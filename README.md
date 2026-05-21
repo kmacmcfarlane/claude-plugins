@@ -20,6 +20,15 @@ Claude Code development tooling — reusable across projects.
 | `goa` | Design-first API development with Goa v3 for Go |
 | `musubi-tuner` | LoRA training/inference with kohya's musubi-tuner |
 | `playwright` | End-to-end testing with Playwright |
+| `chain-of-verification` | CoVe fact-verification pipeline |
+
+### ai-scripts
+
+Context skills for the [ai-scripts](https://github.com/kmacmcfarlane/ai-scripts) repo — Python CLI utilities for AI tasks.
+
+| Skill | Description |
+|-------|-------------|
+| `ai-scripts` | Project context for caption_util, llm_fetch, token_count, and more |
 
 ## Setup
 
@@ -65,17 +74,21 @@ claude-plugins/
 ├── .claude-plugin/
 │   └── marketplace.json         # Plugin index (points to ./plugins/)
 ├── plugins/
+│   ├── ai-scripts/              # AI utility tools
+│   │   └── skills/
+│   │       └── ai-scripts/
 │   └── claude-kit/              # Dev tooling
 │       └── skills/
-│           ├── create-skill/
-│           ├── sandbox/
-│           ├── update-kit/
-│           ├── new-project-from-template/
 │           ├── backlog-entry/
 │           ├── backlog-grooming/
 │           ├── backlog-yaml/
+│           ├── chain-of-verification/
+│           ├── create-skill/
 │           ├── goa/
 │           ├── musubi-tuner/
-│           └── playwright/
+│           ├── new-project-from-template/
+│           ├── playwright/
+│           ├── sandbox/
+│           └── update-kit/
 └── README.md
 ```
