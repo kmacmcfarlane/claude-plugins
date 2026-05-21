@@ -1,0 +1,9 @@
+{
+  "name": "ai-scripts",
+  "description": "Project context for ai-scripts — Python CLI utilities for AI tasks (captioning, model fetching, token counting, embeddings, rare token generation).",
+  "author": {
+    "name": "Kyle McFarlane"
+  },
+  "homepage": "https://github.com/kmacmcfarlane/claude-plugins",
+  "repository": "https://github.com/kmacmcfarlane/claude-plugins"
+}
