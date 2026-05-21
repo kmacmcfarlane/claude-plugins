@@ -1,0 +1,14 @@
+{
+  "name": "kmacmcfarlane",
+  "description": "Claude Code plugin marketplace for Kyle McFarlane — dev tooling and reusable skills.",
+  "owner": {
+    "name": "Kyle McFarlane"
+  },
+  "plugins": [
+    {
+      "name": "claude-kit",
+      "source": "./plugins/claude-kit",
+      "description": "Claude Code dev tooling — skill creation, sandbox management, backlog tracking, Goa API design, Playwright testing, LoRA training, and upstream kit sync."
+    }
+  ]
+}

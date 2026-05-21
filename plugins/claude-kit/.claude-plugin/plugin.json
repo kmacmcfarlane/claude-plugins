@@ -1,0 +1,9 @@
+{
+  "name": "claude-kit",
+  "description": "Claude Code dev tooling — skill creation, sandbox management, backlog tracking, Goa API design, Playwright testing, LoRA training, and upstream kit sync.",
+  "author": {
+    "name": "Kyle McFarlane"
+  },
+  "homepage": "https://github.com/kmacmcfarlane/claude-plugins",
+  "repository": "https://github.com/kmacmcfarlane/claude-plugins"
+}
