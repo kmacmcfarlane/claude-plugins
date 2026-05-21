@@ -38,7 +38,7 @@ Agent `.md` files define the role, tools, and model. **Task-specific context (pl
 - **On reject, spawn a fresh implementer** whose prompt carries forward: the task description, all prior IMPLEMENTER_REPORTs, all prior REVIEW_VERDICTs, and the attempt counter. See `references/todo.md` for future SendMessage adoption.
 - **Spawn a fresh agent for each new task.**
 - **Parallel tasks use worktree isolation.** Each parallel task runs with `isolation: "worktree"` so sub-agents don't see each other's changes.
-- **Commit once per group, not per task.** After all tasks in a group pass review, squash-merge their worktree branches into the main working tree and commit once for the group. Between groups, the commit ensures the next group's worktrees start with prior work.
+- **Never auto-commit.** After all tasks in a group pass review, squash-merge their worktree branches into the working tree but do NOT commit. Changes are left staged for user review. Between groups, commit the staged changes so the next group's worktrees start with prior work — use a temporary commit message (e.g., `wip: implement-plan group [N]`) that the user can amend or squash later.
 - **Every implementer return MUST be followed by a reviewer.** No task is complete until review passes.
 - **Plan-reading is prompted in sub-agent input**, not baked into agent definitions. Always include the plan file path and relevant section in the Agent prompt.
 - **Shared context includes only direct-dependency reports.** Do not accumulate every prior task's IMPLEMENTER_REPORT — only include reports from tasks listed in the current task's `Dependencies` column.
@@ -56,6 +56,16 @@ TS=$(date -u '+%Y-%m-%dT%H-%M-%SZ')
 ```
 
 ## Workflow
+
+### Step 0: Branch Setup
+
+Use AskUserQuestion to prompt the user for a feature branch name (e.g., `kappa-1234`). If the branch doesn't exist, create it. If it does, check it out.
+
+```bash
+git checkout -b <branch-name> 2>/dev/null || git checkout <branch-name>
+```
+
+If the user declines to specify a branch, proceed on the current branch but warn: "Working on `[current branch]` — changes will be staged but not committed."
 
 ### Step 1: Create or Locate the Plan
 
@@ -139,8 +149,8 @@ Process groups sequentially. Within each group, launch parallel Agent calls for 
 
 **Git isolation strategy**:
 - Before starting each group, ensure the working tree is clean (`git status --porcelain` is empty).
-- **Parallel tasks** (multiple tasks in one group): each task runs with `isolation: "worktree"`. The sub-agent commits in its worktree branch. After all tasks in the group pass review, the orchestrator squash-merges each worktree branch into the main working tree and commits once for the group.
-- **Sequential tasks** (single task in a group): can run without worktree isolation since there's no parallel contamination risk. The orchestrator commits after the task passes review.
+- **Parallel tasks** (multiple tasks in one group): each task runs with `isolation: "worktree"`. The sub-agent commits in its worktree branch. After all tasks in the group pass review, the orchestrator squash-merges each worktree branch into the working tree without committing. Changes are left staged.
+- **Sequential tasks** (single task in a group): can run without worktree isolation since there's no parallel contamination risk. Changes are left in the working tree (staged or unstaged).
 - The reviewer runs in the **same worktree** as the implementer (dispatch with the worktree branch checked out) so `git diff` sees only that task's changes.
 
 **Squash-merge flow** (after all parallel tasks in a group pass review):
@@ -149,15 +159,16 @@ Process groups sequentially. Within each group, launch parallel Agent calls for 
 git merge --squash worktree-agent-[id]
 # If merge conflicts arise, resolve them — you have the full context
 # of both tasks' IMPLEMENTER_REPORTs to make informed decisions.
-# After all branches merged:
-git commit -m "implement-plan group [N]: [group name]
-
-Tasks:
-- [T1]: [summary]
-- [T2]: [summary]"
 # Clean up worktree branches:
 git branch -D worktree-agent-[id]
+# Do NOT commit. Changes are staged for user review.
 ```
+
+**Between groups** (if there are more groups to process): the next group's worktrees need a clean base that includes prior groups' work. Create a temporary commit:
+```bash
+git commit -m "wip: implement-plan group [N]: [group name]"
+```
+The user can amend, squash, or reword these later. For the **final group**, leave changes staged without committing.
 
 For each task, use this pattern:
 
@@ -187,7 +198,7 @@ Read the full plan at [plan file path] for broader context. Focus on your assign
 - Implement ONLY the assigned task
 - Write clean, production-quality code
 - Run any relevant tests or linters before finishing
-- Commit your changes before finishing (required for worktree merge)
+- Commit your changes in the worktree before finishing (required for worktree merge back to the main branch)
 
 ## Required Output Format
 You MUST end your response with EXACTLY this block as the LAST thing in your response.
@@ -282,7 +293,7 @@ Field values:
 
 Parse the `REVIEW_VERDICT` block from the reviewer's response.
 
-- **APPROVED**: Mark task complete. Store the IMPLEMENTER_REPORT for use as shared context in downstream tasks. Do NOT commit yet — wait until all tasks in the group are approved, then squash-merge and commit once for the group (see Git isolation strategy above).
+- **APPROVED**: Mark task complete. Store the IMPLEMENTER_REPORT for use as shared context in downstream tasks. Wait until all tasks in the group are approved, then squash-merge into the working tree without committing (see Git isolation strategy above).
 
 - **REJECTED (attempt < 3)**: Spawn a fresh implementer whose prompt includes:
   - The original task description and expected scope
