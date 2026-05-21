@@ -81,7 +81,27 @@ If no existing plan applies, create one:
 4. Exit plan mode with ExitPlanMode.
 5. Present the plan to the user and get confirmation before proceeding. If they want changes, revise and re-present.
 
-### Step 2: Build the Dependency Tree
+### Step 2: Documentation & Skills Gate
+
+Before building the dependency tree, review the plan for documentation and skill coverage.
+
+Check whether the plan includes tasks for:
+1. **Documentation updates** — README, CLAUDE.md, inline docs, API docs, migration guides, or any docs that would become stale after the planned changes.
+2. **Skill updates** — `.claude/skills/`, plugin skills, or agent definitions that reference affected code, patterns, or workflows.
+3. **Config/manifest updates** — marketplace.json, plugin.json, package.json, or other manifests that need to reflect new or changed components.
+
+**How to check**: scan the plan's task list for keywords like "doc", "README", "CLAUDE.md", "skill", "SKILL.md", "agent", "manifest". Also consider what the plan *changes* — if it adds a new feature, renames a component, changes a CLI interface, or alters a workflow, the corresponding docs/skills likely need updating.
+
+If any of these are missing, use AskUserQuestion:
+> "The plan doesn't include tasks for updating [documentation / skills / manifests] that may be affected by these changes. Want me to add tasks for:
+> - [specific doc/skill/manifest that looks stale]
+> - [another]
+>
+> Or proceed without?"
+
+If the user wants them added, revise the plan file before continuing.
+
+### Step 3: Build the Dependency Tree
 
 Derive the dependency tree path from the plan filename:
 ```bash
@@ -113,7 +133,7 @@ Read the generated dependency tree file.
 
 Present the dependency tree to the user and get confirmation before proceeding.
 
-### Step 3: Execute Tasks
+### Step 4: Execute Tasks
 
 Process groups sequentially. Within each group, launch parallel Agent calls for independent tasks.
 
@@ -276,9 +296,9 @@ Parse the `REVIEW_VERDICT` block from the reviewer's response.
   - Present: the task name, all 3 REVIEW_VERDICT blocks, current file state
   - Options: "Approve as-is", "I'll fix it manually", "Skip this task", "Abort plan execution"
 
-### Step 4: Collect Execution Stats
+### Step 5: Collect Execution Stats
 
-Throughout Steps 1–3, the orchestrator must track stats for each sub-agent dispatch. Every Agent tool result includes a `<usage>` block:
+Throughout Steps 1–4, the orchestrator must track stats for each sub-agent dispatch. Every Agent tool result includes a `<usage>` block:
 ```
 <usage>total_tokens: 16188
 tool_uses: 5
@@ -307,7 +327,7 @@ Parse these from each agent result. Record a wall clock start time at the beginn
 - Files changed (deduplicated across tasks)
 - Tasks parallel vs sequential
 
-### Step 5: Post-Completion Verification
+### Step 6: Post-Completion Verification
 
 
 After all groups complete:
@@ -319,7 +339,7 @@ After all groups complete:
    - **Pre-existing failures** (tests/lints that were already failing before this plan ran): do NOT block plan completion. Handle in Step 5.
 4. If in-scope checks pass: report summary — tasks completed, commits created, files changed.
 
-### Step 6: Pre-Existing Issues (final)
+### Step 7: Pre-Existing Issues (final)
 
 If Step 4 found test or lint failures unrelated to this plan's changes, notify the user as the last thing before finishing:
 
@@ -327,7 +347,7 @@ If Step 4 found test or lint failures unrelated to this plan's changes, notify t
 
 This is informational only — do not block, prompt for action, or attempt to fix.
 
-### Step 7: Execution Report
+### Step 8: Execution Report
 
 After all work is complete, present a summary report. This is the final output of the skill.
 
@@ -369,6 +389,26 @@ Duration for group total: `max(task durations)` if parallel, `sum(task durations
 
 End-to-end wall clock = `date +%s` at finish minus `date +%s` at start of Step 1.
 Agent duration = sum of all `duration_ms` from agent results (will exceed wall clock when tasks run in parallel — that's expected).
+
+**Issues of Note** — list anything that warrants attention:
+- Escalated or skipped tasks and why
+- Merge conflicts resolved during squash-merge (what was chosen)
+- Reviewer concerns marked minor that the user may want to revisit
+- Any BLOCKED tasks or unexpected failures
+- If nothing: "No issues."
+
+**Deploy Steps** — terse checklist of what's needed to ship:
+- Commits to push (branch name, number of commits)
+- Migrations to run, services to restart, caches to clear
+- Config or env changes required
+- PR to create (if not on main)
+- If nothing beyond `git push`: "Push and done."
+
+**Verification Steps** — minimum dev testing before merge:
+- Key paths to exercise manually (happy path + edge cases touched by the plan)
+- Commands to run (`make test`, `curl` endpoints, etc.)
+- Things to eyeball (UI changes, log output, config rendering)
+- Keep it to 3–5 bullets. End with: "Ask me to expand on any of these."
 
 ## Handling Interconnected Tasks
 
