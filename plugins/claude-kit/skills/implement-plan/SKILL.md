@@ -1,9 +1,9 @@
 ---
 name: implement-plan
-description: Orchestrates plan implementation using sub-agents with dependency-aware parallel execution and iterative code review. Reads a plan file, builds a dependency tree, dispatches implementer sub-agents (parallel where safe), and runs review cycles with a hard cap before escalating. Requires agent definitions from the claude-kit plugin.
+description: Orchestrates plan implementation using sub-agents with dependency-aware parallel execution and iterative code review. Creates a plan from user instructions (or reads an existing one), builds a dependency tree, dispatches implementer sub-agents (parallel where safe), and runs review cycles with a hard cap before escalating. Requires agent definitions from the claude-kit plugin.
 disable-model-invocation: true
-allowed-tools: Read, Write, Edit, Glob, Grep, Bash, Agent, TaskCreate, TaskUpdate, TaskGet, TaskList, AskUserQuestion
-argument-hint: path/to/plan.md
+allowed-tools: Read, Write, Edit, Glob, Grep, Bash, Agent, TaskCreate, TaskUpdate, TaskGet, TaskList, AskUserQuestion, EnterPlanMode, ExitPlanMode
+argument-hint: instructions or description of what to build
 ---
 
 # Implement Plan
@@ -65,19 +65,28 @@ echo ".claude/tasks/dependency-tree-${TS}.md"
 
 ## Workflow
 
-### Step 1: Locate and Read the Plan
+### Step 1: Create or Locate the Plan
 
-If the user provides a path argument, use it. Otherwise, find the most recent timestamped plan:
+The argument is **free-form user instructions** describing what to build or change.
 
-```bash
-ls -1 .claude/tasks/plan-*.md 2>/dev/null | sort -r | head -1
-```
+First, check if a plan already exists:
+1. If the argument looks like a path to a plan file (e.g., ends in `.md`, matches `plan-*.md`), read it directly.
+2. Otherwise, look for a recent plan from this session — the user may have already gone through plan mode before invoking this skill:
+   ```bash
+   ls -1 .claude/tasks/plan-*.md 2>/dev/null | sort -r | head -1
+   ```
+   If found, read it, present it to the user, and ask: "Use this existing plan, or create a new one from your instructions?"
 
-If no match, fall back to:
-1. Glob for `**/*plan*.md`, `**/*PRD*.md`
-2. If still nothing, use AskUserQuestion to ask the user for the plan location.
-
-Read the full plan file. Identify all discrete tasks/phases.
+If no existing plan applies, create one:
+1. Enter plan mode with EnterPlanMode.
+2. Analyze the codebase and the user's instructions to understand what needs to be done.
+3. Write a plan to `.claude/tasks/plan-[TS].md` where `[TS]` is the session timestamp (see File Conventions). The plan should contain:
+   - **Goal**: what the user asked for
+   - **Context**: relevant codebase observations
+   - **Tasks**: discrete, implementable units of work with clear boundaries
+   - **Dependencies**: which tasks depend on which
+4. Exit plan mode with ExitPlanMode.
+5. Present the plan to the user and get confirmation before proceeding. If they want changes, revise and re-present.
 
 ### Step 2: Build the Dependency Tree
 
