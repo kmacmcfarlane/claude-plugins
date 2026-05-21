@@ -45,22 +45,14 @@ Agent `.md` files define the role, tools, and model. **Task-specific context (pl
 
 ## File Conventions
 
-All artifacts use UTC timestamps in the format `YYYY-MM-DDTHH-MM-SSZ` (hyphens, not colons — filesystem-safe). This format sorts lexicographically in chronological order, which is why the `sort -r` discovery command works.
+Plans live in `.claude/plans/` using Claude Code's auto-generated naming convention (e.g., `ticklish-pondering-feather.md`). The dependency tree is written alongside the plan with a `-deps` suffix.
 
-Two timestamps are in play:
-- **Plan timestamp**: embedded in the plan filename (e.g., `plan-2026-05-21T00-00-00Z.md`) — when the plan was created.
-- **Session timestamp (`TS`)**: generated once when the orchestrator starts a run — used for all outputs of that run (dependency tree, etc.).
+- **Plan file**: `.claude/plans/<name>.md` — created by plan mode or found from a prior session
+- **Dependency tree**: `.claude/plans/<name>-deps.md` — created by the plan-architect agent
 
-**Finding the most recent plan** (when no path argument given):
-```bash
-# Lexicographic sort works because the timestamp format is ISO-8601-ish with fixed width
-ls -1 .claude/tasks/plan-*.md 2>/dev/null | sort -r | head -1
-```
-
-**Generating the session timestamp and output paths**:
+**Session timestamp (`TS`)** is still used for other outputs (logs, reports):
 ```bash
 TS=$(date -u '+%Y-%m-%dT%H-%M-%SZ')
-echo ".claude/tasks/dependency-tree-${TS}.md"
 ```
 
 ## Workflow
@@ -69,18 +61,19 @@ echo ".claude/tasks/dependency-tree-${TS}.md"
 
 The argument is **free-form user instructions** describing what to build or change.
 
-First, check if a plan already exists:
-1. If the argument looks like a path to a plan file (e.g., ends in `.md`, matches `plan-*.md`), read it directly.
-2. Otherwise, look for a recent plan from this session — the user may have already gone through plan mode before invoking this skill:
+First, check if a plan already exists from this session:
+1. If the argument looks like a path to a plan file (e.g., ends in `.md`), read it directly.
+2. Otherwise, check `.claude/plans/` for a recent plan — the user may have already gone through plan mode before invoking this skill:
    ```bash
-   ls -1 .claude/tasks/plan-*.md 2>/dev/null | sort -r | head -1
+   ls -1t .claude/plans/*.md 2>/dev/null | grep -v -- '-deps\.md$' | head -1
    ```
    If found, read it, present it to the user, and ask: "Use this existing plan, or create a new one from your instructions?"
+3. Also review the conversation history for decisions, findings, or constraints the user discussed during prior plan-mode sessions that may not have been written into a plan file yet. If you find unincorporated context, fold it into the plan before proceeding.
 
 If no existing plan applies, create one:
 1. Enter plan mode with EnterPlanMode.
 2. Analyze the codebase and the user's instructions to understand what needs to be done.
-3. Write a plan to `.claude/tasks/plan-[TS].md` where `[TS]` is the session timestamp (see File Conventions). The plan should contain:
+3. Write a plan to `.claude/plans/` (let plan mode generate the filename). The plan should contain:
    - **Goal**: what the user asked for
    - **Context**: relevant codebase observations
    - **Tasks**: discrete, implementable units of work with clear boundaries
@@ -90,9 +83,12 @@ If no existing plan applies, create one:
 
 ### Step 2: Build the Dependency Tree
 
-Generate the session timestamp:
+Derive the dependency tree path from the plan filename:
 ```bash
-TS=$(date -u '+%Y-%m-%dT%H-%M-%SZ')
+# If plan is .claude/plans/ticklish-pondering-feather.md
+# then deps go to .claude/plans/ticklish-pondering-feather-deps.md
+PLAN_PATH=".claude/plans/<name>.md"
+DEPS_PATH="${PLAN_PATH%.md}-deps.md"
 ```
 
 Dispatch the plan-architect agent to analyze the plan and build the dependency tree:
@@ -104,7 +100,7 @@ Agent({
   prompt: "Analyze the plan at [plan file path] and produce a dependency tree.
 
 ## Output Path
-Write the dependency tree to .claude/tasks/dependency-tree-[TS].md
+Write the dependency tree to [DEPS_PATH]
 
 ## Required Output Format
 Write the dependency tree file AND return its contents. Use exactly the format documented in references/dependency-tree-example.md."
@@ -280,7 +276,39 @@ Parse the `REVIEW_VERDICT` block from the reviewer's response.
   - Present: the task name, all 3 REVIEW_VERDICT blocks, current file state
   - Options: "Approve as-is", "I'll fix it manually", "Skip this task", "Abort plan execution"
 
-### Step 4: Post-Completion Verification
+### Step 4: Collect Execution Stats
+
+Throughout Steps 1–3, the orchestrator must track stats for each sub-agent dispatch. Every Agent tool result includes a `<usage>` block:
+```
+<usage>total_tokens: 16188
+tool_uses: 5
+duration_ms: 701376</usage>
+```
+
+Parse these from each agent result. Record a wall clock start time at the beginning of the run (`date +%s`) and at the start/end of each group.
+
+**Per-task stats to collect**:
+- Task ID (from dependency tree)
+- Review attempts (1 = passed first try, max 3)
+- Files changed (from IMPLEMENTER_REPORT: count of files_created + files_modified)
+- Execution mode: `parallel` (worktree) or `sequential` (inline)
+- For each agent dispatch (implementer + reviewer, per attempt):
+  - `total_tokens`
+  - `tool_uses`
+  - `duration_ms`
+- Task outcome: `approved`, `escalated`, `skipped`, `blocked`
+
+**Per-group stats** (aggregate from tasks):
+- Group name (from dependency tree)
+- Task IDs in this group
+- Total tokens (sum across all agent dispatches in group)
+- Total tool uses (sum)
+- Group duration: for parallel groups, `max(task durations)` since they run concurrently; for sequential, sum
+- Files changed (deduplicated across tasks)
+- Tasks parallel vs sequential
+
+### Step 5: Post-Completion Verification
+
 
 After all groups complete:
 
@@ -291,13 +319,56 @@ After all groups complete:
    - **Pre-existing failures** (tests/lints that were already failing before this plan ran): do NOT block plan completion. Handle in Step 5.
 4. If in-scope checks pass: report summary — tasks completed, commits created, files changed.
 
-### Step 5: Pre-Existing Issues (final)
+### Step 6: Pre-Existing Issues (final)
 
 If Step 4 found test or lint failures unrelated to this plan's changes, notify the user as the last thing before finishing:
 
 "Plan implementation complete. Note: the following test/lint failures appear to be pre-existing (not caused by this plan's changes): [list failures]. These may warrant separate attention."
 
 This is informational only — do not block, prompt for action, or attempt to fix.
+
+### Step 7: Execution Report
+
+After all work is complete, present a summary report. This is the final output of the skill.
+
+**Per-Group Breakdown**:
+
+```
+## Group 1: [group name]
+| Task | Attempts | Files Changed | Tokens | Tool Calls | Duration | Mode | Outcome |
+|------|----------|---------------|--------|------------|----------|------|---------|
+| T1   | 1        | 3             | 12,400 | 8          | 45s      | par  | approved |
+| T2   | 2        | 2             | 24,100 | 15         | 92s      | par  | approved |
+| **Group Total** | | **5** | **36,500** | **23** | **92s** | | |
+
+## Group 2: [group name]
+...
+```
+
+Duration for group total: `max(task durations)` if parallel, `sum(task durations)` if sequential.
+
+**Summary**:
+
+```
+## Summary
+| Metric | Value |
+|--------|-------|
+| Total tasks | 8 |
+| Tasks approved | 7 |
+| Tasks escalated | 1 |
+| Tasks blocked/skipped | 0 |
+| Parallel tasks | 5 |
+| Sequential tasks | 3 |
+| Total review attempts | 10 |
+| Total files changed | 14 |
+| Total tokens | 142,300 |
+| Total tool calls | 87 |
+| Total agent duration | 8m 12s |
+| End-to-end wall clock | 10m 45s |
+```
+
+End-to-end wall clock = `date +%s` at finish minus `date +%s` at start of Step 1.
+Agent duration = sum of all `duration_ms` from agent results (will exceed wall clock when tasks run in parallel — that's expected).
 
 ## Handling Interconnected Tasks
 
