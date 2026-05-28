@@ -1,6 +1,6 @@
 ---
 name: sandbox
-description: "Guides setup, configuration, and troubleshooting of claude-sandbox Docker containers. Use when user asks about claude-sandbox, sandbox configuration, .claude-sandbox.yaml, Dockerfile.claude-sandbox, ralph loops, container isolation, or host access flags (--docker-socket, --aws, --git, --ssh). Also triggers on sandbox launch errors, entrypoint issues, or volume mount problems."
+description: "Guides setup, configuration, and troubleshooting of claude-sandbox Docker containers. Use when user asks about claude-sandbox, sandbox configuration, .claude-sandbox.yaml, Dockerfile.claude-sandbox, ralph loops, container isolation, host access flags (--docker-socket, --aws, --git, --ssh), model selection (--model), image rebuilding (--rebuild), or Claude Code version updates. Also triggers on sandbox launch errors, entrypoint issues, or volume mount problems."
 disable-model-invocation: false
 allowed-tools: "Read, Glob, Grep, Bash, Edit, Write, Agent"
 ---
@@ -47,7 +47,7 @@ The container sees the project at its real host path. This is critical for `dock
 CLI flag > env var > `.claude-sandbox.yaml` > defaults
 
 Three config files are resolved by walking parent directories (direnv-style):
-- `.claude-sandbox.yaml` — container settings, host access, mounts
+- `.claude-sandbox.yaml` — container settings, host access, mounts, model
 - `.env.claude-sandbox` — environment variables injected into the container
 - `Dockerfile.claude-sandbox` — child image definition
 
@@ -58,6 +58,16 @@ Three config files are resolved by walking parent directories (direnv-style):
 2. Optionally create `Dockerfile.claude-sandbox` for project-specific tools
 3. Optionally create `.env.claude-sandbox` for env vars
 4. Run `claude-sandbox` from the project directory
+
+### Choosing a Model
+- **CLI flag**: `claude-sandbox --model claude-opus-4-8` (or alias like `opus`)
+- **YAML** (`.claude-sandbox.yaml`): `model: claude-opus-4-8`
+- Forwarded to both `claude` and `ralph` as `--model`
+
+### Updating Claude Code
+On launch, the sandbox checks whether a newer Claude Code version is available on npm and prompts to rebuild. Use `--no-update-check` or `CLAUDE_SANDBOX_NO_UPDATE_CHECK=1` to skip.
+
+Force a full rebuild with `claude-sandbox --rebuild`.
 
 ### Enabling Host Access
 Options (pick any):
