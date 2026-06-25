@@ -104,9 +104,9 @@ Perform variable substitution across all files:
 
 Check if the template includes sandbox example files:
 ```bash
-ls "$TEMPLATES_REPO/$TEMPLATE/.claude-sandbox.example.yaml" 2>/dev/null
-ls "$TEMPLATES_REPO/$TEMPLATE/.env.claude-sandbox.example" 2>/dev/null
-ls "$TEMPLATES_REPO/$TEMPLATE/Dockerfile.claude-sandbox.example" 2>/dev/null
+ls "$TEMPLATES_REPO/$TEMPLATE/.claude-sandbox/config.example.yaml" 2>/dev/null
+ls "$TEMPLATES_REPO/$TEMPLATE/.claude-sandbox/env.example" 2>/dev/null
+ls "$TEMPLATES_REPO/$TEMPLATE/.claude-sandbox/Dockerfile.example" 2>/dev/null
 ```
 
 For each example file found, use `AskUserQuestion`:
@@ -116,10 +116,20 @@ For each example file found, use `AskUserQuestion`:
   2. Label: "Yes, customize", Description: "I'll adjust after copying"
   3. Label: "Skip", Description: "Don't set up this file"
 
-If yes, copy the example to the active filename (strip `.example` suffix).
+If yes, copy the example to the active filename (strip `.example` suffix) — e.g.
+`.claude-sandbox/config.example.yaml` → `.claude-sandbox/config.yaml`,
+`.claude-sandbox/env.example` → `.claude-sandbox/env`.
+
+**Then set `trackInHost`** in `.claude-sandbox/config.yaml` via `AskUserQuestion`:
+- **question**: "How should the `.claude-sandbox/` directory be version-controlled?"
+- **options**:
+  1. Label: "Track in this repo", Description: "trackInHost: true — the dir is committed to the host repo (env/temp/ralph stay gitignored). Best for your OWN projects."
+  2. Label: "Keep out (sidecar)", Description: "trackInHost: false (default) — gitignore /.claude-sandbox/ and use an internal sidecar git repo for history. Best when contributing to someone else's repo."
+
+For a kmacmcfarlane-owned project this is normally **"Track in this repo"** → ensure the line `trackInHost: true` is present (uncommented) in `.claude-sandbox/config.yaml`. For `false`, leave it commented/absent (false is the default).
 
 If no example files exist in the template, ask:
-- **question**: "Set up claude-sandbox configuration? (Dockerfile.claude-sandbox, .claude-sandbox.yaml, .env.claude-sandbox)"
+- **question**: "Set up claude-sandbox configuration? (.claude-sandbox/Dockerfile, .claude-sandbox/config.yaml, .claude-sandbox/env)"
 - **options**:
   1. Label: "Yes, basic setup", Description: "Create minimal sandbox config for this stack"
   2. Label: "Skip", Description: "I'll set up sandbox later"
@@ -165,7 +175,7 @@ git push -u origin main
 
 ### Next steps
 1. Install the claude-kit plugin: `/plugin install claude-kit@kmacmcfarlane`
-2. Review CLAUDE.md and agent/PRD.md
+2. Review CLAUDE.md and .claude-sandbox/agent/PRD.md
 3. Run `make up-dev` to verify the stack starts
 ```
 

@@ -9,7 +9,9 @@ allowed-tools: "Read, Bash, Glob, Grep"
 
 All backlog reads and writes MUST use `python3 scripts/backlog/backlog.py` instead of direct YAML editing. This ensures round-trip YAML preservation (comments, ordering, formatting), schema validation, and atomic writes.
 
-**Never edit `agent/backlog.yaml` or `agent/backlog_done.yaml` directly.** Always use the CLI tool.
+**Never edit `.claude-sandbox/agent/backlog.yaml` or `.claude-sandbox/agent/backlog_done.yaml` directly.** Always use the CLI tool. (Un-migrated repos use the legacy `agent/backlog.yaml` location — the consolidated layout moves the agent dir under `.claude-sandbox/agent/`.)
+
+**Sidecar commit SOP:** when the project's `.claude-sandbox/config.yaml` has `trackInHost: false`, the `.claude-sandbox/` dir is gitignored in the host repo and kept in an internal sidecar git repo. After grooming the backlog, PROMPT the user to commit the change in the sidecar (do not auto-commit): `git -C .claude-sandbox add -A && git -C .claude-sandbox commit -m "..."`.
 
 See `references/cli-reference.md` for the full command reference with examples.
 
