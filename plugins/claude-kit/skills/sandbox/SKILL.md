@@ -51,7 +51,7 @@ Three config files are resolved by walking parent directories (direnv-style):
 - `.claude-sandbox/env` — environment variables injected into the container
 - `.claude-sandbox/Dockerfile` — child image definition
 
-**Reverse-compatible layout:** each path resolves `.claude-sandbox/<new>` first, then the legacy root location (`.claude-sandbox.yaml`, `.env.claude-sandbox`, `Dockerfile.claude-sandbox`, `.ralph/`, `agent/`) — so un-migrated repos keep working unchanged. See claude-sandbox `MIGRATION.md`.
+**Layout:** all sandbox files live under `.claude-sandbox/` — `config.yaml`, `env`, `Dockerfile`, `ralph/`, and `agent/`. The legacy scattered-root layout is no longer supported. See claude-sandbox `MIGRATION.md`.
 
 ### `trackInHost` — how `.claude-sandbox/` is version-controlled
 Set in `.claude-sandbox/config.yaml`:

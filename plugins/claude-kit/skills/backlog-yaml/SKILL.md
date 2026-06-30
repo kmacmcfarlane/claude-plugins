@@ -7,9 +7,9 @@ allowed-tools: "Read, Bash, Glob, Grep"
 
 # Backlog YAML Management
 
-All backlog reads and writes MUST use `python3 scripts/backlog/backlog.py` instead of direct YAML editing. This ensures round-trip YAML preservation (comments, ordering, formatting), schema validation, and atomic writes.
+All backlog reads and writes MUST use `python3 .claude-sandbox/scripts/backlog/backlog.py` instead of direct YAML editing. This ensures round-trip YAML preservation (comments, ordering, formatting), schema validation, and atomic writes.
 
-**Never edit `.claude-sandbox/agent/backlog.yaml` or `.claude-sandbox/agent/backlog_done.yaml` directly.** Always use the CLI tool. (Un-migrated repos use the legacy `agent/backlog.yaml` location — the consolidated layout moves the agent dir under `.claude-sandbox/agent/`.)
+**Never edit `.claude-sandbox/agent/backlog.yaml` or `.claude-sandbox/agent/backlog_done.yaml` directly.** Always use the CLI tool.
 
 **Sidecar commit SOP:** when the project's `.claude-sandbox/config.yaml` has `trackInHost: false`, the `.claude-sandbox/` dir is gitignored in the host repo and kept in an internal sidecar git repo. After grooming the backlog, PROMPT the user to commit the change in the sidecar (do not auto-commit): `git -C .claude-sandbox add -A && git -C .claude-sandbox commit -m "..."`.
 
@@ -19,35 +19,35 @@ See `references/cli-reference.md` for the full command reference with examples.
 
 ```bash
 # Query stories by status
-python3 scripts/backlog/backlog.py query --status todo --fields id,title,priority
+python3 .claude-sandbox/scripts/backlog/backlog.py query --status todo --fields id,title,priority
 
 # Dependency-aware status overview
-python3 scripts/backlog/backlog.py status
+python3 .claude-sandbox/scripts/backlog/backlog.py status
 
 # Query with blocked_by virtual field
-python3 scripts/backlog/backlog.py query --status todo --fields id,title,blocked_by
+python3 .claude-sandbox/scripts/backlog/backlog.py query --status todo --fields id,title,blocked_by
 
 # Select next eligible work (deterministic algorithm)
-python3 scripts/backlog/backlog.py next-work --format json
+python3 .claude-sandbox/scripts/backlog/backlog.py next-work --format json
 
 # Get a single story
-python3 scripts/backlog/backlog.py get S-052
+python3 .claude-sandbox/scripts/backlog/backlog.py get S-052
 
 # Set a scalar field
-python3 scripts/backlog/backlog.py set S-052 status in_progress
-python3 scripts/backlog/backlog.py set S-052 ticket_mode mixed
+python3 .claude-sandbox/scripts/backlog/backlog.py set S-052 status in_progress
+python3 .claude-sandbox/scripts/backlog/backlog.py set S-052 ticket_mode mixed
 
 # Set a text field from stdin
-echo "Changes requested: missing null guard" | python3 scripts/backlog/backlog.py set-text S-052 review_feedback
+echo "Changes requested: missing null guard" | python3 .claude-sandbox/scripts/backlog/backlog.py set-text S-052 review_feedback
 
 # Clear an optional field
-python3 scripts/backlog/backlog.py clear S-052 review_feedback
+python3 .claude-sandbox/scripts/backlog/backlog.py clear S-052 review_feedback
 
 # Get next available ID
-python3 scripts/backlog/backlog.py next-id B
+python3 .claude-sandbox/scripts/backlog/backlog.py next-id B
 
 # Add a new story from stdin
-cat <<'EOF' | python3 scripts/backlog/backlog.py add
+cat <<'EOF' | python3 .claude-sandbox/scripts/backlog/backlog.py add
 - id: B-038
   title: "Grid flicker on resize"
   priority: 70
@@ -61,10 +61,10 @@ cat <<'EOF' | python3 scripts/backlog/backlog.py add
 EOF
 
 # Archive a story to backlog_done.yaml
-python3 scripts/backlog/backlog.py archive S-001
+python3 .claude-sandbox/scripts/backlog/backlog.py archive S-001
 
 # Validate the backlog
-python3 scripts/backlog/backlog.py validate --strict
+python3 .claude-sandbox/scripts/backlog/backlog.py validate --strict
 ```
 
 ## Exit Codes
