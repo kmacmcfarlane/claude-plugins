@@ -1,6 +1,6 @@
 ---
 name: sandbox
-description: "Guides setup, configuration, and troubleshooting of claude-sandbox Docker containers. Use when user asks about claude-sandbox, sandbox configuration, .claude-sandbox/config.yaml, .claude-sandbox/Dockerfile, ralph loops, container isolation, host access flags (--docker-socket, --aws, --git, --ssh), model selection (--model), image rebuilding (--rebuild), or Claude Code version updates. Also triggers on sandbox launch errors, entrypoint issues, or volume mount problems."
+description: "Guides setup, configuration, and troubleshooting of claude-sandbox Docker containers. Use when user asks about claude-sandbox, sandbox configuration, .claude-sandbox/config.yaml, .claude-sandbox/Dockerfile, config cascade, bootstrapping a project (claude-sandbox init / init-ralph), ralph loops, container isolation, host access flags (--docker-socket, --aws, --git, --ssh), model selection (--model), image rebuilding (--rebuild), or Claude Code version updates. Also triggers on sandbox launch errors, entrypoint issues, or volume mount problems."
 disable-model-invocation: false
 allowed-tools: "Read, Glob, Grep, Bash, Edit, Write, Agent"
 ---
@@ -44,14 +44,16 @@ USER root
 The container sees the project at its real host path. This is critical for `docker compose` volume resolution against the host daemon.
 
 ### Configuration Precedence
-CLI flag > env var > `.claude-sandbox/config.yaml` > defaults
+CLI flag > env var > merged `.claude-sandbox/config.yaml` cascade > defaults
 
-Three config files are resolved by walking parent directories (direnv-style):
-- `.claude-sandbox/config.yaml` — container settings, host access, mounts, model
-- `.claude-sandbox/env` — environment variables injected into the container
-- `.claude-sandbox/Dockerfile` — child image definition
+Three kinds of files are resolved by walking parent directories (direnv-style), each with its own semantics:
+- `.claude-sandbox/config.yaml` — **cascades**: every config from the filesystem root down to the project is deep-merged; more-local values override, `mounts` append (a same `host`+`container` entry overrides the upstream one, e.g. to flip `writable`). The launcher prints the cascade at startup.
+- `.claude-sandbox/env` — **layers**: every env file is passed as a stacked `--env-file` flag; a variable set in a more-local file overrides the upstream value.
+- `.claude-sandbox/Dockerfile` — **nearest wins**: the closest one up the tree is used wholesale (no merging).
 
-**Layout:** all sandbox files live under `.claude-sandbox/` — `config.yaml`, `env`, `Dockerfile`, `ralph/`, and `agent/`. The legacy scattered-root layout is no longer supported. See claude-sandbox `MIGRATION.md`.
+This supports a catch-all `.claude-sandbox/` at a workspace root that provides defaults for every project beneath it; per-project configs stay sparse and only override what differs.
+
+**Layout:** all sandbox files live under `.claude-sandbox/` — `config.yaml`, `env`, `Dockerfile`, `ralph/`, `agent/`, and `scripts/`. The legacy scattered-root layout is no longer supported. See claude-sandbox `docs/MIGRATION.md`.
 
 ### `trackInHost` — how `.claude-sandbox/` is version-controlled
 Set in `.claude-sandbox/config.yaml`:
@@ -66,10 +68,16 @@ git -C .claude-sandbox add -A && git -C .claude-sandbox commit -m "..."
 ## Common Tasks
 
 ### Setting Up a New Project
-1. Optionally create `.claude-sandbox/config.yaml` (copy from `.claude-sandbox/config.example.yaml`)
-2. Optionally create `.claude-sandbox/Dockerfile` for project-specific tools
-3. Optionally create `.claude-sandbox/env` for env vars
-4. Run `claude-sandbox` from the project directory
+Run the bootstrap subcommand from the project directory:
+```bash
+claude-sandbox init          # base: sparse config.yaml + env + Dockerfile.example, gitignore, sidecar
+claude-sandbox init-ralph    # init + ralph agent/ + scripts/ scaffolding (backlog, worktree tools)
+```
+- Only `--track-in-host` / `--no-track-in-host` apply to these subcommands (they set `trackInHost` non-interactively; otherwise `init` prompts — unless an upstream config already defines it, then it's inherited).
+- Both are **idempotent**: existing files are never overwritten, so template-provided docs win and re-running fills only gaps.
+- The seeded `config.yaml`/`env` are **sparse (fully commented)** — they override nothing in the cascade; uncomment a key to set it for this project.
+- Rename `.claude-sandbox/Dockerfile.example` → `Dockerfile` to activate project-specific tooling.
+- Then run `claude-sandbox` to launch.
 
 ### Choosing a Model
 - **CLI flag**: `claude-sandbox --model claude-opus-4-8` (or alias like `opus`)
@@ -113,6 +121,7 @@ mounts:
     container: /mnt/data
     writable: true
 ```
+Mounts append down the config cascade. To change an upstream mount (e.g. make it writable), re-declare the same `host` + `container` pair locally with the new settings — it overrides the upstream entry instead of duplicating it.
 
 ## Troubleshooting
 
@@ -152,4 +161,5 @@ The launcher walks parent directories. To skip child image detection entirely:
 | `Dockerfile` | Base image definition |
 | `notification-hooks.json` | Hook fragment merged into settings.json |
 | `container-context.md` | Injected into container's CLAUDE.md |
-| `.claude-sandbox/config.example.yaml` | Example config template |
+| `scaffold/` (in claude-sandbox repo) | Base bootstrap seed for `init` (sparse config.yaml, env, Dockerfile.example) |
+| `scaffold-ralph/` (in claude-sandbox repo) | Ralph scaffolding seed for `init-ralph` (agent/ docs, scripts/ backlog + worktree tools) |

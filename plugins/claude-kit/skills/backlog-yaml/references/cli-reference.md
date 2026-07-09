@@ -1,17 +1,17 @@
 # backlog.py CLI Reference
 
-Location: `scripts/backlog/backlog.py`
+Location: `.claude-sandbox/scripts/backlog/backlog.py`
 
 ## Global Options
 
 ```
-python3 scripts/backlog/backlog.py [--backlog PATH] [--done PATH] [--format yaml|json] <command> [args...]
+python3 .claude-sandbox/scripts/backlog/backlog.py [--backlog PATH] [--done PATH] [--format yaml|json] <command> [args...]
 ```
 
 | Flag | Default | Description |
 |------|---------|-------------|
-| `--backlog` | `<git-root>/agent/backlog.yaml` | Path to active backlog file |
-| `--done` | `<git-root>/agent/backlog_done.yaml` | Path to done/archive file |
+| `--backlog` | `<git-root>/.claude-sandbox/agent/backlog.yaml` | Path to active backlog file |
+| `--done` | `<git-root>/.claude-sandbox/agent/backlog_done.yaml` | Path to done/archive file |
 | `--format` | `yaml` | Output format for read operations |
 
 > **Note:** `--format` also works after read subcommands (`query`, `get`, `next-work`). The subcommand position takes precedence if both are specified.

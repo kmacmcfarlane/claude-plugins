@@ -16,9 +16,9 @@ Create well-formed backlog entries interactively. User's initial description: $A
 
 Run these commands to understand the backlog state:
 ```bash
-python3 scripts/backlog/backlog.py next-id S
-python3 scripts/backlog/backlog.py next-id B
-python3 scripts/backlog/backlog.py next-id R
+python3 .claude-sandbox/scripts/backlog/backlog.py next-id S
+python3 .claude-sandbox/scripts/backlog/backlog.py next-id B
+python3 .claude-sandbox/scripts/backlog/backlog.py next-id R
 ```
 
 If `$ARGUMENTS` is empty, ask the user to describe what they want to add before proceeding.
@@ -131,14 +131,14 @@ Loop on edits until approved.
 
 Pipe the approved YAML to backlog.py:
 ```bash
-cat <<'EOF' | python3 scripts/backlog/backlog.py add
+cat <<'EOF' | python3 .claude-sandbox/scripts/backlog/backlog.py add
 <approved YAML>
 EOF
 ```
 
 Then validate:
 ```bash
-python3 scripts/backlog/backlog.py validate
+python3 .claude-sandbox/scripts/backlog/backlog.py validate
 ```
 
 ### Step 8: Summary

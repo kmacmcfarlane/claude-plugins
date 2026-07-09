@@ -63,7 +63,7 @@ Makefile                    # Project build targets (root and backend/)
 backend/                    # Application code
 frontend/                   # Application code
 docs/                       # Project architecture docs
-.ralph/                     # Runtime state
+.claude-sandbox/ralph/      # Runtime state
 .worktrees/                 # Worktree state
 .e2e/                       # E2E artifacts
 node_modules/               # Dependencies

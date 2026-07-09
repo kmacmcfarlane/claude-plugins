@@ -90,6 +90,7 @@ From the answer, derive:
 ```bash
 cp -r "$TEMPLATES_REPO/$TEMPLATE/" "$PROJECT_DIR/"
 cd "$PROJECT_DIR"
+rm -rf .git   # never carry template git history
 ```
 
 Perform variable substitution across all files:
@@ -98,57 +99,66 @@ Perform variable substitution across all files:
 - Update `package.json` name field
 - Update CLAUDE.md references
 - Clear story-specific content (backlog.yaml stories, CHANGELOG entries, PRD content)
-- Reset git history (will init fresh in Step 7)
 
-### Step 6: Sandbox configuration
+Note: templates ship ONLY their **project-specific** `.claude-sandbox/` files (project
+agent docs like `AGENT_FLOW.md`/`PROMPT.md`/`LSP_TOOLS.md`, the practice docs, `PRD.md`,
+`backlog.yaml`, and a child `Dockerfile` if the stack needs one). The base `config.yaml` /
+`env` and the generic ralph scaffolding (`PROMPT_AUTO.md`, `ideas/`, `scripts/backlog`,
+`scripts/worktree`, etc.) are provided by `claude-sandbox init-ralph` in Step 7 — do NOT
+expect `config.example.yaml` / `env.example` in the template.
 
-Check if the template includes sandbox example files:
+### Step 6: Initialize git
+
 ```bash
-ls "$TEMPLATES_REPO/$TEMPLATE/.claude-sandbox/config.example.yaml" 2>/dev/null
-ls "$TEMPLATES_REPO/$TEMPLATE/.claude-sandbox/env.example" 2>/dev/null
-ls "$TEMPLATES_REPO/$TEMPLATE/.claude-sandbox/Dockerfile.example" 2>/dev/null
+git init
 ```
 
-For each example file found, use `AskUserQuestion`:
-- **question**: "Set up <filename> for this project? (Show example content)"
-- **options**:
-  1. Label: "Yes, use example", Description: "Copy the example as-is"
-  2. Label: "Yes, customize", Description: "I'll adjust after copying"
-  3. Label: "Skip", Description: "Don't set up this file"
+A fresh host repo must exist **before** Step 7 so the sandbox bootstrap can set up the
+host `.gitignore` and tracking/sidecar correctly.
 
-If yes, copy the example to the active filename (strip `.example` suffix) — e.g.
-`.claude-sandbox/config.example.yaml` → `.claude-sandbox/config.yaml`,
-`.claude-sandbox/env.example` → `.claude-sandbox/env`.
+### Step 7: Bootstrap the sandbox (`claude-sandbox init-ralph`)
 
-**Then set `trackInHost`** in `.claude-sandbox/config.yaml` via `AskUserQuestion`:
+Ask how the sandbox dir should be version-controlled via `AskUserQuestion`:
 - **question**: "How should the `.claude-sandbox/` directory be version-controlled?"
 - **options**:
   1. Label: "Track in this repo", Description: "trackInHost: true — the dir is committed to the host repo (env/temp/ralph stay gitignored). Best for your OWN projects."
   2. Label: "Keep out (sidecar)", Description: "trackInHost: false (default) — gitignore /.claude-sandbox/ and use an internal sidecar git repo for history. Best when contributing to someone else's repo."
 
-For a kmacmcfarlane-owned project this is normally **"Track in this repo"** → ensure the line `trackInHost: true` is present (uncommented) in `.claude-sandbox/config.yaml`. For `false`, leave it commented/absent (false is the default).
-
-If no example files exist in the template, ask:
-- **question**: "Set up claude-sandbox configuration? (.claude-sandbox/Dockerfile, .claude-sandbox/config.yaml, .claude-sandbox/env)"
-- **options**:
-  1. Label: "Yes, basic setup", Description: "Create minimal sandbox config for this stack"
-  2. Label: "Skip", Description: "I'll set up sandbox later"
-
-### Step 7: Initialize and review
+Then run the bootstrap (`claude-sandbox` must be on PATH):
 
 ```bash
-rm -rf .git
-git init
+# For a kmacmcfarlane-owned project, default to --track-in-host:
+claude-sandbox init-ralph --track-in-host     # or --no-track-in-host
+```
+
+This creates a **sparse** (fully commented) `.claude-sandbox/config.yaml` + `env` — under
+the config cascade they override nothing, so any workspace-root catch-all config keeps
+applying; uncomment keys locally only to override. It also seeds any **missing** ralph
+`agent/` + `scripts/` baselines (the template's project-specific docs copied in Step 5 are
+kept — `init-ralph` is idempotent and only fills gaps), sets up the `temp/`/`reports/`
+skeleton and seeded `CLAUDE.md`, writes the host `.gitignore` entries, and — for
+`trackInHost: false` — initializes the internal sidecar git repo.
+
+If `claude-sandbox` is not on PATH, tell the user to install it (add its `bin/` to PATH)
+and re-run this step, or to set up `.claude-sandbox/config.yaml` + `env` manually.
+
+### Step 8: Commit and review
+
+```bash
 git add -A
 git commit -m "initial commit from $TEMPLATE template"
 ```
 
+Note: with `trackInHost: false`, `/.claude-sandbox/` is gitignored in the host repo (its
+own sidecar holds history), so this commit won't include it. With `true`, it's committed
+(minus `env` / `temp/` / `ralph/`).
+
 Show summary of what was created:
 - File count and key directories
-- Configuration choices made
+- Configuration choices made (template, trackInHost)
 - Any manual steps needed
 
-### Step 8: GitHub setup
+### Step 9: GitHub setup
 
 Use `AskUserQuestion`:
 - **question**: "Create the GitHub repo and push?"

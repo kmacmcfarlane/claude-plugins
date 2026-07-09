@@ -21,9 +21,9 @@ A two-phase conversational session for grooming the backlog.
 
 Run these in parallel to understand current state:
 ```bash
-python3 scripts/backlog/backlog.py query --status uat --format json --fields id,title,priority,notes,acceptance
-python3 scripts/backlog/backlog.py query --status todo --format json --fields id,title,priority
-python3 scripts/backlog/backlog.py query --status in_progress,review,testing,uat_feedback --format json --fields id,title,priority,status,review_feedback
+python3 .claude-sandbox/scripts/backlog/backlog.py query --status uat --format json --fields id,title,priority,notes,acceptance
+python3 .claude-sandbox/scripts/backlog/backlog.py query --status todo --format json --fields id,title,priority
+python3 .claude-sandbox/scripts/backlog/backlog.py query --status in_progress,review,testing,uat_feedback --format json --fields id,title,priority,status,review_feedback
 ```
 
 Summarize the backlog state for the user: how many stories in each status, what's in-flight, what's waiting for review.
@@ -142,10 +142,10 @@ that the user must review before implementation can begin.
 
 Compile ALL planned changes from Phase 1 into a structured plan. Run these to understand current work order:
 ```bash
-python3 scripts/backlog/backlog.py next-work --format json --fields id,title,priority,queue
-python3 scripts/backlog/backlog.py next-id S
-python3 scripts/backlog/backlog.py next-id B
-python3 scripts/backlog/backlog.py next-id R
+python3 .claude-sandbox/scripts/backlog/backlog.py next-work --format json --fields id,title,priority,queue
+python3 .claude-sandbox/scripts/backlog/backlog.py next-id S
+python3 .claude-sandbox/scripts/backlog/backlog.py next-id B
+python3 .claude-sandbox/scripts/backlog/backlog.py next-id R
 ```
 
 Present the plan in three sections:
@@ -191,13 +191,13 @@ Once approved, execute all changes in this order (ordering prevents operating on
 
 **1. Set review_feedback and status uat_feedback** (before any archiving):
 ```bash
-echo "<feedback text>" | python3 scripts/backlog/backlog.py set-text <id> review_feedback
-python3 scripts/backlog/backlog.py set <id> status uat_feedback
+echo "<feedback text>" | python3 .claude-sandbox/scripts/backlog/backlog.py set-text <id> review_feedback
+python3 .claude-sandbox/scripts/backlog/backlog.py set <id> status uat_feedback
 ```
 
 **2. Update priorities** on existing stories:
 ```bash
-python3 scripts/backlog/backlog.py set <id> priority <value>
+python3 .claude-sandbox/scripts/backlog/backlog.py set <id> priority <value>
 ```
 
 **3. Create new stories** (call `next-id` before each type to get sequential IDs):
@@ -211,20 +211,20 @@ New stories follow the format enforced by `backlog.py` and documented in the `/b
 - Mixed-mode stories prefix interactive AC with `[INTERACTIVE]`
 
 ```bash
-cat <<'EOF' | python3 scripts/backlog/backlog.py add
+cat <<'EOF' | python3 .claude-sandbox/scripts/backlog/backlog.py add
 <story YAML>
 EOF
 ```
 
 **4. Approve stories** (set done + archive):
 ```bash
-python3 scripts/backlog/backlog.py set <id> status done
-python3 scripts/backlog/backlog.py archive <id>
+python3 .claude-sandbox/scripts/backlog/backlog.py set <id> status done
+python3 .claude-sandbox/scripts/backlog/backlog.py archive <id>
 ```
 
 **5. Validate**:
 ```bash
-python3 scripts/backlog/backlog.py validate
+python3 .claude-sandbox/scripts/backlog/backlog.py validate
 ```
 
 ### Step 2.4: Commit
