@@ -1,7 +1,7 @@
 ---
 name: backlog-grooming
 description: Conversational backlog grooming session — UAT review, bug reporting, feature requests, and priority management. Use when user says "groom", "backlog grooming", "uat review", "review uat", "approve tickets", "review backlog", "backlog review", "prioritize backlog", or "uat feedback".
-disable-model-invocation: true
+disable-model-invocation: false
 allowed-tools: "Read, Bash, AskUserQuestion, Edit"
 ---
 
