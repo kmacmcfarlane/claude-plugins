@@ -8,7 +8,7 @@ argument-hint: "[files|skills|all]"
 
 # Update Kit
 
-Syncs changes from a kmac-claude-kit child project back to upstream repos. Works with any project scaffolded from the `local-web-app` template.
+Syncs changes from a claude-kit child project back to upstream repos. Works with any project scaffolded from the `local-web-app` template.
 
 ## Critical: Environment Check
 
@@ -251,7 +251,7 @@ If the `$KIT` repo exists, read `$KIT/README.md` and compare against the current
 ### Step 2.5.2: Update if needed
 
 If any section is outdated or missing:
-1. Create a task: "Update kmac-claude-kit README"
+1. Create a task: "Update claude-kit README"
 2. Read the current README, then rewrite the outdated sections based on the current state of the template, skills, and workflow docs you've already read during this sync
 3. Do NOT include project-specific content — the README describes the toolkit generically
 4. Commit with message format: `docs: update README — <brief summary of what changed>`

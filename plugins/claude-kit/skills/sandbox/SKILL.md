@@ -11,7 +11,7 @@ Expert guidance for the claude-sandbox project — a Docker-based sandbox for ru
 
 ## Important
 
-- claude-sandbox lives at: `https://github.com/kmacmcfarlane/kmac-claude-kit` ecosystem
+- claude-sandbox lives at `https://github.com/kmacmcfarlane/claude-sandbox`, part of the [claude-kit](https://github.com/kmacmcfarlane/claude-kit) ecosystem
 - The project CLAUDE.md is the authoritative source for architecture details — read it first
 - Always check the current state of launcher script and config files before giving advice
 

@@ -1,6 +1,6 @@
 # Upstream Repo Structures
 
-Built-in knowledge of all three upstream repos in the kmac-claude-kit ecosystem. This file is part of the update-kit skill so it never needs to re-explore these repos.
+Built-in knowledge of all three upstream repos in the claude-kit ecosystem (`claude-sandbox`, `claude-templates`, `claude-plugins`; umbrella repo: `claude-kit`). This file is part of the update-kit skill so it never needs to re-explore these repos.
 
 ## claude-templates
 
