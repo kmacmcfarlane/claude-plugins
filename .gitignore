@@ -3,9 +3,9 @@
 .claude-sandbox/env
 .claude-sandbox/temp/
 .claude-sandbox/ralph/
-!.claude-sandbox/config.yaml
 !.claude-sandbox/Dockerfile
 
-# Local only in THIS repo: the investigation record here references a private
-# work project by name. Investigations are normally committed, like reports/.
+# Local only in THIS repo — both reference a private work project by name.
+# Normally config.yaml is tracked and investigations are committed like reports/.
+.claude-sandbox/config.yaml
 .claude-sandbox/investigations/
