@@ -1,2 +1,11 @@
 .idea
 .claude/settings.local.json
+.claude-sandbox/env
+.claude-sandbox/temp/
+.claude-sandbox/ralph/
+!.claude-sandbox/config.yaml
+!.claude-sandbox/Dockerfile
+
+# Local only in THIS repo: the investigation record here references a private
+# work project by name. Investigations are normally committed, like reports/.
+.claude-sandbox/investigations/

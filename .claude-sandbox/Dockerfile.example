@@ -1,0 +1,31 @@
+# Default tools for kmacmcfarlane projects
+FROM claude-sandbox
+
+# direnv — auto-load .envrc (env vars, AWS creds, etc.) so the agent's shells
+# inherit the project environment. Allow-state persists via the launcher's mount
+# of ~/.local/share/direnv; run `direnv allow` once for each new .envrc.
+RUN apt-get update && apt-get install -y --no-install-recommends direnv \
+    && rm -rf /var/lib/apt/lists/* \
+    && printf '%s\n' \
+       'command -v direnv >/dev/null 2>&1 || return 0' \
+       'eval "$(direnv hook bash)"' \
+       'eval "$(direnv export bash 2>/dev/null)" || true' \
+       > /etc/profile.d/direnv.sh \
+    && printf '\n[ -f /etc/profile.d/direnv.sh ] && . /etc/profile.d/direnv.sh\n' >> /etc/bash.bashrc
+
+# Go toolchain
+RUN curl -fsSL https://go.dev/dl/go1.25.6.linux-amd64.tar.gz | tar -C /usr/local -xz
+ENV PATH="/usr/local/go/bin:$PATH"
+
+# TypeScript / Vue language servers
+RUN npm install -g typescript-language-server typescript && \
+    npm install -g @vtsls/language-server
+
+# Python LSP (Python 3 + venv already in base image)
+RUN npm install -g pyright
+
+USER claude
+# Go language server (install as claude user so it lands in ~/go/bin)
+RUN go install golang.org/x/tools/gopls@latest
+USER root
+ENV PATH="/home/claude/go/bin:$PATH"

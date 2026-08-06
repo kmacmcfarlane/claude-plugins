@@ -125,6 +125,38 @@ Mounts append down the config cascade. To change an upstream mount (e.g. make it
 
 ## Troubleshooting
 
+### A path the user named doesn't exist inside the container
+
+**Check the mounts before concluding it isn't there.** Only the project directory and the
+configured mounts are visible from inside; a host path the user refers to by its host-side
+name — especially one reached through a symlink — is commonly present at a *different* path,
+or reachable but not where you looked. `find` returning nothing looks identical to "the
+directory does not exist", so the wrong conclusion is the easy one.
+
+```bash
+grep -A15 '^mounts:' .claude-sandbox/config.yaml     # this project's mounts
+```
+
+Mounts cascade and **append**, so also check every ancestor — a parent directory's
+`.claude-sandbox/config.yaml` may supply the mount:
+
+```bash
+d=$PWD; while [ "$d" != / ]; do
+  [ -f "$d/.claude-sandbox/config.yaml" ] && grep -l -A15 '^mounts:' "$d/.claude-sandbox/config.yaml"
+  d=$(dirname "$d")
+done
+```
+
+The launcher prints the resolved cascade at startup (root → project), so the same information
+is in the scrollback of the run that started this session.
+
+Symlinks are resolved on the host, so `~/foo` pointing at `/srv/bar` appears inside the
+container at `/srv/bar` (or wherever `container:` maps it) — never at `~/foo`. Search for the
+directory's *basename* rather than the path the user gave you.
+
+Only after the mounts show no route to it should you report it as unreachable — and then say
+what would fix it: add a mount to `.claude-sandbox/config.yaml` and relaunch.
+
 ### Container won't start
 1. Check Docker daemon is running: `docker info`
 2. Check base image exists: `docker images claude-sandbox`

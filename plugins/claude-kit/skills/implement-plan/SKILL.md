@@ -1,12 +1,25 @@
 ---
 name: implement-plan
-description: Orchestrates plan implementation using sub-agents with dependency-aware parallel execution and iterative code review. Creates a plan from user instructions (or reads an existing one), builds a dependency tree, dispatches implementer sub-agents (parallel where safe), and runs review cycles with a hard cap before escalating. Requires agent definitions from the claude-kit plugin.
+description: "DEPRECATED — prefer the investigate + implement skills. Orchestrates plan implementation using sub-agents with dependency-aware parallel execution and iterative code review. Creates a plan from user instructions (or reads an existing one), builds a dependency tree, dispatches implementer sub-agents (parallel where safe), and runs review cycles with a hard cap before escalating. Requires agent definitions from the claude-kit plugin."
 disable-model-invocation: true
 allowed-tools: Read, Write, Edit, Glob, Grep, Bash, Agent, TaskCreate, TaskUpdate, TaskGet, TaskList, AskUserQuestion, EnterPlanMode, ExitPlanMode
 argument-hint: instructions or description of what to build
 ---
 
 # Implement Plan
+
+> **Deprecated — prefer `investigate` + `implement`.**
+>
+> That pair covers the same ground with a persisted, append-only investigation record and a
+> different verification model. The substantive difference is the merge gate: this skill gates
+> on a `plan-reviewer` sub-agent's verdict, while `implement` gates on **isolated worktrees plus
+> the project's own tests**. The evidence for LLM reviewers is split — one ablation that added a
+> review agent *lowered* resolved-issue rate (21.33% → 18.33%) — whereas the measured gains for
+> multi-agent implementation (arXiv:2603.21489, +25.6% PaperBench / +14.7% Commit0) are
+> conditional on workspace isolation and test-based consolidation, which this skill does not do.
+>
+> Kept for existing callers and for its dependency-tree references. Do not extend it; put new
+> work in `implement`.
 
 Orchestrate plan execution through sub-agents with dependency-aware scheduling and mandatory code review loops.
 

@@ -10,21 +10,107 @@ argument-hint: "[files|skills|all]"
 
 Syncs changes from a claude-kit child project back to upstream repos. Works with any project scaffolded from the `local-web-app` template.
 
-## Critical: Environment Check
+## Critical: Check the repos, not the environment
 
-Before doing anything, check if running inside Docker:
+What matters is whether the sibling repos are reachable — not whether you are in a container.
+claude-sandbox commonly mounts the whole work tree, in which case they are. **Probe for them.**
 
 ```bash
-test -f /.dockerenv && echo "DOCKER" || echo "HOST"
+PROJECT_ROOT=$(git rev-parse --show-toplevel)
+PARENT=$(dirname "$PROJECT_ROOT")
+for r in claude-templates claude-plugins claude-sandbox claude-kit; do
+  test -d "$PARENT/$r" && echo "found  $r" || echo "MISSING $r"
+done
 ```
 
-**If inside Docker (`/.dockerenv` exists):**
-Stop and tell the user:
-> You are running inside a Docker container (claude-sandbox). The sibling repos are not accessible from here. Please either:
-> 1. Run this skill outside the sandbox (directly on the host), or
-> 2. Add volume mounts for the sibling repos to your docker-compose configuration.
+- **All present** → proceed, whether or not `/.dockerenv` exists.
+- **Some present** → proceed with what is reachable; report which repos are missing and which
+  parts of the sync are therefore skipped. `claude-kit` is optional.
+- **None present** → stop:
 
-Do not attempt to proceed if the sibling repos are not accessible.
+  > The sibling repos are not reachable from `<PARENT>`. If you are in a claude-sandbox
+  > container, add a mount for the parent directory to `.claude-sandbox/config.yaml` and
+  > relaunch; otherwise run this skill from a checkout whose siblings are on disk.
+
+Never edit a repo you could not locate, and never assume a path you did not verify.
+
+---
+
+## Where to edit, and on which branch
+
+**This section is canonical for every skill-doc edit, whoever initiates it** — a direct
+`/update-kit` run, or the retrospective step of `investigate` / `implement`. Do all of it
+**before** editing a single file.
+
+### Edit the real checkout, never the plugin cache
+
+Skill sources live in the `claude-plugins` checkout at
+`plugins/claude-kit/skills/<skill>/`. The plugin cache — under `$CLAUDE_CONFIG_DIR/plugins/`,
+which is `~/.claude/plugins/` only when `CLAUDE_CONFIG_DIR` is unset — is **ephemeral and
+overwritten on plugin update**, so edits there are silently lost and never reach the repo.
+
+The skills you are currently running from are the cache copy. Resolve `$CLAUDE_CONFIG_DIR`
+rather than assuming a path, and confirm the file you are about to edit is under the checkout.
+
+### Settle the branch, and ask
+
+Name the branch you would use and confirm it before editing. Settling it afterwards costs a
+cherry-pick and a conflict resolution.
+
+- **Work is in flight** (a retro, or an in-flight investigation) → that work's branch, so the
+  change is reviewable alongside what taught you it. This holds even for changes that look
+  entirely generic.
+- **Nothing particular in play** → the default branch, left unpushed unless asked.
+
+### Check the branch is not stale — in both directions
+
+```bash
+git -C <repo> fetch origin
+git -C <repo> rev-list --count <branch>..origin/<default>   # commits BEHIND
+git -C <repo> rev-list --count origin/<default>..<branch>   # commits AHEAD
+```
+
+**An empty `origin/<default>..<branch>` means the branch is *behind* — an ancestor of the
+default — not up to date.** Editing from a stale base produces a change that reverts other
+people's work. If behind, merge the default in before editing.
+
+---
+
+## What earns a place in a skill
+
+**Every addition costs context on every load.** A passage that helps one run while displacing
+context on all the others is a net loss even when it is true. The default answer to "should
+this go in the skill?" is **no**. Before adding anything, require all three:
+
+1. **It will recur.** A fact about how the system *is* recurs; a narration of what went wrong
+   once does not. "The build image has no `jq`" earns its place. "I wrote a grep that matched
+   nothing" does not.
+2. **It is not discoverable at the moment of need.** If an agent would hit it immediately from
+   an error message, a failing lint, or the repo's own README, a pointer beats a copy. Skills
+   exist for what is *invisible* until it bites — ordering constraints, silent failure modes,
+   cross-repo coupling, decisions with no trace in the code.
+3. **It changes what someone would do.** If the reader's actions are identical with and without
+   the text, it is commentary. Cut it.
+
+**Weight the bar by how often the skill loads.** A line in a frequently-loaded skill is paid
+for constantly and must be a one-line invariant, not an explanation. A rarely-loaded workflow
+skill can afford more.
+
+**Push length into `references/`.** A reference file loads only when its subject is at hand, so
+that is where procedures, command recipes, and worked detail belong. If an addition to a
+SKILL.md body runs past a few lines, move it to a reference and leave a one-line pointer.
+Prefer *editing* an existing bullet to be more correct over *appending* a new one.
+
+**Do not state counts.** "13 lambdas", "22 call sites", "read by 10 consumers" — these rot
+silently, and a reader who trusts a stale one is worse off than one who counts. Give the shape
+and how to derive the number. When correcting a stale count, **remove it rather than refreshing
+it** — refreshing just resets the clock.
+
+**Watch duplication specifically**: restating a rule that already appears above in different
+words, or copying guidance from another skill instead of pointing at the skill that owns it.
+
+**Removing text is as valuable as adding it.** If a section is now wrong, or never earned its
+place, propose the deletion in the same review table with what it costs and why it goes.
 
 ---
 
@@ -77,7 +163,12 @@ For each syncable path, classify:
 | `[M]` | Modified — file exists in both, content differs |
 | `[A]` | Added — file exists in project but not template |
 | `[D]` | Deleted — file exists in template but not project |
+| `[T]` | Trim — content upstream is now wrong, duplicated, or never earned its place |
 | `[=]` | Identical — no sync needed |
+
+`[T]` is a first-class outcome, not an afterthought. When a scan turns up upstream text that
+is stale, duplicated, or fails the three-part bar above, propose the deletion in the same
+table as the additions, with what it costs and why it goes.
 
 Run a recursive diff across these syncable directory trees:
 - `agent/` (excluding items in the exclude list above)
