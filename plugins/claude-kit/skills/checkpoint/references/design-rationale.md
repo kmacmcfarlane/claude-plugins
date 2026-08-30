@@ -15,9 +15,10 @@ Transcript: 7,187 records, 18.7MB, two compaction boundaries, 267 user turns.
 
 **Finding 1 — tool output was not the main consumer.** Tool results were ~11% of each fill.
 Within a tool loop, the previous assistant output (text *and* thinking) accrues into context
-at a measured ratio of 1.03. The four visible categories — assistant text (~74K), tool results
-(~105K), user-turn text (~80K), harness attachments (~105K) — sum to ~365K of a 975K window.
-**The remaining ~60% can only be retained thinking.**
+at a measured ratio of 1.03. The five visible categories — assistant text (~74K), tool-call inputs (~84K), tool
+results (~105K), user-turn text (~80K), harness attachments (~105K) — sum to ~449K of a
+971K peak. **The remaining ~54% can only be retained thinking** (plus system prompt and tool
+definitions, ~25K).
 
 **Finding 2 — hidden reasoning is retained live and persisted nowhere.** 559 thinking blocks
 on disk, 1.8K characters of content between them — effectively none — and a 428-char
