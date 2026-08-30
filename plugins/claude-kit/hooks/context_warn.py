@@ -29,7 +29,7 @@ def main():
         print(json.dumps({})); return
 
     sid = inp.get("session_id", "unknown")
-    tok, win, pct = L.depth(inp.get("transcript_path", ""))
+    tok, win, pct, src = L.depth(inp.get("transcript_path", ""), sid)
     if not tok:
         print(json.dumps({})); return
 
@@ -54,7 +54,7 @@ def main():
     L.save_state(sid, st)
 
     ctx = (f"[claude-kit context gate] {label}: context is {pct:.0f}% full "
-           f"({tok:,} of {win:,} tokens). {guidance}")
+           f"({tok:,} of {win:,} tokens, {src}). {guidance}")
     out = {
         "hookSpecificOutput": {"hookEventName": "UserPromptSubmit", "additionalContext": ctx},
         "systemMessage": f"Context {pct:.0f}% full ({tok:,}/{win:,}). "

@@ -35,7 +35,7 @@ def main():
 
     dirty = git(cwd, "status", "--porcelain")
     head = git(cwd, "log", "--oneline", "-1")
-    tok, win, pct = L.depth(inp.get("transcript_path", ""))
+    tok, win, pct, src = L.depth(inp.get("transcript_path", ""), sid)
 
     st.update(last_compact_trigger=inp.get("trigger"), at=time.strftime("%F %T"),
               cwd=cwd, head=head, uncommitted=dirty.splitlines(),
