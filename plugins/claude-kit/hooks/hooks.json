@@ -1,0 +1,28 @@
+{
+  "description": "claude-kit context guardrails — banded depth warnings on each prompt, and a one-shot block on the first automatic compaction so the operator decides how to compact.",
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/context_warn.py\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "matcher": "auto",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/precompact_gate.py\""
+          }
+        ]
+      }
+    ]
+  }
+}
