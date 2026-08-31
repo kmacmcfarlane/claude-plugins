@@ -1,26 +1,20 @@
 #!/usr/bin/env python3
-"""PreCompact (auto): convert the first automatic compaction into a decision.
+"""PreCompact: defer automatic compaction while it is safe and unexamined.
 
-Blocks at most ONCE per session. Per the hooks reference, blocking a compaction
-that fired *proactively* is free -- the conversation simply continues
-uncompacted -- but blocking one that fired to recover from a context-limit
-error the API already returned makes the in-flight request FAIL. Hook input
-cannot distinguish the two, so we never block twice: the second attempt always
-proceeds. One decision point, no wedged session.
+Manual /compact is never touched; its custom_instructions are recorded so the
+rehydration hook can replay the operator's own words after the summary.
 
-Manual /compact is never blocked; that is already the operator deciding.
+Auto: per the hooks reference, blocking a PROACTIVE compaction is free (the
+conversation continues uncompacted), but blocking one that fired to recover
+from a context-limit error fails the in-flight request — and hook input cannot
+distinguish them. So the gate defers only while BOTH hold: no checkpoint has
+been recorded this epoch, AND tokens < window - thresholds(window)['hard'],
+which with the auto-compact window lowered (e.g. /autocompact 900k on a 1M
+model) proves the trigger was proactive. Otherwise it always allows.
 """
-import json, os, subprocess, sys, time
+import json, os, sys, time
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import lib_context as L
-
-
-def git(cwd, *args):
-    try:
-        return subprocess.run(("git", "-C", cwd) + args, capture_output=True,
-                              text=True, timeout=5).stdout.strip()
-    except Exception:
-        return ""
 
 
 def main():
@@ -30,35 +24,33 @@ def main():
         print(json.dumps({})); return
 
     sid = inp.get("session_id", "unknown")
-    cwd = inp.get("cwd") or os.getcwd()
     st = L.load_state(sid)
+    st["last_compact_trigger"] = inp.get("trigger")
+    st["last_compact_at"] = time.strftime("%F %T")
 
-    dirty = git(cwd, "status", "--porcelain")
-    head = git(cwd, "log", "--oneline", "-1")
-    tok, win, pct, src = L.depth(inp.get("transcript_path", ""), sid)
-
-    st.update(last_compact_trigger=inp.get("trigger"), at=time.strftime("%F %T"),
-              cwd=cwd, head=head, uncommitted=dirty.splitlines(),
-              tokens=tok, pct=round(pct, 1))
-
-    if inp.get("trigger") != "auto" or st.get("compact_blocked"):
+    if inp.get("trigger") == "manual":
+        ci = inp.get("custom_instructions")
+        if ci:
+            st["custom_instructions"] = ci[:4000]
         L.save_state(sid, st)
         print(json.dumps({})); return
 
-    st["compact_blocked"] = True
-    L.save_state(sid, st)
+    tok, win, _, src = L.depth(inp.get("transcript_path", ""), sid)
+    th = L.thresholds(win)
+    proactive = tok and tok < win - th["hard"]
 
-    n = len(dirty.splitlines())
+    if L.checkpointed_this_epoch(st) or not proactive:
+        st.pop("compact_deferred", None)
+        L.save_state(sid, st)
+        print(json.dumps({})); return
+
+    st["compact_deferred"] = True
+    L.save_state(sid, st)
     sys.stderr.write(
-        "AUTO-COMPACT DEFERRED ONCE by the claude-kit context gate.\n\n"
-        "STOP. Do not start or continue new work. Invoke the `checkpoint` skill now\n"
-        "and follow it. Facts for that walkthrough:\n"
-        f"  context : {pct:.0f}% full ({tok:,} of {win:,} tokens)\n"
-        f"  cwd     : {cwd}\n"
-        f"  HEAD    : {head or '(none)'}\n"
-        f"  dirty   : {n} uncommitted file(s)\n\n"
-        "The NEXT auto-compact will NOT be blocked, so treat this as the last\n"
-        "cheap moment to get state onto disk.\n")
+        f"[claude-kit context gate] Auto-compaction deferred: no checkpoint has "
+        f"run this epoch and there is headroom ({win - tok:,} tokens, {src}). "
+        f"Run the checkpoint skill; compaction proceeds once it records, or "
+        f"when headroom drops below {th['hard']:,}.\n")
     sys.exit(2)
 
 

@@ -40,11 +40,16 @@ def main():
         gauge = "ctx --"
     else:
         p = int(pct)
+        left = max(size - tok, 0)
+        th = L.thresholds(size)
+        ep = L.epoch(L.load_state(sid)) if sid else 0
         filled = p // 10
         bar = "█" * filled + "░" * (10 - filled)
-        color = "\033[32m" if p < 60 else "\033[33m" if p < 80 else "\033[31m"
-        hint = "" if p < 60 else "  ·  consider /checkpoint" if p < 88 else "  ·  /checkpoint NOW"
-        gauge = f"{color}{bar}\033[0m {p}% of {size // 1000}k{hint}"
+        color = ("\033[32m" if left > th["due"] else
+                 "\033[33m" if left > th["hard"] else "\033[31m")
+        hint = ("" if left > th["due"] else
+                "  ·  checkpoint DUE" if left > th["hard"] else "  ·  HARD gate")
+        gauge = f"{color}{bar}\033[0m {p}%  {left // 1000}k left  e{ep}{hint}"
 
     head = f"[{model}{'·' + eff if eff else ''}] {cwd}"
     if name:

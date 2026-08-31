@@ -75,6 +75,13 @@ def main():
                 if k == "hook_success":
                     k = f"hook:{a.get('hookName', '?')}"
                 sz = len(json.dumps(a))
+                # A payload the harness persisted to a file reached the model
+                # only as a short stub - count the stub, not the emission.
+                # Measured: 13 of 98 SessionStart payloads were stubs; counting
+                # emissions overstated hook cost ~15x for that kind.
+                if "<persisted-output>" in json.dumps(a):
+                    s["att_emitted"] = s.get("att_emitted", 0) + sz
+                    sz = 400
                 s["att"][k] += sz
                 biggest.append((sz, f"attachment {k}", ""))
                 continue
@@ -139,7 +146,9 @@ def main():
         print(f"   tool results                     : {tool_tok:>9,} tok")
         print(f"   user-turn text                   : {s['user_text'] // 4:>9,} tok  "
               f"(incl. pasted output, compaction summaries)")
-        print(f"   harness attachments              : {att_tok:>9,} tok  (hooks, diffs, listings)")
+        emitted = s.get("att_emitted", 0) // 4
+        print(f"   harness attachments (accepted)   : {att_tok:>9,} tok  (hooks, diffs, listings"
+              + (f"; +{emitted:,} emitted but persisted-to-file, never in context" if emitted else "") + ")")
         visible = (s["asst_text"] + s.get("tool_in", 0) + s["user_text"]) // 4 + tool_tok + att_tok
         if s["peak"]:
             print(f"   visible categories sum to {visible:,} of peak {s['peak']:,}; "
