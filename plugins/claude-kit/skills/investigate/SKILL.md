@@ -183,6 +183,10 @@ Build a prioritised list of search terms from the problem:
 - **Features** — entity names, concepts, API endpoints, component names.
 - **Tasks** — component names, config areas, file paths.
 
+When the problem touches anything outside the codebase — hardware, a vendor product, pricing,
+a third-party service's behaviour — list the external subjects too: part and model numbers,
+board or chip revisions, spec versions, API versions. Step 6d goes and gets them.
+
 **Search for the whole class of issue, not one idiom.** When the problem is a *category* —
 insecure randomness, a deprecated call, a missing guard — enumerate every way it can appear
 and grep for all of them, not just the project's preferred wrapper. Missing an idiom means
@@ -195,9 +199,11 @@ missing an instance.
 **Delegate context-heavy searching to subagents.** Exploration reads a lot; preserve your
 context for synthesis by handing off well-scoped, high-volume work and keeping only the
 findings. Good candidates: broad multi-file or multi-repo greps, tracing a call chain,
-external research. Use `Explore` for locating code, `general-purpose` for anything that needs
-to read and reason, and a **fork** when the sub-task genuinely needs this session's context.
-**Bring back `file:line` findings, not file dumps.**
+external research (Step 6d) — reading a vendor manual or sweeping a market for prices is
+high-volume and returns a short answer, so it belongs in a subagent. Use `Explore` for
+locating code, `general-purpose` for anything that needs to read and reason, and a **fork**
+when the sub-task genuinely needs this session's context. **Bring back `file:line` findings
+and cited claims, not file dumps.**
 
 Per repo:
 
@@ -233,6 +239,21 @@ installed package. When it is not, say the claim is from documentation and mark 
 frequently deletes a hazard outright rather than mitigating it.
 
 If a repo yields nothing, record "no relevant code found" and move on.
+
+**6d — External research.** Run this when the plan will rest on a fact the codebase cannot
+answer: hardware topology, a vendor's specification, what a part costs or whether it is
+obtainable, a third-party service's documented behaviour. Skip it with one line when the
+problem is wholly internal.
+
+- **Get the primary.** The manufacturer's manual, datasheet, or spec document; the project's
+  own docs; the standards body's PDF. Search results and vendor guides arrive pre-formatted as
+  findings and read as authoritative next to something you verified — that is the trap.
+- **Reconcile against the live system.** An external fact that contradicts what the machine
+  reports is a finding, not a footnote. Prefer the observation and say which source lost.
+- Record per the citation rule in `references/investigation-format.md` — it owns how external
+  and secondhand claims are written down. Do not restate it here.
+- Fetch-blocking is normal, not exceptional, and the workarounds are worth knowing before you
+  waste a pass on them: see `references/external-research.md`.
 
 ---
 
@@ -279,7 +300,9 @@ only what it cannot.
 
 1. **The core problem**, in 1–2 sentences, as you now understand it from the code.
 2. **Your assumptions**, as an explicit bullet list — scope boundaries, expected behaviour,
-   compatibility expectations, what you are treating as out of scope.
+   compatibility expectations, what you are treating as out of scope. Include any **external**
+   fact the plan depends on (Step 6d), so a wrong one is caught here rather than after money
+   is spent or a migration is half done.
 3. **Your open questions** — ambiguities, missing acceptance criteria, edge cases, anything
    Step 7 raised.
 
@@ -311,6 +334,33 @@ Two practical notes:
 
 The triage rule for what may become an Open Question rather than being answered here is in
 `references/investigation-format.md`. Apply it now, not after the plan is written.
+
+---
+
+## Step 9a — Measure before choosing (conditional)
+
+**When the plan will offer genuinely-open alternatives, take the cheapest measurement that
+discriminates between them — before you recommend one.** Skip with one line when there is only
+one viable approach, or when nothing measurable separates the candidates.
+
+Specs and vendor numbers rank options; a measurement on the real system *eliminates* them. The
+difference matters most where the alternatives differ by an order of magnitude in cost, because
+that is exactly where reasoning from datasheets quietly picks the expensive one.
+
+- **Measure the worst thing you already own.** A floor established on hardware or a
+  configuration that is indisputably inferior to every option on the table often settles the
+  question outright — if the worst candidate already clears the requirement by a wide margin,
+  the differences above it are unobservable and the cheap option wins on evidence.
+- **Bound the blast radius.** Measure idle or spare capacity first. Loading a production path
+  needs explicit consent, a hard time cap, and a health check straight after — say plainly what
+  could break and what it cost last time.
+- **Two instruments beat one.** A synthetic benchmark that agrees with the system's own
+  telemetry converts a plausible diagnosis into a confirmed one.
+- Record the command, the conditions and the number. It goes in the investigation as evidence,
+  and it is the baseline `implement` re-runs to prove the change worked.
+
+If the discriminating measurement cannot be taken, say which option the decision rests on and
+mark it for `implement` to settle.
 
 ---
 
@@ -474,10 +524,14 @@ Run a quick retrospective on this investigate run and update the skill docs?
 ```
 
 If **Yes**: note where the run hit friction — a missed search idiom, an undocumented step, a
-wrong assumption — then **invoke the `update-kit` skill and follow it**. It owns the
-mechanics: locating the real checkout rather than the plugin cache, settling the branch, the
-staleness check, and the context-cost bar for what earns a place in a skill. Do not re-derive
-any of that here.
+wrong assumption — then **read and follow `update-kit`'s SKILL.md**. It owns the mechanics:
+locating the real checkout rather than the plugin cache, settling the branch, the staleness
+check, and the context-cost bar for what earns a place in a skill. Do not re-derive any of
+that here.
+
+`update-kit` is `disable-model-invocation: true`, so it is **user-invoked only and cannot be
+called through the Skill tool** — open its `SKILL.md` from the `claude-plugins` checkout and
+follow it directly.
 
 The likely targets are this skill, `investigation-format.md`, and any project skill whose gap
 cost you time during the run.
@@ -531,6 +585,11 @@ cost you time during the run.
   alone, wherever running was possible.
 - Where the plan rests on a low-level nuance of a tool's behaviour, the tool's **source** was
   read and cited — or the claim is marked as documentation-only for `implement` to re-verify.
+- Where it rests on a fact outside the codebase, the **primary** source was opened and cited,
+  or the claim is marked secondhand; and any such fact contradicted by the live system was
+  reconciled rather than left standing.
+- Where the plan offered genuinely-open alternatives, a discriminating measurement was taken
+  before one was recommended — or its absence is stated and the dependent choice flagged.
 - Any new convention the work introduces was checked against existing ones first; adopting an
   existing convention is the default, and diverging is stated and justified in the plan.
 - The requirements gate **blocked** the plan and looped until the user confirmed there was
