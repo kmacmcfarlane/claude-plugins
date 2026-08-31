@@ -7,7 +7,13 @@ allowed-tools: "Read, Bash, Glob, Grep"
 
 # Backlog YAML Management
 
-All backlog reads and writes MUST use `python3 .claude-sandbox/scripts/backlog/backlog.py` instead of direct YAML editing. This ensures round-trip YAML preservation (comments, ordering, formatting), schema validation, and atomic writes.
+All backlog reads and writes MUST use `python3 .claude-sandbox/scripts/backlog/backlog.py` instead of direct YAML editing. This ensures round-trip YAML preservation (comments, ordering, formatting), schema validation, atomic writes, and `flock`-based locking with an atomic `--claim` (the tool locks `agent/backlog.lock`; earlier versions of this doc understated that).
+
+**Interactive sessions should prefer the `work-items` skill (`wi`)** — one markdown file per
+item in git. `backlog.yaml` remains authoritative for unattended ralph runs; the bridge is
+`wi export --format backlog-yaml` before a run and `wi import --format backlog-yaml --update`
+after it. Which store is authoritative long-term is an open decision recorded in the
+context-guardrails series.
 
 The tool is canonical in the claude-sandbox repo (`scaffold-ralph/scripts/backlog/`) and is seeded into a project by `claude-sandbox init-ralph`. If `.claude-sandbox/scripts/backlog/backlog.py` is missing, run `claude-sandbox init-ralph` (idempotent — it only fills gaps).
 

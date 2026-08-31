@@ -3,7 +3,7 @@ name: investigate
 description: Investigate a problem before implementing it — resolve repos, survey branches, load project context, search and read the code, gather requirements with the user, then write a reviewed plan to .claude-sandbox/investigations/<slug>/ for the implement skill to consume. Use when the user says "investigate", "look into", "research this issue", "figure out how to fix", "plan this work", or picks an item off TODO.md. Also use to re-investigate an existing series.
 disable-model-invocation: false
 allowed-tools: Read, Write, Edit, Glob, Grep, Bash, Agent, WebSearch, WebFetch, AskUserQuestion
-argument-hint: <issue description | TODO item>
+argument-hint: <issue description | wi item id | TODO item>
 ---
 
 # Investigate
@@ -36,10 +36,19 @@ Examples:
 
 The argument is a problem description, a pointer to one, or absent.
 
-**A TODO.md reference** (`TODO.md item 3`, `the second TODO`, or just a phrase matching one):
-read `TODO.md` from the repo root, find the matching `- [ ]` item, and use its text as the
-starting description. If `TODO.md` does not exist, say so and treat the argument as ad hoc
-text. Do not create `TODO.md`.
+**A work-item reference** (an id like `etcd-alerting-3f9a`, or a title fragment, in a repo
+with a `.work/` or `.claude-sandbox/work/` store): resolve it with the `work-items` skill's
+CLI — `wi show <id>` for an id, `wi ls --plain` to match a fragment — and use the item's
+description and `## Handoff` block as the starting description. `wi claim` it once the
+investigation begins. With **no argument** in such a repo, offer `wi next --plain` (the
+ready-ranked queue) before falling back to the conversation.
+
+**A TODO.md reference** (`TODO.md item 3`, `the second TODO`, or just a phrase matching one) —
+the fallback when no work-item store exists: read `TODO.md` from the repo root, find the
+matching `- [ ]` item, and use its text as the starting description. A `TODO.md` that carries
+the work-items deprecation notice means the store has moved — use `wi`, do not resurrect the
+file. If `TODO.md` does not exist, say so and treat the argument as ad hoc text. Do not create
+`TODO.md`.
 
 **An existing slug** (matches a directory under `.claude-sandbox/investigations/`): this is a
 re-investigation. Go to Step 1a.

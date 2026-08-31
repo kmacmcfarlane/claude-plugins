@@ -334,6 +334,13 @@ Commit hygiene:
 - Write multi-line messages to a temp file and use `git commit -F <file>`. Never HEREDOC or
   `$()` in git commands.
 
+### 10a½ — Update the work item
+
+When the repo has a work-item store (`.work/` or `.claude-sandbox/work/`) and this run
+implements a claimed item: `wi done <id> --note <sha-or-branch>` on completion, or
+`wi handoff <id> --doing … --next …` when the run ends with the item still open. A repo
+without a store: skip silently. This is the only step that closes an item — nothing else does.
+
 ### 10b — Write the outcome
 
 Write `NN_implementation.md` at the next free serial, per the outcome outline in the
