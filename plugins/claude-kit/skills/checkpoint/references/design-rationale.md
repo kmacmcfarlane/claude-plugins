@@ -1,5 +1,12 @@
 # Design rationale — context guardrails
 
+> **Superseded in part (2026-08-30).** The v1 protocol described in §3 (percent bands, a
+> one-shot compact gate) is replaced by the epoch-aware, remaining-token design in the
+> `context-guardrails` series (`agents` meta-repo), serial `01`, threads A/B2/E/S. Notably:
+> the "~15K tokens per SessionStart" figure in §1 measured emitted, not accepted, payload —
+> payloads over the output cap reached the model as a stub. The forensic findings otherwise
+> stand.
+
 Why the gate, the checkpoint skill, and the playbook look the way they do. Written 2026-08-30
 from a forensic pass over one real session plus a review of how others handle the same
 problem. Numbers are from that session; the shape generalises.

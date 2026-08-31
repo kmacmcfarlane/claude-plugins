@@ -226,6 +226,10 @@ Bullets over paragraphs. Record what the code does today, where it lives, and wh
 constraint is — the things that stay true whichever option is chosen.
 
 - Cite `file:line`. A claim with no citation and no command behind it is a guess.
+- **Secrets: path and key, never value.** Investigation prose lands in git and evades the
+  gates that catch structured secrets (sops, `kind: Secret` scanners). Name where a secret
+  lives and what key it is under — never quote the value, a token, or a connection string
+  with credentials embedded.
 - `file:line` citations are **point-in-time**. `implement` re-verifies them against current
   `HEAD`; say so rather than implying they are durable.
 - No restating the issue back. No "we should probably" — verify it and state it, or file it
@@ -277,6 +281,11 @@ Verified against `claude-sandbox/internal/layout/layout.go`:
 - **The `trackInHost` decision is made at `init`, after artifacts already exist.** In a repo
   that does not inherit `trackInHost: true`, a later `init` moves the directory out of host
   history into a sidecar repo. This cannot be fixed from the skill side.
+
+**Public repos and deliberately-ignored `investigations/`:** when the repo is public, or its
+`.gitignore` excludes `.claude-sandbox/investigations/` on purpose, the series lives in the
+estate's sidecar meta-repo (`agents/investigations/<slug>/`) instead, and the invocation should
+say so. The format is identical; only the home moves.
 
 So: create the directory lazily with `mkdir -p`, never touch `CLAUDE.md`, and when
 `.claude-sandbox/config.yaml` is absent, **warn once and continue** — do not hard-stop:

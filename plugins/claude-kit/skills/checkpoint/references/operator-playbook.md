@@ -19,7 +19,10 @@ operator never sees.** Fixing that is mostly about session *shape*, not about re
 | Hidden thinking persisted to disk | 1.8K chars of 559 blocks (≈0) | only the live session can write it down |
 | Harness attachments per fill (hooks, diffs, listings) | ~105K tokens | as much as all tool output; audit with `context_forensics.py` |
 
-**Power band: below ~60%.** Above it, finish things; do not start things. At 88% the gate fires.
+**The gate thinks in remaining tokens, not percent.** Advisories at 60/75% used; **DUE** when
+~150K tokens remain (1M window; 70K on 200K) — finish things, run `/checkpoint`; **HARD** at
+60K/40K left — the gate blocks every prompt except `/checkpoint`, `/compact`, `/clear` until a
+checkpoint records. All of it resets per epoch (each compaction or `/clear`).
 
 ## Tools, and when
 
@@ -37,9 +40,10 @@ operator never sees.** Fixing that is mostly about session *shape*, not about re
 | `/context` | any time you want the truth | free |
 | status line | always | shows `used_percentage`; also feeds the gate hooks |
 
-Environment: `CLAUDE_AUTOCOMPACT_PCT_OVERRIDE` moves the auto-compact threshold;
-`CLAUDE_CODE_TASK_LIST_ID=<name>` makes the task list persist across sessions (tasks already
-survive compaction).
+Environment & knobs: `/autocompact 900k` lowers the auto-compact trigger so the gate's deferral
+is provably safe (`CLAUDE_CODE_AUTO_COMPACT_WINDOW=900000` per project — plain integer, `900k`
+reads as 900); `CLAUDE_KIT_LEDGER_EVERY` tunes the ledger nudge (default 60000);
+`CLAUDE_CODE_TASK_LIST_ID=<name>` shares a task list across sessions.
 
 ## Session shapes that stay in the band
 
@@ -70,4 +74,6 @@ When the depth warning fires, answer these before touching anything:
 3. **Which repo owns each of those?** Working in one repo on another repo's problem is fine;
    leaving the knowledge there is not.
 
-Then `/checkpoint <mode>`.
+Then `/checkpoint <mode>`. The ledger (`~/.claude/claude-kit/ledger/<session>.md`) has been
+collecting decisions as you worked — the checkpoint is a delta, and after compaction the
+manifest + ledger are re-injected and outrank the machine summary.
