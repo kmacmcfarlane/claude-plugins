@@ -73,6 +73,14 @@ wrong — not "some details changed".
 question from the new file's own Open Questions is not enough: a reader cannot distinguish
 "this pass closed it" from "this pass didn't mention it".
 
+**An answer that arrives after the outcome file is written needs its own serial.** The
+outcome file is append-only like any other, so a late answer — a user decision that lands
+after `implement` finished — cannot be recorded in it. Closing the question in `INDEX.md`
+alone produces exactly the split this format warns about: the index says closed while the
+serials still read open, and whoever reads the files in order acts on the stale one. Write
+the next serial, name the closure in its `Supersedes`, and regenerate the index. A serial
+carrying one sentence is cheap; a contradictory record is not.
+
 ### 2. `INDEX.md` is rewritten wholesale
 
 The index is a **current reconciled view**, not a log. Every pass regenerates it from the
@@ -111,7 +119,7 @@ are written even when the answer is "none":
 | `Confirmed Assumptions` | Settled at the requirements gate. **Never omit.** |
 | `Out of Scope` | What was deliberately excluded, and why. |
 | `Existing Architecture` | Titled **`Root Cause Analysis`** for bugs. What the code does today. |
-| `Implementation Approach` | Titled **`Proposed Fix`** for bugs. **Required** — `implement` refuses a series without it. Genuinely-open alternatives go here as sub-options. |
+| `Implementation Approach` | Titled **`Proposed Fix`** for bugs, or **`Recommendation`** when the conclusion is that no code should be written (the capability exists, the cost is not worth it, the premise fails) — a Recommendation still states what to do, usually documenting why so the idea is not re-proposed, and its row ends up `no code`. **Required** — `implement` refuses a series with none of the three. Genuinely-open alternatives go here as sub-options. |
 | `Files to Modify` | Per repo, with paths. |
 | `Patterns to Follow` | Conventions the implementer must match. |
 | `Blast Radius` | Consumers, public API, contracts, anything downstream. State "self-contained" explicitly when it is. |
@@ -219,6 +227,10 @@ Leave existing rows' Status and Branches alone except the ones this pass genuine
 
 State the tier, the command, and what it does **not** cover. "Tests pass" when only the build
 ran is the specific failure this table exists to prevent.
+
+For a **documentation-only** change the tier applies to the rendered artifact — the help text
+as printed, the page as it reads, the sample as it parses. A green suite evidences only that
+nothing broke, which is worth saying and is not evidence for the change itself.
 
 ## Writing rule: terse, invariant facts
 
