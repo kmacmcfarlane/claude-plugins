@@ -8,12 +8,17 @@
     {
       "name": "claude-kit",
       "source": "./plugins/claude-kit",
-      "description": "Claude Code dev tooling — skill creation, sandbox management, backlog tracking, Goa API design, Playwright testing, LoRA training, and upstream kit sync."
+      "description": "Claude Code dev tooling — skill creation, sandbox management, backlog tracking, Goa API design, Playwright testing, LoRA training, context guardrails, and upstream kit sync."
     },
     {
       "name": "ai-scripts",
       "source": "./plugins/ai-scripts",
       "description": "Project context for ai-scripts — Python CLI utilities for AI tasks (captioning, model fetching, token counting, embeddings, rare token generation)."
+    },
+    {
+      "name": "chat",
+      "source": "./plugins/chat",
+      "description": "Conversational skills — structured product research and purchase recommendations."
     }
   ]
 }

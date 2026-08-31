@@ -1,0 +1,9 @@
+{
+  "name": "chat",
+  "description": "Conversational skills — structured product research and purchase recommendations.",
+  "author": {
+    "name": "Kyle McFarlane"
+  },
+  "homepage": "https://github.com/kmacmcfarlane/claude-plugins",
+  "repository": "https://github.com/kmacmcfarlane/claude-plugins"
+}
