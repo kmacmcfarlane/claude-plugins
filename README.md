@@ -11,6 +11,10 @@ Claude Code development tooling — reusable across projects.
 | Skill | Description |
 |-------|-------------|
 | `create-skill` | Bootstrap new Claude Code skills from a description |
+| `investigate` / `implement` | Investigation series → reviewed plan → verified implementation |
+| `checkpoint` | Land a long session's state before compaction; rehydration manifest + ledger |
+| `work-items` | `wi` — repo-durable work items in `.work/`, TODO.md importer, backlog-yaml bridge |
+| `install-statusline` | Context gauge (tokens left, epoch) that also feeds the gate hooks |
 | `sandbox` | claude-sandbox Docker setup, config, troubleshooting |
 | `update-kit` | Sync files upstream to claude-templates/claude-plugins/claude-sandbox |
 | `new-project-from-template` | Create a new project from a claude-templates template |

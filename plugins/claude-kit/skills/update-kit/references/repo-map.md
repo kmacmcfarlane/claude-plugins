@@ -70,10 +70,18 @@ claude-plugins/
 │   └── marketplace.json       (declares plugin namespaces)
 └── plugins/
     ├── claude-kit/            (the dev tooling plugin — what this skill syncs to)
+    │   ├── hooks/             (context-gate hooks + hooks.json + tests — NOT only skills)
     │   └── skills/
     │       ├── create-skill/          (meta-skill for creating new skills)
     │       │   ├── SKILL.md
     │       │   └── references/
+    │       ├── investigate/           (problem investigation → plan series)
+    │       ├── implement/             (carry an investigation to verified code)
+    │       ├── implement-plan/        (deprecated in favour of the two above)
+    │       ├── checkpoint/            (context checkpoint; handoff-format, delegation-contract, forensics)
+    │       ├── work-items/            (wi CLI — repo-durable work items)
+    │       ├── install-statusline/    (context gauge installer)
+    │       ├── chain-of-verification/ (CoVe fact-checking)
     │       ├── goa/                   (Goa API framework)
     │       ├── musubi-tuner/          (LoRA training)
     │       ├── playwright/            (E2E testing)
