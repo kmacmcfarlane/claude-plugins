@@ -73,9 +73,29 @@ Extract:
   and re-asking it signals you did not read the record
 - The **provenance SHAs** from the index, which say what each citation was true at
 
-Stop if the composed plan has **no Proposed Fix or Implementation Approach**:
+A series whose conclusion is a **Recommendation** not to write code is complete, not
+defective: land whatever it does call for — usually the documentation recording why — and set
+the row to `no code`.
+
+Stop if the composed plan has **no Proposed Fix, Implementation Approach or Recommendation**:
 
 > `Error: The investigation on '<slug>' has no proposed fix or implementation approach. Run /investigate <slug> to complete it.`
+
+---
+
+## Running non-interactively
+
+When the invocation says to run without stopping, the gates change form rather than vanishing:
+
+- **Gates 1 and 6** — decide yourself, and record each decision under **Confirmed Assumptions**
+  in the outcome file, framed as something a reviewer may overturn.
+- **Gate 2 (the diff)** — approve only on a passing verification at the planned tier. A failing
+  or incomplete verification is still a stop: report it and leave the work uncommitted.
+- **Step 10a (terminal action)** — do the least irreversible thing the invocation authorises.
+  Absent an explicit instruction, commit locally and leave the push to the user.
+- A **blocking** open question still blocks. Say so and stop rather than guessing past it.
+
+Report every recorded decision together at the end so the user reviews them in one pass.
 
 ---
 
@@ -97,11 +117,12 @@ A question you can close from evidence is not a question. Close it and record wh
 **2. Classify what remains** — agent-verifiable / user decision / external-blocked, the same
 taxonomy as `investigate`.
 
-**3. Launch ONE background `general-purpose` agent for the verifiable batch — now**, before
-Steps 4–6. That work is genuine dead time for verification, so the answers are usually back by
-the review gate. Self-contained brief: the questions, repo paths, SHAs, and what counts as
-verified. It must report **answer / evidence / confidence**, and say "could not determine"
-rather than guess.
+**3. If there is a verifiable batch, launch ONE background `general-purpose` agent for it —
+now**, before Steps 4–6. That work is genuine dead time for verification, so the answers are
+usually back by the review gate. Self-contained brief: the questions, repo paths, SHAs, and
+what counts as verified. It must report **answer / evidence / confidence**, and say "could not
+determine" rather than guess. When `investigate` already closed everything — common, and the
+sign of a gate that held — skip this and say so; an agent with nothing to verify is waste.
 
 **4. Blockers must be resolved or explicitly waived before Step 7.** The investigation states
 per question whether it blocks. Honour it: never start writing code with an unresolved
@@ -377,6 +398,11 @@ Regenerate `INDEX.md` wholesale:
 Derive the documentation the change requires and apply it — this replaces the release/change-
 management step it was adapted from, and it is part of the work, not an afterthought:
 
+- **Any config or code sample you write into docs must be valid in its target format** — a
+  snippet is only correct if it parses or runs where it is meant to be pasted. A fenced block
+  labelled for readability (`jsonc`, `console`) is not evidence: strict JSON rejects comments
+  and trailing commas, and the reader finds out, not you. Parse it, or pin it with a test
+  where the project can.
 - `CHANGELOG.md` — an entry, if the project keeps one, in its existing style
 - `README.md` — when behaviour, flags, config, or setup changed
 - `docs/*` — when the change contradicts something written there
@@ -414,8 +440,12 @@ Run a quick retrospective on this implement run and update the skill docs?
 ```
 
 If **Yes**: note where the run deviated from these steps or hit friction — an undocumented
-workflow, a wrong assumption, a gotcha that cost time — then **invoke the `update-kit` skill
-and follow it**. It owns locating the real checkout rather than the plugin cache, settling the
+workflow, a wrong assumption, a gotcha that cost time. Derive those findings from the skill
+files in the **checkout**, not the copy you are running from: the plugin cache lags the repo,
+and a finding diffed against it may already be fixed upstream. Then present them and **ask
+the user to run `/claude-kit:update-kit`**. That skill is `disable-model-invocation: true`, so
+it is user-invoked only and cannot be launched from here; do not replicate its workflow by
+other means. It owns locating the real checkout rather than the plugin cache, settling the
 branch, the staleness check, and the bar for what earns a place in a skill. Do not re-derive
 any of that here.
 

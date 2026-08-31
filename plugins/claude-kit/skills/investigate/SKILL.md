@@ -16,8 +16,12 @@ on-disk format — layout, serials, `Supersedes`, `INDEX.md`, the standard outli
 rule — is canonical in `references/investigation-format.md`. **Read it before writing
 anything.** It is the single owner of those rules; this file does not restate them.
 
-Every investigation must end with a concrete **Proposed Fix** (bugs) or **Implementation
-Approach** (features) section. `implement` refuses a series without one.
+Every investigation must end with a concrete **Proposed Fix** (bugs), **Implementation
+Approach** (features), or **Recommendation** — the last when the honest answer is that no
+code should be written, because the capability already exists, the cost is not worth it, or
+the premise does not hold. A Recommendation still says what to do (usually: document why,
+so the idea is not re-proposed) and `implement` lands that. `implement` refuses a series
+with none of the three.
 
 ## Usage
 
@@ -79,6 +83,21 @@ not create the directory yet; nothing is written until Step 13.
 
 If `.claude-sandbox/config.yaml` is absent, warn once and continue — see
 `references/investigation-format.md` for the exact wording and why this is not a hard stop.
+
+---
+
+## Running non-interactively
+
+When the invocation says to run without stopping — an unattended session, or "do it and ask
+me afterwards" — the blocking gates (Steps 2, 9, 11, 12) do not disappear, they change form:
+
+- Decide each gate yourself and record the decision under **Confirmed Assumptions**, framed
+  as something a reviewer may overturn. A silently-made decision is the thing this skill
+  exists to prevent.
+- Anything you would have *asked* becomes an **Open Question** with an owner and a
+  blocks-or-not marking. If one genuinely blocks, stop and say so rather than guessing.
+- Treat Step 12 as Save, and report every recorded decision together at the end so the user
+  reviews them in one pass.
 
 ---
 
@@ -234,6 +253,14 @@ viable — build, test, codegen, lint. This catches what a grep cannot: a genera
 that is stale, a test helper that does not exist yet, an interface that does not compile on
 the base branch. If a codegen step is required for the change to build, call it out in **Files
 to Modify** so the implementer expects it.
+
+**When a probe reproduces a symptom, the probe's own parameters are suspects too.** A cause
+that *explains* the symptom is not the same as one you have *isolated*. Before recording a
+root cause, vary the harness: anything present in every run — a flag you added to force
+re-execution, a fixture, an env var — is an uncontrolled variable, not a constant. Re-run
+without it. This is the failure mode that survives longest, because the wrong explanation
+fits the evidence and looks confirmed by it; a plausible story plus real corroborating
+numbers is exactly what an unisolated cause looks like from the inside.
 
 **When the plan depends on a low-level nuance of a tool's behaviour, read the tool's source.**
 Not for ordinary usage — docs and `--help` are correct and cheaper for that. This is for the
