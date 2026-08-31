@@ -27,8 +27,10 @@ the cheap path one click), unless the argument already names the mode:
 
 1. **"What's the goal from here?"** — *land* (finish one bounded thing, stop) / *continue*
    (keep pulling this thread) / *handoff* (park it, or move it to the owning repo).
-2. **"Anything in flight I haven't listed?"** — preceded by your own ≤10-line inventory, so
-   the answer is usually "no".
+2. **"Anything in flight I haven't listed?"** — with your ≤10-line inventory **inside the
+   question text itself**, not in message prose before it: the question dialog is what the
+   operator actually reads, and text streamed ahead of it goes unseen (observed on first
+   live use).
 3. **"How should the window be handled?"** — pre-draft the `/compact` guidance or the
    `/rewind` point so the answer is confirm/adjust, not compose.
 
