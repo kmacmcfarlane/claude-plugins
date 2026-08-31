@@ -141,5 +141,32 @@ class TestRehydrate(unittest.TestCase):
         self.assertIn(".claude-sandbox", self.ctx(out))
 
 
+class TestForkAdoption(TestRehydrate):
+    def test_fork_adopts_parent_ledger_and_instructions(self):
+        ledger.append("parent-sid", "X", "rejected the obvious fix")
+        st = L.load_state("parent-sid"); st["custom_instructions"] = "keep the thread"
+        L.save_state("parent-sid", st)
+        tp = os.path.join(self.repo, "fork.jsonl")
+        open(tp, "w").write(json.dumps({"type": "user", "sessionId": "parent-sid"}) + "\n"
+                            + json.dumps({"type": "user", "sessionId": "child-sid"}) + "\n")
+        self.write_manifest()
+        rc, out = run_hook({"session_id": "child-sid", "source": "fork",
+                            "cwd": self.repo, "transcript_path": tp}, self.env)
+        led = open(L.ledger_path("child-sid")).read()
+        self.assertIn("adopted from parent parent-sid", led)
+        self.assertIn("rejected the obvious fix", led)
+        self.assertEqual(L.load_state("child-sid")["custom_instructions"], "keep the thread")
+
+    def test_fork_never_overwrites_own_ledger(self):
+        ledger.append("child2", "D", "my own line")
+        tp = os.path.join(self.repo, "fork.jsonl")
+        open(tp, "w").write(json.dumps({"type": "user", "sessionId": "parent-sid"}) + "\n")
+        run_hook({"session_id": "child2", "source": "fork",
+                  "cwd": self.repo, "transcript_path": tp}, self.env)
+        led = open(L.ledger_path("child2")).read()
+        self.assertIn("my own line", led)
+        self.assertNotIn("adopted", led)
+
+
 if __name__ == "__main__":
     unittest.main()

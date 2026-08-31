@@ -93,6 +93,46 @@ def trim(body, budget):
     return body[:budget]
 
 
+def adopt_fork_state(sid, transcript_path):
+    """A fork/branch gets a new session id, orphaning the parent's ledger and
+    staged /compact guidance (Bug B, live-fired 2026-08-31 via /branch). The
+    fork's transcript begins with copied parent records that still carry the
+    parent sessionId — recover it and adopt what the parent had."""
+    if os.path.exists(L.ledger_path(sid)) or not transcript_path \
+            or not os.path.exists(transcript_path):
+        return
+    parent = None
+    try:
+        with open(transcript_path, errors="replace") as fh:
+            for i, line in enumerate(fh):
+                if i > 300:
+                    break
+                try:
+                    ps = json.loads(line).get("sessionId")
+                except Exception:
+                    continue
+                if ps and ps != sid:
+                    parent = ps
+                    break
+    except Exception:
+        return
+    if not parent:
+        return
+    try:
+        pl = L.ledger_path(parent)
+        if os.path.exists(pl):
+            with open(L.ledger_path(sid), "w") as out:
+                out.write(f"# ledger {sid} (adopted from parent {parent})\n")
+                out.write(open(pl, errors="replace").read())
+        pst = L.load_state(parent)
+        if pst.get("custom_instructions"):
+            st = L.load_state(sid)
+            st.setdefault("custom_instructions", pst["custom_instructions"])
+            L.save_state(sid, st)
+    except Exception:
+        pass
+
+
 def main():
     try:
         inp = json.load(sys.stdin)
@@ -101,6 +141,8 @@ def main():
 
     sid = inp.get("session_id", "unknown")
     source = inp.get("source", "startup")
+    if source == "fork":
+        adopt_fork_state(sid, inp.get("transcript_path"))
     cwd = inp.get("cwd") or os.getcwd()
     path, top = manifest_path(cwd)
 

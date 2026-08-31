@@ -74,6 +74,19 @@ class TestDepth(Base):
         self.assertEqual(src, "inferred")
         self.assertEqual(tok, 100_000)
 
+    def test_boundary_resets_current_keeps_peak(self):
+        p = os.path.join(self.tmp.name, "b.jsonl")
+        rec = lambda tok: json.dumps({"type": "assistant", "message": {"usage": {
+            "input_tokens": 2, "cache_read_input_tokens": tok - 2,
+            "cache_creation_input_tokens": 0}}})
+        open(p, "w").write(rec(600_000) + "\n"
+                           + json.dumps({"type": "system", "subtype": "compact_boundary"}) + "\n"
+                           + rec(20_000) + "\n")
+        tok, win, pct, src = L.depth(p)
+        self.assertEqual((tok, win), (20_000, 1_000_000))  # fresh cur, old peak keeps window
+        open(p, "a").write(json.dumps({"type": "system", "subtype": "compact_boundary"}) + "\n")
+        self.assertEqual(L.depth(p)[0], 0)  # boundary with no usage yet -> unknown, not stale
+
     def test_window_inferred_from_peak(self):
         self.assertEqual(L.depth(self._transcript(100_000))[1], 200_000)
         self.assertEqual(L.depth(self._transcript(400_000))[1], 1_000_000)

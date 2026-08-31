@@ -111,6 +111,13 @@ def read_usage(transcript_path):
     try:
         with open(transcript_path, errors="replace") as fh:
             for line in fh:
+                if '"compact_boundary"' in line:
+                    # Bug A (live-fired 2026-08-31): pre-boundary usage records
+                    # described the OLD window; reading them after a compaction
+                    # reported 62% used on a ~2% session. Keep peak (the model
+                    # window did not change); reset current.
+                    cur = 0
+                    continue
                 if '"usage"' not in line:
                     continue
                 try:
