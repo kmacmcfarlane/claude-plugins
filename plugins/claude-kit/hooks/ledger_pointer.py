@@ -12,7 +12,9 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import ledger
 
 COMMIT = re.compile(r"\bgit\b[^|;&]*\bcommit\b")
-SHA = re.compile(r"\[[\w./-]+ ([0-9a-f]{7,40})\]")
+# Match "[main abc1234] msg" (git commit) OR "abc1234 msg" (git log --oneline,
+# common right after a -q commit in compound commands).
+SHA = re.compile(r"\[[\w./-]+ ([0-9a-f]{7,40})\]|^([0-9a-f]{7,40}) ", re.M)
 
 
 def main():
@@ -31,9 +33,12 @@ def main():
         resp = inp.get("tool_response") or {}
         out = resp.get("stdout") if isinstance(resp, dict) else str(resp)
         m = SHA.search(out or "")
-        first = next((l for l in (out or "").splitlines() if l.strip()), "")[:120]
-        ledger.append(sid, "P", f"commit {m.group(1) if m else '?'}: {first}",
-                      ref=inp.get("cwd"))
+        sha = (m.group(1) or m.group(2)) if m else "?"
+        # Prefer the line that names the commit over whatever the compound
+        # command printed first ("lint clean: 7 items" made a poor summary).
+        lines = [l for l in (out or "").splitlines() if l.strip()]
+        first = next((l for l in lines if sha != "?" and sha in l), lines[0] if lines else "")[:120]
+        ledger.append(sid, "P", f"commit {sha}: {first}", ref=inp.get("cwd"))
     elif tool in ("Write", "Edit"):
         path = ti.get("file_path") or ""
         if "/investigations/" in path or path.endswith(("HANDOFF.md", "INDEX.md")):

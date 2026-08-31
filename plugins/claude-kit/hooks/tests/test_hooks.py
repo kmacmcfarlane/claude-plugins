@@ -220,6 +220,13 @@ class TestLedgerPointer(Base):
                     "tool_input": {"file_path": "/r/.claude-sandbox/investigations/x/00_a.md"}})
         self.assertIn("- P wrote 00_a.md", self.read_ledger())
 
+    def test_quiet_commit_with_log_oneline(self):
+        self.point({"tool_name": "Bash",
+                    "tool_input": {"command": "git commit -q -m m && git log --oneline -1"},
+                    "tool_response": {"stdout": "lint clean: 7 items\ndef4567 fixed: the thing\n"}})
+        led = self.read_ledger()
+        self.assertIn("- P commit def4567: def4567 fixed: the thing", led)
+
     def test_plain_bash_ignored(self):
         self.point({"tool_name": "Bash", "tool_input": {"command": "ls -la"},
                     "tool_response": {"stdout": "stuff"}})
