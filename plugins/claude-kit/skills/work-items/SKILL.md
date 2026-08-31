@@ -31,7 +31,7 @@ the TODO.md failure mode with extra steps.
 | --- | --- |
 | `$WI next [--plain\|--json]` | ready-ranked queue: `todo` with all deps done, priority then age |
 | `$WI show <id> [--brief]` | one item; `--brief` for front matter + handoff only |
-| `$WI add` | new item (`<slug>-<4hex>` id); describe, don't dump — path and key, never value |
+| `$WI add "Title here" -p 2 -t task --desc "…" [--ref path]` | new item (`<slug>-<4hex>` id); **title is positional** — describe, don't dump; path and key, never value |
 | `$WI claim <id>` / `release <id>` | atomic; a stale `claimed:` shows up in `next` |
 | `$WI handoff <id> --doing … --next … [--blocked …] [--learned …]` | the per-item residue — write it whenever the item is left mid-flight |
 | `$WI done <id> [--note <sha>]` / `done --drop` | closes it in place; `implement` Step 10a½ owns this on landed work |
