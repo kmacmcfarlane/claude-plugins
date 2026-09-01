@@ -9,3 +9,5 @@
 # Normally config.yaml is tracked and investigations are committed like reports/.
 .claude-sandbox/config.yaml
 .claude-sandbox/investigations/
+__pycache__/
+*.pyc
