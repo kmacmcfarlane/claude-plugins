@@ -19,7 +19,7 @@ Budget: total additionalContext <= 9,000 chars, under the harness's single
 the mandatory tiers). Trim order: Scrolls, then Aware-of, never Doing/Goal/
 Read-in-full.
 """
-import hashlib, json, os, subprocess, sys, time
+import glob, hashlib, json, os, subprocess, sys, time
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import lib_context as L
 import ledger
@@ -93,11 +93,58 @@ def trim(body, budget):
     return body[:budget]
 
 
+def _parent_by_record_uuid(sid, transcript_path):
+    """--fork-session rewrites every copied record's sessionId to the child
+    (live-fired 2026-09-01: zero parent references survive), but the record
+    uuids are copied verbatim — so the parent is the sibling transcript that
+    contains this transcript's first conversation-record uuid."""
+    first_uuid = None
+    with open(transcript_path, errors="replace") as fh:
+        for i, line in enumerate(fh):
+            if i > 50:
+                break
+            try:
+                d = json.loads(line)
+            except Exception:
+                continue
+            if d.get("type") in ("user", "assistant") and d.get("uuid"):
+                first_uuid = d["uuid"]
+                break
+    if not first_uuid:
+        return None
+    proj = os.path.dirname(transcript_path)
+    sib = [p for p in glob.glob(os.path.join(proj, "*.jsonl"))
+           if os.path.basename(p) != os.path.basename(transcript_path)]
+    for p in sorted(sib, key=os.path.getmtime, reverse=True)[:40]:
+        try:
+            with open(p, errors="replace") as fh:
+                for line in fh:
+                    if first_uuid not in line:
+                        continue
+                    # substring alone is not identity: a transcript that merely
+                    # QUOTED the uuid (tool output, pasted logs) matches too —
+                    # live-fired 2026-09-01, adopting the wrong parent. Only a
+                    # record whose own uuid field is this uuid is the parent copy.
+                    try:
+                        d = json.loads(line)
+                    except Exception:
+                        continue
+                    if d.get("uuid") != first_uuid:
+                        continue
+                    ps = d.get("sessionId")
+                    if ps and ps != sid:
+                        return ps
+        except Exception:
+            continue
+    return None
+
+
 def adopt_fork_state(sid, transcript_path):
     """A fork/branch gets a new session id, orphaning the parent's ledger and
-    staged /compact guidance (Bug B, live-fired 2026-08-31 via /branch). The
-    fork's transcript begins with copied parent records that still carry the
-    parent sessionId — recover it and adopt what the parent had."""
+    staged /compact guidance (Bug B, live-fired 2026-08-31 via /branch). Two
+    recovery strategies: copied parent records that still carry the parent
+    sessionId (/branch), else matching a copied record uuid against sibling
+    transcripts (--fork-session, which rewrites sessionIds)."""
     if os.path.exists(L.ledger_path(sid)) or not transcript_path \
             or not os.path.exists(transcript_path):
         return
@@ -114,6 +161,8 @@ def adopt_fork_state(sid, transcript_path):
                 if ps and ps != sid:
                     parent = ps
                     break
+        if not parent:
+            parent = _parent_by_record_uuid(sid, transcript_path)
     except Exception:
         return
     if not parent:

@@ -157,6 +157,24 @@ class TestForkAdoption(TestRehydrate):
         self.assertIn("rejected the obvious fix", led)
         self.assertEqual(L.load_state("child-sid")["custom_instructions"], "keep the thread")
 
+    def test_fork_session_rewritten_sids_recovered_by_record_uuid(self):
+        # --fork-session rewrites every copied record's sessionId to the child;
+        # only the record uuids tie the transcripts together (live-fired 2026-09-01)
+        ledger.append("parent2-sid", "D", "uuid-matched adoption marker")
+        st = L.load_state("parent2-sid"); st["custom_instructions"] = "guidance-x"
+        L.save_state("parent2-sid", st)
+        rec = {"type": "user", "uuid": "shared-rec-uuid-1", "sessionId": "parent2-sid"}
+        open(os.path.join(self.repo, "parent2-sid.jsonl"), "w").write(json.dumps(rec) + "\n")
+        child_rec = dict(rec, sessionId="child3-sid")
+        tp = os.path.join(self.repo, "child3-sid.jsonl")
+        open(tp, "w").write(json.dumps(child_rec) + "\n")
+        run_hook({"session_id": "child3-sid", "source": "fork",
+                  "cwd": self.repo, "transcript_path": tp}, self.env)
+        led = open(L.ledger_path("child3-sid")).read()
+        self.assertIn("adopted from parent parent2-sid", led)
+        self.assertIn("uuid-matched adoption marker", led)
+        self.assertEqual(L.load_state("child3-sid")["custom_instructions"], "guidance-x")
+
     def test_fork_never_overwrites_own_ledger(self):
         ledger.append("child2", "D", "my own line")
         tp = os.path.join(self.repo, "fork.jsonl")
