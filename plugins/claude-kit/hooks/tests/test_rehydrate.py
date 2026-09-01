@@ -186,5 +186,44 @@ class TestForkAdoption(TestRehydrate):
         self.assertNotIn("adopted", led)
 
 
+class TestStatuslineHeal(TestRehydrate):
+    def heal_env(self, settings, marker=True):
+        data = os.path.join(self.cfg.name, "plugins", "data", "claude-kit-x")
+        os.makedirs(data, exist_ok=True)
+        if marker:
+            json.dump({"settings": settings, "command": "python3 /x/statusline.py"},
+                      open(os.path.join(data, "statusline-installed.json"), "w"))
+        env = dict(self.env)
+        env.pop("CLAUDE_PLUGIN_DATA", None)
+        return env
+
+    def test_heal_restores_dropped_entry(self):
+        # a stale session's settings write dropped statusLine (live-fired 2026-08-31)
+        sp = os.path.join(self.cfg.name, "settings.json")
+        json.dump({"model": "m"}, open(sp, "w"))
+        rc, out = run_hook({"session_id": "s", "source": "startup", "cwd": self.repo},
+                           self.heal_env(sp))
+        self.assertIn("restored statusLine", out.get("systemMessage", ""))
+        d = json.load(open(sp))
+        self.assertEqual(d["statusLine"]["command"], "python3 /x/statusline.py")
+        self.assertEqual(d["model"], "m")               # read-modify-write, not clobber
+
+    def test_heal_leaves_present_entry_alone(self):
+        sp = os.path.join(self.cfg.name, "settings.json")
+        json.dump({"statusLine": {"type": "command", "command": "mine"}}, open(sp, "w"))
+        rc, out = run_hook({"session_id": "s", "source": "startup", "cwd": self.repo},
+                           self.heal_env(sp))
+        self.assertNotIn("restored", out.get("systemMessage", ""))
+        self.assertEqual(json.load(open(sp))["statusLine"]["command"], "mine")
+
+    def test_heal_silent_without_marker(self):
+        sp = os.path.join(self.cfg.name, "settings.json")
+        json.dump({}, open(sp, "w"))
+        rc, out = run_hook({"session_id": "s", "source": "startup", "cwd": self.repo},
+                           self.heal_env(sp, marker=False))
+        self.assertEqual(out, {})
+        self.assertNotIn("statusLine", json.load(open(sp)))
+
+
 if __name__ == "__main__":
     unittest.main()

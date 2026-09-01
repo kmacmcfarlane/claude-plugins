@@ -58,6 +58,12 @@ def main():
     if a.remove:
         removed = d.pop("statusLine", None)
         json.dump(d, open(path, "w"), indent=2, ensure_ascii=False)
+        hooks = data_hooks_dir()
+        if hooks:
+            try:
+                os.remove(os.path.join(os.path.dirname(hooks), "statusline-installed.json"))
+            except OSError:
+                pass
         print(f"removed statusLine from {path}" if removed else f"no statusLine in {path}")
         return
 
@@ -72,10 +78,21 @@ def main():
                  f"so the symlink is created, then re-run")
 
     prev = d.get("statusLine")
-    d["statusLine"] = {"type": "command", "command": f"python3 {json.dumps(script)}"}
+    cmd = f"python3 {json.dumps(script)}"
+    d["statusLine"] = {"type": "command", "command": cmd}
     os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
     json.dump(d, open(path, "w"), indent=2, ensure_ascii=False)
+    # Marker for the SessionStart self-heal: a settings write by a session
+    # launched BEFORE this install serializes its stale in-memory snapshot and
+    # drops this entry (live-fired 2026-08-31 via /plugin). The heal restores it.
+    marker = os.path.join(os.path.dirname(hooks), "statusline-installed.json")
+    json.dump({"settings": os.path.abspath(path), "command": cmd},
+              open(marker, "w"), indent=2)
     print(f"{'updated' if prev else 'installed'} statusLine in {path}\n  -> {script}")
+    print("WARNING: sessions already running hold a pre-install settings snapshot; "
+          "a /plugin toggle or model/effort change there will clobber this entry "
+          "on write. The claude-kit SessionStart hook now self-heals it at the "
+          "next session start.")
 
 
 main()

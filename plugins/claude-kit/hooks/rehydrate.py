@@ -139,6 +139,41 @@ def _parent_by_record_uuid(sid, transcript_path):
     return None
 
 
+def heal_statusline():
+    """A settings write from a session launched before the statusline install
+    serializes that session's stale in-memory snapshot and drops the entry
+    (live-fired 2026-08-31: a /plugin toggle in a day-old session clobbered
+    it, and the gate silently fell back to inference). The installer leaves a
+    marker in plugin data; when the marked settings file has lost statusLine,
+    restore it read-modify-write. Returns a message for systemMessage, or None."""
+    try:
+        data = os.environ.get("CLAUDE_PLUGIN_DATA")
+        if not data:
+            cfg = os.path.expanduser(os.environ.get("CLAUDE_CONFIG_DIR", "~/.claude"))
+            base = os.path.join(cfg, "plugins", "data")
+            names = sorted(os.listdir(base)) if os.path.isdir(base) else []
+            data = next((os.path.join(base, n) for n in names
+                         if n.startswith("claude-kit-")), None)
+        if not data:
+            return None
+        marker = os.path.join(data, "statusline-installed.json")
+        if not os.path.exists(marker):
+            return None
+        m = json.load(open(marker))
+        sp, cmd = m.get("settings"), m.get("command")
+        if not sp or not cmd or not os.path.exists(sp):
+            return None
+        d = json.load(open(sp))
+        if "statusLine" in d:
+            return None
+        d["statusLine"] = {"type": "command", "command": cmd}
+        json.dump(d, open(sp, "w"), indent=2, ensure_ascii=False)
+        return (f"claude-kit: restored statusLine in {sp} — a settings write "
+                "from a stale session had dropped it.")
+    except Exception:
+        return None
+
+
 def adopt_fork_state(sid, transcript_path):
     """A fork/branch gets a new session id, orphaning the parent's ledger and
     staged /compact guidance (Bug B, live-fired 2026-08-31 via /branch). Two
@@ -236,10 +271,15 @@ def main():
             parts.append(f"The operator's own /compact guidance was: {ci}")
 
     L.save_state(sid, st)
-    if not parts:
+    healed = heal_statusline()
+    if healed:
+        sysmsg = f"{sysmsg} {healed}" if sysmsg else healed
+    if not parts and not sysmsg:
         print(json.dumps({})); return
-    out = {"hookSpecificOutput": {"hookEventName": "SessionStart",
-                                  "additionalContext": "\n\n".join(parts)[:CAP + 900]}}
+    out = {}
+    if parts:
+        out["hookSpecificOutput"] = {"hookEventName": "SessionStart",
+                                     "additionalContext": "\n\n".join(parts)[:CAP + 900]}
     if sysmsg:
         out["systemMessage"] = sysmsg
     print(json.dumps(out))

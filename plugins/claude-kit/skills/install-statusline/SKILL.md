@@ -25,6 +25,13 @@ The script writes an absolute path under the plugin-data dir
 `current-hooks` symlink there is refreshed by this plugin's SessionStart hook. If the script
 reports the data dir missing, one session must start with the plugin enabled first.
 
+The install leaves a marker (`statusline-installed.json` in plugin data) and the
+plugin's SessionStart hook **self-heals**: a harness settings write from a session
+launched before the install serializes a stale snapshot and drops the entry
+(live-fired 2026-08-31 via a `/plugin` toggle); the next session start detects
+the loss and restores it, announcing the repair. `--remove` also deletes the
+marker, so removal is not "healed" back.
+
 `--remove` deletes the entry from the chosen scope. Changing scope = install in one, remove
 from the other. Verify after install: the gauge shows `NN%  NNNk left  eN` in the footer of
 the next session.
