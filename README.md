@@ -211,7 +211,7 @@ and collaborators and merge cleanly.
 | `work-items` | `wi` — ready-ranked queue, atomic claims, handoff blocks, TODO.md importer, backlog-yaml bridge |
 
 It also carries the **work-source provider interface**
-(`plugins/work-items/skills/work-items/references/provider-interface.md`): the seven-verb
+(`plugins/work-items/skills/work-items/references/provider-interface.md`): the eight-verb
 contract over pluggable work sources, its exit-code and canonical-state conventions, and the
 per-provider capability table. The two providers described today are the `wi` store and
 `backlog.yaml`; remote trackers are a documented mapping pattern, not an implementation. The
