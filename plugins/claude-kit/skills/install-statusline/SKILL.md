@@ -22,8 +22,9 @@ python3 "${CLAUDE_PLUGIN_ROOT}/skills/install-statusline/scripts/install_statusl
 
 The script writes an absolute path under the plugin-data dir
 (`plugins/data/claude-kit-*/current-hooks/`), which survives plugin updates; the
-`current-hooks` symlink there is refreshed by this plugin's SessionStart hook. If the script
-reports the data dir missing, one session must start with the plugin enabled first.
+`current-hooks` symlink there is refreshed by this plugin's SessionStart hook. If the symlink
+(or the data dir itself) does not exist yet — e.g. the session started before the plugin
+loaded, so the hook never fired — the script creates it itself, the same way the hook does.
 
 The install leaves a marker (`statusline-installed.json` in plugin data) and the
 plugin's SessionStart hook **self-heals**: a harness settings write from a session

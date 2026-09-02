@@ -7,7 +7,9 @@ Writes `statusLine` pointing at the update-stable plugin-data path
 (<config>/plugins/data/claude-kit-<marketplace>/current-hooks/statusline.py),
 resolved to an ABSOLUTE path at install time: the statusline docs do not
 promise env expansion in the command, so none is relied on. The symlink that
-keeps that path current is maintained by this plugin's SessionStart hook.
+keeps that path current is maintained by this plugin's SessionStart hook; if it
+does not exist yet (a session started before the plugin loaded, so the hook
+never fired), this script creates it the same way the hook does.
 
 --user   -> ~/.claude/settings.json            (default)
 --project-> ./.claude/settings.json            (shared with the team - only do
@@ -15,7 +17,15 @@ keeps that path current is maintained by this plugin's SessionStart hook.
 --local  -> ./.claude/settings.local.json
 --remove -> delete the statusLine entry from the chosen scope
 """
-import argparse, json, os, sys
+import argparse, json, os, re, sys
+
+
+def plugin_root():
+    # <root>/skills/install-statusline/scripts/install_statusline.py
+    p = os.path.abspath(__file__)
+    for _ in range(3):
+        p = os.path.dirname(p)
+    return os.path.dirname(p)
 
 
 def data_hooks_dir():
@@ -28,7 +38,31 @@ def data_hooks_dir():
         for name in sorted(os.listdir(base)):
             if name.startswith("claude-kit-"):
                 return os.path.join(base, name, "current-hooks")
+    # Fresh install: no data dir yet. Derive its name from the cache path this
+    # script runs from (plugins/cache/<marketplace>/claude-kit/<version>/...).
+    m = re.search(r"/plugins/cache/([^/]+)/claude-kit/", os.path.abspath(__file__))
+    if m:
+        return os.path.join(base, "claude-kit-" + m.group(1), "current-hooks")
     return None
+
+
+def ensure_hooks_symlink(hooks):
+    """Create current-hooks as the SessionStart hook would (ln -sfn), covering
+    sessions that started before the plugin loaded so the hook never fired."""
+    if os.path.isdir(hooks):  # resolves already; SessionStart keeps it current
+        return
+    src = os.path.join(plugin_root(), "hooks")
+    if not os.path.isdir(src):
+        return
+    os.makedirs(os.path.dirname(hooks), exist_ok=True)
+    tmp = hooks + ".tmp"
+    try:
+        if os.path.lexists(tmp):
+            os.remove(tmp)
+        os.symlink(src, tmp)
+        os.replace(tmp, hooks)  # atomic, also replaces a dangling symlink
+    except OSError:
+        pass
 
 
 def main():
@@ -69,13 +103,14 @@ def main():
 
     hooks = data_hooks_dir()
     if not hooks:
-        sys.exit("claude-kit plugin data dir not found - is the plugin installed? "
-                 "(a session must have started once so the SessionStart hook "
-                 "creates the current-hooks symlink)")
+        sys.exit("claude-kit plugin data dir not found and not derivable from "
+                 "this script's path - is the plugin installed?")
+    ensure_hooks_symlink(hooks)
     script = os.path.join(hooks, "statusline.py")
     if not os.path.exists(script):
-        sys.exit(f"{script} missing - start one session with the plugin enabled "
-                 f"so the symlink is created, then re-run")
+        sys.exit(f"{script} missing - could not create the current-hooks "
+                 f"symlink (plugin hooks dir not found next to this script); "
+                 f"start one session with the plugin enabled, then re-run")
 
     prev = d.get("statusLine")
     cmd = f"python3 {json.dumps(script)}"
