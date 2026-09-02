@@ -65,15 +65,15 @@ Planned names are **provisional** pending operator review.
 | …project context for the `ai-scripts` Python CLI utilities | `ai-scripts` | current; *planned* move to the expertise marketplace | — |
 | …structured product research in a web chat session | `chat` | current; *family home under review* | — |
 | …to survive the finite context window (gate, gauge, checkpoint, rehydration) | `context-guard` | **current** | — |
-| …a plan before you code: investigate → reviewed plan → verified implementation | `dev-flow` | **planned** (Phase 3) | `work-items` (soft) |
+| …a plan before you code: investigate → reviewed plan → verified implementation | `dev-flow` | **current** | `work-items` (soft) |
 | …repo-durable work items and a pluggable work source | `work-items` | **planned** (Phase 4) | — |
 | …isolated container execution for agent sessions | `sandbox` | **planned** (Phase 5) | claude-sandbox repo (external) |
 | …unattended agent loops over a backlog ("ralph") | `ralph` | **planned** (Phase 5) | `sandbox` (hard), `work-items` (soft) |
 | …to maintain this kit itself (skill authoring, upstream sync, templates) | `kit-dev` | **planned** (Phase 6) | — |
 | …to make Claude good at a specific stack (Goa, Playwright, musubi-tuner, …) | one plugin per stack | **planned** — second marketplace | — |
 
-Retired when their phases land: the `claude-kit` plugin name, the `implement-plan` skill, and
-the three agents used only by it.
+Retired: the deprecated plan-execution skill and the three sub-agent definitions used only by
+it (Phase 3). Still to retire when its phase lands: the `claude-kit` plugin name.
 
 ## Where does a new thing go?
 
@@ -148,7 +148,7 @@ directory. Nothing in this repo may propose changing it.
 ### Current name status
 
 The plugin names above (`context-guard` — shipped at Phase 1, its data dir and settings path
-now live state; `dev-flow`, `work-items`, `sandbox`,
+now live state; `dev-flow` — shipped at Phase 3, no state of its own; `work-items`, `sandbox`,
 `ralph`, `kit-dev`), the second marketplace's working name (`expertise` / repo
 `claude-expertise`), and the `chat` family's home are **provisional**, adopted so work can
 proceed, and confirmable or changeable at operator review. Names that have shipped state
@@ -168,14 +168,9 @@ plugins in the catalog; until those phases land, this is where these skills live
 | `backlog-entry` | Create backlog entries (stories, bugs, refactoring) in `backlog.yaml` | `ralph` |
 | `backlog-grooming` | Conversational backlog grooming and UAT review | `ralph` |
 | `backlog-yaml` | `backlog.yaml` management via the `backlog.py` CLI | `ralph` |
-| `chain-of-verification` | CoVe fact-verification pipeline — baseline, verify, revise | `dev-flow` |
 | `create-skill` | Bootstrap a new Claude Code skill from a description | `kit-dev` |
-| `deep-investigation` | Multi-agent research fan-out — strategy doc, lanes on a cheap model, one-pass synthesis | `dev-flow` |
 | `factor-analysis` | Analyze how a repo, plugin, or toolset should be factored into coherent standalone pieces | `kit-dev` (under review) |
 | `goa` | Design-first API development with Goa v3 for Go | expertise marketplace |
-| `implement` | Carry out an investigation series — plan, build, verify, record the outcome | `dev-flow` |
-| `implement-plan` | **Deprecated** — superseded by `investigate` + `implement`; retired at Phase 3 | *retired* |
-| `investigate` | Research a problem and write a reviewed plan to an investigation series | `dev-flow` |
 | `musubi-tuner` | LoRA training and inference with kohya's musubi-tuner | expertise marketplace |
 | `new-project-from-template` | Create a new project from a claude-templates template | `kit-dev` |
 | `playwright` | End-to-end testing with Playwright | expertise marketplace |
@@ -183,9 +178,26 @@ plugins in the catalog; until those phases land, this is where these skills live
 | `update-kit` | Sync skills and workflow files upstream to claude-templates / claude-plugins / claude-sandbox | `kit-dev` |
 | `work-items` | `wi` — repo-durable work items in `.work/`, TODO.md importer, backlog-yaml bridge | `work-items` |
 
-`plugins/claude-kit/` also carries `agents/` (three agent definitions used only by the
-deprecated `implement-plan`, retired with it). Its `hooks/`, `checkpoint` and
-`install-statusline` have moved out into `context-guard`.
+`plugins/claude-kit/` is now skills only. Its `hooks/`, `checkpoint` and `install-statusline`
+moved out into `context-guard`; the plan-first lifecycle skills moved into `dev-flow`; its
+`agents/` directory and the deprecated plan-execution skill they served were retired with
+that move.
+
+### dev-flow
+
+A plan before you code. Investigate a problem into a reviewed plan series under
+`.claude-sandbox/investigations/<slug>/`, then carry that series to verified code — plus the
+research and verification techniques that feed it.
+
+| Skill | Description |
+|---|---|
+| `investigate` | Research a problem and write a reviewed plan to an investigation series |
+| `implement` | Carry out an investigation series — plan, build, verify, record the outcome |
+| `deep-investigation` | Multi-agent research fan-out — strategy doc, lanes on a cheap model, one-pass synthesis |
+| `chain-of-verification` | CoVe fact-verification pipeline — baseline, verify, revise |
+
+Soft dependency on `work-items`: the flow threads work items through `wi` when a store is
+present, and degrades to plain investigation series when it is not.
 
 ### context-guard
 
@@ -265,7 +277,8 @@ claude-plugins/
 │   ├── ai-scripts/
 │   ├── chat/
 │   ├── claude-kit/
-│   └── context-guard/
+│   ├── context-guard/
+│   └── dev-flow/
 ├── CLAUDE.md                    # Placement rules for contributors and agents
 └── README.md                    # This file — doctrine and catalog
 ```

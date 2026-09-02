@@ -16,6 +16,11 @@
       "description": "Context survival for long sessions — depth gate, checkpoint workflow, status-line gauge, and session rehydration."
     },
     {
+      "name": "dev-flow",
+      "source": "./plugins/dev-flow",
+      "description": "Plan-first development for agent sessions — investigation series, reviewed plans, verified implementation, multi-agent research fan-outs, and chain-of-verification fact-checking."
+    },
+    {
       "name": "ai-scripts",
       "source": "./plugins/ai-scripts",
       "description": "Project context for ai-scripts — Python CLI utilities for AI tasks (captioning, model fetching, token counting, embeddings, rare token generation)."

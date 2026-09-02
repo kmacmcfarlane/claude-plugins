@@ -12,8 +12,6 @@ Do not restate the principles here; restated rules drift.
 ```
 plugins/
   claude-kit/          # Dissolving kitchen-sink plugin (see README catalog)
-    agents/            # Agent definitions (.md, auto-loaded by the plugin system)
-      <agent-name>.md
     skills/
       <skill-name>/
         SKILL.md
@@ -24,6 +22,9 @@ plugins/
     hooks/             # Gate, statusline sensor, ledger, rehydrate + unit tests
     skills/
       {checkpoint,install-statusline}/
+  dev-flow/            # Plan before you code
+    skills/
+      {investigate,implement,deep-investigation,chain-of-verification}/
   ai-scripts/          # Project context for the ai-scripts repo
     skills/
       <skill-name>/SKILL.md
@@ -37,7 +38,8 @@ plugins/
 - **Skill location**: `plugins/<plugin>/skills/<name>/SKILL.md` (never `.claude/skills/`).
 - **Agent location**: `plugins/<plugin>/agents/<name>.md` — auto-loaded by the plugin system.
   Agent `.md` files define role, tools, and model. Task-specific context is injected via the
-  Agent prompt, not baked into the definition.
+  Agent prompt, not baked into the definition. *No plugin here ships agents today* — the last
+  three were retired with the deprecated plan-execution skill they served (Phase 3).
 - **Plugin registry**: `.claude-plugin/marketplace.json` — update when adding or removing a
   plugin (not when adding skills to an existing plugin). Its `name` field, `kmacmcfarlane`,
   is **frozen**: it suffixes every plugin-data directory.
@@ -70,7 +72,7 @@ own rows and updates this table.
 | Aim | Current home | Target home (planned) |
 |---|---|---|
 | Survive the finite context window (gate, gauge, checkpoint, rehydration) | `plugins/context-guard/` | `plugins/context-guard/` — **landed** (Phase 1) |
-| Plan-before-code development flow | `plugins/claude-kit/skills/{investigate,implement,deep-investigation,chain-of-verification}/` | `plugins/dev-flow/` |
+| Plan-before-code development flow | `plugins/dev-flow/` | `plugins/dev-flow/` — **landed** (Phase 3) |
 | Repo-durable work items / work-source interface | `plugins/claude-kit/skills/work-items/` | `plugins/work-items/` |
 | Isolated container execution | `plugins/claude-kit/skills/sandbox/` | `plugins/sandbox/` |
 | Unattended agent loops over a backlog ("ralph") | `plugins/claude-kit/skills/{backlog-yaml,backlog-entry,backlog-grooming}/` | `plugins/ralph/` |
@@ -78,8 +80,9 @@ own rows and updates this table.
 | Stack expertise ("make Claude good at X") | `plugins/claude-kit/skills/{goa,playwright,musubi-tuner}/`, `plugins/ai-scripts/` | second marketplace (planned) |
 | Web-UI chat-session skills | `plugins/chat/` | family home under review |
 
-Retiring: `plugins/claude-kit/skills/implement-plan/` (deprecated) and
-`plugins/claude-kit/agents/`, which exists only to serve it.
+Retired at Phase 3: the deprecated plan-execution skill under `plugins/claude-kit/skills/`
+and `plugins/claude-kit/agents/`, which existed only to serve it. Both are recoverable from
+git history on this branch.
 
 ### Known temporary inconsistency
 

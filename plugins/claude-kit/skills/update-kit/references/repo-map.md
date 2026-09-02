@@ -69,19 +69,12 @@ claude-plugins/
 ├── .claude-plugin/
 │   └── marketplace.json       (declares plugin namespaces)
 └── plugins/
-    ├── claude-kit/            (the dev tooling plugin — what this skill syncs to)
-    │   ├── hooks/             (context-gate hooks + hooks.json + tests — NOT only skills)
+    ├── claude-kit/            (the dissolving dev tooling plugin — what this skill syncs to)
     │   └── skills/
     │       ├── create-skill/          (meta-skill for creating new skills)
     │       │   ├── SKILL.md
     │       │   └── references/
-    │       ├── investigate/           (problem investigation → plan series)
-    │       ├── implement/             (carry an investigation to verified code)
-    │       ├── implement-plan/        (deprecated in favour of the two above)
-    │       ├── checkpoint/            (context checkpoint; handoff-format, delegation-contract, forensics)
     │       ├── work-items/            (wi CLI — repo-durable work items)
-    │       ├── install-statusline/    (context gauge installer)
-    │       ├── chain-of-verification/ (CoVe fact-checking)
     │       ├── goa/                   (Goa API framework)
     │       ├── musubi-tuner/          (LoRA training)
     │       ├── playwright/            (E2E testing)
@@ -93,6 +86,19 @@ claude-plugins/
     │       │   └── references/
     │       ├── sandbox/               (claude-sandbox config)
     │       └── new-project-from-template/ (project scaffolding)
+    ├── dev-flow/              (plan-first development lifecycle)
+    │   └── skills/
+    │       ├── investigate/           (problem investigation → plan series)
+    │       ├── implement/             (carry an investigation to verified code)
+    │       ├── deep-investigation/    (multi-agent research fan-out)
+    │       └── chain-of-verification/ (CoVe fact-checking)
+    ├── context-guard/         (surviving the context window — the only hook-owning plugin)
+    │   ├── hooks/             (context-gate hooks + hooks.json + tests)
+    │   └── skills/
+    │       ├── checkpoint/            (context checkpoint; handoff-format, delegation-contract, forensics)
+    │       └── install-statusline/    (context gauge installer)
+    ├── chat/                  (web-UI chat-session skills)
+    │   └── skills/...
     └── ai-scripts/            (ai-scripts namespace)
         └── skills/...
 ```
