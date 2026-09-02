@@ -1,6 +1,6 @@
 {
-  "name": "claude-kit",
-  "description": "Claude Code dev tooling — skill creation, project templates, factoring analysis, and upstream kit sync.",
+  "name": "sandbox",
+  "description": "Isolated Docker execution environments for Claude Code — configure, bootstrap, and troubleshoot claude-sandbox containers.",
   "author": {
     "name": "Kyle McFarlane"
   },

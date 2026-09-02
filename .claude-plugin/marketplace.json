@@ -8,7 +8,7 @@
     {
       "name": "claude-kit",
       "source": "./plugins/claude-kit",
-      "description": "Claude Code dev tooling — skill creation, sandbox management, backlog tracking, and upstream kit sync."
+      "description": "Claude Code dev tooling — skill creation, project templates, factoring analysis, and upstream kit sync."
     },
     {
       "name": "context-guard",
@@ -29,6 +29,16 @@
       "name": "chat",
       "source": "./plugins/chat",
       "description": "Conversational skills — structured product research and purchase recommendations."
+    },
+    {
+      "name": "sandbox",
+      "source": "./plugins/sandbox",
+      "description": "Isolated Docker execution environments for Claude Code — configure, bootstrap, and troubleshoot claude-sandbox containers."
+    },
+    {
+      "name": "ralph",
+      "source": "./plugins/ralph",
+      "description": "Unattended agent loops over a backlog — the backlog.yaml workflow for ralph runs. Requires the claude-sandbox tool (see the sandbox plugin); consumes a work source through the work-source interface, with backlog.yaml as the default provider."
     }
   ]
 }

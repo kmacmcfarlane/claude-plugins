@@ -10,10 +10,17 @@ allowed-tools: "Read, Bash, Glob, Grep"
 All backlog reads and writes MUST use `python3 .claude-sandbox/scripts/backlog/backlog.py` instead of direct YAML editing. This ensures round-trip YAML preservation (comments, ordering, formatting), schema validation, atomic writes, and `flock`-based locking with an atomic `--claim` (the tool locks `agent/backlog.lock`; earlier versions of this doc understated that).
 
 **Interactive sessions should prefer the `work-items` skill (`wi`)** — one markdown file per
-item in git. `backlog.yaml` remains authoritative for unattended ralph runs; the bridge is
-`wi export --format backlog-yaml` before a run and `wi import --format backlog-yaml --update`
-after it. Which store is authoritative long-term is an open decision recorded in the
-context-guardrails series.
+item in git. `backlog.yaml` is the **default work-source provider for unattended ralph
+runs**, because `next-work --claim` is atomic and `validate --strict` is enforceable in a
+loop. The verb contract it implements — and the exit-code and canonical-state conventions a
+consumer must honour — is documented in the `work-items` skill's
+`references/provider-interface.md`; read it before writing anything that drives a backlog
+from a loop. Two things that document settles and this one does not: closure is a *policy*
+difference, not a verb (agents advance status but never set `status: done` — see
+`/backlog-grooming`), and the contract reserves a `provider:` config key for future
+mechanical provider selection, which is **sketched and unimplemented — nothing reads it, do
+not write it**. The bridge to `wi` is `wi export --format backlog-yaml` before a run and
+`wi import --format backlog-yaml --update` after it.
 
 The tool is canonical in the claude-sandbox repo (`scaffold-ralph/scripts/backlog/`) and is seeded into a project by `claude-sandbox init-ralph`. If `.claude-sandbox/scripts/backlog/backlog.py` is missing, run `claude-sandbox init-ralph` (idempotent — it only fills gaps).
 

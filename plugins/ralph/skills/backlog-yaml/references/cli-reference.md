@@ -116,7 +116,8 @@ backlog.py list-ids --source both | grep "^S-"
 ### `next-work` — Select next eligible story
 
 ```
-backlog.py next-work [--fields FIELD[,FIELD,...]] [--format yaml|json]
+backlog.py next-work [--fields FIELD[,FIELD,...]] [--claim WORKER_ID]
+                     [--non-interactive] [--format yaml|json]
 ```
 
 Implements the deterministic work-selection algorithm from AGENT_FLOW.md section 3.1 in a single call. Returns the selected story with an additional `queue` field indicating which queue it came from.
@@ -124,6 +125,10 @@ Implements the deterministic work-selection algorithm from AGENT_FLOW.md section
 | Flag | Description |
 |------|-------------|
 | `--fields` | Comma-separated fields to include in output (`queue` is always included) |
+| `--claim` | Atomically claim the selected story: sets `status: in_progress` and `claimed_by: WORKER_ID`, then writes `backlog.yaml` |
+| `--non-interactive` | Skip `ticket_mode: interactive` stories in the `todo` queue (autonomous ralph mode; `mixed` stories stay eligible) |
+
+Without `--claim`, `next-work` is a pure read and takes no lock. **With `--claim` it is a write command** and holds `flock` on `agent/backlog.lock` across the select-and-write — this is the only race-free way for concurrent ralph workers to take work.
 
 **Queue values:**
 
@@ -148,6 +153,9 @@ backlog.py next-work --format json
 
 # Compact view
 backlog.py next-work --fields id,title,priority,queue
+
+# Atomically claim the selected story for a ralph worker
+backlog.py next-work --claim worker-1 --non-interactive --format json
 ```
 
 ---

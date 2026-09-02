@@ -28,6 +28,12 @@ plugins/
   work-items/          # Repo-durable work items + the work-source provider interface
     skills/
       work-items/      # wi CLI, references/{format,provider-interface}.md, tests/
+  sandbox/             # Isolated container execution (claude-sandbox)
+    skills/
+      sandbox/
+  ralph/               # Unattended agent loops over a backlog
+    skills/
+      {backlog-yaml,backlog-entry,backlog-grooming}/
   chat/                # Skills for LLM chat sessions in web UIs
     skills/
       <skill-name>/SKILL.md
@@ -74,8 +80,8 @@ own rows and updates this table.
 | Survive the finite context window (gate, gauge, checkpoint, rehydration) | `plugins/context-guard/` | `plugins/context-guard/` — **landed** (Phase 1) |
 | Plan-before-code development flow | `plugins/dev-flow/` | `plugins/dev-flow/` — **landed** (Phase 3) |
 | Repo-durable work items / work-source interface | `plugins/work-items/` | `plugins/work-items/` — **landed** (Phase 4) |
-| Isolated container execution | `plugins/claude-kit/skills/sandbox/` | `plugins/sandbox/` |
-| Unattended agent loops over a backlog ("ralph") | `plugins/claude-kit/skills/{backlog-yaml,backlog-entry,backlog-grooming}/` | `plugins/ralph/` |
+| Isolated container execution | `plugins/sandbox/` | `plugins/sandbox/` — **landed** (Phase 5) |
+| Unattended agent loops over a backlog ("ralph") | `plugins/ralph/` | `plugins/ralph/` — **landed** (Phase 5) |
 | Maintaining this kit itself | `plugins/claude-kit/skills/{create-skill,update-kit,new-project-from-template,factor-analysis}/` | `plugins/kit-dev/` |
 | Stack expertise ("make Claude good at X") | the `expertise` marketplace (repo `claude-expertise`) — not this repo | moved to the expertise marketplace (local scaffold, remote pending) — **landed** (Phase 2) |
 | Web-UI chat-session skills | `plugins/chat/` | family home under review |
@@ -86,6 +92,6 @@ git history on this branch.
 
 ### Known temporary inconsistency
 
-`create-skill`'s own SKILL.md still says to place new skills in `claude-kit`. That is correct
-today — `claude-kit` is still every skill's current home — and will be aligned with this
+`create-skill`'s own SKILL.md still says to place new skills in `claude-kit`. That is now only
+the fallback, not the rule — the aim table above wins — and it will be aligned with this
 decision tree when the `kit-dev` phase lands.

@@ -68,8 +68,8 @@ Planned names are **provisional** pending operator review.
 | …to survive the finite context window (gate, gauge, checkpoint, rehydration) | `context-guard` | **current** | — |
 | …a plan before you code: investigate → reviewed plan → verified implementation | `dev-flow` | **current** | `work-items` (soft) |
 | …repo-durable work items and a pluggable work source | `work-items` | **current** | — |
-| …isolated container execution for agent sessions | `sandbox` | **planned** (Phase 5) | claude-sandbox repo (external) |
-| …unattended agent loops over a backlog ("ralph") | `ralph` | **planned** (Phase 5) | `sandbox` (hard), `work-items` (soft) |
+| …isolated container execution for agent sessions | `sandbox` | **current** | claude-sandbox repo (external) |
+| …unattended agent loops over a backlog ("ralph") | `ralph` | **current** | `sandbox` (hard), `work-items` (soft) |
 | …to maintain this kit itself (skill authoring, upstream sync, templates) | `kit-dev` | **planned** (Phase 6) | — |
 | …to make Claude good at a specific stack (Goa, Playwright, musubi-tuner, …) | one plugin per stack | **moved** to the expertise marketplace (local scaffold, remote pending) | — |
 
@@ -172,20 +172,17 @@ plugins in the catalog; until those phases land, this is where these skills live
 
 | Skill | Description | Planned home |
 |---|---|---|
-| `backlog-entry` | Create backlog entries (stories, bugs, refactoring) in `backlog.yaml` | `ralph` |
-| `backlog-grooming` | Conversational backlog grooming and UAT review | `ralph` |
-| `backlog-yaml` | `backlog.yaml` management via the `backlog.py` CLI | `ralph` |
 | `create-skill` | Bootstrap a new Claude Code skill from a description | `kit-dev` |
 | `factor-analysis` | Analyze how a repo, plugin, or toolset should be factored into coherent standalone pieces | `kit-dev` (under review) |
 | `new-project-from-template` | Create a new project from a claude-templates template | `kit-dev` |
-| `sandbox` | claude-sandbox Docker setup, config, and troubleshooting | `sandbox` |
 | `update-kit` | Sync skills and workflow files upstream to claude-templates / claude-plugins / claude-sandbox | `kit-dev` |
 
 `plugins/claude-kit/` is now skills only. Its `hooks/`, `checkpoint` and `install-statusline`
 moved out into `context-guard`; the plan-first lifecycle skills moved into `dev-flow`; the
-`work-items` skill moved into `work-items`; the `goa`, `playwright` and `musubi-tuner` skills
-moved out to the `expertise` marketplace; its `agents/` directory and the deprecated
-plan-execution skill they served were retired with the `dev-flow` move.
+`work-items` skill moved into `work-items`; the `sandbox` skill moved into `sandbox` and the
+backlog trio into `ralph`; the `goa`, `playwright` and `musubi-tuner` skills moved out to the
+`expertise` marketplace; its `agents/` directory and the deprecated plan-execution skill they
+served were retired with the `dev-flow` move.
 
 ### dev-flow
 
@@ -221,7 +218,7 @@ per-provider capability table. The two providers described today are the `wi` st
 document itself is the registry — there is no machine-readable descriptor, by decision.
 
 The `backlog.yaml` provider's own skills (`backlog-yaml`, `backlog-entry`,
-`backlog-grooming`) still live in `claude-kit` until the `ralph` phase lands; the bridge
+`backlog-grooming`) live in the `ralph` plugin; the bridge
 (`wi export/import --format backlog-yaml`) works regardless, and degrades silently when only
 one store is present.
 
@@ -245,6 +242,33 @@ SessionStart rehydration/self-heal — with its unit tests
 Upgrading from `claude-kit`: install `context-guard` and start one session; the SessionStart
 hook migrates an existing status-line entry to this plugin's data path. `/install-statusline`
 is the fallback. Hook state stays in `~/.claude/claude-kit/` (a historical directory name).
+
+### sandbox
+
+Isolated Docker execution environments for Claude Code. Configure, bootstrap and troubleshoot
+`claude-sandbox` containers — the config cascade, the child Dockerfile, host-access flags,
+volume mounts and launch failures. Standalone: no dependency on any other plugin here.
+
+| Skill | Description |
+|---|---|
+| `sandbox` | claude-sandbox Docker setup, config, and troubleshooting |
+
+### ralph
+
+Unattended agent loops over a backlog. The `backlog.yaml` workflow a ralph run consumes:
+CLI-mediated reads and writes, entry authoring, and the human grooming pass that closes work.
+
+| Skill | Description |
+|---|---|
+| `backlog-yaml` | `backlog.yaml` management via the `backlog.py` CLI |
+| `backlog-entry` | Create backlog entries (stories, bugs, refactoring) in `backlog.yaml` |
+| `backlog-grooming` | Conversational backlog grooming and UAT review |
+
+Hard dependency on `sandbox`: the loops run inside `claude-sandbox`, and `backlog.py` itself
+is seeded per project by `claude-sandbox init-ralph` (canonical in the claude-sandbox repo,
+not shipped here). Soft dependency on a work source through the **work-source interface**
+documented in `work-items` — `backlog.yaml` is the default provider for unattended runs, and
+the `wi` bridge activates only when both stores are present.
 
 ### chat
 
@@ -296,6 +320,8 @@ claude-plugins/
 │   ├── claude-kit/
 │   ├── context-guard/
 │   ├── dev-flow/
+│   ├── ralph/
+│   ├── sandbox/
 │   └── work-items/
 ├── CLAUDE.md                    # Placement rules for contributors and agents
 └── README.md                    # This file — doctrine and catalog
