@@ -17,15 +17,16 @@ explicitly not an implementation.
 
 ## The verb contract
 
-Seven verbs. Everything else a provider offers is provider-local — useful, but not something
+Eight verbs. Everything else a provider offers is provider-local — useful, but not something
 a consumer may assume.
 
 | Verb | `wi` | `backlog.py` |
 |---|---|---|
 | `next` | `next` (ready-ranked); `next --pipeline --claim <worker>` for atomic claim-next | `next-work [--format json] [--claim]` |
-| `claim` / release | `claim <id>` / `release <id>` | `next-work --claim`; release via `set <id> status todo` |
+| `claim` / release | `claim <id>` / `release <id>` | `next-work --claim`; release via `set <id> status todo` + `clear <id> claimed_by` |
 | `show` | `show <id> [--brief] [--json]` | `get <id>` |
-| `status` | `set <id> status <v>` / `set <id> stage <v>` | `set <id> status <v>` |
+| `status` | `set <id> status <v>` / `set <id> stage <v>` (open states only — see `close`) | `set <id> status <v>` (open states only — see `close`) |
+| `close` | `done <id> [--note <ref>]` / `done <id> --drop` | *policy, not a verb*: agents never set `status: done` — closure belongs to grooming (`/backlog-grooming`); `archive` then moves closed rows |
 | `create` | `add "<title>" [-t -p --dep --parent --desc]` | `add` (heredoc), with `next-id <prefix>` |
 | `handoff` / comment | `handoff <id> --doing --next [--blocked] [--learned]` | `set-text <id> <field>` (approximate) |
 | `query` | `ls [--status --type --tag --owner --ready --json]`; `next --json` | `query --status … --fields …` |
@@ -48,6 +49,14 @@ a consumer may assume.
 - **`status` — set the canonical state**, per the mapping below. In `wi`, `status` and
   `stage` are two fields (`doing` + `review`); in `backlog.yaml` the pipeline stage is folded
   into the single `status` value. Immutable fields (`id`, `created`) reject with **1**.
+  **`status` cannot close an item**: `wi set <id> status done` exits 3 (a closed item needs
+  its closed date, which only `done` writes) — use `close`.
+- **`close` — the only way to finish work, and providers differ on WHO may.** In `wi`,
+  `done <id>` (optionally `--note <ref>` for the landing commit) or `done --drop`; the item
+  file never moves. In `backlog.yaml` closure is a *human* act by policy — agents advance
+  status through the pipeline but never to `done`; `/backlog-grooming` closes, `archive`
+  sweeps. A consumer that finishes work on a backlog provider therefore ends at the last
+  agent-legal status and reports, rather than closing.
 - **`create` — describe, don't dump.** Ids are provider-shaped (`<slug>-<4hex>` in `wi`,
   `S-052`-style in backlog). Never assume an id format across providers.
 - **`handoff` — the per-item residue**, written whenever an item is left mid-flight:
@@ -73,6 +82,13 @@ The contract adopts `wi`'s codes (authoritative in `scripts/wi.py`'s module docs
 A provider that cannot express all five maps onto the nearest; a consumer must at minimum
 distinguish 0 / 2 / 4.
 
+Two known deviations in `wi` itself, documented until fixed in code: **argparse-level usage
+errors (unknown verb, wrong arity) exit 2**, colliding with not-found/empty — so a consumer
+must not read exit 2 as "nothing ready" unless the call shape was known-good (stderr is
+empty on a true empty `next`, and `--json` yields no output on usage errors); and
+**item-schema validation on `add`/`set` (e.g. an invalid status value) exits 3, not 1** —
+only immutable-field, unknown-field, and title-length rejections exit 1.
+
 ## Provider registry
 
 ### `wi` — this plugin
@@ -91,7 +107,7 @@ A single YAML file with round-trip-preserving edits, schema validation, atomic w
 `.claude-sandbox/scripts/backlog/backlog.py`; canonical in the claude-sandbox repo. This is
 the provider unattended ralph runs use, because `next-work --claim` is atomic and its
 validation (`validate --strict`) is enforceable in a loop. Provider-local verbs: `clear`,
-`next-id`, `archive`, `validate`.
+`next-id`, `archive`, `validate`, `status` (store overview), `list-ids`.
 
 ### The bridge, and what it is not
 
@@ -114,7 +130,7 @@ A consumer must degrade when a verb is absent — never assume.
 | `handoff` block | yes (first-class) | approximate (`set-text` into a text field) | approximate (structured comment) |
 | `query` with field selection | yes (`ls --json`) | yes (`query --fields`) | yes |
 | dependency graph | yes (`deps`, `block --on`) | partial (`blocked_by`) | varies |
-| unattended-safe | yes | yes (the ralph provider) | not without rate/auth handling |
+| unattended-safe | mechanically yes; ralph *policy* designates backlog.yaml (see the skill description) | yes (the ralph provider) | not without rate/auth handling |
 
 ## Canonical state model
 
