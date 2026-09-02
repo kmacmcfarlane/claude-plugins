@@ -14,13 +14,16 @@ plugins/
   claude-kit/          # Dissolving kitchen-sink plugin (see README catalog)
     agents/            # Agent definitions (.md, auto-loaded by the plugin system)
       <agent-name>.md
-    hooks/             # The context system: gate, statusline sensor, ledger, rehydrate, tests
     skills/
       <skill-name>/
         SKILL.md
         references/
         scripts/
         assets/
+  context-guard/       # Surviving the context window (the only hook-owning plugin)
+    hooks/             # Gate, statusline sensor, ledger, rehydrate + unit tests
+    skills/
+      {checkpoint,install-statusline}/
   ai-scripts/          # Project context for the ai-scripts repo
     skills/
       <skill-name>/SKILL.md
@@ -48,8 +51,8 @@ Where a new or moved thing goes. The full decision tree is in
 [README.md § Where does a new thing go?](README.md); the short form:
 
 1. Alters harness behavior (hooks, status line, `settings.json` writes)? → only a plugin
-   whose stated aim *is* that behavior (current home: `plugins/claude-kit/hooks/`). Never
-   attach it to a knowledge skill.
+   whose stated aim *is* that behavior (`plugins/context-guard/`). Never attach it to a
+   knowledge skill.
 2. Pure stack/tool knowledge? → the expertise family (second marketplace, planned; until
    then, the current-home column below).
 3. For web-UI chat sessions rather than a coding harness? → the `chat` family (home under
@@ -60,12 +63,13 @@ Where a new or moved thing goes. The full decision tree is in
 
 ### Aim → home
 
-Planned homes are **provisional** pending operator review, and none of them exist yet. Write
-files to the *current* home; each factoring phase moves its own rows and updates this table.
+Planned homes are **provisional** pending operator review, and none of them exist yet except
+where a row says **landed**. Write files to the *current* home; each factoring phase moves its
+own rows and updates this table.
 
 | Aim | Current home | Target home (planned) |
 |---|---|---|
-| Survive the finite context window (gate, gauge, checkpoint, rehydration) | `plugins/claude-kit/hooks/` + `skills/{checkpoint,install-statusline}/` | `plugins/context-guard/` |
+| Survive the finite context window (gate, gauge, checkpoint, rehydration) | `plugins/context-guard/` | `plugins/context-guard/` — **landed** (Phase 1) |
 | Plan-before-code development flow | `plugins/claude-kit/skills/{investigate,implement,deep-investigation,chain-of-verification}/` | `plugins/dev-flow/` |
 | Repo-durable work items / work-source interface | `plugins/claude-kit/skills/work-items/` | `plugins/work-items/` |
 | Isolated container execution | `plugins/claude-kit/skills/sandbox/` | `plugins/sandbox/` |

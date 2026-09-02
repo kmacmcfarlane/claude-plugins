@@ -187,15 +187,27 @@ class TestForkAdoption(TestRehydrate):
 
 
 class TestStatuslineHeal(TestRehydrate):
+    def data_dir(self, name):
+        d = os.path.join(self.cfg.name, "plugins", "data", name)
+        os.makedirs(d, exist_ok=True)
+        return d
+
     def heal_env(self, settings, marker=True):
-        data = os.path.join(self.cfg.name, "plugins", "data", "claude-kit-x")
-        os.makedirs(data, exist_ok=True)
+        data = self.data_dir("context-guard-x")
         if marker:
             json.dump({"settings": settings, "command": "python3 /x/statusline.py"},
                       open(os.path.join(data, "statusline-installed.json"), "w"))
         env = dict(self.env)
         env.pop("CLAUDE_PLUGIN_DATA", None)
         return env
+
+    def legacy_marker(self, settings, command):
+        """The install this plugin inherited: marker + statusLine under the old
+        claude-kit plugin data dir."""
+        legacy = self.data_dir("claude-kit-x")
+        json.dump({"settings": settings, "command": command},
+                  open(os.path.join(legacy, "statusline-installed.json"), "w"))
+        return legacy
 
     def test_heal_restores_dropped_entry(self):
         # a stale session's settings write dropped statusLine (live-fired 2026-08-31)
@@ -221,6 +233,50 @@ class TestStatuslineHeal(TestRehydrate):
         json.dump({}, open(sp, "w"))
         rc, out = run_hook({"session_id": "s", "source": "startup", "cwd": self.repo},
                            self.heal_env(sp, marker=False))
+        self.assertEqual(out, {})
+        self.assertNotIn("statusLine", json.load(open(sp)))
+
+    def test_migrates_legacy_claude_kit_install(self):
+        # the context system shipped inside claude-kit before this plugin existed;
+        # the installed settings entry points at that plugin's data dir
+        sp = os.path.join(self.cfg.name, "settings.json")
+        old_cmd = ("python3 \"" + os.path.join(self.cfg.name, "plugins", "data",
+                   "claude-kit-x", "current-hooks", "statusline.py") + "\"")
+        json.dump({"model": "m", "statusLine": {"type": "command", "command": old_cmd}},
+                  open(sp, "w"))
+        env = self.heal_env(sp, marker=False)          # new data dir, no marker yet
+        legacy = self.legacy_marker(sp, old_cmd)
+        rc, out = run_hook({"session_id": "s", "source": "startup", "cwd": self.repo}, env)
+        self.assertIn("migrated statusLine", out.get("systemMessage", ""))
+        new_script = os.path.join(self.cfg.name, "plugins", "data", "context-guard-x",
+                                  "current-hooks", "statusline.py")
+        d = json.load(open(sp))
+        self.assertEqual(d["statusLine"]["command"], "python3 " + json.dumps(new_script))
+        self.assertEqual(d["model"], "m")               # read-modify-write, not clobber
+        moved = os.path.join(self.cfg.name, "plugins", "data", "context-guard-x",
+                             "statusline-installed.json")
+        self.assertEqual(json.load(open(moved))["command"], d["statusLine"]["command"])
+        self.assertFalse(os.path.exists(os.path.join(legacy, "statusline-installed.json")))
+
+    def test_own_marker_wins_over_legacy(self):
+        # with our own marker present the legacy dir is never consulted
+        sp = os.path.join(self.cfg.name, "settings.json")
+        json.dump({"model": "m"}, open(sp, "w"))
+        env = self.heal_env(sp)                         # writes the context-guard marker
+        legacy = self.legacy_marker(sp, "python3 /legacy/statusline.py")
+        rc, out = run_hook({"session_id": "s", "source": "startup", "cwd": self.repo}, env)
+        self.assertIn("restored statusLine", out.get("systemMessage", ""))
+        self.assertNotIn("migrated", out.get("systemMessage", ""))
+        self.assertEqual(json.load(open(sp))["statusLine"]["command"],
+                         "python3 /x/statusline.py")
+        self.assertTrue(os.path.exists(os.path.join(legacy, "statusline-installed.json")))
+
+    def test_no_marker_anywhere_is_silent(self):
+        sp = os.path.join(self.cfg.name, "settings.json")
+        json.dump({}, open(sp, "w"))
+        env = self.heal_env(sp, marker=False)
+        self.data_dir("claude-kit-x")                   # legacy dir, but no marker in it
+        rc, out = run_hook({"session_id": "s", "source": "startup", "cwd": self.repo}, env)
         self.assertEqual(out, {})
         self.assertNotIn("statusLine", json.load(open(sp)))
 

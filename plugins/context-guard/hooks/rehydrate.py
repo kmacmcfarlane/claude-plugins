@@ -139,37 +139,81 @@ def _parent_by_record_uuid(sid, transcript_path):
     return None
 
 
+def _scan_data_dir(base, prefix):
+    names = sorted(os.listdir(base)) if os.path.isdir(base) else []
+    return next((os.path.join(base, n) for n in names
+                 if n.startswith(prefix)), None)
+
+
+def _restore_statusline(marker):
+    """The self-heal proper: marked settings file lost its statusLine -> put it
+    back, read-modify-write."""
+    m = json.load(open(marker))
+    sp, cmd = m.get("settings"), m.get("command")
+    if not sp or not cmd or not os.path.exists(sp):
+        return None
+    d = json.load(open(sp))
+    if "statusLine" in d:
+        return None
+    d["statusLine"] = {"type": "command", "command": cmd}
+    json.dump(d, open(sp, "w"), indent=2, ensure_ascii=False)
+    return (f"context-guard: restored statusLine in {sp} — a settings write "
+            "from a stale session had dropped it.")
+
+
+def _migrate_legacy_statusline(legacy_marker, data):
+    """The context system used to ship inside the claude-kit plugin, so an
+    installed statusLine points at .../plugins/data/claude-kit-<mkt>/
+    current-hooks/statusline.py — a path nothing maintains any more. Repoint it
+    at this plugin's data dir, move the marker over, drop the legacy one."""
+    m = json.load(open(legacy_marker))
+    sp = m.get("settings")
+    if not sp or not m.get("command") or not os.path.exists(sp):
+        return None
+    script = os.path.join(data, "current-hooks", "statusline.py")
+    cmd = f"python3 {json.dumps(script)}"
+    d = json.load(open(sp))
+    cur = d.get("statusLine")
+    stale = not isinstance(cur, dict) or \
+        "/plugins/data/claude-kit-" in (cur.get("command") or "")
+    if stale:
+        d["statusLine"] = {"type": "command", "command": cmd}
+        json.dump(d, open(sp, "w"), indent=2, ensure_ascii=False)
+    json.dump({"settings": os.path.abspath(sp), "command": cmd},
+              open(os.path.join(data, "statusline-installed.json"), "w"), indent=2)
+    try:
+        os.remove(legacy_marker)
+    except OSError:
+        pass
+    return (f"context-guard: migrated statusLine in {sp} to the context-guard "
+            "plugin data path (the context system moved out of claude-kit).")
+
+
 def heal_statusline():
     """A settings write from a session launched before the statusline install
     serializes that session's stale in-memory snapshot and drops the entry
     (live-fired 2026-08-31: a /plugin toggle in a day-old session clobbered
     it, and the gate silently fell back to inference). The installer leaves a
     marker in plugin data; when the marked settings file has lost statusLine,
-    restore it read-modify-write. Returns a message for systemMessage, or None."""
+    restore it read-modify-write. With no marker of our own, fall back to the
+    legacy claude-kit marker and migrate it. Returns a systemMessage, or None.
+
+    The SessionStart symlink command runs before this hook, so current-hooks
+    already resolves in the new data dir and the rewritten path is live now."""
     try:
-        data = os.environ.get("CLAUDE_PLUGIN_DATA")
-        if not data:
-            cfg = os.path.expanduser(os.environ.get("CLAUDE_CONFIG_DIR", "~/.claude"))
-            base = os.path.join(cfg, "plugins", "data")
-            names = sorted(os.listdir(base)) if os.path.isdir(base) else []
-            data = next((os.path.join(base, n) for n in names
-                         if n.startswith("claude-kit-")), None)
-        if not data:
+        cfg = os.path.expanduser(os.environ.get("CLAUDE_CONFIG_DIR", "~/.claude"))
+        base = os.path.join(cfg, "plugins", "data")
+        data = os.environ.get("CLAUDE_PLUGIN_DATA") or \
+            _scan_data_dir(base, "context-guard-")
+        if data and os.path.exists(os.path.join(data, "statusline-installed.json")):
+            return _restore_statusline(os.path.join(data, "statusline-installed.json"))
+        legacy = _scan_data_dir(base, "claude-kit-")
+        if not data or not legacy:
             return None
-        marker = os.path.join(data, "statusline-installed.json")
-        if not os.path.exists(marker):
+        legacy_marker = os.path.join(legacy, "statusline-installed.json")
+        if not os.path.exists(legacy_marker):
             return None
-        m = json.load(open(marker))
-        sp, cmd = m.get("settings"), m.get("command")
-        if not sp or not cmd or not os.path.exists(sp):
-            return None
-        d = json.load(open(sp))
-        if "statusLine" in d:
-            return None
-        d["statusLine"] = {"type": "command", "command": cmd}
-        json.dump(d, open(sp, "w"), indent=2, ensure_ascii=False)
-        return (f"claude-kit: restored statusLine in {sp} — a settings write "
-                "from a stale session had dropped it.")
+        return _migrate_legacy_statusline(legacy_marker, data)
     except Exception:
         return None
 
@@ -239,7 +283,7 @@ def main():
         sha = hashlib.sha1(text.encode()).hexdigest()[:12]
         live = liveness(fm, top)
         dirty = git(top, "status", "--porcelain") or ""
-        header = (f"[claude-kit rehydration] {live} manifest {path} "
+        header = (f"[context-guard rehydration] {live} manifest {path} "
                   f"(written {fm.get('written', '?')}, head {fm.get('head', '?')}, "
                   f"now {len(dirty.splitlines())} dirty file(s)).")
 
@@ -264,7 +308,7 @@ def main():
     if source == "compact":
         lt = ledger.tail(sid, max_chars=LEDGER_BUDGET)
         if lt:
-            parts.append("[claude-kit ledger — this session's reasoning trail, "
+            parts.append("[context-guard ledger — this session's reasoning trail, "
                          "newest last]\n" + lt)
         ci = st.pop("custom_instructions", None)
         if ci:

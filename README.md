@@ -64,7 +64,7 @@ Planned names are **provisional** pending operator review.
 | …everything below, in one plugin (the historical kitchen sink) | `claude-kit` | **current — dissolving** into the planned plugins below | — |
 | …project context for the `ai-scripts` Python CLI utilities | `ai-scripts` | current; *planned* move to the expertise marketplace | — |
 | …structured product research in a web chat session | `chat` | current; *family home under review* | — |
-| …to survive the finite context window (gate, gauge, checkpoint, rehydration) | `context-guard` | **planned** (Phase 1) | — |
+| …to survive the finite context window (gate, gauge, checkpoint, rehydration) | `context-guard` | **current** | — |
 | …a plan before you code: investigate → reviewed plan → verified implementation | `dev-flow` | **planned** (Phase 3) | `work-items` (soft) |
 | …repo-durable work items and a pluggable work source | `work-items` | **planned** (Phase 4) | — |
 | …isolated container execution for agent sessions | `sandbox` | **planned** (Phase 5) | claude-sandbox repo (external) |
@@ -81,7 +81,7 @@ The contributor decision tree. Answer in order; the first match wins.
 
 1. **Does it alter harness behavior?** Hooks, a status line, `settings.json` writes,
    background state. → It belongs *only* in a plugin whose stated aim is that behavior
-   (current home: `plugins/claude-kit/hooks/`; planned: `context-guard`). Never bolt it
+   (that plugin is `context-guard`: `plugins/context-guard/`). Never bolt it
    onto a knowledge skill (principle 3).
 2. **Is it pure stack/tool knowledge** — "make Claude good at X"? → Expertise family
    (second marketplace, planned; current home: this repo, see the aim→home table in
@@ -147,7 +147,8 @@ directory. Nothing in this repo may propose changing it.
 
 ### Current name status
 
-The planned plugin names above (`context-guard`, `dev-flow`, `work-items`, `sandbox`,
+The plugin names above (`context-guard` — shipped at Phase 1, its data dir and settings path
+now live state; `dev-flow`, `work-items`, `sandbox`,
 `ralph`, `kit-dev`), the second marketplace's working name (`expertise` / repo
 `claude-expertise`), and the `chat` family's home are **provisional**, adopted so work can
 proceed, and confirmable or changeable at operator review. Names that have shipped state
@@ -168,14 +169,12 @@ plugins in the catalog; until those phases land, this is where these skills live
 | `backlog-grooming` | Conversational backlog grooming and UAT review | `ralph` |
 | `backlog-yaml` | `backlog.yaml` management via the `backlog.py` CLI | `ralph` |
 | `chain-of-verification` | CoVe fact-verification pipeline — baseline, verify, revise | `dev-flow` |
-| `checkpoint` | Land a long session's state before compaction; rehydration manifest + ledger | `context-guard` |
 | `create-skill` | Bootstrap a new Claude Code skill from a description | `kit-dev` |
 | `deep-investigation` | Multi-agent research fan-out — strategy doc, lanes on a cheap model, one-pass synthesis | `dev-flow` |
 | `factor-analysis` | Analyze how a repo, plugin, or toolset should be factored into coherent standalone pieces | `kit-dev` (under review) |
 | `goa` | Design-first API development with Goa v3 for Go | expertise marketplace |
 | `implement` | Carry out an investigation series — plan, build, verify, record the outcome | `dev-flow` |
 | `implement-plan` | **Deprecated** — superseded by `investigate` + `implement`; retired at Phase 3 | *retired* |
-| `install-statusline` | Context gauge (tokens left, epoch, checkpoint state) that also feeds the gate hooks | `context-guard` |
 | `investigate` | Research a problem and write a reviewed plan to an investigation series | `dev-flow` |
 | `musubi-tuner` | LoRA training and inference with kohya's musubi-tuner | expertise marketplace |
 | `new-project-from-template` | Create a new project from a claude-templates template | `kit-dev` |
@@ -184,9 +183,28 @@ plugins in the catalog; until those phases land, this is where these skills live
 | `update-kit` | Sync skills and workflow files upstream to claude-templates / claude-plugins / claude-sandbox | `kit-dev` |
 | `work-items` | `wi` — repo-durable work items in `.work/`, TODO.md importer, backlog-yaml bridge | `work-items` |
 
-`plugins/claude-kit/` also carries `hooks/` (the context gate, status line sensor, ledger, and
-session rehydration — planned home `context-guard`) and `agents/` (three agent definitions
-used only by the deprecated `implement-plan`, retired with it).
+`plugins/claude-kit/` also carries `agents/` (three agent definitions used only by the
+deprecated `implement-plan`, retired with it). Its `hooks/`, `checkpoint` and
+`install-statusline` have moved out into `context-guard`.
+
+### context-guard
+
+Survive the finite context window. Registers the context-gate hooks, the status-line sensor,
+the reasoning ledger and session rehydration — the one plugin here whose aim *is* harness
+behavior.
+
+| Skill | Description |
+|---|---|
+| `checkpoint` | Land a long session's state before compaction; rehydration manifest + ledger |
+| `install-statusline` | Install the context gauge (tokens left, epoch, checkpoint state), which also feeds the gate hooks their exact depth |
+
+It also carries `hooks/` — the depth gate, the status line sensor, the ledger, and the
+SessionStart rehydration/self-heal — with its unit tests
+(`cd plugins/context-guard/hooks && python3 -m unittest discover -s tests -q`).
+
+Upgrading from `claude-kit`: install `context-guard` and start one session; the SessionStart
+hook migrates an existing status-line entry to this plugin's data path. `/install-statusline`
+is the fallback. Hook state stays in `~/.claude/claude-kit/` (a historical directory name).
 
 ### ai-scripts
 
@@ -246,7 +264,8 @@ claude-plugins/
 ├── plugins/
 │   ├── ai-scripts/
 │   ├── chat/
-│   └── claude-kit/
+│   ├── claude-kit/
+│   └── context-guard/
 ├── CLAUDE.md                    # Placement rules for contributors and agents
 └── README.md                    # This file — doctrine and catalog
 ```

@@ -8,7 +8,12 @@
     {
       "name": "claude-kit",
       "source": "./plugins/claude-kit",
-      "description": "Claude Code dev tooling — skill creation, sandbox management, backlog tracking, Goa API design, Playwright testing, LoRA training, context guardrails, and upstream kit sync."
+      "description": "Claude Code dev tooling — skill creation, sandbox management, backlog tracking, Goa API design, Playwright testing, LoRA training, and upstream kit sync."
+    },
+    {
+      "name": "context-guard",
+      "source": "./plugins/context-guard",
+      "description": "Context survival for long sessions — depth gate, checkpoint workflow, status-line gauge, and session rehydration."
     },
     {
       "name": "ai-scripts",

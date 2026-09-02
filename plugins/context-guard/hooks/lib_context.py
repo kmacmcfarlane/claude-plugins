@@ -1,4 +1,4 @@
-"""Shared state and depth accounting for the claude-kit context-gate hooks.
+"""Shared state and depth accounting for the context-guard context-gate hooks.
 
 Depth sources, in order of preference:
 1. EXACT - written by statusline.py, which receives context_window.used_percentage

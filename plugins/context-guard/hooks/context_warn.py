@@ -52,7 +52,7 @@ def main():
     if remaining <= th["hard"] and not done and not whitelisted:
         L.save_state(sid, st)
         sys.stderr.write(
-            f"[claude-kit context gate] HARD STOP: {remaining:,} tokens left of "
+            f"[context-guard context gate] HARD STOP: {remaining:,} tokens left of "
             f"{win:,} ({src}). Your prompt was NOT processed and was erased.\n"
             f"Run /checkpoint first (it is whitelisted), then re-send:\n"
             f"  {prompt[:200]}\n")
@@ -70,7 +70,7 @@ def main():
                 "hookSpecificOutput": {
                     "hookEventName": "UserPromptSubmit",
                     "additionalContext":
-                        f"[claude-kit context gate] DUE: {remaining:,} tokens left "
+                        f"[context-guard context gate] DUE: {remaining:,} tokens left "
                         f"({src}); a checkpoint has not run this epoch. Finish the "
                         f"current thought, then run the checkpoint skill. Do not "
                         f"start new threads of work. HARD stop at {th['hard']:,} left."},
@@ -94,7 +94,7 @@ def main():
                 "hookSpecificOutput": {
                     "hookEventName": "UserPromptSubmit",
                     "additionalContext":
-                        f"[claude-kit context gate] {pct:.0f}% of the window is used "
+                        f"[context-guard context gate] {pct:.0f}% of the window is used "
                         f"({tok:,}/{win:,}, {src}). Prefer subagents for read-heavy "
                         f"work; keep writing findings to disk."},
                 "systemMessage": f"Context {pct:.0f}% used ({remaining:,} left).",

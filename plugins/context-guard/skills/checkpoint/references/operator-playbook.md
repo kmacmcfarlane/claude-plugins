@@ -74,6 +74,6 @@ When the depth warning fires, answer these before touching anything:
 3. **Which repo owns each of those?** Working in one repo on another repo's problem is fine;
    leaving the knowledge there is not.
 
-Then `/checkpoint <mode>`. The ledger (`~/.claude/claude-kit/ledger/<session>.md`) has been
-collecting decisions as you worked — the checkpoint is a delta, and after compaction the
+Then `/checkpoint <mode>`. The ledger (`~/.claude/claude-kit/ledger/<session>.md` — a
+historical directory name, kept across the move into `context-guard`) has been collecting decisions as you worked — the checkpoint is a delta, and after compaction the
 manifest + ledger are re-injected and outrank the machine summary.

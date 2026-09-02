@@ -50,7 +50,7 @@ def main():
                if st.get("compact_deferred") else
                f"only {remaining:,} tokens remain ({src})")
         print(json.dumps(ctx(
-            f"[claude-kit context gate] Before anything else: {why} and no "
+            f"[context-guard context gate] Before anything else: {why} and no "
             f"checkpoint has run this epoch. Run the checkpoint skill now — "
             f"ask the operator the goal (land / continue / handoff), write the "
             f"reasoning residue, then mark_checkpoint.py. Do not start new work.")))
@@ -73,7 +73,7 @@ def main():
         if LEDGER_LINE.search(inp.get("last_assistant_message") or ""):
             print(json.dumps({})); return
         print(json.dumps(ctx(
-            f"[claude-kit ledger] ~{tok - last:,} tokens since the last ledger "
+            f"[context-guard ledger] ~{tok - last:,} tokens since the last ledger "
             f"entry. Append one line per new decision/rejection/correction/"
             f"refusal since then to {L.ledger_path(sid)} in the form "
             f"`- <D|X|C|U|R|Q> <text> [-> path]`, or reply 'nothing new'. "

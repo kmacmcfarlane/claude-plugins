@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Install, move, or remove the claude-kit status line, idempotently.
+"""Install, move, or remove the context-guard status line, idempotently.
 
     install_statusline.py [--user|--project|--local|--remove] [--settings PATH]
 
 Writes `statusLine` pointing at the update-stable plugin-data path
-(<config>/plugins/data/claude-kit-<marketplace>/current-hooks/statusline.py),
+(<config>/plugins/data/context-guard-<marketplace>/current-hooks/statusline.py),
 resolved to an ABSOLUTE path at install time: the statusline docs do not
 promise env expansion in the command, so none is relied on. The symlink that
 keeps that path current is maintained by this plugin's SessionStart hook; if it
@@ -36,13 +36,13 @@ def data_hooks_dir():
     base = os.path.join(cfg, "plugins", "data")
     if os.path.isdir(base):
         for name in sorted(os.listdir(base)):
-            if name.startswith("claude-kit-"):
+            if name.startswith("context-guard-"):
                 return os.path.join(base, name, "current-hooks")
     # Fresh install: no data dir yet. Derive its name from the cache path this
-    # script runs from (plugins/cache/<marketplace>/claude-kit/<version>/...).
-    m = re.search(r"/plugins/cache/([^/]+)/claude-kit/", os.path.abspath(__file__))
+    # script runs from (plugins/cache/<marketplace>/context-guard/<version>/...).
+    m = re.search(r"/plugins/cache/([^/]+)/context-guard/", os.path.abspath(__file__))
     if m:
-        return os.path.join(base, "claude-kit-" + m.group(1), "current-hooks")
+        return os.path.join(base, "context-guard-" + m.group(1), "current-hooks")
     return None
 
 
@@ -103,7 +103,7 @@ def main():
 
     hooks = data_hooks_dir()
     if not hooks:
-        sys.exit("claude-kit plugin data dir not found and not derivable from "
+        sys.exit("context-guard plugin data dir not found and not derivable from "
                  "this script's path - is the plugin installed?")
     ensure_hooks_symlink(hooks)
     script = os.path.join(hooks, "statusline.py")
@@ -126,7 +126,7 @@ def main():
     print(f"{'updated' if prev else 'installed'} statusLine in {path}\n  -> {script}")
     print("WARNING: sessions already running hold a pre-install settings snapshot; "
           "a /plugin toggle or model/effort change there will clobber this entry "
-          "on write. The claude-kit SessionStart hook now self-heals it at the "
+          "on write. The context-guard SessionStart hook now self-heals it at the "
           "next session start.")
 
 

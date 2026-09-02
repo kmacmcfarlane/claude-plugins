@@ -44,6 +44,9 @@ cat "${CLAUDE_CONFIG_DIR:-$HOME/.claude}"/claude-kit/context-gate/<session>.json
 cat "${CLAUDE_CONFIG_DIR:-$HOME/.claude}"/claude-kit/ledger/<session>.md
 ```
 
+(`claude-kit/` in those paths is the historical name of the plugin this skill shipped in;
+the state directories keep it so existing sessions and ledgers stay readable.)
+
 The gate state gives exact depth and epoch; the **ledger** holds the decisions, rejections,
 corrections and pointers already captured as the session ran — Step 2 is a **delta over it**,
 not a reconstruction of hours. (`context_forensics.py` in `scripts/` shows *what* filled the

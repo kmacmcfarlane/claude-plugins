@@ -1,0 +1,9 @@
+{
+  "name": "context-guard",
+  "description": "Context survival for long sessions — depth gate, checkpoint workflow, status-line gauge, and session rehydration.",
+  "author": {
+    "name": "Kyle McFarlane"
+  },
+  "homepage": "https://github.com/kmacmcfarlane/claude-plugins",
+  "repository": "https://github.com/kmacmcfarlane/claude-plugins"
+}

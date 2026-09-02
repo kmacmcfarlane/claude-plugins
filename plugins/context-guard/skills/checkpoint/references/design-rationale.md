@@ -92,7 +92,8 @@ Three layers, escalating; the first two are hooks, the third is a skill.
 
 1. **Sensor + gauge** — the status line receives `context_window.used_percentage` and
    `context_window_size` (the only place Claude Code exposes exact depth) and writes them to
-   `~/.claude/claude-kit/context-gate/<session>.json`. Hooks read that; they do not get the
+   `~/.claude/claude-kit/context-gate/<session>.json` (a historical directory name, kept across
+   the move into `context-guard`). Hooks read that; they do not get the
    fields themselves. Falls back to transcript `usage` inference.
 2. **Bands** (`UserPromptSubmit`, 60/75/88%, once each, latching) — to the operator via
    `systemMessage`, to the model via `additionalContext`. Only one can act; only the other can
@@ -132,7 +133,7 @@ compaction loses and what a `HANDOFF`/`INDEX.md` holds. The cheap implementation
 `SessionStart` hook that injects a bounded (~2KB) digest for the cwd — the newest investigation
 `INDEX.md` head, the top of `TODO.md`, the last commit — so every session, resumed or fresh,
 starts knowing where the work stands without reading 49KB to find out. That is a candidate
-for `claude-kit`; it is not built yet.
+for this plugin; it is not built yet.
 
 Two disciplines make every layer cheaper: **progressive disclosure** (a pointer in the
 always-loaded layer, the body one read away) and **indexes over bodies** (`MEMORY.md`, series

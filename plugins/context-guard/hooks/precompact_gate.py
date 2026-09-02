@@ -47,7 +47,7 @@ def main():
     st["compact_deferred"] = True
     L.save_state(sid, st)
     sys.stderr.write(
-        f"[claude-kit context gate] Auto-compaction deferred: no checkpoint has "
+        f"[context-guard context gate] Auto-compaction deferred: no checkpoint has "
         f"run this epoch and there is headroom ({win - tok:,} tokens, {src}). "
         f"Run the checkpoint skill; compaction proceeds once it records, or "
         f"when headroom drops below {th['hard']:,}.\n")
