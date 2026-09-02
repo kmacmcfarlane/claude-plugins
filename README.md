@@ -56,7 +56,8 @@ repo; link here.
 ## Catalog
 
 Problem-indexed. **Status is load-bearing:** *current* rows exist on disk today; *planned*
-rows do not exist yet and must not be installed, referenced, or linked as if they did.
+rows do not exist yet and must not be installed, referenced, or linked as if they did;
+*moved* rows live in the expertise marketplace, not here.
 Planned names are **provisional** pending operator review.
 
 | Aim — "install this if you want…" | Plugin | Status | Depends on |
