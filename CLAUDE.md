@@ -1,32 +1,82 @@
 # claude-plugins
 
-Plugin marketplace repo for Claude Code skills.
+Claude Code plugin marketplace. **The doctrine — the seven principles every plugin is
+measured against, plus naming practices and the catalog — lives in [README.md](README.md).**
+Read it before adding or moving anything. This file carries only the mechanics: where files
+go today, and where they are planned to go.
+
+Do not restate the principles here; restated rules drift.
 
 ## Repository Layout
 
 ```
 plugins/
-  claude-kit/          # Primary dev tooling plugin
-    agents/            # Agent definitions (.md files, auto-loaded)
+  claude-kit/          # Dissolving kitchen-sink plugin (see README catalog)
+    agents/            # Agent definitions (.md, auto-loaded by the plugin system)
       <agent-name>.md
-    skills/            # All skills live here
+    hooks/             # The context system: gate, statusline sensor, ledger, rehydrate, tests
+    skills/
       <skill-name>/
         SKILL.md
         references/
         scripts/
         assets/
-  ai-scripts/          # AI utility tools plugin
+  ai-scripts/          # Project context for the ai-scripts repo
     skills/
-      <skill-name>/
-        SKILL.md
+      <skill-name>/SKILL.md
+  chat/                # Skills for LLM chat sessions in web UIs
+    skills/
+      <skill-name>/SKILL.md
 ```
 
 ## Conventions
 
-- **Skill location**: `plugins/claude-kit/skills/<name>/SKILL.md` (not `.claude/skills/`)
-- **Agent location**: `plugins/claude-kit/agents/<name>.md` — auto-loaded by the plugin system. Agent `.md` files define role, tools, and model. Task-specific context is injected via the Agent prompt, not baked into the definition.
-- **Plugin registry**: `.claude-plugin/marketplace.json` — update when adding new plugins (not when adding skills to existing plugins).
+- **Skill location**: `plugins/<plugin>/skills/<name>/SKILL.md` (never `.claude/skills/`).
+- **Agent location**: `plugins/<plugin>/agents/<name>.md` — auto-loaded by the plugin system.
+  Agent `.md` files define role, tools, and model. Task-specific context is injected via the
+  Agent prompt, not baked into the definition.
+- **Plugin registry**: `.claude-plugin/marketplace.json` — update when adding or removing a
+  plugin (not when adding skills to an existing plugin). Its `name` field, `kmacmcfarlane`,
+  is **frozen**: it suffixes every plugin-data directory.
+- **Skill reference paths**: bare relative paths (no `./`, no `${CLAUDE_SKILL_DIR}`).
+- **Catalog upkeep**: any change to the shape of the marketplace updates the README catalog
+  in the same commit.
 
-## When Creating Skills (`/create-skill`)
+## Placement rules
 
-Place new skills at `plugins/claude-kit/skills/<name>/` unless the user specifies a different plugin.
+Where a new or moved thing goes. The full decision tree is in
+[README.md § Where does a new thing go?](README.md); the short form:
+
+1. Alters harness behavior (hooks, status line, `settings.json` writes)? → only a plugin
+   whose stated aim *is* that behavior. Never attach it to a knowledge skill.
+2. Pure stack/tool knowledge? → the expertise family (second marketplace, planned).
+3. For web-UI chat sessions rather than a coding harness? → the `chat` family (home under
+   review).
+4. Otherwise, a harness capability: find its aim in the table below and use the **current
+   home** column.
+5. No aim fits? → new aim, new plugin. Write its catalog row first.
+
+### Aim → home
+
+Planned homes are **provisional** pending operator review, and none of them exist yet. Write
+files to the *current* home; each factoring phase moves its own rows and updates this table.
+
+| Aim | Current home | Target home (planned) |
+|---|---|---|
+| Survive the finite context window (gate, gauge, checkpoint, rehydration) | `plugins/claude-kit/hooks/` + `skills/{checkpoint,install-statusline}/` | `plugins/context-guard/` |
+| Plan-before-code development flow | `plugins/claude-kit/skills/{investigate,implement,deep-investigation,chain-of-verification}/` | `plugins/dev-flow/` |
+| Repo-durable work items / work-source interface | `plugins/claude-kit/skills/work-items/` | `plugins/work-items/` |
+| Isolated container execution | `plugins/claude-kit/skills/sandbox/` | `plugins/sandbox/` |
+| Unattended agent loops over a backlog ("ralph") | `plugins/claude-kit/skills/{backlog-yaml,backlog-entry,backlog-grooming}/` | `plugins/ralph/` |
+| Maintaining this kit itself | `plugins/claude-kit/skills/{create-skill,update-kit,new-project-from-template,factor-analysis}/` | `plugins/kit-dev/` |
+| Stack expertise ("make Claude good at X") | `plugins/claude-kit/skills/{goa,playwright,musubi-tuner}/`, `plugins/ai-scripts/` | second marketplace (planned) |
+| Web-UI chat-session skills | `plugins/chat/` | family home under review |
+
+Retiring: `plugins/claude-kit/skills/implement-plan/` (deprecated) and
+`plugins/claude-kit/agents/`, which exists only to serve it.
+
+### Known temporary inconsistency
+
+`create-skill`'s own SKILL.md still says to place new skills in `claude-kit`. That is correct
+today — `claude-kit` is still every skill's current home — and is aligned with this decision
+tree when the `kit-dev` phase lands.
