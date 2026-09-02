@@ -19,7 +19,7 @@ Three product families, named provisionally pending review:
 | Family | What it is | Where it lives |
 |---|---|---|
 | **Harness capabilities** | Plugins that shape the development loop itself; may register hooks, a status line, or settings | This marketplace (`kmacmcfarlane/claude-plugins`) |
-| **Expertise packs** | Pure knowledge — make Claude good at stack X. No hooks, ever | A second marketplace, **planned** (working name `expertise`, repo `claude-expertise`) |
+| **Expertise packs** | Pure knowledge — make Claude good at stack X. No hooks, ever | A second marketplace, `expertise` (repo `claude-expertise`) — **local scaffold, remote pending** |
 | **Webui chat skills** | Skills for LLM chat sessions in web UIs, not for a coding harness | The `chat` plugin — **family home under review** |
 
 The cleanest way to say the split: **harness plugins** shape the loop and may alter harness
@@ -62,7 +62,7 @@ Planned names are **provisional** pending operator review.
 | Aim — "install this if you want…" | Plugin | Status | Depends on |
 |---|---|---|---|
 | …everything below, in one plugin (the historical kitchen sink) | `claude-kit` | **current — dissolving** into the planned plugins below | — |
-| …project context for the `ai-scripts` Python CLI utilities | `ai-scripts` | current; *planned* move to the expertise marketplace | — |
+| …project context for the `ai-scripts` Python CLI utilities | `ai-scripts` | **moved** to the expertise marketplace (local scaffold, remote pending) | — |
 | …structured product research in a web chat session | `chat` | current; *family home under review* | — |
 | …to survive the finite context window (gate, gauge, checkpoint, rehydration) | `context-guard` | **current** | — |
 | …a plan before you code: investigate → reviewed plan → verified implementation | `dev-flow` | **current** | `work-items` (soft) |
@@ -70,10 +70,15 @@ Planned names are **provisional** pending operator review.
 | …isolated container execution for agent sessions | `sandbox` | **planned** (Phase 5) | claude-sandbox repo (external) |
 | …unattended agent loops over a backlog ("ralph") | `ralph` | **planned** (Phase 5) | `sandbox` (hard), `work-items` (soft) |
 | …to maintain this kit itself (skill authoring, upstream sync, templates) | `kit-dev` | **planned** (Phase 6) | — |
-| …to make Claude good at a specific stack (Goa, Playwright, musubi-tuner, …) | one plugin per stack | **planned** — second marketplace | — |
+| …to make Claude good at a specific stack (Goa, Playwright, musubi-tuner, …) | one plugin per stack | **moved** to the expertise marketplace (local scaffold, remote pending) | — |
 
 Retired: the deprecated plan-execution skill and the three sub-agent definitions used only by
 it (Phase 3). Still to retire when its phase lands: the `claude-kit` plugin name.
+
+Moved out of this marketplace at Phase 2: `goa`, `playwright`, `musubi-tuner` and the
+`ai-scripts` plugin, into the `expertise` marketplace (repo `claude-expertise`). That repo
+exists as a **local scaffold only** — no remote is configured yet, so the four are not
+installable from anywhere until the remote lands.
 
 ## Where does a new thing go?
 
@@ -83,9 +88,9 @@ The contributor decision tree. Answer in order; the first match wins.
    background state. → It belongs *only* in a plugin whose stated aim is that behavior
    (that plugin is `context-guard`: `plugins/context-guard/`). Never bolt it
    onto a knowledge skill (principle 3).
-2. **Is it pure stack/tool knowledge** — "make Claude good at X"? → Expertise family
-   (second marketplace, planned; current home: this repo, see the aim→home table in
-   [CLAUDE.md](CLAUDE.md)). No hooks, no settings.
+2. **Is it pure stack/tool knowledge** — "make Claude good at X"? → Expertise family, which
+   now lives in its own marketplace (`expertise`, repo `claude-expertise`) — not this repo.
+   No hooks, no settings.
 3. **Is it for LLM chat sessions in a web UI, not a coding harness?** → the `chat` family
    (home under review).
 4. **Otherwise, it is a harness capability.** Find the aim it serves in the placement table
@@ -171,16 +176,14 @@ plugins in the catalog; until those phases land, this is where these skills live
 | `backlog-yaml` | `backlog.yaml` management via the `backlog.py` CLI | `ralph` |
 | `create-skill` | Bootstrap a new Claude Code skill from a description | `kit-dev` |
 | `factor-analysis` | Analyze how a repo, plugin, or toolset should be factored into coherent standalone pieces | `kit-dev` (under review) |
-| `goa` | Design-first API development with Goa v3 for Go | expertise marketplace |
-| `musubi-tuner` | LoRA training and inference with kohya's musubi-tuner | expertise marketplace |
 | `new-project-from-template` | Create a new project from a claude-templates template | `kit-dev` |
-| `playwright` | End-to-end testing with Playwright | expertise marketplace |
 | `sandbox` | claude-sandbox Docker setup, config, and troubleshooting | `sandbox` |
 | `update-kit` | Sync skills and workflow files upstream to claude-templates / claude-plugins / claude-sandbox | `kit-dev` |
 
 `plugins/claude-kit/` is now skills only. Its `hooks/`, `checkpoint` and `install-statusline`
 moved out into `context-guard`; the plan-first lifecycle skills moved into `dev-flow`; the
-`work-items` skill moved into `work-items`; its `agents/` directory and the deprecated
+`work-items` skill moved into `work-items`; the `goa`, `playwright` and `musubi-tuner` skills
+moved out to the `expertise` marketplace; its `agents/` directory and the deprecated
 plan-execution skill they served were retired with the `dev-flow` move.
 
 ### dev-flow
@@ -242,16 +245,6 @@ Upgrading from `claude-kit`: install `context-guard` and start one session; the 
 hook migrates an existing status-line entry to this plugin's data path. `/install-statusline`
 is the fallback. Hook state stays in `~/.claude/claude-kit/` (a historical directory name).
 
-### ai-scripts
-
-Context skills for the [ai-scripts](https://github.com/kmacmcfarlane/ai-scripts) repo —
-Python CLI utilities for AI tasks. Planned to move to the expertise marketplace; it stays
-here and fully functional until that phase lands.
-
-| Skill | Description |
-|---|---|
-| `ai-scripts` | Project context for `caption_util`, `llm_fetch`, `token_count`, `token_embedding_search`, `generate_rare_token` |
-
 ### chat
 
 Skills for LLM chat sessions in web UIs. Family home under review.
@@ -298,7 +291,6 @@ claude-plugins/
 ├── .claude-plugin/
 │   └── marketplace.json         # Plugin index (points to ./plugins/)
 ├── plugins/
-│   ├── ai-scripts/
 │   ├── chat/
 │   ├── claude-kit/
 │   ├── context-guard/

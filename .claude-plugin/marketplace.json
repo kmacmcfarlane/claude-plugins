@@ -8,7 +8,7 @@
     {
       "name": "claude-kit",
       "source": "./plugins/claude-kit",
-      "description": "Claude Code dev tooling — skill creation, sandbox management, backlog tracking, Goa API design, Playwright testing, LoRA training, and upstream kit sync."
+      "description": "Claude Code dev tooling — skill creation, sandbox management, backlog tracking, and upstream kit sync."
     },
     {
       "name": "context-guard",
@@ -24,11 +24,6 @@
       "name": "work-items",
       "source": "./plugins/work-items",
       "description": "Repo-durable work items for humans and agents — the wi CLI over one-markdown-file-per-item stores, and the work-source provider interface."
-    },
-    {
-      "name": "ai-scripts",
-      "source": "./plugins/ai-scripts",
-      "description": "Project context for ai-scripts — Python CLI utilities for AI tasks (captioning, model fetching, token counting, embeddings, rare token generation)."
     },
     {
       "name": "chat",

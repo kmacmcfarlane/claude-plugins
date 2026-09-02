@@ -28,9 +28,6 @@ plugins/
   work-items/          # Repo-durable work items + the work-source provider interface
     skills/
       work-items/      # wi CLI, references/{format,provider-interface}.md, tests/
-  ai-scripts/          # Project context for the ai-scripts repo
-    skills/
-      <skill-name>/SKILL.md
   chat/                # Skills for LLM chat sessions in web UIs
     skills/
       <skill-name>/SKILL.md
@@ -58,8 +55,8 @@ Where a new or moved thing goes. The full decision tree is in
 1. Alters harness behavior (hooks, status line, `settings.json` writes)? → only a plugin
    whose stated aim *is* that behavior (`plugins/context-guard/`). Never attach it to a
    knowledge skill.
-2. Pure stack/tool knowledge? → the expertise family (second marketplace, planned; until
-   then, the current-home column below).
+2. Pure stack/tool knowledge? → the expertise family, in its own marketplace (`expertise`,
+   repo `claude-expertise`) — not this repo.
 3. For web-UI chat sessions rather than a coding harness? → the `chat` family (home under
    review).
 4. Otherwise, a harness capability: find its aim in the table below and use the **current
@@ -80,7 +77,7 @@ own rows and updates this table.
 | Isolated container execution | `plugins/claude-kit/skills/sandbox/` | `plugins/sandbox/` |
 | Unattended agent loops over a backlog ("ralph") | `plugins/claude-kit/skills/{backlog-yaml,backlog-entry,backlog-grooming}/` | `plugins/ralph/` |
 | Maintaining this kit itself | `plugins/claude-kit/skills/{create-skill,update-kit,new-project-from-template,factor-analysis}/` | `plugins/kit-dev/` |
-| Stack expertise ("make Claude good at X") | `plugins/claude-kit/skills/{goa,playwright,musubi-tuner}/`, `plugins/ai-scripts/` | second marketplace (planned) |
+| Stack expertise ("make Claude good at X") | the `expertise` marketplace (repo `claude-expertise`) — not this repo | moved to the expertise marketplace (local scaffold, remote pending) — **landed** (Phase 2) |
 | Web-UI chat-session skills | `plugins/chat/` | family home under review |
 
 Retired at Phase 3: the deprecated plan-execution skill under `plugins/claude-kit/skills/`
