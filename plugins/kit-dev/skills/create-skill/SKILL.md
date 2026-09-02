@@ -105,7 +105,15 @@ Before writing any skill, consult `references/best-practices.md` for Anthropic's
    - No XML angle brackets anywhere in frontmatter.
 
 7. **Create the skill directory and file:**
-   - Determine whether to place it in the project (`.claude/skills/<name>/SKILL.md`) or in the user's skills repo. Ask the user if unclear.
+   - **Decide where it lives.** A skill that only makes sense inside one project goes in that
+     project, at `.claude/skills/<name>/SKILL.md`. A shareable skill goes to a marketplace
+     plugin, **routed by aim** — read the placement decision tree in the `claude-plugins`
+     checkout's `CLAUDE.md` § Placement rules (full form: its `README.md` § Where does a new
+     thing go?) rather than guessing, since the routing moves as the marketplace changes. In
+     shape: expertise packs ("make Claude good at X") go to the `claude-expertise`
+     marketplace; tooling for maintaining the kit itself goes to `kit-dev`; anything else
+     goes to the plugin that owns its aim, and if no aim fits, a new plugin is an operator
+     decision. Ask the user if unclear.
    - Create the directory and write the SKILL.md file.
    - If the skill needs supporting files, create those in the appropriate subdirectories.
 

@@ -129,11 +129,13 @@ After `wi import-todo TODO.md`, replace the file's contents with:
 # TODO — moved
 
 Work items now live in `.work/` (or `.claude-sandbox/work/`), one file per
-item, managed by `wi` (claude-kit `skills/work-items/scripts/wi.py`).
+item, managed by `wi` (the `work-items` plugin's
+`skills/work-items/scripts/wi.py`).
 
 - `wi prime` — what's next, in ≤300 tokens; start every session here
 - `wi next` / `wi show <id> --brief` — pick and inspect an item
 - `wi add "title"` / `wi claim` / `wi handoff` / `wi done` — the write verbs
 
-Format and rules: claude-kit `skills/work-items/references/format.md`.
+Format and rules: the `work-items` plugin's
+`skills/work-items/references/format.md`.
 ```

@@ -443,7 +443,7 @@ If **Yes**: note where the run deviated from these steps or hit friction — an 
 workflow, a wrong assumption, a gotcha that cost time. Derive those findings from the skill
 files in the **checkout**, not the copy you are running from: the plugin cache lags the repo,
 and a finding diffed against it may already be fixed upstream. Then present them and **ask
-the user to run `/claude-kit:update-kit`**. That skill is `disable-model-invocation: true`, so
+the user to run `/kit-dev:update-kit`**. That skill is `disable-model-invocation: true`, so
 it is user-invoked only and cannot be launched from here; do not replicate its workflow by
 other means. It owns locating the real checkout rather than the plugin cache, settling the
 branch, the staleness check, and the bar for what earns a place in a skill. Do not re-derive

@@ -6,9 +6,9 @@
   },
   "plugins": [
     {
-      "name": "claude-kit",
-      "source": "./plugins/claude-kit",
-      "description": "Claude Code dev tooling — skill creation, project templates, factoring analysis, and upstream kit sync."
+      "name": "kit-dev",
+      "source": "./plugins/kit-dev",
+      "description": "Maintainer tooling for this plugin ecosystem — skill creation, project scaffolding, upstream kit sync, and factoring analysis."
     },
     {
       "name": "context-guard",

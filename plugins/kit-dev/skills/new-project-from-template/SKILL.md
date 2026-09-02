@@ -184,7 +184,10 @@ git push -u origin main
 - **Sandbox**: configured / not configured
 
 ### Next steps
-1. Install the claude-kit plugin: `/plugin install claude-kit@kmacmcfarlane`
+1. Install the plugins this project needs — `/plugin install <name>@kmacmcfarlane`.
+   For a template project that usually means `dev-flow`, `work-items`, `sandbox` and
+   `ralph`; see the catalog in the claude-plugins README for the full list and what
+   each is for.
 2. Review CLAUDE.md and .claude-sandbox/agent/PRD.md
 3. Run `make up-dev` to verify the stack starts
 ```
@@ -193,6 +196,6 @@ git push -u origin main
 
 - Templates are COPIED, not linked. The new project is independent after creation.
 - Always init a fresh git repo — never carry template git history.
-- The `claude-kit` plugin provides development workflow skills — templates don't ship skills.
+- Development workflow skills come from the marketplace plugins — templates don't ship skills.
 - Respect `.gitignore` from the template when staging the initial commit.
 - If the project directory already exists and is non-empty, STOP and ask the user.

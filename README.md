@@ -8,9 +8,10 @@ there is no single kitchen-sink plugin. Each plugin is named for an *aim*: the a
 problem a user would state out loud ("I keep losing context", "I want unattended runs", "I
 want a plan before I code"). Install the ones that match your problems; leave the rest.
 
-The marketplace is currently being refactored from one history-indexed plugin (`claude-kit`)
-into aim-named, standalone-installable plugins. **The catalog below marks what exists today
-and what is planned.** Nothing marked *planned* exists yet.
+The marketplace was refactored out of one history-indexed plugin (`claude-kit`) into
+aim-named, standalone-installable plugins; that plugin no longer exists. **The catalog below
+is the current state** — every row in it exists on disk today. If you are upgrading from
+`claude-kit`, see [Migrating from `claude-kit`](#migrating-from-claude-kit).
 
 ## Families
 
@@ -55,14 +56,12 @@ repo; link here.
 
 ## Catalog
 
-Problem-indexed. **Status is load-bearing:** *current* rows exist on disk today; *planned*
-rows do not exist yet and must not be installed, referenced, or linked as if they did;
-*moved* rows live in the expertise marketplace, not here.
-Planned names are **provisional** pending operator review.
+Problem-indexed. **Status is load-bearing:** *current* rows exist on disk today and are
+installable from this marketplace; *moved* rows live in the expertise marketplace, not here.
+Names are **provisional** pending operator review.
 
 | Aim — "install this if you want…" | Plugin | Status | Depends on |
 |---|---|---|---|
-| …everything below, in one plugin (the historical kitchen sink) | `claude-kit` | **current — dissolving** into the planned plugins below | — |
 | …project context for the `ai-scripts` Python CLI utilities | `ai-scripts` | **moved** to the expertise marketplace (local scaffold, remote pending) | — |
 | …structured product research in a web chat session | `chat` | current; *family home under review* | — |
 | …to survive the finite context window (gate, gauge, checkpoint, rehydration) | `context-guard` | **current** | — |
@@ -70,11 +69,12 @@ Planned names are **provisional** pending operator review.
 | …repo-durable work items and a pluggable work source | `work-items` | **current** | — |
 | …isolated container execution for agent sessions | `sandbox` | **current** | claude-sandbox repo (external) |
 | …unattended agent loops over a backlog ("ralph") | `ralph` | **current** | `sandbox` (hard), `work-items` (soft) |
-| …to maintain this kit itself (skill authoring, upstream sync, templates) | `kit-dev` | **planned** (Phase 6) | — |
+| …to maintain this kit itself (skill authoring, upstream sync, templates) | `kit-dev` | **current** | — |
 | …to make Claude good at a specific stack (Goa, Playwright, musubi-tuner, …) | one plugin per stack | **moved** to the expertise marketplace (local scaffold, remote pending) | — |
 
 Retired: the deprecated plan-execution skill and the three sub-agent definitions used only by
-it (Phase 3). Still to retire when its phase lands: the `claude-kit` plugin name.
+it (Phase 3); the `claude-kit` plugin itself (Phase 6) — its skills are in `kit-dev` and the
+other rows above.
 
 Moved out of this marketplace at Phase 2: `goa`, `playwright`, `musubi-tuner` and the
 `ai-scripts` plugin, into the `expertise` marketplace (repo `claude-expertise`). That repo
@@ -100,8 +100,9 @@ The contributor decision tree. Answer in order; the first match wins.
    description. Write the catalog row first — if you cannot write the one-clause aim, the
    thing is not yet one plugin.
 
-Until a planned plugin's phase lands, write to the **current home** in CLAUDE.md's aim→home
-table — a planned destination is never a place to put files today.
+Every plugin in the aim→home table now exists on disk, so the home the table names is the
+home you write to. If a future phase ever plans a move again, write to the **current** home
+until that phase lands — a planned destination is never a place to put files today.
 
 Cross-plugin cooperation follows principle 4: soft, declared, directional. The work-items ↔
 backlog bridge (activates only when both stores are present, degrades silently otherwise) is
@@ -165,24 +166,26 @@ proceed, and confirmable or changeable at operator review. Names that have shipp
 
 What is installable from this marketplace right now.
 
-### claude-kit
+### kit-dev
 
-Claude Code development tooling — reusable across projects. Dissolving into the planned
-plugins in the catalog; until those phases land, this is where these skills live.
+Maintainer tooling for this ecosystem itself — authoring skills, scaffolding projects from the
+templates, and syncing work back upstream. Install it if you *develop* the kit; you do not
+need it to use the kit.
 
-| Skill | Description | Planned home |
-|---|---|---|
-| `create-skill` | Bootstrap a new Claude Code skill from a description | `kit-dev` |
-| `factor-analysis` | Analyze how a repo, plugin, or toolset should be factored into coherent standalone pieces | `kit-dev` (under review) |
-| `new-project-from-template` | Create a new project from a claude-templates template | `kit-dev` |
-| `update-kit` | Sync skills and workflow files upstream to claude-templates / claude-plugins / claude-sandbox | `kit-dev` |
+| Skill | Description |
+|---|---|
+| `create-skill` | Bootstrap a new Claude Code skill from a description, routed to its plugin by aim |
+| `factor-analysis` | Analyze how a repo, plugin, or toolset should be factored into coherent standalone pieces |
+| `new-project-from-template` | Create a new project from a claude-templates template |
+| `update-kit` | Sync skills and workflow files upstream to claude-templates / claude-plugins / claude-expertise / claude-sandbox |
 
-`plugins/claude-kit/` is now skills only. Its `hooks/`, `checkpoint` and `install-statusline`
-moved out into `context-guard`; the plan-first lifecycle skills moved into `dev-flow`; the
-`work-items` skill moved into `work-items`; the `sandbox` skill moved into `sandbox` and the
-backlog trio into `ralph`; the `goa`, `playwright` and `musubi-tuner` skills moved out to the
+`plugins/kit-dev/` is what remains of the old kitchen-sink plugin after the factoring: its
+`hooks/`, `checkpoint` and `install-statusline` went to `context-guard`; the plan-first
+lifecycle skills to `dev-flow`; the `work-items` skill to `work-items`; the `sandbox` skill to
+`sandbox` and the backlog trio to `ralph`; `goa`, `playwright` and `musubi-tuner` to the
 `expertise` marketplace; its `agents/` directory and the deprecated plan-execution skill they
-served were retired with the `dev-flow` move.
+served were retired with the `dev-flow` move. The `claude-kit` *plugin* name is retired — the
+separate umbrella **repo** `kmacmcfarlane/claude-kit` keeps its name and is unaffected.
 
 ### dev-flow
 
@@ -241,7 +244,9 @@ SessionStart rehydration/self-heal — with its unit tests
 
 Upgrading from `claude-kit`: install `context-guard` and start one session; the SessionStart
 hook migrates an existing status-line entry to this plugin's data path. `/install-statusline`
-is the fallback. Hook state stays in `~/.claude/claude-kit/` (a historical directory name).
+is the fallback. Hook state stays in `~/.claude/claude-kit/` (a historical directory name,
+kept deliberately — renaming it would be a migration for cosmetics). See
+[Migrating from `claude-kit`](#migrating-from-claude-kit) for the whole-machine checklist.
 
 ### sandbox
 
@@ -304,10 +309,34 @@ Or in `.claude/settings.json`:
 ### Install plugins
 
 ```bash
-/plugin install claude-kit@kmacmcfarlane
+/plugin install context-guard@kmacmcfarlane
 ```
 
-Or browse: `/plugin` → Discover tab.
+Or browse: `/plugin` → Discover tab. Install the plugins whose aims match your problems — the
+catalog above is the index; nothing here requires anything else here.
+
+## Migrating from `claude-kit`
+
+The `claude-kit` plugin is gone from the marketplace. Per machine, once:
+
+1. **Refresh the marketplace** so the new plugin list is visible:
+   `/plugin marketplace update kmacmcfarlane`.
+2. **Install what that machine actually needs** (`/plugin install <name>@kmacmcfarlane`) —
+   the primary dev machine typically takes all seven; a work machine may want only
+   `context-guard`, plus `dev-flow` / `work-items` if you use the plan-first flow; an
+   inference box like `lucy` wants expertise packs rather than these.
+3. **Start one session** so `context-guard`'s SessionStart migration fires and moves an
+   existing status-line entry to the new data path. Verify the gauge still renders; if not,
+   run `/install-statusline`.
+4. **Uninstall `claude-kit`**: `/plugin uninstall claude-kit@kmacmcfarlane`. It no longer
+   exists in the marketplace, so its cache is orphaned and harmless either way — removing it
+   just stops the duplicate skills showing up.
+5. **Expertise packs** (`goa`, `playwright`, `musubi-tuner`, `ai-scripts`) arrive when the
+   `claude-expertise` repo gains a remote and that marketplace is registered. Until then they
+   are not installable anywhere — this is the one gap the refactor leaves open.
+
+Nothing else needs doing: hook state stays where it was (`~/.claude/claude-kit/`), and `wi`
+stores inside your repos are path-stable.
 
 ## Structure
 
@@ -317,9 +346,9 @@ claude-plugins/
 │   └── marketplace.json         # Plugin index (points to ./plugins/)
 ├── plugins/
 │   ├── chat/
-│   ├── claude-kit/
 │   ├── context-guard/
 │   ├── dev-flow/
+│   ├── kit-dev/
 │   ├── ralph/
 │   ├── sandbox/
 │   └── work-items/

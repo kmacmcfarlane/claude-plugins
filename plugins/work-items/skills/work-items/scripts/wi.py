@@ -483,9 +483,10 @@ def cmd_init(args):
     if not readme.exists():
         readme.write_text(
             "# Work items\n\nOne markdown file per item, managed by `wi` "
-            "(claude-kit skills/work-items).\nStart with `wi prime`, then "
-            "`wi show <id> --brief` for the item you will work.\nFormat: "
-            "claude-kit skills/work-items/references/format.md\n")
+            "(the work-items plugin's skills/work-items).\nStart with "
+            "`wi prime`, then `wi show <id> --brief` for the item you will "
+            "work.\nFormat: the work-items plugin's "
+            "skills/work-items/references/format.md\n")
     gi = root / ".gitignore"
     if not gi.exists():
         gi.write_text(".lock\n*.tmp*\n")
