@@ -12,6 +12,7 @@ Claude Code development tooling — reusable across projects.
 |-------|-------------|
 | `create-skill` | Bootstrap new Claude Code skills from a description |
 | `investigate` / `implement` | Investigation series → reviewed plan → verified implementation |
+| `deep-investigation` | Multi-agent research fan-out — strategy doc, lanes on a cheap model, one-pass synthesis |
 | `checkpoint` | Land a long session's state before compaction; rehydration manifest + ledger |
 | `work-items` | `wi` — repo-durable work items in `.work/`, TODO.md importer, backlog-yaml bridge |
 | `install-statusline` | Context gauge (tokens left, epoch) that also feeds the gate hooks |
