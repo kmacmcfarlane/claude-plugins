@@ -81,9 +81,11 @@ The contributor decision tree. Answer in order; the first match wins.
 
 1. **Does it alter harness behavior?** Hooks, a status line, `settings.json` writes,
    background state. → It belongs *only* in a plugin whose stated aim is that behavior
-   (today: `context-guard`, planned). Never bolt it onto a knowledge skill (principle 3).
+   (current home: `plugins/claude-kit/hooks/`; planned: `context-guard`). Never bolt it
+   onto a knowledge skill (principle 3).
 2. **Is it pure stack/tool knowledge** — "make Claude good at X"? → Expertise family
-   (second marketplace, planned). No hooks, no settings.
+   (second marketplace, planned; current home: this repo, see the aim→home table in
+   [CLAUDE.md](CLAUDE.md)). No hooks, no settings.
 3. **Is it for LLM chat sessions in a web UI, not a coding harness?** → the `chat` family
    (home under review).
 4. **Otherwise, it is a harness capability.** Find the aim it serves in the placement table
@@ -91,6 +93,9 @@ The contributor decision tree. Answer in order; the first match wins.
 5. **No existing aim fits?** New aim → new plugin (principle 6). Do not stretch a
    description. Write the catalog row first — if you cannot write the one-clause aim, the
    thing is not yet one plugin.
+
+Until a planned plugin's phase lands, write to the **current home** in CLAUDE.md's aim→home
+table — a planned destination is never a place to put files today.
 
 Cross-plugin cooperation follows principle 4: soft, declared, directional. The work-items ↔
 backlog bridge (activates only when both stores are present, degrades silently otherwise) is

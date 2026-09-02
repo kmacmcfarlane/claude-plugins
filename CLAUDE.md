@@ -48,8 +48,10 @@ Where a new or moved thing goes. The full decision tree is in
 [README.md § Where does a new thing go?](README.md); the short form:
 
 1. Alters harness behavior (hooks, status line, `settings.json` writes)? → only a plugin
-   whose stated aim *is* that behavior. Never attach it to a knowledge skill.
-2. Pure stack/tool knowledge? → the expertise family (second marketplace, planned).
+   whose stated aim *is* that behavior (current home: `plugins/claude-kit/hooks/`). Never
+   attach it to a knowledge skill.
+2. Pure stack/tool knowledge? → the expertise family (second marketplace, planned; until
+   then, the current-home column below).
 3. For web-UI chat sessions rather than a coding harness? → the `chat` family (home under
    review).
 4. Otherwise, a harness capability: find its aim in the table below and use the **current
@@ -78,5 +80,5 @@ Retiring: `plugins/claude-kit/skills/implement-plan/` (deprecated) and
 ### Known temporary inconsistency
 
 `create-skill`'s own SKILL.md still says to place new skills in `claude-kit`. That is correct
-today — `claude-kit` is still every skill's current home — and is aligned with this decision
-tree when the `kit-dev` phase lands.
+today — `claude-kit` is still every skill's current home — and will be aligned with this
+decision tree when the `kit-dev` phase lands.
