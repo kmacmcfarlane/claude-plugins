@@ -185,8 +185,11 @@ def _migrate_legacy_statusline(legacy_marker, data):
         os.remove(legacy_marker)
     except OSError:
         pass
-    return (f"context-guard: migrated statusLine in {sp} to the context-guard "
-            "plugin data path (the context system moved out of claude-kit).")
+    if stale:
+        return (f"context-guard: migrated statusLine in {sp} to the context-guard "
+                "plugin data path (the context system moved out of claude-kit).")
+    return ("context-guard: adopted the legacy claude-kit statusline marker; "
+            "your custom statusLine entry was left alone.")
 
 
 def heal_statusline():
@@ -198,8 +201,10 @@ def heal_statusline():
     restore it read-modify-write. With no marker of our own, fall back to the
     legacy claude-kit marker and migrate it. Returns a systemMessage, or None.
 
-    The SessionStart symlink command runs before this hook, so current-hooks
-    already resolves in the new data dir and the rewritten path is live now."""
+    The SessionStart symlink command is registered before this hook, so
+    current-hooks normally resolves in the new data dir already; if the two
+    ever ran concurrently and this lost the race, the next session start
+    completes the marker move (write order makes the migration resumable)."""
     try:
         cfg = os.path.expanduser(os.environ.get("CLAUDE_CONFIG_DIR", "~/.claude"))
         base = os.path.join(cfg, "plugins", "data")
