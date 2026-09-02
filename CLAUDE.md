@@ -25,6 +25,9 @@ plugins/
   dev-flow/            # Plan before you code
     skills/
       {investigate,implement,deep-investigation,chain-of-verification}/
+  work-items/          # Repo-durable work items + the work-source provider interface
+    skills/
+      work-items/      # wi CLI, references/{format,provider-interface}.md, tests/
   ai-scripts/          # Project context for the ai-scripts repo
     skills/
       <skill-name>/SKILL.md
@@ -73,7 +76,7 @@ own rows and updates this table.
 |---|---|---|
 | Survive the finite context window (gate, gauge, checkpoint, rehydration) | `plugins/context-guard/` | `plugins/context-guard/` — **landed** (Phase 1) |
 | Plan-before-code development flow | `plugins/dev-flow/` | `plugins/dev-flow/` — **landed** (Phase 3) |
-| Repo-durable work items / work-source interface | `plugins/claude-kit/skills/work-items/` | `plugins/work-items/` |
+| Repo-durable work items / work-source interface | `plugins/work-items/` | `plugins/work-items/` — **landed** (Phase 4) |
 | Isolated container execution | `plugins/claude-kit/skills/sandbox/` | `plugins/sandbox/` |
 | Unattended agent loops over a backlog ("ralph") | `plugins/claude-kit/skills/{backlog-yaml,backlog-entry,backlog-grooming}/` | `plugins/ralph/` |
 | Maintaining this kit itself | `plugins/claude-kit/skills/{create-skill,update-kit,new-project-from-template,factor-analysis}/` | `plugins/kit-dev/` |

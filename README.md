@@ -66,7 +66,7 @@ Planned names are **provisional** pending operator review.
 | …structured product research in a web chat session | `chat` | current; *family home under review* | — |
 | …to survive the finite context window (gate, gauge, checkpoint, rehydration) | `context-guard` | **current** | — |
 | …a plan before you code: investigate → reviewed plan → verified implementation | `dev-flow` | **current** | `work-items` (soft) |
-| …repo-durable work items and a pluggable work source | `work-items` | **planned** (Phase 4) | — |
+| …repo-durable work items and a pluggable work source | `work-items` | **current** | — |
 | …isolated container execution for agent sessions | `sandbox` | **planned** (Phase 5) | claude-sandbox repo (external) |
 | …unattended agent loops over a backlog ("ralph") | `ralph` | **planned** (Phase 5) | `sandbox` (hard), `work-items` (soft) |
 | …to maintain this kit itself (skill authoring, upstream sync, templates) | `kit-dev` | **planned** (Phase 6) | — |
@@ -148,8 +148,9 @@ directory. Nothing in this repo may propose changing it.
 ### Current name status
 
 The plugin names above (`context-guard` — shipped at Phase 1, its data dir and settings path
-now live state; `dev-flow` — shipped at Phase 3, no state of its own; `work-items`, `sandbox`,
-`ralph`, `kit-dev`), the second marketplace's working name (`expertise` / repo
+now live state; `dev-flow` — shipped at Phase 3, no state of its own; `work-items` — shipped
+at Phase 4, no state of its own, though `wi` stores in consuming repos are not affected by a
+rename; `sandbox`, `ralph`, `kit-dev`), the second marketplace's working name (`expertise` / repo
 `claude-expertise`), and the `chat` family's home are **provisional**, adopted so work can
 proceed, and confirmable or changeable at operator review. Names that have shipped state
 (a data dir, a settings path) are changed only via the rename procedure above.
@@ -176,12 +177,11 @@ plugins in the catalog; until those phases land, this is where these skills live
 | `playwright` | End-to-end testing with Playwright | expertise marketplace |
 | `sandbox` | claude-sandbox Docker setup, config, and troubleshooting | `sandbox` |
 | `update-kit` | Sync skills and workflow files upstream to claude-templates / claude-plugins / claude-sandbox | `kit-dev` |
-| `work-items` | `wi` — repo-durable work items in `.work/`, TODO.md importer, backlog-yaml bridge | `work-items` |
 
 `plugins/claude-kit/` is now skills only. Its `hooks/`, `checkpoint` and `install-statusline`
-moved out into `context-guard`; the plan-first lifecycle skills moved into `dev-flow`; its
-`agents/` directory and the deprecated plan-execution skill they served were retired with
-that move.
+moved out into `context-guard`; the plan-first lifecycle skills moved into `dev-flow`; the
+`work-items` skill moved into `work-items`; its `agents/` directory and the deprecated
+plan-execution skill they served were retired with the `dev-flow` move.
 
 ### dev-flow
 
@@ -198,6 +198,30 @@ research and verification techniques that feed it.
 
 Soft dependency on `work-items`: the flow threads work items through `wi` when a store is
 present, and degrades to plain investigation series when it is not.
+
+### work-items
+
+Repo-durable work items — one markdown file per item in `.work/` (or `.claude-sandbox/work/`),
+`status:` authoritative, files never moved on completion, so they survive machines, sessions
+and collaborators and merge cleanly.
+
+| Skill | Description |
+|---|---|
+| `work-items` | `wi` — ready-ranked queue, atomic claims, handoff blocks, TODO.md importer, backlog-yaml bridge |
+
+It also carries the **work-source provider interface**
+(`plugins/work-items/skills/work-items/references/provider-interface.md`): the seven-verb
+contract over pluggable work sources, its exit-code and canonical-state conventions, and the
+per-provider capability table. The two providers described today are the `wi` store and
+`backlog.yaml`; remote trackers are a documented mapping pattern, not an implementation. The
+document itself is the registry — there is no machine-readable descriptor, by decision.
+
+The `backlog.yaml` provider's own skills (`backlog-yaml`, `backlog-entry`,
+`backlog-grooming`) still live in `claude-kit` until the `ralph` phase lands; the bridge
+(`wi export/import --format backlog-yaml`) works regardless, and degrades silently when only
+one store is present.
+
+Tests: `cd plugins/work-items/skills/work-items && python3 -m unittest discover -s tests -q`.
 
 ### context-guard
 
@@ -278,7 +302,8 @@ claude-plugins/
 │   ├── chat/
 │   ├── claude-kit/
 │   ├── context-guard/
-│   └── dev-flow/
+│   ├── dev-flow/
+│   └── work-items/
 ├── CLAUDE.md                    # Placement rules for contributors and agents
 └── README.md                    # This file — doctrine and catalog
 ```

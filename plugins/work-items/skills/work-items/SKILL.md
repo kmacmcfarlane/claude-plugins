@@ -41,9 +41,13 @@ the TODO.md failure mode with extra steps.
 | `$WI lint` | format + secret-shape check; run before committing hand edits |
 | `$WI archive` | moves closed items to `archive/` — its own commit, nothing else in it |
 
-Exit codes: 0 ok · 1 error · 2 empty (e.g. `next` with nothing ready — report "nothing
-ready", don't retry) · 3 validation · 4 lock/claim conflict (someone else holds it — stop,
-don't force).
+Exit codes: 0 ok · 1 usage/validation · 2 not found/empty (e.g. `next` with nothing ready —
+report "nothing ready", don't retry) · 3 file/parser error · 4 lock/claim conflict (someone
+else holds it — stop, don't force).
+
+`wi` is one provider of a small work-source contract (the other is `backlog.yaml`); the
+verbs, capability differences and canonical state mapping are in
+`references/provider-interface.md`.
 
 ## Rules
 
