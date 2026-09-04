@@ -131,17 +131,21 @@ Declined by the implementer, with its reasons:
 
 1. For each finding in your previous report, verify by file:line whether it is fixed,
    partly fixed, or untouched. For each declined finding: if it is low or nit and the
-   reason holds, record DECLINED (accepted); if the reason is insufficient, or the finding
-   is medium or above, record OPEN — it keeps its severity and the round is not CLEAR.
+   reason holds, record DECLINED (accepted); if the reason is insufficient, record OPEN —
+   it keeps its severity and the round is not CLEAR. A declined medium-or-above is OPEN
+   unless its counter-case shows, on the merits, that the failure scenario you wrote
+   cannot occur — then record WITHDRAWN with the reason. Never withdraw for fix effort,
+   and never lower a severity: a finding is right or wrong, not negotiable.
 2. Run the same checks as before; report outcomes verbatim.
 3. Attack the fix: does it introduce a new path, an unhandled case, a contradiction with
    text the fix did not touch? A fix that moves the bug is a new finding.
 4. Report in the same shape. Under FINDINGS, list prior findings first with their status
-   (FIXED / PARTIAL / OPEN / DECLINED with the reason), then any new ones numbered on.
+   (FIXED / PARTIAL / OPEN / DECLINED / WITHDRAWN, each with the reason), then any new
+   ones numbered on.
 ```
 
-The round is `CLEAR` only when every prior medium-or-above is FIXED and no new
-medium-or-above appeared.
+The round is `CLEAR` only when every prior medium-or-above is FIXED or WITHDRAWN and no
+new medium-or-above appeared.
 
 ## Verdict meanings
 
@@ -150,7 +154,7 @@ medium-or-above appeared.
 | `CLEAR` | Nothing at medium or above | Record the result in the item; Land |
 | `NEEDS_CHANGES` | Fixable findings at medium or above | Findings to the implementer as new commits; resume the reviewer with the re-review variant |
 | `SHOW_STOPPER` | Unfixable in scope, or changes scope / an operator decision | `wi block`; operator under `decisions needed`; do not land |
-| `BLOCKED` | The reviewer could not start: worktree, branch or brief wrong | Fix the brief, re-dispatch; never the operator; not a round |
+| `BLOCKED` | The reviewer could not start: worktree, branch, brief or permissions wrong | Fix the brief, re-dispatch — twice at most; not a round. A third `BLOCKED`, or a permission denial, is `wi block` and the operator under `decisions needed` as a blocked item, not a show-stopper |
 
 Three rounds without `CLEAR` is itself a show-stopper: block the item and raise it with the
 round history from the item body.

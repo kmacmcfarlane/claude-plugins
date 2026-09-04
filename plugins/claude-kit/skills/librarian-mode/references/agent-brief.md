@@ -1,6 +1,8 @@
 # Agent brief template
 
-The dispatch brief for one feature. Fill every placeholder; delete nothing. The agent starts
+The dispatch brief for one feature. Fill every placeholder; delete nothing except the
+fix-round clause under Commit, which is included only when resuming or re-dispatching the
+implementer with review findings. The agent starts
 with none of the librarian's context and must be able to finish from this text alone. Send
 it as the prompt of one background `general-purpose` Agent.
 

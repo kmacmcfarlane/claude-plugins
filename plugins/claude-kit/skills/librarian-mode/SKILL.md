@@ -56,9 +56,8 @@ Do this at session start and after any `/clear` or compaction. Never `ls` the wh
    WI="python3 $(ls "$MAIN"/plugins/*/skills/work-items/scripts/wi.py | head -1)"
    ```
 
-   The `wi` script's path depends on which branch the main checkout is on (the plugin that
-   carries it differs between layouts), so locate it with the glob rather than a fixed path. If the glob
-   finds nothing, the installed `work-items` plugin's copy works — that skill's
+   The `wi` script's plugin differs between branches, so locate it with the glob, not a
+   fixed path. If the glob finds nothing, the installed `work-items` plugin's copy works —
    `${CLAUDE_PLUGIN_ROOT}/skills/work-items/scripts/wi.py` — with the same `WI_ROOT`.
    If `MAIN` is not where this session's cwd is, this is a worktree session: say so, and route
    every edit through dispatch (see Red flags).
@@ -178,8 +177,7 @@ parallel; a later group starts only after everything it depends on has landed.
    plus the answer. `BLOCKED`: `$WI block <id> "<reason>"` and route to the operator.
 
 A rejected result is **re-dispatched with a sharper brief**, never fixed by you. Fixing it
-yourself puts an unreviewed edit in the tree and teaches you nothing about why the brief
-failed.
+yourself puts an unreviewed edit in the tree and teaches you nothing about the brief.
 
 ## Review
 
@@ -205,7 +203,8 @@ back clear — not the implementer, and not the operator.
 
 3. **Fix loop.** The reviewer's verdict is `CLEAR`, `NEEDS_CHANGES`, `SHOW_STOPPER`, or
    `BLOCKED` (its own setup failed — wrong worktree, missing brief field: fix the brief and
-   re-dispatch; never the operator's problem).
+   re-dispatch, twice at most; a third is your environment, and goes to the operator as a
+   blocked item, not a show-stopper. Permission denied: as for an implementer, below).
    - `NEEDS_CHANGES`: hand the findings, verbatim, to the **implementer** — resume the same
      agent (SendMessage; it has the context) or, if it is gone, re-dispatch with the
      findings in the brief and the fix-round clause from `references/agent-brief.md`. Tell
@@ -279,9 +278,8 @@ decisions needed: <list with the options and their impact, or none>
 ```
 
 Batch several landings in one message, four lines each. Anything blocked or declined since
-the last report goes under `decisions needed` of the next one. The operator then reviews
-what landed and settles the pending decisions; do not wait for that review before taking the
-next request.
+the last report goes under `decisions needed` of the next one. Do not wait for the
+operator's review before taking the next request.
 
 ## Red flags
 
@@ -340,15 +338,16 @@ it; each is a feature with the catalog edit inside it.
   plugin; use the installed plugin's copy and set `WI_ROOT` explicitly. If there is no store
   at `.claude-sandbox/work/`, stop — creating one is the operator's call.
 - **`wi claim` exits 4.** Another session holds the item. Do not force; report it.
-- **Agent returns `BLOCKED` on permissions.** It is a decision for the operator, not a
-  reason to do the work yourself. Block the item and report.
+- **Agent (implementer or reviewer) returns `BLOCKED` on permissions.** It is a decision
+  for the operator, not a reason to do the work yourself. Block the item and report.
 - **Merge conflict on `main`.** Resolve by reading both sides with the item's approach as
   tiebreaker; never take one side wholesale. If the resolution needs judgement, re-dispatch
   with `main` as the new base instead.
 - **Orphan worktree from a crashed session.** Dirty: surface it, do not remove. Clean and
   merged: remove it; clean and unmerged: ask.
 - **Implementer disputes a medium-or-above finding.** It cannot decline it: it fixes, or
-  states the counter-case for the re-review. If the reviewer holds, that is a round spent.
+  states the counter-case for the re-review. The reviewer withdraws on the merits (the
+  failure cannot occur) or holds; if it holds, fix it — that round is spent.
 - **Reviewer returns `SHOW_STOPPER` for something a fix would close.** Ask it to state
   the fix path in one line; if a fix exists inside the item's scope, route the verdict as
   `NEEDS_CHANGES` and note the re-routing in the item. That corrects the verdict's routing
