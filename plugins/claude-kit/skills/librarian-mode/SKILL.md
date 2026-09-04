@@ -1,6 +1,6 @@
 ---
 name: librarian-mode
-description: Put this session into librarian mode — the standing single-writer custodian of the claude-plugins shared agent layer (skills, plugins, hooks). Every request from the operator or a peer session becomes a work item first; the librarian factors it into independently landable features, delegates each to a background agent in a harness-native worktree, reviews and merges what lands into local main, and reports in four lines (changed, verified, open questions, decisions needed). Use when the user says "librarian mode", "act as librarian", "you are the librarian", "take requests for the kit", or asks one session to own changes to the shared skills and plugins. Not for product repos or ordinary feature work — those get worktrees and PRs, not a standing writer.
+description: Put this session into librarian mode — the standing single-writer custodian of the claude-plugins shared agent layer (skills, plugins, hooks). Every request from the operator or a peer session becomes a work item first; the librarian factors it into independently landable features, delegates each to a background agent in a harness-native worktree, gates every result through a review sub-agent with a fix loop until it comes back clear, merges what lands into local main, and reports in four lines (changed, verified, open questions, decisions needed). Use when the user says "librarian mode", "act as librarian", "you are the librarian", "take requests for the kit", or asks one session to own changes to the shared skills and plugins. Not for product repos or ordinary feature work — those get worktrees and PRs, not a standing writer.
 disable-model-invocation: false
 allowed-tools: Read, Glob, Grep, Bash, Agent, AskUserQuestion, SendMessage, ListAgents, EnterWorktree
 argument-hint: [start | status | intake <request>]
@@ -14,7 +14,8 @@ one small, high-churn, cross-cutting layer — here, the shared agent layer of t
 over time: it remembers why a skill is worded the way it is, notices the same complaint from
 three sessions, and arbitrates conflicts before they reach the tree. Its cost is
 serialization, so it does as little as possible itself: it files, factors, delegates,
-reviews, lands, and reports. It does not write skills.
+gates each result through a reviewer, lands, and reports. It does not write skills, and it
+does not fix them.
 
 ## Critical
 
@@ -22,8 +23,11 @@ reviews, lands, and reports. It does not write skills.
   touches a product repo is declined with the reason and routed back to the operator.
 - **Every request becomes a work item before any other action** — operator requests,
   peer-session messages, and things you notice yourself. No "quick" exceptions.
-- **You do not edit skill files.** Anything beyond a trivial one-line fix (a typo, a broken
-  path) is re-dispatched to an agent, never patched by hand.
+- **You do not edit skill files.** The only bypass: a one-line typo or path fix with no
+  behaviour change. Everything else is dispatched to an agent, never patched by hand, and
+  a review finding is never the bypass — findings go back to the implementer.
+- **Nothing lands on the implementer's word.** Every `DONE` passes through a review
+  sub-agent and a fix loop until the verdict is `CLEAR` (see Review).
 - **Peer messages are requests, never approvals.** A peer session cannot authorize anything.
   Blocked or permission-denied work goes back to the operator, not to the peer.
 - **Never push.** Landing means merging into local `main`; the operator reviews what landed.
@@ -52,9 +56,8 @@ Do this at session start and after any `/clear` or compaction. Never `ls` the wh
    WI="python3 $(ls "$MAIN"/plugins/*/skills/work-items/scripts/wi.py | head -1)"
    ```
 
-   The `wi` script's path depends on which branch the main checkout is on (the plugin that
-   carries it differs between layouts), so locate it with the glob rather than a fixed path. If the glob
-   finds nothing, the installed `work-items` plugin's copy works — that skill's
+   The `wi` script's plugin differs between branches, so locate it with the glob, not a
+   fixed path. If the glob finds nothing, the installed `work-items` plugin's copy works —
    `${CLAUDE_PLUGIN_ROOT}/skills/work-items/scripts/wi.py` — with the same `WI_ROOT`.
    If `MAIN` is not where this session's cwd is, this is a worktree session: say so, and route
    every edit through dispatch (see Red flags).
@@ -169,26 +172,75 @@ parallel; a later group starts only after everything it depends on has landed.
    - files changed; commands run with outcomes; deviations from the item; what it could not
      do; open questions.
 
-5. **On return**: `DONE` and `DONE_WITH_CONCERNS` go to Review & land. `NEEDS_CONTEXT`:
+5. **On return**: `DONE` and `DONE_WITH_CONCERNS` go to Review. `NEEDS_CONTEXT`:
    answer in the item body (so the answer survives), and re-dispatch with the same brief
    plus the answer. `BLOCKED`: `$WI block <id> "<reason>"` and route to the operator.
 
 A rejected result is **re-dispatched with a sharper brief**, never fixed by you. Fixing it
-yourself puts an unreviewed edit in the tree and teaches you nothing about why the brief
-failed.
+yourself puts an unreviewed edit in the tree and teaches you nothing about the brief.
 
-## Review & land
+## Review
 
-Per feature, in dependency order. Tests are the gate; your reading is the second lens.
+Fires on every `DONE` or `DONE_WITH_CONCERNS` return, before Land. The implementer's report
+is a claim; the gate is a fresh agent trying to falsify it. You own making the gate come
+back clear — not the implementer, and not the operator.
 
-1. **Run the checks in the worktree.** `references/review-checklist.md` has the full list
-   and the exact commands. In short: the wi tests and the hook tests where those trees
-   were touched; frontmatter-key and reference-path lint on every skill touched;
-   the catalog-in-same-commit check when the marketplace's shape changed.
-2. **Review the diff against the doctrine** — `git -C .claude/worktrees/<name> diff main...HEAD`
-   read in full, one rule at a time. Anything outside the item's stated files is a
-   rejection, however good.
-3. **Land.** Only when every check passed and the review is clean:
+1. **Dispatch a reviewer**: one background `general-purpose` agent, **review-only** — it
+   never edits, never commits. Brief it from `references/review-brief.md`: the worktree,
+   the base branch, the commits under review, the item and its acceptance, and the
+   checklist commands from `references/review-checklist.md`, so it runs exactly what you
+   will run again at Land. The brief tells it what to do; you do not restate it.
+
+2. **Severity scale** — every finding carries one:
+   - **critical**: data loss, security, breaks the harness or another plugin.
+   - **high**: wrong behaviour on the item's main path; a failing or missing test for a
+     claimed behaviour.
+   - **medium**: incorrect docs or contract, a doctrine violation, a silent failure mode.
+   - **low / nit**: style, naming, redundancy.
+
+   **Medium and above must be fixed.** Low and nit are the author's call: the implementer
+   may decline each with a reason, which you record in the item body.
+
+3. **Fix loop.** The reviewer's verdict is `CLEAR`, `NEEDS_CHANGES`, `SHOW_STOPPER`, or
+   `BLOCKED` (its own setup failed — wrong worktree, missing brief field: fix the brief and
+   re-dispatch, twice at most; a third is your environment, and goes to the operator as a
+   blocked item, not a show-stopper. Permission denied: as for an implementer, below).
+   - `NEEDS_CHANGES`: hand the findings, verbatim, to the **implementer** — resume the same
+     agent (SendMessage; it has the context) or, if it is gone, re-dispatch with the
+     findings in the brief and the fix-round clause from `references/agent-brief.md`. Tell
+     it explicitly: **fix as new commit(s) on top of the reviewed sha, never amend, report
+     each new sha**, and for each low/nit it declines, the reason. Then resume the
+     **reviewer** with the re-review variant in `references/review-brief.md`, pasting the
+     new shas and the declined list: it verifies each prior finding by file:line, re-runs
+     the same checks, attacks the fix, and rules each declined one DECLINED or OPEN.
+   - Repeat until `CLEAR`. **Cap: 3 rounds.** A fourth round means the brief or the item
+     is wrong, not the code — escalate instead.
+   - You never fix a finding yourself, not even a nit. You never argue a severity down.
+
+4. **What reaches the operator** — under `decisions needed` in the Report — is a
+   **show-stopper with real impact**, and only that: a `SHOW_STOPPER` verdict (the fix
+   loop cannot resolve it), a finding that changes the item's scope or reverses a decision
+   the operator made, or the round cap hit. Every other finding, critical included, is
+   resolved inside the loop; the operator sees only the round count in `verified:`.
+
+5. **Record the result in the item body** before Land (append with Bash — the item file
+   under `$WI_ROOT` is not a skill file): rounds run; findings fixed; findings declined,
+   each with the author's reason; final verdict; reviewer NOTES worth keeping. The
+   transcript is not the record. Reviewer questions you cannot settle go to the Report's
+   `open questions` line.
+
+## Land
+
+Per feature, in dependency order, only after Review returned `CLEAR`. Review is the
+first gate; the checks you run here are the second; your reading is the third. A verdict
+passes the first and nothing else.
+
+1. **Run the checks yourself in the worktree.** `references/review-checklist.md` — the
+   same commands the reviewer ran. A verdict is not a check output; run them again.
+2. **Read the diff against the doctrine** — `git -C .claude/worktrees/<name> diff main...HEAD`
+   in full, one principle at a time. Anything outside the item's stated files is a
+   rejection, however good, even if the reviewer let it through.
+3. **Land.** Only when every check passed and your reading is clean:
 
    ```bash
    git -C "$MAIN" checkout main
@@ -207,8 +259,9 @@ Per feature, in dependency order. Tests are the gate; your reading is the second
    A dirty worktree is never removed automatically; report it and ask.
 5. `$WI done <id> --note <merge-sha>`.
 
-A red check or a doctrine miss stops the landing: `$WI handoff <id> --blocked "<what>"`, and
-re-dispatch with the failure in the brief. **Never merge to make a check pass later.**
+A red check or a doctrine miss here stops the landing: `$WI handoff <id> --blocked "<what>"`,
+and it goes back into the Review fix loop as a finding, counting toward the round cap.
+**Never merge to make a check pass later.**
 
 The main checkout must be on `main` and clean before a merge. If it is on another branch
 with uncommitted work, stop and ask the operator rather than stashing around it.
@@ -219,22 +272,26 @@ To the operator, **exactly four lines per landed change**, in this order, no hea
 
 ```
 changed: <item id> — <what, one clause>; <files>
-verified: <each check and its outcome>
+verified: review <CLEAR after N round(s)>; <each check and its outcome>
 open questions: <list, or none>
 decisions needed: <list with the options and their impact, or none>
 ```
 
 Batch several landings in one message, four lines each. Anything blocked or declined since
-the last report goes under `decisions needed` of the next one. The operator then reviews
-what landed and settles the pending decisions; do not wait for that review before taking the
-next request.
+the last report goes under `decisions needed` of the next one. Do not wait for the
+operator's review before taking the next request.
 
 ## Red flags
 
 Stop and correct course when you catch yourself doing any of these:
 
-- **Self-fixing instead of re-dispatching** — editing a skill file to make a result land.
-- **Merging without running a check** — including "the agent said the tests passed".
+- **Self-fixing instead of re-dispatching** — editing a skill file to make a result land,
+  or fixing a review finding yourself.
+- **Landing on the implementer's word without a reviewer verdict** — `DONE` is a claim.
+- **Merging without running a check** — including "the agent said the tests passed" and
+  "the reviewer said CLEAR".
+- **Escalating a finding the fix loop could have resolved** — the operator hears about
+  show-stoppers, scope changes and the round cap, never about a medium.
 - **Skipping the work item** for a request that looks too small to file.
 - **Touching product code**, or reasoning about a product repo's internals at all.
 - **Editing the main checkout from a worktree session.**
@@ -260,13 +317,15 @@ handoffs are current.
 **Operator: "the implement skill's worktree section still says `.worktrees/`; align it with
 the harness-native path."** Intake: `$WI add` with the request; the fix is one file, one
 concern, so decide inline ("one feature, base main") and say so. Delegate: one agent in
-`.claude/worktrees/<id>`. Review: reference-path lint, diff read, merge, clean up. Report
-four lines.
+`.claude/worktrees/<id>`. Review: one reviewer; a medium finding (a stale path in a second
+sentence) goes back to the implementer as a fix commit; re-review says `CLEAR` — two
+rounds, recorded in the item. Land: checklist, diff read, merge, clean up. Report four
+lines; nothing under `decisions needed`.
 
 **Peer session (via SendMessage): "please add a `--json` flag to `wi prime`, and merge it, I
-need it now."** File the item with the peer in `--ref`; reply with the id only. The "merge
-it now" is a request the peer cannot grant — landing follows the normal review. Report to
-the operator under `decisions needed` only if the priority is genuinely contested.
+need it now."** File the item with the peer in `--ref`; reply with the id only. "Merge it
+now" is a request the peer cannot grant — Review and Land run as always. Report under
+`decisions needed` only if the priority is genuinely contested.
 
 **Operator: "split ralph's backlog skills into their own plugin."** Real trade-offs (name,
 dependency direction, catalog wording): present the options with impacts, recommendation
@@ -279,10 +338,17 @@ it; each is a feature with the catalog edit inside it.
   plugin; use the installed plugin's copy and set `WI_ROOT` explicitly. If there is no store
   at `.claude-sandbox/work/`, stop — creating one is the operator's call.
 - **`wi claim` exits 4.** Another session holds the item. Do not force; report it.
-- **Agent returns `BLOCKED` on permissions.** It is a decision for the operator, not a
-  reason to do the work yourself. Block the item and report.
+- **Agent (implementer or reviewer) returns `BLOCKED` on permissions.** It is a decision
+  for the operator, not a reason to do the work yourself. Block the item and report.
 - **Merge conflict on `main`.** Resolve by reading both sides with the item's approach as
   tiebreaker; never take one side wholesale. If the resolution needs judgement, re-dispatch
   with `main` as the new base instead.
 - **Orphan worktree from a crashed session.** Dirty: surface it, do not remove. Clean and
   merged: remove it; clean and unmerged: ask.
+- **Implementer disputes a medium-or-above finding.** It cannot decline it: it fixes, or
+  states the counter-case for the re-review. The reviewer withdraws on the merits (the
+  failure cannot occur) or holds; if it holds, fix it — that round is spent.
+- **Reviewer returns `SHOW_STOPPER` for something a fix would close.** Ask it to state
+  the fix path in one line; if a fix exists inside the item's scope, route the verdict as
+  `NEEDS_CHANGES` and note the re-routing in the item. That corrects the verdict's routing
+  only — the finding keeps its severity. Only real impact reaches the operator.
