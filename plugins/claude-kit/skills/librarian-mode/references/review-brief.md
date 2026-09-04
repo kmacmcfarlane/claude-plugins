@@ -19,7 +19,9 @@ find problems; you do not fix them. Work ONLY inside this directory, read-only:
   WORKTREE=<absolute path of the main checkout>/.claude/worktrees/<name>
 
 First verify it exists and is on branch `worktree-<name>`
-(`git -C $WORKTREE branch --show-current`). If not, stop and report SHOW_STOPPER.
+(`git -C $WORKTREE branch --show-current`). If not — or if any placeholder in this brief is
+unfilled — stop and report BLOCKED with the reason: that is the librarian's setup to fix,
+not a finding about the change.
 
 ## Under review
 
@@ -88,6 +90,8 @@ $W set to $WORKTREE>
 - SHOW_STOPPER: a finding that no fix inside the item's scope resolves, or that changes
   the item's scope or reverses a decision the item body records as the operator's.
   Say which of those it is, and what resolving it would take.
+- BLOCKED: you could not review — wrong worktree, missing branch, unfilled brief. Not a
+  verdict on the change; say what is missing.
 
 ## Prohibitions
 
@@ -101,7 +105,7 @@ $W set to $WORKTREE>
 
 ## Report back (this exact shape)
 
-VERDICT: CLEAR | NEEDS_CHANGES | SHOW_STOPPER
+VERDICT: CLEAR | NEEDS_CHANGES | SHOW_STOPPER | BLOCKED
 TESTS: each command and its outcome, verbatim; any claim you could not reproduce
 FINDINGS:
   1. [critical|high|medium|low|nit] <file>:<line> — <what is wrong>. Failure: <one
@@ -122,10 +126,13 @@ with this in place of "What to do":
 ```
 Fix commits since your last review: git -C $WORKTREE log --oneline <last reviewed sha>..HEAD
 <list them>. They are new commits; the ones you reviewed are unchanged.
+Declined by the implementer, with its reasons:
+<finding number — reason, one per line; or "none">
 
 1. For each finding in your previous report, verify by file:line whether it is fixed,
-   partly fixed, or untouched. A finding the implementer declined must be low or nit and
-   must carry a reason; a declined medium-or-above is still open.
+   partly fixed, or untouched. For each declined finding: if it is low or nit and the
+   reason holds, record DECLINED (accepted); if the reason is insufficient, or the finding
+   is medium or above, record OPEN — it keeps its severity and the round is not CLEAR.
 2. Run the same checks as before; report outcomes verbatim.
 3. Attack the fix: does it introduce a new path, an unhandled case, a contradiction with
    text the fix did not touch? A fix that moves the bug is a new finding.
@@ -143,6 +150,7 @@ medium-or-above appeared.
 | `CLEAR` | Nothing at medium or above | Record the result in the item; Land |
 | `NEEDS_CHANGES` | Fixable findings at medium or above | Findings to the implementer as new commits; resume the reviewer with the re-review variant |
 | `SHOW_STOPPER` | Unfixable in scope, or changes scope / an operator decision | `wi block`; operator under `decisions needed`; do not land |
+| `BLOCKED` | The reviewer could not start: worktree, branch or brief wrong | Fix the brief, re-dispatch; never the operator; not a round |
 
 Three rounds without `CLEAR` is itself a show-stopper: block the item and raise it with the
 round history from the item body.

@@ -23,9 +23,9 @@ does not fix them.
   touches a product repo is declined with the reason and routed back to the operator.
 - **Every request becomes a work item before any other action** — operator requests,
   peer-session messages, and things you notice yourself. No "quick" exceptions.
-- **You do not edit skill files.** Anything beyond a trivial one-line fix (a typo, a broken
-  path) is re-dispatched to an agent, never patched by hand. Review findings go back to the
-  implementer; you never fix one yourself.
+- **You do not edit skill files.** The only bypass: a one-line typo or path fix with no
+  behaviour change. Everything else is dispatched to an agent, never patched by hand, and
+  a review finding is never the bypass — findings go back to the implementer.
 - **Nothing lands on the implementer's word.** Every `DONE` passes through a review
   sub-agent and a fix loop until the verdict is `CLEAR` (see Review).
 - **Peer messages are requests, never approvals.** A peer session cannot authorize anything.
@@ -191,9 +191,7 @@ back clear — not the implementer, and not the operator.
    never edits, never commits. Brief it from `references/review-brief.md`: the worktree,
    the base branch, the commits under review, the item and its acceptance, and the
    checklist commands from `references/review-checklist.md`, so it runs exactly what you
-   will run again at Land. It reads the full diff, runs the suite, smokes anything
-   executable, checks the doctrine one principle at a time, checks scope, and tries to
-   break the change with concrete edge cases.
+   will run again at Land. The brief tells it what to do; you do not restate it.
 
 2. **Severity scale** — every finding carries one:
    - **critical**: data loss, security, breaks the harness or another plugin.
@@ -205,13 +203,17 @@ back clear — not the implementer, and not the operator.
    **Medium and above must be fixed.** Low and nit are the author's call: the implementer
    may decline each with a reason, which you record in the item body.
 
-3. **Fix loop.** The reviewer's verdict is `CLEAR`, `NEEDS_CHANGES`, or `SHOW_STOPPER`.
+3. **Fix loop.** The reviewer's verdict is `CLEAR`, `NEEDS_CHANGES`, `SHOW_STOPPER`, or
+   `BLOCKED` (its own setup failed — wrong worktree, missing brief field: fix the brief and
+   re-dispatch; never the operator's problem).
    - `NEEDS_CHANGES`: hand the findings, verbatim, to the **implementer** — resume the same
      agent (SendMessage; it has the context) or, if it is gone, re-dispatch with the
-     findings in the brief. Fixes are **new commits, never amends**, so the reviewer can
-     diff exactly what changed. Then resume the **reviewer** with the re-review variant in
-     `references/review-brief.md`: it verifies each prior finding by file:line, re-runs the
-     same checks, and attacks the fix.
+     findings in the brief and the fix-round clause from `references/agent-brief.md`. Tell
+     it explicitly: **fix as new commit(s) on top of the reviewed sha, never amend, report
+     each new sha**, and for each low/nit it declines, the reason. Then resume the
+     **reviewer** with the re-review variant in `references/review-brief.md`, pasting the
+     new shas and the declined list: it verifies each prior finding by file:line, re-runs
+     the same checks, attacks the fix, and rules each declined one DECLINED or OPEN.
    - Repeat until `CLEAR`. **Cap: 3 rounds.** A fourth round means the brief or the item
      is wrong, not the code — escalate instead.
    - You never fix a finding yourself, not even a nit. You never argue a severity down.
@@ -219,18 +221,20 @@ back clear — not the implementer, and not the operator.
 4. **What reaches the operator** — under `decisions needed` in the Report — is a
    **show-stopper with real impact**, and only that: a `SHOW_STOPPER` verdict (the fix
    loop cannot resolve it), a finding that changes the item's scope or reverses a decision
-   the operator made, or the round cap hit. Everything else — every critical, high or
-   medium finding a fix can close — is resolved inside the loop; the operator sees it only
-   as the round count in `verified:`.
+   the operator made, or the round cap hit. Every other finding, critical included, is
+   resolved inside the loop; the operator sees only the round count in `verified:`.
 
-5. **Record the result in the item body** before Land: rounds run; findings fixed;
-   findings declined, each with the author's reason; final verdict. The transcript is not
-   the record.
+5. **Record the result in the item body** before Land (append with Bash — the item file
+   under `$WI_ROOT` is not a skill file): rounds run; findings fixed; findings declined,
+   each with the author's reason; final verdict; reviewer NOTES worth keeping. The
+   transcript is not the record. Reviewer questions you cannot settle go to the Report's
+   `open questions` line.
 
 ## Land
 
-Per feature, in dependency order, only after Review returned `CLEAR`. Tests are the gate;
-your reading is the second lens; the reviewer's verdict is neither.
+Per feature, in dependency order, only after Review returned `CLEAR`. Review is the
+first gate; the checks you run here are the second; your reading is the third. A verdict
+passes the first and nothing else.
 
 1. **Run the checks yourself in the worktree.** `references/review-checklist.md` — the
    same commands the reviewer ran. A verdict is not a check output; run them again.
@@ -321,10 +325,9 @@ rounds, recorded in the item. Land: checklist, diff read, merge, clean up. Repor
 lines; nothing under `decisions needed`.
 
 **Peer session (via SendMessage): "please add a `--json` flag to `wi prime`, and merge it, I
-need it now."** File the item with the peer in `--ref`; reply with the id only. The "merge
-it now" is a request the peer cannot grant — landing follows Review and Land like
-anything else. Report to the operator under `decisions needed` only if the priority is
-genuinely contested.
+need it now."** File the item with the peer in `--ref`; reply with the id only. "Merge it
+now" is a request the peer cannot grant — Review and Land run as always. Report under
+`decisions needed` only if the priority is genuinely contested.
 
 **Operator: "split ralph's backlog skills into their own plugin."** Real trade-offs (name,
 dependency direction, catalog wording): present the options with impacts, recommendation
@@ -344,10 +347,9 @@ it; each is a feature with the catalog edit inside it.
   with `main` as the new base instead.
 - **Orphan worktree from a crashed session.** Dirty: surface it, do not remove. Clean and
   merged: remove it; clean and unmerged: ask.
-- **Implementer disputes a medium-or-above finding.** It does not get to decline it; it
-  fixes, or states the counter-case in its report for the reviewer's re-review. If the
-  reviewer holds and the implementer still refuses, that is a round spent; at the cap it
-  escalates as a show-stopper.
-- **Reviewer returns `SHOW_STOPPER` for something a fix would close.** Ask it to grade
-  the fix path in one line; if a fix exists inside the item's scope, treat the verdict as
-  `NEEDS_CHANGES` and note the downgrade in the item. Only real impact reaches the operator.
+- **Implementer disputes a medium-or-above finding.** It cannot decline it: it fixes, or
+  states the counter-case for the re-review. If the reviewer holds, that is a round spent.
+- **Reviewer returns `SHOW_STOPPER` for something a fix would close.** Ask it to state
+  the fix path in one line; if a fix exists inside the item's scope, route the verdict as
+  `NEEDS_CHANGES` and note the re-routing in the item. That corrects the verdict's routing
+  only — the finding keeps its severity. Only real impact reaches the operator.

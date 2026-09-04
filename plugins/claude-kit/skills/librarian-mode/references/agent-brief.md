@@ -68,6 +68,12 @@ file under <absolute scratchpad path> and use `git commit -F <path>`. Stage the 
 paths; never `git add .` or `git add -A`. Do not commit anything under .claude-sandbox/ or
 .claude/.
 
+<fix round only — include when resuming or re-dispatching with review findings:>
+Fix round <n>. Findings to fix are listed below, verbatim. Fix each finding at medium or
+above; each low/nit you decline, state under DECLINED with a reason. Fix as one or more NEW
+commits on top of <reviewed sha>; never amend, rebase, or squash — the reviewer diffs from
+that sha. Report every new sha under COMMIT.
+
 ## Prohibitions
 
 - Do not merge, rebase, push, or check out any other branch.
@@ -88,7 +94,8 @@ VERIFIED: each command and its outcome, verbatim
 DEVIATIONS: from the item, with why
 COULD NOT DO: anything the item asked for that is not in the commit
 OPEN QUESTIONS: anything you could not settle
-COMMIT: sha and message subject
+DECLINED: (fix rounds only) each declined low/nit finding with its reason, or none
+COMMIT: sha and message subject — in a fix round, every new sha
 ```
 
 ---

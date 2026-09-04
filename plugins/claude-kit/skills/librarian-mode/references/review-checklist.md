@@ -16,8 +16,9 @@ W=<absolute worktree path>
 - [ ] `git -C $W diff --stat main...HEAD` lists only the files the item names (plus the
       catalog and layout edits when the marketplace's shape changed).
 - [ ] Nothing under `.claude-sandbox/`, `.claude/`, or a product repo.
-- [ ] One commit on the branch, message `<verb>: <aspect> - <description>` — plus one
-      further commit per review fix round, never an amend. Any other extra commit is a fail.
+- [ ] One commit on the branch, message `<verb>: <aspect> - <description>` — plus, per
+      review fix round, one or more new commits on top of it. No amend, rebase or squash
+      of a reviewed commit; nothing outside the item's files in any of them.
 
 ```bash
 git -C $W log --oneline main..HEAD
