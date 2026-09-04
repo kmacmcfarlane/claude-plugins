@@ -1,7 +1,11 @@
 # Review checklist
 
-Run per feature, inside its worktree, before any merge — and again on `main` after each
-merge. Every item is pass or fail; a fail stops the landing. `W` is the worktree path.
+Two readers run this list: the **review sub-agent** briefed from `review-brief.md`
+(sections 1–5, as the check commands pasted into its brief), and the **librarian itself**
+at Land (all sections, inside the worktree before the merge and again on `main` after it).
+Both run the same commands so a verdict and a landing rest on the same evidence; a verdict
+never substitutes for the librarian's own run. Every item is pass or fail; a fail stops the
+landing. `W` is the worktree path.
 
 ```bash
 W=<absolute worktree path>
@@ -12,7 +16,8 @@ W=<absolute worktree path>
 - [ ] `git -C $W diff --stat main...HEAD` lists only the files the item names (plus the
       catalog and layout edits when the marketplace's shape changed).
 - [ ] Nothing under `.claude-sandbox/`, `.claude/`, or a product repo.
-- [ ] Exactly one commit on the branch, message `<verb>: <aspect> - <description>`.
+- [ ] One commit on the branch, message `<verb>: <aspect> - <description>` — plus one
+      further commit per review fix round, never an amend. Any other extra commit is a fail.
 
 ```bash
 git -C $W log --oneline main..HEAD
@@ -118,5 +123,7 @@ python3 -c "import json,os,sys; m=json.load(open('$W/.claude-plugin/marketplace.
 - [ ] `git -C "$MAIN" status --short` is empty.
 - [ ] The worktree was removed and the branch deleted only after both of the above.
 
-A result that passes every box lands. A result that fails one is re-dispatched with the
-failing line quoted in the brief — see `agent-brief.md` § Sharpening a brief for re-dispatch.
+A result that passes every box lands. A fail found by the reviewer is a finding at medium
+or above in its report; a fail found by the librarian at Land goes back into the Review fix
+loop with the failing line quoted, to the implementer as a new commit — see `agent-brief.md`
+§ Sharpening a brief for re-dispatch when the implementer must be re-dispatched.

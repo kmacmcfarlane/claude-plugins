@@ -97,8 +97,8 @@ COMMIT: sha and message subject
 
 | Status | Means | Librarian's next move |
 |---|---|---|
-| `DONE` | Every acceptance line met, all checks green, one commit | Review & land |
-| `DONE_WITH_CONCERNS` | Committed and green, but the agent flagged a judgement call | Read the concerns before review; land or re-dispatch |
+| `DONE` | Every acceptance line met, all checks green, one commit | Review (the sub-agent gate), then Land |
+| `DONE_WITH_CONCERNS` | Committed and green, but the agent flagged a judgement call | Read the concerns; put them in the reviewer brief; Review, then Land |
 | `NEEDS_CONTEXT` | Could not proceed without an answer; nothing or little committed | Answer in the item body, re-dispatch with the answer |
 | `BLOCKED` | Worktree wrong, permission denied, dependency missing | `wi block`, route to the operator |
 
