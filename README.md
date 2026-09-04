@@ -17,6 +17,7 @@ Claude Code development tooling — reusable across projects.
 | `install-statusline` | Context gauge (tokens left, epoch) that also feeds the gate hooks |
 | `sandbox` | claude-sandbox Docker setup, config, troubleshooting |
 | `update-kit` | Sync files upstream to claude-templates/claude-plugins/claude-sandbox |
+| `librarian-mode` | Standing single-writer custodian of this repo's shared agent layer: file, factor, delegate to worktree agents, review, land, report |
 | `new-project-from-template` | Create a new project from a claude-templates template |
 | `backlog-entry` | Create backlog entries (stories, bugs, refactoring) |
 | `backlog-grooming` | Conversational backlog grooming and UAT review |
@@ -89,6 +90,7 @@ claude-plugins/
 │           ├── chain-of-verification/
 │           ├── create-skill/
 │           ├── goa/
+│           ├── librarian-mode/
 │           ├── musubi-tuner/
 │           ├── new-project-from-template/
 │           ├── playwright/
