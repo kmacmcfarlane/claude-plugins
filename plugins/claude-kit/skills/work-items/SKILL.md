@@ -36,6 +36,7 @@ the TODO.md failure mode with extra steps.
 | `$WI handoff <id> --doing … --next … [--blocked …] [--learned …]` | the per-item residue — write it whenever the item is left mid-flight |
 | `$WI done <id> [--note <sha>]` / `done --drop` | closes it in place; `implement` Step 10a½ owns this on landed work |
 | `$WI block <id> "reason"` / `--on <dep-id>` / `unblock` | runtime vs dependency blocks |
+| `$WI set <id> <field> <value> [--force]` | one front-matter field; list fields (`tags deps refs`) take `a,b` and are **replaced whole**; `""` (or `—`) clears any field; `deps`/`parent` targets must resolve — `ext:` deps exempt, `--force` bypasses |
 | `$WI import-todo TODO.md` | idempotent migration; then replace TODO.md with the deprecation notice from `references/format.md` |
 | `$WI export/import --format backlog-yaml` | the ralph bridge — backlog.yaml stays authoritative for unattended runs |
 | `$WI lint` | format + secret-shape check; run before committing hand edits |

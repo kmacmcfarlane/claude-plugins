@@ -95,7 +95,21 @@ lists, block lists of scalars, one level of map for `x_backlog`. No multi-line
 scalars, anchors or nesting — prose goes in the body. `lint` reports any line
 that does not parse, and `wi` never rewrites a file it could not parse.
 
-## Body sections
+## Editing fields: `wi set <id> <field> <value>`
+
+Sets exactly one front-matter field. `id` and `created` are immutable (exit 1).
+
+- **List fields** (`tags`, `deps`, `refs`) take a comma-separated value —
+  `wi set <id> deps a-1111,b-2222` — and are **replaced whole**, never
+  appended to (`block --on` / `unblock --dep` add/remove a single dep).
+- **Clearing**: the value `""` (or `—`) clears any field — there is no
+  `--clear` flag: `wi set <id> deps ""`. (A bare `--clear` token is eaten by
+  argparse; it only works quoted after `--`.)
+- **Validation**: `deps` and `parent` targets must resolve to existing items
+  (archive included), exactly as `add --dep`/`--parent` requires — a dangling
+  id exits 1, `ext: <text>` deps are exempt, and `--force` writes it anyway.
+  The item is then schema-validated as a whole; a value that breaks it (bad
+  `status`, priority out of range, …) exits 3 and nothing is written.
 
 - untitled text before the first `##` — description; the first paragraph is
   the summary `show --brief` and `prime` print.

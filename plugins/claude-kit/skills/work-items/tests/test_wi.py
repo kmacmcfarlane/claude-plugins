@@ -535,6 +535,85 @@ class TestIds(WiTestCase):
 
 
 
+class TestSet(WiTestCase):
+    """`wi set` list-field replace/clear semantics and add-mirrored
+    dep/parent validation (format.md 'Editing fields')."""
+
+    def deps_of(self, iid):
+        return json.loads(self.wi_ok(["show", iid, "--json"]))["deps"]
+
+    def test_list_field_is_replaced_whole_not_appended(self):
+        self.write_item("real-a-1111")
+        self.write_item("real-b-2222")
+        self.write_item("target-3333", deps=["real-a-1111"])
+        self.wi_ok(["set", "target-3333", "deps", "real-a-1111,real-b-2222"])
+        self.assertEqual(self.deps_of("target-3333"),
+                         ["real-a-1111", "real-b-2222"])
+        self.wi_ok(["set", "target-3333", "deps", "real-b-2222"])
+        self.assertEqual(self.deps_of("target-3333"), ["real-b-2222"])
+
+    def test_dangling_dep_rejected_exit_1_and_nothing_written(self):
+        self.write_item("target-3333")
+        before = (self.root / "items" / "target-3333.md").read_text()
+        r = run(["set", "target-3333", "deps", "nope-0000"], self.root)
+        self.assertEqual(r.returncode, 1)
+        self.assertIn("does not resolve", r.stderr)
+        self.assertEqual((self.root / "items" / "target-3333.md").read_text(),
+                         before)
+
+    def test_each_dep_in_multi_value_validated(self):
+        self.write_item("real-a-1111")
+        self.write_item("target-3333")
+        r = run(["set", "target-3333", "deps", "real-a-1111,nope-0000"],
+                self.root)
+        self.assertEqual(r.returncode, 1)
+        self.assertIn("nope-0000", r.stderr)
+
+    def test_ext_dep_allowed_and_force_bypasses(self):
+        self.write_item("target-3333")
+        self.wi_ok(["set", "target-3333", "deps", "ext: other-repo"])
+        self.assertEqual(self.deps_of("target-3333"), ["ext: other-repo"])
+        self.wi_ok(["set", "target-3333", "deps", "nope-0000", "--force"])
+        self.assertEqual(self.deps_of("target-3333"), ["nope-0000"])
+
+    def test_parent_validated_like_add(self):
+        self.write_item("parent-1111")
+        self.write_item("child-2222")
+        r = run(["set", "child-2222", "parent", "nope-0000"], self.root)
+        self.assertEqual(r.returncode, 1)
+        self.assertIn("does not resolve", r.stderr)
+        self.wi_ok(["set", "child-2222", "parent", "parent-1111"])
+        rec = json.loads(self.wi_ok(["show", "child-2222", "--json"]))
+        self.assertEqual(rec["parent"], "parent-1111")
+        self.wi_ok(["set", "child-2222", "parent", "nope-0000", "--force"])
+
+    def test_empty_value_clears_list_and_scalar_fields(self):
+        self.write_item("real-a-1111")
+        self.write_item("target-3333", deps=["real-a-1111"],
+                        parent="real-a-1111", tags=["x"])
+        self.wi_ok(["set", "target-3333", "deps", ""])
+        self.assertIsNone(self.deps_of("target-3333"))
+        self.wi_ok(["set", "target-3333", "tags", "—"])
+        rec = json.loads(self.wi_ok(["show", "target-3333", "--json"]))
+        self.assertIsNone(rec["tags"])
+        self.wi_ok(["set", "target-3333", "parent", ""])
+        rec = json.loads(self.wi_ok(["show", "target-3333", "--json"]))
+        self.assertIsNone(rec["parent"])
+
+    def test_schema_validation_still_exits_3(self):
+        self.write_item("target-3333")
+        r = run(["set", "target-3333", "status", "bogus"], self.root)
+        self.assertEqual(r.returncode, 3)
+        self.assertIn("invalid status", r.stderr)
+
+    def test_immutable_and_unknown_fields_exit_1(self):
+        self.write_item("target-3333")
+        self.assertEqual(
+            run(["set", "target-3333", "id", "x-1111"], self.root).returncode, 1)
+        self.assertEqual(
+            run(["set", "target-3333", "nofield", "x"], self.root).returncode, 1)
+
+
 class TestInitShapes(WiTestCase):
     """`wi init` vs the host .gitignore, per agents/decisions/0002: a
     private-shaped repo tracks config + work, so init must never whole-dir
