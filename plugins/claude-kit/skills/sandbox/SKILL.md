@@ -46,7 +46,7 @@ The container sees the project at its real host path. This is critical for `dock
 ### Worktree Mode (default on)
 By default the launcher runs Claude in a git worktree, not the main checkout: `.claude/worktrees/<name>` on branch `worktree-<name>`. The name defaults to the container's instance noun, so container, worktree, and branch share one word. `--worktree=NAME` reopens the existing worktree NAME; a join runs bare `--worktree`; `--branch` composes with the fork flags as `--worktree <new-noun>`.
 
-Every container gets `CLAUDE_SANDBOX_PROJECT_DIR` set to the project root (useful for reaching `.claude-sandbox/` from inside a worktree). The container carries a `claude-sandbox.worktree` label, `claude-sandbox sessions` lists a WORKTREE column, and attach reports the worktree. The choice is per-session and excluded from the config drift fingerprint.
+Every container gets `CLAUDE_SANDBOX_PROJECT_DIR` set to the project root (useful for reaching `.claude-sandbox/` from inside a worktree). Shell commands in this skill spell sandbox paths as `"${CLAUDE_SANDBOX_PROJECT_DIR:-.}"/.claude-sandbox/...` so they work from a worktree cwd inside a container and fall back to the project-root cwd on the host. The container carries a `claude-sandbox.worktree` label, `claude-sandbox sessions` lists a WORKTREE column, and attach reports the worktree. The choice is per-session and excluded from the config drift fingerprint.
 
 When the project is not a git work tree, the launcher stands down with the banner `Worktree: off (not a git repository)` and runs in the project directory — see Troubleshooting.
 
@@ -75,7 +75,7 @@ In **both** modes the launcher also adds `.claude/worktrees/` to the host `.giti
 
 **Sidecar commit SOP (when `trackInHost: false`):** after grooming the backlog or changing the agent flow, PROMPT the user to commit in the sidecar — do not auto-commit:
 ```bash
-git -C .claude-sandbox add -A && git -C .claude-sandbox commit -m "..."
+git -C "${CLAUDE_SANDBOX_PROJECT_DIR:-.}"/.claude-sandbox add -A && git -C "${CLAUDE_SANDBOX_PROJECT_DIR:-.}"/.claude-sandbox commit -m "..."
 ```
 
 ## Common Tasks
@@ -129,9 +129,9 @@ claude-sandbox --ralph --docker-socket --dangerous --limit 5
 ```
 - Runs Claude in fresh-context iterations (new process each time)
 - Runs in one worktree named `ralph` per run (details are ralph's own contract, not covered here)
-- Stop gracefully: `touch .claude-sandbox/ralph/stop`
-- Debug: read `.claude-sandbox/ralph/runlogs/rawlog_*` for full NDJSON streams
-- Metrics: `.claude-sandbox/ralph/runlog.json`
+- Stop gracefully: `touch "${CLAUDE_SANDBOX_PROJECT_DIR:-.}"/.claude-sandbox/ralph/stop`
+- Debug: read `"${CLAUDE_SANDBOX_PROJECT_DIR:-.}"/.claude-sandbox/ralph/runlogs/rawlog_*` for full NDJSON streams
+- Metrics: `"${CLAUDE_SANDBOX_PROJECT_DIR:-.}"/.claude-sandbox/ralph/runlog.json`
 
 ### Adding Extra Volume Mounts
 In `.claude-sandbox/config.yaml`:
@@ -156,14 +156,14 @@ or reachable but not where you looked. `find` returning nothing looks identical 
 directory does not exist", so the wrong conclusion is the easy one.
 
 ```bash
-grep -A15 '^mounts:' .claude-sandbox/config.yaml     # this project's mounts
+grep -A15 '^mounts:' "${CLAUDE_SANDBOX_PROJECT_DIR:-.}"/.claude-sandbox/config.yaml     # this project's mounts
 ```
 
 Mounts cascade and **append**, so also check every ancestor — a parent directory's
 `.claude-sandbox/config.yaml` may supply the mount:
 
 ```bash
-d=$PWD; while [ "$d" != / ]; do
+d="${CLAUDE_SANDBOX_PROJECT_DIR:-$PWD}"; while [ "$d" != / ]; do
   [ -f "$d/.claude-sandbox/config.yaml" ] && grep -l -A15 '^mounts:' "$d/.claude-sandbox/config.yaml"
   d=$(dirname "$d")
 done
@@ -180,7 +180,7 @@ Only after the mounts show no route to it should you report it as unreachable �
 what would fix it: add a mount to `.claude-sandbox/config.yaml` and relaunch.
 
 ### Banner says "Worktree: off (not a git repository)"
-Not an error. Worktree mode needs the project to be a git work tree; when it isn't, the launcher stands down and runs Claude in the project directory directly. To use worktree mode, `git init` the project first. To make the stand-down explicit instead, pass `--no-worktree` or set `worktree: false`.
+Not an error. Worktree mode needs the project to be a git work tree; when it isn't, the launcher stands down and runs Claude in the project directory directly. To use worktree mode, `git init` the project first. To make the stand-down explicit instead, pass `--no-worktree` or set `worktree: false`; the banner still prints but reads `Worktree: off (shared checkout)`.
 
 ### Container won't start
 1. Check Docker daemon is running: `docker info`
@@ -199,8 +199,8 @@ The entrypoint remaps UID/GID and chowns all non-bind-mounted files under the ho
 Ensure `--docker-socket` flag or `hostAccess.dockerSocket.enabled: true` is set. The container talks to the host Docker daemon — there is no daemon inside.
 
 ### Ralph loop won't stop
-1. `touch .claude-sandbox/ralph/stop` in the project directory
-2. If stuck, check `.claude-sandbox/ralph/lock` for the PID
+1. `touch "${CLAUDE_SANDBOX_PROJECT_DIR:-.}"/.claude-sandbox/ralph/stop`
+2. If stuck, check `"${CLAUDE_SANDBOX_PROJECT_DIR:-.}"/.claude-sandbox/ralph/lock` for the PID
 3. The activity watchdog (`logstream/activity-watchdog.js`) exits after N minutes of silence
 
 ### Child Dockerfile not found
