@@ -1,6 +1,6 @@
 ---
 name: sandbox
-description: "Guides setup, configuration, and troubleshooting of claude-sandbox Docker containers. Use when user asks about claude-sandbox, sandbox configuration, .claude-sandbox/config.yaml, .claude-sandbox/Dockerfile, config cascade, bootstrapping a project (claude-sandbox init / init-ralph), ralph loops, container isolation, host access flags (--docker-socket, --aws, --git, --ssh), model selection (--model), image rebuilding (--rebuild), or Claude Code version updates. Also triggers on sandbox launch errors, entrypoint issues, or volume mount problems."
+description: "Guides setup, configuration, and troubleshooting of claude-sandbox Docker containers. Use when user asks about claude-sandbox, sandbox configuration, .claude-sandbox/config.yaml, .claude-sandbox/Dockerfile, config cascade, bootstrapping a project (claude-sandbox init / init-ralph), ralph loops, container isolation, host access flags (--docker-socket, --aws, --git, --ssh), worktree mode (--worktree, --no-worktree, the worktree config key), model selection (--model), image rebuilding (--rebuild), or Claude Code version updates. Also triggers on sandbox launch errors, entrypoint issues, or volume mount problems."
 disable-model-invocation: false
 allowed-tools: "Read, Glob, Grep, Bash, Edit, Write, Agent"
 ---
@@ -43,8 +43,19 @@ USER root
 ### Same-Path Mounting
 The container sees the project at its real host path. This is critical for `docker compose` volume resolution against the host daemon.
 
+### Worktree Mode (default on)
+By default the launcher runs Claude in a git worktree, not the main checkout: `.claude/worktrees/<name>` on branch `worktree-<name>`. The name defaults to the container's instance noun, so container, worktree, and branch share one word. `--worktree=NAME` reopens the existing worktree NAME; a join runs bare `--worktree`; `--branch` composes with the fork flags as `--worktree <new-noun>`.
+
+Every container gets `CLAUDE_SANDBOX_PROJECT_DIR` set to the project root (useful for reaching `.claude-sandbox/` from inside a worktree). The container carries a `claude-sandbox.worktree` label, `claude-sandbox sessions` lists a WORKTREE column, and attach reports the worktree. The choice is per-session and excluded from the config drift fingerprint.
+
+When the project is not a git work tree, the launcher stands down with the banner `Worktree: off (not a git repository)` and runs in the project directory — see Troubleshooting.
+
+**Unverified:** whether Bash writes from inside the worktree into the gitignored `.claude-sandbox/` sidecar pass the harness guard (a live ralph run will settle it).
+
 ### Configuration Precedence
 CLI flag > env var > merged `.claude-sandbox/config.yaml` cascade > defaults
+
+For worktree mode specifically: `--worktree[=NAME]` / `--no-worktree` > `CLAUDE_SANDBOX_WORKTREE` > `worktree: true|false` in the cascade > default on. The `worktree` key cascades like any other scalar — a more-local `config.yaml` overrides an upstream one.
 
 Three kinds of files are resolved by walking parent directories (direnv-style), each with its own semantics:
 - `.claude-sandbox/config.yaml` — **cascades**: every config from the filesystem root down to the project is deep-merged; more-local values override, `mounts` append (a same `host`+`container` entry overrides the upstream one, e.g. to flip `writable`). The launcher prints the cascade at startup.
@@ -60,6 +71,8 @@ Set in `.claude-sandbox/config.yaml`:
 - **`false` (default, foreign-safe):** the launcher adds `/.claude-sandbox/` to the host `.gitignore` and creates an internal **sidecar git repo** inside `.claude-sandbox/` for history. Use when working in someone else's repo — nothing leaks into their history.
 - **`true` (your own projects):** the dir is tracked by the host repo; no sidecar. Only `.claude-sandbox/env`, `.claude-sandbox/temp/`, and `.claude-sandbox/ralph/` are gitignored.
 
+In **both** modes the launcher also adds `.claude/worktrees/` to the host `.gitignore`, so worktree-mode checkouts never appear as untracked files in the host repo.
+
 **Sidecar commit SOP (when `trackInHost: false`):** after grooming the backlog or changing the agent flow, PROMPT the user to commit in the sidecar — do not auto-commit:
 ```bash
 git -C .claude-sandbox add -A && git -C .claude-sandbox commit -m "..."
@@ -71,7 +84,7 @@ git -C .claude-sandbox add -A && git -C .claude-sandbox commit -m "..."
 Run the bootstrap subcommand from the project directory:
 ```bash
 claude-sandbox init          # base: sparse config.yaml + env + Dockerfile.example, gitignore, sidecar
-claude-sandbox init-ralph    # init + ralph agent/ + scripts/ scaffolding (backlog, worktree tools)
+claude-sandbox init-ralph    # init + ralph agent/ + scripts/ scaffolding (backlog tools)
 ```
 - Only `--track-in-host` / `--no-track-in-host` apply to these subcommands (they set `trackInHost` non-interactively; otherwise `init` prompts — unless an upstream config already defines it, then it's inherited).
 - Both are **idempotent**: existing files are never overwritten, so template-provided docs win and re-running fills only gaps.
@@ -102,11 +115,20 @@ Options (pick any):
       enabled: true
   ```
 
+### Controlling Worktree Mode
+On by default; precedence CLI > env > cascade YAML > default on:
+- **CLI flags**: `--worktree[=NAME]` turns it on (`--worktree=NAME` reopens the existing worktree NAME; bare `--worktree` uses the default name — the instance noun); `--no-worktree` turns it off
+- **Env var**: `CLAUDE_SANDBOX_WORKTREE` (`0`/`false`/`no` disables)
+- **YAML** (`.claude-sandbox/config.yaml`): `worktree: true` or `worktree: false` (cascades)
+
+`claude-sandbox sessions` shows which worktree each session is in (WORKTREE column).
+
 ### Running Ralph (Loop Runner)
 ```bash
 claude-sandbox --ralph --docker-socket --dangerous --limit 5
 ```
 - Runs Claude in fresh-context iterations (new process each time)
+- Runs in one worktree named `ralph` per run (details are ralph's own contract, not covered here)
 - Stop gracefully: `touch .claude-sandbox/ralph/stop`
 - Debug: read `.claude-sandbox/ralph/runlogs/rawlog_*` for full NDJSON streams
 - Metrics: `.claude-sandbox/ralph/runlog.json`
@@ -157,6 +179,9 @@ directory's *basename* rather than the path the user gave you.
 Only after the mounts show no route to it should you report it as unreachable — and then say
 what would fix it: add a mount to `.claude-sandbox/config.yaml` and relaunch.
 
+### Banner says "Worktree: off (not a git repository)"
+Not an error. Worktree mode needs the project to be a git work tree; when it isn't, the launcher stands down and runs Claude in the project directory directly. To use worktree mode, `git init` the project first. To make the stand-down explicit instead, pass `--no-worktree` or set `worktree: false`.
+
 ### Container won't start
 1. Check Docker daemon is running: `docker info`
 2. Check base image exists: `docker images claude-sandbox`
@@ -194,4 +219,4 @@ The launcher walks parent directories. To skip child image detection entirely:
 | `notification-hooks.json` | Hook fragment merged into settings.json |
 | `container-context.md` | Injected into container's CLAUDE.md |
 | `scaffold/` (in claude-sandbox repo) | Base bootstrap seed for `init` (sparse config.yaml, env, Dockerfile.example) |
-| `scaffold-ralph/` (in claude-sandbox repo) | Ralph scaffolding seed for `init-ralph` (agent/ docs, scripts/ backlog + worktree tools) |
+| `scaffold-ralph/` (in claude-sandbox repo) | Ralph scaffolding seed for `init-ralph` (agent/ docs, scripts/ backlog tools) |
