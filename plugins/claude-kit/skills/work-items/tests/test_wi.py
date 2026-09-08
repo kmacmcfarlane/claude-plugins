@@ -576,6 +576,25 @@ class TestSet(WiTestCase):
         self.wi_ok(["set", "target-3333", "deps", "nope-0000", "--force"])
         self.assertEqual(self.deps_of("target-3333"), ["nope-0000"])
 
+    def test_self_dep_rejected_even_with_force(self):
+        self.write_item("target-3333")
+        for extra in ([], ["--force"]):
+            r = run(["set", "target-3333", "deps", "target-3333"] + extra,
+                    self.root)
+            self.assertEqual(r.returncode, 1, r.stderr)
+            self.assertIn("cannot depend on itself", r.stderr)
+        self.assertIsNone(self.deps_of("target-3333"))
+
+    def test_self_parent_rejected_even_with_force(self):
+        self.write_item("target-3333")
+        for extra in ([], ["--force"]):
+            r = run(["set", "target-3333", "parent", "target-3333"] + extra,
+                    self.root)
+            self.assertEqual(r.returncode, 1, r.stderr)
+            self.assertIn("cannot be its own parent", r.stderr)
+        rec = json.loads(self.wi_ok(["show", "target-3333", "--json"]))
+        self.assertIsNone(rec["parent"])
+
     def test_parent_validated_like_add(self):
         self.write_item("parent-1111")
         self.write_item("child-2222")

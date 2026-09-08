@@ -702,14 +702,19 @@ def cmd_set(args):
             item.meta[field] = int(value)
         else:
             item.meta[field] = value
-        # mirror cmd_add: deps/parent must resolve; ext: never does; --force bypasses
+        # mirror cmd_add: deps/parent must resolve; ext: never does; --force
+        # bypasses a dangling target but never a self-reference
         if field == "deps":
             for dep in item.get("deps", []):
+                if dep == item.id:
+                    raise WiError(1, f"'{dep}' cannot depend on itself")
                 if not dep.startswith("ext:") and dep not in by_id and not args.force:
                     raise WiError(1, f"dep '{dep}' does not resolve (--force to set anyway)")
-        if field == "parent" and item.get("parent") and \
-                item.get("parent") not in by_id and not args.force:
-            raise WiError(1, f"parent '{item.get('parent')}' does not resolve")
+        if field == "parent" and item.get("parent"):
+            if item.get("parent") == item.id:
+                raise WiError(1, f"'{item.id}' cannot be its own parent")
+            if item.get("parent") not in by_id and not args.force:
+                raise WiError(1, f"parent '{item.get('parent')}' does not resolve")
         errs = item.validate()
         if errs:
             raise WiError(3, "; ".join(errs))
