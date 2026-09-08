@@ -75,22 +75,27 @@ something to reinvent.
 
 ### Retired: `.worktrees/<id>` and the ralph worktree helper
 
-Earlier revisions of this reference mandated worktrees at `.worktrees/<id>/` on bare
-`<slug>-<n>` branches, managed by ralph's `scripts/worktree` helper (`worktree.py` plus
-`merge_helper.py`). That convention is **retired** and the helper is deleted upstream; the
-migration recipe for repos still carrying it is in the claude-sandbox repo's
-`docs/MIGRATION.md`. If a project still has `.worktrees/` paths, bare `<slug>-<n>` branches,
-or the helper scripts, treat them as stale — do not use them.
+Earlier revisions of this reference mandated worktrees at `.worktrees/<id>/` — on bare
+`<slug>-<n>` branches under this skill, `story/<id>` branches under ralph — managed by
+ralph's `scripts/worktree` helper (`worktree.py` plus `merge_helper.py`). That convention is
+**retired** and the helper is deleted upstream; the migration recipe for repos still carrying
+it is in the claude-sandbox repo's `docs/MIGRATION.md`. If a project still has `.worktrees/`
+paths, bare `<slug>-<n>` or `story/<id>` branches, or the helper scripts, treat them as
+stale — do not use them.
 
 ## Naming
 
-One name family per run, all in the harness's `worktree-<name>` terms — the branch is always
-`worktree-` plus the worktree's name:
+One name family per run, in the harness's `worktree-<name>` terms — every worktree-backed
+branch is `worktree-` plus its worktree's name:
 
 - Integration branch for the whole run: **`worktree-<slug>`**, from the investigation slug.
   It is created in the main checkout off the verified base and is where the run's work lands.
-- Per-task branches when fanning out: **`worktree-<slug>-<n>`**, matching worktree
-  **`.claude/worktrees/<slug>-<n>/`**.
+  (No worktree carries it — so never reuse the bare slug as a worktree name; `claude
+  --worktree <slug>` would collide with this branch.)
+- Per-task branches when fanning out manually: **`worktree-<slug>-<n>`**, matching worktree
+  **`.claude/worktrees/<slug>-<n>/`**. A task dispatched with the Agent tool's worktree
+  isolation carries whatever `worktree-<name>` branch the harness assigned, as reported by
+  the agent.
 - Single-task runs use `worktree-<slug>` alone, with no worktree at all.
 
 ## Gotchas
@@ -148,8 +153,8 @@ depends on has merged and verified.
 Per task, in dependency order:
 
 1. Run the task's own verification inside its worktree. A task whose tests fail does not merge.
-2. Merge its `worktree-<slug>-<n>` branch into the integration branch (`worktree-<slug>`) in
-   the main checkout.
+2. Merge the task's reported branch (`worktree-<slug>-<n>` when created manually) into the
+   integration branch (`worktree-<slug>`) in the main checkout.
 3. On conflict, resolve by hand with the investigation's approach as the tiebreaker. Never
    resolve by taking one side wholesale without reading both.
 4. **Re-run the full verification on the integration branch after every merge**, not only at
@@ -164,10 +169,10 @@ what you tried — do not keep merging on top of a red integration branch.
 
 Before reporting completion:
 
-- Every worktree removed (`git worktree remove .claude/worktrees/<slug>-<n>`, or the
+- Every worktree removed (`git worktree remove .claude/worktrees/<name>`, or the
   harness's own cleanup where it created the worktree), or explicitly reported as retained
   with the reason.
-- Per-task `worktree-<slug>-<n>` branches deleted once merged; the integration branch
-  `worktree-<slug>` retained.
+- Each task's reported branch (`worktree-<slug>-<n>` in the manual case) deleted once
+  merged; the integration branch `worktree-<slug>` retained.
 - `git worktree list` shows only the main checkout, or exactly what you said you kept.
 - `git status` in the main checkout is clean apart from intended changes.
