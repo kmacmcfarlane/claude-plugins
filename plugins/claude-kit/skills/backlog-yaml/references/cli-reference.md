@@ -116,13 +116,14 @@ backlog.py list-ids --source both | grep "^S-"
 ### `next-work` — Select next eligible story
 
 ```
-backlog.py next-work [--fields FIELD[,FIELD,...]] [--format yaml|json]
+backlog.py next-work [--claim WORKER_ID] [--fields FIELD[,FIELD,...]] [--format yaml|json]
 ```
 
 Implements the deterministic work-selection algorithm from AGENT_FLOW.md section 3.1 in a single call. Returns the selected story with an additional `queue` field indicating which queue it came from.
 
 | Flag | Description |
 |------|-------------|
+| `--claim` | Atomically claim the selected story under the file lock: set `status: in_progress`, `claimed_by: WORKER_ID`, and `base_sha` to the HEAD of the current checkout (`git rev-parse HEAD`) |
 | `--fields` | Comma-separated fields to include in output (`queue` is always included) |
 
 **Queue values:**
@@ -148,6 +149,9 @@ backlog.py next-work --format json
 
 # Compact view
 backlog.py next-work --fields id,title,priority,queue
+
+# Atomically claim the next story (in_progress + claimed_by + base_sha=HEAD)
+backlog.py next-work --claim worker-1 --format json
 ```
 
 ---
@@ -219,12 +223,14 @@ EOF
 backlog.py set <id> <field> <value>
 ```
 
-Allowed fields: `status`, `priority`, `complexity`, `blocked_reason`, `title`
+Allowed fields: `status`, `priority`, `complexity`, `blocked_reason`, `title`, `ticket_mode`, `base_sha`
 
 **Validation:**
 - `status`: must be a valid status enum value
 - `priority`: must be a positive integer
 - `complexity`: must be `low`, `medium`, or `high`
+- `ticket_mode`: must be `autonomous`, `interactive`, or `mixed`
+- `base_sha`: must be a 7-40 character hex commit id
 
 **Examples:**
 
@@ -232,6 +238,7 @@ Allowed fields: `status`, `priority`, `complexity`, `blocked_reason`, `title`
 backlog.py set S-052 status in_progress
 backlog.py set S-052 priority 50
 backlog.py set S-052 complexity medium
+backlog.py set S-052 base_sha "$(git rev-parse HEAD)"
 ```
 
 ### `set-text` — Set a text field from stdin
@@ -262,7 +269,7 @@ EOF
 backlog.py clear <id> <field>
 ```
 
-Allowed fields: `review_feedback`, `blocked_reason`, `complexity`, `notes`
+Allowed fields: `review_feedback`, `blocked_reason`, `complexity`, `notes`, `claimed_by`, `base_sha`
 
 Required fields (`id`, `title`, `priority`, `status`, `requires`, `acceptance`, `testing`) cannot be cleared.
 
@@ -343,6 +350,11 @@ backlog.py validate --source both      # Validate both files
     - "command: make test-backend"
   review_feedback: "..."       # Optional. Set by orchestrator on rejection, or by grooming skill for UAT feedback
   blocked_reason: "..."        # Optional. Required when status is blocked
+  claimed_by: worker-1         # Optional. Set by next-work --claim
+  base_sha: abc1234            # Optional. Commit the story's work started from (HEAD when it
+                               # entered in_progress). Recorded by next-work --claim and on every
+                               # entry to in_progress. The story's change set for review/QA is
+                               # `git diff <base_sha>` — never `git diff main`
 ```
 
 ### ID Prefixes
@@ -391,6 +403,9 @@ backlog.py validate --source both      # Validate both files
 ```bash
 # Single-call work selection (recommended)
 backlog.py next-work --format json
+
+# Select and claim in one atomic call (sets status, claimed_by, base_sha=HEAD)
+backlog.py next-work --claim worker-1 --format json
 ```
 
 For manual queue inspection (reference only):
@@ -406,8 +421,9 @@ backlog.py query --status todo --check-requires --format json
 ### Status transitions
 
 ```bash
-# Start work
+# Start work (record the base commit alongside; next-work --claim does both)
 backlog.py set S-083 status in_progress
+backlog.py set S-083 base_sha "$(git rev-parse HEAD)"
 
 # Developer done → review
 backlog.py set S-083 status review
@@ -435,9 +451,24 @@ echo "Needs design decision on layout" | backlog.py set-text S-083 blocked_reaso
 echo "Please fix the button layout" | backlog.py set-text S-083 review_feedback
 backlog.py set S-083 status uat_feedback
 
-# Orchestrator picks up uat_feedback story and transitions to in_progress:
+# Orchestrator picks up uat_feedback story and transitions to in_progress,
+# recording a fresh base commit (every entry to in_progress records one):
 backlog.py set S-083 status in_progress
+backlog.py set S-083 base_sha "$(git rev-parse HEAD)"
 ```
+
+### Review/QA context bundle
+
+The change set handed to review and QA is always the story's own work:
+
+```bash
+git diff <base_sha>          # working tree vs the story's base commit
+```
+
+Never `git diff main` — stories accumulate on one run branch, so after the first
+story that diff would include every earlier, already-reviewed story. The developer
+brief carries the corresponding line:
+`**Base**: <base_sha> (work on the current branch; do not create branches or merge)`.
 
 ### Filing bug tickets from QA sweep
 
