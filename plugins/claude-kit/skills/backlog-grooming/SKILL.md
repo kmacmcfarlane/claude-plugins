@@ -32,6 +32,8 @@ Summarize the backlog state for the user: how many stories in each status, what'
 
 If there are stories in `uat` status, present them for triage using `AskUserQuestion`.
 
+Note on where UAT work lives: ralph never merges. `uat` means "on the run branch" (`worktree-<name>` — the deliverable a human fast-forwards `main` from after approval). To inspect a story's actual changes during triage, use `git diff <base_sha>` (the story's recorded base commit) — never `git diff main`, which after the first story would include every earlier story on the run branch.
+
 Group stories by category (bugs, features/enhancements, infrastructure/testing) and present in batches of up to 4.
 
 **Before each batch**, output a markdown reference block so the user can scroll up for context:
@@ -229,10 +231,15 @@ python3 .claude-sandbox/scripts/backlog/backlog.py validate
 
 ### Step 2.4: Commit
 
-Stage and commit all backlog changes in a single commit:
+Stage and commit all backlog changes in a single commit. With `trackInHost: true` the backlog files are tracked by the host repo:
 ```bash
-git add agent/backlog.yaml agent/backlog_done.yaml
+git add .claude-sandbox/agent/backlog.yaml .claude-sandbox/agent/backlog_done.yaml
 git commit -m "chore: backlog grooming — <brief summary>"
+```
+
+With `trackInHost: false` (the default), `.claude-sandbox/` is gitignored in the host repo and has its own sidecar git repo — commit there instead:
+```bash
+git -C .claude-sandbox add -A && git -C .claude-sandbox commit -m "chore: backlog grooming — <brief summary>"
 ```
 
 The commit message should summarize counts: stories approved, feedback added, new tickets created, priority changes made.
