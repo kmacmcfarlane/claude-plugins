@@ -476,6 +476,31 @@ def item_json(item, by_id=None):
 
 # ── Commands ────────────────────────────────────────────────────────────────
 
+# Host-.gitignore spellings that ignore the whole .claude-sandbox/ dir.
+SANDBOX_IGNORES = ("/.claude-sandbox/", "/.claude-sandbox",
+                   ".claude-sandbox/", ".claude-sandbox")
+
+
+def sandbox_shape(root):
+    """Classify a `.claude-sandbox/work` store per agents/decisions/0002:
+    ('private'|'sidecar'|'ignored', repo_dir), or (None, None) for `.work/`
+    and other non-sandbox stores. private = host repo tracks config + work;
+    sidecar = a git repo at .claude-sandbox/.git owns the store; ignored =
+    the host .gitignore already whole-dir-ignores .claude-sandbox/."""
+    sandbox = root.absolute().parent
+    if sandbox.name != ".claude-sandbox":
+        return None, None
+    repo = sandbox.parent
+    if (sandbox / ".git").exists():
+        return "sidecar", repo
+    host_gi = repo / ".gitignore"
+    if host_gi.is_file():
+        lines = {ln.strip() for ln in host_gi.read_text().splitlines()}
+        if lines.intersection(SANDBOX_IGNORES):
+            return "ignored", repo
+    return "private", repo
+
+
 def cmd_init(args):
     root = resolve_root(args.root, must_exist=False)
     (root / "items").mkdir(parents=True, exist_ok=True)
@@ -489,6 +514,23 @@ def cmd_init(args):
     gi = root / ".gitignore"
     if not gi.exists():
         gi.write_text(".lock\n*.tmp*\n")
+    shape, repo = sandbox_shape(root)
+    if shape == "private":
+        print("private-shaped repo (no sidecar git, .claude-sandbox/ not "
+              "gitignored): host .gitignore left alone so the store stays "
+              "tracked")
+    elif shape == "sidecar":
+        host_gi = repo / ".gitignore"
+        text = host_gi.read_text() if host_gi.is_file() else ""
+        lines = {ln.strip() for ln in text.splitlines()}
+        if not lines.intersection(SANDBOX_IGNORES):
+            if text and not text.endswith("\n"):
+                text += "\n"
+            host_gi.write_text(text + "/.claude-sandbox/\n")
+            print("sidecar git at .claude-sandbox/.git: added "
+                  "/.claude-sandbox/ to host .gitignore")
+    # shape 'ignored' (already whole-dir-ignored) and non-sandbox stores:
+    # never duplicate the line, never touch the host .gitignore.
     print(f"initialised {root}")
     return 0
 

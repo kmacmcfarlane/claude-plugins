@@ -535,6 +535,73 @@ class TestIds(WiTestCase):
 
 
 
+class TestInitShapes(WiTestCase):
+    """`wi init` vs the host .gitignore, per agents/decisions/0002: a
+    private-shaped repo tracks config + work, so init must never whole-dir
+    ignore .claude-sandbox/; only the sidecar (foreign-safe) shape gets the
+    ignore, and never as a duplicate line."""
+
+    def sandbox_repo(self, name):
+        repo = self.tmp / name
+        (repo / ".claude-sandbox").mkdir(parents=True)
+        return repo, repo / ".claude-sandbox" / "work"
+
+    def test_private_shape_adds_no_ignore_and_says_why(self):
+        # repro of the 2026-09-06 operator-attention incident: fresh private
+        # repo, .claude-sandbox/ present, no sidecar git — init must leave the
+        # host .gitignore alone so the new store stays trackable
+        repo, store = self.sandbox_repo("private")
+        r = run(["init"], store)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertIn("private-shaped", r.stdout)
+        self.assertFalse((repo / ".gitignore").exists())
+        self.assertTrue((store / "items").is_dir())
+
+    @unittest.skipUnless(shutil.which("git"), "git not available")
+    def test_private_shape_store_commits_with_git_add_all(self):
+        repo, store = self.sandbox_repo("private-git")
+        subprocess.run(["git", "init", "-q", str(repo)], check=True)
+        self.assertEqual(run(["init"], store).returncode, 0)
+        subprocess.run(["git", "-C", str(repo), "add", "-A"], check=True)
+        staged = subprocess.run(
+            ["git", "-C", str(repo), "diff", "--cached", "--name-only"],
+            capture_output=True, text=True).stdout
+        self.assertIn(".claude-sandbox/work/README.md", staged)
+
+    def test_sidecar_shape_gets_whole_dir_ignore(self):
+        repo, store = self.sandbox_repo("sidecar")
+        (repo / ".claude-sandbox" / ".git").mkdir()
+        (repo / ".gitignore").write_text("*.pyc\n")
+        r = run(["init"], store)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertEqual((repo / ".gitignore").read_text(),
+                         "*.pyc\n/.claude-sandbox/\n")
+
+    def test_already_ignored_adds_no_duplicate(self):
+        repo, store = self.sandbox_repo("ignored")
+        (repo / ".gitignore").write_text("/.claude-sandbox/\n")
+        r = run(["init"], store)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertEqual((repo / ".gitignore").read_text(),
+                         "/.claude-sandbox/\n")
+
+    def test_sidecar_with_existing_ignore_adds_no_duplicate(self):
+        repo, store = self.sandbox_repo("sidecar-ignored")
+        (repo / ".claude-sandbox" / ".git").mkdir()
+        (repo / ".gitignore").write_text(".claude-sandbox/\n")
+        r = run(["init"], store)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertEqual((repo / ".gitignore").read_text(),
+                         ".claude-sandbox/\n")
+
+    def test_plain_work_store_stays_quiet(self):
+        store = self.tmp / ".work2"
+        r = run(["init"], store)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertEqual(r.stdout, f"initialised {store}\n")
+        self.assertFalse((self.tmp / ".gitignore").exists())
+
+
 class TestDetailsBlocks(unittest.TestCase):
     def test_details_content_never_becomes_items(self):
         import sys, os
