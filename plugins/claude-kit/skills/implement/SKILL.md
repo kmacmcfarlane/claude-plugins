@@ -152,7 +152,7 @@ before deviating. Adopting a non-default base the investigation did *not* record
 same explicit consent `investigate` requires.
 
 Branch naming and worktree layout are in `references/worktree-orchestration.md`. The
-integration branch is the bare slug.
+integration branch is `worktree-<slug>`.
 
 ---
 
@@ -242,7 +242,7 @@ order in the main checkout, running the verification as you go.
 
 ```bash
 git -C <repo> fetch origin
-git -C <repo> checkout -b <slug> origin/<base>
+git -C <repo> checkout -b worktree-<slug> origin/<base>
 ```
 
 Immediately after checkout, regenerate anything checked in that the base may carry stale

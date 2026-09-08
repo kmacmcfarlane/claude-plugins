@@ -46,47 +46,52 @@ test or build command that can gate the merge.
 
 Say which you chose and why. Silent fan-out on a two-file change is a cost with no return.
 
-## The existing convention — use it
+## The convention — harness-native worktrees
 
-This is established tooling, not something to reinvent.
+Use the Claude Code harness's own worktree convention. This is established tooling, not
+something to reinvent.
 
-- Worktrees live at **`.worktrees/<id>/`** in the repo root.
-- `.worktrees/` is gitignored and documented as ephemeral local state. The commits live in the
-  main `.git`, so the directory is disposable.
-- Ralph-scaffolded projects ship a lifecycle manager at
-  **`.claude-sandbox/scripts/worktree/worktree.py`**:
-
-  ```bash
-  python3 .claude-sandbox/scripts/worktree/worktree.py --format json create <id>
-  python3 .claude-sandbox/scripts/worktree/worktree.py list
-  python3 .claude-sandbox/scripts/worktree/worktree.py detect-stale
-  python3 .claude-sandbox/scripts/worktree/worktree.py recover
-  python3 .claude-sandbox/scripts/worktree/worktree.py remove <id> [--force] [--delete-branch]
-  ```
-
-  Plus `merge_helper.py` for conflict resolution:
+- Worktrees live at **`.claude/worktrees/<name>/`** in the repo root, each on branch
+  **`worktree-<name>`** — the harness's native layout.
+- `.claude/worktrees/` is gitignored and is ephemeral local state. The commits live in the
+  main `.git`, so the directory is disposable. If `.claude/worktrees/` is not in the target
+  repo's `.gitignore`, add it before creating the first worktree.
+- **Prefer the harness tools over manual `git worktree add`** — they create, register, and
+  clean up worktrees in this layout for you:
+  - the **Agent tool's worktree isolation** (`isolation: "worktree"`) when dispatching a
+    subagent — the harness gives it its own worktree, auto-cleaned if left unchanged;
+  - **`EnterWorktree`** to move the current session into a worktree;
+  - **`claude --worktree <name>`** to launch a whole session in one.
+- Fall back to plain git only where those are unavailable, producing the same layout:
 
   ```bash
-  python3 .claude-sandbox/scripts/worktree/merge_helper.py --repo-dir . --format json
+  git -C <repo> worktree add .claude/worktrees/<name> -b worktree-<name> <base>
+  git -C <repo> worktree remove .claude/worktrees/<name>
   ```
 
-- **Check whether the script exists before using it.** It ships only with ralph-scaffolded
-  projects and is coupled to `backlog.yaml` — its `create` and `detect-stale` read story
-  status. When the id is an investigation slug rather than a story id, or the script is
-  absent, fall back to plain git:
+- **Single-writer enforcement comes with the harness convention.** From a session inside a
+  harness-created worktree, Edit/Write targeting the main checkout are blocked. A task that
+  needs main-checkout state changed reports the need back; it does not write there.
 
-  ```bash
-  git -C <repo> worktree add .worktrees/<id> -b <id> <base>
-  git -C <repo> worktree remove .worktrees/<id>
-  ```
+### Retired: `.worktrees/<id>` and the ralph worktree helper
 
-  If `.worktrees/` is not in `.gitignore`, add it before creating the first worktree.
+Earlier revisions of this reference mandated worktrees at `.worktrees/<id>/` on bare
+`<slug>-<n>` branches, managed by ralph's `scripts/worktree` helper (`worktree.py` plus
+`merge_helper.py`). That convention is **retired** and the helper is deleted upstream; the
+migration recipe for repos still carrying it is in the claude-sandbox repo's
+`docs/MIGRATION.md`. If a project still has `.worktrees/` paths, bare `<slug>-<n>` branches,
+or the helper scripts, treat them as stale — do not use them.
 
 ## Naming
 
-- Integration branch for the whole run: **`<slug>`** — the investigation slug, bare.
-- Per-task branches when fanning out: **`<slug>-<n>`**, matching worktree `.worktrees/<slug>-<n>/`.
-- Single-task runs use `<slug>` for both, with no worktree at all.
+One name family per run, all in the harness's `worktree-<name>` terms — the branch is always
+`worktree-` plus the worktree's name:
+
+- Integration branch for the whole run: **`worktree-<slug>`**, from the investigation slug.
+  It is created in the main checkout off the verified base and is where the run's work lands.
+- Per-task branches when fanning out: **`worktree-<slug>-<n>`**, matching worktree
+  **`.claude/worktrees/<slug>-<n>/`**.
+- Single-task runs use `worktree-<slug>` alone, with no worktree at all.
 
 ## Gotchas
 
@@ -108,14 +113,19 @@ so the branch does not compile until you do. A no-op diff afterwards means the a
 correct; a diff means the base shipped stale ones.
 
 **Stale worktrees survive crashes.** Before creating any, check for orphans from a previous
-run (`worktree.py detect-stale` / `recover`, or `git worktree list` plus `git -C <path> status
---short`). A worktree with uncommitted changes is never removed automatically — surface it to
-the user and ask.
+run: `git worktree list`, then `git -C <path> status --short` in each. A worktree with
+uncommitted changes is never removed automatically — surface it to the user and ask.
 
 ## Dispatch
 
 For each independent task, spawn a **vanilla `general-purpose` subagent**. There are no custom
 agent definitions for this; the brief carries everything.
+
+Where the harness offers the Agent tool's worktree isolation, prefer dispatching with
+`isolation: "worktree"` — the harness creates and registers the task's worktree itself; the
+brief must then tell the agent to report back the worktree path and `worktree-<name>` branch
+it worked on, because consolidation merges that branch. Otherwise create the worktree first
+(see the convention above) and put its absolute path in the brief.
 
 Each brief is self-contained and states:
 
@@ -138,10 +148,10 @@ depends on has merged and verified.
 Per task, in dependency order:
 
 1. Run the task's own verification inside its worktree. A task whose tests fail does not merge.
-2. Merge its branch into the integration branch in the main checkout.
-3. On conflict, use `merge_helper.py` where available; otherwise resolve by hand with the
-   investigation's approach as the tiebreaker. Never resolve by taking one side wholesale
-   without reading both.
+2. Merge its `worktree-<slug>-<n>` branch into the integration branch (`worktree-<slug>`) in
+   the main checkout.
+3. On conflict, resolve by hand with the investigation's approach as the tiebreaker. Never
+   resolve by taking one side wholesale without reading both.
 4. **Re-run the full verification on the integration branch after every merge**, not only at
    the end. Two independently-green tasks can be red together, and finding that out after six
    merges means bisecting your own work.
@@ -154,7 +164,10 @@ what you tried — do not keep merging on top of a red integration branch.
 
 Before reporting completion:
 
-- Every worktree removed, or explicitly reported as retained with the reason.
-- Per-task branches deleted once merged; the integration branch retained.
+- Every worktree removed (`git worktree remove .claude/worktrees/<slug>-<n>`, or the
+  harness's own cleanup where it created the worktree), or explicitly reported as retained
+  with the reason.
+- Per-task `worktree-<slug>-<n>` branches deleted once merged; the integration branch
+  `worktree-<slug>` retained.
 - `git worktree list` shows only the main checkout, or exactly what you said you kept.
 - `git status` in the main checkout is clean apart from intended changes.
