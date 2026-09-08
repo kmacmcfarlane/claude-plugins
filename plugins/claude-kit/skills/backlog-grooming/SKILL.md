@@ -237,7 +237,7 @@ git add .claude-sandbox/agent/backlog.yaml .claude-sandbox/agent/backlog_done.ya
 git commit -m "chore: backlog grooming — <brief summary>"
 ```
 
-With `trackInHost: false` (the default), `.claude-sandbox/` is gitignored in the host repo and has its own sidecar git repo — commit there instead:
+With `trackInHost: false` (the default), `.claude-sandbox/` is gitignored in the host repo and has its own sidecar git repo. Per the sidecar commit SOP in the `backlog-yaml` skill, do NOT auto-commit there — PROMPT the user to commit, giving them the exact command:
 ```bash
 git -C .claude-sandbox add -A && git -C .claude-sandbox commit -m "chore: backlog grooming — <brief summary>"
 ```
