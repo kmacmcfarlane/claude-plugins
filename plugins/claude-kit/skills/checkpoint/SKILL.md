@@ -23,7 +23,8 @@ do Steps 0, 2, 4b only, and keep the whole checkpoint under a screen.
 ## Step 0 — Ask the goal, in one round
 
 The operator holds the one input nobody else has. Ask exactly this (pre-drafted answers make
-the cheap path one click), unless the argument already names the mode:
+the cheap path one click) — unless the argument already answers it: mode named → skip
+question 1; mode *and* next skill named → ask only question 2:
 
 1. **"What's the goal from here?"** — *land* (finish one bounded thing, stop) / *continue*
    (keep pulling this thread) / *handoff* (park it, or move it to the owning repo).
@@ -33,6 +34,11 @@ the cheap path one click), unless the argument already names the mode:
    live use).
 3. **"How should the window be handled?"** — pre-draft the `/compact` guidance or the
    `/rewind` point so the answer is confirm/adjust, not compose.
+
+**A stage boundary in a skill chain is a handoff trigger in its own right**, not a rescue for
+a degraded window. The test: the next skill reads its inputs from files this session already
+published. When that is true, hand off regardless of window health — a fresh session starts
+faster and spends none of its window carrying a finished stage.
 
 If "one last thing" will not fit in the remaining headroom, it is not one thing — say so and
 treat it as *handoff*.
@@ -91,7 +97,10 @@ secrets. A repo not yours to commit to stays dirty with a written note.
 **4b.** Rewrite the **rehydration manifest** per `references/handoff-format.md` — at
 `.claude-sandbox/HANDOFF.md` if that directory exists, else `./HANDOFF.md` — in **all three
 modes** (*land* writes `mode: landed` so the next session gets one header line, not a stale
-goal). Then stand the gate down:
+goal). At a stage boundary the published stage file is the authoritative record: point
+**Read in full** at it and carry only what the files do not hold — deploy state, test
+fixtures/accounts, cross-ticket blocks, model/agent rules, CORRECTION/REFUSED lines. Then
+stand the gate down:
 
 ```bash
 python3 "${CLAUDE_PLUGIN_ROOT}/hooks/mark_checkpoint.py" <session-id>
@@ -111,6 +120,13 @@ sentence:
 - **handoff** → `/clear`, or a fresh session in the owning repo; the manifest is the brief and
   the rehydration hook will inject it there.
 - **continue uncompacted** → when the number says there is more room than it felt like.
+
+For a stage-boundary handoff, also print a ready-to-paste opener for the next session:
+
+```text
+Read <manifest path> in full — mode: handoff. Then run /<next-skill> <focus>.
+Do not re-run the previous stage: its gate label is set; its published files are your input.
+```
 
 After a compaction, the manifest + ledger are re-injected automatically and **outrank the
 machine summary**; corrections outrank recollection.

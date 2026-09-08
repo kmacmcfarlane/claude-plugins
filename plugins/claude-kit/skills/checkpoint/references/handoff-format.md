@@ -51,6 +51,10 @@ TOC, read on demand: `path — one line on what it holds`.
 
 - **Secrets: path and key, never value.** A manifest lands in git; sops and `kind: Secret`
   gates do not see prose. Name where a secret lives, never what it is.
+- **Stage boundary in a skill chain:** the published stage file is the authoritative record —
+  **Read in full** points at it, and the manifest carries only what the files do not hold
+  (deploy state, test fixtures/accounts, cross-ticket blocks, model/agent rules,
+  CORRECTION/REFUSED lines).
 - The hook labels the manifest FRESH (fresh), AGED (>24h or any commit drift), STALE (>7 days
   or >30 commits — goal lines must be re-confirmed with the operator), LANDED (`mode: land*` —
   header-only, the work is done).
