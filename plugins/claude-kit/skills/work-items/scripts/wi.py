@@ -691,7 +691,9 @@ def cmd_set(args):
     if field not in FIELD_ORDER:
         raise WiError(1, f"unknown field '{field}'")
     with Lock(root):
-        item = load_item_anywhere(root, args.id)
+        items = load_all(root, archived=True)
+        by_id = {it.id: it for it in items}
+        item = resolve_id(items, args.id)
         if value in ("", "—", "--clear"):
             item.meta[field] = None
         elif field in LIST_FIELDS:
@@ -700,6 +702,19 @@ def cmd_set(args):
             item.meta[field] = int(value)
         else:
             item.meta[field] = value
+        # mirror cmd_add: deps/parent must resolve; ext: never does; --force
+        # bypasses a dangling target but never a self-reference
+        if field == "deps":
+            for dep in item.get("deps", []):
+                if dep == item.id:
+                    raise WiError(1, f"'{dep}' cannot depend on itself")
+                if not dep.startswith("ext:") and dep not in by_id and not args.force:
+                    raise WiError(1, f"dep '{dep}' does not resolve (--force to set anyway)")
+        if field == "parent" and item.get("parent"):
+            if item.get("parent") == item.id:
+                raise WiError(1, f"'{item.id}' cannot be its own parent")
+            if item.get("parent") not in by_id and not args.force:
+                raise WiError(1, f"parent '{item.get('parent')}' does not resolve")
         errs = item.validate()
         if errs:
             raise WiError(3, "; ".join(errs))
@@ -1478,7 +1493,7 @@ def build_parser():
             ("--status", {}), ("--type", {}), ("--tag", {}), ("--owner", {}),
             ("--ready",), ("--json",), ("--plain",)],
         ("set", cmd_set, "set one front-matter field"): [
-            ("id", {}), ("field", {}), ("value", {})],
+            ("id", {}), ("field", {}), ("value", {}), ("--force",)],
         ("import-todo", cmd_import_todo, "import a TODO.md"): [
             ("path", {}), ("--dry-run",)],
         ("export", cmd_export, "export to backlog-yaml"): [
