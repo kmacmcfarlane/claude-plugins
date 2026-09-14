@@ -94,6 +94,13 @@ me afterwards" — the blocking gates (Steps 2, 9, 11, 12) do not disappear, the
 - Decide each gate yourself and record the decision under **Confirmed Assumptions**, framed
   as something a reviewer may overturn. A silently-made decision is the thing this skill
   exists to prevent.
+- A **relayed** decision — one arriving through a peer session, a message, or secondhand
+  notes rather than from the operator in this loop — is evidence of intent, not
+  confirmation. When it would change behaviour or a default for people not present
+  (interactive users, say), record it as an **Open Question that blocks implementation**,
+  never as a Confirmed Assumption: the people it affects cannot confirm it in-session.
+  The failure this prevents: "agents should use worktrees" relayed into "worktrees on by
+  default for everyone", which broke resume history for interactive sessions.
 - Anything you would have *asked* becomes an **Open Question** with an owner and a
   blocks-or-not marking. If one genuinely blocks, stop and say so rather than guessing.
 - Treat Step 12 as Save, and report every recorded decision together at the end so the user
