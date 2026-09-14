@@ -237,16 +237,18 @@ wait for the outcome file in Step 10.
 plugin skills matching the stack. The investigation names the patterns to follow; the project
 docs say how the code is actually written.
 
-**Inline** (the default): create the branch off the verified base, work the tasks in dependency
-order in the main checkout, running the verification as you go.
+**Inline** (the default): create the integration branch off the verified base in the main
+checkout, then work the tasks in dependency order in the session's own worktree
+(`EnterWorktree`, no per-task fan-out), running the verification as you go; the worktree's
+branch merges into `worktree-<slug>` from the main checkout when done.
 
 ```bash
 git -C <repo> fetch origin
 git -C <repo> checkout -b worktree-<slug> origin/<base>
 ```
 
-Immediately after checkout, regenerate anything checked in that the base may carry stale
-(codegen, mocks, generated clients). A no-op diff means the artifacts were correct; a diff
+Immediately after entering the worktree, regenerate anything checked in that the base may
+carry stale (codegen, mocks, generated clients). A no-op diff means the artifacts were correct; a diff
 means the base shipped stale ones — reconcile before proceeding.
 
 **Fan-out**: follow `references/worktree-orchestration.md` — worktree per task, vanilla

@@ -32,7 +32,8 @@ lens. **Tests are the gate.**
 
 ### The decision
 
-Work inline, in the main checkout, when any of these hold:
+Work inline — in the session's own worktree (`EnterWorktree`), with no per-task
+fan-out — when any of these hold:
 
 - The plan has fewer than three tasks.
 - The tasks touch overlapping files.
@@ -50,6 +51,11 @@ Say which you chose and why. Silent fan-out on a two-file change is a cost with 
 
 Use the Claude Code harness's own worktree convention. This is established tooling, not
 something to reinvent.
+
+This is one face of the wider rule — process stays in the checkout, work goes in a
+worktree; the sandbox skill's worktree-mode section owns the details. Remember a worktree
+is a fresh checkout: untracked inputs (`.env`, `node_modules`) are absent unless listed in
+`.worktreeinclude` or covered by Claude Code's `worktree.symlinkDirectories` setting.
 
 - Worktrees live at **`.claude/worktrees/<name>/`** in the repo root, each on branch
   **`worktree-<name>`** — the harness's native layout.
@@ -96,7 +102,8 @@ branch is `worktree-` plus its worktree's name:
   **`.claude/worktrees/<slug>-<n>/`**. A task dispatched with the Agent tool's worktree
   isolation carries whatever `worktree-<name>` branch the harness assigned, as reported by
   the agent.
-- Single-task runs use `worktree-<slug>` alone, with no worktree at all.
+- Single-task (inline) runs still land on `worktree-<slug>`: the work happens in the
+  session's own worktree and merges into the integration branch from the main checkout.
 
 ## Gotchas
 
