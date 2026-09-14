@@ -43,19 +43,29 @@ USER root
 ### Same-Path Mounting
 The container sees the project at its real host path. This is critical for `docker compose` volume resolution against the host daemon.
 
-### Worktree Mode (default on)
-By default the launcher runs Claude in a git worktree, not the main checkout: `.claude/worktrees/<name>` on branch `worktree-<name>`. The name defaults to the container's instance noun, so container, worktree, and branch share one word. `--worktree=NAME` reopens the existing worktree NAME; a join runs bare `--worktree`; `--branch` composes with the fork flags as `--worktree <new-noun>`.
+### The Worktree Convention — process stays in the checkout, work goes in a worktree
+Interactive launches run Claude in the shared repo checkout; worktree mode is **off by default for interactive sessions, on for ralph**. The rationale: Claude Code files transcripts by working directory, so a process living in a worktree has an empty resume history — the process stays in the checkout, the work goes in a worktree.
+
+The working convention:
+
+1. A session starts in the repo checkout. Before substantive edits to the repo, enter a worktree (`EnterWorktree`) or delegate to an Agent with worktree isolation; return with `ExitWorktree` once the work is merged or handed off.
+2. Reading, planning, answering questions, and editing files under `.claude-sandbox/` need no worktree.
+3. Parallel tasks each get their own worktree; never share one.
+4. A worktree is a fresh checkout: untracked inputs (`.env`, `node_modules`) are absent unless listed in `.worktreeinclude` or covered by Claude Code's `worktree.symlinkDirectories` setting.
+5. Ralph is the exception: its whole run is work, the launcher starts it in a worktree, and the run branch is the deliverable.
+
+When the mode resolves on, the launcher runs Claude in a git worktree, not the main checkout: `.claude/worktrees/<name>` on branch `worktree-<name>`. The name defaults to the container's instance noun, so container, worktree, and branch share one word. `--worktree=NAME` reopens the existing worktree NAME; a join runs bare `--worktree` and `--branch` composes with the fork flags as `--worktree <new-noun>` — both only when the mode resolves on. The launcher prints a `Worktree: …` banner only when a worktree is in use or a requested one stood down; a shared-checkout launch prints nothing.
 
 Every container gets `CLAUDE_SANDBOX_PROJECT_DIR` set to the project root (useful for reaching `.claude-sandbox/` from inside a worktree). Shell commands in this skill spell sandbox paths as `"${CLAUDE_SANDBOX_PROJECT_DIR:-.}"/.claude-sandbox/...` so they work from a worktree cwd inside a container and fall back to the project-root cwd on the host. The container carries a `claude-sandbox.worktree` label, `claude-sandbox sessions` lists a WORKTREE column, and attach reports the worktree. The choice is per-session and excluded from the config drift fingerprint.
 
-When the project is not a git work tree, the launcher stands down with the banner `Worktree: off (not a git repository)` and runs in the project directory — see Troubleshooting.
+When the mode resolves on but the project is not a git work tree, the launcher stands down with the banner `Worktree: off (not a git repository)` and runs in the project directory — see Troubleshooting.
 
 **Unverified:** whether Bash writes from inside the worktree into the gitignored `.claude-sandbox/` sidecar pass the harness guard (a live ralph run will settle it).
 
 ### Configuration Precedence
 CLI flag > env var > merged `.claude-sandbox/config.yaml` cascade > defaults
 
-For worktree mode specifically: `--worktree[=NAME]` / `--no-worktree` > `CLAUDE_SANDBOX_WORKTREE` > `worktree: true|false` in the cascade > default on. The `worktree` key cascades like any other scalar — a more-local `config.yaml` overrides an upstream one.
+For worktree mode specifically: `--worktree[=NAME]` / `--no-worktree` > `CLAUDE_SANDBOX_WORKTREE` > `worktree: true|false` in the cascade > the per-kind default (off for interactive launches, on for ralph). One flag/env/key governs both kinds of launch; only the fall-through default differs. The `worktree` key cascades like any other scalar — a more-local `config.yaml` overrides an upstream one.
 
 Three kinds of files are resolved by walking parent directories (direnv-style), each with its own semantics:
 - `.claude-sandbox/config.yaml` — **cascades**: every config from the filesystem root down to the project is deep-merged; more-local values override, `mounts` append (a same `host`+`container` entry overrides the upstream one, e.g. to flip `writable`). The launcher prints the cascade at startup.
@@ -116,10 +126,10 @@ Options (pick any):
   ```
 
 ### Controlling Worktree Mode
-On by default; precedence CLI > env > cascade YAML > default on:
-- **CLI flags**: `--worktree[=NAME]` turns it on (`--worktree=NAME` reopens the existing worktree NAME; bare `--worktree` uses the default name — the instance noun); `--no-worktree` turns it off
-- **Env var**: `CLAUDE_SANDBOX_WORKTREE` (`0`/`false`/`no` disables)
-- **YAML** (`.claude-sandbox/config.yaml`): `worktree: true` or `worktree: false` (cascades)
+Off by default for interactive launches, on for ralph; precedence CLI > env > cascade YAML > per-kind default:
+- **CLI flags**: `--worktree[=NAME]` opts an interactive session in (`--worktree=NAME` reopens the existing worktree NAME; bare `--worktree` uses the default name — the instance noun); `--no-worktree` turns it off — already the interactive default, so rarely needed, but it also turns ralph's worktree off
+- **Env var**: `CLAUDE_SANDBOX_WORKTREE` (`1` enables, `0` disables — sets the default for both interactive and ralph)
+- **YAML** (`.claude-sandbox/config.yaml`): `worktree: true` or `worktree: false` (cascades; one key sets the default for both interactive and ralph)
 
 `claude-sandbox sessions` shows which worktree each session is in (WORKTREE column).
 
@@ -128,7 +138,7 @@ On by default; precedence CLI > env > cascade YAML > default on:
 claude-sandbox --ralph --docker-socket --dangerous --limit 5
 ```
 - Runs Claude in fresh-context iterations (new process each time)
-- Runs in one worktree named `ralph` per run (details are ralph's own contract, not covered here)
+- Runs in one worktree named `ralph` per run — the worktree convention's exception: the whole run is work and the run branch is the deliverable (details are ralph's own contract, not covered here)
 - Stop gracefully: `touch "${CLAUDE_SANDBOX_PROJECT_DIR:-.}"/.claude-sandbox/ralph/stop`
 - Debug: read `"${CLAUDE_SANDBOX_PROJECT_DIR:-.}"/.claude-sandbox/ralph/runlogs/rawlog_*` for full NDJSON streams
 - Metrics: `"${CLAUDE_SANDBOX_PROJECT_DIR:-.}"/.claude-sandbox/ralph/runlog.json`
@@ -180,7 +190,10 @@ Only after the mounts show no route to it should you report it as unreachable �
 what would fix it: add a mount to `.claude-sandbox/config.yaml` and relaunch.
 
 ### Banner says "Worktree: off (not a git repository)"
-Not an error. Worktree mode needs the project to be a git work tree; when it isn't, the launcher stands down and runs Claude in the project directory directly. To use worktree mode, `git init` the project first. To make the stand-down explicit instead, pass `--no-worktree` or set `worktree: false`; the banner still prints but reads `Worktree: off (shared checkout)`.
+Not an error. A requested worktree needs the project to be a git work tree; when it isn't, the launcher stands down and runs Claude in the project directory directly. To use worktree mode, `git init` the project first. This stand-down line is the only off-state banner: a session in the shared checkout (the interactive default, or `--no-worktree`) prints no worktree banner at all.
+
+### `--resume` picker is empty or missing conversations
+Claude Code files transcripts by working directory, and a worktree is a different directory with its own history — an empty picker usually means the session is inside a worktree. `Ctrl+W` in the picker lists sessions across all worktrees (including transcripts from sessions launched while worktree mode was still the interactive default); `Ctrl+A` lists all projects.
 
 ### Container won't start
 1. Check Docker daemon is running: `docker info`

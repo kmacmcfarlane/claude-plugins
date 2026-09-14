@@ -51,6 +51,11 @@ Say which you chose and why. Silent fan-out on a two-file change is a cost with 
 Use the Claude Code harness's own worktree convention. This is established tooling, not
 something to reinvent.
 
+This is one face of the wider rule — process stays in the checkout, work goes in a
+worktree; the sandbox skill's worktree-mode section owns the details. Remember a worktree
+is a fresh checkout: untracked inputs (`.env`, `node_modules`) are absent unless listed in
+`.worktreeinclude` or covered by Claude Code's `worktree.symlinkDirectories` setting.
+
 - Worktrees live at **`.claude/worktrees/<name>/`** in the repo root, each on branch
   **`worktree-<name>`** — the harness's native layout.
 - `.claude/worktrees/` is gitignored and is ephemeral local state. The commits live in the

@@ -50,6 +50,9 @@ don't force).
 
 - The store is resolved `WI_ROOT` → `.claude-sandbox/work/` → `./.work/`; create only via
   `$WI init`, and only when the user asks for the store.
+- Working an item follows the checkout/worktree rule — process stays in the checkout, the
+  item's edits go in a worktree (from there, `WI_ROOT` points at the main checkout's store);
+  the sandbox skill's worktree-mode section owns the details.
 - Item files are hand-editable; run `$WI lint` after hand edits, in the same turn.
 - One session claims an item before working it; two sessions on one item is what `claim` is
   for — respect a conflict.
