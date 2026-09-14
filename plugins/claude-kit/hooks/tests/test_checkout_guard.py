@@ -133,6 +133,27 @@ class TestCheckoutGuard(Base):
                                env={"GIT_DIR": os.path.join(self.tmp.name, "no.git")})
         self.assertEqual((rc, out), (0, {}))
 
+    def test_multi_edit_payload_blocked(self):
+        rc, out, _ = run_hook({"session_id": "s", "hook_event_name": "PreToolUse",
+                               "tool_name": "MultiEdit", "cwd": self.repo,
+                               "tool_input": {"file_path": self.tracked,
+                                              "edits": [{"old_string": "a",
+                                                         "new_string": "b"}]}})
+        self.assertEqual((rc, out), (0, BLOCK))
+
+    def test_notebook_edit_file_path_spelling_blocked(self):
+        # The docs' NotebookEdit payloads use file_path; the guard reads it.
+        nb = os.path.join(self.repo, "fp.ipynb")
+        with open(nb, "w") as f:
+            f.write("{}\n")
+        git(self.repo, "add", "fp.ipynb")
+        git(self.repo, "commit", "-q", "-m", "fp")
+        rc, out, _ = run_hook({"session_id": "s", "hook_event_name": "PreToolUse",
+                               "tool_name": "NotebookEdit", "cwd": self.repo,
+                               "tool_input": {"file_path": nb,
+                                              "new_source": "x"}})
+        self.assertEqual((rc, out), (0, BLOCK))
+
     def test_notebook_edit_payload_shape(self):
         nb = os.path.join(self.repo, "nb.ipynb")
         with open(nb, "w") as f:

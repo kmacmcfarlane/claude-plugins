@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""PreToolUse (Edit|Write|NotebookEdit): enforce the checkout/worktree
-convention from the missing direction.
+"""PreToolUse (Edit|Write|MultiEdit|NotebookEdit): enforce the checkout/
+worktree convention from the missing direction.
 
 The harness blocks worktree sessions from editing the main checkout, but
 nothing stops a main-checkout session editing tracked files. This guard denies
-Edit/Write/NotebookEdit on a file tracked by git when the session's cwd is a
-MAIN checkout (git-dir == git-common-dir), pointing at EnterWorktree / Agent
+the edit tools on a file tracked by git when the session's cwd is a MAIN
+checkout (git-dir == git-common-dir), pointing at EnterWorktree / Agent
 worktree isolation / the sandbox skill's convention section.
 
 Allowed without question: linked-worktree cwds, non-git cwds, untracked files,
@@ -14,7 +14,10 @@ CLAUDE_KIT_ALLOW_CHECKOUT_EDITS=1 env escape hatch, and a per-repo
 .claude/allow-checkout-edits marker file.
 
 Every failure path fails OPEN (allow, exit 0): a guard that breaks edits on
-git errors is worse than no guard. Bash writes (sed/heredoc) are out of scope.
+git errors is worse than no guard. Known limitations (documented in the
+sandbox skill): Bash writes (sed/heredoc) are out of scope, and files inside
+submodules are not guarded from the superproject's checkout — ls-files in the
+superproject sees only the gitlink, so the target reads as untracked.
 
 Block contract: exit 0 with hookSpecificOutput.permissionDecision "deny" on
 stdout, per the hooks reference (PreToolUse decision control).
@@ -70,17 +73,14 @@ def main():
 
     cwd = inp.get("cwd") or os.getcwd()
 
-    git_dir = git(cwd, "rev-parse", "--git-dir")
-    common_dir = git(cwd, "rev-parse", "--git-common-dir")
-    if not git_dir or not common_dir:
+    lines = (git(cwd, "rev-parse", "--git-dir", "--git-common-dir",
+                 "--show-toplevel") or "").splitlines()
+    if len(lines) != 3:
         allow()  # not a git repo, or git unavailable/broken
+    git_dir, common_dir, top = lines
     if (os.path.realpath(os.path.join(cwd, git_dir))
             != os.path.realpath(os.path.join(cwd, common_dir))):
         allow()  # linked worktree: the harness already guards that direction
-
-    top = git(cwd, "rev-parse", "--show-toplevel")
-    if not top:
-        allow()
     top = os.path.realpath(top)
 
     target = path if os.path.isabs(path) else os.path.join(cwd, path)
