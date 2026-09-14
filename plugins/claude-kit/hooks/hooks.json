@@ -1,6 +1,18 @@
 {
-  "description": "claude-kit context guardrails — epoch-aware depth gate (advisory/DUE/HARD in remaining tokens), defer-while-proactive compaction gate, Stop relay + reasoning-ledger nudge, free ledger pointers, and the plugin-data symlink that keeps the shareable status line on a stable path.",
+  "description": "claude-kit context guardrails — epoch-aware depth gate (advisory/DUE/HARD in remaining tokens), defer-while-proactive compaction gate, Stop relay + reasoning-ledger nudge, free ledger pointers, the plugin-data symlink that keeps the shareable status line on a stable path, and the checkout guard that blocks tracked-file edits from a main checkout (worktree convention).",
   "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/checkout_guard.py\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
     "UserPromptSubmit": [
       {
         "matcher": "",
