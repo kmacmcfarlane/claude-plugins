@@ -190,7 +190,7 @@ Only after the mounts show no route to it should you report it as unreachable �
 what would fix it: add a mount to `.claude-sandbox/config.yaml` and relaunch.
 
 ### Banner says "Worktree: off (not a git repository)"
-Not an error. A requested worktree needs the project to be a git work tree; when it isn't, the launcher stands down and runs Claude in the project directory directly. To use worktree mode, `git init` the project first. This stand-down line is the only off-state banner: a session in the shared checkout (the interactive default, or `--no-worktree`) prints no worktree banner at all.
+Not an error. A requested worktree needs the project to be a git work tree; when it isn't, the launcher stands down and runs Claude in the project directory directly. To use worktree mode, `git init` the project first. This stand-down line is the launcher's only off-state banner: a session in the shared checkout (the interactive default, or `--no-worktree`) prints no worktree banner at all — though a `--no-worktree` ralph run still shows `worktree: off (shared checkout)` in the ralph loop's own startup block.
 
 ### `--resume` picker is empty or missing conversations
 Claude Code files transcripts by working directory, and a worktree is a different directory with its own history — an empty picker usually means the session is inside a worktree. `Ctrl+W` in the picker lists sessions across all worktrees (including transcripts from sessions launched while worktree mode was still the interactive default); `Ctrl+A` lists all projects.

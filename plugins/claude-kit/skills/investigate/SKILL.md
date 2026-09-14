@@ -255,8 +255,9 @@ the base branch. If a codegen step is required for the change to build, call it 
 to Modify** so the implementer expects it.
 
 Investigation is process, so it stays in the repo checkout — a probe that needs substantive
-repo edits gets its own worktree first; the sandbox skill's worktree-mode section owns the
-details.
+repo edits gets its own worktree first (a fresh checkout: untracked inputs like `.env` or
+`node_modules` are absent unless `.worktreeinclude` or Claude Code's worktree symlink
+setting covers them); the sandbox skill's worktree-mode section owns the details.
 
 **When a probe reproduces a symptom, the probe's own parameters are suspects too.** A cause
 that *explains* the symptom is not the same as one you have *isolated*. Before recording a

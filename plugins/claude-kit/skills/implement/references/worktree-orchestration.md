@@ -32,7 +32,8 @@ lens. **Tests are the gate.**
 
 ### The decision
 
-Work inline, in the main checkout, when any of these hold:
+Work inline — in the session's own worktree (`EnterWorktree`), with no per-task
+fan-out — when any of these hold:
 
 - The plan has fewer than three tasks.
 - The tasks touch overlapping files.
@@ -101,7 +102,8 @@ branch is `worktree-` plus its worktree's name:
   **`.claude/worktrees/<slug>-<n>/`**. A task dispatched with the Agent tool's worktree
   isolation carries whatever `worktree-<name>` branch the harness assigned, as reported by
   the agent.
-- Single-task runs use `worktree-<slug>` alone, with no worktree at all.
+- Single-task (inline) runs still land on `worktree-<slug>`: the work happens in the
+  session's own worktree and merges into the integration branch from the main checkout.
 
 ## Gotchas
 
