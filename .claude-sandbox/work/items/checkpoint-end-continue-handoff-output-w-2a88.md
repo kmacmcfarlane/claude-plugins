@@ -2,12 +2,11 @@
 id: checkpoint-end-continue-handoff-output-w-2a88
 title: "checkpoint: end continue/handoff output with a ready-to-paste next-session prompt"
 type: feature
-status: doing
+status: done
 priority: 2
-owner: unknown@4d338747396e
-claimed: 2026-09-16T17:56Z
 created: 2026-09-16
 updated: 2026-09-16
+closed: 2026-09-16
 refs:
   - operator message 2026-09-16
 ---
@@ -24,3 +23,8 @@ dispatch: reviewer opus — rule 4 floor
 
 ## Notes
 - 2026-09-16 claimed by unknown@4d338747396e
+- implementer sonnet returned DONE, commit 3b565e8; deviation: removed Step 5's old stage-boundary opener block as a narrower duplicate of the new Step 7 — reviewer to rule. Reviewer opus round 1 dispatched 2026-09-16 17:59:13
+- review round 1: NEEDS_CHANGES — 1 medium (the deleted Step 5 block carried 'do not re-run the previous stage — its outputs are published; read them as inputs' which now exists nowhere), 1 low ('read <path> first' lost 'in full' and the mode declaration; after /clear the hook injects only the header). Reviewer note for the operator: the Lean path (<60K left) skips Steps 5-7, so the opener is skipped exactly when a handoff is likeliest — promote it into the lean path? Fix round 1 sent 2026-09-16 18:01:26, tier unchanged (sonnet, resumed).
+- fix round 1 returned DONE, new commit c584f65 (warning restored inside Step 7's opener; 'in full'). Re-review dispatched 2026-09-16 18:02:28 (reviewer opus, resumed).
+- 2026-09-16 done: e365d99
+- re-review CLEAR (both FIXED; 1 new low: the restored parenthetical lost its 'if your chain records…' conditional — not sent back). Landed merge e365d99 2026-09-16 18:04:12.

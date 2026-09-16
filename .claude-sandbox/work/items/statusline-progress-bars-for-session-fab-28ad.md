@@ -43,3 +43,5 @@ dispatch: reviewer fable — rule 4
 ## Notes
 - 2026-09-16 claimed by unknown@4d338747396e
 - implementer fable returned DONE, commit aa6d0e3 (100 hook tests); reviewer fable round 1 dispatched 2026-09-16 17:56:27
+- review round 1: NEEDS_CHANGES — 2 high (NaN/Infinity resets_at crashes to a blank line; no test for spend_limit), 2 medium (millisecond resets_at renders a 56,000-year countdown; clamping/threshold/round-up behaviours untested), 3 low, 1 note. Fix round 1 sent 2026-09-16 17:59:47, tier unchanged (fable, resumed).
+- fix round 1 returned DONE, new commit 134b7d9 (105 tests); declined low 6 (window without resets_at dropped as malformed) and note 8. Re-review dispatched 2026-09-16 18:02:11 (reviewer fable, resumed).
