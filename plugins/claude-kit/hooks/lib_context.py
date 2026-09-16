@@ -5,8 +5,13 @@ Depth sources, in order of preference:
    and context_window_size from Claude Code on every render. Hooks never get
    those fields in their own input, so the status line doubles as the sensor.
 2. INFERRED - from the transcript's per-message `usage` blocks (the numbers the
-   API charged), window guessed from the session's peak. Inference can only
-   raise the denominator, so a wrong guess under-reports pressure.
+   API charged), window guessed from the session's peak. A guess can be wrong
+   in either direction (live-fired 2026-09-16: a 1M session with a stale exact
+   record was scored against 200K and HARD-blocked), so an inferred depth may
+   warn but never block; context_warn.py requires source "exact" to exit 2.
+   An exact record that has gone stale (older than EXACT_MAX_AGE_S) still
+   pins the window - a session's window never shrinks with time - and its
+   token count is a floor for the re-derived one.
 
 State is per session under $CLAUDE_CONFIG_DIR/claude-kit/context-gate/, and is
 EPOCH-aware: a compaction (PostCompact) or /clear starts a new epoch, resetting
@@ -137,20 +142,36 @@ def read_usage(transcript_path):
     return cur, peak
 
 
-def window(peak):
+def window(peak, floor=0):
+    """Guess the window from the session's peak usage. `floor` is a window that
+    was once reported exactly (by the status line): the guess never returns
+    less than it. CLAUDE_KIT_CONTEXT_WINDOW pins the window outright."""
     env = os.environ.get("CLAUDE_KIT_CONTEXT_WINDOW")
     if env and env.isdigit():
         return int(env)
     small, large = DEFAULTS
-    return large if peak > small * 0.95 else small
+    guess = large if peak > small * 0.95 else small
+    return max(guess, int(floor or 0))
 
 
 def depth(transcript_path, session_id=None):
-    """Return (tokens, window, pct_full, source) where source is 'exact' or 'inferred'."""
+    """Return (tokens, window, pct_full, source).
+
+    source is "exact" when the status line's record is fresh; otherwise it
+    starts with "inferred" - the tokens are a guess and must not hard-block.
+    A stale exact record still contributes its window (as the floor of the
+    guess) and its tokens (as the floor of the transcript-derived count).
+    """
+    ex = {}
     if session_id:
         ex = load_state(session_id).get("exact") or {}
-        if ex and time.time() - ex.get("at", 0) < EXACT_MAX_AGE_S and ex.get("window"):
+        if ex.get("window") and time.time() - ex.get("at", 0) < EXACT_MAX_AGE_S:
             return ex["tokens"], ex["window"], ex["pct"], "exact"
     cur, peak = read_usage(transcript_path)
-    w = window(peak)
-    return cur, w, (100.0 * cur / w if w else 0.0), "inferred"
+    known = int(ex.get("window") or 0)
+    w = window(peak, floor=known)
+    src = "inferred"
+    if known:
+        cur = max(cur, int(ex.get("tokens") or 0))
+        src = "inferred, window from status line"
+    return cur, w, (100.0 * cur / w if w else 0.0), src

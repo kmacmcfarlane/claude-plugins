@@ -6,17 +6,23 @@ tokens drop under thresholds(window)['due'] with no checkpoint recorded this
 epoch, and re-fires every 3 prompts or 25K tokens so it cannot be scrolled
 past. HARD blocks the prompt itself (exit 2 — Claude Code shows stderr to the
 user and ERASES the prompt) unless the prompt is /checkpoint, /compact or
-/clear. Set timeout: 10 in hooks.json: this event is fail-open on timeout, so
-a slow hook silently disables the gate.
+/clear, in the bare or the plugin-prefixed form (/claude-kit:checkpoint).
+A HARD stop requires an EXACT depth (fresh status-line record): when the
+depth is inferred from the transcript it is a guess, so under `hard` the hook
+emits the DUE-style advisory saying a hard stop was not applied and exits 0
+(live-fired 2026-09-16: a 1M session was blocked against a guessed 200K).
+Set timeout: 10 in hooks.json: this event is fail-open on timeout, so a slow
+hook silently disables the gate.
 """
-import json, os, sys
+import json, os, re, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import lib_context as L
 
 DUE_EVERY_PROMPTS = 3
 DUE_EVERY_TOKENS = 25_000
 BANDS = (60, 75)
-WHITELIST = ("/checkpoint", "/compact", "/clear")
+# /checkpoint, /compact, /clear - bare or plugin-qualified (/claude-kit:checkpoint).
+WHITELIST = re.compile(r"^/(?:[\w-]+:)?(?:checkpoint|compact|clear)\b")
 
 
 def main():
@@ -40,7 +46,7 @@ def main():
     remaining = max(win - tok, 0)
     th = L.thresholds(win)
     done = L.checkpointed_this_epoch(st)
-    whitelisted = prompt.startswith(WHITELIST)
+    whitelisted = bool(WHITELIST.match(prompt))
 
     if done:
         # A checkpoint this epoch stands the whole gate down - DUE, HARD and
@@ -51,10 +57,29 @@ def main():
 
     if remaining <= th["hard"] and not done and not whitelisted:
         L.save_state(sid, st)
+        if src != "exact":
+            # A guess never blocks: the window may be larger than inferred.
+            print(json.dumps({
+                "hookSpecificOutput": {
+                    "hookEventName": "UserPromptSubmit",
+                    "additionalContext":
+                        f"[claude-kit context gate] HARD threshold reached by an "
+                        f"INFERRED depth: {remaining:,} tokens left of {win:,} "
+                        f"({src}); a hard stop was NOT applied because the depth "
+                        f"is inferred, not exact. A checkpoint has not run this "
+                        f"epoch. Run the checkpoint skill now; do not start new "
+                        f"work. Install the status line for exact depth."},
+                "systemMessage":
+                    f"Context: {remaining:,} tokens left (inferred) — under the "
+                    f"hard threshold ({th['hard']:,}); not blocked because the "
+                    f"depth is inferred. Checkpoint now.",
+            }))
+            return
         sys.stderr.write(
             f"[claude-kit context gate] HARD STOP: {remaining:,} tokens left of "
             f"{win:,} ({src}). Your prompt was NOT processed and was erased.\n"
-            f"Run /checkpoint first (it is whitelisted), then re-send:\n"
+            f"Run /checkpoint (or /claude-kit:checkpoint - both forms are "
+            f"whitelisted) first, then re-send:\n"
             f"  {prompt[:200]}\n")
         sys.exit(2)
 

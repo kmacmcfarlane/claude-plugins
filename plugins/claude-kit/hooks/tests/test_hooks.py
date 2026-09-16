@@ -40,10 +40,18 @@ class Base(unittest.TestCase):
                        "window": window, "at": time.time()}
         L.save_state(sid, st)
 
-    def warn(self, sid, prompt="do a thing"):
+    def warn(self, sid, prompt="do a thing", transcript="/nonexistent"):
         return run_hook("context_warn.py",
                         {"session_id": sid, "prompt": prompt,
-                         "transcript_path": "/nonexistent"}, self.env)
+                         "transcript_path": transcript}, self.env)
+
+    def transcript(self, tokens):
+        p = os.path.join(self.tmp.name, "t.jsonl")
+        rec = {"type": "assistant", "message": {"usage": {
+            "input_tokens": 2, "cache_read_input_tokens": tokens - 2,
+            "cache_creation_input_tokens": 0}}}
+        open(p, "w").write(json.dumps(rec) + "\n")
+        return p
 
 
 class TestContextWarn(Base):
@@ -96,6 +104,50 @@ class TestContextWarn(Base):
         self.set_exact("s", 950_000, 1_000_000)
         rc, out, err = self.warn("s", "please do more work")
         self.assertEqual(rc, 0)  # checkpoint stands the gate down
+
+    def test_hard_whitelist_accepts_plugin_prefixed_form(self):
+        for prompt in ("/checkpoint", "/claude-kit:checkpoint",
+                       "/claude-kit:checkpoint land", "/compact keep auth",
+                       "/my-plugin:compact", "/clear", "/x:clear"):
+            self.set_exact("s", 950_000, 1_000_000)
+            rc, out, err = self.warn("s", prompt)
+            self.assertEqual(rc, 0, prompt)
+        for prompt in ("/checkpointx", "/claude-kit:checkpointx",
+                       "checkpoint", "/clearance", "/kit:other"):
+            self.set_exact("s", 950_000, 1_000_000)
+            rc, out, err = self.warn("s", prompt)
+            self.assertEqual(rc, 2, prompt)
+            self.assertIn("/claude-kit:checkpoint", err)
+
+    def test_inferred_depth_never_hard_blocks(self):
+        # Live-fired 2026-09-16: stale exact {186454 of 1M}; transcript at the
+        # same depth; the old hook guessed 200K and blocked with 13,546 left.
+        st = L.load_state("s")
+        st["exact"] = {"pct": 18.6, "tokens": 186_454, "window": 1_000_000,
+                       "at": time.time() - 700}
+        L.save_state("s", st)
+        rc, out, err = self.warn("s", "a long prompt", self.transcript(186_454))
+        self.assertEqual((rc, out, err), (0, {}, ""))
+        self.assertEqual(L.load_state("s")["window"], 1_000_000)
+        # No record at all, transcript deep enough to be under hard on the
+        # guessed 200K window: advisory, not a block.
+        rc, out, err = self.warn("t", "a long prompt", self.transcript(170_000))
+        self.assertEqual(rc, 0)
+        self.assertIn("hookSpecificOutput", out)
+        self.assertIn("NOT applied", out["hookSpecificOutput"]["additionalContext"])
+        self.assertIn("inferred", out["systemMessage"])
+        self.assertIn("not blocked", out["systemMessage"])
+        # Stale exact record that is itself under hard: still exit 0.
+        st = L.load_state("u")
+        st["exact"] = {"pct": 95.0, "tokens": 950_000, "window": 1_000_000,
+                       "at": time.time() - 700}
+        L.save_state("u", st)
+        rc, out, err = self.warn("u", "a long prompt")
+        self.assertEqual(rc, 0)
+        self.assertIn("inferred", out["hookSpecificOutput"]["additionalContext"])
+        # Exact still blocks.
+        self.set_exact("v", 950_000, 1_000_000)
+        self.assertEqual(self.warn("v", "a long prompt")[0], 2)
 
 
 class TestPrecompactGate(Base):
