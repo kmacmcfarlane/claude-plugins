@@ -80,9 +80,9 @@ paths; never `git add .` or `git add -A`. Do not commit anything under .claude-s
 .claude/.
 
 <fix round only — include when resuming or re-dispatching with review findings:>
-Fix round <n> — the nth re-dispatch or resume with review findings; the cap is 3. The
-Model line above is this round's tier (Route rules 2, 3 and 6); when it differs from the
-previous round's, this is a fresh dispatch, not a resume.
+Fix round <n> — the nth re-dispatch or resume with review findings, i.e. review round n+1
+of a 3-review-round cap. The Model line above is this round's tier (Route rules 3 and 6);
+when it differs from the previous round's, this is a fresh dispatch, not a resume.
 Findings to fix are listed below, verbatim. Fix each finding at medium or
 above; each low/nit you decline, state under DECLINED with a reason. Fix as one or more NEW
 commits on top of <reviewed sha>; never amend, rebase, or squash — the reviewer diffs from

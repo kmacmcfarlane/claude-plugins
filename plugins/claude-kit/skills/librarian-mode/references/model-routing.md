@@ -29,7 +29,6 @@ sets the tier, and the fable table wins over the opus one. No hit: sonnet.
 | Breadth | more than three files, or more than one plugin |
 | Judgement in the item | the body records a real trade-off, or the acceptance uses words like coherent, align, reconcile |
 | A prior `NEEDS_CONTEXT` return | the first run could not settle it from the brief alone |
-| Fix round 2 or later | the second re-dispatch with findings |
 
 ### Fable — any one signal
 
@@ -37,7 +36,7 @@ sets the tier, and the fable table wins over the opus one. No hit: sonnet.
 |---|---|
 | Hard to reverse | a hook that gates or blocks edits, commits or tool calls; anything else whose wrong result the harness enforces |
 | Security-relevant | credentials, permission allowlists, sandbox config |
-| Fix round 3 | the last round before the cap |
+| Fix round 2 | the last fix round before the cap |
 | Operator names it | a `model: fable` line in the item body (rule 8) |
 
 ## Reviewer
@@ -56,16 +55,16 @@ than opus. When a fix round bumps the implementer's tier, the reviewer's tier fo
 ## Rounds
 
 Fix round n = the nth re-dispatch or resume with review findings = review round n+1. The
-cap is 3 fix rounds; a fourth means the brief or the item is wrong — escalate. Fix round
-3 is therefore the last before the cap.
+cap is 3 review rounds — the first review plus two fix rounds; a third review without
+`CLEAR` means the brief or the item is wrong, not the code: block the item and ask the
+operator to weigh in. Fix round 2 is therefore the last before the cap.
 
 | Dispatch | Tier |
 |---|---|
 | First run | per the tables above, or the operator pin |
 | Re-dispatch after `NEEDS_CONTEXT` | at least opus (opus signal) |
 | Fix round 1 | unchanged — the brief gets sharper, not the model |
-| Fix round 2 | at least opus |
-| Fix round 3 | fable |
+| Fix round 2 | fable — the last round before the cap |
 
 A tier only rises across rounds; it never falls, and a pinned tier never falls below its
 pin. A resumed agent keeps its model, so a tier bump on either role is a fresh dispatch
@@ -107,9 +106,10 @@ dispatch: reviewer opus — rule 4 floor
 The reviewer returns `NEEDS_CHANGES` with one medium. Fix round 1 (review round 2):
 implementer stays sonnet, resumed with the finding; the same reviewer is resumed. `CLEAR`.
 Report: `verified: review CLEAR after 1 fix round (impl sonnet, review opus)`. Had that
-re-review failed too, fix round 2 would re-dispatch the implementer fresh at opus, with the
-full brief and both findings lists, and a fresh opus reviewer is not needed — the reviewer
-was already opus, so it is resumed.
+re-review failed too, fix round 2 — the last before the cap — would re-dispatch the
+implementer fresh at fable, with the full brief and both findings lists, and the reviewer
+would be a fresh fable one too (rule 4): a resumed agent keeps its model. A third review
+without `CLEAR` ends the loop — block the item and ask the operator.
 
 **"Add a PreToolUse hook that blocks edits to the main checkout from a worktree
 session."** Executable logic (opus) and a hook that blocks edits (fable): fable wins.

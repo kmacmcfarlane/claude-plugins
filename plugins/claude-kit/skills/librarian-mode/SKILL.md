@@ -165,11 +165,11 @@ Rules:
 
 ## Route
 
-Route every dispatch — an unrouted sub-agent inherits the librarian's, dearest, model —
-via the Agent tool's `model` field (`sonnet` | `opus` | `fable`); tables and worked
+Route every dispatch — an unrouted sub-agent inherits the librarian's model, the dearest
+tier — via the Agent tool's `model` field (`sonnet` | `opus` | `fable`); tables and worked
 examples: `references/model-routing.md`. Rounds count **fix rounds**: fix round n = the
-nth re-dispatch or resume with review findings = review round n+1; cap 3. The Report's
-`verified:` line counts the same way, `CLEAR after N fix round(s)`, N possibly 0.
+nth re-dispatch or resume with findings = review round n+1; cap 3 review rounds. The
+`verified:` line counts fix rounds too.
 
 1. **Default implementer: sonnet.** The brief constrains the work; a sonnet failure is
    cheap.
@@ -177,17 +177,16 @@ nth re-dispatch or resume with review findings = review round n+1; cap 3. The Re
    status line, settings write); doctrine or marketplace shape (README catalog or
    placement, CLAUDE.md layout, marketplace.json, a plugin split or move); more than three
    files or more than one plugin; a real trade-off in the item body, or judgement words in
-   the acceptance (coherent, align, reconcile); a prior `NEEDS_CONTEXT`; fix round 2 or
-   later.
+   the acceptance (coherent, align, reconcile); a prior `NEEDS_CONTEXT`.
 3. **Implementer → fable** when a wrong result is hard to reverse or touches the harness:
    hooks that gate or block edits, commits or tool calls; security-relevant (credentials,
-   permission allowlists, sandbox config); fix round 3 (last before the cap); the operator
-   names it. Rule 3 wins over rule 2.
+   permission allowlists, sandbox config); fix round 2 (the last before the cap); the
+   operator names it. Rule 3 wins over rule 2.
 4. **Reviewer = implementer's tier, floor opus.** Sonnet gets an opus reviewer; opus gets
    opus; fable gets fable. The gate is never weaker than opus.
 5. **Haiku is out of scope.** Mechanical checks you run yourself.
-6. **Re-dispatch after a rejection keeps the tier** and sharpens the brief; the round
-   signals in rules 2 and 3 are the only bumps, and a tier never falls.
+6. **Re-dispatch after a rejection keeps the tier** and sharpens the brief; rule 3's round
+   signal is the only bump; a tier never falls.
 7. **Record each dispatch in the item body** before the call — `dispatch: <role> <model>
    — <signal>` — and name both final tiers in the Report's `verified:` line
    (`sonnet→opus` when a round bumped one).
@@ -262,16 +261,17 @@ back clear — not the implementer, not the operator.
      **reviewer** with the re-review variant in `references/review-brief.md`, pasting the
      new shas and the declined list: it verifies each prior finding by file:line, re-runs
      the same checks, attacks the fix, and rules each declined one DECLINED or OPEN.
-   - Repeat until `CLEAR`. **Cap: 3 fix rounds.** A fourth means the brief or the item
-     is wrong, not the code — escalate instead. Tier per fix round:
+   - Repeat until `CLEAR`. **Cap: 3 review rounds** — the first review plus two fix
+     rounds. A third review without `CLEAR` means the brief or the item is wrong, not the
+     code: block it and ask the operator to weigh in. Tier per round:
      `references/model-routing.md` § Rounds.
    - You never fix a finding yourself, not even a nit. You never argue a severity down.
 
 4. **What reaches the operator** — under `decisions needed` in the Report — is a
    **show-stopper with real impact**, and only that: a `SHOW_STOPPER` verdict, a finding
-   that changes the item's scope or reverses a decision
-   the operator made, or the round cap hit. Every other finding, critical included, is
-   resolved inside the loop; the operator sees only the round count in `verified:`.
+   that changes the item's scope or reverses a decision the operator made, or the cap hit.
+   Every other finding, critical included, is resolved inside the loop; the operator sees
+   only the round count in `verified:`.
 
 5. **Record the result in the item body** before Land (append with Bash — the item file
    under `$WI_ROOT` is not a custody file): rounds run; findings fixed; findings declined,
@@ -310,7 +310,7 @@ only the first.
 5. `$WI done <id> --note <merge-sha>`.
 
 A red check or a doctrine miss here stops the landing: `$WI handoff <id> --blocked "<what>"`,
-and it goes back into the Review fix loop as a finding, counting toward the round cap.
+and it goes back into the Review fix loop as a finding, counting toward the cap.
 **Never merge to make a check pass later.**
 
 The main checkout must be on `main` and clean before a merge — except first-start dirt
@@ -343,7 +343,7 @@ Stop when you catch yourself doing any of these:
 - **Merging without running a check** — including "the agent said the tests passed" and
   "the reviewer said CLEAR".
 - **Escalating a finding the fix loop could have resolved** — the operator hears about
-  show-stoppers, scope changes and the round cap, never about a medium.
+  show-stoppers, scope changes and the cap, never about a medium.
 - **Skipping the work item** for a request that looks too small to file.
 - **Touching product code**, or reasoning about a product repo's internals at all.
 - **Editing the main checkout from a worktree session.**
