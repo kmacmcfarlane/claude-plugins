@@ -35,6 +35,14 @@ Context skills for the [ai-scripts](https://github.com/kmacmcfarlane/ai-scripts)
 |-------|-------------|
 | `ai-scripts` | Project context for caption_util, llm_fetch, token_count, and more |
 
+### chat
+
+Conversational skills — structured product research and purchase recommendations.
+
+| Skill | Description |
+|-------|-------------|
+| `product-research` | Requirements-first product research: broad search, candidate analysis, comparison writeup with prices and vendor links |
+
 ## Setup
 
 ### Add the marketplace
@@ -82,6 +90,9 @@ claude-plugins/
 │   ├── ai-scripts/              # AI utility tools
 │   │   └── skills/
 │   │       └── ai-scripts/
+│   ├── chat/                    # Conversational skills
+│   │   └── skills/
+│   │       └── product-research/
 │   └── claude-kit/              # Dev tooling
 │       └── skills/
 │           ├── backlog-entry/
