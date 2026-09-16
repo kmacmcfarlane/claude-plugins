@@ -36,6 +36,12 @@ marker, so removal is not "healed" back.
 from the other. Verify after install: the gauge shows `NN%  NNNk left  eN` in the footer of
 the next session.
 
+On a Pro/Max subscription (Claude Code >= 2.1.251) the gauge also shows plan usage bars after
+the context gauge — `5h` (session window), `7d` (weekly), and `$` where a spend limit is set —
+each with the used percentage and a reset countdown, read from the official `rate_limits`
+field of the status-line payload. API-key sessions never receive `rate_limits`, so they see
+none; the bars need no configuration and cannot be enabled for them.
+
 ## If the gate blocks wrongly
 
 A hard block needs a fresh exact reading; an inferred depth (stale or missing record) only

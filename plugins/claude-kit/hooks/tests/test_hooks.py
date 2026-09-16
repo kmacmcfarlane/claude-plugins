@@ -394,5 +394,66 @@ class TestLedgerPointer(Base):
         self.assertEqual(self.read_ledger(), "")
 
 
+class TestStatusline(Base):
+    CTX = {"used_percentage": 42.0, "context_window_size": 1_000_000,
+           "total_input_tokens": 420_000}
+
+    def line(self, payload):
+        payload.setdefault("session_id", "s")
+        payload.setdefault("context_window", dict(self.CTX))
+        payload.setdefault("model", {"display_name": "Fable"})
+        rc, out, err = run_hook("statusline.py", payload, self.env)
+        return rc, out.get("_raw", ""), err
+
+    def test_plan_usage_bars_both_windows(self):
+        now = time.time()
+        rc, line, _ = self.line({"rate_limits": {
+            "five_hour": {"used_percentage": 23.5, "resets_at": now + 2 * 3600 + 600},
+            "seven_day": {"used_percentage": 91.2, "resets_at": now + 3 * 86400}}})
+        self.assertEqual(rc, 0)
+        self.assertEqual(line.count("\n"), 1)
+        self.assertIn("[Fable]", line)
+        self.assertIn("42%  580k left  e0", line)
+        self.assertIn("5h \033[32m██░░░░░░░░\033[0m 23% resets 2h10m", line)
+        self.assertIn("7d \033[31m█████████░\033[0m 91% resets 3d", line)
+        self.assertLess(line.index("580k left"), line.index("5h "))
+        self.assertLess(line.index("5h "), line.index("7d "))
+
+    def test_no_bars_without_rate_limits(self):
+        rc, line, _ = self.line({})
+        self.assertEqual(rc, 0)
+        self.assertNotIn("resets", line)
+        self.assertIn("42%  580k left  e0", line)
+        rc, line, _ = self.line({"rate_limits": {}})
+        self.assertEqual((rc, "resets" in line), (0, False))
+
+    def test_window_with_past_reset_is_absent(self):
+        now = time.time()
+        rc, line, _ = self.line({"rate_limits": {
+            "five_hour": {"used_percentage": 99.0, "resets_at": now - 60},
+            "seven_day": {"used_percentage": 75.0, "resets_at": now + 86400}}})
+        self.assertEqual(rc, 0)
+        self.assertNotIn("5h ", line)
+        self.assertIn("7d \033[33m███████░░░\033[0m 75% resets 1d", line)
+
+    def test_malformed_rate_limits_do_not_crash(self):
+        for bad in ("garbage", 7, ["five_hour"],
+                    {"five_hour": "x", "seven_day": {"used_percentage": "no",
+                                                     "resets_at": None}},
+                    {"five_hour": {"used_percentage": 12.0}}):
+            rc, line, err = self.line({"rate_limits": bad})
+            self.assertEqual((rc, err), (0, ""), bad)
+            self.assertNotIn("resets", line)
+            self.assertIn("42%  580k left", line)
+
+    def test_exact_state_still_written(self):
+        rc, _, _ = self.line({"rate_limits": {
+            "five_hour": {"used_percentage": 5.0, "resets_at": time.time() + 100}}})
+        self.assertEqual(rc, 0)
+        ex = L.load_state("s")["exact"]
+        self.assertEqual((ex["pct"], ex["tokens"], ex["window"]),
+                         (42.0, 420_000, 1_000_000))
+
+
 if __name__ == "__main__":
     unittest.main()
