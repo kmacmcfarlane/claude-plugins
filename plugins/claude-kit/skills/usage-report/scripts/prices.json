@@ -1,0 +1,62 @@
+{
+  "version": 1,
+  "retrieved": "2026-09-16",
+  "currency": "USD",
+  "unit": "per_1m_tokens",
+  "source": "https://platform.claude.com/docs/en/about-claude/pricing",
+  "normalization_base": "claude-opus-5",
+  "default_model": "claude-sonnet-5",
+  "notes": [
+    "List prices only. Claude Code transcripts have carried no costUSD since 1.0.9, so every dollar figure here is a local estimate, not a bill.",
+    "On subscription plans (Pro/Max/Team) the dollar total is not what is billed; use it as a relative routing metric.",
+    "Every entry is marked uncertain: the figures come from a single 2026-09-16 fetch of the pricing page and were not cross-checked against the claude-api skill. Confirm before treating any number as authoritative.",
+    "Opus 5 fast mode ($10 input / $50 output) is not modelled; records are priced at the standard tier.",
+    "Batch API discount (50%) is not modelled.",
+    "cache_write_1h is used when the usage block splits cache creation into ephemeral_1h_input_tokens; otherwise cache creation is priced at the 5m rate.",
+    "Model ids observed locally that predate the priced entries (claude-fable-5, claude-opus-4-7, claude-opus-4-8) are aliased to the current same-family entry. Historical pricing is not modelled, so records served by an older model are priced at today's rate for its family \u2014 an approximation, not a sourced price."
+  ],
+  "aliases": {
+    "opus": "claude-opus-5",
+    "sonnet": "claude-sonnet-5",
+    "haiku": "claude-haiku-4-5",
+    "fable": "claude-fable-5-1",
+    "inherit": null,
+    "claude-fable-5": "claude-fable-5-1",
+    "claude-opus-4-7": "claude-opus-5",
+    "claude-opus-4-8": "claude-opus-5"
+  },
+  "models": {
+    "claude-opus-5": {
+      "input": 5.0,
+      "output": 25.0,
+      "cache_write_5m": 6.25,
+      "cache_write_1h": 10.0,
+      "cache_read": 0.5,
+      "uncertain": true
+    },
+    "claude-sonnet-5": {
+      "input": 2.0,
+      "output": 10.0,
+      "cache_write_5m": 2.5,
+      "cache_write_1h": 4.0,
+      "cache_read": 0.2,
+      "uncertain": true
+    },
+    "claude-haiku-4-5": {
+      "input": 1.0,
+      "output": 5.0,
+      "cache_write_5m": 1.25,
+      "cache_write_1h": 2.0,
+      "cache_read": 0.1,
+      "uncertain": true
+    },
+    "claude-fable-5-1": {
+      "input": 10.0,
+      "output": 50.0,
+      "cache_write_5m": 12.5,
+      "cache_write_1h": 20.0,
+      "cache_read": 0.25,
+      "uncertain": true
+    }
+  }
+}
