@@ -4,7 +4,10 @@ The dispatch brief for one feature. Fill every placeholder; delete nothing excep
 fix-round clause under Commit, which is included only when resuming or re-dispatching the
 implementer with review findings. The agent starts
 with none of the librarian's context and must be able to finish from this text alone. Send
-it as the prompt of one background `general-purpose` Agent.
+it as the prompt of one background `general-purpose` Agent. The librarian sets the
+`Model:` line from the Route step in SKILL.md and passes the same value to the Agent
+tool's `model` field — the brief tells the agent which tier it runs on, the field
+enforces it, and the item body's `dispatch:` line records it.
 
 The prohibitions and the return contract are fixed. The verification commands vary with what
 the item touches — take them from `review-checklist.md`.
@@ -29,6 +32,7 @@ CLI:   WI="python3 $(ls $WORKTREE/plugins/*/skills/work-items/scripts/wi.py | he
 
 Read it first, in full:  $WI show <id>
 Item: <id> — <title>
+Model: <sonnet|opus|fable> — <the Route signal that chose it, or "default">
 Acceptance: <one or two lines, copied from the item body>
 Base branch: <main, unless the item names another>
 Files in scope: <explicit list; anything else is out of scope>
@@ -74,7 +78,8 @@ paths; never `git add .` or `git add -A`. Do not commit anything under .claude-s
 .claude/.
 
 <fix round only — include when resuming or re-dispatching with review findings:>
-Fix round <n>. Findings to fix are listed below, verbatim. Fix each finding at medium or
+Fix round <n>. The Model line above is this round's tier (Route rules 2, 3 and 6).
+Findings to fix are listed below, verbatim. Fix each finding at medium or
 above; each low/nit you decline, state under DECLINED with a reason. Fix as one or more NEW
 commits on top of <reviewed sha>; never amend, rebase, or squash — the reviewer diffs from
 that sha. Report every new sha under COMMIT.
