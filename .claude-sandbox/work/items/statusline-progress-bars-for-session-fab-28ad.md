@@ -2,12 +2,11 @@
 id: statusline-progress-bars-for-session-fab-28ad
 title: "statusline: progress bars for session, fable and weekly plan usage"
 type: feature
-status: doing
+status: done
 priority: 2
-owner: unknown@4d338747396e
-claimed: 2026-09-16T17:52Z
 created: 2026-09-16
 updated: 2026-09-16
+closed: 2026-09-16
 refs:
   - operator message 2026-09-16
 ---
@@ -45,3 +44,5 @@ dispatch: reviewer fable — rule 4
 - implementer fable returned DONE, commit aa6d0e3 (100 hook tests); reviewer fable round 1 dispatched 2026-09-16 17:56:27
 - review round 1: NEEDS_CHANGES — 2 high (NaN/Infinity resets_at crashes to a blank line; no test for spend_limit), 2 medium (millisecond resets_at renders a 56,000-year countdown; clamping/threshold/round-up behaviours untested), 3 low, 1 note. Fix round 1 sent 2026-09-16 17:59:47, tier unchanged (fable, resumed).
 - fix round 1 returned DONE, new commit 134b7d9 (105 tests); declined low 6 (window without resets_at dropped as malformed) and note 8. Re-review dispatched 2026-09-16 18:02:11 (reviewer fable, resumed).
+- 2026-09-16 done: b9ce2f6
+- re-review CLEAR (all FIXED or DECLINED-accepted; 1 new low: the 366-day edge is not pinned by a test). Landed merge b9ce2f6 2026-09-16 18:04:33; 105 hook tests OK on main.
