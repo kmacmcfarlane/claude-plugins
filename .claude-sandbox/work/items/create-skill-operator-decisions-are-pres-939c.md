@@ -2,12 +2,11 @@
 id: create-skill-operator-decisions-are-pres-939c
 title: "create-skill: operator decisions are presented as a numbered list"
 type: feature
-status: doing
+status: done
 priority: 3
-owner: unknown@4d338747396e
-claimed: 2026-09-16T17:53Z
 created: 2026-09-16
 updated: 2026-09-16
+closed: 2026-09-16
 refs:
   - operator message 2026-09-16
 ---
@@ -24,3 +23,6 @@ dispatch: reviewer opus — rule 4
 
 ## Notes
 - 2026-09-16 claimed by unknown@4d338747396e
+- implementer opus returned DONE, commit cbdd156; reviewer opus round 1 dispatched 2026-09-16 17:56:16
+- 2026-09-16 done: 11b5802
+- review CLEAR; 3 lows (bullet length/register; 'operator' vs the file's 'user'; AskUserQuestion vs numbered list mechanism seam with librarian-mode — the 486d review is ruling on that seam). Landed merge 11b5802 2026-09-16 17:59:07.

@@ -86,6 +86,7 @@ Before writing any skill, consult `references/best-practices.md` for Anthropic's
    - Put critical instructions at the top under `## Important` or `## Critical` headers.
    - Include error handling for common failure modes.
    - For critical validations, prefer bundling a script that checks programmatically over relying on language instructions alone.
+   - When the skill needs decisions from the operator, have it present them as a numbered list — one decision per number, each with its options and their impact, the recommended option first — so the operator can answer by number. Never pair that list with a heavy analysis in the same turn: present the analysis, then ask in the next turn.
    - Use `$ARGUMENTS` to reference user input. Use `$0`, `$1` etc. for positional args.
    - Use `` !`command` `` syntax for dynamic preprocessing only when the skill genuinely needs runtime data injected before Claude sees the prompt.
 
