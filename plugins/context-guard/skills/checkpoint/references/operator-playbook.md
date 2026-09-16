@@ -25,7 +25,7 @@ operator never sees.** Fixing that is mostly about session *shape*, not about re
 an *inferred* depth it only warns, because the real window may be larger than the guess — and
 that warning keeps the DUE cadence (first time, then every 3 prompts or 25K tokens), so a
 quiet stretch is not an all-clear. The whitelist that passes a blocked prompt through is
-`/checkpoint`, `/compact` and `/clear`, bare or plugin-prefixed (`/claude-kit:checkpoint`).
+`/checkpoint`, `/compact` and `/clear`, bare or plugin-prefixed (`/context-guard:checkpoint`).
 All of it resets per epoch (each compaction or `/clear`).
 
 ## Tools, and when

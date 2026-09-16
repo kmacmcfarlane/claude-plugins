@@ -118,7 +118,7 @@ class TestContextWarn(Base):
             self.set_exact("s", 950_000, 1_000_000)
             rc, out, err = self.warn("s", prompt)
             self.assertEqual(rc, 2, prompt)
-            self.assertIn("/claude-kit:checkpoint", err)
+            self.assertIn("/context-guard:checkpoint", err)
 
     def test_inferred_depth_never_hard_blocks(self):
         # Live-fired 2026-09-16: stale exact {186454 of 1M}; transcript at the

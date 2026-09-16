@@ -6,7 +6,7 @@ tokens drop under thresholds(window)['due'] with no checkpoint recorded this
 epoch, and re-fires every 3 prompts or 25K tokens so it cannot be scrolled
 past. HARD blocks the prompt itself (exit 2 — Claude Code shows stderr to the
 user and ERASES the prompt) unless the prompt is /checkpoint, /compact or
-/clear, in the bare or the plugin-prefixed form (/claude-kit:checkpoint).
+/clear, in the bare or the plugin-prefixed form (/context-guard:checkpoint).
 A HARD stop requires an EXACT depth (fresh status-line record): when the
 depth is inferred from the transcript it is a guess, so under `hard` the hook
 emits the DUE-style advisory saying a hard stop was not applied and exits 0
@@ -21,7 +21,7 @@ import lib_context as L
 DUE_EVERY_PROMPTS = 3
 DUE_EVERY_TOKENS = 25_000
 BANDS = (60, 75)
-# /checkpoint, /compact, /clear - bare or plugin-qualified (/claude-kit:checkpoint).
+# /checkpoint, /compact, /clear - bare or plugin-qualified (/context-guard:checkpoint).
 WHITELIST = re.compile(r"^/(?:[\w-]+:)?(?:checkpoint|compact|clear)(?=\s|$)")
 
 
@@ -77,7 +77,7 @@ def main():
                 "hookSpecificOutput": {
                     "hookEventName": "UserPromptSubmit",
                     "additionalContext":
-                        f"[claude-kit context gate] HARD threshold reached by an "
+                        f"[context-guard context gate] HARD threshold reached by an "
                         f"INFERRED depth: {remaining:,} tokens left of {win:,} "
                         f"({src}); a hard stop was NOT applied because the depth "
                         f"is inferred, not exact. A checkpoint has not run this "
@@ -95,7 +95,7 @@ def main():
         sys.stderr.write(
             f"[context-guard context gate] HARD STOP: {remaining:,} tokens left of "
             f"{win:,} ({src}). Your prompt was NOT processed and was erased.\n"
-            f"Run /checkpoint (or /claude-kit:checkpoint - both forms are "
+            f"Run /checkpoint (or /context-guard:checkpoint - both forms are "
             f"whitelisted) first, then re-send:\n"
             f"  {prompt[:200]}\n")
         sys.exit(2)

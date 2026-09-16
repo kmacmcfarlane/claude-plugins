@@ -172,7 +172,7 @@ backend/                    # Application code
 frontend/                   # Application code
 docs/                       # Project architecture docs
 .claude-sandbox/ralph/      # Runtime state
-.worktrees/                 # Worktree state
+.claude/worktrees/          # Worktree state (harness-native worktrees)
 .e2e/                       # E2E artifacts
 node_modules/               # Dependencies
 __pycache__/                # Python cache
