@@ -39,8 +39,9 @@ the next session.
 On a Pro/Max subscription (Claude Code >= 2.1.251) the gauge also shows plan usage bars after
 the context gauge — `5h` (session window), `7d` (weekly), and `$` where a spend limit is set —
 each with the used percentage and a reset countdown, read from the official `rate_limits`
-field of the status-line payload. API-key sessions never receive `rate_limits`, so they see
-none; the bars need no configuration and cannot be enabled for them.
+field of the status-line payload. They appear only after the session's first API response,
+so an empty footer before the first reply is not a fault. API-key sessions never receive
+`rate_limits`, so they see none; the bars need no configuration and cannot be enabled for them.
 
 ## If the gate blocks wrongly
 

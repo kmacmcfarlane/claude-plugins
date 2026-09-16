@@ -446,6 +446,67 @@ class TestStatusline(Base):
             self.assertNotIn("resets", line)
             self.assertIn("42%  580k left", line)
 
+    def test_non_finite_and_bool_fields_are_skipped(self):
+        now = time.time()
+        for bad in ({"used_percentage": 5.0, "resets_at": float("nan")},
+                    {"used_percentage": 5.0, "resets_at": float("inf")},
+                    {"used_percentage": float("nan"), "resets_at": now + 100},
+                    {"used_percentage": float("inf"), "resets_at": now + 100},
+                    {"used_percentage": True, "resets_at": now + 100},
+                    {"used_percentage": 5.0, "resets_at": True}):
+            rc, line, err = self.line({"rate_limits": {
+                "five_hour": bad,
+                "seven_day": {"used_percentage": 1.0, "resets_at": now + 100}}})
+            self.assertEqual((rc, err), (0, ""), bad)
+            self.assertNotIn("5h ", line)
+            self.assertIn("7d ", line)
+
+    def test_reset_too_far_out_is_dropped(self):
+        now = time.time()
+        rc, line, err = self.line({"rate_limits": {
+            "five_hour": {"used_percentage": 5.0, "resets_at": (now + 7200) * 1000},
+            "seven_day": {"used_percentage": 5.0, "resets_at": now + 367 * 86400},
+            "spend_limit": {"used_percentage": 5.0, "resets_at": now + 365 * 86400}}})
+        self.assertEqual((rc, err), (0, ""))
+        self.assertNotIn("5h ", line)
+        self.assertNotIn("7d ", line)
+        self.assertIn("$ \033[32m░░░░░░░░░░\033[0m 5% resets 365d", line)
+
+    def test_spend_limit_is_third(self):
+        now = time.time()
+        rc, line, _ = self.line({"rate_limits": {
+            "spend_limit": {"used_percentage": 10.0, "resets_at": now + 86400},
+            "seven_day": {"used_percentage": 20.0, "resets_at": now + 86400},
+            "five_hour": {"used_percentage": 30.0, "resets_at": now + 86400}}})
+        self.assertEqual(rc, 0)
+        self.assertIn("$ \033[32m█░░░░░░░░░\033[0m 10% resets 1d", line)
+        self.assertLess(line.index("5h "), line.index("7d "))
+        self.assertLess(line.index("7d "), line.index("$ "))
+        self.assertEqual(line.count("resets"), 3)
+
+    def test_clamping_and_threshold_boundaries(self):
+        now = time.time()
+        for used, want in ((150.0, "\033[31m██████████\033[0m 100%"),
+                           (-5.0, "\033[32m░░░░░░░░░░\033[0m 0%"),
+                           (69.9, "\033[32m██████░░░░\033[0m 69%"),
+                           (70.0, "\033[33m███████░░░\033[0m 70%"),
+                           (89.9, "\033[33m████████░░\033[0m 89%"),
+                           (90.0, "\033[31m█████████░\033[0m 90%")):
+            rc, line, _ = self.line({"rate_limits": {
+                "five_hour": {"used_percentage": used, "resets_at": now + 100}}})
+            self.assertEqual(rc, 0)
+            self.assertIn("5h " + want, line, used)
+
+    def test_countdown_rounds_up_to_the_minute(self):
+        now = time.time()
+        for ahead, want in ((59, "1m"), (60, "1m"), (90, "2m"),
+                            (3600 + 5 * 60, "1h05m"), (3600, "1h"),
+                            (86400 + 3600, "1d1h"), (2 * 86400, "2d")):
+            rc, line, _ = self.line({"rate_limits": {
+                "five_hour": {"used_percentage": 1.0, "resets_at": now + ahead}}})
+            self.assertEqual(rc, 0)
+            self.assertIn(f"1% resets {want}", line, ahead)
+
     def test_exact_state_still_written(self):
         rc, _, _ = self.line({"rate_limits": {
             "five_hour": {"used_percentage": 5.0, "resets_at": time.time() + 100}}})
