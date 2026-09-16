@@ -50,7 +50,10 @@ cat "${CLAUDE_CONFIG_DIR:-$HOME/.claude}"/claude-kit/context-gate/<session>.json
 cat "${CLAUDE_CONFIG_DIR:-$HOME/.claude}"/claude-kit/ledger/<session>.md
 ```
 
-The gate state gives exact depth and epoch; the **ledger** holds the decisions, rejections,
+The gate state gives the epoch and the depth, with the source it came from: `exact` when the
+status line's record is fresh, otherwise `inferred` — a guess off the transcript, which the
+gate will warn on but never hard-block against. Only an exact depth can hard-block. The
+**ledger** holds the decisions, rejections,
 corrections and pointers already captured as the session ran — Step 2 is a **delta over it**,
 not a reconstruction of hours. (`context_forensics.py` in `scripts/` shows *what* filled the
 window, when that question matters.) Missing files: say so, continue.
