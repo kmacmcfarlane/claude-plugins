@@ -1,0 +1,36 @@
+---
+id: statusline-progress-bars-for-session-fab-28ad
+title: "statusline: progress bars for session, fable and weekly plan usage"
+type: feature
+status: todo
+priority: 2
+created: 2026-09-16
+updated: 2026-09-16
+refs:
+  - operator message 2026-09-16
+---
+
+Operator 2026-09-16: add progress bars to the claude-kit status line for the current-session, Fable, and weekly usage against the current subscription plan's limits, shown only when running on a plan (Pro/Max style rate-limit windows — the librarian reads 'plan mode' as the subscription plan, not Claude Code's planning mode; correct if wrong). Research first: what the statusline JSON payload and hooks actually receive about rate-limit/plan usage (fields, versions), whether /usage data is reachable from a script, and what the 5-hour / weekly windows look like; then a plan for the operator; then implementation in hooks/statusline.py (harness file — fable per rule 3) with tests.
+
+## Handoff
+- doing: research done; plan proposed in item body
+- next: operator decides on the Fable bar (decision 4 in the 2026-09-16 list); then dispatch
+- blocked: awaiting operator decision
+- learned: —
+
+## Research (2026-09-16, claude-code-guide agent; docs: code.claude.com/docs/en/statusline, /costs)
+- Claude Code >= 2.1.251 passes `rate_limits` on the statusline stdin: `five_hour` and `seven_day` (each
+  `used_percentage`, `resets_at` epoch s), plus `spend_limit` behind a gateway. Present only on Pro/Max
+  subscriptions, only after the first API response; a window disappears once its resets_at passes.
+- NO per-model (Opus/Fable) weekly window in the official payload. /usage shows aggregate bars only. The only
+  per-model source is the undocumented https://api.anthropic.com/oauth/usage endpoint read with the OAuth
+  token from ~/.claude/.credentials.json (used by ohugonnot/claude-code-statusline and
+  leeguooooo/claude-code-usage-bar as an optional fallback).
+- Plan detection: presence of rate_limits is the signal (API-key sessions never get it).
+
+## Librarian's proposed plan (awaiting operator decision on the Fable bar)
+Implement from the official payload only: two bars (5h session, 7-day weekly) with used % and a reset countdown,
+rendered only when rate_limits is present; same bar style as the context gauge; hooks/statusline.py + tests.
+The Fable-specific weekly bar is NOT available officially — recommend leaving it out (an undocumented endpoint
+plus reading the credentials file from a status line that runs every render is a risk the kit should not take
+by default); revisit when the payload carries per-model windows. Routing: fable (harness file, rule 3).
