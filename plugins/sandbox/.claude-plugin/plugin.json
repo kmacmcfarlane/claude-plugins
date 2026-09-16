@@ -1,6 +1,6 @@
 {
   "name": "sandbox",
-  "description": "Isolated Docker execution environments for Claude Code — configure, bootstrap, and troubleshoot claude-sandbox containers.",
+  "description": "Isolated execution for Claude Code sessions — configure, bootstrap and troubleshoot claude-sandbox containers, with the checkout/worktree convention their launcher follows enforced by a PreToolUse guard.",
   "author": {
     "name": "Kyle McFarlane"
   },

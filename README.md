@@ -67,7 +67,7 @@ Names are **provisional** pending operator review.
 | …to survive the finite context window (gate, gauge, checkpoint, rehydration) | `context-guard` | **current** | — |
 | …a plan before you code: investigate → reviewed plan → verified implementation | `dev-flow` | **current** | `work-items` (soft) |
 | …repo-durable work items and a pluggable work source | `work-items` | **current** | — |
-| …isolated container execution for agent sessions | `sandbox` | **current** | claude-sandbox repo (external) |
+| …isolated execution for agent sessions (containers, and the checkout/worktree convention) | `sandbox` | **current** | claude-sandbox repo (external) |
 | …unattended agent loops over a backlog ("ralph") | `ralph` | **current** | `sandbox` (hard), `work-items` (soft) |
 | …to maintain this kit itself (skill authoring, upstream sync, templates) | `kit-dev` | **current** | — |
 | …to make Claude good at a specific stack (Goa, Playwright, musubi-tuner, …) | one plugin per stack | **moved** to the expertise marketplace (local scaffold, remote pending) | — |
@@ -87,8 +87,8 @@ The contributor decision tree. Answer in order; the first match wins.
 
 1. **Does it alter harness behavior?** Hooks, a status line, `settings.json` writes,
    background state. → It belongs *only* in a plugin whose stated aim is that behavior
-   (that plugin is `context-guard`: `plugins/context-guard/`). Never bolt it
-   onto a knowledge skill (principle 3).
+   (today `context-guard` for the context system, `sandbox` for the checkout/worktree
+   guard). Never bolt it onto a knowledge skill (principle 3).
 2. **Is it pure stack/tool knowledge** — "make Claude good at X"? → Expertise family, which
    now lives in its own marketplace (`expertise`, repo `claude-expertise`) — not this repo.
    No hooks, no settings.
@@ -180,7 +180,8 @@ need it to use the kit.
 | `update-kit` | Sync skills and workflow files upstream to claude-templates / claude-plugins / claude-expertise / claude-sandbox |
 
 `plugins/kit-dev/` is what remains of the old kitchen-sink plugin after the factoring: its
-`hooks/`, `checkpoint` and `install-statusline` went to `context-guard`; the plan-first
+`hooks/`, `checkpoint` and `install-statusline` went to `context-guard` (except the checkout
+guard, which went to `sandbox` with the convention it enforces); the plan-first
 lifecycle skills to `dev-flow`; the `work-items` skill to `work-items`; the `sandbox` skill to
 `sandbox` and the backlog trio to `ralph`; `goa`, `playwright` and `musubi-tuner` to the
 `expertise` marketplace; its `agents/` directory and the deprecated plan-execution skill they
@@ -230,8 +231,8 @@ Tests: `cd plugins/work-items/skills/work-items && python3 -m unittest discover 
 ### context-guard
 
 Survive the finite context window. Registers the context-gate hooks, the status-line sensor,
-the reasoning ledger and session rehydration — the one plugin here whose aim *is* harness
-behavior.
+the reasoning ledger and session rehydration — one of the two plugins here whose aim *is*
+harness behavior (the other is `sandbox`, for the checkout guard).
 
 | Skill | Description |
 |---|---|
@@ -250,13 +251,23 @@ kept deliberately — renaming it would be a migration for cosmetics). See
 
 ### sandbox
 
-Isolated Docker execution environments for Claude Code. Configure, bootstrap and troubleshoot
+Isolated execution for Claude Code sessions. Configure, bootstrap and troubleshoot
 `claude-sandbox` containers — the config cascade, the child Dockerfile, host-access flags,
-volume mounts and launch failures. Standalone: no dependency on any other plugin here.
+volume mounts and launch failures — and follow the checkout/worktree convention the launcher
+implements (process stays in the checkout, work goes in a worktree). Standalone: no dependency
+on any other plugin here.
 
 | Skill | Description |
 |---|---|
-| `sandbox` | claude-sandbox Docker setup, config, and troubleshooting |
+| `sandbox` | claude-sandbox Docker setup, config, troubleshooting, and the checkout/worktree convention |
+
+It also carries `hooks/` — `checkout_guard.py`, a PreToolUse guard that denies `Edit`/`Write`/
+`MultiEdit`/`NotebookEdit` on git-tracked files when the session's cwd is a main checkout, the
+direction the harness's own worktree guard does not cover. Enforcement is on wherever the plugin
+is installed; the per-repo opt-out is a `.claude/allow-checkout-edits` marker file or
+`CLAUDE_KIT_ALLOW_CHECKOUT_EDITS=1` in the environment (the variable keeps its historical name so
+existing env files keep working). Every git failure fails open. Unit tests:
+`cd plugins/sandbox/hooks && python3 -m unittest discover -s tests -q`.
 
 ### ralph
 

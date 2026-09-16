@@ -14,7 +14,7 @@ plugins/
   chat/                # Skills for LLM chat sessions in web UIs
     skills/
       product-research/
-  context-guard/       # Surviving the context window (the only hook-owning plugin)
+  context-guard/       # Surviving the context window (hook-owning)
     hooks/             # Gate, statusline sensor, ledger, rehydrate + unit tests
     skills/
       {checkpoint,install-statusline}/
@@ -27,7 +27,8 @@ plugins/
   ralph/               # Unattended agent loops over a backlog
     skills/
       {backlog-yaml,backlog-entry,backlog-grooming}/
-  sandbox/             # Isolated container execution (claude-sandbox)
+  sandbox/             # Isolated execution: claude-sandbox + the checkout/worktree convention (hook-owning)
+    hooks/             # Checkout guard + hooks.json + unit tests
     skills/
       sandbox/
   work-items/          # Repo-durable work items + the work-source provider interface
@@ -67,8 +68,8 @@ Where a new or moved thing goes. The full decision tree is in
 [README.md § Where does a new thing go?](README.md); the short form:
 
 1. Alters harness behavior (hooks, status line, `settings.json` writes)? → only a plugin
-   whose stated aim *is* that behavior (`plugins/context-guard/`). Never attach it to a
-   knowledge skill.
+   whose stated aim *is* that behavior (`plugins/context-guard/` for the context system,
+   `plugins/sandbox/` for the checkout/worktree guard). Never attach it to a knowledge skill.
 2. Pure stack/tool knowledge? → the expertise family, in its own marketplace (`expertise`,
    repo `claude-expertise`) — not this repo.
 3. For web-UI chat sessions rather than a coding harness? → the `chat` family (home under
@@ -87,7 +88,7 @@ current home is the real home, and is where files go.
 | Survive the finite context window (gate, gauge, checkpoint, rehydration) | `plugins/context-guard/` | `plugins/context-guard/` — **landed** (Phase 1) |
 | Plan-before-code development flow | `plugins/dev-flow/` | `plugins/dev-flow/` — **landed** (Phase 3) |
 | Repo-durable work items / work-source interface | `plugins/work-items/` | `plugins/work-items/` — **landed** (Phase 4) |
-| Isolated container execution | `plugins/sandbox/` | `plugins/sandbox/` — **landed** (Phase 5) |
+| Isolated execution (containers; the checkout/worktree convention and its guard) | `plugins/sandbox/` | `plugins/sandbox/` — **landed** (Phase 5) |
 | Unattended agent loops over a backlog ("ralph") | `plugins/ralph/` | `plugins/ralph/` — **landed** (Phase 5) |
 | Maintaining this kit itself | `plugins/kit-dev/` | `plugins/kit-dev/` — **landed** (Phase 6) |
 | Stack expertise ("make Claude good at X") | the `expertise` marketplace (repo `claude-expertise`) — not this repo | moved to the expertise marketplace (local scaffold, remote pending) — **landed** (Phase 2) |
