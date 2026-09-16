@@ -119,3 +119,22 @@ Implementer fable; reviewer fable.
 one plugin: opus. Implementer opus; reviewer opus. Had the operator written
 `model: fable` in the item body, both roles would run fable — the pin is a floor for
 every role on that item.
+
+### Full-loop walkthroughs
+
+The same two requests carried end to end, from Intake through Report — moved here out of
+SKILL.md, whose Route step points at this file.
+
+**Operator: "the implement skill's worktree section still says `.worktrees/`; align it with
+the harness-native path."** Intake: `$WI add`; one file, one concern — decide inline ("one
+feature, base main"). Route: impl sonnet (one file, no signal), review opus (floor).
+Delegate: one agent in `.claude/worktrees/<id>`. Review: a medium finding goes back to
+the implementer as a fix commit, same tier; re-review says `CLEAR` — one fix round,
+recorded in the item. Land: checklist, diff read, merge, clean up. Report four
+lines; nothing under `decisions needed`.
+
+**Operator: "split ralph's backlog skills into their own plugin."** Real trade-offs (name,
+dependency direction, catalog wording): present the options with impacts, recommendation
+first, and ask. Then factor: catalog row + plugin skeleton first; the skill moves depend
+on it, each with its catalog edit inside — every dispatch opus (marketplace shape, more
+than one plugin), reviewers opus.
