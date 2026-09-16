@@ -26,6 +26,7 @@ Claude Code development tooling — reusable across projects.
 | `musubi-tuner` | LoRA training/inference with kohya's musubi-tuner |
 | `playwright` | End-to-end testing with Playwright |
 | `chain-of-verification` | CoVe fact-verification pipeline |
+| `implement-plan` | Deprecated — superseded by `investigate` / `implement` |
 
 ### ai-scripts
 
