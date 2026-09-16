@@ -12,7 +12,7 @@ the item touches — take them from `review-checklist.md`.
 ---
 
 ```
-You are building one change to the claude-plugins marketplace's shared agent layer, in an
+You are building one change to this repo's librarian-owned custody layer, in an
 isolated git worktree. Work ONLY inside this directory and nowhere else:
 
   WORKTREE=<absolute path of the main checkout>/.claude/worktrees/<name>
@@ -24,6 +24,8 @@ First verify it exists and is on branch `worktree-<name>`
 
 Store: export WI_ROOT=<absolute path to the main checkout>/.claude-sandbox/work
 CLI:   WI="python3 $(ls $WORKTREE/plugins/*/skills/work-items/scripts/wi.py | head -1)"
+       <on a repo with no plugins/ tree, substitute the installed work-items plugin's
+       wi.py, by absolute path>
 
 Read it first, in full:  $WI show <id>
 Item: <id> — <title>
@@ -34,8 +36,9 @@ Files in scope: <explicit list; anything else is out of scope>
 ## Doctrine — read before writing
 
 - $WORKTREE/README.md — its doctrine, catalog and placement sections when present,
-  otherwise its plugin tables
-- $WORKTREE/CLAUDE.md — layout and conventions
+  otherwise its plugin tables; on a repo with no plugins/ tree, in full
+- $WORKTREE/CLAUDE.md — layout and conventions, and its `## Librarian` heading when
+  present
 - <when the change adds or edits a skill:> the create-skill skill at
   $WORKTREE/plugins/*/skills/create-skill/SKILL.md and its references/ — follow it as the
   authoring procedure.
