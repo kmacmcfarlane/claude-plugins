@@ -11,7 +11,10 @@ Depth sources, in order of preference:
    warn but never block; context_warn.py requires source "exact" to exit 2.
    An exact record that has gone stale (older than EXACT_MAX_AGE_S) still
    pins the window - a session's window never shrinks with time - and its
-   token count is a floor for the re-derived one.
+   token count is a floor for the re-derived one. A new epoch (reset_epoch)
+   demotes the record to window-only: a fresh record written seconds before
+   a compaction or /clear describes the OLD fill and must not gate the new
+   epoch, and the status line may not have re-rendered yet.
 
 State is per session under $CLAUDE_CONFIG_DIR/claude-kit/context-gate/, and is
 EPOCH-aware: a compaction (PostCompact) or /clear starts a new epoch, resetting
@@ -72,6 +75,17 @@ def reset_epoch(session_id, compact_summary=None):
     st.pop("compact_deferred", None)
     st.pop("due", None)
     st["prompt_n"] = 0
+    ex = st.get("exact") or {}
+    if ex.get("window"):
+        # Demote, don't stamp: the record's tokens/pct describe the epoch that
+        # just ended, so a still-fresh one would HARD-block a 3% session until
+        # the status line re-renders. With `at` zeroed and the tokens dropped,
+        # depth() takes its existing stale path - the window survives as the
+        # floor (a compaction never shrinks the model's window) and the count
+        # comes from the post-boundary transcript alone, boundary line or not
+        # (/clear starts a transcript with no compact_boundary). The next
+        # status-line render overwrites the block with a fresh exact record.
+        st["exact"] = {"window": int(ex["window"]), "at": 0}
     if compact_summary is not None:
         st["compact_summary"] = compact_summary[:20000]
     save_state(session_id, st)
