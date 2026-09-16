@@ -559,12 +559,22 @@ class TestStatusline(Base):
             self.assertNotIn("(", line, bad[:40])
             self.assertIn("42%  580k left", line)
 
-    def test_payload_rename_wins_over_stale_registry(self):
-        self.registry({"name": "old-name", "nameSource": "user"})
-        rc, line, err = self.line({"session_name": "renamed"})
+    def test_registry_explicit_name_wins_over_payload_title(self):
+        # /rename and an agent naming itself land in the registry first; the
+        # payload lags (next render) or carries only the AI title.
+        for src in ("user", "peer", "hook", "collision"):
+            self.registry({"name": "set-by-" + src, "nameSource": src})
+            rc, line, err = self.line({"session_name": "AI title"})
+            self.assertEqual((rc, err), (0, ""), src)
+            self.assertIn(f"  (set-by-{src})  ", line, src)
+            self.assertNotIn("AI title", line, src)
+
+    def test_registry_auto_name_is_skipped_for_payload_title(self):
+        self.registry({"name": "hooks-3f", "nameSource": "auto"})
+        rc, line, err = self.line({"session_name": "AI title"})
         self.assertEqual((rc, err), (0, ""))
-        self.assertIn("  (renamed)  ", line)
-        self.assertNotIn("old-name", line)
+        self.assertIn("  (AI title)  ", line)
+        self.assertNotIn("hooks-3f", line)
 
     def test_registry_entry_for_another_session_is_ignored(self):
         self.registry({}, sid="someone-else")
@@ -572,11 +582,12 @@ class TestStatusline(Base):
         self.assertEqual((rc, err), (0, ""))
         self.assertNotIn("(", line)
 
-    def test_derived_default_name_is_not_shown(self):
-        self.registry({"name": "hooks-3f", "nameSource": "derived"})
-        rc, line, err = self.line({})
-        self.assertEqual((rc, err), (0, ""))
-        self.assertNotIn("(", line)
+    def test_derived_and_auto_default_names_are_never_shown(self):
+        for src in ("derived", "auto", None, "bogus"):
+            self.registry({"name": "hooks-3f", "nameSource": src})
+            rc, line, err = self.line({})
+            self.assertEqual((rc, err), (0, ""), src)
+            self.assertNotIn("(", line, src)
 
 
 if __name__ == "__main__":

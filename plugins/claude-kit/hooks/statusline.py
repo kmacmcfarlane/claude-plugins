@@ -14,16 +14,20 @@ seconds). Those render as compact bars after the context gauge; API-key
 sessions never receive `rate_limits`, so they see none.
 
 The session name shown in parentheses comes from a documented fallback chain
-(Claude Code 2.1.273, docs/en/statusline): the payload's `session_name` first --
-the custom name from `/rename` or `--name` when one exists, else the AI-generated
-title, absent otherwise -- then Claude Code's local session registry
-`$CLAUDE_CONFIG_DIR/sessions/<pid>.json` (keys `sessionId`, `name`,
-`nameSource` in user|peer|collision|auto|hook|derived), which also holds names
-set through the peer channel (an agent naming itself) that never reach the
-payload; a `derived` name is the auto default (my-app-3f) and is skipped, as the
-payload skips it. The registry read is one small file per ancestor pid (the
-status line runs as a child of the session, possibly through a shell), never a
-directory scan; any missing or malformed source just falls through.
+(Claude Code 2.1.273, docs/en/statusline). First Claude Code's local session
+registry, `$CLAUDE_CONFIG_DIR/sessions/<pid>.json` (keys `sessionId`, `name`,
+`nameSource` in user|peer|hook|collision|auto|derived), but only when the entry
+for this session carries an explicit nameSource -- user, peer, hook or
+collision: those are the names the operator sets (/rename, an agent naming
+itself through the peer channel), and the payload lags them or never carries
+them. Then the payload's `session_name` -- the custom name from `/rename` or
+`--name` when one exists, else the AI-generated title, absent otherwise --
+which covers the AI title and the window before the registry write. A
+`derived` or `auto` registry name (the my-app-3f default) is never shown, as
+the payload skips it too. The registry read is one small file per ancestor pid
+(the status line runs as a child of the session, possibly through a shell), at
+most ANCESTORS reads and never a directory scan; any missing or malformed
+source just falls through.
 
 Install (user settings, ~/.claude/settings.json):
   "statusLine": {"type": "command", "command": "python3 /path/to/statusline.py"}
@@ -89,6 +93,7 @@ def usage_bars(rate_limits, now=None):
 
 REGISTRY_MAX_BYTES = 65536  # a registry entry is a few hundred bytes; cap the read
 ANCESTORS = 4  # python -> [sh ->] claude: how far up to look for the session pid
+EXPLICIT = ("user", "peer", "hook", "collision")  # nameSource values the operator set
 
 
 def ancestor_pids():
@@ -107,11 +112,13 @@ def ancestor_pids():
 
 
 def registry_name(sid, base=None):
-    """Session name from the local session registry for this session id, or "".
+    """Explicitly set session name from the local session registry, or "".
 
     Reads `<config dir>/sessions/<pid>.json` for each ancestor pid and takes the
     first entry whose `sessionId` is ours, so a reused pid or a sibling session
-    never leaks a name. Anything missing, oversized or malformed yields "".
+    never leaks a name. Only a name with an EXPLICIT nameSource counts; a
+    derived/auto default yields "". Anything missing, oversized or malformed
+    yields "".
     """
     if not sid:
         return ""
@@ -125,21 +132,22 @@ def registry_name(sid, base=None):
         if not isinstance(d, dict) or d.get("sessionId") != sid:
             continue
         name = d.get("name")
-        if isinstance(name, str) and name.strip() and d.get("nameSource") != "derived":
+        if isinstance(name, str) and name.strip() and d.get("nameSource") in EXPLICIT:
             return name.strip()
         return ""
     return ""
 
 
 def session_name(d):
-    """Current name by the chain: payload session_name -> registry -> ""."""
-    name = d.get("session_name")
-    if isinstance(name, str) and name.strip():
-        return name.strip()
+    """Current name by the chain: registry explicit name -> payload session_name -> ""."""
     try:
-        return registry_name(d.get("session_id"))
+        name = registry_name(d.get("session_id"))
     except Exception:
-        return ""
+        name = ""
+    if name:
+        return name
+    name = d.get("session_name")
+    return name.strip() if isinstance(name, str) else ""
 
 
 def main():
