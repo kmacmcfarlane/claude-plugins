@@ -10,9 +10,9 @@ promise env expansion in the command, so none is relied on. The symlink that
 keeps that path current is maintained by this plugin's SessionStart hook.
 
 --user   -> ~/.claude/settings.json            (default)
---project-> ./.claude/settings.json            (shared with the team - only do
+--project-> .claude/settings.json              (shared with the team - only do
             this in a repo whose collaborators want it; it overrides theirs)
---local  -> ./.claude/settings.local.json
+--local  -> .claude/settings.local.json
 --remove -> delete the statusLine entry from the chosen scope
 """
 import argparse, json, os, sys

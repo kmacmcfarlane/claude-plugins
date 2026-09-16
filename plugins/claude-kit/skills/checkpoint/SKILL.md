@@ -50,7 +50,14 @@ cat "${CLAUDE_CONFIG_DIR:-$HOME/.claude}"/claude-kit/context-gate/<session>.json
 cat "${CLAUDE_CONFIG_DIR:-$HOME/.claude}"/claude-kit/ledger/<session>.md
 ```
 
-The gate state gives exact depth and epoch; the **ledger** holds the decisions, rejections,
+The gate state gives the epoch and a depth, but **stores no source label** — the source is
+derived when the gate reads the file. The status line writes an `exact` block (`pct`,
+`tokens`, `window`, `at`); that block counts as *exact* only while `now - at` is under 600s,
+and once it goes stale the depth is re-derived from the transcript and is *inferred* (or
+`inferred, window from status line`, the literal the gate messages print when a stale block
+still supplied the window — the window is trustworthy there, the token count is not). So a
+plain `tokens`/`pct` with no fresh `exact` block is a guess: only an exact depth can
+hard-block, an inferred one only warns. The **ledger** holds the decisions, rejections,
 corrections and pointers already captured as the session ran — Step 2 is a **delta over it**,
 not a reconstruction of hours. (`context_forensics.py` in `scripts/` shows *what* filled the
 window, when that question matters.) Missing files: say so, continue.

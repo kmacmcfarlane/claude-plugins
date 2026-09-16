@@ -21,8 +21,12 @@ operator never sees.** Fixing that is mostly about session *shape*, not about re
 
 **The gate thinks in remaining tokens, not percent.** Advisories at 60/75% used; **DUE** when
 ~150K tokens remain (1M window; 70K on 200K) — finish things, run `/checkpoint`; **HARD** at
-60K/40K left — the gate blocks every prompt except `/checkpoint`, `/compact`, `/clear` until a
-checkpoint records. All of it resets per epoch (each compaction or `/clear`).
+60K/40K left — on an *exact* depth the gate blocks every prompt until a checkpoint records; on
+an *inferred* depth it only warns, because the real window may be larger than the guess — and
+that warning keeps the DUE cadence (first time, then every 3 prompts or 25K tokens), so a
+quiet stretch is not an all-clear. The whitelist that passes a blocked prompt through is
+`/checkpoint`, `/compact` and `/clear`, bare or plugin-prefixed (`/claude-kit:checkpoint`).
+All of it resets per epoch (each compaction or `/clear`).
 
 ## Tools, and when
 
