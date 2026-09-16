@@ -1,9 +1,9 @@
 ---
 name: checkpoint
-description: Land the state of a long session before context is compacted or cleared — ask the operator the goal from here (land / continue / handoff), write the reasoning that exists only in this conversation as a delta over the session ledger, route every finding to the repo that owns it, write the HANDOFF.md rehydration manifest, record the checkpoint so the context gate stands down, then hand the operator the decision. Use when the gate warns (DUE/HARD), when an auto-compaction is deferred, when the user says "checkpoint", "we're running out of context", "wrap this up", or before switching topics after a long thread.
+description: Land the state of a long session before context is compacted or cleared — ask the operator the goal from here (land / continue / handoff), write the reasoning that exists only in this conversation as a delta over the session ledger, route every finding to the repo that owns it, write the HANDOFF.md rehydration manifest, record the checkpoint so the context gate stands down, then hand the operator the decision. Use when the gate warns (DUE/HARD), when an auto-compaction is deferred, when the user says "checkpoint", "we're running out of context", "wrap this up", or before switching topics after a long thread. Also use at a stage boundary in a skill chain — the next skill reads its inputs from files this session already published — regardless of window health.
 disable-model-invocation: false
 allowed-tools: Read, Write, Edit, Glob, Grep, Bash, Agent, AskUserQuestion
-argument-hint: [land | continue | handoff] [optional focus]
+argument-hint: [land | continue | handoff] [then <next-skill>] [optional focus]
 ---
 
 # Checkpoint
@@ -23,7 +23,8 @@ do Steps 0, 2, 4b only, and keep the whole checkpoint under a screen.
 ## Step 0 — Ask the goal, in one round
 
 The operator holds the one input nobody else has. Ask exactly this (pre-drafted answers make
-the cheap path one click), unless the argument already names the mode:
+the cheap path one click) — unless the argument already answers it: mode named → skip
+question 1; mode plus `then <next-skill>` → ask only question 2:
 
 1. **"What's the goal from here?"** — *land* (finish one bounded thing, stop) / *continue*
    (keep pulling this thread) / *handoff* (park it, or move it to the owning repo).
@@ -33,6 +34,11 @@ the cheap path one click), unless the argument already names the mode:
    live use).
 3. **"How should the window be handled?"** — pre-draft the `/compact` guidance or the
    `/rewind` point so the answer is confirm/adjust, not compose.
+
+**A stage boundary in a skill chain is a handoff trigger in its own right**, not a rescue for
+a degraded window. The test: the next skill reads its inputs from files this session already
+published. When that is true, hand off regardless of window health — a fresh session starts
+faster and spends none of its window carrying a finished stage.
 
 If "one last thing" will not fit in the remaining headroom, it is not one thing — say so and
 treat it as *handoff*.
@@ -47,7 +53,14 @@ cat "${CLAUDE_CONFIG_DIR:-$HOME/.claude}"/claude-kit/ledger/<session>.md
 (`claude-kit/` in those paths is the historical name of the plugin this skill shipped in;
 the state directories keep it so existing sessions and ledgers stay readable.)
 
-The gate state gives exact depth and epoch; the **ledger** holds the decisions, rejections,
+The gate state gives the epoch and a depth, but **stores no source label** — the source is
+derived when the gate reads the file. The status line writes an `exact` block (`pct`,
+`tokens`, `window`, `at`); that block counts as *exact* only while `now - at` is under 600s,
+and once it goes stale the depth is re-derived from the transcript and is *inferred* (or
+`inferred, window from status line`, the literal the gate messages print when a stale block
+still supplied the window — the window is trustworthy there, the token count is not). So a
+plain `tokens`/`pct` with no fresh `exact` block is a guess: only an exact depth can
+hard-block, an inferred one only warns. The **ledger** holds the decisions, rejections,
 corrections and pointers already captured as the session ran — Step 2 is a **delta over it**,
 not a reconstruction of hours. (`context_forensics.py` in `scripts/` shows *what* filled the
 window, when that question matters.) Missing files: say so, continue.
@@ -92,9 +105,12 @@ pre-commit hooks, secret encryption, never `git add -A` where the tree carries u
 secrets. A repo not yours to commit to stays dirty with a written note.
 
 **4b.** Rewrite the **rehydration manifest** per `references/handoff-format.md` — at
-`.claude-sandbox/HANDOFF.md` if that directory exists, else `./HANDOFF.md` — in **all three
-modes** (*land* writes `mode: landed` so the next session gets one header line, not a stale
-goal). Then stand the gate down:
+`.claude-sandbox/HANDOFF.md` if that directory exists, else `HANDOFF.md` at the repo
+root — in **all three modes** (*land* writes `mode: landed` so the next session gets
+one header line, not a stale goal). At a stage boundary the published stage file is the
+authoritative record: point **Read in full** at it and carry only what the files do not
+hold — environment state, corrections, refusals; the format spec's stage-boundary rule
+has the full list. Then stand the gate down:
 
 ```bash
 python3 "${CLAUDE_PLUGIN_ROOT}/hooks/mark_checkpoint.py" <session-id>
@@ -114,6 +130,13 @@ sentence:
 - **handoff** → `/clear`, or a fresh session in the owning repo; the manifest is the brief and
   the rehydration hook will inject it there.
 - **continue uncompacted** → when the number says there is more room than it felt like.
+
+For a stage-boundary handoff, also print a ready-to-paste opener for the next session:
+
+```text
+Read <manifest path> in full — mode: handoff. Then run /<next-skill> <focus>.
+Do not re-run the previous stage — its outputs are published and complete; read them as your inputs (if your chain records a per-stage gate or label, it is already set).
+```
 
 After a compaction, the manifest + ledger are re-injected automatically and **outrank the
 machine summary**; corrections outrank recollection.

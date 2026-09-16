@@ -30,6 +30,17 @@ The tool is canonical in the claude-sandbox repo (`scaffold-ralph/scripts/backlo
 
 See `references/cli-reference.md` for the full command reference with examples.
 
+## Worktree-Run Contract (ralph)
+
+Unattended ralph runs execute in a single Claude Code worktree per run (`.claude/worktrees/<name>` on branch `worktree-<name>`), reopened every iteration. The contract:
+
+- **No per-story branches.** Every story is committed on the run branch. The legacy conventions — `story/<id>` branches, `.worktrees/<id>` per-story worktrees, the `scripts/worktree/` helper — are retired (migration recipe: claude-sandbox `docs/MIGRATION.md`).
+- **Ralph never merges.** The run branch `worktree-<name>` is the deliverable; a human reviews it and fast-forwards `main` from it (`git merge --ff-only worktree-<name>`) or opens a PR. `uat` means "on the run branch".
+- **`base_sha`** (optional story field): the commit the story's work started from — HEAD when the story entered `in_progress`. `next-work --claim` records it atomically with the claim, and the orchestrator records a fresh one on every entry to `in_progress` (from `todo` or `uat_feedback`) via `set <id> base_sha "$(git rev-parse HEAD)"`.
+- **Review/QA context is `git diff <base_sha>`** (working tree against the story's base) — never `git diff main`, which after the first story would include every earlier, already-reviewed story on the run branch. A story with no `base_sha` (claimed before the field existed): record one now — the last commit on the branch that is not this story's — and proceed.
+- **Developer briefs carry the base line** `**Base**: <base_sha> (work on the current branch; do not create branches or merge)`.
+- **`.claude-sandbox/` lives in the main checkout** and is gitignored, so it does not exist inside the worktree. Claude Code blocks the Edit/Write/NotebookEdit tools against the main checkout from inside a worktree, so all writes to `.claude-sandbox/` (backlog mutations via `backlog.py`, stop files, ideas/, QUESTIONS.md) go through Bash. UNVERIFIED (pending a live ralph run): whether such Bash writes from the worktree into the gitignored sidecar pass the harness guard.
+
 ## Quick Reference
 
 ```bash
@@ -44,6 +55,12 @@ python3 .claude-sandbox/scripts/backlog/backlog.py query --status todo --fields 
 
 # Select next eligible work (deterministic algorithm)
 python3 .claude-sandbox/scripts/backlog/backlog.py next-work --format json
+
+# Atomically claim it: sets status=in_progress, claimed_by, base_sha=HEAD
+python3 .claude-sandbox/scripts/backlog/backlog.py next-work --claim worker-1 --format json
+
+# Record a story's base commit on (re-)entry to in_progress
+python3 .claude-sandbox/scripts/backlog/backlog.py set S-052 base_sha "$(git rev-parse HEAD)"
 
 # Get a single story
 python3 .claude-sandbox/scripts/backlog/backlog.py get S-052

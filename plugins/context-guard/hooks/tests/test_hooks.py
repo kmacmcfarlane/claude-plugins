@@ -40,10 +40,18 @@ class Base(unittest.TestCase):
                        "window": window, "at": time.time()}
         L.save_state(sid, st)
 
-    def warn(self, sid, prompt="do a thing"):
+    def warn(self, sid, prompt="do a thing", transcript="/nonexistent"):
         return run_hook("context_warn.py",
                         {"session_id": sid, "prompt": prompt,
-                         "transcript_path": "/nonexistent"}, self.env)
+                         "transcript_path": transcript}, self.env)
+
+    def transcript(self, tokens):
+        p = os.path.join(self.tmp.name, "t.jsonl")
+        rec = {"type": "assistant", "message": {"usage": {
+            "input_tokens": 2, "cache_read_input_tokens": tokens - 2,
+            "cache_creation_input_tokens": 0}}}
+        open(p, "w").write(json.dumps(rec) + "\n")
+        return p
 
 
 class TestContextWarn(Base):
@@ -97,6 +105,147 @@ class TestContextWarn(Base):
         rc, out, err = self.warn("s", "please do more work")
         self.assertEqual(rc, 0)  # checkpoint stands the gate down
 
+    def test_hard_whitelist_accepts_plugin_prefixed_form(self):
+        for prompt in ("/checkpoint", "/claude-kit:checkpoint",
+                       "/claude-kit:checkpoint land", "/compact keep auth",
+                       "/my-plugin:compact", "/clear", "/x:clear"):
+            self.set_exact("s", 950_000, 1_000_000)
+            rc, out, err = self.warn("s", prompt)
+            self.assertEqual(rc, 0, prompt)
+        for prompt in ("/checkpointx", "/claude-kit:checkpointx", "/checkpoint-x",
+                       "/clear-all", "/claude-kit:checkpoint:x", "/checkpoint/x",
+                       "checkpoint", "/clearance", "/kit:other"):
+            self.set_exact("s", 950_000, 1_000_000)
+            rc, out, err = self.warn("s", prompt)
+            self.assertEqual(rc, 2, prompt)
+            self.assertIn("/claude-kit:checkpoint", err)
+
+    def test_inferred_depth_never_hard_blocks(self):
+        # Live-fired 2026-09-16: stale exact {186454 of 1M}; transcript at the
+        # same depth; the old hook guessed 200K and blocked with 13,546 left.
+        st = L.load_state("s")
+        st["exact"] = {"pct": 18.6, "tokens": 186_454, "window": 1_000_000,
+                       "at": time.time() - 700}
+        L.save_state("s", st)
+        rc, out, err = self.warn("s", "a long prompt", self.transcript(186_454))
+        self.assertEqual((rc, out, err), (0, {}, ""))
+        self.assertEqual(L.load_state("s")["window"], 1_000_000)
+        # No record at all, transcript deep enough to be under hard on the
+        # guessed 200K window: advisory, not a block.
+        rc, out, err = self.warn("t", "a long prompt", self.transcript(170_000))
+        self.assertEqual(rc, 0)
+        self.assertIn("hookSpecificOutput", out)
+        self.assertIn("NOT applied", out["hookSpecificOutput"]["additionalContext"])
+        self.assertIn("CLAUDE_KIT_CONTEXT_WINDOW", out["hookSpecificOutput"]["additionalContext"])
+        self.assertIn("inferred", out["systemMessage"])
+        self.assertIn("not blocked", out["systemMessage"])
+        # DUE cadence: silent on the next two prompts, fires on the third.
+        for _ in range(2):
+            rc, out, err = self.warn("t", "a long prompt", self.transcript(170_000))
+            self.assertEqual((rc, out), (0, {}))
+        rc, out, err = self.warn("t", "a long prompt", self.transcript(170_000))
+        self.assertIn("hookSpecificOutput", out)
+        # Stale exact record that is itself under hard: still exit 0.
+        st = L.load_state("u")
+        st["exact"] = {"pct": 95.0, "tokens": 950_000, "window": 1_000_000,
+                       "at": time.time() - 700}
+        L.save_state("u", st)
+        rc, out, err = self.warn("u", "a long prompt")
+        self.assertEqual(rc, 0)
+        self.assertIn("inferred", out["hookSpecificOutput"]["additionalContext"])
+        # Both messages print the same source label, not a hardcoded one.
+        self.assertIn("(inferred, window from status line)",
+                      out["hookSpecificOutput"]["additionalContext"])
+        self.assertIn("(inferred, window from status line)", out["systemMessage"])
+        # Exact still blocks.
+        self.set_exact("v", 950_000, 1_000_000)
+        self.assertEqual(self.warn("v", "a long prompt")[0], 2)
+
+    def test_stale_exact_after_compaction_does_not_nag(self):
+        st = L.load_state("s")
+        st["exact"] = {"pct": 95.0, "tokens": 950_000, "window": 1_000_000,
+                       "at": time.time() - 700}
+        L.save_state("s", st)
+        p = os.path.join(self.tmp.name, "c.jsonl")
+        rec = lambda tok: json.dumps({"type": "assistant", "message": {"usage": {
+            "input_tokens": 2, "cache_read_input_tokens": tok - 2,
+            "cache_creation_input_tokens": 0}}})
+        open(p, "w").write(rec(950_000) + "\n"
+                           + json.dumps({"type": "system", "subtype": "compact_boundary"}) + "\n"
+                           + rec(30_000) + "\n")
+        rc, out, err = self.warn("s", "a long prompt", p)
+        self.assertEqual((rc, out), (0, {}))
+        st = L.load_state("s")
+        self.assertEqual((st["tokens"], st["window"]), (30_000, 1_000_000))
+
+    def boundary_transcript(self, before=950_000, after=30_000):
+        p = os.path.join(self.tmp.name, "c.jsonl")
+        rec = lambda tok: json.dumps({"type": "assistant", "message": {"usage": {
+            "input_tokens": 2, "cache_read_input_tokens": tok - 2,
+            "cache_creation_input_tokens": 0}}})
+        open(p, "w").write(rec(before) + "\n"
+                           + json.dumps({"type": "system", "subtype": "compact_boundary"}) + "\n"
+                           + rec(after) + "\n")
+        return p
+
+    def _fresh_pre_boundary_record(self, sid):
+        st = L.load_state(sid)
+        st["exact"] = {"pct": 95.0, "tokens": 950_000, "window": 1_000_000,
+                       "at": time.time() - 300}   # fresh (< EXACT_MAX_AGE_S)
+        L.save_state(sid, st)
+
+    def test_fresh_exact_from_before_compaction_cannot_gate_new_epoch(self):
+        # 99cb reviewer: the status line wrote 95% seconds before an auto
+        # compaction; the record was still fresh, so the next prompt of a 3%
+        # session was HARD-blocked with the old numbers.
+        self._fresh_pre_boundary_record("s")
+        rc, out, _ = run_hook("postcompact_epoch.py",
+                              {"session_id": "s", "hook_event_name": "PostCompact",
+                               "trigger": "auto", "compact_summary": "sum"}, self.env)
+        self.assertEqual(rc, 0)
+        rc, out, err = self.warn("s", "a long prompt", self.boundary_transcript())
+        self.assertEqual((rc, out, err), (0, {}, ""))
+        st = L.load_state("s")
+        self.assertEqual((st["tokens"], st["window"]), (30_000, 1_000_000))
+        # Still exact-free until the status line re-renders: no stop, no
+        # advisory on the following prompts either.
+        for _ in range(3):
+            rc, out, err = self.warn("s", "a long prompt", self.boundary_transcript())
+            self.assertEqual((rc, out), (0, {}))
+
+    def test_fresh_exact_from_before_clear_cannot_gate_new_epoch(self):
+        self._fresh_pre_boundary_record("s")
+        rc, out, _ = run_hook("postcompact_epoch.py",
+                              {"session_id": "s", "hook_event_name": "SessionStart",
+                               "source": "clear"}, self.env)
+        self.assertEqual(rc, 0)
+        rc, out, err = self.warn("s", "a long prompt", self.boundary_transcript())
+        self.assertEqual((rc, out, err), (0, {}, ""))
+        self.assertEqual(L.load_state("s")["window"], 1_000_000)
+        # /clear's transcript carries no compact_boundary line at all: the
+        # demoted record still must not floor the count.
+        rc, out, err = self.warn("s", "a long prompt", self.transcript(30_000))
+        self.assertEqual((rc, out), (0, {}))
+        st = L.load_state("s")
+        self.assertEqual((st["tokens"], st["window"]), (30_000, 1_000_000))
+
+    def test_exact_written_after_boundary_is_still_exact(self):
+        self._fresh_pre_boundary_record("s")
+        run_hook("postcompact_epoch.py",
+                 {"session_id": "s", "hook_event_name": "PostCompact",
+                  "trigger": "auto"}, self.env)
+        self.set_exact("s", 950_000, 1_000_000)   # status line re-rendered, deep again
+        rc, out, err = self.warn("s", "a long prompt", self.boundary_transcript())
+        self.assertEqual(rc, 2)
+        self.assertIn("(exact)", err)
+
+    def test_sessionstart_resume_keeps_fresh_exact(self):
+        self._fresh_pre_boundary_record("s")
+        run_hook("postcompact_epoch.py",
+                 {"session_id": "s", "hook_event_name": "SessionStart",
+                  "source": "resume"}, self.env)
+        self.assertEqual(L.load_state("s")["exact"]["tokens"], 950_000)
+
 
 class TestPrecompactGate(Base):
     def gate(self, sid, trigger, ci=None):
@@ -144,6 +293,18 @@ class TestPostcompactEpoch(Base):
         self.assertEqual((rc, L.epoch(st)), (0, 2))
         self.assertNotIn("compact_deferred", st)
         self.assertEqual(st["compact_summary"], "sum")
+
+    def test_postcompact_demotes_exact_and_headers_pre_reset_tokens(self):
+        L.save_state("s", {"epoch": 1, "tokens": 900_000,
+                           "exact": {"pct": 95.0, "tokens": 950_000,
+                                     "window": 1_000_000, "at": time.time()}})
+        rc, out, _ = run_hook("postcompact_epoch.py",
+                              {"session_id": "s", "hook_event_name": "PostCompact",
+                               "trigger": "auto"}, self.env)
+        self.assertEqual(rc, 0)
+        self.assertEqual(L.load_state("s")["exact"], {"window": 1_000_000, "at": 0})
+        self.assertIn("## epoch 2", open(L.ledger_path("s")).read())
+        self.assertIn("900,000 tok", open(L.ledger_path("s")).read())
 
     def test_sessionstart_only_clear_resets(self):
         L.save_state("s", {"epoch": 1})

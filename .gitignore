@@ -1,5 +1,6 @@
 .idea
 .claude/settings.local.json
+.claude/worktrees/
 .claude-sandbox/env
 .claude-sandbox/temp/
 .claude-sandbox/ralph/

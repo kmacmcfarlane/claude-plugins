@@ -36,6 +36,7 @@ the TODO.md failure mode with extra steps.
 | `$WI handoff <id> --doing … --next … [--blocked …] [--learned …]` | the per-item residue — write it whenever the item is left mid-flight |
 | `$WI done <id> [--note <sha>]` / `done --drop` | closes it in place; `implement` Step 10a½ owns this on landed work |
 | `$WI block <id> "reason"` / `--on <dep-id>` / `unblock` | runtime vs dependency blocks |
+| `$WI set <id> <field> <value> [--force]` | one front-matter field; list fields (`tags deps refs`) take `a,b` and are **replaced whole**; `""` (or `—`) clears any field; `deps`/`parent` targets must resolve — `ext:` deps exempt, `--force` bypasses |
 | `$WI import-todo TODO.md` | idempotent migration; then replace TODO.md with the deprecation notice from `references/format.md` |
 | `$WI export/import --format backlog-yaml` | the ralph bridge — backlog.yaml stays authoritative for unattended runs |
 | `$WI lint` | format + secret-shape check; run before committing hand edits |
@@ -53,6 +54,9 @@ verbs, capability differences and canonical state mapping are in
 
 - The store is resolved `WI_ROOT` → `.claude-sandbox/work/` → `./.work/`; create only via
   `$WI init`, and only when the user asks for the store.
+- Working an item follows the checkout/worktree rule — process stays in the checkout, the
+  item's edits go in a worktree (from there, `WI_ROOT` points at the main checkout's store);
+  the sandbox skill's worktree-mode section owns the details.
 - Item files are hand-editable; run `$WI lint` after hand edits, in the same turn.
 - One session claims an item before working it; two sessions on one item is what `claim` is
   for — respect a conflict.

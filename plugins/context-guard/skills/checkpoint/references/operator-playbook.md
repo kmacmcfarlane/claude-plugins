@@ -21,8 +21,12 @@ operator never sees.** Fixing that is mostly about session *shape*, not about re
 
 **The gate thinks in remaining tokens, not percent.** Advisories at 60/75% used; **DUE** when
 ~150K tokens remain (1M window; 70K on 200K) — finish things, run `/checkpoint`; **HARD** at
-60K/40K left — the gate blocks every prompt except `/checkpoint`, `/compact`, `/clear` until a
-checkpoint records. All of it resets per epoch (each compaction or `/clear`).
+60K/40K left — on an *exact* depth the gate blocks every prompt until a checkpoint records; on
+an *inferred* depth it only warns, because the real window may be larger than the guess — and
+that warning keeps the DUE cadence (first time, then every 3 prompts or 25K tokens), so a
+quiet stretch is not an all-clear. The whitelist that passes a blocked prompt through is
+`/checkpoint`, `/compact` and `/clear`, bare or plugin-prefixed (`/claude-kit:checkpoint`).
+All of it resets per epoch (each compaction or `/clear`).
 
 ## Tools, and when
 
@@ -47,9 +51,11 @@ reads as 900); `CLAUDE_KIT_LEDGER_EVERY` tunes the ledger nudge (default 60000);
 
 ## Session shapes that stay in the band
 
-1. **One workstream per session.** Investigate in one session, write the plan to disk,
-   implement in a fresh one. The docs say the same: *write a spec, then start a fresh session
-   to execute it.* A session that spans two repos will accumulate two repos' worth of context.
+1. **One workstream per session — one stage, in a skill chain.** Investigate in one session,
+   write the result to disk, implement in a fresh one; whenever the next skill reads its
+   inputs from files this session already published, `/checkpoint handoff` at that boundary
+   regardless of window health. A session that spans two repos will accumulate two repos'
+   worth of context.
 2. **Rename at the start, clear at the end.** Named sessions are branches; `--resume` is
    checkout.
 3. **Delegate reads, keep writes.** Anything that would return more than a screen goes to a

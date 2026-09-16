@@ -1,11 +1,12 @@
 # HANDOFF.md — the rehydration manifest
 
-One per repo, **authored by the checkpoint skill** (never machine-synthesized: intent is a
-snapshot only its author can write; the facts around it — age, drift, dirty count — are
-computed live by `hooks/rehydrate.py` at injection). Work-addressed (class b1): lives at
-`.claude-sandbox/HANDOFF.md` when `.claude-sandbox/` exists (so `trackInHost` governs it),
-else `./HANDOFF.md`. Write-side budget **≤6,000 chars**; the hook trims Scrolls → Aware-of and
-never the mandatory tiers, under its 9,000-char injection cap.
+One per repo, **authored by the checkpoint skill** (never machine-synthesized: intent
+is a snapshot only its author can write; the facts around it — age, drift, dirty count
+— are computed live by `hooks/rehydrate.py` at injection). Work-addressed (class b1):
+lives at `.claude-sandbox/HANDOFF.md` when `.claude-sandbox/` exists (so `trackInHost`
+governs it), else `HANDOFF.md` at the repo root. Write-side budget **≤6,000 chars**;
+the hook trims Scrolls → Aware-of and never the mandatory tiers, under its 9,000-char
+injection cap.
 
 ## Format
 
@@ -51,6 +52,10 @@ TOC, read on demand: `path — one line on what it holds`.
 
 - **Secrets: path and key, never value.** A manifest lands in git; sops and `kind: Secret`
   gates do not see prose. Name where a secret lives, never what it is.
+- **Stage boundary in a skill chain:** the published stage file is the authoritative record —
+  **Read in full** points at it, and the manifest carries only what the files do not hold
+  (deploy state, test fixtures/accounts, cross-ticket blocks, model/agent rules,
+  CORRECTION/REFUSED lines).
 - The hook labels the manifest FRESH (fresh), AGED (>24h or any commit drift), STALE (>7 days
   or >30 commits — goal lines must be re-confirmed with the operator), LANDED (`mode: land*` —
   header-only, the work is done).

@@ -45,6 +45,15 @@ optional `references/`, `scripts/`, `assets/`.
   Agent `.md` files define role, tools, and model. Task-specific context is injected via the
   Agent prompt, not baked into the definition. *No plugin here ships agents today* — the last
   three were retired with the deprecated plan-execution skill they served (Phase 3).
+- **Hook location**: `plugins/<plugin>/hooks/<name>.py` — registered in that plugin's
+  `plugins/<plugin>/hooks/hooks.json`, which lists each hook under its event (`PreToolUse`,
+  `UserPromptSubmit`, `SessionStart`, `Stop`, …) with a `matcher` and a `command` that names
+  the script through the plugin root, `python3 "${CLAUDE_PLUGIN_ROOT}/hooks/<name>.py"` —
+  never a relative path, since the command runs with no guaranteed working directory. Tests
+  live in `plugins/<plugin>/hooks/tests/` and run with `python3 -m unittest discover -s tests -q`
+  from the hooks dir. Hooks, status lines and `settings.json` writes belong only in the
+  plugin whose stated aim is that behavior; each such plugin carries its own `hooks.json`
+  with only its hooks.
 - **Plugin registry**: `.claude-plugin/marketplace.json` — update when adding or removing a
   plugin (not when adding skills to an existing plugin). Its `name` field, `kmacmcfarlane`,
   is **frozen**: it suffixes every plugin-data directory.
