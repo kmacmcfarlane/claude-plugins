@@ -131,10 +131,13 @@ feature, base main"). Route: impl sonnet (one file, no signal), review opus (flo
 Delegate: one agent in `.claude/worktrees/<id>`. Review: a medium finding goes back to
 the implementer as a fix commit, same tier; re-review says `CLEAR` — one fix round,
 recorded in the item. Land: checklist, diff read, merge, clean up. Report four
-lines; nothing under `decisions needed`.
+lines; `decisions needed: none`.
 
 **Operator: "split ralph's backlog skills into their own plugin."** Real trade-offs (name,
-dependency direction, catalog wording): present the options with impacts, recommendation
-first, and ask. Then factor: catalog row + plugin skeleton first; the skill moves depend
-on it, each with its catalog edit inside — every dispatch opus (marketplace shape, more
-than one plugin), reviewers opus.
+dependency direction, catalog wording): ask as a numbered list — `1. plugin name:
+(a) ralph-backlog, (b) backlog` and so on, one decision per number, each option's impact
+named, recommendation first — so the operator answers "1: a, 2: b". The next Report
+carries any that are still open under `decisions needed`, keeping their numbers. Then
+factor: catalog row + plugin skeleton first; the skill moves depend on it, each with
+its catalog edit inside — every dispatch opus (marketplace shape, more than one plugin),
+reviewers opus.
