@@ -256,8 +256,11 @@ back clear — not the implementer, not the operator.
    Every other finding, critical included, is resolved inside the loop; the operator sees
    only the round count in `verified:`.
 
-5. **Record the result in the item body** before Land — rounds, findings fixed, findings
-   declined with their reasons, the verdict, reviewer NOTES: `references/fix-loop.md`.
+5. **Record the result in the item body** before Land (append with Bash — the item file
+   under `$WI_ROOT` is not a custody file): rounds run; findings fixed; findings declined,
+   each with the author's reason; final verdict; reviewer NOTES worth keeping. The
+   transcript is not the record. Reviewer questions you cannot settle go to the Report's
+   `open questions` line.
 
 ## Land
 
@@ -334,15 +337,7 @@ Stop when you catch yourself doing any of these:
 
 ## Ending the session
 
-Before the session ends, compacts, or is cleared:
-
-```bash
-$WI handoff <id> --doing "<state>" --next "<step>" [--blocked "<why>"] [--learned "<what>"]
-```
-
-on **every** open item — yours and the ones dispatched. Then send the final Report. The
-context-gate ledger and HANDOFF are session-addressed and do not replace this; the
-librarian rehydrates from `wi prime` and git.
+What to do before the session ends, compacts, or is cleared: `references/ending-the-session.md`.
 
 ## Examples
 

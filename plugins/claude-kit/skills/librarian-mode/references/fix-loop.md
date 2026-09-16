@@ -3,7 +3,8 @@
 One round of the loop in SKILL.md § Review step 3: what each verdict means, who is
 resumed and who is re-dispatched, and exactly what the implementer and the re-review are
 told. The cap (3 review rounds), the rule that the librarian never fixes a finding
-itself, and the tier per round stay in SKILL.md and `model-routing.md` § Rounds.
+itself, the operator's share of the findings (step 4) and recording the round in the item
+body (step 5) stay in SKILL.md; the tier per round is `model-routing.md` § Rounds.
 
 ## The verdicts
 
@@ -30,16 +31,3 @@ report. `SHOW_STOPPER` and the operator's share of the findings: SKILL.md § Rev
   the same checks, attacks the fix, and rules each declined one DECLINED or OPEN.
 
 Then repeat until `CLEAR`, inside the cap.
-
-## Recording the round
-
-SKILL.md § Review step 5 points here; its text in full:
-
-5. **Record the result in the item body** before Land (append with Bash — the item file
-   under `$WI_ROOT` is not a custody file): rounds run; findings fixed; findings declined,
-   each with the author's reason; final verdict; reviewer NOTES worth keeping. The
-   transcript is not the record. Reviewer questions you cannot settle go to the Report's
-   `open questions` line.
-
-`$WI_ROOT` is the work-item store, not a custody file, and the Report's `open questions`
-line is the librarian's: SKILL.md § Report.
