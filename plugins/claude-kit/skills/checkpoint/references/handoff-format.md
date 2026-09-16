@@ -1,11 +1,12 @@
 # HANDOFF.md — the rehydration manifest
 
-One per repo, **authored by the checkpoint skill** (never machine-synthesized: intent is a
-snapshot only its author can write; the facts around it — age, drift, dirty count — are
-computed live by `hooks/rehydrate.py` at injection). Work-addressed (class b1): lives at
-`.claude-sandbox/HANDOFF.md` when `.claude-sandbox/` exists (so `trackInHost` governs it),
-else `HANDOFF.md` in the working directory. Write-side budget **≤6,000 chars**; the hook trims Scrolls → Aware-of and
-never the mandatory tiers, under its 9,000-char injection cap.
+One per repo, **authored by the checkpoint skill** (never machine-synthesized: intent
+is a snapshot only its author can write; the facts around it — age, drift, dirty count
+— are computed live by `hooks/rehydrate.py` at injection). Work-addressed (class b1):
+lives at `.claude-sandbox/HANDOFF.md` when `.claude-sandbox/` exists (so `trackInHost`
+governs it), else `HANDOFF.md` at the repo root. Write-side budget **≤6,000 chars**;
+the hook trims Scrolls → Aware-of and never the mandatory tiers, under its 9,000-char
+injection cap.
 
 ## Format
 
