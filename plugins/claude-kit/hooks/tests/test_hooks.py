@@ -394,5 +394,127 @@ class TestLedgerPointer(Base):
         self.assertEqual(self.read_ledger(), "")
 
 
+class TestStatusline(Base):
+    CTX = {"used_percentage": 42.0, "context_window_size": 1_000_000,
+           "total_input_tokens": 420_000}
+
+    def line(self, payload):
+        payload.setdefault("session_id", "s")
+        payload.setdefault("context_window", dict(self.CTX))
+        payload.setdefault("model", {"display_name": "Fable"})
+        rc, out, err = run_hook("statusline.py", payload, self.env)
+        return rc, out.get("_raw", ""), err
+
+    def test_plan_usage_bars_both_windows(self):
+        now = time.time()
+        rc, line, _ = self.line({"rate_limits": {
+            "five_hour": {"used_percentage": 23.5, "resets_at": now + 2 * 3600 + 600},
+            "seven_day": {"used_percentage": 91.2, "resets_at": now + 3 * 86400}}})
+        self.assertEqual(rc, 0)
+        self.assertEqual(line.count("\n"), 1)
+        self.assertIn("[Fable]", line)
+        self.assertIn("42%  580k left  e0", line)
+        self.assertIn("5h \033[32m██░░░░░░░░\033[0m 23% resets 2h10m", line)
+        self.assertIn("7d \033[31m█████████░\033[0m 91% resets 3d", line)
+        self.assertLess(line.index("580k left"), line.index("5h "))
+        self.assertLess(line.index("5h "), line.index("7d "))
+
+    def test_no_bars_without_rate_limits(self):
+        rc, line, _ = self.line({})
+        self.assertEqual(rc, 0)
+        self.assertNotIn("resets", line)
+        self.assertIn("42%  580k left  e0", line)
+        rc, line, _ = self.line({"rate_limits": {}})
+        self.assertEqual((rc, "resets" in line), (0, False))
+
+    def test_window_with_past_reset_is_absent(self):
+        now = time.time()
+        rc, line, _ = self.line({"rate_limits": {
+            "five_hour": {"used_percentage": 99.0, "resets_at": now - 60},
+            "seven_day": {"used_percentage": 75.0, "resets_at": now + 86400}}})
+        self.assertEqual(rc, 0)
+        self.assertNotIn("5h ", line)
+        self.assertIn("7d \033[33m███████░░░\033[0m 75% resets 1d", line)
+
+    def test_malformed_rate_limits_do_not_crash(self):
+        for bad in ("garbage", 7, ["five_hour"],
+                    {"five_hour": "x", "seven_day": {"used_percentage": "no",
+                                                     "resets_at": None}},
+                    {"five_hour": {"used_percentage": 12.0}}):
+            rc, line, err = self.line({"rate_limits": bad})
+            self.assertEqual((rc, err), (0, ""), bad)
+            self.assertNotIn("resets", line)
+            self.assertIn("42%  580k left", line)
+
+    def test_non_finite_and_bool_fields_are_skipped(self):
+        now = time.time()
+        for bad in ({"used_percentage": 5.0, "resets_at": float("nan")},
+                    {"used_percentage": 5.0, "resets_at": float("inf")},
+                    {"used_percentage": float("nan"), "resets_at": now + 100},
+                    {"used_percentage": float("inf"), "resets_at": now + 100},
+                    {"used_percentage": True, "resets_at": now + 100},
+                    {"used_percentage": 5.0, "resets_at": True}):
+            rc, line, err = self.line({"rate_limits": {
+                "five_hour": bad,
+                "seven_day": {"used_percentage": 1.0, "resets_at": now + 100}}})
+            self.assertEqual((rc, err), (0, ""), bad)
+            self.assertNotIn("5h ", line)
+            self.assertIn("7d ", line)
+
+    def test_reset_too_far_out_is_dropped(self):
+        now = time.time()
+        rc, line, err = self.line({"rate_limits": {
+            "five_hour": {"used_percentage": 5.0, "resets_at": (now + 7200) * 1000},
+            "seven_day": {"used_percentage": 5.0, "resets_at": now + 367 * 86400},
+            "spend_limit": {"used_percentage": 5.0, "resets_at": now + 365 * 86400}}})
+        self.assertEqual((rc, err), (0, ""))
+        self.assertNotIn("5h ", line)
+        self.assertNotIn("7d ", line)
+        self.assertIn("$ \033[32m░░░░░░░░░░\033[0m 5% resets 365d", line)
+
+    def test_spend_limit_is_third(self):
+        now = time.time()
+        rc, line, _ = self.line({"rate_limits": {
+            "spend_limit": {"used_percentage": 10.0, "resets_at": now + 86400},
+            "seven_day": {"used_percentage": 20.0, "resets_at": now + 86400},
+            "five_hour": {"used_percentage": 30.0, "resets_at": now + 86400}}})
+        self.assertEqual(rc, 0)
+        self.assertIn("$ \033[32m█░░░░░░░░░\033[0m 10% resets 1d", line)
+        self.assertLess(line.index("5h "), line.index("7d "))
+        self.assertLess(line.index("7d "), line.index("$ "))
+        self.assertEqual(line.count("resets"), 3)
+
+    def test_clamping_and_threshold_boundaries(self):
+        now = time.time()
+        for used, want in ((150.0, "\033[31m██████████\033[0m 100%"),
+                           (-5.0, "\033[32m░░░░░░░░░░\033[0m 0%"),
+                           (69.9, "\033[32m██████░░░░\033[0m 69%"),
+                           (70.0, "\033[33m███████░░░\033[0m 70%"),
+                           (89.9, "\033[33m████████░░\033[0m 89%"),
+                           (90.0, "\033[31m█████████░\033[0m 90%")):
+            rc, line, _ = self.line({"rate_limits": {
+                "five_hour": {"used_percentage": used, "resets_at": now + 100}}})
+            self.assertEqual(rc, 0)
+            self.assertIn("5h " + want, line, used)
+
+    def test_countdown_rounds_up_to_the_minute(self):
+        now = time.time()
+        for ahead, want in ((59, "1m"), (60, "1m"), (90, "2m"),
+                            (3600 + 5 * 60, "1h05m"), (3600, "1h"),
+                            (86400 + 3600, "1d1h"), (2 * 86400, "2d")):
+            rc, line, _ = self.line({"rate_limits": {
+                "five_hour": {"used_percentage": 1.0, "resets_at": now + ahead}}})
+            self.assertEqual(rc, 0)
+            self.assertIn(f"1% resets {want}", line, ahead)
+
+    def test_exact_state_still_written(self):
+        rc, _, _ = self.line({"rate_limits": {
+            "five_hour": {"used_percentage": 5.0, "resets_at": time.time() + 100}}})
+        self.assertEqual(rc, 0)
+        ex = L.load_state("s")["exact"]
+        self.assertEqual((ex["pct"], ex["tokens"], ex["window"]),
+                         (42.0, 420_000, 1_000_000))
+
+
 if __name__ == "__main__":
     unittest.main()
