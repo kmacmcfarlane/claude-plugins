@@ -13,10 +13,32 @@ On Pro/Max subscriptions (Claude Code >= 2.1.251) the payload also carries
 seconds). Those render as compact bars after the context gauge; API-key
 sessions never receive `rate_limits`, so they see none.
 
+The session name shown in parentheses comes from a documented fallback chain
+(Claude Code 2.1.273, docs/en/statusline). First Claude Code's local session
+registry, `$CLAUDE_CONFIG_DIR/sessions/<pid>.json` (keys `sessionId`, `name`,
+`nameSource` in user|peer|hook|collision|auto|derived), but only when the entry
+for this session carries an explicit nameSource -- user, peer, hook or
+collision: those are the names the operator sets (/rename, an agent naming
+itself through the peer channel), and the payload lags them or never carries
+them. Then the payload's `session_name` -- the custom name from `/rename` or
+`--name` when one exists, else the AI-generated title, absent otherwise --
+which covers the AI title and the window before the registry write. A
+`derived` or `auto` registry name (the my-app-3f default) is never shown, as
+the payload skips it too. The registry read is one small file per ancestor pid
+(the status line runs as a child of the session, possibly through a shell),
+walked lazily -- the direct parent's entry first, then one /proc read per
+further ancestor, stopping at the first entry for this session -- at most
+ANCESTORS reads and never a directory scan; any missing or malformed source
+just falls through. Without /proc (non-Linux) only the direct parent is
+checked, so the chain degrades to payload-only when a shell sits between the
+session and this script. Either name is sanitised before it is shown: runs of
+whitespace or control characters collapse to one space (a peer or hook name is
+an arbitrary string set by another agent), and it is capped at NAME_MAX.
+
 Install (user settings, ~/.claude/settings.json):
   "statusLine": {"type": "command", "command": "python3 /path/to/statusline.py"}
 """
-import json, math, os, sys, time
+import json, math, os, re, sys, time
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import lib_context as L
 
@@ -75,6 +97,90 @@ def usage_bars(rate_limits, now=None):
     return out
 
 
+REGISTRY_MAX_BYTES = 65536  # a registry entry is a few hundred bytes; cap the read
+ANCESTORS = 4  # python -> [sh ->] claude: how far up to look for the session pid
+EXPLICIT = ("user", "peer", "hook", "collision")  # nameSource values the operator set
+NAME_MAX = 60  # longest name shown; longer ones end in an ellipsis
+_UNSAFE = re.compile(r"[\s\x00-\x1f\x7f-\x9f]+")  # whitespace, C0, DEL, C1
+
+
+def clean(name):
+    """One-line, printable form of a name from any source, or "" for a non-string.
+
+    Runs of whitespace or C0/C1 control characters (ESC, BEL, DEL, newlines)
+    collapse to a single space, the ends are stripped, and anything longer than
+    NAME_MAX is cut to NAME_MAX - 1 characters plus an ellipsis.
+    """
+    if not isinstance(name, str):
+        return ""
+    name = _UNSAFE.sub(" ", name).strip()
+    if len(name) > NAME_MAX:
+        name = name[:NAME_MAX - 1].rstrip() + "\u2026"
+    return name
+
+
+def ancestor_pids():
+    """Yield the parent pid, then its ancestors through /proc where that exists.
+
+    Lazy: each further ancestor costs one /proc read, taken only if the caller
+    asks for it. Without /proc (non-Linux) the walk ends after the direct
+    parent, so a shell between the session and this script hides the registry
+    there and the name falls back to the payload.
+    """
+    pids, pid = [], os.getppid()
+    for _ in range(ANCESTORS):
+        if not pid or pid <= 1 or pid in pids:
+            return
+        pids.append(pid)
+        yield pid
+        try:
+            with open(f"/proc/{pid}/status") as f:
+                pid = next((int(ln.split()[1]) for ln in f if ln.startswith("PPid:")), 0)
+        except Exception:
+            return
+
+
+def registry_name(sid, base=None):
+    """Explicitly set session name from the local session registry, or "".
+
+    Reads `<config dir>/sessions/<pid>.json` for each ancestor pid, nearest
+    first, and stops at the first entry whose `sessionId` is ours, so a reused
+    pid or a sibling session never leaks a name and the common case (a direct
+    child of the session) costs one open. Only a name with an EXPLICIT
+    nameSource counts; a derived/auto default yields "". Anything missing,
+    oversized or malformed yields "".
+    """
+    if not sid:
+        return ""
+    base = base or L._base_dir()
+    for pid in ancestor_pids():
+        try:
+            with open(os.path.join(base, "sessions", f"{pid}.json")) as f:
+                d = json.loads(f.read(REGISTRY_MAX_BYTES))
+        except Exception:
+            continue
+        if not isinstance(d, dict) or d.get("sessionId") != sid:
+            continue
+        name = clean(d.get("name"))
+        return name if name and d.get("nameSource") in EXPLICIT else ""
+    return ""
+
+
+def session_name(d):
+    """Current name by the chain: registry explicit name -> payload session_name -> "".
+
+    Both sources pass through clean(): a peer/hook name is set by another agent
+    and the payload title is free text, and the status line is one line.
+    """
+    try:
+        name = clean(registry_name(d.get("session_id")))
+    except Exception:
+        name = ""
+    if name:
+        return name
+    return clean(d.get("session_name"))
+
+
 def main():
     try:
         d = json.load(sys.stdin)
@@ -92,7 +198,7 @@ def main():
         L.save_state(sid, st)
 
     model = (d.get("model") or {}).get("display_name", "?")
-    name = d.get("session_name") or ""
+    name = session_name(d)
     cwd = os.path.basename((d.get("workspace") or {}).get("current_dir") or d.get("cwd") or "")
     eff = ((d.get("effort") or {}).get("level") or "")
 

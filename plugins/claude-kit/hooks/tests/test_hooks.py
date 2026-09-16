@@ -515,6 +515,193 @@ class TestStatusline(Base):
         self.assertEqual((ex["pct"], ex["tokens"], ex["window"]),
                          (42.0, 420_000, 1_000_000))
 
+    # The statusline is our direct child, so its parent pid is this process:
+    # a registry entry at sessions/<our pid>.json is what it finds first. Our
+    # own parent is its grandparent, one /proc hop up the ancestor walk.
+    def registry(self, body, sid="s", pid=None):
+        pid = os.getpid() if pid is None else pid
+        d = os.path.join(self.tmp.name, "sessions")
+        os.makedirs(d, exist_ok=True)
+        p = os.path.join(d, f"{pid}.json")
+        if isinstance(body, str):
+            open(p, "w").write(body)
+        else:
+            entry = {"pid": pid, "sessionId": sid, "name": "beta",
+                     "nameSource": "peer"}
+            entry.update(body)
+            json.dump(entry, open(p, "w"))
+
+    def grandparent(self):
+        if not os.path.isdir("/proc") or os.getppid() <= 1:
+            self.skipTest("ancestor walk needs /proc and a real parent")
+        return os.getppid()
+
+    def line_via_shell(self, payload):
+        """Run the hook through `sh -c` so the real chain has depth 2."""
+        payload.setdefault("session_id", "s")
+        payload.setdefault("context_window", dict(self.CTX))
+        payload.setdefault("model", {"display_name": "Fable"})
+        e = dict(os.environ); e.update(self.env)
+        p = subprocess.run(["sh", "-c", f'"$0" "$1"', sys.executable,
+                            os.path.join(HOOKS, "statusline.py")],
+                           input=json.dumps(payload), capture_output=True,
+                           text=True, env=e, timeout=30)
+        return p.returncode, p.stdout, p.stderr
+
+    def test_payload_session_name_shown(self):
+        rc, line, err = self.line({"session_name": "alpha"})
+        self.assertEqual((rc, err), (0, ""))
+        self.assertIn("  (alpha)  ", line)
+
+    def test_registry_name_when_payload_has_none(self):
+        self.registry({})
+        for payload in ({}, {"session_name": ""}, {"session_name": "   "},
+                        {"session_name": None}, {"session_name": 7}):
+            rc, line, err = self.line(dict(payload))
+            self.assertEqual((rc, err), (0, ""), payload)
+            self.assertIn("  (beta)  ", line, payload)
+
+    def test_no_name_segment_without_any_source(self):
+        rc, line, err = self.line({})
+        self.assertEqual((rc, err), (0, ""))
+        self.assertNotIn("(", line)
+        self.assertTrue(line.startswith("[Fable]   "), line)
+
+    def test_malformed_registry_does_not_crash(self):
+        for bad in ("{not json", "", "[]", '"beta"', json.dumps({"name": "beta"}),
+                    json.dumps({"sessionId": "s", "name": 7}),
+                    json.dumps({"sessionId": "s", "name": "  "}),
+                    json.dumps({"sessionId": "s"}), "x" * 70000):
+            self.registry(bad)
+            rc, line, err = self.line({})
+            self.assertEqual((rc, err), (0, ""), bad[:40])
+            self.assertNotIn("(", line, bad[:40])
+            self.assertIn("42%  580k left", line)
+
+    def test_registry_explicit_name_wins_over_payload_title(self):
+        # /rename and an agent naming itself land in the registry first; the
+        # payload lags (next render) or carries only the AI title.
+        for src in ("user", "peer", "hook", "collision"):
+            self.registry({"name": "set-by-" + src, "nameSource": src})
+            rc, line, err = self.line({"session_name": "AI title"})
+            self.assertEqual((rc, err), (0, ""), src)
+            self.assertIn(f"  (set-by-{src})  ", line, src)
+            self.assertNotIn("AI title", line, src)
+
+    def test_registry_auto_name_is_skipped_for_payload_title(self):
+        self.registry({"name": "hooks-3f", "nameSource": "auto"})
+        rc, line, err = self.line({"session_name": "AI title"})
+        self.assertEqual((rc, err), (0, ""))
+        self.assertIn("  (AI title)  ", line)
+        self.assertNotIn("hooks-3f", line)
+
+    def test_registry_entry_for_another_session_is_ignored(self):
+        self.registry({}, sid="someone-else")
+        rc, line, err = self.line({})
+        self.assertEqual((rc, err), (0, ""))
+        self.assertNotIn("(", line)
+
+    def test_derived_and_auto_default_names_are_never_shown(self):
+        for src in ("derived", "auto", None, "bogus"):
+            self.registry({"name": "hooks-3f", "nameSource": src})
+            rc, line, err = self.line({})
+            self.assertEqual((rc, err), (0, ""), src)
+            self.assertNotIn("(", line, src)
+
+    # -- names are sanitised to one printable line, whatever the source --
+
+    HOSTILE = "ev\x1b[31mil\nsecond\x07 line\x7f\x85end"
+
+    def test_registry_name_with_control_chars_stays_one_line(self):
+        self.registry({"name": self.HOSTILE, "nameSource": "user"})
+        rc, line, err = self.line({"session_name": "AI title"})
+        self.assertEqual((rc, err), (0, ""))
+        self.assertEqual(line.count("\n"), 1, repr(line))  # only the trailing one
+        self.assertIn("  (ev [31mil second line end)  ", line)
+        self.assertNotIn("AI title", line)
+
+    def test_payload_name_with_control_chars_stays_one_line(self):
+        rc, line, err = self.line({"session_name": self.HOSTILE})
+        self.assertEqual((rc, err), (0, ""))
+        self.assertEqual(line.count("\n"), 1, repr(line))
+        self.assertIn("  (ev [31mil second line end)  ", line)
+
+    def test_each_control_char_collapses_to_one_space(self):
+        for raw, shown in (("a\x1bb", "a b"), ("a\nb", "a b"), ("a\x07b", "a b"),
+                           ("a\x1b[0m\r\n\tb", "a [0m b"), ("a\x7f\x9fb", "a b"),
+                           ("  a   b  ", "a b"), ("\x1b\x07\n", "")):
+            self.registry({"name": raw, "nameSource": "user"})
+            rc, line, err = self.line({})
+            self.assertEqual((rc, err), (0, ""), repr(raw))
+            if shown:
+                self.assertIn(f"  ({shown})  ", line, repr(raw))
+            else:
+                self.assertNotIn("(", line, repr(raw))
+            rc, line, err = self.line({"session_name": raw})
+            self.assertEqual((rc, err), (0, ""), repr(raw))
+            if shown:
+                self.assertIn(f"  ({shown})  ", line, repr(raw))
+            else:
+                self.assertNotIn("(", line, repr(raw))
+
+    def test_long_names_are_capped_with_an_ellipsis(self):
+        long = "n" * 100
+        for src in ("registry", "payload"):
+            if src == "registry":
+                self.registry({"name": long, "nameSource": "user"})
+                rc, line, err = self.line({})
+            else:
+                rc, line, err = self.line({"session_name": long})
+            self.assertEqual((rc, err), (0, ""), src)
+            self.assertIn("  (" + "n" * 59 + "\u2026)  ", line, src)
+            self.assertNotIn("n" * 60, line, src)
+        self.registry({"name": "n" * 60, "nameSource": "user"})
+        rc, line, _ = self.line({})
+        self.assertIn("  (" + "n" * 60 + ")  ", line)  # exactly NAME_MAX is untouched
+
+    # -- the ancestor walk: nearest entry for this session wins --
+
+    def test_registry_match_at_the_grandparent(self):
+        self.registry({}, pid=self.grandparent())
+        rc, line, err = self.line({})
+        self.assertEqual((rc, err), (0, ""))
+        self.assertIn("  (beta)  ", line)
+
+    def test_walk_continues_past_a_parent_entry_for_another_session(self):
+        self.registry({"name": "not-ours", "nameSource": "user"}, sid="someone-else")
+        self.registry({}, pid=self.grandparent())
+        rc, line, err = self.line({})
+        self.assertEqual((rc, err), (0, ""))
+        self.assertIn("  (beta)  ", line)
+        self.assertNotIn("not-ours", line)
+
+    def test_nearest_matching_entry_wins(self):
+        self.registry({"name": "near", "nameSource": "user"})
+        self.registry({"name": "far", "nameSource": "user"}, pid=self.grandparent())
+        rc, line, err = self.line({})
+        self.assertEqual((rc, err), (0, ""))
+        self.assertIn("  (near)  ", line)
+        self.assertNotIn("far", line)
+
+    def test_nearer_auto_entry_stops_the_walk_for_the_payload_title(self):
+        self.registry({"name": "hooks-3f", "nameSource": "auto"})
+        self.registry({"name": "far", "nameSource": "user"}, pid=self.grandparent())
+        rc, line, err = self.line({"session_name": "AI title"})
+        self.assertEqual((rc, err), (0, ""))
+        self.assertIn("  (AI title)  ", line)
+        self.assertNotIn("far", line)
+        self.assertNotIn("hooks-3f", line)
+
+    def test_walk_reaches_the_session_through_an_intermediate_shell(self):
+        # sh -c between us and the hook: our entry is now at its grandparent.
+        if not os.path.isdir("/proc"):
+            self.skipTest("ancestor walk needs /proc")
+        self.registry({})
+        rc, line, err = self.line_via_shell({"session_name": "AI title"})
+        self.assertEqual((rc, err), (0, ""))
+        self.assertIn("  (beta)  ", line)
+        self.assertNotIn("AI title", line)
+
 
 if __name__ == "__main__":
     unittest.main()
