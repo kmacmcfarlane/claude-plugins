@@ -8,7 +8,7 @@
     {
       "name": "claude-kit",
       "source": "./plugins/claude-kit",
-      "description": "Claude Code dev tooling — skill creation, sandbox management, backlog tracking, Goa API design, Playwright testing, LoRA training, context guardrails, and upstream kit sync."
+      "description": "Claude Code dev tooling — skill creation, sandbox management, backlog tracking, Goa API design, Playwright testing, LoRA training, context guardrails, upstream kit sync, and librarian mode for the shared agent layer."
     },
     {
       "name": "ai-scripts",
