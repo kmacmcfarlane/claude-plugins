@@ -102,7 +102,7 @@ pre-commit hooks, secret encryption, never `git add -A` where the tree carries u
 secrets. A repo not yours to commit to stays dirty with a written note.
 
 **4b.** Rewrite the **rehydration manifest** per `references/handoff-format.md` — at
-`.claude-sandbox/HANDOFF.md` if that directory exists, else `./HANDOFF.md` — in **all three
+`.claude-sandbox/HANDOFF.md` if that directory exists, else `HANDOFF.md` in the working directory — in **all three
 modes** (*land* writes `mode: landed` so the next session gets one header line, not a stale
 goal). At a stage boundary the published stage file is the authoritative record: point
 **Read in full** at it and carry only what the files do not hold — environment state,
