@@ -43,7 +43,7 @@ field of the status-line payload. They appear only after the session's first API
 so an empty footer before the first reply is not a fault. API-key sessions never receive
 `rate_limits`, so they see none; the bars need no configuration and cannot be enabled for them.
 
-The name in parentheses is the explicitly set name from Claude Code's session registry (`/rename`, `--name`, or an agent naming itself through the peer channel) and otherwise the payload's `session_name` (the AI title); the line re-renders only on the next event, not instantly, unless `statusLine.refreshInterval` is set.
+The name in parentheses is the explicitly set name from Claude Code's session registry (`/rename`, `--name`, or an agent naming itself through the peer channel) and otherwise the payload's `session_name` (the AI title); the line re-renders only on the next event, not instantly, unless `statusLine.refreshInterval` is set. The name is shown on one line whatever it contains (control characters and newlines collapse to spaces, and it is cut to 60 characters with an ellipsis). The registry is found by walking the hook's ancestor processes through `/proc`; without `/proc` (macOS) only the direct parent is checked, so a shell between the session and the script leaves just the payload title.
 
 ## If the gate blocks wrongly
 
