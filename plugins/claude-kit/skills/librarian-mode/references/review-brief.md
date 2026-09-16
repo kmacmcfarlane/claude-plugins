@@ -13,7 +13,7 @@ librarian runs again at Land.
 ---
 
 ```
-You are reviewing one change to the claude-plugins marketplace's shared agent layer. You
+You are reviewing one change to this repo's librarian-owned custody layer. You
 find problems; you do not fix them. Work ONLY inside this directory, read-only:
 
   WORKTREE=<absolute path of the main checkout>/.claude/worktrees/<name>
@@ -33,6 +33,8 @@ Full diff:   git -C $WORKTREE diff <base>...HEAD
 Item: <id> — <title>
 Store: export WI_ROOT=<absolute path to the main checkout>/.claude-sandbox/work
 CLI:   WI="python3 $(ls $WORKTREE/plugins/*/skills/work-items/scripts/wi.py | head -1)"
+       <on a repo with no plugins/ tree, substitute the installed work-items plugin's
+       wi.py, by absolute path>
 Read it in full first: $WI show <id>
 Acceptance: <one or two lines, copied from the item body>
 Files in scope: <explicit list; anything else in the diff is a finding>
@@ -42,8 +44,9 @@ pasted verbatim — you are testing these claims, not trusting them>
 ## Doctrine — read before reviewing
 
 - $WORKTREE/README.md — its doctrine, catalog and placement sections when present,
-  otherwise its plugin tables
-- $WORKTREE/CLAUDE.md — layout and conventions
+  otherwise its plugin tables; on a repo with no plugins/ tree, in full
+- $WORKTREE/CLAUDE.md — layout and conventions, and its `## Librarian` heading when
+  present
 - <when the change adds or edits a skill:> $WORKTREE/plugins/*/skills/create-skill/SKILL.md
   and its references/ — the authoring rules
 - <any other skill or reference the item names, by absolute path>

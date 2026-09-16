@@ -65,8 +65,8 @@ is reviewed by eye, not waved through.
 ## 3. Doctrine
 
 Read the full diff — `git -C $W diff main...HEAD` — against the README's doctrine section
-when present (the seven principles below are its content; apply them regardless), one
-principle at a time:
+when present (the seven principles below are its content; apply each where its subject
+exists — on a repo with no plugins/ tree most are vacuous), one principle at a time:
 
 - [ ] **One plugin, one aim.** No plugin description gained an "and".
 - [ ] **Standalone test.** Nothing new requires another plugin from this marketplace to be
@@ -111,17 +111,20 @@ for p in $(git -C $W diff --name-only main...HEAD | grep '\.py$'); do python3 -m
 ## 5. Config validity
 
 - [ ] Every `.json` in the diff parses.
-- [ ] `.claude-plugin/marketplace.json` still lists exactly the plugins on disk.
+- [ ] `.claude-plugin/marketplace.json`, when present, still lists exactly the plugins
+      on disk.
 
 ```bash
 for j in $(git -C $W diff --name-only main...HEAD | grep '\.json$'); do python3 -m json.tool $W/$j >/dev/null && echo "ok $j" || echo "FAIL $j"; done
-python3 -c "import json,os,sys; m=json.load(open('$W/.claude-plugin/marketplace.json')); names={p['name'] for p in m['plugins']}; disk=set(os.listdir('$W/plugins')); print('marketplace==disk' if names==disk else 'FAIL: '+str(names^disk))"
+test -f $W/.claude-plugin/marketplace.json && python3 -c "import json,os,sys; m=json.load(open('$W/.claude-plugin/marketplace.json')); names={p['name'] for p in m['plugins']}; disk=set(os.listdir('$W/plugins')); print('marketplace==disk' if names==disk else 'FAIL: '+str(names^disk))"
 ```
 
 ## 6. After the merge, on `main`
 
 - [ ] Sections 4 and 5 re-run in the main checkout on `main`.
-- [ ] `git -C "$MAIN" status --short` is empty.
+- [ ] `git -C "$MAIN" status --short` is empty, or shows only first-start dirt (the
+      store and any `.gitignore` line `wi init` wrote) — expected: commit it with the
+      first landed item or leave it for the operator; it never blocks a merge.
 - [ ] The worktree was removed and the branch deleted only after both of the above.
 
 A result that passes every box lands. A fail found by the reviewer is a finding at medium
