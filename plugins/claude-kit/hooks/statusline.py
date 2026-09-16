@@ -13,6 +13,18 @@ On Pro/Max subscriptions (Claude Code >= 2.1.251) the payload also carries
 seconds). Those render as compact bars after the context gauge; API-key
 sessions never receive `rate_limits`, so they see none.
 
+The session name shown in parentheses comes from a documented fallback chain
+(Claude Code 2.1.273, docs/en/statusline): the payload's `session_name` first --
+the custom name from `/rename` or `--name` when one exists, else the AI-generated
+title, absent otherwise -- then Claude Code's local session registry
+`$CLAUDE_CONFIG_DIR/sessions/<pid>.json` (keys `sessionId`, `name`,
+`nameSource` in user|peer|collision|auto|hook|derived), which also holds names
+set through the peer channel (an agent naming itself) that never reach the
+payload; a `derived` name is the auto default (my-app-3f) and is skipped, as the
+payload skips it. The registry read is one small file per ancestor pid (the
+status line runs as a child of the session, possibly through a shell), never a
+directory scan; any missing or malformed source just falls through.
+
 Install (user settings, ~/.claude/settings.json):
   "statusLine": {"type": "command", "command": "python3 /path/to/statusline.py"}
 """
@@ -75,6 +87,61 @@ def usage_bars(rate_limits, now=None):
     return out
 
 
+REGISTRY_MAX_BYTES = 65536  # a registry entry is a few hundred bytes; cap the read
+ANCESTORS = 4  # python -> [sh ->] claude: how far up to look for the session pid
+
+
+def ancestor_pids():
+    """Parent pid, then its ancestors through /proc where that exists (Linux)."""
+    pids, pid = [], os.getppid()
+    for _ in range(ANCESTORS):
+        if not pid or pid <= 1 or pid in pids:
+            break
+        pids.append(pid)
+        try:
+            with open(f"/proc/{pid}/status") as f:
+                pid = next((int(ln.split()[1]) for ln in f if ln.startswith("PPid:")), 0)
+        except Exception:
+            break
+    return pids
+
+
+def registry_name(sid, base=None):
+    """Session name from the local session registry for this session id, or "".
+
+    Reads `<config dir>/sessions/<pid>.json` for each ancestor pid and takes the
+    first entry whose `sessionId` is ours, so a reused pid or a sibling session
+    never leaks a name. Anything missing, oversized or malformed yields "".
+    """
+    if not sid:
+        return ""
+    base = base or L._base_dir()
+    for pid in ancestor_pids():
+        try:
+            with open(os.path.join(base, "sessions", f"{pid}.json")) as f:
+                d = json.loads(f.read(REGISTRY_MAX_BYTES))
+        except Exception:
+            continue
+        if not isinstance(d, dict) or d.get("sessionId") != sid:
+            continue
+        name = d.get("name")
+        if isinstance(name, str) and name.strip() and d.get("nameSource") != "derived":
+            return name.strip()
+        return ""
+    return ""
+
+
+def session_name(d):
+    """Current name by the chain: payload session_name -> registry -> ""."""
+    name = d.get("session_name")
+    if isinstance(name, str) and name.strip():
+        return name.strip()
+    try:
+        return registry_name(d.get("session_id"))
+    except Exception:
+        return ""
+
+
 def main():
     try:
         d = json.load(sys.stdin)
@@ -92,7 +159,7 @@ def main():
         L.save_state(sid, st)
 
     model = (d.get("model") or {}).get("display_name", "?")
-    name = d.get("session_name") or ""
+    name = session_name(d)
     cwd = os.path.basename((d.get("workspace") or {}).get("current_dir") or d.get("cwd") or "")
     eff = ((d.get("effort") or {}).get("level") or "")
 

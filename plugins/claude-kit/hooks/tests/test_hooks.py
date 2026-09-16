@@ -515,6 +515,69 @@ class TestStatusline(Base):
         self.assertEqual((ex["pct"], ex["tokens"], ex["window"]),
                          (42.0, 420_000, 1_000_000))
 
+    # The statusline is our direct child, so its parent pid is this process:
+    # a registry entry at sessions/<our pid>.json is what it finds first.
+    def registry(self, body, sid="s"):
+        d = os.path.join(self.tmp.name, "sessions")
+        os.makedirs(d, exist_ok=True)
+        p = os.path.join(d, f"{os.getpid()}.json")
+        if isinstance(body, str):
+            open(p, "w").write(body)
+        else:
+            entry = {"pid": os.getpid(), "sessionId": sid, "name": "beta",
+                     "nameSource": "peer"}
+            entry.update(body)
+            json.dump(entry, open(p, "w"))
+
+    def test_payload_session_name_shown(self):
+        rc, line, err = self.line({"session_name": "alpha"})
+        self.assertEqual((rc, err), (0, ""))
+        self.assertIn("  (alpha)  ", line)
+
+    def test_registry_name_when_payload_has_none(self):
+        self.registry({})
+        for payload in ({}, {"session_name": ""}, {"session_name": "   "},
+                        {"session_name": None}, {"session_name": 7}):
+            rc, line, err = self.line(dict(payload))
+            self.assertEqual((rc, err), (0, ""), payload)
+            self.assertIn("  (beta)  ", line, payload)
+
+    def test_no_name_segment_without_any_source(self):
+        rc, line, err = self.line({})
+        self.assertEqual((rc, err), (0, ""))
+        self.assertNotIn("(", line)
+        self.assertTrue(line.startswith("[Fable]   "), line)
+
+    def test_malformed_registry_does_not_crash(self):
+        for bad in ("{not json", "", "[]", '"beta"', json.dumps({"name": "beta"}),
+                    json.dumps({"sessionId": "s", "name": 7}),
+                    json.dumps({"sessionId": "s", "name": "  "}),
+                    json.dumps({"sessionId": "s"}), "x" * 70000):
+            self.registry(bad)
+            rc, line, err = self.line({})
+            self.assertEqual((rc, err), (0, ""), bad[:40])
+            self.assertNotIn("(", line, bad[:40])
+            self.assertIn("42%  580k left", line)
+
+    def test_payload_rename_wins_over_stale_registry(self):
+        self.registry({"name": "old-name", "nameSource": "user"})
+        rc, line, err = self.line({"session_name": "renamed"})
+        self.assertEqual((rc, err), (0, ""))
+        self.assertIn("  (renamed)  ", line)
+        self.assertNotIn("old-name", line)
+
+    def test_registry_entry_for_another_session_is_ignored(self):
+        self.registry({}, sid="someone-else")
+        rc, line, err = self.line({})
+        self.assertEqual((rc, err), (0, ""))
+        self.assertNotIn("(", line)
+
+    def test_derived_default_name_is_not_shown(self):
+        self.registry({"name": "hooks-3f", "nameSource": "derived"})
+        rc, line, err = self.line({})
+        self.assertEqual((rc, err), (0, ""))
+        self.assertNotIn("(", line)
+
 
 if __name__ == "__main__":
     unittest.main()

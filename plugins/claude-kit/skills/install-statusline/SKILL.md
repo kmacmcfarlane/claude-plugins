@@ -43,6 +43,8 @@ field of the status-line payload. They appear only after the session's first API
 so an empty footer before the first reply is not a fault. API-key sessions never receive
 `rate_limits`, so they see none; the bars need no configuration and cannot be enabled for them.
 
+The name in parentheses is the payload's `session_name` (`/rename` or `--name`, else the AI title) with a fallback to Claude Code's session registry for names set through the peer channel; a `/rename` shows on the next event-driven render, not instantly, unless `statusLine.refreshInterval` is set.
+
 ## If the gate blocks wrongly
 
 A hard block needs a fresh exact reading; an inferred depth (stale or missing record) only
