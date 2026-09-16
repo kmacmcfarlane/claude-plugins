@@ -19,6 +19,12 @@ here for the glob and orphan-worktree cases.
 - **Implementer disputes a medium-or-above finding.** It cannot decline it: it fixes, or
   states the counter-case for the re-review. The reviewer withdraws on the merits (the
   failure cannot occur) or holds; if it holds, fix it — that round is spent.
+- **Push rejected (non-fast-forward).** Someone pushed to origin/main since the last
+  sync. Do not pull, fetch, rebase or merge around it, and never `--force`: stop and put
+  it under `decisions needed` — the next Report mid-session, the final Report at session
+  end.
+- **No `origin` remote.** A custody layer in a repo with no remote has nothing to push to:
+  skip the push, and say so once in the Report rather than every cycle.
 - **Reviewer returns `SHOW_STOPPER` for something a fix would close.** Ask it to state
   the fix path in one line; if a fix exists inside the item's scope, route the verdict as
   `NEEDS_CHANGES` and note the re-routing in the item — routing only; the finding keeps
