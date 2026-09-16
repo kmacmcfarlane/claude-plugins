@@ -19,6 +19,10 @@ plugins/
     skills/
       <skill-name>/
         SKILL.md
+  chat/                # Conversational skills plugin
+    skills/
+      product-research/
+        SKILL.md
 ```
 
 ## Conventions
