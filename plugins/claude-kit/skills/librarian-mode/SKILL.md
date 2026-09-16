@@ -63,16 +63,11 @@ Do this at session start and after any `/clear` or compaction. Never `ls` the wh
    WI="python3 $(ls "$MAIN"/plugins/*/skills/work-items/scripts/wi.py | head -1)"
    ```
 
-   An empty glob is normal on a repo that does not carry the plugin in its tree: use the
-   installed copy, `${CLAUDE_PLUGIN_ROOT}/skills/work-items/scripts/wi.py`, same `WI_ROOT`.
+   An empty glob is normal on a repo that does not carry the plugin in its tree — use the
+   installed copy: `references/troubleshooting.md`.
 
-   **First start:** no store at `$WI_ROOT`? Check `.work/` too — an existing `.work/`
-   store is used (point `WI_ROOT` at it), never shadowed by a fresh one. Truly no store
-   during `start` or `intake` → resolve the custody layer (step 2) first; none means
-   decline, creating nothing. Else run `$WI init` (idempotent), relay its output (it
-   explains any host `.gitignore` decision), and add one line: "initialised
-   .claude-sandbox/work/ — first start on this repo". `status` never creates a store:
-   it reports "no store" and stops.
+   **First start** — no store at `$WI_ROOT`, an existing `.work/` one, what `status` does
+   instead: `references/first-start.md`.
 
    If `MAIN` is not this session's cwd, this is a worktree session: say so and route
    every edit through dispatch (see Red flags).
@@ -104,9 +99,7 @@ Do this at session start and after any `/clear` or compaction. Never `ls` the wh
 
 Expected output: one short paragraph — items in flight, items ready, worktrees and agents
 alive, anything awaiting the operator. That is also the whole answer to `status`. After
-an init, it also carries "first start: store created, custody layer = <resolved>" so the
-operator can correct scope before the first intake; `start` never commits the store
-creation.
+an init it carries one clause more: `references/first-start.md`.
 
 ## Intake
 
@@ -249,18 +242,8 @@ back clear — not the implementer, not the operator.
    record in the item body.
 
 3. **Fix loop.** The reviewer's verdict is `CLEAR`, `NEEDS_CHANGES`, `SHOW_STOPPER`, or
-   `BLOCKED` (its setup failed: fix the brief and re-dispatch, twice at most; a third is
-   your environment — a blocked item for the operator, not a show-stopper. Permission
-   denied: as for an implementer, below).
-   - `NEEDS_CHANGES`: hand the findings, verbatim, to the **implementer** — resume the same
-     agent (SendMessage; it has the context) only when its tier is unchanged (a resumed
-     agent keeps its model); on a tier bump of either role, or if gone, re-dispatch with
-     the full brief, the findings and the fix-round clause from `references/agent-brief.md`. Tell
-     it explicitly: **fix as new commit(s) on top of the reviewed sha, never amend, report
-     each new sha**, and for each low/nit it declines, the reason. Then resume the
-     **reviewer** with the re-review variant in `references/review-brief.md`, pasting the
-     new shas and the declined list: it verifies each prior finding by file:line, re-runs
-     the same checks, attacks the fix, and rules each declined one DECLINED or OPEN.
+   `BLOCKED`. One round in full — each verdict, who is resumed and who is re-dispatched,
+   what the implementer is told and what the re-review is handed: `references/fix-loop.md`.
    - Repeat until `CLEAR`. **Cap: 3 review rounds** — the first review plus two fix
      rounds. A third review without `CLEAR` means the brief or the item is wrong, not the
      code: block it and ask the operator to weigh in. Tier per round:
@@ -314,9 +297,8 @@ and it goes back into the Review fix loop as a finding, counting toward the cap.
 **Never merge to make a check pass later.**
 
 The main checkout must be on `main` and clean before a merge — except first-start dirt
-(the store and any `.gitignore` line `wi init` wrote): commit it with the first landed
-item or leave it for the operator; it never blocks a merge. On another branch with
-uncommitted work, stop and ask the operator rather than stashing around it.
+(`references/first-start.md`), which never blocks it. On another branch with uncommitted
+work, stop and ask the operator rather than stashing around it.
 
 ## Report
 
@@ -355,50 +337,15 @@ Stop when you catch yourself doing any of these:
 
 ## Ending the session
 
-Before the session ends, compacts, or is cleared:
-
-```bash
-$WI handoff <id> --doing "<state>" --next "<step>" [--blocked "<why>"] [--learned "<what>"]
-```
-
-on **every** open item — yours and the ones dispatched. Then send the final Report. The
-context-gate ledger and HANDOFF are session-addressed and do not replace this; the
-librarian rehydrates from `wi prime` and git.
+What to do before the session ends, compacts, or is cleared: `references/ending-the-session.md`.
 
 ## Examples
 
-**Operator: "the implement skill's worktree section still says `.worktrees/`; align it with
-the harness-native path."** Intake: `$WI add`; one file, one concern — decide inline ("one
-feature, base main"). Route: impl sonnet (one file, no signal), review opus (floor).
-Delegate: one agent in `.claude/worktrees/<id>`. Review: a medium finding goes back to
-the implementer as a fix commit, same tier; re-review says `CLEAR` — one fix round,
-recorded in the item. Land: checklist, diff read, merge, clean up. Report four
-lines; nothing under `decisions needed`.
-
-**Operator: "split ralph's backlog skills into their own plugin."** Real trade-offs (name,
-dependency direction, catalog wording): present the options with impacts, recommendation
-first, and ask. Then factor: catalog row + plugin skeleton first; the skill moves depend
-on it, each with its catalog edit inside — every dispatch opus (marketplace shape, more
-than one plugin), reviewers opus.
+Two requests carried end to end — a one-file fix through the full loop, and a plugin split
+that needs an operator decision first: `references/model-routing.md` § Worked examples.
 
 ## Troubleshooting
 
-- **`wi` not found by the glob.** Normal when the repo does not carry the plugin: use the
-  installed copy and set `WI_ROOT` explicitly. No store at either standard root: `start`
-  and `intake` run `$WI init` once a custody layer resolves; `status` reports "no store"
-  and stops.
-- **`wi claim` exits 4.** Another session holds the item. Do not force; report it.
-- **Agent (implementer or reviewer) returns `BLOCKED` on permissions.** A decision for
-  the operator, not a reason to do the work yourself: block the item and report.
-- **Merge conflict on `main`.** Resolve by reading both sides with the item's approach as
-  tiebreaker; never take one side wholesale. If the resolution needs judgement, re-dispatch
-  with `main` as the new base.
-- **Orphan worktree from a crashed session.** Dirty: surface it, do not remove. Clean and
-  merged: remove it; clean and unmerged: ask.
-- **Implementer disputes a medium-or-above finding.** It cannot decline it: it fixes, or
-  states the counter-case for the re-review. The reviewer withdraws on the merits (the
-  failure cannot occur) or holds; if it holds, fix it — that round is spent.
-- **Reviewer returns `SHOW_STOPPER` for something a fix would close.** Ask it to state
-  the fix path in one line; if a fix exists inside the item's scope, route the verdict as
-  `NEEDS_CHANGES` and note the re-routing in the item — routing only; the finding keeps
-  its severity.
+Failure modes and what to do about each: `references/troubleshooting.md` — `wi` not found,
+`wi claim` exits 4, permission-blocked agents, merge conflicts, orphan worktrees, disputed
+findings, mis-routed show-stoppers.
