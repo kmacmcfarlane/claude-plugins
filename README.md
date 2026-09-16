@@ -69,7 +69,7 @@ Names are **provisional** pending operator review.
 | …repo-durable work items and a pluggable work source | `work-items` | **current** | — |
 | …isolated execution for agent sessions (containers, and the checkout/worktree convention) | `sandbox` | **current** | claude-sandbox repo (external) |
 | …unattended agent loops over a backlog ("ralph") | `ralph` | **current** | `sandbox` (hard), `work-items` (soft) |
-| …to maintain this kit itself (skill authoring, upstream sync, templates, librarian custody) | `kit-dev` | **current** | — |
+| …to maintain this kit itself (skill authoring, upstream sync, templates, librarian custody) | `kit-dev` | **current** | `work-items` (soft; via the repo tree, or the installed plugin's `wi`) |
 | …to make Claude good at a specific stack (Goa, Playwright, musubi-tuner, …) | one plugin per stack | **moved** to the expertise marketplace (local scaffold, remote pending) | — |
 
 Retired: the deprecated plan-execution skill and the three sub-agent definitions used only by
@@ -179,6 +179,10 @@ templates, syncing work back upstream, and standing custody of a repo's shared a
 | `librarian-mode` | Standing single-writer custodian of a repo's custody layer: file, factor, route by model tier, delegate to worktree agents, review, land, report |
 | `new-project-from-template` | Create a new project from a claude-templates template |
 | `update-kit` | Sync skills and workflow files upstream to claude-templates / claude-plugins / claude-expertise / claude-sandbox |
+
+Soft dependency on `work-items`: `librarian-mode` drives `wi` throughout, found through the
+repo's own `plugins/*/skills/work-items` tree or the installed plugin's copy; the other
+three skills need nothing else here.
 
 `plugins/kit-dev/` is what remains of the old kitchen-sink plugin after the factoring: its
 `hooks/`, `checkpoint` and `install-statusline` went to `context-guard` (except the checkout
@@ -340,12 +344,16 @@ The `claude-kit` plugin is gone from the marketplace. Per machine, once:
    the primary dev machine typically takes all seven; a work machine may want only
    `context-guard`, plus `dev-flow` / `work-items` if you use the plan-first flow; an
    inference box like `lucy` wants expertise packs rather than these.
-3. **Start one session** so `context-guard`'s SessionStart migration fires and moves an
-   existing status-line entry to the new data path. Verify the gauge still renders; if not,
-   run `/install-statusline`.
-4. **Uninstall `claude-kit`**: `/plugin uninstall claude-kit@kmacmcfarlane`. It no longer
-   exists in the marketplace, so its cache is orphaned and harmless either way — removing it
-   just stops the duplicate skills showing up.
+3. **Uninstall `claude-kit` in the same `/plugin` sitting, before the first session**:
+   `/plugin uninstall claude-kit@kmacmcfarlane`. Its hooks and `context-guard`'s (and
+   `sandbox`'s) would otherwise all fire in that session — two gates, two relays, two
+   guards. It no longer exists in the marketplace, so removing it also stops the duplicate
+   skills showing up.
+4. **Start one session** so `context-guard`'s SessionStart migration fires and moves an
+   existing status-line entry to the new data path. It reads the installer marker in the
+   legacy `plugins/data/claude-kit-*/` directory; if the uninstall has already cleared that
+   directory there is nothing to migrate and the old entry points at a dead path. Verify
+   the gauge still renders; if not, run `/install-statusline` — the fallback either way.
 5. **Expertise packs** (`goa`, `playwright`, `musubi-tuner`, `ai-scripts`) arrive when the
    `claude-expertise` repo gains a remote and that marketplace is registered. Until then they
    are not installable anywhere — this is the one gap the refactor leaves open.

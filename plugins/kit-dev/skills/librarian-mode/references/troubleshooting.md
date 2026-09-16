@@ -33,4 +33,12 @@ here for the glob and orphan-worktree cases.
 The same case as Rehydrate step 1 states it, which is where the installed path is:
 
 An empty glob is normal on a repo that does not carry the plugin in its tree: use the
-installed copy, `${CLAUDE_PLUGIN_ROOT}/skills/work-items/scripts/wi.py`, same `WI_ROOT`.
+installed `work-items` plugin's copy (not `${CLAUDE_PLUGIN_ROOT}`, which is this plugin's
+root and carries no `wi`), same `WI_ROOT`:
+
+```bash
+WI="python3 $(ls -t "${CLAUDE_CONFIG_DIR:-$HOME/.claude}"/plugins/cache/kmacmcfarlane/work-items/*/skills/work-items/scripts/wi.py | head -1)"
+```
+
+The newest cached version wins; an empty result means `work-items` is not installed on
+this machine — install it (`/plugin install work-items@kmacmcfarlane`) before continuing.

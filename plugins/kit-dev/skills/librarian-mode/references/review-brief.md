@@ -39,7 +39,7 @@ Model: <opus|fable> — your tier; reviewer matches the implementer (<implemente
 Store: export WI_ROOT=<absolute path to the main checkout>/.claude-sandbox/work
 CLI:   WI="python3 $(ls $WORKTREE/plugins/*/skills/work-items/scripts/wi.py | head -1)"
        <on a repo with no plugins/ tree, substitute the installed work-items plugin's
-       wi.py, by absolute path>
+       wi.py by absolute path: ls -t "${CLAUDE_CONFIG_DIR:-$HOME/.claude}"/plugins/cache/kmacmcfarlane/work-items/*/skills/work-items/scripts/wi.py | head -1>
 Read it in full first: $WI show <id>
 Acceptance: <one or two lines, copied from the item body>
 Files in scope: <explicit list; anything else in the diff is a finding>

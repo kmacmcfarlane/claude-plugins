@@ -64,7 +64,8 @@ Do this at session start and after any `/clear` or compaction. Never `ls` the wh
    ```
 
    An empty glob is normal when the repo does not carry the plugin — use the installed
-   copy: `references/troubleshooting.md`.
+   `work-items` plugin's copy from the plugin cache (the exact `ls -t` line is in
+   `references/troubleshooting.md`).
 
    **First start** — no store at `$WI_ROOT`, an existing `.work/` one, what `status` does
    instead: `references/first-start.md`.
