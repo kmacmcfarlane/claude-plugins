@@ -50,6 +50,8 @@ TOKEN_CLASSES = ("input", "output", "cache_creation", "cache_read")
 PRICE_CLASSES = ("input", "output", "cache_write_5m", "cache_write_1h", "cache_read")
 DEFAULT_PRICES = Path(__file__).resolve().parent / "prices.json"
 DATE_SUFFIX_RE = re.compile(r"-\d{8}$")
+NO_MODEL = "(no model)"
+UNKNOWN_PREFIX = "unknown:"
 SLUG_RE = re.compile(r"[^a-zA-Z0-9]")
 
 
@@ -73,16 +75,17 @@ def projects_dir(override=None):
 
 
 def slug_for_path(path):
-    """Claude Code's project-directory slug: every non-alphanumeric run to '-'."""
+    """Claude Code's project-directory slug: every non-alphanumeric character to '-'."""
     return SLUG_RE.sub("-", str(Path(path).resolve()))
 
 
 def resolve_scope(root, cwd=None, all_projects=False):
     """The project directories in scope.
 
-    Default is the slug for `cwd`; when that exact directory is absent the
-    longest existing slug that prefixes it wins, so a git worktree inside a
-    project resolves to the project it belongs to.
+    The slug for `cwd` wins outright when that directory exists. Only when it
+    does not is an ancestor used: the longest existing slug that prefixes the
+    cwd slug *at a path-component boundary*, so a worktree under a project
+    resolves to that project while `/foo/barbaz` never matches `-foo-bar`.
     """
     root = Path(root)
     if not root.is_dir():
@@ -94,7 +97,8 @@ def resolve_scope(root, cwd=None, all_projects=False):
     exact = [p for p in dirs if p.name == want]
     if exact:
         return exact
-    prefixes = [p for p in dirs if want.startswith(p.name)]
+    prefixes = [p for p in dirs
+                if want.startswith(p.name) and want[len(p.name):len(p.name) + 1] == "-"]
     if prefixes:
         return [max(prefixes, key=lambda p: len(p.name))]
     return []
@@ -171,15 +175,22 @@ class PriceTable:
         return None
 
     def prices_for(self, model):
-        """(key, prices, known). Unknown models warn once and fall back."""
+        """(key, prices, known). Unknown models warn once and fall back.
+
+        A line with no model at all (an API-error or synthetic assistant line
+        that still carries a usage block) is an unknown model like any other:
+        it warns under the NO_MODEL sentinel and is priced at the default,
+        never silently folded into the default model's row.
+        """
         key = self.canonical(model)
         if key:
             return key, self.models[key], True
-        if model and model not in self._warned:
-            self._warned.add(model)
-            self.unknown_models.append(model)
+        warn_key = model or NO_MODEL
+        if warn_key not in self._warned:
+            self._warned.add(warn_key)
+            self.unknown_models.append(warn_key)
             self._warn("usage_report: unknown model %r; pricing it as %r"
-                       % (model, self.default_model))
+                       % (warn_key, self.default_model))
         fallback = self.canonical(self.default_model)
         if fallback is None:
             return None, {c: 0.0 for c in PRICE_CLASSES}, False
@@ -529,6 +540,18 @@ def round_totals(totals):
     return totals
 
 
+def model_bucket(record):
+    """The by-model key for a record.
+
+    A guessed price never hides inside the row of the model it was guessed as:
+    unknown ids (and lines with no model at all) get their own visible
+    `unknown:` key.
+    """
+    if record.model_known and record.price_key:
+        return record.price_key
+    return UNKNOWN_PREFIX + (record.model or NO_MODEL)
+
+
 def dispatch_row(dispatch, flat):
     """One dispatch row; when not flat, nested dispatches roll up into it."""
     members = [dispatch] if flat else dispatch.own_and_descendants()
@@ -561,7 +584,7 @@ def summarize(sessions, table, flat=False, scope=None, since=None):
     for session in sessions:
         session_records = session.all_records()
         for record in session_records:
-            key = record.price_key or record.model or "unknown"
+            key = model_bucket(record)
             add_records(by_model.setdefault(key, empty_totals()), [record])
         add_records(totals, session_records)
         boundaries += session.main_scan.boundaries if session.main_scan else 0

@@ -176,6 +176,64 @@ class ParserTests(unittest.TestCase):
             self.assertEqual(record.price_key, "claude-sonnet-5")
             self.assertAlmostEqual(record.cost_usd, 1000 * 2 / 1e6)
 
+    def test_missing_model_is_unknown_not_silently_the_default(self):
+        """A usage line with no model must warn and get its own bucket."""
+        path = self.fixture.session("sess", [
+            json.dumps({"type": "assistant", "timestamp": "2026-09-10T00:00:01.000Z",
+                        "sessionId": "sess",
+                        "message": {"id": "msg_1", "role": "assistant",
+                                    "usage": {"input_tokens": 1000,
+                                              "output_tokens": 0}}}),
+            json.dumps({"type": "assistant", "timestamp": "2026-09-10T00:00:02.000Z",
+                        "sessionId": "sess",
+                        "message": {"id": "msg_2", "role": "assistant",
+                                    "model": None,
+                                    "usage": {"input_tokens": 1000,
+                                              "output_tokens": 0}}}),
+            assistant_line("msg_3", "claude-opus-5", "2026-09-10T00:00:03.000Z",
+                           input_tokens=1000)])
+        session = usage_report.read_session(path, table=self.table)
+        self.assertEqual(len(self.warnings), 1)
+        self.assertIn(usage_report.NO_MODEL, self.warnings[0])
+        self.assertEqual(self.table.unknown_models, [usage_report.NO_MODEL])
+        data = usage_report.summarize([session], self.table)
+        bucket = usage_report.UNKNOWN_PREFIX + usage_report.NO_MODEL
+        self.assertEqual(sorted(data["by_model"]), ["claude-opus-5", bucket])
+        self.assertEqual(data["by_model"][bucket]["input"], 2000)
+        self.assertEqual(data["by_model"]["claude-opus-5"]["input"], 1000)
+        self.assertTrue(any(usage_report.NO_MODEL in w for w in data["warnings"]))
+        # still priced, at the default, so the dollar total is not silently zero
+        self.assertGreater(data["by_model"][bucket]["cost_usd"], 0)
+
+    def test_unknown_model_gets_its_own_bucket(self):
+        path = self.fixture.session("sess", [
+            assistant_line("msg_1", "claude-arcticfox-9", "2026-09-10T00:00:01.000Z",
+                           input_tokens=1000)])
+        session = usage_report.read_session(path, table=self.table)
+        data = usage_report.summarize([session], self.table)
+        self.assertEqual(sorted(data["by_model"]),
+                         [usage_report.UNKNOWN_PREFIX + "claude-arcticfox-9"])
+
+    def test_dedupe_is_file_scoped(self):
+        """The same message.id in two sessions is two responses, not one."""
+        first = self.fixture.session("sess_a", [
+            assistant_line("msg_shared", "claude-opus-5",
+                           "2026-09-10T00:00:01.000Z", session_id="sess_a",
+                           output_tokens=100)])
+        second = self.fixture.session("sess_b", [
+            assistant_line("msg_shared", "claude-opus-5",
+                           "2026-09-10T00:00:02.000Z", session_id="sess_b",
+                           output_tokens=100)])
+        for path in (first, second):
+            scan = usage_report.read_transcript(path, table=self.table)
+            self.assertEqual(len(scan.records), 1)
+            self.assertEqual(scan.duplicates, 0)
+        sessions = usage_report.read_project(self.fixture.project, table=self.table)
+        data = usage_report.summarize(sessions, self.table)
+        self.assertEqual(len(data["sessions"]), 2)
+        self.assertEqual(data["totals"]["output"], 200)
+        self.assertEqual(data["duplicate_lines_dropped"], 0)
+
     def test_dated_model_id_resolves_to_its_family(self):
         self.table.models["claude-haiku-4-5"] = {
             "input": 1.0, "output": 5.0, "cache_write_5m": 1.25,
@@ -259,6 +317,25 @@ class DispatchTests(unittest.TestCase):
         self.assertEqual(sorted(data["by_requested_tier"]), ["inherit", "sonnet"])
         self.assertEqual(data["totals"]["output"], 350)
 
+    def test_dispatch_without_a_meta_file(self):
+        """A transcript with no .meta.json is still a dispatch, attributes empty."""
+        self.fixture.dispatch("sess", "ddd", None, [
+            assistant_line("d_1", "claude-opus-5", "2026-09-10T00:04:00.000Z",
+                           agent_id="ddd", output_tokens=11)])
+        session = usage_report.read_session(self.fixture.project / "sess.jsonl",
+                                            table=self.table)
+        dispatch = {d.agent_id: d for d in session.dispatches}["ddd"]
+        self.assertEqual(dispatch.meta, {})
+        self.assertIsNone(dispatch.agent_type)
+        self.assertIsNone(dispatch.requested_tier)
+        self.assertEqual(dispatch.tier_source, "inherited")
+        self.assertEqual(dispatch.spawn_depth, 1)
+        self.assertIsNone(dispatch.parent_agent_id)
+        data = usage_report.summarize([session], self.table)
+        row = {r["agent_id"]: r for r in data["dispatches"]}["ddd"]
+        self.assertEqual(row["totals"]["output"], 11)
+        self.assertIn("inherit", data["by_requested_tier"])
+
     def test_orphan_parent_is_promoted_to_a_row(self):
         self.fixture.dispatch("sess", "ccc", {"spawnDepth": 2,
                                               "parentAgentId": "gone"}, [
@@ -314,6 +391,33 @@ class SinceAndScopeTests(unittest.TestCase):
         self.assertEqual(len(usage_report.resolve_scope(root, cwd=other,
                                                         all_projects=True)), 2)
 
+    def test_scope_prefix_match_respects_component_boundaries(self):
+        """/foo/barbaz must not resolve to the project at /foo/bar."""
+        root = self.fixture.root
+        project = Path(self.tmp.name) / "foo" / "bar"
+        (root / usage_report.slug_for_path(project)).mkdir()
+        sibling = Path(self.tmp.name) / "foo" / "barbaz"
+        self.assertEqual(usage_report.resolve_scope(root, cwd=sibling), [])
+        inside = project / "sub"
+        self.assertEqual([p.name for p in usage_report.resolve_scope(root, cwd=inside)],
+                         [usage_report.slug_for_path(project)])
+
+    def test_empty_and_absent_scope(self):
+        """No matching project, and no projects root at all, both report nothing."""
+        root = self.fixture.root
+        table = self.table
+        self.assertEqual(usage_report.resolve_scope(root, cwd=Path(self.tmp.name)), [])
+        missing = Path(self.tmp.name) / "no-such-projects-dir"
+        self.assertEqual(usage_report.resolve_scope(missing, cwd=Path(self.tmp.name)), [])
+        data = usage_report.summarize([], table, scope=[])
+        self.assertEqual(data["scope"], [])
+        self.assertEqual(data["totals"]["total_tokens"], 0)
+        self.assertEqual(data["dispatches"], [])
+        self.assertEqual(data["sessions"], [])
+        # an empty project directory reads as zero sessions, not an error
+        self.assertEqual(usage_report.read_project(self.fixture.project,
+                                                   table=table), [])
+
 
 class CliTests(unittest.TestCase):
     def setUp(self):
@@ -362,6 +466,24 @@ class CliTests(unittest.TestCase):
         plain = self.run_cli("summary")
         self.assertEqual(plain.returncode, 0, plain.stderr)
         self.assertIn("opus-equivalent tokens", plain.stdout)
+
+    def test_default_scope_with_no_matching_project_is_not_an_error(self):
+        proc = subprocess.run(
+            [sys.executable, str(SCRIPT), "--projects-dir", str(self.fixture.root),
+             "--prices", str(self.prices), "scan"],
+            capture_output=True, text=True, cwd=self.tmp.name,
+            env={"PYTHONDONTWRITEBYTECODE": "1", "PATH": "/usr/bin:/bin"})
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        self.assertIn("no project directory in scope", proc.stdout)
+        summary = subprocess.run(
+            [sys.executable, str(SCRIPT), "--projects-dir", str(self.fixture.root),
+             "--prices", str(self.prices), "summary", "--json"],
+            capture_output=True, text=True, cwd=self.tmp.name,
+            env={"PYTHONDONTWRITEBYTECODE": "1", "PATH": "/usr/bin:/bin"})
+        self.assertEqual(summary.returncode, 0, summary.stderr)
+        data = json.loads(summary.stdout)
+        self.assertEqual(data["scope"], [])
+        self.assertEqual(data["totals"]["total_tokens"], 0)
 
     def test_no_subcommand_prints_help(self):
         proc = self.run_cli()
