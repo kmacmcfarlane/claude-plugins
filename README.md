@@ -69,7 +69,7 @@ Names are **provisional** pending operator review.
 | …repo-durable work items and a pluggable work source | `work-items` | **current** | — |
 | …isolated execution for agent sessions (containers, and the checkout/worktree convention) | `sandbox` | **current** | claude-sandbox repo (external) |
 | …unattended agent loops over a backlog ("ralph") | `ralph` | **current** | `sandbox` (hard), `work-items` (soft) |
-| …to maintain this kit itself (skill authoring, upstream sync, templates) | `kit-dev` | **current** | — |
+| …to maintain this kit itself (skill authoring, upstream sync, templates, librarian custody) | `kit-dev` | **current** | — |
 | …to make Claude good at a specific stack (Goa, Playwright, musubi-tuner, …) | one plugin per stack | **moved** to the expertise marketplace (local scaffold, remote pending) | — |
 
 Retired: the deprecated plan-execution skill and the three sub-agent definitions used only by
@@ -169,13 +169,14 @@ What is installable from this marketplace right now.
 ### kit-dev
 
 Maintainer tooling for this ecosystem itself — authoring skills, scaffolding projects from the
-templates, and syncing work back upstream. Install it if you *develop* the kit; you do not
-need it to use the kit.
+templates, syncing work back upstream, and standing custody of a repo's shared agent layer
+(librarian mode). Install it if you *develop* the kit; you do not need it to use the kit.
 
 | Skill | Description |
 |---|---|
 | `create-skill` | Bootstrap a new Claude Code skill from a description, routed to its plugin by aim |
 | `factor-analysis` | Analyze how a repo, plugin, or toolset should be factored into coherent standalone pieces |
+| `librarian-mode` | Standing single-writer custodian of a repo's custody layer: file, factor, route by model tier, delegate to worktree agents, review, land, report |
 | `new-project-from-template` | Create a new project from a claude-templates template |
 | `update-kit` | Sync skills and workflow files upstream to claude-templates / claude-plugins / claude-expertise / claude-sandbox |
 

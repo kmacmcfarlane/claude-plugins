@@ -23,7 +23,7 @@ plugins/
       {investigate,implement,deep-investigation,chain-of-verification}/
   kit-dev/             # Maintaining this kit itself
     skills/
-      {create-skill,update-kit,new-project-from-template,factor-analysis}/
+      {create-skill,update-kit,new-project-from-template,factor-analysis,librarian-mode}/
   ralph/               # Unattended agent loops over a backlog
     skills/
       {backlog-yaml,backlog-entry,backlog-grooming}/

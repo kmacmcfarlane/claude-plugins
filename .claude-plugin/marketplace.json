@@ -8,7 +8,7 @@
     {
       "name": "kit-dev",
       "source": "./plugins/kit-dev",
-      "description": "Maintainer tooling for this plugin ecosystem — skill creation, project scaffolding, upstream kit sync, and factoring analysis."
+      "description": "Maintainer tooling for this plugin ecosystem — skill creation, project scaffolding, upstream kit sync, factoring analysis, and the librarian custody workflow for the shared agent layer."
     },
     {
       "name": "context-guard",
