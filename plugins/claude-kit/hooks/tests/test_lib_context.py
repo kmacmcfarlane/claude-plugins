@@ -50,6 +50,24 @@ class TestEpoch(Base):
         st = L.reset_epoch("s", compact_summary="the summary")
         self.assertEqual(st["compact_summary"], "the summary")
 
+    def test_reset_demotes_fresh_exact_to_window_only(self):
+        # A record written seconds before the boundary is still fresh after
+        # it; the new epoch must not inherit its tokens, only its window.
+        import time
+        L.save_state("s", {"exact": {"pct": 95.0, "tokens": 950_000,
+                                     "window": 1_000_000, "at": time.time() - 300}})
+        st = L.reset_epoch("s")
+        self.assertEqual(st["exact"], {"window": 1_000_000, "at": 0})
+        self.assertEqual(L.load_state("s")["exact"], {"window": 1_000_000, "at": 0})
+        # No transcript yet (status line not re-rendered): unknown, not 950K.
+        tok, win, pct, src = L.depth("/nonexistent", "s")
+        self.assertEqual((tok, win), (0, 1_000_000))
+        self.assertTrue(src.startswith("inferred"))
+
+    def test_reset_without_exact_record_is_a_noop_for_it(self):
+        st = L.reset_epoch("s")
+        self.assertNotIn("exact", st)
+
 
 class TestDepth(Base):
     def _transcript(self, tokens):
@@ -97,6 +115,22 @@ class TestDepth(Base):
         self.assertTrue(src.startswith("inferred"))
         self.assertEqual(L.scan_usage(p), (30_000, 950_000, True))
         self.assertEqual(L.read_usage(p), (30_000, 950_000))
+
+    def test_demoted_exact_after_clear_uses_transcript_only(self):
+        # /clear starts a transcript with no compact_boundary line: the
+        # demoted record must not floor the count even without a boundary.
+        import time
+        L.save_state("s", {"exact": {"pct": 95.0, "tokens": 950_000,
+                                     "window": 1_000_000, "at": time.time() - 300}})
+        L.reset_epoch("s")
+        tok, win, pct, src = L.depth(self._transcript(30_000), "s")
+        self.assertEqual((tok, win), (30_000, 1_000_000))
+        self.assertLess(pct, 5)
+        self.assertEqual(src, "inferred, window from status line")
+        # A record written after the boundary is exact again.
+        L.save_state("s", {"exact": {"pct": 3.0, "tokens": 30_000,
+                                     "window": 1_000_000, "at": time.time()}})
+        self.assertEqual(L.depth(self._transcript(30_000), "s")[3], "exact")
 
     def test_stale_exact_missing_transcript_still_reports(self):
         L.save_state("s", {"exact": {"pct": 50.0, "tokens": 500_000,

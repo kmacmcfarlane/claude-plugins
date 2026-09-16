@@ -86,7 +86,7 @@ def main():
                         f"CLAUDE_KIT_CONTEXT_WINDOW=<tokens> in the launch "
                         f"environment pins it, and the status line gives exact depth."},
                 "systemMessage":
-                    f"Context: {remaining:,} tokens left of {win:,} (inferred) — "
+                    f"Context: {remaining:,} tokens left of {win:,} ({src}) — "
                     f"under the hard threshold ({th['hard']:,}); not blocked because "
                     f"the depth is inferred. Checkpoint now, or pin the window with "
                     f"CLAUDE_KIT_CONTEXT_WINDOW if {win:,} is wrong.",
