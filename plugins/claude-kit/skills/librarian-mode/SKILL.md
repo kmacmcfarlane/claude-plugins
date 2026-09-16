@@ -169,7 +169,7 @@ Route every dispatch — an unrouted sub-agent inherits the librarian's model, t
 tier — via the Agent tool's `model` field (`sonnet` | `opus` | `fable`); tables and worked
 examples: `references/model-routing.md`. Rounds count **fix rounds**: fix round n = the
 nth re-dispatch or resume with findings = review round n+1; cap 3 review rounds. The
-`verified:` line counts the same.
+`verified:` line counts fix rounds too.
 
 1. **Default implementer: sonnet.** The brief constrains the work; a sonnet failure is
    cheap.
@@ -310,7 +310,7 @@ only the first.
 5. `$WI done <id> --note <merge-sha>`.
 
 A red check or a doctrine miss here stops the landing: `$WI handoff <id> --blocked "<what>"`,
-and it goes back into the Review fix loop as a finding, counting toward the round cap.
+and it goes back into the Review fix loop as a finding, counting toward the cap.
 **Never merge to make a check pass later.**
 
 The main checkout must be on `main` and clean before a merge — except first-start dirt

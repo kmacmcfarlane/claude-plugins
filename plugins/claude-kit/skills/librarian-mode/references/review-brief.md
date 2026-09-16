@@ -129,7 +129,7 @@ NOTES: anything you noticed that is not a finding; questions for the librarian
 ## Re-review variant
 
 After the implementer pushes fix commits, resume the **same** reviewer (it has the context)
-with this in place of "What to do" — unless the fix round raised the tier (Route rules 2–4):
+with this in place of "What to do" — unless the fix round raised the tier (Route rules 3–4):
 a resumed agent keeps its model, so dispatch a fresh reviewer at the new tier with the full
 brief, its `Model:` line updated, and the previous report pasted above this block.
 
