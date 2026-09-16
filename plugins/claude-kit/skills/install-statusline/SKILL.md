@@ -35,3 +35,18 @@ marker, so removal is not "healed" back.
 `--remove` deletes the entry from the chosen scope. Changing scope = install in one, remove
 from the other. Verify after install: the gauge shows `NN%  NNNk left  eN` in the footer of
 the next session.
+
+## If the gate blocks wrongly
+
+A hard block needs a fresh exact reading; an inferred depth (stale or missing record) only
+warns. So a wrong block means a fresh-but-wrong record, e.g. one written just before a
+compaction. Two escape hatches:
+1. Pin the window: `CLAUDE_KIT_CONTEXT_WINDOW=1000000` (tokens) in the environment Claude
+   Code is launched from; the hooks then never guess the denominator.
+2. Emergency stand-down: set `checkpoint_epoch` equal to `epoch` (default 0) in the session's
+   state file (named by session id; the newest file in the dir is the live session) — what
+   `/checkpoint` records. The gate stays down until the next compaction or `/clear`:
+
+```bash
+python3 -c 'import json,sys;p=sys.argv[1];s=json.load(open(p));s["checkpoint_epoch"]=s.get("epoch",0);json.dump(s,open(p,"w"),indent=1)' "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/claude-kit/context-gate/<session_id>.json"
+```

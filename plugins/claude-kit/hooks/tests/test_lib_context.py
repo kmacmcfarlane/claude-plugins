@@ -67,12 +67,47 @@ class TestDepth(Base):
         tok, win, pct, src = L.depth(self._transcript(100_000), "s")
         self.assertEqual((tok, src), (500_000, "exact"))
 
-    def test_stale_exact_falls_back(self):
+    def test_stale_exact_keeps_window_and_token_floor(self):
+        # Live-fired 2026-09-16: exact {186454 of 1M} older than EXACT_MAX_AGE_S
+        # was discarded; inference guessed 200K and HARD-blocked a 1M session.
+        L.save_state("s", {"exact": {"pct": 18.6, "tokens": 186_454,
+                                     "window": 1_000_000, "at": 0}})
+        tok, win, pct, src = L.depth(self._transcript(186_454), "s")
+        self.assertTrue(src.startswith("inferred"))
+        self.assertEqual(win, 1_000_000)          # window never shrinks
+        self.assertEqual(tok, 186_454)
+        self.assertLess(pct, 20)
+        # transcript ahead of the stale record: transcript wins
+        self.assertEqual(L.depth(self._transcript(300_000), "s")[0], 300_000)
+        # transcript behind it: exact tokens are the floor
+        self.assertEqual(L.depth(self._transcript(100_000), "s")[0], 186_454)
+
+    def test_stale_exact_token_floor_dropped_after_boundary(self):
+        L.save_state("s", {"exact": {"pct": 95.0, "tokens": 950_000,
+                                     "window": 1_000_000, "at": 0}})
+        p = os.path.join(self.tmp.name, "b.jsonl")
+        rec = lambda tok: json.dumps({"type": "assistant", "message": {"usage": {
+            "input_tokens": 2, "cache_read_input_tokens": tok - 2,
+            "cache_creation_input_tokens": 0}}})
+        open(p, "w").write(rec(950_000) + "\n"
+                           + json.dumps({"type": "system", "subtype": "compact_boundary"}) + "\n"
+                           + rec(30_000) + "\n")
+        tok, win, pct, src = L.depth(p, "s")
+        self.assertEqual((tok, win), (30_000, 1_000_000))  # window kept, floor dropped
+        self.assertTrue(src.startswith("inferred"))
+        self.assertEqual(L.scan_usage(p), (30_000, 950_000, True))
+        self.assertEqual(L.read_usage(p), (30_000, 950_000))
+
+    def test_stale_exact_missing_transcript_still_reports(self):
         L.save_state("s", {"exact": {"pct": 50.0, "tokens": 500_000,
                                      "window": 1_000_000, "at": 0}})
+        tok, win, pct, src = L.depth("/nonexistent", "s")
+        self.assertEqual((tok, win), (500_000, 1_000_000))
+        self.assertTrue(src.startswith("inferred"))
+
+    def test_no_exact_record_is_plain_inferred(self):
         tok, win, pct, src = L.depth(self._transcript(100_000), "s")
-        self.assertEqual(src, "inferred")
-        self.assertEqual(tok, 100_000)
+        self.assertEqual((tok, win, src), (100_000, 200_000, "inferred"))
 
     def test_boundary_resets_current_keeps_peak(self):
         p = os.path.join(self.tmp.name, "b.jsonl")
@@ -90,6 +125,21 @@ class TestDepth(Base):
     def test_window_inferred_from_peak(self):
         self.assertEqual(L.depth(self._transcript(100_000))[1], 200_000)
         self.assertEqual(L.depth(self._transcript(400_000))[1], 1_000_000)
+
+    def test_window_floor(self):
+        self.assertEqual(L.window(100_000), 200_000)
+        self.assertEqual(L.window(100_000, floor=1_000_000), 1_000_000)
+        self.assertEqual(L.window(400_000, floor=200_000), 1_000_000)  # floor never lowers
+        self.assertEqual(L.window(100_000, floor=0), 200_000)
+
+    def test_window_env_override(self):
+        os.environ["CLAUDE_KIT_CONTEXT_WINDOW"] = "500000"
+        try:
+            self.assertEqual(L.window(100_000), 500_000)
+            self.assertEqual(L.window(100_000, floor=1_000_000), 500_000)  # pin wins
+            self.assertEqual(L.depth(self._transcript(100_000))[1], 500_000)
+        finally:
+            os.environ.pop("CLAUDE_KIT_CONTEXT_WINDOW", None)
 
 
 class TestLedger(Base):
