@@ -128,13 +128,6 @@ sentence:
   the rehydration hook will inject it there.
 - **continue uncompacted** → when the number says there is more room than it felt like.
 
-For a stage-boundary handoff, also print a ready-to-paste opener for the next session:
-
-```text
-Read <manifest path> in full — mode: handoff. Then run /<next-skill> <focus>.
-Do not re-run the previous stage — its outputs are published and complete; read them as your inputs (if your chain records a per-stage gate or label, it is already set).
-```
-
 After a compaction, the manifest + ledger are re-injected automatically and **outrank the
 machine summary**; corrections outrank recollection.
 
@@ -142,6 +135,23 @@ machine summary**; corrections outrank recollection.
 
 Two sentences: where the session started, where it ended, whether that was productive. No
 moralizing; the operator decides whether to keep pulling.
+
+## Step 7 — Hand the next session its first prompt (continue / handoff only)
+
+The drift note is not the last word. In *continue* or *handoff* mode, close with a fenced,
+ready-to-paste opener for the next session (or the next `/compact`/`/clear` turn) —
+this is the **last thing on screen**, after Step 6. Land mode emits nothing here: `mode:
+landed` in the manifest is the whole story.
+
+Under ~5 lines. Contents: the skill or task to invoke, exactly as the operator would type
+it; `read <manifest path> first` (the path Step 4b actually wrote — `.claude-sandbox/HANDOFF.md`
+or root `HANDOFF.md`); and the one or two facts that changed since the manifest was written —
+pull these from the drift note or the `Aware of` lines you just wrote, never restate the whole
+manifest.
+
+```text
+/<skill-or-task> <args> — read <manifest path> first; <fact that changed>; <fact that changed>
+```
 
 ## Rules
 
