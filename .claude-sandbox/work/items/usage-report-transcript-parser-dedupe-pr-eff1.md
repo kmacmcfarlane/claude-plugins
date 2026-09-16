@@ -2,13 +2,12 @@
 id: usage-report-transcript-parser-dedupe-pr-eff1
 title: "usage-report: transcript parser, dedupe, price table, tests"
 type: feature
-status: doing
+status: done
 priority: 2
 parent: spike-analyze-claude-code-usage-across-c-e5a7
-owner: unknown@4d338747396e
-claimed: 2026-09-16T17:33Z
 created: 2026-09-16
 updated: 2026-09-16
+closed: 2026-09-16
 refs:
   - operator approval 2026-09-16
 ---
@@ -33,3 +32,6 @@ dispatch: reviewer opus — rule 4
   per-character; no test for file-scoped dedupe / missing .meta.json / empty scope; legacy price aliases invisible
   in the report. Hand cross-check of this session: tool == jq dedupe on all five figures. Lows 2 and 6 are
   report-surface gaps -> appended to F2 (7e8f). Fix round 1 sent 2026-09-16 17:47:26, tier unchanged (opus, resumed).
+- fix round 1 returned DONE, new commit 075a7ba (25 tests); declined lows 2 and 6 (moved to F2 by the librarian). Re-review dispatched 2026-09-16 17:49:55 (reviewer opus, resumed).
+- 2026-09-16 done: cf5ddb1
+- re-review CLEAR (reviewer corrected its verdict inconsistency). Landed merge cf5ddb1 2026-09-16 17:53:10. F2 and F3 unblocked.

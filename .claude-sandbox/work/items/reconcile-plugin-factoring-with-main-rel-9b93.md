@@ -19,3 +19,15 @@ Peer session claude-sandbox-e3 (formerly pintail-11), 2026-09-16, relaying the o
 - next: —
 - blocked: —
 - learned: —
+- OPERATOR 2026-09-16 (decision 6): unblocked. Librarian plan: (1) land in-flight (F1 eff1) and push main; (2) dispatch
+  a fable agent in the existing plugin-factoring worktree: rebase plugin-factoring onto main (or merge main in if the
+  rebase is unmanageable — say which), relocate checkout_guard.py + hooks.json PreToolUse registration + the checkout
+  convention text into plugins/sandbox (peer decision 1, adopted), keep enforcement default on with per-repo opt-out
+  (peer decision 2, adopted), carry every skill landed today (usage-report, model routing, librarian changes,
+  context-gate fixes) into the factored layout, fix .claude-sandbox/work/README.md's plugin reference, update README
+  catalog + CLAUDE.md layout, run every test suite and the skill lint; (3) fable review; (4) NOT merged to main:
+  the branch is the operator's test branch — the librarian verifies everything it can, then hands the operator
+  step-by-step marketplace-switch and verification instructions; (5) merge to main after the operator's manual test.
+  Pushing the branch: outside the librarian's push rule (main only) — the operator pushes it, or authorizes once.
+dispatch: implementer fable — rule 3 (gating hook relocation; marketplace shape; hard to reverse)
+dispatch: reviewer fable — rule 4

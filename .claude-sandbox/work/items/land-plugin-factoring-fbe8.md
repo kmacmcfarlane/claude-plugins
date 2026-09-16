@@ -36,3 +36,7 @@ plugin-factoring (14 commits, 0079d1c..d118f48, epic fully reviewed) now lives i
   factoring branch's plugins/dev-flow/skills/implement/references/worktree-orchestration.md
   still mandates the retired .worktrees/<id> convention — reconcile at migration (main's
   version wins). Also sweep update-kit SKILL.md:153's .worktrees/ layout line then.
+- 2026-09-16 (from gitignore-config-37d3, operator decision 3): when this lands, fix .claude-sandbox/work/README.md's plugin reference (it names claude-kit skills/work-items; after factoring the work-items plugin owns wi).
+- OPERATOR 2026-09-16 (decision 6): hold lifted — 'tear off the band-aid'. Sequence: land in-flight items, push main,
+  then reconcile (item reconcile-plugin-factoring-with-main-rel-9b93) on a branch the operator tests from their
+  marketplace before it merges to main.

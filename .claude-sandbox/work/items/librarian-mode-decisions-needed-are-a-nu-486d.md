@@ -20,3 +20,5 @@ Operator 2026-09-16 ('use a list so I can reference it'): when the librarian nee
 - next: —
 - blocked: —
 - learned: —
+dispatch: implementer opus — rule 2 (doctrine: Report format)
+dispatch: reviewer opus — rule 4

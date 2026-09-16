@@ -2,8 +2,10 @@
 id: statusline-progress-bars-for-session-fab-28ad
 title: "statusline: progress bars for session, fable and weekly plan usage"
 type: feature
-status: todo
+status: doing
 priority: 2
+owner: unknown@4d338747396e
+claimed: 2026-09-16T17:52Z
 created: 2026-09-16
 updated: 2026-09-16
 refs:
@@ -13,8 +15,8 @@ refs:
 Operator 2026-09-16: add progress bars to the claude-kit status line for the current-session, Fable, and weekly usage against the current subscription plan's limits, shown only when running on a plan (Pro/Max style rate-limit windows — the librarian reads 'plan mode' as the subscription plan, not Claude Code's planning mode; correct if wrong). Research first: what the statusline JSON payload and hooks actually receive about rate-limit/plan usage (fields, versions), whether /usage data is reachable from a script, and what the 5-hour / weekly windows look like; then a plan for the operator; then implementation in hooks/statusline.py (harness file — fable per rule 3) with tests.
 
 ## Handoff
-- doing: research done; plan proposed in item body
-- next: operator decides on the Fable bar (decision 4 in the 2026-09-16 list); then dispatch
+- doing: unblocked; dispatching
+- next: implement in hooks/statusline.py + tests
 - blocked: awaiting operator decision
 - learned: —
 
@@ -34,3 +36,9 @@ rendered only when rate_limits is present; same bar style as the context gauge; 
 The Fable-specific weekly bar is NOT available officially — recommend leaving it out (an undocumented endpoint
 plus reading the credentials file from a status line that runs every render is a risk the kit should not take
 by default); revisit when the payload carries per-model windows. Routing: fable (harness file, rule 3).
+- OPERATOR 2026-09-16 (decision 4): official payload only — 5h and 7-day bars from rate_limits; no Fable-specific bar, no undocumented endpoint.
+dispatch: implementer fable — rule 3 (harness file hooks/statusline.py)
+dispatch: reviewer fable — rule 4
+
+## Notes
+- 2026-09-16 claimed by unknown@4d338747396e

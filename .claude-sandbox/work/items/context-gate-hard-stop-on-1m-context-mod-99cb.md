@@ -20,7 +20,7 @@ Operator 2026-09-16, urgent: in a session on Opus 5 (1M context) the UserPromptS
 - learned: —
 
 ## Diagnosis (librarian, 2026-09-16)
-State file of the blocked session (config dir /home/rt/work/src/git.sussexdirectories.com/.claude,
+State file of the blocked session (config dir <other-project CLAUDE_CONFIG_DIR>,
 session 3abff11c): `exact` = {tokens 186454, window 1000000, pct 19, at 1789573377}; the hook
 wrote window 200000 / pct 93.2. So the status line HAD the exact 1M window, but the record was
 older than EXACT_MAX_AGE_S (600 s) when the prompt was submitted (operator idle while typing
