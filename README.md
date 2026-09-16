@@ -94,18 +94,26 @@ claude-plugins/
 │   │   └── skills/
 │   │       └── product-research/
 │   └── claude-kit/              # Dev tooling
-│       └── skills/
+│       ├── agents/              # Agent definitions, auto-loaded by the plugin system
+│       ├── hooks/               # Context gate, ledger, statusline, checkout guard
+│       └── skills/              # One directory per skill
 │           ├── backlog-entry/
 │           ├── backlog-grooming/
 │           ├── backlog-yaml/
 │           ├── chain-of-verification/
+│           ├── checkpoint/
 │           ├── create-skill/
 │           ├── goa/
+│           ├── implement/
+│           ├── implement-plan/
+│           ├── install-statusline/
+│           ├── investigate/
 │           ├── librarian-mode/
 │           ├── musubi-tuner/
 │           ├── new-project-from-template/
 │           ├── playwright/
 │           ├── sandbox/
-│           └── update-kit/
+│           ├── update-kit/
+│           └── work-items/
 └── README.md
 ```
