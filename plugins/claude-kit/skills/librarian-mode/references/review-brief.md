@@ -166,5 +166,6 @@ new medium-or-above appeared.
 | `SHOW_STOPPER` | Unfixable in scope, or changes scope / an operator decision | `wi block`; operator under `decisions needed`; do not land |
 | `BLOCKED` | The reviewer could not start: worktree, branch, brief or permissions wrong | Fix the brief, re-dispatch — twice at most; not a round. A third `BLOCKED`, or a permission denial, is `wi block` and the operator under `decisions needed` as a blocked item, not a show-stopper |
 
-Three fix rounds without `CLEAR` is itself a show-stopper: block the item and raise it with
+A third review round without `CLEAR` is itself a show-stopper — the cap is 3 review rounds,
+the first review plus two fix rounds: block the item and ask the operator to weigh in, with
 the round history from the item body.
