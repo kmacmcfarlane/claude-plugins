@@ -9,6 +9,7 @@ plugins/
   claude-kit/          # Primary dev tooling plugin
     agents/            # Agent definitions (.md files, auto-loaded)
       <agent-name>.md
+    hooks/             # Hook scripts + hooks.json (context gate, ledger, statusline)
     skills/            # All skills live here
       <skill-name>/
         SKILL.md
@@ -21,7 +22,7 @@ plugins/
         SKILL.md
   chat/                # Conversational skills plugin
     skills/
-      product-research/
+      <skill-name>/
         SKILL.md
 ```
 
