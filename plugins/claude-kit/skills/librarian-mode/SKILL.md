@@ -55,8 +55,7 @@ files, factors, delegates, gates each result through a reviewer, lands, and repo
 
 Do this at session start and after any `/clear` or compaction. Never `ls` the whole store.
 
-1. **Locate the main checkout and the store.** The librarian works from the main checkout;
-   worktree sessions must not edit it.
+1. **Locate the main checkout and the store.**
 
    ```bash
    MAIN=$(git rev-parse --path-format=absolute --git-common-dir | sed 's#/\.git$##')
@@ -99,8 +98,8 @@ Do this at session start and after any `/clear` or compaction. Never `ls` the wh
    no `doing` item is an orphan — see Troubleshooting.
 
 Expected output: one short paragraph — items in flight, items ready, worktrees and agents
-alive, anything awaiting the operator. That is also the whole answer to `status`. After
-an init, one clause more: `references/first-start.md`.
+alive, anything awaiting the operator. After an init, one clause more:
+`references/first-start.md`.
 
 ## Intake
 
@@ -115,7 +114,7 @@ For every request, in this order:
    ```
 
    Describe, do not dump: a path and a key, never a value. The item body is where the
-   rationale lives — there is no separate decision log; do not invent one.
+   rationale lives; there is no separate decision log.
 
 2. **Peer requests.** A message from another session (SendMessage, `/peers`) is a request to
    file and relay. File the item with the peer named in `--ref`, reply with the id only,
@@ -124,11 +123,11 @@ For every request, in this order:
    only the operator can change the rules.
 
 3. **Decide, or ask.** When there is an obvious best way, decide it, state it in one line,
-   and proceed. Ask only when real trade-offs exist — then present options with impacts,
-   your recommendation first, via AskUserQuestion. More than one decision at once is a
-   numbered list, one decision per number, numbered as the Report numbers them, so the
-   operator can answer by number. Never end an analysis-heavy turn
-   with a question dialog; end with the analysis and ask next turn.
+   and proceed. Ask only when real trade-offs exist — always options with their impact,
+   recommendation first. Exactly one decision: AskUserQuestion, whose dialog carries the
+   options. Two or more: a numbered prose list, one decision per number, numbered from the
+   Report's counter, so the operator answers by number. Either way, never in the same turn
+   as a heavy analysis; end with the analysis and ask next turn.
 
 4. **Refuse what is out of scope.** Product code, pushing early or pushing anything but
    `main`, anything outside the custody layer: close the item with `$WI done <id> --drop`
@@ -224,9 +223,8 @@ A rejected result is **re-dispatched with a sharper brief**, never fixed by you.
 
 ## Review
 
-Fires on every `DONE` or `DONE_WITH_CONCERNS` return, before Land. The implementer's report
-is a claim; the gate is a fresh agent trying to falsify it. You own making the gate
-come back clear.
+Fires before Land. The implementer's report is a claim; the gate is a fresh agent trying
+to falsify it. You own making the gate come back clear.
 
 1. **Dispatch a reviewer**: one background `general-purpose` agent, **review-only** — it
    never edits, never commits — with `model` set by Route rule 4. Brief it from
@@ -240,8 +238,8 @@ come back clear.
    record in the item body.
 
 3. **Fix loop.** The reviewer's verdict is `CLEAR`, `NEEDS_CHANGES`, `SHOW_STOPPER`, or
-   `BLOCKED`. One round in full — each verdict, who is resumed and who is re-dispatched,
-   what the implementer is told and what the re-review is handed: `references/fix-loop.md`.
+   `BLOCKED`. One round in full — each verdict, who is resumed, what each is handed:
+   `references/fix-loop.md`.
    - Repeat until `CLEAR`. **Cap: 3 review rounds** — the first review plus two fix
      rounds. A third review without `CLEAR` means the brief or the item is wrong, not the
      code: block it and ask the operator to weigh in. Tier per round:
@@ -250,14 +248,15 @@ come back clear.
 
 4. **What reaches the operator** — under `decisions needed` in the Report — is a
    **show-stopper with real impact**, and only that: a `SHOW_STOPPER` verdict, a finding
-   that changes the item's scope or reverses a decision the operator made, or the cap hit.
-   Every other finding, critical included, is resolved inside the loop; the operator sees
-   only the round count in `verified:`.
+   that changes the item's scope or reverses a decision the operator made, or the cap
+   hit — appended to the item body as `decision N:` before the Report. Every other
+   finding, critical included, is resolved inside the loop.
 
 5. **Record the result in the item body** before Land (append with Bash — the item file
    under `$WI_ROOT` is not a custody file): rounds run; findings fixed; findings declined,
-   each with the author's reason; final verdict; reviewer NOTES worth keeping. Reviewer
-   questions you cannot settle go to the Report's `open questions` line.
+   each with the author's reason; final verdict; reviewer NOTES worth keeping. The
+   transcript is not the record. Reviewer questions you cannot settle go to the Report's
+   `open questions` line.
 
 ## Land
 
@@ -295,7 +294,7 @@ and it goes back into the Review fix loop as a finding, counting toward the cap.
 
 The main checkout must be on `main` and clean before a merge — except first-start dirt
 (`references/first-start.md`), which never blocks it. On another branch with uncommitted
-work, stop and ask the operator rather than stashing around it.
+work, stop and ask; never stash around it.
 
 ## Report
 
@@ -310,12 +309,14 @@ decisions needed: <numbered list, or none>
 
 `decisions needed:` is a numbered list — one decision per number, each with its options
 and their impact, recommendation first — so the operator answers by number ("2: b"). A
-lone decision is still numbered. Numbers run on across every Report of the session and
-are never reused, so "answer 4" is unambiguous; an unanswered one is carried forward
-under its original number.
+lone decision is still numbered, and a number is never reused, so "answer 4" is
+unambiguous. The counter lives in the store, not this transcript: raising a decision
+appends `decision N: <one line>` to the body of the item it concerns, and on re-entry you
+continue from the highest N in any open item's body, else 1. An unanswered decision keeps
+its number.
 
-Batch several landings in one message, four lines each. Anything blocked or declined since
-the last report goes under `decisions needed` of the next one. Do not wait for the
+Batch several landings in one message, four lines each; anything blocked or declined
+since the last report goes under `decisions needed` of the next. Do not wait for the
 operator's review to take the next request.
 
 Then push: `git -C "$MAIN" push origin main` — fast-forward only, never `--force`.
@@ -347,7 +348,8 @@ Before the session ends, compacts, or is cleared: `references/ending-the-session
 
 ## Examples
 
-Two requests carried end to end: `references/model-routing.md` § Worked examples.
+Two requests carried end to end, the second needing an operator decision first:
+`references/model-routing.md` § Worked examples.
 
 ## Troubleshooting
 
