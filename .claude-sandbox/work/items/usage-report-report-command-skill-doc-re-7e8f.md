@@ -20,3 +20,7 @@ F2 of the approved analyzer plan: complete the usage-report SKILL.md (what/when/
 - next: —
 - blocked: —
 - learned: —
+From the F1 review (2026-09-16): (a) by_requested_tier needs a "main" bucket (or a key saying main-session tokens
+are excluded) so it reconciles with totals, and its opus_equivalent should be summed from unrounded values; (b)
+tokens priced through a legacy alias (claude-fable-5, claude-opus-4-7, claude-opus-4-8 -> current same-family
+entry) must be visible in the report — a separate row or a marker — not silently merged.

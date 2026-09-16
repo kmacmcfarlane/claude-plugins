@@ -15,3 +15,4 @@ Working tree has an uncommitted .gitignore change adding '!.claude-sandbox/confi
 - next: —
 - blocked: —
 - learned: —
+- OPERATOR 2026-09-16: (1) revert the un-ignore of config.yaml — done, .gitignore restored; (2) track .claude-sandbox/work/ in this repo — committed 49952ee. Item 3 (work README note) still awaiting the operator's answer.

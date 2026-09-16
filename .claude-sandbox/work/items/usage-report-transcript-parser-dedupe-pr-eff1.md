@@ -25,3 +25,11 @@ dispatch: reviewer opus — rule 4
 
 ## Notes
 - 2026-09-16 claimed by unknown@4d338747396e
+- implementer opus returned DONE, commit 028c697 (18 tests; real-data smoke: 17 sessions, 85 dispatches on this project). Open: three legacy model ids aliased to current same-family prices; Opus-equivalent = per-class tokens x price ratio. Reviewer opus round 1 dispatched 2026-09-16 17:41:46
+- review round 1: reviewer wrote CLEAR but listed 1 medium (a usage line with no message.model is silently priced
+  as the default model and bucketed under it, no warning) — librarian treats the verdict as NEEDS_CHANGES (a
+  medium is never CLEAR). 5 lows: per-row rounding + no 'main' bucket in by_requested_tier; scope fallback is a
+  string-prefix match and the docstring over-promises for worktrees; a docstring says 'run' but the regex is
+  per-character; no test for file-scoped dedupe / missing .meta.json / empty scope; legacy price aliases invisible
+  in the report. Hand cross-check of this session: tool == jq dedupe on all five figures. Lows 2 and 6 are
+  report-surface gaps -> appended to F2 (7e8f). Fix round 1 sent 2026-09-16 17:47:26, tier unchanged (opus, resumed).
