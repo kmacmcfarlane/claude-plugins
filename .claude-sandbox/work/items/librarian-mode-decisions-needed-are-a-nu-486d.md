@@ -2,13 +2,14 @@
 id: librarian-mode-decisions-needed-are-a-nu-486d
 title: "librarian-mode: decisions needed are a numbered list the operator can reference"
 type: feature
-status: todo
+status: done
 priority: 2
 deps:
   - librarian-mode-push-main-after-each-repo-e3a9
 parent: librarian-mode-push-main-after-each-repo-e3a9
 created: 2026-09-16
 updated: 2026-09-16
+closed: 2026-09-16
 refs:
   - operator message 2026-09-16
 ---
@@ -34,3 +35,8 @@ dispatch: reviewer opus — rule 4
   prose list, numbered from the counter; in both cases never in the same turn as a heavy analysis.
   (3) restore 'The transcript is not the record.' with a paired trim.
   Fix round 1 sent 2026-09-16 18:01:51, tier unchanged (opus, resumed).
+- fix round 1 returned DONE, new commit 236a171 (rulings A-C applied; 8 further trims claimed duplication-only; nit 4 declined for budget). Re-review dispatched 2026-09-16 18:05:32 (reviewer opus, resumed).
+
+## Notes
+- 2026-09-16 done: 0ac17b3
+- re-review CLEAR (1-3, 5 FIXED; nit 4 DECLINED-accepted; 1 new low: the counter's recovery step is not in Rehydrate and wi show --brief hides appended lines — a grep for '^decision [0-9]' under WI_ROOT satisfies it). All 8 new trims ruled clean. Landed merge 0ac17b3 2026-09-16 18:08:38.
