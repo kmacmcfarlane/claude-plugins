@@ -64,7 +64,7 @@ Names are **provisional** pending operator review.
 |---|---|---|---|
 | …project context for the `ai-scripts` Python CLI utilities | `ai-scripts` | **moved** to the expertise marketplace (local scaffold, remote pending) | — |
 | …structured product research in a web chat session | `chat` | current; *family home under review* | — |
-| …to survive the finite context window (gate, gauge, checkpoint, rehydration) | `context-guard` | **current** | — |
+| …to survive the finite context window (gate, gauge, checkpoint, rehydration, token-spend report) | `context-guard` | **current** | — |
 | …a plan before you code: investigate → reviewed plan → verified implementation | `dev-flow` | **current** | `work-items` (soft) |
 | …repo-durable work items and a pluggable work source | `work-items` | **current** | — |
 | …isolated execution for agent sessions (containers, and the checkout/worktree convention) | `sandbox` | **current** | claude-sandbox repo (external) |
@@ -239,10 +239,13 @@ harness behavior (the other is `sandbox`, for the checkout guard).
 |---|---|
 | `checkpoint` | Land a long session's state before compaction; rehydration manifest + ledger |
 | `install-statusline` | Install the context gauge (tokens left, epoch, checkpoint state), which also feeds the gate hooks their exact depth |
+| `usage-report` | Token spend per session, model and sub-agent dispatch from the local transcripts (stub: parser, price table and tests; report tables follow) |
 
 It also carries `hooks/` — the depth gate, the status line sensor, the ledger, and the
 SessionStart rehydration/self-heal — with its unit tests
-(`cd plugins/context-guard/hooks && python3 -m unittest discover -s tests -q`).
+(`cd plugins/context-guard/hooks && python3 -m unittest discover -s tests -q`). The
+`usage-report` skill has its own suite:
+`cd plugins/context-guard/skills/usage-report && python3 -m unittest discover -s tests -q`.
 
 Upgrading from `claude-kit`: install `context-guard` and start one session; the SessionStart
 hook migrates an existing status-line entry to this plugin's data path. `/install-statusline`

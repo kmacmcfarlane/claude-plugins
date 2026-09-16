@@ -36,7 +36,7 @@ Constraints this file lives under:
   judging routing when dollars are fiction.
 - This is an offline analysis tool. It must never be wired into the statusline
   or a hook: it re-reads whole transcripts, and that path has its own gauge in
-  plugins/claude-kit/hooks/lib_context.py.
+  plugins/context-guard/hooks/lib_context.py.
 """
 import argparse
 import json
