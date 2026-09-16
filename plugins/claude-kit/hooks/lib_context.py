@@ -110,9 +110,18 @@ def thresholds(window):
 
 def read_usage(transcript_path):
     """Return (current_tokens, peak_tokens) from the transcript. Zero when unknown."""
+    cur, peak, _ = scan_usage(transcript_path)
+    return cur, peak
+
+
+def scan_usage(transcript_path):
+    """Return (current_tokens, peak_tokens, saw_boundary). `saw_boundary` is
+    True when a compact_boundary was read: the current count then describes a
+    new window and older state (a stale exact record) must not floor it."""
     if not transcript_path or not os.path.exists(transcript_path):
-        return 0, 0
+        return 0, 0, False
     cur = peak = 0
+    boundary = False
     try:
         with open(transcript_path, errors="replace") as fh:
             for line in fh:
@@ -122,6 +131,7 @@ def read_usage(transcript_path):
                     # reported 62% used on a ~2% session. Keep peak (the model
                     # window did not change); reset current.
                     cur = 0
+                    boundary = True
                     continue
                 if '"usage"' not in line:
                     continue
@@ -138,8 +148,8 @@ def read_usage(transcript_path):
                     cur = t
                     peak = max(peak, t)
     except Exception:
-        return 0, 0
-    return cur, peak
+        return 0, 0, False
+    return cur, peak, boundary
 
 
 def window(peak, floor=0):
@@ -167,11 +177,14 @@ def depth(transcript_path, session_id=None):
         ex = load_state(session_id).get("exact") or {}
         if ex.get("window") and time.time() - ex.get("at", 0) < EXACT_MAX_AGE_S:
             return ex["tokens"], ex["window"], ex["pct"], "exact"
-    cur, peak = read_usage(transcript_path)
+    cur, peak, boundary = scan_usage(transcript_path)
     known = int(ex.get("window") or 0)
     w = window(peak, floor=known)
     src = "inferred"
     if known:
-        cur = max(cur, int(ex.get("tokens") or 0))
+        if not boundary:
+            # After a compaction the stale record describes the OLD epoch's
+            # fill; only its window still holds.
+            cur = max(cur, int(ex.get("tokens") or 0))
         src = "inferred, window from status line"
     return cur, w, (100.0 * cur / w if w else 0.0), src

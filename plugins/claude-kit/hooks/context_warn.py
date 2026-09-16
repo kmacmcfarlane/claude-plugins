@@ -22,7 +22,15 @@ DUE_EVERY_PROMPTS = 3
 DUE_EVERY_TOKENS = 25_000
 BANDS = (60, 75)
 # /checkpoint, /compact, /clear - bare or plugin-qualified (/claude-kit:checkpoint).
-WHITELIST = re.compile(r"^/(?:[\w-]+:)?(?:checkpoint|compact|clear)\b")
+WHITELIST = re.compile(r"^/(?:[\w-]+:)?(?:checkpoint|compact|clear)(?=\s|$)")
+
+
+def due_fires(st, tok):
+    """DUE cadence: first time, then every DUE_EVERY_PROMPTS or DUE_EVERY_TOKENS."""
+    due = st.get("due") or {}
+    return (not due
+            or st["prompt_n"] - due.get("prompt_n", 0) >= DUE_EVERY_PROMPTS
+            or tok - due.get("tok", 0) >= DUE_EVERY_TOKENS)
 
 
 def main():
@@ -59,6 +67,12 @@ def main():
         L.save_state(sid, st)
         if src != "exact":
             # A guess never blocks: the window may be larger than inferred.
+            # Same cadence as DUE so a long stretch under a guessed 200K
+            # window does not nag on every prompt.
+            if not due_fires(st, tok):
+                print(json.dumps({})); return
+            st["due"] = {"prompt_n": st["prompt_n"], "tok": tok}
+            L.save_state(sid, st)
             print(json.dumps({
                 "hookSpecificOutput": {
                     "hookEventName": "UserPromptSubmit",
@@ -68,11 +82,14 @@ def main():
                         f"({src}); a hard stop was NOT applied because the depth "
                         f"is inferred, not exact. A checkpoint has not run this "
                         f"epoch. Run the checkpoint skill now; do not start new "
-                        f"work. Install the status line for exact depth."},
+                        f"work. If the real window is larger, tell the operator: "
+                        f"CLAUDE_KIT_CONTEXT_WINDOW=<tokens> in the launch "
+                        f"environment pins it, and the status line gives exact depth."},
                 "systemMessage":
-                    f"Context: {remaining:,} tokens left (inferred) — under the "
-                    f"hard threshold ({th['hard']:,}); not blocked because the "
-                    f"depth is inferred. Checkpoint now.",
+                    f"Context: {remaining:,} tokens left of {win:,} (inferred) — "
+                    f"under the hard threshold ({th['hard']:,}); not blocked because "
+                    f"the depth is inferred. Checkpoint now, or pin the window with "
+                    f"CLAUDE_KIT_CONTEXT_WINDOW if {win:,} is wrong.",
             }))
             return
         sys.stderr.write(
@@ -84,11 +101,7 @@ def main():
         sys.exit(2)
 
     if remaining <= th["due"] and not done:
-        due = st.get("due") or {}
-        fire = (not due
-                or st["prompt_n"] - due.get("prompt_n", 0) >= DUE_EVERY_PROMPTS
-                or tok - due.get("tok", 0) >= DUE_EVERY_TOKENS)
-        if fire:
+        if due_fires(st, tok):
             st["due"] = {"prompt_n": st["prompt_n"], "tok": tok}
             L.save_state(sid, st)
             print(json.dumps({

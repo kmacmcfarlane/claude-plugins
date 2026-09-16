@@ -82,6 +82,22 @@ class TestDepth(Base):
         # transcript behind it: exact tokens are the floor
         self.assertEqual(L.depth(self._transcript(100_000), "s")[0], 186_454)
 
+    def test_stale_exact_token_floor_dropped_after_boundary(self):
+        L.save_state("s", {"exact": {"pct": 95.0, "tokens": 950_000,
+                                     "window": 1_000_000, "at": 0}})
+        p = os.path.join(self.tmp.name, "b.jsonl")
+        rec = lambda tok: json.dumps({"type": "assistant", "message": {"usage": {
+            "input_tokens": 2, "cache_read_input_tokens": tok - 2,
+            "cache_creation_input_tokens": 0}}})
+        open(p, "w").write(rec(950_000) + "\n"
+                           + json.dumps({"type": "system", "subtype": "compact_boundary"}) + "\n"
+                           + rec(30_000) + "\n")
+        tok, win, pct, src = L.depth(p, "s")
+        self.assertEqual((tok, win), (30_000, 1_000_000))  # window kept, floor dropped
+        self.assertTrue(src.startswith("inferred"))
+        self.assertEqual(L.scan_usage(p), (30_000, 950_000, True))
+        self.assertEqual(L.read_usage(p), (30_000, 950_000))
+
     def test_stale_exact_missing_transcript_still_reports(self):
         L.save_state("s", {"exact": {"pct": 50.0, "tokens": 500_000,
                                      "window": 1_000_000, "at": 0}})

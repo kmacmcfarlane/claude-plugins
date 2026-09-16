@@ -112,7 +112,8 @@ class TestContextWarn(Base):
             self.set_exact("s", 950_000, 1_000_000)
             rc, out, err = self.warn("s", prompt)
             self.assertEqual(rc, 0, prompt)
-        for prompt in ("/checkpointx", "/claude-kit:checkpointx",
+        for prompt in ("/checkpointx", "/claude-kit:checkpointx", "/checkpoint-x",
+                       "/clear-all", "/claude-kit:checkpoint:x", "/checkpoint/x",
                        "checkpoint", "/clearance", "/kit:other"):
             self.set_exact("s", 950_000, 1_000_000)
             rc, out, err = self.warn("s", prompt)
@@ -135,8 +136,15 @@ class TestContextWarn(Base):
         self.assertEqual(rc, 0)
         self.assertIn("hookSpecificOutput", out)
         self.assertIn("NOT applied", out["hookSpecificOutput"]["additionalContext"])
+        self.assertIn("CLAUDE_KIT_CONTEXT_WINDOW", out["hookSpecificOutput"]["additionalContext"])
         self.assertIn("inferred", out["systemMessage"])
         self.assertIn("not blocked", out["systemMessage"])
+        # DUE cadence: silent on the next two prompts, fires on the third.
+        for _ in range(2):
+            rc, out, err = self.warn("t", "a long prompt", self.transcript(170_000))
+            self.assertEqual((rc, out), (0, {}))
+        rc, out, err = self.warn("t", "a long prompt", self.transcript(170_000))
+        self.assertIn("hookSpecificOutput", out)
         # Stale exact record that is itself under hard: still exit 0.
         st = L.load_state("u")
         st["exact"] = {"pct": 95.0, "tokens": 950_000, "window": 1_000_000,
@@ -148,6 +156,23 @@ class TestContextWarn(Base):
         # Exact still blocks.
         self.set_exact("v", 950_000, 1_000_000)
         self.assertEqual(self.warn("v", "a long prompt")[0], 2)
+
+    def test_stale_exact_after_compaction_does_not_nag(self):
+        st = L.load_state("s")
+        st["exact"] = {"pct": 95.0, "tokens": 950_000, "window": 1_000_000,
+                       "at": time.time() - 700}
+        L.save_state("s", st)
+        p = os.path.join(self.tmp.name, "c.jsonl")
+        rec = lambda tok: json.dumps({"type": "assistant", "message": {"usage": {
+            "input_tokens": 2, "cache_read_input_tokens": tok - 2,
+            "cache_creation_input_tokens": 0}}})
+        open(p, "w").write(rec(950_000) + "\n"
+                           + json.dumps({"type": "system", "subtype": "compact_boundary"}) + "\n"
+                           + rec(30_000) + "\n")
+        rc, out, err = self.warn("s", "a long prompt", p)
+        self.assertEqual((rc, out), (0, {}))
+        st = L.load_state("s")
+        self.assertEqual((st["tokens"], st["window"]), (30_000, 1_000_000))
 
 
 class TestPrecompactGate(Base):
