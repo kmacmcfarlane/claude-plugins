@@ -11,10 +11,11 @@ argument-hint: [start | status | intake <request>]
 A librarian is a standing single writer whose context accumulates the stream of changes to
 one small, high-churn, cross-cutting layer — the repo's custody layer (resolved under
 Critical): a marketplace's shared agent layer, or a codeless repo's documentation tree.
-Its value is coherence over time: it remembers why a skill is worded the way it is and
-arbitrates conflicts before they reach the tree. Its cost is serialization, so it does as
-little as possible itself: it files, factors, delegates, gates each result through a
-reviewer, lands, and reports. It does not write custody files, and it does not fix them.
+Its value is coherence over time: it remembers why a skill is worded the way it is,
+notices the same complaint from three sessions, and arbitrates conflicts before they
+reach the tree. Its cost is serialization, so it does as little as possible itself: it
+files, factors, delegates, gates each result through a reviewer, lands, and reports. It
+does not write custody files, and it does not fix them.
 
 ## Critical
 
@@ -71,11 +72,11 @@ Do this at session start and after any `/clear` or compaction. Never `ls` the wh
    If `MAIN` is not this session's cwd, this is a worktree session: say so and route
    every edit through dispatch (see Red flags).
 
-2. **Read the custody docs** — the layer Critical resolves: CLAUDE.md's `## Librarian`
-   declaration; else, with `plugins/`, `README.md` (doctrine, catalog and placement
-   sections, otherwise its plugin tables) and `CLAUDE.md`; else, with no code, both in
-   full. No arm matches → no custody layer: decline as Critical says and stop. Read in
-   full the first time; on re-entry, re-read
+2. **Read the custody docs.** What CLAUDE.md declares under `## Librarian`, when present;
+   else, with `plugins/`: `README.md` — its doctrine, catalog and placement sections when
+   present, otherwise its plugin tables — and `CLAUDE.md` (layout and conventions); else,
+   with no code: `README.md` and `CLAUDE.md` in full. No arm matches → no custody layer:
+   decline as Critical says and stop. Read in full the first time; on re-entry, re-read
    only the placement and conventions parts.
 
 3. **Prime the queue, then read the one item you are working.**
@@ -97,8 +98,8 @@ Do this at session start and after any `/clear` or compaction. Never `ls` the wh
    no `doing` item is an orphan — see Troubleshooting.
 
 Expected output: one short paragraph — items in flight, items ready, worktrees and agents
-alive, anything awaiting the operator. That is also the whole answer to `status`; after a
-first-start init it carries one clause more (`references/first-start.md`).
+alive, anything awaiting the operator. That is also the whole answer to `status`. After
+an init it carries one clause more: `references/first-start.md`.
 
 ## Intake
 
@@ -203,9 +204,11 @@ starts only after everything it depends on has landed.
 
 2. **Claim** the item for the run: `$WI claim <id>`.
 
-3. **Brief**: fill the template in `references/agent-brief.md`, which lists every part;
-   the Agent call's `model` carries the same tier. The brief is self-contained: the agent
-   has none of your context and must not need it.
+3. **Brief**: fill the template in `references/agent-brief.md` — absolute worktree path,
+   `WI_ROOT`, the one item, its `Model:` line from Route, the doctrine pointers, the
+   verification commands, the report contract, the prohibitions; the Agent call's `model`
+   carries the same tier. The brief is self-contained: the agent has none of your
+   context and must not need it.
 
 4. **Return contract** — the agent reports exactly:
    - `STATUS`: `DONE` | `DONE_WITH_CONCERNS` | `NEEDS_CONTEXT` | `BLOCKED`
@@ -228,9 +231,10 @@ back clear — not the implementer, not the operator.
 
 1. **Dispatch a reviewer**: one background `general-purpose` agent, **review-only** — it
    never edits, never commits — with `model` set by Route rule 4 (the implementer's tier,
-   floor opus). Brief it from `references/review-brief.md` — worktree, base branch,
-   commits under review, the item and its acceptance, and the checklist commands from
-   `references/review-checklist.md`, so it runs what you will run again at Land.
+   floor opus). Brief it from `references/review-brief.md`: the worktree,
+   the base branch, the commits under review, the item and its acceptance, and the
+   checklist commands from `references/review-checklist.md`, so it runs exactly what you
+   will run again at Land.
 
 2. **Severity scale** — every finding carries one: critical, high, medium, or low/nit,
    defined in `references/review-brief.md`. **Medium and above must be fixed.** Low and
@@ -252,11 +256,8 @@ back clear — not the implementer, not the operator.
    Every other finding, critical included, is resolved inside the loop; the operator sees
    only the round count in `verified:`.
 
-5. **Record the result in the item body** before Land (append with Bash — the item file
-   under `$WI_ROOT` is not a custody file): rounds run; findings fixed; findings declined,
-   each with the author's reason; final verdict; reviewer NOTES worth keeping. The
-   transcript is not the record. Reviewer questions you cannot settle go to the Report's
-   `open questions` line.
+5. **Record the result in the item body** before Land — rounds, findings fixed, findings
+   declined with their reasons, the verdict, reviewer NOTES: `references/fix-loop.md`.
 
 ## Land
 

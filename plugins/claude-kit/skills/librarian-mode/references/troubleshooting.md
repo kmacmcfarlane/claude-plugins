@@ -24,7 +24,7 @@ here for the glob and orphan-worktree cases.
   `NEEDS_CHANGES` and note the re-routing in the item — routing only; the finding keeps
   its severity.
 
-Where the `wi` glob comes up in Rehydrate step 1:
+The same case as Rehydrate step 1 states it, which is where the installed path is:
 
 An empty glob is normal on a repo that does not carry the plugin in its tree: use the
 installed copy, `${CLAUDE_PLUGIN_ROOT}/skills/work-items/scripts/wi.py`, same `WI_ROOT`.
