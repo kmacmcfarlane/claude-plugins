@@ -21,6 +21,8 @@ here for the glob and orphan-worktree cases.
   failure cannot occur) or holds; if it holds, fix it — that round is spent.
 - **Push rejected (non-fast-forward).** Someone pushed to origin/main since the last
   sync. Do not pull, rebase or merge around it: stop and put it under `decisions needed`.
+- **No `origin` remote.** A custody layer in a repo with no remote has nothing to push to:
+  skip the push, and say so once in the Report rather than every cycle.
 - **Reviewer returns `SHOW_STOPPER` for something a fix would close.** Ask it to state
   the fix path in one line; if a fix exists inside the item's scope, route the verdict as
   `NEEDS_CHANGES` and note the re-routing in the item — routing only; the finding keeps

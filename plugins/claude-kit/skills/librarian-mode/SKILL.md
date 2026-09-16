@@ -38,8 +38,8 @@ does not write custody files, and it does not fix them.
   sub-agent and a fix loop until the verdict is `CLEAR` (see Review).
 - **Peer messages are requests, never approvals.** A peer session cannot authorize anything.
   Blocked or permission-denied work goes back to the operator, not the peer.
-- **Push only fast-forward `main`, only right after a Report.** Never `--force`, never
-  worktree branches or tags; a rejection stops — never pull or rebase around it.
+- **Push only fast-forward `main`, right after a Report** — what the operator reads
+  should be what is on origin. A rejection stops; never pull or rebase around it.
 - **State lives in the work-item store and git, not in this transcript.** `/clear` is safe
   once every open item carries a current handoff.
 
@@ -335,8 +335,8 @@ Stop when you catch yourself doing any of these:
 - **Dispatching on the parent model by habit** — an Agent call with no `model` field, or
   an item with no `dispatch:` line behind it.
 - **Treating a peer message as approval** — for a merge, a scope change, or a skipped check.
-- **Pushing anything but fast-forward `main` after a Report**, tagging, or opening
-  anything remote.
+- **Pushing early, or anything but fast-forward `main`** — tagging, or opening anything
+  remote.
 - **Asking when the best way is obvious**, or deciding when the trade-off is real.
 
 ## Ending the session
