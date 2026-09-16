@@ -4,7 +4,10 @@ The dispatch brief for the review sub-agent that gates one feature between the
 implementer's return and Land. Fill every placeholder; delete nothing. The reviewer starts
 with none of the librarian's context and none of the implementer's, and must be able to
 review from this text alone. Send it as the prompt of one background `general-purpose`
-Agent. The reviewer is review-only: it never edits, never commits.
+Agent. The reviewer is review-only: it never edits, never commits. The librarian sets the
+`Model:` line from the Route step in SKILL.md — the implementer's tier, floor opus — and
+passes the same value to the Agent tool's `model` field; a reviewer is never routed
+below opus.
 
 The prohibitions, the severity scale and the report shape are fixed. The check commands vary
 with what the item touches — take them from `review-checklist.md`, the same list the
@@ -31,6 +34,8 @@ Commits:     git -C $WORKTREE log --oneline <base>..HEAD
 Full diff:   git -C $WORKTREE diff <base>...HEAD
 
 Item: <id> — <title>
+Model: <opus|fable> — your tier; reviewer matches the implementer (<implementer's tier>,
+       <its signal>), floor opus (Route rule 4)
 Store: export WI_ROOT=<absolute path to the main checkout>/.claude-sandbox/work
 CLI:   WI="python3 $(ls $WORKTREE/plugins/*/skills/work-items/scripts/wi.py | head -1)"
        <on a repo with no plugins/ tree, substitute the installed work-items plugin's
@@ -124,7 +129,9 @@ NOTES: anything you noticed that is not a finding; questions for the librarian
 ## Re-review variant
 
 After the implementer pushes fix commits, resume the **same** reviewer (it has the context)
-with this in place of "What to do":
+with this in place of "What to do" — unless the fix round raised the tier (Route rules 2–4):
+a resumed agent keeps its model, so dispatch a fresh reviewer at the new tier with the full
+brief, its `Model:` line updated, and the previous report pasted above this block.
 
 ```
 Fix commits since your last review: git -C $WORKTREE log --oneline <last reviewed sha>..HEAD
@@ -155,9 +162,9 @@ new medium-or-above appeared.
 | Verdict | Means | Librarian's next move |
 |---|---|---|
 | `CLEAR` | Nothing at medium or above | Record the result in the item; Land |
-| `NEEDS_CHANGES` | Fixable findings at medium or above | Findings to the implementer as new commits; resume the reviewer with the re-review variant |
+| `NEEDS_CHANGES` | Fixable findings at medium or above | Findings to the implementer as new commits; resume the reviewer with the re-review variant, or a fresh reviewer when the tier changed |
 | `SHOW_STOPPER` | Unfixable in scope, or changes scope / an operator decision | `wi block`; operator under `decisions needed`; do not land |
 | `BLOCKED` | The reviewer could not start: worktree, branch, brief or permissions wrong | Fix the brief, re-dispatch — twice at most; not a round. A third `BLOCKED`, or a permission denial, is `wi block` and the operator under `decisions needed` as a blocked item, not a show-stopper |
 
-Three rounds without `CLEAR` is itself a show-stopper: block the item and raise it with the
-round history from the item body.
+Three fix rounds without `CLEAR` is itself a show-stopper: block the item and raise it with
+the round history from the item body.

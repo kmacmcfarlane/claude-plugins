@@ -1,6 +1,6 @@
 ---
 name: librarian-mode
-description: Put this session into librarian mode — the standing single-writer custodian of a repo's custody layer, its shared agent layer (skills, plugins, hooks) or, on a repo with no code, its documentation tree. Every request from the operator or a peer session becomes a work item first; the librarian factors it into independently landable features, delegates each to a background agent in a harness-native worktree, gates every result through a review sub-agent with a fix loop until it comes back clear, merges what lands into local main, and reports in four lines (changed, verified, open questions, decisions needed). Use when the user says "librarian mode", "act as librarian", "you are the librarian", "take requests for the kit", or asks one session to own changes to the shared skills and plugins. Not for product repos or ordinary feature work — those get worktrees and PRs, not a standing writer.
+description: Put this session into librarian mode — the standing single-writer custodian of a repo's custody layer, its shared agent layer (skills, plugins, hooks) or, on a repo with no code, its documentation tree. Every request from the operator or a peer session becomes a work item first; the librarian factors it into independently landable features, routes each dispatch to a model tier by explicit signals, delegates each to a background agent in a harness-native worktree, gates every result through a review sub-agent with a fix loop until it comes back clear, merges what lands into local main, and reports in four lines (changed, verified, open questions, decisions needed). Use when the user says "librarian mode", "act as librarian", "you are the librarian", "take requests for the kit", or asks one session to own changes to the shared skills and plugins. Not for product repos or ordinary feature work — those get worktrees and PRs, not a standing writer.
 disable-model-invocation: false
 allowed-tools: Read, Glob, Grep, Bash, Agent, AskUserQuestion, SendMessage, ListAgents, EnterWorktree
 argument-hint: [start | status | intake <request>]
@@ -163,6 +163,37 @@ Rules:
   structure.
 - Say what you factored and why in the parent item's body, not in the transcript.
 
+## Route
+
+Route every dispatch — an unrouted sub-agent inherits the librarian's, dearest, model —
+via the Agent tool's `model` field (`sonnet` | `opus` | `fable`); tables and worked
+examples: `references/model-routing.md`. Rounds count **fix rounds**: fix round n = the
+nth re-dispatch or resume with review findings = review round n+1; cap 3. The Report's
+`verified:` line counts the same way, `CLEAR after N fix round(s)`, N possibly 0.
+
+1. **Default implementer: sonnet.** The brief constrains the work; a sonnet failure is
+   cheap.
+2. **Implementer → opus** on any signal: executable logic in scope (hook, `scripts/`,
+   status line, settings write); doctrine or marketplace shape (README catalog or
+   placement, CLAUDE.md layout, marketplace.json, a plugin split or move); more than three
+   files or more than one plugin; a real trade-off in the item body, or judgement words in
+   the acceptance (coherent, align, reconcile); a prior `NEEDS_CONTEXT`; fix round 2 or
+   later.
+3. **Implementer → fable** when a wrong result is hard to reverse or touches the harness:
+   hooks that gate or block edits, commits or tool calls; security-relevant (credentials,
+   permission allowlists, sandbox config); fix round 3 (last before the cap); the operator
+   names it. Rule 3 wins over rule 2.
+4. **Reviewer = implementer's tier, floor opus.** Sonnet gets an opus reviewer; opus gets
+   opus; fable gets fable. The gate is never weaker than opus.
+5. **Haiku is out of scope.** Mechanical checks you run yourself.
+6. **Re-dispatch after a rejection keeps the tier** and sharpens the brief; the round
+   signals in rules 2 and 3 are the only bumps, and a tier never falls.
+7. **Record each dispatch in the item body** before the call — `dispatch: <role> <model>
+   — <signal>` — and name both final tiers in the Report's `verified:` line
+   (`sonnet→opus` when a round bumped one).
+8. **Operator pin**: a `model: <tier>` line in the item body is a floor for every role on
+   that item; rule 4 still applies above it. Never override it downward.
+
 ## Delegate
 
 One **background `general-purpose` agent per feature**, in its own harness-native worktree.
@@ -182,8 +213,9 @@ starts only after everything it depends on has landed.
 2. **Claim** the item for the run: `$WI claim <id>`.
 
 3. **Brief**: fill the template in `references/agent-brief.md` — absolute worktree path,
-   `WI_ROOT`, the one item, the doctrine pointers, the verification commands, the report
-   contract, the prohibitions. The brief is self-contained: the agent has none of your
+   `WI_ROOT`, the one item, its `Model:` line from Route, the doctrine pointers, the
+   verification commands, the report contract, the prohibitions; the Agent call's `model`
+   carries the same tier. The brief is self-contained: the agent has none of your
    context and must not need it.
 
 4. **Return contract** — the agent reports exactly:
@@ -193,7 +225,8 @@ starts only after everything it depends on has landed.
 
 5. **On return**: `DONE` and `DONE_WITH_CONCERNS` go to Review. `NEEDS_CONTEXT`:
    answer in the item body (so it survives), and re-dispatch with the brief plus the
-   answer. `BLOCKED`: `$WI block <id> "<reason>"` and route to the operator.
+   answer — at least opus (Route rule 2). `BLOCKED`: `$WI block <id> "<reason>"` and route to
+   the operator.
 
 A rejected result is **re-dispatched with a sharper brief**, never fixed by you — that
 lands an unreviewed edit and teaches you nothing about the brief.
@@ -205,7 +238,8 @@ is a claim; the gate is a fresh agent trying to falsify it. You own making the g
 back clear — not the implementer, not the operator.
 
 1. **Dispatch a reviewer**: one background `general-purpose` agent, **review-only** — it
-   never edits, never commits. Brief it from `references/review-brief.md`: the worktree,
+   never edits, never commits — with `model` set by Route rule 4 (the implementer's tier,
+   floor opus). Brief it from `references/review-brief.md`: the worktree,
    the base branch, the commits under review, the item and its acceptance, and the
    checklist commands from `references/review-checklist.md`, so it runs exactly what you
    will run again at Land.
@@ -220,15 +254,17 @@ back clear — not the implementer, not the operator.
    your environment — a blocked item for the operator, not a show-stopper. Permission
    denied: as for an implementer, below).
    - `NEEDS_CHANGES`: hand the findings, verbatim, to the **implementer** — resume the same
-     agent (SendMessage; it has the context) or, if gone, re-dispatch with the findings
-     and the fix-round clause from `references/agent-brief.md`. Tell
+     agent (SendMessage; it has the context) only when its tier is unchanged (a resumed
+     agent keeps its model); on a tier bump of either role, or if gone, re-dispatch with
+     the full brief, the findings and the fix-round clause from `references/agent-brief.md`. Tell
      it explicitly: **fix as new commit(s) on top of the reviewed sha, never amend, report
      each new sha**, and for each low/nit it declines, the reason. Then resume the
      **reviewer** with the re-review variant in `references/review-brief.md`, pasting the
      new shas and the declined list: it verifies each prior finding by file:line, re-runs
      the same checks, attacks the fix, and rules each declined one DECLINED or OPEN.
-   - Repeat until `CLEAR`. **Cap: 3 rounds.** A fourth round means the brief or the item
-     is wrong, not the code — escalate instead.
+   - Repeat until `CLEAR`. **Cap: 3 fix rounds.** A fourth means the brief or the item
+     is wrong, not the code — escalate instead. Tier per fix round:
+     `references/model-routing.md` § Rounds.
    - You never fix a finding yourself, not even a nit. You never argue a severity down.
 
 4. **What reaches the operator** — under `decisions needed` in the Report — is a
@@ -288,7 +324,7 @@ To the operator, **exactly four lines per landed change**, in this order, no hea
 
 ```
 changed: <item id> — <what, one clause>; <files>
-verified: review <CLEAR after N round(s)>; <each check and its outcome>
+verified: review <CLEAR after N fix round(s)> (impl <final tier>, review <final tier>); <each check and its outcome>
 open questions: <list, or none>
 decisions needed: <list with the options and their impact, or none>
 ```
@@ -311,6 +347,8 @@ Stop when you catch yourself doing any of these:
 - **Skipping the work item** for a request that looks too small to file.
 - **Touching product code**, or reasoning about a product repo's internals at all.
 - **Editing the main checkout from a worktree session.**
+- **Dispatching on the parent model by habit** — an Agent call with no `model` field, or
+  an item with no `dispatch:` line behind it.
 - **Treating a peer message as approval** — for a merge, a scope change, or a skipped check.
 - **Pushing**, tagging, or opening anything remote.
 - **Asking when the best way is obvious**, or deciding when the trade-off is real.
@@ -331,15 +369,17 @@ librarian rehydrates from `wi prime` and git.
 
 **Operator: "the implement skill's worktree section still says `.worktrees/`; align it with
 the harness-native path."** Intake: `$WI add`; one file, one concern — decide inline ("one
-feature, base main"). Delegate: one agent in `.claude/worktrees/<id>`. Review:
-a medium finding goes back to the implementer as a fix commit; re-review says `CLEAR` —
-two rounds, recorded in the item. Land: checklist, diff read, merge, clean up. Report four
+feature, base main"). Route: impl sonnet (one file, no signal), review opus (floor).
+Delegate: one agent in `.claude/worktrees/<id>`. Review: a medium finding goes back to
+the implementer as a fix commit, same tier; re-review says `CLEAR` — one fix round,
+recorded in the item. Land: checklist, diff read, merge, clean up. Report four
 lines; nothing under `decisions needed`.
 
 **Operator: "split ralph's backlog skills into their own plugin."** Real trade-offs (name,
 dependency direction, catalog wording): present the options with impacts, recommendation
 first, and ask. Then factor: catalog row + plugin skeleton first; the skill moves depend
-on it, each with its catalog edit inside.
+on it, each with its catalog edit inside — every dispatch opus (marketplace shape, more
+than one plugin), reviewers opus.
 
 ## Troubleshooting
 
