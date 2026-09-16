@@ -34,7 +34,8 @@ Commits:     git -C $WORKTREE log --oneline <base>..HEAD
 Full diff:   git -C $WORKTREE diff <base>...HEAD
 
 Item: <id> — <title>
-Model: <opus|fable> — <the implementer's tier, floor opus (Route rule 4)>
+Model: <opus|fable> — your tier; reviewer matches the implementer (<implementer's tier>,
+       <its signal>), floor opus (Route rule 4)
 Store: export WI_ROOT=<absolute path to the main checkout>/.claude-sandbox/work
 CLI:   WI="python3 $(ls $WORKTREE/plugins/*/skills/work-items/scripts/wi.py | head -1)"
        <on a repo with no plugins/ tree, substitute the installed work-items plugin's
@@ -161,9 +162,9 @@ new medium-or-above appeared.
 | Verdict | Means | Librarian's next move |
 |---|---|---|
 | `CLEAR` | Nothing at medium or above | Record the result in the item; Land |
-| `NEEDS_CHANGES` | Fixable findings at medium or above | Findings to the implementer as new commits; resume the reviewer with the re-review variant |
+| `NEEDS_CHANGES` | Fixable findings at medium or above | Findings to the implementer as new commits; resume the reviewer with the re-review variant, or a fresh reviewer when the tier changed |
 | `SHOW_STOPPER` | Unfixable in scope, or changes scope / an operator decision | `wi block`; operator under `decisions needed`; do not land |
 | `BLOCKED` | The reviewer could not start: worktree, branch, brief or permissions wrong | Fix the brief, re-dispatch — twice at most; not a round. A third `BLOCKED`, or a permission denial, is `wi block` and the operator under `decisions needed` as a blocked item, not a show-stopper |
 
-Three rounds without `CLEAR` is itself a show-stopper: block the item and raise it with the
-round history from the item body.
+Three fix rounds without `CLEAR` is itself a show-stopper: block the item and raise it with
+the round history from the item body.

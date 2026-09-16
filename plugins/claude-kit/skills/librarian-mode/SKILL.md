@@ -165,10 +165,11 @@ Rules:
 
 ## Route
 
-A sub-agent inherits the parent's model unless the Agent tool's `model` field says
-otherwise, and the librarian runs on the dearest tier: an unrouted dispatch is the dearest
-dispatch. Route every implementer and reviewer before the call, passing
-`model: "sonnet" | "opus" | "fable"`. Tables and examples: `references/model-routing.md`.
+Route every dispatch — an unrouted sub-agent inherits the librarian's, dearest, model —
+via the Agent tool's `model` field (`sonnet` | `opus` | `fable`); tables and worked
+examples: `references/model-routing.md`. Rounds count **fix rounds**: fix round n = the
+nth re-dispatch or resume with review findings = review round n+1; cap 3. The Report's
+`verified:` line counts the same way, `CLEAR after N fix round(s)`, N possibly 0.
 
 1. **Default implementer: sonnet.** The brief constrains the work; a sonnet failure is
    cheap.
@@ -181,20 +182,17 @@ dispatch. Route every implementer and reviewer before the call, passing
 3. **Implementer → fable** when a wrong result is hard to reverse or touches the harness:
    hooks that gate or block edits, commits or tool calls; security-relevant (credentials,
    permission allowlists, sandbox config); fix round 3 (last before the cap); the operator
-   names it.
+   names it. Rule 3 wins over rule 2.
 4. **Reviewer = implementer's tier, floor opus.** Sonnet gets an opus reviewer; opus gets
    opus; fable gets fable. The gate is never weaker than opus.
 5. **Haiku is out of scope.** Mechanical checks you run yourself.
 6. **Re-dispatch after a rejection keeps the tier** and sharpens the brief; the round
    signals in rules 2 and 3 are the only bumps, and a tier never falls.
 7. **Record each dispatch in the item body** before the call — `dispatch: <role> <model>
-   — <signal>` — and name both models in the Report's `verified:` line.
-8. **Operator pin**: a `model: <tier>` line in the item body sets the implementer's tier;
-   rule 4 gives the reviewer's. Never override it downward.
-
-Example: "align one skill's worktree path with the harness-native one" — one file, no
-trade-off, no logic: impl sonnet (default), review opus (floor); two `dispatch:` lines in
-the item, `(impl sonnet, review opus)` in the Report.
+   — <signal>` — and name both final tiers in the Report's `verified:` line
+   (`sonnet→opus` when a round bumped one).
+8. **Operator pin**: a `model: <tier>` line in the item body is a floor for every role on
+   that item; rule 4 still applies above it. Never override it downward.
 
 ## Delegate
 
@@ -216,9 +214,9 @@ starts only after everything it depends on has landed.
 
 3. **Brief**: fill the template in `references/agent-brief.md` — absolute worktree path,
    `WI_ROOT`, the one item, its `Model:` line from Route, the doctrine pointers, the
-   verification commands, the report contract, the prohibitions. The brief is
-   self-contained: the agent has none of your context and must not need it. The Agent
-   call passes the same tier in `model`; the brief tells the agent, the field enforces it.
+   verification commands, the report contract, the prohibitions; the Agent call's `model`
+   carries the same tier. The brief is self-contained: the agent has none of your
+   context and must not need it.
 
 4. **Return contract** — the agent reports exactly:
    - `STATUS`: `DONE` | `DONE_WITH_CONCERNS` | `NEEDS_CONTEXT` | `BLOCKED`
@@ -227,7 +225,7 @@ starts only after everything it depends on has landed.
 
 5. **On return**: `DONE` and `DONE_WITH_CONCERNS` go to Review. `NEEDS_CONTEXT`:
    answer in the item body (so it survives), and re-dispatch with the brief plus the
-   answer — at opus (Route rule 2). `BLOCKED`: `$WI block <id> "<reason>"` and route to
+   answer — at least opus (Route rule 2). `BLOCKED`: `$WI block <id> "<reason>"` and route to
    the operator.
 
 A rejected result is **re-dispatched with a sharper brief**, never fixed by you — that
@@ -256,18 +254,17 @@ back clear — not the implementer, not the operator.
    your environment — a blocked item for the operator, not a show-stopper. Permission
    denied: as for an implementer, below).
    - `NEEDS_CHANGES`: hand the findings, verbatim, to the **implementer** — resume the same
-     agent (SendMessage; it has the context) or, if gone, re-dispatch with the findings
-     and the fix-round clause from `references/agent-brief.md`. Tell
+     agent (SendMessage; it has the context) only when its tier is unchanged (a resumed
+     agent keeps its model); on a tier bump of either role, or if gone, re-dispatch with
+     the full brief, the findings and the fix-round clause from `references/agent-brief.md`. Tell
      it explicitly: **fix as new commit(s) on top of the reviewed sha, never amend, report
      each new sha**, and for each low/nit it declines, the reason. Then resume the
      **reviewer** with the re-review variant in `references/review-brief.md`, pasting the
      new shas and the declined list: it verifies each prior finding by file:line, re-runs
      the same checks, attacks the fix, and rules each declined one DECLINED or OPEN.
-   - Repeat until `CLEAR`. **Cap: 3 rounds.** A fourth round means the brief or the item
-     is wrong, not the code — escalate instead. Fix round 1 keeps both tiers; rounds 2
-     and 3 bump per Route rules 2 and 3, the reviewer following rule 4 — a reviewer at a
-     new tier is a fresh dispatch briefed with its predecessor's report, since a resumed
-     agent keeps its model.
+   - Repeat until `CLEAR`. **Cap: 3 fix rounds.** A fourth means the brief or the item
+     is wrong, not the code — escalate instead. Tier per fix round:
+     `references/model-routing.md` § Rounds.
    - You never fix a finding yourself, not even a nit. You never argue a severity down.
 
 4. **What reaches the operator** — under `decisions needed` in the Report — is a
@@ -327,7 +324,7 @@ To the operator, **exactly four lines per landed change**, in this order, no hea
 
 ```
 changed: <item id> — <what, one clause>; <files>
-verified: review <CLEAR after N round(s)> (impl <model>, review <model>); <each check and its outcome>
+verified: review <CLEAR after N fix round(s)> (impl <final tier>, review <final tier>); <each check and its outcome>
 open questions: <list, or none>
 decisions needed: <list with the options and their impact, or none>
 ```
@@ -374,8 +371,8 @@ librarian rehydrates from `wi prime` and git.
 the harness-native path."** Intake: `$WI add`; one file, one concern — decide inline ("one
 feature, base main"). Route: impl sonnet (one file, no signal), review opus (floor).
 Delegate: one agent in `.claude/worktrees/<id>`. Review: a medium finding goes back to
-the implementer as a fix commit, same tier; re-review says `CLEAR` — two rounds, recorded
-in the item. Land: checklist, diff read, merge, clean up. Report four
+the implementer as a fix commit, same tier; re-review says `CLEAR` — one fix round,
+recorded in the item. Land: checklist, diff read, merge, clean up. Report four
 lines; nothing under `decisions needed`.
 
 **Operator: "split ralph's backlog skills into their own plugin."** Real trade-offs (name,
