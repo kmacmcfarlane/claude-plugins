@@ -144,14 +144,20 @@ this is the **last thing on screen**, after Step 6. Land mode emits nothing here
 landed` in the manifest is the whole story.
 
 Under ~5 lines. Contents: the skill or task to invoke, exactly as the operator would type
-it; `read <manifest path> first` (the path Step 4b actually wrote — `.claude-sandbox/HANDOFF.md`
-or root `HANDOFF.md`); and the one or two facts that changed since the manifest was written —
-pull these from the drift note or the `Aware of` lines you just wrote, never restate the whole
-manifest.
+it; `read <manifest path> in full first` (the path Step 4b actually wrote —
+`.claude-sandbox/HANDOFF.md` or root `HANDOFF.md`; "in full" matters — after `/clear` the
+rehydration hook injects only the manifest header, so the opener is what tells the next
+session to read the whole file); and the one or two facts that changed since the manifest
+was written — pull these from the drift note or the `Aware of` lines you just wrote, never
+restate the whole manifest.
 
 ```text
-/<skill-or-task> <args> — read <manifest path> first; <fact that changed>; <fact that changed>
+/<skill-or-task> <args> — read <manifest path> in full first; <fact that changed>; <fact that changed>
 ```
+
+At a stage boundary, one of those facts is always: **do not re-run the previous stage** — its
+outputs are published and complete, read them as inputs (a per-stage gate or label is already
+set). Drop this line only when the mode isn't a stage handoff.
 
 ## Rules
 
