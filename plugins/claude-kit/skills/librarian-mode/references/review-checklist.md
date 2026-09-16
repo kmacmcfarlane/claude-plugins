@@ -122,7 +122,9 @@ test -f $W/.claude-plugin/marketplace.json && python3 -c "import json,os,sys; m=
 ## 6. After the merge, on `main`
 
 - [ ] Sections 4 and 5 re-run in the main checkout on `main`.
-- [ ] `git -C "$MAIN" status --short` is empty.
+- [ ] `git -C "$MAIN" status --short` is empty, or shows only first-start dirt (the
+      store and any `.gitignore` line `wi init` wrote) — expected: commit it with the
+      first landed item or leave it for the operator; it never blocks a merge.
 - [ ] The worktree was removed and the branch deleted only after both of the above.
 
 A result that passes every box lands. A fail found by the reviewer is a finding at medium
