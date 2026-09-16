@@ -2,10 +2,12 @@
 id: statusline-session-name-does-not-always-7942
 title: "statusline: session name does not always match /rename or an agent-set name"
 type: bug
-status: todo
+status: doing
 priority: 3
 deps:
   - statusline-progress-bars-for-session-fab-28ad
+owner: unknown@4d338747396e
+claimed: 2026-09-16T18:04Z
 created: 2026-09-16
 updated: 2026-09-16
 refs:
@@ -19,3 +21,8 @@ Operator 2026-09-16: the session name shown by hooks/statusline.py does not alwa
 - next: —
 - blocked: —
 - learned: —
+
+## Notes
+- 2026-09-16 claimed by unknown@4d338747396e
+dispatch: implementer fable — rule 3 (harness file hooks/statusline.py); research step included in the brief
+dispatch: reviewer fable — rule 4
