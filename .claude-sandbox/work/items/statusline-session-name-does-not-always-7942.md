@@ -2,14 +2,13 @@
 id: statusline-session-name-does-not-always-7942
 title: "statusline: session name does not always match /rename or an agent-set name"
 type: bug
-status: doing
+status: done
 priority: 3
 deps:
   - statusline-progress-bars-for-session-fab-28ad
-owner: unknown@4d338747396e
-claimed: 2026-09-16T18:04Z
 created: 2026-09-16
 updated: 2026-09-16
+closed: 2026-09-16
 refs:
   - operator message 2026-09-16
 ---
@@ -37,3 +36,5 @@ dispatch: reviewer fable — rule 4
 - review round 1: NEEDS_CHANGES — 2 medium (control chars/newlines in a registry or payload name break the one-line contract; ancestor walk untested — every registry test places the file at the direct parent), 2 lows (eager /proc walk costs 4+3 opens; non-Linux degrades silently to payload-only, undocumented), 1 note. Reviewer confirmed collision as explicit and closest-ancestor precedence. Fix round 1 sent 2026-09-16 18:19:46, tier unchanged (fable, resumed).
 - fix round 1 implementer killed by the API rate limit (2026-09-16 20:01:53) before any change; fresh fable implementer re-dispatched with the findings (same round, same tier).
 - fix round 1 (re-dispatched) returned DONE, commit 7a7545f (122 tests; clean() sanitiser + 60-char cap; lazy interleaved walk; docs). Re-review dispatched 2026-09-16 20:06:00 (reviewer fable, resumed).
+- 2026-09-16 done: 2ce6544
+- re-review CLEAR (all 5 FIXED; 2 new lows: Unicode format chars such as U+202E pass the sanitiser; the cap counts code points not columns). Landed merge 2ce6544 2026-09-16 20:09:17; 122 hook tests OK on main.
