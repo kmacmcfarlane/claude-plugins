@@ -20,3 +20,4 @@ F3 of the approved analyzer plan: a test (skipped when npx/ccusage is unavailabl
 - next: —
 - blocked: —
 - learned: —
+- librarian 2026-09-16: held until the plugin-factoring reconcile (9b93) lands, so usage-report is placed once in the factored layout.

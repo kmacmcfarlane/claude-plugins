@@ -22,3 +22,5 @@ Operator 2026-09-16 ('use a list so I can reference it'): when the librarian nee
 - learned: —
 dispatch: implementer opus — rule 2 (doctrine: Report format)
 dispatch: reviewer opus — rule 4
+- implementer opus returned DONE, commit 577cfe9; ten trims to pay (claimed duplication-only; two touch text defended in 1420's reviews: 'The transcript is not the record.' in Review 5 and Delegate 3's field list). Reviewer opus round 1 dispatched 2026-09-16 17:58:02 with that focus.
+- (from 939c review) rule on the mechanism seam: AskUserQuestion dialog vs numbered prose list — say when each applies.

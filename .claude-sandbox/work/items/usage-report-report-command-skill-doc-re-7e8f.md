@@ -24,3 +24,4 @@ From the F1 review (2026-09-16): (a) by_requested_tier needs a "main" bucket (or
 are excluded) so it reconciles with totals, and its opus_equivalent should be summed from unrounded values; (b)
 tokens priced through a legacy alias (claude-fable-5, claude-opus-4-7, claude-opus-4-8 -> current same-family
 entry) must be visible in the report — a separate row or a marker — not silently merged.
+- librarian 2026-09-16: held until the plugin-factoring reconcile (9b93) lands, so usage-report is placed once in the factored layout.

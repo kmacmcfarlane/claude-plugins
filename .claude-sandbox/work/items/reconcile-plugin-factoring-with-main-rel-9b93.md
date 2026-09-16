@@ -2,10 +2,12 @@
 id: reconcile-plugin-factoring-with-main-rel-9b93
 title: "reconcile plugin-factoring with main: relocate checkout guard + convention into the sandbox plugin, rebase, land"
 type: feature
-status: todo
+status: doing
 priority: 2
 deps:
   - land-plugin-factoring-fbe8
+owner: unknown@4d338747396e
+claimed: 2026-09-16T17:53Z
 created: 2026-09-16
 updated: 2026-09-16
 refs:
@@ -31,3 +33,6 @@ Peer session claude-sandbox-e3 (formerly pintail-11), 2026-09-16, relaying the o
   Pushing the branch: outside the librarian's push rule (main only) — the operator pushes it, or authorizes once.
 dispatch: implementer fable — rule 3 (gating hook relocation; marketplace shape; hard to reverse)
 dispatch: reviewer fable — rule 4
+
+## Notes
+- 2026-09-16 claimed by unknown@4d338747396e

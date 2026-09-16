@@ -42,3 +42,4 @@ dispatch: reviewer fable — rule 4
 
 ## Notes
 - 2026-09-16 claimed by unknown@4d338747396e
+- implementer fable returned DONE, commit aa6d0e3 (100 hook tests); reviewer fable round 1 dispatched 2026-09-16 17:56:27
