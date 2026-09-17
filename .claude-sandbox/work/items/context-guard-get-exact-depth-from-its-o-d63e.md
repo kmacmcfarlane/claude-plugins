@@ -32,3 +32,17 @@ decision 14: depth source for context-guard — (a) hook-derived window (transcr
   overrides) as the default, status line optional and wins when present, derived depth warns but never hard-blocks
   (recommended); (b) keep the status line as the required sensor (status quo); (c) hook-derived window allowed to
   hard-block.
+- OPERATOR 2026-09-17: rejects "only the status line is exact"; wants context-guard's hook to do what the status
+  line does, duplicated logic acceptable. Librarian agrees on the approach: the status line computes nothing — Claude
+  Code hands it context_window_size — so the hook must duplicate Claude Code's own window selection instead:
+  transcript `attachment.type:"model"` identity.modelId → [1m] suffix / native-1M model table → env overrides
+  (CLAUDE_CODE_DISABLE_1M_CONTEXT, CLAUDE_CODE_MAX_CONTEXT_TOKENS with compaction disabled) → the account-side 1M
+  gate, which IS cached on disk in ~/.claude.json (seen: s1mAccessCache{<account>:{hasAccess,hasAccessNotAsDefault,
+  timestamp}}, cachedExtraUsageDisabledReason, oauthAccount.hasExtraUsageEnabled) — exact semantics to be pinned in
+  the plan by reading the 2.1.273 selection code. Tokens: transcript usage (already exact).
+decision 14 (revised): (d) hook derives the window by duplicating Claude Code's selection logic, including the
+  cached account gate; the derived depth may hard-block when every input resolved (known model, readable fresh
+  cache); unresolved input → warn-only; status line, when installed, is a cross-check that wins on disagreement and
+  logs the mismatch so drift in the duplicated logic is visible. Recommended; awaiting the operator.
+- CORRECTION (librarian): the config scan that found the cached gate printed one stored MCP API key value from
+  ~/.claude.json into this session's tool output; operator told, rotation suggested.
