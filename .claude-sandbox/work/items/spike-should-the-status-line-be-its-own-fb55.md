@@ -27,3 +27,4 @@ Operator question 2026-09-17: factor the status line out of context-guard into i
 - Cheaper decoupling raised with the operator: context-guard writes its computed thresholds (and epoch) into the
   state file; a separate status-line plugin only reads that record and never copies the policy. Reduces the
   dependency to a data contract. Weakens the librarian's "not yet" recommendation; still pending the operator.
+- OPERATOR 2026-09-17: d63e decision 14 answered (d); status line may become its own plugin without a hard dependency.

@@ -13,8 +13,8 @@ refs:
 Operator 2026-09-17: remove context-guard's dependency on the status line as its depth sensor; context-guard should own its own hook. Librarian facts: hooks receive no context-window size or usage (docs: common fields session_id, prompt_id, transcript_path, cwd, scratchpad_dir, permission_mode, effort, hook_event_name; none for window/usage). Token count is already exact from transcript usage blocks (cross-checked equal to the status-line record). The only missing input is the WINDOW SIZE (200K vs 1M), which the model id in transcripts ('claude-opus-5') and settings ('opus') does not carry. The 2.1.273 binary shows SessionStart hooks receive an undocumented 'model' field and there are PreModelSwitch/PostModelSwitch hook events with from_model/to_model — if those carry the 1M variant, hooks can know the window without the status line. Step 1 (spike): capture the live payloads. Step 2: plan + operator review. Step 3: implement on the factored layout (context-guard), fable.
 
 ## Handoff
-- doing: spike done: hooks cannot read the window; transcript model line + table can derive it
-- next: operator answers decision 14; then plan on the factored layout
+- doing: decision 14 answered (d): mirror window selection in the hook
+- next: after plugin-factoring merges: plan (read 2.1.273 selection code, pin the account-gate cache semantics, model table, cross-check design) for operator review; implement on fable
 - blocked: decision 14
 - learned: —
 
@@ -46,3 +46,7 @@ decision 14 (revised): (d) hook derives the window by duplicating Claude Code's 
   logs the mismatch so drift in the duplicated logic is visible. Recommended; awaiting the operator.
 - CORRECTION (librarian): the config scan that found the cached gate printed one stored MCP API key value from
   ~/.claude.json into this session's tool output; operator told, rotation suggested.
+- OPERATOR 2026-09-17: decision 14 ANSWERED — (d) mirror Claude Code's window selection in context-guard's hook
+  ("assuming there's really no other way, I'm cool with mirroring the claude code internals"). Librarian confirmed no
+  documented third way (hooks cannot query the harness). Status line becomes an optional cross-check; this also frees
+  the status line to become its own plugin with no hard dependency (spike fb55).
