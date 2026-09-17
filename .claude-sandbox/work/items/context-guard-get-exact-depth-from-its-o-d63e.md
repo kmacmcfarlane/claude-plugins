@@ -1,0 +1,34 @@
+---
+id: context-guard-get-exact-depth-from-its-o-d63e
+title: "context-guard: get exact depth from its own hooks, not the status line"
+type: feature
+status: todo
+priority: 2
+created: 2026-09-17
+updated: 2026-09-17
+refs:
+  - operator message 2026-09-17
+---
+
+Operator 2026-09-17: remove context-guard's dependency on the status line as its depth sensor; context-guard should own its own hook. Librarian facts: hooks receive no context-window size or usage (docs: common fields session_id, prompt_id, transcript_path, cwd, scratchpad_dir, permission_mode, effort, hook_event_name; none for window/usage). Token count is already exact from transcript usage blocks (cross-checked equal to the status-line record). The only missing input is the WINDOW SIZE (200K vs 1M), which the model id in transcripts ('claude-opus-5') and settings ('opus') does not carry. The 2.1.273 binary shows SessionStart hooks receive an undocumented 'model' field and there are PreModelSwitch/PostModelSwitch hook events with from_model/to_model — if those carry the 1M variant, hooks can know the window without the status line. Step 1 (spike): capture the live payloads. Step 2: plan + operator review. Step 3: implement on the factored layout (context-guard), fable.
+
+## Handoff
+- doing: spike done: hooks cannot read the window; transcript model line + table can derive it
+- next: operator answers decision 14; then plan on the factored layout
+- blocked: decision 14
+- learned: —
+
+## Spike result (live capture, 2026-09-17; findings copied to .claude-sandbox/investigations/hook-window-capture-findings.md)
+- No hook payload field or hook env var carries the window, on any of 6 headless runs (opus, opus[1m], sonnet,
+  sonnet[1m], haiku, resume-with-switch). SessionStart's optional `model` never appeared. Model-switch hooks did
+  not fire headless.
+- The transcript carries an `attachment.type:"model"` line at session start and on every model change, with
+  identity.modelId (e.g. "claude-opus-5[1m]") — readable by a hook.
+- The model id does not decide the window alone: plain opus-5 / sonnet-5 / fable-5 / opus-4-7+ are natively 1M;
+  haiku-4-5 is 200K; overrides: CLAUDE_CODE_DISABLE_1M_CONTEXT, CLAUDE_CODE_MAX_CONTEXT_TOKENS (with compaction
+  disabled), and an account-side 1M-credits cap that a hook cannot see.
+- Status line in -p mode: did not fire. Its context_window_size remains the only exact source.
+decision 14: depth source for context-guard — (a) hook-derived window (transcript model line + model table + env
+  overrides) as the default, status line optional and wins when present, derived depth warns but never hard-blocks
+  (recommended); (b) keep the status line as the required sensor (status quo); (c) hook-derived window allowed to
+  hard-block.
