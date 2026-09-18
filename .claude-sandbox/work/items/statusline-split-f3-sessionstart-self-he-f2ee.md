@@ -18,3 +18,7 @@ updated: 2026-09-18
 - next: —
 - blocked: —
 - learned: —
+
+- (F2) README/SKILL say run /install-statusline explicitly and migration step 4 — update once takeover + first-run install land; sensor .tmp pruning belongs here.
+
+- (F2 review lows) split --force into --replace-foreign and --force-readonly (or ask per consent); dumps_like re-indents mixed hand-formatted files (disclosed; consider a line-level splice for the statusLine key); validate $ARGUMENTS in SKILL.md (only known flags) and document argparse rc 2.
