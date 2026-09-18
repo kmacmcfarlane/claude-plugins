@@ -60,10 +60,26 @@ warns. So a wrong block means a fresh-but-wrong record, e.g. one written just be
 compaction. Two escape hatches:
 1. Pin the window: `CLAUDE_KIT_CONTEXT_WINDOW=1000000` (tokens) in the environment Claude
    Code is launched from; the hooks then never guess the denominator.
-2. Emergency stand-down: set `checkpoint_epoch` equal to `epoch` (default 0) in the session's
-   state file (named by session id; the newest file in the dir is the live session) — what
-   `/checkpoint` records. The gate stays down until the next compaction or `/clear`:
+2. Emergency stand-down: record a checkpoint for the current epoch — exactly what
+   `/checkpoint` records — with the plugin's own `mark_checkpoint.py`. It writes through the
+   same locked read-modify-write as every hook, so a status-line render or hook firing at the
+   same moment cannot drop the change (a hand-edit of the state file can). The session id
+   names the state file under `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/claude-kit/context-gate/`
+   (the newest `.json` there is the live session). It refuses, exiting non-zero and writing
+   nothing, when no state file exists for that id — a mistyped id, since a live session always
+   has one. The gate stays down until the next compaction or `/clear`. From a Bash tool call
+   inside the session (where Claude Code sets `CLAUDE_PLUGIN_ROOT`):
 
 ```bash
-python3 -c 'import json,os,sys,tempfile;p=sys.argv[1];s=json.load(open(p));s["checkpoint_epoch"]=s.get("epoch",0);fd,t=tempfile.mkstemp(dir=os.path.dirname(p));f=os.fdopen(fd,"w");json.dump(s,f,indent=1);f.close();os.replace(t,p)' "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/claude-kit/context-gate/<session_id>.json"
+python3 "${CLAUDE_PLUGIN_ROOT}/hooks/mark_checkpoint.py" <session_id>
+```
+
+   That form fails in a plain terminal, where `CLAUDE_PLUGIN_ROOT` is unset. There, use the
+   stable plugin-data path; `ls -td … | head -1` picks the most recently refreshed
+   `context-guard-*` data dir if more than one exists (one per marketplace the plugin was
+   installed from — list them with plain `ls -d` and pick yours if unsure):
+
+```bash
+d=$(ls -td "${CLAUDE_CONFIG_DIR:-$HOME/.claude}"/plugins/data/context-guard-*/ | head -1)
+python3 "${d}current-hooks/mark_checkpoint.py" <session_id>
 ```

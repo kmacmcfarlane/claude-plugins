@@ -453,6 +453,132 @@ class TestRehydrateStale(unittest.TestCase):
         self.assertIn("items:\n  - keep-me-body", c)
         self.assertNotIn("items: (trimmed", c)
 
+    # ── 3685: store-only rewind, head unverified, behind-side drift ────────
+    def hook_out(self, source="compact", cwd=None):
+        p = subprocess.run([sys.executable, os.path.join(HOOKS, "rehydrate.py")],
+                           input=json.dumps({"session_id": "s", "source": source,
+                                             "cwd": cwd or self.repo}),
+                           capture_output=True, text=True, env=self.env, timeout=30)
+        self.assertEqual(p.returncode, 0, p.stderr)
+        return json.loads(p.stdout) if p.stdout.strip() else {}
+
+    def test_store_only_rewind_is_fresh_with_next_shown(self):
+        self.manifest(head=None)
+        for i in range(3):
+            self.commit(f"chore {i}", ".claude-sandbox/work/items/x.md")
+        chores = self.rev()
+        self.manifest(head=chores)
+        self.g("reset", "-q", "--hard", self.head)   # rewound over store-only commits
+        self.manifest(head=chores)                     # the reset dropped the file
+        c = self.hook()
+        self.assertIn("FRESH manifest", self.header(c))
+        self.assertNotIn("Next withheld", c)
+        self.assertNotIn("not an ancestor", c)
+        self.assertIn("wi show build-the-widget-aaaa", c)
+
+    def test_store_only_divergence_is_fresh(self):
+        self.commit("side chore", ".claude-sandbox/work/items/s.md")
+        side = self.rev()
+        self.g("reset", "-q", "--hard", self.head)
+        self.commit("main chore", ".claude-sandbox/work/items/m.md")
+        self.manifest(head=side)
+        c = self.hook()
+        self.assertIn("FRESH manifest", self.header(c))
+        self.assertNotIn("Next withheld", c)
+
+    def test_mixed_divergence_reads_plain_ahead(self):
+        # recorded side holds only a store chore, HEAD gained code: forward move
+        self.commit("side chore", ".claude-sandbox/work/items/s.md")
+        side = self.rev()
+        self.g("reset", "-q", "--hard", self.head)
+        self.commit("code 1", "src/a.txt")
+        self.commit("code 2", "src/b.txt")
+        self.manifest(head=side)
+        c = self.hook()
+        self.assertIn("AGED manifest", self.header(c))
+        self.assertIn(f"Next withheld: head moved 2 commits since this manifest "
+                      f"({side}..{self.rev()}); run wi prime and git log.", c)
+        self.assertNotIn("not an ancestor", c)
+
+    def test_code_rewind_still_withheld(self):
+        self.commit("code", "src/a.txt")
+        self.commit("chore", ".claude-sandbox/work/items/x.md")
+        ahead = self.rev()
+        self.g("reset", "-q", "--hard", self.head)
+        self.manifest(head=ahead)
+        c = self.hook()
+        self.assertIn("AGED (recorded head is not an ancestor)", self.header(c))
+        self.assertIn("0 commits ahead, 1 behind", c)
+
+    def test_non_repo_reads_head_unverified(self):
+        plain = tempfile.TemporaryDirectory()
+        self.addCleanup(plain.cleanup)
+        put(os.path.join(plain.name, "HANDOFF.md"),
+            MANIFEST.format(written=time.strftime("%Y-%m-%dT%H:%M:%SZ"),
+                            head="abc1234", items="", mode="continue"))
+        out = self.hook_out(cwd=plain.name)
+        c = out["hookSpecificOutput"]["additionalContext"]
+        self.assertIn("FRESH (head unverified) manifest", self.header(c))
+        self.assertNotIn("git unavailable", c)
+        self.assertIn("Rehydrated from FRESH (head unverified) manifest",
+                      out["systemMessage"])
+
+    def test_empty_repo_reads_head_unverified(self):
+        empty = tempfile.TemporaryDirectory()
+        self.addCleanup(empty.cleanup)
+        subprocess.run(["git", "-C", empty.name, "init", "-q"], check=True)
+        put(os.path.join(empty.name, "HANDOFF.md"),
+            MANIFEST.format(written=time.strftime("%Y-%m-%dT%H:%M:%SZ"),
+                            head="abc1234", items="", mode="continue"))
+        c = self.hook_out(cwd=empty.name)["hookSpecificOutput"]["additionalContext"]
+        self.assertIn("FRESH (head unverified) manifest", self.header(c))
+
+    def test_fifty_behind_is_stale(self):
+        for i in range(50):
+            self.commit(f"code {i}", f"src/f{i}.txt")
+        ahead = self.rev()
+        self.g("reset", "-q", "--hard", self.head)
+        self.manifest(head=ahead)
+        c = self.hook()
+        self.assertIn("STALE (recorded head is not an ancestor) manifest", self.header(c))
+        self.assertIn("0 commits ahead, 50 behind", c)
+
+    def test_drift_threshold_sums_both_sides(self):
+        rh = self.rh()
+        now = time.strftime("%Y-%m-%dT%H:%M:%S")
+        hs = {"rec": "a", "cur": "b", "known": True, "ancestor": False,
+              "n": 16, "behind": 15}
+        self.assertEqual(rh.liveness({"written": now, "head": "a"}, hs)[0], "STALE")
+        hs.update(n=15)
+        self.assertEqual(rh.liveness({"written": now, "head": "a"}, hs)[0], "AGED")
+
+    def test_system_message_carries_reason(self):
+        self.commit("code", "src/a.txt")
+        ahead = self.rev()
+        self.g("reset", "-q", "--hard", self.head)
+        self.manifest(head=ahead)
+        self.assertIn("Rehydrated from AGED (recorded head is not an ancestor) manifest",
+                      self.hook_out()["systemMessage"])
+
+    def test_sweep_runs_at_session_start(self):
+        d = os.path.join(self.cfg.name, "claude-kit", "context-gate")
+        os.makedirs(d, exist_ok=True)
+        old = time.time() - 40 * 86400
+        for n in (".dead.123.abcdef012345.tmp", ".dead.lock", "dead.json",
+                  ".s.9.abcdef012345.tmp", ".live.1.abcdef012345.tmp"):
+            put(os.path.join(d, n), "{}")
+        for n in (".dead.123.abcdef012345.tmp", ".dead.lock", "dead.json",
+                  ".s.9.abcdef012345.tmp"):
+            os.utime(os.path.join(d, n), (old, old))
+        self.manifest()
+        self.hook()
+        left = sorted(os.listdir(d))
+        self.assertNotIn(".dead.123.abcdef012345.tmp", left)
+        self.assertNotIn(".dead.lock", left)
+        self.assertIn("dead.json", left)                   # state files are not swept
+        self.assertIn(".s.9.abcdef012345.tmp", left)       # the live session is kept
+        self.assertIn(".live.1.abcdef012345.tmp", left)    # young temp kept
+
     # ── precedence ──────────────────────────────────────────────────────────
     def test_precedence_puts_repo_state_over_manifest(self):
         self.manifest()

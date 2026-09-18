@@ -1,6 +1,7 @@
 """End-to-end hook tests: each hook is run as a subprocess with JSON on stdin
 and CLAUDE_CONFIG_DIR pointed at a temp dir, the way Claude Code runs it."""
-import json, os, subprocess, sys, tempfile, time, unittest
+import importlib, io, json, os, subprocess, sys, tempfile, time, unittest
+from unittest import mock
 
 HOOKS = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, HOOKS)
@@ -304,7 +305,28 @@ class TestPostcompactEpoch(Base):
         self.assertEqual(rc, 0)
         self.assertEqual(L.load_state("s")["exact"], {"window": 1_000_000, "at": 0})
         self.assertIn("## epoch 2", open(L.ledger_path("s")).read())
-        self.assertIn("900,000 tok", open(L.ledger_path("s")).read())
+        # the exact record's fill, captured under the lock before the demote
+        self.assertIn("950,000 tok", open(L.ledger_path("s")).read())
+        self.assertEqual(L.load_state("s")["epoch_end_tokens"], 950_000)
+
+    def test_postcompact_header_tokens_come_from_locked_update(self):
+        # tokens written between an unlocked pre-read and the reset would be
+        # lost; the header must read the state reset_epoch itself returned
+        L.save_state("s", {"epoch": 1})
+        real = L.update_state
+
+        def racing(sid, fn):
+            L.save_state(sid, {"epoch": 1, "exact": {"tokens": 123_456,
+                                                     "window": 200_000, "at": 1}})
+            return real(sid, fn)
+        with mock.patch.object(L, "update_state", racing), \
+                mock.patch("sys.stdin", io.StringIO(json.dumps(
+                    {"session_id": "s", "hook_event_name": "PostCompact"}))), \
+                mock.patch("sys.stdout", io.StringIO()):
+            sys.modules.pop("postcompact_epoch", None)
+            importlib.import_module("postcompact_epoch")  # runs main() on import
+        sys.modules.pop("postcompact_epoch", None)
+        self.assertIn("123,456 tok", open(L.ledger_path("s")).read())
 
     def test_sessionstart_only_clear_resets(self):
         L.save_state("s", {"epoch": 1})
