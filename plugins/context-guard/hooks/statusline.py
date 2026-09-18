@@ -33,12 +33,14 @@ just falls through. Without /proc (non-Linux) only the direct parent is
 checked, so the chain degrades to payload-only when a shell sits between the
 session and this script. Either name is sanitised before it is shown: runs of
 whitespace or control characters collapse to one space (a peer or hook name is
-an arbitrary string set by another agent), and it is capped at NAME_MAX.
+an arbitrary string set by another agent), invisible format characters (bidi
+overrides, zero-width spaces; Unicode category Cf) are dropped, and it is
+capped at NAME_MAX terminal columns.
 
 Install (user settings, ~/.claude/settings.json):
   "statusLine": {"type": "command", "command": "python3 /path/to/statusline.py"}
 """
-import json, math, os, re, sys, time
+import json, math, os, re, sys, time, unicodedata
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import lib_context as L
 
@@ -100,23 +102,78 @@ def usage_bars(rate_limits, now=None):
 REGISTRY_MAX_BYTES = 65536  # a registry entry is a few hundred bytes; cap the read
 ANCESTORS = 4  # python -> [sh ->] claude: how far up to look for the session pid
 EXPLICIT = ("user", "peer", "hook", "collision")  # nameSource values the operator set
-NAME_MAX = 60  # longest name shown; longer ones end in an ellipsis
+NAME_MAX = 60  # widest name shown, in terminal columns; wider ones end in an ellipsis
+SCAN_MAX = 8 * NAME_MAX  # code points looked at: a flood of zero-width marks ends here
 _UNSAFE = re.compile(r"[\s\x00-\x1f\x7f-\x9f]+")  # whitespace, C0, DEL, C1
+ZWJ = "\u200d"
+FLAG = "\U0001F3F4"  # the base of the tag-sequence flags (England, Scotland, Wales)
+# A ZWJ with no visible non-ASCII character on either side joins nothing and is
+# only invisible padding; inside an emoji sequence (or Indic text) it stays.
+_LONE_ZWJ = re.compile(r"(?<![^\x00-\x9f\s\u200d])\u200d|\u200d(?![^\x00-\x9f\s\u200d])")
+
+
+def _visible(name):
+    """`name` without format (Cf) or surrogate (Cs) characters.
+
+    Cf covers the bidi overrides and isolates (U+202A-202E, U+2066-2069) that
+    can visually reverse the row, and the zero-width spaces, joiners and BOM
+    (U+200B-200F, U+2060-2064, U+FEFF) that pad it invisibly. Two exceptions:
+    a ZWJ, which _LONE_ZWJ then keeps only between visible characters, and the
+    tag characters that spell a subdivision flag right after its FLAG base. A
+    lone surrogate cannot be printed at all.
+    """
+    out = []
+    for ch in name:
+        cat = unicodedata.category(ch)
+        if cat == "Cs":
+            continue
+        if cat == "Cf" and ch != ZWJ:
+            tag = "\U000E0020" <= ch <= "\U000E007F"
+            if not (tag and out and (out[-1] == FLAG or "\U000E0020" <= out[-1] <= "\U000E007F")):
+                continue
+        out.append(ch)
+    return _LONE_ZWJ.sub("", "".join(out))
+
+
+def columns(ch):
+    """Terminal columns one code point takes: 0 for combining and format
+    characters, 2 for East Asian wide/fullwidth (CJK, most emoji), else 1."""
+    if unicodedata.combining(ch) or unicodedata.category(ch) in ("Mn", "Me", "Cf"):
+        return 0
+    return 2 if unicodedata.east_asian_width(ch) in ("W", "F") else 1
 
 
 def clean(name):
     """One-line, printable form of a name from any source, or "" for a non-string.
 
-    Runs of whitespace or C0/C1 control characters (ESC, BEL, DEL, newlines)
-    collapse to a single space, the ends are stripped, and anything longer than
-    NAME_MAX is cut to NAME_MAX - 1 characters plus an ellipsis.
+    Format characters are dropped (see _visible), runs of whitespace or C0/C1
+    control characters (ESC, BEL, DEL, newlines) collapse to a single space,
+    and the ends are stripped, so a name made only of such characters is "".
+    Anything wider than NAME_MAX terminal columns (see columns(); a wide
+    character counts 2, a combining mark 0) is cut to at most NAME_MAX - 1
+    columns plus an ellipsis, never between a character and its combining
+    marks. Only the first SCAN_MAX code points (after whitespace collapses) are
+    looked at; a name longer than that also ends in the ellipsis. Never raises.
     """
     if not isinstance(name, str):
         return ""
-    name = _UNSAFE.sub(" ", name).strip()
-    if len(name) > NAME_MAX:
-        name = name[:NAME_MAX - 1].rstrip() + "\u2026"
-    return name
+    try:
+        name = _UNSAFE.sub(" ", name).strip()
+        over = len(name) > SCAN_MAX
+        name = _UNSAFE.sub(" ", _visible(name[:SCAN_MAX])).strip()
+        if not name:
+            return ""
+        widths = [columns(ch) for ch in name]
+        if not over and sum(widths) <= NAME_MAX:
+            return name
+        used = cut = 0
+        for i, w in enumerate(widths):
+            if used + w > NAME_MAX - 1:
+                break
+            used, cut = used + w, i + 1
+        return name[:cut].rstrip().rstrip(ZWJ).rstrip() + "\u2026"
+    except Exception:
+        return ""
 
 
 def ancestor_pids():
