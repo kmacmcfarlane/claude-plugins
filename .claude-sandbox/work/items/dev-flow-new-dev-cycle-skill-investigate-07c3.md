@@ -17,3 +17,5 @@ Peer claude-sandbox librarian (its 8b2d), relaying its operator, 2026-09-18. Fac
 - next: —
 - blocked: —
 - learned: —
+
+dispatch: plan-writer opus — design plan for operator/librarian review (.claude-sandbox/investigations/07c3-dev-cycle/plan.md)

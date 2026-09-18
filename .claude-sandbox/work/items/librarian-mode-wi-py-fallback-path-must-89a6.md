@@ -2,10 +2,12 @@
 id: librarian-mode-wi-py-fallback-path-must-89a6
 title: "librarian-mode: wi.py fallback path must not assume the skill's own plugin root"
 type: chore
-status: todo
+status: doing
 priority: 4
+owner: unknown@e3a28d2cc009
+claimed: 2026-09-18T19:32Z
 created: 2026-09-16
-updated: 2026-09-16
+updated: 2026-09-18
 refs:
   - reviewer report, item reconcile-plugin-factoring-with-main-rel-9b93
 ---
@@ -20,3 +22,8 @@ From the 9b93 review 2026-09-16: references/troubleshooting.md and the Rehydrate
 Also (9b93 re-review): prefer installed_plugins.json plugins['work-items@kmacmcfarlane'][0].installPath as the key, ls -t as the fallback; apply on the branch too when it merges.
 
 - 2026-09-18: plugin-factoring merged (0d8b4c9); hold released. Paths moved: claude-kit dissolved into kit-dev/context-guard/dev-flow/work-items/chat/sandbox/ralph.
+
+## Notes
+- 2026-09-18 claimed by unknown@e3a28d2cc009
+
+dispatch: implementer opus — bundled chores in worktree d72e; >3 files (rule 2)

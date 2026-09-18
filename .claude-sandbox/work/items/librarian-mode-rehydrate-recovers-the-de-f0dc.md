@@ -2,10 +2,12 @@
 id: librarian-mode-rehydrate-recovers-the-de-f0dc
 title: "librarian-mode: Rehydrate recovers the decision counter with a grep"
 type: chore
-status: todo
+status: doing
 priority: 4
+owner: unknown@e3a28d2cc009
+claimed: 2026-09-18T19:32Z
 created: 2026-09-16
-updated: 2026-09-16
+updated: 2026-09-18
 refs:
   - reviewer report, item librarian-mode-decisions-needed-are-a-nu-486d
 ---
@@ -17,3 +19,8 @@ From the 486d review 2026-09-16: the decision counter lives in item bodies, but 
 - next: —
 - blocked: —
 - learned: —
+
+## Notes
+- 2026-09-18 claimed by unknown@e3a28d2cc009
+
+dispatch: implementer opus — bundled chores in worktree d72e; >3 files (rule 2)

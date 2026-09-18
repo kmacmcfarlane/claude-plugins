@@ -2,8 +2,10 @@
 id: librarian-mode-75-sop-follow-up-wording-d72e
 title: "librarian-mode 75% SOP: follow-up wording from review"
 type: chore
-status: todo
+status: doing
 priority: 3
+owner: unknown@e3a28d2cc009
+claimed: 2026-09-18T19:32Z
 created: 2026-09-18
 updated: 2026-09-18
 refs:
@@ -25,3 +27,8 @@ From the ce46 re-review 2026-09-18 (all low/nit): (10) ending-the-session.md nam
 - 2026-09-18 (881e lesson): agent-brief/fix-loop should say how to fix a bad commit subject without history rewrite (decline it, or the merge message carries the correction); never brief `git reset --soft main` once main may have moved.
 
 - 2026-09-18 (f696 round-3 low): model-routing.md:43-49 — state that the one-line/mechanical exclusion wins over "such lines in more than one file".
+
+## Notes
+- 2026-09-18 claimed by unknown@e3a28d2cc009
+
+dispatch: implementer opus — bundled chores in worktree d72e; >3 files (rule 2)
