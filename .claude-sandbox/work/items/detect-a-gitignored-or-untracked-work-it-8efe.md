@@ -36,3 +36,6 @@ dispatch: reviewer opus — rule 4
 
 review round 1 (opus): NEEDS_CHANGES — medium 1 (remedy text fixed regardless of cause; wrong for .work, *.md, info/exclude, excludesFile, none-tracked), 2 (no sidecar remedy for public repos, decision 0002); lows 3 (UNTRACKED_MIN_ITEMS=10 — librarian CONFIRMS the threshold, per the brief), 4 (verb table lint description), 5 (no-warning header-trim test), nit 6.
 dispatch: implementer opus fix round 1 — resume
+
+fix round 1 (opus): DONE 6db40eb (all 6).
+dispatch: reviewer opus review round 2 — resume

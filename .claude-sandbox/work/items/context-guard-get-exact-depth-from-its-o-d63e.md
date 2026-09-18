@@ -54,3 +54,12 @@ decision 14 (revised): (d) hook derives the window by duplicating Claude Code's 
 - 2026-09-18: plugin-factoring merged (0d8b4c9); hold released. Paths moved: claude-kit dissolved into kit-dev/context-guard/dev-flow/work-items/chat/sandbox/ralph.
 
 - 2026-09-18 (peer "agent front-ends", ex "Paseo stop-gap"): headless front-ends depend on this: Paseo option B (Claude Agent SDK provider wrapping claude-sandbox) has no status line, so exact depth needs this mirror. Option A (PTY terminal tabs running claude-sandbox) does not. Source: operator-attention research/findings/p1-paseo-stopgap.md; trial item operator-attention 6dc1.
+
+## Plan (2026-09-18, opus plan-writer; .claude-sandbox/investigations/d63e-window-mirror/plan.md)
+- CORRECTION to decision 14's premise: Claude Code 2.1.277 never reads s1mAccessCache/hasAccessNotAsDefault (stale leftover, 2026-02-24). cachedExtraUsageDisabledReason gates only the /model picker; hasExtraUsageEnabled only usage-limit messages. The real account 1M gate is an in-memory flag set by a 429 "usage credits required for long context" error, which is written to the transcript -> the hook never needs ~/.claude.json.
+- Mirrors lf(model, sdkBetas): native-1M table, [1m] rule, CLAUDE_CODE_DISABLE_1M_CONTEXT (caps all at 200K), CLAUDE_CODE_MAX_CONTEXT_TOKENS (first under DISABLE_COMPACT, last for custom models). 11-step algorithm, 21-row truth table; new window_rules.py; depth() order: fresh status line > derived resolved (may block) > derived unresolved (warn) > inferred; mismatch log window-mismatch.jsonl demotes that CC version to warn-only; new SessionStart/PostModelSwitch bookkeeping. Size M (~700 lines incl. tests), fable implementer + reviewer.
+- Security: a directory listing printed the served-catalog cache filename (contains account/org UUIDs) into the plan-writer's tool output; no ~/.claude.json values printed beyond allowed booleans/timestamps/keys.
+decision 31: approve the d63e plan for implementation (fable, or opus fallback while fable is out)
+decision 32: drop ~/.claude.json from the design entirely (plan rec: yes)
+decision 33: CC version the table was copied from: record + demote to warn-only after a real mismatch (plan rec) vs gate hard-block on exact version
+decision 34: auto-compact window (CLAUDE_CODE_AUTO_COMPACT_WINDOW etc.): follow-up item, not this one (plan rec)
