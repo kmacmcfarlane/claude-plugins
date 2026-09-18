@@ -16,6 +16,7 @@ Constraints this file lives under:
 """
 import argparse
 import fcntl
+import fnmatch
 import hashlib
 import json
 import os
@@ -355,14 +356,35 @@ PROBE_ITEM = "items/wi-custody-probe-0000.md"   # a new item's would-be path
 
 
 def _git(cwd, *args, stdin=None):
+    """Run git; None when it is missing, the cwd is gone, or it times out.
+    Output is decoded here, not by subprocess: -z output is raw bytes (no
+    quotePath), and a non-UTF-8 path must neither crash nor depend on the
+    locale; backslashreplace shows such a byte readably, as \\xe9."""
     env = {k: v for k, v in os.environ.items()
            if k not in ("GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE")}
     try:
-        return subprocess.run(["git"] + list(args), cwd=cwd, env=env,
-                              input=stdin, capture_output=True, text=True,
-                              timeout=GIT_TIMEOUT)
-    except (OSError, subprocess.SubprocessError):
-        return None   # git missing, cwd gone, or timed out
+        r = subprocess.run(["git"] + list(args), cwd=cwd, env=env,
+                           input=None if stdin is None else stdin.encode(),
+                           capture_output=True, timeout=GIT_TIMEOUT)
+        r.stdout = r.stdout.decode("utf-8", "backslashreplace")
+        r.stderr = r.stderr.decode("utf-8", "backslashreplace")
+        return r
+    except (OSError, ValueError, subprocess.SubprocessError):
+        return None
+
+
+def _dir_level(pattern, root):
+    """True when an ignore pattern excludes a directory on the store's path
+    (a trailing '/', or its last segment matches a parent dir of the probe
+    item). git cannot re-include a path under an excluded directory, so a
+    negation is dead advice for such a rule. Heuristic: the parents checked
+    are every component of the store's absolute path, plus items/."""
+    p = pattern.strip()
+    if p.endswith("/"):
+        return True
+    last = p.rsplit("/", 1)[-1]
+    parents = list(root.absolute().parts[1:]) + ["items"]
+    return any(fnmatch.fnmatchcase(d, last) for d in parents)
 
 
 def custody_warning(root):
@@ -371,8 +393,9 @@ def custody_warning(root):
     # the probe path, not only `items`, catches a store whose tracked files
     # mask the ignore rule: check-ignore skips tracked paths, but a new
     # item's path is still matched against the rule. -v names the rule; -z
-    # (which git allows only with --stdin) gives NUL-separated fields, so a
-    # source path holding ':N:', a tab or a quotePath-escaped byte parses.
+    # (which git allows only with --stdin) gives NUL-separated fields with
+    # paths unquoted, so a source path holding ':N:', a tab or a non-ASCII
+    # byte parses; _git decodes the raw bytes without failing.
     r = _git(root, "check-ignore", "-v", "-z", "--stdin",
              stdin=f"items\0{PROBE_ITEM}\0")
     if r is None or r.returncode not in (0, 1):
@@ -389,22 +412,28 @@ def custody_warning(root):
         src, lineno, pattern = rule
         shape, _ = sandbox_shape(root)
         where = f"{src}:{lineno} '{pattern}'"
-        if shape == "sidecar":
-            # the nested repo owns the store: host advice (trackInHost, the
-            # host .gitignore) does not apply
-            return head + (f"new items are git-ignored by {where} in the "
-                           "sidecar repo .claude-sandbox/; fix: remove or "
-                           "negate that rule there")
-        whole_dir = pattern.strip() in SANDBOX_IGNORES
+        # sidecar: the nested repo owns the store, so host advice
+        # (trackInHost, the host .gitignore) does not apply. A relative
+        # source is that repo's own .gitignore or info/exclude; an absolute
+        # one (an excludesFile) is named as is.
+        there = ""
+        if shape == "sidecar" and not os.path.isabs(src):
+            where += " in the sidecar repo .claude-sandbox/"
+            there = " there"
+        whole_dir = shape != "sidecar" and pattern.strip() in SANDBOX_IGNORES
         if whole_dir:
             # git cannot re-include a path under an excluded parent, so a
             # negation after a whole-dir ignore is dead
-            fix = [f"new items are git-ignored by {where}; fix: remove it, "
-                   "or rewrite it as `/.claude-sandbox/*` plus "
-                   "`!/.claude-sandbox/work/`"]
+            remedy = ("remove it, or rewrite it as `/.claude-sandbox/*` plus "
+                      "`!/.claude-sandbox/work/`")
+        elif _dir_level(pattern, root):
+            remedy = (f"remove it or narrow it{there} (a negation cannot "
+                      "re-include files under an ignored directory)")
         else:
-            fix = [f"new items are git-ignored by {where}; "
-                   "fix: remove or negate that rule"]
+            remedy = f"remove or negate that rule{there}"
+        if shape == "sidecar":
+            return head + f"new items are git-ignored by {where}; fix: {remedy}"
+        fix = [f"new items are git-ignored by {where}; fix: {remedy}"]
         if shape is not None:
             fix.append(" and set trackInHost: true in the sandbox config (a "
                        "claude-sandbox launcher at 490d8ca or later warns "

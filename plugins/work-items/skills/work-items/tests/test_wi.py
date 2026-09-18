@@ -14,6 +14,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import time
 import unittest
 from pathlib import Path
 
@@ -874,6 +875,8 @@ class TestStoreCustodyWarning(WiTestCase):
 
     SANDBOX_FIX = "set trackInHost: true in the sandbox config"
     SIDECAR_FIX = "for a public repo, give .claude-sandbox/ its own sidecar git"
+    NARROW_FIX = ("fix: remove it or narrow it (a negation cannot re-include "
+                  "files under an ignored directory)")
     REWRITE_FIX = ("fix: remove it, or rewrite it as `/.claude-sandbox/*` "
                    "plus `!/.claude-sandbox/work/`")
 
@@ -977,8 +980,75 @@ class TestStoreCustodyWarning(WiTestCase):
         self.assertEqual(run(["init"], self.root, env=self.env).returncode, 0)
         self.write_item("item-00-aaaa")
         self.assert_warns("git-ignored by .gitignore:1 '.work/'",
-                          "remove or negate that rule",
-                          absent=("trackInHost", "sidecar", "490d8ca"))
+                          self.NARROW_FIX,
+                          absent=("trackInHost", "sidecar", "490d8ca",
+                                  "negate"))
+
+    def test_directory_rules_get_narrow_not_negate(self):
+        # a negation cannot re-include files under an ignored directory, for
+        # rules beyond the whole-dir sandbox spellings too
+        for name, gi, rule in (
+                ("slash", "/.claude-sandbox/work/\n",
+                 ".gitignore:1 '/.claude-sandbox/work/'"),
+                ("parent", "work\n", ".gitignore:1 'work'"),
+                ("items", "items\n", ".gitignore:1 'items'")):
+            with self.subTest(name):
+                self.store_in(self.tmp / f"dir-{name}", gi=gi)
+                self.assert_warns(rule, self.NARROW_FIX, self.SANDBOX_FIX,
+                                  absent=("negate", "rewrite it",
+                                          self.SIDECAR_FIX))
+
+    def excludes_under(self, repo, dirname):
+        """core.excludesFile '*.md' under tmp/<dirname> (bytes, so a
+        non-UTF-8 name works), written straight into .git/config."""
+        d = os.fsencode(str(self.tmp)) + b"/" + dirname
+        os.mkdir(d)
+        with open(d + b"/excludes", "wb") as fh:
+            fh.write(b"*.md\n")
+        with open(repo / ".git" / "config", "ab") as fh:
+            fh.write(b"[core]\n\tquotePath = true\n\texcludesFile = \""
+                     + d.replace(b"\t", b"\\t") + b"/excludes\"\n")
+        return d + b"/excludes"
+
+    def test_tab_and_non_ascii_source_path_with_quotepath_on(self):
+        # quotePath would print "...\\303\\251..." in -v output; -z
+        # gives the raw path, shown as is
+        repo = self.tmp / "tabpath"
+        self.store_in(repo)
+        excl = self.excludes_under(repo, "t\tb \u00e9".encode())
+        self.assert_warns(f"git-ignored by {excl.decode()}:1 '*.md'",
+                          "remove or negate that rule")
+
+    def test_non_utf8_source_path_fails_open_readably(self):
+        # raw Latin-1 bytes in the source used to crash text decoding
+        repo = self.tmp / "latin1"
+        self.store_in(repo)
+        self.excludes_under(repo, b"p\xe9")
+        for env in ({}, {"LC_ALL": "C", "LANG": "C"}):
+            with self.subTest(env=env):
+                r = run(["prime"], self.root, env=dict(self.env, **env))
+                self.assertEqual(r.returncode, 0, r.stderr)
+                self.assertNotIn("Traceback", r.stderr)
+                warn = r.stdout.split("\n")[1]
+                self.assertIn("WARNING", warn)
+                self.assertIn("p\\xe9/excludes:1 '*.md'", warn)
+                r = run(["lint"], self.root, env=dict(self.env, **env))
+                self.assertEqual(r.returncode, 3, r.stdout + r.stderr)
+                self.assertNotIn("Traceback", r.stderr)
+
+    def test_hung_git_fails_open(self):
+        # a git that never answers on the stdin path is killed by the
+        # timeout and the check stays silent
+        self.store_in(self.tmp / "hung", gi="/.claude-sandbox/\n")
+        fake = self.tmp / "fakebin"
+        fake.mkdir()
+        (fake / "git").write_text("#!/bin/sh\nexec sleep 30\n")
+        (fake / "git").chmod(0o755)
+        path = {"PATH": f"{fake}{os.pathsep}{os.environ.get('PATH', '')}"}
+        start = time.monotonic()
+        self.assert_silent(env=path)
+        # prime + lint, one bounded call each (under 10 items)
+        self.assertLess(time.monotonic() - start, 4 * wi.GIT_TIMEOUT + 5)
 
     def test_new_untracked_store_below_threshold_is_silent(self):
         # a freshly initialised store before its first `git add` is normal
@@ -1026,9 +1096,25 @@ class TestStoreCustodyWarning(WiTestCase):
         # repo: no host advice (trackInHost, the launcher, a sidecar git)
         self.assert_warns("git-ignored by .gitignore:1 '/work/' in the "
                           "sidecar repo .claude-sandbox/",
-                          "fix: remove or negate that rule there",
+                          "fix: remove it or narrow it there (a negation",
                           absent=("trackInHost", "490d8ca", self.SIDECAR_FIX,
-                                  "rewrite it"))
+                                  "rewrite it", "negate"))
+
+    def test_sidecar_excludes_file_is_named_as_is(self):
+        # a rule from core.excludesFile does not live in the sidecar repo
+        repo = self.tmp / "sidecar-excl"
+        (repo / ".claude-sandbox").mkdir(parents=True)
+        self.git(repo, "init", "-q")
+        self.git(repo / ".claude-sandbox", "init", "-q")
+        self.store_in(repo, git_init=False)
+        excl = self.tmp / "sidecar-excludes"
+        excl.write_text("*.md\n")
+        self.git(repo / ".claude-sandbox", "config", "core.excludesFile",
+                 str(excl))
+        self.assert_warns(f"git-ignored by {excl}:1 '*.md'; "
+                          "fix: remove or negate that rule",
+                          absent=("sidecar repo", "there", "trackInHost",
+                                  self.SIDECAR_FIX))
 
     def test_prime_keeps_warning_under_tiny_budget(self):
         self.store_in(self.tmp / "budget", gi="/.claude-sandbox/\n",
