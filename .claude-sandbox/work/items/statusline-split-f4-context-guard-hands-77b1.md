@@ -18,3 +18,7 @@ updated: 2026-09-18
 - next: —
 - blocked: —
 - learned: —
+
+- 2026-09-18 (F1): align _base_dir empty-var rule (`get(...) or "~/.claude"`) in rehydrate heal code, install_statusline.py, context_forensics.py; update checkpoint SKILL.md Step 1 for the sensor path; gauge.json is 0600.
+
+- (F1 review lows) lib_context: reject sensor at > now+60; O_NONBLOCK/regular-file check before reading the sensor path; fix "no current writer" tokens comment; call publish_gauge near the top of rehydrate main(); gauge.json vs a session literally named "gauge" (theoretical).
