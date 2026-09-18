@@ -7,7 +7,7 @@ priority: 3
 owner: unknown@4d338747396e
 claimed: 2026-09-16T17:08Z
 created: 2026-09-16
-updated: 2026-09-16
+updated: 2026-09-18
 refs:
   - operator message 2026-09-16
 ---
@@ -15,8 +15,8 @@ refs:
 Operator 2026-09-16: investigate how a skill could analyze token/model usage across conversations (per session, per model, per sub-agent dispatch), to measure the effect of model routing. Process when worked: background research agent first (transcript/JSONL locations, ccusage-style tools, statusline data, OTEL export), then an implementation plan reviewed by the operator, then implementation as child feature items.
 
 ## Handoff
-- doing: plan approved by operator 2026-09-16; factored into F1 (parser), F2 (report+doc+catalog, dep F1), F3 (ccusage oracle, dep F1)
-- next: dispatch F1; F2/F3 after it lands
+- doing: F1 parser landed (cf5ddb1); F2 7e8f and F3 8482 held until plugin-factoring merges (usage-report moves to context-guard)
+- next: after the merge: dispatch F2 (report tables, skill doc, catalog row; includes the by_requested_tier main bucket and legacy-alias visibility from the F1 review), then F3
 - blocked: awaiting operator review of the plan (2026-09-16)
 - learned: —
 

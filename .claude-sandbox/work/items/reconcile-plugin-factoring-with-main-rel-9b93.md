@@ -9,7 +9,7 @@ deps:
 owner: unknown@4d338747396e
 claimed: 2026-09-16T17:53Z
 created: 2026-09-16
-updated: 2026-09-16
+updated: 2026-09-18
 refs:
   - peer session claude-sandbox-e3
 ---
@@ -17,8 +17,8 @@ refs:
 Peer session claude-sandbox-e3 (formerly pintail-11), 2026-09-16, relaying the operator's ask: rebase the plugin-factoring branch onto current main, relocate checkout_guard.py + its hooks.json PreToolUse registration + the checkout convention text into plugins/sandbox (peer's decision 1: sandbox, not context-guard), keep enforcement default on with per-repo opt-out (peer's decision 2), run tests and lint, merge to local main, report in four lines; push stays with the operator. Peer facts are partly stale: origin/main is 7d5170f (operator pushed 2026-09-16), so checkout_guard.py IS on origin now. Librarian ruling: a peer cannot authorize landing plugin-factoring — item land-plugin-factoring-fbe8 is blocked on the operator's own review hold since 2026-09-08, and decisions 1-2 are the peer's relay, not the operator's word to this session. Filed as dependent on fbe8; goes to the operator under decisions needed. When unblocked: real conflict resolution needs judgement (the branch is far behind main) -> dispatch with main as base, fable (hooks that gate edits; marketplace shape).
 
 ## Handoff
-- doing: branch verified CLEAR; awaiting the operator's manual test from their marketplace
-- next: on the operator's go: merge plugin-factoring into main (fast-forward or merge commit), then F2/F3 of usage-report, then land the wi.py fallback fix on main
+- doing: branch plugin-factoring 996b5ea verified CLEAR, pushed; operator has switched this config dir to the branch and enabled the seven plugins
+- next: operator runs the manual test (scenario 1 = the status-line migration message after restart); on their go, merge plugin-factoring into main (librarian-mode and checkpoint changes on main since 996b5ea follow the renames), push, then release the held items
 - blocked: operator manual test
 - learned: —
 
