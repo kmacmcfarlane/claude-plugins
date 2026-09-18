@@ -713,11 +713,17 @@ class TestHostGitignoreUntouched(WiTestCase):
     GI = "*.pyc\n.claude-sandbox/work/.lock\n"
     AUTO = {"WI_ROOT": ""}   # empty = resolve .claude-sandbox/work from cwd
 
-    def git(self, repo, *args):
+    def git(self, repo, *args, check=True):
+        # isolate from the caller's git: no global/system config (signing,
+        # excludesFile, hooks) and no inherited GIT_DIR-style overrides
+        env = {k: v for k, v in os.environ.items()
+               if k not in ("GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE")}
+        env.update(GIT_CONFIG_GLOBAL=os.devnull, GIT_CONFIG_NOSYSTEM="1")
         return subprocess.run(
             ["git", "-C", str(repo), "-c", "user.email=t@t", "-c",
-             "user.name=t"] + list(args),
-            capture_output=True, text=True, check=True).stdout
+             "user.name=t", "-c", "commit.gpgsign=false", "-c",
+             "core.excludesFile="] + list(args),
+            capture_output=True, text=True, check=check, env=env)
 
     def wi_in(self, repo, args):
         r = run(args, "", env=self.AUTO, cwd=repo)
@@ -737,8 +743,8 @@ class TestHostGitignoreUntouched(WiTestCase):
         items = list((repo / ".claude-sandbox/work/items").glob("*.md"))
         self.assertTrue(items)
         for p in items:
-            ignored = subprocess.run(
-                ["git", "-C", str(repo), "check-ignore", "-q", str(p)])
+            ignored = self.git(repo, "check-ignore", "-q", str(p),
+                               check=False)
             self.assertNotEqual(ignored.returncode, 0, f"{p} is ignored")
 
     def every_command(self, repo):
@@ -759,8 +765,13 @@ class TestHostGitignoreUntouched(WiTestCase):
             ["unblock", iid, "--dep", dep], ["release", iid],
             ["import-todo", str(todo)],
             ["export", str(repo / "backlog.yaml"), "--format", "backlog-yaml"],
+            ["import", str(repo / "backlog.yaml"), "--format", "backlog-yaml"],
             ["done", dep], ["archive", "--older-than", "0d"],
         ]
+        choices = set(next(a for a in wi.build_parser()._actions
+                           if a.dest == "command").choices)
+        self.assertEqual({s[0] for s in steps} | {"add"}, choices,
+                         "every wi subcommand must be exercised here")
         for step in steps:
             self.wi_in(repo, step)
             self.assertEqual(gi_path.read_bytes(), before,
@@ -789,7 +800,8 @@ class TestHostGitignoreUntouched(WiTestCase):
         self.assertEqual((repo / ".gitignore").read_text(), self.GI)
         self.assert_store_trackable(repo)
         self.every_command(repo)
-        self.assertEqual(self.git(repo, "diff", "--", ".gitignore"), "")
+        diff = self.git(repo, "diff", "--", ".gitignore").stdout
+        self.assertEqual(diff, "")
 
     def test_sidecar_shape_unchanged(self):
         # sidecar keeps the 7f00 behaviour: init ensures the whole-dir
