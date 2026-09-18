@@ -2,8 +2,10 @@
 id: librarian-mode-let-an-operator-opt-a-pro-ed88
 title: "librarian-mode: let an operator opt a product repo in as custody"
 type: feature
-status: todo
+status: doing
 priority: 1
+owner: unknown@e3a28d2cc009
+claimed: 2026-09-18T18:44Z
 created: 2026-09-18
 updated: 2026-09-18
 refs:
@@ -34,3 +36,29 @@ decision 25: product-code red flag scope
 - 23: a (fast-forward main after a Report; `Push: none` opt-out).
 - 24: use dev-flow investigate/implement when they are installed; otherwise mention at work-item start that they can be used, and continue without them.
 - 25: a (red flag kept outside the declared scope).
+
+## Approved design (operator approved 2026-09-18, "approved, go ahead with ed88")
+1. start with no `## Librarian` section: no decline. One AskUserQuestion dialog, three questions, first option in each preselected so Enter x3 accepts the defaults:
+   - Scope: Whole repo (first) / Plugin layer (only when plugins/ exists: skills, hooks, README catalog, CLAUDE.md, i.e. today's default) / Listed paths (globs via Other) / Not now (creates nothing, stops; the only remaining decline).
+   - Checks every change must pass: multiSelect, prefilled with commands detected in the repo (go test ./..., make test, npm test, scripts/check-*.sh), more via Other.
+   - Push: main (fast-forward after each Report, first) / none (land to local main only).
+2. The answer writes `## Librarian` into CLAUDE.md, committed as `librarian: opt in (<scope>)`. A named exception to "you do not edit custody files" (transcribing the operator's answer, not a behaviour change). Later edits to the section are ordinary work items. Format:
+   ## Librarian
+   Scope: whole repo            (or a list of paths/globs)
+   Exclude: vendor/             (optional)
+   Checks:
+   - go test ./...
+   Push: main                   (main | none)
+   Workflow: <optional repo workflow notes, e.g. spec-first order>
+3. Section present: skip the dialog, use Scope as written. `status` stays read-only; in an undeclared repo it prints "not opted in; `start` offers opt-in".
+4. Checks and Workflow feed the implementer brief, the reviewer checklist and the Land checks, on top of the generic checklist.
+5. Routing: code inside Scope = executable logic → opus; security surfaces (mounts, permissions, host access, sockets, credentials) → fable; docs-only changes inside Scope stay sonnet. model-routing.md gains a product-repo case and worked example.
+6. Push follows `Push:`; `none` means land to local main and skip the push step.
+7. dev-flow: when installed, spikes go through /investigate and features through /implement inside the implementer's worktree (the brief says so); when not, intake notes they can be used and work continues without them.
+8. Red flag "touching product code" applies outside Scope, including Exclude:.
+9. Unchanged: one librarian per repo, work items first, the review gate.
+
+## Notes
+- 2026-09-18 claimed by unknown@e3a28d2cc009
+
+dispatch: implementer opus — doctrine change (custody resolution, routing guidance), >3 files
