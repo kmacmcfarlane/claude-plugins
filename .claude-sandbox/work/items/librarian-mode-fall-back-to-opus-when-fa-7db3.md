@@ -2,8 +2,10 @@
 id: librarian-mode-fall-back-to-opus-when-fa-7db3
 title: "librarian-mode: fall back to opus when fable is out for more than 2h"
 type: feature
-status: todo
+status: doing
 priority: 1
+owner: unknown@e3a28d2cc009
+claimed: 2026-09-18T19:21Z
 created: 2026-09-18
 updated: 2026-09-18
 refs:
@@ -20,3 +22,9 @@ Peer claude-sandbox librarian (its d5ac), relaying its operator, 2026-09-18. A f
 
 decision 28 answered (operator 2026-09-18): run fable-routed items on opus while fable is out, recorded as fallbacks, until 7db3/f696 land.
 decision 29 answered: unknown reset time = treat as >2h -> opus.
+
+## Notes
+- 2026-09-18 claimed by unknown@e3a28d2cc009
+
+bundled into worktree f696 (see f696 design)
+dispatch: implementer opus — bundled with f696

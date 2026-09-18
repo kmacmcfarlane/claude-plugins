@@ -24,3 +24,6 @@ From the 7942 re-review 2026-09-16: clean() lets Cf characters through (bidi ove
 - 2026-09-18 claimed by unknown@e3a28d2cc009
 
 dispatch: implementer opus — executable logic (status line)
+
+impl: DONE 4856907 (Cf stripped wholesale, ZWJ kept between visible non-ASCII, tag chars kept, columns() cap, lone surrogates stripped, SCAN_MAX backstop; 25 new tests)
+dispatch: reviewer opus — rule 4

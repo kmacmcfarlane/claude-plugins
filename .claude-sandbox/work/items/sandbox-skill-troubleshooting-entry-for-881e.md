@@ -27,3 +27,6 @@ dispatch: implementer sonnet — default (one doc entry)
 
 impl: DONE 5dd2511 (entry inline in SKILL.md Troubleshooting)
 dispatch: reviewer opus — rule 4 (implementer sonnet)
+
+review round 1 (opus): NEEDS_CHANGES — high 1 (--rm: docker ps -a / inspect cannot see the dead container), medium 2 (use after-the-fact docker events --since/--until with oom+die exit code), 3 (say where to run: host or sandbox with docker socket), 4 (commit verb docs:), lows 5-7, nit 8.
+dispatch: implementer sonnet fix round 1 — resume, tier unchanged

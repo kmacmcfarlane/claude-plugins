@@ -27,3 +27,6 @@ Also (ce46 re-review): ending-the-session.md calls HANDOFF 'session-addressed' w
 - 2026-09-18 claimed by unknown@e3a28d2cc009
 
 dispatch: implementer opus — executable logic (rehydrate.py hook) + judgement; bundled with 72bf in worktree 5cdb (same SKILL.md)
+
+impl: DONE 70b918b (5cdb), e2680e3 (72bf). Deviations: .work fallback, "?" for unknown head, LANDED skipped, operator-playbook one-clause edit. Open: AGED label still counts store chores (liveness()).
+dispatch: reviewer opus — rule 4

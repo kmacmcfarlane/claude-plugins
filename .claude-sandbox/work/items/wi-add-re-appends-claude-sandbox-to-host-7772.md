@@ -29,3 +29,6 @@ dispatch: implementer opus — executable logic (wi.py)
 
 impl: DONE_WITH_CONCERNS bdc506b — could not reproduce in wi.py; only cmd_init sidecar branch writes host .gitignore. Real writer: claude-sandbox launcher layout.Setup (cmd/claude-sandbox/root.go:739 -> internal/layout/layout.go:115 gitignoreAdd "/.claude-sandbox/", prompt default yes) when trackInHost: false (operator-attention config.yaml:109). Commit is regression tests only (TestHostGitignoreUntouched, mutation-checked). Premise of the title is wrong (like 7f00). Relayed launcher fix to the claude-sandbox librarian.
 dispatch: reviewer opus — rule 4
+
+review round 1 (opus): NEEDS_CHANGES — high 1: every_command skips `import` (mutation in cmd_import undetected); lows 2 (global git config isolation), 3 (inherited GIT_DIR etc.), nit 4. Root cause confirmed independently (launcher; claude-sandbox 18a7 filed and dispatched there).
+dispatch: implementer opus fix round 1 — resume

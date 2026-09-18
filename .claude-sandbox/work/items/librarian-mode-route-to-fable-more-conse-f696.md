@@ -2,8 +2,10 @@
 id: librarian-mode-route-to-fable-more-conse-f696
 title: "librarian-mode: route to fable more conservatively"
 type: feature
-status: todo
+status: doing
 priority: 1
+owner: unknown@e3a28d2cc009
+claimed: 2026-09-18T19:21Z
 created: 2026-09-18
 updated: 2026-09-18
 refs:
@@ -20,3 +22,14 @@ Peer claude-sandbox librarian (its f3ab), relaying its operator, 2026-09-18: fab
 
 decision 28 answered (operator 2026-09-18): run fable-routed items on opus while fable is out, recorded as fallbacks, until 7db3/f696 land.
 decision 29 answered: unknown reset time = treat as >2h -> opus.
+
+## Notes
+- 2026-09-18 claimed by unknown@e3a28d2cc009
+
+## Librarian design (2026-09-18; operator delegated: "get as much as you can done yourself")
+Bundle f696 + 7db3 + f518 in one worktree (all rewrite Route / § Rounds). Rule 3 narrowed:
+- fable only for (a) hooks/code that gate or block edits, commits or tool calls, (b) security-relevant changes (credentials, permission allowlists, sandbox config, mounts/sockets/host access), (c) the operator names it — AND the change is non-trivial (more than a small, local edit: e.g. >~20 changed lines of executable logic, or more than one file). A one-line or mechanical fix in such code stays opus.
+- the round signal: the last fix round before the cap (now fix round 3 under cap 4) goes to fable only when the previous review carried a critical or high finding; rounds fixing mediums/lows/wording stay at their tier.
+- Fallback (7db3; decisions 28, 29): routed tier unavailable (429/usage) and reset >2h or unknown -> opus, recorded `dispatch: <role> opus — fable unavailable (resets in Xh|unknown); fallback`, named in verified:; reset <=2h -> ask the operator (wait vs opus). Reviewer floor stays opus. Where to learn the reset: the 429 text if it carries one; the status line rate_limits in the context-guard state record when present; else unknown.
+- Cap (f518): 4 review rounds = first review + three fix rounds.
+dispatch: implementer opus — doctrine (Route), >3 files
