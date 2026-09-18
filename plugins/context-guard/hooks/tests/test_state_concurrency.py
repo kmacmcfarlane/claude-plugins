@@ -101,6 +101,7 @@ class ConcurrentWriters(Base):
         self.assertEqual(st["checkpoint_epoch"], resets)
 
     def test_hook_writers_keep_each_others_keys(self):
+        L.save_state("h", {})   # a live session has state; mark_checkpoint requires it
         procs = []
         for i in range(8):
             procs.append(subprocess.Popen(

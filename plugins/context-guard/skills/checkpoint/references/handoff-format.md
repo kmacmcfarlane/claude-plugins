@@ -65,7 +65,8 @@ TOC, read on demand: `path — one line on what it holds`.
   lines must be re-confirmed with the operator), LANDED (`mode: land*` — header-only, the work
   is done). Drift never counts commits that touch only `.claude-sandbox/work` (store chores),
   so a HEAD rewound over (or diverged by) store-only commits is no code drift: it reads FRESH
-  with Next shown, not "not an ancestor". The
+  with Next shown, not "not an ancestor"; and when the only commits HEAD lacks are store-only
+  while HEAD gained code, it reads as plain forward movement (`AGED`, "N commits since"). The
   label and the Next withhold read the same ancestry check, so a withheld Next is never FRESH:
   a recorded head missing locally reads `AGED (recorded head not found locally)`, one that is
   not an ancestor of HEAD (HEAD rewound behind it, or diverged) reads
@@ -101,8 +102,8 @@ TOC, read on demand: `path — one line on what it holds`.
   - not an ancestor (HEAD rewound behind the recorded head, or diverged from it): N is the
     commits on HEAD's side and M those on the recorded head's side, from one
     `git rev-list --left-right --count <recorded>...HEAD`, so a pure rewind reads
-    `0 commits ahead, M behind` (M ≥ 1: a rewind with no code commits on either side is
-    FRESH and Next is shown):
+    `0 commits ahead, M behind` (M ≥ 1: with M = 0 the recorded code is still under HEAD, so
+    it reads as the plain ahead variant above, or FRESH with Next shown when N = 0 too):
     `... head moved <N> commit(s) ahead, <M> behind since this manifest (<recorded>..<current>,
     recorded head is not an ancestor); ...`
   - not found locally (N is unknowable): `... head moved ? commits since this manifest

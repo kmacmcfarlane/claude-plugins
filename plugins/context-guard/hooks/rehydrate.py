@@ -215,13 +215,15 @@ def head_state(fm, top):
 
 def divergence(hs):
     """Why the recorded head no longer describes HEAD by ancestry, or None.
-    Not an ancestor, but with zero code commits on either side (HEAD rewound
-    over, or diverged by, store-only commits): no code drift, so None."""
+    Not an ancestor, but with no code commits on the recorded side (the
+    commits HEAD lacks are all store-only): the recorded code is still under
+    HEAD, so None - zero code commits ahead too is no drift at all (FRESH),
+    and N ahead reads as plain forward movement ("N commits since")."""
     if not hs:
         return None
     if not hs["known"]:
         return "recorded head not found locally"
-    if not hs["ancestor"] and not (hs["n"] == 0 and hs.get("behind") == 0):
+    if not hs["ancestor"] and hs.get("behind") != 0:
         return "recorded head is not an ancestor"
     return None
 
@@ -252,8 +254,7 @@ def head_moved(hs):
     if not why and not n:
         return None
     moved = "? commits" if n is None else f"{n} commit{'' if n == 1 else 's'}"
-    if hs["known"] and not hs["ancestor"] and n is not None \
-            and hs.get("behind") is not None:
+    if why and hs["known"] and n is not None and hs.get("behind") is not None:
         moved += f" ahead, {hs['behind']} behind"   # rewound or diverged
     return (f"Next withheld: head moved {moved} since this manifest ({hs['rec']}.."
             f"{hs['cur']}{', ' + why if why else ''}); run wi prime and git log.")

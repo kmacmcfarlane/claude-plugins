@@ -486,6 +486,20 @@ class TestRehydrateStale(unittest.TestCase):
         self.assertIn("FRESH manifest", self.header(c))
         self.assertNotIn("Next withheld", c)
 
+    def test_mixed_divergence_reads_plain_ahead(self):
+        # recorded side holds only a store chore, HEAD gained code: forward move
+        self.commit("side chore", ".claude-sandbox/work/items/s.md")
+        side = self.rev()
+        self.g("reset", "-q", "--hard", self.head)
+        self.commit("code 1", "src/a.txt")
+        self.commit("code 2", "src/b.txt")
+        self.manifest(head=side)
+        c = self.hook()
+        self.assertIn("AGED manifest", self.header(c))
+        self.assertIn(f"Next withheld: head moved 2 commits since this manifest "
+                      f"({side}..{self.rev()}); run wi prime and git log.", c)
+        self.assertNotIn("not an ancestor", c)
+
     def test_code_rewind_still_withheld(self):
         self.commit("code", "src/a.txt")
         self.commit("chore", ".claude-sandbox/work/items/x.md")

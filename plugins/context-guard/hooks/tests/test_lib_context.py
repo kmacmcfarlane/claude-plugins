@@ -251,6 +251,67 @@ class TestSweep(Base):
         self.assertFalse(os.path.exists(outside))
         self.assertEqual(L.load_state("y")["a"], 1)
 
+    def test_swept_stamp_symlink_is_not_followed(self):
+        victim = os.path.join(self.tmp.name, "victim.txt")
+        with open(victim, "w") as fh:
+            fh.write("precious")
+        os.symlink(victim, os.path.join(self.d(), ".swept"))
+        self.touch(".a.1.abcdef012345.tmp", 2)
+        L.sweep_stale()
+        with open(victim) as fh:
+            self.assertEqual(fh.read(), "precious")
+        dangling = os.path.join(self.tmp.name, "nowhere.txt")
+        os.remove(os.path.join(self.d(), ".swept"))
+        os.symlink(dangling, os.path.join(self.d(), ".swept"))
+        L.sweep_stale(now=time.time() + 9 * 86400)
+        self.assertFalse(os.path.exists(dangling))
+
+    def test_acquire_rejects_lock_on_orphaned_inode(self):
+        # A waiter that opened the lock file before the sweep unlinked it wins
+        # the flock on a dead inode; it must re-open the path, not trust it.
+        from unittest import mock
+        path = os.path.join(self.d(), ".o.lock")
+        with open(path, "w"):
+            pass
+        orphan = os.open(path, os.O_RDWR)
+        os.unlink(path)
+        real_open, calls = os.open, []
+
+        def fake_open(p, *a, **k):
+            calls.append(p)
+            return os.dup(orphan) if len(calls) == 1 else real_open(p, *a, **k)
+        with mock.patch.object(L.os, "open", fake_open):
+            fd = L._acquire("o")
+        os.close(orphan)
+        self.assertIsNotNone(fd)
+        try:
+            self.assertEqual(len(calls), 2)
+            self.assertEqual(os.fstat(fd).st_ino, os.stat(path).st_ino)
+        finally:
+            L._release(fd)
+
+
+class TestMarkCheckpointCli(Base):
+    def run_cli(self, sid):
+        import subprocess
+        return subprocess.run([sys.executable, os.path.join(
+            os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+            "mark_checkpoint.py"), sid], capture_output=True, text=True,
+            env=dict(os.environ, CLAUDE_CONFIG_DIR=self.tmp.name), timeout=30)
+
+    def test_refuses_unknown_session(self):
+        p = self.run_cli("typo-sid")
+        self.assertNotEqual(p.returncode, 0)
+        self.assertIn("no context-gate state for session 'typo-sid'", p.stderr)
+        self.assertFalse(os.path.exists(L.state_path("typo-sid")))
+
+    def test_marks_known_session(self):
+        L.save_state("live", {"epoch": 2})
+        p = self.run_cli("live")
+        self.assertEqual(p.returncode, 0, p.stderr)
+        self.assertIn("checkpoint recorded for epoch 2", p.stdout)
+        self.assertEqual(L.load_state("live")["checkpoint_epoch"], 2)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -130,18 +130,27 @@ def save_state(session_id, data):
 def _acquire(session_id):
     """Take the session's advisory lock, waiting at most LOCK_TIMEOUT_S.
     Returns the locked fd, or None (no fcntl, timeout, any error): the caller
-    then proceeds unlocked. Never raises."""
+    then proceeds unlocked. Never raises. A lock won on an inode no longer at
+    the path (sweep_stale unlinked it while this call waited) guards nothing,
+    since the next opener creates a fresh file: it is dropped and the path is
+    re-opened, within the same deadline."""
     if fcntl is None:
         return None
     fd = None
     try:
-        fd = os.open(os.path.join(_state_dir(), "." + safe_sid(session_id) + ".lock"),
-                     os.O_RDWR | os.O_CREAT | _NOFOLLOW, 0o600)
+        path = os.path.join(_state_dir(), "." + safe_sid(session_id) + ".lock")
         deadline = time.monotonic() + LOCK_TIMEOUT_S
         while True:
+            if fd is None:
+                fd = os.open(path, os.O_RDWR | os.O_CREAT | _NOFOLLOW, 0o600)
             try:
                 fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
-                return fd
+                if _same_file(fd, path):
+                    return fd
+                os.close(fd)             # orphaned inode: its lock is void
+                fd = None
+                if time.monotonic() >= deadline:
+                    break
             except (BlockingIOError, InterruptedError):
                 if time.monotonic() >= deadline:
                     break
@@ -154,6 +163,15 @@ def _acquire(session_id):
         except Exception:
             pass
     return None
+
+
+def _same_file(fd, path):
+    """Whether the open fd is still the file at path (same device and inode)."""
+    try:
+        a, b = os.fstat(fd), os.stat(path)
+        return (a.st_dev, a.st_ino) == (b.st_dev, b.st_ino)
+    except OSError:
+        return False
 
 
 def _release(fd):
@@ -205,16 +223,11 @@ def sweep_stale(keep=None, now=None):
         d = _state_dir()
         stamp = os.path.join(d, ".swept")
         try:
-            if now - os.stat(stamp).st_mtime < SWEEP_EVERY_S:
+            if now - os.lstat(stamp).st_mtime < SWEEP_EVERY_S:
                 return removed
         except OSError:
             pass
-        try:
-            with open(stamp, "w"):
-                pass
-            os.utime(stamp, (now, now))
-        except OSError:
-            pass
+        _touch_stamp(stamp, now)
         skip = safe_sid(keep) if keep else None
 
         def age(p):
@@ -250,6 +263,24 @@ def sweep_stale(keep=None, now=None):
     except Exception:
         pass
     return removed
+
+
+def _touch_stamp(stamp, now):
+    """Create or re-date the sweep stamp without truncating and without
+    following a symlink (O_NOFOLLOW: a planted `.swept` link fails the open and
+    the stamp is silently skipped). Never raises."""
+    fd = None
+    try:
+        fd = os.open(stamp, os.O_WRONLY | os.O_CREAT | _NOFOLLOW, 0o600)
+        os.utime(fd, (now, now))
+    except Exception:
+        pass
+    finally:
+        if fd is not None:
+            try:
+                os.close(fd)
+            except Exception:
+                pass
 
 
 def _unlink_unheld_lock(p):
