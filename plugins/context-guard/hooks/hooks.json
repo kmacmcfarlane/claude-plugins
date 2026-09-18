@@ -1,5 +1,5 @@
 {
-  "description": "context-guard: context guardrails — epoch-aware depth gate (advisory/DUE/HARD in remaining tokens), defer-while-proactive compaction gate, Stop relay + reasoning-ledger nudge, free ledger pointers, and the plugin-data symlink that keeps the shareable status line on a stable path.",
+  "description": "context-guard: context guardrails — epoch-aware depth gate (advisory/DUE/HARD in remaining tokens), defer-while-proactive compaction gate, Stop relay + reasoning-ledger nudge, free ledger pointers, and the current-hooks symlink (stable path for mark_checkpoint.py).",
   "hooks": {
     "UserPromptSubmit": [
       {

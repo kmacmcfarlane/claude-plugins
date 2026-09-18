@@ -28,11 +28,17 @@ Budget: total additionalContext <= 9,000 chars, under the harness's single
 the mandatory tiers). Trim order: the frontmatter `items:` list, Scrolls, then
 Aware-of, never Doing/Goal/Read-in-full.
 
-SessionStart is also where orphaned state-dir dotfiles are swept
-(L.sweep_stale: stale temp files, dead sessions' lock files; once a day),
-and where the gauge policy is published (L.publish_gauge: gauge.json, the
-threshold anchors and labels for the statusline plugin; rewritten only when
-missing or different).
+SessionStart is also where the gauge policy is published, first thing
+(L.publish_gauge: gauge.json, the threshold anchors and labels for the
+statusline plugin; rewritten only when missing or different), and where
+orphaned state-dir dotfiles are swept (L.sweep_stale: stale temp files, dead
+sessions' lock files; once a day).
+
+It never writes settings.json. The statusLine entry belongs to the statusline
+plugin; this hook only reads it, to show a "moved to the statusline plugin"
+notice at most once a week while an entry still runs context-guard's (or
+claude-kit's) deprecated copy and that plugin is not installed
+(statusline_notice).
 
 Never exits non-zero: the staleness checks degrade to the plain manifest on
 any internal error, and anything else degrades to {}.
@@ -395,86 +401,70 @@ def _parent_by_record_uuid(sid, transcript_path):
     return None
 
 
-def _scan_data_dir(base, prefix):
-    names = sorted(os.listdir(base)) if os.path.isdir(base) else []
-    return next((os.path.join(base, n) for n in names
-                 if n.startswith(prefix)), None)
+# The status line moved to the statusline plugin. context-guard keeps its
+# deprecated copy (hooks/statusline.py) for one release and never writes
+# settings.json: it only notices, read-only, when a settings entry still runs
+# a predecessor copy and the statusline plugin is not there to take it over.
+NOTICE_EVERY_S = 7 * 24 * 3600
+NOTICE_STAMP = ".statusline-moved-notice"
+# The predecessor fingerprint (statusline plugin's owner.py, PREDECESSOR_RE):
+# a command running <cfg>/plugins/data/{claude-kit,context-guard}-<mkt>/
+# current-hooks/statusline.py.
+PREDECESSOR_RE = re.compile(
+    r'\s*python3\s+"?[^"]*/plugins/data/(?:claude-kit|context-guard)-[^/"]+'
+    r'/current-hooks/statusline\.py"?\s*')
+NOTICE = ("context-guard: the status line moved to the `statusline` plugin: "
+          "/plugin install statusline@kmacmcfarlane. This copy is removed in a "
+          "later update.")
 
 
-def _restore_statusline(marker):
-    """The self-heal proper: marked settings file lost its statusLine -> put it
-    back, read-modify-write."""
-    m = json.load(open(marker))
-    sp, cmd = m.get("settings"), m.get("command")
-    if not sp or not cmd or not os.path.exists(sp):
-        return None
-    d = json.load(open(sp))
-    if "statusLine" in d:
-        return None
-    d["statusLine"] = {"type": "command", "command": cmd}
-    json.dump(d, open(sp, "w"), indent=2, ensure_ascii=False)
-    return (f"context-guard: restored statusLine in {sp} — a settings write "
-            "from a stale session had dropped it.")
-
-
-def _migrate_legacy_statusline(legacy_marker, data):
-    """The context system used to ship inside the claude-kit plugin, so an
-    installed statusLine points at .../plugins/data/claude-kit-<mkt>/
-    current-hooks/statusline.py — a path nothing maintains any more. Repoint it
-    at this plugin's data dir, move the marker over, drop the legacy one."""
-    m = json.load(open(legacy_marker))
-    sp = m.get("settings")
-    if not sp or not m.get("command") or not os.path.exists(sp):
-        return None
-    script = os.path.join(data, "current-hooks", "statusline.py")
-    cmd = f"python3 {json.dumps(script)}"
-    d = json.load(open(sp))
-    cur = d.get("statusLine")
-    stale = not isinstance(cur, dict) or \
-        "/plugins/data/claude-kit-" in (cur.get("command") or "")
-    if stale:
-        d["statusLine"] = {"type": "command", "command": cmd}
-        json.dump(d, open(sp, "w"), indent=2, ensure_ascii=False)
-    json.dump({"settings": os.path.abspath(sp), "command": cmd},
-              open(os.path.join(data, "statusline-installed.json"), "w"), indent=2)
+def _data_dirs(cfg, prefix):
+    base = os.path.join(cfg, "plugins", "data")
     try:
-        os.remove(legacy_marker)
+        return [os.path.join(base, n) for n in sorted(os.listdir(base))
+                if n.startswith(prefix) and os.path.isdir(os.path.join(base, n))]
     except OSError:
-        pass
-    if stale:
-        return (f"context-guard: migrated statusLine in {sp} to the context-guard "
-                "plugin data path (the context system moved out of claude-kit).")
-    return ("context-guard: adopted the legacy claude-kit statusline marker; "
-            "your custom statusLine entry was left alone.")
+        return []
 
 
-def heal_statusline():
-    """A settings write from a session launched before the statusline install
-    serializes that session's stale in-memory snapshot and drops the entry
-    (live-fired 2026-08-31: a /plugin toggle in a day-old session clobbered
-    it, and the gate silently fell back to inference). The installer leaves a
-    marker in plugin data; when the marked settings file has lost statusLine,
-    restore it read-modify-write. With no marker of our own, fall back to the
-    legacy claude-kit marker and migrate it. Returns a systemMessage, or None.
+def _runs_predecessor(settings_path):
+    d = L.read_json_file(settings_path)
+    cur = d.get("statusLine") if isinstance(d, dict) else None
+    cmd = cur.get("command") if isinstance(cur, dict) else None
+    return isinstance(cmd, str) and bool(PREDECESSOR_RE.fullmatch(cmd))
 
-    The SessionStart symlink command is registered before this hook, so
-    current-hooks normally resolves in the new data dir already; if the two
-    ever ran concurrently and this lost the race, the next session start
-    completes the marker move (write order makes the migration resumable)."""
+
+def statusline_notice(now=None):
+    """The one-line "moved" notice, or None. Read-only on settings: it fires
+    when a settings file (user settings, or one a predecessor install marker
+    names) still runs context-guard's or claude-kit's copy of the status line
+    AND the statusline plugin is absent - any plugins/data/statusline-* dir
+    (its owner.json lives there) means that plugin owns the setting and takes
+    it over itself, so context-guard stays silent. At most once per
+    NOTICE_EVERY_S across all sessions (a stamp in the state dir); when the
+    stamp cannot be written the notice is withheld, so it can never repeat
+    every session. Never raises."""
     try:
-        cfg = os.path.expanduser(os.environ.get("CLAUDE_CONFIG_DIR", "~/.claude"))
-        base = os.path.join(cfg, "plugins", "data")
-        data = os.environ.get("CLAUDE_PLUGIN_DATA") or \
-            _scan_data_dir(base, "context-guard-")
-        if data and os.path.exists(os.path.join(data, "statusline-installed.json")):
-            return _restore_statusline(os.path.join(data, "statusline-installed.json"))
-        legacy = _scan_data_dir(base, "claude-kit-")
-        if not data or not legacy:
+        now = time.time() if now is None else now
+        cfg = L._base_dir()
+        if _data_dirs(cfg, "statusline-"):
             return None
-        legacy_marker = os.path.join(legacy, "statusline-installed.json")
-        if not os.path.exists(legacy_marker):
+        stamp = os.path.join(L._state_dir(), NOTICE_STAMP)
+        try:
+            age = now - os.lstat(stamp).st_mtime
+            if 0 <= age < NOTICE_EVERY_S:
+                return None
+        except OSError:
+            pass
+        cands = [os.path.join(cfg, "settings.json")]
+        for d in _data_dirs(cfg, "context-guard-") + _data_dirs(cfg, "claude-kit-"):
+            m = L.read_json_file(os.path.join(d, "statusline-installed.json"))
+            sp = m.get("settings") if isinstance(m, dict) else None
+            if isinstance(sp, str) and sp and sp not in cands:
+                cands.append(sp)
+        if not any(_runs_predecessor(sp) for sp in cands):
             return None
-        return _migrate_legacy_statusline(legacy_marker, data)
+        return NOTICE if L._touch_stamp(stamp, now) else None
     except Exception:
         return None
 
@@ -522,6 +512,9 @@ def adopt_fork_state(sid, transcript_path):
 
 
 def main():
+    # First: the gauge policy does not depend on the input, and nothing below
+    # may keep the statusline plugin from getting it. Never raises.
+    L.publish_gauge()
     try:
         inp = json.load(sys.stdin)
     except Exception:
@@ -608,10 +601,9 @@ def main():
 
     L.update_state(sid, write_back)
     L.sweep_stale(keep=sid)
-    L.publish_gauge()
-    healed = heal_statusline()
-    if healed:
-        sysmsg = f"{sysmsg} {healed}" if sysmsg else healed
+    moved_note = statusline_notice()
+    if moved_note:
+        sysmsg = f"{sysmsg} {moved_note}" if sysmsg else moved_note
     if not parts and not sysmsg:
         print(json.dumps({})); return
     out = {}

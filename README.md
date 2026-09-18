@@ -66,7 +66,7 @@ Names are **provisional** pending operator review.
 | …structured product research in a web chat session | `chat` | current; *family home under review* | — |
 | …to survive the finite context window (gate, checkpoint, rehydration, token-spend report) | `context-guard` | **current** | `statusline` (soft; exact depth when installed) |
 | …an always-on status line (context left, plan usage, model, session name) | `statusline` | **current** | `context-guard` (soft; epoch and checkpoint thresholds in the gauge when installed) |
-| …a plan before you code: investigate → reviewed plan → verified implementation, and a standing librarian that takes custody of a repo's work (files, dispatches, reviews, lands) | `dev-flow` | **current** | `work-items` (soft; `librarian-mode` finds `wi` via the repo tree, or the installed plugin's copy) |
+| …a plan before you code: investigate → reviewed plan → verified implementation, and a standing librarian that takes custody of a repo's work (files, dispatches, reviews, lands) | `dev-flow` | **current** | `work-items` (soft; `librarian-mode` finds `wi` via the repo tree, or the installed plugin's copy), `statusline` (soft; the librarian's fable fallback reads its rate-limit reset times) |
 | …repo-durable work items and a pluggable work source | `work-items` | **current** | — |
 | …isolated execution for agent sessions (containers, and the checkout/worktree convention) | `sandbox` | **current** | claude-sandbox repo (external) |
 | …unattended agent loops over a backlog ("ralph") | `ralph` | **current** | `sandbox` (hard), `work-items` (soft) |
@@ -215,6 +215,9 @@ Soft dependency on `work-items`: the flow threads work items through `wi` when a
 present, and degrades to plain investigation series when it is not. `librarian-mode` drives
 `wi` throughout, found through the repo's own `plugins/*/skills/work-items` tree or the
 installed plugin's copy; without either it stops at start and says to install `work-items`.
+Soft dependency on `statusline`: when `librarian-mode` cannot dispatch to fable, it reads the
+exhausted usage window's reset time from the status line's sensor record; without it the
+reset time is unknown and the fallback runs on opus at once.
 
 ### work-items
 
@@ -258,14 +261,14 @@ It also carries `hooks/` — the depth gate, the ledger, the SessionStart rehydr
 `cd plugins/context-guard/skills/usage-report && python3 -m unittest discover -s tests -q`.
 
 Soft dependency on `statusline`: its sensor record gives the gate exact depth; without it the
-depth is inferred from the transcript, which warns but never hard-blocks. Until the handover
-lands, `context-guard` still ships its older copy of the status line (`hooks/statusline.py`)
-and the SessionStart heal for a `statusLine` entry that points at it, so existing installs
-see no change; new installs take the status line from `statusline`.
+depth is inferred from the transcript, which warns but never hard-blocks. `context-guard`
+never writes `settings.json`. For one more release it still ships its older copy of the status
+line (`hooks/statusline.py`, deprecated), so an existing `statusLine` entry that points at it
+keeps rendering. While such an entry is active and `statusline` is not installed, SessionStart
+shows a "moved to the `statusline` plugin" notice at most once a week.
 
-Upgrading from `claude-kit`: install `context-guard` and start one session; the SessionStart
-hook migrates an existing status-line entry to this plugin's data path. For the status line
-itself, install `statusline` and run its `/install-statusline`, which replaces the old entry.
+Upgrading from `claude-kit`: install `context-guard` for the context system. For the status
+line, install `statusline` and run its `/install-statusline`, which replaces the old entry.
 Hook state stays in `~/.claude/claude-kit/` (a historical directory name,
 kept deliberately — renaming it would be a migration for cosmetics). See
 [Migrating from `claude-kit`](#migrating-from-claude-kit) for the whole-machine checklist.
