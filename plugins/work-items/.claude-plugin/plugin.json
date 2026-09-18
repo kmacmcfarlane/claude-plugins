@@ -1,0 +1,9 @@
+{
+  "name": "work-items",
+  "description": "Repo-durable work items for humans and agents — the wi CLI over one-markdown-file-per-item stores, and the work-source provider interface.",
+  "author": {
+    "name": "Kyle McFarlane"
+  },
+  "homepage": "https://github.com/kmacmcfarlane/claude-plugins",
+  "repository": "https://github.com/kmacmcfarlane/claude-plugins"
+}

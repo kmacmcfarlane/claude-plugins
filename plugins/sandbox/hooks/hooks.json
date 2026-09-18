@@ -1,0 +1,17 @@
+{
+  "description": "sandbox: the checkout/worktree convention, enforced — a PreToolUse guard that denies Edit/Write/MultiEdit/NotebookEdit on git-tracked files when the session's cwd is a main checkout (the direction the harness's own worktree guard does not cover). Fails open on any git error; escape hatches CLAUDE_KIT_ALLOW_CHECKOUT_EDITS=1 and a per-repo .claude/allow-checkout-edits marker.",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/checkout_guard.py\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

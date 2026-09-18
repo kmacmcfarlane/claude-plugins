@@ -6,19 +6,39 @@
   },
   "plugins": [
     {
-      "name": "claude-kit",
-      "source": "./plugins/claude-kit",
-      "description": "Claude Code dev tooling — skill creation, sandbox management, backlog tracking, Goa API design, Playwright testing, LoRA training, context guardrails, upstream kit sync, and librarian mode for the shared agent layer."
+      "name": "kit-dev",
+      "source": "./plugins/kit-dev",
+      "description": "Maintainer tooling for this plugin ecosystem — skill creation, project scaffolding, upstream kit sync, factoring analysis, and the librarian custody workflow for the shared agent layer."
     },
     {
-      "name": "ai-scripts",
-      "source": "./plugins/ai-scripts",
-      "description": "Project context for ai-scripts — Python CLI utilities for AI tasks (captioning, model fetching, token counting, embeddings, rare token generation)."
+      "name": "context-guard",
+      "source": "./plugins/context-guard",
+      "description": "Context survival for long sessions — depth gate, checkpoint workflow, status-line gauge, session rehydration, and token-spend reporting from the local transcripts."
+    },
+    {
+      "name": "dev-flow",
+      "source": "./plugins/dev-flow",
+      "description": "Plan-first development for agent sessions — investigation series, reviewed plans, verified implementation, multi-agent research fan-outs, and chain-of-verification fact-checking."
+    },
+    {
+      "name": "work-items",
+      "source": "./plugins/work-items",
+      "description": "Repo-durable work items for humans and agents — the wi CLI over one-markdown-file-per-item stores, and the work-source provider interface."
     },
     {
       "name": "chat",
       "source": "./plugins/chat",
       "description": "Conversational skills — structured product research and purchase recommendations."
+    },
+    {
+      "name": "sandbox",
+      "source": "./plugins/sandbox",
+      "description": "Isolated execution for Claude Code sessions — configure, bootstrap and troubleshoot claude-sandbox containers, with the checkout/worktree convention their launcher follows enforced by a PreToolUse guard."
+    },
+    {
+      "name": "ralph",
+      "source": "./plugins/ralph",
+      "description": "Unattended agent loops over a backlog — the backlog.yaml workflow for ralph runs. Requires the claude-sandbox tool (see the sandbox plugin); consumes a work source through the work-source interface, with backlog.yaml as the default provider."
     }
   ]
 }

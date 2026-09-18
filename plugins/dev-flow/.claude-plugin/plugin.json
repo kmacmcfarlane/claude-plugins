@@ -1,0 +1,9 @@
+{
+  "name": "dev-flow",
+  "description": "Plan-first development for agent sessions — investigation series, reviewed plans, verified implementation, multi-agent research fan-outs, and chain-of-verification fact-checking.",
+  "author": {
+    "name": "Kyle McFarlane"
+  },
+  "homepage": "https://github.com/kmacmcfarlane/claude-plugins",
+  "repository": "https://github.com/kmacmcfarlane/claude-plugins"
+}
