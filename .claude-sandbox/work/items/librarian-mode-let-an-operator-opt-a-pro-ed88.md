@@ -74,3 +74,6 @@ dispatch: reviewer opus review round 2 — resume, tier unchanged
 
 review round 2 (opus): SHOW_STOPPER. Prior 1-11 all FIXED. New: 12 [medium] principle 6: kit-dev description stretched to "any repo its operator opts in" (reverting reopens finding 5); 13 [low] /implement Step 1 looks only in .claude-sandbox/investigations; 14 [low] whole-repo carve-out not in the written section; 15 [nit] model-routing wrap. Reviewer: work-items soft dep in plugin.json is correct (principle 4).
 decision 26: product-repo custody home: (a) land in kit-dev now + follow-up to split librarian-mode into its own plugin [reviewer rec]; (b) split now, widening ed88 scope.
+
+decision 26 answered (operator 2026-09-18): "let's move it to the dev-flow plugin, that makes more sense". ed88 scope widens: git mv plugins/kit-dev/skills/librarian-mode -> plugins/dev-flow/skills/librarian-mode; kit-dev description/catalog reverted to kit maintenance; dev-flow description/catalog gain librarian custody; CLAUDE.md layout, marketplace.json descriptions; invocation becomes /dev-flow:librarian-mode.
+dispatch: implementer fable fix round 2 — rule 3 (fix round 2), fresh dispatch (tier bump), scope widened by decision 26
