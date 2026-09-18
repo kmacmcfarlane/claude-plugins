@@ -1,6 +1,7 @@
 """rehydrate.py: current repo state outranks the manifest — DEAD CLAIM lines
 for `items:` the store has closed, and `## Next` withheld once HEAD moves."""
-import json, os, subprocess, sys, tempfile, time, unittest
+import importlib, json, os, subprocess, sys, tempfile, time, unittest
+from unittest import mock
 
 HOOKS = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -10,7 +11,7 @@ repo: demo
 session: old
 written: {written}
 head: {head}
-mode: continue
+mode: {mode}
 {items}---
 ## Doing
 Building the thing.
@@ -34,7 +35,7 @@ def put(path, text, mode="w"):
         fh.write(text)
 
 
-ITEM = "---\nid: {id}\ntitle: t\ntype: chore\nstatus: {status}\n---\nbody\n"
+ITEM = "---\nid: {id}\ntitle: t\ntype: chore\nstatus: {status}\n{extra}---\nbody\n"
 
 
 class TestRehydrateStale(unittest.TestCase):
@@ -70,26 +71,27 @@ class TestRehydrateStale(unittest.TestCase):
         else:
             self.g("commit", "-q", "--allow-empty", "-m", msg)
 
-    def item(self, iid, status, archived=False):
+    def item(self, iid, status, archived=False, extra=""):
         d = os.path.join(self.repo, ".claude-sandbox", "work",
                          "archive/2026" if archived else "items")
         os.makedirs(d, exist_ok=True)
         os.makedirs(os.path.join(self.repo, ".claude-sandbox", "work", "items"),
                     exist_ok=True)
-        put(os.path.join(d, iid + ".md"), ITEM.format(id=iid, status=status))
+        put(os.path.join(d, iid + ".md"), ITEM.format(id=iid, status=status, extra=extra))
 
-    def manifest(self, items="", head=None):
+    def manifest(self, items="", head=None, mode="continue"):
         os.makedirs(os.path.join(self.repo, ".claude-sandbox"), exist_ok=True)
         put(os.path.join(self.repo, ".claude-sandbox", "HANDOFF.md"),
             MANIFEST.format(written=time.strftime("%Y-%m-%dT%H:%M:%SZ"),
-                            head=head or self.head, items=items))
+                            head=head or self.head, items=items, mode=mode))
 
-    def hook(self, source="compact", env=None):
+    def hook(self, source="compact", env=None, timeout=30):
         p = subprocess.run([sys.executable, os.path.join(HOOKS, "rehydrate.py")],
                            input=json.dumps({"session_id": "s", "source": source,
                                              "cwd": self.repo}),
                            capture_output=True, text=True, env=env or self.env,
-                           timeout=30)
+                           timeout=timeout)
+        self.assertEqual(p.returncode, 0, p.stderr)
         out = json.loads(p.stdout) if p.stdout.strip() else {}
         return (out.get("hookSpecificOutput") or {}).get("additionalContext", "")
 
@@ -125,7 +127,7 @@ class TestRehydrateStale(unittest.TestCase):
         self.addCleanup(other.cleanup)
         os.makedirs(os.path.join(other.name, "items"))
         put(os.path.join(other.name, "items", "zz-1111.md"),
-            ITEM.format(id="zz-1111", status="done"))
+            ITEM.format(id="zz-1111", status="done", extra=""))
         self.item("zz-1111", "doing")          # repo store says doing; env says done
         self.manifest("items:\n  - zz-1111\n")
         c = self.hook(env=dict(self.env, WI_ROOT=other.name))
@@ -178,7 +180,7 @@ class TestRehydrateStale(unittest.TestCase):
         self.manifest()
         self.commit("chore", ".claude-sandbox/work/items/x.md")
         self.commit("code", "src/a.txt")
-        self.assertIn("head moved 1 commits", self.hook())
+        self.assertIn("head moved 1 commit since", self.hook())
 
     def test_next_withheld_when_not_ancestor(self):
         self.commit("side", "src/side.txt")
@@ -195,6 +197,97 @@ class TestRehydrateStale(unittest.TestCase):
         self.manifest(head="deadbee")
         c = self.hook()
         self.assertIn("Next withheld: head moved ? commits", c)
+        self.assertIn("recorded head not found locally", c)
+        self.assertNotIn("not an ancestor", c)
+
+    # ── robustness (review round 1) ─────────────────────────────────────────
+    def test_template_comment_and_entry_comments_stripped(self):
+        self.item("build-the-widget-aaaa", "done")
+        self.item("ok-1111", "doing")
+        self.manifest("items:            # optional: wi ids you expect open\n"
+                      "  - build-the-widget-aaaa  # the widget\n"
+                      "  - ok-1111 # note\n")
+        c = self.hook()
+        self.assertIn("DEAD CLAIM build-the-widget-aaaa (done)", c)
+        self.assertNotIn("DEAD CLAIM #", c)
+        self.assertNotIn("ok-1111", c.split("---")[0])   # no claim line for it
+        self.assertNotIn("DEAD CLAIM ok-1111", c)
+
+    def test_alias_resolves(self):
+        self.item("long-live-item-eeee", "doing", extra="alias: live\n")
+        self.item("long-dead-item-ffff", "done", extra="alias: gone\n")
+        self.manifest("items: [live, gone]\n")
+        c = self.hook()
+        self.assertNotIn("DEAD CLAIM live", c)
+        self.assertIn("DEAD CLAIM gone (done)", c)
+
+    def test_malformed_items_not_dead_claims(self):
+        self.item("ok-1111", "doing")
+        for val in ("{a: b}", "-", ": weird", "[ok-1111, , 'ok-1111'"):
+            with self.subTest(val=val):
+                self.manifest(f"items: {val}\n")
+                c = self.hook()
+                self.assertNotIn("DEAD CLAIM", c)
+        self.manifest("items: {a: b}\n")
+        self.assertIn("items: 1 unparseable entry skipped", self.hook())
+
+    def test_huge_items_list_capped_and_doing_survives(self):
+        self.item("x-0", "doing")
+        self.manifest("items:\n" + "".join(f"  - gone-{i:04d}-{'z' * 20}\n"
+                                            for i in range(3000)))
+        c = self.hook()
+        self.assertLess(len(c), 10_000)
+        for keep in ("## Doing", "## Goal", "Building the thing."):
+            self.assertIn(keep, c)
+        self.assertIn("(+30 more)", c)                  # 50 read, 20 shown
+
+    def test_landed_skips_both_checks(self):
+        self.item("build-the-widget-aaaa", "done")
+        self.manifest("items:\n  - build-the-widget-aaaa\n", mode="landed")
+        self.commit("code", "src/a.txt")
+        c = self.hook()
+        self.assertIn("LANDED", c)
+        self.assertNotIn("DEAD CLAIM", c)
+        self.assertNotIn("Next withheld", c)
+
+    def test_hanging_git_never_fails_the_hook(self):
+        shim = tempfile.TemporaryDirectory()
+        self.addCleanup(shim.cleanup)
+        put(os.path.join(shim.name, "git"), "#!/bin/sh\nsleep 30\n")
+        os.chmod(os.path.join(shim.name, "git"), 0o755)
+        self.item("build-the-widget-aaaa", "done")
+        self.manifest("items:\n  - build-the-widget-aaaa\n")
+        env = dict(self.env, PATH=shim.name + os.pathsep + self.env.get("PATH", ""))
+        t0 = time.time()
+        c = self.hook(env=env, timeout=40)
+        self.assertLess(time.time() - t0, 15)           # one 5s wait, not one per call
+        self.assertIn("## Doing", c)                    # rehydration survives
+        self.assertNotIn("Next withheld", c)
+
+    def test_git_timeout_in_process(self):
+        self.env_patch = mock.patch.dict(os.environ, {"CLAUDE_CONFIG_DIR": self.cfg.name})
+        self.env_patch.start()
+        self.addCleanup(self.env_patch.stop)
+        sys.path.insert(0, HOOKS)
+        self.addCleanup(sys.path.remove, HOOKS)
+        rh = importlib.import_module("rehydrate")
+        self.addCleanup(rh._git_hung.clear)
+        boom = subprocess.TimeoutExpired("git", 5)
+        with mock.patch.object(rh.subprocess, "run", side_effect=boom) as run:
+            self.assertEqual(rh.stale_checks({"head": self.head}, self.repo, "FRESH"),
+                             (None, []))
+            self.assertIsNone(rh.git(self.repo, "status"))
+            self.assertEqual(run.call_count, 1)
+
+    # ── liveness ignores store chores ───────────────────────────────────────
+    def test_store_chores_do_not_age_the_manifest(self):
+        self.manifest()
+        for i in range(31):
+            self.commit(f"chore {i}", ".claude-sandbox/work/items/x.md")
+        c = self.hook("startup")
+        self.assertIn("FRESH", c)
+        self.commit("code", "src/a.txt")
+        self.assertIn("AGED", self.hook("startup"))
 
     # ── precedence ──────────────────────────────────────────────────────────
     def test_precedence_puts_repo_state_over_manifest(self):
@@ -203,6 +296,7 @@ class TestRehydrateStale(unittest.TestCase):
         self.assertIn("current repo state (git log, the work-item store) beats "
                       "this manifest", c)
         self.assertIn("beat any machine summary", c)
+        self.assertIn("beat everything else, including your own recollection", c)
 
 
 if __name__ == "__main__":
