@@ -2,12 +2,11 @@
 id: detect-a-gitignored-or-untracked-work-it-8efe
 title: detect a gitignored or untracked work-item store; one shared ignore-shape helper
 type: spike
-status: doing
+status: done
 priority: 2
-owner: unknown@e3a28d2cc009
-claimed: 2026-09-18T19:24Z
 created: 2026-09-18
 updated: 2026-09-18
+closed: 2026-09-18
 refs:
   - peer Paseo stop-gap (agents repo); operator-attention e5516d2
 ---
@@ -39,3 +38,6 @@ dispatch: implementer opus fix round 1 — resume
 
 fix round 1 (opus): DONE 6db40eb (all 6).
 dispatch: reviewer opus review round 2 — resume
+
+review round 2 (opus): CLEAR. Lows to follow-up: sidecar store gets host trackInHost advice; negation cannot re-include under a whole-dir ignore; -v parse mis-splits on :N: paths / quotePath.
+- 2026-09-18 done: 60e88b9
