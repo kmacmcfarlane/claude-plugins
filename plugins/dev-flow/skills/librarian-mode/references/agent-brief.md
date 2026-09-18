@@ -118,6 +118,9 @@ commits on top of <reviewed sha>; never amend, rebase, or squash — the reviewe
 that sha. Report every new sha under COMMIT. A finding against a commit subject or
 message is always low (the librarian's fix-loop rule): never rewrite history for it — no
 reset, amend or rebase; decline it under DECLINED with "carried in the merge message".
+The one exception: a message that leaks a secret or credential is critical. Only then is
+the branch rebuilt, from the merge-base the findings name (never onto main), with every
+message clean — that instruction overrides the new-commits rule above.
 
 ## Prohibitions
 

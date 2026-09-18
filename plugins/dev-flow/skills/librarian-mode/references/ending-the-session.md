@@ -14,7 +14,7 @@ never worktree branches or tags. With `Push: none` in `## Librarian`, skip every
 here and below; the final Report says what stays on local `main`. A rejected
 non-fast-forward push is not fixed by pulling, fetching, rebasing or merging: stop, and
 carry it under `decisions needed` in the final Report. Send that final Report last, so
-it reports the push as well as the landings — here and at 75% below, the push precedes
+it reports the push as well as the landings — here and at 75%/DUE below, the push precedes
 its Report; everywhere else the Report comes first. The context-gate ledger
 (session-addressed, one per session) and HANDOFF (work-addressed, class b1, one per
 repo) do not replace this; the librarian rehydrates from `wi prime` and git.

@@ -94,7 +94,8 @@ run from $WORKTREE, in addition to the generic ones>
   behaviour.
 - medium: incorrect docs or contract, a doctrine violation, a silent failure mode.
 - low / nit: style, naming, redundancy. The author may decline these with a reason. A
-  commit subject or message finding is always low (`references/fix-loop.md`).
+  commit subject or message finding is always low, except one that leaks a secret or
+  credential, which is critical (`references/fix-loop.md`).
 
 ## Verdict
 

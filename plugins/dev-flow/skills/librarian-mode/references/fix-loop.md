@@ -36,16 +36,26 @@ item and goes to the operator.
 
 ## A bad commit subject
 
-A finding against a commit's subject or message is always graded **low**: history is not
-rewritten to fix it, so the implementer may always decline it (reason: "carried in the
-merge message"). This is the one statement of that rule; the briefs point here.
+A finding against a commit's subject or message is always graded **low**, unless the
+message leaks a secret or credential (below): history is not rewritten to fix it, so the
+implementer may always decline it (reason: "carried in the merge message"). This is the
+one statement of that rule; the briefs point here.
 
 - **Record it.** Append `subject-fix: <sha> <corrected subject>` to the item body (Bash).
-- **Carry it at Land.** SKILL.md § Land step 3 merges with `-m`: the message is
-  `merge: <aspect> - <description> - land worktree-<name> (<item ids>)`, followed by one
-  body line per `subject-fix:` in the item — `<sha> should read: <corrected subject>`.
+- **Carry it at Land.** SKILL.md § Land step 3 merges with one `-m` per paragraph, so git
+  separates them with blank lines and never folds a correction into the subject:
+  `-m "merge: <aspect> - <description> - land worktree-<name> (<item ids>)"`, then one
+  `-m "<sha> should read: <corrected subject>"` per `subject-fix:` in the item.
 
 Never brief `git reset --soft main`, an amend, a rebase or a squash to redo a subject:
 the reviewer diffs from the reviewed sha, and once `main` has moved since the worktree
 branched, a soft reset onto it stages the inverse of `main`'s newer commits into the next
 commit.
+
+**The exception: a secret or credential in a commit message** is critical, not low. The
+unmerged worktree branch is rebuilt without it before Land — the one case where the
+branch's history is rewritten, safe only because nothing has been merged or pushed yet.
+Re-dispatch the implementer to rebuild `worktree-<name>` from its merge-base with `main`
+(never onto `main` itself), with every commit message clean; the re-review diffs from that
+merge-base, not the reviewed sha. The secret goes under `decisions needed` so the
+operator can decide on rotating it.
