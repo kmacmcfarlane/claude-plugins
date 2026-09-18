@@ -42,7 +42,7 @@ All of it resets per epoch (each compaction or `/clear`).
 | "use a subagent to …" | read-heavy research, log digging, doc reading | returns 1–2K tokens; the reads never enter your window |
 | `Explore` / `Plan` agents | codebase survey before implementation | skip CLAUDE.md, cheap, read-only |
 | `/context` | any time you want the truth | free |
-| status line | always | shows `used_percentage`; also feeds the gate hooks |
+| status line | always | shows `used_percentage`; feeds the gate hooks exact depth when the `statusline` plugin is installed |
 
 Environment & knobs: `/autocompact 900k` lowers the auto-compact trigger so the gate's deferral
 is provably safe (`CLAUDE_CODE_AUTO_COMPACT_WINDOW=900000` per project — plain integer, `900k`

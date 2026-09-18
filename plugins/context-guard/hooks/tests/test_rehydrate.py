@@ -195,99 +195,216 @@ class TestForkAdoption(TestRehydrate):
         self.assertNotIn("adopted", led)
 
 
-class TestStatuslineHeal(TestRehydrate):
+def snapshot(path):
+    """(bytes, mtime_ns, inode) of a file, or None when it is absent."""
+    try:
+        st = os.stat(path)
+        with open(path, "rb") as f:
+            return f.read(), st.st_mtime_ns, st.st_ino
+    except FileNotFoundError:
+        return None
+
+
+class TestStatuslineHandover(TestRehydrate):
+    """3c48 F4: context-guard never writes settings.json. The old heal and
+    legacy migration are gone; a read-only "moved" notice replaces them."""
+
+    def setUp(self):
+        super().setUp()
+        self.env = dict(self.env, HOME=self.cfg.name)
+        self.env.pop("CLAUDE_PLUGIN_DATA", None)
+        self.sp = os.path.join(self.cfg.name, "settings.json")
+
     def data_dir(self, name):
         d = os.path.join(self.cfg.name, "plugins", "data", name)
         os.makedirs(d, exist_ok=True)
         return d
 
-    def heal_env(self, settings, marker=True):
-        data = self.data_dir("context-guard-x")
-        if marker:
-            json.dump({"settings": settings, "command": "python3 /x/statusline.py"},
-                      open(os.path.join(data, "statusline-installed.json"), "w"))
-        env = dict(self.env)
-        env.pop("CLAUDE_PLUGIN_DATA", None)
-        return env
+    def cmd(self, plugin):
+        return "python3 " + json.dumps(os.path.join(
+            self.cfg.name, "plugins", "data", plugin, "current-hooks", "statusline.py"))
 
-    def legacy_marker(self, settings, command):
-        """The install this plugin inherited: marker + statusLine under the old
-        claude-kit plugin data dir."""
-        legacy = self.data_dir("claude-kit-x")
-        json.dump({"settings": settings, "command": command},
-                  open(os.path.join(legacy, "statusline-installed.json"), "w"))
-        return legacy
+    def settings(self, d, path=None):
+        with open(path or self.sp, "w") as f:
+            json.dump(d, f, indent=4)
+            f.write("\n")
 
-    def test_heal_restores_dropped_entry(self):
-        # a stale session's settings write dropped statusLine (live-fired 2026-08-31)
-        sp = os.path.join(self.cfg.name, "settings.json")
-        json.dump({"model": "m"}, open(sp, "w"))
-        rc, out = run_hook({"session_id": "s", "source": "startup", "cwd": self.repo},
-                           self.heal_env(sp))
-        self.assertIn("restored statusLine", out.get("systemMessage", ""))
-        d = json.load(open(sp))
-        self.assertEqual(d["statusLine"]["command"], "python3 /x/statusline.py")
-        self.assertEqual(d["model"], "m")               # read-modify-write, not clobber
+    def marker(self, plugin, settings, command="python3 /x/statusline.py"):
+        with open(os.path.join(self.data_dir(plugin), "statusline-installed.json"), "w") as f:
+            json.dump({"settings": settings, "command": command}, f)
 
-    def test_heal_leaves_present_entry_alone(self):
-        sp = os.path.join(self.cfg.name, "settings.json")
-        json.dump({"statusLine": {"type": "command", "command": "mine"}}, open(sp, "w"))
-        rc, out = run_hook({"session_id": "s", "source": "startup", "cwd": self.repo},
-                           self.heal_env(sp))
-        self.assertNotIn("restored", out.get("systemMessage", ""))
-        self.assertEqual(json.load(open(sp))["statusLine"]["command"], "mine")
+    def start(self, source="startup", sid="s"):
+        rc, out = self.hook(source, sid)
+        self.assertEqual(rc, 0)
+        return out.get("systemMessage", "")
 
-    def test_heal_silent_without_marker(self):
-        sp = os.path.join(self.cfg.name, "settings.json")
-        json.dump({}, open(sp, "w"))
-        rc, out = run_hook({"session_id": "s", "source": "startup", "cwd": self.repo},
-                           self.heal_env(sp, marker=False))
-        self.assertEqual(out, {})
-        self.assertNotIn("statusLine", json.load(open(sp)))
+    def stamp(self):
+        return os.path.join(self.cfg.name, "claude-kit", "context-gate",
+                            ".statusline-moved-notice")
 
-    def test_migrates_legacy_claude_kit_install(self):
-        # the context system shipped inside claude-kit before this plugin existed;
-        # the installed settings entry points at that plugin's data dir
-        sp = os.path.join(self.cfg.name, "settings.json")
-        old_cmd = ("python3 \"" + os.path.join(self.cfg.name, "plugins", "data",
-                   "claude-kit-x", "current-hooks", "statusline.py") + "\"")
-        json.dump({"model": "m", "statusLine": {"type": "command", "command": old_cmd}},
-                  open(sp, "w"))
-        env = self.heal_env(sp, marker=False)          # new data dir, no marker yet
-        legacy = self.legacy_marker(sp, old_cmd)
-        rc, out = run_hook({"session_id": "s", "source": "startup", "cwd": self.repo}, env)
-        self.assertIn("migrated statusLine", out.get("systemMessage", ""))
-        new_script = os.path.join(self.cfg.name, "plugins", "data", "context-guard-x",
-                                  "current-hooks", "statusline.py")
-        d = json.load(open(sp))
-        self.assertEqual(d["statusLine"]["command"], "python3 " + json.dumps(new_script))
-        self.assertEqual(d["model"], "m")               # read-modify-write, not clobber
-        moved = os.path.join(self.cfg.name, "plugins", "data", "context-guard-x",
-                             "statusline-installed.json")
-        self.assertEqual(json.load(open(moved))["command"], d["statusLine"]["command"])
-        self.assertFalse(os.path.exists(os.path.join(legacy, "statusline-installed.json")))
+    # -- no settings write, in every state the old heal or migration acted on --
 
-    def test_own_marker_wins_over_legacy(self):
-        # with our own marker present the legacy dir is never consulted
-        sp = os.path.join(self.cfg.name, "settings.json")
-        json.dump({"model": "m"}, open(sp, "w"))
-        env = self.heal_env(sp)                         # writes the context-guard marker
-        legacy = self.legacy_marker(sp, "python3 /legacy/statusline.py")
-        rc, out = run_hook({"session_id": "s", "source": "startup", "cwd": self.repo}, env)
-        self.assertIn("restored statusLine", out.get("systemMessage", ""))
-        self.assertNotIn("migrated", out.get("systemMessage", ""))
-        self.assertEqual(json.load(open(sp))["statusLine"]["command"],
-                         "python3 /x/statusline.py")
-        self.assertTrue(os.path.exists(os.path.join(legacy, "statusline-installed.json")))
+    def assert_untouched(self, setup):
+        setup()
+        before = snapshot(self.sp)
+        for source in ("startup", "resume", "clear", "compact"):
+            self.start(source)
+            self.assertEqual(snapshot(self.sp), before, source)
+        return before
 
-    def test_no_marker_anywhere_is_silent(self):
-        sp = os.path.join(self.cfg.name, "settings.json")
-        json.dump({}, open(sp, "w"))
-        env = self.heal_env(sp, marker=False)
-        self.data_dir("claude-kit-x")                   # legacy dir, but no marker in it
-        rc, out = run_hook({"session_id": "s", "source": "startup", "cwd": self.repo}, env)
-        self.assertEqual(out, {})
-        self.assertNotIn("statusLine", json.load(open(sp)))
+    def test_dropped_entry_with_own_marker_is_not_restored(self):
+        def setup():
+            self.settings({"model": "m"})
+            self.marker("context-guard-x", self.sp)
+        self.assert_untouched(setup)
+        self.assertNotIn("statusLine", json.load(open(self.sp)))
+
+    def test_legacy_claude_kit_entry_is_not_migrated(self):
+        def setup():
+            self.settings({"model": "m", "statusLine": {
+                "type": "command", "command": self.cmd("claude-kit-x")}})
+            self.marker("claude-kit-x", self.sp, self.cmd("claude-kit-x"))
+            self.data_dir("context-guard-x")
+        self.assert_untouched(setup)
+        # the legacy marker is not moved or deleted either
+        self.assertTrue(os.path.exists(os.path.join(
+            self.cfg.name, "plugins", "data", "claude-kit-x", "statusline-installed.json")))
+        self.assertFalse(os.path.exists(os.path.join(
+            self.cfg.name, "plugins", "data", "context-guard-x", "statusline-installed.json")))
+
+    def test_no_settings_file_is_never_created(self):
+        self.marker("context-guard-x", self.sp)
+        self.start()
+        self.assertIsNone(snapshot(self.sp))
+
+    def test_no_hook_source_writes_settings(self):
+        # the grep-level guarantee: no hook opens settings for writing
+        import glob as g
+        for f in g.glob(os.path.join(HOOKS, "*.py")):
+            with open(f) as fh:
+                src = fh.read()
+            for bad in ("heal_statusline", "_restore_statusline",
+                        "_migrate_legacy_statusline"):
+                self.assertNotIn(bad, src, f)
+
+    # -- the notice --
+
+    def test_notice_when_deprecated_copy_is_active(self):
+        self.settings({"statusLine": {"type": "command",
+                                      "command": self.cmd("context-guard-x")}})
+        before = snapshot(self.sp)
+        msg = self.start()
+        self.assertIn("moved to the `statusline` plugin", msg)
+        self.assertIn("/plugin install statusline@kmacmcfarlane", msg)
+        self.assertEqual(snapshot(self.sp), before)
+
+    def test_notice_for_a_claude_kit_entry_too(self):
+        self.settings({"statusLine": {"type": "command", "command": self.cmd("claude-kit-y")}})
+        self.assertIn("moved to the `statusline` plugin", self.start())
+
+    def test_notice_cadence_once_per_week(self):
+        self.settings({"statusLine": {"type": "command",
+                                      "command": self.cmd("context-guard-x")}})
+        self.assertIn("moved", self.start("startup", "a"))
+        for source, sid in (("startup", "b"), ("resume", "a"), ("clear", "c"),
+                            ("compact", "a"), ("startup", "d")):
+            self.assertNotIn("moved", self.start(source, sid), (source, sid))
+        six_days = time.time() - 6 * 86400
+        os.utime(self.stamp(), (six_days, six_days))
+        self.assertNotIn("moved", self.start("startup", "e"))
+        eight_days = time.time() - 8 * 86400
+        os.utime(self.stamp(), (eight_days, eight_days))
+        self.assertIn("moved", self.start("startup", "f"))
+        self.assertNotIn("moved", self.start("startup", "g"))
+
+    def test_notice_never_on_the_prompt_path(self):
+        self.settings({"statusLine": {"type": "command",
+                                      "command": self.cmd("context-guard-x")}})
+        t = os.path.join(self.tmp.name, "t.jsonl")
+        open(t, "w").close()
+        for _ in range(3):
+            p = subprocess.run([sys.executable, os.path.join(HOOKS, "context_warn.py")],
+                               input=json.dumps({"session_id": "s", "prompt": "hi",
+                                                 "transcript_path": t}),
+                               capture_output=True, text=True, env=self.env, timeout=30)
+            self.assertNotIn("moved", p.stdout)
+        self.assertFalse(os.path.exists(self.stamp()))
+
+    def test_future_stamp_does_not_silence_forever(self):
+        self.settings({"statusLine": {"type": "command",
+                                      "command": self.cmd("context-guard-x")}})
+        os.makedirs(os.path.dirname(self.stamp()), exist_ok=True)
+        open(self.stamp(), "w").close()
+        future = time.time() + 365 * 86400
+        os.utime(self.stamp(), (future, future))
+        self.assertIn("moved", self.start())
+
+    def test_unwritable_stamp_withholds_the_notice(self):
+        # a stamp that cannot be dated (here a dangling symlink, which
+        # O_NOFOLLOW refuses) must not turn into a notice every session
+        self.settings({"statusLine": {"type": "command",
+                                      "command": self.cmd("context-guard-x")}})
+        os.makedirs(os.path.dirname(self.stamp()), exist_ok=True)
+        os.symlink(os.path.join(self.tmp.name, "nowhere"), self.stamp())
+        old = time.time() - 30 * 86400
+        os.utime(self.stamp(), (old, old), follow_symlinks=False)
+        for sid in ("a", "b"):
+            self.assertNotIn("moved", self.start("startup", sid))
+
+    def test_silent_when_statusline_plugin_is_installed(self):
+        self.settings({"statusLine": {"type": "command",
+                                      "command": self.cmd("context-guard-x")}})
+        d = self.data_dir("statusline-kmacmcfarlane")
+        with open(os.path.join(d, "owner.json"), "w") as f:
+            json.dump({"v": 1, "state": "installed", "settings": self.sp,
+                       "command": self.cmd("statusline-kmacmcfarlane")}, f)
+        before = snapshot(self.sp)
+        self.assertEqual(self.start(), "")
+        self.assertEqual(snapshot(self.sp), before)
+        self.assertFalse(os.path.exists(self.stamp()))
+
+    def test_silent_when_statusline_owns_the_entry(self):
+        self.settings({"statusLine": {"type": "command",
+                                      "command": self.cmd("statusline-kmacmcfarlane")}})
+        self.assertEqual(self.start(), "")
+
+    def test_silent_for_a_foreign_entry_or_none(self):
+        self.settings({"statusLine": {"type": "command", "command": "my-own-line.sh"}})
+        self.assertEqual(self.start("startup", "a"), "")
+        self.settings({"model": "m"})
+        self.assertEqual(self.start("startup", "b"), "")
+        os.remove(self.sp)
+        self.assertEqual(self.start("startup", "c"), "")
+        self.assertFalse(os.path.exists(self.stamp()))
+
+    def test_notice_for_a_settings_file_a_marker_names(self):
+        local = os.path.join(self.tmp.name, "settings.local.json")
+        self.settings({"statusLine": {"type": "command",
+                                      "command": self.cmd("context-guard-x")}}, local)
+        self.marker("context-guard-x", local)
+        before = snapshot(local)
+        self.assertIn("moved", self.start())
+        self.assertEqual(snapshot(local), before)
+
+    def test_notice_joins_the_rehydration_message(self):
+        self.settings({"statusLine": {"type": "command",
+                                      "command": self.cmd("context-guard-x")}})
+        self.write_manifest()
+        msg = self.start("compact")
+        self.assertIn("Rehydrated from", msg)
+        self.assertIn("moved to the `statusline` plugin", msg)
+
+    @unittest.skipUnless(hasattr(os, "mkfifo"), "no FIFOs on this platform")
+    def test_fifo_settings_neither_hangs_nor_notices(self):
+        os.mkfifo(self.sp)
+        self.assertEqual(self.start(), "")
+
+    def test_garbage_settings_are_silent(self):
+        for raw in ("{", "[]", json.dumps({"statusLine": "x"}),
+                    json.dumps({"statusLine": {"command": 5}})):
+            with open(self.sp, "w") as f:
+                f.write(raw)
+            self.assertEqual(self.start(), "", raw)
 
 
 if __name__ == "__main__":

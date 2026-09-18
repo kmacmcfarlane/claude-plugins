@@ -21,7 +21,7 @@ import collections, glob, json, os, sys
 
 
 def newest_transcript():
-    cfg = os.path.expanduser(os.environ.get("CLAUDE_CONFIG_DIR", "~/.claude"))
+    cfg = os.path.expanduser(os.environ.get("CLAUDE_CONFIG_DIR") or "~/.claude")
     slug = os.getcwd().replace("/", "-")
     paths = glob.glob(os.path.join(cfg, "projects", slug, "*.jsonl"))
     paths = [p for p in paths if "/subagents/" not in p]

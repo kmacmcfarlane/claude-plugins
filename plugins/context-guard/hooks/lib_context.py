@@ -1,7 +1,9 @@
 """Shared state and depth accounting for the context-guard context-gate hooks.
 
 Depth sources, in order of preference:
-1. EXACT - written by the status line, which receives
+1. EXACT - written by the status line (the statusline plugin; its data
+   contract is that plugin's install-statusline references/sensor-contract.md),
+   which receives
    context_window.used_percentage and context_window_size from Claude Code on
    every render. Hooks never get those fields in their own input, so the status
    line doubles as the sensor. Two records are read (sensor()): the statusline
@@ -10,7 +12,11 @@ Depth sources, in order of preference:
    `exact`, `rate_limits`; a record whose `v` is not 1 is treated as absent),
    and the legacy `exact` block in this plugin's own state file (written by
    context-guard's deprecated statusline.py until the compat release). The
-   one with the larger `exact.at` wins; ties go to the sensor file.
+   one with the larger `exact.at` wins; ties go to the sensor file. The
+   sensor file is read only when it is a regular file (opened O_NONBLOCK, so
+   a FIFO planted at the path cannot hang a hook), and an `exact.at` more than
+   FUTURE_SKEW_S in the future is rejected: it would otherwise read as fresh,
+   and gate as exact, until the clock caught up.
 2. INFERRED - from the transcript's per-message `usage` blocks (the numbers the
    API charged), window guessed from the session's peak. A guess can be wrong
    in either direction (live-fired 2026-09-16: a 1M session with a stale exact
@@ -53,7 +59,7 @@ sweep_stale() (called by the SessionStart rehydrate hook) removes the dotfiles
 a killed writer leaves behind: temp files older than a day, and lock files of
 sessions whose state file is over 30 days old or gone. At most once a day.
 """
-import json, math, os, re, time
+import json, math, os, re, stat, time
 try:
     import fcntl
 except ImportError:  # not POSIX: no lock, unique temp names still hold
@@ -70,6 +76,9 @@ ANCHORS = ((200_000, 70_000, 40_000), (1_000_000, 150_000, 60_000))
 GAUGE_LABELS = {"due": "checkpoint DUE", "hard": "HARD gate"}
 GAUGE_V = 1
 SENSOR_V = 1
+# A sensor `exact.at` further ahead of now than this is a bad clock or a bad
+# record, never a fresh reading.
+FUTURE_SKEW_S = 60
 
 
 def _base_dir():
@@ -85,6 +94,7 @@ def _state_dir():
 
 LOCK_TIMEOUT_S = 0.2
 _NOFOLLOW = getattr(os, "O_NOFOLLOW", 0)
+_NONBLOCK = getattr(os, "O_NONBLOCK", 0)
 _SAFE_SID = re.compile(r"[A-Za-z0-9_-][A-Za-z0-9._-]{0,127}")
 
 
@@ -304,15 +314,18 @@ def sweep_stale(keep=None, now=None):
 
 
 def _touch_stamp(stamp, now):
-    """Create or re-date the sweep stamp without truncating and without
-    following a symlink (O_NOFOLLOW: a planted `.swept` link fails the open and
-    the stamp is silently skipped). Never raises."""
+    """Create or re-date a stamp file without truncating and without
+    following a symlink or blocking (O_NOFOLLOW, O_NONBLOCK: a planted link or
+    a FIFO without a reader fails the open and the stamp is silently skipped). Returns True when the stamp was dated. Never
+    raises."""
     fd = None
     try:
-        fd = os.open(stamp, os.O_WRONLY | os.O_CREAT | _NOFOLLOW, 0o600)
+        fd = os.open(stamp, os.O_WRONLY | os.O_CREAT | _NOFOLLOW | _NONBLOCK,
+                     0o600)
         os.utime(fd, (now, now))
+        return True
     except Exception:
-        pass
+        return False
     finally:
         if fd is not None:
             try:
@@ -356,8 +369,10 @@ def _reset(st, compact_summary, session_id=None):
     # The fill the ending epoch reached, read under the lock before the demote
     # below drops it (postcompact_epoch logs it in the ledger's epoch header).
     # The status line's exact record (the fresher of the sensor file and the
-    # legacy in-state block) is the source; a top-level `tokens` (no current
-    # writer) is the fallback. Read before epoch_at moves, which would demote it.
+    # legacy in-state block) is the source; the top-level `tokens` that
+    # context_warn.decide() stores on every prompt (the depth it last scored,
+    # exact or inferred) is the fallback. Read before epoch_at moves, which
+    # would demote it.
     try:
         end = sensor(session_id, st) if session_id else (st.get("exact") or {})
         st["epoch_end_tokens"] = int(end.get("tokens") or st.get("tokens") or 0)
@@ -521,15 +536,35 @@ def _finite(x):
     return x if math.isfinite(x) else None
 
 
+def read_json_file(path):
+    """The JSON value in the regular file at path, or None when it is absent,
+    unreadable, not JSON, or not a regular file. The open is O_NONBLOCK and the
+    type is checked on the open fd before any read, so a FIFO, socket or
+    device at the path can neither hang nor feed the caller. Never raises."""
+    fd = None
+    try:
+        fd = os.open(path, os.O_RDONLY | _NONBLOCK)
+        if not stat.S_ISREG(os.fstat(fd).st_mode):
+            return None
+        with os.fdopen(fd, encoding="utf-8", errors="replace") as f:
+            fd = None
+            return json.load(f)
+    except Exception:
+        return None
+    finally:
+        if fd is not None:
+            try:
+                os.close(fd)
+            except Exception:
+                pass
+
+
 def sensor_record(session_id):
     """The status line's sensor record (the whole v1 dict: `exact`,
-    `rate_limits`), or {} when it is absent, unreadable, not an object, or its
-    `v` is not 1 - a newer version is never misread. Never raises."""
-    try:
-        with open(sensor_path(session_id)) as f:
-            rec = json.load(f)
-    except Exception:
-        return {}
+    `rate_limits`), or {} when it is absent, unreadable, not a regular file,
+    not an object, or its `v` is not 1 - a newer version is never misread.
+    Never raises."""
+    rec = read_json_file(sensor_path(session_id))
     if not isinstance(rec, dict) or type(rec.get("v")) is not int \
             or rec["v"] != SENSOR_V:
         return {}
@@ -538,12 +573,15 @@ def sensor_record(session_id):
 
 def _sensor_exact(session_id):
     """The sensor record's `exact` block, normalised, or {} unless it carries
-    a window >= 1 and finite pct, tokens and at."""
+    a window >= 1 and finite pct, tokens and at, with `at` no more than
+    FUTURE_SKEW_S ahead of now."""
     ex = sensor_record(session_id).get("exact")
     if not isinstance(ex, dict):
         return {}
     win, tok, pct, at = (_finite(ex.get(k)) for k in ("window", "tokens", "pct", "at"))
     if win is None or win < 1 or tok is None or pct is None or at is None:
+        return {}
+    if at > time.time() + FUTURE_SKEW_S:
         return {}
     return {"pct": min(max(pct, 0.0), 100.0), "tokens": max(int(tok), 0),
             "window": int(win), "at": at}

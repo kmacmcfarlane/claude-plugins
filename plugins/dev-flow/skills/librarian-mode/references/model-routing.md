@@ -107,7 +107,9 @@ agent's own `BLOCKED` or error, handled as such.
 **Reset time** — take the first source that has one:
 
 1. the error text, when it carries a reset time;
-2. the status line's `rate_limits` in the context-guard state record,
+2. the status line's `rate_limits` in its sensor record,
+   `${CLAUDE_CONFIG_DIR:-~/.claude}/statusline/sensor/<session>.json` (the `statusline`
+   plugin), else in the older context-guard state record,
    `${CLAUDE_CONFIG_DIR:-~/.claude}/claude-kit/context-gate/<session>.json`, when present:
    the exhausted window's `resets_at` (epoch seconds);
 3. otherwise, unknown.
@@ -221,7 +223,7 @@ dispatch: reviewer opus — rule 4, matches implementer
 
 **Fallback: the blocking hook above, fix round 3.** The item has run fable from its first
 dispatch; at fix round 3 the Agent call returns HTTP 429 "out of usage credits" with no
-reset time, and the context-guard state record has no `rate_limits`. Unknown counts as
+reset time, and neither status-line record has `rate_limits`. Unknown counts as
 over 2h: dispatch opus for both roles, no question. Item body:
 
 ```

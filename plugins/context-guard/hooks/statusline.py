@@ -1,6 +1,15 @@
 #!/usr/bin/env python3
 """Status line: the always-on context gauge, and the sensor for the gate hooks.
 
+DEPRECATED: the status line moved to the `statusline` plugin
+(/plugin install statusline@kmacmcfarlane), which writes its own sensor record
+that lib_context reads first. This copy stays one release so existing
+statusLine entries that still point at it keep rendering and keep feeding the
+gate its legacy in-state `exact` block; context-guard no longer installs,
+restores or migrates any statusLine entry, and the SessionStart hook only
+shows a periodic "moved" notice (rehydrate.statusline_notice). A later update
+deletes this file.
+
 Claude Code hands the status line `context_window.used_percentage` and
 `context_window_size` on every render -- the only place those exact figures are
 exposed. This prints a one-line gauge for the operator and writes the same
@@ -39,8 +48,8 @@ an arbitrary string set by another agent), invisible format characters (bidi
 overrides, zero-width spaces; Unicode category Cf) are dropped, and it is
 capped at NAME_MAX terminal columns.
 
-Install (user settings, ~/.claude/settings.json):
-  "statusLine": {"type": "command", "command": "python3 /path/to/statusline.py"}
+Install: not from here any more - install the `statusline` plugin, whose
+SessionStart hook and /install-statusline take over an entry that points here.
 """
 import json, math, os, re, sys, time, unicodedata
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))

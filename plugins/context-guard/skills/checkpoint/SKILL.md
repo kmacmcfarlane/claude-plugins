@@ -49,16 +49,21 @@ treat it as *handoff*.
 
 ```bash
 cat "${CLAUDE_CONFIG_DIR:-$HOME/.claude}"/claude-kit/context-gate/<session>.json
+cat "${CLAUDE_CONFIG_DIR:-$HOME/.claude}"/statusline/sensor/<session>.json
 cat "${CLAUDE_CONFIG_DIR:-$HOME/.claude}"/claude-kit/ledger/<session>.md
 ```
 
-(`claude-kit/` in those paths is the historical name of the plugin this skill shipped in;
+(`claude-kit/` in the gate and ledger paths is the historical name of the plugin this skill shipped in;
 the state directories keep it so existing sessions and ledgers stay readable.)
 
 The gate state gives the epoch and a depth, but **stores no source label** — the source is
 derived when the gate reads the file. The status line writes an `exact` block (`pct`,
-`tokens`, `window`, `at`); that block counts as *exact* only while `now - at` is under 600s,
-and once it goes stale the depth is re-derived from the transcript and is *inferred* (or
+`tokens`, `window`, `at`) to its sensor file, `statusline/sensor/<session>.json` (the
+`statusline` plugin; absent when it is not installed). An older install whose status line
+still runs context-guard's deprecated copy writes the block into the gate state instead; the
+gate reads both and takes the one with the larger `at`. That block counts as *exact* only
+while `now - at` is under 600s, and once it goes stale the depth is re-derived from the
+transcript and is *inferred* (or
 `inferred, window from status line`, the literal the gate messages print when a stale block
 still supplied the window — the window is trustworthy there, the token count is not). So a
 plain `tokens`/`pct` with no fresh `exact` block is a guess: only an exact depth can

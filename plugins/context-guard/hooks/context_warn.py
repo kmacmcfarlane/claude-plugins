@@ -100,7 +100,7 @@ def main():
                     f"epoch. Run the checkpoint skill now; do not start new "
                     f"work. If the real window is larger, tell the operator: "
                     f"CLAUDE_KIT_CONTEXT_WINDOW=<tokens> in the launch "
-                    f"environment pins it, and the status line gives exact depth."},
+                    f"environment pins it, and the statusline plugin gives exact depth."},
             "systemMessage":
                 f"Context: {remaining:,} tokens left of {win:,} ({src}) — "
                 f"under the hard threshold ({th['hard']:,}); not blocked because "

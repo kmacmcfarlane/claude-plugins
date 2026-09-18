@@ -229,6 +229,73 @@ class TestDualRead(Base):
         self.assertEqual(L.depth("/nonexistent", "s")[2], 100.0)
 
 
+class TestSensorHardening(Base):
+    """F4: routed lows from the F1 review - a future `at` and a non-regular
+    file at the sensor path."""
+
+    def test_future_at_beyond_skew_is_rejected(self):
+        self.write_sensor("s", 500_000, 1_000_000, at=time.time() + L.FUTURE_SKEW_S + 60)
+        self.assertEqual(L._sensor_exact("s"), {})
+        self.assertEqual(L.sensor("s"), {})
+        tok, win, pct, src = L.depth("", "s")
+        self.assertTrue(src.startswith("inferred"), src)
+
+    def test_future_at_rejected_falls_back_to_legacy(self):
+        self.write_legacy("s", 300_000, 1_000_000)
+        self.write_sensor("s", 500_000, 1_000_000, at=time.time() + 3600)
+        self.assertEqual(L.sensor("s")["tokens"], 300_000)
+
+    def test_small_clock_skew_is_accepted(self):
+        self.write_sensor("s", 500_000, 1_000_000, at=time.time() + 30)
+        self.assertEqual(L.depth("", "s")[3], "exact")
+
+    def _read_in_child(self, sid="s", timeout=10):
+        """sensor_record in a subprocess, so a regression that blocks on a
+        FIFO fails the test instead of hanging the suite."""
+        code = ("import sys, json; sys.path.insert(0, %r); import lib_context as L; "
+                "print(json.dumps([L.sensor_record(%r), L.sensor(%r)]))" % (HOOKS, sid, sid))
+        p = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True,
+                           env=dict(os.environ, **self.env), timeout=timeout)
+        self.assertEqual(p.returncode, 0, p.stderr)
+        return json.loads(p.stdout)
+
+    @unittest.skipUnless(hasattr(os, "mkfifo"), "no FIFOs on this platform")
+    def test_fifo_at_sensor_path_neither_hangs_nor_reads(self):
+        p = L.sensor_path("s")
+        os.makedirs(os.path.dirname(p), exist_ok=True)
+        os.mkfifo(p)
+        self.assertEqual(self._read_in_child(), [{}, {}])
+        self.assertIsNone(L.read_json_file(p))
+
+    @unittest.skipUnless(hasattr(os, "mkfifo"), "no FIFOs on this platform")
+    def test_context_warn_with_fifo_sensor_exits_clean(self):
+        p = L.sensor_path("s")
+        os.makedirs(os.path.dirname(p), exist_ok=True)
+        os.mkfifo(p)
+        t = os.path.join(self.tmp.name, "t.jsonl")
+        self.write(t, "")
+        self.assert_clean_exit(*self.run_hook("context_warn.py", {
+            "session_id": "s", "prompt": "hi", "transcript_path": t}), "fifo")
+
+    def test_directory_and_device_at_sensor_path_are_absent(self):
+        p = L.sensor_path("s")
+        os.makedirs(p)                       # a directory where the file goes
+        self.assertEqual(self._read_in_child(), [{}, {}])
+        os.rmdir(p)
+        if os.path.exists("/dev/zero"):
+            os.symlink("/dev/zero", p)       # a character device via a link
+            self.assertEqual(self._read_in_child(), [{}, {}])
+
+    def test_symlink_to_a_regular_record_still_reads(self):
+        real = os.path.join(self.tmp.name, "rec.json")
+        self.write(real, json.dumps({"v": 1, "exact": {
+            "pct": 50.0, "tokens": 500_000, "window": 1_000_000, "at": time.time()}}))
+        p = L.sensor_path("s")
+        os.makedirs(os.path.dirname(p), exist_ok=True)
+        os.symlink(real, p)
+        self.assertEqual(L.sensor("s")["tokens"], 500_000)
+
+
 class TestEpochDemotion(Base):
     def test_reset_stamps_epoch_at(self):
         before = time.time()
@@ -335,6 +402,14 @@ class TestGauge(Base):
         os.makedirs(os.path.join(self.tmp.name, "claude-kit", "context-gate",
                                  "gauge.json"))  # a dir where the file goes
         self.assertFalse(L.publish_gauge())
+
+    def test_gauge_published_even_on_unparseable_input(self):
+        # publish_gauge runs first in rehydrate main(), before the input parse
+        p = subprocess.run([sys.executable, os.path.join(HOOKS, "rehydrate.py")],
+                           input="not json", capture_output=True, text=True,
+                           env=dict(os.environ, **self.env), timeout=30)
+        self.assertEqual((p.returncode, p.stdout.strip()), (0, "{}"))
+        self.assertEqual(self.read_json(L.gauge_path()), L.gauge_record())
 
     def test_labels_match_the_status_line_hints(self):
         # context-guard's statusline.py (deprecated at F4) hard-codes its hint
