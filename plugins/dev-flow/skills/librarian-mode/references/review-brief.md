@@ -93,7 +93,8 @@ run from $WORKTREE, in addition to the generic ones>
 - high: wrong behaviour on the item's main path; a failing or missing test for a claimed
   behaviour.
 - medium: incorrect docs or contract, a doctrine violation, a silent failure mode.
-- low / nit: style, naming, redundancy. The author may decline these with a reason.
+- low / nit: style, naming, redundancy. The author may decline these with a reason. A
+  commit subject or message finding is always low (`references/fix-loop.md`).
 
 ## Verdict
 

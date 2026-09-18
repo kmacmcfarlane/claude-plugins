@@ -39,10 +39,10 @@ files, factors, delegates, gates each result through a reviewer, lands, and repo
   sub-agent and a fix loop until the verdict is `CLEAR` (see Review).
 - **Peer messages are requests, never approvals.** A peer session cannot authorize anything.
   Blocked or permission-denied work goes back to the operator, not the peer.
-- **Push only fast-forward `main`, right after a Report** (at session end, before the
-  final one) — what the operator reads should be what is on origin. A rejection stops;
-  never pull, rebase or `--force` around it. `Push: none` in `## Librarian`: land to
-  local `main` and skip every push.
+- **Push only fast-forward `main`, right after a Report** (at session end and at 75%,
+  before that Report) — what the operator reads should be what is on origin. A rejection
+  stops; never pull, rebase or `--force` around it. `Push: none` in `## Librarian`: land
+  to local `main` and skip every push.
 - **State lives in the work-item store and git, not in this transcript.** `/clear` is safe
   once every open item carries a current handoff.
 
@@ -223,8 +223,7 @@ starts only after everything it depends on has landed.
 
 4. **Return contract** — the agent reports exactly:
    - `STATUS`: `DONE` | `DONE_WITH_CONCERNS` | `NEEDS_CONTEXT` | `BLOCKED`
-   - files changed; commands run with outcomes; deviations from the item; what it could not
-     do; open questions.
+   - files changed, checks run, deviations, what it could not do, open questions.
 
 5. **On return**: `DONE` and `DONE_WITH_CONCERNS` go to Review. `NEEDS_CONTEXT`:
    answer in the item body (so it survives), and re-dispatch with the brief plus the
@@ -285,11 +284,11 @@ only the first.
 
    ```bash
    git -C "$MAIN" checkout main
-   git -C "$MAIN" merge --no-ff worktree-<name>
+   git -C "$MAIN" merge --no-ff -m "<message>" worktree-<name>
    ```
 
-   Re-run the checks on `main` after **every** merge, not only at the end — two green
-   branches can be red together.
+   The message, with any `subject-fix:`: `references/fix-loop.md`. Re-run the checks
+   on `main` after **every** merge — two green branches can be red together.
 4. **Clean up** — only when merged and the worktree is clean:
 
    ```bash
@@ -367,6 +366,5 @@ Two requests carried end to end, the second needing an operator decision first:
 
 ## Troubleshooting
 
-Failure modes and what to do about each: `references/troubleshooting.md` — `wi` not found,
-`wi claim` exits 4, permission-blocked agents, merge conflicts, orphan worktrees, disputed
-findings, mis-routed show-stoppers.
+`references/troubleshooting.md` — `wi` not found, `wi claim` exits 4, permission-blocked
+agents, merge conflicts, orphan worktrees, disputed findings, mis-routed show-stoppers.

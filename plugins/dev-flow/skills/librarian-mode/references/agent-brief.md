@@ -116,8 +116,8 @@ Findings to fix are listed below, verbatim. Fix each finding at medium or
 above; each low/nit you decline, state under DECLINED with a reason. Fix as one or more NEW
 commits on top of <reviewed sha>; never amend, rebase, or squash — the reviewer diffs from
 that sha. Report every new sha under COMMIT. A finding against a commit subject or
-message is not fixed by rewriting it (no reset, amend or rebase): decline it under
-DECLINED with "carried in the merge message".
+message is always low (the librarian's fix-loop rule): never rewrite history for it — no
+reset, amend or rebase; decline it under DECLINED with "carried in the merge message".
 
 ## Prohibitions
 

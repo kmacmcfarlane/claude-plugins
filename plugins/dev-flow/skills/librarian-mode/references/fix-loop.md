@@ -36,10 +36,16 @@ item and goes to the operator.
 
 ## A bad commit subject
 
-A finding against a commit's subject or message is never fixed by rewriting history —
-the reviewer diffs from the reviewed sha, and `main` may have moved since the worktree
-branched. Either the implementer declines it (a low/nit, reason "carried in the merge
-message") or it stays as is and the Land step's merge message carries the corrected
-subject. Never brief `git reset --soft main`, an amend, a rebase or a squash to redo it:
-once `main` has moved, a soft reset onto it stages the inverse of `main`'s newer commits
-into the next commit.
+A finding against a commit's subject or message is always graded **low**: history is not
+rewritten to fix it, so the implementer may always decline it (reason: "carried in the
+merge message"). This is the one statement of that rule; the briefs point here.
+
+- **Record it.** Append `subject-fix: <sha> <corrected subject>` to the item body (Bash).
+- **Carry it at Land.** SKILL.md § Land step 3 merges with `-m`: the message is
+  `merge: <aspect> - <description> - land worktree-<name> (<item ids>)`, followed by one
+  body line per `subject-fix:` in the item — `<sha> should read: <corrected subject>`.
+
+Never brief `git reset --soft main`, an amend, a rebase or a squash to redo a subject:
+the reviewer diffs from the reviewed sha, and once `main` has moved since the worktree
+branched, a soft reset onto it stages the inverse of `main`'s newer commits into the next
+commit.
