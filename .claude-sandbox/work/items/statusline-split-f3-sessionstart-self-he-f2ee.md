@@ -2,11 +2,13 @@
 id: statusline-split-f3-sessionstart-self-he-f2ee
 title: "statusline split F3: SessionStart self-heal, takeover, first-run install, prune"
 type: feature
-status: todo
+status: doing
 priority: 1
 deps:
   - statusline-split-f2-the-statusline-plugi-a67f
 parent: status-line-its-own-independently-instal-3c48
+owner: unknown@e3a28d2cc009
+claimed: 2026-09-18T20:52Z
 created: 2026-09-18
 updated: 2026-09-18
 ---
@@ -14,11 +16,12 @@ updated: 2026-09-18
 3c48 plan §F3. Size M; opus (settings writes).
 
 ## Handoff
-- doing: —
-- next: —
+- doing: dispatched
+- next: review -> land
 - blocked: —
 - learned: —
 
-- (F2) README/SKILL say run /install-statusline explicitly and migration step 4 — update once takeover + first-run install land; sensor .tmp pruning belongs here.
+## Notes
+- 2026-09-18 claimed by unknown@e3a28d2cc009
 
-- (F2 review lows) split --force into --replace-foreign and --force-readonly (or ask per consent); dumps_like re-indents mixed hand-formatted files (disclosed; consider a line-level splice for the statusLine key); validate $ARGUMENTS in SKILL.md (only known flags) and document argparse rc 2.
+dispatch: implementer opus — settings writes / hook code (rule 2); fable not needed: not a gate
