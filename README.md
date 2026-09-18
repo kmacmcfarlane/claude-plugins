@@ -278,12 +278,21 @@ its own — the plugin to hand a coworker who wants only the footer.
 
 | Skill | Description |
 |---|---|
-| `install-statusline` | Install, move or remove the `statusLine` entry (user, project or local scope); coworker install steps |
+| `install-statusline` | Optional: install into another scope, remove, or replace a status line another tool set; coworker install steps |
+
+It sets itself up: on the first session its SessionStart hook installs the `statusLine`
+entry into the settings file where the plugin is enabled (user settings, or the per-user
+`.claude/settings.local.json` when only a project enables it) and says so in one line. It
+never writes over a status line another tool set; it says so once and leaves it. It takes
+over an entry left by the older copy of this status line (recognised by its path, marker or
+not), puts the entry back when a stale session's settings write drops it, never re-adds one
+the user removed, and prunes sensor files older than 30 days.
 
 It also carries `hooks/` — `statusline.py` (the renderer), `sensor.py` (its per-session sensor
-record, `~/.claude/statusline/sensor/<session>.json`), `owner.py` (the settings entry's
-ownership and atomic write) and a SessionStart hook that keeps the update-stable
-`current-hooks` link — with its unit tests
+record, `~/.claude/statusline/sensor/<session>.json`, and its pruning), `owner.py` (the settings
+entry's ownership and its atomic, formatting-preserving write) and `session_start.py` (the
+first-run install, takeover and self-heal above), after the `current-hooks` link command — with
+its unit tests
 (`cd plugins/statusline/hooks && python3 -m unittest discover -s tests -q`). The data
 contract both ways is `skills/install-statusline/references/sensor-contract.md`; its
 `test_contract.py` checks parity with `context-guard` whenever both sit in this repo.
@@ -368,8 +377,9 @@ Or in `.claude/settings.json`:
 /plugin install statusline@kmacmcfarlane
 ```
 
-After installing `statusline`, run `/install-statusline` once to add the footer to your
-settings.
+After installing `statusline`, start a new session: it adds the footer to your settings and
+says so, and the footer shows from the session after that. `/install-statusline` is only for
+another scope, removal, or replacing a status line another tool set.
 
 Or browse: `/plugin` → Discover tab. Install the plugins whose aims match your problems — the
 catalog above is the index; nothing here requires anything else here.
@@ -389,11 +399,12 @@ The `claude-kit` plugin is gone from the marketplace. Per machine, once:
    `sandbox`'s) would otherwise all fire in that session — two gates, two relays, two
    guards. It no longer exists in the marketplace, so removing it also stops the duplicate
    skills showing up.
-4. **Take over the status line:** install `statusline` and run `/install-statusline`. It
-   recognises an entry that points into `plugins/data/claude-kit-*/` or
+4. **Take over the status line:** install `statusline` and start one session. Its
+   SessionStart hook recognises an entry that points into `plugins/data/claude-kit-*/` or
    `plugins/data/context-guard-*/` by its path (no marker needed), repoints it at the
-   `statusline` plugin, and retires the old installer markers so no older heal restores the
-   old entry. Verify the gauge renders in the next session.
+   `statusline` plugin, retires the old installer markers so no older heal restores the old
+   entry, and says `took over an existing status line setting in PATH`. Verify the gauge
+   renders in the next session. (`/install-statusline` does the same by hand.)
 5. **Expertise packs** (`goa`, `playwright`, `musubi-tuner`, `ai-scripts`) arrive when the
    `claude-expertise` repo gains a remote and that marketplace is registered. Until then they
    are not installable anywhere — this is the one gap the refactor leaves open.

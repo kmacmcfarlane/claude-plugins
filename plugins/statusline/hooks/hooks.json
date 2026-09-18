@@ -1,5 +1,5 @@
 {
-  "description": "statusline: keeps the plugin-data current-hooks symlink pointing at this version's hooks, so the statusLine command in settings.json stays on an update-stable path.",
+  "description": "statusline: keeps the plugin-data current-hooks symlink pointing at this version's hooks, so the statusLine command in settings.json stays on an update-stable path; then installs the statusLine entry on the first session (into the scope where the plugin is enabled, never over another tool's entry), takes over an earlier copy of this status line, restores the entry when a stale session's settings write dropped it, and prunes old sensor files.",
   "hooks": {
     "SessionStart": [
       {
@@ -8,6 +8,11 @@
           {
             "type": "command",
             "command": "mkdir -p \"${CLAUDE_PLUGIN_DATA}\" && ln -sfn \"${CLAUDE_PLUGIN_ROOT}/hooks\" \"${CLAUDE_PLUGIN_DATA}/current-hooks\" >/dev/null 2>&1; true"
+          },
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/session_start.py\"",
+            "timeout": 10
           }
         ]
       }

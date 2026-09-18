@@ -53,6 +53,9 @@ No id can name a path outside its directory.
   clock). `at` as above.
 - A record, or block, may be absent: a session that has not rendered yet has no file, and a
   render with neither block writes nothing.
+- Pruning: the plugin's SessionStart hook deletes records not modified for 30 days (never
+  the starting session's own) and orphaned temp files older than one hour, at most once a day
+  (the `.pruned` stamp in the same directory). A pruned record reads as absent.
 
 ## 3. The gauge policy (optional publisher → status line)
 

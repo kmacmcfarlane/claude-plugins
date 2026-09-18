@@ -13,12 +13,16 @@ without `exact` keeps the stored one, likewise `rate_limits`), and a render
 that finds a newer record on disk skips its write, so an older payload never
 regresses a newer one.
 
+Housekeeping (prune): sensor records untouched for PRUNE_DAYS are deleted, and
+temp files a killed render left behind (older than TMP_STALE_S), at most once
+per PRUNE_EVERY_S - called from the SessionStart hook, never from a render.
+
 The gauge policy: remaining-token thresholds, interpolated over (window, due,
 hard) anchors - linear between anchors, clamped outside. DEFAULT_ANCHORS apply
 unless a gauge publisher is active for this session (publisher()): then its
 published anchors, labels and epoch are used instead.
 """
-import json, math, os, re, time
+import json, math, os, re, stat, time
 
 SENSOR_V = 1
 GAUGE_V = 1
@@ -31,6 +35,11 @@ READ_MAX = 1 << 20          # bytes read from any file this module parses
 LABEL_MAX = 40              # columns of a published label shown at most
 ANCHORS_MAX = 16
 FUTURE_SLACK_S = 60         # an on-disk `at` this far ahead of ours is a newer render
+PRUNE_DAYS = 30             # a sensor record untouched this long is deleted
+PRUNE_EVERY_S = 86400       # prune at most this often (the PRUNE_STAMP mtime)
+TMP_STALE_S = 3600          # an orphaned temp file older than this is deleted
+PRUNE_STAMP = ".pruned"
+_TMP = re.compile(r"\..+\.\d+\.[0-9a-f]{12}\.tmp")  # _mkstemp's names
 _SAFE_SID = re.compile(r"[A-Za-z0-9_-][A-Za-z0-9._-]{0,127}")
 
 
@@ -253,3 +262,69 @@ def publisher(session_id):
                 "epoch": ep}
     except Exception:
         return None
+
+
+def prune_tmp(d, now=None, max_age=TMP_STALE_S):
+    """Delete the orphaned temp files _mkstemp names (.<name>.<pid>.<hex>.tmp)
+    in dir d older than max_age - a writer killed between create and
+    replace. Regular files only; a live write is milliseconds old. Returns
+    how many went. Never raises."""
+    n = 0
+    now = time.time() if now is None else now
+    try:
+        with os.scandir(d) as it:
+            for e in it:
+                try:
+                    if _TMP.fullmatch(e.name) and e.is_file(follow_symlinks=False) and \
+                            now - e.stat(follow_symlinks=False).st_mtime > max_age:
+                        os.unlink(e.path)
+                        n += 1
+                except OSError:
+                    continue
+    except OSError:
+        pass
+    return n
+
+
+def prune(keep=None, now=None, days=PRUNE_DAYS):
+    """Delete sensor records not modified for `days` and stale temp files in
+    the sensor dir, except `keep`'s (the current session's) record. Runs at
+    most once per PRUNE_EVERY_S: the PRUNE_STAMP file's mtime says when it
+    last ran (a stamp that is not a regular file - a planted symlink, say -
+    is removed and replaced, never followed). Returns how many files went,
+    or None when it was not yet due. Never raises."""
+    try:
+        now = time.time() if now is None else now
+        d = sensor_dir()
+        if os.path.islink(d) or not os.path.isdir(d):
+            return 0
+        stamp = os.path.join(d, PRUNE_STAMP)
+        try:
+            st = os.lstat(stamp)
+            if not stat.S_ISREG(st.st_mode):
+                os.unlink(stamp)
+            elif 0 <= now - st.st_mtime < PRUNE_EVERY_S:
+                return None
+        except FileNotFoundError:
+            pass
+        keep_name = safe_sid(keep) + ".json" if keep else None
+        n = prune_tmp(d, now)
+        with os.scandir(d) as it:
+            for e in it:
+                try:
+                    if not e.name.endswith(".json") or e.name == keep_name or \
+                            not e.is_file(follow_symlinks=False):
+                        continue
+                    if now - e.stat(follow_symlinks=False).st_mtime > days * 86400:
+                        os.unlink(e.path)
+                        n += 1
+                except OSError:
+                    continue
+        fd = os.open(stamp, os.O_WRONLY | os.O_CREAT | getattr(os, "O_NOFOLLOW", 0), 0o600)
+        try:
+            os.utime(fd if os.utime in os.supports_fd else stamp, (now, now))
+        finally:
+            os.close(fd)
+        return n
+    except Exception:
+        return 0

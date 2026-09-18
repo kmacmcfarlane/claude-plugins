@@ -95,7 +95,7 @@ class Install(Base):
                 self.assertFalse(os.path.exists(a))
                 self.assertFalse(os.path.exists(b))
 
-    def test_foreign_needs_force(self):
+    def test_foreign_needs_replace(self):
         self.seed({"statusLine": FOREIGN, "x": 1})
         with open(self.settings, "rb") as f:
             raw = f.read()
@@ -105,7 +105,9 @@ class Install(Base):
         with open(self.settings, "rb") as f:
             self.assertEqual(f.read(), raw)
         self.assertFalse(os.path.exists(os.path.join(self.data, "owner.json")))
-        rc, out, _ = self.install("--force")
+        rc, out, _ = self.install("--write-read-only")   # the other consent is not this one
+        self.assertEqual(rc, 3)
+        rc, out, _ = self.install("--replace")
         self.assertEqual(rc, 0)
         self.assertEqual(self.load(), {"statusLine": {"type": "command",
                                                       "command": self.own_cmd()}, "x": 1})
@@ -225,7 +227,7 @@ class Layout(Base):
         self.assertEqual(os.stat(self.settings).st_ino, ino)
 
     @unittest.skipIf(hasattr(os, "geteuid") and os.geteuid() == 0, "root writes anything")
-    def test_read_only_settings_are_refused_without_force(self):
+    def test_read_only_settings_are_refused_without_consent(self):
         for args, st in (((), {"a": 1}),
                          (("--remove",), {"a": 1, "statusLine": {
                              "type": "command", "command": self.own_cmd()}})):
@@ -235,18 +237,75 @@ class Layout(Base):
             os.chmod(self.settings, 0o444)
             with open(self.settings, "rb") as f:
                 raw = f.read()
-            rc, out, err = self.install(*args)
-            self.assertEqual(rc, 1, args)
-            self.assertIn("is read-only; left unchanged", err)
-            with open(self.settings, "rb") as f:
-                self.assertEqual(f.read(), raw)
+            for extra in ((), ("--replace",)):  # --replace is not consent to this
+                rc, out, err = self.install(*args, *extra)
+                self.assertEqual(rc, 4, args + extra)
+                self.assertIn("is read-only; left unchanged", err)
+                self.assertIn("--write-read-only", err)
+                with open(self.settings, "rb") as f:
+                    self.assertEqual(f.read(), raw)
         os.chmod(self.settings, 0o644)
         self.seed({"a": 1, "statusLine": {"type": "command", "command": "x"}})
         os.chmod(self.settings, 0o444)
-        rc, _, _ = self.install("--force")
+        rc, _, _ = self.install("--write-read-only")     # foreign: still needs --replace
+        self.assertEqual(rc, 3)
+        rc, _, _ = self.install("--write-read-only", "--replace")
         self.assertEqual(rc, 0)
         self.assertEqual(self.load()["statusLine"]["command"], self.own_cmd())
         self.assertEqual(stat.S_IMODE(os.stat(self.settings).st_mode), 0o444)
+
+
+    def test_mixed_hand_formatted_layout_keeps_every_other_byte(self):
+        # a hand-edited file: mixed indents, one-line nested objects, odd
+        # spacing, braces and quotes inside strings. Only the statusLine
+        # member's text is added, and --remove takes exactly it away again.
+        text = ('{\n    "model": "opus",\n  "permissions": {"allow": ["Bash(ls)", "x}{\\"]"]},\n'
+                '\t"env":{"A":"1"},\n    "hooks":   {\n        "Stop": []\n    }\n}\n')
+        self.write_json(self.settings, raw=text)
+        self.assertEqual(self.install()[0], 0)
+        with open(self.settings, encoding="utf-8") as f:
+            new = f.read()
+        head = text[:text.rindex("}", 0, len(text) - 2) + 1]
+        self.assertTrue(new.startswith(head), new)
+        self.assertEqual(self.load()["statusLine"]["command"], self.own_cmd())
+        self.assertEqual(self.install("--remove")[0], 0)
+        with open(self.settings, encoding="utf-8") as f:
+            self.assertEqual(f.read(), text)
+
+    def test_replacing_an_entry_keeps_its_place_and_neighbours(self):
+        text = ('{\n  "a": 1,\n  "statusLine": {"type": "command", "command": "x"},\n'
+                '  "b":   [1,2]\n}\n')
+        self.write_json(self.settings, raw=text)
+        self.assertEqual(self.install("--replace")[0], 0)
+        with open(self.settings) as f:
+            new = f.read()
+        self.assertTrue(new.startswith('{\n  "a": 1,\n  "statusLine": {\n    "type"'), new)
+        self.assertTrue(new.endswith('\n  },\n  "b":   [1,2]\n}\n'), new)
+        self.assertEqual(list(self.load()), ["a", "statusLine", "b"])
+
+
+class Splice(unittest.TestCase):
+    V = {"type": "command", "command": 'python3 "/p"'}
+
+    def test_falls_back_when_not_provably_right(self):
+        self.assertIsNone(owner.splice_key("{}", "statusLine", self.V))
+        self.assertIsNone(owner.splice_key('{"statusLine": 1}', "statusLine"))
+        self.assertIsNone(owner.splice_key('{"statusLine": 1, "statusLine": 2}',
+                                           "statusLine", self.V))
+        for bad in ("{bad", "[1]", '{"a" 1}', '{"a": 1', ""):
+            self.assertIsNone(owner.splice_key(bad, "statusLine", self.V), bad)
+
+    def test_only_a_single_key_change_splices(self):
+        self.assertIsNone(owner._splice_settings('{"a": 1}', {"a": 2, "b": 3}))
+        self.assertIsNone(owner._splice_settings('{"a": 1, "b": 2}', {"b": 2, "a": 1, "c": 3}))
+        self.assertEqual(owner._splice_settings('{"a": 1}', {"a": 1, "statusLine": 2}),
+                         '{"a": 1, "statusLine": 2}')
+
+    def test_delete_first_middle_last(self):
+        for text, want in (('{"statusLine": 1, "a": 2}', '{"a": 2}'),
+                           ('{"a": 1, "statusLine": 1, "b": 2}', '{"a": 1, "b": 2}'),
+                           ('{\n  "a": 1,\n  "statusLine": 1\n}', '{\n  "a": 1\n}')):
+            self.assertEqual(owner.splice_key(text, "statusLine"), want)
 
 
 class Remove(Base):
@@ -264,13 +323,13 @@ class Remove(Base):
         self.assertEqual(rc, 0)
         self.assertIn("no statusLine in", out)
 
-    def test_remove_foreign_needs_force(self):
+    def test_remove_foreign_needs_replace(self):
         self.seed({"statusLine": FOREIGN})
         rc, out, _ = self.install("--remove")
         self.assertEqual(rc, 3)
         self.assertIn("was not installed by this plugin", out)
         self.assertEqual(self.load()["statusLine"], FOREIGN)
-        rc, _, _ = self.install("--remove", "--force")
+        rc, _, _ = self.install("--remove", "--replace")
         self.assertEqual((rc, self.load()), (0, {}))
 
     def test_remove_predecessor_retires_only_its_markers(self):
@@ -287,6 +346,18 @@ class Remove(Base):
         self.install()
         self.install("--local", "--remove")
         self.assertEqual(self.marker()["state"], "installed")
+
+
+class Usage(Base):
+    def test_unknown_or_abbreviated_flags_are_usage_errors(self):
+        for args in (("--force",), ("--rep",), ("--write",), ("--bogus",),
+                     ("--user", "--local"), ("extra",)):
+            with self.subTest(args=args):
+                rc, out, err = self.install(*args)
+                self.assertEqual(rc, 2)
+                self.assertIn("usage:", err)
+                self.assertFalse(os.path.exists(self.settings))
+                self.assertFalse(os.path.exists(self.data))
 
 
 class Classify(unittest.TestCase):
