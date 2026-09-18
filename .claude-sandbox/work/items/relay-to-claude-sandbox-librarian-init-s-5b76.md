@@ -2,11 +2,12 @@
 id: relay-to-claude-sandbox-librarian-init-s-5b76
 title: "relay to claude-sandbox librarian: init seeds env.example only; warn when project env shadows upstream"
 type: chore
-status: blocked
+status: done
 priority: 1
 blocked: waiting on the claude-sandbox librarian (offline 2026-09-18); relay, do not implement
 created: 2026-09-18
 updated: 2026-09-18
+closed: 2026-09-18
 refs:
   - peer kappa-3446 implement
 ---
@@ -18,3 +19,6 @@ Peer 'kappa-3446 implement', 2026-09-18. A claude-sandbox change (product code t
 - next: —
 - blocked: —
 - learned: —
+
+## Notes
+- 2026-09-18 done: relayed to claude-sandbox librarian (online) 2026-09-18
