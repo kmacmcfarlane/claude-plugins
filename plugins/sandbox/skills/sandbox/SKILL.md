@@ -1,6 +1,6 @@
 ---
 name: sandbox
-description: "Guides setup, configuration, and troubleshooting of claude-sandbox Docker containers. Use when user asks about claude-sandbox, sandbox configuration, .claude-sandbox/config.yaml, .claude-sandbox/Dockerfile, config cascade, bootstrapping a project (claude-sandbox init / init-ralph), ralph loops, container isolation, host access flags (--docker-socket, --aws, --git, --ssh), worktree mode (--worktree, --no-worktree, the worktree config key), model selection (--model), image rebuilding (--rebuild), or Claude Code version updates. Also triggers on sandbox launch errors, entrypoint issues, or volume mount problems."
+description: "Guides setup, configuration, and troubleshooting of claude-sandbox Docker containers. Use when user asks about claude-sandbox, sandbox configuration, .claude-sandbox/config.yaml, .claude-sandbox/Dockerfile, config cascade, bootstrapping a project (claude-sandbox init / init-ralph), ralph loops, container isolation, host access flags (--docker-socket, --aws, --git, --ssh), worktree mode (--worktree, --no-worktree, the worktree config key), model selection (--model), image rebuilding (--rebuild), or Claude Code version updates. Also triggers on sandbox launch errors, entrypoint issues, volume mount problems, a session that died or vanished mid-command, OOM, or a container/build exiting with code 137."
 disable-model-invocation: false
 allowed-tools: "Read, Glob, Grep, Bash, Edit, Write, Agent"
 argument-hint: [init | config | worktree | troubleshoot | question]
@@ -218,6 +218,49 @@ Ensure `--docker-socket` flag or `hostAccess.dockerSocket.enabled: true` is set.
 1. `touch "${CLAUDE_SANDBOX_PROJECT_DIR:-.}"/.claude-sandbox/ralph/stop`
 2. If stuck, check `"${CLAUDE_SANDBOX_PROJECT_DIR:-.}"/.claude-sandbox/ralph/lock` for the PID
 3. The activity watchdog (`logstream/activity-watchdog.js`) exits after N minutes of silence
+
+### Session dies mid-command and relaunching resumes it (container OOM-killed)
+
+**Symptom:** the Claude session is simply gone mid-command — no error dialog, the terminal
+line just ends — and relaunching `claude-sandbox` resumes the same conversation as if nothing
+happened. This looks like the Claude process crashing, but it is usually the container being
+OOM-killed by the host kernel: the session was mid-`Bash` on a heavy build or test run, memory
+usage crossed the container's limit, and the kernel killed the container's main process (or
+init/PID 1, which takes the whole container with it).
+
+The cgroup OOM killer picks whatever has the highest `oom_score`, often the build process
+itself rather than `claude`/`node` — in that case only the `Bash` call exits `137` and the
+session survives to report it. A build step failing with a lone `exit 137` inside an
+otherwise-alive session is the same memory-ceiling problem, just caught before it took the
+session down too.
+
+**Check:** run these on the host, or in a relaunched sandbox with the docker socket enabled
+(`--docker-socket` / `hostAccess.dockerSocket.enabled` — see "Docker commands fail inside
+container" above). The launcher runs containers with `--rm`, so a dead container is deleted
+immediately — `docker ps -a` won't list it and `docker inspect` returns "No such object";
+there is nothing left to inspect after the fact. Query the daemon's event log instead:
+```bash
+docker events --since 1h --until 0s --filter event=oom --filter event=die \
+  --format '{{.Time}} {{.Action}} {{.Actor.Attributes.name}} exit={{.Actor.Attributes.exitCode}}'
+```
+An `oom` event followed by `die exit=137` for the same container name confirms it. The
+launcher's own exit status of `137` is a second signal.
+
+**Remedies:**
+- Raise `memoryLimit` in `.claude-sandbox/config.yaml` for this project — it defaults to
+  `8g`, swap is off (the launcher sets `--memory-swap` equal to `memoryLimit`, so there's no
+  overflow room), and being cascade config it takes effect only on the next relaunch, not the
+  running container.
+- Cap build and test parallelism inside the container — flags like `-p`/`-j` and env vars
+  like `GOMAXPROCS` multiply memory use per worker. (Project-specific example: Go's
+  `go test`/`ginkgo -r --race` builds are especially heavy, since the race detector
+  instruments every memory access.)
+- Avoid running heavy builds in parallel across subagents in the same container — each one
+  adds to the same memory ceiling.
+
+Note: the launcher does not yet report an OOM kill on exit — it just looks like the session
+dying, which is why the check above is manual. Tracked in the claude-sandbox repo as item
+`d95a`.
 
 ### Child Dockerfile not found
 The launcher walks parent directories. To skip child image detection entirely:
