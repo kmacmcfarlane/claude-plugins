@@ -874,6 +874,8 @@ class TestStoreCustodyWarning(WiTestCase):
 
     SANDBOX_FIX = "set trackInHost: true in the sandbox config"
     SIDECAR_FIX = "for a public repo, give .claude-sandbox/ its own sidecar git"
+    REWRITE_FIX = ("fix: remove it, or rewrite it as `/.claude-sandbox/*` "
+                   "plus `!/.claude-sandbox/work/`")
 
     def assert_warns(self, *parts, absent=()):
         out = self.prime()
@@ -904,8 +906,35 @@ class TestStoreCustodyWarning(WiTestCase):
         self.store_in(self.tmp / "ignored", gi="*.pyc\n/.claude-sandbox/\n")
         self.assert_warns(
             "new items are git-ignored by .gitignore:2 '/.claude-sandbox/'",
-            "remove or negate that rule", self.SANDBOX_FIX, "490d8ca",
-            self.SIDECAR_FIX, absent=("git add",))
+            self.REWRITE_FIX, self.SANDBOX_FIX, "490d8ca",
+            self.SIDECAR_FIX, absent=("git add", "negate"))
+
+    def test_negation_under_whole_dir_ignore_is_dead(self):
+        # git cannot re-include a path under an excluded parent: the
+        # negation does nothing, so the warning must not suggest one
+        repo = self.tmp / "deadneg"
+        self.store_in(repo, gi="/.claude-sandbox/\n!/.claude-sandbox/work/\n")
+        self.assert_warns(".gitignore:1 '/.claude-sandbox/'",
+                          self.REWRITE_FIX, self.SANDBOX_FIX, self.SIDECAR_FIX,
+                          absent=("negate",))
+        # the suggested rewrite does re-include the store
+        (repo / ".gitignore").write_text(
+            "/.claude-sandbox/*\n!/.claude-sandbox/work/\n")
+        self.git(repo, "add", "-A")
+        self.assert_silent()
+
+    def test_excludes_file_path_with_colon_n_colon_parses(self):
+        # -v output is <source>:<line>:<pattern>; a source path holding
+        # ':1:' mis-split a regex parse, the -z fields do not
+        repo = self.tmp / "colon"
+        self.store_in(repo)
+        excl = self.tmp / "ex:1:dir" / "excludes"
+        excl.parent.mkdir()
+        excl.write_text("# comment\n*.md\n")
+        self.git(repo, "config", "core.excludesFile", str(excl))
+        self.assert_warns(f"git-ignored by {excl}:2 '*.md'",
+                          "remove or negate that rule", self.SANDBOX_FIX,
+                          absent=(self.SIDECAR_FIX, "rewrite it"))
 
     def test_ignore_masked_by_tracked_items_still_warns(self):
         # operator-attention: the store was tracked, then the whole-dir line
@@ -917,14 +946,14 @@ class TestStoreCustodyWarning(WiTestCase):
         self.git(repo, "commit", "-qm", "store")
         (repo / ".gitignore").write_text("*.pyc\n/.claude-sandbox/\n")
         self.assert_warns(".gitignore:2 '/.claude-sandbox/'",
-                          self.SANDBOX_FIX, self.SIDECAR_FIX)
+                          self.REWRITE_FIX, self.SANDBOX_FIX, self.SIDECAR_FIX)
 
     def test_md_ignore_names_rule_without_sidecar_remedy(self):
         # not a whole-dir ignore: the sidecar remedy would be wrong advice
         self.store_in(self.tmp / "md", gi="*.pyc\n*.md\n")
         self.assert_warns("git-ignored by .gitignore:2 '*.md'",
                           "remove or negate that rule", self.SANDBOX_FIX,
-                          absent=(self.SIDECAR_FIX,))
+                          absent=(self.SIDECAR_FIX, "rewrite it"))
 
     def test_info_exclude_is_named_as_the_source(self):
         repo = self.tmp / "exclude"
@@ -932,7 +961,7 @@ class TestStoreCustodyWarning(WiTestCase):
         with open(repo / ".git" / "info" / "exclude", "a") as fh:
             fh.write(".claude-sandbox/\n")
         self.assert_warns(".git/info/exclude:", "'.claude-sandbox/'",
-                          self.SANDBOX_FIX, self.SIDECAR_FIX)
+                          self.REWRITE_FIX, self.SANDBOX_FIX, self.SIDECAR_FIX)
 
     def test_negated_rule_is_silent(self):
         self.store_in(self.tmp / "negated",
@@ -978,7 +1007,7 @@ class TestStoreCustodyWarning(WiTestCase):
         empty.mkdir()
         self.assert_silent(env={"PATH": str(empty)})
 
-    def test_sidecar_judged_against_nested_repo(self):
+    def test_sidecar_store_ignoring_its_own_work_gets_no_host_advice(self):
         repo = self.tmp / "sidecar"
         (repo / ".claude-sandbox").mkdir(parents=True)
         self.git(repo, "init", "-q")
@@ -993,10 +1022,13 @@ class TestStoreCustodyWarning(WiTestCase):
         self.git(sidecar, "commit", "-qm", "store")
         self.assert_silent()
         (sidecar / ".gitignore").write_text("/work/\n")
-        # judged by the nested repo's own rule; not a whole-dir sandbox
-        # ignore, so no sidecar advice
-        self.assert_warns("git-ignored by .gitignore:1 '/work/'",
-                          absent=(self.SIDECAR_FIX,))
+        # judged by the nested repo's own rule, which lives in the sidecar
+        # repo: no host advice (trackInHost, the launcher, a sidecar git)
+        self.assert_warns("git-ignored by .gitignore:1 '/work/' in the "
+                          "sidecar repo .claude-sandbox/",
+                          "fix: remove or negate that rule there",
+                          absent=("trackInHost", "490d8ca", self.SIDECAR_FIX,
+                                  "rewrite it"))
 
     def test_prime_keeps_warning_under_tiny_budget(self):
         self.store_in(self.tmp / "budget", gi="/.claude-sandbox/\n",

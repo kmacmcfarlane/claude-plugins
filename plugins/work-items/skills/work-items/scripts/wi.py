@@ -354,12 +354,12 @@ UNTRACKED_MIN_ITEMS = 10
 PROBE_ITEM = "items/wi-custody-probe-0000.md"   # a new item's would-be path
 
 
-def _git(cwd, *args):
+def _git(cwd, *args, stdin=None):
     env = {k: v for k, v in os.environ.items()
            if k not in ("GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE")}
     try:
         return subprocess.run(["git"] + list(args), cwd=cwd, env=env,
-                              capture_output=True, text=True,
+                              input=stdin, capture_output=True, text=True,
                               timeout=GIT_TIMEOUT)
     except (OSError, subprocess.SubprocessError):
         return None   # git missing, cwd gone, or timed out
@@ -370,26 +370,46 @@ def custody_warning(root):
     Silent outside git, when git is missing or slow, or on any git error."""
     # the probe path, not only `items`, catches a store whose tracked files
     # mask the ignore rule: check-ignore skips tracked paths, but a new
-    # item's path is still matched against the rule. -v names the rule.
-    r = _git(root, "check-ignore", "-v", "--", "items", PROBE_ITEM)
+    # item's path is still matched against the rule. -v names the rule; -z
+    # (which git allows only with --stdin) gives NUL-separated fields, so a
+    # source path holding ':N:', a tab or a quotePath-escaped byte parses.
+    r = _git(root, "check-ignore", "-v", "-z", "--stdin",
+             stdin=f"items\0{PROBE_ITEM}\0")
     if r is None or r.returncode not in (0, 1):
         return None
+    fields = r.stdout.split("\0")
     rule = None
-    for line in r.stdout.splitlines():
-        m = re.match(r"^(.*?):(\d+):(.*?)\t", line)
-        if m and not m.group(3).startswith("!"):   # a negation un-ignores
-            rule = m.groups()
+    for i in range(0, len(fields) - 3, 4):   # source, linenum, pattern, path
+        src, lineno, pattern = fields[i:i + 3]
+        if pattern and not pattern.startswith("!"):   # a negation un-ignores
+            rule = (src, lineno, pattern)
             break
     head = f"wi: WARNING store {root} is silently untracked: "
     if rule:
         src, lineno, pattern = rule
-        fix = [f"new items are git-ignored by {src}:{lineno} '{pattern}'; "
-               "fix: remove or negate that rule"]
-        if root.absolute().parent.name == ".claude-sandbox":
+        shape, _ = sandbox_shape(root)
+        where = f"{src}:{lineno} '{pattern}'"
+        if shape == "sidecar":
+            # the nested repo owns the store: host advice (trackInHost, the
+            # host .gitignore) does not apply
+            return head + (f"new items are git-ignored by {where} in the "
+                           "sidecar repo .claude-sandbox/; fix: remove or "
+                           "negate that rule there")
+        whole_dir = pattern.strip() in SANDBOX_IGNORES
+        if whole_dir:
+            # git cannot re-include a path under an excluded parent, so a
+            # negation after a whole-dir ignore is dead
+            fix = [f"new items are git-ignored by {where}; fix: remove it, "
+                   "or rewrite it as `/.claude-sandbox/*` plus "
+                   "`!/.claude-sandbox/work/`"]
+        else:
+            fix = [f"new items are git-ignored by {where}; "
+                   "fix: remove or negate that rule"]
+        if shape is not None:
             fix.append(" and set trackInHost: true in the sandbox config (a "
                        "claude-sandbox launcher at 490d8ca or later warns "
                        "about this)")
-            if pattern.strip() in SANDBOX_IGNORES:
+            if whole_dir:
                 # agents 0002: a public-shaped repo keeps the whole-dir
                 # ignore; removing it would publish private items
                 fix.append(", or, for a public repo, give .claude-sandbox/ "
