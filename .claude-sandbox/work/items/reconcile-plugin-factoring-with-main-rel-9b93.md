@@ -2,14 +2,13 @@
 id: reconcile-plugin-factoring-with-main-rel-9b93
 title: "reconcile plugin-factoring with main: relocate checkout guard + convention into the sandbox plugin, rebase, land"
 type: feature
-status: doing
+status: done
 priority: 2
 deps:
   - land-plugin-factoring-fbe8
-owner: unknown@4d338747396e
-claimed: 2026-09-16T17:53Z
 created: 2026-09-16
 updated: 2026-09-18
+closed: 2026-09-18
 refs:
   - peer session claude-sandbox-e3
 ---
@@ -39,3 +38,4 @@ decision 11: product-research gains allowed-tools WebSearch, WebFetch, Read — 
 - fix round 1 (re-dispatched) returned DONE, commit 996b5ea; report § 11 appended. Re-review dispatched 2026-09-16 20:05:16 (reviewer fable, resumed). Open (operator): adopt a version field in plugin.json to silence validate?
 - re-review CLEAR (all 4 FIXED; 1 new low: ls -t keys the cache by mtime, installed_plugins.json installPath is the correct key — folded into chore 89a6; 1 nit). Librarian Land checks on the branch: marketplace==disk, 11 json ok, 4 suites OK, 18 skills lint clean, catalog ok, single PreToolUse (sandbox), validate passed (7 no-version warnings). Branch plugin-factoring at 996b5ea is the operator's test branch; NOT merged to main by plan. 2026-09-16 20:08:23
 - OPERATOR (2026-09-17 15:49:43): one-time authorization to push the test branch; pushed plugin-factoring 996b5ea to origin (fast-forward, no force).
+- 2026-09-18 done: 0d8b4c9
