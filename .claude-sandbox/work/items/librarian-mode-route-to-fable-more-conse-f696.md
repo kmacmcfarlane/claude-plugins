@@ -33,3 +33,6 @@ Bundle f696 + 7db3 + f518 in one worktree (all rewrite Route / § Rounds). Rule 
 - Fallback (7db3; decisions 28, 29): routed tier unavailable (429/usage) and reset >2h or unknown -> opus, recorded `dispatch: <role> opus — fable unavailable (resets in Xh|unknown); fallback`, named in verified:; reset <=2h -> ask the operator (wait vs opus). Reviewer floor stays opus. Where to learn the reset: the 429 text if it carries one; the status line rate_limits in the context-guard state record when present; else unknown.
 - Cap (f518): 4 review rounds = first review + three fix rounds.
 dispatch: implementer opus — doctrine (Route), >3 files
+
+impl: DONE_WITH_CONCERNS ac8951f. Librarian accepts: (1) operator pin stays a floor that can reach fable regardless of size (rule 8 wins), and a pinned fable that is unavailable -> ask, never fall back; (2) dispatch line `(resets in <X>h)` / `(unknown)`; (3) reset source empty today -> filed context-guard follow-up; (4) threshold heuristic kept, reviewer may tighten.
+dispatch: reviewer opus — rule 4
