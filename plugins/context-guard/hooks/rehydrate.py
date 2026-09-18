@@ -39,7 +39,8 @@ LEDGER_BUDGET = 2500
 MAX_ITEMS = 50
 ID_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9._:-]*")
 STORE_EXCLUDE = ("--", ".", ":!.claude-sandbox/work")
-_FM_CLOSE = re.compile(r"^[ \t]*---[ \t]*$", re.M)
+_FM_OPEN = re.compile(r"[ \t]*---[ \t]*(\r?\n)")
+_FM_CLOSE = re.compile(r"^[ \t]*---[ \t]*\r?$", re.M)
 _ITEMS_RE = re.compile(r"^items:[^\n]*\n(?:[ \t]*-[^\n]*\n)*", re.M)
 _git_hung = []
 
@@ -178,9 +179,10 @@ def dead_claims(fm, top):
 
 def head_state(fm, top):
     """The one ancestry check both the label and the Next withhold read:
-    {rec, cur, known, ancestor, n} (n = code commits rec..HEAD, store-only
-    commits excluded; None when unknown), or None when there is no recorded
-    head, git fails, or git hung. Never raises."""
+    {rec, cur, known, ancestor, n, behind} (n = code commits on HEAD's side of
+    rec...HEAD, behind = code commits on the recorded head's side, store-only
+    commits excluded from both; None when unknown), or None when there is no
+    recorded head, git fails, or git hung. Never raises."""
     try:
         rec = fm.get("head")
         if not isinstance(rec, str) or not rec:
@@ -193,11 +195,15 @@ def head_state(fm, top):
             return None
         ancestor = bool(known and git(top, "merge-base", "--is-ancestor", rec, "HEAD",
                                       ok=True))
-        n = git(top, "rev-list", "--count", f"{rec}..HEAD", *STORE_EXCLUDE) if known else None
+        lr = git(top, "rev-list", "--left-right", "--count", f"{rec}...HEAD",
+                 *STORE_EXCLUDE) if known else None
         if _git_hung:
             return None
-        n = int(n) if n and n.isdigit() else None
-        return {"rec": rec, "cur": cur, "known": known, "ancestor": ancestor, "n": n}
+        lr = (lr or "").split()
+        behind, n = (int(lr[0]), int(lr[1])) \
+            if len(lr) == 2 and all(x.isdigit() for x in lr) else (None, None)
+        return {"rec": rec, "cur": cur, "known": known, "ancestor": ancestor,
+                "n": n, "behind": behind}
     except Exception:
         return None
 
@@ -223,6 +229,9 @@ def head_moved(hs):
     if not why and not n:
         return None
     moved = "? commits" if n is None else f"{n} commit{'' if n == 1 else 's'}"
+    if hs["known"] and not hs["ancestor"] and n is not None \
+            and hs.get("behind") is not None:
+        moved += f" ahead, {hs['behind']} behind"   # rewound or diverged
     return (f"Next withheld: head moved {moved} since this manifest ({hs['rec']}.."
             f"{hs['cur']}{', ' + why if why else ''}); run wi prime and git log.")
 
@@ -258,7 +267,9 @@ def is_landed(fm):
 def liveness(fm, hs):
     """(label, reason or None). Reads the same head_state as the Next withhold:
     a recorded head missing locally or not an ancestor of HEAD (rewound,
-    diverged) is AGED with that reason, never FRESH."""
+    diverged) is AGED with that reason, never FRESH. A recorded head that git
+    could not check (unavailable, failing, hung) carries `git unavailable`, so
+    an unverified manifest never reads as plain FRESH."""
     if is_landed(fm):
         return "LANDED", None
     age_h = None
@@ -269,18 +280,21 @@ def liveness(fm, hs):
         pass
     drift = hs["n"] if hs else None
     why = divergence(hs)
+    rec = fm.get("head")
+    unverified = "git unavailable" if hs is None and isinstance(rec, str) and rec \
+        else None
     if (age_h is not None and age_h > 7 * 24) or (drift is not None and drift > 30):
-        return "STALE", why
+        return "STALE", why or unverified
     if (age_h is not None and age_h > 24) or drift or why:
-        return "AGED", why
-    return "FRESH", None
+        return "AGED", why or unverified
+    return "FRESH", unverified
 
 
 def _trim_items(body):
     """Collapse the frontmatter `items:` list to one line (dead claims have
     already been computed from it). Only the frontmatter is searched: an
     `items:` line in the body is prose and stays."""
-    open_ = re.match(r"[ \t]*---[ \t]*\n", body)
+    open_ = _FM_OPEN.match(body)
     if not open_:
         return body
     close = _FM_CLOSE.search(body, open_.end())
@@ -288,8 +302,8 @@ def _trim_items(body):
     m = _ITEMS_RE.search(body, open_.end(), end)
     if not m:
         return body
-    return body[:m.start()] + "items: (trimmed — read the manifest file)\n" + body[m.end():]
-
+    return body[:m.start()] + "items: (trimmed — read the manifest file)" + \
+        open_.group(1) + body[m.end():]
 
 
 def trim(body, budget):

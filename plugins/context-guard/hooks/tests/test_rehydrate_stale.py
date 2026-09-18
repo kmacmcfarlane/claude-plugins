@@ -79,10 +79,10 @@ class TestRehydrateStale(unittest.TestCase):
                     exist_ok=True)
         put(os.path.join(d, iid + ".md"), ITEM.format(id=iid, status=status, extra=extra))
 
-    def manifest(self, items="", head=None, mode="continue"):
+    def manifest(self, items="", head=None, mode="continue", written=None):
         os.makedirs(os.path.join(self.repo, ".claude-sandbox"), exist_ok=True)
         put(os.path.join(self.repo, ".claude-sandbox", "HANDOFF.md"),
-            MANIFEST.format(written=time.strftime("%Y-%m-%dT%H:%M:%SZ"),
+            MANIFEST.format(written=written or time.strftime("%Y-%m-%dT%H:%M:%SZ"),
                             head=head or self.head, items=items, mode=mode))
 
     def hook(self, source="compact", env=None, timeout=30):
@@ -263,6 +263,7 @@ class TestRehydrateStale(unittest.TestCase):
         self.assertLess(time.time() - t0, 15)           # one 5s wait, not one per call
         self.assertIn("## Doing", c)                    # rehydration survives
         self.assertNotIn("Next withheld", c)
+        self.assertIn("FRESH (git unavailable) manifest", c.split("\n", 1)[0])
 
     def test_git_timeout_in_process(self):
         self.env_patch = mock.patch.dict(os.environ, {"CLAUDE_CONFIG_DIR": self.cfg.name})
@@ -311,10 +312,74 @@ class TestRehydrateStale(unittest.TestCase):
         c = self.hook()
         self.assertIn("AGED (recorded head is not an ancestor) manifest", self.header(c))
         self.assertNotIn("FRESH", self.header(c))
-        self.assertIn(f"Next withheld: head moved 0 commits since this manifest "
-                      f"({ahead}..{self.head}, recorded head is not an ancestor); "
-                      f"run wi prime and git log.", c)
+        self.assertIn(f"Next withheld: head moved 0 commits ahead, 1 behind since this "
+                      f"manifest ({ahead}..{self.head}, recorded head is not an "
+                      f"ancestor); run wi prime and git log.", c)
         self.assertNotIn("wi show build-the-widget-aaaa", c)
+
+    def diverge(self, n_main=1):
+        """Recorded head on a side branch; HEAD gains n_main code commits."""
+        self.commit("side", "src/side.txt")
+        self.commit("side store chore", ".claude-sandbox/work/items/s.md")
+        side = self.rev()
+        self.g("reset", "-q", "--hard", self.head)
+        for i in range(n_main):
+            self.commit(f"main {i}", f"src/main{i}.txt")
+        return side
+
+    def test_diverged_branch_labelled_aged_with_ahead_behind(self):
+        side = self.diverge(2)
+        self.manifest(head=side)
+        c = self.hook()
+        self.assertIn("AGED (recorded head is not an ancestor) manifest", self.header(c))
+        self.assertIn(f"Next withheld: head moved 2 commits ahead, 1 behind since this "
+                      f"manifest ({side}..{self.rev()}, recorded head is not an "
+                      f"ancestor); run wi prime and git log.", c)
+
+    def test_diverged_one_commit_singular(self):
+        side = self.diverge(1)
+        self.manifest(head=side)
+        self.assertIn("head moved 1 commit ahead, 1 behind since", self.hook())
+
+    def test_stale_with_reason_on_drift(self):
+        side = self.diverge(31)
+        self.manifest(head=side)
+        c = self.hook()
+        self.assertIn("STALE (recorded head is not an ancestor) manifest", self.header(c))
+        self.assertIn("head moved 31 commits ahead, 1 behind since", c)
+        self.assertIn("must be re-confirmed with the operator", c)
+
+    def test_stale_with_reason_on_age(self):
+        self.manifest(head="deadbee", written="2020-01-01T00:00:00Z")
+        c = self.hook("startup")
+        self.assertIn("STALE (recorded head not found locally) manifest", self.header(c))
+        self.assertIn("head moved ? commits since", c)
+
+    def test_plain_stale_on_age_has_no_reason(self):
+        self.manifest(written="2020-01-01T00:00:00Z")
+        c = self.hook("startup")
+        self.assertIn("STALE manifest", self.header(c))
+
+    def test_git_failing_labelled_unverified_not_fresh(self):
+        shim = tempfile.TemporaryDirectory()
+        self.addCleanup(shim.cleanup)
+        put(os.path.join(shim.name, "git"), "#!/bin/sh\nexit 1\n")
+        os.chmod(os.path.join(shim.name, "git"), 0o755)
+        self.manifest()
+        env = dict(self.env, PATH=shim.name + os.pathsep + self.env.get("PATH", ""))
+        c = self.hook(env=env)
+        self.assertIn("FRESH (git unavailable) manifest", self.header(c))
+        self.assertIn("wi show build-the-widget-aaaa", c)  # documented degrade
+        self.assertNotIn("Next withheld", c)
+        self.manifest(written="2020-01-01T00:00:00Z")
+        self.assertIn("STALE (git unavailable) manifest", self.header(self.hook(env=env)))
+
+    def test_liveness_unverified_only_with_recorded_head(self):
+        rh = self.rh()
+        now = time.strftime("%Y-%m-%dT%H:%M:%S")
+        self.assertEqual(rh.liveness({"written": now, "head": "abc"}, None),
+                         ("FRESH", "git unavailable"))
+        self.assertEqual(rh.liveness({"written": now}, None), ("FRESH", None))
 
     def test_label_fresh_only_when_next_shown(self):
         self.manifest()
@@ -363,6 +428,15 @@ class TestRehydrateStale(unittest.TestCase):
         self.assertNotIn("a-1", out)
         self.assertTrue(out.endswith(body_items))
         self.assertEqual(rh._trim_items(body_items), body_items)   # no frontmatter
+
+    def test_trim_items_crlf_frontmatter(self):
+        rh = self.rh()
+        crlf = "---\r\nhead: abc\r\nitems:\r\n  - a-1\r\n  - b-2\r\n---\r\n" \
+            "## Doing\r\nitems:\r\n  - keep-me\r\n"
+        out = rh._trim_items(crlf)
+        self.assertIn("items: (trimmed — read the manifest file)\r\n---\r\n", out)
+        self.assertNotIn("a-1", out)
+        self.assertTrue(out.endswith("## Doing\r\nitems:\r\n  - keep-me\r\n"))
 
     def test_body_items_survive_hook_trim(self):
         self.manifest()
