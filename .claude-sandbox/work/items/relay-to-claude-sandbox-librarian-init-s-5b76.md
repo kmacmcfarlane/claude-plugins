@@ -2,8 +2,9 @@
 id: relay-to-claude-sandbox-librarian-init-s-5b76
 title: "relay to claude-sandbox librarian: init seeds env.example only; warn when project env shadows upstream"
 type: chore
-status: todo
+status: blocked
 priority: 1
+blocked: waiting on the claude-sandbox librarian (offline 2026-09-18); relay, do not implement
 created: 2026-09-18
 updated: 2026-09-18
 refs:
