@@ -27,3 +27,9 @@ dispatch: implementer opus — bundled chores in worktree d72e; >3 files (rule 2
 
 impl (bundle): DONE 7ace960 (all five; none pre-fixed). Open: agent-brief Commit verbs omit "fixed" (main history uses it).
 dispatch: reviewer opus — rule 4
+
+review round 1 (opus): NEEDS_CHANGES — medium 1 (bad-subject correction "carried in the merge message" but Land merge has no -m slot); lows 2 (agent-brief declines any severity vs fix-loop low/nit), 3 (SKILL.md push-before-Report at 75% missing), 4 (wrap), 6 (verb list lacks fixed: -> filed separately); nit 5 (ls stderr).
+dispatch: implementer opus fix round 1 — resume
+
+fix round 1 (opus): DONE 51a6789 (1-5 fixed; declined 6 = filed a638).
+dispatch: reviewer opus review round 2 — resume

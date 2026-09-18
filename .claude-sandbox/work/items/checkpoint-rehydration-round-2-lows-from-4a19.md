@@ -22,3 +22,6 @@ From the 5cdb round-2 review (2026-09-18), all low: (1) liveness() label FRESH w
 - 2026-09-18 claimed by unknown@e3a28d2cc009
 
 dispatch: implementer opus — executable logic
+
+impl: DONE ebd501d (head_state() single ancestry check; AGED(reason); separate unparseable block; frontmatter-only trim; handoff-format variants). Note: implementer used bare git stash/pop in its worktree (shared stash stack) — restored; stash list checked.
+dispatch: reviewer opus — rule 4

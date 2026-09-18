@@ -18,3 +18,7 @@ updated: 2026-09-18
 - next: —
 - blocked: —
 - learned: —
+
+- 2026-09-18 (from 81a5): model-routing § Fallback should say the reader checks rate_limits.at / a past resets_at to spot stale data (the block persists when a payload lacks rate_limits). Carry into the moved model-routing.md.
+
+- 2026-09-18 (from 4a19): the implementer brief should prohibit bare git stash/pop (the stash stack is shared across worktrees and sessions); prefer a temp WIP commit or a scratch copy for revert-to-verify. Carry into the moved agent-brief.md.

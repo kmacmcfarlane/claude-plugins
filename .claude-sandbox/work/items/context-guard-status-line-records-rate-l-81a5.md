@@ -24,3 +24,6 @@ From f696/7db3 (2026-09-18): librarian-mode's fable-unavailable fallback reads t
 - 2026-09-18 claimed by unknown@e3a28d2cc009
 
 dispatch: implementer opus — executable logic
+
+impl: DONE_WITH_CONCERNS 1e1996a (stored shape: rate_limits.<window>{used_percentage,resets_at} + at; no per-model window documented; stale block persists when payload lacks rate_limits).
+dispatch: reviewer opus — rule 4

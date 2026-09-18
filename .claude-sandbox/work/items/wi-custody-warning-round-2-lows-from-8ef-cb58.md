@@ -22,3 +22,6 @@ From the 8efe round-2 review (2026-09-18), all low: (1) sidecar store ignoring i
 - 2026-09-18 claimed by unknown@e3a28d2cc009
 
 dispatch: implementer opus — executable logic
+
+impl: DONE 3b3526c (check-ignore -v -z --stdin, one call; sidecar no host advice; rewrite remedy for SANDBOX_IGNORES).
+dispatch: reviewer opus — rule 4
