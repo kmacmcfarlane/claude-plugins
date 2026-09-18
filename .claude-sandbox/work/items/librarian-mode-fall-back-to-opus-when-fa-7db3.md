@@ -15,13 +15,10 @@ refs:
 Peer claude-sandbox librarian (its d5ac), relaying its operator, 2026-09-18. A fix-round-2 fable implementer hit HTTP 429 'out of usage credits'; rule 6 (a tier never falls) left only asking. Rule: routed special tier unavailable and resets in >2h -> dispatch opus by default, record 'dispatch: <role> opus — fable unavailable (resets in Xh); fallback', note it in verified:; resets within 2h -> ask the operator (wait vs opus); reviewer floor stays opus. Open detail: how the librarian learns the reset time (the 429 text had none) — candidates: status line rate_limits in the context-guard state record, or unknown = >2h. Settle together with the conservative-fable item. Lands after ed88 (librarian-mode moves to dev-flow).
 
 ## Handoff
-- doing: —
-- next: —
+- doing: in review/fix loop in worktree (see item body)
+- next: review -> land
 - blocked: —
 - learned: —
-
-decision 28 answered (operator 2026-09-18): run fable-routed items on opus while fable is out, recorded as fallbacks, until 7db3/f696 land.
-decision 29 answered: unknown reset time = treat as >2h -> opus.
 
 ## Notes
 - 2026-09-18 claimed by unknown@e3a28d2cc009

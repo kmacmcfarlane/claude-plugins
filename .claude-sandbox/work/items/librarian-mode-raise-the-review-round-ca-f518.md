@@ -15,8 +15,8 @@ refs:
 Operator 2026-09-18 (answer to decision 30): 'Let's raise the round limit to 4'. Cap = 4 review rounds (first review + three fix rounds); update SKILL.md Route/Review, fix-loop.md, model-routing.md § Rounds (the 'last round before the cap' fable signal moves from fix round 2 to fix round 3), agent-brief/review-brief fix-round clauses, troubleshooting. Bundle with 7db3 + f696 (same Route text) after ed88 lands.
 
 ## Handoff
-- doing: —
-- next: —
+- doing: in review/fix loop in worktree (see item body)
+- next: review -> land
 - blocked: —
 - learned: —
 

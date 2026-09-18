@@ -15,12 +15,10 @@ refs:
 Peer 'Paseo stop-gap' (agents repo), 2026-09-18, retrospective on the 7f00 class. Ask: judge whether it's worth (1) wi lint and the wi prime header warning when the store root is git check-ignore'd or has zero tracked files while holding items; (2) test_wi.py covering private, sidecar and already-ignored shapes, including the 'store exists but ignored' state; (3) one shared shape-classification helper instead of per-tool re-implementations, plus a 'who may write a host .gitignore' rule in agents decision 0002. Siblings: 7772 (wi add recurrence), 37d3 (config.yaml un-ignore), claude-sandbox a7bf. Acceptance: a recommendation per point, then features filed. Held until plugin-factoring merges.
 
 ## Handoff
-- doing: —
-- next: —
+- doing: in review/fix loop in worktree (see item body)
+- next: review -> land
 - blocked: —
 - learned: —
-
-- 2026-09-18: plugin-factoring merged (0d8b4c9); hold released. Paths moved: claude-kit dissolved into kit-dev/context-guard/dev-flow/work-items/chat/sandbox/ralph.
 
 ## Librarian decision (2026-09-18)
 - Point 1: build it. `wi prime` header and `wi lint` warn when the resolved store root is inside a git repo and either `git check-ignore -q <store>/items` succeeds, or the store holds items but `git ls-files <store>` lists none. The warning names the cause class and the remedies (remove the whole-dir ignore, trackInHost: true, or the claude-sandbox launcher fix 18a7). Skip silently outside git, or when git is unavailable. Sidecar stores (the store sits in its own nested repo) are fine: check against the repo that contains the store.
@@ -30,3 +28,6 @@ dispatch: implementer opus — executable logic (wi.py)
 
 ## Notes
 - 2026-09-18 claimed by unknown@e3a28d2cc009
+
+impl: DONE_WITH_CONCERNS 65344d7 (check-ignore on items + a would-be item path; ls-files only at >=10 items; lint exits 3; prime header-trim fix)
+dispatch: reviewer opus — rule 4
