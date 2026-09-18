@@ -131,6 +131,15 @@ class TestRehydrate(unittest.TestCase):
         rc, out = self.hook("compact")
         self.assertNotIn("keep the auth thread", self.ctx(out))
 
+    def test_empty_custom_instructions_consumed_too(self):
+        self.write_manifest()
+        for ci in ("", None):
+            with self.subTest(ci=ci):
+                st = L.load_state("s"); st["custom_instructions"] = ci
+                L.save_state("s", st)
+                self.hook("compact")
+                self.assertNotIn("custom_instructions", L.load_state("s"))
+
     def test_sandbox_dir_preferred(self):
         os.makedirs(os.path.join(self.repo, ".claude-sandbox"))
         open(os.path.join(self.repo, ".claude-sandbox", "HANDOFF.md"), "w").write(

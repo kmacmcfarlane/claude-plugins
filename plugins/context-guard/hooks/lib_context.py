@@ -27,8 +27,14 @@ LOCK_TIMEOUT_S; on timeout, error, or a platform without fcntl it proceeds
 unlocked - today's behaviour - rather than block a session). save_state writes
 a unique temp file in the same dir (created O_EXCL, as tempfile.mkstemp does,
 without the ~5 ms tempfile import on every status-line render) and
-os.replace()s it, so a racing writer can never install a torn file. A session id becomes a file name only
-when it is a safe token; anything else is hashed, so no id escapes the dir.
+os.replace()s it, so a racing writer can never install a torn file. A session
+id becomes a file name only when it is a safe token; anything else is hashed,
+so no id escapes the dir. The lock file is opened O_NOFOLLOW, so a planted
+symlink cannot make it create a file outside the dir.
+
+sweep_stale() (called by the SessionStart rehydrate hook) removes the dotfiles
+a killed writer leaves behind: temp files older than a day, and lock files of
+sessions whose state file is over 30 days old or gone. At most once a day.
 """
 import json, os, re, time
 try:
@@ -51,6 +57,7 @@ def _state_dir():
 
 
 LOCK_TIMEOUT_S = 0.2
+_NOFOLLOW = getattr(os, "O_NOFOLLOW", 0)
 _SAFE_SID = re.compile(r"[A-Za-z0-9_-][A-Za-z0-9._-]{0,127}")
 
 
@@ -129,7 +136,7 @@ def _acquire(session_id):
     fd = None
     try:
         fd = os.open(os.path.join(_state_dir(), "." + safe_sid(session_id) + ".lock"),
-                     os.O_RDWR | os.O_CREAT, 0o600)
+                     os.O_RDWR | os.O_CREAT | _NOFOLLOW, 0o600)
         deadline = time.monotonic() + LOCK_TIMEOUT_S
         while True:
             try:
@@ -177,6 +184,94 @@ def update_state(session_id, fn):
         _release(fd)
 
 
+TMP_MAX_AGE_S = 24 * 3600
+LOCK_MAX_AGE_S = 30 * 24 * 3600
+SWEEP_EVERY_S = 24 * 3600
+_TMP_RE = re.compile(r"\.(.+)\.\d+\.[0-9a-f]+\.tmp")
+_LOCK_RE = re.compile(r"\.(.+)\.lock")
+
+
+def sweep_stale(keep=None, now=None):
+    """Best-effort removal of orphaned dotfiles in the state dir: temp files
+    (`.<sid>.<pid>.<hex>.tmp`, which a writer killed mid-save leaks) older than
+    TMP_MAX_AGE_S, and lock files (`.<sid>.lock`) whose session's state file is
+    older than LOCK_MAX_AGE_S - or gone, with the lock itself that old. The
+    session `keep` is never touched, and a lock someone holds is skipped: it is
+    removed only while this call holds it. Runs at most once per SWEEP_EVERY_S
+    (a `.swept` stamp). Returns the names removed; never raises."""
+    removed = []
+    try:
+        now = time.time() if now is None else now
+        d = _state_dir()
+        stamp = os.path.join(d, ".swept")
+        try:
+            if now - os.stat(stamp).st_mtime < SWEEP_EVERY_S:
+                return removed
+        except OSError:
+            pass
+        try:
+            with open(stamp, "w"):
+                pass
+            os.utime(stamp, (now, now))
+        except OSError:
+            pass
+        skip = safe_sid(keep) if keep else None
+
+        def age(p):
+            try:
+                return now - os.lstat(p).st_mtime
+            except OSError:
+                return None
+
+        for name in os.listdir(d):
+            if not name.startswith("."):
+                continue
+            p = os.path.join(d, name)
+            try:
+                m = _TMP_RE.fullmatch(name)
+                if m:
+                    a = age(p)
+                    if m.group(1) != skip and a is not None and a > TMP_MAX_AGE_S:
+                        os.unlink(p)
+                        removed.append(name)
+                    continue
+                m = _LOCK_RE.fullmatch(name)
+                if not m or m.group(1) == skip:
+                    continue
+                sa = age(os.path.join(d, m.group(1) + ".json"))
+                if sa is None:
+                    sa = age(p)
+                if sa is None or sa <= LOCK_MAX_AGE_S:
+                    continue
+                if _unlink_unheld_lock(p):
+                    removed.append(name)
+            except Exception:
+                continue
+    except Exception:
+        pass
+    return removed
+
+
+def _unlink_unheld_lock(p):
+    """Unlink lock file p only if its lock is free, holding it meanwhile."""
+    if fcntl is None:
+        return False
+    fd = None
+    try:
+        fd = os.open(p, os.O_RDWR | _NOFOLLOW)
+        fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        os.unlink(p)
+        return True
+    except Exception:
+        return False
+    finally:
+        if fd is not None:
+            try:
+                os.close(fd)
+            except Exception:
+                pass
+
+
 def epoch(state):
     return int(state.get("epoch", 0))
 
@@ -193,6 +288,14 @@ def _reset(st, compact_summary):
     st.pop("due", None)
     st["prompt_n"] = 0
     ex = st.get("exact") or {}
+    # The fill the ending epoch reached, read under the lock before the demote
+    # below drops it (postcompact_epoch logs it in the ledger's epoch header).
+    # The status line's exact record is the source; a top-level `tokens` (no
+    # current writer) is the fallback.
+    try:
+        st["epoch_end_tokens"] = int(ex.get("tokens") or st.get("tokens") or 0)
+    except (TypeError, ValueError):
+        st["epoch_end_tokens"] = 0
     if ex.get("window"):
         # Demote, don't stamp: the record's tokens/pct describe the epoch that
         # just ended, so a still-fresh one would HARD-block a 3% session until

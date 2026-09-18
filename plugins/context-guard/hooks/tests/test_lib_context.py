@@ -1,4 +1,4 @@
-import json, os, sys, tempfile, unittest
+import json, os, sys, tempfile, time, unittest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -192,6 +192,64 @@ class TestLedger(Base):
         self.assertLessEqual(len(t), 220)
         self.assertIn("entry 199", t)
         self.assertNotIn("entry 0\n", t)
+
+
+
+class TestSweep(Base):
+    def d(self):
+        return os.path.dirname(L.state_path("x"))
+
+    def touch(self, name, age_days=0):
+        p = os.path.join(self.d(), name)
+        with open(p, "w") as fh:
+            fh.write("{}")
+        t = time.time() - age_days * 86400
+        os.utime(p, (t, t))
+        return p
+
+    def test_sweeps_old_temp_and_dead_locks_only(self):
+        self.touch(".a.1.abcdef012345.tmp", 2)       # old temp: gone
+        self.touch(".b.1.abcdef012345.tmp", 0.1)     # young temp: kept
+        self.touch("c.json", 31); self.touch(".c.lock", 31)   # dead session: lock gone
+        self.touch("d.json", 1); self.touch(".d.lock", 60)    # live session: kept
+        self.touch(".e.lock", 31)                    # orphan lock, no state: gone
+        self.touch(".f.lock", 1)                     # young orphan lock: kept
+        self.touch(".k.1.abcdef012345.tmp", 9); self.touch(".k.lock", 90)  # keep=k
+        removed = L.sweep_stale(keep="k")
+        self.assertEqual(sorted(removed), [".a.1.abcdef012345.tmp", ".c.lock", ".e.lock"])
+        left = set(os.listdir(self.d()))
+        for n in (".b.1.abcdef012345.tmp", "c.json", "d.json", ".d.lock", ".f.lock",
+                  ".k.1.abcdef012345.tmp", ".k.lock"):
+            self.assertIn(n, left)
+
+    def test_held_lock_is_not_removed(self):
+        import fcntl
+        self.touch("h.json", 40)
+        p = self.touch(".h.lock", 40)
+        fd = os.open(p, os.O_RDWR)
+        fcntl.flock(fd, fcntl.LOCK_EX)
+        try:
+            self.assertEqual(L.sweep_stale(), [])
+        finally:
+            os.close(fd)
+        self.assertTrue(os.path.exists(p))
+
+    def test_runs_at_most_once_a_day_and_never_raises(self):
+        self.touch(".a.1.abcdef012345.tmp", 2)
+        self.assertEqual(len(L.sweep_stale()), 1)
+        self.touch(".b.1.abcdef012345.tmp", 2)
+        self.assertEqual(L.sweep_stale(), [])        # stamped: skipped
+        self.assertEqual(len(L.sweep_stale(now=time.time() + 2 * 86400)), 1)
+        from unittest import mock
+        with mock.patch.object(L.os, "listdir", side_effect=OSError("boom")):
+            self.assertEqual(L.sweep_stale(now=time.time() + 9 * 86400), [])
+
+    def test_lock_open_refuses_symlink(self):
+        outside = os.path.join(self.tmp.name, "outside")
+        os.symlink(outside, os.path.join(self.d(), ".y.lock"))
+        L.update_state("y", lambda st: st.update(a=1))   # proceeds unlocked
+        self.assertFalse(os.path.exists(outside))
+        self.assertEqual(L.load_state("y")["a"], 1)
 
 
 if __name__ == "__main__":

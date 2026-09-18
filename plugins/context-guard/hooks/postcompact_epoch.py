@@ -24,10 +24,11 @@ def main():
         print(json.dumps({})); return
 
     sid = inp.get("session_id", "unknown")
-    st_before = L.load_state(sid)
+    # The ending epoch's fill is captured inside reset_epoch's locked
+    # read-modify-write (epoch_end_tokens), not read from an unlocked snapshot.
     st = L.reset_epoch(sid, compact_summary=inp.get("compact_summary")
                        if ev == "PostCompact" else None)
-    ledger.epoch_header(sid, L.epoch(st), int(st_before.get("tokens") or 0))
+    ledger.epoch_header(sid, L.epoch(st), int(st.get("epoch_end_tokens") or 0))
     print(json.dumps({}))
 
 

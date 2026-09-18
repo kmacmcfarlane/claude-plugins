@@ -5,7 +5,9 @@ this is what you were working on, and these are the scrolls we saved."
 Current repo state outranks the manifest: when the manifest lists `items:`,
 each id the work-item store now has done, dropped or missing is named as a
 DEAD CLAIM; when HEAD has moved past the recorded `head` (store-only commits
-excluded) or diverged from it, the `## Next` body is withheld, not warned.
+excluded) or diverged from it, the `## Next` body is withheld, not warned. A
+rewind or divergence whose skipped commits are all store-only is no code drift:
+the manifest still describes the code, so it reads FRESH with Next shown.
 
 The manifest (HANDOFF.md, spec: skills/checkpoint/references/handoff-format.md)
 is AUTHORED by the checkpoint skill, never synthesized here: intent is a
@@ -25,6 +27,9 @@ Budget: total additionalContext <= 9,000 chars, under the harness's single
 10,000-char cap (overflow would be replaced by a file stub, silently dropping
 the mandatory tiers). Trim order: the frontmatter `items:` list, Scrolls, then
 Aware-of, never Doing/Goal/Read-in-full.
+
+SessionStart is also where orphaned state-dir dotfiles are swept
+(L.sweep_stale: stale temp files, dead sessions' lock files; once a day).
 
 Never exits non-zero: the staleness checks degrade to the plain manifest on
 any internal error, and anything else degrades to {}.
@@ -209,14 +214,32 @@ def head_state(fm, top):
 
 
 def divergence(hs):
-    """Why the recorded head no longer describes HEAD by ancestry, or None."""
+    """Why the recorded head no longer describes HEAD by ancestry, or None.
+    Not an ancestor, but with zero code commits on either side (HEAD rewound
+    over, or diverged by, store-only commits): no code drift, so None."""
     if not hs:
         return None
     if not hs["known"]:
         return "recorded head not found locally"
-    if not hs["ancestor"]:
+    if not hs["ancestor"] and not (hs["n"] == 0 and hs.get("behind") == 0):
         return "recorded head is not an ancestor"
     return None
+
+
+def code_drift(hs):
+    """Code commits on both sides of rec...HEAD (ahead + behind), or None."""
+    if not hs or hs["n"] is None:
+        return None
+    return hs["n"] + (hs.get("behind") or 0)
+
+
+def unverified_reason(top):
+    """Why a recorded head could not be checked: `git unavailable` when git
+    itself does not run (missing, failing, hung), else `head unverified` (git
+    works but there is no HEAD to check against: not a repo, or no commits)."""
+    if _git_hung or git(top, "--version") is None:
+        return "git unavailable"
+    return "head unverified"
 
 
 def head_moved(hs):
@@ -264,12 +287,14 @@ def is_landed(fm):
     return (fm.get("mode") or "").startswith("land")
 
 
-def liveness(fm, hs):
+def liveness(fm, hs, unverified_why="git unavailable"):
     """(label, reason or None). Reads the same head_state as the Next withhold:
     a recorded head missing locally or not an ancestor of HEAD (rewound,
-    diverged) is AGED with that reason, never FRESH. A recorded head that git
-    could not check (unavailable, failing, hung) carries `git unavailable`, so
-    an unverified manifest never reads as plain FRESH."""
+    diverged) is AGED with that reason, never FRESH. A recorded head that could
+    not be checked carries `unverified_why` (main passes unverified_reason():
+    `git unavailable` or `head unverified`), so an unverified manifest never
+    reads as plain FRESH. Drift counts code commits on both sides (ahead +
+    behind): a HEAD 50 commits behind is as STALE as one 50 ahead."""
     if is_landed(fm):
         return "LANDED", None
     age_h = None
@@ -278,10 +303,10 @@ def liveness(fm, hs):
         age_h = (time.time() - time.mktime(t)) / 3600
     except Exception:
         pass
-    drift = hs["n"] if hs else None
+    drift = code_drift(hs)
     why = divergence(hs)
     rec = fm.get("head")
-    unverified = "git unavailable" if hs is None and isinstance(rec, str) and rec \
+    unverified = unverified_why if hs is None and isinstance(rec, str) and rec \
         else None
     if (age_h is not None and age_h > 7 * 24) or (drift is not None and drift > 30):
         return "STALE", why or unverified
@@ -516,7 +541,10 @@ def main():
         fm = front_matter(text)
         sha = hashlib.sha1(text.encode()).hexdigest()[:12]
         hs = None if is_landed(fm) else head_state(fm, top)
-        live, why = liveness(fm, hs)
+        rec = fm.get("head")
+        live, why = liveness(fm, hs, unverified_reason(top) if hs is None
+                             and not is_landed(fm) and isinstance(rec, str) and rec
+                             else "git unavailable")
         dirty = git(top, "status", "--porcelain") or ""
         header = (f"[context-guard rehydration] {live}{f' ({why})' if why else ''} "
                   f"manifest {path} "
@@ -550,7 +578,8 @@ def main():
             parts += [header, preamble] + ([checks] if checks else []) + \
                 [trim(text, CAP - len(header) - len(preamble) - len(checks)
                       - LEDGER_BUDGET - 400)]
-            sysmsg = f"Rehydrated from {live} manifest ({fm.get('written', '?')})."
+            sysmsg = (f"Rehydrated from {live}{f' ({why})' if why else ''} manifest "
+                      f"({fm.get('written', '?')}).")
         else:
             parts.append(header + " Read it before resuming its thread."
                          + "".join("\n" + c for c in (checks, moved) if c))
@@ -568,12 +597,13 @@ def main():
     def write_back(cur):
         if seen_new is not None:
             cur["manifest"] = seen_new
-        if source == "compact" and st.get("custom_instructions") is not None \
+        if source == "compact" and "custom_instructions" in st \
                 and cur.get("custom_instructions") == st.get("custom_instructions"):
             # Consumed once; a newer /compact guidance written meanwhile stays.
             cur.pop("custom_instructions", None)
 
     L.update_state(sid, write_back)
+    L.sweep_stale(keep=sid)
     healed = heal_statusline()
     if healed:
         sysmsg = f"{sysmsg} {healed}" if sysmsg else healed

@@ -60,17 +60,24 @@ TOC, read on demand: `path — one line on what it holds`.
   (deploy state, test fixtures/accounts, cross-ticket blocks, model/agent rules,
   CORRECTION/REFUSED lines).
 - The hook labels the manifest FRESH (fresh), AGED (>24h, any commit drift, or a recorded
-  `head` that no longer describes HEAD by ancestry), STALE (>7 days or >30 commits — goal lines
-  must be re-confirmed with the operator), LANDED (`mode: land*` — header-only, the work is
-  done). Drift never counts commits that touch only `.claude-sandbox/work` (store chores). The
+  `head` that no longer describes HEAD by ancestry), STALE (>7 days or >30 commits of drift,
+  counting both sides — commits ahead plus commits behind, so a HEAD 50 behind is STALE — goal
+  lines must be re-confirmed with the operator), LANDED (`mode: land*` — header-only, the work
+  is done). Drift never counts commits that touch only `.claude-sandbox/work` (store chores),
+  so a HEAD rewound over (or diverged by) store-only commits is no code drift: it reads FRESH
+  with Next shown, not "not an ancestor". The
   label and the Next withhold read the same ancestry check, so a withheld Next is never FRESH:
   a recorded head missing locally reads `AGED (recorded head not found locally)`, one that is
   not an ancestor of HEAD (HEAD rewound behind it, or diverged) reads
   `AGED (recorded head is not an ancestor)` — `STALE (<reason>)` when age or drift already
-  make it STALE. When git cannot check the recorded head at all (not installed, failing, or
-  hung past its 5s timeout), the checks degrade to the plain manifest (Next shown) and the
-  label carries `(git unavailable)` — `FRESH (git unavailable)`, or `AGED`/`STALE` on age —
-  so an unverified manifest never reads as plain FRESH.
+  make it STALE. When the recorded head cannot be checked at all, the checks degrade to the
+  plain manifest (Next shown) and the label carries the reason, so an unverified manifest
+  never reads as plain FRESH: `(git unavailable)` when git itself does not run (not
+  installed, failing, or hung past its 5s timeout), `(head unverified)` when git runs but
+  there is no HEAD to check against (the manifest sits outside a repo, or the repo has no
+  commits) — e.g. `FRESH (head unverified)`, or `AGED`/`STALE` on age. The one-line
+  `systemMessage` shown to the operator carries the same label and reason
+  (`Rehydrated from AGED (recorded head is not an ancestor) manifest (...)`).
 - **Current repo state outranks the manifest.** git log and the work-item store are the
   durable record; the manifest is only the reasoning. The injected precedence line says so:
   repo state beats the manifest; the manifest and ledger beat any machine summary.
@@ -94,7 +101,8 @@ TOC, read on demand: `path — one line on what it holds`.
   - not an ancestor (HEAD rewound behind the recorded head, or diverged from it): N is the
     commits on HEAD's side and M those on the recorded head's side, from one
     `git rev-list --left-right --count <recorded>...HEAD`, so a pure rewind reads
-    `0 commits ahead, M behind`:
+    `0 commits ahead, M behind` (M ≥ 1: a rewind with no code commits on either side is
+    FRESH and Next is shown):
     `... head moved <N> commit(s) ahead, <M> behind since this manifest (<recorded>..<current>,
     recorded head is not an ancestor); ...`
   - not found locally (N is unknowable): `... head moved ? commits since this manifest
