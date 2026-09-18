@@ -33,7 +33,8 @@ First verify it exists and is on branch `worktree-<name>`
 Store: export WI_ROOT=<absolute path to the main checkout>/.claude-sandbox/work
 CLI:   WI="python3 $(ls $WORKTREE/plugins/*/skills/work-items/scripts/wi.py | head -1)"
        <on a repo with no plugins/ tree, substitute the installed work-items plugin's
-       wi.py by absolute path: ls -t "${CLAUDE_CONFIG_DIR:-$HOME/.claude}"/plugins/cache/kmacmcfarlane/work-items/*/skills/work-items/scripts/wi.py | head -1>
+       wi.py by absolute path, resolved with the lines in references/troubleshooting.md
+       (installed_plugins.json installPath first, the ls -t cache glob as fallback)>
 
 Read it first, in full:  $WI show <id>
 Item: <id> — <title>
@@ -114,7 +115,9 @@ when it differs from the previous round's, this is a fresh dispatch, not a resum
 Findings to fix are listed below, verbatim. Fix each finding at medium or
 above; each low/nit you decline, state under DECLINED with a reason. Fix as one or more NEW
 commits on top of <reviewed sha>; never amend, rebase, or squash — the reviewer diffs from
-that sha. Report every new sha under COMMIT.
+that sha. Report every new sha under COMMIT. A finding against a commit subject or
+message is not fixed by rewriting it (no reset, amend or rebase): decline it under
+DECLINED with "carried in the merge message".
 
 ## Prohibitions
 

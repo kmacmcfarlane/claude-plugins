@@ -65,10 +65,12 @@ is reviewed by eye, not waved through.
 
 ## 3. Doctrine
 
-Read the full diff — `git -C $W diff main...HEAD` — against the README's doctrine section
-when present (the seven principles below are its content; apply each where its subject
-exists — on a repo with no plugins/ tree most are vacuous), one principle at a time, plus
-the repo's own workflow:
+Read the full diff — `git -C $W diff main...HEAD` — against the repo's doctrine, one
+principle at a time, plus the repo's own workflow. In this marketplace that is README.md
+§ The doctrine, the canonical statement of the seven principles; the checks below apply
+them, and a finding cites a principle by its number there. A repo with no such
+section is measured by the checks below alone, each where its subject exists — on a repo
+with no plugins/ tree most are vacuous:
 
 - [ ] **One plugin, one aim.** No plugin description gained an "and".
 - [ ] **Standalone test.** Nothing new requires another plugin from this marketplace to be

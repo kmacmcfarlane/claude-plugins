@@ -41,7 +41,8 @@ Model: <opus|fable> — your tier; reviewer matches the implementer (<implemente
 Store: export WI_ROOT=<absolute path to the main checkout>/.claude-sandbox/work
 CLI:   WI="python3 $(ls $WORKTREE/plugins/*/skills/work-items/scripts/wi.py | head -1)"
        <on a repo with no plugins/ tree, substitute the installed work-items plugin's
-       wi.py by absolute path: ls -t "${CLAUDE_CONFIG_DIR:-$HOME/.claude}"/plugins/cache/kmacmcfarlane/work-items/*/skills/work-items/scripts/wi.py | head -1>
+       wi.py by absolute path, resolved with the lines in references/troubleshooting.md
+       (installed_plugins.json installPath first, the ls -t cache glob as fallback)>
 Read it in full first: $WI show <id>
 Acceptance: <one or two lines, copied from the item body>
 Files in scope: <explicit list; anything else in the diff is a finding>
@@ -132,7 +133,7 @@ NOTES: anything you noticed that is not a finding; questions for the librarian
 
 ## Re-review variant
 
-After the implementer pushes fix commits, resume the **same** reviewer (it has the context)
+After the implementer commits its fixes, resume the **same** reviewer (it has the context)
 with this in place of "What to do" — unless the fix round changed the tier (Route rules 3, 4
 and 6):
 a resumed agent keeps its model, so dispatch a fresh reviewer at the new tier with the full

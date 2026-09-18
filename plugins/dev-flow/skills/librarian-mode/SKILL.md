@@ -68,8 +68,7 @@ Do this at session start and after any `/clear` or compaction. Never `ls` the wh
    ```
 
    An empty glob is normal when the repo does not carry the plugin — use the installed
-   `work-items` plugin's copy from the plugin cache (the exact `ls -t` line is in
-   `references/troubleshooting.md`).
+   `work-items` plugin's copy (exact lines: `references/troubleshooting.md`).
 
    **First start** — no store at `$WI_ROOT`, an existing `.work/` one, what `status` does
    instead: `references/first-start.md`.
@@ -89,6 +88,7 @@ Do this at session start and after any `/clear` or compaction. Never `ls` the wh
    ```bash
    $WI prime
    $WI show <id> --brief      # for each item marked doing by you
+   grep -rh '^decision [0-9]' "$WI_ROOT" | sort -k2 -n | tail -1  # last decision N
    ```
 
 4. **Inventory the tree.**
@@ -132,7 +132,7 @@ For every request, in this order:
    recommendation first. Exactly one decision: AskUserQuestion, whose dialog carries the
    options. Two or more: a numbered prose list, one decision per number, numbered from the
    Report's counter, so the operator answers by number. Either way, never in the same turn
-   as a heavy analysis; end with the analysis and ask next turn.
+   as a heavy analysis: end with the analysis, ask next turn.
 
 4. **Refuse what is out of scope.** Anything outside Scope (Exclude included), pushing
    early or pushing anything but `main`: close the item with `$WI done <id> --drop`
@@ -250,8 +250,7 @@ to falsify it. You own making the gate come back clear.
    record in the item body.
 
 3. **Fix loop.** The reviewer's verdict is `CLEAR`, `NEEDS_CHANGES`, `SHOW_STOPPER`, or
-   `BLOCKED`. One round in full — each verdict, who is resumed, what each is handed:
-   `references/fix-loop.md`.
+   `BLOCKED`. Who is resumed, with what, per verdict: `references/fix-loop.md`.
    - Repeat until `CLEAR`. **Cap: 4 review rounds** — the first review plus three fix
      rounds. A fourth review without `CLEAR` means the brief or the item is wrong, not
      the code: block it and ask the operator to weigh in. Tier per round:
@@ -324,8 +323,8 @@ decisions needed: <numbered list, or none>
 and their impact, recommendation first — so the operator answers by number ("2: b"). A
 lone decision is still numbered, and a number is never reused, so "answer 4" is
 unambiguous. The counter lives in the store, not this transcript: raising a decision
-appends `decision N: <one line>` to the body of the item it concerns, and on re-entry you
-continue from the highest N in any open item's body, else 1. An unanswered decision keeps
+appends `decision N: <one line>` to the body of the item it concerns; on re-entry continue
+from the highest N in the store (Rehydrate step 3), else 1. An unanswered one keeps
 its number.
 
 Batch several landings in one message, four lines each; anything blocked or declined

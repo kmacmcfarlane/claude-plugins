@@ -33,3 +33,13 @@ report. `SHOW_STOPPER` and the operator's share of the findings: SKILL.md § Rev
 
 Then repeat until `CLEAR`, inside the cap: a fourth review that is not `CLEAR` blocks the
 item and goes to the operator.
+
+## A bad commit subject
+
+A finding against a commit's subject or message is never fixed by rewriting history —
+the reviewer diffs from the reviewed sha, and `main` may have moved since the worktree
+branched. Either the implementer declines it (a low/nit, reason "carried in the merge
+message") or it stays as is and the Land step's merge message carries the corrected
+subject. Never brief `git reset --soft main`, an amend, a rebase or a squash to redo it:
+once `main` has moved, a soft reset onto it stages the inverse of `main`'s newer commits
+into the next commit.

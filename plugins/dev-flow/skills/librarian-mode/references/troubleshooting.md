@@ -38,11 +38,16 @@ The same case as Rehydrate step 1 states it, which is where the installed path i
 
 An empty glob is normal on a repo that does not carry the plugin in its tree: use the
 installed `work-items` plugin's copy (not `${CLAUDE_PLUGIN_ROOT}`, which is this plugin's
-root and carries no `wi`), same `WI_ROOT`:
+root and carries no `wi`), same `WI_ROOT`. The key is the harness's own install record, `installed_plugins.json`
+`plugins['work-items@kmacmcfarlane'][0].installPath`; the newest cached version (`ls -t`)
+is the fallback when that record is missing or unreadable:
 
 ```bash
-WI="python3 $(ls -t "${CLAUDE_CONFIG_DIR:-$HOME/.claude}"/plugins/cache/kmacmcfarlane/work-items/*/skills/work-items/scripts/wi.py | head -1)"
+P="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/plugins"
+WI_PY="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["plugins"]["work-items@kmacmcfarlane"][0]["installPath"])' "$P/installed_plugins.json" 2>/dev/null)/skills/work-items/scripts/wi.py"
+test -f "$WI_PY" || WI_PY=$(ls -t "$P"/cache/kmacmcfarlane/work-items/*/skills/work-items/scripts/wi.py | head -1)
+WI="python3 $WI_PY"
 ```
 
-The newest cached version wins; an empty result means `work-items` is not installed on
-this machine — install it (`/plugin install work-items@kmacmcfarlane`) before continuing.
+An empty `WI_PY` after both means `work-items` is not installed on this machine — install
+it (`/plugin install work-items@kmacmcfarlane`) before continuing.

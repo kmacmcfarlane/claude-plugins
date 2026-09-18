@@ -46,8 +46,10 @@ toward either, so a fix that ships with its regression test is still one file. A
 rewrite of a permission allowlist and its mount config across two YAML files is
 non-trivial: fable. A one-line or mechanical fix in gating or security code or config — a
 CRLF strip, a path correction, a renamed flag — does not reach fable; it stays at the
-tier the opus table gives it (executable logic: opus). Fable usage runs out fast, and a
-small fix gains nothing from it.
+tier the opus table gives it (executable logic: opus). That exclusion wins over "such
+lines changed in more than one file": the same one-line or mechanical fix repeated
+across several files is still not non-trivial. Fable usage runs out fast, and a small fix
+gains nothing from it.
 
 ## Product repos
 
