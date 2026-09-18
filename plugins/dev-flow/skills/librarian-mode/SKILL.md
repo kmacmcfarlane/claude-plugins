@@ -137,9 +137,10 @@ For every request, in this order:
    early or pushing anything but `main`: close the item with `$WI done <id> --drop`
    after recording why, and tell the requester.
 
-5. **dev-flow.** For a spike or feature, check whether `investigate` and `implement` are
-   installed (`references/agent-brief.md` § dev-flow). Installed: the brief routes the
-   work through them. Not installed: note in the item that they can be used, and go on.
+5. **dev-flow.** A spike or feature goes through `investigate` and `implement`, this
+   skill's siblings in the dev-flow plugin and so always present: the brief routes the
+   work through them (`references/agent-brief.md` § dev-flow). Bugs, chores and
+   refactors do not.
 
 Expected output: an item id, and either a stated decision or a queued question.
 

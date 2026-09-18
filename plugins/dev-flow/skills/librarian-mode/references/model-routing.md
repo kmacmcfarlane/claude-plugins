@@ -137,11 +137,11 @@ every role on that item.
 **Product repo, a Go CLI opted in as `Scope: whole repo`.** "Add a `--json` flag to
 `list`." Code inside Scope: opus; no security surface, so fable does not apply.
 Implementer opus; reviewer opus. Both briefs carry the repo's `Checks:` (say `go test`
-over every package and `make lint`) and its `Workflow:` notes; dev-flow installed, so the
+over every package and `make lint`) and its `Workflow:` notes; a feature, so the
 implementer uses /investigate then /implement's build and verify steps in its worktree,
-non-interactively, per the brief's dev-flow block — none of their git or dialogs. "Fix a typo in the
-README": docs only, sonnet, reviewer opus. "Let `run` bind-mount the host's docker
-socket": a mount and a socket, fable for both roles. Item body for the first:
+non-interactively, per the brief's dev-flow block — none of their git or dialogs. "Fix a
+typo in the README": docs only, sonnet, reviewer opus. "Let `run` bind-mount the host's
+docker socket": a mount and a socket, fable for both roles. Item body for the first:
 
 ```
 dispatch: implementer opus — code inside a product repo's Scope

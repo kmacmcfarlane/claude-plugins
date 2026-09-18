@@ -72,7 +72,7 @@ copy and from where — absolute paths>
 <when ## Librarian has Workflow: — the repo's workflow, follow it:>
 <the Workflow: notes, verbatim>
 
-<when dev-flow is installed (§ dev-flow below) — spike or feature:>
+<spike or feature (§ dev-flow below):>
 Use the dev-flow skills for their method, not their git or their dialogs: a spike
 through /investigate, a feature through /investigate then /implement. Invoke both as
 running non-interactively (each skill's § Running non-interactively), and:
@@ -150,17 +150,9 @@ COMMIT: sha and message subject — in a fix round, every new sha
 
 ## dev-flow
 
-`investigate` and `implement` (the dev-flow plugin) count as installed when any of these
-holds; check once per session, at Intake:
-
-- the session's skill list names them, under any plugin prefix;
-- `ls "${CLAUDE_CONFIG_DIR:-$HOME/.claude}"/plugins/cache/*/dev-flow/*/skills/implement/SKILL.md`
-  finds a file;
-- the repo carries them: `ls "$MAIN"/plugins/*/skills/implement/SKILL.md`.
-
-Installed: include the dev-flow block in every spike or feature brief. Not installed: the
-Intake note in the item says they can be used (install `dev-flow`), and the brief omits
-the block; the work goes on without them. Bugs, chores and refactors never need it.
+`investigate` and `implement` ship in the dev-flow plugin beside this skill, so they are
+present wherever the librarian runs; there is nothing to detect. Include the dev-flow
+block in every spike or feature brief. Bugs, chores and refactors never need it.
 
 ## Sharpening a brief for re-dispatch
 

@@ -18,12 +18,12 @@ plugins/
     hooks/             # Gate, statusline sensor, ledger, rehydrate + unit tests
     skills/
       {checkpoint,install-statusline,usage-report}/
-  dev-flow/            # Plan before you code
+  dev-flow/            # Plan before you code; the librarian that takes custody of a repo
     skills/
-      {investigate,implement,deep-investigation,chain-of-verification}/
+      {investigate,implement,deep-investigation,chain-of-verification,librarian-mode}/
   kit-dev/             # Maintaining this kit itself
     skills/
-      {create-skill,update-kit,new-project-from-template,factor-analysis,librarian-mode}/
+      {create-skill,update-kit,new-project-from-template,factor-analysis}/
   ralph/               # Unattended agent loops over a backlog
     skills/
       {backlog-yaml,backlog-entry,backlog-grooming}/
