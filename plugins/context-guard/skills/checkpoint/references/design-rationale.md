@@ -94,7 +94,14 @@ Three layers, escalating; the first two are hooks, the third is a skill.
    `context_window_size` (the only place Claude Code exposes exact depth) and writes them to
    `~/.claude/claude-kit/context-gate/<session>.json` (a historical directory name, kept across
    the move into `context-guard`). Hooks read that; they do not get the
-   fields themselves. Falls back to transcript `usage` inference.
+   fields themselves. Falls back to transcript `usage` inference. The standalone `statusline`
+   plugin writes the same `exact` block (plus `rate_limits`) to its own neutral sensor record,
+   `${CLAUDE_CONFIG_DIR:-~/.claude}/statusline/sensor/<session>.json` (`"v": 1`; any other `v`
+   reads as absent). The hooks read both records and use the one with the larger `exact.at`
+   (`lib_context.sensor`). They never write the sensor file: a new epoch stamps `epoch_at` in
+   the gate's own state, and a record stamped at or before it counts as window-only. The gate
+   publishes its threshold anchors and gauge labels to `claude-kit/context-gate/gauge.json`
+   (`"v": 1`) at SessionStart, generated from the same `ANCHORS` constant it gates on.
 2. **Bands** (`UserPromptSubmit`, 60/75/88%, once each, latching) — to the operator via
    `systemMessage`, to the model via `additionalContext`. Only one can act; only the other can
    decide.
