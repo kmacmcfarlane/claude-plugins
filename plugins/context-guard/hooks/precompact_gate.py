@@ -24,28 +24,29 @@ def main():
         print(json.dumps({})); return
 
     sid = inp.get("session_id", "unknown")
-    st = L.load_state(sid)
-    st["last_compact_trigger"] = inp.get("trigger")
-    st["last_compact_at"] = time.strftime("%F %T")
+    manual = inp.get("trigger") == "manual"
+    if not manual:
+        tok, win, _, src = L.depth(inp.get("transcript_path", ""), sid)
+        th = L.thresholds(win)
+        proactive = tok and tok < win - th["hard"]
 
-    if inp.get("trigger") == "manual":
-        ci = inp.get("custom_instructions")
-        if ci:
-            st["custom_instructions"] = ci[:4000]
-        L.save_state(sid, st)
+    def apply(st):
+        st["last_compact_trigger"] = inp.get("trigger")
+        st["last_compact_at"] = time.strftime("%F %T")
+        if manual:
+            ci = inp.get("custom_instructions")
+            if ci:
+                st["custom_instructions"] = ci[:4000]
+            return
+        if L.checkpointed_this_epoch(st) or not proactive:
+            st.pop("compact_deferred", None)
+        else:
+            st["compact_deferred"] = True
+
+    st = L.update_state(sid, apply)
+    if not st.get("compact_deferred") or manual:
         print(json.dumps({})); return
 
-    tok, win, _, src = L.depth(inp.get("transcript_path", ""), sid)
-    th = L.thresholds(win)
-    proactive = tok and tok < win - th["hard"]
-
-    if L.checkpointed_this_epoch(st) or not proactive:
-        st.pop("compact_deferred", None)
-        L.save_state(sid, st)
-        print(json.dumps({})); return
-
-    st["compact_deferred"] = True
-    L.save_state(sid, st)
     sys.stderr.write(
         f"[context-guard context gate] Auto-compaction deferred: no checkpoint has "
         f"run this epoch and there is headroom ({win - tok:,} tokens, {src}). "

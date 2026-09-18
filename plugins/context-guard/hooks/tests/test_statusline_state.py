@@ -236,8 +236,9 @@ class StateRecord(unittest.TestCase):
                 self.assertLess(len(out), 400)
                 self.assertEqual(self.read_state()["exact"]["pct"], stored)
 
-    def test_nonpositive_size_is_unknown(self):
-        for size in (0, -5, -1e9):
+    def test_nonpositive_or_fractional_size_is_unknown(self):
+        # A size in (0, 1) passed the old `<= 0` check and int() made it 0.
+        for size in (0, -5, -1e9, 0.5, 0.999):
             with self.subTest(size=size):
                 out = self.run_line({"context_window": dict(CTX, context_window_size=size)})
                 self.assertIn("[Fable]", out)

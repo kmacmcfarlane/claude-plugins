@@ -33,6 +33,44 @@ def due_fires(st, tok):
             or tok - due.get("tok", 0) >= DUE_EVERY_TOKENS)
 
 
+def decide(st, tok, win, pct, src, whitelisted):
+    """Apply one prompt's accounting to `st` (in place, under the state lock)
+    and return the action: None, "hard_inferred", "hard", "due" or "band"."""
+    ep = L.epoch(st)
+    st["prompt_n"] = int(st.get("prompt_n", 0)) + 1
+    st.update(tokens=tok, pct=round(pct, 1), window=win)
+    if not tok:
+        return None
+    remaining = max(win - tok, 0)
+    th = L.thresholds(win)
+    if L.checkpointed_this_epoch(st):
+        # A checkpoint this epoch stands the whole gate down - DUE, HARD and
+        # the advisories. The operator has already acted on the depth.
+        return None
+    if remaining <= th["hard"] and not whitelisted:
+        if src == "exact":
+            return "hard"
+        # A guess never blocks: the window may be larger than inferred.
+        # Same cadence as DUE so a long stretch under a guessed 200K
+        # window does not nag on every prompt.
+        if not due_fires(st, tok):
+            return None
+        st["due"] = {"prompt_n": st["prompt_n"], "tok": tok}
+        return "hard_inferred"
+    if remaining <= th["due"]:
+        if due_fires(st, tok):
+            st["due"] = {"prompt_n": st["prompt_n"], "tok": tok}
+            return "due"
+        return None
+    bands = st.get("bands") or {}
+    if [b for b in BANDS if pct >= b and bands.get(str(b)) != ep]:
+        # Crossing latches every band at or below current depth for this epoch,
+        # so a jump straight past 60 to 75 never warns downward next prompt.
+        st["bands"] = {str(x): ep for x in BANDS if pct >= x}
+        return "band"
+    return None
+
+
 def main():
     try:
         inp = json.load(sys.stdin)
@@ -42,56 +80,35 @@ def main():
     sid = inp.get("session_id", "unknown")
     prompt = (inp.get("prompt") or "").strip()
     tok, win, pct, src = L.depth(inp.get("transcript_path", ""), sid)
-
-    st = L.load_state(sid)
-    ep = L.epoch(st)
-    st["prompt_n"] = int(st.get("prompt_n", 0)) + 1
-    st.update(tokens=tok, pct=round(pct, 1), window=win)
-
-    if not tok:
-        L.save_state(sid, st); print(json.dumps({})); return
-
-    remaining = max(win - tok, 0)
-    th = L.thresholds(win)
-    done = L.checkpointed_this_epoch(st)
     whitelisted = bool(WHITELIST.match(prompt))
 
-    if done:
-        # A checkpoint this epoch stands the whole gate down - DUE, HARD and
-        # the advisories. The operator has already acted on the depth.
-        L.save_state(sid, st)
-        print(json.dumps({}))
-        return
+    act = []
+    L.update_state(sid, lambda st: act.append(decide(st, tok, win, pct, src, whitelisted)))
+    act = act[0] if act else None
+    remaining = max(win - tok, 0)
+    th = L.thresholds(win)
 
-    if remaining <= th["hard"] and not done and not whitelisted:
-        L.save_state(sid, st)
-        if src != "exact":
-            # A guess never blocks: the window may be larger than inferred.
-            # Same cadence as DUE so a long stretch under a guessed 200K
-            # window does not nag on every prompt.
-            if not due_fires(st, tok):
-                print(json.dumps({})); return
-            st["due"] = {"prompt_n": st["prompt_n"], "tok": tok}
-            L.save_state(sid, st)
-            print(json.dumps({
-                "hookSpecificOutput": {
-                    "hookEventName": "UserPromptSubmit",
-                    "additionalContext":
-                        f"[context-guard context gate] HARD threshold reached by an "
-                        f"INFERRED depth: {remaining:,} tokens left of {win:,} "
-                        f"({src}); a hard stop was NOT applied because the depth "
-                        f"is inferred, not exact. A checkpoint has not run this "
-                        f"epoch. Run the checkpoint skill now; do not start new "
-                        f"work. If the real window is larger, tell the operator: "
-                        f"CLAUDE_KIT_CONTEXT_WINDOW=<tokens> in the launch "
-                        f"environment pins it, and the status line gives exact depth."},
-                "systemMessage":
-                    f"Context: {remaining:,} tokens left of {win:,} ({src}) — "
-                    f"under the hard threshold ({th['hard']:,}); not blocked because "
-                    f"the depth is inferred. Checkpoint now, or pin the window with "
-                    f"CLAUDE_KIT_CONTEXT_WINDOW if {win:,} is wrong.",
-            }))
-            return
+    if act == "hard_inferred":
+        print(json.dumps({
+            "hookSpecificOutput": {
+                "hookEventName": "UserPromptSubmit",
+                "additionalContext":
+                    f"[context-guard context gate] HARD threshold reached by an "
+                    f"INFERRED depth: {remaining:,} tokens left of {win:,} "
+                    f"({src}); a hard stop was NOT applied because the depth "
+                    f"is inferred, not exact. A checkpoint has not run this "
+                    f"epoch. Run the checkpoint skill now; do not start new "
+                    f"work. If the real window is larger, tell the operator: "
+                    f"CLAUDE_KIT_CONTEXT_WINDOW=<tokens> in the launch "
+                    f"environment pins it, and the status line gives exact depth."},
+            "systemMessage":
+                f"Context: {remaining:,} tokens left of {win:,} ({src}) — "
+                f"under the hard threshold ({th['hard']:,}); not blocked because "
+                f"the depth is inferred. Checkpoint now, or pin the window with "
+                f"CLAUDE_KIT_CONTEXT_WINDOW if {win:,} is wrong.",
+        }))
+        return
+    if act == "hard":
         sys.stderr.write(
             f"[context-guard context gate] HARD STOP: {remaining:,} tokens left of "
             f"{win:,} ({src}). Your prompt was NOT processed and was erased.\n"
@@ -99,47 +116,31 @@ def main():
             f"whitelisted) first, then re-send:\n"
             f"  {prompt[:200]}\n")
         sys.exit(2)
-
-    if remaining <= th["due"] and not done:
-        if due_fires(st, tok):
-            st["due"] = {"prompt_n": st["prompt_n"], "tok": tok}
-            L.save_state(sid, st)
-            print(json.dumps({
-                "hookSpecificOutput": {
-                    "hookEventName": "UserPromptSubmit",
-                    "additionalContext":
-                        f"[context-guard context gate] DUE: {remaining:,} tokens left "
-                        f"({src}); a checkpoint has not run this epoch. Finish the "
-                        f"current thought, then run the checkpoint skill. Do not "
-                        f"start new threads of work. HARD stop at {th['hard']:,} left."},
-                "systemMessage":
-                    f"Context: {remaining:,} tokens left — checkpoint is due "
-                    f"(hard stop at {th['hard']:,}).",
-            }))
-            return
-        L.save_state(sid, st)
-        print(json.dumps({})); return
-
-    bands = st.get("bands") or {}
-    unfired = [b for b in BANDS if pct >= b and bands.get(str(b)) != ep]
-    if unfired:
-        # Crossing latches every band at or below current depth for this epoch,
-        # so a jump straight past 60 to 75 never warns downward next prompt.
-        st["bands"] = {str(x): ep for x in BANDS if pct >= x}
-        L.save_state(sid, st)
-        if True:
-            print(json.dumps({
-                "hookSpecificOutput": {
-                    "hookEventName": "UserPromptSubmit",
-                    "additionalContext":
-                        f"[context-guard context gate] {pct:.0f}% of the window is used "
-                        f"({tok:,}/{win:,}, {src}). Prefer subagents for read-heavy "
-                        f"work; keep writing findings to disk."},
-                "systemMessage": f"Context {pct:.0f}% used ({remaining:,} left).",
-            }))
-            return
-    L.save_state(sid, st)
+    if act == "due":
+        print(json.dumps({
+            "hookSpecificOutput": {
+                "hookEventName": "UserPromptSubmit",
+                "additionalContext":
+                    f"[context-guard context gate] DUE: {remaining:,} tokens left "
+                    f"({src}); a checkpoint has not run this epoch. Finish the "
+                    f"current thought, then run the checkpoint skill. Do not "
+                    f"start new threads of work. HARD stop at {th['hard']:,} left."},
+            "systemMessage":
+                f"Context: {remaining:,} tokens left — checkpoint is due "
+                f"(hard stop at {th['hard']:,}).",
+        }))
+        return
+    if act == "band":
+        print(json.dumps({
+            "hookSpecificOutput": {
+                "hookEventName": "UserPromptSubmit",
+                "additionalContext":
+                    f"[context-guard context gate] {pct:.0f}% of the window is used "
+                    f"({tok:,}/{win:,}, {src}). Prefer subagents for read-heavy "
+                    f"work; keep writing findings to disk."},
+            "systemMessage": f"Context {pct:.0f}% used ({remaining:,} left).",
+        }))
+        return
     print(json.dumps({}))
-
 
 main()

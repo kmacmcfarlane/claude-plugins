@@ -486,9 +486,8 @@ def adopt_fork_state(sid, transcript_path):
                 out.write(open(pl, errors="replace").read())
         pst = L.load_state(parent)
         if pst.get("custom_instructions"):
-            st = L.load_state(sid)
-            st.setdefault("custom_instructions", pst["custom_instructions"])
-            L.save_state(sid, st)
+            L.update_state(sid, lambda st: st.setdefault(
+                "custom_instructions", pst["custom_instructions"]))
     except Exception:
         pass
 
@@ -507,7 +506,10 @@ def main():
     path, top = manifest_path(cwd)
 
     parts, sysmsg = [], None
+    # Read-only snapshot: the git and store checks below are slow, so the
+    # write-back at the end is a locked update of only the keys this hook owns.
     st = L.load_state(sid)
+    seen_new = None
 
     if path:
         text = open(path, errors="replace").read()
@@ -552,18 +554,26 @@ def main():
         else:
             parts.append(header + " Read it before resuming its thread."
                          + "".join("\n" + c for c in (checks, moved) if c))
-        st["manifest"] = {"sha": sha, "top": top}
+        seen_new = {"sha": sha, "top": top}
 
     if source == "compact":
         lt = ledger.tail(sid, max_chars=LEDGER_BUDGET)
         if lt:
             parts.append("[context-guard ledger — this session's reasoning trail, "
                          "newest last]\n" + lt)
-        ci = st.pop("custom_instructions", None)
+        ci = st.get("custom_instructions")
         if ci:
             parts.append(f"The operator's own /compact guidance was: {ci}")
 
-    L.save_state(sid, st)
+    def write_back(cur):
+        if seen_new is not None:
+            cur["manifest"] = seen_new
+        if source == "compact" and st.get("custom_instructions") is not None \
+                and cur.get("custom_instructions") == st.get("custom_instructions"):
+            # Consumed once; a newer /compact guidance written meanwhile stays.
+            cur.pop("custom_instructions", None)
+
+    L.update_state(sid, write_back)
     healed = heal_statusline()
     if healed:
         sysmsg = f"{sysmsg} {healed}" if sysmsg else healed
