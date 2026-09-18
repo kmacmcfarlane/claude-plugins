@@ -58,6 +58,7 @@ verbs, capability differences and canonical state mapping are in
   item's edits go in a worktree (from there, `WI_ROOT` points at the main checkout's store);
   the sandbox skill's worktree-mode section owns the details.
 - Item files are hand-editable; run `$WI lint` after hand edits, in the same turn.
+- A `wi: WARNING store … is silently untracked` line (second line of `prime`; a problem, exit 3, in `lint`) means new items are git-ignored, or ≥10 items are and none is tracked. Fix the ignore rule rather than working around it; the line names the remedies.
 - One session claims an item before working it; two sessions on one item is what `claim` is
   for — respect a conflict.
 - Migration of a repo's TODO.md is a reviewed, committed change (import → review items →
