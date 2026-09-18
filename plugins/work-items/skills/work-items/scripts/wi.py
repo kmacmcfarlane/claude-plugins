@@ -20,6 +20,7 @@ import hashlib
 import json
 import os
 import re
+import subprocess
 import sys
 import time
 from datetime import datetime, timezone
@@ -338,6 +339,69 @@ def resolve_root(explicit=None, must_exist=True):
     if must_exist and not (root / "items").is_dir():
         raise WiError(1, f"no work-item root at {root} (run `wi init`)")
     return root
+
+
+# Custody check: is the store silently untracked by the git repo that holds
+# it? (7f00/7772: a whole-dir /.claude-sandbox/ ignore, written by the
+# claude-sandbox launcher when trackInHost is false, hid new items.) At most
+# two bounded git calls, run from the store dir so git judges the repo that
+# contains it — a sidecar store's own nested repo included.
+GIT_TIMEOUT = 2.0
+# Below this many items, "none tracked" is a store not yet committed, which
+# `git status` already shows; at or above it, a store has grown without ever
+# being added.
+UNTRACKED_MIN_ITEMS = 10
+PROBE_ITEM = "items/wi-custody-probe-0000.md"   # a new item's would-be path
+
+
+def _git(cwd, *args):
+    env = {k: v for k, v in os.environ.items()
+           if k not in ("GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE")}
+    try:
+        return subprocess.run(["git"] + list(args), cwd=cwd, env=env,
+                              capture_output=True, text=True,
+                              timeout=GIT_TIMEOUT)
+    except (OSError, subprocess.SubprocessError):
+        return None   # git missing, cwd gone, or timed out
+
+
+def custody_warning(root):
+    """One-line warning when the store is silently untracked, else None.
+    Silent outside git, when git is missing or slow, or on any git error."""
+    # the probe path, not only `items`, catches a store whose tracked files
+    # mask the ignore rule: check-ignore skips tracked paths, but a new
+    # item's path is still matched against the rule. -v names the rule.
+    r = _git(root, "check-ignore", "-v", "--", "items", PROBE_ITEM)
+    if r is None or r.returncode not in (0, 1):
+        return None
+    rule = None
+    for line in r.stdout.splitlines():
+        m = re.match(r"^(.*?):(\d+):(.*?)\t", line)
+        if m and not m.group(3).startswith("!"):   # a negation un-ignores
+            rule = m.groups()
+            break
+    head = f"wi: WARNING store {root} is silently untracked: "
+    if rule:
+        src, lineno, pattern = rule
+        fix = [f"new items are git-ignored by {src}:{lineno} '{pattern}'; "
+               "fix: remove or negate that rule"]
+        if root.absolute().parent.name == ".claude-sandbox":
+            fix.append(" and set trackInHost: true in the sandbox config (a "
+                       "claude-sandbox launcher at 490d8ca or later warns "
+                       "about this)")
+            if pattern.strip() in SANDBOX_IGNORES:
+                # agents 0002: a public-shaped repo keeps the whole-dir
+                # ignore; removing it would publish private items
+                fix.append(", or, for a public repo, give .claude-sandbox/ "
+                           "its own sidecar git")
+        return head + "".join(fix)
+    n = len(item_paths(root))
+    if n < UNTRACKED_MIN_ITEMS:
+        return None
+    r = _git(root, "ls-files", "--", ".")
+    if r is None or r.returncode != 0 or r.stdout.strip():
+        return None
+    return head + f"it holds {n} items and git tracks none; fix: `git add` the store"
 
 
 class Lock:
@@ -897,7 +961,11 @@ def cmd_prime(args):
     lines = [f"wi: {root} · {n_open} open · {len(grouped['doing'])} doing · "
              f"{len(grouped['blocked'])} blocked · run `wi show <id>` before "
              f"working an item, `wi handoff` at every stop"]
-    spent = tokens(lines[0])
+    warning = custody_warning(root)
+    # the warning is header: its tokens are reserved from the budget, and it
+    # is inserted after trimming so trimming never drops it
+    reserved = tokens(warning) + 1 if warning else 0
+    spent = tokens(lines[0]) + reserved
 
     def fits(line):
         return spent + tokens(line) + 1 <= budget
@@ -931,8 +999,13 @@ def cmd_prime(args):
     if shown < len(ready):
         lines.append(f"       … (+{len(ready) - shown}, wi next)")
     text = "\n".join(lines)
-    while tokens(text) > budget and len(lines) > 1:
-        lines.pop(-2 if lines[-1].startswith("       …") else -1)
+    while tokens(text) + reserved > budget and len(lines) > 1:
+        # never pop the header: with only [header, "…"] left, drop the "…"
+        lines.pop(-2 if lines[-1].startswith("       …") and len(lines) > 2
+                  else -1)
+        text = "\n".join(lines)
+    if warning:
+        lines.insert(1, warning)
         text = "\n".join(lines)
     print(text)
     return 0
@@ -1430,6 +1503,10 @@ def cmd_lint(args):
 
     for iid in by_id:
         visit(iid, [])
+    # lint has no warning tier: every finding it prints is a problem, exit 3
+    warning = custody_warning(root)
+    if warning:
+        problems.append(warning)
     for p in problems:
         print(p)
     if problems:

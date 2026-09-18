@@ -39,7 +39,7 @@ the TODO.md failure mode with extra steps.
 | `$WI set <id> <field> <value> [--force]` | one front-matter field; list fields (`tags deps refs`) take `a,b` and are **replaced whole**; `""` (or `—`) clears any field; `deps`/`parent` targets must resolve — `ext:` deps exempt, `--force` bypasses |
 | `$WI import-todo TODO.md` | idempotent migration; then replace TODO.md with the deprecation notice from `references/format.md` |
 | `$WI export/import --format backlog-yaml` | the ralph bridge — backlog.yaml stays authoritative for unattended runs |
-| `$WI lint` | format + secret-shape check; run before committing hand edits |
+| `$WI lint` | format + secret-shape + store-custody check; run before committing hand edits |
 | `$WI archive` | moves closed items to `archive/` — its own commit, nothing else in it |
 
 Exit codes: 0 ok · 1 usage/validation · 2 not found/empty (e.g. `next` with nothing ready —
@@ -58,6 +58,7 @@ verbs, capability differences and canonical state mapping are in
   item's edits go in a worktree (from there, `WI_ROOT` points at the main checkout's store);
   the sandbox skill's worktree-mode section owns the details.
 - Item files are hand-editable; run `$WI lint` after hand edits, in the same turn.
+- A `wi: WARNING store … is silently untracked` line (second line of `prime`; a problem, exit 3, in `lint`) means new items are git-ignored, or the store holds ≥10 items and none is tracked (below 10, an uncommitted store is treated as new). The line names the ignore rule (file:line) and the remedies for that cause; fix the cause rather than working around it.
 - One session claims an item before working it; two sessions on one item is what `claim` is
   for — respect a conflict.
 - Migration of a repo's TODO.md is a reviewed, committed change (import → review items →
