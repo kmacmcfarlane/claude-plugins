@@ -22,3 +22,5 @@ Peer 'kappa-3446 implement', 2026-09-18. A claude-sandbox change (product code t
 
 ## Notes
 - 2026-09-18 done: relayed to claude-sandbox librarian (online) 2026-09-18
+
+- 2026-09-18: claude-sandbox librarian filed it as claude-sandbox 8716 and replied to kappa-3446.
