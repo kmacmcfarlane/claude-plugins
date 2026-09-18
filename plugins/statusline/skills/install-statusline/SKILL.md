@@ -1,9 +1,9 @@
 ---
 name: install-statusline
-description: Install, move or remove the always-on status line — a one-line footer showing context left (tokens and percent), plan usage limits with reset countdowns, model, effort and session name. Use when the user says "install the statusline", "set up the status line", "set up the context gauge", "remove the statusline", "move the statusline to this project", or right after installing the statusline plugin on a machine.
+description: Install, move or remove the always-on status line — a one-line footer showing context left (tokens and percent), plan usage limits with reset countdowns, model, effort and session name. The plugin installs it by itself on the first session; use this to put it in another scope, remove it, or replace a status line another tool set. Use when the user says "install the statusline", "set up the status line", "set up the context gauge", "remove the statusline", "move the statusline to this project", or "replace my status line with this one".
 disable-model-invocation: false
 allowed-tools: Bash, Read, AskUserQuestion
-argument-hint: [--user | --project | --local | --remove]
+argument-hint: [--user | --local | --project] [--remove]
 ---
 
 # Install the status line
@@ -14,22 +14,48 @@ The footer looks like this:
 [Opus 5·high] my-repo  (session name)  ████░░░░░░ 42%  580k left  5h ██░░░░░░░░ 23% resets 2h10m  7d █████████░ 91% resets 3d
 ```
 
+## You may not need this skill
+
+The plugin sets itself up. On the first session after it is installed, its SessionStart hook
+adds the entry to the settings file where the plugin is enabled and shows one line, e.g.
+`statusline: status line installed in ~/.claude/settings.json; it shows from your next
+session.` It never replaces a status line another tool set: it says so once and leaves it.
+It also takes over an older copy of this same status line, and puts the entry back if an
+older session's settings write drops it. It never re-adds an entry you removed. If the
+settings file cannot be used (not valid JSON, read-only, or a project's
+`settings.local.json` that git does not ignore), it says so once, naming the file and the
+fix, and retries quietly in later sessions.
+
+Run this skill to install into another scope, to remove the status line, or to replace a
+status line another tool set.
+
 ## Instructions
 
-### Step 1: Pick the scope
+### Step 1: Check the arguments
+
+`$ARGUMENTS` may contain only these words, each at most once:
+
+- one scope: `--user`, `--local` or `--project`
+- `--remove`
+
+If it contains anything else, do not run the installer. Tell the user which words it accepts
+and stop. The consent flags `--replace` and `--write-read-only` are never taken from
+`$ARGUMENTS`: add one only after the user answers yes to its own question in Step 3.
+
+### Step 2: Pick the scope
 
 - `--user` (default): your user settings file, `~/.claude/settings.json` (or
   `$CLAUDE_CONFIG_DIR/settings.json`). The right choice on a personal machine.
 - `--local`: `.claude/settings.local.json` in the current repo — only you, only this repo.
 - `--project`: `.claude/settings.json` in the current repo. It is shared with everyone who
   uses the repo, it **overrides each teammate's own status line**, and the command it writes
-  is an absolute path on this machine. Confirm with the user before using it; for a team,
-  prefer each person installing the plugin and running this skill with `--user`.
+  is an absolute path on this machine. Confirm with the user before using it. For a team,
+  prefer enabling the plugin for the repo: each person's first session installs it into
+  their own `settings.local.json`.
 
-### Step 2: Run the installer
+### Step 3: Run the installer
 
-Pass the user's arguments through unchanged (a scope flag and/or `--remove`; none means
-`--user`):
+Pass the checked arguments (none means `--user`):
 
 ```bash
 python3 "${CLAUDE_PLUGIN_ROOT}/skills/install-statusline/scripts/install_statusline.py" $ARGUMENTS
@@ -45,21 +71,32 @@ the plugin's SessionStart hook keeps the `current-hooks` link pointing at the in
 version, and the installer creates that link itself if no session has run it yet. Running
 the installer again is harmless.
 
-**Exit code 1** with `is read-only; left unchanged` means the settings file is not writable
-by you. Nothing was written. Ask the user whether it is read-only on purpose; only on a
-go-ahead, run the same command with `--force` added.
+Each exit code other than 0 means nothing was written:
 
-**Exit code 3** means the settings file already has a *different* status line (from another
-tool or your own script). Nothing was written. Ask the user whether to replace it; only on a
-yes, run the same command with `--force` added.
+| Exit | Meaning | What to do |
+|---|---|---|
+| 1 | An error: the settings file is not valid JSON, the plugin's data dir was not found, or the entry changed while writing | Show the message; see Troubleshooting |
+| 2 | Usage error: an unknown flag, or two scopes | Show the usage line it printed; fix the arguments |
+| 3 | The settings file has a *different* status line (from another tool or your own script) | Ask: "Replace the existing status line in PATH?" Only on a yes, run the same command with `--replace` added |
+| 4 | The settings file is read-only | Ask: "PATH is read-only. Write it anyway? Its mode is kept." Only on a yes, run the same command with `--write-read-only` added |
+
+Ask the two questions separately: a yes to one is not a yes to the other. A command with
+`--replace` can still exit 4, and then the second question is asked.
 
 An earlier copy of this same status line (installed from another plugin of this
 marketplace) is recognised and replaced without asking.
 
-### Step 3: Verify
+Settings are changed in place. The file is read again at the moment of writing, and only
+its `statusLine` entry is changed, so edits made meanwhile by another session are kept. Only
+that entry's text changes: the rest of the file keeps its formatting byte for byte,
+including CRLF line endings. When that splice cannot be proved right (an empty `{}`, a
+repeated `statusLine` key, or removing the file's only key), the whole file is written again
+in its own indent style and line endings. An empty (0-byte) settings file counts as `{}`.
+
+### Step 4: Verify
 
 In the next session the footer shows the gauge. Before the first reply of a session it may
-read `ctx --` (the numbers arrive with the first response); that is not a fault.
+read `ctx --` (the numbers arrive with the first response). That is not a fault.
 
 ## Coworker install (from scratch)
 
@@ -73,9 +110,10 @@ claude plugin install statusline@kmacmcfarlane
 Or inside a session: `/plugin marketplace add kmacmcfarlane/claude-plugins`, then
 `/plugin install statusline@kmacmcfarlane`. Nothing else from the marketplace is needed.
 
-Then, in a Claude Code session, run `/install-statusline` (this skill). Installing the
-plugin alone does not change your settings; the footer appears from the session after the
-installer runs.
+Then start a new session. It shows `statusline: status line installed in PATH; it shows from
+your next session.` The footer appears from the session after that. If you already had a
+status line, the message says so instead and nothing is changed; run `/install-statusline`
+and answer yes to replace it.
 
 ## What it shows
 
@@ -105,8 +143,9 @@ line payload can read exact depth and reset times. The format is documented in
 
 - Move to another scope: install in the new one, then remove from the old one.
 - Remove: `/install-statusline --remove` (add the scope flag it was installed with, e.g.
-  `/install-statusline --local --remove`). It
-  deletes only an entry this plugin installed; a different status line needs `--force`.
+  `/install-statusline --local --remove`). It deletes only an entry this plugin installed; a
+  different status line exits 3 and needs a yes to `--replace`. After a removal the plugin
+  never adds the entry back by itself; installing again with this skill turns it back on.
 - Uninstall the plugin **after** removing the entry, in this order:
 
 ```bash
@@ -117,7 +156,7 @@ rm -rf "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/statusline"
 
 Uninstalling first deletes the plugin's data dir, which leaves the settings entry pointing
 at a script that no longer exists (a blank footer). The last line removes the per-session
-sensor files.
+sensor files. They are also pruned automatically after 30 days.
 
 ## Troubleshooting
 
@@ -136,4 +175,22 @@ parse.
 Solution: fix the file, then run the skill again.
 
 The footer vanished after a `/plugin` toggle or a model change in an older session: that
-session wrote its stale copy of the settings. Run the installer again.
+session wrote its stale copy of the settings. The next new session puts it back and says so.
+To fix it at once, run the installer again.
+
+The first session said `your settings already define a statusLine`, or later said
+`was changed by something else; left alone`: another tool owns the entry, and the plugin will
+not fight it. Run `/install-statusline` and answer yes to replace it.
+
+The first session said `... is read-only`, `... is not valid JSON` or `... could not be
+written; status line not installed`: fix what it names, then start a new session (it retries
+quietly each session), or run `/install-statusline`.
+
+The first session said `... settings.local.json is not git-ignored`: the entry is an absolute
+path on your machine and must not be committed. Add `.claude/settings.local.json` to the
+repo's `.gitignore` and start a new session, or run `/install-statusline` to put it in your
+user settings.
+
+A repo enables the plugin but no footer appears there: the automatic install happens once
+per machine, into the first settings file where the plugin is enabled. In other repos, run
+`/install-statusline --local`.

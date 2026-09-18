@@ -46,7 +46,8 @@ an arbitrary string set by another agent), invisible format characters (bidi
 overrides, zero-width spaces; Unicode category Cf) are dropped, and it is
 capped at NAME_MAX terminal columns.
 
-Install with the install-statusline skill, which writes (user settings):
+Installed by the plugin's SessionStart hook (session_start.py) on the first
+session, or by hand with the install-statusline skill; either writes:
   "statusLine": {"type": "command", "command": "python3 /path/to/statusline.py"}
 """
 import json, math, os, re, sys, time, unicodedata
