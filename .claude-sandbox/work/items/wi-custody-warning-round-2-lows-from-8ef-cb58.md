@@ -2,12 +2,11 @@
 id: wi-custody-warning-round-2-lows-from-8ef-cb58
 title: "wi custody warning: round-2 lows from 8efe"
 type: chore
-status: doing
+status: done
 priority: 4
-owner: unknown@e3a28d2cc009
-claimed: 2026-09-18T19:36Z
 created: 2026-09-18
 updated: 2026-09-18
+closed: 2026-09-18
 ---
 
 From the 8efe round-2 review (2026-09-18), all low: (1) sidecar store ignoring its own work/ gets host advice (trackInHost) — when sandbox_shape is sidecar, drop trackInHost and name the sidecar repo; (2) 'remove or negate that rule' — git cannot re-include under an excluded parent; for SANDBOX_IGNORES rules say rewrite as /.claude-sandbox/* + !/.claude-sandbox/work/ or remove; (3) check-ignore -v parse splits on the first :N: — use -z output. Files: plugins/work-items/skills/work-items/scripts/wi.py, tests.
@@ -31,3 +30,6 @@ dispatch: implementer opus fix round 1 — resume
 
 fix round 1 (opus): DONE 2680215 (1-4; bytes decode backslashreplace; _dir_level heuristic).
 dispatch: reviewer opus review round 2 — resume
+
+review round 2 (opus): CLEAR. Lows noted, not re-dispatched: _dir_level treats a trailing * as dir-level (bracketed explanation false for items/*); ancestors above repo root count; nit relative excludesFile label.
+- 2026-09-18 done: 9eec2cf
