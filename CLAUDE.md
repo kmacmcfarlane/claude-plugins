@@ -32,7 +32,7 @@ plugins/
     skills/
       sandbox/
   statusline/          # Always-on status line + its settings entry (hook-owning)
-    hooks/             # statusline, sensor, owner + hooks.json (current-hooks link) + unit tests
+    hooks/             # statusline, sensor, owner, session_start (first-run install, takeover, self-heal, prune) + hooks.json + unit tests
     skills/
       install-statusline/  # installer script, references/sensor-contract.md
   work-items/          # Repo-durable work items + the work-source provider interface

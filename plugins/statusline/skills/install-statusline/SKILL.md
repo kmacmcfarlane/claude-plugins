@@ -21,7 +21,10 @@ adds the entry to the settings file where the plugin is enabled and shows one li
 `statusline: status line installed in ~/.claude/settings.json; it shows from your next
 session.` It never replaces a status line another tool set: it says so once and leaves it.
 It also takes over an older copy of this same status line, and puts the entry back if an
-older session's settings write drops it. It never re-adds an entry you removed.
+older session's settings write drops it. It never re-adds an entry you removed. If the
+settings file cannot be used (not valid JSON, read-only, or a project's
+`settings.local.json` that git does not ignore), it says so once, naming the file and the
+fix, and retries quietly in later sessions.
 
 Run this skill to install into another scope, to remove the status line, or to replace a
 status line another tool set.
@@ -72,7 +75,7 @@ Each exit code other than 0 means nothing was written:
 
 | Exit | Meaning | What to do |
 |---|---|---|
-| 1 | An error: the settings file is not valid JSON, or the plugin's data dir was not found | Show the message; see Troubleshooting |
+| 1 | An error: the settings file is not valid JSON, the plugin's data dir was not found, or the entry changed while writing | Show the message; see Troubleshooting |
 | 2 | Usage error: an unknown flag, or two scopes | Show the usage line it printed; fix the arguments |
 | 3 | The settings file has a *different* status line (from another tool or your own script) | Ask: "Replace the existing status line in PATH?" Only on a yes, run the same command with `--replace` added |
 | 4 | The settings file is read-only | Ask: "PATH is read-only. Write it anyway? Its mode is kept." Only on a yes, run the same command with `--write-read-only` added |
@@ -83,10 +86,12 @@ Ask the two questions separately: a yes to one is not a yes to the other. A comm
 An earlier copy of this same status line (installed from another plugin of this
 marketplace) is recognised and replaced without asking.
 
-Settings are changed in place: only the `statusLine` entry's text changes, and the rest of
-the file keeps its formatting byte for byte. When that splice cannot be proved right (an
-empty `{}`, a repeated `statusLine` key, or removing the file's only key), the whole file is
-written again in its own indent style.
+Settings are changed in place. The file is read again at the moment of writing, and only
+its `statusLine` entry is changed, so edits made meanwhile by another session are kept. Only
+that entry's text changes: the rest of the file keeps its formatting byte for byte,
+including CRLF line endings. When that splice cannot be proved right (an empty `{}`, a
+repeated `statusLine` key, or removing the file's only key), the whole file is written again
+in its own indent style and line endings. An empty (0-byte) settings file counts as `{}`.
 
 ### Step 4: Verify
 
@@ -176,6 +181,15 @@ To fix it at once, run the installer again.
 The first session said `your settings already define a statusLine`, or later said
 `was changed by something else; left alone`: another tool owns the entry, and the plugin will
 not fight it. Run `/install-statusline` and answer yes to replace it.
+
+The first session said `... is read-only`, `... is not valid JSON` or `... could not be
+written; status line not installed`: fix what it names, then start a new session (it retries
+quietly each session), or run `/install-statusline`.
+
+The first session said `... settings.local.json is not git-ignored`: the entry is an absolute
+path on your machine and must not be committed. Add `.claude/settings.local.json` to the
+repo's `.gitignore` and start a new session, or run `/install-statusline` to put it in your
+user settings.
 
 A repo enables the plugin but no footer appears there: the automatic install happens once
 per machine, into the first settings file where the plugin is enabled. In other repos, run

@@ -41,6 +41,7 @@ sys.path.insert(0, os.path.join(ROOT, "hooks"))
 import owner  # noqa: E402
 import sensor  # noqa: E402
 
+OURS = {"absent", "own", "predecessor"}  # changeable without --replace
 STALE_WARNING = (
     "Note: sessions already running hold their own copy of the settings; a "
     "settings change made from one of them (a /plugin toggle, a model or effort "
@@ -66,8 +67,7 @@ def remove(path, replace, read_only):
               f"unchanged. Re-run with --replace to remove it anyway.")
         return 3
     if kind != "absent":
-        d.pop("statusLine", None)
-        owner.write_settings(path, d, read_only)
+        owner.write_settings(path, None, read_only, expect=None if replace else OURS)
     owner.retire_predecessor_markers(only_settings=path)
     if data and os.path.isdir(data):
         m = owner.read_marker(data)
@@ -98,8 +98,8 @@ def install(path, replace, read_only, project):
               f"Re-run with --replace to replace it.")
         return 3
     cmd = owner.command_for(data)
-    d["statusLine"] = {"type": "command", "command": cmd}
-    owner.write_settings(path, d, read_only)
+    owner.write_settings(path, {"type": "command", "command": cmd}, read_only,
+                         expect=None if replace else OURS)
     owner.write_marker(data, "installed", path, cmd)
     owner.retire_predecessor_markers()
     verb = {"absent": "installed", "own": "updated"}.get(kind, "replaced")
@@ -133,6 +133,9 @@ def main():
         if a.remove:
             return remove(path, a.replace, a.write_read_only)
         return install(path, a.replace, a.write_read_only, a.project)
+    except owner.Changed as e:
+        print(f"{e}; left unchanged - run this again.", file=sys.stderr)
+        return 1
     except owner.ReadOnly as e:
         print(f"{e}; left unchanged. Make it writable, or re-run with "
               f"--write-read-only to write it anyway.", file=sys.stderr)

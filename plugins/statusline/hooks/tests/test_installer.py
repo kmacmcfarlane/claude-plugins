@@ -284,6 +284,97 @@ class Layout(Base):
         self.assertEqual(list(self.load()), ["a", "statusLine", "b"])
 
 
+class FreshWrite(helpers.Hermetic):
+    ENTRY = {"type": "command", "command": "python3 /x/plugins/data/statusline-m/current-hooks/statusline.py"}
+
+    def setUp(self):
+        super().setUp()
+        self.p = self.write_json(os.path.join(self.cfg, "settings.json"),
+                                 {"model": "opus", "permissions": {"allow": []}})
+
+    def test_a_concurrent_change_between_read_and_write_is_kept(self):
+        seen = owner.read_settings(self.p)              # the caller's (stale) read
+        self.assertEqual(owner.classify(seen.get("statusLine")), "absent")
+        # another process changes two keys meanwhile
+        self.write_json(self.p, {"model": "sonnet", "permissions": {"allow": ["Bash(ls)"]},
+                                 "env": {"A": "1"}})
+        self.assertTrue(owner.write_settings(self.p, self.ENTRY, expect={"absent"}))
+        with open(self.p) as f:
+            got = json.load(f)
+        self.assertEqual(got, {"model": "sonnet", "permissions": {"allow": ["Bash(ls)"]},
+                               "env": {"A": "1"}, "statusLine": self.ENTRY})
+        self.assertTrue(owner.write_settings(self.p, None))
+        with open(self.p) as f:
+            self.assertNotIn("statusLine", json.load(f))
+
+    def test_a_fresh_file_that_does_not_parse_aborts(self):
+        self.write_json(self.p, raw='{"model": ')
+        with self.assertRaises(owner.SettingsError):
+            owner.write_settings(self.p, self.ENTRY)
+        with open(self.p) as f:
+            self.assertEqual(f.read(), '{"model": ')
+
+    def test_an_entry_that_turned_foreign_meanwhile_is_not_replaced(self):
+        self.write_json(self.p, {"statusLine": FOREIGN})
+        with open(self.p, "rb") as f:
+            raw = f.read()
+        with self.assertRaises(owner.Changed):
+            owner.write_settings(self.p, self.ENTRY, expect={"absent", "own", "predecessor"})
+        with open(self.p, "rb") as f:
+            self.assertEqual(f.read(), raw)
+
+    def test_empty_file_is_an_empty_object(self):
+        self.write_json(self.p, raw="")
+        self.assertTrue(owner.write_settings(self.p, self.ENTRY))
+        with open(self.p) as f:
+            self.assertEqual(json.load(f), {"statusLine": self.ENTRY})
+
+    def test_crlf_line_endings_are_kept(self):
+        text = '{\r\n  "a": 1,\r\n  "b": {"c": [1, 2]}\r\n}\r\n'
+        with open(self.p, "w", newline="") as f:
+            f.write(text)
+        owner.write_settings(self.p, self.ENTRY)
+        with open(self.p, newline="") as f:
+            new = f.read()
+        self.assertEqual(new.count("\n"), new.count("\r\n"))
+        self.assertEqual(json.loads(new)["statusLine"], self.ENTRY)
+        owner.write_settings(self.p, None)
+        with open(self.p, newline="") as f:
+            self.assertEqual(f.read(), text)
+
+
+class NonAscii(Base):
+    def test_non_ascii_home_gives_a_working_command(self):
+        cfg = os.path.join(self.cfg, "jos\u00e9", ".claude")
+        data = os.path.join(cfg, "plugins", "data", "statusline-m")
+        env = {"CLAUDE_CONFIG_DIR": cfg, "HOME": os.path.dirname(cfg),
+               "CLAUDE_PLUGIN_DATA": data}
+        for text in (None, '{\n  "a": "\\u00e9"\n}\n'):       # plain, and an ASCII-escaped file
+            with self.subTest(text=text):
+                st = os.path.join(cfg, "settings.json")
+                if text:
+                    self.write_json(st, raw=text)
+                rc, out, err = self.install(env=env)
+                self.assertEqual(rc, 0, err)
+                with open(st, encoding="utf-8") as f:
+                    cmd = json.load(f)["statusLine"]["command"]
+                self.assertIn("jos\u00e9", cmd)
+                self.assertNotIn("\\u", cmd)
+                self.assertEqual(owner.classify({"command": cmd}), "own")
+                p = subprocess.run(cmd, shell=True, input=json.dumps(
+                    {"session_id": "s", "context_window": helpers.CTX,
+                     "model": {"display_name": "M"}}),
+                    capture_output=True, text=True, env=dict(self.env, **env), timeout=30)
+                self.assertIn("580k left", p.stdout, p.stderr)
+
+    def test_shell_specials_in_the_path_are_quoted(self):
+        cmd = owner.command_for('/h/a$b`c"d\\e')
+        self.assertEqual(cmd, 'python3 "/h/a\\$b\\`c\\"d\\\\e/current-hooks/statusline.py"')
+        out = subprocess.run("printf %s " + cmd[len("python3 "):], shell=True,
+                             capture_output=True, text=True).stdout
+        self.assertEqual(out, '/h/a$b`c"d\\e/current-hooks/statusline.py')
+
+
 class Splice(unittest.TestCase):
     V = {"type": "command", "command": 'python3 "/p"'}
 

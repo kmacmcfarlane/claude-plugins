@@ -282,8 +282,10 @@ its own — the plugin to hand a coworker who wants only the footer.
 
 It sets itself up: on the first session its SessionStart hook installs the `statusLine`
 entry into the settings file where the plugin is enabled (user settings, or the per-user
-`.claude/settings.local.json` when only a project enables it) and says so in one line. It
-never writes over a status line another tool set; it says so once and leaves it. It takes
+`.claude/settings.local.json` when only a project enables it, and only when git ignores that
+file) and says so in one line. It never writes over a status line another tool set; it says
+so once and leaves it. A settings file it cannot use (invalid, read-only, not git-ignored)
+is named once, with the fix, and retried quietly. It takes
 over an entry left by the older copy of this status line (recognised by its path, marker or
 not), puts the entry back when a stale session's settings write drops it, never re-adds one
 the user removed, and prunes sensor files older than 30 days.

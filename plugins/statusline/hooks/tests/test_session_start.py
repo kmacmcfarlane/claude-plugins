@@ -158,7 +158,8 @@ class FirstRun(Base):
                 before = self.raw(where)
                 msg = self.said()
                 self.assertIn("already define a statusLine", msg)
-                self.assertIn("--replace", msg)
+                self.assertIn("and answer yes to replace it", msg)
+                self.assertNotIn("--replace", msg)
                 self.assertEqual(self.raw(where), before)
                 self.assertEqual(self.marker()["state"], "deferred")
                 self.assertFalse(os.path.exists(self.local))
@@ -290,7 +291,8 @@ class Heal(Base):
         self.write_json(self.user, {"statusLine": FOREIGN})
         msg = self.said()
         self.assertIn("changed by something else; left alone", msg)
-        self.assertIn("/install-statusline --replace", msg)
+        self.assertIn("run /install-statusline and answer yes to replace it", msg)
+        self.assertNotIn("--replace", msg)
         self.assertEqual(self.marker()["state"], "yielded")
         self.quiet()
         self.write_json(self.user, {})               # even when it goes away later
@@ -313,15 +315,114 @@ class Heal(Base):
         self.assertEqual(self.load()["statusLine"], self.own())
 
     @ROOT_SKIP
-    def test_read_only_settings_are_not_written(self):
+    def test_read_only_settings_block_the_restore_once(self):
         self.write_json(self.user, ENABLED)
         os.chmod(self.user, 0o444)
         try:
             before = self.raw()
+            msg = self.said()
+            self.assertIn(f"{self.user} is read-only; status line not restored", msg)
+            self.assertIn("Make it writable", msg)
+            self.assertEqual((self.marker()["state"], self.marker()["resume"]),
+                             ("blocked", "installed"))
             self.quiet()
             self.assertEqual(self.raw(), before)
         finally:
             os.chmod(self.user, 0o644)
+        self.assertIn("restored the status line", self.said())
+        self.assertEqual(self.marker()["state"], "installed")
+
+
+class Blocked(Base):
+    @ROOT_SKIP
+    def test_read_only_user_settings_said_once_then_retried(self):
+        self.write_json(self.user, ENABLED)
+        os.chmod(self.user, 0o444)
+        try:
+            msg = self.said()
+            self.assertEqual(msg, f"statusline: {self.user} is read-only; status line not "
+                                  f"installed. Make it writable, then start a new session, "
+                                  f"or run /install-statusline.")
+            m = self.marker()
+            self.assertEqual((m["state"], m["reason"], m["resume"], m["settings"]),
+                             ("blocked", "read-only", "new", self.user))
+            self.quiet()
+            self.quiet()
+            self.assertEqual(self.load(), ENABLED)
+        finally:
+            os.chmod(self.user, 0o644)
+        self.assertIn("status line installed", self.said())
+        self.assertEqual(self.load()["statusLine"], self.own())
+
+    def test_invalid_user_settings_said_once_then_retried(self):
+        self.write_json(self.user, raw='{"enabledPlugins": {')
+        msg = self.said()
+        self.assertIn("is not valid JSON; status line not installed. Fix it", msg)
+        self.assertEqual(self.marker()["reason"], "invalid")
+        self.quiet()
+        self.write_json(self.user, ENABLED)
+        self.assertIn("status line installed", self.said())
+
+    def test_empty_settings_file_is_an_empty_object(self):
+        self.write_json(self.user, raw="")
+        self.quiet()                                    # nothing enables it
+        self.assertFalse(os.path.exists(os.path.join(self.data, "owner.json")))
+
+    def test_removed_while_blocked_stays_removed(self):
+        self.write_json(self.user, raw="{bad")
+        self.said()
+        self.write_json(self.user, ENABLED)
+        p = subprocess.run([sys.executable, helpers.INSTALLER, "--remove"], cwd=self.proj,
+                           env=self.env, capture_output=True, text=True, timeout=30)
+        self.assertEqual(p.returncode, 0, p.stderr)
+        self.quiet()
+        self.assertEqual(self.load(), ENABLED)
+
+
+@unittest.skipUnless(shutil.which("git"), "git not installed")
+class GitIgnore(Base):
+    def git(self, *args):
+        subprocess.run(["git", "-C", self.proj, *args], env=self.env, check=True,
+                       capture_output=True, timeout=30)
+
+    def setUp(self):
+        super().setUp()
+        self.env.update(GIT_CONFIG_NOSYSTEM="1", GIT_AUTHOR_NAME="t", GIT_AUTHOR_EMAIL="t@t",
+                        GIT_COMMITTER_NAME="t", GIT_COMMITTER_EMAIL="t@t")
+        self.git("init", "-q")
+        self.write_json(self.user, {})
+        self.write_json(self.shared, ENABLED)
+
+    def test_not_ignored_local_file_is_never_created(self):
+        msg = self.said()
+        self.assertIn(f"{self.local} is not git-ignored", msg)
+        self.assertIn("Add .claude/settings.local.json to .gitignore", msg)
+        self.assertIn("run /install-statusline to install it in your user settings", msg)
+        self.assertFalse(os.path.exists(self.local))
+        self.assertEqual(self.marker()["reason"], "not-ignored")
+        self.quiet()
+        self.assertFalse(os.path.exists(self.local))
+        with open(os.path.join(self.proj, ".gitignore"), "w") as f:
+            f.write(".claude/settings.local.json\n")
+        self.assertIn(f"status line installed in {self.local}", self.said())
+        self.assertEqual(self.load(self.local)["statusLine"], self.own())
+
+    def test_ignored_local_file_is_installed(self):
+        with open(os.path.join(self.proj, ".gitignore"), "w") as f:
+            f.write("settings.local.json\n")
+        self.assertIn("installed", self.said())
+
+    def test_a_tracked_local_file_is_not_written(self):
+        self.write_json(self.local, {"model": "opus"})
+        self.git("add", "-f", ".claude/settings.local.json")
+        self.git("commit", "-qm", "x")
+        before = self.raw(self.local)
+        self.assertIn("is not git-ignored", self.said())
+        self.assertEqual(self.raw(self.local), before)
+
+    def test_outside_a_repo_installs(self):
+        shutil.rmtree(os.path.join(self.proj, ".git"))
+        self.assertIn("installed", self.said())
 
 
 class NeverRaises(Base):
@@ -335,6 +436,11 @@ class NeverRaises(Base):
                 self.assertEqual((rc, err), (0, ""))
                 if raw.startswith('{"enabledPlugins": {"statusline@x"'):
                     self.assertIn("already define", out.get("systemMessage", ""))
+                elif raw in ("{bad", "[1]", "null"):
+                    self.assertIn(f"{self.user} is not valid JSON; status line not "
+                                  f"installed", out.get("systemMessage", ""))
+                    with open(self.user) as f:
+                        self.assertEqual(f.read(), raw)
                 else:
                     self.assertEqual(out, {})
                     with open(self.user) as f:
@@ -352,11 +458,12 @@ class NeverRaises(Base):
         os.makedirs(self.data)
         os.chmod(self.cfg, 0o555)
         try:
+            self.assertIn("could not be written; status line not installed", self.said())
             self.quiet()
         finally:
             os.chmod(self.cfg, 0o755)
         self.assertEqual(self.load(), ENABLED)
-        self.assertFalse(os.path.exists(os.path.join(self.data, "owner.json")))
+        self.assertEqual(self.marker()["reason"], "unwritable")
 
     @ROOT_SKIP
     def test_data_dir_cannot_be_created(self):
