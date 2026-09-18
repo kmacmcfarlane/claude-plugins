@@ -2,12 +2,11 @@
 id: checkpoint-emit-the-next-session-opener-72bf
 title: "checkpoint: emit the next-session opener on the lean path too"
 type: chore
-status: doing
+status: done
 priority: 3
-owner: unknown@e3a28d2cc009
-claimed: 2026-09-18T19:16Z
 created: 2026-09-16
 updated: 2026-09-18
+closed: 2026-09-18
 refs:
   - reviewer report, item checkpoint-end-continue-handoff-output-w-2a88
 ---
@@ -26,3 +25,4 @@ Raised twice by the 2a88 reviewer 2026-09-16: the Lean path (<60K tokens left) r
 dispatch: implementer opus — bundled into worktree 5cdb with 5cdb (same SKILL.md)
 
 impl: in worktree 5cdb as e2680e3; reviewed with 5cdb
+- 2026-09-18 done: c78cb50

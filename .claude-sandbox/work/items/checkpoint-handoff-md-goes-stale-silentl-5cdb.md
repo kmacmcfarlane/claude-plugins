@@ -2,12 +2,11 @@
 id: checkpoint-handoff-md-goes-stale-silentl-5cdb
 title: "checkpoint: HANDOFF.md goes stale silently and misleads the next session"
 type: bug
-status: doing
+status: done
 priority: 2
-owner: unknown@e3a28d2cc009
-claimed: 2026-09-18T19:16Z
 created: 2026-09-17
 updated: 2026-09-18
+closed: 2026-09-18
 refs:
   - peer session claude-sandbox librarian (uds 238.sock), relaying the operator
 ---
@@ -33,3 +32,6 @@ dispatch: implementer opus fix round 1 — resume
 
 fix round 1 (opus): DONE 548a1f6 (1-8, 10 fixed + liveness exclusion; declined 9 = no history rewrite).
 dispatch: reviewer opus review round 2 — resume
+
+review round 2 (opus): CLEAR. Declined: 9 (fix: subjects, no history rewrite). Lows carried to follow-up: FRESH label vs withheld Next disagree on rewound/missing heads; unparseable line under the contradictions heading; spec lacks withheld-line variants; _trim_items matches body items:.
+- 2026-09-18 done: c78cb50
