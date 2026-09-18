@@ -17,6 +17,8 @@ here for the glob and orphan-worktree cases.
   with `main` as the new base.
 - **Orphan worktree from a crashed session.** Dirty: surface it, do not remove. Clean and
   merged: remove it; clean and unmerged: ask.
+- **A fable dispatch returns HTTP 429 or a usage-credits error.** Not a `BLOCKED`: the
+  reset time decides between opus and asking — `model-routing.md` § Fallback.
 - **Implementer disputes a medium-or-above finding.** It cannot decline it: it fixes, or
   states the counter-case for the re-review. The reviewer withdraws on the merits (the
   failure cannot occur) or holds; if it holds, fix it — that round is spent.

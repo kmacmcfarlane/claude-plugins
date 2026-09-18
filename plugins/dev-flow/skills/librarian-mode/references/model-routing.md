@@ -34,10 +34,16 @@ sets the tier, and the fable table wins over the opus one. No hit: sonnet.
 
 | Signal | Reads as |
 |---|---|
-| Hard to reverse | a hook that gates or blocks edits, commits or tool calls; anything else whose wrong result the harness enforces |
-| Security-relevant | credentials, permission allowlists, sandbox config; in a product repo, mounts, permissions, host access, sockets |
-| Fix round 2 | the last fix round before the cap |
-| Operator names it | a `model: fable` line in the item body (rule 8) |
+| Gates or blocks | a non-trivial change to a hook or other code that gates or blocks edits, commits or tool calls |
+| Security-relevant | a non-trivial change to credentials, permission allowlists, sandbox config, mounts, host access or sockets |
+| Fix round 3 after a critical or high | the last fix round before the cap, when the review before it carried a critical or high finding (see Rounds) |
+| Operator names it | a `model: fable` line in the item body (rule 8) — a pin, honoured whatever the change's size |
+
+Non-trivial means more than a small, local edit: roughly more than 20 changed lines of
+executable logic, or more than one file. A one-line or mechanical fix in gating or
+security code — a CRLF strip, a path correction, a renamed flag — does not reach fable;
+it stays at the tier the opus table gives it (executable logic: opus). Fable usage runs
+out fast, and a small fix gains nothing from it.
 
 ## Product repos
 
@@ -48,7 +54,7 @@ as a signal widens:
 |---|---|
 | Docs only — README, `docs/`, comments with no code change | sonnet (default) |
 | Any code — source, tests, build files, scripts | opus (executable logic) |
-| A security surface — mounts, permissions, host access, sockets, credentials | fable |
+| A security surface — mounts, permissions, host access, sockets, credentials | fable when non-trivial; else opus |
 
 The breadth and judgement signals apply as before, and rule 3 still wins over rule 2.
 The repo's `Checks:` do not move the tier: they run at review and Land whatever it is.
@@ -69,22 +75,63 @@ than opus. When a fix round bumps the implementer's tier, the reviewer's tier fo
 ## Rounds
 
 Fix round n = the nth re-dispatch or resume with review findings = review round n+1. The
-cap is 3 review rounds — the first review plus two fix rounds; a third review without
+cap is 4 review rounds — the first review plus three fix rounds; a fourth review without
 `CLEAR` means the brief or the item is wrong, not the code: block the item and ask the
-operator to weigh in. Fix round 2 is therefore the last before the cap.
+operator to weigh in. Fix round 3 is therefore the last before the cap.
 
 | Dispatch | Tier |
 |---|---|
 | First run | per the tables above, or the operator pin |
 | Re-dispatch after `NEEDS_CONTEXT` | at least opus (opus signal) |
-| Fix round 1 | unchanged — the brief gets sharper, not the model |
-| Fix round 2 | fable — the last round before the cap |
+| Fix rounds 1 and 2 | unchanged — the brief gets sharper, not the model |
+| Fix round 3 | fable when review round 3 carried a critical or high finding; otherwise unchanged — a round fixing mediums, lows or wording stays at its tier |
 
-A tier only rises across rounds; it never falls, and a pinned tier never falls below its
-pin. A resumed agent keeps its model, so a tier bump on either role is a fresh dispatch
-with the full brief and the prior findings (implementer) or the prior report (reviewer)
-pasted in; resume — SendMessage, the agent has the context — only when the tier is
-unchanged.
+A tier only rises across rounds; it never falls — the one exception is the Fallback
+below — and a pinned tier never falls below its pin. A resumed agent keeps its model, so
+a tier change on either role is a fresh dispatch with the full brief and the prior
+findings (implementer) or the prior report (reviewer) pasted in; resume — SendMessage,
+the agent has the context — only when the tier is unchanged.
+
+## Fallback
+
+Rule 6's one exception: a dispatch routed to fable that cannot run on fable. Settled by
+decisions 28 and 29.
+
+**Unavailable** means the Agent tool returns HTTP 429 or a usage-credits error (such as
+"out of usage credits") for a fable call. Any other failure is not a fallback: it is the
+agent's own `BLOCKED` or error, handled as such.
+
+**Reset time** — take the first source that has one:
+
+1. the error text, when it carries a reset time;
+2. the status line's `rate_limits` in the context-guard state record,
+   `${CLAUDE_CONFIG_DIR:-~/.claude}/claude-kit/context-gate/<session>.json`, when present:
+   the exhausted window's `resets_at` (epoch seconds);
+3. otherwise, unknown.
+
+**Then:**
+
+- **More than 2h, or unknown** — dispatch opus without asking. Record it in the item body
+  before the call, and put the same text on the brief's `Model:` line:
+
+  ```
+  dispatch: <implementer|reviewer> opus — fable unavailable (resets in <X>h); fallback
+  ```
+
+  with `(unknown)` in place of `(resets in <X>h)` when no source had a reset time.
+
+  Name it in the Report's `verified:` line, e.g.
+  `(impl opus — fable fallback, review opus — fable fallback)`, or `fable→opus` when
+  earlier rounds ran fable.
+- **2h or less** — ask the operator: wait for the reset, or run opus now. One
+  AskUserQuestion; meanwhile hand the item off and take other work.
+- **Reviewer floor stays opus.** A fable-routed reviewer falls back to opus under the same
+  rule, never lower; the reviewer matching a fallen-back implementer is opus.
+- **An operator pin** of `model: fable` is the operator's own choice (rule 8): an
+  unavailable pinned tier is always asked, whatever the reset time, never fallen back.
+
+Each dispatch checks afresh: once fable is back, the next dispatch routes to it again by
+the tables and Rounds. A fallback does not reset the round count.
 
 ## Recording
 
@@ -102,8 +149,9 @@ agree. The Report's `verified:` line then names both models:
 verified: review CLEAR after 1 fix round (impl sonnet, review opus); <checks>
 ```
 
-Name the final tiers; write `sonnet→opus` when a round bumped one. N counts fix rounds
-(see Rounds), so a first-pass `CLEAR` is `after 0 fix rounds`.
+Name the final tiers; write `sonnet→opus` when a round bumped one, and mark a fallback as
+Fallback shows. N counts fix rounds (see Rounds), so a first-pass `CLEAR` is
+`after 0 fix rounds`.
 
 ## Worked examples
 
@@ -119,15 +167,17 @@ dispatch: reviewer opus — rule 4 floor
 
 The reviewer returns `NEEDS_CHANGES` with one medium. Fix round 1 (review round 2):
 implementer stays sonnet, resumed with the finding; the same reviewer is resumed. `CLEAR`.
-Report: `verified: review CLEAR after 1 fix round (impl sonnet, review opus)`. Had that
-re-review failed too, fix round 2 — the last before the cap — would re-dispatch the
-implementer fresh at fable, with the full brief and both findings lists, and the reviewer
-would be a fresh fable one too (rule 4): a resumed agent keeps its model. A third review
-without `CLEAR` ends the loop — block the item and ask the operator.
+Report: `verified: review CLEAR after 1 fix round (impl sonnet, review opus)`. Had review
+rounds 2 and 3 failed too, fix round 3 — the last before the cap — turns on what review
+round 3 found: mediums only, and it stays sonnet, resumed; a critical or high, and it
+re-dispatches the implementer fresh at fable, with the full brief and every findings list,
+and the reviewer is a fresh fable one too (rule 4): a resumed agent keeps its model. A
+fourth review without `CLEAR` ends the loop — block the item and ask the operator.
 
 **"Add a PreToolUse hook that blocks edits to the main checkout from a worktree
-session."** Executable logic (opus) and a hook that blocks edits (fable): fable wins.
-Implementer fable; reviewer fable.
+session."** Executable logic (opus) and a new hook that blocks edits — non-trivial
+(fable): fable wins. Implementer fable; reviewer fable. A later "strip CRLF from that
+hook's input", a one-line fix in the same hook, is trivial: opus for both roles.
 
 **"Split ralph's backlog skills into their own plugin."** Marketplace shape and more than
 one plugin: opus. Implementer opus; reviewer opus. Had the operator written
@@ -141,12 +191,27 @@ over every package and `make lint`) and its `Workflow:` notes; a feature, so the
 implementer uses /investigate then /implement's build and verify steps in its worktree,
 non-interactively, per the brief's dev-flow block — none of their git or dialogs. "Fix a
 typo in the README": docs only, sonnet, reviewer opus. "Let `run` bind-mount the host's
-docker socket": a mount and a socket, fable for both roles. Item body for the first:
+docker socket": a non-trivial change to a mount and a socket, fable for both roles. Item
+body for the first:
 
 ```
 dispatch: implementer opus — code inside a product repo's Scope
 dispatch: reviewer opus — rule 4, matches implementer
 ```
+
+**Fallback: the blocking hook above, fix round 3.** The item has run fable from its first
+dispatch; at fix round 3 the Agent call returns HTTP 429 "out of usage credits" with no
+reset time, and the context-guard state record has no `rate_limits`. Unknown counts as
+over 2h: dispatch opus for both roles, no question. Item body:
+
+```
+dispatch: implementer opus — fable unavailable (unknown); fallback
+dispatch: reviewer opus — fable unavailable (unknown); fallback
+```
+
+Report: `verified: review CLEAR after 3 fix rounds (impl fable→opus — fable fallback,
+review fable→opus — fable fallback); <checks>`. Had the record shown the window resetting
+in 90 minutes, the librarian would have asked the operator: wait, or opus now.
 
 ### Full-loop walkthroughs
 
