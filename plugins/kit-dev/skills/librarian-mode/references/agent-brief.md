@@ -73,10 +73,22 @@ copy and from where — absolute paths>
 <the Workflow: notes, verbatim>
 
 <when dev-flow is installed (§ dev-flow below) — spike or feature:>
-Run this work through the dev-flow skills inside $WORKTREE: a spike through /investigate,
-a feature through /implement (after /investigate when there is no plan yet). Their
-commits land on this worktree's branch and the Commit section below still governs them.
-Any question they would put to the user goes under OPEN QUESTIONS instead.
+Use the dev-flow skills for their method, not their git or their dialogs: a spike
+through /investigate, a feature through /investigate then /implement. Invoke both as
+running non-interactively (each skill's § Running non-interactively), and:
+- /investigate: its research, requirements and plan steps. Write the series under
+  <absolute scratchpad path>/investigations/<slug>/, never inside $WORKTREE, and name
+  that path in your report. Skip its branch survey (the base is fixed above) and its
+  retrospective.
+- /implement, on that series: its plan, build and verify steps and its review gates,
+  with every edit made in $WORKTREE itself. Skip its repo and base-branch step (no
+  fetch, no new branch or worktree, nothing run in the main checkout), its whole
+  Finalize step (no terminal action, merge, push, work-item update, outcome or index
+  write) and its retrospective. The Commit section below is the only commit.
+- A question either skill would put to the user: take the least irreversible choice
+  and record it under DEVIATIONS, or, if it blocks, under OPEN QUESTIONS
+  (NEEDS_CONTEXT when you cannot go on). Never AskUserQuestion.
+- `git -C $WORKTREE status --short` is empty apart from your commit before you report.
 
 ## Verification — run all, report outcomes verbatim
 

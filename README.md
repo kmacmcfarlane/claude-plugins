@@ -69,7 +69,7 @@ Names are **provisional** pending operator review.
 | …repo-durable work items and a pluggable work source | `work-items` | **current** | — |
 | …isolated execution for agent sessions (containers, and the checkout/worktree convention) | `sandbox` | **current** | claude-sandbox repo (external) |
 | …unattended agent loops over a backlog ("ralph") | `ralph` | **current** | `sandbox` (hard), `work-items` (soft) |
-| …to maintain this kit itself (skill authoring, upstream sync, templates, librarian custody) | `kit-dev` | **current** | `work-items` (soft; via the repo tree, or the installed plugin's `wi`) |
+| …to maintain this kit itself (skill authoring, upstream sync, templates, librarian custody — of this kit, or of any repo whose operator opts it in) | `kit-dev` | **current** | `work-items` (soft; via the repo tree, or the installed plugin's `wi`), `dev-flow` (soft; used by `librarian-mode` when installed) |
 | …to make Claude good at a specific stack (Goa, Playwright, musubi-tuner, …) | one plugin per stack | **moved** to the expertise marketplace (local scaffold, remote pending) | — |
 
 Retired: the deprecated plan-execution skill and the three sub-agent definitions used only by
@@ -170,19 +170,24 @@ What is installable from this marketplace right now.
 
 Maintainer tooling for this ecosystem itself — authoring skills, scaffolding projects from the
 templates, syncing work back upstream, and standing custody of a repo's shared agent layer
-(librarian mode). Install it if you *develop* the kit; you do not need it to use the kit.
+(librarian mode) — the same custodian workflow also runs on any repo whose operator opts it
+in. Install it if you *develop* the kit, or want that custodian on a repo of your own; you
+do not need it to use the kit.
 
 | Skill | Description |
 |---|---|
 | `create-skill` | Bootstrap a new Claude Code skill from a description, routed to its plugin by aim |
 | `factor-analysis` | Analyze how a repo, plugin, or toolset should be factored into coherent standalone pieces |
-| `librarian-mode` | Standing single-writer custodian of a repo's custody layer: file, factor, route by model tier, delegate to worktree agents, review, land, report |
+| `librarian-mode` | Standing single-writer custodian of a repo's custody layer — this kit's shared agent layer, or whatever scope an operator opts a repo in with: file, factor, route by model tier, delegate to worktree agents, review, land, report |
 | `new-project-from-template` | Create a new project from a claude-templates template |
 | `update-kit` | Sync skills and workflow files upstream to claude-templates / claude-plugins / claude-expertise / claude-sandbox |
 
 Soft dependency on `work-items`: `librarian-mode` drives `wi` throughout, found through the
-repo's own `plugins/*/skills/work-items` tree or the installed plugin's copy; the other
-three skills need nothing else here.
+repo's own `plugins/*/skills/work-items` tree or the installed plugin's copy. Soft
+dependency on `dev-flow`: when it is installed, `librarian-mode` briefs its implementers to
+use `investigate` and `implement` for spikes and features; when it is not, the librarian
+notes at intake that they could be used and the implementers work without them. The other
+four skills need nothing else here.
 
 `plugins/kit-dev/` is what remains of the old kitchen-sink plugin after the factoring: its
 `hooks/`, `checkpoint` and `install-statusline` went to `context-guard` (except the checkout

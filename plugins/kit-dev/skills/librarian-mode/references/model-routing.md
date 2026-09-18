@@ -138,7 +138,8 @@ every role on that item.
 `list`." Code inside Scope: opus; no security surface, so fable does not apply.
 Implementer opus; reviewer opus. Both briefs carry the repo's `Checks:` (say `go test`
 over every package and `make lint`) and its `Workflow:` notes; dev-flow installed, so the
-implementer runs /investigate then /implement in its worktree. "Fix a typo in the
+implementer uses /investigate then /implement's build and verify steps in its worktree,
+non-interactively, per the brief's dev-flow block — none of their git or dialogs. "Fix a typo in the
 README": docs only, sonnet, reviewer opus. "Let `run` bind-mount the host's docker
 socket": a mount and a socket, fable for both roles. Item body for the first:
 

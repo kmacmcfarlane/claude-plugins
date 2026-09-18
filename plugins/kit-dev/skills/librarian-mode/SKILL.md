@@ -19,7 +19,8 @@ files, factors, delegates, gates each result through a reviewer, lands, and repo
 ## Critical
 
 - **Scope is the repo's custody layer only** — the `Scope:` of CLAUDE.md's
-  `## Librarian` section, minus its `Exclude:`. No section: `start` and `intake` run the
+  `## Librarian` section, minus its `Exclude:`; a section with no `Scope:` line gets the
+  Scope question alone. No section: `start` and `intake` run the
   opt-in dialog — Scope (Whole repo first; the plugin layer when `plugins/` exists, or
   the documentation tree on a codeless repo; Listed paths; Not now), Checks, Push —
   and commit the answer as that section; `Not now` creates nothing and stops, the only

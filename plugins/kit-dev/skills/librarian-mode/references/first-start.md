@@ -14,7 +14,8 @@ during `start` or `intake` → resolve the custody layer (step 2) first; no
 stop, creating nothing. Once a Scope is written, run `$WI init` (idempotent), relay its
 output (it explains any host `.gitignore` decision), and add one line: "initialised
 .claude-sandbox/work/ — first start on this repo". `status` never creates a store:
-it reports "no store" and stops.
+with no `## Librarian` section it prints "not opted in; `start` offers opt-in"
+(`opt-in.md`), otherwise "no store", and stops.
 
 ## What the first Rehydrate reports
 

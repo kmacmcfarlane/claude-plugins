@@ -13,10 +13,10 @@ on **every** open item — yours and the ones dispatched. Then push what landed:
 never worktree branches or tags. With `Push: none` in `## Librarian`, skip every push
 here and below; the final Report says what stays on local `main`. A rejected
 non-fast-forward push is not fixed by pulling, fetching, rebasing or merging: stop, and
-carry it under `decisions needed` in the final Report. Send that final Report last — the one time the push precedes its
-Report — so it reports the push as well as the landings. The context-gate ledger and
-HANDOFF are session-addressed and do not replace this; the librarian rehydrates from
-`wi prime` and git.
+carry it under `decisions needed` in the final Report. Send that final Report last — the
+one time the push precedes its Report — so it reports the push as well as the landings.
+The context-gate ledger and HANDOFF are session-addressed and do not replace this; the
+librarian rehydrates from `wi prime` and git.
 
 ## At 75% or DUE — checkpoint, then continue
 
