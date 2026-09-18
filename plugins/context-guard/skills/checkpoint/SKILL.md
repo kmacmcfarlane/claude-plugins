@@ -18,7 +18,9 @@ Operator tool guide: `references/operator-playbook.md`. Manifest spec:
 `references/handoff-format.md`.
 
 **Lean path:** if the state file shows fewer than ~60K tokens left, skip every optional read,
-do Steps 0, 2, 4b only, and keep the whole checkpoint under a screen.
+do Steps 0, 2, 4b only, then emit the Step 7 one-line opener (continue / handoff) — a lean
+checkpoint is when a handoff is likeliest and the next session has the least to go on. Keep
+the whole checkpoint under a screen.
 
 ## Step 0 — Ask the goal, in one round
 
@@ -110,7 +112,10 @@ root — in **all three modes** (*land* writes `mode: landed` so the next sessio
 one header line, not a stale goal). At a stage boundary the published stage file is the
 authoritative record: point **Read in full** at it and carry only what the files do not
 hold — environment state, corrections, refusals; the format spec's stage-boundary rule
-has the full list. Then stand the gate down:
+has the full list. Fill the frontmatter `items:` with the `wi` ids of the open or doing
+items the manifest mentions (check them against the store, not memory): the rehydration hook
+diffs that list against the store and names every one since closed as a dead claim. Then
+stand the gate down:
 
 ```bash
 python3 "${CLAUDE_PLUGIN_ROOT}/hooks/mark_checkpoint.py" <session-id>
@@ -132,7 +137,8 @@ sentence:
 - **continue uncompacted** → when the number says there is more room than it felt like.
 
 After a compaction, the manifest + ledger are re-injected automatically and **outrank the
-machine summary**; corrections outrank recollection.
+machine summary**; corrections outrank recollection; and current repo state (git log, the
+work-item store) outranks the manifest.
 
 ## Step 6 — Note the drift, once
 
@@ -151,16 +157,16 @@ it; `read <manifest path> in full first` (the path Step 4b actually wrote —
 `.claude-sandbox/HANDOFF.md` or root `HANDOFF.md`; "in full" matters — after `/clear` the
 rehydration hook injects only the manifest header, so the opener is what tells the next
 session to read the whole file); and the one or two facts that changed since the manifest
-was written — pull these from the drift note or the `Aware of` lines you just wrote, never
-restate the whole manifest.
+was written — pull these from the drift note or the `Aware of` lines you just wrote (the
+lean path has no drift note; use the `Aware of` lines), never restate the whole manifest.
 
 ```text
 /<skill-or-task> <args> — read <manifest path> in full first; <fact that changed>; <fact that changed>
 ```
 
 At a stage boundary, one of those facts is always: **do not re-run the previous stage** — its
-outputs are published and complete, read them as inputs (a per-stage gate or label is already
-set). Drop this line only when the mode isn't a stage handoff.
+outputs are published and complete, read them as inputs (if your chain records a per-stage
+gate or label, it is already set). Drop this line only when the mode isn't a stage handoff.
 
 ## Rules
 

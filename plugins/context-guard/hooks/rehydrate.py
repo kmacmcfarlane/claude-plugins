@@ -2,6 +2,11 @@
 """SessionStart: inject the rehydration manifest — "you forgot everything, but
 this is what you were working on, and these are the scrolls we saved."
 
+Current repo state outranks the manifest: when the manifest lists `items:`,
+each id the work-item store now has done, dropped or missing is named as a
+DEAD CLAIM; when HEAD has moved past the recorded `head` (store-only commits
+excluded) or diverged from it, the `## Next` body is withheld, not warned.
+
 The manifest (HANDOFF.md, spec: skills/checkpoint/references/handoff-format.md)
 is AUTHORED by the checkpoint skill, never synthesized here: intent is a
 snapshot only its author can write. This hook adds the live part — age, commit
@@ -16,23 +21,40 @@ No manifest and nothing to say -> {} (silent).
 
 Budget: total additionalContext <= 9,000 chars, under the harness's single
 10,000-char cap (overflow would be replaced by a file stub, silently dropping
-the mandatory tiers). Trim order: Scrolls, then Aware-of, never Doing/Goal/
-Read-in-full.
+the mandatory tiers). Trim order: the frontmatter `items:` list, Scrolls, then
+Aware-of, never Doing/Goal/Read-in-full.
+
+Never exits non-zero: the staleness checks degrade to the plain manifest on
+any internal error, and anything else degrades to {}.
 """
-import glob, hashlib, json, os, subprocess, sys, time
+import glob, hashlib, json, os, re, subprocess, sys, time
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import lib_context as L
 import ledger
 
 CAP = 9000
 LEDGER_BUDGET = 2500
+MAX_ITEMS = 50
+ID_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9._:-]*")
+STORE_EXCLUDE = ("--", ".", ":!.claude-sandbox/work")
+_git_hung = []
 
 
-def git(cwd, *args):
+def git(cwd, *args, ok=False):
+    """stdout (or, with ok=True, whether it exited 0); None on any failure.
+    After one timeout every later call returns None at once, so a hanging git
+    costs one 5s wait, not one per call."""
+    if _git_hung:
+        return None
     try:
         r = subprocess.run(("git", "-C", cwd) + args, capture_output=True,
                            text=True, timeout=5)
+        if ok:
+            return r.returncode == 0
         return r.stdout.strip() if r.returncode == 0 else None
+    except subprocess.TimeoutExpired:
+        _git_hung.append(True)
+        return None
     except Exception:
         return None
 
@@ -48,17 +70,151 @@ def manifest_path(cwd):
     return None, top
 
 
+def _uncomment(s):
+    """Drop a YAML end-of-line comment (`#` at the start or after whitespace)."""
+    return re.sub(r"(^|\s)#.*$", "", s).strip()
+
+
 def front_matter(text):
-    fm = {}
+    """Flat `key: value` pairs; a key with an empty value followed by `- x`
+    lines (the `items:` list) collects them as a list. `# comments` dropped."""
+    fm, key = {}, None
     lines = text.splitlines()
     if lines and lines[0].strip() == "---":
         for ln in lines[1:]:
             if ln.strip() == "---":
                 break
-            if ":" in ln:
+            s = ln.strip()
+            if s.startswith("- ") and key and isinstance(fm.get(key), list):
+                fm[key].append(_uncomment(s[2:]))
+            elif ":" in ln:
                 k, v = ln.split(":", 1)
-                fm[k.strip()] = v.strip()
-    return fm
+                key, v = k.strip(), _uncomment(v)
+                fm[key] = [] if v == "" else v
+    return {k: ("" if v == [] else v) for k, v in fm.items()}
+
+
+def claimed_items(fm):
+    """`items:` as a block list, `[a, b]`, or `a, b` -> (ids, n_unparseable).
+    Only id-shaped tokens count; the first MAX_ITEMS are read."""
+    v = fm.get("items")
+    if isinstance(v, str):
+        v = v.strip().strip("[]").split(",")
+    ids, bad = [], 0
+    for x in v or []:
+        x = x.strip().strip("'\"").strip()
+        if not x:
+            continue
+        if ID_RE.fullmatch(x):
+            ids.append(x)
+        else:
+            bad += 1
+    return ids[:MAX_ITEMS], bad
+
+
+def store_root(top):
+    """The work-item store: WI_ROOT, else the repo's .claude-sandbox/work, else
+    .work (wi's own fallback). None when no items/ dir exists."""
+    env = os.environ.get("WI_ROOT")
+    cands = [os.path.join(top, env) if env else None,
+             os.path.join(top, ".claude-sandbox", "work"), os.path.join(top, ".work")]
+    for c in ([cands[0]] if env else cands[1:]):
+        if c and os.path.isdir(os.path.join(c, "items")):
+            return c
+    return None
+
+
+def store_index(root):
+    """[(id, alias, status)] for every live and archived item — wi's own
+    resolution: exact id or alias first, then unique id prefix."""
+    idx = []
+    for p in sorted(glob.glob(os.path.join(root, "items", "*.md"))) + \
+            sorted(glob.glob(os.path.join(root, "archive", "*", "*.md"))):
+        try:
+            with open(p, errors="replace") as fh:
+                fm = front_matter(fh.read())
+        except Exception:
+            continue
+        iid = fm.get("id") if isinstance(fm.get("id"), str) and fm.get("id") \
+            else os.path.basename(p)[:-3]
+        st = fm.get("status")
+        idx.append((iid, fm.get("alias") or None,
+                    st if isinstance(st, str) and st else "unknown"))
+    return idx
+
+
+def item_status(idx, ref):
+    """Status of work item `ref` (id, alias or unique id prefix); 'missing'
+    when nothing matches, 'ambiguous' when a prefix matches several."""
+    hits = [e for e in idx if ref in (e[0], e[1])] or \
+        [e for e in idx if e[0].startswith(ref)]
+    if len(hits) != 1:
+        return "missing" if not hits else "ambiguous"
+    return hits[0][2]
+
+
+def dead_claims(fm, top):
+    """`DEAD CLAIM <id> (<status>)` for every id the manifest expected open that
+    the store now has done, dropped or missing. [] when no store (silent)."""
+    ids, bad = claimed_items(fm)
+    root = store_root(top) if ids or bad else None
+    if not root:
+        return []
+    idx = store_index(root)
+    out = []
+    for i in ids:
+        st = item_status(idx, i)
+        if st in ("done", "dropped", "missing"):
+            out.append(f"DEAD CLAIM {i} ({st})")
+    if bad:
+        out.append(f"items: {bad} unparseable entr{'y' if bad == 1 else 'ies'} skipped")
+    return out
+
+
+def head_moved(fm, top):
+    """None when the recorded head still describes the repo; else the one line
+    that replaces the `## Next` body. Store-only commits (librarian chores under
+    .claude-sandbox/work) do not count as movement."""
+    rec = fm.get("head")
+    if not isinstance(rec, str) or not rec:
+        return None
+    cur = git(top, "rev-parse", "--short", "HEAD")
+    if not cur:
+        return None
+    known = git(top, "rev-parse", "--verify", "-q", rec + "^{commit}") is not None
+    if _git_hung:
+        return None
+    ancestor = known and git(top, "merge-base", "--is-ancestor", rec, "HEAD", ok=True)
+    n = git(top, "rev-list", "--count", f"{rec}..HEAD", *STORE_EXCLUDE) if known else None
+    if _git_hung:
+        return None
+    n = int(n) if n and n.isdigit() else None
+    if ancestor and not n:
+        return None
+    note = ("" if ancestor else ", recorded head is not an ancestor") if known \
+        else ", recorded head not found locally"
+    moved = "? commits" if n is None else f"{n} commit{'' if n == 1 else 's'}"
+    return (f"Next withheld: head moved {moved} since this manifest ({rec}..{cur}"
+            f"{note}); run wi prime and git log.")
+
+
+def stale_checks(fm, top, live):
+    """(moved line or None, dead-claim lines). Any internal error degrades to
+    (None, []): the plain manifest, as before these checks existed."""
+    if live == "LANDED":
+        return None, []
+    try:
+        return head_moved(fm, top), dead_claims(fm, top)
+    except Exception:
+        return None, []
+
+
+def withhold_next(body, line):
+    i = body.find("\n## Next")
+    if i < 0:
+        return body
+    j = body.find("\n## ", i + 1)
+    return body[:i] + f"\n## Next\n{line}\n" + (body[j:] if j >= 0 else "")
 
 
 def liveness(fm, top):
@@ -72,7 +228,7 @@ def liveness(fm, top):
         pass
     drift = None
     if fm.get("head"):
-        d = git(top, "rev-list", "--count", f"{fm['head']}..HEAD")
+        d = git(top, "rev-list", "--count", f"{fm['head']}..HEAD", *STORE_EXCLUDE)
         drift = int(d) if d and d.isdigit() else None
     if (age_h is not None and age_h > 7 * 24) or (drift is not None and drift > 30):
         return "STALE"
@@ -81,7 +237,18 @@ def liveness(fm, top):
     return "FRESH"
 
 
+def _trim_items(body):
+    """Collapse the frontmatter `items:` list to one line (dead claims have
+    already been computed from it)."""
+    m = re.search(r"^items:[^\n]*\n(?:[ \t]*-[^\n]*\n)*", body, re.M)
+    if not m or not body.startswith("---"):
+        return body
+    return body[:m.start()] + "items: (trimmed — read the manifest file)\n" + body[m.end():]
+
+
 def trim(body, budget):
+    if len(body) > budget:
+        body = _trim_items(body)
     for sec in ("## Scrolls", "## Aware of"):
         if len(body) <= budget:
             break
@@ -291,23 +458,35 @@ def main():
         header = (f"[context-guard rehydration] {live} manifest {path} "
                   f"(written {fm.get('written', '?')}, head {fm.get('head', '?')}, "
                   f"now {len(dirty.splitlines())} dirty file(s)).")
+        moved, dead = stale_checks(fm, top, live)
+        if len(dead) > 20:
+            dead = dead[:20] + [f"(+{len(dead) - 20} more)"]
+        checks = ("Claims this manifest makes that the work-item store now "
+                  "contradicts (the store wins):\n" + "\n".join(dead)) if dead else ""
+        if moved:
+            text = withhold_next(text, moved)
 
         seen = st.get("manifest") or {}
         full = source == "compact" or (
             source in ("resume", "fork") and (seen.get("sha") != sha or seen.get("top") != top))
         if full:
-            preamble = ("Precedence: this manifest and the ledger beat any machine "
-                        "summary of the old conversation; CORRECTION/REFUSED/DEFERRED "
-                        "lines beat everything including your own recollection."
+            preamble = ("Precedence: current repo state (git log, the work-item "
+                        "store) beats this manifest; this manifest and the ledger beat "
+                        "any machine summary of the old conversation; CORRECTION/"
+                        "REFUSED/DEFERRED lines beat everything else, including your "
+                        "own recollection."
                         + (" A goal line in a STALE manifest must be re-confirmed "
                            "with the operator before acting on it." if live == "STALE" else "")
                         + (" A machine compaction summary also exists for this "
                            "session; where they disagree, the manifest wins."
                            if st.get("compact_summary") else ""))
-            parts += [header, preamble, trim(text, CAP - len(header) - len(preamble) - LEDGER_BUDGET - 400)]
+            parts += [header, preamble] + ([checks] if checks else []) + \
+                [trim(text, CAP - len(header) - len(preamble) - len(checks)
+                      - LEDGER_BUDGET - 400)]
             sysmsg = f"Rehydrated from {live} manifest ({fm.get('written', '?')})."
         else:
-            parts.append(header + " Read it before resuming its thread.")
+            parts.append(header + " Read it before resuming its thread."
+                         + "".join("\n" + c for c in (checks, moved) if c))
         st["manifest"] = {"sha": sha, "top": top}
 
     if source == "compact":
@@ -334,4 +513,9 @@ def main():
     print(json.dumps(out))
 
 
-main()
+if __name__ == "__main__":
+    try:
+        main()
+    except Exception:
+        print(json.dumps({}))
+    sys.exit(0)
