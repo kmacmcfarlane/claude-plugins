@@ -15,8 +15,8 @@ refs:
 Reviewer of e3a9 2026-09-16: librarian-mode/references/review-brief.md:131 'After the implementer pushes fix commits' conflicts with agent-brief.md's 'do not push' now that push has a precise meaning in the skill. Acceptance: reword to 'commits its fixes' or equivalent; one line.
 
 ## Handoff
-- doing: —
-- next: —
+- doing: bundled in worktree d72e
+- next: review -> land
 - blocked: —
 - learned: —
 

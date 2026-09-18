@@ -15,20 +15,15 @@ refs:
 From the ce46 re-review 2026-09-18 (all low/nit): (10) ending-the-session.md names the advisories by the '[claude-kit context gate]' prefix — after the plugin-factoring merge the gate prints '[context-guard context gate]'; match by the advisory bodies only; (11) 'store-only — the work-item store and the manifest': .claude-sandbox/HANDOFF.md is neither tracked nor ignored and handoff-format.md says trackInHost governs it — commit the manifest only when trackInHost tracks it; (12) drop 'reads the status-line gauge' (the model cannot see it; the advisory latches and arrives on the next prompt) or say read the gate state file; (13) 'the one time the push precedes its Report' is now false (75% does too). Lands on the factored layout after the merge.
 
 ## Handoff
-- doing: —
-- next: —
+- doing: bundled in worktree d72e
+- next: review -> land
 - blocked: —
 - learned: —
-
-- 2026-09-18: plugin-factoring merged (0d8b4c9); hold released. Paths moved: claude-kit dissolved into kit-dev/context-guard/dev-flow/work-items/chat/sandbox/ralph.
-
-- 2026-09-18 (from 5cdb impl): also fix librarian-mode ending-the-session.md "session-addressed" (handoff-format says work-addressed) and add the repo-state-outranks-manifest clause to its precedence line. Bundle into the librarian chores item.
-
-- 2026-09-18 (881e lesson): agent-brief/fix-loop should say how to fix a bad commit subject without history rewrite (decline it, or the merge message carries the correction); never brief `git reset --soft main` once main may have moved.
-
-- 2026-09-18 (f696 round-3 low): model-routing.md:43-49 — state that the one-line/mechanical exclusion wins over "such lines in more than one file".
 
 ## Notes
 - 2026-09-18 claimed by unknown@e3a28d2cc009
 
 dispatch: implementer opus — bundled chores in worktree d72e; >3 files (rule 2)
+
+impl (bundle): DONE 7ace960 (all five; none pre-fixed). Open: agent-brief Commit verbs omit "fixed" (main history uses it).
+dispatch: reviewer opus — rule 4
