@@ -15,7 +15,8 @@ W=<absolute worktree path>
 
 - [ ] `git -C $W diff --stat main...HEAD` lists only the files the item names (plus the
       catalog and layout edits when the marketplace's shape changed).
-- [ ] Nothing under `.claude-sandbox/`, `.claude/`, or a product repo.
+- [ ] Nothing under `.claude-sandbox/` or `.claude/`, nothing outside the `## Librarian`
+      Scope in CLAUDE.md, nothing inside its Exclude.
 - [ ] One commit on the branch, message `<verb>: <aspect> - <description>` — plus, per
       review fix round, one or more new commits on top of it. No amend, rebase or squash
       of a reviewed commit; nothing outside the item's files in any of them.
@@ -66,7 +67,8 @@ is reviewed by eye, not waved through.
 
 Read the full diff — `git -C $W diff main...HEAD` — against the README's doctrine section
 when present (the seven principles below are its content; apply each where its subject
-exists — on a repo with no plugins/ tree most are vacuous), one principle at a time:
+exists — on a repo with no plugins/ tree most are vacuous), one principle at a time, plus
+the repo's own workflow:
 
 - [ ] **One plugin, one aim.** No plugin description gained an "and".
 - [ ] **Standalone test.** Nothing new requires another plugin from this marketplace to be
@@ -80,6 +82,8 @@ exists — on a repo with no plugins/ tree most are vacuous), one principle at a
 - [ ] **Names are API.** No plugin renamed; the marketplace `name` untouched; no `claude-`
       prefix on a new plugin.
 - [ ] **New aim → new plugin.** A new capability did not stretch an existing description.
+- [ ] **Repo workflow.** The change follows the `Workflow:` notes in `## Librarian`, when
+      present.
 - [ ] **Catalog is the front door.** If the shape changed — plugin added/moved/retired, a
       skill added to or removed from a plugin — README.md's catalog row and per-plugin skill
       table, and CLAUDE.md's layout block where it enumerates skills, changed in this same
@@ -95,7 +99,11 @@ git -C $W diff --name-only main...HEAD | grep -q '\.claude-plugin/' && \
 ## 4. Tests where they exist
 
 Run the suite for every tree the diff touches; run both when in doubt — they are seconds.
+Then the repo's own gates: every command under `Checks:` in CLAUDE.md's `## Librarian`
+section, run from `$W`, on every item — they come on top of the generic ones, never
+instead of them.
 
+- [ ] Each repo `Checks:` command exits 0.
 - [ ] The `work-items` skill touched → wi tests green.
 - [ ] A plugin's `hooks/` touched → that plugin's hook tests green.
 - [ ] Any `scripts/*.py` touched → at least `python3 -m py_compile` on it.
@@ -106,6 +114,7 @@ git -C $W diff --name-only main...HEAD | grep -q '/skills/work-items/' && \
 for h in $(git -C $W diff --name-only main...HEAD | grep -o '^plugins/[^/]*/hooks' | sort -u); do
   (cd $W/$h && python3 -m unittest discover -s tests -q); done
 for p in $(git -C $W diff --name-only main...HEAD | grep '\.py$'); do python3 -m py_compile $W/$p && echo "ok $p"; done
+# then, from $W, each command listed under Checks: in ## Librarian, one per line
 ```
 
 ## 5. Config validity

@@ -18,12 +18,12 @@ plugins/
     hooks/             # Gate, statusline sensor, ledger, rehydrate + unit tests
     skills/
       {checkpoint,install-statusline,usage-report}/
-  dev-flow/            # Plan before you code
+  dev-flow/            # Plan before you code; the librarian that takes custody of a repo
     skills/
-      {investigate,implement,deep-investigation,chain-of-verification}/
+      {investigate,implement,deep-investigation,chain-of-verification,librarian-mode}/
   kit-dev/             # Maintaining this kit itself
     skills/
-      {create-skill,update-kit,new-project-from-template,factor-analysis,librarian-mode}/
+      {create-skill,update-kit,new-project-from-template,factor-analysis}/
   ralph/               # Unattended agent loops over a backlog
     skills/
       {backlog-yaml,backlog-entry,backlog-grooming}/
@@ -86,7 +86,7 @@ current home is the real home, and is where files go.
 | Aim | Current home | Target home (planned) |
 |---|---|---|
 | Survive the finite context window (gate, gauge, checkpoint, rehydration, token-spend report) | `plugins/context-guard/` | `plugins/context-guard/` — **landed** (Phase 1) |
-| Plan-before-code development flow | `plugins/dev-flow/` | `plugins/dev-flow/` — **landed** (Phase 3) |
+| Plan-before-code development flow, and a standing librarian that takes custody of a repo's work | `plugins/dev-flow/` | `plugins/dev-flow/` — **landed** (Phase 3) |
 | Repo-durable work items / work-source interface | `plugins/work-items/` | `plugins/work-items/` — **landed** (Phase 4) |
 | Isolated execution (containers; the checkout/worktree convention and its guard) | `plugins/sandbox/` | `plugins/sandbox/` — **landed** (Phase 5) |
 | Unattended agent loops over a backlog ("ralph") | `plugins/ralph/` | `plugins/ralph/` — **landed** (Phase 5) |

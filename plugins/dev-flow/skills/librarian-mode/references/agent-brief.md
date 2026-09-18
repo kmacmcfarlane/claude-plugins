@@ -2,7 +2,8 @@
 
 The dispatch brief for one feature. Fill every placeholder; delete nothing except the
 fix-round clause under Commit, which is included only when resuming or re-dispatching the
-implementer with review findings. The agent starts
+implementer with review findings, and the repo-workflow and dev-flow blocks when their
+condition does not hold. The agent starts
 with none of the librarian's context and must be able to finish from this text alone. Send
 it as the prompt of one background `general-purpose` Agent. The librarian sets the
 `Model:` line from the Route step in SKILL.md and passes the same value to the Agent
@@ -12,7 +13,8 @@ tier is a fresh dispatch with the full brief and the findings, never a resume �
 agent keeps its model; resume only when the tier is unchanged.
 
 The prohibitions and the return contract are fixed. The verification commands vary with what
-the item touches — take them from `review-checklist.md`.
+the item touches — take them from `review-checklist.md`, plus every command under
+`Checks:` in CLAUDE.md's `## Librarian` section. Its `Workflow:` notes go in verbatim.
 
 ---
 
@@ -43,8 +45,8 @@ Files in scope: <explicit list; anything else is out of scope>
 
 - $WORKTREE/README.md — its doctrine, catalog and placement sections when present,
   otherwise its plugin tables; on a repo with no plugins/ tree, in full
-- $WORKTREE/CLAUDE.md — layout and conventions, and its `## Librarian` heading when
-  present
+- $WORKTREE/CLAUDE.md — layout and conventions, and its `## Librarian` section: its
+  Scope is the only ground you may touch, and never its Exclude
 - <when the change adds or edits a skill:> the create-skill skill at
   $WORKTREE/plugins/*/skills/create-skill/SKILL.md and its references/ — follow it as the
   authoring procedure.
@@ -67,9 +69,34 @@ Rules that reviewers reject on sight:
 <the approach, as specific as the item allows: which files, which sections, which pattern to
 copy and from where — absolute paths>
 
+<when ## Librarian has Workflow: — the repo's workflow, follow it:>
+<the Workflow: notes, verbatim>
+
+<spike or feature (§ dev-flow below):>
+Use the dev-flow skills for their method, not their git or their dialogs: a spike
+through /investigate, a feature through /investigate then /implement. Invoke both as
+running non-interactively (each skill's § Running non-interactively), and:
+- /investigate: its research, requirements and plan steps. Write the series under
+  <absolute scratchpad path>/investigations/<slug>/, never inside $WORKTREE, and name
+  that path in your report. Skip its branch survey (the base is fixed above) and its
+  retrospective.
+- /implement, on that series: its plan, build and verify steps and its review gates,
+  with every edit made in $WORKTREE itself. Its Step 1 looks for series only under
+  .claude-sandbox/investigations/ and would stop with "No investigations found": skip
+  Step 1, take the series to be the scratchpad path above, and start at its Step 2,
+  reading every file of the series there. Skip its repo and base-branch step (no
+  fetch, no new branch or worktree, nothing run in the main checkout), its whole
+  Finalize step (no terminal action, merge, push, work-item update, outcome or index
+  write) and its retrospective. The Commit section below is the only commit.
+- A question either skill would put to the user: take the least irreversible choice
+  and record it under DEVIATIONS, or, if it blocks, under OPEN QUESTIONS
+  (NEEDS_CONTEXT when you cannot go on). Never AskUserQuestion.
+- `git -C $WORKTREE status --short` is empty apart from your commit before you report.
+
 ## Verification — run all, report outcomes verbatim
 
 <paste the applicable commands from review-checklist.md, each with $WORKTREE substituted>
+<then each command under Checks: in ## Librarian, run from $WORKTREE, verbatim>
 
 ## Commit
 
@@ -93,7 +120,8 @@ that sha. Report every new sha under COMMIT.
 - Do not merge, rebase, push, or check out any other branch.
 - Do not edit any file outside $WORKTREE.
 - Do not touch files outside "Files in scope", however tempting; list the temptation under
-  OPEN QUESTIONS instead.
+  OPEN QUESTIONS instead. Nothing outside the `## Librarian` Scope, or inside its
+  Exclude, is ever in scope.
 - Do not create README.md, CHANGELOG.md, or any documentation file the item did not ask for.
 - Do not run `wi done`, `wi claim` or `wi release`; the librarian owns the item's state. You
   MAY run `$WI handoff <id> --doing ... --next ...` if you stop mid-way.
@@ -122,6 +150,12 @@ COMMIT: sha and message subject — in a fix round, every new sha
 | `DONE_WITH_CONCERNS` | Committed and green, but the agent flagged a judgement call | Read the concerns; put them in the reviewer brief; Review, then Land |
 | `NEEDS_CONTEXT` | Could not proceed without an answer; nothing or little committed | Answer in the item body, re-dispatch with the answer |
 | `BLOCKED` | Worktree wrong, permission denied, dependency missing | `wi block`, route to the operator |
+
+## dev-flow
+
+`investigate` and `implement` ship in the dev-flow plugin beside this skill, so they are
+present wherever the librarian runs; there is nothing to detect. Include the dev-flow
+block in every spike or feature brief. Bugs, chores and refactors never need it.
 
 ## Sharpening a brief for re-dispatch
 

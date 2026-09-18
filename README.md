@@ -65,11 +65,11 @@ Names are **provisional** pending operator review.
 | …project context for the `ai-scripts` Python CLI utilities | `ai-scripts` | **moved** to the expertise marketplace (local scaffold, remote pending) | — |
 | …structured product research in a web chat session | `chat` | current; *family home under review* | — |
 | …to survive the finite context window (gate, gauge, checkpoint, rehydration, token-spend report) | `context-guard` | **current** | — |
-| …a plan before you code: investigate → reviewed plan → verified implementation | `dev-flow` | **current** | `work-items` (soft) |
+| …a plan before you code: investigate → reviewed plan → verified implementation, and a standing librarian that takes custody of a repo's work (files, dispatches, reviews, lands) | `dev-flow` | **current** | `work-items` (soft; `librarian-mode` finds `wi` via the repo tree, or the installed plugin's copy) |
 | …repo-durable work items and a pluggable work source | `work-items` | **current** | — |
 | …isolated execution for agent sessions (containers, and the checkout/worktree convention) | `sandbox` | **current** | claude-sandbox repo (external) |
 | …unattended agent loops over a backlog ("ralph") | `ralph` | **current** | `sandbox` (hard), `work-items` (soft) |
-| …to maintain this kit itself (skill authoring, upstream sync, templates, librarian custody) | `kit-dev` | **current** | `work-items` (soft; via the repo tree, or the installed plugin's `wi`) |
+| …to maintain this kit itself (skill authoring, upstream sync, templates) | `kit-dev` | **current** | — |
 | …to make Claude good at a specific stack (Goa, Playwright, musubi-tuner, …) | one plugin per stack | **moved** to the expertise marketplace (local scaffold, remote pending) | — |
 
 Retired: the deprecated plan-execution skill and the three sub-agent definitions used only by
@@ -169,20 +169,18 @@ What is installable from this marketplace right now.
 ### kit-dev
 
 Maintainer tooling for this ecosystem itself — authoring skills, scaffolding projects from the
-templates, syncing work back upstream, and standing custody of a repo's shared agent layer
-(librarian mode). Install it if you *develop* the kit; you do not need it to use the kit.
+templates, syncing work back upstream. Install it if you *develop* the kit; you do not need
+it to use the kit.
 
 | Skill | Description |
 |---|---|
 | `create-skill` | Bootstrap a new Claude Code skill from a description, routed to its plugin by aim |
 | `factor-analysis` | Analyze how a repo, plugin, or toolset should be factored into coherent standalone pieces |
-| `librarian-mode` | Standing single-writer custodian of a repo's custody layer: file, factor, route by model tier, delegate to worktree agents, review, land, report |
 | `new-project-from-template` | Create a new project from a claude-templates template |
 | `update-kit` | Sync skills and workflow files upstream to claude-templates / claude-plugins / claude-expertise / claude-sandbox |
 
-Soft dependency on `work-items`: `librarian-mode` drives `wi` throughout, found through the
-repo's own `plugins/*/skills/work-items` tree or the installed plugin's copy; the other
-three skills need nothing else here.
+The four skills need nothing else here. (`librarian-mode` lived here until it moved to
+`dev-flow`, whose aim it serves.)
 
 `plugins/kit-dev/` is what remains of the old kitchen-sink plugin after the factoring: its
 `hooks/`, `checkpoint` and `install-statusline` went to `context-guard` (except the checkout
@@ -197,7 +195,9 @@ separate umbrella **repo** `kmacmcfarlane/claude-kit` keeps its name and is unaf
 
 A plan before you code. Investigate a problem into a reviewed plan series under
 `.claude-sandbox/investigations/<slug>/`, then carry that series to verified code — plus the
-research and verification techniques that feed it.
+research and verification techniques that feed it, and a standing librarian that takes
+custody of a repo's work: it files every request, dispatches it to worktree agents (spikes
+and features through `investigate` and `implement`), reviews, and lands.
 
 | Skill | Description |
 |---|---|
@@ -205,9 +205,12 @@ research and verification techniques that feed it.
 | `implement` | Carry out an investigation series — plan, build, verify, record the outcome |
 | `deep-investigation` | Multi-agent research fan-out — strategy doc, lanes on a cheap model, one-pass synthesis |
 | `chain-of-verification` | CoVe fact-verification pipeline — baseline, verify, revise |
+| `librarian-mode` | Standing single-writer custodian of a repo's custody layer — a marketplace's shared agent layer, or whatever scope an operator opts a repo in with: file, factor, route by model tier, delegate to worktree agents, review, land, report |
 
 Soft dependency on `work-items`: the flow threads work items through `wi` when a store is
-present, and degrades to plain investigation series when it is not.
+present, and degrades to plain investigation series when it is not. `librarian-mode` drives
+`wi` throughout, found through the repo's own `plugins/*/skills/work-items` tree or the
+installed plugin's copy; without either it stops at start and says to install `work-items`.
 
 ### work-items
 

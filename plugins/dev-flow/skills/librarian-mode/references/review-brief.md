@@ -11,7 +11,8 @@ below opus.
 
 The prohibitions, the severity scale and the report shape are fixed. The check commands vary
 with what the item touches — take them from `review-checklist.md`, the same list the
-librarian runs again at Land.
+librarian runs again at Land, including its section 4's repo `Checks:` from CLAUDE.md's
+`## Librarian` section.
 
 ---
 
@@ -50,8 +51,9 @@ pasted verbatim — you are testing these claims, not trusting them>
 
 - $WORKTREE/README.md — its doctrine, catalog and placement sections when present,
   otherwise its plugin tables; on a repo with no plugins/ tree, in full
-- $WORKTREE/CLAUDE.md — layout and conventions, and its `## Librarian` heading when
-  present
+- $WORKTREE/CLAUDE.md — layout and conventions, and its `## Librarian` section: a
+  change outside its Scope, or inside its Exclude, is a finding at medium; a change that
+  ignores its Workflow notes is a finding at medium
 - <when the change adds or edits a skill:> $WORKTREE/plugins/*/skills/create-skill/SKILL.md
   and its references/ — the authoring rules
 - <any other skill or reference the item names, by absolute path>
@@ -80,7 +82,8 @@ pasted verbatim — you are testing these claims, not trusting them>
 ## Checks — run all, report outcomes verbatim
 
 <paste the applicable commands from review-checklist.md sections 1 through 5, each with
-$W set to $WORKTREE>
+$W set to $WORKTREE — section 4 includes each command under Checks: in ## Librarian,
+run from $WORKTREE, in addition to the generic ones>
 
 ## Severity
 

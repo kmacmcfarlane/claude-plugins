@@ -6,8 +6,9 @@ here for the glob and orphan-worktree cases.
 
 - **`wi` not found by the glob.** Normal when the repo does not carry the plugin: use the
   installed copy and set `WI_ROOT` explicitly. No store at either standard root: `start`
-  and `intake` run `$WI init` once a custody layer resolves; `status` reports "no store"
-  and stops.
+  and `intake` run `$WI init` once a custody layer resolves; `status` reports "not opted
+  in; `start` offers opt-in" when CLAUDE.md has no `## Librarian` section, else "no
+  store", and stops.
 - **`wi claim` exits 4.** Another session holds the item. Do not force; report it.
 - **Agent (implementer or reviewer) returns `BLOCKED` on permissions.** A decision for
   the operator, not a reason to do the work yourself: block the item and report.

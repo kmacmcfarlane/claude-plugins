@@ -8,7 +8,7 @@
     {
       "name": "kit-dev",
       "source": "./plugins/kit-dev",
-      "description": "Maintainer tooling for this plugin ecosystem — skill creation, project scaffolding, upstream kit sync, factoring analysis, and the librarian custody workflow for the shared agent layer."
+      "description": "Maintainer tooling for this plugin ecosystem — skill creation, project scaffolding, upstream kit sync, and factoring analysis."
     },
     {
       "name": "context-guard",
@@ -18,7 +18,7 @@
     {
       "name": "dev-flow",
       "source": "./plugins/dev-flow",
-      "description": "Plan-first development for agent sessions — investigation series, reviewed plans, verified implementation, multi-agent research fan-outs, and chain-of-verification fact-checking."
+      "description": "Plan-first development for agent sessions — investigation series, reviewed plans, verified implementation, multi-agent research fan-outs, chain-of-verification fact-checking, and a standing librarian that takes custody of a repo's work: files, dispatches, reviews and lands (soft dependency: work-items)."
     },
     {
       "name": "work-items",
