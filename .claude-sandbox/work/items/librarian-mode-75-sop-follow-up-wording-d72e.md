@@ -36,3 +36,9 @@ dispatch: reviewer opus review round 2 — resume
 
 review round 2 (opus): NEEDS_CHANGES — medium 1 (push clause omits DUE; DUE fires at 65% on 200K windows; budget allows it), 2 (always-low subject rule has no carve-out for a leaked secret); low 3 (merge -m body needs a blank line), nit 4.
 dispatch: implementer opus fix round 2 — resume (mediums only; no fable escalation under f696)
+
+fix round 2 (opus): DONE 32880e2 (1-3; declined nit 4 = budget).
+dispatch: reviewer opus review round 3 — resume
+
+review round 3 (opus): NEEDS_CHANGES — 1-3 FIXED, 4 declined OK; new medium 5 (re-review template has no merge-base slot after a secret rebuild), 6 (secret decision must name location/key, never value); lows 7 (rebuild base unnamed in agent-brief), 8 (SKILL review step 4 vs rotation decision), nit 9 (rebase prohibition).
+dispatch: implementer opus fix round 3 (last before cap 4) — resume; mediums only -> no fable escalation

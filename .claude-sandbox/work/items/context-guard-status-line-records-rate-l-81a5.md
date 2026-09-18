@@ -30,3 +30,6 @@ dispatch: reviewer opus — rule 4
 
 review round 1 (opus): NEEDS_CHANGES — high 1 (WINDOWS_MAX untested), medium 2 (usage_bars OverflowError blanks the line; pre-existing, now in scope via acceptance 2); lows 3 (pct/size range), 4 (sid path — to follow-up), 5 (doc; noted on 07c3 F1).
 dispatch: implementer opus fix round 1 — resume
+
+fix round 1 (opus): DONE 9dd0b21 (1-3; declined 4, 5 = out of scope, filed/noted).
+dispatch: reviewer opus review round 2 — resume
