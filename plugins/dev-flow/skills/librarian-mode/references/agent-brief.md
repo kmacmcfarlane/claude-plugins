@@ -8,9 +8,10 @@ with none of the librarian's context and must be able to finish from this text a
 it as the prompt of one background `general-purpose` Agent. The librarian sets the
 `Model:` line from the Route step in SKILL.md and passes the same value to the Agent
 tool's `model` field — the brief tells the agent which tier it runs on, the field
-enforces it, and the item body's `dispatch:` line records it. A fix round that raises the
-tier is a fresh dispatch with the full brief and the findings, never a resume — a resumed
-agent keeps its model; resume only when the tier is unchanged.
+enforces it, and the item body's `dispatch:` line records it. A fix round that changes the
+tier (a bump, or the fable fallback) is a fresh dispatch with the full brief and the
+findings, never a resume — a resumed agent keeps its model; resume only when the tier is
+unchanged.
 
 The prohibitions and the return contract are fixed. The verification commands vary with what
 the item touches — take them from `review-checklist.md`, plus every command under
@@ -108,7 +109,7 @@ paths; never `git add .` or `git add -A`. Do not commit anything under .claude-s
 
 <fix round only — include when resuming or re-dispatching with review findings:>
 Fix round <n> — the nth re-dispatch or resume with review findings, i.e. review round n+1
-of a 3-review-round cap. The Model line above is this round's tier (Route rules 3 and 6);
+of a 4-review-round cap. The Model line above is this round's tier (Route rules 3 and 6);
 when it differs from the previous round's, this is a fresh dispatch, not a resume.
 Findings to fix are listed below, verbatim. Fix each finding at medium or
 above; each low/nit you decline, state under DECLINED with a reason. Fix as one or more NEW

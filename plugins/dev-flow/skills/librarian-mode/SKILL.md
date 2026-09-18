@@ -170,30 +170,30 @@ Rules:
 
 Route every dispatch — an unrouted sub-agent inherits the librarian's model, the dearest
 tier — via the Agent tool's `model` field (`sonnet` | `opus` | `fable`); tables and worked
-examples: `references/model-routing.md`. Rounds count **fix rounds**: fix round n = the
-nth re-dispatch or resume with findings = review round n+1; cap 3 review rounds. The
-`verified:` line counts fix rounds too.
+examples: `references/model-routing.md`. Rounds, and `verified:`, count **fix rounds**:
+fix round n = the nth re-dispatch or resume with findings = review round n+1; cap 4
+review rounds.
 
-1. **Default implementer: sonnet.** The brief constrains the work; a sonnet failure is
-   cheap.
+1. **Default implementer: sonnet** — a failure costs a re-dispatch.
 2. **Implementer → opus** on any signal: executable logic in scope (hook, `scripts/`,
    status line, settings write); doctrine or marketplace shape (README catalog or
    placement, CLAUDE.md layout, marketplace.json, a plugin split or move); any code in a
-   product repo's Scope (docs-only changes there stay sonnet); more than three files or
-   more than one plugin; a real trade-off in the item body, or judgement words in
-   the acceptance (coherent, align, reconcile); a prior `NEEDS_CONTEXT`.
-3. **Implementer → fable** when a wrong result is hard to reverse or touches the harness:
-   hooks that gate or block edits, commits or tool calls; security-relevant (credentials,
-   permission allowlists, sandbox config, mounts, host access, sockets); fix round 2 (the
-   last before the cap); the operator names it. Rule 3 wins over rule 2.
-4. **Reviewer = implementer's tier, floor opus.** Sonnet gets an opus reviewer; opus gets
-   opus; fable gets fable. The gate is never weaker than opus.
+   product repo's Scope (docs-only stays sonnet); more than three files or more than one
+   plugin; a real trade-off in the item body, or judgement words in the acceptance
+   (coherent, align, reconcile); a prior `NEEDS_CONTEXT`.
+3. **Implementer → fable** only for a non-trivial change (beyond a small local edit) to
+   code that gates or blocks edits, commits or tool calls, or to a security surface
+   (credentials, permission allowlists, sandbox config, mounts, host access, sockets);
+   fix round 3 after a critical or high finding; an operator pin (rule 8).
+   Rule 3 wins over rule 2.
+4. **Reviewer = implementer's tier, floor opus** — the gate is never weaker than opus.
 5. **Haiku is out of scope.** Mechanical checks you run yourself.
 6. **Re-dispatch after a rejection keeps the tier** and sharpens the brief; rule 3's round
-   signal is the only bump; a tier never falls.
-7. **Record each dispatch in the item body** before the call — `dispatch: <role> <model>
-   — <signal>` — and name both final tiers in the Report's `verified:` line
-   (`sonnet→opus` when a round bumped one).
+   signal is the only bump; a tier never falls, except the fallback
+   (`references/model-routing.md` § Fallback): fable unavailable, reset over 2h or
+   unknown → opus, recorded; within 2h, or a `model: fable` pin → ask the operator.
+7. **Record each dispatch in the item body** before the call: `dispatch: <role> <model>
+   — <signal>`.
 8. **Operator pin**: a `model: <tier>` line in the item body is a floor for every role on
    that item; rule 4 still applies above it. Never override it downward.
 
@@ -252,9 +252,9 @@ to falsify it. You own making the gate come back clear.
 3. **Fix loop.** The reviewer's verdict is `CLEAR`, `NEEDS_CHANGES`, `SHOW_STOPPER`, or
    `BLOCKED`. One round in full — each verdict, who is resumed, what each is handed:
    `references/fix-loop.md`.
-   - Repeat until `CLEAR`. **Cap: 3 review rounds** — the first review plus two fix
-     rounds. A third review without `CLEAR` means the brief or the item is wrong, not the
-     code: block it and ask the operator to weigh in. Tier per round:
+   - Repeat until `CLEAR`. **Cap: 4 review rounds** — the first review plus three fix
+     rounds. A fourth review without `CLEAR` means the brief or the item is wrong, not
+     the code: block it and ask the operator to weigh in. Tier per round:
      `references/model-routing.md` § Rounds.
    - You never fix a finding yourself, not even a nit. You never argue a severity down.
 
