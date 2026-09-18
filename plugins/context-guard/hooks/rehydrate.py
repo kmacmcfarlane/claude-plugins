@@ -10,7 +10,9 @@ excluded) or diverged from it, the `## Next` body is withheld, not warned.
 The manifest (HANDOFF.md, spec: skills/checkpoint/references/handoff-format.md)
 is AUTHORED by the checkpoint skill, never synthesized here: intent is a
 snapshot only its author can write. This hook adds the live part — age, commit
-drift, dirty count — and labels it FRESH / AGED / STALE / LANDED.
+drift, dirty count — and labels it FRESH / AGED / STALE / LANDED. The label
+and the Next withhold read the same ancestry check (head_state), so a manifest
+whose Next is withheld is never labelled FRESH.
 
 Tiers by source:
   compact          full manifest + the ledger tail (reasoning survives)
@@ -37,6 +39,8 @@ LEDGER_BUDGET = 2500
 MAX_ITEMS = 50
 ID_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9._:-]*")
 STORE_EXCLUDE = ("--", ".", ":!.claude-sandbox/work")
+_FM_CLOSE = re.compile(r"^[ \t]*---[ \t]*$", re.M)
+_ITEMS_RE = re.compile(r"^items:[^\n]*\n(?:[ \t]*-[^\n]*\n)*", re.M)
 _git_hung = []
 
 
@@ -154,59 +158,89 @@ def item_status(idx, ref):
 
 
 def dead_claims(fm, top):
-    """`DEAD CLAIM <id> (<status>)` for every id the manifest expected open that
-    the store now has done, dropped or missing. [] when no store (silent)."""
+    """(dead, notes): `DEAD CLAIM <id> (<status>)` for every id the manifest
+    expected open that the store now has done, dropped or missing, and a note
+    line when entries were unparseable. ([], []) when no store (silent)."""
     ids, bad = claimed_items(fm)
     root = store_root(top) if ids or bad else None
     if not root:
-        return []
+        return [], []
     idx = store_index(root)
     out = []
     for i in ids:
         st = item_status(idx, i)
         if st in ("done", "dropped", "missing"):
             out.append(f"DEAD CLAIM {i} ({st})")
-    if bad:
-        out.append(f"items: {bad} unparseable entr{'y' if bad == 1 else 'ies'} skipped")
-    return out
+    notes = [f"items: {bad} unparseable entr{'y' if bad == 1 else 'ies'} skipped"] \
+        if bad else []
+    return out, notes
 
 
-def head_moved(fm, top):
+def head_state(fm, top):
+    """The one ancestry check both the label and the Next withhold read:
+    {rec, cur, known, ancestor, n} (n = code commits rec..HEAD, store-only
+    commits excluded; None when unknown), or None when there is no recorded
+    head, git fails, or git hung. Never raises."""
+    try:
+        rec = fm.get("head")
+        if not isinstance(rec, str) or not rec:
+            return None
+        cur = git(top, "rev-parse", "--short", "HEAD")
+        if not cur:
+            return None
+        known = git(top, "rev-parse", "--verify", "-q", rec + "^{commit}") is not None
+        if _git_hung:
+            return None
+        ancestor = bool(known and git(top, "merge-base", "--is-ancestor", rec, "HEAD",
+                                      ok=True))
+        n = git(top, "rev-list", "--count", f"{rec}..HEAD", *STORE_EXCLUDE) if known else None
+        if _git_hung:
+            return None
+        n = int(n) if n and n.isdigit() else None
+        return {"rec": rec, "cur": cur, "known": known, "ancestor": ancestor, "n": n}
+    except Exception:
+        return None
+
+
+def divergence(hs):
+    """Why the recorded head no longer describes HEAD by ancestry, or None."""
+    if not hs:
+        return None
+    if not hs["known"]:
+        return "recorded head not found locally"
+    if not hs["ancestor"]:
+        return "recorded head is not an ancestor"
+    return None
+
+
+def head_moved(hs):
     """None when the recorded head still describes the repo; else the one line
     that replaces the `## Next` body. Store-only commits (librarian chores under
     .claude-sandbox/work) do not count as movement."""
-    rec = fm.get("head")
-    if not isinstance(rec, str) or not rec:
+    if not hs:
         return None
-    cur = git(top, "rev-parse", "--short", "HEAD")
-    if not cur:
+    why, n = divergence(hs), hs["n"]
+    if not why and not n:
         return None
-    known = git(top, "rev-parse", "--verify", "-q", rec + "^{commit}") is not None
-    if _git_hung:
-        return None
-    ancestor = known and git(top, "merge-base", "--is-ancestor", rec, "HEAD", ok=True)
-    n = git(top, "rev-list", "--count", f"{rec}..HEAD", *STORE_EXCLUDE) if known else None
-    if _git_hung:
-        return None
-    n = int(n) if n and n.isdigit() else None
-    if ancestor and not n:
-        return None
-    note = ("" if ancestor else ", recorded head is not an ancestor") if known \
-        else ", recorded head not found locally"
     moved = "? commits" if n is None else f"{n} commit{'' if n == 1 else 's'}"
-    return (f"Next withheld: head moved {moved} since this manifest ({rec}..{cur}"
-            f"{note}); run wi prime and git log.")
+    return (f"Next withheld: head moved {moved} since this manifest ({hs['rec']}.."
+            f"{hs['cur']}{', ' + why if why else ''}); run wi prime and git log.")
 
 
-def stale_checks(fm, top, live):
-    """(moved line or None, dead-claim lines). Any internal error degrades to
-    (None, []): the plain manifest, as before these checks existed."""
+_UNSET = object()
+
+
+def stale_checks(fm, top, live, hs=_UNSET):
+    """(moved line or None, dead-claim lines, note lines). Any internal error
+    degrades to (None, [], []): the plain manifest, as before these checks."""
     if live == "LANDED":
-        return None, []
+        return None, [], []
     try:
-        return head_moved(fm, top), dead_claims(fm, top)
+        if hs is _UNSET:
+            hs = head_state(fm, top)
+        return (head_moved(hs),) + dead_claims(fm, top)
     except Exception:
-        return None, []
+        return None, [], []
 
 
 def withhold_next(body, line):
@@ -217,33 +251,45 @@ def withhold_next(body, line):
     return body[:i] + f"\n## Next\n{line}\n" + (body[j:] if j >= 0 else "")
 
 
-def liveness(fm, top):
-    if (fm.get("mode") or "").startswith("land"):
-        return "LANDED"
+def is_landed(fm):
+    return (fm.get("mode") or "").startswith("land")
+
+
+def liveness(fm, hs):
+    """(label, reason or None). Reads the same head_state as the Next withhold:
+    a recorded head missing locally or not an ancestor of HEAD (rewound,
+    diverged) is AGED with that reason, never FRESH."""
+    if is_landed(fm):
+        return "LANDED", None
     age_h = None
     try:
         t = time.strptime(fm.get("written", "")[:19], "%Y-%m-%dT%H:%M:%S")
         age_h = (time.time() - time.mktime(t)) / 3600
     except Exception:
         pass
-    drift = None
-    if fm.get("head"):
-        d = git(top, "rev-list", "--count", f"{fm['head']}..HEAD", *STORE_EXCLUDE)
-        drift = int(d) if d and d.isdigit() else None
+    drift = hs["n"] if hs else None
+    why = divergence(hs)
     if (age_h is not None and age_h > 7 * 24) or (drift is not None and drift > 30):
-        return "STALE"
-    if (age_h is not None and age_h > 24) or drift:
-        return "AGED"
-    return "FRESH"
+        return "STALE", why
+    if (age_h is not None and age_h > 24) or drift or why:
+        return "AGED", why
+    return "FRESH", None
 
 
 def _trim_items(body):
     """Collapse the frontmatter `items:` list to one line (dead claims have
-    already been computed from it)."""
-    m = re.search(r"^items:[^\n]*\n(?:[ \t]*-[^\n]*\n)*", body, re.M)
-    if not m or not body.startswith("---"):
+    already been computed from it). Only the frontmatter is searched: an
+    `items:` line in the body is prose and stays."""
+    open_ = re.match(r"[ \t]*---[ \t]*\n", body)
+    if not open_:
+        return body
+    close = _FM_CLOSE.search(body, open_.end())
+    end = close.start() if close else len(body)
+    m = _ITEMS_RE.search(body, open_.end(), end)
+    if not m:
         return body
     return body[:m.start()] + "items: (trimmed — read the manifest file)\n" + body[m.end():]
+
 
 
 def trim(body, budget):
@@ -453,16 +499,21 @@ def main():
         text = open(path, errors="replace").read()
         fm = front_matter(text)
         sha = hashlib.sha1(text.encode()).hexdigest()[:12]
-        live = liveness(fm, top)
+        hs = None if is_landed(fm) else head_state(fm, top)
+        live, why = liveness(fm, hs)
         dirty = git(top, "status", "--porcelain") or ""
-        header = (f"[context-guard rehydration] {live} manifest {path} "
+        header = (f"[context-guard rehydration] {live}{f' ({why})' if why else ''} "
+                  f"manifest {path} "
                   f"(written {fm.get('written', '?')}, head {fm.get('head', '?')}, "
                   f"now {len(dirty.splitlines())} dirty file(s)).")
-        moved, dead = stale_checks(fm, top, live)
+        moved, dead, notes = stale_checks(fm, top, live, hs)
         if len(dead) > 20:
             dead = dead[:20] + [f"(+{len(dead) - 20} more)"]
-        checks = ("Claims this manifest makes that the work-item store now "
-                  "contradicts (the store wins):\n" + "\n".join(dead)) if dead else ""
+        checks = "\n\n".join(b for b in (
+            ("Claims this manifest makes that the work-item store now "
+             "contradicts (the store wins):\n" + "\n".join(dead)) if dead else "",
+            ("Manifest `items:` entries not checked against the store:\n"
+             + "\n".join(notes)) if notes else "") if b)
         if moved:
             text = withhold_next(text, moved)
 
