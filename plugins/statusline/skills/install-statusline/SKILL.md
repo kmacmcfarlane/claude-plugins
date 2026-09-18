@@ -103,17 +103,40 @@ read `ctx --` (the numbers arrive with the first response). That is not a fault.
 Requirements: `python3` on `PATH`; Linux or macOS (Windows is untested).
 
 ```bash
-claude plugin marketplace add kmacmcfarlane/claude-plugins
+claude plugin marketplace add https://github.com/kmacmcfarlane/claude-plugins.git
 claude plugin install statusline@kmacmcfarlane
 ```
 
-Or inside a session: `/plugin marketplace add kmacmcfarlane/claude-plugins`, then
-`/plugin install statusline@kmacmcfarlane`. Nothing else from the marketplace is needed.
+Or inside a session: `/plugin marketplace add https://github.com/kmacmcfarlane/claude-plugins.git`,
+then `/plugin install statusline@kmacmcfarlane`. Nothing else from the marketplace is needed.
 
 Then start a new session. It shows `statusline: status line installed in PATH; it shows from
 your next session.` The footer appears from the session after that. If you already had a
 status line, the message says so instead and nothing is changed; run `/install-statusline`
 and answer yes to replace it.
+
+### Keep it updated
+
+The `claude plugin marketplace add` command has no auto-update flag. To have this
+marketplace refresh itself instead of running `/plugin marketplace update kmacmcfarlane` by
+hand, turn on auto-update one of two ways:
+
+- In a session: `/plugin` → Marketplaces → `kmacmcfarlane` → turn on auto-update.
+- In settings, add `autoUpdate: true` to the marketplace's `extraKnownMarketplaces` entry:
+
+```json
+{
+  "extraKnownMarketplaces": {
+    "kmacmcfarlane": {
+      "source": {
+        "source": "git",
+        "url": "https://github.com/kmacmcfarlane/claude-plugins.git"
+      },
+      "autoUpdate": true
+    }
+  }
+}
+```
 
 ## What it shows
 
@@ -159,6 +182,13 @@ at a script that no longer exists (a blank footer). The last line removes the pe
 sensor files. They are also pruned automatically after 30 days.
 
 ## Troubleshooting
+
+Error: `Cannot add marketplace "kmacmcfarlane": its network source differs from the one
+declared for it in settings …`
+Cause: `kmacmcfarlane` is already declared in settings with a different source spelling than
+the one just given to `add`.
+Solution: it is already registered, so run `claude plugin marketplace update kmacmcfarlane`
+instead — or re-run `add` with exactly the declared source.
 
 Error: `the plugin's data dir was not found`
 Cause: the plugin is not installed, or the script was run from a plain checkout.
