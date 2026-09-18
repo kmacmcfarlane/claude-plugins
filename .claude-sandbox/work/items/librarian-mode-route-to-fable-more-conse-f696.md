@@ -36,3 +36,6 @@ dispatch: reviewer opus — rule 4
 
 review round 1 (opus): NEEDS_CHANGES — medium 1 (">1 file" makes a one-line hook fix + its test non-trivial), 2 (<=2h/pinned ask bypasses decision N protocol; parallel 429s); lows 3 (SKILL rule 6 lacks pin exception), 4 (troubleshooting ignores pin), 5 (cites this repo's decision numbers in a shared skill), 6 (mid-run 429 leaves partial work in the worktree); nits 7, 8.
 dispatch: implementer opus fix round 1 — resume
+
+fix round 1 (opus): DONE 5a4aa76 (all 8; declined F2 optional SKILL.md clause — rule 6 names the ask, topic mix).
+dispatch: reviewer opus review round 2 — resume

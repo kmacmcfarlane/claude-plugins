@@ -37,3 +37,5 @@ dispatch: reviewer opus review round 2 — resume
 
 review round 2 (opus): CLEAR (nit: guard reads argparse _actions; accepted). CORRECTION: the item premise (wi add re-appends) is false — wi never writes the host .gitignore outside sidecar init; the writer is the claude-sandbox launcher (claude-sandbox 18a7). This item lands as a regression sweep only.
 - 2026-09-18 done: 59b1e83
+
+- 2026-09-18: claude-sandbox 18a7 landed as 490d8ca (CS-LAY-020 + CS-LAY-018 probe fix): launcher refuses the whole-dir ignore when files are tracked, and warns on the incident state (rule present + tracked files) via a child-path probe. operator-attention likely in that state; remedy (remove /.claude-sandbox/ rule, trackInHost: true) is its operator's call.

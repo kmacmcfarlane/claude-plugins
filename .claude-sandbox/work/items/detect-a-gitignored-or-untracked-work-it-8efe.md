@@ -31,3 +31,5 @@ dispatch: implementer opus — executable logic (wi.py)
 
 impl: DONE_WITH_CONCERNS 65344d7 (check-ignore on items + a would-be item path; ls-files only at >=10 items; lint exits 3; prime header-trim fix)
 dispatch: reviewer opus — rule 4
+
+- 2026-09-18: 18a7 landed (claude-sandbox 490d8ca). If this item takes a fix round, reword the remedy "update the claude-sandbox launcher (its item 18a7)" to "a claude-sandbox launcher at 490d8ca or later warns about this".
