@@ -345,6 +345,7 @@ Stop when you catch yourself doing any of these:
 ## Ending the session
 
 Before the session ends, compacts, or is cleared: `references/ending-the-session.md`.
+At 75% context: its § At 75%.
 
 ## Examples
 
