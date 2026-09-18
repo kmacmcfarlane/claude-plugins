@@ -67,7 +67,10 @@ TOC, read on demand: `path — one line on what it holds`.
   a recorded head missing locally reads `AGED (recorded head not found locally)`, one that is
   not an ancestor of HEAD (HEAD rewound behind it, or diverged) reads
   `AGED (recorded head is not an ancestor)` — `STALE (<reason>)` when age or drift already
-  make it STALE.
+  make it STALE. When git cannot check the recorded head at all (not installed, failing, or
+  hung past its 5s timeout), the checks degrade to the plain manifest (Next shown) and the
+  label carries `(git unavailable)` — `FRESH (git unavailable)`, or `AGED`/`STALE` on age —
+  so an unverified manifest never reads as plain FRESH.
 - **Current repo state outranks the manifest.** git log and the work-item store are the
   durable record; the manifest is only the reasoning. The injected precedence line says so:
   repo state beats the manifest; the manifest and ledger beat any machine summary.
@@ -80,22 +83,25 @@ TOC, read on demand: `path — one line on what it holds`.
   (`items: <N> unparseable entr(y|ies) skipped`) under its own heading, "Manifest `items:`
   entries not checked against the store" — not under the dead-claims heading, since the store
   contradicts nothing there. No store: silent. When the hook trims for budget it collapses
-  only the frontmatter `items:` list; an `items:` line in the body is left alone.
+  only the frontmatter `items:` list (LF or CRLF line endings); an `items:` line in the body
+  is left alone.
 - **Stale Next is withheld, not warned.** When the recorded `head` is not an ancestor of
   HEAD, or HEAD is ≥1 commit past it, the hook replaces the `## Next` body with one line.
   Its variants:
   - ahead, N ≥ 2: `Next withheld: head moved <N> commits since this manifest
     (<recorded>..<current>); run wi prime and git log.`
   - ahead, one commit: `... head moved 1 commit since this manifest (<recorded>..<current>); ...`
-  - not an ancestor (HEAD rewound behind the recorded head, or diverged from it; N counts
-    commits on HEAD's side only, so a pure rewind reads `0 commits`):
-    `... head moved <N> commits since this manifest (<recorded>..<current>, recorded head is
-    not an ancestor); ...`
+  - not an ancestor (HEAD rewound behind the recorded head, or diverged from it): N is the
+    commits on HEAD's side and M those on the recorded head's side, from one
+    `git rev-list --left-right --count <recorded>...HEAD`, so a pure rewind reads
+    `0 commits ahead, M behind`:
+    `... head moved <N> commit(s) ahead, <M> behind since this manifest (<recorded>..<current>,
+    recorded head is not an ancestor); ...`
   - not found locally (N is unknowable): `... head moved ? commits since this manifest
     (<recorded>..<current>, recorded head not found locally); ...`
 
   Other sections stay. Commits touching only `.claude-sandbox/work` (store chores) do not
-  count toward N. No time-based expiry — the head check covers it.
+  count toward N or M. No time-based expiry — the head check covers it.
 - A LANDED manifest skips both checks (no dead claims, Next not withheld): the work is done.
   Either check degrades to the plain manifest if git or the store fails.
 - Injection tiers: `compact` → full + ledger tail; `resume`/`fork` → full only when the file
