@@ -28,3 +28,6 @@ dispatch: reviewer opus — rule 4
 
 review round 1 (opus): NEEDS_CHANGES — medium 1 (non-UTF-8 source path under -z -> UnicodeDecodeError escapes _git; prime/lint crash; regression); lows 2 (sidecar branch blames sidecar for an excludesFile rule), 3 (negate advice for dir-level rules outside SANDBOX_IGNORES), 4 (tests for quotePath/non-ASCII/hung stdin).
 dispatch: implementer opus fix round 1 — resume
+
+fix round 1 (opus): DONE 2680215 (1-4; bytes decode backslashreplace; _dir_level heuristic).
+dispatch: reviewer opus review round 2 — resume
