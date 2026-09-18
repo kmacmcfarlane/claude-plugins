@@ -33,3 +33,6 @@ impl: DONE_WITH_CONCERNS 65344d7 (check-ignore on items + a would-be item path; 
 dispatch: reviewer opus — rule 4
 
 - 2026-09-18: 18a7 landed (claude-sandbox 490d8ca). If this item takes a fix round, reword the remedy "update the claude-sandbox launcher (its item 18a7)" to "a claude-sandbox launcher at 490d8ca or later warns about this".
+
+review round 1 (opus): NEEDS_CHANGES — medium 1 (remedy text fixed regardless of cause; wrong for .work, *.md, info/exclude, excludesFile, none-tracked), 2 (no sidecar remedy for public repos, decision 0002); lows 3 (UNTRACKED_MIN_ITEMS=10 — librarian CONFIRMS the threshold, per the brief), 4 (verb table lint description), 5 (no-warning header-trim test), nit 6.
+dispatch: implementer opus fix round 1 — resume

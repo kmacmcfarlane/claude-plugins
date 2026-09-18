@@ -2,12 +2,11 @@
 id: librarian-mode-raise-the-review-round-ca-f518
 title: "librarian-mode: raise the review round cap from 3 to 4"
 type: feature
-status: doing
+status: done
 priority: 1
-owner: unknown@e3a28d2cc009
-claimed: 2026-09-18T19:21Z
 created: 2026-09-18
 updated: 2026-09-18
+closed: 2026-09-18
 refs:
   - operator answer to decision 30
 ---
@@ -25,3 +24,4 @@ Operator 2026-09-18 (answer to decision 30): 'Let's raise the round limit to 4'.
 
 bundled into worktree f696 (see f696 design)
 dispatch: implementer opus — bundled with f696
+- 2026-09-18 done: 9203c77

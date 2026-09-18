@@ -2,12 +2,11 @@
 id: librarian-mode-fall-back-to-opus-when-fa-7db3
 title: "librarian-mode: fall back to opus when fable is out for more than 2h"
 type: feature
-status: doing
+status: done
 priority: 1
-owner: unknown@e3a28d2cc009
-claimed: 2026-09-18T19:21Z
 created: 2026-09-18
 updated: 2026-09-18
+closed: 2026-09-18
 refs:
   - peer claude-sandbox librarian; claude-sandbox d5ac
 ---
@@ -25,3 +24,4 @@ Peer claude-sandbox librarian (its d5ac), relaying its operator, 2026-09-18. A f
 
 bundled into worktree f696 (see f696 design)
 dispatch: implementer opus — bundled with f696
+- 2026-09-18 done: 9203c77

@@ -2,12 +2,11 @@
 id: librarian-mode-route-to-fable-more-conse-f696
 title: "librarian-mode: route to fable more conservatively"
 type: feature
-status: doing
+status: done
 priority: 1
-owner: unknown@e3a28d2cc009
-claimed: 2026-09-18T19:21Z
 created: 2026-09-18
 updated: 2026-09-18
+closed: 2026-09-18
 refs:
   - peer claude-sandbox librarian; claude-sandbox f3ab
 ---
@@ -22,6 +21,7 @@ Peer claude-sandbox librarian (its f3ab), relaying its operator, 2026-09-18: fab
 
 ## Notes
 - 2026-09-18 claimed by unknown@e3a28d2cc009
+- 2026-09-18 done: 9203c77
 
 ## Librarian design (2026-09-18; operator delegated: "get as much as you can done yourself")
 Bundle f696 + 7db3 + f518 in one worktree (all rewrite Route / § Rounds). Rule 3 narrowed:
@@ -39,3 +39,11 @@ dispatch: implementer opus fix round 1 — resume
 
 fix round 1 (opus): DONE 5a4aa76 (all 8; declined F2 optional SKILL.md clause — rule 6 names the ask, topic mix).
 dispatch: reviewer opus review round 2 — resume
+
+review round 2 (opus): NEEDS_CHANGES — medium 1 (executable-logic-only threshold drops security config from fable); lows 2 (rule 6 says any pin, should be model: fable), 3 (429s arriving in separate notifications — batching); nits 4, 5.
+dispatch: implementer opus fix round 2 — resume (last-round fable escalation only after critical/high; this was medium)
+
+fix round 2 (opus): DONE 059c362 (all 5).
+dispatch: reviewer opus review round 3 — resume
+
+review round 3 (opus): CLEAR. Final: CLEAR after 2 fix rounds (impl opus, review opus). Declined: F2-optional SKILL.md clause (round 1). Accepted librarian calls: model: fable pin reaches fable at any size and asks when unavailable; (unknown) line; reset source empty until 81a5. Low carried to d72e: mechanical-exclusion vs >1-file rule has no stated winner.
