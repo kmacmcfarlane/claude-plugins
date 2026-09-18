@@ -119,8 +119,10 @@ that sha. Report every new sha under COMMIT. A finding against a commit subject 
 message is always low (the librarian's fix-loop rule): never rewrite history for it — no
 reset, amend or rebase; decline it under DECLINED with "carried in the merge message".
 The one exception: a message that leaks a secret or credential is critical. Only then is
-the branch rebuilt, from the merge-base the findings name (never onto main), with every
-message clean — that instruction overrides the new-commits rule above.
+the branch rebuilt: `git reset --soft <merge-base sha pasted here by the librarian>` and
+one recommit with every message clean — never a rebase, never onto main. That overrides
+the new-commits rule above; the no-rebase prohibition below still holds.
+Never write the secret's value anywhere: name it by commit sha, file and key only.
 
 ## Prohibitions
 

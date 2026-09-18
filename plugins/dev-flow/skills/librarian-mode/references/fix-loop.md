@@ -55,7 +55,16 @@ commit.
 **The exception: a secret or credential in a commit message** is critical, not low. The
 unmerged worktree branch is rebuilt without it before Land — the one case where the
 branch's history is rewritten, safe only because nothing has been merged or pushed yet.
-Re-dispatch the implementer to rebuild `worktree-<name>` from its merge-base with `main`
-(never onto `main` itself), with every commit message clean; the re-review diffs from that
-merge-base, not the reviewed sha. The secret goes under `decisions needed` so the
-operator can decide on rotating it.
+Re-dispatch the implementer with the merge-base sha pasted into the brief
+(`git -C "$MAIN" merge-base main worktree-<name>`): it rebuilds `worktree-<name>` by
+`git reset --soft <merge-base>` and a recommit with every message clean — never a
+rebase, never onto `main` itself. The re-review uses the rebuild case of
+`references/review-brief.md` § Re-review variant: diff from the merge-base, and the old
+reviewed tree against the new.
+
+- **Never the value.** The secret is recorded and reported by commit sha, file and key
+  name only — Intake's "a path and a key, never a value" — in the finding, the item body
+  (committed and pushed) and the Report alike.
+- **Rotation is a scope change.** Rotating a leaked credential is outside the item, so it
+  reaches the operator under `decisions needed` by SKILL.md § Review step 4's "changes the
+  item's scope" arm; the rebuild itself is resolved inside the loop.

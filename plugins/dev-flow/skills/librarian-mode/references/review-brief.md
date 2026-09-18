@@ -95,7 +95,8 @@ run from $WORKTREE, in addition to the generic ones>
 - medium: incorrect docs or contract, a doctrine violation, a silent failure mode.
 - low / nit: style, naming, redundancy. The author may decline these with a reason. A
   commit subject or message finding is always low, except one that leaks a secret or
-  credential, which is critical (`references/fix-loop.md`).
+  credential, which is critical (`references/fix-loop.md`). Never quote a secret's value
+  in a finding: name its commit sha, file and key only.
 
 ## Verdict
 
@@ -146,6 +147,16 @@ Fix commits since your last review: git -C $WORKTREE log --oneline <last reviewe
 <list them>. They are new commits; the ones you reviewed are unchanged.
 Declined by the implementer, with its reasons:
 <finding number — reason, one per line; or "none">
+
+<rebuild case only — the branch was rebuilt to drop a leaked secret; replace the first
+two lines above with:>
+History was rewritten: the branch was rebuilt from its merge-base <merge-base sha> to drop
+a leaked secret, so <last reviewed sha> is no longer on it. Re-review the whole branch:
+git -C $WORKTREE log --oneline <merge-base sha>..HEAD and
+git -C $WORKTREE diff <merge-base sha>...HEAD. Then compare against the tree you reviewed:
+git -C $WORKTREE diff <last reviewed sha> HEAD must show only this round's fixes and the
+secret's removal from any file that held it (a message-only leak adds nothing); anything
+more is a finding. Check every message in the new log is clean.
 
 1. For each finding in your previous report, verify by file:line whether it is fixed,
    partly fixed, or untouched. For each declined finding: if it is low or nit and the
