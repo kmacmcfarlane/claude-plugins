@@ -28,3 +28,5 @@ Operator question 2026-09-17: factor the status line out of context-guard into i
   state file; a separate status-line plugin only reads that record and never copies the policy. Reduces the
   dependency to a data contract. Weakens the librarian's "not yet" recommendation; still pending the operator.
 - OPERATOR 2026-09-17: d63e decision 14 answered (d); status line may become its own plugin without a hard dependency.
+
+- OPERATOR 2026-09-18: DECIDED — split the status line into its own plugin, installable independently, to share with coworkers ("I want to be able to share that with some of my coworkers and have it installed independently of the other plugins"). This answers the spike and decision 16 (the new plugin owns the statusLine setting and installer).
