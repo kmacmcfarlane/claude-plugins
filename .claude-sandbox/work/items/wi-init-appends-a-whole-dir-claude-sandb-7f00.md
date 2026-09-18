@@ -36,3 +36,6 @@ Observed 2026-09-06 in kmacmcfarlane/operator-attention (fresh private repo, .cl
   may revert the merge if the reclassification is unwanted.
 - Known lows (accepted): ..-containing WI_ROOT misclassifies; unreadable/non-UTF-8 host
   .gitignore tracebacks; glob ignore spellings not recognized (action still safe).
+
+## Recurrence (2026-09-18)
+- Also happens on `wi add`, not only `wi init`: in operator-attention the line was removed and committed (e5516d2), and a later `wi add` re-appended `/.claude-sandbox/` to the working-tree .gitignore, so the new item was silently ignored.

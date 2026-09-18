@@ -21,3 +21,5 @@ F3 of the approved analyzer plan: a test (skipped when npx/ccusage is unavailabl
 - blocked: —
 - learned: —
 - librarian 2026-09-16: held until the plugin-factoring reconcile (9b93) lands, so usage-report is placed once in the factored layout.
+
+- 2026-09-18: plugin-factoring merged (0d8b4c9); hold released. Paths moved: claude-kit dissolved into kit-dev/context-guard/dev-flow/work-items/chat/sandbox/ralph.

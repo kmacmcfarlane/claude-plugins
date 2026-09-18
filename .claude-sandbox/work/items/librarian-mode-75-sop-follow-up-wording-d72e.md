@@ -17,3 +17,5 @@ From the ce46 re-review 2026-09-18 (all low/nit): (10) ending-the-session.md nam
 - next: —
 - blocked: —
 - learned: —
+
+- 2026-09-18: plugin-factoring merged (0d8b4c9); hold released. Paths moved: claude-kit dissolved into kit-dev/context-guard/dev-flow/work-items/chat/sandbox/ralph.

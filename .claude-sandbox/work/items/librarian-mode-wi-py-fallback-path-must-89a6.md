@@ -18,3 +18,5 @@ From the 9b93 review 2026-09-16: references/troubleshooting.md and the Rehydrate
 - blocked: —
 - learned: —
 Also (9b93 re-review): prefer installed_plugins.json plugins['work-items@kmacmcfarlane'][0].installPath as the key, ls -t as the fallback; apply on the branch too when it merges.
+
+- 2026-09-18: plugin-factoring merged (0d8b4c9); hold released. Paths moved: claude-kit dissolved into kit-dev/context-guard/dev-flow/work-items/chat/sandbox/ralph.

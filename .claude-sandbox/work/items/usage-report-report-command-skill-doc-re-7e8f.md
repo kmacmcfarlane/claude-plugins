@@ -25,3 +25,5 @@ are excluded) so it reconciles with totals, and its opus_equivalent should be su
 tokens priced through a legacy alias (claude-fable-5, claude-opus-4-7, claude-opus-4-8 -> current same-family
 entry) must be visible in the report — a separate row or a marker — not silently merged.
 - librarian 2026-09-16: held until the plugin-factoring reconcile (9b93) lands, so usage-report is placed once in the factored layout.
+
+- 2026-09-18: plugin-factoring merged (0d8b4c9); hold released. Paths moved: claude-kit dissolved into kit-dev/context-guard/dev-flow/work-items/chat/sandbox/ralph.

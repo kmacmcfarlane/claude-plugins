@@ -50,3 +50,5 @@ decision 14 (revised): (d) hook derives the window by duplicating Claude Code's 
   ("assuming there's really no other way, I'm cool with mirroring the claude code internals"). Librarian confirmed no
   documented third way (hooks cannot query the harness). Status line becomes an optional cross-check; this also frees
   the status line to become its own plugin with no hard dependency (spike fb55).
+
+- 2026-09-18: plugin-factoring merged (0d8b4c9); hold released. Paths moved: claude-kit dissolved into kit-dev/context-guard/dev-flow/work-items/chat/sandbox/ralph.
