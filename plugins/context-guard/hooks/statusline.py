@@ -67,7 +67,8 @@ def usage_bars(rate_limits, now=None):
     """Bars for the plan usage windows in `rate_limits`, or [] when there are none.
 
     Defensive by design: the block is optional, each window is optional, and any
-    field may be missing or the wrong type (bool, NaN and infinity included). A
+    field may be missing or the wrong type (bool, NaN, infinity and an integer
+    too large for a float included; see num()). A
     window whose reset is already past is stale (Claude Code drops it after the
     next response) and is skipped, as is one more than MAX_AHEAD out -- the
     official field is epoch seconds, so that is a unit mix-up, not a window.
@@ -80,14 +81,8 @@ def usage_bars(rate_limits, now=None):
         w = rate_limits.get(key)
         if not isinstance(w, dict):
             continue
-        used, resets = w.get("used_percentage"), w.get("resets_at")
-        if isinstance(used, bool) or isinstance(resets, bool):
-            continue
-        try:
-            used, resets = float(used), float(resets)
-        except (TypeError, ValueError):
-            continue
-        if not (math.isfinite(used) and math.isfinite(resets)):
+        used, resets = num(w.get("used_percentage")), num(w.get("resets_at"))
+        if used is None or resets is None:
             continue
         if resets <= now or resets - now > MAX_AHEAD:
             continue
@@ -124,7 +119,10 @@ def limits_record(rate_limits, now=None):
     `{<window>: {"used_percentage": float, "resets_at": float}, ..., "at": now}`
     with every window the payload carries -- five_hour, seven_day, spend_limit,
     and any other (a per-model window such as seven_day_opus lands under its own
-    name) -- as long as its name is a short lowercase identifier. Only the two
+    name) -- as long as its name is a short lowercase identifier. At most
+    WINDOWS_MAX windows are kept: the first ones, in payload order (JSON object
+    order, which json.load preserves), that pass the checks below, so the same
+    payload always yields the same set. Only the two
     numeric fields are kept, each only when it is a finite number, and a
     resets_at more than MAX_AHEAD out (a milliseconds mix-up) is dropped; a
     window left with neither field is skipped. A past resets_at is kept: the
@@ -351,13 +349,18 @@ def main():
     cw = obj(d.get("context_window"))
     # A field that is present but not a number (text, bool, NaN) spoils the
     # gauge: it shows "ctx --" and records nothing, never a blank line.
+    # A window size of 0 or less (or none) is unknown: no gauge, and no exact
+    # record that would tell the gate hooks there is nothing left. The used
+    # percentage is clamped to 0-100.
     pct = num(cw.get("used_percentage"))
     size = num(cw.get("context_window_size") or 0)
     tok = num(cw.get("total_input_tokens") or 0)
-    if size is None or tok is None:
+    if size is None or tok is None or size <= 0:
         pct = None
     else:
-        size, tok = int(size), int(tok)
+        size, tok = int(size), max(int(tok), 0)
+    if pct is not None:
+        pct = min(max(pct, 0.0), 100.0)
     sid = d.get("session_id")
     if not isinstance(sid, str):
         sid = None

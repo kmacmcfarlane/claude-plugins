@@ -190,6 +190,60 @@ class StateRecord(unittest.TestCase):
         self.assertIn("[Fable]", out)
         self.assertIn("ctx --", out)
 
+    # -- bounds ----------------------------------------------------------
+
+    def test_window_cap_keeps_first_sixteen_valid_in_payload_order(self):
+        now = time.time()
+        limits = {}
+        for i in range(100):
+            # every tenth is invalid, so the cap counts stored windows only
+            v = "bad" if i % 10 == 0 else i
+            limits[f"w{i:03d}"] = {"used_percentage": v, "resets_at": "x" if v == "bad" else now + 60}
+        expected = [f"w{i:03d}" for i in range(100) if i % 10][:16]
+        for _ in range(2):
+            self.run_line({"rate_limits": limits})
+            rl = self.read_state()["rate_limits"]
+            self.assertEqual([k for k in rl if k != "at"], expected)
+        self.assertEqual(expected[0], "w001")
+        self.assertEqual(expected[-1], "w017")
+
+    def test_huge_integer_does_not_blank_the_line(self):
+        now = float(int(time.time()))
+        huge = "9" * 400  # a JSON integer too large for a float: OverflowError
+        raw = ('{"session_id": "s", "model": {"display_name": "Fable"},'
+               ' "context_window": {"used_percentage": %s, "context_window_size": 1000000,'
+               ' "total_input_tokens": 1},'
+               ' "rate_limits": {"five_hour": {"used_percentage": %s, "resets_at": %f},'
+               ' "seven_day": {"used_percentage": 50, "resets_at": %s},'
+               ' "spend_limit": {"used_percentage": 5, "resets_at": %f}}}'
+               % (huge, huge, now + 3600, huge, now + 7200))
+        out = self.run_line({}, raw=raw)
+        self.assertEqual(out.count("\n"), 1)
+        self.assertIn("[Fable]", out)
+        self.assertIn("ctx --", out)
+        self.assertNotIn("5h ", out)
+        self.assertNotIn("7d ", out)
+        self.assertIn("$ ", out)
+        rl = self.read_state()["rate_limits"]
+        self.assertEqual(rl["five_hour"], {"resets_at": now + 3600})
+        self.assertEqual(rl["seven_day"], {"used_percentage": 50.0})
+
+    def test_pct_clamped_to_0_100(self):
+        for raw_pct, shown, stored in ((1e300, "100%", 100.0), (-5, "0%", 0.0)):
+            with self.subTest(pct=raw_pct):
+                out = self.run_line({"context_window": dict(CTX, used_percentage=raw_pct)})
+                self.assertIn(f" {shown}  580k left", out)
+                self.assertLess(len(out), 400)
+                self.assertEqual(self.read_state()["exact"]["pct"], stored)
+
+    def test_nonpositive_size_is_unknown(self):
+        for size in (0, -5, -1e9):
+            with self.subTest(size=size):
+                out = self.run_line({"context_window": dict(CTX, context_window_size=size)})
+                self.assertIn("[Fable]", out)
+                self.assertIn("ctx --", out)
+                self.assertIsNone(self.read_state())
+
     def test_unparsable_stdin_still_one_line(self):
         out = self.run_line({}, raw="{not json")
         self.assertEqual(out, "\n")
