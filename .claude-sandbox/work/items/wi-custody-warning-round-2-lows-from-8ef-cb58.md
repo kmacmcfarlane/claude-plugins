@@ -25,3 +25,6 @@ dispatch: implementer opus — executable logic
 
 impl: DONE 3b3526c (check-ignore -v -z --stdin, one call; sidecar no host advice; rewrite remedy for SANDBOX_IGNORES).
 dispatch: reviewer opus — rule 4
+
+review round 1 (opus): NEEDS_CHANGES — medium 1 (non-UTF-8 source path under -z -> UnicodeDecodeError escapes _git; prime/lint crash; regression); lows 2 (sidecar branch blames sidecar for an excludesFile rule), 3 (negate advice for dir-level rules outside SANDBOX_IGNORES), 4 (tests for quotePath/non-ASCII/hung stdin).
+dispatch: implementer opus fix round 1 — resume

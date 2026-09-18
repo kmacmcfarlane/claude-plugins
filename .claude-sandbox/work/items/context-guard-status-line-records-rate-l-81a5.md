@@ -27,3 +27,6 @@ dispatch: implementer opus — executable logic
 
 impl: DONE_WITH_CONCERNS 1e1996a (stored shape: rate_limits.<window>{used_percentage,resets_at} + at; no per-model window documented; stale block persists when payload lacks rate_limits).
 dispatch: reviewer opus — rule 4
+
+review round 1 (opus): NEEDS_CHANGES — high 1 (WINDOWS_MAX untested), medium 2 (usage_bars OverflowError blanks the line; pre-existing, now in scope via acceptance 2); lows 3 (pct/size range), 4 (sid path — to follow-up), 5 (doc; noted on 07c3 F1).
+dispatch: implementer opus fix round 1 — resume

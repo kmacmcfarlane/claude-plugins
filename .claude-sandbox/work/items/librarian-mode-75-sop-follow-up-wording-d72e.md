@@ -33,3 +33,6 @@ dispatch: implementer opus fix round 1 — resume
 
 fix round 1 (opus): DONE 51a6789 (1-5 fixed; declined 6 = filed a638).
 dispatch: reviewer opus review round 2 — resume
+
+review round 2 (opus): NEEDS_CHANGES — medium 1 (push clause omits DUE; DUE fires at 65% on 200K windows; budget allows it), 2 (always-low subject rule has no carve-out for a leaked secret); low 3 (merge -m body needs a blank line), nit 4.
+dispatch: implementer opus fix round 2 — resume (mediums only; no fable escalation under f696)
