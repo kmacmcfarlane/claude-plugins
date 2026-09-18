@@ -2,12 +2,11 @@
 id: context-guard-status-line-records-rate-l-81a5
 title: "context-guard: status line records rate_limits in the context-gate state record"
 type: feature
-status: doing
+status: done
 priority: 3
-owner: unknown@e3a28d2cc009
-claimed: 2026-09-18T19:36Z
 created: 2026-09-18
 updated: 2026-09-18
+closed: 2026-09-18
 refs:
   - f696 impl open question 3
 ---
@@ -33,3 +32,6 @@ dispatch: implementer opus fix round 1 — resume
 
 fix round 1 (opus): DONE 9dd0b21 (1-3; declined 4, 5 = out of scope, filed/noted).
 dispatch: reviewer opus review round 2 — resume
+
+review round 2 (opus): CLEAR. Declined 4 (41e7), 5 (07c3 F1 note). Low: fractional size 0<s<1 truncates to 0 in the display (carried to 41e7).
+- 2026-09-18 done: ea313c0

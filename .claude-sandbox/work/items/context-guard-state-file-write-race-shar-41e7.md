@@ -17,3 +17,5 @@ From the 81a5 review (2026-09-18), pre-existing on main: (1) every writer does a
 - learned: —
 
 - held until 81a5 lands (statusline.py) ; lands before d63e (both edit lib_context state handling).
+
+- 2026-09-18 (81a5 review, low): statusline.py:358-361 — a context_window_size in (0,1) passes the <=0 check then int() truncates to 0 (display shows HARD gate; no exact write). Check size < 1 or after int().
