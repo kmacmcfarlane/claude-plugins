@@ -13,7 +13,12 @@
     {
       "name": "context-guard",
       "source": "./plugins/context-guard",
-      "description": "Context survival for long sessions — depth gate, checkpoint workflow, status-line gauge, session rehydration, and token-spend reporting from the local transcripts."
+      "description": "Context survival for long sessions — depth gate, checkpoint workflow, session rehydration, and token-spend reporting from the local transcripts (soft dependency: statusline, for exact depth)."
+    },
+    {
+      "name": "statusline",
+      "source": "./plugins/statusline",
+      "description": "Always-on status line — context left, plan usage limits, model and session name at a glance (optional: works with context-guard, which adds its epoch and checkpoint thresholds to the gauge)."
     },
     {
       "name": "dev-flow",
