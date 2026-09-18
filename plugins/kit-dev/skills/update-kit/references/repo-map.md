@@ -78,18 +78,19 @@ claude-plugins/
 └── plugins/
     ├── chat/                  (web-UI chat-session skills)
     │   └── skills/product-research/
-    ├── context-guard/         (surviving the context window — the only hook-owning plugin)
+    ├── context-guard/         (surviving the context window — a hook-owning plugin)
     │   ├── hooks/             (gate, statusline sensor, ledger, rehydrate + tests)
-    │   └── skills/{checkpoint,install-statusline}/
-    ├── dev-flow/              (plan before you code)
-    │   └── skills/{investigate,implement,deep-investigation,chain-of-verification}/
+    │   └── skills/{checkpoint,install-statusline,usage-report}/
+    ├── dev-flow/              (plan before you code; the librarian that takes custody of a repo)
+    │   └── skills/{investigate,implement,deep-investigation,chain-of-verification,librarian-mode}/
     ├── kit-dev/               (maintaining this kit itself — where THIS skill lives)
     │   └── skills/{create-skill,update-kit,new-project-from-template,factor-analysis}/
     ├── ralph/                 (unattended agent loops over a backlog)
     │   └── skills/{backlog-yaml,backlog-entry,backlog-grooming}/
-    ├── sandbox/               (isolated container execution)
+    ├── sandbox/               (isolated execution: claude-sandbox + checkout/worktree convention — a hook-owning plugin)
+    │   ├── hooks/             (checkout guard + tests)
     │   └── skills/sandbox/
-    └── work-items/            (repo-durable work items + work-source interface)
+    └── work-items/            (repo-durable work items + work-source provider interface)
         └── skills/work-items/ (wi CLI, references/, tests/)
 ```
 
