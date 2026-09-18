@@ -82,4 +82,5 @@ When the depth warning fires, answer these before touching anything:
 
 Then `/checkpoint <mode>`. The ledger (`~/.claude/claude-kit/ledger/<session>.md` — a
 historical directory name, kept across the move into `context-guard`) has been collecting decisions as you worked — the checkpoint is a delta, and after compaction the
-manifest + ledger are re-injected and outrank the machine summary.
+manifest + ledger are re-injected and outrank the machine summary (current repo state — git
+log, the work-item store — outranks the manifest).

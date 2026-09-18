@@ -110,7 +110,10 @@ root — in **all three modes** (*land* writes `mode: landed` so the next sessio
 one header line, not a stale goal). At a stage boundary the published stage file is the
 authoritative record: point **Read in full** at it and carry only what the files do not
 hold — environment state, corrections, refusals; the format spec's stage-boundary rule
-has the full list. Then stand the gate down:
+has the full list. Fill the frontmatter `items:` with the `wi` ids of the open or doing
+items the manifest mentions (check them against the store, not memory): the rehydration hook
+diffs that list against the store and names every one since closed as a dead claim. Then
+stand the gate down:
 
 ```bash
 python3 "${CLAUDE_PLUGIN_ROOT}/hooks/mark_checkpoint.py" <session-id>
@@ -132,7 +135,8 @@ sentence:
 - **continue uncompacted** → when the number says there is more room than it felt like.
 
 After a compaction, the manifest + ledger are re-injected automatically and **outrank the
-machine summary**; corrections outrank recollection.
+machine summary**; corrections outrank recollection; and current repo state (git log, the
+work-item store) outranks the manifest.
 
 ## Step 6 — Note the drift, once
 
