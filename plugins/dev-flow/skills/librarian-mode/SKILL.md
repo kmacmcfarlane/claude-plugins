@@ -191,8 +191,7 @@ review rounds.
 6. **Re-dispatch after a rejection keeps the tier** and sharpens the brief; rule 3's round
    signal is the only bump; a tier never falls, except the fallback
    (`references/model-routing.md` § Fallback): fable unavailable, reset over 2h or
-   unknown → opus, recorded; within 2h, or a `model:` pin (rule 8) → ask the
-   operator.
+   unknown → opus, recorded; within 2h, or a `model: fable` pin → ask the operator.
 7. **Record each dispatch in the item body** before the call: `dispatch: <role> <model>
    — <signal>`.
 8. **Operator pin**: a `model: <tier>` line in the item body is a floor for every role on

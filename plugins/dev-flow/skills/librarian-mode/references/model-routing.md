@@ -40,11 +40,14 @@ sets the tier, and the fable table wins over the opus one. No hit: sonnet.
 | Operator names it | a `model: fable` line in the item body (rule 8) — a pin, honoured whatever the change's size |
 
 Non-trivial means more than a small, local edit: roughly more than 20 changed lines of
-executable logic, or executable logic changed in more than one file. Tests do not count
-toward either, so a fix that ships with its regression test is still one file. A one-line or mechanical fix in gating or
-security code — a CRLF strip, a path correction, a renamed flag — does not reach fable;
-it stays at the tier the opus table gives it (executable logic: opus). Fable usage runs
-out fast, and a small fix gains nothing from it.
+executable logic or security-relevant configuration (credentials, permission allowlists,
+sandbox config, mounts), or such lines changed in more than one file. Tests do not count
+toward either, so a fix that ships with its regression test is still one file. A 40-line
+rewrite of a permission allowlist and its mount config across two YAML files is
+non-trivial: fable. A one-line or mechanical fix in gating or security code or config — a
+CRLF strip, a path correction, a renamed flag — does not reach fable; it stays at the
+tier the opus table gives it (executable logic: opus). Fable usage runs out fast, and a
+small fix gains nothing from it.
 
 ## Product repos
 
@@ -133,16 +136,18 @@ agent's own `BLOCKED` or error, handled as such.
 
 **Asking** is a decision like any other (SKILL.md § Intake step 3, § Report): append
 `decision N:` to the body of each item it concerns and carry it under
-`decisions needed`. When fable runs out, parallel dispatches tend to hit it together:
-batch the 429s from one dependency group into one decision — "fable out, resets in
-<X>; wait, or opus for items A, B, C" — rather than one per item. One pending decision
-goes through AskUserQuestion; two or more, a numbered list. Meanwhile hand each waiting
-item off and take other work.
+`decisions needed`. When fable runs out, a dependency group's parallel dispatches hit it
+one notification at a time: ask once, on the first 429, and let that pending decision
+cover every later 429 in the same group — append the item to it ("fable out, resets in
+<X>; wait, or opus for items A, B, C") rather than raising one per item; the operator's
+answer settles them all. One pending decision goes through AskUserQuestion; two or more,
+a numbered list. Meanwhile hand each waiting item off and take other work.
 
 **A mid-run 429.** A background fable agent cut off mid-run may leave commits or edits in
 its worktree. The opus fallback continues from the worktree as it stands, never
-discarding it: list what the fable run committed (`git log <base>..HEAD`) in the brief,
-inspect only the uncommitted edits, and re-dispatch on top of them.
+discarding it: the librarian lists what the interrupted run committed
+(`git log <reviewed sha>..HEAD`, or `<base>..HEAD` on a first run) and notes its
+uncommitted edits (`git status --short`) in the brief, and re-dispatches on top of them.
 
 Each dispatch checks afresh: once fable is back, the next dispatch routes to it again by
 the tables and Rounds. A fallback does not reset the round count.
