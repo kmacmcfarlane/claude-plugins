@@ -2,11 +2,12 @@
 id: land-plugin-factoring-fbe8
 title: Land plugin-factoring on main (operator review pending)
 type: task
-status: blocked
+status: done
 priority: 1
 blocked: operator review pending; operator holding until spare time (2026-09-08)
 created: 2026-09-04
-updated: 2026-09-08
+updated: 2026-09-18
+closed: 2026-09-18
 ---
 
 plugin-factoring (14 commits, 0079d1c..d118f48, epic fully reviewed) now lives in worktree .claude/worktrees/plugin-factoring; the main checkout is on main (dff2449). Operator (2026-09-04) chose NOT to merge it into main yet. Stacked on it: worktree-context-guard-turn-gate, worktree-backstage-disclosure-guard, worktree-librarian-mode. Landing plan: operator reviews plugin-factoring, then it merges to main (fast-forward, main has no commits it lacks), then the stacked branches rebase onto main. Blocks every kit-dev change since plugins/kit-dev exists only on this branch.
@@ -40,3 +41,4 @@ plugin-factoring (14 commits, 0079d1c..d118f48, epic fully reviewed) now lives i
 - OPERATOR 2026-09-16 (decision 6): hold lifted — 'tear off the band-aid'. Sequence: land in-flight items, push main,
   then reconcile (item reconcile-plugin-factoring-with-main-rel-9b93) on a branch the operator tests from their
   marketplace before it merges to main.
+- 2026-09-18 done: landed via 9b93 merge 0d8b4c9 (2026-09-18)

@@ -2,10 +2,11 @@
 id: librarian-mode-let-an-operator-opt-a-pro-ed88
 title: "librarian-mode: let an operator opt a product repo in as custody"
 type: feature
-status: doing
+status: blocked
 priority: 1
 owner: unknown@e3a28d2cc009
 claimed: 2026-09-18T18:44Z
+blocked: "review cap hit: finding 16 (CLAUDE.md:89 aim row) - decision 30"
 created: 2026-09-18
 updated: 2026-09-18
 refs:
@@ -80,3 +81,11 @@ dispatch: implementer fable fix round 2 — rule 3 (fix round 2), fresh dispatch
 
 fix round 2 (fable): FAILED — HTTP 429 out of usage credits (req_011CfBRqfAxo1hkmLHasPprc); reset time not in the error. Same case as 7db3.
 decision 27: fix round 2 tier while fable is out of credits: opus now / wait for fable / you add credits
+decision 27 answered: opus now.
+dispatch: implementer opus fix round 2 — fallback: fable out of credits (operator decision 27)
+
+fix round 2 (opus): DONE_WITH_CONCERNS a3cb26a (move + catalog + layout), 0a5abad (13, 14). Deviation accepted by librarian: brief said kit-dev plugin.json diff must be empty, but main's wording claimed librarian custody; clause removed instead (brief error, not implementer error). Open: CLAUDE.md Aim table for dev-flow not updated (out of scope in brief).
+dispatch: reviewer opus review round 3 (final) — resume, tier unchanged
+
+review round 3 (opus, final): NEEDS_CHANGES. 12-15 FIXED. New 16 [medium] CLAUDE.md:89 Aim -> home row for dev-flow lacks the librarian; README placement tree step 4 routes through it (brief gap, not implementer). Cap hit.
+decision 30: ed88 cap: (a) one extra round to fix the CLAUDE.md:89 row, re-review, land; (b) waive 16, land now, file the one-line follow-up.

@@ -2,10 +2,12 @@
 id: statusline-strip-unicode-format-characte-dd8c
 title: "statusline: strip Unicode format characters from session names; cap by column width"
 type: chore
-status: todo
+status: doing
 priority: 4
+owner: unknown@e3a28d2cc009
+claimed: 2026-09-18T19:16Z
 created: 2026-09-16
-updated: 2026-09-16
+updated: 2026-09-18
 refs:
   - reviewer report, item statusline-session-name-does-not-always-7942
 ---
@@ -17,3 +19,8 @@ From the 7942 re-review 2026-09-16: clean() lets Cf characters through (bidi ove
 - next: —
 - blocked: —
 - learned: —
+
+## Notes
+- 2026-09-18 claimed by unknown@e3a28d2cc009
+
+dispatch: implementer opus — executable logic (status line)

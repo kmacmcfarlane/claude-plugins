@@ -17,3 +17,6 @@ Peer claude-sandbox librarian (its d5ac), relaying its operator, 2026-09-18. A f
 - next: —
 - blocked: —
 - learned: —
+
+decision 28 answered (operator 2026-09-18): run fable-routed items on opus while fable is out, recorded as fallbacks, until 7db3/f696 land.
+decision 29 answered: unknown reset time = treat as >2h -> opus.

@@ -2,8 +2,10 @@
 id: wi-add-re-appends-claude-sandbox-to-host-7772
 title: wi add re-appends /.claude-sandbox/ to host .gitignore (7f00 recurrence)
 type: bug
-status: todo
+status: doing
 priority: 2
+owner: unknown@e3a28d2cc009
+claimed: 2026-09-18T19:16Z
 created: 2026-09-18
 updated: 2026-09-18
 refs:
@@ -19,3 +21,8 @@ Noticed at rehydrate 2026-09-18: an uncommitted recurrence note was appended to 
 - learned: —
 
 - 2026-09-18: plugin-factoring merged (0d8b4c9); hold released. Paths moved: claude-kit dissolved into kit-dev/context-guard/dev-flow/work-items/chat/sandbox/ralph.
+
+## Notes
+- 2026-09-18 claimed by unknown@e3a28d2cc009
+
+dispatch: implementer opus — executable logic (wi.py)

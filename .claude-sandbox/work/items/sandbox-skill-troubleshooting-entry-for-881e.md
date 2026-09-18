@@ -2,10 +2,12 @@
 id: sandbox-skill-troubleshooting-entry-for-881e
 title: "sandbox skill: troubleshooting entry for a session that vanishes mid-command (container OOM, exit 137)"
 type: chore
-status: todo
+status: doing
 priority: 3
+owner: unknown@e3a28d2cc009
+claimed: 2026-09-18T19:16Z
 created: 2026-09-17
-updated: 2026-09-17
+updated: 2026-09-18
 refs:
   - item session-kappa-3446-implement-in-the-emai-0236
 ---
@@ -17,3 +19,8 @@ From the 0236 diagnosis 2026-09-17: a claude-sandbox container OOM-kill looks li
 - next: —
 - blocked: —
 - learned: —
+
+## Notes
+- 2026-09-18 claimed by unknown@e3a28d2cc009
+
+dispatch: implementer sonnet — default (one doc entry)
