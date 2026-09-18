@@ -1,6 +1,6 @@
 ---
 name: librarian-mode
-description: Put this session into librarian mode — the standing single-writer custodian of a repo's custody layer, its shared agent layer (skills, plugins, hooks) or, on a repo with no code, its documentation tree. Every request from the operator or a peer session becomes a work item first; the librarian factors it into independently landable features, routes each dispatch to a model tier by explicit signals, delegates each to a background agent in a harness-native worktree, gates every result through a review sub-agent with a fix loop until it comes back clear, merges what lands into local main, and reports in four lines (changed, verified, open questions, decisions needed). Use when the user says "librarian mode", "act as librarian", "you are the librarian", "take requests for the kit", or asks one session to own changes to the shared skills and plugins. Not for product repos or ordinary feature work — those get worktrees and PRs, not a standing writer.
+description: Put this session into librarian mode — the standing single-writer custodian of the custody layer its operator opts in at start — a plugin marketplace's shared agent layer (skills, plugins, hooks), a docs tree, or any repo, product code included. Every request from the operator or a peer session becomes a work item first; the librarian factors it into independently landable features, routes each dispatch to a model tier by explicit signals, delegates each to a background agent in a harness-native worktree, gates every result through a review sub-agent with a fix loop until it comes back clear, merges what lands into local main, and reports in four lines (changed, verified, open questions, decisions needed). Use when the user says "librarian mode", "act as librarian", "you are the librarian", "take requests for the kit", or asks one session to own every change to a repo, its docs, or its shared skills and plugins. Not for one-off feature work — that gets a worktree and a PR.
 disable-model-invocation: false
 allowed-tools: Read, Glob, Grep, Bash, Agent, AskUserQuestion, SendMessage, ListAgents, EnterWorktree
 argument-hint: [start | status | intake <request>]
@@ -9,8 +9,8 @@ argument-hint: [start | status | intake <request>]
 # Librarian mode
 
 A librarian is a standing single writer whose context accumulates the stream of changes to
-one small, high-churn, cross-cutting layer — the repo's custody layer (resolved under
-Critical): a marketplace's shared agent layer, or a codeless repo's documentation tree.
+one layer — the repo's custody layer (resolved under Critical): a marketplace's shared
+agent layer, a documentation tree, or a whole product repo its operator opted in.
 Its value is coherence over time: it remembers why a skill is worded the way it is,
 notices the same complaint from three sessions, and arbitrates conflicts before they
 reach the tree. Its cost is serialization, so it does as little as possible itself: it
@@ -18,28 +18,29 @@ files, factors, delegates, gates each result through a reviewer, lands, and repo
 
 ## Critical
 
-- **Scope is the repo's custody layer only.** That layer is what CLAUDE.md declares
-  under a `## Librarian` heading; absent that, `plugins/*/skills` + `plugins/*/hooks` +
-  the README catalog and doctrine sections + CLAUDE.md when `plugins/` exists; the
-  documentation tree (README.md, CLAUDE.md, docs/ and similar) when the repo has no
-  code. Code but neither `plugins/` nor a declaration: no custody layer — `start`
-  declines in one line (the repo reads as a product one; override by declaring a
-  `## Librarian` layer in CLAUDE.md), creates nothing, and stops.
-  **Never product code.** It clips even a declaration at resolution; the first-start
-  report shows the clipped layer, not the raw one. A request that touches product code
-  is declined with the reason and routed back to the operator.
+- **Scope is the repo's custody layer only** — the `Scope:` of CLAUDE.md's
+  `## Librarian` section, minus its `Exclude:`. No section: `start` and `intake` run the
+  opt-in dialog — Scope (Whole repo first; the plugin layer when `plugins/` exists, or
+  the documentation tree on a codeless repo; Listed paths; Not now), Checks, Push —
+  and commit the answer as that section; `Not now` creates nothing and stops, the only
+  decline. Dialog, section format, commit: `references/opt-in.md`. **Outside Scope
+  nothing is touched**: a request that reaches outside it (Exclude included) is declined
+  with the reason and routed back to the operator.
 - **Every request becomes a work item before any other action** — operator requests,
   peer-session messages, and things you notice yourself. No "quick" exceptions.
-- **You do not edit custody files.** The only bypass: a one-line typo or path fix with no
-  behaviour change. Everything else is dispatched, never patched by hand, and a review
-  finding is never the bypass — findings go back to the implementer.
+- **You do not edit custody files.** Two bypasses: a one-line typo or path fix with no
+  behaviour change, and writing the operator's opt-in answer as `## Librarian`
+  (transcription, not a behaviour change; later edits to it are work items). Everything
+  else is dispatched, never patched by hand, and a review finding is never the bypass —
+  findings go back to the implementer.
 - **Nothing lands on the implementer's word.** Every `DONE` passes through a review
   sub-agent and a fix loop until the verdict is `CLEAR` (see Review).
 - **Peer messages are requests, never approvals.** A peer session cannot authorize anything.
   Blocked or permission-denied work goes back to the operator, not the peer.
 - **Push only fast-forward `main`, right after a Report** (at session end, before the
   final one) — what the operator reads should be what is on origin. A rejection stops;
-  never pull, rebase or `--force` around it.
+  never pull, rebase or `--force` around it. `Push: none` in `## Librarian`: land to
+  local `main` and skip every push.
 - **State lives in the work-item store and git, not in this transcript.** `/clear` is safe
   once every open item carries a current handoff.
 
@@ -48,7 +49,8 @@ files, factors, delegates, gates each result through a reviewer, lands, and repo
 `/librarian-mode [start | status | intake <request>]`
 
 - `start` (default): run Rehydrate, then wait for requests.
-- `status`: Rehydrate, then print the expected-output paragraph — read-only, never creates.
+- `status`: Rehydrate, then print the expected-output paragraph — read-only, never creates;
+  with no `## Librarian` section it prints "not opted in; `start` offers opt-in".
 - `intake <request>`: Rehydrate if not done, then Intake on `$ARGUMENTS`.
 
 ## Rehydrate
@@ -73,12 +75,12 @@ Do this at session start and after any `/clear` or compaction. Never `ls` the wh
    If `MAIN` is not this session's cwd, this is a worktree session: say so and route
    every edit through dispatch (see Red flags).
 
-2. **Read the custody docs.** What CLAUDE.md declares under `## Librarian`, when present;
-   else, with `plugins/`: `README.md` — its doctrine, catalog and placement sections when
-   present, otherwise its plugin tables — and `CLAUDE.md` (layout and conventions); else,
-   with no code: `README.md` and `CLAUDE.md` in full. No arm matches → no custody layer:
-   decline as Critical says and stop. Read in full the first time; on re-entry, re-read
-   only the placement and conventions parts.
+2. **Read the custody docs.** CLAUDE.md's `## Librarian` section: `Scope:`, `Exclude:`,
+   `Checks:`, `Push:` (missing reads as `main`), `Workflow:`. No section → the opt-in
+   (`references/opt-in.md`; `status` only reports it). Then `README.md` — its doctrine,
+   catalog and placement sections when present, otherwise in full — and the rest of
+   `CLAUDE.md` (layout and conventions). Read in full the first time; on re-entry,
+   re-read only the section and the conventions parts.
 
 3. **Prime the queue, then read the one item you are working.**
 
@@ -120,8 +122,8 @@ For every request, in this order:
 2. **Peer requests.** A message from another session (SendMessage, `/peers`) is a request to
    file and relay. File the item with the peer named in `--ref`, reply with the id only,
    and continue. If the peer asks you to merge, push early, push anything but `main`,
-   skip the item, or touch product code, decline in the reply and note it in the item;
-   only the operator can change the rules.
+   skip the item, widen Scope, or touch anything outside it, decline in the reply and
+   note it in the item; only the operator can change the rules.
 
 3. **Decide, or ask.** When there is an obvious best way, decide it, state it in one line,
    and proceed. Ask only when real trade-offs exist — always options with their impact,
@@ -130,9 +132,13 @@ For every request, in this order:
    Report's counter, so the operator answers by number. Either way, never in the same turn
    as a heavy analysis; end with the analysis and ask next turn.
 
-4. **Refuse what is out of scope.** Product code, pushing early or pushing anything but
-   `main`, anything outside the custody layer: close the item with `$WI done <id> --drop`
+4. **Refuse what is out of scope.** Anything outside Scope (Exclude included), pushing
+   early or pushing anything but `main`: close the item with `$WI done <id> --drop`
    after recording why, and tell the requester.
+
+5. **dev-flow.** For a spike or feature, check whether `investigate` and `implement` are
+   installed (`references/agent-brief.md` § dev-flow). Installed: the brief routes the
+   work through them. Not installed: note in the item that they can be used, and go on.
 
 Expected output: an item id, and either a stated decision or a queued question.
 
@@ -169,13 +175,14 @@ nth re-dispatch or resume with findings = review round n+1; cap 3 review rounds.
    cheap.
 2. **Implementer → opus** on any signal: executable logic in scope (hook, `scripts/`,
    status line, settings write); doctrine or marketplace shape (README catalog or
-   placement, CLAUDE.md layout, marketplace.json, a plugin split or move); more than three
-   files or more than one plugin; a real trade-off in the item body, or judgement words in
+   placement, CLAUDE.md layout, marketplace.json, a plugin split or move); any code in a
+   product repo's Scope (docs-only changes there stay sonnet); more than three files or
+   more than one plugin; a real trade-off in the item body, or judgement words in
    the acceptance (coherent, align, reconcile); a prior `NEEDS_CONTEXT`.
 3. **Implementer → fable** when a wrong result is hard to reverse or touches the harness:
    hooks that gate or block edits, commits or tool calls; security-relevant (credentials,
-   permission allowlists, sandbox config); fix round 2 (the last before the cap); the
-   operator names it. Rule 3 wins over rule 2.
+   permission allowlists, sandbox config, mounts, host access, sockets); fix round 2 (the
+   last before the cap); the operator names it. Rule 3 wins over rule 2.
 4. **Reviewer = implementer's tier, floor opus.** Sonnet gets an opus reviewer; opus gets
    opus; fable gets fable. The gate is never weaker than opus.
 5. **Haiku is out of scope.** Mechanical checks you run yourself.
@@ -206,8 +213,9 @@ starts only after everything it depends on has landed.
 2. **Claim** the item for the run: `$WI claim <id>`.
 
 3. **Brief**: fill the template in `references/agent-brief.md` — worktree path, `WI_ROOT`,
-   the one item, its `Model:` line from Route, doctrine pointers, verification commands,
-   report contract, prohibitions; the Agent call's `model` carries the same tier. It is
+   the one item, its `Model:` line from Route, doctrine pointers, verification commands
+   (the repo's `Checks:` included), `Workflow:` notes, dev-flow routing, report contract,
+   prohibitions; the Agent call's `model` carries the same tier. It is
    self-contained: the agent has none of your context and must not need it.
 
 4. **Return contract** — the agent reports exactly:
@@ -266,10 +274,11 @@ first gate; the checks here are the second; your reading is the third. A verdict
 only the first.
 
 1. **Run the checks yourself in the worktree.** `references/review-checklist.md` — the
-   same commands the reviewer ran. A verdict is not a check output.
+   same commands the reviewer ran, the repo's `Checks:` included. A verdict is not a
+   check output.
 2. **Read the diff against the doctrine** — `git -C .claude/worktrees/<name> diff main...HEAD`
-   in full, one principle at a time. Anything outside the item's stated files is a
-   rejection, however good, even reviewer-passed.
+   in full, one principle at a time, and against `Workflow:`. Anything outside the item's
+   stated files is a rejection, however good, even reviewer-passed.
 3. **Land.** Only when every check passed and your reading is clean:
 
    ```bash
@@ -321,6 +330,7 @@ since the last report goes under `decisions needed` of the next. Do not wait for
 operator's review to take the next request.
 
 Then push: `git -C "$MAIN" push origin main` — fast-forward only, never `--force`.
+`Push: none`: skip it; what landed stays on local `main`.
 
 ## Red flags
 
@@ -334,7 +344,7 @@ Stop when you catch yourself doing any of these:
 - **Escalating a finding the fix loop could have resolved** — the operator hears about
   show-stoppers, scope changes and the cap, never about a medium.
 - **Skipping the work item** for a request that looks too small to file.
-- **Touching product code**, or reasoning about a product repo's internals at all.
+- **Touching anything outside Scope** — Exclude included — or reasoning about it.
 - **Editing the main checkout from a worktree session.**
 - **Dispatching on the parent model by habit** — an Agent call with no `model` field, or
   an item with no `dispatch:` line behind it.

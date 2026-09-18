@@ -24,7 +24,7 @@ sets the tier, and the fable table wins over the opus one. No hit: sonnet.
 
 | Signal | Reads as |
 |---|---|
-| Executable logic in scope | a hook, anything under `scripts/`, a status line, a `settings.json` write |
+| Executable logic in scope | a hook, anything under `scripts/`, a status line, a `settings.json` write; in a product repo, any code inside Scope |
 | Doctrine or marketplace shape | README catalog or placement text, CLAUDE.md layout, `marketplace.json`, a plugin split or move |
 | Breadth | more than three files, or more than one plugin |
 | Judgement in the item | the body records a real trade-off, or the acceptance uses words like coherent, align, reconcile |
@@ -35,9 +35,23 @@ sets the tier, and the fable table wins over the opus one. No hit: sonnet.
 | Signal | Reads as |
 |---|---|
 | Hard to reverse | a hook that gates or blocks edits, commits or tool calls; anything else whose wrong result the harness enforces |
-| Security-relevant | credentials, permission allowlists, sandbox config |
+| Security-relevant | credentials, permission allowlists, sandbox config; in a product repo, mounts, permissions, host access, sockets |
 | Fix round 2 | the last fix round before the cap |
 | Operator names it | a `model: fable` line in the item body (rule 8) |
+
+## Product repos
+
+A repo opted in with a code Scope (`opt-in.md`) keeps the same tables; only what counts
+as a signal widens:
+
+| Change inside Scope | Tier |
+|---|---|
+| Docs only — README, `docs/`, comments with no code change | sonnet (default) |
+| Any code — source, tests, build files, scripts | opus (executable logic) |
+| A security surface — mounts, permissions, host access, sockets, credentials | fable |
+
+The breadth and judgement signals apply as before, and rule 3 still wins over rule 2.
+The repo's `Checks:` do not move the tier: they run at review and Land whatever it is.
 
 ## Reviewer
 
@@ -119,6 +133,19 @@ Implementer fable; reviewer fable.
 one plugin: opus. Implementer opus; reviewer opus. Had the operator written
 `model: fable` in the item body, both roles would run fable — the pin is a floor for
 every role on that item.
+
+**Product repo, a Go CLI opted in as `Scope: whole repo`.** "Add a `--json` flag to
+`list`." Code inside Scope: opus; no security surface, so fable does not apply.
+Implementer opus; reviewer opus. Both briefs carry the repo's `Checks:` (say `go test`
+over every package and `make lint`) and its `Workflow:` notes; dev-flow installed, so the
+implementer runs /investigate then /implement in its worktree. "Fix a typo in the
+README": docs only, sonnet, reviewer opus. "Let `run` bind-mount the host's docker
+socket": a mount and a socket, fable for both roles. Item body for the first:
+
+```
+dispatch: implementer opus — code inside a product repo's Scope
+dispatch: reviewer opus — rule 4, matches implementer
+```
 
 ### Full-loop walkthroughs
 
