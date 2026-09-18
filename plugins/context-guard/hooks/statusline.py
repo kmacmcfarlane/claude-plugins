@@ -11,7 +11,9 @@ On Pro/Max subscriptions (Claude Code >= 2.1.251) the payload also carries
 `rate_limits` -- the plan's usage windows (`five_hour`, `seven_day`, and
 `spend_limit` where enabled), each with `used_percentage` and `resets_at` (epoch
 seconds). Those render as compact bars after the context gauge; API-key
-sessions never receive `rate_limits`, so they see none.
+sessions never receive `rate_limits`, so they see none. The same windows are
+recorded in the state file under `rate_limits` (see limits_record) for
+librarian-mode's fable-unavailable fallback, which reads a window's reset time.
 
 The session name shown in parentheses comes from a documented fallback chain
 (Claude Code 2.1.273, docs/en/statusline). First Claude Code's local session
@@ -97,6 +99,61 @@ def usage_bars(rate_limits, now=None):
                  "\033[33m" if used < 90 else "\033[31m")
         out.append(f"{label} {color}{bar}\033[0m {p}% resets {countdown(resets - now)}")
     return out
+
+
+def num(v):
+    """`v` as a finite float, or None: a missing, bool, text, NaN or infinite
+    field is not a number the gauge or the state record can use."""
+    if isinstance(v, bool):
+        return None
+    try:
+        v = float(v)
+    except (TypeError, ValueError, OverflowError):
+        return None
+    return v if math.isfinite(v) else None
+
+
+_WINDOW_KEY = re.compile(r"[a-z0-9_]{1,40}")  # a window name, not free text
+LIMIT_FIELDS = ("used_percentage", "resets_at")
+WINDOWS_MAX = 16  # windows recorded at most: the payload is not ours to bound
+
+
+def limits_record(rate_limits, now=None):
+    """The state-file form of `rate_limits`, or None when there is nothing to record.
+
+    `{<window>: {"used_percentage": float, "resets_at": float}, ..., "at": now}`
+    with every window the payload carries -- five_hour, seven_day, spend_limit,
+    and any other (a per-model window such as seven_day_opus lands under its own
+    name) -- as long as its name is a short lowercase identifier. Only the two
+    numeric fields are kept, each only when it is a finite number, and a
+    resets_at more than MAX_AHEAD out (a milliseconds mix-up) is dropped; a
+    window left with neither field is skipped. A past resets_at is kept: the
+    reader compares it with the clock. Never raises.
+    """
+    try:
+        if not isinstance(rate_limits, dict):
+            return None
+        now = time.time() if now is None else now
+        rec = {}
+        for key, w in rate_limits.items():
+            if len(rec) >= WINDOWS_MAX:
+                break
+            if key == "at" or not isinstance(key, str) or not _WINDOW_KEY.fullmatch(key):
+                continue
+            if not isinstance(w, dict):
+                continue
+            fields = {f: num(w.get(f)) for f in LIMIT_FIELDS}
+            if fields["resets_at"] is not None and fields["resets_at"] - now > MAX_AHEAD:
+                fields["resets_at"] = None
+            fields = {f: v for f, v in fields.items() if v is not None}
+            if fields:
+                rec[key] = fields
+        if not rec:
+            return None
+        rec["at"] = now
+        return rec
+    except Exception:
+        return None
 
 
 REGISTRY_MAX_BYTES = 65536  # a registry entry is a few hundred bytes; cap the read
@@ -292,15 +349,32 @@ def main():
     except Exception:
         print(""); return
     cw = obj(d.get("context_window"))
-    pct = cw.get("used_percentage")
-    size = cw.get("context_window_size") or 0
-    tok = cw.get("total_input_tokens") or 0
+    # A field that is present but not a number (text, bool, NaN) spoils the
+    # gauge: it shows "ctx --" and records nothing, never a blank line.
+    pct = num(cw.get("used_percentage"))
+    size = num(cw.get("context_window_size") or 0)
+    tok = num(cw.get("total_input_tokens") or 0)
+    if size is None or tok is None:
+        pct = None
+    else:
+        size, tok = int(size), int(tok)
     sid = d.get("session_id")
+    if not isinstance(sid, str):
+        sid = None
 
-    if sid and pct is not None and size:
-        st = L.load_state(sid)
-        st["exact"] = {"pct": float(pct), "tokens": int(tok), "window": int(size), "at": time.time()}
-        L.save_state(sid, st)
+    if sid:
+        try:
+            now = time.time()
+            limits = limits_record(d.get("rate_limits"), now)
+            if (pct is not None and size) or limits:
+                st = L.load_state(sid)
+                if pct is not None and size:
+                    st["exact"] = {"pct": pct, "tokens": tok, "window": size, "at": now}
+                if limits:
+                    st["rate_limits"] = limits
+                L.save_state(sid, st)
+        except Exception:
+            pass
 
     model = obj(d.get("model")).get("display_name", "?")
     name = session_name(d)
@@ -308,20 +382,22 @@ def main():
     cwd = os.path.basename(cwd) if isinstance(cwd, str) else ""
     eff = obj(d.get("effort")).get("level") or ""
 
-    if pct is None:
-        gauge = "ctx --"
-    else:
-        p = int(pct)
-        left = max(size - tok, 0)
-        th = L.thresholds(size)
-        ep = L.epoch(L.load_state(sid)) if sid else 0
-        filled = p // 10
-        bar = "█" * filled + "░" * (10 - filled)
-        color = ("\033[32m" if left > th["due"] else
-                 "\033[33m" if left > th["hard"] else "\033[31m")
-        hint = ("" if left > th["due"] else
-                "  ·  checkpoint DUE" if left > th["hard"] else "  ·  HARD gate")
-        gauge = f"{color}{bar}\033[0m {p}%  {left // 1000}k left  e{ep}{hint}"
+    gauge = "ctx --"
+    if pct is not None:
+        try:
+            p = int(pct)
+            left = max(size - tok, 0)
+            th = L.thresholds(size)
+            ep = L.epoch(L.load_state(sid)) if sid else 0
+            filled = min(max(p // 10, 0), 10)
+            bar = "█" * filled + "░" * (10 - filled)
+            color = ("\033[32m" if left > th["due"] else
+                     "\033[33m" if left > th["hard"] else "\033[31m")
+            hint = ("" if left > th["due"] else
+                    "  ·  checkpoint DUE" if left > th["hard"] else "  ·  HARD gate")
+            gauge = f"{color}{bar}\033[0m {p}%  {left // 1000}k left  e{ep}{hint}"
+        except Exception:
+            gauge = "ctx --"
 
     head = f"[{model}{'·' + eff if eff else ''}] {cwd}"
     if name:
