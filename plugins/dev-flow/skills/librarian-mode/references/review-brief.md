@@ -36,7 +36,8 @@ Full diff:   git -C $WORKTREE diff <base>...HEAD
 
 Item: <id> — <title>
 Model: <opus|fable> — your tier; reviewer matches the implementer (<implementer's tier>,
-       <its signal>), floor opus (Route rule 4)
+       <its signal>), floor opus (Route rule 4) | opus — fable unavailable (<resets in
+       Xh | unknown>); fallback
 Store: export WI_ROOT=<absolute path to the main checkout>/.claude-sandbox/work
 CLI:   WI="python3 $(ls $WORKTREE/plugins/*/skills/work-items/scripts/wi.py | head -1)"
        <on a repo with no plugins/ tree, substitute the installed work-items plugin's

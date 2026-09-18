@@ -40,7 +40,8 @@ sets the tier, and the fable table wins over the opus one. No hit: sonnet.
 | Operator names it | a `model: fable` line in the item body (rule 8) — a pin, honoured whatever the change's size |
 
 Non-trivial means more than a small, local edit: roughly more than 20 changed lines of
-executable logic, or more than one file. A one-line or mechanical fix in gating or
+executable logic, or executable logic changed in more than one file. Tests do not count
+toward either, so a fix that ships with its regression test is still one file. A one-line or mechanical fix in gating or
 security code — a CRLF strip, a path correction, a renamed flag — does not reach fable;
 it stays at the tier the opus table gives it (executable logic: opus). Fable usage runs
 out fast, and a small fix gains nothing from it.
@@ -94,8 +95,7 @@ the agent has the context — only when the tier is unchanged.
 
 ## Fallback
 
-Rule 6's one exception: a dispatch routed to fable that cannot run on fable. Settled by
-decisions 28 and 29.
+Rule 6's one exception: a dispatch routed to fable that cannot run on fable.
 
 **Unavailable** means the Agent tool returns HTTP 429 or a usage-credits error (such as
 "out of usage credits") for a fable call. Any other failure is not a fallback: it is the
@@ -112,23 +112,37 @@ agent's own `BLOCKED` or error, handled as such.
 **Then:**
 
 - **More than 2h, or unknown** — dispatch opus without asking. Record it in the item body
-  before the call, and put the same text on the brief's `Model:` line:
+  before the call:
 
   ```
   dispatch: <implementer|reviewer> opus — fable unavailable (resets in <X>h); fallback
   ```
 
-  with `(unknown)` in place of `(resets in <X>h)` when no source had a reset time.
+  with `(unknown)` in place of `(resets in <X>h)` when no source had a reset time. The
+  brief's `Model:` line carries the same reason:
+  `Model: opus — fable unavailable (resets in <X>h); fallback`.
 
   Name it in the Report's `verified:` line, e.g.
   `(impl opus — fable fallback, review opus — fable fallback)`, or `fable→opus` when
   earlier rounds ran fable.
-- **2h or less** — ask the operator: wait for the reset, or run opus now. One
-  AskUserQuestion; meanwhile hand the item off and take other work.
-- **Reviewer floor stays opus.** A fable-routed reviewer falls back to opus under the same
-  rule, never lower; the reviewer matching a fallen-back implementer is opus.
+- **2h or less** — ask the operator: wait for the reset, or run opus now.
 - **An operator pin** of `model: fable` is the operator's own choice (rule 8): an
   unavailable pinned tier is always asked, whatever the reset time, never fallen back.
+- **Reviewer floor stays opus.** A fable-routed reviewer falls back to opus under the same
+  rule, never lower; the reviewer matching a fallen-back implementer is opus.
+
+**Asking** is a decision like any other (SKILL.md § Intake step 3, § Report): append
+`decision N:` to the body of each item it concerns and carry it under
+`decisions needed`. When fable runs out, parallel dispatches tend to hit it together:
+batch the 429s from one dependency group into one decision — "fable out, resets in
+<X>; wait, or opus for items A, B, C" — rather than one per item. One pending decision
+goes through AskUserQuestion; two or more, a numbered list. Meanwhile hand each waiting
+item off and take other work.
+
+**A mid-run 429.** A background fable agent cut off mid-run may leave commits or edits in
+its worktree. The opus fallback continues from the worktree as it stands, never
+discarding it: list what the fable run committed (`git log <base>..HEAD`) in the brief,
+inspect only the uncommitted edits, and re-dispatch on top of them.
 
 Each dispatch checks afresh: once fable is back, the next dispatch routes to it again by
 the tables and Rounds. A fallback does not reset the round count.
@@ -177,7 +191,8 @@ fourth review without `CLEAR` ends the loop — block the item and ask the opera
 **"Add a PreToolUse hook that blocks edits to the main checkout from a worktree
 session."** Executable logic (opus) and a new hook that blocks edits — non-trivial
 (fable): fable wins. Implementer fable; reviewer fable. A later "strip CRLF from that
-hook's input", a one-line fix in the same hook, is trivial: opus for both roles.
+hook's input", a one-line fix in the same hook shipped with its regression test, is
+trivial (the test does not count): opus for both roles.
 
 **"Split ralph's backlog skills into their own plugin."** Marketplace shape and more than
 one plugin: opus. Implementer opus; reviewer opus. Had the operator written
