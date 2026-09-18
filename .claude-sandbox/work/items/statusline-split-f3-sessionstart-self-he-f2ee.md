@@ -25,3 +25,6 @@ updated: 2026-09-18
 - 2026-09-18 claimed by unknown@e3a28d2cc009
 
 dispatch: implementer opus — settings writes / hook code (rule 2); fable not needed: not a gate
+
+impl: DONE be6d73d (session_start.py; --replace / --write-read-only split; splice write; prune; 198 tests). Out-of-scope notes: CLAUDE.md:35 layout line should name session_start; README context-guard section still says run /install-statusline.
+dispatch: reviewer opus — rule 4

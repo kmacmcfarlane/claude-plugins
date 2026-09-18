@@ -16,3 +16,5 @@ updated: 2026-09-18
 - next: —
 - blocked: —
 - learned: —
+
+- (F4 review lows) notice treats any statusline-* data dir as owning — check owner.json state/entry; notice misses marker-less project/local-scope entries; publish_gauge reads gauge.json with a blocking open (FIFO) — use read_json_file; future-at reject only on the sensor, not the legacy block; sensor-contract.md should state the regular-file and +60s rules; notice text add "then start a new session"; _touch_stamp docstring width. OPERATOR RISK at F5: if the operator has not been taken over by F3 when the deprecated copy is deleted, the gate drops silently to inferred depth — F5 must check/announce.
