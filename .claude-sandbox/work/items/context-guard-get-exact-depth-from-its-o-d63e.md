@@ -52,3 +52,5 @@ decision 14 (revised): (d) hook derives the window by duplicating Claude Code's 
   the status line to become its own plugin with no hard dependency (spike fb55).
 
 - 2026-09-18: plugin-factoring merged (0d8b4c9); hold released. Paths moved: claude-kit dissolved into kit-dev/context-guard/dev-flow/work-items/chat/sandbox/ralph.
+
+- 2026-09-18 (peer "agent front-ends", ex "Paseo stop-gap"): headless front-ends depend on this: Paseo option B (Claude Agent SDK provider wrapping claude-sandbox) has no status line, so exact depth needs this mirror. Option A (PTY terminal tabs running claude-sandbox) does not. Source: operator-attention research/findings/p1-paseo-stopgap.md; trial item operator-attention 6dc1.
