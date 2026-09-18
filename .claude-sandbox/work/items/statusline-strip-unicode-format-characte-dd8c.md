@@ -27,3 +27,6 @@ dispatch: implementer opus — executable logic (status line)
 
 impl: DONE 4856907 (Cf stripped wholesale, ZWJ kept between visible non-ASCII, tag chars kept, columns() cap, lone surrogates stripped, SCAN_MAX backstop; 25 new tests)
 dispatch: reviewer opus — rule 4
+
+review round 1 (opus): NEEDS_CHANGES — medium 1 (FE0F emoji presentation counted 1 col), 2 (tag run after flag unbounded); lows 3 (ZWJ after combining marks), 4 (SCAN_MAX all-Cf hides later name), 5 (main() still raises on surrogate cwd/model or non-dict payload — librarian pulls into this item: file in scope, never-raise rule), 6 (fix: verb; not fixable without history rewrite — new commits use fixed:).
+dispatch: implementer opus fix round 1 — resume

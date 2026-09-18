@@ -21,3 +21,5 @@ From the ce46 re-review 2026-09-18 (all low/nit): (10) ending-the-session.md nam
 - 2026-09-18: plugin-factoring merged (0d8b4c9); hold released. Paths moved: claude-kit dissolved into kit-dev/context-guard/dev-flow/work-items/chat/sandbox/ralph.
 
 - 2026-09-18 (from 5cdb impl): also fix librarian-mode ending-the-session.md "session-addressed" (handoff-format says work-addressed) and add the repo-state-outranks-manifest clause to its precedence line. Bundle into the librarian chores item.
+
+- 2026-09-18 (881e lesson): agent-brief/fix-loop should say how to fix a bad commit subject without history rewrite (decline it, or the merge message carries the correction); never brief `git reset --soft main` once main may have moved.

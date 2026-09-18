@@ -32,3 +32,6 @@ dispatch: reviewer opus — rule 4
 
 review round 1 (opus): NEEDS_CHANGES — high 1: every_command skips `import` (mutation in cmd_import undetected); lows 2 (global git config isolation), 3 (inherited GIT_DIR etc.), nit 4. Root cause confirmed independently (launcher; claude-sandbox 18a7 filed and dispatched there).
 dispatch: implementer opus fix round 1 — resume
+
+fix round 1 (opus): DONE 3507a99 (import covered + parser-choices guard; git isolation). Declined nit 4 (e5516d2 citation = provenance).
+dispatch: reviewer opus review round 2 — resume
