@@ -2,12 +2,11 @@
 id: wi-add-re-appends-claude-sandbox-to-host-7772
 title: wi add re-appends /.claude-sandbox/ to host .gitignore (7f00 recurrence)
 type: bug
-status: doing
+status: done
 priority: 2
-owner: unknown@e3a28d2cc009
-claimed: 2026-09-18T19:16Z
 created: 2026-09-18
 updated: 2026-09-18
+closed: 2026-09-18
 refs:
   - recurrence note in 7f00 body, 2026-09-18
 ---
@@ -35,3 +34,6 @@ dispatch: implementer opus fix round 1 — resume
 
 fix round 1 (opus): DONE 3507a99 (import covered + parser-choices guard; git isolation). Declined nit 4 (e5516d2 citation = provenance).
 dispatch: reviewer opus review round 2 — resume
+
+review round 2 (opus): CLEAR (nit: guard reads argparse _actions; accepted). CORRECTION: the item premise (wi add re-appends) is false — wi never writes the host .gitignore outside sidecar init; the writer is the claude-sandbox launcher (claude-sandbox 18a7). This item lands as a regression sweep only.
+- 2026-09-18 done: 59b1e83
