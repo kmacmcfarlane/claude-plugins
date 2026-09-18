@@ -103,44 +103,80 @@ REGISTRY_MAX_BYTES = 65536  # a registry entry is a few hundred bytes; cap the r
 ANCESTORS = 4  # python -> [sh ->] claude: how far up to look for the session pid
 EXPLICIT = ("user", "peer", "hook", "collision")  # nameSource values the operator set
 NAME_MAX = 60  # widest name shown, in terminal columns; wider ones end in an ellipsis
-SCAN_MAX = 8 * NAME_MAX  # code points looked at: a flood of zero-width marks ends here
+SCAN_MAX = 8 * NAME_MAX  # code points kept from a name: a flood of combining marks ends here
+SCAN_HARD = 64 * NAME_MAX  # code points read while looking for them: format padding ends here
 _UNSAFE = re.compile(r"[\s\x00-\x1f\x7f-\x9f]+")  # whitespace, C0, DEL, C1
 ZWJ = "\u200d"
+VS16 = "\ufe0f"  # emoji presentation selector: the character before it is drawn 2 wide
 FLAG = "\U0001F3F4"  # the base of the tag-sequence flags (England, Scotland, Wales)
-# A ZWJ with no visible non-ASCII character on either side joins nothing and is
-# only invisible padding; inside an emoji sequence (or Indic text) it stays.
-_LONE_ZWJ = re.compile(r"(?<![^\x00-\x9f\s\u200d])\u200d|\u200d(?![^\x00-\x9f\s\u200d])")
+# A subdivision flag is FLAG, a short tag spelling (gbeng, gbsct, usca...), and
+# the CANCEL TAG terminator; tag characters anywhere else are invisible padding.
+_FLAG_TAGS = re.compile("[\U000E0020-\U000E007E]{2,7}\U000E007F")
+
+
+def _joins(ch, mark_ok):
+    """Whether `ch` can sit beside a kept ZWJ: visible and non-ASCII (emoji,
+    Indic), and on the right-hand side a base character, not a combining mark,
+    so a mark-ZWJ-mark chain cannot pad a name with joiners."""
+    if ch is None or ch <= "\x9f" or ch == ZWJ or ch.isspace():
+        return False
+    return mark_ok or not unicodedata.category(ch).startswith("M")
 
 
 def _visible(name):
-    """`name` without format (Cf) or surrogate (Cs) characters.
+    """(`name` without format or surrogate characters, whether it was cut short).
 
-    Cf covers the bidi overrides and isolates (U+202A-202E, U+2066-2069) that
-    can visually reverse the row, and the zero-width spaces, joiners and BOM
-    (U+200B-200F, U+2060-2064, U+FEFF) that pad it invisibly. Two exceptions:
-    a ZWJ, which _LONE_ZWJ then keeps only between visible characters, and the
-    tag characters that spell a subdivision flag right after its FLAG base. A
-    lone surrogate cannot be printed at all.
+    Drops Unicode category Cf -- the bidi overrides and isolates (U+202A-202E,
+    U+2066-2069) that can visually reverse the row, and the zero-width spaces,
+    joiners and BOM (U+200B-200F, U+2060-2064, U+FEFF) that pad it invisibly --
+    and lone surrogates (Cs), which cannot be printed at all. Two exceptions:
+    a ZWJ with a visible non-ASCII character before it and a base character
+    after it (inside an emoji sequence or Indic text), and a whole subdivision
+    flag (FLAG + _FLAG_TAGS). Stops once SCAN_MAX characters are kept or
+    SCAN_HARD have been read, so the cost is bounded whatever the input.
     """
-    out = []
-    for ch in name:
-        cat = unicodedata.category(ch)
-        if cat == "Cs":
+    out, i, n = [], 0, len(name)
+    while i < n and i < SCAN_HARD and len(out) < SCAN_MAX:
+        ch = name[i]
+        i += 1
+        if ch == FLAG:
+            m = _FLAG_TAGS.match(name, i)
+            out.append(ch)
+            if m:
+                out.extend(m.group())
+                i = m.end()
             continue
-        if cat == "Cf" and ch != ZWJ:
-            tag = "\U000E0020" <= ch <= "\U000E007F"
-            if not (tag and out and (out[-1] == FLAG or "\U000E0020" <= out[-1] <= "\U000E007F")):
-                continue
+        cat = unicodedata.category(ch)
+        if cat == "Cs" or (cat == "Cf" and ch != ZWJ):
+            continue
         out.append(ch)
-    return _LONE_ZWJ.sub("", "".join(out))
+    kept = []
+    for j, ch in enumerate(out):
+        if ch == ZWJ and not (_joins(kept[-1] if kept else None, True) and
+                              _joins(out[j + 1] if j + 1 < len(out) else None, False)):
+            continue
+        kept.append(ch)
+    return "".join(kept), i < n
 
 
 def columns(ch):
-    """Terminal columns one code point takes: 0 for combining and format
-    characters, 2 for East Asian wide/fullwidth (CJK, most emoji), else 1."""
+    """Terminal columns one code point takes on its own: 0 for combining and
+    format characters, 2 for East Asian wide/fullwidth (CJK, and emoji whose
+    default presentation is emoji), else 1. widths() adds the VS16 rule."""
     if unicodedata.combining(ch) or unicodedata.category(ch) in ("Mn", "Me", "Cf"):
         return 0
     return 2 if unicodedata.east_asian_width(ch) in ("W", "F") else 1
+
+
+def widths(name):
+    """columns() of each code point in `name`, with a text-default character
+    followed by VS16 (the heart, sun or victory hand as emoji) counted 2 wide,
+    as terminals draw it."""
+    ws = [columns(ch) for ch in name]
+    for i in range(len(ws) - 1):
+        if ws[i] == 1 and name[i + 1] == VS16:
+            ws[i] = 2
+    return ws
 
 
 def clean(name):
@@ -149,25 +185,26 @@ def clean(name):
     Format characters are dropped (see _visible), runs of whitespace or C0/C1
     control characters (ESC, BEL, DEL, newlines) collapse to a single space,
     and the ends are stripped, so a name made only of such characters is "".
-    Anything wider than NAME_MAX terminal columns (see columns(); a wide
+    Anything wider than NAME_MAX terminal columns (see widths(); a wide
     character counts 2, a combining mark 0) is cut to at most NAME_MAX - 1
     columns plus an ellipsis, never between a character and its combining
-    marks. Only the first SCAN_MAX code points (after whitespace collapses) are
-    looked at; a name longer than that also ends in the ellipsis. Never raises.
+    marks. Reading stops after SCAN_MAX kept code points or SCAN_HARD read
+    ones (after whitespace collapses), and a name cut short there also ends in
+    the ellipsis. The trade-off: a real name hidden behind more than SCAN_HARD
+    format characters is not found, and shows as "". Never raises.
     """
     if not isinstance(name, str):
         return ""
     try:
+        name, over = _visible(_UNSAFE.sub(" ", name).strip())
         name = _UNSAFE.sub(" ", name).strip()
-        over = len(name) > SCAN_MAX
-        name = _UNSAFE.sub(" ", _visible(name[:SCAN_MAX])).strip()
         if not name:
             return ""
-        widths = [columns(ch) for ch in name]
-        if not over and sum(widths) <= NAME_MAX:
+        ws = widths(name)
+        if not over and sum(ws) <= NAME_MAX:
             return name
         used = cut = 0
-        for i, w in enumerate(widths):
+        for i, w in enumerate(ws):
             if used + w > NAME_MAX - 1:
                 break
             used, cut = used + w, i + 1
@@ -238,12 +275,23 @@ def session_name(d):
     return clean(d.get("session_name"))
 
 
+def obj(v):
+    """`v` when it is a JSON object, else {}: any payload block may be missing,
+    null, or the wrong type."""
+    return v if isinstance(v, dict) else {}
+
+
 def main():
     try:
-        d = json.load(sys.stdin)
+        # A lone surrogate in any field (cwd, model name) must not make print() raise.
+        sys.stdout.reconfigure(errors="replace")
+    except Exception:
+        pass
+    try:
+        d = obj(json.load(sys.stdin))
     except Exception:
         print(""); return
-    cw = d.get("context_window") or {}
+    cw = obj(d.get("context_window"))
     pct = cw.get("used_percentage")
     size = cw.get("context_window_size") or 0
     tok = cw.get("total_input_tokens") or 0
@@ -254,10 +302,11 @@ def main():
         st["exact"] = {"pct": float(pct), "tokens": int(tok), "window": int(size), "at": time.time()}
         L.save_state(sid, st)
 
-    model = (d.get("model") or {}).get("display_name", "?")
+    model = obj(d.get("model")).get("display_name", "?")
     name = session_name(d)
-    cwd = os.path.basename((d.get("workspace") or {}).get("current_dir") or d.get("cwd") or "")
-    eff = ((d.get("effort") or {}).get("level") or "")
+    cwd = obj(d.get("workspace")).get("current_dir") or d.get("cwd") or ""
+    cwd = os.path.basename(cwd) if isinstance(cwd, str) else ""
+    eff = obj(d.get("effort")).get("level") or ""
 
     if pct is None:
         gauge = "ctx --"
@@ -283,4 +332,7 @@ def main():
     print(line)
 
 
-main()
+try:
+    main()
+except Exception:  # the status line never raises: a blank line beats a traceback
+    print("")
