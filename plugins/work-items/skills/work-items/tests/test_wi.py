@@ -872,19 +872,26 @@ class TestStoreCustodyWarning(WiTestCase):
         self.assertNotIn("WARNING", r.stdout)
         self.assertIn("lint clean", r.stdout)
 
-    def assert_warns(self, cause):
+    SANDBOX_FIX = "set trackInHost: true in the sandbox config"
+    SIDECAR_FIX = "for a public repo, give .claude-sandbox/ its own sidecar git"
+
+    def assert_warns(self, *parts, absent=()):
         out = self.prime()
         self.assertTrue(out[0].startswith("wi: "))
         warn = out[1]
         self.assertTrue(warn.startswith("wi: WARNING store "), warn)
-        for part in (cause, "silently untracked", "/.claude-sandbox/",
-                     "trackInHost: true", "18a7"):
+        self.assertIn("silently untracked", warn)
+        self.assertNotIn("18a7", warn)
+        for part in parts:
             self.assertIn(part, warn)
+        for part in absent:
+            self.assertNotIn(part, warn)
         self.assertEqual(sum("WARNING" in ln for ln in out), 1)
         r = self.lint()
         self.assertEqual(r.returncode, 3, r.stdout)
         self.assertIn(warn, r.stdout.splitlines())
         self.assertNotIn("lint clean", r.stdout)
+        return warn
 
     def test_tracked_private_store_is_silent(self):
         repo = self.tmp / "private"
@@ -895,7 +902,10 @@ class TestStoreCustodyWarning(WiTestCase):
 
     def test_whole_dir_ignore_warns(self):
         self.store_in(self.tmp / "ignored", gi="*.pyc\n/.claude-sandbox/\n")
-        self.assert_warns("new items are git-ignored")
+        self.assert_warns(
+            "new items are git-ignored by .gitignore:2 '/.claude-sandbox/'",
+            "remove or negate that rule", self.SANDBOX_FIX, "490d8ca",
+            self.SIDECAR_FIX, absent=("git add",))
 
     def test_ignore_masked_by_tracked_items_still_warns(self):
         # operator-attention: the store was tracked, then the whole-dir line
@@ -906,7 +916,40 @@ class TestStoreCustodyWarning(WiTestCase):
         self.git(repo, "add", "-A")
         self.git(repo, "commit", "-qm", "store")
         (repo / ".gitignore").write_text("*.pyc\n/.claude-sandbox/\n")
-        self.assert_warns("new items are git-ignored")
+        self.assert_warns(".gitignore:2 '/.claude-sandbox/'",
+                          self.SANDBOX_FIX, self.SIDECAR_FIX)
+
+    def test_md_ignore_names_rule_without_sidecar_remedy(self):
+        # not a whole-dir ignore: the sidecar remedy would be wrong advice
+        self.store_in(self.tmp / "md", gi="*.pyc\n*.md\n")
+        self.assert_warns("git-ignored by .gitignore:2 '*.md'",
+                          "remove or negate that rule", self.SANDBOX_FIX,
+                          absent=(self.SIDECAR_FIX,))
+
+    def test_info_exclude_is_named_as_the_source(self):
+        repo = self.tmp / "exclude"
+        self.store_in(repo)
+        with open(repo / ".git" / "info" / "exclude", "a") as fh:
+            fh.write(".claude-sandbox/\n")
+        self.assert_warns(".git/info/exclude:", "'.claude-sandbox/'",
+                          self.SANDBOX_FIX, self.SIDECAR_FIX)
+
+    def test_negated_rule_is_silent(self):
+        self.store_in(self.tmp / "negated",
+                      gi="*.md\n!.claude-sandbox/work/items/*.md\n")
+        self.assert_silent()
+
+    def test_dot_work_store_gets_no_sandbox_remedies(self):
+        repo = self.tmp / "dotwork"
+        repo.mkdir()
+        self.git(repo, "init", "-q")
+        (repo / ".gitignore").write_text(".work/\n")
+        self.root = repo / ".work"
+        self.assertEqual(run(["init"], self.root, env=self.env).returncode, 0)
+        self.write_item("item-00-aaaa")
+        self.assert_warns("git-ignored by .gitignore:1 '.work/'",
+                          "remove or negate that rule",
+                          absent=("trackInHost", "sidecar", "490d8ca"))
 
     def test_new_untracked_store_below_threshold_is_silent(self):
         # a freshly initialised store before its first `git add` is normal
@@ -917,7 +960,10 @@ class TestStoreCustodyWarning(WiTestCase):
     def test_grown_untracked_store_warns_until_added(self):
         repo = self.tmp / "grown"
         self.store_in(repo, n_items=wi.UNTRACKED_MIN_ITEMS)
-        self.assert_warns(f"{wi.UNTRACKED_MIN_ITEMS} items, none tracked")
+        self.assert_warns(
+            f"it holds {wi.UNTRACKED_MIN_ITEMS} items and git tracks none",
+            "fix: `git add` the store",
+            absent=("git-ignored", "trackInHost", "sidecar", "negate"))
         self.git(repo, "add", ".claude-sandbox")   # staging is enough
         self.assert_silent()
 
@@ -947,7 +993,10 @@ class TestStoreCustodyWarning(WiTestCase):
         self.git(sidecar, "commit", "-qm", "store")
         self.assert_silent()
         (sidecar / ".gitignore").write_text("/work/\n")
-        self.assert_warns("new items are git-ignored")
+        # judged by the nested repo's own rule; not a whole-dir sandbox
+        # ignore, so no sidecar advice
+        self.assert_warns("git-ignored by .gitignore:1 '/work/'",
+                          absent=(self.SIDECAR_FIX,))
 
     def test_prime_keeps_warning_under_tiny_budget(self):
         self.store_in(self.tmp / "budget", gi="/.claude-sandbox/\n",
@@ -956,6 +1005,18 @@ class TestStoreCustodyWarning(WiTestCase):
         lines = r.stdout.split("\n")
         self.assertTrue(lines[0].startswith("wi: "))
         self.assertIn("WARNING", lines[1])
+
+    def test_prime_header_kept_when_alone_over_budget(self):
+        # no warning: a budget below the header's own size keeps the header
+        # (trimming used to pop it when only [header, "…"] was left)
+        self.store_in(self.tmp / "trim", gi="*.pyc\n", n_items=30)
+        self.git(self.root.parent.parent, "add", "-A")
+        r = run(["prime", "--budget", "10"], self.root, env=self.env)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        lines = r.stdout.rstrip("\n").split("\n")
+        self.assertEqual(len(lines), 1, r.stdout)
+        self.assertTrue(lines[0].startswith("wi: "), r.stdout)
+        self.assertNotIn("WARNING", r.stdout)
 
 
 class TestDetailsBlocks(unittest.TestCase):

@@ -370,24 +370,38 @@ def custody_warning(root):
     Silent outside git, when git is missing or slow, or on any git error."""
     # the probe path, not only `items`, catches a store whose tracked files
     # mask the ignore rule: check-ignore skips tracked paths, but a new
-    # item's path is still matched against the rule
-    r = _git(root, "check-ignore", "--", "items", PROBE_ITEM)
+    # item's path is still matched against the rule. -v names the rule.
+    r = _git(root, "check-ignore", "-v", "--", "items", PROBE_ITEM)
     if r is None or r.returncode not in (0, 1):
         return None
-    if r.returncode == 0:
-        cause = "new items are git-ignored"
-    else:
-        n = len(item_paths(root))
-        if n < UNTRACKED_MIN_ITEMS:
-            return None
-        r = _git(root, "ls-files", "--", ".")
-        if r is None or r.returncode != 0 or r.stdout.strip():
-            return None
-        cause = f"{n} items, none tracked by git; `git add` it if it is new"
-    return (f"wi: WARNING store {root} is silently untracked ({cause}); fix: "
-            "remove the whole-dir /.claude-sandbox/ ignore from the host "
-            ".gitignore, set trackInHost: true in the sandbox config, or "
-            "update the claude-sandbox launcher (its item 18a7)")
+    rule = None
+    for line in r.stdout.splitlines():
+        m = re.match(r"^(.*?):(\d+):(.*?)\t", line)
+        if m and not m.group(3).startswith("!"):   # a negation un-ignores
+            rule = m.groups()
+            break
+    head = f"wi: WARNING store {root} is silently untracked: "
+    if rule:
+        src, lineno, pattern = rule
+        fix = [f"new items are git-ignored by {src}:{lineno} '{pattern}'; "
+               "fix: remove or negate that rule"]
+        if root.absolute().parent.name == ".claude-sandbox":
+            fix.append(" and set trackInHost: true in the sandbox config (a "
+                       "claude-sandbox launcher at 490d8ca or later warns "
+                       "about this)")
+            if pattern.strip() in SANDBOX_IGNORES:
+                # agents 0002: a public-shaped repo keeps the whole-dir
+                # ignore; removing it would publish private items
+                fix.append(", or, for a public repo, give .claude-sandbox/ "
+                           "its own sidecar git")
+        return head + "".join(fix)
+    n = len(item_paths(root))
+    if n < UNTRACKED_MIN_ITEMS:
+        return None
+    r = _git(root, "ls-files", "--", ".")
+    if r is None or r.returncode != 0 or r.stdout.strip():
+        return None
+    return head + f"it holds {n} items and git tracks none; fix: `git add` the store"
 
 
 class Lock:
