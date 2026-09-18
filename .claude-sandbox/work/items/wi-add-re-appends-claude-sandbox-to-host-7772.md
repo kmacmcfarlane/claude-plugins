@@ -26,3 +26,6 @@ Noticed at rehydrate 2026-09-18: an uncommitted recurrence note was appended to 
 - 2026-09-18 claimed by unknown@e3a28d2cc009
 
 dispatch: implementer opus — executable logic (wi.py)
+
+impl: DONE_WITH_CONCERNS bdc506b — could not reproduce in wi.py; only cmd_init sidecar branch writes host .gitignore. Real writer: claude-sandbox launcher layout.Setup (cmd/claude-sandbox/root.go:739 -> internal/layout/layout.go:115 gitignoreAdd "/.claude-sandbox/", prompt default yes) when trackInHost: false (operator-attention config.yaml:109). Commit is regression tests only (TestHostGitignoreUntouched, mutation-checked). Premise of the title is wrong (like 7f00). Relayed launcher fix to the claude-sandbox librarian.
+dispatch: reviewer opus — rule 4

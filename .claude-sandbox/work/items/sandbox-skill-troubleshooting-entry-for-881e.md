@@ -24,3 +24,6 @@ From the 0236 diagnosis 2026-09-17: a claude-sandbox container OOM-kill looks li
 - 2026-09-18 claimed by unknown@e3a28d2cc009
 
 dispatch: implementer sonnet — default (one doc entry)
+
+impl: DONE 5dd2511 (entry inline in SKILL.md Troubleshooting)
+dispatch: reviewer opus — rule 4 (implementer sonnet)

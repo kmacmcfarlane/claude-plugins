@@ -2,13 +2,11 @@
 id: librarian-mode-let-an-operator-opt-a-pro-ed88
 title: "librarian-mode: let an operator opt a product repo in as custody"
 type: feature
-status: blocked
+status: done
 priority: 1
-owner: unknown@e3a28d2cc009
-claimed: 2026-09-18T18:44Z
-blocked: "review cap hit: finding 16 (CLAUDE.md:89 aim row) - decision 30"
 created: 2026-09-18
 updated: 2026-09-18
+closed: 2026-09-18
 refs:
   - peer claude-sandbox librarian; claude-sandbox 9468
 ---
@@ -89,3 +87,12 @@ dispatch: reviewer opus review round 3 (final) — resume, tier unchanged
 
 review round 3 (opus, final): NEEDS_CHANGES. 12-15 FIXED. New 16 [medium] CLAUDE.md:89 Aim -> home row for dev-flow lacks the librarian; README placement tree step 4 routes through it (brief gap, not implementer). Cap hit.
 decision 30: ed88 cap: (a) one extra round to fix the CLAUDE.md:89 row, re-review, land; (b) waive 16, land now, file the one-line follow-up.
+
+decision 30 answered (operator 2026-09-18): "that's fine. Let's raise the round limit to 4" — one more round for ed88 (finding 16), under a cap of 4 review rounds.
+dispatch: implementer opus fix round 3 — resume; last round before the new cap would route fable, opus per decision 28
+
+fix round 3 (opus): DONE a28f2af (CLAUDE.md:89 aim row)
+dispatch: reviewer opus review round 4 (final under cap 4) — resume
+
+review round 4 (opus): CLEAR. Final: CLEAR after 3 fix rounds (impl opus, review opus). Declined: none. Reviewer notes kept: SKILL.md ~4990/5000 tokens (item 1420); this repo has no ## Librarian — next start offers Whole repo first; work-items effectively hard for librarian-mode.
+- 2026-09-18 done: d44ef31
