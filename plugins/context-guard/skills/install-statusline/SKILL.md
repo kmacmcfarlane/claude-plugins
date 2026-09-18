@@ -65,5 +65,5 @@ compaction. Two escape hatches:
    `/checkpoint` records. The gate stays down until the next compaction or `/clear`:
 
 ```bash
-python3 -c 'import json,sys;p=sys.argv[1];s=json.load(open(p));s["checkpoint_epoch"]=s.get("epoch",0);json.dump(s,open(p,"w"),indent=1)' "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/claude-kit/context-gate/<session_id>.json"
+python3 -c 'import json,os,sys,tempfile;p=sys.argv[1];s=json.load(open(p));s["checkpoint_epoch"]=s.get("epoch",0);fd,t=tempfile.mkstemp(dir=os.path.dirname(p));f=os.fdopen(fd,"w");json.dump(s,f,indent=1);f.close();os.replace(t,p)' "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/claude-kit/context-gate/<session_id>.json"
 ```

@@ -20,8 +20,21 @@ State is per session under $CLAUDE_CONFIG_DIR/claude-kit/context-gate/, and is
 EPOCH-aware: a compaction (PostCompact) or /clear starts a new epoch, resetting
 advisories, DUE/HARD accounting and the deferred-compaction flag. The v1 hooks
 latched once per session, which is why a session's second fill got no warning.
+
+Writers never load-modify-save the file bare: update_state(sid, fn) runs the
+read-modify-write under a per-session advisory lock (fcntl.flock, bounded by
+LOCK_TIMEOUT_S; on timeout, error, or a platform without fcntl it proceeds
+unlocked - today's behaviour - rather than block a session). save_state writes
+a unique temp file in the same dir (created O_EXCL, as tempfile.mkstemp does,
+without the ~5 ms tempfile import on every status-line render) and
+os.replace()s it, so a racing writer can never install a torn file. A session id becomes a file name only
+when it is a safe token; anything else is hashed, so no id escapes the dir.
 """
-import json, os, time
+import json, os, re, time
+try:
+    import fcntl
+except ImportError:  # not POSIX: no lock, unique temp names still hold
+    fcntl = None
 
 DEFAULTS = (200_000, 1_000_000)
 EXACT_MAX_AGE_S = 600
@@ -37,30 +50,131 @@ def _state_dir():
     return d
 
 
+LOCK_TIMEOUT_S = 0.2
+_SAFE_SID = re.compile(r"[A-Za-z0-9_-][A-Za-z0-9._-]{0,127}")
+
+
+def safe_sid(session_id):
+    """The file-name form of a session id. A safe token (the UUIDs Claude Code
+    issues) passes unchanged; anything else - a path separator, a leading dot,
+    '..', over 128 chars, a non-string - becomes 'sid-<sha256 prefix>', so a
+    hostile or garbled id can never name a path outside the state dir."""
+    if not session_id:
+        return "unknown"
+    if isinstance(session_id, str) and _SAFE_SID.fullmatch(session_id):
+        return session_id
+    import hashlib  # lazily: only a malformed id pays for it
+    raw = session_id if isinstance(session_id, str) else repr(session_id)
+    return "sid-" + hashlib.sha256(raw.encode("utf-8", "replace")).hexdigest()[:32]
+
+
 def state_path(session_id):
-    return os.path.join(_state_dir(), (session_id or "unknown") + ".json")
+    return os.path.join(_state_dir(), safe_sid(session_id) + ".json")
 
 
 def ledger_path(session_id):
     d = os.path.join(_base_dir(), "claude-kit", "ledger")
     os.makedirs(d, exist_ok=True)
-    return os.path.join(d, (session_id or "unknown") + ".md")
+    return os.path.join(d, safe_sid(session_id) + ".md")
 
 
 def load_state(session_id):
     try:
-        return json.load(open(state_path(session_id)))
+        with open(state_path(session_id)) as f:
+            st = json.load(f)
+        return st if isinstance(st, dict) else {}
     except Exception:
         return {}
 
 
+def _mkstemp(d, prefix):
+    """tempfile.mkstemp's contract (a new file no other writer can share,
+    mode 0600) at os-module cost."""
+    for _ in range(100):
+        name = os.path.join(d, f"{prefix}{os.getpid()}.{os.urandom(6).hex()}.tmp")
+        try:
+            return os.open(name, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600), name
+        except FileExistsError:
+            continue
+    raise FileExistsError("no unique temp name")
+
+
 def save_state(session_id, data):
+    """Atomic write: a unique temp file in the same dir, then os.replace.
+    Callers that modify existing state go through update_state instead."""
+    tmp = None
     try:
-        tmp = state_path(session_id) + ".tmp"
-        json.dump(data, open(tmp, "w"), indent=1)
-        os.replace(tmp, state_path(session_id))
+        path = state_path(session_id)
+        fd, tmp = _mkstemp(os.path.dirname(path), "." + safe_sid(session_id) + ".")
+        with os.fdopen(fd, "w") as f:
+            json.dump(data, f, indent=1)
+        os.replace(tmp, path)
+        tmp = None
     except Exception:
         pass
+    finally:
+        if tmp:
+            try:
+                os.unlink(tmp)
+            except Exception:
+                pass
+
+
+def _acquire(session_id):
+    """Take the session's advisory lock, waiting at most LOCK_TIMEOUT_S.
+    Returns the locked fd, or None (no fcntl, timeout, any error): the caller
+    then proceeds unlocked. Never raises."""
+    if fcntl is None:
+        return None
+    fd = None
+    try:
+        fd = os.open(os.path.join(_state_dir(), "." + safe_sid(session_id) + ".lock"),
+                     os.O_RDWR | os.O_CREAT, 0o600)
+        deadline = time.monotonic() + LOCK_TIMEOUT_S
+        while True:
+            try:
+                fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                return fd
+            except (BlockingIOError, InterruptedError):
+                if time.monotonic() >= deadline:
+                    break
+                time.sleep(0.002)
+    except Exception:
+        pass
+    if fd is not None:
+        try:
+            os.close(fd)
+        except Exception:
+            pass
+    return None
+
+
+def _release(fd):
+    if fd is None:
+        return
+    try:
+        fcntl.flock(fd, fcntl.LOCK_UN)
+    except Exception:
+        pass
+    try:
+        os.close(fd)
+    except Exception:
+        pass
+
+
+def update_state(session_id, fn):
+    """Read-modify-write the session's state under its lock: load, fn(state)
+    mutates it in place, save. Returns the saved state. Every writer uses this
+    so a concurrent writer's keys are never overwritten with a stale copy.
+    The lock wait is bounded; on timeout the update runs unlocked."""
+    fd = _acquire(session_id)
+    try:
+        st = load_state(session_id)
+        fn(st)
+        save_state(session_id, st)
+        return st
+    finally:
+        _release(fd)
 
 
 def epoch(state):
@@ -70,7 +184,10 @@ def epoch(state):
 def reset_epoch(session_id, compact_summary=None):
     """New epoch: advisories and DUE/HARD accounting start over; the deferred
     flag clears; the checkpoint requirement re-arms. The ledger survives."""
-    st = load_state(session_id)
+    return update_state(session_id, lambda st: _reset(st, compact_summary))
+
+
+def _reset(st, compact_summary):
     st["epoch"] = epoch(st) + 1
     st.pop("compact_deferred", None)
     st.pop("due", None)
@@ -88,16 +205,13 @@ def reset_epoch(session_id, compact_summary=None):
         st["exact"] = {"window": int(ex["window"]), "at": 0}
     if compact_summary is not None:
         st["compact_summary"] = compact_summary[:20000]
-    save_state(session_id, st)
-    return st
 
 
 def mark_checkpoint(session_id):
-    st = load_state(session_id)
-    st["checkpoint_epoch"] = epoch(st)
-    st["checkpoint_at"] = time.strftime("%F %T")
-    save_state(session_id, st)
-    return st
+    def mark(st):
+        st["checkpoint_epoch"] = epoch(st)
+        st["checkpoint_at"] = time.strftime("%F %T")
+    return update_state(session_id, mark)
 
 
 def checkpointed_this_epoch(state):

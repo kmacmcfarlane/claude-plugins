@@ -349,13 +349,14 @@ def main():
     cw = obj(d.get("context_window"))
     # A field that is present but not a number (text, bool, NaN) spoils the
     # gauge: it shows "ctx --" and records nothing, never a blank line.
-    # A window size of 0 or less (or none) is unknown: no gauge, and no exact
-    # record that would tell the gate hooks there is nothing left. The used
-    # percentage is clamped to 0-100.
+    # A window size below 1 (or none) is unknown: no gauge, and no exact
+    # record that would tell the gate hooks there is nothing left - a
+    # fractional size would otherwise truncate to 0. The used percentage is
+    # clamped to 0-100.
     pct = num(cw.get("used_percentage"))
     size = num(cw.get("context_window_size") or 0)
     tok = num(cw.get("total_input_tokens") or 0)
-    if size is None or tok is None or size <= 0:
+    if size is None or tok is None or size < 1:
         pct = None
     else:
         size, tok = int(size), max(int(tok), 0)
@@ -365,17 +366,18 @@ def main():
     if not isinstance(sid, str):
         sid = None
 
+    st = None
     if sid:
         try:
             now = time.time()
             limits = limits_record(d.get("rate_limits"), now)
             if (pct is not None and size) or limits:
-                st = L.load_state(sid)
-                if pct is not None and size:
-                    st["exact"] = {"pct": pct, "tokens": tok, "window": size, "at": now}
-                if limits:
-                    st["rate_limits"] = limits
-                L.save_state(sid, st)
+                def record(s):
+                    if pct is not None and size:
+                        s["exact"] = {"pct": pct, "tokens": tok, "window": size, "at": now}
+                    if limits:
+                        s["rate_limits"] = limits
+                st = L.update_state(sid, record)
         except Exception:
             pass
 
@@ -391,7 +393,7 @@ def main():
             p = int(pct)
             left = max(size - tok, 0)
             th = L.thresholds(size)
-            ep = L.epoch(L.load_state(sid)) if sid else 0
+            ep = L.epoch(st if st is not None else L.load_state(sid)) if sid else 0
             filled = min(max(p // 10, 0), 10)
             bar = "█" * filled + "░" * (10 - filled)
             color = ("\033[32m" if left > th["due"] else

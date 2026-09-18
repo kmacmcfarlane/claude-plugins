@@ -32,22 +32,45 @@ def main():
         print(json.dumps({})); return
 
     sid = inp.get("session_id", "unknown")
-    st = L.load_state(sid)
-    ep = L.epoch(st)
     tok, win, _, src = L.depth(inp.get("transcript_path", ""), sid)
     if not tok:
         print(json.dumps({})); return
     remaining = max(win - tok, 0)
     th = L.thresholds(win)
-    done = L.checkpointed_this_epoch(st)
+    every = int(os.environ.get("CLAUDE_KIT_LEDGER_EVERY", "60000") or 60000)
+    res = {}
 
-    if not done and st.get("relay_epoch") != ep and (
-            st.get("compact_deferred") or remaining <= th["due"]):
-        st["relay_epoch"] = ep
+    def apply(st):
+        ep = L.epoch(st)
+        if not L.checkpointed_this_epoch(st) and st.get("relay_epoch") != ep and (
+                st.get("compact_deferred") or remaining <= th["due"]):
+            st["relay_epoch"] = ep
+            st.update(tokens=tok, window=win)
+            res["act"] = "relay"
+            res["deferred"] = bool(st.get("compact_deferred"))
+            return
+        if not isinstance(st.get("ledger"), dict):
+            # First observation: set the baseline silently. The nudge measures
+            # growth the relay has watched, not absolute depth - otherwise a
+            # session resumed deep would open with a spurious 'N tokens since'.
+            st["ledger"] = {"tok": tok}
+            st.update(tokens=tok, window=win)
+            return
+        last = int(st["ledger"].get("tok", 0))
+        if tok - last >= every:
+            # As before, a nudge leaves tokens/window to the next quiet turn.
+            st["ledger"] = {"tok": tok}
+            res["act"] = "ledger"
+            res["last"] = last
+            return
         st.update(tokens=tok, window=win)
-        L.save_state(sid, st)
+
+    L.update_state(sid, apply)
+    act = res.get("act")
+
+    if act == "relay":
         why = ("an automatic compaction was deferred by the context gate"
-               if st.get("compact_deferred") else
+               if res["deferred"] else
                f"only {remaining:,} tokens remain ({src})")
         print(json.dumps(ctx(
             f"[context-guard context gate] Before anything else: {why} and no "
@@ -55,21 +78,8 @@ def main():
             f"ask the operator the goal (land / continue / handoff), write the "
             f"reasoning residue, then mark_checkpoint.py. Do not start new work.")))
         return
-
-    every = int(os.environ.get("CLAUDE_KIT_LEDGER_EVERY", "60000") or 60000)
-    if "ledger" not in st:
-        # First observation: set the baseline silently. The nudge measures
-        # growth the relay has watched, not absolute depth - otherwise a
-        # session resumed deep would open with a spurious 'N tokens since'.
-        st["ledger"] = {"tok": tok}
-        st.update(tokens=tok, window=win)
-        L.save_state(sid, st)
-        print(json.dumps({}))
-        return
-    last = int(st["ledger"].get("tok", 0))
-    if tok - last >= every:
-        st["ledger"] = {"tok": tok}
-        L.save_state(sid, st)
+    if act == "ledger":
+        last = res["last"]
         if LEDGER_LINE.search(inp.get("last_assistant_message") or ""):
             print(json.dumps({})); return
         print(json.dumps(ctx(
@@ -79,9 +89,6 @@ def main():
             f"`- <D|X|C|U|R|Q> <text> [-> path]`, or reply 'nothing new'. "
             f"One short turn; then stop.")))
         return
-
-    st.update(tokens=tok, window=win)
-    L.save_state(sid, st)
     print(json.dumps({}))
 
 
