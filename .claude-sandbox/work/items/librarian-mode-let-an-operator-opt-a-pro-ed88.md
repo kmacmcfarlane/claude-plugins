@@ -77,3 +77,6 @@ decision 26: product-repo custody home: (a) land in kit-dev now + follow-up to s
 
 decision 26 answered (operator 2026-09-18): "let's move it to the dev-flow plugin, that makes more sense". ed88 scope widens: git mv plugins/kit-dev/skills/librarian-mode -> plugins/dev-flow/skills/librarian-mode; kit-dev description/catalog reverted to kit maintenance; dev-flow description/catalog gain librarian custody; CLAUDE.md layout, marketplace.json descriptions; invocation becomes /dev-flow:librarian-mode.
 dispatch: implementer fable fix round 2 — rule 3 (fix round 2), fresh dispatch (tier bump), scope widened by decision 26
+
+fix round 2 (fable): FAILED — HTTP 429 out of usage credits (req_011CfBRqfAxo1hkmLHasPprc); reset time not in the error. Same case as 7db3.
+decision 27: fix round 2 tier while fable is out of credits: opus now / wait for fable / you add credits
