@@ -80,7 +80,7 @@ else.
 
 ```markdown
 ## Librarian
-Scope: whole repo
+Scope: whole repo (except .claude-sandbox/ and .claude/)
 Exclude: vendor/
 Checks:
 - make test
@@ -88,8 +88,11 @@ Push: main
 Workflow: spec-first; update docs/api.md with any endpoint change
 ```
 
-- `Scope:` — `whole repo`, or one path or glob per `- ` line under it (`Plugin layer` and
-  `Documentation tree` are written out as their paths, so the section reads alone).
+- `Scope:` — `whole repo (except .claude-sandbox/ and .claude/)`, or one path or glob
+  per `- ` line under it (`Plugin layer` and `Documentation tree` are written out as
+  their paths, so the section reads alone). Whole repo never includes `.claude-sandbox/`
+  or `.claude/`, whether or not the line spells the exception out: a bare
+  `Scope: whole repo` means the same.
 - `Exclude:` — optional; paths inside Scope the librarian never touches.
 - `Checks:` — one command per `- ` line; omit the key for none.
 - `Push:` — `main` or `none`; a missing key reads as `main`.

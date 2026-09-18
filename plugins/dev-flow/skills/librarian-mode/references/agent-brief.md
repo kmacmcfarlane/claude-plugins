@@ -81,7 +81,10 @@ running non-interactively (each skill's § Running non-interactively), and:
   that path in your report. Skip its branch survey (the base is fixed above) and its
   retrospective.
 - /implement, on that series: its plan, build and verify steps and its review gates,
-  with every edit made in $WORKTREE itself. Skip its repo and base-branch step (no
+  with every edit made in $WORKTREE itself. Its Step 1 looks for series only under
+  .claude-sandbox/investigations/ and would stop with "No investigations found": skip
+  Step 1, take the series to be the scratchpad path above, and start at its Step 2,
+  reading every file of the series there. Skip its repo and base-branch step (no
   fetch, no new branch or worktree, nothing run in the main checkout), its whole
   Finalize step (no terminal action, merge, push, work-item update, outcome or index
   write) and its retrospective. The Commit section below is the only commit.
