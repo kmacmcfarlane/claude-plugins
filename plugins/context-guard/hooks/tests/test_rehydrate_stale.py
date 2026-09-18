@@ -275,7 +275,7 @@ class TestRehydrateStale(unittest.TestCase):
         boom = subprocess.TimeoutExpired("git", 5)
         with mock.patch.object(rh.subprocess, "run", side_effect=boom) as run:
             self.assertEqual(rh.stale_checks({"head": self.head}, self.repo, "FRESH"),
-                             (None, []))
+                             (None, [], []))
             self.assertIsNone(rh.git(self.repo, "status"))
             self.assertEqual(run.call_count, 1)
 
@@ -288,6 +288,96 @@ class TestRehydrateStale(unittest.TestCase):
         self.assertIn("FRESH", c)
         self.commit("code", "src/a.txt")
         self.assertIn("AGED", self.hook("startup"))
+
+    # ── round-2 lows (4a19) ─────────────────────────────────────────────────
+    def header(self, c):
+        return c.split("\n", 1)[0]
+
+    def test_missing_head_labelled_aged_not_fresh(self):
+        self.manifest(head="deadbee")
+        for src in ("startup", "compact"):
+            with self.subTest(source=src):
+                c = self.hook(src)
+                self.assertIn("AGED (recorded head not found locally) manifest",
+                              self.header(c))
+                self.assertNotIn("FRESH", self.header(c))
+                self.assertIn("Next withheld: head moved ? commits", c)
+
+    def test_rewound_head_labelled_aged_not_fresh(self):
+        self.commit("code", "src/a.txt")
+        ahead = self.rev()
+        self.manifest(head=ahead)
+        self.g("reset", "-q", "--hard", self.head)
+        c = self.hook()
+        self.assertIn("AGED (recorded head is not an ancestor) manifest", self.header(c))
+        self.assertNotIn("FRESH", self.header(c))
+        self.assertIn(f"Next withheld: head moved 0 commits since this manifest "
+                      f"({ahead}..{self.head}, recorded head is not an ancestor); "
+                      f"run wi prime and git log.", c)
+        self.assertNotIn("wi show build-the-widget-aaaa", c)
+
+    def test_label_fresh_only_when_next_shown(self):
+        self.manifest()
+        c = self.hook()
+        self.assertIn("FRESH manifest", self.header(c))
+        self.assertNotIn("Next withheld", c)
+        self.commit("code", "src/a.txt")
+        c = self.hook()
+        self.assertIn("AGED manifest", self.header(c))    # plain drift: no reason
+        self.assertIn("head moved 1 commit since", c)
+
+    def test_unparseable_line_has_its_own_heading(self):
+        self.item("ok-1111", "doing")
+        self.manifest("items: {a: b}\n")
+        for src in ("compact", "startup"):
+            with self.subTest(source=src):
+                c = self.hook(src)
+                self.assertIn("items: 1 unparseable entry skipped", c)
+                self.assertIn("not checked against the store", c)
+                self.assertNotIn("contradicts", c)
+
+    def test_unparseable_line_not_under_contradicts_heading(self):
+        self.item("build-the-widget-aaaa", "done")
+        self.manifest("items: [build-the-widget-aaaa, 'x y']\n")
+        c = self.hook()
+        i = c.index("contradicts (the store wins):")
+        block = c[i:c.index("\n\n", i)]
+        self.assertIn("DEAD CLAIM build-the-widget-aaaa (done)", block)
+        self.assertNotIn("unparseable", block)
+        j = c.index("not checked against the store:")
+        self.assertIn("items: 1 unparseable entry skipped", c[j:].split("\n\n")[0])
+
+    def rh(self):
+        sys.path.insert(0, HOOKS)
+        self.addCleanup(sys.path.remove, HOOKS)
+        return importlib.import_module("rehydrate")
+
+    def test_trim_items_only_inside_frontmatter(self):
+        rh = self.rh()
+        body_items = "## Doing\nitems:\n  - keep-me-in-the-body\n"
+        no_fm_items = "---\nhead: abc\n---\n" + body_items
+        self.assertEqual(rh._trim_items(no_fm_items), no_fm_items)
+        with_fm = "---\nhead: abc\nitems:\n  - a-1\n  - b-2\n---\n" + body_items
+        out = rh._trim_items(with_fm)
+        self.assertIn("items: (trimmed — read the manifest file)\n---\n", out)
+        self.assertNotIn("a-1", out)
+        self.assertTrue(out.endswith(body_items))
+        self.assertEqual(rh._trim_items(body_items), body_items)   # no frontmatter
+
+    def test_body_items_survive_hook_trim(self):
+        self.manifest()
+        path = os.path.join(self.repo, ".claude-sandbox", "HANDOFF.md")
+        with open(path) as fh:
+            text = fh.read()
+        text = text.replace(
+            "Building the thing.\n", "Building the thing.\nitems:\n  - keep-me-body\n")
+        text = text.replace("- x.md — notes\n", "".join(
+            f"- s{i:04d}.md — {'n' * 60}\n" for i in range(200)))
+        put(path, text)
+        c = self.hook()
+        self.assertIn("## Scrolls\n(trimmed", c)                # trim ran
+        self.assertIn("items:\n  - keep-me-body", c)
+        self.assertNotIn("items: (trimmed", c)
 
     # ── precedence ──────────────────────────────────────────────────────────
     def test_precedence_puts_repo_state_over_manifest(self):

@@ -59,10 +59,15 @@ TOC, read on demand: `path — one line on what it holds`.
   **Read in full** points at it, and the manifest carries only what the files do not hold
   (deploy state, test fixtures/accounts, cross-ticket blocks, model/agent rules,
   CORRECTION/REFUSED lines).
-- The hook labels the manifest FRESH (fresh), AGED (>24h or any commit drift), STALE (>7 days
-  or >30 commits — goal lines must be re-confirmed with the operator), LANDED (`mode: land*` —
-  header-only, the work is done). Drift never counts commits that touch only
-  `.claude-sandbox/work` (store chores).
+- The hook labels the manifest FRESH (fresh), AGED (>24h, any commit drift, or a recorded
+  `head` that no longer describes HEAD by ancestry), STALE (>7 days or >30 commits — goal lines
+  must be re-confirmed with the operator), LANDED (`mode: land*` — header-only, the work is
+  done). Drift never counts commits that touch only `.claude-sandbox/work` (store chores). The
+  label and the Next withhold read the same ancestry check, so a withheld Next is never FRESH:
+  a recorded head missing locally reads `AGED (recorded head not found locally)`, one that is
+  not an ancestor of HEAD (HEAD rewound behind it, or diverged) reads
+  `AGED (recorded head is not an ancestor)` — `STALE (<reason>)` when age or drift already
+  make it STALE.
 - **Current repo state outranks the manifest.** git log and the work-item store are the
   durable record; the manifest is only the reasoning. The injected precedence line says so:
   repo state beats the manifest; the manifest and ledger beat any machine summary.
@@ -71,12 +76,26 @@ TOC, read on demand: `path — one line on what it holds`.
   store is found (`WI_ROOT`, else `.claude-sandbox/work`, else `.work`), the hook names each
   id now done, dropped or missing as `DEAD CLAIM <id> (<status>)`, in every tier. Ids resolve
   as `wi` does (id, alias, unique prefix); `# comments` are ignored; only the first 50 are read;
-  entries that are not id-shaped are skipped and counted on one line. No store: silent.
+  entries that are not id-shaped are skipped and counted on one line
+  (`items: <N> unparseable entr(y|ies) skipped`) under its own heading, "Manifest `items:`
+  entries not checked against the store" — not under the dead-claims heading, since the store
+  contradicts nothing there. No store: silent. When the hook trims for budget it collapses
+  only the frontmatter `items:` list; an `items:` line in the body is left alone.
 - **Stale Next is withheld, not warned.** When the recorded `head` is not an ancestor of
-  HEAD, or HEAD is ≥1 commit past it, the hook replaces the `## Next` body with one line:
-  `Next withheld: head moved <N> commits since this manifest (<recorded>..<current>); run wi
-  prime and git log.` Other sections stay. Commits touching only `.claude-sandbox/work` (store
-  chores) do not count toward N. No time-based expiry — the head check covers it.
+  HEAD, or HEAD is ≥1 commit past it, the hook replaces the `## Next` body with one line.
+  Its variants:
+  - ahead, N ≥ 2: `Next withheld: head moved <N> commits since this manifest
+    (<recorded>..<current>); run wi prime and git log.`
+  - ahead, one commit: `... head moved 1 commit since this manifest (<recorded>..<current>); ...`
+  - not an ancestor (HEAD rewound behind the recorded head, or diverged from it; N counts
+    commits on HEAD's side only, so a pure rewind reads `0 commits`):
+    `... head moved <N> commits since this manifest (<recorded>..<current>, recorded head is
+    not an ancestor); ...`
+  - not found locally (N is unknowable): `... head moved ? commits since this manifest
+    (<recorded>..<current>, recorded head not found locally); ...`
+
+  Other sections stay. Commits touching only `.claude-sandbox/work` (store chores) do not
+  count toward N. No time-based expiry — the head check covers it.
 - A LANDED manifest skips both checks (no dead claims, Next not withheld): the work is done.
   Either check degrades to the plain manifest if git or the store fails.
 - Injection tiers: `compact` → full + ledger tail; `resume`/`fork` → full only when the file
