@@ -49,7 +49,7 @@ the context gauge — `5h` (session window), `7d` (weekly), and `$` where a spen
 each with the used percentage and a reset countdown, read from the official `rate_limits`
 field of the status-line payload. They appear only after the session's first API response,
 so an empty footer before the first reply is not a fault. API-key sessions never receive
-`rate_limits`, so they see none; the bars need no configuration and cannot be enabled for them.
+`rate_limits`, so they see none; the bars need no configuration and cannot be enabled for them. The same windows (used percentage and `resets_at`, numbers only) are recorded under `rate_limits` in the context-gate state file, where librarian-mode's fable-unavailable fallback reads the reset time.
 
 The name in parentheses is the explicitly set name from Claude Code's session registry (`/rename`, `--name`, or an agent naming itself through the peer channel) and otherwise the payload's `session_name` (the AI title); the line re-renders only on the next event, not instantly, unless `statusLine.refreshInterval` is set. The name is shown on one line whatever it contains (control characters and newlines collapse to spaces, invisible format characters such as bidi overrides and zero-width spaces are dropped, and it is cut to 60 terminal columns with an ellipsis, a CJK character or emoji counting as two). The registry is found by walking the hook's ancestor processes through `/proc`; without `/proc` (macOS) only the direct parent is checked, so a shell between the session and the script leaves just the payload title.
 
