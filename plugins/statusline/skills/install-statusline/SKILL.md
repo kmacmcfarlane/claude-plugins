@@ -28,8 +28,11 @@ The footer looks like this:
 
 ### Step 2: Run the installer
 
+Pass the user's arguments through unchanged (a scope flag and/or `--remove`; none means
+`--user`):
+
 ```bash
-python3 "${CLAUDE_PLUGIN_ROOT}/skills/install-statusline/scripts/install_statusline.py" --user
+python3 "${CLAUDE_PLUGIN_ROOT}/skills/install-statusline/scripts/install_statusline.py" $ARGUMENTS
 ```
 
 Expected output: `installed statusLine in PATH` (or `updated` when it was already there),
@@ -41,6 +44,10 @@ The command it writes is an absolute path under the plugin's data dir
 the plugin's SessionStart hook keeps the `current-hooks` link pointing at the installed
 version, and the installer creates that link itself if no session has run it yet. Running
 the installer again is harmless.
+
+**Exit code 1** with `is read-only; left unchanged` means the settings file is not writable
+by you. Nothing was written. Ask the user whether it is read-only on purpose; only on a
+go-ahead, run the same command with `--force` added.
 
 **Exit code 3** means the settings file already has a *different* status line (from another
 tool or your own script). Nothing was written. Ask the user whether to replace it; only on a
@@ -90,21 +97,22 @@ installer runs.
   between Claude Code and the script hides the `/rename` name until the payload carries it.
 
 Each render also writes this session's numbers (context used, window, plan usage) to
-`~/.claude/statusline/sensor/SESSION.json`, so hooks and tools that never see the status
+`~/.claude/statusline/sensor/SESSION.json` (under `$CLAUDE_CONFIG_DIR` when that is set), so hooks and tools that never see the status
 line payload can read exact depth and reset times. The format is documented in
 `references/sensor-contract.md`.
 
 ## Remove or move
 
 - Move to another scope: install in the new one, then remove from the old one.
-- Remove: `/install-statusline --remove` (with the scope flag it was installed with). It
+- Remove: `/install-statusline --remove` (add the scope flag it was installed with, e.g.
+  `/install-statusline --local --remove`). It
   deletes only an entry this plugin installed; a different status line needs `--force`.
 - Uninstall the plugin **after** removing the entry, in this order:
 
 ```bash
 python3 "${CLAUDE_PLUGIN_ROOT}/skills/install-statusline/scripts/install_statusline.py" --remove
 claude plugin uninstall statusline@kmacmcfarlane
-rm -rf ~/.claude/statusline
+rm -rf "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/statusline"
 ```
 
 Uninstalling first deletes the plugin's data dir, which leaves the settings entry pointing

@@ -1,6 +1,6 @@
 {
   "name": "statusline",
-  "description": "Always-on status line — context left, plan usage limits, model and session name at a glance (soft: context-guard adds epoch and checkpoint thresholds).",
+  "description": "Always-on status line — context left, plan usage limits, model and session name at a glance (optional: works with context-guard, which adds its epoch and checkpoint thresholds to the gauge).",
   "author": {
     "name": "Kyle McFarlane"
   },

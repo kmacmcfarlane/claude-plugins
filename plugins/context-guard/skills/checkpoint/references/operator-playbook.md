@@ -102,17 +102,13 @@ compaction. Two escape hatches:
    under `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/claude-kit/context-gate/` (the newest `.json`
    there is the live session; `gauge.json` is not a session). It refuses, exiting non-zero and
    writing nothing, when no state file exists for that id — a mistyped id, since a live
-   session always has one. The gate stays down until the next compaction or `/clear`. From a
-   Bash tool call inside the session (where Claude Code sets `CLAUDE_PLUGIN_ROOT`):
-
-```bash
-python3 "${CLAUDE_PLUGIN_ROOT}/hooks/mark_checkpoint.py" <session_id>
-```
-
-   That form fails in a plain terminal, where `CLAUDE_PLUGIN_ROOT` is unset. There, use the
-   stable plugin-data path; `ls -td … | head -1` picks the most recently refreshed
-   `context-guard-*` data dir if more than one exists (one per marketplace the plugin was
-   installed from — list them with plain `ls -d` and pick yours if unsure):
+   session always has one. The gate stays down until the next compaction or `/clear`. Run it
+   through the stable plugin-data path, which works the same from a Bash tool call inside the
+   session and from a plain terminal (`CLAUDE_PLUGIN_ROOT` is set for hooks, not for the Bash
+   tool, so a `${CLAUDE_PLUGIN_ROOT}/hooks/...` form does not work there). `ls -td … | head -1`
+   picks the most recently refreshed `context-guard-*` data dir if more than one exists (one
+   per marketplace the plugin was installed from — list them with plain `ls -d` and pick yours
+   if unsure):
 
 ```bash
 d=$(ls -td "${CLAUDE_CONFIG_DIR:-$HOME/.claude}"/plugins/data/context-guard-*/ | head -1)

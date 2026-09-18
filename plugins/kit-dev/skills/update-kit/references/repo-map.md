@@ -79,8 +79,8 @@ claude-plugins/
     ├── chat/                  (web-UI chat-session skills)
     │   └── skills/product-research/
     ├── context-guard/         (surviving the context window — a hook-owning plugin)
-    │   ├── hooks/             (gate, statusline sensor, ledger, rehydrate + tests)
-    │   └── skills/{checkpoint,install-statusline,usage-report}/
+    │   ├── hooks/             (gate, ledger, rehydrate, gauge.json publish + tests)
+    │   └── skills/{checkpoint,usage-report}/
     ├── dev-flow/              (plan before you code; the librarian that takes custody of a repo)
     │   └── skills/{investigate,implement,deep-investigation,chain-of-verification,librarian-mode}/
     ├── kit-dev/               (maintaining this kit itself — where THIS skill lives)
@@ -90,6 +90,9 @@ claude-plugins/
     ├── sandbox/               (isolated execution: claude-sandbox + checkout/worktree convention — a hook-owning plugin)
     │   ├── hooks/             (checkout guard + tests)
     │   └── skills/sandbox/
+    ├── statusline/            (always-on status line + its settings entry — a hook-owning plugin)
+    │   ├── hooks/             (statusline, sensor, owner + tests)
+    │   └── skills/install-statusline/ (installer script, references/sensor-contract.md)
     └── work-items/            (repo-durable work items + work-source provider interface)
         └── skills/work-items/ (wi CLI, references/, tests/)
 ```

@@ -2,7 +2,7 @@
 dir (so an expanduser fallback cannot reach the real ~/.claude), and the
 plugin env vars are removed. Scripts run as subprocesses, the way Claude Code
 runs them."""
-import json, os, subprocess, sys, tempfile, unittest
+import json, os, shutil, subprocess, sys, tempfile, unittest
 
 HOOKS = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PLUGIN = os.path.dirname(HOOKS)
@@ -64,6 +64,16 @@ class Hermetic(unittest.TestCase):
         rc, out, err = self.render(payload if payload is not None else {}, **kw)
         self.assertEqual((rc, err), (0, ""))
         return out
+
+    def plain_copy(self):
+        """The installer script of a copy of this plugin at a temp path that
+        is not under plugins/cache/, so owner.data_dir() cannot derive a data
+        dir from the script's own path - whatever path the suite runs from."""
+        dst = os.path.join(self.cfg, "src", "statusline")
+        if not os.path.isdir(dst):
+            shutil.copytree(PLUGIN, dst, ignore=shutil.ignore_patterns(
+                "__pycache__", "tests"))
+        return os.path.join(dst, os.path.relpath(INSTALLER, PLUGIN))
 
     # -- files -----------------------------------------------------------
 

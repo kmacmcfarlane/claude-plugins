@@ -12,9 +12,11 @@ Used by the install-statusline skill's script (explicit install and remove).
 - Anything else is foreign: never modified without an explicit force.
 
 Settings writes change only the `statusLine` key: the file is resolved through
-symlinks (a dotfiles link stays a link), read, changed, written to a temp file
-in the same dir with the original mode, then os.replace()d - never truncated in
-place. Messages name paths only, never setting values.
+symlinks (a dotfiles link stays a link), read, changed, re-serialised in its own
+layout (indent, final newline; see dumps_like), written to a temp file in the
+same dir with the original mode, then os.replace()d - never truncated in place.
+Nothing is written when nothing changes, and a read-only file is refused.
+Messages name paths only, never setting values.
 
 The own marker, <plugin data>/owner.json:
   {"v": 1, "state": "installed" | "removed", "settings": "<abs path>",
@@ -114,8 +116,8 @@ def _default_mode():
     return 0o666 & ~mask
 
 
-def atomic_write_json(path, data, mode=None):
-    """Write data to path's real target via a same-dir temp file and
+def atomic_write_text(path, text, mode=None):
+    """Write text to path's real target via a same-dir temp file and
     os.replace. Keeps the existing file's mode (else `mode`, else the umask
     default). On any failure the original is untouched and the temp removed;
     the error propagates."""
@@ -129,7 +131,7 @@ def atomic_write_json(path, data, mode=None):
     fd, tmp = sensor._mkstemp(d, "." + os.path.basename(real) + ".")
     try:
         with os.fdopen(fd, "w", encoding="utf-8") as f:
-            f.write(json.dumps(data, indent=2, ensure_ascii=False) + "\n")
+            f.write(text)
         os.chmod(tmp, mode)
         os.replace(tmp, real)
         tmp = None
@@ -139,6 +141,65 @@ def atomic_write_json(path, data, mode=None):
                 os.unlink(tmp)
             except OSError:
                 pass
+
+
+def atomic_write_json(path, data, mode=None):
+    atomic_write_text(path, json.dumps(data, indent=2, ensure_ascii=False) + "\n", mode)
+
+
+_INDENT = re.compile(r'\n([ \t]+)"')
+_ESCAPED = re.compile(r"\\u[0-9a-fA-F]{4}")
+
+
+def dumps_like(data, original):
+    """data serialised in the layout of `original` (the file's previous text):
+    the same indent unit (spaces or a tab), one-line when it was one line,
+    \\u escapes when it used them for non-ASCII, and a final newline when it
+    had one. For a file written by json.dumps / JSON.stringify with an indent -
+    what Claude Code writes - only the changed key's lines differ. With no
+    original, two-space indent and a final newline."""
+    kw = {"ensure_ascii": False, "indent": 2}
+    end = "\n"
+    if original and original.strip():
+        end = "\n" if original.endswith("\n") else ""
+        m = _INDENT.search(original)
+        if m:
+            kw["indent"] = m.group(1)
+        elif "\n" not in original.strip() and original.strip() != "{}":
+            kw["indent"] = None
+            kw["separators"] = (", ", ": ") if '": ' in original else (",", ":")
+        if original.isascii() and _ESCAPED.search(original):
+            kw["ensure_ascii"] = True
+    return json.dumps(data, **kw) + end
+
+
+class ReadOnly(SettingsError):
+    """A settings file the user cannot write (mode 0444, say)."""
+
+
+def write_settings(path, data, force=False):
+    """Replace the settings file at path (through a symlink) with `data`,
+    keeping its layout (dumps_like) and mode. A no-op when `data` equals what
+    is there; returns whether it wrote. Raises ReadOnly, writing nothing, when
+    the file exists but the user may not write it - replacing it would still
+    succeed in a writable dir, and that would override a deliberate
+    read-only - unless `force`."""
+    real = os.path.realpath(path)
+    try:
+        with open(real, encoding="utf-8") as f:
+            original = f.read()
+    except FileNotFoundError:
+        original = None
+    if original is not None:
+        try:
+            if json.loads(original) == data:
+                return False
+        except ValueError:
+            pass
+        if not force and not os.access(real, os.W_OK):
+            raise ReadOnly(f"{path} is read-only")
+    atomic_write_text(path, dumps_like(data, original))
+    return True
 
 
 def read_marker(data):

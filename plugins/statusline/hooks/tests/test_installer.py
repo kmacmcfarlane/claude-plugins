@@ -1,6 +1,6 @@
 """The install-statusline script and owner.py: explicit install and remove,
 fingerprints, predecessor-marker retirement, and the atomic settings write."""
-import json, os, stat, subprocess, sys, unittest
+import collections, json, os, stat, subprocess, sys, unittest
 from unittest import mock
 
 import helpers
@@ -20,9 +20,9 @@ class Base(helpers.Hermetic):
         os.makedirs(self.proj)
         self.settings = os.path.join(self.cfg, "settings.json")
 
-    def install(self, *args, env=None):
+    def install(self, *args, env=None, script=helpers.INSTALLER):
         e = dict(self.env, **(env or {}))
-        p = subprocess.run([sys.executable, helpers.INSTALLER, *args], cwd=self.proj,
+        p = subprocess.run([sys.executable, script, *args], cwd=self.proj,
                            capture_output=True, text=True, env=e, timeout=30)
         return p.returncode, p.stdout, p.stderr
 
@@ -168,7 +168,7 @@ class Install(Base):
     def test_no_data_dir_is_an_error_and_writes_nothing(self):
         e = dict(self.env)
         e.pop("CLAUDE_PLUGIN_DATA")
-        p = subprocess.run([sys.executable, helpers.INSTALLER], cwd=self.proj,
+        p = subprocess.run([sys.executable, self.plain_copy()], cwd=self.proj,
                            capture_output=True, text=True, env=e, timeout=30)
         self.assertEqual(p.returncode, 1)
         self.assertIn("data dir was not found", p.stderr)
@@ -179,11 +179,74 @@ class Install(Base):
         os.makedirs(found)
         e = dict(self.env)
         e.pop("CLAUDE_PLUGIN_DATA")
-        p = subprocess.run([sys.executable, helpers.INSTALLER], cwd=self.proj,
+        p = subprocess.run([sys.executable, self.plain_copy()], cwd=self.proj,
                            capture_output=True, text=True, env=e, timeout=30)
         self.assertEqual(p.returncode, 0, p.stderr)
         self.assertIn("statusline-mkt/current-hooks/statusline.py",
                       self.load()["statusLine"]["command"])
+
+
+class Layout(Base):
+    def test_install_remove_round_trip_is_byte_identical(self):
+        for text in ('{\n    "model": "opus",\n    "env": {\n        "A": "\u00e9"\n    },\n'
+                     '    "empty": {},\n    "list": []\n}',
+                     '{\n\t"a": [\n\t\t1,\n\t\t2\n\t]\n}\n',
+                     '{"a": 1, "b": [1, 2]}\n', '{"a":1}',
+                     '{\n  "a": "\\u00e9"\n}\n'):
+            with self.subTest(text=text):
+                self.write_json(self.settings, raw=text)
+                self.assertEqual(self.install()[0], 0)
+                self.assertEqual(self.install("--remove")[0], 0)
+                with open(self.settings, encoding="utf-8") as f:
+                    self.assertEqual(f.read(), text)
+
+    def test_only_the_status_line_lines_change(self):
+        # Claude Code writes settings as JSON.stringify(v, null, 2): the diff
+        # is the new key's lines plus the comma on the line before them.
+        old = {"model": "opus", "env": {"A": "1"}, "permissions": {"allow": ["Bash(ls)"]}}
+        text = json.dumps(old, indent=2) + "\n"
+        self.write_json(self.settings, raw=text)
+        self.install()
+        with open(self.settings) as f:
+            new = f.read()
+        want = dict(old, statusLine={"type": "command", "command": self.own_cmd()})
+        self.assertEqual(new, json.dumps(want, indent=2, ensure_ascii=False) + "\n")
+        old_lines, new_lines = (collections.Counter(t.splitlines()) for t in (text, new))
+        self.assertEqual(old_lines - new_lines, collections.Counter())  # nothing lost
+        self.assertEqual(sorted((new_lines - old_lines).elements()), sorted([
+            "  },", '  "statusLine": {', '    "type": "command",',
+            "    " + json.dumps("command") + ": " + json.dumps(self.own_cmd())]))
+
+    def test_unchanged_settings_are_not_rewritten(self):
+        self.install()
+        ino = os.stat(self.settings).st_ino
+        rc, out, _ = self.install()
+        self.assertEqual(rc, 0)
+        self.assertEqual(os.stat(self.settings).st_ino, ino)
+
+    @unittest.skipIf(hasattr(os, "geteuid") and os.geteuid() == 0, "root writes anything")
+    def test_read_only_settings_are_refused_without_force(self):
+        for args, st in (((), {"a": 1}),
+                         (("--remove",), {"a": 1, "statusLine": {
+                             "type": "command", "command": self.own_cmd()}})):
+            if os.path.exists(self.settings):
+                os.chmod(self.settings, 0o644)
+            self.seed(st)
+            os.chmod(self.settings, 0o444)
+            with open(self.settings, "rb") as f:
+                raw = f.read()
+            rc, out, err = self.install(*args)
+            self.assertEqual(rc, 1, args)
+            self.assertIn("is read-only; left unchanged", err)
+            with open(self.settings, "rb") as f:
+                self.assertEqual(f.read(), raw)
+        os.chmod(self.settings, 0o644)
+        self.seed({"a": 1, "statusLine": {"type": "command", "command": "x"}})
+        os.chmod(self.settings, 0o444)
+        rc, _, _ = self.install("--force")
+        self.assertEqual(rc, 0)
+        self.assertEqual(self.load()["statusLine"]["command"], self.own_cmd())
+        self.assertEqual(stat.S_IMODE(os.stat(self.settings).st_mode), 0o444)
 
 
 class Remove(Base):

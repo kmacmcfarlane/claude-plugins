@@ -42,8 +42,8 @@ class Standalone(helpers.Hermetic):
         self.write_json(os.path.join(pred, "statusline-installed.json"),
                         {"settings": settings, "command": "x"})
 
-        def run(*args, e=env):
-            p = subprocess.run([sys.executable, helpers.INSTALLER, *args], cwd=proj,
+        def run(*args, e=env, script=helpers.INSTALLER):
+            p = subprocess.run([sys.executable, script, *args], cwd=proj,
                                capture_output=True, text=True, env=e, timeout=30)
             self.assertClean(p.stdout + p.stderr, args)
             return p.returncode
@@ -64,7 +64,7 @@ class Standalone(helpers.Hermetic):
         bare = {k: v for k, v in env.items() if k != "CLAUDE_PLUGIN_DATA"}
         self.write_json(settings, {})
         os.rename(os.path.join(self.cfg, "plugins"), os.path.join(self.cfg, "gone"))
-        self.assertEqual(run(e=bare), 1)                 # no data dir
+        self.assertEqual(run(e=bare, script=self.plain_copy()), 1)   # no data dir
 
     def test_skill_md_never_leaks(self):
         with open(os.path.join(helpers.SKILL, "SKILL.md"), encoding="utf-8") as f:

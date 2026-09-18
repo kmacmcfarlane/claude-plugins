@@ -15,7 +15,8 @@ session started before the plugin loaded), this script creates it the same way.
            team, and the command is an absolute path on THIS machine
 --local    .claude/settings.local.json in the current directory (per user)
 --remove   delete the entry this plugin installed from the chosen scope
---force    replace or remove a statusLine that some other tool installed
+--force    replace or remove a statusLine that some other tool installed, or
+           write a settings file that is read-only
 
 Exit codes: 0 done (or nothing to do), 1 error (nothing written),
 3 a different statusLine is present and --force was not given (nothing written).
@@ -54,7 +55,7 @@ def remove(path, force):
         return 3
     if kind != "absent":
         d.pop("statusLine", None)
-        owner.atomic_write_json(path, d)
+        owner.write_settings(path, d, force)
     owner.retire_predecessor_markers(only_settings=path)
     if data and os.path.isdir(data):
         m = owner.read_marker(data)
@@ -86,7 +87,7 @@ def install(path, force, project):
         return 3
     cmd = owner.command_for(data)
     d["statusLine"] = {"type": "command", "command": cmd}
-    owner.atomic_write_json(path, d)
+    owner.write_settings(path, d, force)
     owner.write_marker(data, "installed", path, cmd)
     owner.retire_predecessor_markers()
     verb = {"absent": "installed", "own": "updated"}.get(kind, "replaced")
@@ -116,6 +117,10 @@ def main():
         if a.remove:
             return remove(path, a.force)
         return install(path, a.force, a.project)
+    except owner.ReadOnly as e:
+        print(f"{e}; left unchanged. Make it writable, or re-run with --force to "
+              f"replace it anyway.", file=sys.stderr)
+        return 1
     except owner.SettingsError as e:
         print(f"{e}; left unchanged - fix the file, then run this again.", file=sys.stderr)
         return 1
