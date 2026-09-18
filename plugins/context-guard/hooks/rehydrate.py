@@ -29,7 +29,10 @@ the mandatory tiers). Trim order: the frontmatter `items:` list, Scrolls, then
 Aware-of, never Doing/Goal/Read-in-full.
 
 SessionStart is also where orphaned state-dir dotfiles are swept
-(L.sweep_stale: stale temp files, dead sessions' lock files; once a day).
+(L.sweep_stale: stale temp files, dead sessions' lock files; once a day),
+and where the gauge policy is published (L.publish_gauge: gauge.json, the
+threshold anchors and labels for the statusline plugin; rewritten only when
+missing or different).
 
 Never exits non-zero: the staleness checks degrade to the plain manifest on
 any internal error, and anything else degrades to {}.
@@ -605,6 +608,7 @@ def main():
 
     L.update_state(sid, write_back)
     L.sweep_stale(keep=sid)
+    L.publish_gauge()
     healed = heal_statusline()
     if healed:
         sysmsg = f"{sysmsg} {healed}" if sysmsg else healed

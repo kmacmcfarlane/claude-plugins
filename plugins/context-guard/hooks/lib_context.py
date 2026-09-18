@@ -1,9 +1,16 @@
 """Shared state and depth accounting for the context-guard context-gate hooks.
 
 Depth sources, in order of preference:
-1. EXACT - written by statusline.py, which receives context_window.used_percentage
-   and context_window_size from Claude Code on every render. Hooks never get
-   those fields in their own input, so the status line doubles as the sensor.
+1. EXACT - written by the status line, which receives
+   context_window.used_percentage and context_window_size from Claude Code on
+   every render. Hooks never get those fields in their own input, so the status
+   line doubles as the sensor. Two records are read (sensor()): the statusline
+   plugin's neutral sensor file,
+   ${CLAUDE_CONFIG_DIR:-~/.claude}/statusline/sensor/<safe_sid>.json (v1:
+   `exact`, `rate_limits`; a record whose `v` is not 1 is treated as absent),
+   and the legacy `exact` block in this plugin's own state file (written by
+   context-guard's deprecated statusline.py until the compat release). The
+   one with the larger `exact.at` wins; ties go to the sensor file.
 2. INFERRED - from the transcript's per-message `usage` blocks (the numbers the
    API charged), window guessed from the session's peak. A guess can be wrong
    in either direction (live-fired 2026-09-16: a 1M session with a stale exact
@@ -14,7 +21,11 @@ Depth sources, in order of preference:
    token count is a floor for the re-derived one. A new epoch (reset_epoch)
    demotes the record to window-only: a fresh record written seconds before
    a compaction or /clear describes the OLD fill and must not gate the new
-   epoch, and the status line may not have re-rendered yet.
+   epoch, and the status line may not have re-rendered yet. context-guard
+   never writes the sensor file: _reset stamps `epoch_at` in its own state,
+   and any record with `at <= epoch_at` (from either path) is read as
+   window-only - which also covers a render whose payload predates the
+   compaction but whose write lands after it.
 
 State is per session under $CLAUDE_CONFIG_DIR/claude-kit/context-gate/, and is
 EPOCH-aware: a compaction (PostCompact) or /clear starts a new epoch, resetting
@@ -32,11 +43,17 @@ id becomes a file name only when it is a safe token; anything else is hashed,
 so no id escapes the dir. The lock file is opened O_NOFOLLOW, so a planted
 symlink cannot make it create a file outside the dir.
 
+publish_gauge() (called by the SessionStart rehydrate hook) writes
+claude-kit/context-gate/gauge.json (v1): the threshold ANCHORS and the gauge
+labels, for the statusline plugin to colour and label its gauge by the same
+policy the gate enforces. It is generated from ANCHORS, the constant
+thresholds() interpolates, so the two can never disagree.
+
 sweep_stale() (called by the SessionStart rehydrate hook) removes the dotfiles
 a killed writer leaves behind: temp files older than a day, and lock files of
 sessions whose state file is over 30 days old or gone. At most once a day.
 """
-import json, os, re, time
+import json, math, os, re, time
 try:
     import fcntl
 except ImportError:  # not POSIX: no lock, unique temp names still hold
@@ -45,9 +62,19 @@ except ImportError:  # not POSIX: no lock, unique temp names still hold
 DEFAULTS = (200_000, 1_000_000)
 EXACT_MAX_AGE_S = 600
 
+# The gate's threshold policy, in REMAINING tokens: (window, due, hard)
+# anchors, sorted by window; linear between, clamped outside. thresholds()
+# interpolates it and publish_gauge() serialises it - the single source.
+ANCHORS = ((200_000, 70_000, 40_000), (1_000_000, 150_000, 60_000))
+# The words the status line shows beside its gauge under `due` and `hard`.
+GAUGE_LABELS = {"due": "checkpoint DUE", "hard": "HARD gate"}
+GAUGE_V = 1
+SENSOR_V = 1
+
 
 def _base_dir():
-    return os.path.expanduser(os.environ.get("CLAUDE_CONFIG_DIR", "~/.claude"))
+    """${CLAUDE_CONFIG_DIR:-~/.claude}: an empty value counts as unset."""
+    return os.path.expanduser(os.environ.get("CLAUDE_CONFIG_DIR") or "~/.claude")
 
 
 def _state_dir():
@@ -77,6 +104,17 @@ def safe_sid(session_id):
 
 def state_path(session_id):
     return os.path.join(_state_dir(), safe_sid(session_id) + ".json")
+
+
+def sensor_path(session_id):
+    """The statusline plugin's sensor record for this session (read-only here;
+    the status line is its only writer). The dir is not created."""
+    return os.path.join(_base_dir(), "statusline", "sensor",
+                        safe_sid(session_id) + ".json")
+
+
+def gauge_path():
+    return os.path.join(_state_dir(), "gauge.json")
 
 
 def ledger_path(session_id):
@@ -310,23 +348,30 @@ def epoch(state):
 def reset_epoch(session_id, compact_summary=None):
     """New epoch: advisories and DUE/HARD accounting start over; the deferred
     flag clears; the checkpoint requirement re-arms. The ledger survives."""
-    return update_state(session_id, lambda st: _reset(st, compact_summary))
+    return update_state(session_id,
+                        lambda st: _reset(st, compact_summary, session_id))
 
 
-def _reset(st, compact_summary):
+def _reset(st, compact_summary, session_id=None):
+    # The fill the ending epoch reached, read under the lock before the demote
+    # below drops it (postcompact_epoch logs it in the ledger's epoch header).
+    # The status line's exact record (the fresher of the sensor file and the
+    # legacy in-state block) is the source; a top-level `tokens` (no current
+    # writer) is the fallback. Read before epoch_at moves, which would demote it.
+    try:
+        end = sensor(session_id, st) if session_id else (st.get("exact") or {})
+        st["epoch_end_tokens"] = int(end.get("tokens") or st.get("tokens") or 0)
+    except (TypeError, ValueError, AttributeError):
+        st["epoch_end_tokens"] = 0
     st["epoch"] = epoch(st) + 1
     st.pop("compact_deferred", None)
     st.pop("due", None)
     st["prompt_n"] = 0
+    # Any exact record stamped at or before this instant describes the old
+    # epoch (sensor() demotes it): the sensor file, which context-guard never
+    # writes, and a legacy block written back by a render that raced this reset.
+    st["epoch_at"] = time.time()
     ex = st.get("exact") or {}
-    # The fill the ending epoch reached, read under the lock before the demote
-    # below drops it (postcompact_epoch logs it in the ledger's epoch header).
-    # The status line's exact record is the source; a top-level `tokens` (no
-    # current writer) is the fallback.
-    try:
-        st["epoch_end_tokens"] = int(ex.get("tokens") or st.get("tokens") or 0)
-    except (TypeError, ValueError):
-        st["epoch_end_tokens"] = 0
     if ex.get("window"):
         # Demote, don't stamp: the record's tokens/pct describe the epoch that
         # just ended, so a still-fresh one would HARD-block a 3% session until
@@ -355,19 +400,61 @@ def checkpointed_this_epoch(state):
 def thresholds(window):
     """Action thresholds in REMAINING tokens, per threads/A-checkpoint-timing.md.
 
-    Anchored at (200K -> due 70K, hard 40K) and (1M -> due 150K, hard 60K);
-    linear between, clamped outside. A full checkpoint costs ~16-60K in the
-    live window and one operator exchange is p90 ~20K, so `hard` is the floor
-    below which only /checkpoint itself is affordable.
+    Interpolated over ANCHORS - (200K -> due 70K, hard 40K) and (1M -> due
+    150K, hard 60K) - linear between, clamped outside. A full checkpoint costs
+    ~16-60K in the live window and one operator exchange is p90 ~20K, so
+    `hard` is the floor below which only /checkpoint itself is affordable.
     """
     w = max(int(window or 0), 1)
-    lo_w, hi_w = 200_000, 1_000_000
+    lo_w, lo_d, lo_h = ANCHORS[0]
     if w <= lo_w:
-        return {"due": 70_000, "hard": 40_000}
-    if w >= hi_w:
-        return {"due": 150_000, "hard": 60_000}
-    f = (w - lo_w) / (hi_w - lo_w)
-    return {"due": int(70_000 + f * 80_000), "hard": int(40_000 + f * 20_000)}
+        return {"due": lo_d, "hard": lo_h}
+    for hi_w, hi_d, hi_h in ANCHORS[1:]:
+        if w < hi_w:
+            f = (w - lo_w) / (hi_w - lo_w)
+            return {"due": int(lo_d + f * (hi_d - lo_d)),
+                    "hard": int(lo_h + f * (hi_h - lo_h))}
+        lo_w, lo_d, lo_h = hi_w, hi_d, hi_h
+    return {"due": lo_d, "hard": lo_h}
+
+
+def gauge_record():
+    """The gauge.json (v1) content, generated from ANCHORS and GAUGE_LABELS."""
+    return {"v": GAUGE_V, "writer": "context-guard",
+            "thresholds": {"unit": "tokens_remaining", "interp": "linear_clamped",
+                           "anchors": [{"window": w, "due": d, "hard": h}
+                                       for w, d, h in ANCHORS]},
+            "labels": dict(GAUGE_LABELS)}
+
+
+def publish_gauge():
+    """Write gauge.json when it is missing, unreadable or differs from
+    gauge_record(): a unique temp file, then os.replace, so a reader never
+    sees a torn file. Returns True when it wrote. Never raises."""
+    tmp = None
+    try:
+        want = gauge_record()
+        path = gauge_path()
+        try:
+            with open(path) as f:
+                if json.load(f) == want:
+                    return False
+        except Exception:
+            pass
+        fd, tmp = _mkstemp(os.path.dirname(path), ".gauge.")
+        with os.fdopen(fd, "w") as f:
+            json.dump(want, f, indent=1)
+        os.replace(tmp, path)
+        tmp = None
+        return True
+    except Exception:
+        return False
+    finally:
+        if tmp:
+            try:
+                os.unlink(tmp)
+            except Exception:
+                pass
 
 
 def read_usage(transcript_path):
@@ -426,6 +513,68 @@ def window(peak, floor=0):
     return max(guess, int(floor or 0))
 
 
+def _finite(x):
+    """x as a float when it is a real finite number (not a bool), else None."""
+    if isinstance(x, bool) or not isinstance(x, (int, float)):
+        return None
+    x = float(x)
+    return x if math.isfinite(x) else None
+
+
+def sensor_record(session_id):
+    """The status line's sensor record (the whole v1 dict: `exact`,
+    `rate_limits`), or {} when it is absent, unreadable, not an object, or its
+    `v` is not 1 - a newer version is never misread. Never raises."""
+    try:
+        with open(sensor_path(session_id)) as f:
+            rec = json.load(f)
+    except Exception:
+        return {}
+    if not isinstance(rec, dict) or type(rec.get("v")) is not int \
+            or rec["v"] != SENSOR_V:
+        return {}
+    return rec
+
+
+def _sensor_exact(session_id):
+    """The sensor record's `exact` block, normalised, or {} unless it carries
+    a window >= 1 and finite pct, tokens and at."""
+    ex = sensor_record(session_id).get("exact")
+    if not isinstance(ex, dict):
+        return {}
+    win, tok, pct, at = (_finite(ex.get(k)) for k in ("window", "tokens", "pct", "at"))
+    if win is None or win < 1 or tok is None or pct is None or at is None:
+        return {}
+    return {"pct": min(max(pct, 0.0), 100.0), "tokens": max(int(tok), 0),
+            "window": int(win), "at": at}
+
+
+def sensor(session_id, state=None):
+    """The exact block depth() uses: the fresher (larger `at`; a tie goes to the
+    sensor file) of the statusline plugin's sensor record and the legacy
+    `exact` in this session's state (`state`, else loaded). A block stamped
+    at or before the state's `epoch_at` describes an earlier epoch and is
+    demoted to window-only ({"window", "at": 0}). Returns {} when neither
+    exists. Never raises."""
+    try:
+        st = state if state is not None else load_state(session_id)
+        legacy = st.get("exact") or {}
+        if not isinstance(legacy, dict):
+            legacy = {}
+        new = _sensor_exact(session_id)
+        if new and (not legacy or new["at"] >= (_finite(legacy.get("at")) or 0.0)):
+            ex = new
+        else:
+            ex = legacy
+        cut = _finite(st.get("epoch_at"))
+        at = _finite(ex.get("at"))
+        if cut is not None and at and at <= cut and ex.get("window"):
+            return {"window": int(ex["window"]), "at": 0}
+        return ex
+    except Exception:
+        return {}
+
+
 def depth(transcript_path, session_id=None):
     """Return (tokens, window, pct_full, source).
 
@@ -436,7 +585,7 @@ def depth(transcript_path, session_id=None):
     """
     ex = {}
     if session_id:
-        ex = load_state(session_id).get("exact") or {}
+        ex = sensor(session_id)
         if ex.get("window") and time.time() - ex.get("at", 0) < EXACT_MAX_AGE_S:
             return ex["tokens"], ex["window"], ex["pct"], "exact"
     cur, peak, boundary = scan_usage(transcript_path)
