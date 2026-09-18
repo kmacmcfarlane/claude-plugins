@@ -64,7 +64,8 @@ Names are **provisional** pending operator review.
 |---|---|---|---|
 | …project context for the `ai-scripts` Python CLI utilities | `ai-scripts` | **moved** to the expertise marketplace (local scaffold, remote pending) | — |
 | …structured product research in a web chat session | `chat` | current; *family home under review* | — |
-| …to survive the finite context window (gate, gauge, checkpoint, rehydration, token-spend report) | `context-guard` | **current** | — |
+| …to survive the finite context window (gate, checkpoint, rehydration, token-spend report) | `context-guard` | **current** | `statusline` (soft; exact depth when installed) |
+| …an always-on status line (context left, plan usage, model, session name) | `statusline` | **current** | `context-guard` (soft; epoch and checkpoint thresholds in the gauge when installed) |
 | …a plan before you code: investigate → reviewed plan → verified implementation, and a standing librarian that takes custody of a repo's work (files, dispatches, reviews, lands) | `dev-flow` | **current** | `work-items` (soft; `librarian-mode` finds `wi` via the repo tree, or the installed plugin's copy) |
 | …repo-durable work items and a pluggable work source | `work-items` | **current** | — |
 | …isolated execution for agent sessions (containers, and the checkout/worktree convention) | `sandbox` | **current** | claude-sandbox repo (external) |
@@ -87,8 +88,9 @@ The contributor decision tree. Answer in order; the first match wins.
 
 1. **Does it alter harness behavior?** Hooks, a status line, `settings.json` writes,
    background state. → It belongs *only* in a plugin whose stated aim is that behavior
-   (today `context-guard` for the context system, `sandbox` for the checkout/worktree
-   guard). Never bolt it onto a knowledge skill (principle 3).
+   (today `context-guard` for the context system, `statusline` for the status line and its
+   setting, `sandbox` for the checkout/worktree guard). Never bolt it onto a knowledge skill
+   (principle 3).
 2. **Is it pure stack/tool knowledge** — "make Claude good at X"? → Expertise family, which
    now lives in its own marketplace (`expertise`, repo `claude-expertise`) — not this repo.
    No hooks, no settings.
@@ -157,7 +159,8 @@ directory. Nothing in this repo may propose changing it.
 The plugin names above (`context-guard` — shipped at Phase 1, its data dir and settings path
 now live state; `dev-flow` — shipped at Phase 3, no state of its own; `work-items` — shipped
 at Phase 4, no state of its own, though `wi` stores in consuming repos are not affected by a
-rename; `sandbox`, `ralph`, `kit-dev`), the second marketplace's working name (`expertise` / repo
+rename; `statusline` — shipped with item 3c48, its data dir and settings path live state from
+first install; `sandbox`, `ralph`, `kit-dev`), the second marketplace's working name (`expertise` / repo
 `claude-expertise`), and the `chat` family's home are **provisional**, adopted so work can
 proceed, and confirmable or changeable at operator review. Names that have shipped state
 (a data dir, a settings path) are changed only via the rename procedure above.
@@ -184,7 +187,8 @@ The four skills need nothing else here. (`librarian-mode` lived here until it mo
 
 `plugins/kit-dev/` is what remains of the old kitchen-sink plugin after the factoring: its
 `hooks/`, `checkpoint` and `install-statusline` went to `context-guard` (except the checkout
-guard, which went to `sandbox` with the convention it enforces); the plan-first
+guard, which went to `sandbox` with the convention it enforces; the status line and
+`install-statusline` have since moved on to `statusline`); the plan-first
 lifecycle skills to `dev-flow`; the `work-items` skill to `work-items`; the `sandbox` skill to
 `sandbox` and the backlog trio to `ralph`; `goa`, `playwright` and `musubi-tuner` to the
 `expertise` marketplace; its `agents/` directory and the deprecated plan-execution skill they
@@ -238,27 +242,56 @@ Tests: `cd plugins/work-items/skills/work-items && python3 -m unittest discover 
 
 ### context-guard
 
-Survive the finite context window. Registers the context-gate hooks, the status-line sensor,
-the reasoning ledger and session rehydration — one of the two plugins here whose aim *is*
-harness behavior (the other is `sandbox`, for the checkout guard).
+Survive the finite context window. Registers the context-gate hooks, the reasoning ledger and
+session rehydration — one of the three plugins here whose aim *is* harness behavior (the
+others are `statusline`, for the status line, and `sandbox`, for the checkout guard).
 
 | Skill | Description |
 |---|---|
 | `checkpoint` | Land a long session's state before compaction; rehydration manifest + ledger |
-| `install-statusline` | Install the context gauge (tokens left, epoch, checkpoint state), which also feeds the gate hooks their exact depth |
 | `usage-report` | Token spend per session, model and sub-agent dispatch from the local transcripts (stub: parser, price table and tests; report tables follow) |
 
-It also carries `hooks/` — the depth gate, the status line sensor, the ledger, and the
-SessionStart rehydration/self-heal — with its unit tests
+It also carries `hooks/` — the depth gate, the ledger, the SessionStart rehydration, and
+`gauge.json`, the thresholds and labels it publishes for the status line — with its unit tests
 (`cd plugins/context-guard/hooks && python3 -m unittest discover -s tests -q`). The
 `usage-report` skill has its own suite:
 `cd plugins/context-guard/skills/usage-report && python3 -m unittest discover -s tests -q`.
 
+Soft dependency on `statusline`: its sensor record gives the gate exact depth; without it the
+depth is inferred from the transcript, which warns but never hard-blocks. Until the handover
+lands, `context-guard` still ships its older copy of the status line (`hooks/statusline.py`)
+and the SessionStart heal for a `statusLine` entry that points at it, so existing installs
+see no change; new installs take the status line from `statusline`.
+
 Upgrading from `claude-kit`: install `context-guard` and start one session; the SessionStart
-hook migrates an existing status-line entry to this plugin's data path. `/install-statusline`
-is the fallback. Hook state stays in `~/.claude/claude-kit/` (a historical directory name,
+hook migrates an existing status-line entry to this plugin's data path. For the status line
+itself, install `statusline` and run its `/install-statusline`, which replaces the old entry.
+Hook state stays in `~/.claude/claude-kit/` (a historical directory name,
 kept deliberately — renaming it would be a migration for cosmetics). See
 [Migrating from `claude-kit`](#migrating-from-claude-kit) for the whole-machine checklist.
+
+### statusline
+
+An always-on status line: a one-line footer with context left (bar, percent, tokens), plan
+usage limits with reset countdowns (Pro/Max), model, effort and session name. Installable on
+its own — the plugin to hand a coworker who wants only the footer.
+
+| Skill | Description |
+|---|---|
+| `install-statusline` | Install, move or remove the `statusLine` entry (user, project or local scope); coworker install steps |
+
+It also carries `hooks/` — `statusline.py` (the renderer), `sensor.py` (its per-session sensor
+record, `~/.claude/statusline/sensor/<session>.json`), `owner.py` (the settings entry's
+ownership and atomic write) and a SessionStart hook that keeps the update-stable
+`current-hooks` link — with its unit tests
+(`cd plugins/statusline/hooks && python3 -m unittest discover -s tests -q`). The data
+contract both ways is `skills/install-statusline/references/sensor-contract.md`; its
+`test_contract.py` checks parity with `context-guard` whenever both sit in this repo.
+
+Soft dependency on `context-guard`: when it is installed and active in the session, the gauge
+colours by its published thresholds and shows its epoch and `checkpoint DUE` / `HARD gate`
+labels; without it, default thresholds, no epoch, no labels, and nothing is written outside
+`~/.claude/statusline/`.
 
 ### sandbox
 
@@ -332,7 +365,11 @@ Or in `.claude/settings.json`:
 
 ```bash
 /plugin install context-guard@kmacmcfarlane
+/plugin install statusline@kmacmcfarlane
 ```
+
+After installing `statusline`, run `/install-statusline` once to add the footer to your
+settings.
 
 Or browse: `/plugin` → Discover tab. Install the plugins whose aims match your problems — the
 catalog above is the index; nothing here requires anything else here.
@@ -344,7 +381,7 @@ The `claude-kit` plugin is gone from the marketplace. Per machine, once:
 1. **Refresh the marketplace** so the new plugin list is visible:
    `/plugin marketplace update kmacmcfarlane`.
 2. **Install what that machine actually needs** (`/plugin install <name>@kmacmcfarlane`) —
-   the primary dev machine typically takes all seven; a work machine may want only
+   the primary dev machine typically takes all eight; a work machine may want only
    `context-guard`, plus `dev-flow` / `work-items` if you use the plan-first flow; an
    inference box like `lucy` wants expertise packs rather than these.
 3. **Uninstall `claude-kit` in the same `/plugin` sitting, before the first session**:
@@ -352,11 +389,11 @@ The `claude-kit` plugin is gone from the marketplace. Per machine, once:
    `sandbox`'s) would otherwise all fire in that session — two gates, two relays, two
    guards. It no longer exists in the marketplace, so removing it also stops the duplicate
    skills showing up.
-4. **Start one session** so `context-guard`'s SessionStart migration fires and moves an
-   existing status-line entry to the new data path. It reads the installer marker in the
-   legacy `plugins/data/claude-kit-*/` directory; if the uninstall has already cleared that
-   directory there is nothing to migrate and the old entry points at a dead path. Verify
-   the gauge still renders; if not, run `/install-statusline` — the fallback either way.
+4. **Take over the status line:** install `statusline` and run `/install-statusline`. It
+   recognises an entry that points into `plugins/data/claude-kit-*/` or
+   `plugins/data/context-guard-*/` by its path (no marker needed), repoints it at the
+   `statusline` plugin, and retires the old installer markers so no older heal restores the
+   old entry. Verify the gauge renders in the next session.
 5. **Expertise packs** (`goa`, `playwright`, `musubi-tuner`, `ai-scripts`) arrive when the
    `claude-expertise` repo gains a remote and that marketplace is registered. Until then they
    are not installable anywhere — this is the one gap the refactor leaves open.
@@ -377,6 +414,7 @@ claude-plugins/
 │   ├── kit-dev/
 │   ├── ralph/
 │   ├── sandbox/
+│   ├── statusline/
 │   └── work-items/
 ├── CLAUDE.md                    # Placement rules for contributors and agents
 └── README.md                    # This file — doctrine and catalog

@@ -84,3 +84,37 @@ Then `/checkpoint <mode>`. The ledger (`~/.claude/claude-kit/ledger/<session>.md
 historical directory name, kept across the move into `context-guard`) has been collecting decisions as you worked — the checkpoint is a delta, and after compaction the
 manifest + ledger are re-injected and outrank the machine summary (current repo state — git
 log, the work-item store — outranks the manifest).
+
+## If the gate blocks wrongly
+
+(Moved here from the installer skill when the status line became its own plugin,
+`statusline`: this is gate content.)
+
+A hard block needs a fresh exact reading; an inferred depth (stale or missing record) only
+warns. So a wrong block means a fresh-but-wrong record, e.g. one written just before a
+compaction. Two escape hatches:
+1. Pin the window: `CLAUDE_KIT_CONTEXT_WINDOW=1000000` (tokens) in the environment Claude
+   Code is launched from; the hooks then never guess the denominator.
+2. Emergency stand-down: record a checkpoint for the current epoch — exactly what
+   `/checkpoint` records — with the plugin's own `mark_checkpoint.py`. It writes through the
+   same locked read-modify-write as every hook, so a hook firing at the same moment cannot
+   drop the change (a hand-edit of the state file can). The session id names the state file
+   under `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/claude-kit/context-gate/` (the newest `.json`
+   there is the live session; `gauge.json` is not a session). It refuses, exiting non-zero and
+   writing nothing, when no state file exists for that id — a mistyped id, since a live
+   session always has one. The gate stays down until the next compaction or `/clear`. From a
+   Bash tool call inside the session (where Claude Code sets `CLAUDE_PLUGIN_ROOT`):
+
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/hooks/mark_checkpoint.py" <session_id>
+```
+
+   That form fails in a plain terminal, where `CLAUDE_PLUGIN_ROOT` is unset. There, use the
+   stable plugin-data path; `ls -td … | head -1` picks the most recently refreshed
+   `context-guard-*` data dir if more than one exists (one per marketplace the plugin was
+   installed from — list them with plain `ls -d` and pick yours if unsure):
+
+```bash
+d=$(ls -td "${CLAUDE_CONFIG_DIR:-$HOME/.claude}"/plugins/data/context-guard-*/ | head -1)
+python3 "${d}current-hooks/mark_checkpoint.py" <session_id>
+```

@@ -15,9 +15,9 @@ plugins/
     skills/
       product-research/
   context-guard/       # Surviving the context window (hook-owning)
-    hooks/             # Gate, statusline sensor, ledger, rehydrate + unit tests
+    hooks/             # Gate, ledger, rehydrate, gauge.json publish (+ deprecated statusline copy) + unit tests
     skills/
-      {checkpoint,install-statusline,usage-report}/
+      {checkpoint,usage-report}/
   dev-flow/            # Plan before you code; the librarian that takes custody of a repo
     skills/
       {investigate,implement,deep-investigation,chain-of-verification,librarian-mode}/
@@ -31,6 +31,10 @@ plugins/
     hooks/             # Checkout guard + hooks.json + unit tests
     skills/
       sandbox/
+  statusline/          # Always-on status line + its settings entry (hook-owning)
+    hooks/             # statusline, sensor, owner + hooks.json (current-hooks link) + unit tests
+    skills/
+      install-statusline/  # installer script, references/sensor-contract.md
   work-items/          # Repo-durable work items + the work-source provider interface
     skills/
       work-items/      # wi CLI, references/{format,provider-interface}.md, tests/
@@ -69,7 +73,8 @@ Where a new or moved thing goes. The full decision tree is in
 
 1. Alters harness behavior (hooks, status line, `settings.json` writes)? → only a plugin
    whose stated aim *is* that behavior (`plugins/context-guard/` for the context system,
-   `plugins/sandbox/` for the checkout/worktree guard). Never attach it to a knowledge skill.
+   `plugins/statusline/` for the status line and its settings entry, `plugins/sandbox/` for
+   the checkout/worktree guard). Never attach it to a knowledge skill.
 2. Pure stack/tool knowledge? → the expertise family, in its own marketplace (`expertise`,
    repo `claude-expertise`) — not this repo.
 3. For web-UI chat sessions rather than a coding harness? → the `chat` family (home under
@@ -85,7 +90,8 @@ current home is the real home, and is where files go.
 
 | Aim | Current home | Target home (planned) |
 |---|---|---|
-| Survive the finite context window (gate, gauge, checkpoint, rehydration, token-spend report) | `plugins/context-guard/` | `plugins/context-guard/` — **landed** (Phase 1) |
+| Survive the finite context window (gate, checkpoint, rehydration, token-spend report) | `plugins/context-guard/` | `plugins/context-guard/` — **landed** (Phase 1) |
+| Always-on status line (context left, plan usage, model, session name) | `plugins/statusline/` | `plugins/statusline/` — **landed** (3c48) |
 | Plan-before-code development flow, and a standing librarian that takes custody of a repo's work | `plugins/dev-flow/` | `plugins/dev-flow/` — **landed** (Phase 3) |
 | Repo-durable work items / work-source interface | `plugins/work-items/` | `plugins/work-items/` — **landed** (Phase 4) |
 | Isolated execution (containers; the checkout/worktree convention and its guard) | `plugins/sandbox/` | `plugins/sandbox/` — **landed** (Phase 5) |

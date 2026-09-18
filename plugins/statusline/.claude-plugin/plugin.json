@@ -1,0 +1,9 @@
+{
+  "name": "statusline",
+  "description": "Always-on status line — context left, plan usage limits, model and session name at a glance (soft: context-guard adds epoch and checkpoint thresholds).",
+  "author": {
+    "name": "Kyle McFarlane"
+  },
+  "homepage": "https://github.com/kmacmcfarlane/claude-plugins",
+  "repository": "https://github.com/kmacmcfarlane/claude-plugins"
+}
