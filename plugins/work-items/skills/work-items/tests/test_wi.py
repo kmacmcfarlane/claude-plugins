@@ -700,6 +700,124 @@ class TestInitShapes(WiTestCase):
         self.assertFalse((self.tmp / ".gitignore").exists())
 
 
+@unittest.skipUnless(shutil.which("git"), "git not available")
+class TestHostGitignoreUntouched(WiTestCase):
+    """7772 (7f00 recurrence): after init, no wi command may write the host
+    .gitignore. In operator-attention the operator removed the whole-dir
+    /.claude-sandbox/ line and committed (e5516d2), then the line reappeared
+    after a later `wi add`; the writer was the claude-sandbox launcher's
+    layout setup (trackInHost: false), not wi. These tests pin that every
+    wi subcommand, run the way an operator runs it (cwd auto-resolve, no
+    WI_ROOT), leaves the host .gitignore byte-identical."""
+
+    GI = "*.pyc\n.claude-sandbox/work/.lock\n"
+    AUTO = {"WI_ROOT": ""}   # empty = resolve .claude-sandbox/work from cwd
+
+    def git(self, repo, *args, check=True):
+        # isolate from the caller's git: no global/system config (signing,
+        # excludesFile, hooks) and no inherited GIT_DIR-style overrides
+        env = {k: v for k, v in os.environ.items()
+               if k not in ("GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE")}
+        env.update(GIT_CONFIG_GLOBAL=os.devnull, GIT_CONFIG_NOSYSTEM="1")
+        return subprocess.run(
+            ["git", "-C", str(repo), "-c", "user.email=t@t", "-c",
+             "user.name=t", "-c", "commit.gpgsign=false", "-c",
+             "core.excludesFile="] + list(args),
+            capture_output=True, text=True, check=check, env=env)
+
+    def wi_in(self, repo, args):
+        r = run(args, "", env=self.AUTO, cwd=repo)
+        self.assertEqual(r.returncode, 0, f"{args}: {r.stderr}{r.stdout}")
+        return r.stdout
+
+    def private_repo(self, name, gi=GI):
+        repo = self.tmp / name
+        (repo / ".claude-sandbox").mkdir(parents=True)
+        self.git(repo, "init", "-q")
+        (repo / ".gitignore").write_text(gi)
+        return repo
+
+    def assert_store_trackable(self, repo):
+        gi = (repo / ".gitignore").read_text()
+        self.assertNotIn("/.claude-sandbox/", gi.splitlines())
+        items = list((repo / ".claude-sandbox/work/items").glob("*.md"))
+        self.assertTrue(items)
+        for p in items:
+            ignored = self.git(repo, "check-ignore", "-q", str(p),
+                               check=False)
+            self.assertNotEqual(ignored.returncode, 0, f"{p} is ignored")
+
+    def every_command(self, repo):
+        """Run each subcommand once against the auto-resolved store,
+        asserting the host .gitignore never changes."""
+        gi_path = repo / ".gitignore"
+        before = gi_path.read_bytes()
+        iid = self.wi_in(repo, ["add", "second item", "--json"])
+        iid = json.loads(iid)["id"]
+        dep = json.loads(self.wi_in(repo, ["add", "dep item", "--json"]))["id"]
+        todo = repo / "TODO.md"
+        todo.write_text("# TODO\n\n## imported thing\n\nbody\n")
+        steps = [
+            ["init"], ["ls"], ["next", "--plain", "--non-interactive"],
+            ["show", iid], ["prime"], ["lint"],
+            ["claim", iid], ["handoff", iid, "--next", "go"],
+            ["set", iid, "priority", "1"], ["block", iid, "--on", dep],
+            ["unblock", iid, "--dep", dep], ["release", iid],
+            ["import-todo", str(todo)],
+            ["export", str(repo / "backlog.yaml"), "--format", "backlog-yaml"],
+            ["import", str(repo / "backlog.yaml"), "--format", "backlog-yaml"],
+            ["done", dep], ["archive", "--older-than", "0d"],
+        ]
+        choices = set(next(a for a in wi.build_parser()._actions
+                           if a.dest == "command").choices)
+        self.assertEqual({s[0] for s in steps} | {"add"}, choices,
+                         "every wi subcommand must be exercised here")
+        for step in steps:
+            self.wi_in(repo, step)
+            self.assertEqual(gi_path.read_bytes(), before,
+                             f"`wi {' '.join(step)}` changed host .gitignore")
+
+    def test_private_init_then_add_leaves_gitignore_alone(self):
+        repo = self.private_repo("init-add")
+        self.wi_in(repo, ["init"])
+        self.wi_in(repo, ["add", "first item"])
+        self.assertEqual((repo / ".gitignore").read_text(), self.GI)
+        self.assert_store_trackable(repo)
+        self.every_command(repo)
+
+    def test_operator_removed_ignore_line_is_not_reappended(self):
+        # the operator-attention sequence: the whole-dir line got in, the
+        # operator removed it and committed, then kept using wi
+        repo = self.private_repo("removed", gi="*.pyc\n/.claude-sandbox/\n")
+        self.wi_in(repo, ["init"])            # 'ignored' shape: untouched
+        self.assertEqual((repo / ".gitignore").read_text(),
+                         "*.pyc\n/.claude-sandbox/\n")
+        (repo / ".gitignore").write_text(self.GI)
+        self.wi_in(repo, ["add", "first item"])
+        self.git(repo, "add", "-A")
+        self.git(repo, "commit", "-qm", "track the store")
+        self.wi_in(repo, ["add", "after removal"])
+        self.assertEqual((repo / ".gitignore").read_text(), self.GI)
+        self.assert_store_trackable(repo)
+        self.every_command(repo)
+        diff = self.git(repo, "diff", "--", ".gitignore").stdout
+        self.assertEqual(diff, "")
+
+    def test_sidecar_shape_unchanged(self):
+        # sidecar keeps the 7f00 behaviour: init ensures the whole-dir
+        # ignore; other commands still never touch the host .gitignore
+        repo = self.private_repo("sidecar", gi="*.pyc\n")
+        self.git(repo / ".claude-sandbox", "init", "-q")
+        out = self.wi_in(repo, ["init"])
+        self.assertIn("sidecar git", out)
+        self.assertEqual((repo / ".gitignore").read_text(),
+                         "*.pyc\n/.claude-sandbox/\n")
+        self.wi_in(repo, ["add", "first item"])
+        self.every_command(repo)
+        self.assertEqual((repo / ".gitignore").read_text(),
+                         "*.pyc\n/.claude-sandbox/\n")
+
+
 class TestDetailsBlocks(unittest.TestCase):
     def test_details_content_never_becomes_items(self):
         import sys, os
