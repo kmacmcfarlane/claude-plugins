@@ -30,3 +30,6 @@ dispatch: implementer opus — executable logic (rehydrate.py hook) + judgement;
 
 impl: DONE 70b918b (5cdb), e2680e3 (72bf). Deviations: .work fallback, "?" for unknown head, LANDED skipped, operator-playbook one-clause edit. Open: AGED label still counts store chores (liveness()).
 dispatch: reviewer opus — rule 4
+
+review round 1 (opus): NEEDS_CHANGES — high 1 (template inline comment on items: breaks parsing; comments kept in ids), medium 2 (merge-base via raw subprocess; TimeoutExpired escapes, no top-level catch); lows 3 alias, 4 malformed items noise, 5 "?, not an ancestor" overclaims, 6 trim can drop Doing with huge items:, 7 missing tests, 8 LANDED skip undocumented, 9 fix: verb, nit 10 precedence wording. Librarian pulls in: liveness() AGED/STALE count uses the same store-only exclusion (same file, same complaint).
+dispatch: implementer opus fix round 1 — resume
