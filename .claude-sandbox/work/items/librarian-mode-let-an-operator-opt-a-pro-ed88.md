@@ -62,3 +62,15 @@ decision 25: product-code red flag scope
 - 2026-09-18 claimed by unknown@e3a28d2cc009
 
 dispatch: implementer opus — doctrine change (custody resolution, routing guidance), >3 files
+
+impl round 0: DONE_WITH_CONCERNS 35c04df (concerns: README/plugin.json narrower than skill; this repo has no ## Librarian so next start defaults Whole repo; dev-flow vs one-commit rules untested)
+dispatch: reviewer opus — rule 4 (implementer opus)
+
+review round 1 (opus): NEEDS_CHANGES. high 1 (dev-flow /implement branches main checkout, asks questions, dirty investigations); medium 2 (status stops at no-store before not-opted-in msg), 3 (Checks question may have <2 options; empty submit undefined), 4 (section without Scope: line undefined), 5 (README 72/171-179 + plugin.json:3 narrower than skill), 6 (kit-dev->dev-flow soft dep undeclared in catalog); low 7-9, nit 10-11.
+dispatch: implementer opus fix round 1 — resume, tier unchanged
+
+fix round 1: DONE f0bb818 (all 11 fixed; README soft-dep count corrected three->four)
+dispatch: reviewer opus review round 2 — resume, tier unchanged
+
+review round 2 (opus): SHOW_STOPPER. Prior 1-11 all FIXED. New: 12 [medium] principle 6: kit-dev description stretched to "any repo its operator opts in" (reverting reopens finding 5); 13 [low] /implement Step 1 looks only in .claude-sandbox/investigations; 14 [low] whole-repo carve-out not in the written section; 15 [nit] model-routing wrap. Reviewer: work-items soft dep in plugin.json is correct (principle 4).
+decision 26: product-repo custody home: (a) land in kit-dev now + follow-up to split librarian-mode into its own plugin [reviewer rec]; (b) split now, widening ed88 scope.
