@@ -22,3 +22,6 @@ updated: 2026-09-18
 ## Carried to F2
 - librarian-mode troubleshooting.md merge-conflict entry has the same hand-resolve wording; fix when librarian-mode leans on dev-cycle.
 - Standalone /dev-cycle in a librarian-custody repo ignores ## Librarian Scope/Exclude: decide whether dev-cycle must refuse or honour a declared Scope.
+
+## Carried from F1 review
+- plan-mode re-review: paste "none" for the changed: list; fix-loop.md:33 long line; conflict-round CHANGED may list base-brought files (drop them against the three-dot diff).
