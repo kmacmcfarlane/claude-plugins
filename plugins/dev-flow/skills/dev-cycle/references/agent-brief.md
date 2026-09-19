@@ -1,10 +1,10 @@
 # Agent brief template
 
 The dispatch brief for one change. Fill every placeholder from the run's bindings
-(`bindings.md`); delete nothing except the blocks marked conditional — the fix-round clause
-under Commit (only when resuming or re-dispatching the implementer with review findings),
-the Workflow block (only when the Workflow binding is set) and the dev-flow block (only for
-a feature with no plan yet, or a given plan). The agent starts with none of the
+(`bindings.md`); delete nothing except the blocks marked conditional — the fix-round and
+merge-conflict clauses under Commit (only in those rounds), the Workflow block (only when
+the Workflow binding is set) and the dev-flow block (only for a feature with no plan yet,
+or a given plan). The agent starts with none of the
 orchestrator's context and must be able to finish from this text alone. Send it as the
 prompt of one background `general-purpose` Agent. The orchestrator sets the `Model:` line
 from SKILL.md § Step 2 and passes the same value to the Agent tool's `model` field — the
@@ -42,7 +42,8 @@ Model: <sonnet|opus|fable> — <the routing signal that chose it, or "default">
 Acceptance: <one or two lines, copied from the item, plan or brief>
 Base branch: <the Base binding>
 Ground: <the Ground binding — the only ground you may touch>
-Files in scope: <explicit list, inside Ground; anything else is out of scope>
+Files in scope: <explicit list, inside Ground; anything else is out of scope — or
+                "undeclared" (bindings.md § Undeclared files)>
 
 ## Doctrine — read before writing
 
@@ -138,12 +139,23 @@ one recommit with every message clean — never a rebase, never onto the base br
 overrides the new-commits rule above; the no-rebase prohibition below still holds.
 Never write the secret's value anywhere: name it by commit sha, file and key only.
 
+<conditional — merge-conflict round only: include when Land's merge conflicted:>
+Your branch conflicts with <base> (the conflicting paths, from the aborted merge: <list>).
+Bring the base in as ONE NEW merge commit on top of <reviewed sha>:
+`git -C $WORKTREE merge --no-ff <base>`, resolve each conflict with this change's own
+approach as the tiebreaker — never take one side wholesale — re-run the verification
+above, and commit the merge. This is the one exception to the no-merge prohibition below;
+never rebase, and never merge anything but <base>. Report the merge sha under COMMIT and
+each resolution in one line under DEVIATIONS.
+
 ## Prohibitions
 
-- Do not merge, rebase, push, or check out any other branch.
+- Do not merge, rebase, push, or check out any other branch. (One exception: a
+  merge-conflict round merges <base> into this branch, as briefed above.)
 - Do not edit any file outside $WORKTREE.
 - Do not touch files outside "Files in scope", however tempting; list the temptation under
-  OPEN QUESTIONS instead. Nothing outside Ground is ever in scope.
+  OPEN QUESTIONS instead. When Files in scope is "undeclared", touch only what the
+  acceptance needs, and justify every changed file under CHANGED. Nothing outside Ground is ever in scope.
 - Do not run `git stash` in any form (see Verification).
 - Do not create README.md, CHANGELOG.md, or any documentation file the change did not ask
   for.
@@ -155,7 +167,8 @@ Never write the secret's value anywhere: name it by commit sha, file and key onl
 ## Report back (this exact shape)
 
 STATUS: DONE | DONE_WITH_CONCERNS | NEEDS_CONTEXT | BLOCKED
-CHANGED: files, one per line, absolute paths, with a phrase each
+CHANGED: files, one per line, absolute paths, with a phrase each (with undeclared
+         Files in scope: a one-line reason each)
 VERIFIED: each command and its outcome, verbatim
 DEVIATIONS: from the change as briefed, with why
 COULD NOT DO: anything the change asked for that is not in the commit
@@ -174,7 +187,9 @@ scope, Verification and Commit; set What to do to the /investigate bullet of the
 block alone, writing the series to the Series home binding; replace the prohibitions'
 worktree lines with "Do not edit, commit or stage anything in the repository; write only
 under the Series home". Report shape: STATUS, SERIES (absolute path), OPEN QUESTIONS (each
-marked blocking or not), DEVIATIONS.
+marked blocking or not), DEVIATIONS. The series is gated like a change, by
+`review-brief.md` § Plan-review variant; a fix round re-dispatches this brief with the
+findings verbatim and asks for a revision as new files or sections of the same series.
 
 ## Status meanings
 

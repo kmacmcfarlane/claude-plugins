@@ -15,12 +15,12 @@ order given, and asks the user only where the table says so.
 | Binding | What it is | Standalone resolves |
 |---|---|---|
 | **Ground** | What may be touched at all | The whole repo except `.claude-sandbox/` and `.claude/` |
-| **Files in scope** | What this change may touch, inside Ground | The item's or plan's files to modify; with no plan, the cycle brief's list |
+| **Files in scope** | What this change may touch, inside Ground | The item's or plan's files to modify, or the cycle brief's list; when none names files, `undeclared` (§ Undeclared files) |
 | **Checks** | Repo commands every change must pass, on top of the generic checklist | § Checks below |
 | **Workflow** | Free-text repo workflow notes the change must follow | A `Workflow:` line in CLAUDE.md's `## Librarian` section, read only; otherwise none |
 | **Base** | The branch the worktree starts from and the merge lands on | Named by the item or plan (implement's recorded base, re-verified); otherwise the default branch, § Base |
 | **Model floor** | The lowest tier any role on this change may run | A `model: <tier>` line in the item body, or the invocation's own words ("at least opus"); otherwise none |
-| **Record sink** | Where `dispatch:`, round, verdict, `checks:` and decision lines are appended | The item body; else the plan series' outcome file; else `<scratchpad>/dev-cycle/<slug>/record.md` |
+| **Record sink** | Where `dispatch:`, round, verdict, `checks:` and decision lines are appended | The item body when a store holds the target; otherwise always the scratchpad run record, `<scratchpad>/dev-cycle/<slug>/record.md`. Never a file in an investigation series: series files belong to `/implement` and are append-only |
 | **Decision channel** | How a decision reaches a human | § Decisions |
 | **Terminal action** | What Land does with a `CLEAR`, checked branch | Asked once at Land, § Landing |
 | **Series home** | Where the plan phase writes an investigation series | `$MAIN/.claude-sandbox/investigations/<slug>/`, the canonical path `/implement` reads |
@@ -45,6 +45,15 @@ For reference, the values `librarian-mode` supplies (its own SKILL.md is authori
 | Terminal action | `git merge --no-ff` into local `main`; the push is the librarian's, after its Report |
 | Series home | Its scratchpad (`.claude-sandbox/` is outside every Scope) |
 
+## Undeclared files
+
+When neither the item, the plan nor the cycle brief names the files to change, the Files in
+scope binding is `undeclared` — never a guess. The implementer brief then says
+`Files in scope: undeclared`, and the implementer lists every file it changed under
+CHANGED with a one-line reason each. The reviewer grades each changed file against the
+item's or plan's intent: a file the intent does not justify is a finding at medium. A
+declared list keeps the stricter rule: anything outside it is a finding at medium.
+
 ## Checks
 
 Take the first source that answers:
@@ -56,7 +65,8 @@ Take the first source that answers:
    three detected commands in one AskUserQuestion multiSelect question, recommended
    first, then always `None beyond the generic checklist` last; list any further
    detections in the question text so the user can paste them into Other. Ticked
-   commands and Other text are the checks; an empty submit or only `None…` means none.
+   commands and Other text are the checks; an empty submit or only `None…` means none;
+   `None…` ticked alongside commands is ignored.
 
 | Evidence | Offered command |
 |---|---|
@@ -109,8 +119,8 @@ rejected push stops: never pull, rebase or force around it — report it.
 ## Store
 
 A work-item store is optional. Look in the main checkout for `.claude-sandbox/work/`, then
-`.work/`; the first that exists is the store. No store: the record sink is the plan
-outcome file or the scratchpad record, and nothing is filed. Never run `wi init` from a
+`.work/`; the first that exists is the store. No store: the record sink is the scratchpad
+run record, and nothing is filed. Never run `wi init` from a
 cycle.
 
 `wi` itself comes from the repo's own tree when it carries the `work-items` plugin, else

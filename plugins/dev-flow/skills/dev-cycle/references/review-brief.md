@@ -47,7 +47,7 @@ Model: <opus|fable> — your tier; reviewer matches the implementer (<implemente
        Xh | unknown>); fallback
 Acceptance: <one or two lines, copied from the item, plan or brief>
 Ground: <the Ground binding>
-Files in scope: <explicit list; anything else in the diff is a finding>
+Files in scope: <explicit list; anything else in the diff is a finding — or "undeclared">
 Workflow: <the Workflow binding, verbatim, or "none">
 The implementer claims: <its STATUS line, then its VERIFIED and DEVIATIONS sections,
 pasted verbatim — you are testing these claims, not trusting them>
@@ -75,7 +75,9 @@ pasted verbatim — you are testing these claims, not trusting them>
 4. Check the doctrine one principle at a time (checklist section 3). Record pass or fail
    per principle, with the diff line for any fail.
 5. Check scope: anything in the diff outside "Files in scope" is a finding at medium,
-   however good the change is. Anything the acceptance asks for that the diff does not
+   however good the change is. When Files in scope is "undeclared", grade each changed
+   file against the acceptance and the implementer's one-line reason for it under
+   CHANGED: a file the intent does not justify is a finding at medium. Anything the acceptance asks for that the diff does not
    deliver is a finding at high.
 6. Try to break it. Write down at least three concrete edge cases before you look for
    them — empty input, a missing file, a second run, a path with a space, the branch name
@@ -162,6 +164,12 @@ git -C $WORKTREE diff <last reviewed sha> HEAD must show only this round's fixes
 secret's removal from any file that held it (a message-only leak adds nothing); anything
 more is a finding. Check every message in the new log is clean.
 
+<merge-conflict round only — the branch now carries a merge of <base>; add:>
+The new commits include <merge sha>, a merge of <base> made to resolve a conflict at Land.
+Review from <last reviewed sha> as usual, but judge the merge by its resolution only:
+`git -C $WORKTREE show <merge sha>` (git's combined diff shows just the hunks that differ
+from both parents). A resolution that drops either side's intent is a finding.
+
 1. For each finding in your previous report, verify by file:line whether it is fixed,
    partly fixed, or untouched. For each declined finding: if it is low or nit and the
    reason holds, record DECLINED (accepted); if the reason is insufficient, record OPEN —
@@ -179,6 +187,32 @@ more is a finding. Check every message in the new log is clean.
 
 The round is `CLEAR` only when every prior medium-or-above is FIXED or WITHDRAWN and no
 new medium-or-above appeared.
+
+## Plan-review variant
+
+For a plan-mode series (SKILL.md § Step 1): the same brief, severity scale, verdicts,
+prohibitions and report shape, with these changes. There is no worktree and no diff:
+replace the WORKTREE and Under review blocks with `SERIES=<absolute path of the series>`
+and "Read every file of the series in full", keep Item or Brief, Acceptance and the
+plan agent's claims, and drop the Checks block. Replace What to do with:
+
+```
+1. Completeness: every acceptance line has a planned change, with the files it touches
+   and how it will be verified. A missing one is a finding at high.
+2. Open questions: each is stated, marked blocking or not, and carries options with
+   their impact. A blocking question hidden as an assumption, or a decision the plan
+   takes that the acceptance leaves to a human, is a finding at medium.
+3. Feasibility: check the plan's claims about the code against the repository, read-only
+   — files, functions, commands and branches it names exist and behave as it says. A
+   plan built on a false claim is a finding at high.
+4. Doctrine: a plan that would break a principle or the Workflow binding when built is a
+   finding at medium, cited by principle.
+5. Scope: work the plan adds beyond the acceptance is a finding at medium.
+```
+
+A `NEEDS_CHANGES` goes back to the plan agent, which revises the series in place as new
+files or new sections, never rewriting what the reviewer read without saying so; the
+re-review variant applies with "the revised files" in place of fix commits.
 
 ## Verdict meanings
 

@@ -11,16 +11,17 @@ argument-hint: [wi-id | slug | plan-path] [plan | review branch]
 One change, carried from plan to merge through sub-agents. This session is the
 **orchestrator**: it resolves the run, routes, briefs, gates and lands, and never edits
 the change itself. A caller such as `librarian-mode` reads this skill as its cycle spec and
-supplies the run's bindings. Run standalone, it resolves them itself and asks the user at
-most three short questions: the cycle brief, the checks, and how to land.
+supplies the run's bindings. Run standalone, it resolves them itself and asks the user a
+few questions, each asked once: the cycle brief, the checks, how to land.
 
 ## Critical
 
-- **Nothing lands on the implementer's word.** Every `DONE` passes a review sub-agent
-  and the fix loop until `CLEAR`, then your own checks and diff reading.
+- **Nothing passes on an agent's word.** Every `DONE`, a plan-mode series included,
+  goes through a review sub-agent and the fix loop until `CLEAR`; a change then also
+  passes your own checks and diff reading before it lands.
 - **You never edit the change**, and never fix a finding, not even a nit: a rejected result
   is re-dispatched with a sharper brief. Your only writes are the record sink, the cycle
-  brief and the merge.
+  brief, a `.git/info/exclude` line (Step 3) and the merge.
 - **Every Agent call carries a `model`.** An unrouted sub-agent inherits your model, the
   dearest tier (Step 2).
 - **One target, one worktree, one cycle.** Several items are several cycles; running them
@@ -44,8 +45,8 @@ most three short questions: the cycle brief, the checks, and how to land.
 Modes:
 
 - **full** (default): Steps 0–6.
-- **plan**: Steps 0, 1 and 6 only — for a spike. It produces an investigation series; no
-  worktree, no review, no land.
+- **plan**: Steps 0, 1, 4 and 6 — for a spike. It produces a reviewed investigation
+  series; no worktree, and nothing lands.
 - **review `<branch>`**: coming, not available yet (gate an existing branch). Say so and
   stop.
 
@@ -83,10 +84,12 @@ Expected output: one short paragraph — target, mode, base, checks, record sink
 Runs for `plan` mode, a spike, and a feature with no plan. A bug, chore or refactor with
 clear acceptance skips it, and so does a target that already has a series or plan file.
 
-- **`plan` mode or a spike:** dispatch one plan agent at opus (judgement) with the plan
-  variant in `references/agent-brief.md`: /investigate, non-interactively, writing the
-  series to the Series home; no worktree. Record the series path. Its blocking open
-  questions go to the decision channel. Then Step 6, and stop.
+- **`plan` mode or a spike:** dispatch one plan agent, routed by Step 2 with opus as its
+  minimum (a plan is judgement) and the Model floor respected, with the plan variant in
+  `references/agent-brief.md`: /investigate, non-interactively, writing the series to
+  the Series home; no worktree. Record the series path. Its `DONE` goes to Step 4 with
+  the plan-review variant; a `NEEDS_CHANGES` re-dispatches the plan agent. After
+  `CLEAR`, its blocking open questions go to the decision channel; then Step 6.
 - **A feature in full mode:** no separate dispatch; the implementer runs /investigate
   then /implement in its worktree through the brief's dev-flow block — `librarian-mode`'s
   current block, reused until those skills own an orchestrated mode
@@ -129,7 +132,9 @@ re-dispatch or resume with findings = review round n+1; cap 4 review rounds.
    git -C "$MAIN" worktree add .claude/worktrees/<name> -b worktree-<name> <base>
    ```
 
-   Confirm `.claude/worktrees/` is gitignored.
+   Before adding it, if git does not ignore `.claude/worktrees/` (`git -C "$MAIN"
+   check-ignore -q .claude/worktrees/x` fails), append `.claude/worktrees/` to `"$MAIN"/.git/info/exclude`
+   (repo-local, never committed) and say so. Never edit `.gitignore`.
 2. **Claim** the item, when there is one and it is not already yours: `$WI claim <id>`.
 3. **Brief**: fill `references/agent-brief.md` from the bindings; send it to one
    background `general-purpose` agent with the routed `model`.
@@ -143,7 +148,8 @@ re-dispatch or resume with findings = review round n+1; cap 4 review rounds.
 
 1. **Dispatch a reviewer**: one background `general-purpose` agent, review-only, `model`
    per rule 4, briefed from `references/review-brief.md`, with the commands from
-   `references/review-checklist.md` plus the Checks binding — what you run at Land.
+   `references/review-checklist.md` plus the Checks binding — what you run at Land. A
+   plan-mode series gets that file's plan-review variant instead.
 2. **Severity scale** (defined in the review brief):
    - critical: data loss, security, breaks the harness or another plugin.
    - high: wrong on the main path; a failing or missing test for a claimed behaviour.
@@ -162,7 +168,8 @@ re-dispatch or resume with findings = review round n+1; cap 4 review rounds.
    recorded human decision, or the cap. Everything else, critical included, is resolved
    inside the loop.
 5. **Record the result** in the record sink: rounds, findings fixed, findings declined
-   with reasons, the final verdict and the HEAD sha it covers.
+   with reasons, the final verdict and the HEAD sha it covers, and the reviewer NOTES
+   worth keeping. Reviewer questions you cannot settle go on Step 6's `open questions:`.
 
 ## Step 5: Land
 
@@ -170,26 +177,32 @@ Only after a `CLEAR` recorded against the current HEAD.
 
 1. **Run the checks yourself** in the worktree: `references/review-checklist.md`, the
    Checks binding included. A verdict is not a check output.
-2. **Read the diff** — `git -C .claude/worktrees/<name> diff <base>...HEAD` in full —
-   against the repo's doctrine and the Workflow binding. Anything outside Files in scope
+2. **Read the diff** in full — `git -C "$MAIN"/.claude/worktrees/<name> diff
+   <base>...HEAD` — against the repo's doctrine and the Workflow binding. Anything outside Files in scope
    is a rejection, however good.
 3. **Take the terminal action.** A caller's binding as given. Standalone, ask once
    (`references/bindings.md` § Landing): `Merge to <base> locally, no push` first, then
    `Leave the branch`, then `Merge and push`. To merge, the main checkout must be on the
-   base and clean; otherwise stop and raise it — never stash around it:
+   base. Dirt the cycle wrote itself — the record sink or store, the Series home,
+   `.claude/worktrees/` — never blocks a merge; any other dirt the merge would touch or
+   the user owns means stop and ask, never stash
+   (`references/troubleshooting.md` § Landing):
 
    ```bash
    git -C "$MAIN" merge --no-ff -m "<message>" worktree-<name>
    ```
 
-   The message, with any `subject-fix:`: `references/fix-loop.md`. Re-run the checks on
-   the base after the merge.
+   The message, with any `subject-fix:`: `references/fix-loop.md`. A conflict: never
+   resolve it yourself — `git -C "$MAIN" merge --abort`, record it as a finding, and
+   re-dispatch it into the fix loop (`references/fix-loop.md` § A merge conflict). Re-run
+   the checks on the base after the merge.
 4. **Clean up**, only when merged and the worktree is clean: `git worktree remove` it and
-   `git branch -d` the branch. A dirty worktree is never removed automatically.
+   `git branch -d` the branch. A dirty worktree is never removed: report it and ask.
 5. **Close the item**: `$WI done <id> --note <merge-sha>`; for `Leave the branch`,
    `$WI handoff <id>` with `--next` naming the branch.
 
-A red check or a doctrine miss stops the landing and goes back into the fix loop as a
+A red check or a doctrine miss stops the landing: `$WI handoff <id> --blocked "<what>"`
+(no item: a `blocked:` line in the record sink), and it goes back into the fix loop as a
 finding, counting toward the cap. **Never merge to make a check pass later.**
 
 ## Step 6: Report
@@ -203,14 +216,15 @@ open questions: <list, or none>
 decisions needed: <numbered list, or none>
 ```
 
-`plan` mode reports the series path on `changed:` and its blocking questions under
-`decisions needed:`.
+`plan` mode reports the series path on `changed:`, its review on `verified:`, and its
+blocking questions under `decisions needed:`.
 
 ## Red flags
 
 Stop when you catch yourself:
 
-- **Fixing instead of re-dispatching** — editing the change, or fixing a finding yourself.
+- **Fixing instead of re-dispatching** — editing the change, fixing a finding, or
+  resolving a merge conflict yourself.
 - **Landing without a `CLEAR`**, or on a `CLEAR` for an older sha.
 - **Merging without running a check yourself.**
 - **Escalating a finding the loop could resolve** — a human hears show-stoppers, scope

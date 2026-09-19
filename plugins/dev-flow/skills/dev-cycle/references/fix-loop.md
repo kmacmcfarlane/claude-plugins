@@ -34,6 +34,24 @@ SKILL.md § Step 4.
 Then repeat until `CLEAR`, inside the cap: a fourth review that is not `CLEAR` blocks the
 change and goes to the decision channel.
 
+## A merge conflict
+
+The orchestrator never resolves a conflict by hand. When Land's merge conflicts:
+
+1. `git -C "$MAIN" merge --abort` at once, so the main checkout is as it was.
+2. Record it in the record sink as a finding — `conflict: <paths> against <base> at
+   <base sha>` — graded medium (the change does not merge). It opens a fix round and
+   counts toward the cap like any other.
+3. Re-dispatch or resume the implementer with the merge-conflict clause of
+   `agent-brief.md`: it merges `<base>` into `worktree-<name>` as one new commit,
+   resolving with the change's own approach as the tiebreaker. That is the brief's one
+   exception to its no-merge rule; a rebase stays forbidden.
+4. Re-review from the last reviewed sha, with the merge-conflict case of
+   `review-brief.md` § Re-review variant, then Land again from its step 1.
+
+A plan-mode series never reaches a merge; its fix rounds revise the series (the
+plan-review variant in `review-brief.md`).
+
 ## A bad commit subject
 
 A finding against a commit's subject or message is always graded **low**, unless the

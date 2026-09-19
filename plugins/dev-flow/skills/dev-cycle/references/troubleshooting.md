@@ -9,8 +9,9 @@ Pointed at from SKILL.md § Troubleshooting and from `fix-loop.md` for the permi
 - **A caller's handoff lacks a binding.** A setup error, not something to guess: stop
   before any dispatch and name the missing binding. Standalone resolution never fills in
   for a caller.
-- **No work-item store.** Normal. The record sink is the plan's outcome file or
-  `<scratchpad>/dev-cycle/<slug>/record.md`; nothing is filed and nothing is claimed.
+- **No work-item store.** Normal. The record sink is the scratchpad run record,
+  `<scratchpad>/dev-cycle/<slug>/record.md` — never a file in an investigation series;
+  nothing is filed and nothing is claimed.
   Never `wi init` from a cycle.
 - **A store, but no `wi`.** Resolve it with the lines in `bindings.md` § Store; an empty
   result after all three sources means `work-items` is not installed. Say so once and run
@@ -44,15 +45,27 @@ Pointed at from SKILL.md § Troubleshooting and from `fix-loop.md` for the permi
 
 ## Landing
 
-- **The main checkout is not on the base, or is dirty.** Stop and raise it; never stash,
-  switch branches or commit someone else's work around it. The `git stash` stack is
-  shared by every worktree and session of the repository.
+- **The main checkout is dirty.** Read `git -C "$MAIN" status --short` against what the
+  cycle wrote itself: paths under the record sink or the store (`$WI add`, `claim` and
+  appended lines), the Series home, and `.claude/worktrees/`. That dirt never blocks a
+  merge; leave it as it is. Any other dirt — a path the merge would touch, or anything
+  the user owns — stops the merge: say which paths and ask. Never stash, switch branches
+  or commit someone else's work around it; the `git stash` stack is shared by every
+  worktree and session of the repository.
+- **The main checkout is not on the base.** Stop and ask; never check the base out over
+  someone's work.
+- **`.claude/worktrees/` is not ignored.** Step 3 appends it to
+  `"$MAIN"/.git/info/exclude` and says so; never `.gitignore`, which is a tracked file.
 - **This session runs inside a worktree.** `git -C "$MAIN" …` still merges in the main
   checkout; the harness blocks Edit/Write there, not git. When the main checkout is
   another live session's working tree, prefer `Leave the branch` and say why.
-- **Merge conflict on the base.** Resolve by reading both sides with the change's approach
-  as tiebreaker; never take one side wholesale. If the resolution needs judgement,
-  re-dispatch with the moved base as the new base; the review gate runs again.
+- **Merge conflict on the base.** Never resolve it yourself: `git -C "$MAIN" merge
+  --abort`, record it as a finding, and re-dispatch into the fix loop, counting toward
+  the cap — `fix-loop.md` § A merge conflict.
+- **A red check in the worktree at Land.** `$WI handoff <id> --blocked "<what>"` (no
+  item: a `blocked:` line in the record sink); back into the fix loop as a finding,
+  counting toward the cap.
+- **A dirty worktree at cleanup.** Never removed: report its `git status --short` and ask.
 - **A check is red on the base after the merge.** Two green branches can be red together.
   Do not revert or patch by hand: file it (a new item when a store exists) or raise it,
   and report it on the `verified:` line.

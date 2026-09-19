@@ -7,8 +7,8 @@ are the contract; this file is how to apply them without re-deriving them per di
 
 A sub-agent inherits the parent's model unless the Agent tool's `model` field says
 otherwise, and that field wins over everything else. The orchestrator usually runs on the
-dearest tier, so an unrouted dispatch is the dearest dispatch — every implementer, every reviewer,
-every helper. Per million tokens the tiers sit roughly at fable 10/50, opus 5/25, sonnet
+dearest tier, so an unrouted dispatch is the dearest dispatch — every implementer, every
+reviewer, every helper. Per million tokens the tiers sit roughly at fable 10/50, opus 5/25, sonnet
 2/10 (in/out): sonnet is about five times cheaper than fable, opus about half. The brief
 constrains the work tightly enough that a cheap failure costs a re-dispatch, not a landing.
 

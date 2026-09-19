@@ -25,8 +25,9 @@ where such a repo's own gates come in.
 - [ ] Nothing under `.claude-sandbox/` or `.claude/`, nothing outside the Ground binding.
 - [ ] One commit on the branch, message `<verb>: <aspect> - <description>` — plus, per
       review fix round, one or more new commits on top of it. No amend, rebase or squash
-      of a reviewed commit — except the secret rebuild in `fix-loop.md`; nothing outside
-      the files in scope in any of them.
+      of a reviewed commit — except the secret rebuild in `fix-loop.md`; a merge of the
+      base only in a merge-conflict round (`fix-loop.md` § A merge conflict); nothing
+      outside the files in scope in any of them.
 
 ```bash
 git -C $W log --oneline $BASE..HEAD
@@ -221,9 +222,10 @@ test -f $W/.claude-plugin/marketplace.json && python3 -c "import json,os,sys; m=
 ## 6. After the merge, on the base
 
 - [ ] Sections 4 and 5 re-run in the main checkout on the base.
-- [ ] `git -C "$MAIN" status --short` shows nothing the merge introduced: empty, or the
-      same as just before the merge (dirt a caller names as expected, such as a newly
-      created work-item store, never blocks a merge).
+- [ ] `git -C "$MAIN" status --short` shows nothing the merge introduced. Dirt the
+      cycle wrote itself — the record sink or store, the Series home, `.claude/worktrees/`
+      — is expected and never blocks a merge; any other dirt stopped the merge before it
+      ran (`troubleshooting.md` § Landing).
 - [ ] The worktree was removed and the branch deleted only after both of the above.
 
 A result that passes every box lands. A fail found by the reviewer is a finding at medium
