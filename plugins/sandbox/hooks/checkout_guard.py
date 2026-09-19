@@ -10,7 +10,8 @@ worktree isolation / the sandbox skill's convention section.
 
 Allowed without question: linked-worktree cwds, non-git cwds, untracked files,
 paths outside the repo, anything under .claude-sandbox/ or .claude/, the
-CLAUDE_KIT_ALLOW_CHECKOUT_EDITS=1 env escape hatch, and a per-repo
+SANDBOX_ALLOW_CHECKOUT_EDITS=1 env escape hatch (CLAUDE_KIT_ALLOW_CHECKOUT_EDITS=1
+is honoured as a deprecated alias with the same semantics), and a per-repo
 .claude/allow-checkout-edits marker file.
 
 Every failure path fails OPEN (allow, exit 0): a guard that breaks edits on
@@ -28,8 +29,12 @@ BLOCK_MSG = (
     "This file is tracked in the main checkout. Enter a worktree first "
     "(EnterWorktree) or delegate to an Agent with worktree isolation; see the "
     "sandbox skill's checkout/worktree convention. Escape hatches: "
-    "CLAUDE_KIT_ALLOW_CHECKOUT_EDITS=1 or a .claude/allow-checkout-edits file."
+    "SANDBOX_ALLOW_CHECKOUT_EDITS=1 or a .claude/allow-checkout-edits file."
 )
+
+# Canonical opt-out first; the CLAUDE_KIT_ name is a deprecated alias kept so
+# existing env files keep working. Either one set to exactly "1" allows.
+ALLOW_ENV_VARS = ("SANDBOX_ALLOW_CHECKOUT_EDITS", "CLAUDE_KIT_ALLOW_CHECKOUT_EDITS")
 
 
 def git(cwd, *args):
@@ -63,7 +68,7 @@ def main():
     except Exception:
         allow()
 
-    if os.environ.get("CLAUDE_KIT_ALLOW_CHECKOUT_EDITS") == "1":
+    if any(os.environ.get(v) == "1" for v in ALLOW_ENV_VARS):
         allow()
 
     tool_input = inp.get("tool_input") or {}
