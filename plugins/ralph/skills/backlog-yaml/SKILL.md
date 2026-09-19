@@ -14,8 +14,8 @@ All backlog reads and writes MUST use `python3 .claude-sandbox/scripts/backlog/b
 item in git. `backlog.yaml` is the **default work-source provider for unattended ralph
 runs**, because `next-work --claim` is atomic and `validate --strict` is enforceable in a
 loop. The verb contract it implements — and the exit-code and canonical-state conventions a
-consumer must honour — is documented in the `work-items` skill's
-`references/provider-interface.md`; read it before writing anything that drives a backlog
+consumer must honour — is documented by the `work-items` plugin (its provider interface,
+the verb contract); read it before writing anything that drives a backlog
 from a loop. Two things that document settles and this one does not: closure is a *policy*
 difference, not a verb (agents advance status but never set `status: done` — see
 `/backlog-grooming`), and the contract reserves a `provider:` config key for future
