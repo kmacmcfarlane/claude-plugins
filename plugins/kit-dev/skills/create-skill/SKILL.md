@@ -35,13 +35,13 @@ Before writing any skill, consult `references/best-practices.md` for Anthropic's
 
 4. **Decide on settings:**
    - `disable-model-invocation`: default `false` (Claude can invoke automatically). Set `true` for skills that should only be invoked by the user typing `/<name>`. Use `true` for destructive operations, interactive workflows, or commands requiring human judgment. Use `false` for reference/context skills that should auto-activate on relevant keywords. **If it's not obvious which is correct, ask the user before writing the skill.**
-   - `allowed-tools`: list only the tools the skill actually needs. Common sets:
+   - `allowed-tools`: pre-approves the listed tools for the turn that invokes the skill; it never restricts (every tool stays callable, and permission settings govern the rest), and an empty list pre-approves nothing (the docs grant only the listed tools; nothing else is pre-approved). List only the tools that should run without prompting; never pre-approve side effects nobody needs. Common sets:
      - Read-only research: `Read, Glob, Grep`
      - Code modification: `Read, Write, Edit, Glob, Grep, Bash`
      - Bash-heavy: `Bash, Read, Glob`
    - `argument-hint`: a brief hint shown in autocomplete (e.g. `<file-path>`, `<issue-number>`)
    - `context: fork` if the skill should run in an isolated subagent
-   - Optional fields: `license`, `compatibility`, `metadata` (author, version, mcp-server, category, tags)
+   - Optional fields: `model`, `license`, `compatibility`, `metadata` (author, version, mcp-server, category, tags). House rule: every skill declares the five keys in the structure below; any other field must be one the Claude Code skills docs define. The set is closed because undocumented keys are usually typos, and uploads to claude.ai or the Skills API hard-fail on unknown keys. The allowed list lives in `references/frontmatter-reference.md`.
 
 5. **Write the SKILL.md** using progressive disclosure:
    - **Level 1 (frontmatter)**: Always loaded. Just enough for Claude to know when to use the skill.
