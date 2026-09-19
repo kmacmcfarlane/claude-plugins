@@ -104,7 +104,7 @@ Before writing any skill, consult `references/best-practices.md` for Anthropic's
    - Folder name must match the `name` field in frontmatter.
    - Do NOT include a `README.md` inside the skill folder. All documentation goes in `SKILL.md` or `references/`.
    - No XML angle brackets anywhere in frontmatter.
-   - To point into a sibling skill of the same plugin, name it plus a bare path — the `other-skill` skill's `references/x.md` (`x.md` is the placeholder the review lint skips). Never a parent-directory path, never a path into another plugin.
+   - To point into a sibling skill of the same plugin, put its backticked name right before a bare path: the `other-skill` skill's `references/x.md`. Never a parent-directory path, never a path into another plugin.
 
 7. **Create the skill directory and file:**
    - **Decide where it lives.** A skill that only makes sense inside one project goes in that

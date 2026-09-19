@@ -39,9 +39,9 @@ git -C $W diff --stat main...HEAD
       variable (the two tokens the lint below greps for).
 - [ ] No `README.md` inside the skill folder.
 - [ ] SKILL.md under ~5000 tokens; detail lives in `references/`.
-- [ ] Every `references/*.md` the SKILL.md names exists: in the skill itself, or, when the
-      line or the one before names a sibling skill of the same plugin in backticks, in that
-      sibling (CLAUDE.md § Cross-skill references). `references/x.md` is the reserved
+- [ ] Every `references/*.md` the SKILL.md names exists: in the skill itself, or, for a
+      sibling pointer written `` `name` skill's `references/…` `` (CLAUDE.md's Cross-skill
+      references convention), in that named sibling. `references/x.md` is the reserved
       placeholder for examples and is skipped.
 
 ```bash
@@ -58,15 +58,27 @@ for s in $(git -C $W diff --name-only main...HEAD | grep -o 'plugins/[^/]*/skill
   desc=$(sed -n 's/^description: *//p' $d/SKILL.md | head -1); test ${#desc} -le 1024 || echo "FAIL: description ${#desc} chars"
   grep -rn '[.]/\|CLAUDE_SKILL_DI[R]' $d && echo "FAIL: non-bare reference path"
   wc -w $d/SKILL.md
-  p=$(dirname $d)
-  grep -on '\(^\|[^/A-Za-z0-9_.-]\)references/[A-Za-z0-9_.-]*\.md' $d/SKILL.md | while IFS=: read n m; do
-    r=references/${m#*references/}
-    test "$r" = references/x.md && continue
-    test -f $d/$r && continue
-    ctx=$(sed -n "$((n>1 ? n-1 : 1)),${n}p" $d/SKILL.md); hit=
-    for sib in $(ls $p); do case "$ctx" in *"\`$sib\`"*) test -f $p/$sib/$r && hit=$sib;; esac; done
-    test -n "$hit" && echo "ok (sibling $hit): $r" || echo "FAIL: missing $r (line $n)"
-  done
+  python3 - $d <<'PY'
+import os, re, sys
+d = sys.argv[1]; p = os.path.dirname(d); fence = False
+lines = open(d + '/SKILL.md').read().split('\n')
+for n, line in enumerate(lines, 1):
+    if line.lstrip().startswith('```'): fence = not fence
+    prev = lines[n - 2] if n > 1 else ''
+    for m in re.finditer(r'([^\s`(\'"]*/)?(references/[\w.-]+?\.md)\b', line):
+        pre, r = m.group(1), m.group(2)
+        if pre:  # a path into some skill by directory; fenced example output is exempt
+            if not fence: print(f'FAIL: path by directory, use the sibling form: {pre}{r} (line {n})')
+            continue
+        if r == 'references/x.md' or os.path.isfile(f'{d}/{r}'): continue
+        named = re.search(r"`([\w-]+)`(?: skill)?'s\s+`?$", prev + ' ' + line[:m.start()])
+        if not named: print(f'FAIL: missing {r} (line {n})'); continue
+        sib = named.group(1)
+        if sib == os.path.basename(d) or not os.path.isdir(f'{p}/{sib}'):
+            print(f'FAIL: `{sib}` is not a sibling in this plugin: {r} (line {n})')
+        elif os.path.isfile(f'{p}/{sib}/{r}'): print(f'ok (sibling {sib}): {r}')
+        else: print(f'FAIL: missing {r} in sibling {sib} (line {n})')
+PY
 done
 ```
 
@@ -75,11 +87,14 @@ that quotes it — which is why the pattern above is written with a bracket clas
 lint file passes its own lint. A hit in a code block that genuinely needs the prefix (rare)
 is reviewed by eye, not waved through.
 
-The reference check reads a path only where it starts a token, so a longer path that merely
-ends in `references/…` (a file listing, another plugin's tree) is not taken for a pointer.
-The skill's own file is tried first; failing that, a sibling pointer passes only when the
-named sibling's file exists. A path into another plugin, or into a sibling that lacks the
-file, still fails.
+The reference check tries the skill's own file first. Failing that, the path must be a
+sibling pointer: the backticked name immediately before it (`` `name` skill's `` or
+`` `name`'s ``, on the same line or wrapped from the one before) must be another skill of
+this plugin that has the file. Any other named skill, including one in another plugin, fails;
+so does a bare mention without backticks. A path that reaches a skill's `references/` by
+directory (`beta/references/…`, `plugins/…/references/…`) fails outside a fenced block — use
+the sibling form; inside a fence it is taken for example output and skipped. `.mdx` and
+other longer extensions are not read as `.md`.
 
 ## 3. Doctrine
 
