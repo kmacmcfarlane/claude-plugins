@@ -16,8 +16,8 @@ updated: 2026-09-19
 07c3 plan §F1: new plugins/dev-flow/skills/dev-cycle (full + plan modes, standalone bindings); README/CLAUDE.md layout/plugin.json/marketplace.json in the same commit; librarian-mode untouched. Size L; opus/opus.
 
 ## Handoff
-- doing: fix round 3 (last before cap 4) running in worktree 325d on top of 20e68f2
-- next: review round 4 (resume the F1 reviewer) -> land; non-CLEAR -> operator
+- doing: review round 4 (final) running; impl at 3edc2a8
+- next: CLEAR -> land; else block + ask operator
 - blocked: —
 - learned: —
 
@@ -52,3 +52,6 @@ dispatch: reviewer opus review round 3 — resume
 
 review round 3 (opus): NEEDS_CHANGES — medium 1 (reviewer never given CHANGED reasons; union of CHANGED across rounds), 2 (plan re-review has no baseline: record serial hashes); lows 3 (fallback misses a dropped change side), 4 (open-question fields per investigation-format). Last fix round; mediums only -> stays opus.
 dispatch: implementer opus fix round 3 (last) — resume
+
+fix round 3 (opus): DONE 3edc2a8 (cumulative changed: block; serial sha256 baseline; both-sided fallback; open-question fields per format).
+dispatch: reviewer opus review round 4 (final) — resume
