@@ -2,12 +2,13 @@
 id: review-checklist-3-points-at-a-readme-do-f66d
 title: review-checklist § 3 points at a README doctrine section that does not exist
 type: chore
-status: doing
+status: blocked
 priority: 4
 owner: unknown@e3a28d2cc009
 claimed: 2026-09-18T19:32Z
+blocked: bundled in worktree d72e; review cap hit - decision 35
 created: 2026-09-16
-updated: 2026-09-18
+updated: 2026-09-19
 refs:
   - reviewer report, item claude-md-conventions-add-a-hooks-entry-e01a
 ---

@@ -2,12 +2,13 @@
 id: review-brief-md-says-after-the-implement-2d2b
 title: review-brief.md says 'after the implementer pushes fix commits' — reword to 'commits'
 type: chore
-status: doing
+status: blocked
 priority: 4
 owner: unknown@e3a28d2cc009
 claimed: 2026-09-18T19:32Z
+blocked: bundled in worktree d72e; review cap hit - decision 35
 created: 2026-09-16
-updated: 2026-09-18
+updated: 2026-09-19
 refs:
   - reviewer report, item librarian-mode-push-main-after-each-repo-e3a9
 ---

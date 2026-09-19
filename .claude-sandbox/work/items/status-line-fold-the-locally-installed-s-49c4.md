@@ -2,10 +2,11 @@
 id: status-line-fold-the-locally-installed-s-49c4
 title: "status line: fold the locally installed status line into the plugins repo"
 type: feature
-status: todo
+status: done
 priority: 2
 created: 2026-09-17
-updated: 2026-09-17
+updated: 2026-09-19
+closed: 2026-09-19
 refs:
   - operator message 2026-09-17
 ---
@@ -30,3 +31,6 @@ Operator 2026-09-17: the status line appears to be installed only locally, not d
   remaining gap is any config dir whose statusLine points at a hand-copied path. Next: operator reports what
   statusLine shows in the config dir where they saw it (test scenario 2), then either close as covered by 9b93
   or scope a migration for hand-copied paths.
+
+## Notes
+- 2026-09-19 done: superseded: the statusline plugin (3c48) installs itself and takes over hand-copied/predecessor entries

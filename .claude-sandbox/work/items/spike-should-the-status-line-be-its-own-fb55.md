@@ -2,10 +2,11 @@
 id: spike-should-the-status-line-be-its-own-fb55
 title: "spike: should the status line be its own plugin?"
 type: spike
-status: todo
+status: done
 priority: 3
 created: 2026-09-17
-updated: 2026-09-17
+updated: 2026-09-19
+closed: 2026-09-19
 refs:
   - operator message 2026-09-17
 ---
@@ -30,3 +31,6 @@ Operator question 2026-09-17: factor the status line out of context-guard into i
 - OPERATOR 2026-09-17: d63e decision 14 answered (d); status line may become its own plugin without a hard dependency.
 
 - OPERATOR 2026-09-18: DECIDED — split the status line into its own plugin, installable independently, to share with coworkers ("I want to be able to share that with some of my coworkers and have it installed independently of the other plugins"). This answers the spike and decision 16 (the new plugin owns the statusLine setting and installer).
+
+## Notes
+- 2026-09-19 done: decided 2026-09-18: yes; delivered by 3c48

@@ -2,11 +2,12 @@
 id: status-line-its-own-independently-instal-3c48
 title: "status line: its own independently installable plugin"
 type: feature
-status: todo
+status: done
 priority: 1
 parent: spike-should-the-status-line-be-its-own-fb55
 created: 2026-09-18
-updated: 2026-09-18
+updated: 2026-09-19
+closed: 2026-09-19
 refs:
   - operator message 2026-09-18
 ---
@@ -23,3 +24,6 @@ Operator 2026-09-18: split the status line out of context-guard into its own plu
 - Name `statusline` (told the operator; no objection). Neutral sensor path ~/.claude/statusline/sensor/<sid>.json (v1), no lock (single writer) — deliberate deviation from this item's "same record, locked write" acceptance: nothing claude-kit-branded leaks to coworkers; context-guard reads both paths for one release. context-guard publishes claude-kit/context-gate/gauge.json (v1 anchors/labels); statusline's context-guard mode needs gauge.json v1 AND this session's state file. First-session self-install into the enabled scope, never over a foreign entry. Only-context-guard installs keep a deprecated copy one release with a notice, no settings writes. Findings: `claude plugin uninstall` deletes the data dir unless --keep-data (remove the setting first); the operator's live statusLine points into claude-kit-kmacmcfarlane/ with no marker -> takeover recognises legacy by command path.
 - Risk: stale worktree-context-guard-turn-gate (8cc2, Sep 4) changes the lib_context API — conflicts with F1 if revived.
 Features: F1 context-guard side of the contract (ANCHORS, dual-path read, epoch-start demotion, gauge.json) — M, fable (HARD gate) / opus fallback; F2 statusline plugin + catalog same commit — L, opus; F3 statusline SessionStart self-heal/takeover/first install/prune — M, opus; F4 context-guard handover + dev-flow model-routing Fallback path — M, opus (F3, F4 parallel after F2); F5 one release later: delete compat — S, opus.
+
+## Notes
+- 2026-09-19 done: split landed: F1 69d3283, F2 1d8dc1b, F3 29cc134, F4 ad71f30, docs a618a04; F5 (a95a) follows one release later
