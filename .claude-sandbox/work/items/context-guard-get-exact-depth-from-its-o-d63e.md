@@ -2,10 +2,12 @@
 id: context-guard-get-exact-depth-from-its-o-d63e
 title: "context-guard: get exact depth from its own hooks, not the status line"
 type: feature
-status: todo
+status: doing
 priority: 2
+owner: unknown@e3a28d2cc009
+claimed: 2026-09-19T00:27Z
 created: 2026-09-17
-updated: 2026-09-17
+updated: 2026-09-19
 refs:
   - operator message 2026-09-17
 ---
@@ -13,8 +15,8 @@ refs:
 Operator 2026-09-17: remove context-guard's dependency on the status line as its depth sensor; context-guard should own its own hook. Librarian facts: hooks receive no context-window size or usage (docs: common fields session_id, prompt_id, transcript_path, cwd, scratchpad_dir, permission_mode, effort, hook_event_name; none for window/usage). Token count is already exact from transcript usage blocks (cross-checked equal to the status-line record). The only missing input is the WINDOW SIZE (200K vs 1M), which the model id in transcripts ('claude-opus-5') and settings ('opus') does not carry. The 2.1.273 binary shows SessionStart hooks receive an undocumented 'model' field and there are PreModelSwitch/PostModelSwitch hook events with from_model/to_model — if those carry the 1M variant, hooks can know the window without the status line. Step 1 (spike): capture the live payloads. Step 2: plan + operator review. Step 3: implement on the factored layout (context-guard), fable.
 
 ## Handoff
-- doing: decision 14 answered (d): mirror window selection in the hook
-- next: after plugin-factoring merges: plan (read 2.1.273 selection code, pin the account-gate cache semantics, model table, cross-check design) for operator review; implement on fable
+- doing: dispatched
+- next: review -> land
 - blocked: decision 14
 - learned: —
 
@@ -63,3 +65,10 @@ decision 31: approve the d63e plan for implementation (fable, or opus fallback w
 decision 32: drop ~/.claude.json from the design entirely (plan rec: yes)
 decision 33: CC version the table was copied from: record + demote to warn-only after a real mismatch (plan rec) vs gate hard-block on exact version
 decision 34: auto-compact window (CLAUDE_CODE_AUTO_COMPACT_WINDOW etc.): follow-up item, not this one (plan rec)
+
+OPERATOR 2026-09-19: decision 31 approved; 32 a (drop ~/.claude.json entirely); 33 a (record CC version, demote to warn-only after a real mismatch); 34 b (include the auto-compact window in d63e).
+
+## Notes
+- 2026-09-19 claimed by unknown@e3a28d2cc009
+
+dispatch: implementer opus — fable unavailable (unknown); fallback (rule 3: non-trivial HARD-gate code)

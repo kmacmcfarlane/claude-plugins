@@ -39,3 +39,11 @@ decision 11: product-research gains allowed-tools WebSearch, WebFetch, Read — 
 - re-review CLEAR (all 4 FIXED; 1 new low: ls -t keys the cache by mtime, installed_plugins.json installPath is the correct key — folded into chore 89a6; 1 nit). Librarian Land checks on the branch: marketplace==disk, 11 json ok, 4 suites OK, 18 skills lint clean, catalog ok, single PreToolUse (sandbox), validate passed (7 no-version warnings). Branch plugin-factoring at 996b5ea is the operator's test branch; NOT merged to main by plan. 2026-09-16 20:08:23
 - OPERATOR (2026-09-17 15:49:43): one-time authorization to push the test branch; pushed plugin-factoring 996b5ea to origin (fast-forward, no force).
 - 2026-09-18 done: 0d8b4c9
+
+## Operator answers (2026-09-19)
+- decision 8: coordinate with the "Agent telemetry collection options" peer (changes in flight there) on who owns usage-report — librarian to ask.
+- decision 9: "whatever makes most sense" — librarian decides: keep the sandbox description naming the checkout guard (one aim: safe work inside claude-sandbox). No change.
+- decision 10: "whatever makes most sense and offers consistency and cohesion" — librarian decides: canonical SANDBOX_ALLOW_CHECKOUT_EDITS, keep CLAUDE_KIT_ALLOW_CHECKOUT_EDITS as a deprecated alias (no one breaks). Filed.
+- decision 11: product-research may use all tools — drop the allowed-tools restriction. Filed.
+- decision 12: leave plugin.json version fields out; the commit SHA is the cache key. No change.
+- "13" (read as decision 18, the uncommitted .gitignore !.claude-sandbox/config.yaml line): don't worry about it; changes with the backstage refactor. Left alone.

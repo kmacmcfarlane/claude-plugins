@@ -2,13 +2,12 @@
 id: librarian-mode-75-sop-follow-up-wording-d72e
 title: "librarian-mode 75% SOP: follow-up wording from review"
 type: chore
-status: blocked
+status: doing
 priority: 3
 owner: unknown@e3a28d2cc009
 claimed: 2026-09-18T19:32Z
-blocked: "review cap hit (4): finding 10 one clause in review-checklist § 1 - decision 35"
 created: 2026-09-18
-updated: 2026-09-18
+updated: 2026-09-19
 refs:
   - reviewer report, item librarian-mode-at-75-context-checkpoint-ce46
 ---
@@ -49,3 +48,10 @@ dispatch: reviewer opus review round 4 (final) — resume
 
 review round 4 (opus, final): NEEDS_CHANGES — 5-9 FIXED; new medium 10: review-checklist.md:20-22 § 1 "no amend, rebase or squash of a reviewed commit" contradicts the sanctioned secret rebuild (reset --soft + recommit) -> Land check would fail after a rebuild; low 11: "never quote" covers findings only, not verbatim TESTS output of git log subjects. CAP HIT (4).
 decision 35: d72e cap: (a) one extra round for the one-clause § 1 exception, re-review, land; (b) land now, fold finding 10 into b2ad (same secret-rebuild area).
+
+OPERATOR 2026-09-19: decision 35 a — one extra review round for finding 10 (one clause), then land.
+
+dispatch: implementer opus fix round 4 (extra, decision 35) — resume
+
+fix round 4 (extra, opus): DONE 3a0db89 (10 + 11).
+dispatch: reviewer opus review round 5 (extra, final) — resume
