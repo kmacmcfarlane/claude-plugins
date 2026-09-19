@@ -2,8 +2,10 @@
 id: wi-claim-handoff-drops-body-text-appende-e832
 title: wi claim/handoff drops body text appended after the Handoff block
 type: bug
-status: todo
+status: doing
 priority: 1
+owner: unknown@e3a28d2cc009
+claimed: 2026-09-19T00:49Z
 created: 2026-09-19
 updated: 2026-09-19
 ---
@@ -15,3 +17,9 @@ Observed 2026-09-19: notes appended (plain '- ...' lines after the '## Handoff' 
 - next: —
 - blocked: —
 - learned: —
+
+## Notes
+- 2026-09-19 claimed by unknown@e3a28d2cc009
+
+## Dispatch
+dispatch: implementer opus — executable logic (wi.py), data loss
