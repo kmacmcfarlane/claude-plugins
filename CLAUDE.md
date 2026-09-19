@@ -108,3 +108,13 @@ Retired at Phase 3: the deprecated plan-execution skill under the then-`claude-k
 `skills/`, and its `agents/`, which existed only to serve it. Retired at Phase 6: the
 `claude-kit` plugin itself. All are recoverable from git history on this branch. (The separate
 umbrella **repo** `kmacmcfarlane/claude-kit` is unaffected and keeps its name.)
+
+## Librarian
+Scope: whole repo (except .claude-sandbox/ and .claude/)
+Checks:
+- (cd plugins/context-guard/hooks && python3 -m unittest discover -s tests -q)
+- (cd plugins/statusline/hooks && python3 -m unittest discover -s tests -q)
+- (cd plugins/sandbox/hooks && python3 -m unittest discover -s tests -q)
+- (cd plugins/work-items/skills/work-items && python3 -m unittest discover -s tests -q)
+- (cd plugins/context-guard/skills/usage-report && python3 -m unittest discover -s tests -q)
+Push: main
