@@ -360,20 +360,27 @@ Skills for LLM chat sessions in web UIs. Family home under review.
 /plugin marketplace add https://github.com/kmacmcfarlane/claude-plugins.git
 ```
 
-Or in `.claude/settings.json`:
+Or in `.claude/settings.json` (`~/.claude/settings.json` for user scope):
 
 ```json
 {
   "extraKnownMarketplaces": {
     "kmacmcfarlane": {
       "source": {
-        "source": "github",
-        "repo": "kmacmcfarlane/claude-plugins"
-      }
+        "source": "git",
+        "url": "https://github.com/kmacmcfarlane/claude-plugins.git"
+      },
+      "autoUpdate": true
     }
+  },
+  "enabledPlugins": {
+    "statusline@kmacmcfarlane": true
   }
 }
 ```
+
+Auto-install from `enabledPlugins` is unverified; the reliable path is still the explicit
+`/plugin install statusline@kmacmcfarlane` below.
 
 ### Install plugins
 

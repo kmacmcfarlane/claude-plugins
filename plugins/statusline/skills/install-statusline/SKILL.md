@@ -187,8 +187,15 @@ Error: `Cannot add marketplace "kmacmcfarlane": its network source differs from 
 declared for it in settings …`
 Cause: `kmacmcfarlane` is already declared in settings with a different source spelling than
 the one just given to `add`.
-Solution: it is already registered, so run `claude plugin marketplace update kmacmcfarlane`
-instead — or re-run `add` with exactly the declared source.
+Solution, in order:
+- Run `claude plugin marketplace list`. If `kmacmcfarlane` is already listed, run
+  `claude plugin marketplace update kmacmcfarlane` instead of `add`.
+- If it is not listed yet, the settings declaration has not been reconciled into the
+  known-marketplaces list — that happens in the background when a Claude Code session
+  starts. Start one session, then run `claude plugin marketplace update kmacmcfarlane`.
+  (Running `update` before that reconcile fails with `Marketplace 'kmacmcfarlane' not
+  found`.)
+- Or skip both: change the source declared in settings to match exactly what you're adding.
 
 Error: `the plugin's data dir was not found`
 Cause: the plugin is not installed, or the script was run from a plain checkout.
