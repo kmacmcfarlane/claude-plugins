@@ -28,7 +28,9 @@ SKILL.md § Step 4.
   sha, never amend, report each new sha**, and for each low/nit it declines, the reason.
   Then resume the **reviewer** — re-dispatched fresh only when its own tier changed
   (rule 4), or if gone — with the re-review variant in `review-brief.md`, pasting the
-  new shas and the declined list: it verifies each prior finding by file:line, re-runs
+  new shas, the declined list and, every round, the cumulative "Files changed, with
+  reasons" — the record sink's `changed:` block after this round's CHANGED was merged
+  in, so a file a fix round added arrives with its reason: it verifies each prior finding by file:line, re-runs
   the same checks, attacks the fix, and rules each declined one DECLINED or OPEN.
 
 Then repeat until `CLEAR`, inside the cap: a fourth review that is not `CLEAR` blocks the

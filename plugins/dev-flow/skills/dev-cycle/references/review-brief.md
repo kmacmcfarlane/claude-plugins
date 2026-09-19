@@ -148,14 +148,17 @@ NOTES: anything you noticed that is not a finding; questions for the orchestrato
 After the implementer commits its fixes, resume the **same** reviewer (it has the context)
 with this in place of "What to do" — unless the fix round changed the tier (routing rules
 3, 4 and 6): a resumed agent keeps its model, so dispatch a fresh reviewer at the new tier
-with the full brief, its `Model:` line updated, and the previous report pasted above this
-block.
+with the full brief, its `Model:` line and "Files changed, with reasons" updated, and the
+previous report pasted above this block.
 
 ```
 Fix commits since your last review: git -C $WORKTREE log --oneline <last reviewed sha>..HEAD
 <list them>. They are new commits; the ones you reviewed are unchanged.
 Declined by the implementer, with its reasons:
 <finding number — reason, one per line; or "none">
+Files changed, with reasons (cumulative, updated this round):
+<the record sink's `changed:` block, verbatim, as it stands after this round's CHANGED
+was merged in — it replaces the list in your earlier brief>
 
 <rebuild case only — the branch was rebuilt to drop a leaked secret; replace the first
 two lines above with:>
@@ -183,8 +186,6 @@ OLD=$(git -C $WORKTREE merge-base <merge sha>^1 <merge sha>^2) and check both si
   `git -C $WORKTREE diff <merge sha>^2 <merge sha>` — one missing there (the resolution
   kept the base's version) is a dropped change side.
 A resolution that drops either side's intent is a finding.
-The "Files changed, with reasons" list above is the cumulative one, updated for this
-round.
 
 1. For each finding in your previous report, verify by file:line whether it is fixed,
    partly fixed, or untouched. For each declined finding: if it is low or nit and the
