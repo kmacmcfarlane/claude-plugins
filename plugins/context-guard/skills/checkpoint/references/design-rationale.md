@@ -94,8 +94,24 @@ Three layers, escalating; the first two are hooks, the third is a skill.
    `context_window.used_percentage` and `context_window_size` (the only place Claude Code
    exposes exact depth) and writes them to its neutral sensor record,
    `${CLAUDE_CONFIG_DIR:-~/.claude}/statusline/sensor/<session>.json` (`"v": 1`; any other `v`
-   reads as absent). Hooks read that; they do not get the fields themselves. Falls back to
-   transcript `usage` inference. context-guard's own deprecated copy of the status line (kept
+   reads as absent). Hooks read that; they do not get the fields themselves. Without a fresh
+   record the gate derives the window itself (`hooks/window_rules.py`, the "window mirror"):
+   it duplicates Claude Code's own selection — the transcript's `attachment.type:"model"`
+   line, the native-1M model table, the `[1m]` suffix, `CLAUDE_CODE_DISABLE_1M_CONTEXT`,
+   `CLAUDE_CODE_MAX_CONTEXT_TOKENS` (first under `DISABLE_COMPACT`, last for custom models)
+   and the long-context-credits latch a 429 leaves in the transcript — and counts tokens from
+   the transcript's post-boundary `usage` blocks. A window whose every input was observed is
+   *resolved* and gates like an exact one; one that depends on something a hook cannot see
+   (SDK betas, the served catalog, a 3P provider, an unknown model, an alias model switch) is
+   *unresolved* and only warns, and the depth then falls back to transcript `usage` inference
+   as before. When the status line is present it wins, and a disagreement is logged to
+   `claude-kit/context-gate/window-mismatch.jsonl` and demotes that Claude Code version to
+   warn-only (the table is copied from 2.1.277, `RULES_CC_VERSION`). The gate also scores
+   against the auto-compact window when one is configured below the model window
+   (`CLAUDE_CODE_AUTO_COMPACT_WINDOW`, the `autoCompactWindow` setting); server-side
+   client data and experiments cannot be read, so they never bound a hard stop.
+   `CONTEXT_GUARD_DERIVE=off` turns the mirror off. The account file in the home directory
+   is never opened. context-guard's own deprecated copy of the status line (kept
    one release for entries that still point at it) writes the same `exact` block into
    `~/.claude/claude-kit/context-gate/<session>.json` (a historical directory name). The hooks
    read both records and use the one with the larger `exact.at` (`lib_context.sensor`); a

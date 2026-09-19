@@ -1,5 +1,5 @@
 {
-  "description": "context-guard: context guardrails — epoch-aware depth gate (advisory/DUE/HARD in remaining tokens), defer-while-proactive compaction gate, Stop relay + reasoning-ledger nudge, free ledger pointers, and the current-hooks symlink (stable path for mark_checkpoint.py).",
+  "description": "context-guard: context guardrails — epoch-aware depth gate (advisory/DUE/HARD in remaining tokens), defer-while-proactive compaction gate, Stop relay + reasoning-ledger nudge, free ledger pointers, the current-hooks symlink (stable path for mark_checkpoint.py), and the window mirror's SessionStart/PostModelSwitch bookkeeping.",
   "hooks": {
     "UserPromptSubmit": [
       {
@@ -55,6 +55,10 @@
           {
             "type": "command",
             "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/rehydrate.py\""
+          },
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/window_events.py\""
           }
         ]
       }
@@ -77,6 +81,17 @@
           {
             "type": "command",
             "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/ledger_pointer.py\""
+          }
+        ]
+      }
+    ],
+    "PostModelSwitch": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/window_events.py\""
           }
         ]
       }

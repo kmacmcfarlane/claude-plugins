@@ -21,12 +21,17 @@ operator never sees.** Fixing that is mostly about session *shape*, not about re
 
 **The gate thinks in remaining tokens, not percent.** Advisories at 60/75% used; **DUE** when
 ~150K tokens remain (1M window; 70K on 200K) — finish things, run `/checkpoint`; **HARD** at
-60K/40K left — on an *exact* depth the gate blocks every prompt until a checkpoint records; on
-an *inferred* depth it only warns, because the real window may be larger than the guess — and
+60K/40K left — on an *exact* depth (a fresh status-line reading) or a *derived* one (the
+window mirrored from Claude Code's own selection logic, every input observed) the gate blocks
+every prompt until a checkpoint records; on an *inferred* depth, or a derived one it could not
+fully resolve, it only warns, because the real window may be larger than the guess — and
 that warning keeps the DUE cadence (first time, then every 3 prompts or 25K tokens), so a
 quiet stretch is not an all-clear. The whitelist that passes a blocked prompt through is
 `/checkpoint`, `/compact` and `/clear`, bare or plugin-prefixed (`/context-guard:checkpoint`).
-All of it resets per epoch (each compaction or `/clear`).
+All of it resets per epoch (each compaction or `/clear`). The window scored is the auto-compact
+window when one is set below the model window (`/autocompact`, `CLAUDE_CODE_AUTO_COMPACT_WINDOW`),
+because that is where Claude Code compacts; the compaction gate still proves a deferral safe
+against the model window.
 
 ## Tools, and when
 
@@ -42,11 +47,12 @@ All of it resets per epoch (each compaction or `/clear`).
 | "use a subagent to …" | read-heavy research, log digging, doc reading | returns 1–2K tokens; the reads never enter your window |
 | `Explore` / `Plan` agents | codebase survey before implementation | skip CLAUDE.md, cheap, read-only |
 | `/context` | any time you want the truth | free |
-| status line | always | shows `used_percentage`; feeds the gate hooks exact depth when the `statusline` plugin is installed |
+| status line | always | shows `used_percentage`; when the `statusline` plugin is installed its reading wins over the gate's derived window and cross-checks it |
 
 Environment & knobs: `/autocompact 900k` lowers the auto-compact trigger so the gate's deferral
 is provably safe (`CLAUDE_CODE_AUTO_COMPACT_WINDOW=900000` per project — plain integer, `900k`
-reads as 900); `CLAUDE_KIT_LEDGER_EVERY` tunes the ledger nudge (default 60000);
+reads as 900, which Claude Code raises to its 100K floor, and the gate then scores against
+100K too); `CLAUDE_KIT_LEDGER_EVERY` tunes the ledger nudge (default 60000);
 `CLAUDE_CODE_TASK_LIST_ID=<name>` shares a task list across sessions.
 
 ## Session shapes that stay in the band
@@ -90,17 +96,23 @@ log, the work-item store — outranks the manifest).
 (Moved here from the installer skill when the status line became its own plugin,
 `statusline`: this is gate content.)
 
-A hard block needs a fresh exact reading; an inferred depth (stale or missing record) only
-warns. So a wrong block means a fresh-but-wrong record, e.g. one written just before a
-compaction. Two escape hatches:
+A hard block needs a fresh exact reading or a resolved derived window (the mirror of Claude
+Code's own window selection); an inferred depth or an unresolved derived one only warns. So a
+wrong block means a fresh-but-wrong record, e.g. one written just before a compaction, or a
+derived window that drifted from a newer Claude Code (the block message names the source:
+`derived`; with the `statusline` plugin installed a drift is caught, logged to
+`claude-kit/context-gate/window-mismatch.jsonl`, and that version drops to warn-only). Three
+escape hatches:
 1. Pin the window: `CLAUDE_KIT_CONTEXT_WINDOW=1000000` (tokens) in the environment Claude
-   Code is launched from; the hooks then never guess the denominator.
+   Code is launched from; the hooks then never guess the denominator of an inferred depth.
+   It does not override a derived window — use hatch 3 for that.
 2. Emergency stand-down: record a checkpoint for the current epoch — exactly what
    `/checkpoint` records — with the plugin's own `mark_checkpoint.py`. It writes through the
    same locked read-modify-write as every hook, so a hook firing at the same moment cannot
    drop the change (a hand-edit of the state file can). The session id names the state file
    under `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/claude-kit/context-gate/` (the newest `.json`
-   there is the live session; `gauge.json` is not a session). It refuses, exiting non-zero and
+   there is the live session; `gauge.json`, `window-mismatch.jsonl` and the `_`-prefixed
+   files are not sessions). It refuses, exiting non-zero and
    writing nothing, when no state file exists for that id — a mistyped id, since a live
    session always has one. The gate stays down until the next compaction or `/clear`. Run it
    through the stable plugin-data path, which works the same from a Bash tool call inside the
@@ -114,3 +126,7 @@ compaction. Two escape hatches:
 d=$(ls -td "${CLAUDE_CONFIG_DIR:-$HOME/.claude}"/plugins/data/context-guard-*/ | head -1)
 python3 "${d}current-hooks/mark_checkpoint.py" <session_id>
 ```
+3. Turn the window mirror off: `CONTEXT_GUARD_DERIVE=off` in the environment Claude Code is
+   launched from. The gate is then exactly what it was before the mirror: exact from the
+   status line, else inferred (warn-only). Worth a note to the plugin maintainers: a derived
+   block that was wrong means the mirrored table needs a new Claude Code version.

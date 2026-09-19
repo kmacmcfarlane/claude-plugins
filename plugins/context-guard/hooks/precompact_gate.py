@@ -11,6 +11,10 @@ distinguish them. So the gate defers only while BOTH hold: no checkpoint has
 been recorded this epoch, AND tokens < window - thresholds(window)['hard'],
 which with the auto-compact window lowered (e.g. /autocompact 900k on a 1M
 model) proves the trigger was proactive. Otherwise it always allows.
+`window` here is the MODEL window (L.depth: exact, derived or inferred),
+never the lower auto-compact window the prompt gate scores against: a
+compaction below the model window's hard line cannot be the context-limit
+recovery.
 """
 import json, os, sys, time
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
