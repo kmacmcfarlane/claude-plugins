@@ -205,11 +205,37 @@ def emit_front(meta, extra=()):
 
 # ── Body sections ───────────────────────────────────────────────────────────
 
+FENCE_RE = re.compile(r"^ {0,3}(`{3,}|~{3,})")
+
+
+def _heading_flags(lines):
+    """For each line, True when it is a `## ` section heading: it starts with
+    `## ` and is not inside a fenced code block (``` or ~~~, CommonMark-style:
+    the fence closes on a run of the same character at least as long, with
+    nothing but whitespace after it; an unclosed fence runs to the end)."""
+    flags, fence = [], None
+    for line in lines:
+        content = line.rstrip("\r\n")
+        m = FENCE_RE.match(content)
+        if fence is None:
+            if m and not (m.group(1)[0] == "`" and "`" in content[m.end():]):
+                fence = m.group(1)
+            flags.append(fence is None and content.startswith("## "))
+        else:
+            if (m and m.group(1)[0] == fence[0] and len(m.group(1)) >= len(fence)
+                    and not content[m.end():].strip()):
+                fence = None
+            flags.append(False)
+    return flags
+
+
 def parse_body(text):
-    """Split into (description, [(name, text), ...]); section text is stripped."""
+    """Split into (description, [(name, text), ...]); section text is stripped.
+    A `## ` line inside a fenced code block is text, not a heading."""
     desc, sections, name, buf = None, [], None, []
-    for line in text.split("\n"):
-        if line.startswith("## "):
+    lines = text.split("\n")
+    for line, heading in zip(lines, _heading_flags(lines)):
+        if heading:
             if name is None:
                 desc = "\n".join(buf).strip()
             else:
@@ -270,10 +296,11 @@ def _content(line):
 
 def _section_span(lines, name):
     """(heading index, end index) of the first `## name` section; the section
-    runs to the next `## ` heading or the end of the body."""
+    runs to the next `## ` heading or the end of the body. Headings inside
+    fenced code blocks do not count (see _heading_flags)."""
     start = None
-    for i, line in enumerate(lines):
-        if line.startswith("## "):
+    for i, (line, heading) in enumerate(zip(lines, _heading_flags(lines))):
+        if heading:
             if start is not None:
                 return start, i
             if _content(line)[3:].strip() == name:
@@ -343,13 +370,13 @@ class Item:
 
     def _append_section(self, name, text):
         """Add `## name` at the end of the body; existing bytes are a prefix
-        of the result (at most a line ending and a blank line are added)."""
+        of the result (at most a line ending and a blank line are added).
+        The heading always starts a line, even after a whitespace-only body."""
         eol, body = self.eol, self.body
-        if body.strip():
-            if not body.endswith("\n"):
-                body += eol
-            if not re.search(r"\n\r?\n\Z", body):
-                body += eol
+        if body and not body.endswith("\n"):
+            body += eol
+        if body.strip() and not re.search(r"\n\r?\n\Z", body):
+            body += eol
         self.body = body + f"## {name}" + eol + text.replace("\n", eol) + eol
 
     def set_handoff(self, h):
@@ -847,6 +874,13 @@ def cmd_release(args):
 
 
 def cmd_handoff(args):
+    # Handoff values are one line each (format.md): a line break would leave
+    # lines the next rewrite does not own, or inject a heading. Reject before
+    # anything is read or written.
+    for key in HANDOFF_KEYS:
+        val = getattr(args, key)
+        if val is not None and ("\n" in val or "\r" in val):
+            raise WiError(1, f"--{key} must be one line; it contains a line break")
     root = resolve_root(args.root)
     with Lock(root):
         item = load_item_anywhere(root, args.id)

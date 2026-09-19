@@ -123,14 +123,17 @@ Sets exactly one front-matter field. `id` and `created` are immutable (exit 1).
 - `## Handoff` — four bullets `- doing: / - next: / - blocked: /
   - learned:` (`—` when empty). `wi handoff` rewrites only those four lines
   (the first of each key) and inserts any that are missing; required by `lint`
-  when `status: doing`.
+  when `status: doing`. Each value is one line: a `--doing`/`--next`/
+  `--blocked`/`--learned` value containing a line break exits 1 and nothing
+  is written.
 - `## Notes` — free text; the tool only appends dated lines, after the last
   non-blank line of the section (it adds `## Notes` at the end when absent).
 - any other `## …` section round-trips untouched.
 
 A section runs from its `## ` heading to the next `## ` heading, so unheaded
-text after a block belongs to that block. Every rewriting command edits the
-body in place: bytes outside the lines it owns — trailing unheaded text,
+text after a block belongs to that block. A `## ` line inside a fenced code
+block (```` ``` ```` or `~~~`) is text, not a heading. Every rewriting
+command edits the body in place: bytes outside the lines it owns — trailing unheaded text,
 spacing between sections, section order, CRLF line endings — are kept exactly.
 Front matter is re-emitted in canonical form.
 
