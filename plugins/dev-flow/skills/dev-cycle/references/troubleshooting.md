@@ -61,7 +61,10 @@ Pointed at from SKILL.md § Troubleshooting and from `fix-loop.md` for the permi
   another live session's working tree, prefer `Leave the branch` and say why.
 - **Merge conflict on the base.** Never resolve it yourself: `git -C "$MAIN" merge
   --abort`, record it as a finding, and re-dispatch into the fix loop, counting toward
-  the cap — `fix-loop.md` § A merge conflict.
+  the cap — `fix-loop.md` § A merge conflict. The re-review judges the implementer's
+  resolution with `git show --remerge-diff <merge sha>` (git 2.36+; older git: the
+  fallback in `review-brief.md`), never plain `git show`: its combined diff is empty
+  when a resolution keeps one side whole, so a dropped side would pass unseen.
 - **A red check in the worktree at Land.** `$WI handoff <id> --blocked "<what>"` (no
   item: a `blocked:` line in the record sink); back into the fix loop as a finding,
   counting toward the cap.

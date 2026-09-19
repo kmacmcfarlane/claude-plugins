@@ -155,7 +155,8 @@ each resolution in one line under DEVIATIONS.
 - Do not edit any file outside $WORKTREE.
 - Do not touch files outside "Files in scope", however tempting; list the temptation under
   OPEN QUESTIONS instead. When Files in scope is "undeclared", touch only what the
-  acceptance needs, and justify every changed file under CHANGED. Nothing outside Ground is ever in scope.
+  acceptance needs, and justify every changed file under CHANGED. Nothing outside
+  Ground is ever in scope.
 - Do not run `git stash` in any form (see Verification).
 - Do not create README.md, CHANGELOG.md, or any documentation file the change did not ask
   for.
@@ -188,8 +189,11 @@ block alone, writing the series to the Series home binding; replace the prohibit
 worktree lines with "Do not edit, commit or stage anything in the repository; write only
 under the Series home". Report shape: STATUS, SERIES (absolute path), OPEN QUESTIONS (each
 marked blocking or not), DEVIATIONS. The series is gated like a change, by
-`review-brief.md` § Plan-review variant; a fix round re-dispatches this brief with the
-findings verbatim and asks for a revision as new files or sections of the same series.
+`review-brief.md` § Plan-review variant. A fix round re-dispatches this brief with the
+findings verbatim and the rules of the `investigate` skill's
+`references/investigation-format.md`: never edit a written serial; write the revision as a
+new serial at the next free number, opening with a `Supersedes` block that names what the
+findings overturned; regenerate `INDEX.md`.
 
 ## Status meanings
 

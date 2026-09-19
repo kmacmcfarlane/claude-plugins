@@ -26,8 +26,9 @@ few questions, each asked once: the cycle brief, the checks, how to land.
   dearest tier (Step 2).
 - **One target, one worktree, one cycle.** Several items are several cycles; running them
   in parallel is the caller's business.
-- **Bindings first.** Step 0 resolves all ten before any dispatch. A caller's handoff
-  missing one is a setup error: stop and name it.
+- **Bindings first.** Step 0 resolves every binding before any dispatch, except the
+  terminal action, which a standalone run asks at Land. A caller's handoff missing one
+  is a setup error: stop and name it.
 - **Nothing outside the Ground binding is touched**; `.claude-sandbox/` and `.claude/` are
   never committed.
 - **Never push, tag or open anything remote** unless the terminal action says so.
@@ -88,8 +89,10 @@ clear acceptance skips it, and so does a target that already has a series or pla
   minimum (a plan is judgement) and the Model floor respected, with the plan variant in
   `references/agent-brief.md`: /investigate, non-interactively, writing the series to
   the Series home; no worktree. Record the series path. Its `DONE` goes to Step 4 with
-  the plan-review variant; a `NEEDS_CHANGES` re-dispatches the plan agent. After
-  `CLEAR`, its blocking open questions go to the decision channel; then Step 6.
+  the plan-review variant; a `NEEDS_CHANGES` re-dispatches the plan agent, which
+  revises by a new serial per the `investigate` skill's
+  `references/investigation-format.md`. After `CLEAR`, its blocking open questions go
+  to the decision channel; then Step 6.
 - **A feature in full mode:** no separate dispatch; the implementer runs /investigate
   then /implement in its worktree through the brief's dev-flow block — `librarian-mode`'s
   current block, reused until those skills own an orchestrated mode
@@ -133,8 +136,9 @@ re-dispatch or resume with findings = review round n+1; cap 4 review rounds.
    ```
 
    Before adding it, if git does not ignore `.claude/worktrees/` (`git -C "$MAIN"
-   check-ignore -q .claude/worktrees/x` fails), append `.claude/worktrees/` to `"$MAIN"/.git/info/exclude`
-   (repo-local, never committed) and say so. Never edit `.gitignore`.
+   check-ignore -q .claude/worktrees/x` fails), append `.claude/worktrees/` to
+   `"$MAIN"/.git/info/exclude` (repo-local, never committed) and say so. Never edit
+   `.gitignore`.
 2. **Claim** the item, when there is one and it is not already yours: `$WI claim <id>`.
 3. **Brief**: fill `references/agent-brief.md` from the bindings; send it to one
    background `general-purpose` agent with the routed `model`.
@@ -149,7 +153,8 @@ re-dispatch or resume with findings = review round n+1; cap 4 review rounds.
 1. **Dispatch a reviewer**: one background `general-purpose` agent, review-only, `model`
    per rule 4, briefed from `references/review-brief.md`, with the commands from
    `references/review-checklist.md` plus the Checks binding — what you run at Land. A
-   plan-mode series gets that file's plan-review variant instead.
+   plan-mode series gets the plan-review variant in `references/review-brief.md`
+   instead.
 2. **Severity scale** (defined in the review brief):
    - critical: data loss, security, breaks the harness or another plugin.
    - high: wrong on the main path; a failing or missing test for a claimed behaviour.
@@ -168,8 +173,9 @@ re-dispatch or resume with findings = review round n+1; cap 4 review rounds.
    recorded human decision, or the cap. Everything else, critical included, is resolved
    inside the loop.
 5. **Record the result** in the record sink: rounds, findings fixed, findings declined
-   with reasons, the final verdict and the HEAD sha it covers, and the reviewer NOTES
-   worth keeping. Reviewer questions you cannot settle go on Step 6's `open questions:`.
+   with reasons, the final verdict and what it covers — the HEAD sha for a change, the
+   series' serial files by name for a plan — and the reviewer NOTES worth keeping.
+   Reviewer questions you cannot settle go on Step 6's `open questions:`.
 
 ## Step 5: Land
 
@@ -178,8 +184,10 @@ Only after a `CLEAR` recorded against the current HEAD.
 1. **Run the checks yourself** in the worktree: `references/review-checklist.md`, the
    Checks binding included. A verdict is not a check output.
 2. **Read the diff** in full — `git -C "$MAIN"/.claude/worktrees/<name> diff
-   <base>...HEAD` — against the repo's doctrine and the Workflow binding. Anything outside Files in scope
-   is a rejection, however good.
+   <base>...HEAD` — against the repo's doctrine and the Workflow binding. A file outside
+   the declared Files in scope is a rejection, however good. With Files in scope
+   `undeclared`, every changed file must carry the implementer's one-line reason and
+   have survived the reviewer's per-file grading; one that did not is a rejection.
 3. **Take the terminal action.** A caller's binding as given. Standalone, ask once
    (`references/bindings.md` § Landing): `Merge to <base> locally, no push` first, then
    `Leave the branch`, then `Merge and push`. To merge, the main checkout must be on the
@@ -229,7 +237,8 @@ Stop when you catch yourself:
 - **Merging without running a check yourself.**
 - **Escalating a finding the loop could resolve** — a human hears show-stoppers, scope
   changes and the cap, never a medium.
-- **Dispatching unrouted** — an Agent call with no `model`, or no `dispatch:` line behind it.
+- **Dispatching unrouted** — an Agent call with no `model`, or no `dispatch:` line
+  behind it.
 - **Pushing unasked**, writing CLAUDE.md to save the checks, or guessing a caller's
   missing binding.
 

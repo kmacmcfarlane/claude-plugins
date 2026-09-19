@@ -47,10 +47,14 @@ The orchestrator never resolves a conflict by hand. When Land's merge conflicts:
    resolving with the change's own approach as the tiebreaker. That is the brief's one
    exception to its no-merge rule; a rebase stays forbidden.
 4. Re-review from the last reviewed sha, with the merge-conflict case of
-   `review-brief.md` § Re-review variant, then Land again from its step 1.
+   `review-brief.md` § Re-review variant, which judges the resolution with
+   `git show --remerge-diff <merge sha>` (git 2.36+; its fallback for older git is
+   there), never plain `git show`, whose combined diff hides a one-sided resolution.
+   Then Land again from its step 1.
 
-A plan-mode series never reaches a merge; its fix rounds revise the series (the
-plan-review variant in `review-brief.md`).
+A plan-mode series never reaches a merge; its fix rounds add a new serial with a
+`Supersedes` block and regenerate `INDEX.md`, never edit a written one (the plan-review
+variant in `review-brief.md`).
 
 ## A bad commit subject
 

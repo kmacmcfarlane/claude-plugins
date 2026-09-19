@@ -8,9 +8,10 @@ are the contract; this file is how to apply them without re-deriving them per di
 A sub-agent inherits the parent's model unless the Agent tool's `model` field says
 otherwise, and that field wins over everything else. The orchestrator usually runs on the
 dearest tier, so an unrouted dispatch is the dearest dispatch — every implementer, every
-reviewer, every helper. Per million tokens the tiers sit roughly at fable 10/50, opus 5/25, sonnet
-2/10 (in/out): sonnet is about five times cheaper than fable, opus about half. The brief
-constrains the work tightly enough that a cheap failure costs a re-dispatch, not a landing.
+reviewer, every helper. Per million tokens the tiers sit roughly at fable 10/50, opus
+5/25, sonnet 2/10 (in/out): sonnet is about five times cheaper than fable, opus about
+half. The brief constrains the work tightly enough that a cheap failure costs a
+re-dispatch, not a landing.
 
 Mechanism: pass `model: "sonnet"`, `"opus"` or `"fable"` on every Agent call. Haiku is
 out of scope — the checks it could run, the orchestrator runs itself.
@@ -196,7 +197,8 @@ rounds 2 and 3 failed too, fix round 3 — the last before the cap — turns on 
 round 3 found: mediums only, and it stays sonnet, resumed; a critical or high, and it
 re-dispatches the implementer fresh at fable, with the full brief and every findings list,
 and the reviewer is a fresh fable one too (rule 4): a resumed agent keeps its model. A
-fourth review without `CLEAR` ends the loop — block the change and raise it through the decision channel.
+fourth review without `CLEAR` ends the loop — block the change and raise it through the
+decision channel.
 
 **"Add a PreToolUse hook that blocks edits to the main checkout from a worktree
 session."** Executable logic (opus) and a new hook that blocks edits — non-trivial

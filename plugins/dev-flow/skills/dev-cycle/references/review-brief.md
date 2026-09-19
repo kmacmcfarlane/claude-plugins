@@ -77,8 +77,8 @@ pasted verbatim — you are testing these claims, not trusting them>
 5. Check scope: anything in the diff outside "Files in scope" is a finding at medium,
    however good the change is. When Files in scope is "undeclared", grade each changed
    file against the acceptance and the implementer's one-line reason for it under
-   CHANGED: a file the intent does not justify is a finding at medium. Anything the acceptance asks for that the diff does not
-   deliver is a finding at high.
+   CHANGED: a file the intent does not justify is a finding at medium. Anything the
+   acceptance asks for that the diff does not deliver is a finding at high.
 6. Try to break it. Write down at least three concrete edge cases before you look for
    them — empty input, a missing file, a second run, a path with a space, the branch name
    the docs say versus the one the code makes — then test each one. A vague worry is not a
@@ -166,9 +166,16 @@ more is a finding. Check every message in the new log is clean.
 
 <merge-conflict round only — the branch now carries a merge of <base>; add:>
 The new commits include <merge sha>, a merge of <base> made to resolve a conflict at Land.
-Review from <last reviewed sha> as usual, but judge the merge by its resolution only:
-`git -C $WORKTREE show <merge sha>` (git's combined diff shows just the hunks that differ
-from both parents). A resolution that drops either side's intent is a finding.
+Review from <last reviewed sha> as usual, and judge the merge by its resolution:
+`git -C $WORKTREE show --remerge-diff <merge sha>` (git 2.36 or later) re-runs the merge
+and diffs the conflicted result against what was committed, so a side the resolution
+dropped shows as removed lines. Never judge it by plain `git show <merge sha>`: its
+combined diff is empty when the resolution keeps one side whole. On git older than 2.36,
+set OLD=$(git -C $WORKTREE merge-base <merge sha>^1 <merge sha>^2) and compare what the
+base brought, `git -C $WORKTREE diff $OLD <merge sha>^2`, with what the merged tree
+still differs from the base by, `git -C $WORKTREE diff <merge sha>^2 <merge sha>`: a
+base hunk reversed in the second, beyond the change's own reviewed diff, is a dropped
+side. A resolution that drops either side's intent is a finding.
 
 1. For each finding in your previous report, verify by file:line whether it is fixed,
    partly fixed, or untouched. For each declined finding: if it is low or nit and the
@@ -197,22 +204,36 @@ and "Read every file of the series in full", keep Item or Brief, Acceptance and 
 plan agent's claims, and drop the Checks block. Replace What to do with:
 
 ```
-1. Completeness: every acceptance line has a planned change, with the files it touches
+The series follows the investigate skill's investigation-format reference (path below).
+1. Format: every serial from 01 on opens with a Supersedes block, "Nothing — purely
+   additive" when nothing is overturned; the never-omit sections are present
+   (Confirmed Assumptions, Risk Assessment, Open Questions, and Supersedes on 01+); and
+   the series carries one of Implementation Approach, Proposed Fix or Recommendation,
+   without which /implement refuses it. Each miss is a finding at medium, the missing
+   approach section at high. A written serial edited after the fact is a finding at
+   medium.
+2. Completeness: every acceptance line has a planned change, with the files it touches
    and how it will be verified. A missing one is a finding at high.
-2. Open questions: each is stated, marked blocking or not, and carries options with
+3. Open questions: each is stated, marked blocking or not, and carries options with
    their impact. A blocking question hidden as an assumption, or a decision the plan
    takes that the acceptance leaves to a human, is a finding at medium.
-3. Feasibility: check the plan's claims about the code against the repository, read-only
+4. Feasibility: check the plan's claims about the code against the repository, read-only
    — files, functions, commands and branches it names exist and behave as it says. A
    plan built on a false claim is a finding at high.
-4. Doctrine: a plan that would break a principle or the Workflow binding when built is a
+5. Doctrine: a plan that would break a principle or the Workflow binding when built is a
    finding at medium, cited by principle.
-5. Scope: work the plan adds beyond the acceptance is a finding at medium.
+6. Scope: work the plan adds beyond the acceptance is a finding at medium.
 ```
 
-A `NEEDS_CHANGES` goes back to the plan agent, which revises the series in place as new
-files or new sections, never rewriting what the reviewer read without saying so; the
-re-review variant applies with "the revised files" in place of fix commits.
+Fill the path as the absolute path of the `investigate` skill's
+`references/investigation-format.md`, the sibling of this skill in the dev-flow plugin.
+
+A `NEEDS_CHANGES` goes back to the plan agent, which follows that format's two rules
+exactly: a written serial is never edited or deleted; the revision is a new serial at the
+next free number, opening with a `Supersedes` block that names each file, section and
+statement the findings overturned; and `INDEX.md` is regenerated wholesale. The re-review
+variant applies with "the new serial, and the regenerated INDEX.md" in place of fix
+commits; the reviewer checks the older serials are byte-for-byte unchanged.
 
 ## Verdict meanings
 
