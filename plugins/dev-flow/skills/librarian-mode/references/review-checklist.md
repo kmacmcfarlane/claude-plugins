@@ -30,10 +30,13 @@ git -C $W diff --stat main...HEAD
 ## 2. Skill hygiene (every skill directory touched)
 
 - [ ] Folder name equals the frontmatter `name`; the file is exactly `SKILL.md`.
-- [ ] Frontmatter keys follow the house rule (create-skill's frontmatter reference states
-      the same): every skill declares `name, description, disable-model-invocation,
-      allowed-tools, argument-hint`, none missing; the other documented fields `model,
-      context, license, compatibility, metadata` are allowed; no other key.
+- [ ] Frontmatter keys follow the house rule, whose allowed list lives in the create-skill
+      skill's frontmatter reference, in the kit-dev plugin (the code below copies it and must
+      be kept in step): the five required keys `name, description,
+      disable-model-invocation, allowed-tools, argument-hint` are all present; every other
+      key is a field the Claude Code skills docs define; no key appears twice; keys match
+      exactly (`Model` fails). The set is closed because undocumented keys are usually typos,
+      and claude.ai / Skills API uploads hard-fail on unknown keys.
 - [ ] No angle brackets in `name` or `description` (they are allowed in `argument-hint`,
       where about half the skills here use them); description under 1024 characters and states
       what + when + trigger phrases.
@@ -54,14 +57,19 @@ for s in $(git -C $W diff --name-only main...HEAD | grep -o 'plugins/[^/]*/skill
   test -f $d/README.md && echo "FAIL: README.md inside skill"
   name=$(sed -n 's/^name: *//p' $d/SKILL.md | head -1)
   test "$name" = "$(basename $s)" || echo "FAIL: name '$name' != folder"
-  keys=$(awk 'NR>1 && /^---$/ {exit} NR>1 && /^[a-z-]+:/ {sub(":.*",""); print}' $d/SKILL.md | sort | tr '\n' ' ')
+  # every top-level key (indented lines, such as those under metadata:, do not count),
+  # with surrounding quotes and whitespace trimmed
+  keys=$(awk 'NR>1 && /^---$/ {exit} NR>1 && /^[^ \t#-][^:]*:/ {sub(/:.*/, ""); gsub(/^[ \t"\047]+|[ \t"\047]+$/, ""); print}' $d/SKILL.md)
+  dups=$(printf '%s\n' "$keys" | sort | uniq -d | tr '\n' ' ')
+  test -z "$dups" || echo "FAIL: duplicate keys: $dups"
   for k in name description disable-model-invocation allowed-tools argument-hint; do
-    case " $keys" in *" $k "*) ;; *) echo "FAIL: missing key $k (keys: $keys)";; esac
+    printf '%s\n' "$keys" | grep -qxF -e "$k" || echo "FAIL: missing key $k"
   done
-  for k in $keys; do
-    case " name description disable-model-invocation allowed-tools argument-hint model context license compatibility metadata " in
-      *" $k "*) ;; *) echo "FAIL: key $k not allowed (keys: $keys)";; esac
-  done
+  printf '%s\n' "$keys" | grep -v '^$' | grep -vxF -e name -e description \
+    -e disable-model-invocation -e allowed-tools -e argument-hint -e when_to_use \
+    -e arguments -e user-invocable -e disallowed-tools -e model -e effort -e context \
+    -e agent -e background -e hooks -e paths -e shell -e metadata -e license \
+    -e compatibility | sed 's/^/FAIL: key not allowed: /'
   grep -n '^\(name\|description\):.*[<>]' $d/SKILL.md && echo "FAIL: angle brackets in name/description"
   desc=$(sed -n 's/^description: *//p' $d/SKILL.md | head -1); test ${#desc} -le 1024 || echo "FAIL: description ${#desc} chars"
   grep -rn '[.]/\|CLAUDE_SKILL_DI[R]' $d && echo "FAIL: non-bare reference path"

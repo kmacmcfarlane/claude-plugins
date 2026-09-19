@@ -58,8 +58,10 @@ Rules that reviewers reject on sight:
 - Skill reference paths are bare relative paths (`references/x.md`) — no dot-slash prefix,
   no skill-dir variable.
 - Frontmatter keys follow the house rule: every skill declares name, description,
-  disable-model-invocation, allowed-tools, argument-hint; the other documented fields
-  (model, context, license, compatibility, metadata) are allowed; no other key. Folder name
+  disable-model-invocation, allowed-tools, argument-hint; any other key must be a field the
+  Claude Code skills docs define (the list is in the create-skill skill's frontmatter
+  reference, kit-dev plugin); no key twice. Closed because undocumented keys are
+  usually typos, and claude.ai / Skills API uploads hard-fail on unknown keys. Folder name
   equals `name`. No README.md inside a skill folder.
 - No angle brackets in `name` or `description` (fine in `argument-hint`); description under
   1024 characters, what + when + triggers.
