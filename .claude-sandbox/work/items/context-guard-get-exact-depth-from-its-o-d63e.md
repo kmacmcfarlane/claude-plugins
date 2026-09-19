@@ -72,3 +72,7 @@ OPERATOR 2026-09-19: decision 31 approved; 32 a (drop ~/.claude.json entirely); 
 - 2026-09-19 claimed by unknown@e3a28d2cc009
 
 dispatch: implementer opus — fable unavailable (unknown); fallback (rule 3: non-trivial HARD-gate code)
+
+## Round log
+impl (opus fallback): DONE d513ea9 + cf69579 (window_rules.py 2.1.277; measure(); 357 tests; 42-case gate matrix: existing users identical except E7 stale+model line now blocks and A3 configured auto-compact window now gates fresh-sensor users). Librarian accepts A3 as decision 34b working as intended (the gate should respect the real compaction threshold); reported to the operator. Kill switch CONTEXT_GUARD_DERIVE=off. Timing 11->49ms fresh, 71->95ms none on a 52MB transcript.
+dispatch: reviewer opus — fable unavailable (unknown); fallback
