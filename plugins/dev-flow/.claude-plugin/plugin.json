@@ -1,6 +1,6 @@
 {
   "name": "dev-flow",
-  "description": "Plan-first development for agent sessions — investigation series, reviewed plans, verified implementation, multi-agent research fan-outs, chain-of-verification fact-checking, and a standing librarian that takes custody of a repo's work: files, dispatches, reviews and lands (soft dependencies: work-items; statusline, for rate-limit reset times).",
+  "description": "Plan-first development for agent sessions — investigation series, reviewed plans, verified implementation, a sub-agent dev cycle that carries one change from plan to merge, multi-agent research fan-outs, chain-of-verification fact-checking, and a standing librarian that takes custody of a repo's work: files, dispatches, reviews and lands (soft dependencies: work-items; statusline, for rate-limit reset times).",
   "author": {
     "name": "Kyle McFarlane"
   },

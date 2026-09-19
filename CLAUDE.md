@@ -20,7 +20,7 @@ plugins/
       {checkpoint,usage-report}/
   dev-flow/            # Plan before you code; the librarian that takes custody of a repo
     skills/
-      {investigate,implement,deep-investigation,chain-of-verification,librarian-mode}/
+      {investigate,implement,dev-cycle,deep-investigation,chain-of-verification,librarian-mode}/
   kit-dev/             # Maintaining this kit itself
     skills/
       {create-skill,update-kit,new-project-from-template,factor-analysis}/

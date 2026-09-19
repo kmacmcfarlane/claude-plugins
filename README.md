@@ -66,7 +66,7 @@ Names are **provisional** pending operator review.
 | …structured product research in a web chat session | `chat` | current; *family home under review* | — |
 | …to survive the finite context window (gate, checkpoint, rehydration, token-spend report) | `context-guard` | **current** | `statusline` (soft; exact depth when installed) |
 | …an always-on status line (context left, plan usage, model, session name) | `statusline` | **current** | `context-guard` (soft; epoch and checkpoint thresholds in the gauge when installed) |
-| …a plan before you code: investigate → reviewed plan → verified implementation, and a standing librarian that takes custody of a repo's work (files, dispatches, reviews, lands) | `dev-flow` | **current** | `work-items` (soft; `librarian-mode` finds `wi` via the repo tree, or the installed plugin's copy), `statusline` (soft; the librarian's fable fallback reads its rate-limit reset times) |
+| …a plan before you code: investigate → reviewed plan → verified implementation, and a standing librarian that takes custody of a repo's work (files, dispatches, reviews, lands) | `dev-flow` | **current** | `work-items` (soft; `librarian-mode` and `dev-cycle` find `wi` via the repo tree, or the installed plugin's copy; `dev-cycle` runs without it on a scratchpad record), `statusline` (soft; the fable fallback in `librarian-mode` and `dev-cycle` reads its rate-limit reset times) |
 | …repo-durable work items and a pluggable work source | `work-items` | **current** | — |
 | …isolated execution for agent sessions (containers, and the checkout/worktree convention) | `sandbox` | **current** | claude-sandbox repo (external) |
 | …unattended agent loops over a backlog ("ralph") | `ralph` | **current** | `sandbox` (hard), `work-items` (soft) |
@@ -198,26 +198,31 @@ separate umbrella **repo** `kmacmcfarlane/claude-kit` keeps its name and is unaf
 ### dev-flow
 
 A plan before you code. Investigate a problem into a reviewed plan series under
-`.claude-sandbox/investigations/<slug>/`, then carry that series to verified code — plus the
-research and verification techniques that feed it, and a standing librarian that takes
-custody of a repo's work: it files every request, dispatches it to worktree agents (spikes
-and features through `investigate` and `implement`), reviews, and lands.
+`.claude-sandbox/investigations/<slug>/`, then carry that series to verified code — by hand,
+or through `dev-cycle`, which takes one change from plan to merge through sub-agents (a
+routed implementer in its own worktree, a review gate with a capped fix loop, the repo's
+checks, a local merge on the user's say-so). Plus the research and verification techniques
+that feed it, and a standing librarian that takes custody of a repo's work: it files every
+request, dispatches it to worktree agents (spikes and features through `investigate` and
+`implement`), reviews, and lands.
 
 | Skill | Description |
 |---|---|
 | `investigate` | Research a problem and write a reviewed plan to an investigation series |
 | `implement` | Carry out an investigation series — plan, build, verify, record the outcome |
+| `dev-cycle` | Carry one change — a work item, a plan, or the conversation — from plan to merge through sub-agents: route by model tier, build in a worktree, review with a capped fix loop, run the checks, land |
 | `deep-investigation` | Multi-agent research fan-out — strategy doc, lanes on a cheap model, one-pass synthesis |
 | `chain-of-verification` | CoVe fact-verification pipeline — baseline, verify, revise |
 | `librarian-mode` | Standing single-writer custodian of a repo's custody layer — a marketplace's shared agent layer, or whatever scope an operator opts a repo in with: file, factor, route by model tier, delegate to worktree agents, review, land, report |
 
 Soft dependency on `work-items`: the flow threads work items through `wi` when a store is
-present, and degrades to plain investigation series when it is not. `librarian-mode` drives
-`wi` throughout, found through the repo's own `plugins/*/skills/work-items` tree or the
-installed plugin's copy; without either it stops at start and says to install `work-items`.
-Soft dependency on `statusline`: when `librarian-mode` cannot dispatch to fable, it reads the
-exhausted usage window's reset time from the status line's sensor record; without it the
-reset time is unknown and the fallback runs on opus at once.
+present, and degrades to plain investigation series when it is not; `dev-cycle` then keeps
+its record in the session scratchpad. `librarian-mode` drives `wi` throughout, found through
+the repo's own `plugins/*/skills/work-items` tree or the installed plugin's copy; without
+either it stops at start and says to install `work-items`. Soft dependency on `statusline`:
+when `librarian-mode` or `dev-cycle` cannot dispatch to fable, it reads the exhausted usage
+window's reset time from the status line's sensor record; without it the reset time is
+unknown and the fallback runs on opus at once.
 
 ### work-items
 
