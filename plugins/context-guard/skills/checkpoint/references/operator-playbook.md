@@ -43,7 +43,10 @@ policy tier may be present — a `managed-settings.json`, a `managed-settings.d/
 `remote-settings.json`, an MDM profile (macOS, Windows), or `CLAUDE_CODE_MANAGED_SETTINGS_PATH`
 set; no `--settings`, `--setting-sources`, `--managed-settings`, `--autocompact` or similar
 flag on the `claude` command line and not an SDK session; and the `claude` process the hook
-runs under must be verified (its binary, and its own session-registry entry). The hard stop
+runs under must be verified (its binary, and its own session-registry entry).
+A `claude` started from another session's Bash tool is never verified (it does not register,
+and its environment carries `CLAUDE_CODE_CHILD_SESSION`), so in it any derived window above
+200K and any auto-compact window only warn. The hard stop
 near the model window is unaffected. The compaction gate never uses the derived or
 auto-compact window: it defers only on the depth it used before the window mirror.
 

@@ -525,6 +525,17 @@ class TestProcInfo(Base):
     under a process, which may or may not be a verified Claude Code."""
     CHILD = ("import sys,json;sys.path.insert(0,sys.argv[1]);import lib_context as L;"
              "print(json.dumps(L.proc_info()))")
+    # Register this (claude) process correctly, then run argv[1] as code.
+    REGISTER_THEN = (
+        "import json,os,sys;start=open(f'/proc/{os.getpid()}/stat').read().rsplit(')',1)[1]"
+        ".split()[19];r=os.path.join(os.environ['CLAUDE_CONFIG_DIR'],'sessions');"
+        "os.makedirs(r,exist_ok=True);json.dump({'pid':os.getpid(),'procStart':start},"
+        "open(os.path.join(r,f'{os.getpid()}.json'),'w'));sys.argv=sys.argv[:1]+sys.argv[1:];")
+
+    @property
+    def CHILD_CMD(self):
+        return ("import subprocess,sys;print(subprocess.run([sys.executable,'-c',"
+                + repr(self.CHILD) + "," + repr(HOOKS) + "],capture_output=True,text=True).stdout)")
 
     def run_under(self, *argv, exe=None, entry="good", mid=None):
         """Run proc_info in a grandchild of `exe` (default: the `claude`
@@ -538,7 +549,10 @@ hooks, entry, mid, child = sys.argv[1:5]
 start = open(f"/proc/{os.getpid()}/stat").read().rsplit(")", 1)[1].split()[19]
 reg = os.path.join(os.environ["CLAUDE_CONFIG_DIR"], "sessions")
 os.makedirs(reg, exist_ok=True)
+dom = "linux:" + (open("/etc/machine-id").read().strip() if os.path.exists("/etc/machine-id") else "") + ":" + os.readlink("/proc/self/ns/pid")
 rec = {"good": {"pid": os.getpid(), "procStart": start},
+       "same-domain": {"pid": os.getpid(), "procStart": start, "pidDomain": dom},
+       "other-domain": {"pid": os.getpid(), "procStart": start, "pidDomain": "linux:x:pid:[1]"},
        "wrong-pid": {"pid": os.getpid() + 1, "procStart": start},
        "wrong-start": {"pid": os.getpid(), "procStart": str(int(start) + 7)}}.get(entry)
 if rec is not None:
@@ -570,6 +584,23 @@ print(subprocess.run(inner, capture_output=True, text=True).stdout)
         self.assertTrue(got["key"])
         self.assertFalse(got["key"].startswith(str(os.getpid())))
         self.assertEqual(self.run_under(exe=sys.executable)["key"], None)
+
+    def test_an_unregistered_first_claude_is_not_skipped(self):
+        # A registered claude ABOVE an unregistered one (a nested claude):
+        # the walk stops at the first claude and reports unverified.
+        code = ("import os,subprocess,sys;link=os.path.join(os.environ['CLAUDE_CONFIG_DIR'],'bin','claude');"
+                "print(subprocess.run([link,'-c',sys.argv[1]],capture_output=True,text=True).stdout)")
+        outer = self.run_under(exe=None, entry="good")
+        self.assertTrue(outer["key"])
+        p = subprocess.run([claude_link(self.cfg), "-c", self.REGISTER_THEN + code,
+                            self.CHILD_CMD], capture_output=True, text=True,
+                           env=self.environ(), timeout=30)
+        got = json.loads(p.stdout.strip().splitlines()[-1])
+        self.assertEqual(got, {"key": None, "observable": False})
+
+    def test_pid_domain_must_match(self):
+        self.assertEqual(self.run_under(entry="other-domain"), {"key": None, "observable": False})
+        self.assertTrue(self.run_under(entry="same-domain")["key"])
 
     def test_the_registry_entry_must_be_the_process_own(self):
         for entry in ("none", "wrong-pid", "wrong-start"):
@@ -635,8 +666,12 @@ if old:
             st["proc"]["key"] = f"{os.getpid()}-{start}"
             with open(p, "w") as f:
                 json.dump(st, f)
-r = subprocess.run([sys.executable, hook], input=sys.stdin.read(), capture_output=True,
-                   text=True)
+cmd = [sys.executable, hook]
+if os.environ.pop("_TEST_NESTED", None):
+    # A claude started from this one's Bash tool: same binary, NOT registered.
+    inner = "import subprocess,sys;r=subprocess.run(sys.argv[1:],input=sys.stdin.read(),capture_output=True,text=True);sys.stdout.write(r.stdout);sys.stderr.write(r.stderr);sys.exit(r.returncode)"
+    cmd = [os.path.join(cfg, "bin", "claude"), "-c", inner] + cmd
+r = subprocess.run(cmd, input=sys.stdin.read(), capture_output=True, text=True)
 sys.stdout.write(r.stdout); sys.stderr.write(r.stderr); sys.exit(r.returncode)
 """
 
@@ -785,6 +820,45 @@ class TestHooks(Base):
         rc, out, _ = self.warn()
         self.assertEqual(rc, 0)
         self.assertIn("NOT applied", out["hookSpecificOutput"]["additionalContext"])
+
+    def test_nested_claude_never_shares_the_outer_session_state(self):
+        # Reviewer round 3: a claude run from the outer claude's Bash tool is
+        # the same binary but unregistered. Its hooks must not take the outer
+        # key; a latch in either session must not HARD-block the other.
+        self.session("claude-opus-5", 170_000)             # the outer session, marker keyed
+        rc, out, err = self.warn()
+        self.assertEqual((rc, err), (0, ""))
+        # The inner session: SessionStart and a prompt under the nested claude.
+        inner = os.path.join(self.cfg, "inner.jsonl")
+        with open(inner, "w") as f:
+            for r in (model_line("claude-opus-5", time.time()), usage_line(170_000),
+                      credits_line(time.time() + 1)):
+                f.write(json.dumps(r) + "\n")
+        env = self.environ(_TEST_NESTED=1)
+        run_hook("window_events.py", {"session_id": "inner", "hook_event_name": "SessionStart",
+                                      "source": "startup", "transcript_path": inner},
+                 dict(env))
+        self.assertIsNone(L.load_state("inner")["proc"]["key"])
+        rc, out, err = run_hook("context_warn.py", {"session_id": "inner", "prompt": "x",
+                                                    "transcript_path": inner, "cwd": self.proj},
+                                dict(env))
+        self.assertEqual(rc, 0, err)                        # its own latch: a maybe, warn only
+        self.assertEqual(L.load_state("inner")["derived"]["resolved"], False)
+        self.assertFalse([f for f in os.listdir(os.path.join(self.cfg, "claude-kit",
+                                                             "context-gate"))
+                          if f.startswith(L.PROC_PREFIX)])
+        # The outer session after the nested run: still 1M, still silent.
+        # (each run_hook is a new stand-in process: re-adopt the outer marker)
+        L.update_state("s", lambda st: st["proc"].update(key=self.key))
+        rc, out, err = self.warn()
+        self.assertEqual((rc, out, err), (0, {}, ""))
+        self.assertEqual(L.load_state("s")["derived"]["window"], 1_000_000)
+
+    def test_child_session_env_is_unverified(self):
+        self.session("claude-opus-5", 950_000)
+        rc, out, _ = self.warn(CLAUDE_CODE_CHILD_SESSION=1)
+        self.assertEqual(rc, 0)
+        self.assertIn("latch_unknown", out["hookSpecificOutput"]["additionalContext"])
 
     def test_malformed_mismatch_record_never_raises(self):
         self.session("claude-opus-5", 100_000)

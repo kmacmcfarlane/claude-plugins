@@ -36,9 +36,10 @@ Depth sources, in order of preference:
    sidechain (subagent) transcripts, none in the process record. The latch
    is matched on apiError "long_context_credits_required" only.
    The running Claude Code process is identified only when verified
-   (proc_info: /proc shows the claude binary and its session-registry entry
-   carries its own pid and start time); unverified, every input that
-   depends on it is unresolved.
+   (proc_info: the FIRST claude ancestor, whose session-registry entry
+   carries its own pid, start time and PID namespace); a nested claude
+   (unregistered, or CLAUDE_CODE_CHILD_SESSION set) is never matched to an
+   outer one. Unverified, every input that depends on it is unresolved.
    CONTEXT_GUARD_DERIVE=off, or the operator's CLAUDE_KIT_CONTEXT_WINDOW
    pin, turns the mirror off (and the auto-compact window below): the gate
    is then exactly the pre-mirror exact-or-inferred one. precompact_gate
@@ -925,55 +926,86 @@ def _is_claude(pid):
         return False
 
 
+def _pid_domain():
+    """Claude Code's pidDomain for this PID namespace (e7r() in 2.1.277):
+    'linux:<machine-id>:<readlink /proc/self/ns/pid>', or None."""
+    try:
+        try:
+            with open("/etc/machine-id") as f:
+                mid = f.read().strip()
+        except Exception:
+            mid = ""
+        return f"linux:{mid}:{os.readlink('/proc/self/ns/pid')}"
+    except Exception:
+        return None
+
+
 def _registry_matches(entry, pid, start):
     """The registry entry was written by this very process: its `pid` is
-    pid, and its `procStart`, when present, carries the /proc start time."""
+    pid, its `procStart`, when present, carries the /proc start time, and
+    its `pidDomain`, when present, is this PID namespace's (the registry is
+    shared across sandboxes, each its own namespace)."""
     if not isinstance(entry, dict) or entry.get("pid") != pid:
         return False
     ps = entry.get("procStart")
-    if ps is None:
-        return True
-    return start is not None and str(start) in re.findall(r"\d+", str(ps))
+    if ps is not None and (start is None or str(start) not in re.findall(r"\d+", str(ps))):
+        return False
+    dom = entry.get("pidDomain")
+    if dom is not None and dom != _pid_domain():
+        return False
+    return True
+
+
+CHILD_SESSION_ENV = "CLAUDE_CODE_CHILD_SESSION"
 
 
 def proc_info():
     """The Claude Code process this hook runs under: {"key":
     '<pid>-<starttime>' or None, "observable": bool}.
 
-    Walks at most ANCESTORS parents through /proc. An ancestor counts only
-    when it is VERIFIED: /proc shows it running the Claude Code binary
-    (_is_claude), and <config>/sessions/<pid>.json exists and was written by
-    it (its `pid`, and `procStart` when present, match). The walk goes on
-    past any ancestor that fails either check - the session registry is
-    shared across sandboxes (separate pid namespaces), so a registry entry
-    alone can name another sandbox's claude at the same pid as this hook's
-    shell. `observable` is True only when the verified process's
+    Walks at most ANCESTORS parents through /proc and STOPS at the first one
+    running the Claude Code binary (_is_claude) - that is the claude whose
+    hook this is. It counts only when VERIFIED: <config>/sessions/<pid>.json
+    exists and was written by it (_registry_matches: pid, procStart,
+    pidDomain). A first claude that is not verified is never skipped for an
+    outer one: a claude started from another's Bash tool does not register
+    (2.1.277), and taking the outer claude's key would share its state -
+    its latch, its marker - across two sessions. Also unverified: the hook
+    environment carries CLAUDE_CODE_CHILD_SESSION (set in Bash-tool
+    children, so this claude is nested). Non-claude ancestors (shells) are
+    walked past, whatever the registry says about their pids: the registry
+    is shared across sandboxes.
+    `observable` is True only when the verified process's
     /proc/<pid>/cmdline carries none of SETTINGS_FLAGS (matched against
-    flag names only, never stored or printed). Nothing verified (non-Linux,
-    no registry): key None, not observable - every input that depends on
-    this process is then unresolved. Never raises."""
+    flag names only, never stored or printed). Unverified (non-Linux, no
+    registry entry, a nested claude): key None, not observable - every
+    input that depends on the process is then unresolved. Never raises."""
     info = {"key": None, "observable": False}
     try:
+        if os.environ.get(CHILD_SESSION_ENV):
+            return info
         reg = os.path.join(_base_dir(), "sessions")
         pid, seen = os.getppid(), set()
         for _ in range(ANCESTORS):
             if not pid or pid <= 1 or pid in seen:
                 return info
             seen.add(pid)
-            path = os.path.join(reg, f"{pid}.json")
-            if os.path.isfile(path) and _is_claude(pid):
+            if _is_claude(pid):
+                path = os.path.join(reg, f"{pid}.json")
                 start = _proc_start(pid)
-                if start is not None and _registry_matches(read_json_file(path), pid, start):
-                    info["key"] = f"{pid}-{start}"
-                    try:
-                        with open(f"/proc/{pid}/cmdline", "rb") as f:
-                            args = f.read(1 << 20).split(b"\0")
-                        flags = tuple(x.encode() for x in SETTINGS_FLAGS)
-                        info["observable"] = bool(args and args[0]) and not any(
-                            a == fl or a.startswith(fl + b"=") for a in args for fl in flags)
-                    except Exception:
-                        info["observable"] = False
+                if start is None or not os.path.isfile(path) \
+                        or not _registry_matches(read_json_file(path), pid, start):
                     return info
+                info["key"] = f"{pid}-{start}"
+                try:
+                    with open(f"/proc/{pid}/cmdline", "rb") as f:
+                        args = f.read(1 << 20).split(b"\0")
+                    flags = tuple(x.encode() for x in SETTINGS_FLAGS)
+                    info["observable"] = bool(args and args[0]) and not any(
+                        a == fl or a.startswith(fl + b"=") for a in args for fl in flags)
+                except Exception:
+                    info["observable"] = False
+                return info
             with open(f"/proc/{pid}/status") as f:
                 pid = next((int(ln.split()[1]) for ln in f if ln.startswith("PPid:")), 0)
     except Exception:
