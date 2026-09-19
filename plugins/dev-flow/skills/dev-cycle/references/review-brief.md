@@ -211,7 +211,9 @@ For a plan-mode series (SKILL.md § Step 1): the same brief, severity scale, ver
 prohibitions and report shape, with these changes. There is no worktree and no diff:
 replace the WORKTREE and Under review blocks with `SERIES=<absolute path of the series>`
 and "Read every file of the series in full", keep Item or Brief, Acceptance and the
-plan agent's claims, and drop the Checks block. Replace What to do with:
+plan agent's claims, set "Files changed, with reasons" to "none" (a plan has no worktree
+diff; its re-review pastes "none" too), and drop the Checks block. Replace What to do
+with:
 
 ```
 The series follows the investigate skill's investigation-format reference (path below).

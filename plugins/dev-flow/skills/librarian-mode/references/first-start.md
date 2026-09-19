@@ -3,7 +3,7 @@
 Everything that only happens the first time the librarian runs in a repo: creating the
 work-item store, what the first Rehydrate reports, and the dirt that leaves in the main
 checkout. The opt-in that writes `## Librarian` runs before any of it:
-`opt-in.md`. Pointed at from SKILL.md § Rehydrate and § Land.
+`opt-in.md`. Pointed at from SKILL.md § Rehydrate and § The cycle.
 
 ## No store yet (Rehydrate step 1)
 

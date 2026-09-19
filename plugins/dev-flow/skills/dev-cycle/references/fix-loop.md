@@ -30,8 +30,10 @@ SKILL.md § Step 4.
   (rule 4), or if gone — with the re-review variant in `review-brief.md`, pasting the
   new shas, the declined list and, every round, the cumulative "Files changed, with
   reasons" — the record sink's `changed:` block after this round's CHANGED was merged
-  in, so a file a fix round added arrives with its reason: it verifies each prior finding by file:line, re-runs
-  the same checks, attacks the fix, and rules each declined one DECLINED or OPEN.
+  in, so a file a fix round added arrives with its reason; a plan-mode re-review pastes
+  "none" there, since a plan has no worktree diff. The reviewer verifies each prior
+  finding by file:line, re-runs the same checks, attacks the fix, and rules each
+  declined one DECLINED or OPEN.
 
 Then repeat until `CLEAR`, inside the cap: a fourth review that is not `CLEAR` blocks the
 change and goes to the decision channel.
@@ -47,7 +49,11 @@ The orchestrator never resolves a conflict by hand. When Land's merge conflicts:
 3. Re-dispatch or resume the implementer with the merge-conflict clause of
    `agent-brief.md`: it merges `<base>` into `worktree-<name>` as one new commit,
    resolving with the change's own approach as the tiebreaker. That is the brief's one
-   exception to its no-merge rule; a rebase stays forbidden.
+   exception to its no-merge rule; a rebase stays forbidden. Its CHANGED may list files
+   the base brought in with the merge: before merging it into the `changed:` block, drop
+   every path that `git -C "$MAIN"/.claude/worktrees/<name> diff --stat <base>...HEAD`
+   does not show — the three-dot diff, taken after the merge, holds only the change's
+   own side.
 4. Re-review from the last reviewed sha, with the merge-conflict case of
    `review-brief.md` § Re-review variant, which judges the resolution with
    `git show --remerge-diff <merge sha>` (git 2.36+; its fallback for older git is

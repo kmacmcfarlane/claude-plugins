@@ -14,7 +14,7 @@ order given, and asks the user only where the table says so.
 
 | Binding | What it is | Standalone resolves |
 |---|---|---|
-| **Ground** | What may be touched at all | The whole repo except `.claude-sandbox/` and `.claude/` |
+| **Ground** | What may be touched at all | CLAUDE.md's `## Librarian` `Scope:` minus its `Exclude:` when that section exists (§ A librarian's repo); otherwise the whole repo. Never `.claude-sandbox/` or `.claude/` |
 | **Files in scope** | What this change may touch, inside Ground | The item's or plan's files to modify, or the cycle brief's list; when none names files, `undeclared` (§ Undeclared files) |
 | **Checks** | Repo commands every change must pass, on top of the generic checklist | § Checks below |
 | **Workflow** | Free-text repo workflow notes the change must follow | A `Workflow:` line in CLAUDE.md's `## Librarian` section, read only; otherwise none |
@@ -44,6 +44,16 @@ For reference, the values `librarian-mode` supplies (its own SKILL.md is authori
 | Decision channel | `decision N:` appended to the item, carried under `decisions needed` in its Report |
 | Terminal action | `git merge --no-ff` into local `main`; the push is the librarian's, after its Report |
 | Series home | Its scratchpad (`.claude-sandbox/` is outside every Scope) |
+
+## A librarian's repo
+
+A standalone run in a repo whose CLAUDE.md carries a `## Librarian` section honours it,
+read only: Ground is its `Scope:` minus its `Exclude:` (a section with no `Scope:` line,
+or `whole repo`, means the whole repo), and its `Checks:` and `Workflow:` feed those
+bindings as the table says. The run never refuses because of it and never widens it: a
+path outside that Ground is out of scope like any other — the implementer lists it under
+OPEN QUESTIONS, and a diff that touches it is a finding at medium. The section is never
+written from a cycle.
 
 ## Undeclared files
 
