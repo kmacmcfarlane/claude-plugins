@@ -231,44 +231,109 @@ def emit_body(desc, sections):
     return "\n\n".join(parts)
 
 
+HANDOFF_LINE_RE = re.compile(r"^- (doing|next|blocked|learned):\s*(.*)$")
+
+
 def parse_handoff(text):
-    h = {k: "" for k in HANDOFF_KEYS}
+    """First `- key:` line of each key wins — the same line set_handoff rewrites."""
+    h, seen = {k: "" for k in HANDOFF_KEYS}, set()
     for line in text.split("\n"):
-        m = re.match(r"^- (doing|next|blocked|learned):\s*(.*)$", line)
-        if m:
+        m = HANDOFF_LINE_RE.match(line)
+        if m and m.group(1) not in seen:
+            seen.add(m.group(1))
             v = m.group(2).strip()
             h[m.group(1)] = "" if v == "—" else v
     return h
 
 
+def _handoff_line(h, key):
+    return f"- {key}: {h.get(key) or '—'}"
+
+
 def emit_handoff(h):
-    return "\n".join(f"- {k}: {h.get(k) or '—'}" for k in HANDOFF_KEYS)
+    return "\n".join(_handoff_line(h, k) for k in HANDOFF_KEYS)
+
+
+# The raw body is the custody record: rewrites edit it in place, line by line,
+# so every byte outside the lines a command owns (the four Handoff bullets,
+# one appended Notes line, a section appended at the end) survives untouched —
+# unheaded trailing text, spacing between sections, section order, CRLF.
+
+def _raw_lines(text):
+    """Lines with their endings kept; ''.join() gives `text` back exactly."""
+    return re.findall(r"[^\n]*\n|[^\n]+\Z", text)
+
+
+def _content(line):
+    return line.rstrip("\r\n")
+
+
+def _section_span(lines, name):
+    """(heading index, end index) of the first `## name` section; the section
+    runs to the next `## ` heading or the end of the body."""
+    start = None
+    for i, line in enumerate(lines):
+        if line.startswith("## "):
+            if start is not None:
+                return start, i
+            if _content(line)[3:].strip() == name:
+                start = i
+    return None if start is None else (start, len(lines))
 
 
 # ── Item model ──────────────────────────────────────────────────────────────
 
 class Item:
-    def __init__(self, meta, extra, desc, sections, path=None):
-        self.meta, self.extra, self.desc, self.sections, self.path = \
-            meta, extra, desc, sections, path
+    def __init__(self, meta, extra, desc, sections, path=None, body=None, eol="\n"):
+        """New items pass desc/sections; parsed items pass the raw `body`
+        (everything after the closing `---` line), which is kept verbatim."""
+        self.meta, self.extra, self.path, self.eol = meta, extra, path, eol
+        if body is None:
+            body = "\n" + emit_body(desc, sections) + "\n"
+            body = body.replace("\n", eol)
+        self.body = body
+        self._parsed = None
 
     @classmethod
     def parse(cls, text, path=None):
-        if not text.startswith("---\n"):
+        if text.startswith("---\r\n"):
+            eol = "\r\n"
+        elif text.startswith("---\n"):
+            eol = "\n"
+        else:
             raise WiError(3, f"{path}: missing front matter")
-        try:
-            _, front, body = text.split("---\n", 2)
-        except ValueError:
-            raise WiError(3, f"{path}: unterminated front matter")
+        start = i = len("---" + eol)
+        while True:
+            j = text.find("\n", i)
+            if j == -1:
+                raise WiError(3, f"{path}: unterminated front matter")
+            if text[i:j].rstrip("\r") == "---":
+                front, body = text[start:i], text[j + 1:]
+                break
+            i = j + 1
+        front = front.replace("\r\n", "\n")
         meta, extra, errors = parse_front(front.rstrip("\n").split("\n"))
         if errors:
             raise WiError(3, f"{path}: " + "; ".join(errors))
-        desc, sections = parse_body(body)
-        return cls(meta, extra, desc, sections, path)
+        return cls(meta, extra, None, None, path, body=body, eol=eol)
 
     def render(self):
-        body = emit_body(self.desc, self.sections)
-        return "---\n" + emit_front(self.meta, self.extra) + "\n---\n\n" + body + "\n"
+        eol = self.eol
+        front = emit_front(self.meta, self.extra).replace("\n", eol)
+        return "---" + eol + front + eol + "---" + eol + self.body
+
+    def _parse(self):
+        if self._parsed is None or self._parsed[0] is not self.body:
+            self._parsed = (self.body, parse_body(self.body.replace("\r\n", "\n")))
+        return self._parsed[1]
+
+    @property
+    def desc(self):
+        return self._parse()[0]
+
+    @property
+    def sections(self):
+        return list(self._parse()[1])
 
     def section(self, name):
         for n, text in self.sections:
@@ -276,19 +341,66 @@ class Item:
                 return text
         return None
 
-    def set_section(self, name, text):
-        for i, (n, _) in enumerate(self.sections):
-            if n == name:
-                self.sections[i] = (name, text)
-                return
-        self.sections.append((name, text))
+    def _append_section(self, name, text):
+        """Add `## name` at the end of the body; existing bytes are a prefix
+        of the result (at most a line ending and a blank line are added)."""
+        eol, body = self.eol, self.body
+        if body.strip():
+            if not body.endswith("\n"):
+                body += eol
+            if not re.search(r"\n\r?\n\Z", body):
+                body += eol
+        self.body = body + f"## {name}" + eol + text.replace("\n", eol) + eol
+
+    def set_handoff(self, h):
+        """Rewrite only the four `- key:` bullets of `## Handoff` (the first
+        of each key); a missing bullet is inserted after its predecessor.
+        Nothing else in the section, or after it, is touched."""
+        lines = _raw_lines(self.body)
+        span = _section_span(lines, "Handoff")
+        if span is None:
+            self._append_section("Handoff", emit_handoff(h))
+            return
+        start, end = span
+        found = {}
+        for i in range(start + 1, end):
+            m = HANDOFF_LINE_RE.match(_content(lines[i]))
+            if m and m.group(1) not in found:
+                found[m.group(1)] = i
+        anchor = start
+        for key in HANDOFF_KEYS:
+            if key in found:
+                i = found[key]
+                lines[i] = _handoff_line(h, key) + lines[i][len(_content(lines[i])):]
+                anchor = i
+                continue
+            if not lines[anchor].endswith("\n"):
+                lines[anchor] += self.eol
+            anchor += 1
+            lines.insert(anchor, _handoff_line(h, key) + self.eol)
+            found = {k: (v + 1 if v >= anchor else v) for k, v in found.items()}
+        self.body = "".join(lines)
 
     def handoff(self):
         return parse_handoff(self.section("Handoff") or "")
 
     def append_note(self, line):
-        notes = self.section("Notes")
-        self.set_section("Notes", (notes + "\n" + line).strip() if notes else line)
+        """Insert `line` after the last non-blank line of `## Notes` (or add
+        the section at the end); every existing byte stays in place."""
+        lines = _raw_lines(self.body)
+        span = _section_span(lines, "Notes")
+        if span is None:
+            self._append_section("Notes", line)
+            return
+        start, end = span
+        last = start
+        for i in range(start + 1, end):
+            if lines[i].strip():
+                last = i
+        if not lines[last].endswith("\n"):
+            lines[last] += self.eol
+        lines.insert(last + 1, line + self.eol)
+        self.body = "".join(lines)
 
     def summary(self):
         return self.desc.split("\n\n")[0].replace("\n", " ").strip()
@@ -477,9 +589,16 @@ class Lock:
         self.fh.close()
 
 
+def read_raw(path):
+    """Read without newline translation, so CRLF survives a rewrite."""
+    with open(path, newline="") as fh:
+        return fh.read()
+
+
 def atomic_write(path, text):
     tmp = path.with_name(path.name + ".tmp" + str(os.getpid()))
-    tmp.write_text(text)
+    with open(tmp, "w", newline="") as fh:
+        fh.write(text)
     os.replace(tmp, path)
 
 
@@ -499,7 +618,7 @@ def item_paths(root, archived=False):
 def load_all(root, archived=False):
     items = []
     for path in item_paths(root, archived):
-        items.append(Item.parse(path.read_text(), path))
+        items.append(Item.parse(read_raw(path), path))
     return items
 
 
@@ -736,7 +855,7 @@ def cmd_handoff(args):
             val = getattr(args, key)
             if val is not None:
                 h[key] = val
-        item.set_section("Handoff", emit_handoff(h))
+        item.set_handoff(h)
         if args.learned:
             line = f"- {today()} learned: {args.learned}"
             if line not in (item.section("Notes") or ""):

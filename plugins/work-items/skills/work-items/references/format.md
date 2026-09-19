@@ -120,11 +120,19 @@ Sets exactly one front-matter field. `id` and `created` are immutable (exit 1).
   the summary `show --brief` and `prime` print.
 - `## Acceptance` — `- [ ]` / `- [x]` bullets; exported to `acceptance:`.
 - `## Testing` — bullets, typically `command: …`; exported to `testing:`.
-- `## Handoff` — exactly four bullets `- doing: / - next: / - blocked: /
-  - learned:` (`—` when empty). Rewritten whole by `wi handoff`; required by
-  `lint` when `status: doing`.
-- `## Notes` — free text; the tool only appends dated lines.
+- `## Handoff` — four bullets `- doing: / - next: / - blocked: /
+  - learned:` (`—` when empty). `wi handoff` rewrites only those four lines
+  (the first of each key) and inserts any that are missing; required by `lint`
+  when `status: doing`.
+- `## Notes` — free text; the tool only appends dated lines, after the last
+  non-blank line of the section (it adds `## Notes` at the end when absent).
 - any other `## …` section round-trips untouched.
+
+A section runs from its `## ` heading to the next `## ` heading, so unheaded
+text after a block belongs to that block. Every rewriting command edits the
+body in place: bytes outside the lines it owns — trailing unheaded text,
+spacing between sections, section order, CRLF line endings — are kept exactly.
+Front matter is re-emitted in canonical form.
 
 ## Session-start rule
 
