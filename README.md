@@ -357,23 +357,30 @@ Skills for LLM chat sessions in web UIs. Family home under review.
 ### Add the marketplace
 
 ```bash
-/plugin marketplace add kmacmcfarlane/claude-plugins
+/plugin marketplace add https://github.com/kmacmcfarlane/claude-plugins.git
 ```
 
-Or in `.claude/settings.json`:
+Or in `.claude/settings.json` (`~/.claude/settings.json` for user scope):
 
 ```json
 {
   "extraKnownMarketplaces": {
     "kmacmcfarlane": {
       "source": {
-        "source": "github",
-        "repo": "kmacmcfarlane/claude-plugins"
-      }
+        "source": "git",
+        "url": "https://github.com/kmacmcfarlane/claude-plugins.git"
+      },
+      "autoUpdate": true
     }
+  },
+  "enabledPlugins": {
+    "statusline@kmacmcfarlane": true
   }
 }
 ```
+
+Auto-install from `enabledPlugins` is unverified; the reliable path is still the explicit
+`/plugin install statusline@kmacmcfarlane` below.
 
 ### Install plugins
 
@@ -385,6 +392,9 @@ Or in `.claude/settings.json`:
 After installing `statusline`, start a new session: it adds the footer to your settings and
 says so, and the footer shows from the session after that. `/install-statusline` is only for
 another scope, removal, or replacing a status line another tool set.
+
+To keep this marketplace itself up to date automatically, see "Keep it updated" in the
+`install-statusline` skill.
 
 Or browse: `/plugin` → Discover tab. Install the plugins whose aims match your problems — the
 catalog above is the index; nothing here requires anything else here.
