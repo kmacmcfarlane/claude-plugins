@@ -15,8 +15,8 @@ refs:
 Operator 2026-09-17: remove context-guard's dependency on the status line as its depth sensor; context-guard should own its own hook. Librarian facts: hooks receive no context-window size or usage (docs: common fields session_id, prompt_id, transcript_path, cwd, scratchpad_dir, permission_mode, effort, hook_event_name; none for window/usage). Token count is already exact from transcript usage blocks (cross-checked equal to the status-line record). The only missing input is the WINDOW SIZE (200K vs 1M), which the model id in transcripts ('claude-opus-5') and settings ('opus') does not carry. The 2.1.273 binary shows SessionStart hooks receive an undocumented 'model' field and there are PreModelSwitch/PostModelSwitch hook events with from_model/to_model — if those carry the 1M variant, hooks can know the window without the status line. Step 1 (spike): capture the live payloads. Step 2: plan + operator review. Step 3: implement on the factored layout (context-guard), fable.
 
 ## Handoff
-- doing: dispatched
-- next: review -> land
+- doing: fix round 1 running in worktree d63e on top of cf69579 (5 criticals: false hard-blocks)
+- next: review round 2 (resume the d63e reviewer) -> land; then 953e, 6d60 folded in
 - blocked: decision 14
 - learned: —
 
@@ -76,3 +76,6 @@ dispatch: implementer opus — fable unavailable (unknown); fallback (rule 3: no
 ## Round log
 impl (opus fallback): DONE d513ea9 + cf69579 (window_rules.py 2.1.277; measure(); 357 tests; 42-case gate matrix: existing users identical except E7 stale+model line now blocks and A3 configured auto-compact window now gates fresh-sensor users). Librarian accepts A3 as decision 34b working as intended (the gate should respect the real compaction threshold); reported to the operator. Kill switch CONTEXT_GUARD_DERIVE=off. Timing 11->49ms fresh, 71->95ms none on a 52MB transcript.
 dispatch: reviewer opus — fable unavailable (unknown); fallback
+
+review round 1 (opus, fable fallback): NEEDS_CHANGES — critical 1 (autoCompactWindow not range-validated: 50000 blocks at 20K), 2 (settings window resolved though --settings/--setting-sources can override), 3 (legacy autoCompactEnabled in ~/.claude.json unobservable), 4 (credits latch matched by phrase, not apiError), 5 (provider gate on the 1M beta); high 6 (overestimate -> precompact defers needed compactions; latch key unchecked), 7 (stale proc record trusted); medium 8 (URL.host/port, CLAUDE_CODE_USE_GATEWAY), 9 (README), 10 (HARD STOP escapes; CLAUDE_KIT_CONTEXT_WINDOW pin no longer honoured); lows 11-12, nit 13. Librarian decisions: false blocks are never acceptable — every unobservable override makes the input unresolved (warn-only); precompact_gate defers only on exact depth; the pin beats derivation; 6d60 docs folded in.
+dispatch: implementer opus fix round 1 — resume (fable unavailable)

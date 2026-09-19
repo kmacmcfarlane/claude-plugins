@@ -16,8 +16,8 @@ updated: 2026-09-19
 07c3 plan §F1: new plugins/dev-flow/skills/dev-cycle (full + plan modes, standalone bindings); README/CLAUDE.md layout/plugin.json/marketplace.json in the same commit; librarian-mode untouched. Size L; opus/opus.
 
 ## Handoff
-- doing: dispatched
-- next: review -> land
+- doing: fix round 3 (last before cap 4) running in worktree 325d on top of 20e68f2
+- next: review round 4 (resume the F1 reviewer) -> land; non-CLEAR -> operator
 - blocked: —
 - learned: —
 
@@ -40,3 +40,15 @@ dispatch: reviewer opus — rule 4
 
 review round 1 (opus): NEEDS_CHANGES — high 1 (Land refuses the cycle's own store/series/worktree dirt), 2 (lost: reviewer NOTES/open questions, --blocked handoff on a red Land check, report-and-ask on a dirty worktree); medium 3 (merge-conflict hand resolution), 4 (record sink fallback to a nonexistent outcome file), 5 (no Files-in-scope fallback), 6 (plan/spike DONE skips review); lows 7-11, nit 12. Librarian decisions: own dirt never blocks; conflicts go back to the implementer (named merge-base exception); every DONE incl. plans is reviewed; files fallback = implementer declares, review holds it to the plan.
 dispatch: implementer opus fix round 1 — resume
+
+fix round 1 (opus): DONE 5d96ef3 (all but 11 declined->10f2; conflict graded medium; plan revisions as new series files).
+dispatch: reviewer opus review round 2 — resume
+
+review round 2 (opus): NEEDS_CHANGES — high 1 (conflict re-review uses git show; one-sided resolutions invisible -> use --remerge-diff), medium 2 (plan fix rounds edit serials; must add a new serial with Supersedes per investigation-format), 3 (undeclared Files in scope not carried to Land step 2 / checklist §1); lows 4-5, nit 6.
+dispatch: implementer opus fix round 2 — resume
+
+fix round 2 (opus): DONE 20e68f2 (remerge-diff + fallback; plan rounds by new serial with Supersedes; undeclared at Land/§1).
+dispatch: reviewer opus review round 3 — resume
+
+review round 3 (opus): NEEDS_CHANGES — medium 1 (reviewer never given CHANGED reasons; union of CHANGED across rounds), 2 (plan re-review has no baseline: record serial hashes); lows 3 (fallback misses a dropped change side), 4 (open-question fields per investigation-format). Last fix round; mediums only -> stays opus.
+dispatch: implementer opus fix round 3 (last) — resume
