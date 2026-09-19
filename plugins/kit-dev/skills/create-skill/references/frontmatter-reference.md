@@ -1,6 +1,13 @@
 # YAML Frontmatter Reference
 
-YAML frontmatter is optional metadata at the start of SKILL.md files, enclosed in `---` delimiters. All fields except `name` are optional. Commands work without any frontmatter.
+YAML frontmatter is optional metadata at the start of SKILL.md files, enclosed in `---` delimiters. Claude Code itself requires none of the fields (`name` defaults to the folder name, `description` is recommended). Commands work without any frontmatter.
+
+## House rule for this repo
+
+Every skill here declares exactly these five keys: `name`, `description`,
+`disable-model-invocation`, `allowed-tools`, `argument-hint`. The other fields documented
+below (`model`, `context`, `license`, `compatibility`, `metadata`) are allowed; no other key
+is. The librarian review checklist (§2) enforces the same set.
 
 ## Required fields
 
@@ -25,7 +32,7 @@ description: What it does and when to use it. Include specific trigger phrases.
 - Mention file types if relevant
 - Start with a verb (Review, Deploy, Generate)
 
-## Optional fields
+## Other fields (house-required ones marked)
 
 ```yaml
 ---
@@ -46,12 +53,13 @@ metadata:
 ---
 ```
 
-### allowed-tools (optional)
-- Restricts which tools the skill can use
-- Default: inherits from conversation permissions
-- Be as restrictive as possible
+### allowed-tools (house-required)
+- Pre-approves the listed tools for the turn that invokes the skill: Claude can use them without a permission prompt. The grant clears when the user sends the next message.
+- It never restricts: every tool stays callable, and permission settings still govern the tools that are not listed. (Removing tools is a different field, `disallowed-tools`, outside this repo's key set.)
+- Omitted (or empty): nothing is pre-approved; every tool call goes through permission settings as usual.
+- List only the tools that should run without prompting; never pre-approve side effects nobody needs (writes, pushes, deletes, network calls the skill does not make).
 
-**Formats:**
+**Formats:** a space- or comma-separated string, or a YAML list.
 
 Comma-separated string:
 ```yaml
@@ -76,12 +84,12 @@ allowed-tools: Bash(git:*), Bash(npm:*), Read
 - Default: inherits from conversation
 - Use `haiku` for simple/fast tasks, `opus` for complex analysis, omit for default `sonnet`
 
-### argument-hint (optional)
+### argument-hint (house-required)
 - Brief hint shown in autocomplete
 - Use square brackets for each argument: `[file-path]`, `[issue-number] [options]`
 - Use descriptive names, not `arg1`/`arg2`
 
-### disable-model-invocation (optional)
+### disable-model-invocation (house-required)
 - `false` (default): Skill can be invoked programmatically by Claude via SlashCommand tool
 - `true`: Skill is user-invoked only via `/<skill-name>` — use for commands requiring human judgment or with destructive effects
 
@@ -128,7 +136,7 @@ description: "Does things
 # Wrong - name has spaces or capitals
 name: My Cool Skill
 
-# Wrong - Bash without command filter
+# Risky - pre-approves every Bash command, side effects included
 allowed-tools: Bash
 
 # Correct

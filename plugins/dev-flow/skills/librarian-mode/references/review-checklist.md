@@ -30,8 +30,10 @@ git -C $W diff --stat main...HEAD
 ## 2. Skill hygiene (every skill directory touched)
 
 - [ ] Folder name equals the frontmatter `name`; the file is exactly `SKILL.md`.
-- [ ] Frontmatter keys are exactly `name, description, disable-model-invocation,
-      allowed-tools, argument-hint` — no others, none missing.
+- [ ] Frontmatter keys follow the house rule (create-skill's frontmatter reference states
+      the same): every skill declares `name, description, disable-model-invocation,
+      allowed-tools, argument-hint`, none missing; the other documented fields `model,
+      context, license, compatibility, metadata` are allowed; no other key.
 - [ ] No angle brackets in `name` or `description` (they are allowed in `argument-hint`,
       where about half the skills here use them); description under 1024 characters and states
       what + when + trigger phrases.
@@ -53,7 +55,13 @@ for s in $(git -C $W diff --name-only main...HEAD | grep -o 'plugins/[^/]*/skill
   name=$(sed -n 's/^name: *//p' $d/SKILL.md | head -1)
   test "$name" = "$(basename $s)" || echo "FAIL: name '$name' != folder"
   keys=$(awk 'NR>1 && /^---$/ {exit} NR>1 && /^[a-z-]+:/ {sub(":.*",""); print}' $d/SKILL.md | sort | tr '\n' ' ')
-  test "$keys" = "allowed-tools argument-hint description disable-model-invocation name " || echo "FAIL: keys: $keys"
+  for k in name description disable-model-invocation allowed-tools argument-hint; do
+    case " $keys" in *" $k "*) ;; *) echo "FAIL: missing key $k (keys: $keys)";; esac
+  done
+  for k in $keys; do
+    case " name description disable-model-invocation allowed-tools argument-hint model context license compatibility metadata " in
+      *" $k "*) ;; *) echo "FAIL: key $k not allowed (keys: $keys)";; esac
+  done
   grep -n '^\(name\|description\):.*[<>]' $d/SKILL.md && echo "FAIL: angle brackets in name/description"
   desc=$(sed -n 's/^description: *//p' $d/SKILL.md | head -1); test ${#desc} -le 1024 || echo "FAIL: description ${#desc} chars"
   grep -rn '[.]/\|CLAUDE_SKILL_DI[R]' $d && echo "FAIL: non-bare reference path"
