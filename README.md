@@ -265,8 +265,15 @@ It also carries `hooks/` — the depth gate, the ledger, the SessionStart rehydr
 `usage-report` skill has its own suite:
 `cd plugins/context-guard/skills/usage-report && python3 -m unittest discover -s tests -q`.
 
-Soft dependency on `statusline`: its sensor record gives the gate exact depth; without it the
-depth is inferred from the transcript, which warns but never hard-blocks. `context-guard`
+Soft dependency on `statusline`: its sensor record gives the gate exact depth. Without it the
+gate derives the window itself, mirroring Claude Code's own selection logic from the
+transcript's model line and the `CLAUDE_CODE_*` window variables (`hooks/window_rules.py`).
+A hard block needs an exact depth, or a derived one whose every input was observed; a derived
+window that depends on something a hook cannot see (SDK betas, a 3P provider or gateway, an
+unknown model, a pending model switch, a credits latch it cannot rule out for this process, an
+auto-compact window a hidden settings layer could change) only warns, and so does a depth
+inferred from the transcript. With the status line present its reading wins and cross-checks
+the derived window. `CONTEXT_GUARD_DERIVE=off` turns derivation off. `context-guard`
 never writes `settings.json`. For one more release it still ships its older copy of the status
 line (`hooks/statusline.py`, deprecated), so an existing `statusLine` entry that points at it
 keeps rendering. While such an entry is active and `statusline` is not installed, SessionStart
