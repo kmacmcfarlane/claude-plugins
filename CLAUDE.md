@@ -63,6 +63,10 @@ optional `references/`, `scripts/`, `assets/`.
   plugin (not when adding skills to an existing plugin). Its `name` field, `kmacmcfarlane`,
   is **frozen**: it suffixes every plugin-data directory.
 - **Skill reference paths**: bare relative paths (no `./`, no `${CLAUDE_SKILL_DIR}`).
+- **Cross-skill references**: a skill may point into a sibling skill of the *same* plugin by
+  its backticked name right before a bare path — "the `investigate` skill's
+  `references/investigation-format.md`".
+  Never `../`, never a path into another plugin (there, README principle 4 applies).
 - **Catalog upkeep**: any change to the shape of the marketplace updates the README catalog
   in the same commit.
 
