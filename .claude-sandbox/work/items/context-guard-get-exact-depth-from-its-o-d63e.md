@@ -15,8 +15,8 @@ refs:
 Operator 2026-09-17: remove context-guard's dependency on the status line as its depth sensor; context-guard should own its own hook. Librarian facts: hooks receive no context-window size or usage (docs: common fields session_id, prompt_id, transcript_path, cwd, scratchpad_dir, permission_mode, effort, hook_event_name; none for window/usage). Token count is already exact from transcript usage blocks (cross-checked equal to the status-line record). The only missing input is the WINDOW SIZE (200K vs 1M), which the model id in transcripts ('claude-opus-5') and settings ('opus') does not carry. The 2.1.273 binary shows SessionStart hooks receive an undocumented 'model' field and there are PreModelSwitch/PostModelSwitch hook events with from_model/to_model — if those carry the 1M variant, hooks can know the window without the status line. Step 1 (spike): capture the live payloads. Step 2: plan + operator review. Step 3: implement on the factored layout (context-guard), fable.
 
 ## Handoff
-- doing: fix round 1 running in worktree d63e on top of cf69579 (5 criticals: false hard-blocks)
-- next: review round 2 (resume the d63e reviewer) -> land; then 953e, 6d60 folded in
+- doing: review round 2 running; impl at 6db9fd3
+- next: CLEAR -> land (close 6d60 too); else fix round 2
 - blocked: decision 14
 - learned: —
 
@@ -79,3 +79,6 @@ dispatch: reviewer opus — fable unavailable (unknown); fallback
 
 review round 1 (opus, fable fallback): NEEDS_CHANGES — critical 1 (autoCompactWindow not range-validated: 50000 blocks at 20K), 2 (settings window resolved though --settings/--setting-sources can override), 3 (legacy autoCompactEnabled in ~/.claude.json unobservable), 4 (credits latch matched by phrase, not apiError), 5 (provider gate on the 1M beta); high 6 (overestimate -> precompact defers needed compactions; latch key unchecked), 7 (stale proc record trusted); medium 8 (URL.host/port, CLAUDE_CODE_USE_GATEWAY), 9 (README), 10 (HARD STOP escapes; CLAUDE_KIT_CONTEXT_WINDOW pin no longer honoured); lows 11-12, nit 13. Librarian decisions: false blocks are never acceptable — every unobservable override makes the input unresolved (warn-only); precompact_gate defers only on exact depth; the pin beats derivation; 6d60 docs folded in.
 dispatch: implementer opus fix round 1 — resume (fable unavailable)
+
+fix round 1 (opus): DONE 26f7c7b + 6db9fd3 (all 13; 387 tests; kill switch byte-identical on 42 cases; scan cache: 16ms steady state). Librarian accepts: precompact keeps main's exact-or-inferred deferral (derived never defers); an absent remote-settings cache = no remote policy; macOS (no /proc) = warn-only above 200K. 6d60 docs folded in.
+dispatch: reviewer opus review round 2 — resume
