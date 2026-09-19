@@ -6,10 +6,12 @@ read here. The backlog-yaml export is validated against the claude-sandbox
 scaffold's backlog.py `validate --strict` when that script is invocable, and
 falls back to a structural assertion otherwise.
 """
+import difflib
 import importlib.util
 import json
 import multiprocessing
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -430,6 +432,242 @@ class TestHandoffDoneArchive(WiTestCase):
         self.write_item("same-prefix-2222")
         self.assertEqual(run(["show", "same-prefix"], self.root).returncode, 2)
         self.wi_ok(["show", "same-prefix-1"])
+
+
+# Body shapes a hand-edited item can take. Every rewriting command must keep
+# every body byte outside the lines it owns: the four Handoff bullets (handoff),
+# dated lines appended under ## Notes (claim, done, handoff --learned), and a
+# ## Notes section appended at the end when there is none.
+BODY_SHAPES = {
+    # the e832 shape: unheaded bullets after the Handoff block, Handoff last
+    "trailing-unheaded": (
+        "\nDesc line.\n\n## Handoff\n- doing: —\n- next: —\n- blocked: —\n"
+        "- learned: —\n\n- 2026-09-18 (from 81a5): carry this forward\n\n"
+        "- (F0 review lows) keep me too\n"),
+    # irregular spacing, stray prose and trailing whitespace between sections
+    "between-sections": (
+        "\n\n\nDesc   line.  \n\n\n\n## Acceptance\n- [ ] one\n\n\n"
+        "loose prose under acceptance\n   \n## Handoff\n\n- doing: x\n"
+        "  indented aside\n- next: y\n- blocked: —\n- learned: —\n\t\n\n\n"
+        "## Notes\n- 2026-09-01 first\n\n\n"),
+    # several ## sections in an unusual order, Handoff in the middle
+    "many-sections-any-order": (
+        "\nDesc.\n\n## Notes\n- 2026-09-01 early note\n\n## Custom\ncustom body\n"
+        "\n## Handoff\n- doing: a\n- next: b\n- blocked: —\n- learned: —\n"
+        "\n## Acceptance\n- [x] done thing\n\n## Testing\n- command: make\n"),
+    # Handoff not last, extra text inside it, unheaded text after Notes,
+    # a key line out of order and a second copy of a key in the trailing text
+    "handoff-not-last": (
+        "\nDesc.\n\n## Handoff\n- next: n\n- doing: d\n- blocked: —\n"
+        "- learned: —\ntrailing text inside handoff\n- doing: not the owned line\n"
+        "\n## Notes\n- 2026-09-01 n1\n\nunheaded after notes\n\n## Zeta\nz\n"),
+    # no ## Notes at all, trailing text after Handoff
+    "no-notes": (
+        "\nDesc.\n\n## Handoff\n- doing: —\n- next: —\n- blocked: —\n"
+        "- learned: —\n\ntrailing without heading\n"),
+}
+
+NOTE_LINE_RE = re.compile(r"^- \d{4}-\d{2}-\d{2} .*$")
+
+
+class TestBodyPreservation(WiTestCase):
+    """e832: rewrites must not drop or reshape body text they do not own."""
+
+    IID = "keep-body-1111"
+
+    def write_raw(self, body, eol, front_extra=""):
+        front = (f"id: {self.IID}\ntitle: keep body\ntype: task\npriority: 2\n"
+                 f"{front_extra}created: 2026-08-01\nupdated: 2026-08-01\n")
+        text = "---\n" + front + "---\n" + body
+        path = self.root / "items" / f"{self.IID}.md"
+        path.write_bytes(text.replace("\n", eol).encode())
+        return path
+
+    @staticmethod
+    def split_body(raw, eol):
+        close = eol + "---" + eol
+        return raw[raw.index(close, 3) + len(close):]
+
+    @staticmethod
+    def lines(text):
+        return re.findall(r"[^\n]*\n|[^\n]+\Z", text)
+
+    def owned_handoff_lines(self, body_lines):
+        """Indices of the first `- key:` line of each key in ## Handoff."""
+        owned, seen, inside = set(), set(), False
+        for i, line in enumerate(body_lines):
+            if line.startswith("## "):
+                if inside:
+                    break
+                inside = line.rstrip("\r\n") == "## Handoff"
+                continue
+            m = inside and re.match(r"^- (doing|next|blocked|learned):",
+                                    line.rstrip("\r\n"))
+            if m and m.group(1) not in seen:
+                seen.add(m.group(1))
+                owned.add(i)
+        return owned
+
+    def assert_only_owned_changes(self, before, after, eol, handoff=None,
+                                  inserts=False):
+        """Everything outside the owned lines is byte-identical: diff ops are
+        equal; inserts of note lines / a ## Notes heading / blank lines (when
+        `inserts`); and same-count replaces of owned Handoff bullets that keep
+        their line ending (when `handoff`)."""
+        b, a = self.lines(before), self.lines(after)
+        owned = self.owned_handoff_lines(b) if handoff else set()
+        sm = difflib.SequenceMatcher(None, b, a, autojunk=False)
+        for op, i1, i2, j1, j2 in sm.get_opcodes():
+            if op == "equal":
+                continue
+            ctx = f"{op} before{b[i1:i2]!r} after{a[j1:j2]!r}"
+            if op == "insert" and inserts:
+                for line in a[j1:j2]:
+                    self.assertTrue(line.endswith(eol), ctx)
+                    c = line[:-len(eol)]
+                    self.assertTrue(c == "" or c == "## Notes"
+                                    or NOTE_LINE_RE.match(c), ctx)
+                continue
+            self.assertEqual(op, "replace", ctx)
+            self.assertEqual(i2 - i1, j2 - j1, ctx)
+            for i, j in zip(range(i1, i2), range(j1, j2)):
+                self.assertIn(i, owned, ctx)
+                key = re.match(r"^- (\w+):", b[i]).group(1)
+                ending = b[i][len(b[i].rstrip("\r\n")):]
+                self.assertEqual(a[j], f"- {key}: {handoff[key]}" + ending, ctx)
+        if handoff:
+            # every owned bullet carries its new value
+            for i in owned:
+                key = re.match(r"^- (\w+):", b[i]).group(1)
+                self.assertIn(f"- {key}: {handoff[key]}{eol}", a)
+
+    COMMANDS = {
+        # name: (front-matter extra, argv tail, kind)
+        "claim": ("status: todo\n", ["claim", IID], "insert"),
+        "claim-steal": ("status: doing\nowner: other@x\nclaimed: 2026-09-01T00:00Z\n",
+                        ["claim", IID, "--steal"], "insert"),
+        "next-claim": ("status: todo\n",
+                       ["next", "--pipeline", "--one", "--claim", "w1"], "insert"),
+        "release": ("status: doing\nowner: tester@local\nclaimed: 2026-09-01T00:00Z\n",
+                    ["release", IID], "same"),
+        "handoff": ("status: doing\n",
+                    ["handoff", IID, "--doing", "D1", "--next", "N1",
+                     "--blocked", "B1"], "handoff"),
+        "handoff-learned": ("status: doing\n",
+                            ["handoff", IID, "--learned", "L1"], "handoff+insert"),
+        "block": ("status: todo\n", ["block", IID, "waiting on vendor"], "same"),
+        "block-on": ("status: todo\n", ["block", IID, "--on", "other-2222"], "same"),
+        "unblock": ("status: blocked\nblocked: vendor\n", ["unblock", IID], "same"),
+        "unblock-dep": ("status: todo\ndeps:\n  - other-2222\n",
+                        ["unblock", IID, "--dep", "other-2222"], "same"),
+        "set": ("status: todo\n", ["set", IID, "priority", "0"], "same"),
+        "done": ("status: doing\n", ["done", IID, "--note", "shipped"], "insert"),
+        "drop": ("status: todo\n", ["done", IID, "--drop"], "insert"),
+        "export": ("status: todo\n", ["export", "OUT", "--format", "backlog-yaml",
+                                      "--project", "t"], "same"),
+    }
+
+    def run_matrix(self, names):
+        for shape, body in BODY_SHAPES.items():
+            for eol in ("\n", "\r\n"):
+                for name in names:
+                    front, argv, kind = self.COMMANDS[name]
+                    with self.subTest(shape=shape, eol=repr(eol), command=name):
+                        shutil.rmtree(self.root / "items")
+                        (self.root / "items").mkdir()
+                        self.write_item("other-2222", status="done")
+                        path = self.write_raw(body, eol, front)
+                        before = self.split_body(path.read_bytes().decode(), eol)
+                        argv = [str(self.tmp / "b.yaml") if a == "OUT" else a
+                                for a in argv]
+                        self.wi_ok(argv)
+                        raw = path.read_bytes().decode()
+                        if eol == "\r\n":
+                            self.assertNotIn("\n", raw.replace("\r\n", ""))
+                        after = self.split_body(raw, eol)
+                        if kind == "same":
+                            self.assertEqual(after, before)
+                            continue
+                        h = None
+                        if kind.startswith("handoff"):
+                            old = wi.parse_handoff(before.replace("\r\n", "\n")
+                                                   .split("## Handoff", 1)[1])
+                            h = {k: getattr_arg(argv, k) or old[k] or "—"
+                                 for k in wi.HANDOFF_KEYS}
+                        self.assert_only_owned_changes(
+                            before, after, eol, handoff=h,
+                            inserts=kind.endswith("insert"))
+                        if kind.endswith("insert"):
+                            self.assertGreater(len(after), len(before))
+
+    def test_claim_and_next_claim_keep_body(self):
+        self.run_matrix(["claim", "claim-steal", "next-claim"])
+
+    def test_release_keeps_body(self):
+        self.run_matrix(["release"])
+
+    def test_handoff_keeps_body(self):
+        self.run_matrix(["handoff", "handoff-learned"])
+
+    def test_block_unblock_keep_body(self):
+        self.run_matrix(["block", "block-on", "unblock", "unblock-dep"])
+
+    def test_set_keeps_body(self):
+        self.run_matrix(["set"])
+
+    def test_done_and_drop_keep_body(self):
+        self.run_matrix(["done", "drop"])
+
+    def test_export_alias_writeback_keeps_body(self):
+        self.run_matrix(["export"])
+
+    def test_archive_moves_file_byte_identical(self):
+        for shape, body in BODY_SHAPES.items():
+            for eol in ("\n", "\r\n"):
+                with self.subTest(shape=shape, eol=repr(eol)):
+                    path = self.write_raw(
+                        body, eol, "status: done\nclosed: 2020-01-02\n")
+                    raw = path.read_bytes()
+                    self.wi_ok(["archive", "--older-than", "0d"])
+                    moved = self.root / "archive" / "2020" / path.name
+                    self.assertEqual(moved.read_bytes(), raw)
+                    moved.unlink()
+
+    def test_claim_then_handoff_keeps_trailing_notes(self):
+        """The observed e832 sequence, end to end."""
+        path = self.write_raw(BODY_SHAPES["trailing-unheaded"], "\n",
+                              "status: todo\n")
+        self.wi_ok(["claim", self.IID])
+        self.wi_ok(["handoff", self.IID, "--doing", "dispatched",
+                    "--next", "review -> land"])
+        text = path.read_text()
+        self.assertIn("\n- doing: dispatched\n- next: review -> land\n"
+                      "- blocked: —\n- learned: —\n\n"
+                      "- 2026-09-18 (from 81a5): carry this forward\n\n"
+                      "- (F0 review lows) keep me too\n\n## Notes\n", text)
+
+    def test_handoff_inserts_missing_bullets_in_place(self):
+        path = self.write_raw("\nD.\n\n## Handoff\n- next: n\ntail\n\n## X\nx\n",
+                              "\n", "status: doing\n")
+        self.wi_ok(["handoff", self.IID, "--doing", "d"])
+        self.assertTrue(path.read_text().endswith(
+            "---\n\nD.\n\n## Handoff\n- doing: d\n- next: n\n- blocked: —\n"
+            "- learned: —\ntail\n\n## X\nx\n"))
+
+    def test_no_final_newline_is_kept_as_prefix(self):
+        path = self.write_raw("\nD.\n\n## Handoff\n- doing: —\n- next: —\n"
+                              "- blocked: —\n- learned: —\n\nlast words", "\n",
+                              "status: todo\n")
+        before = self.split_body(path.read_text(), "\n")
+        self.wi_ok(["claim", self.IID])
+        after = self.split_body(path.read_text(), "\n")
+        self.assertTrue(after.startswith(before), after)
+        self.assertIn("## Notes\n- ", after[len(before):])
+
+
+def getattr_arg(argv, key):
+    flag = "--" + key
+    return argv[argv.index(flag) + 1] if flag in argv else None
 
 
 class TestMergeSimulation(WiTestCase):
