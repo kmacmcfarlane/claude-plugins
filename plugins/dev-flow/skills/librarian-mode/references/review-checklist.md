@@ -39,7 +39,10 @@ git -C $W diff --stat main...HEAD
       variable (the two tokens the lint below greps for).
 - [ ] No `README.md` inside the skill folder.
 - [ ] SKILL.md under ~5000 tokens; detail lives in `references/`.
-- [ ] Every `references/*.md` the SKILL.md names exists.
+- [ ] Every `references/*.md` the SKILL.md names exists: in the skill itself, or, when the
+      line or the one before names a sibling skill of the same plugin in backticks, in that
+      sibling (CLAUDE.md § Cross-skill references). `references/x.md` is the reserved
+      placeholder for examples and is skipped.
 
 ```bash
 for s in $(git -C $W diff --name-only main...HEAD | grep -o 'plugins/[^/]*/skills/[^/]*' | sort -u); do
@@ -55,7 +58,15 @@ for s in $(git -C $W diff --name-only main...HEAD | grep -o 'plugins/[^/]*/skill
   desc=$(sed -n 's/^description: *//p' $d/SKILL.md | head -1); test ${#desc} -le 1024 || echo "FAIL: description ${#desc} chars"
   grep -rn '[.]/\|CLAUDE_SKILL_DI[R]' $d && echo "FAIL: non-bare reference path"
   wc -w $d/SKILL.md
-  for r in $(grep -o 'references/[A-Za-z0-9_.-]*\.md' $d/SKILL.md | sort -u); do test -f $d/$r || echo "FAIL: missing $r"; done
+  p=$(dirname $d)
+  grep -on '\(^\|[^/A-Za-z0-9_.-]\)references/[A-Za-z0-9_.-]*\.md' $d/SKILL.md | while IFS=: read n m; do
+    r=references/${m#*references/}
+    test "$r" = references/x.md && continue
+    test -f $d/$r && continue
+    ctx=$(sed -n "$((n>1 ? n-1 : 1)),${n}p" $d/SKILL.md); hit=
+    for sib in $(ls $p); do case "$ctx" in *"\`$sib\`"*) test -f $p/$sib/$r && hit=$sib;; esac; done
+    test -n "$hit" && echo "ok (sibling $hit): $r" || echo "FAIL: missing $r (line $n)"
+  done
 done
 ```
 
@@ -63,6 +74,12 @@ The dot-slash grep also catches the prefix in prose or shell, including in a che
 that quotes it — which is why the pattern above is written with a bracket class, so the
 lint file passes its own lint. A hit in a code block that genuinely needs the prefix (rare)
 is reviewed by eye, not waved through.
+
+The reference check reads a path only where it starts a token, so a longer path that merely
+ends in `references/…` (a file listing, another plugin's tree) is not taken for a pointer.
+The skill's own file is tried first; failing that, a sibling pointer passes only when the
+named sibling's file exists. A path into another plugin, or into a sibling that lacks the
+file, still fails.
 
 ## 3. Doctrine
 
