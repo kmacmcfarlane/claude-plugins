@@ -173,26 +173,39 @@ class TestServedCatalog(unittest.TestCase):
 
 
 class TestAutoCompact(unittest.TestCase):
-    NONE = {"window": None, "unparsed": False, "enabled": None}
+    NONE = {"window": None, "enabled": None, "unsure": False}
+    ON = {"window": None, "enabled": True, "unsure": False}
 
-    def acw(self, model="claude-opus-5", mw=M1, e=None, s=None, **kw):
-        return R.autocompact(model, mw, e if e is not None else env(), s or self.NONE, **kw)
+    def acw(self, model="claude-opus-5", mw=M1, e=None, s=None, observable=True, **kw):
+        return R.autocompact(model, mw, e if e is not None else env(), s or self.ON,
+                             observable=observable, **kw)
 
-    def test_env_window(self):
-        a = self.acw(e=env(CLAUDE_CODE_AUTO_COMPACT_WINDOW=500000))
-        self.assertEqual(a, {"window": 500_000, "resolved": True, "source": "env"})
-        # Clamped to [100K, 1M]; at or above the model window it lowers nothing.
+    def test_env_window_resolved_only_when_everything_is_seen(self):
+        e = env(CLAUDE_CODE_AUTO_COMPACT_WINDOW=500000)
+        self.assertEqual(self.acw(e=e), {"window": 500_000, "resolved": True, "source": "env"})
+        # autoCompactEnabled not set in any observable layer: Claude Code falls
+        # back to the legacy global config, which a hook never reads.
+        self.assertEqual(self.acw(e=e, s=self.NONE)["resolved"], False)
+        # A flag layer could be in play (or the cmdline was not read).
+        self.assertEqual(self.acw(e=e, observable=False)["resolved"], False)
+        # An SDK session can get settings at runtime.
+        e2 = env(CLAUDE_CODE_AUTO_COMPACT_WINDOW=500000, CLAUDE_CODE_ENTRYPOINT="sdk-ts")
+        self.assertEqual(self.acw(e=e2)["resolved"], False)
+        # An unreadable policy file.
+        self.assertEqual(self.acw(e=e, s=dict(self.ON, unsure=True))["resolved"], False)
+
+    def test_env_clamp(self):
         self.assertEqual(self.acw(e=env(CLAUDE_CODE_AUTO_COMPACT_WINDOW=50000))["window"], 100_000)
         self.assertIsNone(self.acw(e=env(CLAUDE_CODE_AUTO_COMPACT_WINDOW=5000000))["window"])
         self.assertIsNone(self.acw(mw=K200, e=env(CLAUDE_CODE_AUTO_COMPACT_WINDOW=500000))["window"])
 
     def test_env_beats_settings(self):
         a = self.acw(e=env(CLAUDE_CODE_AUTO_COMPACT_WINDOW=600000),
-                     s={"window": 300_000, "unparsed": False, "enabled": None})
+                     s=dict(self.ON, window=300_000))
         self.assertEqual((a["window"], a["source"]), (600_000, "env"))
 
     def test_env_invalid_falls_through(self):
-        s = {"window": 300_000, "unparsed": False, "enabled": None}
+        s = dict(self.ON, window=300_000)
         for v in ("0", "-1", "abc"):
             self.assertEqual(self.acw(e=env(CLAUDE_CODE_AUTO_COMPACT_WINDOW=v), s=s)["source"],
                              "settings", v)
@@ -201,19 +214,18 @@ class TestAutoCompact(unittest.TestCase):
         self.assertEqual(a, {"window": 100_000, "resolved": True, "source": "env"})
 
     def test_settings_window(self):
-        a = self.acw(s={"window": 300_000, "unparsed": False, "enabled": None})
+        a = self.acw(s=dict(self.ON, window=300_000))
         self.assertEqual(a, {"window": 300_000, "resolved": True, "source": "settings"})
-        a = self.acw(s={"window": None, "unparsed": True, "enabled": None})
-        self.assertEqual((a["window"], a["resolved"]), (None, False))
+        a = self.acw(s=dict(self.NONE, window=300_000))
+        self.assertEqual(a, {"window": 300_000, "resolved": False, "source": "settings"})
 
     def test_disabled(self):
         for e in (env(DISABLE_AUTO_COMPACT=1), env(DISABLE_COMPACT=1)):
-            a = self.acw(e=e, s={"window": 300_000, "unparsed": False, "enabled": None})
-            self.assertEqual(a["source"], "disabled")
-            self.assertIsNone(a["window"])
+            a = self.acw(e=e, s=dict(self.ON, window=300_000))
+            self.assertEqual((a["source"], a["window"]), ("disabled", None))
         a = self.acw(e=env(CLAUDE_CODE_AUTO_COMPACT_WINDOW=500000),
-                     s={"window": None, "unparsed": False, "enabled": False})
-        self.assertEqual(a["source"], "disabled")
+                     s={"window": None, "enabled": False, "unsure": False})
+        self.assertEqual((a["source"], a["window"]), ("disabled_setting", None))
 
     def test_model_defaults(self):
         # claude-sonnet-5's per-entrypoint default, unresolved (client data may replace it).
@@ -224,19 +236,30 @@ class TestAutoCompact(unittest.TestCase):
         # Nothing configured: server client data / experiments cannot be ruled out.
         self.assertEqual(self.acw(), {"window": None, "resolved": False, "source": "auto"})
 
+    def test_entrypoint_is_not_carried_raw(self):
+        e = R.env_inputs({"CLAUDE_CODE_ENTRYPOINT": "local-agent"})
+        self.assertNotIn("local-agent", json.dumps(e))
+        self.assertTrue(e["surface_entrypoint"])
+
+    def settings_dirs(self, d):
+        cfg, proj = os.path.join(d, "cfg"), os.path.join(d, "proj")
+        os.makedirs(cfg)
+        os.makedirs(os.path.join(proj, ".claude"))
+        managed = os.path.join(d, "managed.json")
+        dropins = os.path.join(d, "managed.d")
+        os.makedirs(dropins)
+
+        def put(p, obj):
+            with open(p, "w") as f:
+                json.dump(obj, f) if not isinstance(obj, str) else f.write(obj)
+
+        def read():
+            return R.settings_autocompact(cfg, proj, L.read_json_file, (managed,), (dropins,))
+        return cfg, proj, managed, dropins, put, read
+
     def test_settings_precedence(self):
         with tempfile.TemporaryDirectory() as d:
-            cfg, proj = os.path.join(d, "cfg"), os.path.join(d, "proj")
-            os.makedirs(cfg)
-            os.makedirs(os.path.join(proj, ".claude"))
-            managed = os.path.join(d, "managed.json")
-
-            def put(p, obj):
-                with open(p, "w") as f:
-                    json.dump(obj, f)
-
-            def read():
-                return R.settings_autocompact(cfg, proj, L.read_json_file, (managed,))
+            cfg, proj, managed, dropins, put, read = self.settings_dirs(d)
             self.assertEqual(read(), self.NONE)
             put(os.path.join(cfg, "settings.json"), {"autoCompactWindow": 300000,
                                                      "env": {"X": "not read"}})
@@ -245,9 +268,69 @@ class TestAutoCompact(unittest.TestCase):
             self.assertEqual(read()["window"], 400_000)
             put(os.path.join(proj, ".claude", "settings.local.json"),
                 {"autoCompactWindow": 450000, "autoCompactEnabled": True})
-            self.assertEqual(read(), {"window": 450_000, "unparsed": False, "enabled": True})
-            put(managed, {"autoCompactWindow": "500k", "autoCompactEnabled": False})
-            self.assertEqual(read(), {"window": None, "unparsed": True, "enabled": False})
+            self.assertEqual(read(), {"window": 450_000, "enabled": True, "unsure": False})
+            put(os.path.join(dropins, "10-org.json"), {"autoCompactWindow": 600000})
+            self.assertEqual(read()["window"], 600_000)
+            put(managed, {"autoCompactEnabled": False})
+            self.assertEqual(read(), {"window": 600_000, "enabled": False, "unsure": False})
+            put(os.path.join(cfg, R.REMOTE_SETTINGS), {"autoCompactWindow": 700000})
+            self.assertEqual(read()["window"], 700_000)
+
+    def test_out_of_range_settings_fall_through_like_claude_code(self):
+        # int().min(1e5).max(1e6).catch(undefined): the lower layer's value wins.
+        with tempfile.TemporaryDirectory() as d:
+            cfg, proj, managed, dropins, put, read = self.settings_dirs(d)
+            put(os.path.join(proj, ".claude", "settings.json"), {"autoCompactWindow": 50000})
+            self.assertEqual(read()["window"], None)
+            put(os.path.join(cfg, "settings.json"), {"autoCompactWindow": 300000})
+            self.assertEqual(read()["window"], 300_000)
+            for bad in (1_000_001, "500k", 300000.5, True, None):
+                put(os.path.join(proj, ".claude", "settings.json"), {"autoCompactWindow": bad})
+                self.assertEqual(read()["window"], 300_000, bad)
+
+    def test_unreadable_policy_or_odd_enabled_is_unsure(self):
+        with tempfile.TemporaryDirectory() as d:
+            cfg, proj, managed, dropins, put, read = self.settings_dirs(d)
+            put(managed, "{not json")
+            self.assertTrue(read()["unsure"])
+            os.unlink(managed)
+            put(os.path.join(cfg, "settings.json"), {"autoCompactEnabled": "yes"})
+            self.assertEqual((read()["enabled"], read()["unsure"]), (None, True))
+
+
+class TestProviderAndUrl(unittest.TestCase):
+    def test_url_host_keeps_a_non_default_port(self):
+        self.assertEqual(R.url_host("https://api.anthropic.com"), "api.anthropic.com")
+        self.assertEqual(R.url_host("https://api.anthropic.com:443/v1"), "api.anthropic.com")
+        self.assertEqual(R.url_host("https://API.anthropic.com:8443"), "api.anthropic.com:8443")
+        self.assertEqual(R.url_host("http://api.anthropic.com:443"), "api.anthropic.com:443")
+        self.assertIsNone(R.url_host("not a url"))
+
+    def test_port_8443_is_not_first_party(self):
+        e = env(ANTHROPIC_BASE_URL="https://api.anthropic.com:8443")
+        self.assertFalse(e["first_party_direct"])
+        d = derive("claude-opus-5", e)
+        self.assertEqual((d["window"], d["resolved"]), (M1, False))
+
+    def test_gateway_env_is_unresolved(self):
+        e = env(CLAUDE_CODE_USE_GATEWAY=1)
+        self.assertEqual(e["provider"], "gateway")
+        self.assertFalse(derive("claude-opus-5", e)["resolved"])
+
+    def test_beta_models_are_unresolved_on_every_provider(self):
+        for extra in ({}, {"CLAUDE_CODE_USE_VERTEX": 1}, {"CLAUDE_CODE_USE_BEDROCK": 1},
+                      {"CLAUDE_CODE_USE_GATEWAY": 1}):
+            for m in ("claude-sonnet-4-5", "claude-opus-4-6", "claude-sonnet-4-0"):
+                with self.subTest(m=m, extra=extra):
+                    d = derive(m, env(**extra))
+                    self.assertEqual((d["window"], d["resolved"], d["rule"]),
+                                     (K200, False, "beta_unobservable"))
+
+    def test_unknown_latch_unresolves_windows_above_200k_only(self):
+        d = derive("claude-opus-5", latch=False, latch_known=False)
+        self.assertEqual((d["window"], d["resolved"], d["rule"]), (M1, False, "latch_unknown"))
+        d = derive("claude-haiku-4-5", latch=False, latch_known=False)
+        self.assertEqual((d["window"], d["resolved"]), (K200, True))
 
 
 if __name__ == "__main__":

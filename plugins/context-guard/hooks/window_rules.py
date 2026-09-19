@@ -11,10 +11,25 @@ is told it is optional. This module mirrors the two functions Claude Code uses:
 Both are pure functions of inputs a hook can read (the transcript's model
 line, the environment, the settings files, the served-model-catalog cache),
 except for a few it cannot (SDK betas, server client data, experiments,
-gateway mode from credential slots, the long-context-credits latch before a
-SessionStart marker exists). Every result carries `resolved`: True only when
-every input the rule depends on was observed. The gate may hard-block on a
-resolved window and only warns on an unresolved one.
+gateway mode from credential slots, flag settings layers, the legacy global
+config, the long-context-credits latch of a process the hook cannot
+identify). Every result carries `resolved`: True only when every input the
+rule depends on was observed. The gate may hard-block on a resolved window
+and only warns on an unresolved one.
+
+The governing rule: a false hard-block is never acceptable. Any input
+Claude Code could take from a layer a hook cannot observe makes the result
+UNRESOLVED. What the unobservable inputs can do, and why the rest resolve:
+- a window can only be LOWERED by them (betas and 1M-native models aside,
+  which are unresolved anyway): gateway mode (vae()), the served catalog,
+  the latch, client data and experiments for the auto-compact window. A
+  wrong-high window under-warns; it never blocks early. So a resolved 200K
+  window (haiku-4-5 and the other non-beta 200K models, DISABLE_1M, a seen
+  latch) is safe, and a resolved 1M window needs only the latch to be known
+  absent for this process (lib_context._latch).
+- an auto-compact window is the other direction - it lowers the gate - so it
+  resolves only when every layer that could set or cancel it was read
+  (autocompact()).
 
 The account file in the home directory is never read: in RULES_CC_VERSION no
 field of it feeds lf() (see the d63e plan, section 0), and it holds secrets.
@@ -32,7 +47,7 @@ Stdlib only. Nothing here prints or returns an environment value: env inputs
 become booleans, small ints and a provider name.
 """
 import glob, os, re
-from urllib.parse import urlparse
+from urllib.parse import urlsplit
 
 RULES_CC_VERSION = "2.1.277"
 
@@ -77,9 +92,11 @@ FIRST_PARTY = {
     "claude-opus-4-1-20250805": "claude-opus-4-1",
     "claude-opus-4-5-20251101": "claude-opus-4-5",
 }
-# Providers for which the SDK 1M beta header is honoured (step 4).
-BETA_PROVIDERS = ("firstParty", "anthropicAws", "anthropicGoogleCloud", "foundry", "mantle")
-PROVIDER_ENV = (("CLAUDE_CODE_USE_BEDROCK", "bedrock"), ("CLAUDE_CODE_USE_VERTEX", "vertex"),
+# Provider-selecting env vars (Me()). Gateway mode can also come from host
+# credential slots no hook can see; that only ever narrows 1M (never widens a
+# window), and any selected provider other than first party is unresolved.
+PROVIDER_ENV = (("CLAUDE_CODE_USE_GATEWAY", "gateway"),
+                ("CLAUDE_CODE_USE_BEDROCK", "bedrock"), ("CLAUDE_CODE_USE_VERTEX", "vertex"),
                 ("CLAUDE_CODE_USE_FOUNDRY", "foundry"),
                 ("CLAUDE_CODE_USE_ANTHROPIC_AWS", "anthropicAws"),
                 ("CLAUDE_CODE_USE_ANTHROPIC_GOOGLE_CLOUD", "anthropicGoogleCloud"),
@@ -91,11 +108,16 @@ LATCH_API_ERROR = "long_context_credits_required"
 # HE(): ZPr, the models whose sub-1M window keeps a 200K auto-compact default.
 ACW_200K_MODELS = ("claude-sonnet-4-6", "claude-opus-4-6", "claude-opus-4-8", "claude-opus-5")
 # HE() via JPr/e$t: claude-sonnet-5's auto-compact default on these entrypoints.
-ACW_SURFACES = {"claude-sonnet-5": (("remote_cowork", "local-agent"), 500_000)}
-
-# Managed (policy) settings files: the highest-precedence readable layer.
+ACW_SURFACE_ENTRYPOINTS = ("remote_cowork", "local-agent")
+ACW_SURFACES = {"claude-sonnet-5": 500_000}
+# Managed (policy) settings: the files, and the drop-in dirs of *.json.
 MANAGED_SETTINGS = ("/etc/claude-code/managed-settings.json",
                     "/Library/Application Support/ClaudeCode/managed-settings.json")
+MANAGED_DROPINS = ("/etc/claude-code/managed-settings.d",
+                   "/Library/Application Support/ClaudeCode/managed-settings.d")
+# The cached remote (server-managed) policy settings, under the config dir.
+REMOTE_SETTINGS = "remote-settings.json"
+_DEFAULT_PORT = {"http": 80, "https": 443, "ws": 80, "wss": 443, "ftp": 21}
 
 _ONE_M = re.compile(r"\[1m\]", re.I)
 # Yl()/N(): Claude Code's integer parse for env values.
@@ -138,14 +160,8 @@ def env_inputs(environ):
     mct = js_int(g("CLAUDE_CODE_MAX_CONTEXT_TOKENS"))
     raw_acw = g("CLAUDE_CODE_AUTO_COMPACT_WINDOW")
     providers = [name for var, name in PROVIDER_ENV if truthy(g(var))]
-    base = (g("ANTHROPIC_BASE_URL") or "").strip()
-    host = ""
-    if base:
-        try:
-            host = (urlparse(base).hostname or "").lower()
-        except Exception:
-            host = "?"
-    direct_url = not base or host == "api.anthropic.com" \
+    base = g("ANTHROPIC_BASE_URL") or ""
+    direct_url = not base or url_host(base) == "api.anthropic.com" \
         or truthy(g("_CLAUDE_CODE_ASSUME_FIRST_PARTY_BASE_URL"))
     provider = providers[0] if len(providers) == 1 else (
         "firstParty" if not providers else "ambiguous")
@@ -158,8 +174,27 @@ def env_inputs(environ):
         "acw_set": bool(raw_acw),
         "provider": provider,
         "first_party_direct": provider == "firstParty" and direct_url,
-        "entrypoint": (g("CLAUDE_CODE_ENTRYPOINT") or "").strip(),
+        "surface_entrypoint": (g("CLAUDE_CODE_ENTRYPOINT") or "").strip()
+        in ACW_SURFACE_ENTRYPOINTS,
+        "sdk_entrypoint": (g("CLAUDE_CODE_ENTRYPOINT") or "").strip().lower().startswith("sdk"),
     }
+
+
+def url_host(url):
+    """WHATWG URL.host as Claude Code's Yw() compares it: the lowercased
+    hostname plus ":port" unless the port is the scheme's default. None when
+    the URL does not parse (Claude Code then treats it as not first party)."""
+    try:
+        u = urlsplit(url.strip())
+        if not u.scheme or not u.hostname:
+            return None
+        port = u.port
+        scheme = u.scheme.lower()
+        if port is None or port == _DEFAULT_PORT.get(scheme):
+            return u.hostname.lower()
+        return f"{u.hostname.lower()}:{port}"
+    except Exception:
+        return None
 
 
 def canonical(model_id):
@@ -224,10 +259,14 @@ def derive(model_id, env, latch=False, latch_known=True, served=None):
     if not isinstance(model_id, str) or not model_id.strip():
         return _res(None, False, "no_model")
     base = _derive_base(model_id, env, served)
-    # 10. Xsr(): the credits latch caps any window above 200K.
+    # 10. Xsr(): the credits latch caps any window above 200K. When this
+    #     process's latch cannot be known, a window above 200K may already be
+    #     200K in Claude Code: unresolved.
     if base["window"] and base["window"] > W200K:
         if latch:
             return _res(W200K, base["resolved"] and latch_known, "credits_latch")
+        if not latch_known:
+            return _res(base["window"], False, "latch_unknown")
     return base
 
 
@@ -241,9 +280,9 @@ def _derive_base(model_id, env, served):
     # 3. au(): a [1m] suffix is 1M - no model-support check, as in lf().
     if _ONE_M.search(model_id) and not d1m:
         return _res(W1M, True, "suffix_1m")
-    # 4. SDK betas (context-1m) lift beta-capable 200K models; unobservable.
-    if row and not d1m and row[2] and row[0] < W1M \
-            and env.get("provider") in BETA_PROVIDERS:
+    # 4. SDK betas (context-1m) lift beta-capable 200K models on any
+    #    provider (xU() has no provider check for them); unobservable.
+    if row and not d1m and row[2] and row[0] < W1M:
         return _res(W200K, False, "beta_unobservable")
     # 5. Served catalog: a declared window wins over the baked table.
     if served:
@@ -269,26 +308,39 @@ def _derive_base(model_id, env, served):
     return _res(row[0], True, "catalog_200k")
 
 
-def autocompact(model_id, model_window, env, settings, latch=False, served=None):
+def autocompact(model_id, model_window, env, settings, observable=False, latch=False,
+                served=None):
     """HE(): the auto-compact window, where Claude Code compacts on its own.
 
-    `settings` is settings_autocompact()'s result. Returns {"window",
-    "resolved", "source"}: `window` is set only when it is below
-    model_window (else the model window already bounds the gate); `resolved`
-    is False when a source a hook cannot read could decide the value.
-    Sources covered: CLAUDE_CODE_AUTO_COMPACT_WINDOW; the autoCompactWindow
-    setting (user, project, local, managed files); the model defaults (the
-    200K default for ZPr models, claude-sonnet-5's per-entrypoint default).
-    Not observable (so an unset result is `resolved: False`, source "auto"):
-    server client data (rowan_thicket, the auto-compact windows cache), the
-    claude-opus-4-8 experiment, the --autocompact and --settings flags.
+    `settings` is settings_autocompact()'s result; `observable` is True only
+    when the running Claude Code process's command line was read and carries
+    no flag that adds or narrows a settings layer (lib_context.proc_info).
+    Returns {"window", "resolved", "source"}: `window` is set only when it is
+    below model_window. RESOLVED needs every input Claude Code could use to be
+    seen, because a wrong lower window would HARD-block early:
+      - the value comes from CLAUDE_CODE_AUTO_COMPACT_WINDOW or from a valid
+        autoCompactWindow setting (an int in [100000, 1000000], Claude Code's
+        schema; anything else is skipped, as Claude Code skips it);
+      - auto-compact is known ON: an observable settings layer sets
+        autoCompactEnabled: true (without one, Claude Code falls back to the
+        legacy global config, which a hook never reads);
+      - no unobservable layer can override: `observable`, no SDK entrypoint
+        (flag settings arrive at runtime), no unreadable policy file.
+    Otherwise a lower window is UNRESOLVED: named in advisories, never a hard
+    stop. Not observable at all (source "auto", nothing lowered): server
+    client data and the claude-opus-4-8 experiment.
     """
     if not model_window:
         return {"window": None, "resolved": False, "source": "no_window"}
-    # Wf(): auto-compact off -> no auto-compact window at all.
-    if env.get("disable_compact") or env.get("disable_auto_compact") \
-            or settings.get("enabled") is False:
+    # Wf(): these env vars turn auto-compact off outright.
+    if env.get("disable_compact") or env.get("disable_auto_compact"):
         return {"window": None, "resolved": True, "source": "disabled"}
+    if settings.get("enabled") is False:
+        # Off in the highest observable layer. A hidden layer could only turn
+        # it back on, which lowers the window: an under-warning, never a block.
+        return {"window": None, "resolved": False, "source": "disabled_setting"}
+    certain = bool(observable and settings.get("enabled") is True
+                   and not settings.get("unsure") and not env.get("sdk_entrypoint"))
 
     def lowered(w, resolved, source):
         w = int(w)
@@ -298,58 +350,72 @@ def autocompact(model_id, model_window, env, settings, latch=False, served=None)
     if env.get("acw_set"):
         v = env.get("acw")
         if v and v > 0:   # NaN or <= 0 is "invalid": Claude Code falls through
-            return lowered(min(model_window, max(ACW_MIN, min(v, ACW_MAX))), True, "env")
+            return lowered(min(model_window, max(ACW_MIN, min(v, ACW_MAX))), certain, "env")
     s = settings.get("window")
-    if settings.get("unparsed"):
-        return {"window": None, "resolved": False, "source": "settings_unparsed"}
     if s:
-        return lowered(min(model_window, s), True, "settings")
+        return lowered(min(model_window, s), certain, "settings")
     canon = canonical(model_id) if isinstance(model_id, str) else None
     # Past this point client data and experiments (unreadable) come first.
     if model_window < W1M and (canon in ACW_200K_MODELS or latch
                                or (env.get("d1m") and served and served > W200K)):
         if model_window > W200K:
             return lowered(W200K, False, "model_default")
-    surf = ACW_SURFACES.get(canon)
-    if surf and env.get("entrypoint") in surf[0]:
-        return lowered(min(model_window, surf[1]), False, "model_default_surface")
+    if canon in ACW_SURFACES and env.get("surface_entrypoint"):
+        return lowered(min(model_window, ACW_SURFACES[canon]), False, "model_default_surface")
     return {"window": None, "resolved": False, "source": "auto"}
 
 
-def settings_autocompact(config_dir, project_dir, read_json, managed_paths=None):
+def _valid_acw(v):
+    """Claude Code's schema for autoCompactWindow: int().min(1e5).max(1e6)
+    .catch(undefined) - anything else is as if the key were absent."""
+    return isinstance(v, int) and not isinstance(v, bool) and ACW_MIN <= v <= ACW_MAX
+
+
+def settings_autocompact(config_dir, project_dir, read_json, managed_paths=None,
+                         dropin_dirs=None):
     """The autoCompactWindow and autoCompactEnabled settings, merged by
-    Claude Code's precedence (managed > local > project > user; the --settings
-    flag layer is not observable). Reads only those two keys, from:
-    <config>/settings.json, <project>/.claude/settings.json,
-    <project>/.claude/settings.local.json and the managed-settings file.
-    `read_json` is lib_context.read_json_file. Returns {"window": int|None,
-    "unparsed": bool, "enabled": bool|None}. Never raises."""
+    Claude Code's precedence: policy (the managed-settings files and
+    drop-ins, the cached remote policy) > local > project > user. The flag
+    layers (--settings, --managed-settings, SDK apply_flag_settings) are not
+    files; lib_context.proc_info reports whether they can be in play. Reads
+    only these two keys, from <config>/settings.json,
+    <project>/.claude/settings.json, <project>/.claude/settings.local.json,
+    the managed files and drop-ins, and <config>/remote-settings.json.
+    Returns {"window": int|None, "enabled": bool|None, "unsure": bool}:
+    `unsure` when a policy file exists but cannot be read, or a layer holds
+    an autoCompactEnabled that is not a boolean. Never raises."""
     if managed_paths is None:
         managed_paths = MANAGED_SETTINGS
-    files = []
-    if config_dir:
-        files.append(os.path.join(config_dir, "settings.json"))
-    if project_dir:
-        files += [os.path.join(project_dir, ".claude", "settings.json"),
-                  os.path.join(project_dir, ".claude", "settings.local.json")]
-    files += list(managed_paths)
-    out = {"window": None, "unparsed": False, "enabled": None}
-    win_set = en_set = False
-    for p in reversed(files):              # highest precedence first
-        try:
-            d = read_json(p)
-        except Exception:
-            d = None
-        if not isinstance(d, dict):
-            continue
-        if not win_set and d.get("autoCompactWindow") is not None:
-            win_set = True
-            v = d["autoCompactWindow"]
-            if isinstance(v, int) and not isinstance(v, bool) and v > 0:
-                out["window"] = v
-            else:
-                out["unparsed"] = True
-        if not en_set and isinstance(d.get("autoCompactEnabled"), bool):
-            en_set = True
-            out["enabled"] = d["autoCompactEnabled"]
+    if dropin_dirs is None:
+        dropin_dirs = MANAGED_DROPINS
+    out = {"window": None, "enabled": None, "unsure": False}
+    try:
+        user = [os.path.join(config_dir, "settings.json")] if config_dir else []
+        proj = [os.path.join(project_dir, ".claude", "settings.json"),
+                os.path.join(project_dir, ".claude", "settings.local.json")] \
+            if project_dir else []
+        policy = list(managed_paths)
+        for d in dropin_dirs:
+            policy += sorted(glob.glob(os.path.join(glob.escape(d), "*.json")))
+        if config_dir:
+            policy.append(os.path.join(config_dir, REMOTE_SETTINGS))
+        win_set = en_set = False
+        for p in reversed(user + proj + policy):     # highest precedence first
+            exists = os.path.lexists(p)
+            d = read_json(p) if exists else None
+            if not isinstance(d, dict):
+                if exists and p in policy:
+                    out["unsure"] = True
+                continue
+            if not win_set and _valid_acw(d.get("autoCompactWindow")):
+                win_set = True
+                out["window"] = d["autoCompactWindow"]
+            if not en_set and d.get("autoCompactEnabled") is not None:
+                en_set = True
+                if isinstance(d["autoCompactEnabled"], bool):
+                    out["enabled"] = d["autoCompactEnabled"]
+                else:
+                    out["unsure"] = True
+    except Exception:
+        out["unsure"] = True
     return out

@@ -18,6 +18,10 @@ blocked against a guessed 200K). The window scored is the gate window
 A hard stop is measured against `block_window` - the gate window when every
 input to it resolved, else the model window - so an unresolved auto-compact
 window warns but never blocks.
+A HARD STOP caused by a derived window prints its escape hatches
+(CONTEXT_GUARD_DERIVE=off, mark_checkpoint.py <session>). The operator's
+CLAUDE_KIT_CONTEXT_WINDOW pin turns the mirror off, as it pinned the window
+before it.
 The first time the mirror disagrees with the status line in a session (the
 Claude Code version is then distrusted: derived depth warns only), a one-line
 systemMessage says so.
@@ -88,6 +92,33 @@ def decide(st, tok, win, pct, src, whitelisted, block_win=_UNSET):
     return None
 
 
+def mismatch_notice(wm):
+    """The one-time mirror/status-line disagreement notice. A malformed
+    record (hand-edited state) degrades to generic words, never raises."""
+    def num(v):
+        return f"{v:,}" if isinstance(v, int) and not isinstance(v, bool) else "?"
+    ver = wm.get("cc_version") if isinstance(wm, dict) else None
+    ver = ver if isinstance(ver, str) else "?"
+    d = wm.get("derived") if isinstance(wm, dict) else None
+    e = wm.get("exact") if isinstance(wm, dict) else None
+    return (f"context-guard: the context window mirror disagreed with the status "
+            f"line on Claude Code {ver[:32]} (derived {num(d)}, status line {num(e)}); "
+            f"derived depth is warn-only on this version until the rules are updated.")
+
+
+def derived_hatches(sid):
+    """Escape hatches printed under a HARD STOP that a derived (mirrored)
+    window caused, in case the mirror is wrong."""
+    return ("If this window is wrong (it was derived from Claude Code's own "
+            "selection logic, not read from the status line): set "
+            "CONTEXT_GUARD_DERIVE=off in the environment Claude Code is launched "
+            "from, or stand the gate down for this epoch with\n"
+            f"  python3 \"$(ls -td \"${{CLAUDE_CONFIG_DIR:-$HOME/.claude}}\"/plugins/data/"
+            f"context-guard-*/ | head -1)current-hooks/mark_checkpoint.py\" {L.safe_sid(sid)}\n"
+            "(context-guard skills/checkpoint/references/operator-playbook.md, "
+            "\"If the gate blocks wrongly\").\n")
+
+
 def main():
     try:
         inp = json.load(sys.stdin)
@@ -108,6 +139,8 @@ def main():
         act.append(decide(st, tok, win, pct, src, whitelisted, m["block_window"]))
         if dr:
             st["derived"] = dr
+        if m.get("scan_cache"):
+            st["scan"] = m["scan_cache"]
         wm = st.get("window_mismatch")
         if isinstance(wm, dict) and not wm.get("notified"):
             wm["notified"] = True
@@ -118,14 +151,7 @@ def main():
     remaining = max(win - tok, 0)
     th = L.thresholds(win)
     extra = f" [{note}]" if note else ""
-    notice = ""
-    if mismatch:
-        wm = mismatch[0]
-        notice = (f"context-guard: the context window mirror disagreed with the "
-                  f"status line on Claude Code {wm.get('cc_version')} "
-                  f"(derived {wm.get('derived'):,}, status line {wm.get('exact'):,}); "
-                  f"derived depth is warn-only on this version until the rules "
-                  f"are updated.")
+    notice = mismatch_notice(mismatch[0]) if mismatch else ""
 
     def emit(out):
         if notice:
@@ -162,7 +188,8 @@ def main():
             f"{bw:,} ({src}){extra}. Your prompt was NOT processed and was erased.\n"
             f"Run /checkpoint (or /context-guard:checkpoint - both forms are "
             f"whitelisted) first, then re-send:\n"
-            f"  {prompt[:200]}\n")
+            f"  {prompt[:200]}\n"
+            + (derived_hatches(sid) if src != "exact" else ""))
         sys.exit(2)
     if act == "due":
         emit({

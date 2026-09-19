@@ -11,10 +11,11 @@ distinguish them. So the gate defers only while BOTH hold: no checkpoint has
 been recorded this epoch, AND tokens < window - thresholds(window)['hard'],
 which with the auto-compact window lowered (e.g. /autocompact 900k on a 1M
 model) proves the trigger was proactive. Otherwise it always allows.
-`window` here is the MODEL window (L.depth: exact, derived or inferred),
-never the lower auto-compact window the prompt gate scores against: a
-compaction below the model window's hard line cannot be the context-limit
-recovery.
+The depth here is the pre-mirror one (L.depth(mirror=False): exact, else
+inferred) - exactly what it was before the window mirror. A derived window
+never defers a compaction: if it overestimated the window, deferring would
+block a compaction Claude Code needs. It is also the MODEL window, never the
+lower auto-compact window the prompt gate may score against.
 """
 import json, os, sys, time
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -30,7 +31,7 @@ def main():
     sid = inp.get("session_id", "unknown")
     manual = inp.get("trigger") == "manual"
     if not manual:
-        tok, win, _, src = L.depth(inp.get("transcript_path", ""), sid)
+        tok, win, _, src = L.depth(inp.get("transcript_path", ""), sid, mirror=False)
         th = L.thresholds(win)
         proactive = tok and tok < win - th["hard"]
 

@@ -29,8 +29,17 @@ Depth sources, in order of preference:
    With a fresh exact record the derived window is a cross-check
    (cross_check): a disagreement is logged to window-mismatch.jsonl and
    distrusts that Claude Code version, so its derived depth warns only.
-   CONTEXT_GUARD_DERIVE=off turns the mirror off (and the auto-compact
-   window below): the gate is then exactly exact-or-inferred.
+   A derived window above 200K resolves only when this process's
+   long-context-credits latch is known absent: a SessionStart marker whose
+   pid key (pid and start time) is the running Claude Code process's, no
+   latch line after its offset in the transcript or in this process's
+   sidechain (subagent) transcripts, none in the process record. The latch
+   is matched on apiError "long_context_credits_required" only.
+   CONTEXT_GUARD_DERIVE=off, or the operator's CLAUDE_KIT_CONTEXT_WINDOW
+   pin, turns the mirror off (and the auto-compact window below): the gate
+   is then exactly the pre-mirror exact-or-inferred one. precompact_gate
+   always uses that pre-mirror depth (depth(mirror=False)): a derived window
+   never defers a compaction.
 3. INFERRED - from the transcript's per-message `usage` blocks (the numbers the
    API charged), window guessed from the session's peak. A guess can be wrong
    in either direction (live-fired 2026-09-16: a 1M session with a stale exact
@@ -53,14 +62,18 @@ the auto-compact window when one is configured below it
 (window_rules.autocompact: CLAUDE_CODE_AUTO_COMPACT_WINDOW, the
 autoCompactWindow setting, the model defaults): Claude Code compacts there.
 A resolved auto-compact window may bound a hard block; an unresolved one only
-warns, and a hard stop is then still measured against the model window.
+warns, and a hard stop is then still measured against the model window. It
+resolves only when auto-compact is known on (autoCompactEnabled: true in a
+settings layer the hook reads) and no flag layer can be in play
+(proc_info's `observable`) - see window_rules.autocompact.
 depth() returns the MODEL window: precompact_gate proves a compaction
 proactive against it.
 
 The mirror's state, all written through update_state: per session `proc`
 (window_events.py at SessionStart: this Claude Code process's start offset in
 the transcript, its pid key, when), `model_switch` (PostModelSwitch's
-to_model), `derived` (the last derived result, with the Claude Code version
+to_model), `scan` (the resumable transcript scan, so a prompt reads only
+the bytes appended since the last one), `derived` (the last derived result, with the Claude Code version
 it was read on and RULES_CC_VERSION) and `window_mismatch`; the pseudo
 sessions `_proc-<pid>-<starttime>` (a credits latch seen in that process,
 which outlives a /clear) and `_window-rules` (the distrusted versions).
@@ -513,12 +526,47 @@ def read_usage(transcript_path):
 def scan_usage(transcript_path):
     """Return (current_tokens, peak_tokens, saw_boundary). `saw_boundary` is
     True when a compact_boundary was read: the current count then describes a
-    new window and older state (a stale exact record) must not floor it."""
-    r = scan_transcript(transcript_path)
-    return r["cur"], r["peak"], r["boundary"]
+    new window and older state (a stale exact record) must not floor it.
+    This is the pre-mirror scan, unchanged: the inferred path with the mirror
+    off (or the window pinned) runs exactly this."""
+    if not transcript_path or not os.path.exists(transcript_path):
+        return 0, 0, False
+    cur = peak = 0
+    boundary = False
+    try:
+        with open(transcript_path, errors="replace") as fh:
+            for line in fh:
+                if '"compact_boundary"' in line:
+                    # Bug A (live-fired 2026-08-31): pre-boundary usage records
+                    # described the OLD window; reading them after a compaction
+                    # reported 62% used on a ~2% session. Keep peak (the model
+                    # window did not change); reset current.
+                    cur = 0
+                    boundary = True
+                    continue
+                if '"usage"' not in line:
+                    continue
+                try:
+                    u = (json.loads(line).get("message") or {}).get("usage")
+                except Exception:
+                    continue
+                if not u:
+                    continue
+                t = sum(u.get(k) or 0 for k in
+                        ("input_tokens", "cache_read_input_tokens",
+                         "cache_creation_input_tokens"))
+                if t:
+                    cur = t
+                    peak = max(peak, t)
+    except Exception:
+        return 0, 0, False
+    return cur, peak, boundary
 
 
 LATCH_KEEP = 16
+SCAN_V = 1
+TAIL_CHECK = 64
+_SCAN_KEYS = ("cur", "peak", "boundary", "model_id", "model_off", "model_at", "latches")
 
 
 def _scan_empty():
@@ -556,29 +604,78 @@ def _tail_version(fh, size):
         return None
 
 
-def scan_transcript(transcript_path, usage=True):
-    """One pass over the transcript. Returns a dict:
-    cur, peak, boundary - as scan_usage (zero with usage=False, which skips
-      parsing the usage lines: the exact path needs only the model line);
+def _is_latch(obj, R):
+    """An API-error line from the one 429 branch that sets Claude Code's
+    long-context-credits latch: apiError "long_context_credits_required" is
+    returned only after `O && nue(message)` set it. The generic 429 path can
+    carry the same words in its text without latching, so the phrase alone
+    never counts."""
+    return obj.get("isApiErrorMessage") is True and obj.get("apiError") == R.LATCH_API_ERROR
+
+
+def _cache_start(fh, st_, cache, path):
+    """(offset, state) to resume a scan from `cache`, or (0, None) when the
+    cache does not describe a prefix of this very file (another path or
+    inode, a shorter file, different bytes before the cached offset)."""
+    try:
+        if not isinstance(cache, dict) or cache.get("v") != SCAN_V \
+                or cache.get("path") != path or cache.get("dev") != st_.st_dev \
+                or cache.get("ino") != st_.st_ino:
+            return 0, None
+        size = cache.get("size")
+        tail = bytes.fromhex(cache.get("tail") or "")
+        if not isinstance(size, int) or size <= 0 or size > st_.st_size \
+                or len(tail) != min(TAIL_CHECK, size):
+            return 0, None
+        fh.seek(size - len(tail))
+        if fh.read(len(tail)) != tail:
+            return 0, None
+        state = {k: cache.get(k) for k in _SCAN_KEYS}
+        state["latches"] = [tuple(x) for x in (state["latches"] or [])
+                            if isinstance(x, (list, tuple)) and len(x) == 2]
+        if not isinstance(state["cur"], int) or not isinstance(state["peak"], int) \
+                or not isinstance(state["model_off"], int):
+            return 0, None
+        return size, state
+    except Exception:
+        return 0, None
+
+
+def scan_transcript(transcript_path, cache=None):
+    """The transcript's depth inputs, reading only what `cache` (a previous
+    call's `cache` result, from the session state) has not covered.
+    Returns a dict:
+    cur, peak, boundary - as scan_usage;
     model_id, model_off, model_at - the last `attachment.type:"model"` line's
       identity.modelId, its byte offset and timestamp (epoch);
-    cc_version - the `version` of the last line that carries one;
-    latches - [(byte offset, epoch)] of the last LATCH_KEEP API-error lines
-      that set Claude Code's long-context-credits latch;
-    size - bytes read.
-    Lines are only parsed when a cheap substring test says they matter.
-    Any error yields the empty result, as scan_usage always has."""
+    cc_version - the `version` of the last line carrying one (a tail read);
+    latches - [(byte offset, epoch)] of the last LATCH_KEEP credits-latch
+      API-error lines (_is_latch);
+    size - bytes read; cache - the resumable state as of the last complete
+      line (None when the file could not be read).
+    A final line without its newline is read (as scan_usage reads it) but
+    not cached, so the next call reads it again once it is complete. Any
+    error yields the empty result, as scan_usage always has."""
     out = _scan_empty()
+    out["cache"] = None
     if not transcript_path or not os.path.exists(transcript_path):
         return out
     R = _rules()
-    phrases = tuple(p.encode() for p in R.NUE_PHRASES)
     try:
         with open(transcript_path, "rb") as fh:
-            off = 0
+            st_ = os.fstat(fh.fileno())
+            off, state = _cache_start(fh, st_, cache, transcript_path)
+            if state:
+                out.update(state)
+            fh.seek(off)
+            committed, snap = off, None
             for line in fh:
                 start = off
                 off += len(line)
+                if line.endswith(b"\n"):
+                    committed = off
+                else:
+                    snap = {k: out[k] for k in _SCAN_KEYS}
                 if b'"compact_boundary"' in line:
                     # Bug A (live-fired 2026-08-31): pre-boundary usage records
                     # described the OLD window; reading them after a compaction
@@ -587,7 +684,7 @@ def scan_transcript(transcript_path, usage=True):
                     out["cur"] = 0
                     out["boundary"] = True
                     continue
-                has_u = usage and b'"usage"' in line
+                has_u = b'"usage"' in line
                 if not has_u and b"isApiErrorMessage" not in line and not (
                         b'"attachment"' in line and b'"model"' in line):
                     continue
@@ -597,9 +694,6 @@ def scan_transcript(transcript_path, usage=True):
                     continue
                 if not isinstance(obj, dict):
                     continue
-                v = obj.get("version")
-                if isinstance(v, str) and v:
-                    out["cc_version"] = v[:32]     # fallback for the tail read
                 if has_u:
                     msg = obj.get("message")
                     u = msg.get("usage") if isinstance(msg, dict) else None
@@ -622,15 +716,24 @@ def scan_transcript(transcript_path, usage=True):
                         out["model_id"] = mid.strip()[:200]
                         out["model_off"] = start
                         out["model_at"] = _iso_ts(obj.get("timestamp"))
-                if obj.get("isApiErrorMessage") is True and (
-                        obj.get("apiError") == R.LATCH_API_ERROR
-                        or any(p in line for p in phrases)):
+                if _is_latch(obj, R):
                     out["latches"] = (out["latches"] + [
                         (start, _iso_ts(obj.get("timestamp")))])[-LATCH_KEEP:]
             out["size"] = off
-            out["cc_version"] = _tail_version(fh, off) or out["cc_version"]
+            out["cc_version"] = _tail_version(fh, off)
+            base = snap if snap is not None else {k: out[k] for k in _SCAN_KEYS}
+            tail = b""
+            if committed > 0:
+                fh.seek(committed - min(TAIL_CHECK, committed))
+                tail = fh.read(min(TAIL_CHECK, committed))
+            out["cache"] = dict(base, v=SCAN_V, path=transcript_path, dev=st_.st_dev,
+                                ino=st_.st_ino, size=committed, tail=tail.hex(),
+                                latches=[list(x) for x in base["latches"]]) \
+                if committed > 0 else None
     except Exception:
-        return _scan_empty()
+        out = _scan_empty()
+        out["cache"] = None
+        return out
     return out
 
 
@@ -764,29 +867,56 @@ def derive_off(environ=None):
     return v.strip().lower() in ("off", "0", "false", "no")
 
 
-def proc_key():
-    """'<pid>-<starttime>' of the Claude Code process this hook runs under,
-    or None. Walks at most ANCESTORS parents through /proc and takes the
-    first whose pid has an entry in Claude Code's session registry
-    (<config>/sessions/<pid>.json - only its existence is checked, it is
-    never opened); the /proc start time guards against pid reuse. Without
-    /proc (non-Linux) or a registry entry: None. Never raises."""
+# Command-line flags that add, replace or narrow a settings layer the hook
+# cannot read (or hand Claude Code settings at runtime): with any of them the
+# settings a hook reads are not the whole story.
+SETTINGS_FLAGS = ("--settings", "--setting-sources", "--managed-settings",
+                  "--autocompact", "--project-config-root", "--sdk-url",
+                  "--input-format")
+
+
+def proc_info():
+    """The Claude Code process this hook runs under: {"key":
+    '<pid>-<starttime>' or None, "observable": bool}. Walks at most ANCESTORS
+    parents through /proc and takes the first whose pid has an entry in
+    Claude Code's session registry (<config>/sessions/<pid>.json - only its
+    existence is checked, it is never opened); the /proc start time guards
+    against pid reuse. `observable` is True only when that process's
+    /proc/<pid>/cmdline was read and carries none of SETTINGS_FLAGS (the
+    command line is only matched against flag names, never stored or
+    printed). Without /proc (non-Linux) or a registry entry: key None, not
+    observable. Never raises."""
+    info = {"key": None, "observable": False}
     try:
         reg = os.path.join(_base_dir(), "sessions")
         pid, seen = os.getppid(), set()
         for _ in range(ANCESTORS):
             if not pid or pid <= 1 or pid in seen:
-                return None
+                return info
             seen.add(pid)
             if os.path.isfile(os.path.join(reg, f"{pid}.json")):
                 with open(f"/proc/{pid}/stat") as f:
                     fields = f.read().rsplit(")", 1)[1].split()
-                return f"{pid}-{int(fields[19])}"
+                info["key"] = f"{pid}-{int(fields[19])}"
+                try:
+                    with open(f"/proc/{pid}/cmdline", "rb") as f:
+                        args = f.read(1 << 20).split(b"\0")
+                    flags = tuple(x.encode() for x in SETTINGS_FLAGS)
+                    info["observable"] = bool(args and args[0]) and not any(
+                        a == fl or a.startswith(fl + b"=") for a in args for fl in flags)
+                except Exception:
+                    info["observable"] = False
+                return info
             with open(f"/proc/{pid}/status") as f:
                 pid = next((int(ln.split()[1]) for ln in f if ln.startswith("PPid:")), 0)
     except Exception:
-        return None
-    return None
+        return info
+    return info
+
+
+def proc_key():
+    """proc_info()'s key: '<pid>-<starttime>' of this Claude Code process."""
+    return proc_info()["key"]
 
 
 def distrusted_versions():
@@ -795,62 +925,116 @@ def distrusted_versions():
     return d if isinstance(d, dict) else {}
 
 
-def _latch(scan, st):
-    """(latch, latch_known, latch_at): whether this Claude Code process has
-    its long-context-credits latch set. With a SessionStart marker
-    (state `proc`) only API-error lines at or after the process's start
-    offset count, and the pid-keyed process record carries a latch set
-    before a /clear; without one every such line counts and the answer is
-    not known (a line may come from an earlier process)."""
+def _sidechain_latch(transcript_path, since):
+    """(latch_at or None, readable) over this session's subagent (sidechain)
+    transcripts, <dir>/<session>/subagents/*.jsonl: a subagent's 429 sets the
+    same process-wide latch but is written there, not to the main
+    transcript. Only files touched and lines stamped at or after `since` (the
+    process start) count; a matching line with no timestamp, or a file that
+    cannot be read, makes the answer unknown (readable False)."""
+    R = _rules()
+    try:
+        import glob
+        stem = os.path.splitext(transcript_path)[0]
+        paths = glob.glob(os.path.join(glob.escape(stem), "subagents", "*.jsonl"))
+    except Exception:
+        return None, False
+    found, readable = None, True
+    needle = R.LATCH_API_ERROR.encode()
+    for p in paths:
+        try:
+            if os.stat(p).st_mtime < since:
+                continue
+            with open(p, "rb") as fh:
+                for line in fh:
+                    if needle not in line:
+                        continue
+                    try:
+                        obj = json.loads(line.decode("utf-8", "replace"))
+                    except Exception:
+                        continue
+                    if not isinstance(obj, dict) or not _is_latch(obj, R):
+                        continue
+                    t = _iso_ts(obj.get("timestamp"))
+                    if t is None:
+                        readable = False
+                    elif t >= since:
+                        found = max(found or 0.0, t)
+        except Exception:
+            readable = False
+    return found, readable
+
+
+def _latch(scan, st, transcript_path, current_key):
+    """(latch, latch_known, latch_at): whether THIS Claude Code process has
+    its long-context-credits latch set.
+
+    Known only with a SessionStart marker (state `proc`) whose key is this
+    process's (pid and start time, proc_info): then only main-transcript
+    latch lines at or after the process's start offset count, plus this
+    process's sidechain transcripts, plus the pid-keyed process record (a
+    latch seen before a /clear). A missing, key-less or stale marker leaves
+    the latch unknown - any window above 200K is then unresolved - and any
+    latch line only proves "maybe"."""
     proc = st.get("proc") if isinstance(st.get("proc"), dict) else None
     lines = scan.get("latches") or []
-    if proc is None or not isinstance(proc.get("offset"), int):
+    valid = (proc is not None and isinstance(proc.get("offset"), int)
+             and isinstance(proc.get("key"), str) and current_key is not None
+             and proc["key"] == current_key and _finite(proc.get("at")) is not None)
+    if not valid:
         return bool(lines), False, (lines[-1][1] if lines else None)
+    key, since = proc["key"], _finite(proc["at"])
     mine = [(o, t) for o, t in lines if o >= proc["offset"]]
-    key = proc.get("key") if isinstance(proc.get("key"), str) else None
+    at = mine[-1][1] if mine else None
+    if not mine:
+        side, readable = _sidechain_latch(transcript_path, since)
+        if side is not None:
+            mine, at = [(None, side)], side
+        elif not readable:
+            return False, False, None
     if mine:
-        if key and not load_state(PROC_PREFIX + key).get("latch"):
+        if not load_state(PROC_PREFIX + key).get("latch"):
             update_state(PROC_PREFIX + key,
                          lambda p: p.setdefault("latch", time.time()))
-        return True, True, mine[-1][1]
-    if key:
-        at = _finite(load_state(PROC_PREFIX + key).get("latch"))
-        if at:
-            return True, True, at
+        return True, True, at
+    rec = _finite(load_state(PROC_PREFIX + key).get("latch"))
+    if rec:
+        return True, True, rec
     return False, True, None
 
 
-def derived_window(scan, st, environ=None):
-    """window_rules.derive() on this session's inputs, then the trust gate:
-    a PostModelSwitch newer than the last model line replaces the model (or,
-    when it named only an alias, leaves the result unresolved), and a
+def derived_window(scan, st, environ=None, transcript_path=None, current_key=None):
+    """window_rules.derive() on this session's inputs, then the trust gate: a
+    PostModelSwitch newer than the last model line leaves the result
+    unresolved until Claude Code writes the new model line (the switched-to
+    string can still be rewritten on its way to the model id), and a
     distrusted Claude Code version is unresolved. The returned dict adds
-    model, cc_version, rules_version, latch, changed_at (the epoch at which
-    the last input changed: model line, switch or latch) and distrusted."""
+    model, cc_version, rules_version, latch, latch_known, changed_at (the
+    epoch at which the last input changed: model line, switch or latch) and
+    distrusted."""
     R = _rules()
     environ = os.environ if environ is None else environ
     env = R.env_inputs(environ)
     model, changed = scan.get("model_id"), scan.get("model_at")
-    alias = False
+    switched = False
     sw = st.get("model_switch")
     if isinstance(sw, dict) and isinstance(sw.get("to_model"), str) \
             and isinstance(sw.get("size"), int) and sw["size"] > scan.get("model_off", -1):
-        tm = sw["to_model"].strip()
-        if tm.lower().startswith("claude-"):
-            model = tm
-        else:
-            alias = True
+        switched = True
         changed = max(changed or 0.0, _finite(sw.get("at")) or 0.0) or None
-    latch, known, latch_at = _latch(scan, st)
+    latch, known, latch_at = _latch(scan, st, transcript_path, current_key)
     if latch and latch_at:
         changed = max(changed or 0.0, latch_at)
     served = R.served_declared(_base_dir(), R.canonical(model), read_json_file)
     d = R.derive(model, env, latch=latch, latch_known=known, served=served)
     ver = scan.get("cc_version")
+    proc = st.get("proc") if isinstance(st.get("proc"), dict) else {}
     d.update(model=model, cc_version=ver, rules_version=R.RULES_CC_VERSION,
-             latch=latch, changed_at=changed, distrusted=False, served=served)
-    if alias:
-        d.update(resolved=False, rule="model_switch_alias")
+             latch=latch, latch_known=known, changed_at=changed, distrusted=False,
+             served=served,
+             proc_ok=current_key is not None and proc.get("key") == current_key)
+    if switched:
+        d.update(resolved=False, rule="model_switch_pending")
     if d["resolved"] and (ver or "unknown") in distrusted_versions():
         d.update(resolved=False, distrusted=True)
     return d, env
@@ -858,8 +1042,8 @@ def derived_window(scan, st, environ=None):
 
 def cross_check(session_id, ex, d, st):
     """Compare a status-line record's window with a resolved derived one.
-    Only a record written by this Claude Code process (at >= the SessionStart
-    marker) after the derived inputs last changed can disagree; then one
+    Only a record written by this Claude Code process (a SessionStart marker
+    whose pid key is this process's, and at >= its time) after the derived inputs last changed can disagree; then one
     line goes to window-mismatch.jsonl (the last MISMATCH_KEEP kept), the
     Claude Code version joins the distrust list and the session records
     `window_mismatch` (context_warn tells the operator once). Returns True
@@ -871,8 +1055,8 @@ def cross_check(session_id, ex, d, st):
         if not (d.get("resolved") and d.get("window") and win and at) \
                 or int(win) == int(d["window"]):
             return False
-        if started is None or at < started or d.get("changed_at") is None \
-                or at < d["changed_at"]:
+        if not d.get("proc_ok") or started is None or at < started \
+                or d.get("changed_at") is None or at < d["changed_at"]:
             return False
         ver = d.get("cc_version") or "unknown"
         rec = {"at": round(time.time(), 3), "session": safe_sid(session_id),
@@ -936,7 +1120,28 @@ def _append_capped(path, line, keep):
                 pass
 
 
-def measure(transcript_path, session_id=None, cwd=None, environ=None):
+def _pinned(environ):
+    """CLAUDE_KIT_CONTEXT_WINDOW (the operator's pin) is set, as window() reads it."""
+    v = environ.get("CLAUDE_KIT_CONTEXT_WINDOW")
+    return bool(v and v.isdigit())
+
+
+def _inferred(res, ex, cur, peak, boundary):
+    """The pre-mirror inferred depth (a stale exact record floors it)."""
+    known = int(ex.get("window") or 0)
+    w = window(peak, floor=known)
+    src = "inferred"
+    if known:
+        if not boundary:
+            # After a compaction the stale record describes the OLD epoch's
+            # fill; only its window still holds.
+            cur = max(cur, int(ex.get("tokens") or 0))
+        src = "inferred, window from status line"
+    res.update(tokens=cur, model_window=w, model_pct=(100.0 * cur / w if w else 0.0),
+               source=src)
+
+
+def measure(transcript_path, session_id=None, cwd=None, environ=None, mirror=True):
     """The depth the gate scores, as a dict:
 
     tokens, window, pct - the GATE window: the model window, lowered to a
@@ -949,30 +1154,37 @@ def measure(transcript_path, session_id=None, cwd=None, environ=None):
     derived - derived_window()'s dict (None with the mirror off);
     acw - window_rules.autocompact()'s dict;
     note - words for the advisory (an unresolved derived window, the
-      auto-compact window), "" when there is nothing to add.
+      auto-compact window), "" when there is nothing to add;
+    scan_cache - the transcript scan's resumable state, for the caller to
+      keep in the session state (None with the mirror off).
 
     Precedence: a fresh exact record; a resolved derived window; the
-    inferred guess (an unresolved derived window only adds its note). Never
-    raises for a missing or malformed transcript."""
-    R = _rules()
+    inferred guess (an unresolved derived window only adds its note).
+    With the mirror off - mirror=False, CONTEXT_GUARD_DERIVE=off, or the
+    operator's CLAUDE_KIT_CONTEXT_WINDOW pin - this is exactly the
+    pre-mirror depth: exact, else inferred. Never raises for a missing or
+    malformed transcript."""
     environ = os.environ if environ is None else environ
-    off = derive_off(environ)
     st = load_state(session_id) if session_id else {}
     ex = sensor(session_id, st) if session_id else {}
     fresh = bool(ex.get("window")) and time.time() - (ex.get("at") or 0) < EXACT_MAX_AGE_S
     res = {"derived": None, "acw": {"window": None, "resolved": False, "source": "off"},
-           "note": ""}
-    if fresh and off:
-        res.update(tokens=ex["tokens"], model_window=ex["window"], model_pct=ex["pct"],
-                   source="exact")
-        return _gate(res, True)
-    scan = scan_transcript(transcript_path, usage=not fresh)
-    d = env = None
-    if not off:
-        try:
-            d, env = derived_window(scan, st, environ)
-        except Exception:
-            d = env = None
+           "note": "", "scan_cache": None}
+    if not mirror or derive_off(environ) or _pinned(environ):
+        if fresh:
+            res.update(tokens=ex["tokens"], model_window=ex["window"], model_pct=ex["pct"],
+                       source="exact")
+            return _gate(res, True)
+        _inferred(res, ex, *scan_usage(transcript_path))
+        return _gate(res, False)
+    R = _rules()
+    pi = proc_info()
+    scan = scan_transcript(transcript_path, st.get("scan"))
+    res["scan_cache"] = scan["cache"]
+    try:
+        d, env = derived_window(scan, st, environ, transcript_path, pi["key"])
+    except Exception:
+        d = env = None
     if fresh:
         if d and session_id and cross_check(session_id, ex, d, st):
             d.update(resolved=False, distrusted=True)
@@ -992,30 +1204,22 @@ def measure(transcript_path, session_id=None, cwd=None, environ=None):
                        source="derived")
             blocking = True
         else:
-            cur, peak, boundary = scan["cur"], scan["peak"], scan["boundary"]
-            known = int(ex.get("window") or 0)
-            w = window(peak, floor=known)
-            src = "inferred"
-            if known:
-                if not boundary:
-                    # After a compaction the stale record describes the OLD
-                    # epoch's fill; only its window still holds.
-                    cur = max(cur, int(ex.get("tokens") or 0))
-                src = "inferred, window from status line"
-            res.update(tokens=cur, model_window=w,
-                       model_pct=(100.0 * cur / w if w else 0.0), source=src)
+            _inferred(res, ex, scan["cur"], scan["peak"], scan["boundary"])
             blocking = False
             if d and d.get("window"):
-                res["note"] = (f"derived window {int(d['window']):,} unresolved "
-                               f"({d['rule']}{', CC ' + str(d['cc_version']) + ' distrusted' if d.get('distrusted') else ''})")
+                why = d["rule"]
+                if d.get("distrusted"):
+                    why += f", CC {d.get('cc_version')} distrusted"
+                res["note"] = f"derived window {int(d['window']):,} unresolved ({why})"
     res["derived"] = d
-    if not off and env is not None:
+    if env is not None:
         try:
             proj = environ.get("CLAUDE_PROJECT_DIR") or cwd
-            res["acw"] = R.autocompact(d.get("model") if d else None, res["model_window"],
-                                       env, R.settings_autocompact(_base_dir(), proj, read_json_file),
-                                       latch=bool(d and d.get("latch")),
-                                       served=d.get("served") if d else None)
+            res["acw"] = R.autocompact(
+                d.get("model") if d else None, res["model_window"], env,
+                R.settings_autocompact(_base_dir(), proj, read_json_file),
+                observable=pi["observable"], latch=bool(d and d.get("latch")),
+                served=d.get("served") if d else None)
         except Exception:
             pass
     return _gate(res, blocking)
@@ -1049,7 +1253,7 @@ def derived_record(m):
             "rules_version": d.get("rules_version"), "at": round(time.time(), 3)}
 
 
-def depth(transcript_path, session_id=None, cwd=None):
+def depth(transcript_path, session_id=None, cwd=None, mirror=True):
     """Return (tokens, window, pct_full, source) against the MODEL window.
 
     source is "exact" when the status line's record is fresh, "derived" when
@@ -1057,6 +1261,8 @@ def depth(transcript_path, session_id=None, cwd=None):
     tokens are a guess and must not hard-block. A stale exact record still
     contributes its window (as the floor of the guess) and its tokens (as the
     floor of the transcript-derived count). See measure() for the gate window.
+    mirror=False is the pre-mirror depth (exact, else inferred) - what
+    precompact_gate uses, so a derived window never defers a compaction.
     """
-    m = measure(transcript_path, session_id, cwd=cwd)
+    m = measure(transcript_path, session_id, cwd=cwd, mirror=mirror)
     return m["tokens"], m["model_window"], m["model_pct"], m["source"]
