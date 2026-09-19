@@ -15,8 +15,8 @@ refs:
 Operator 2026-09-17: remove context-guard's dependency on the status line as its depth sensor; context-guard should own its own hook. Librarian facts: hooks receive no context-window size or usage (docs: common fields session_id, prompt_id, transcript_path, cwd, scratchpad_dir, permission_mode, effort, hook_event_name; none for window/usage). Token count is already exact from transcript usage blocks (cross-checked equal to the status-line record). The only missing input is the WINDOW SIZE (200K vs 1M), which the model id in transcripts ('claude-opus-5') and settings ('opus') does not carry. The 2.1.273 binary shows SessionStart hooks receive an undocumented 'model' field and there are PreModelSwitch/PostModelSwitch hook events with from_model/to_model — if those carry the 1M variant, hooks can know the window without the status line. Step 1 (spike): capture the live payloads. Step 2: plan + operator review. Step 3: implement on the factored layout (context-guard), fable.
 
 ## Handoff
-- doing: review round 2 running; impl at 6db9fd3
-- next: CLEAR -> land (close 6d60 too); else fix round 2
+- doing: review round 3 running; impl at 4aa7c87
+- next: CLEAR -> land + close 6d60; else fix round 3 (last)
 - blocked: decision 14
 - learned: —
 
@@ -82,3 +82,9 @@ dispatch: implementer opus fix round 1 — resume (fable unavailable)
 
 fix round 1 (opus): DONE 26f7c7b + 6db9fd3 (all 13; 387 tests; kill switch byte-identical on 42 cases; scan cache: 16ms steady state). Librarian accepts: precompact keeps main's exact-or-inferred deferral (derived never defers); an absent remote-settings cache = no remote policy; macOS (no /proc) = warn-only above 200K. 6d60 docs folded in.
 dispatch: reviewer opus review round 2 — resume
+
+review round 2 (opus): NEEDS_CHANGES — critical 1 (proc_info trusts any ancestor with a registry entry; shared registry across sandboxes -> wrong cmdline), 2 (policy tier is first-wins, not merged), 3 (CLAUDE_CODE_MANAGED_SETTINGS_PATH unread); medium 4 (remote policy may live in a storage backend, not remote-settings.json), 5 (escapes missing when the auto-compact block has a fresh status line); lows 6-8. Model window now safe. Librarian decision: adopt the simplest safe rule — a settings-derived auto-compact window is unresolved whenever any policy tier is present, CLAUDE_CODE_MANAGED_SETTINGS_PATH is set, remote policy cannot be ruled out, or the ancestor is not verified as the Claude Code binary.
+dispatch: implementer opus fix round 2 — resume
+
+fix round 2 (opus): DONE c27cd37 + 4aa7c87 (verified claude ancestor; any policy / MANAGED_SETTINGS_PATH / unrulable remote policy -> unresolved; auto-compact window never hard-blocks on 2.1.277; sidechain cache; escapes on mirror-bounded blocks). Librarian: keep the resolution machinery (REMOTE_POLICY_RULED_OUT=False) for a future CC.
+dispatch: reviewer opus review round 3 — resume
