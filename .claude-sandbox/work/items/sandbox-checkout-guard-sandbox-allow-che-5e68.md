@@ -24,3 +24,6 @@ Operator decision 10 (2026-09-19): consistency and cohesion. The checkout-guard 
 - 2026-09-19 claimed by unknown@e3a28d2cc009
 
 dispatch: implementer opus — gating hook, trivial change (rule 3 exclusion)
+
+impl: DONE 1199590 (alias tuple; 21 tests; 29/31 matrix identical, 2 intended allows).
+dispatch: reviewer opus — rule 4
