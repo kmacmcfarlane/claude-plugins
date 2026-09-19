@@ -110,10 +110,9 @@ Three layers, escalating; the first two are hooks, the third is a skill.
    demotes that Claude Code version to warn-only (the table is copied from 2.1.277,
    `RULES_CC_VERSION`). The gate also warns against the auto-compact window when one is
    configured below the model window (`CLAUDE_CODE_AUTO_COMPACT_WINDOW`, the
-   `autoCompactWindow` setting), and hard-stops there only when every settings layer that
-   could set or cancel it was read — in practice only with `"autoCompactEnabled": true` in a
-   settings file and no settings flag on the command line; server-side client data and
-   experiments cannot be read, so they never bound a hard stop. The compaction gate keeps the
+   `autoCompactWindow` setting), and would hard-stop there only when every settings layer
+   that could set or cancel it was read; server-managed policy can never be ruled out from a
+   hook on 2.1.277, so in practice the auto-compact window only warns. The compaction gate keeps the
    pre-mirror depth: a derived window never defers a compaction. `CONTEXT_GUARD_DERIVE=off`,
    or a `CLAUDE_KIT_CONTEXT_WINDOW` pin, turns the mirror off. The account file in the home directory
    is never opened. context-guard's own deprecated copy of the status line (kept

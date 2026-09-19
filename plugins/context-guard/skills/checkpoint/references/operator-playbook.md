@@ -32,13 +32,19 @@ quiet stretch is not an all-clear. The whitelist that passes a blocked prompt th
 All of it resets per epoch (each compaction or `/clear`). The gate also warns against the
 auto-compact window when one is set below the model window (`/autocompact`,
 `CLAUDE_CODE_AUTO_COMPACT_WINDOW`, a valid `autoCompactWindow` of 100000–1000000), because that
-is where Claude Code compacts. **The auto-compact window is advisory unless you set
-`"autoCompactEnabled": true` in a settings file** (user, project or local): without that
-line Claude Code may take the setting from its legacy global config, which the gate never
-reads, so it cannot know auto-compact is on and never hard-stops at the auto-compact window —
-it warns there and hard-stops only near the model window. A `--settings`, `--setting-sources`,
-`--autocompact` or similar flag on the `claude` command line, an SDK session, or an unreadable
-managed-settings file keeps it advisory too. The compaction gate never uses the derived or
+is where Claude Code compacts. **The auto-compact window is advisory: the gate warns there but never hard-stops there on
+Claude Code 2.1.277.** A hard stop at it would need every settings layer that can set or
+cancel it to be read, and one of them never can be: server-managed (remote) policy. Whether an
+account gets it depends on account data the gate never reads, and it may be kept in Claude
+Code's storage backend rather than in `remote-settings.json`. The other conditions, all of
+which would also keep it advisory on their own: `"autoCompactEnabled": true` must be set in a
+settings file (without it Claude Code may take the value from its legacy global config); no
+policy tier may be present — a `managed-settings.json`, a `managed-settings.d/` drop-in, a
+`remote-settings.json`, an MDM profile (macOS, Windows), or `CLAUDE_CODE_MANAGED_SETTINGS_PATH`
+set; no `--settings`, `--setting-sources`, `--managed-settings`, `--autocompact` or similar
+flag on the `claude` command line and not an SDK session; and the `claude` process the hook
+runs under must be verified (its binary, and its own session-registry entry). The hard stop
+near the model window is unaffected. The compaction gate never uses the derived or
 auto-compact window: it defers only on the depth it used before the window mirror.
 
 ## Tools, and when
