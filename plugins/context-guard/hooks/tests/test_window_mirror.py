@@ -530,7 +530,8 @@ class TestProcInfo(Base):
         "import json,os,sys;start=open(f'/proc/{os.getpid()}/stat').read().rsplit(')',1)[1]"
         ".split()[19];r=os.path.join(os.environ['CLAUDE_CONFIG_DIR'],'sessions');"
         "os.makedirs(r,exist_ok=True);json.dump({'pid':os.getpid(),'procStart':start},"
-        "open(os.path.join(r,f'{os.getpid()}.json'),'w'));sys.argv=sys.argv[:1]+sys.argv[1:];")
+        "open(os.path.join(r,f'{os.getpid()}.json'),'w'));"
+        "os.environ.update(CLAUDE_PID=str(os.getpid()),CLAUDE_CODE_CHILD_SESSION='1');")
 
     @property
     def CHILD_CMD(self):
@@ -557,6 +558,7 @@ rec = {"good": {"pid": os.getpid(), "procStart": start},
        "wrong-start": {"pid": os.getpid(), "procStart": str(int(start) + 7)}}.get(entry)
 if rec is not None:
     json.dump(rec, open(os.path.join(reg, f"{os.getpid()}.json"), "w"))
+os.environ.update(CLAUDE_PID=str(os.getpid()), CLAUDE_CODE_CHILD_SESSION="1")
 inner = [sys.executable, "-c", child, hooks]
 if mid == "1":   # a registered shell-like process between: must be walked past
     reg_mid = "import json,os,subprocess,sys;json.dump({'pid':os.getpid()},open(os.path.join(os.environ['CLAUDE_CONFIG_DIR'],'sessions',f'{os.getpid()}.json'),'w'));sys.stdout.write(subprocess.run(sys.argv[1:],capture_output=True,text=True).stdout)"
@@ -588,15 +590,23 @@ print(subprocess.run(inner, capture_output=True, text=True).stdout)
     def test_an_unregistered_first_claude_is_not_skipped(self):
         # A registered claude ABOVE an unregistered one (a nested claude):
         # the walk stops at the first claude and reports unverified.
+        # The inner claude runs its child with ITS pid as CLAUDE_PID; a second
+        # variant keeps the OUTER pid there (a hook env that is not the
+        # inner's): neither may take the outer key.
         code = ("import os,subprocess,sys;link=os.path.join(os.environ['CLAUDE_CONFIG_DIR'],'bin','claude');"
-                "print(subprocess.run([link,'-c',sys.argv[1]],capture_output=True,text=True).stdout)")
+                "own=sys.argv[2]=='own';"
+                "inner='import os,subprocess,sys;'+('os.environ[\\'CLAUDE_PID\\']=str(os.getpid());' if own else '')"
+                "+'print(subprocess.run([sys.executable,\\'-c\\',sys.argv[1]],capture_output=True,text=True).stdout)';"
+                "print(subprocess.run([link,'-c',inner,sys.argv[1]],capture_output=True,text=True).stdout)")
         outer = self.run_under(exe=None, entry="good")
         self.assertTrue(outer["key"])
-        p = subprocess.run([claude_link(self.cfg), "-c", self.REGISTER_THEN + code,
-                            self.CHILD_CMD], capture_output=True, text=True,
-                           env=self.environ(), timeout=30)
-        got = json.loads(p.stdout.strip().splitlines()[-1])
-        self.assertEqual(got, {"key": None, "observable": False})
+        for mode in ("own", "outer"):
+            with self.subTest(mode=mode):
+                p = subprocess.run([claude_link(self.cfg), "-c", self.REGISTER_THEN + code,
+                                    self.CHILD_CMD, mode], capture_output=True, text=True,
+                                   env=self.environ(), timeout=30)
+                got = json.loads([l for l in p.stdout.strip().splitlines() if l][-1])
+                self.assertEqual(got, {"key": None, "observable": False})
 
     def test_pid_domain_must_match(self):
         self.assertEqual(self.run_under(entry="other-domain"), {"key": None, "observable": False})
@@ -667,11 +677,23 @@ if old:
             with open(p, "w") as f:
                 json.dump(st, f)
 cmd = [sys.executable, hook]
-if os.environ.pop("_TEST_NESTED", None):
-    # A claude started from this one's Bash tool: same binary, NOT registered.
-    inner = "import subprocess,sys;r=subprocess.run(sys.argv[1:],input=sys.stdin.read(),capture_output=True,text=True);sys.stdout.write(r.stdout);sys.stderr.write(r.stderr);sys.exit(r.returncode)"
+# The env Claude Code gives every command hook (RLe()): its own pid, and
+# CLAUDE_CODE_CHILD_SESSION=1 always.
+env = dict(os.environ, CLAUDE_PID=str(os.getpid()), CLAUDE_CODE_CHILD_SESSION="1")
+if "_TEST_PID_OVERRIDE" in env:
+    env["CLAUDE_PID"] = env.pop("_TEST_PID_OVERRIDE")
+    if not env["CLAUDE_PID"]:
+        del env["CLAUDE_PID"]
+if os.environ.get("_TEST_NESTED"):
+    # A claude started from this one's Bash tool: same binary, NOT registered,
+    # and its hooks get ITS pid as CLAUDE_PID.
+    env.pop("_TEST_NESTED")
+    inner = ("import os,subprocess,sys;"
+             "e=dict(os.environ,CLAUDE_PID=str(os.getpid()),CLAUDE_CODE_CHILD_SESSION='1');"
+             "r=subprocess.run(sys.argv[1:],input=sys.stdin.read(),capture_output=True,text=True,env=e);"
+             "sys.stdout.write(r.stdout);sys.stderr.write(r.stderr);sys.exit(r.returncode)")
     cmd = [os.path.join(cfg, "bin", "claude"), "-c", inner] + cmd
-r = subprocess.run(cmd, input=sys.stdin.read(), capture_output=True, text=True)
+r = subprocess.run(cmd, input=sys.stdin.read(), capture_output=True, text=True, env=env)
 sys.stdout.write(r.stdout); sys.stderr.write(r.stderr); sys.exit(r.returncode)
 """
 
@@ -854,11 +876,29 @@ class TestHooks(Base):
         self.assertEqual((rc, out, err), (0, {}, ""))
         self.assertEqual(L.load_state("s")["derived"]["window"], 1_000_000)
 
-    def test_child_session_env_is_unverified(self):
+    def test_the_real_hook_env_still_verifies(self):
+        # Claude Code sets CLAUDE_CODE_CHILD_SESSION=1 in EVERY hook env: it
+        # must not unverify (the launcher sets it on every run).
         self.session("claude-opus-5", 950_000)
-        rc, out, _ = self.warn(CLAUDE_CODE_CHILD_SESSION=1)
-        self.assertEqual(rc, 0)
-        self.assertIn("latch_unknown", out["hookSpecificOutput"]["additionalContext"])
+        rc, _, err = self.warn()
+        self.assertEqual(rc, 2, err)
+        self.assertIn("(derived)", err)
+
+    def test_claude_pid_absent_or_foreign_is_unverified(self):
+        for pid in ("", "1", "abc"):
+            with self.subTest(pid=pid):
+                self.session("claude-opus-5", 950_000)
+                env = self.environ()
+                # the stand-in hands the hook this CLAUDE_PID instead of its own
+                p = subprocess.run(
+                    [claude_link(self.cfg), "-c", LAUNCHER, self.cfg,
+                     os.path.join(HOOKS, "context_warn.py")],
+                    input=json.dumps({"session_id": "s", "prompt": "x",
+                                      "transcript_path": self.tpath, "cwd": self.proj}),
+                    capture_output=True, text=True,
+                    env=dict(env, _TEST_PID_OVERRIDE=pid), timeout=30)
+                self.assertEqual(p.returncode, 0, p.stderr)
+                self.assertIn("latch_unknown", p.stdout)
 
     def test_malformed_mismatch_record_never_raises(self):
         self.session("claude-opus-5", 100_000)

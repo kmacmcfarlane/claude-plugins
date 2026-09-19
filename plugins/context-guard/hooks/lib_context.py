@@ -37,9 +37,9 @@ Depth sources, in order of preference:
    is matched on apiError "long_context_credits_required" only.
    The running Claude Code process is identified only when verified
    (proc_info: the FIRST claude ancestor, whose session-registry entry
-   carries its own pid, start time and PID namespace); a nested claude
-   (unregistered, or CLAUDE_CODE_CHILD_SESSION set) is never matched to an
-   outer one. Unverified, every input that depends on it is unresolved.
+   carries its own pid, start time and PID namespace, and whose pid is the
+   hook's CLAUDE_PID); a nested claude (unregistered, its own CLAUDE_PID)
+   is never matched to an outer one. Unverified, every input that depends on it is unresolved.
    CONTEXT_GUARD_DERIVE=off, or the operator's CLAUDE_KIT_CONTEXT_WINDOW
    pin, turns the mirror off (and the auto-compact window below): the gate
    is then exactly the pre-mirror exact-or-inferred one. precompact_gate
@@ -956,7 +956,10 @@ def _registry_matches(entry, pid, start):
     return True
 
 
-CHILD_SESSION_ENV = "CLAUDE_CODE_CHILD_SESSION"
+# Claude Code 2.1.277 puts its own pid in every command hook's environment
+# (RLe(): CLAUDE_PID, next to CLAUDE_CODE_CHILD_SESSION=1, which is always set
+# and so says nothing about nesting).
+CLAUDE_PID_ENV = "CLAUDE_PID"
 
 
 def proc_info():
@@ -965,14 +968,15 @@ def proc_info():
 
     Walks at most ANCESTORS parents through /proc and STOPS at the first one
     running the Claude Code binary (_is_claude) - that is the claude whose
-    hook this is. It counts only when VERIFIED: <config>/sessions/<pid>.json
-    exists and was written by it (_registry_matches: pid, procStart,
-    pidDomain). A first claude that is not verified is never skipped for an
-    outer one: a claude started from another's Bash tool does not register
-    (2.1.277), and taking the outer claude's key would share its state -
-    its latch, its marker - across two sessions. Also unverified: the hook
-    environment carries CLAUDE_CODE_CHILD_SESSION (set in Bash-tool
-    children, so this claude is nested). Non-claude ancestors (shells) are
+    hook this is. It counts only when VERIFIED: its pid is the hook
+    environment's CLAUDE_PID (Claude Code sets it to its own pid for every
+    command hook), and <config>/sessions/<pid>.json exists and was written
+    by it (_registry_matches: pid, procStart, pidDomain). A first claude
+    that is not verified is never skipped for an outer one: a claude started
+    from another's Bash tool does not register (2.1.277), and its hooks
+    carry its own CLAUDE_PID, so taking the outer claude's key - and with it
+    the outer session's latch and marker - cannot happen. CLAUDE_PID absent
+    or naming another process: unverified. Non-claude ancestors (shells) are
     walked past, whatever the registry says about their pids: the registry
     is shared across sandboxes.
     `observable` is True only when the verified process's
@@ -982,7 +986,8 @@ def proc_info():
     input that depends on the process is then unresolved. Never raises."""
     info = {"key": None, "observable": False}
     try:
-        if os.environ.get(CHILD_SESSION_ENV):
+        want = os.environ.get(CLAUDE_PID_ENV) or ""
+        if not want.isdigit():
             return info
         reg = os.path.join(_base_dir(), "sessions")
         pid, seen = os.getppid(), set()
@@ -991,6 +996,8 @@ def proc_info():
                 return info
             seen.add(pid)
             if _is_claude(pid):
+                if pid != int(want):
+                    return info
                 path = os.path.join(reg, f"{pid}.json")
                 start = _proc_start(pid)
                 if start is None or not os.path.isfile(path) \
