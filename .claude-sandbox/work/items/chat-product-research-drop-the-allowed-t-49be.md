@@ -24,3 +24,6 @@ Operator decision 11 (2026-09-19): let product-research use all tools. Acceptanc
 - 2026-09-19 claimed by unknown@e3a28d2cc009
 
 dispatch: implementer sonnet — default
+
+impl: DONE 6128212 (key removed; allowed-tools only pre-approves, never restricts — docs quote).
+dispatch: reviewer opus — rule 4

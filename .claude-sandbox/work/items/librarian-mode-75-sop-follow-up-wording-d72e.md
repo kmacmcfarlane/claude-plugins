@@ -2,12 +2,11 @@
 id: librarian-mode-75-sop-follow-up-wording-d72e
 title: "librarian-mode 75% SOP: follow-up wording from review"
 type: chore
-status: doing
+status: done
 priority: 3
-owner: unknown@e3a28d2cc009
-claimed: 2026-09-18T19:32Z
 created: 2026-09-18
 updated: 2026-09-19
+closed: 2026-09-19
 refs:
   - reviewer report, item librarian-mode-at-75-context-checkpoint-ce46
 ---
@@ -55,3 +54,6 @@ dispatch: implementer opus fix round 4 (extra, decision 35) — resume
 
 fix round 4 (extra, opus): DONE 3a0db89 (10 + 11).
 dispatch: reviewer opus review round 5 (extra, final) — resume
+
+review round 5 (opus, extra per decision 35): CLEAR. Final: CLEAR after 4 fix rounds (impl opus, review opus).
+- 2026-09-19 done: cd4b580

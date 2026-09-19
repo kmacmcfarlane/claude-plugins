@@ -2,13 +2,11 @@
 id: librarian-mode-wi-py-fallback-path-must-89a6
 title: "librarian-mode: wi.py fallback path must not assume the skill's own plugin root"
 type: chore
-status: blocked
+status: done
 priority: 4
-owner: unknown@e3a28d2cc009
-claimed: 2026-09-18T19:32Z
-blocked: bundled in worktree d72e; review cap hit - decision 35
 created: 2026-09-16
 updated: 2026-09-19
+closed: 2026-09-19
 refs:
   - reviewer report, item reconcile-plugin-factoring-with-main-rel-9b93
 ---
@@ -25,3 +23,6 @@ From the 9b93 review 2026-09-16: references/troubleshooting.md and the Rehydrate
 - 2026-09-18 claimed by unknown@e3a28d2cc009
 
 dispatch: implementer opus — bundled chores in worktree d72e; >3 files (rule 2)
+
+review round 5 (opus, extra per decision 35): CLEAR. Final: CLEAR after 4 fix rounds (impl opus, review opus).
+- 2026-09-19 done: cd4b580
