@@ -2,13 +2,14 @@
 id: dev-flow-add-the-dev-cycle-skill-07c3-f1-325d
 title: "dev-flow: add the dev-cycle skill (07c3 F1)"
 type: feature
-status: doing
+status: blocked
 priority: 2
 deps:
   - dev-flow-cross-skill-reference-conventio-05bb
 parent: dev-flow-new-dev-cycle-skill-investigate-07c3
 owner: unknown@e3a28d2cc009
 claimed: 2026-09-19T00:47Z
+blocked: "review cap hit (4): one-sentence fix in review-brief re-review template - decision 36"
 created: 2026-09-18
 updated: 2026-09-19
 ---
@@ -55,3 +56,7 @@ dispatch: implementer opus fix round 3 (last) — resume
 
 fix round 3 (opus): DONE 3edc2a8 (cumulative changed: block; serial sha256 baseline; both-sided fallback; open-question fields per format).
 dispatch: reviewer opus review round 4 (final) — resume
+
+## Cap
+review round 4 (opus, final): NEEDS_CHANGES — 1-4 of round 3 fixed; new medium: re-review template re-pastes the cumulative changed: block only in the merge-conflict case, so a resumed reviewer in an ordinary fix round lacks new files' reasons (one-sentence move in references/review-brief.md). CAP HIT (4).
+decision 36: 07c3 F1 cap: (a) one extra round to move the sentence into the general re-review template, re-review, land [recommended]; (b) land now, fold the fix into F2 (fb09), which edits the same briefs.
