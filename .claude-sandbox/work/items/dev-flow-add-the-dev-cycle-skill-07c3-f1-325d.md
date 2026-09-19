@@ -37,3 +37,6 @@ dispatch: implementer opus — marketplace shape + doctrine, L (rule 2); no gati
 ## Round log
 impl: DONE 0dfad31 (SKILL.md 13k chars; 7 references; carried notes folded; librarian-mode untouched).
 dispatch: reviewer opus — rule 4
+
+review round 1 (opus): NEEDS_CHANGES — high 1 (Land refuses the cycle's own store/series/worktree dirt), 2 (lost: reviewer NOTES/open questions, --blocked handoff on a red Land check, report-and-ask on a dirty worktree); medium 3 (merge-conflict hand resolution), 4 (record sink fallback to a nonexistent outcome file), 5 (no Files-in-scope fallback), 6 (plan/spike DONE skips review); lows 7-11, nit 12. Librarian decisions: own dirt never blocks; conflicts go back to the implementer (named merge-base exception); every DONE incl. plans is reviewed; files fallback = implementer declares, review holds it to the plan.
+dispatch: implementer opus fix round 1 — resume
