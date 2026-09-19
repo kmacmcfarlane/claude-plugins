@@ -812,11 +812,22 @@ class TestHooks(Base):
         self.assertNotIn("CONTEXT_GUARD_DERIVE", self.warn()[2])
 
     def test_pin_beats_derivation(self):
-        # Reviewer case 35: CLAUDE_KIT_CONTEXT_WINDOW wins, as on main.
+        # Reviewer case 35: the window pin wins, as on main - under the
+        # canonical name and under the deprecated alias alike.
+        for name in ("CONTEXT_GUARD_CONTEXT_WINDOW", "CLAUDE_KIT_CONTEXT_WINDOW"):
+            with self.subTest(name=name):
+                self.session("claude-haiku-4-5", 185_000)
+                rc, out, _ = self.warn(**{name: 1000000})
+                self.assertEqual((rc, out), (0, {}))
+                self.assertNotIn("derived", L.load_state("s"))
+
+    def test_invalid_canonical_pin_does_not_fall_back_to_the_alias(self):
+        # Canonical wins when both are set, even when it is invalid: no pin,
+        # so derivation runs and the haiku session blocks against 200K.
         self.session("claude-haiku-4-5", 185_000)
-        rc, out, _ = self.warn(CLAUDE_KIT_CONTEXT_WINDOW=1000000)
-        self.assertEqual((rc, out), (0, {}))
-        self.assertNotIn("derived", L.load_state("s"))
+        rc, _, _ = self.warn(CONTEXT_GUARD_CONTEXT_WINDOW="big",
+                             CLAUDE_KIT_CONTEXT_WINDOW=1000000)
+        self.assertEqual(rc, 2)
 
     def test_non_default_port_on_the_anthropic_host_only_warns(self):
         # Reviewer case 31.

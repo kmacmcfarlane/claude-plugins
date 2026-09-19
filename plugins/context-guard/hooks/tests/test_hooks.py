@@ -7,8 +7,14 @@ HOOKS = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, HOOKS)
 
 
+# Operator settings, canonical and deprecated alias: scrubbed so a stray value
+# in the environment running the tests cannot leak into a hook.
+OPERATOR_ENV = ("CONTEXT_GUARD_CONTEXT_WINDOW", "CLAUDE_KIT_CONTEXT_WINDOW",
+                "CONTEXT_GUARD_LEDGER_EVERY", "CLAUDE_KIT_LEDGER_EVERY")
+
+
 def run_hook(name, payload, env=None):
-    e = dict(os.environ)
+    e = {k: v for k, v in os.environ.items() if k not in OPERATOR_ENV}
     if env:
         e.update(env)
     p = subprocess.run([sys.executable, os.path.join(HOOKS, name)],
@@ -27,6 +33,11 @@ class Base(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
         self.env = {"CLAUDE_CONFIG_DIR": self.tmp.name}
+        scrub = mock.patch.dict(os.environ)
+        scrub.start()
+        self.addCleanup(scrub.stop)
+        for k in OPERATOR_ENV:
+            os.environ.pop(k, None)
         os.environ["CLAUDE_CONFIG_DIR"] = self.tmp.name
         global L
         import lib_context as L
@@ -137,7 +148,8 @@ class TestContextWarn(Base):
         self.assertEqual(rc, 0)
         self.assertIn("hookSpecificOutput", out)
         self.assertIn("NOT applied", out["hookSpecificOutput"]["additionalContext"])
-        self.assertIn("CLAUDE_KIT_CONTEXT_WINDOW", out["hookSpecificOutput"]["additionalContext"])
+        self.assertIn("CONTEXT_GUARD_CONTEXT_WINDOW", out["hookSpecificOutput"]["additionalContext"])
+        self.assertIn("CONTEXT_GUARD_CONTEXT_WINDOW", out["systemMessage"])
         self.assertIn("inferred", out["systemMessage"])
         self.assertIn("not blocked", out["systemMessage"])
         # DUE cadence: silent on the next two prompts, fires on the third.
@@ -376,6 +388,33 @@ class TestStopRelay(Base):
         self.set_exact("s", 240_000, 1_000_000)
         rc, out, _ = self.relay("s", last="just prose")
         self.assertIn("ledger", json.dumps(out))
+
+
+    def ledger_every(self, **env):
+        """Baseline at 100K, then +20K growth: True when the nudge fires."""
+        self.env.update(env)
+        self.set_exact("s", 100_000, 1_000_000)
+        self.relay("s")
+        self.set_exact("s", 120_000, 1_000_000)
+        rc, out, _ = self.relay("s", last="just prose")
+        return "ledger" in json.dumps(out)
+
+    def test_ledger_every_default(self):
+        self.assertFalse(self.ledger_every())       # 20K < 60K
+
+    def test_ledger_every_canonical(self):
+        self.assertTrue(self.ledger_every(CONTEXT_GUARD_LEDGER_EVERY="10000"))
+
+    def test_ledger_every_deprecated_alias(self):
+        self.assertTrue(self.ledger_every(CLAUDE_KIT_LEDGER_EVERY="10000"))
+
+    def test_ledger_every_canonical_wins(self):
+        self.assertFalse(self.ledger_every(CONTEXT_GUARD_LEDGER_EVERY="50000",
+                                           CLAUDE_KIT_LEDGER_EVERY="10000"))
+
+    def test_ledger_every_empty_canonical_falls_to_alias(self):
+        self.assertTrue(self.ledger_every(CONTEXT_GUARD_LEDGER_EVERY="",
+                                          CLAUDE_KIT_LEDGER_EVERY="10000"))
 
 
 class TestLedgerPointer(Base):

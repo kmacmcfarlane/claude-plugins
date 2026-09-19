@@ -40,9 +40,10 @@ Depth sources, in order of preference:
    carries its own pid, start time and PID namespace, and whose pid is the
    hook's CLAUDE_PID); a nested claude (unregistered, its own CLAUDE_PID)
    is never matched to an outer one. Unverified, every input that depends on it is unresolved.
-   CONTEXT_GUARD_DERIVE=off, or the operator's CLAUDE_KIT_CONTEXT_WINDOW
-   pin, turns the mirror off (and the auto-compact window below): the gate
-   is then exactly the pre-mirror exact-or-inferred one. precompact_gate
+   CONTEXT_GUARD_DERIVE=off, or the operator's CONTEXT_GUARD_CONTEXT_WINDOW
+   pin (deprecated alias CLAUDE_KIT_CONTEXT_WINDOW), turns the mirror off
+   (and the auto-compact window below): the gate is then exactly the
+   pre-mirror exact-or-inferred one. precompact_gate
    always uses that pre-mirror depth (depth(mirror=False)): a derived window
    never defers a compaction.
 3. INFERRED - from the transcript's per-message `usage` blocks (the numbers the
@@ -749,11 +750,33 @@ def scan_transcript(transcript_path, cache=None):
     return out
 
 
+# Operator settings read from the environment: canonical name, then the
+# deprecated alias it replaced (the claude-kit brand is dissolved). The alias
+# keeps exactly the same semantics; the canonical name wins when both are set.
+WINDOW_ENV = ("CONTEXT_GUARD_CONTEXT_WINDOW", "CLAUDE_KIT_CONTEXT_WINDOW")
+LEDGER_EVERY_ENV = ("CONTEXT_GUARD_LEDGER_EVERY", "CLAUDE_KIT_LEDGER_EVERY")
+
+
+def env_setting(names, environ=None):
+    """The value of the first of `names` (canonical, then deprecated alias)
+    that is set to a non-empty string in environ (default os.environ), else
+    None. An empty value counts as unset, as every reader treated it before
+    the alias existed. The value is returned raw: a set but invalid canonical
+    value still wins over the alias, and each reader validates it as before."""
+    environ = os.environ if environ is None else environ
+    for name in names:
+        v = environ.get(name)
+        if v:
+            return v
+    return None
+
+
 def window(peak, floor=0):
     """Guess the window from the session's peak usage. `floor` is a window that
     was once reported exactly (by the status line): the guess never returns
-    less than it. CLAUDE_KIT_CONTEXT_WINDOW pins the window outright."""
-    env = os.environ.get("CLAUDE_KIT_CONTEXT_WINDOW")
+    less than it. CONTEXT_GUARD_CONTEXT_WINDOW (deprecated alias
+    CLAUDE_KIT_CONTEXT_WINDOW) pins the window outright."""
+    env = env_setting(WINDOW_ENV)
     if env and env.isdigit():
         return int(env)
     small, large = DEFAULTS
@@ -1262,8 +1285,9 @@ def _append_capped(path, line, keep):
 
 
 def _pinned(environ):
-    """CLAUDE_KIT_CONTEXT_WINDOW (the operator's pin) is set, as window() reads it."""
-    v = environ.get("CLAUDE_KIT_CONTEXT_WINDOW")
+    """CONTEXT_GUARD_CONTEXT_WINDOW (the operator's pin; deprecated alias
+    CLAUDE_KIT_CONTEXT_WINDOW) is set, as window() reads it."""
+    v = env_setting(WINDOW_ENV, environ)
     return bool(v and v.isdigit())
 
 
@@ -1302,7 +1326,8 @@ def measure(transcript_path, session_id=None, cwd=None, environ=None, mirror=Tru
     Precedence: a fresh exact record; a resolved derived window; the
     inferred guess (an unresolved derived window only adds its note).
     With the mirror off - mirror=False, CONTEXT_GUARD_DERIVE=off, or the
-    operator's CLAUDE_KIT_CONTEXT_WINDOW pin - this is exactly the
+    operator's CONTEXT_GUARD_CONTEXT_WINDOW pin (or its deprecated alias
+    CLAUDE_KIT_CONTEXT_WINDOW) - this is exactly the
     pre-mirror depth: exact, else inferred. Never raises for a missing or
     malformed transcript."""
     environ = os.environ if environ is None else environ

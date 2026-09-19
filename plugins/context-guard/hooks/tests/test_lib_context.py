@@ -1,11 +1,22 @@
 import json, os, sys, tempfile, time, unittest
+from unittest import mock
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+# Operator settings, canonical and deprecated alias: scrubbed so a stray value
+# in the environment running the tests cannot leak in.
+OPERATOR_ENV = ("CONTEXT_GUARD_CONTEXT_WINDOW", "CLAUDE_KIT_CONTEXT_WINDOW",
+                "CONTEXT_GUARD_LEDGER_EVERY", "CLAUDE_KIT_LEDGER_EVERY")
 
 
 class Base(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
+        scrub = mock.patch.dict(os.environ)
+        scrub.start()
+        self.addCleanup(scrub.stop)
+        for k in OPERATOR_ENV:
+            os.environ.pop(k, None)
         os.environ["CLAUDE_CONFIG_DIR"] = self.tmp.name
         global L, ledger
         import lib_context as L
@@ -167,13 +178,60 @@ class TestDepth(Base):
         self.assertEqual(L.window(100_000, floor=0), 200_000)
 
     def test_window_env_override(self):
-        os.environ["CLAUDE_KIT_CONTEXT_WINDOW"] = "500000"
-        try:
-            self.assertEqual(L.window(100_000), 500_000)
-            self.assertEqual(L.window(100_000, floor=1_000_000), 500_000)  # pin wins
-            self.assertEqual(L.depth(self._transcript(100_000))[1], 500_000)
-        finally:
-            os.environ.pop("CLAUDE_KIT_CONTEXT_WINDOW", None)
+        # The canonical name and the deprecated alias pin alike.
+        for name in ("CONTEXT_GUARD_CONTEXT_WINDOW", "CLAUDE_KIT_CONTEXT_WINDOW"):
+            with self.subTest(name=name):
+                os.environ[name] = "500000"
+                try:
+                    self.assertEqual(L.window(100_000), 500_000)
+                    self.assertEqual(L.window(100_000, floor=1_000_000), 500_000)  # pin wins
+                    self.assertEqual(L.depth(self._transcript(100_000))[1], 500_000)
+                    self.assertTrue(L._pinned(os.environ))
+                finally:
+                    os.environ.pop(name, None)
+
+    def test_window_env_canonical_wins(self):
+        os.environ["CONTEXT_GUARD_CONTEXT_WINDOW"] = "500000"
+        os.environ["CLAUDE_KIT_CONTEXT_WINDOW"] = "300000"
+        self.assertEqual(L.window(100_000), 500_000)
+        # A set but invalid canonical value still wins: no pin, as an invalid
+        # value always meant.
+        os.environ["CONTEXT_GUARD_CONTEXT_WINDOW"] = "lots"
+        self.assertEqual(L.window(100_000), 200_000)
+        self.assertFalse(L._pinned(os.environ))
+        # An empty canonical value counts as unset: the alias applies.
+        os.environ["CONTEXT_GUARD_CONTEXT_WINDOW"] = ""
+        self.assertEqual(L.window(100_000), 300_000)
+        self.assertTrue(L._pinned(os.environ))
+
+    def test_window_env_invalid_is_ignored(self):
+        for name in ("CONTEXT_GUARD_CONTEXT_WINDOW", "CLAUDE_KIT_CONTEXT_WINDOW"):
+            for v in ("", "1e6", "-5", "abc"):
+                with self.subTest(name=name, v=v):
+                    os.environ[name] = v
+                    try:
+                        self.assertEqual(L.window(100_000), 200_000)
+                        self.assertFalse(L._pinned(os.environ))
+                    finally:
+                        os.environ.pop(name, None)
+
+
+class TestEnvSetting(Base):
+    def test_canonical_then_alias(self):
+        names = ("CANON", "ALIAS")
+        self.assertIsNone(L.env_setting(names, {}))
+        self.assertEqual(L.env_setting(names, {"ALIAS": "2"}), "2")
+        self.assertEqual(L.env_setting(names, {"CANON": "1"}), "1")
+        self.assertEqual(L.env_setting(names, {"CANON": "1", "ALIAS": "2"}), "1")
+        self.assertEqual(L.env_setting(names, {"CANON": "x", "ALIAS": "2"}), "x")
+        self.assertEqual(L.env_setting(names, {"CANON": "", "ALIAS": "2"}), "2")
+        self.assertIsNone(L.env_setting(names, {"CANON": "", "ALIAS": ""}))
+
+    def test_names(self):
+        self.assertEqual(L.WINDOW_ENV,
+                         ("CONTEXT_GUARD_CONTEXT_WINDOW", "CLAUDE_KIT_CONTEXT_WINDOW"))
+        self.assertEqual(L.LEDGER_EVERY_ENV,
+                         ("CONTEXT_GUARD_LEDGER_EVERY", "CLAUDE_KIT_LEDGER_EVERY"))
 
 
 class TestLedger(Base):
