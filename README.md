@@ -323,8 +323,8 @@ It also carries `hooks/` — `checkout_guard.py`, a PreToolUse guard that denies
 `MultiEdit`/`NotebookEdit` on git-tracked files when the session's cwd is a main checkout, the
 direction the harness's own worktree guard does not cover. Enforcement is on wherever the plugin
 is installed; the per-repo opt-out is a `.claude/allow-checkout-edits` marker file or
-`CLAUDE_KIT_ALLOW_CHECKOUT_EDITS=1` in the environment (the variable keeps its historical name so
-existing env files keep working). Every git failure fails open. Unit tests:
+`SANDBOX_ALLOW_CHECKOUT_EDITS=1` in the environment (`CLAUDE_KIT_ALLOW_CHECKOUT_EDITS=1` is still
+honoured as a deprecated alias, so existing env files keep working). Every git failure fails open. Unit tests:
 `cd plugins/sandbox/hooks && python3 -m unittest discover -s tests -q`.
 
 ### ralph

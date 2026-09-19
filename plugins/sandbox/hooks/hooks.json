@@ -1,5 +1,5 @@
 {
-  "description": "sandbox: the checkout/worktree convention, enforced — a PreToolUse guard that denies Edit/Write/MultiEdit/NotebookEdit on git-tracked files when the session's cwd is a main checkout (the direction the harness's own worktree guard does not cover). Fails open on any git error; escape hatches CLAUDE_KIT_ALLOW_CHECKOUT_EDITS=1 and a per-repo .claude/allow-checkout-edits marker.",
+  "description": "sandbox: the checkout/worktree convention, enforced — a PreToolUse guard that denies Edit/Write/MultiEdit/NotebookEdit on git-tracked files when the session's cwd is a main checkout (the direction the harness's own worktree guard does not cover). Fails open on any git error; escape hatches SANDBOX_ALLOW_CHECKOUT_EDITS=1 (deprecated alias CLAUDE_KIT_ALLOW_CHECKOUT_EDITS=1) and a per-repo .claude/allow-checkout-edits marker.",
   "hooks": {
     "PreToolUse": [
       {

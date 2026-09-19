@@ -13,7 +13,7 @@ BLOCK = {
             "This file is tracked in the main checkout. Enter a worktree "
             "first (EnterWorktree) or delegate to an Agent with worktree "
             "isolation; see the sandbox skill's checkout/worktree convention. "
-            "Escape hatches: CLAUDE_KIT_ALLOW_CHECKOUT_EDITS=1 or a "
+            "Escape hatches: SANDBOX_ALLOW_CHECKOUT_EDITS=1 or a "
             ".claude/allow-checkout-edits file."),
     }
 }
@@ -21,6 +21,7 @@ BLOCK = {
 
 def run_hook(payload, env=None):
     e = dict(os.environ)
+    e.pop("SANDBOX_ALLOW_CHECKOUT_EDITS", None)
     e.pop("CLAUDE_KIT_ALLOW_CHECKOUT_EDITS", None)
     e.pop("GIT_DIR", None)
     if env:
@@ -114,8 +115,40 @@ class TestCheckoutGuard(Base):
 
     def test_env_escape_hatch_allows(self):
         rc, out, _ = self.edit(self.tracked,
+                               env={"SANDBOX_ALLOW_CHECKOUT_EDITS": "1"})
+        self.assertEqual((rc, out), (0, {}))
+
+    def test_deprecated_alias_escape_hatch_allows(self):
+        rc, out, _ = self.edit(self.tracked,
                                env={"CLAUDE_KIT_ALLOW_CHECKOUT_EDITS": "1"})
         self.assertEqual((rc, out), (0, {}))
+
+    def test_both_env_names_set_allows(self):
+        rc, out, _ = self.edit(self.tracked,
+                               env={"SANDBOX_ALLOW_CHECKOUT_EDITS": "1",
+                                    "CLAUDE_KIT_ALLOW_CHECKOUT_EDITS": "1"})
+        self.assertEqual((rc, out), (0, {}))
+
+    def test_neither_env_name_set_blocks(self):
+        # run_hook strips both names, so this is the unset baseline.
+        rc, out, _ = self.edit(self.tracked)
+        self.assertEqual((rc, out), (0, BLOCK))
+
+    def test_env_values_other_than_1_do_not_allow(self):
+        # Same accepted values under both names: exactly "1", nothing else.
+        for name in ("SANDBOX_ALLOW_CHECKOUT_EDITS",
+                     "CLAUDE_KIT_ALLOW_CHECKOUT_EDITS"):
+            for val in ("", "0", "true", "yes", " 1"):
+                rc, out, _ = self.edit(self.tracked, env={name: val})
+                self.assertEqual((rc, out), (0, BLOCK), (name, val))
+
+    def test_either_name_at_1_allows_whatever_the_other_holds(self):
+        for env in ({"SANDBOX_ALLOW_CHECKOUT_EDITS": "1",
+                     "CLAUDE_KIT_ALLOW_CHECKOUT_EDITS": "0"},
+                    {"SANDBOX_ALLOW_CHECKOUT_EDITS": "0",
+                     "CLAUDE_KIT_ALLOW_CHECKOUT_EDITS": "1"}):
+            rc, out, _ = self.edit(self.tracked, env=env)
+            self.assertEqual((rc, out), (0, {}), env)
 
     def test_marker_file_allows(self):
         os.makedirs(os.path.join(self.repo, ".claude"))
