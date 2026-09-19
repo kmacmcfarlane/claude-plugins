@@ -2,12 +2,11 @@
 id: context-guard-get-exact-depth-from-its-o-d63e
 title: "context-guard: get exact depth from its own hooks, not the status line"
 type: feature
-status: doing
+status: done
 priority: 2
-owner: unknown@e3a28d2cc009
-claimed: 2026-09-19T00:27Z
 created: 2026-09-17
 updated: 2026-09-19
+closed: 2026-09-19
 refs:
   - operator message 2026-09-17
 ---
@@ -72,6 +71,7 @@ OPERATOR 2026-09-19: decision 31 approved; 32 a (drop ~/.claude.json entirely); 
 - 2026-09-19 claimed by unknown@e3a28d2cc009
 
 dispatch: implementer opus — fable unavailable (unknown); fallback (rule 3: non-trivial HARD-gate code)
+- 2026-09-19 done: f04eb42
 
 ## Round log
 impl (opus fallback): DONE d513ea9 + cf69579 (window_rules.py 2.1.277; measure(); 357 tests; 42-case gate matrix: existing users identical except E7 stale+model line now blocks and A3 configured auto-compact window now gates fresh-sensor users). Librarian accepts A3 as decision 34b working as intended (the gate should respect the real compaction threshold); reported to the operator. Kill switch CONTEXT_GUARD_DERIVE=off. Timing 11->49ms fresh, 71->95ms none on a 52MB transcript.
@@ -101,3 +101,8 @@ decision 37: d63e cap: (a) one extra round (key on CLAUDE_PID), re-review, land 
 
 OPERATOR 2026-09-19: decision 37 a — one extra round (key on CLAUDE_PID).
 dispatch: implementer opus fix round 4 (extra) — fable unavailable (unknown); fallback — resume
+
+fix round 4 (extra, opus fallback): DONE 3555de1 (CLAUDE_PID keyed; real hook env blocks again; nested clean both ways).
+dispatch: reviewer opus review round 5 (extra, final) — resume
+
+review round 5 (opus, extra per 37a): CLEAR (forged CLAUDE_PID only ever unverifies; nested clean both ways). Final: CLEAR after 4 fix rounds (impl opus, review opus; fable fallback throughout). Low: a hand-run hook from the Bash tool against the real config dir can write the session latch (playbook line). Not verified live: claude -p conformance, interactive /model, credits line actually in the transcript.
