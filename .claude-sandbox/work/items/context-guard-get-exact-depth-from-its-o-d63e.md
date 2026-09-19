@@ -2,11 +2,10 @@
 id: context-guard-get-exact-depth-from-its-o-d63e
 title: "context-guard: get exact depth from its own hooks, not the status line"
 type: feature
-status: blocked
+status: doing
 priority: 2
 owner: unknown@e3a28d2cc009
 claimed: 2026-09-19T00:27Z
-blocked: "review cap hit (4): CHILD_SESSION check makes every real session unverified - decision 37"
 created: 2026-09-17
 updated: 2026-09-19
 refs:
@@ -99,3 +98,6 @@ dispatch: reviewer opus review round 4 (final) — resume
 ## Cap
 review round 4 (opus, final): NEEDS_CHANGES — no false hard-block remains (0 kill-switch diffs every run); high: CC 2.1.277 sets CLAUDE_CODE_CHILD_SESSION=1 (and CLAUDE_PID) in EVERY command hook env, so the new env check marks every real session unverified -> derived windows above 200K never hard-block inside real CC (safe but the mirror's main purpose is inert). Fix: drop the env test; key the first claude ancestor only when its pid == the hook's CLAUDE_PID. CAP HIT (4).
 decision 37: d63e cap: (a) one extra round (key on CLAUDE_PID), re-review, land [recommended]; (b) land now safe-but-inert (200K windows and DISABLE_COMPACT+max tokens still block; above 200K warns), fix in a follow-up; (c) hold unmerged.
+
+OPERATOR 2026-09-19: decision 37 a — one extra round (key on CLAUDE_PID).
+dispatch: implementer opus fix round 4 (extra) — fable unavailable (unknown); fallback — resume
