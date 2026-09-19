@@ -51,6 +51,8 @@ Files in scope: <explicit list; anything else in the diff is a finding — or "u
 Workflow: <the Workflow binding, verbatim, or "none">
 The implementer claims: <its STATUS line, then its VERIFIED and DEVIATIONS sections,
 pasted verbatim — you are testing these claims, not trusting them>
+Files changed, with reasons: <the record sink's cumulative `changed:` block, verbatim — the
+union of every round's CHANGED, one file per line with its one-line reason>
 
 ## Doctrine — read before reviewing
 
@@ -76,8 +78,9 @@ pasted verbatim — you are testing these claims, not trusting them>
    per principle, with the diff line for any fail.
 5. Check scope: anything in the diff outside "Files in scope" is a finding at medium,
    however good the change is. When Files in scope is "undeclared", grade each changed
-   file against the acceptance and the implementer's one-line reason for it under
-   CHANGED: a file the intent does not justify is a finding at medium. Anything the
+   file against the acceptance and its one-line reason in "Files changed, with reasons"
+   above: a file the intent does not justify, or one in the diff with no reason there, is
+   a finding at medium. Anything the
    acceptance asks for that the diff does not deliver is a finding at high.
 6. Try to break it. Write down at least three concrete edge cases before you look for
    them — empty input, a missing file, a second run, a path with a space, the branch name
@@ -170,12 +173,18 @@ Review from <last reviewed sha> as usual, and judge the merge by its resolution:
 `git -C $WORKTREE show --remerge-diff <merge sha>` (git 2.36 or later) re-runs the merge
 and diffs the conflicted result against what was committed, so a side the resolution
 dropped shows as removed lines. Never judge it by plain `git show <merge sha>`: its
-combined diff is empty when the resolution keeps one side whole. On git older than 2.36,
-set OLD=$(git -C $WORKTREE merge-base <merge sha>^1 <merge sha>^2) and compare what the
-base brought, `git -C $WORKTREE diff $OLD <merge sha>^2`, with what the merged tree
-still differs from the base by, `git -C $WORKTREE diff <merge sha>^2 <merge sha>`: a
-base hunk reversed in the second, beyond the change's own reviewed diff, is a dropped
-side. A resolution that drops either side's intent is a finding.
+combined diff can hide a one-sided resolution. On git older than 2.36, set
+OLD=$(git -C $WORKTREE merge-base <merge sha>^1 <merge sha>^2) and check both sides:
+- the base's side: every hunk of `git -C $WORKTREE diff $OLD <merge sha>^2` (what the
+  base brought) is kept — one reversed in `git -C $WORKTREE diff <merge sha>^2 <merge
+  sha>` (what the merged tree still differs from the base by) is a dropped base side;
+- the change's side: every hunk of the change's last reviewed diff,
+  `git -C $WORKTREE diff $OLD <last reviewed sha>`, still appears in
+  `git -C $WORKTREE diff <merge sha>^2 <merge sha>` — one missing there (the resolution
+  kept the base's version) is a dropped change side.
+A resolution that drops either side's intent is a finding.
+The "Files changed, with reasons" list above is the cumulative one, updated for this
+round.
 
 1. For each finding in your previous report, verify by file:line whether it is fixed,
    partly fixed, or untouched. For each declined finding: if it is low or nit and the
@@ -214,9 +223,12 @@ The series follows the investigate skill's investigation-format reference (path 
    medium.
 2. Completeness: every acceptance line has a planned change, with the files it touches
    and how it will be verified. A missing one is a finding at high.
-3. Open questions: each is stated, marked blocking or not, and carries options with
-   their impact. A blocking question hidden as an assumption, or a decision the plan
-   takes that the acceptance leaves to a human, is a finding at medium.
+3. Open questions: each records exactly what the format's Open Questions rule asks —
+   the question, who owns it, the decision it changes, and whether it blocks
+   implementation — and passed its triage (not verifiable from the code, not a
+   requirement that belonged at the gate). A missing field, a blocking question hidden
+   as an assumption, or a decision the plan takes that the acceptance leaves to a human
+   is a finding at medium.
 4. Feasibility: check the plan's claims about the code against the repository, read-only
    — files, functions, commands and branches it names exist and behave as it says. A
    plan built on a false claim is a finding at high.
@@ -233,7 +245,18 @@ exactly: a written serial is never edited or deleted; the revision is a new seri
 next free number, opening with a `Supersedes` block that names each file, section and
 statement the findings overturned; and `INDEX.md` is regenerated wholesale. The re-review
 variant applies with "the new serial, and the regenerated INDEX.md" in place of fix
-commits; the reviewer checks the older serials are byte-for-byte unchanged.
+commits.
+
+**The baseline for "never edited".** Before every plan review, the orchestrator records
+the hashes of the written serials in the record sink (SKILL.md § Step 4):
+
+```bash
+sha256sum <series>/[0-9][0-9]_*.md
+```
+
+The re-review brief pastes the hashes recorded before the previous review, and the
+reviewer runs the same command: every file listed there must show the same hash. A
+changed or missing one is a finding at medium (the format's rule 1).
 
 ## Verdict meanings
 

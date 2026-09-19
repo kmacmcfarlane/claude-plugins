@@ -144,7 +144,9 @@ re-dispatch or resume with findings = review round n+1; cap 4 review rounds.
    background `general-purpose` agent with the routed `model`.
 4. **Return contract**: `STATUS` (`DONE` | `DONE_WITH_CONCERNS` | `NEEDS_CONTEXT` |
    `BLOCKED`) and the report shape in the brief.
-5. **On return**: `DONE` and `DONE_WITH_CONCERNS` go to Step 4. `NEEDS_CONTEXT`: answer in
+5. **On return**: merge its CHANGED into the record sink's cumulative `changed:` block
+   (`references/bindings.md` § Undeclared files). `DONE` and `DONE_WITH_CONCERNS` go to
+   Step 4. `NEEDS_CONTEXT`: answer in
    the record sink, re-dispatch with the answer, at least opus. `BLOCKED`: `$WI block`
    when there is an item, and raise it through the decision channel.
 
@@ -154,7 +156,8 @@ re-dispatch or resume with findings = review round n+1; cap 4 review rounds.
    per rule 4, briefed from `references/review-brief.md`, with the commands from
    `references/review-checklist.md` plus the Checks binding — what you run at Land. A
    plan-mode series gets the plan-review variant in `references/review-brief.md`
-   instead.
+   instead; before each such review, record `sha256sum <series>/[0-9][0-9]_*.md` in the
+   record sink, the baseline its re-review checks the written serials against.
 2. **Severity scale** (defined in the review brief):
    - critical: data loss, security, breaks the harness or another plugin.
    - high: wrong on the main path; a failing or missing test for a claimed behaviour.

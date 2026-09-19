@@ -54,6 +54,17 @@ CHANGED with a one-line reason each. The reviewer grades each changed file again
 item's or plan's intent: a file the intent does not justify is a finding at medium. A
 declared list keeps the stricter rule: anything outside it is a finding at medium.
 
+After each implementer return, the orchestrator merges that round's CHANGED into one
+cumulative block in the record sink — a fix round's CHANGED lists only its own files:
+
+```
+changed:
+- <path> — <one-line reason>
+```
+
+A file changed again keeps one line, with its latest reason. The review brief pastes this
+block, and the checklist's scope check (section 1) compares the diff against it.
+
 ## Checks
 
 Take the first source that answers:

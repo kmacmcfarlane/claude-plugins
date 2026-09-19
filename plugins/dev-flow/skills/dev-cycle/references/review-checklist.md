@@ -23,8 +23,8 @@ where such a repo's own gates come in.
 - [ ] `git -C $W diff --stat $BASE...HEAD` lists only the files in scope (plus the
       catalog and layout edits when the marketplace's shape changed). With Files in
       scope `undeclared` (`bindings.md` § Undeclared files), compare the stat against the
-      implementer's CHANGED list instead: every file in one is in the other, each with
-      its one-line reason.
+      record sink's cumulative `changed:` block instead (the union of every round's
+      CHANGED): every file in one is in the other, each with its one-line reason.
 - [ ] Nothing under `.claude-sandbox/` or `.claude/`, nothing outside the Ground binding.
 - [ ] One commit on the branch, message `<verb>: <aspect> - <description>` — plus, per
       review fix round, one or more new commits on top of it. No amend, rebase or squash
