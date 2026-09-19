@@ -22,3 +22,5 @@ updated: 2026-09-18
 - 2026-09-18 (from 81a5): model-routing § Fallback should say the reader checks rate_limits.at / a past resets_at to spot stale data (the block persists when a payload lacks rate_limits). Carry into the moved model-routing.md.
 
 - 2026-09-18 (from 4a19): the implementer brief should prohibit bare git stash/pop (the stash stack is shared across worktrees and sessions); prefer a temp WIP commit or a scratch copy for revert-to-verify. Carry into the moved agent-brief.md.
+
+- (F0 review lows, fold into the moved review-checklist) path split across lines not read; own file shadows a named sibling; only backtick fences, plain toggle (tilde/nested fences); URLs hit the directory-prefix rule; .md.bak read as .md; CLAUDE.md wording "by its backticked name".
