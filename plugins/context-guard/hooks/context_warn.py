@@ -106,11 +106,19 @@ def mismatch_notice(wm):
             f"derived depth is warn-only on this version until the rules are updated.")
 
 
+def mirror_bound(m, src):
+    """Whether the mirror set this hard stop: a derived depth, or a block
+    bounded by the mirror's auto-compact window (whatever the depth)."""
+    acw = m.get("acw") or {}
+    return src != "exact" or bool(acw.get("window") and acw.get("resolved")
+                                  and m.get("block_window") == acw.get("window"))
+
+
 def derived_hatches(sid):
     """Escape hatches printed under a HARD STOP that a derived (mirrored)
     window caused, in case the mirror is wrong."""
-    return ("If this window is wrong (it was derived from Claude Code's own "
-            "selection logic, not read from the status line): set "
+    return ("If this stop is wrong (its window came from context-guard's mirror of "
+            "Claude Code's window selection, not from the status line alone): set "
             "CONTEXT_GUARD_DERIVE=off in the environment Claude Code is launched "
             "from, or stand the gate down for this epoch with\n"
             f"  python3 \"$(ls -td \"${{CLAUDE_CONFIG_DIR:-$HOME/.claude}}\"/plugins/data/"
@@ -141,6 +149,8 @@ def main():
             st["derived"] = dr
         if m.get("scan_cache"):
             st["scan"] = m["scan_cache"]
+        if m.get("side_cache"):
+            st["sidechains"] = m["side_cache"]
         wm = st.get("window_mismatch")
         if isinstance(wm, dict) and not wm.get("notified"):
             wm["notified"] = True
@@ -189,7 +199,7 @@ def main():
             f"Run /checkpoint (or /context-guard:checkpoint - both forms are "
             f"whitelisted) first, then re-send:\n"
             f"  {prompt[:200]}\n"
-            + (derived_hatches(sid) if src != "exact" else ""))
+            + (derived_hatches(sid) if mirror_bound(m, src) else ""))
         sys.exit(2)
     if act == "due":
         emit({
@@ -218,4 +228,5 @@ def main():
         return
     emit({})
 
-main()
+if __name__ == "__main__":
+    main()

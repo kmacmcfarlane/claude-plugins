@@ -82,6 +82,7 @@ class Base(unittest.TestCase):
     def environ(self, **kw):
         e = {k: v for k, v in os.environ.items() if not k.startswith(SCRUB)}
         e["CLAUDE_CONFIG_DIR"] = self.cfg
+        e["_TEST_REKEY"] = self.key
         e["CLAUDE_PROJECT_DIR"] = self.proj
         e.update({k: str(v) for k, v in kw.items()})
         return e
@@ -259,6 +260,28 @@ class TestLatch(Base):
         d = self.measure()["derived"]
         self.assertEqual((d["window"], d["resolved"]), (1_000_000, True))
 
+    def test_sidechain_scan_is_cached_per_file(self):
+        self.session("claude-opus-5", 185_000)
+        self.sidechain(usage_line(10), usage_line(20))
+        m = self.measure()
+        c = m["side_cache"]
+        ent = c["files"]["agent-a1.jsonl"]
+        p = os.path.join(os.path.splitext(self.tpath)[0], "subagents", "agent-a1.jsonl")
+        self.assertEqual(ent["off"], os.path.getsize(p))
+        L.update_state("s", lambda st: st.__setitem__("sidechains", c))
+        # Resumed from the cached offset: bytes before it are not read again
+        # (a latch planted there is not seen), bytes after it are.
+        size = os.path.getsize(p)
+        with open(p, "r+") as f:
+            f.write(" " * 5)                     # garbles the already-read part
+        with open(p, "a") as f:
+            f.write(json.dumps(credits_line(time.time())) + "\n")
+        d = self.measure()["derived"]
+        self.assertEqual((d["window"], d["rule"]), (200_000, "credits_latch"))
+        self.assertGreater(self.measure()["side_cache"]["files"]["agent-a1.jsonl"]["off"], size)
+        # Another process (a new SessionStart time) drops the cache.
+        self.assertEqual(L._sidechain_latch(self.tpath, time.time() + 5, c)[2]["files"], {})
+
     def test_sidechain_latch_without_timestamp_is_unknown(self):
         self.session("claude-opus-5", 185_000)
         line = credits_line(time.time())
@@ -278,6 +301,21 @@ class TestModelSwitch(Base):
                 m = self.measure()
                 self.assertEqual(m["derived"]["rule"], "model_switch_pending")
                 self.assertTrue(m["source"].startswith("inferred"))
+
+    def test_switching_back_to_the_model_lines_model_clears_it(self):
+        self.session("claude-opus-5", 950_000)
+        size = os.path.getsize(self.tpath)
+        for to, rule in (("haiku", "model_switch_pending"), ("claude-opus-5", "native_1m")):
+            L.update_state("s", lambda st: st.__setitem__("model_switch", {
+                "to_model": to, "at": self.t0 + 30, "size": size}))
+            self.assertEqual(self.measure()["derived"]["rule"], rule, to)
+
+    def test_a_usage_line_after_the_switch_does_not_clear_it(self):
+        self.session("claude-haiku-4-5", 150_000)
+        L.update_state("s", lambda st: st.__setitem__("model_switch", {
+            "to_model": "opus", "at": self.t0 + 30, "size": os.path.getsize(self.tpath)}))
+        self.write(usage_line(160_000), append=True)       # a response in flight
+        self.assertEqual(self.measure()["derived"]["rule"], "model_switch_pending")
 
     def test_a_later_model_line_supersedes_the_switch(self):
         self.session("claude-opus-5", 170_000)
@@ -392,18 +430,26 @@ class TestCrossCheck(Base):
 
 
 class TestAutoCompactGate(Base):
-    def test_env_window_resolves_only_with_auto_compact_known_on(self):
+    def all_hidden_layers_ruled_out(self):
+        """What the rule would do if every hidden layer could be ruled out -
+        the reader never reports that in 2.1.277 (remote policy)."""
+        return mock.patch.object(R, "REMOTE_POLICY_RULED_OUT", True)
+
+    def test_env_window_is_warn_only_in_this_version(self):
         self.session("claude-opus-5", 460_000)
         self.settings(autoCompactEnabled=True)
         m = self.measure(CLAUDE_CODE_AUTO_COMPACT_WINDOW=500000)
-        self.assertEqual((m["window"], m["block_window"], m["model_window"]),
-                         (500_000, 500_000, 1_000_000))
-        self.assertIn("auto-compact window 500,000 (env)", m["note"])
+        self.assertEqual((m["window"], m["block_window"]), (500_000, 1_000_000))
+        self.assertIn("auto-compact window 500,000 (env, unresolved)", m["note"])
+        with self.all_hidden_layers_ruled_out():
+            self.assertEqual(self.measure(CLAUDE_CODE_AUTO_COMPACT_WINDOW=500000)
+                             ["block_window"], 500_000)
 
     def test_legacy_auto_compact_enabled_is_unobservable(self):
         # No observable layer sets autoCompactEnabled: warn at the window, block on the model's.
         self.session("claude-opus-5", 460_000)
-        m = self.measure(CLAUDE_CODE_AUTO_COMPACT_WINDOW=500000)
+        with self.all_hidden_layers_ruled_out():
+            m = self.measure(CLAUDE_CODE_AUTO_COMPACT_WINDOW=500000)
         self.assertEqual((m["window"], m["block_window"]), (500_000, 1_000_000))
         self.assertIn("unresolved", m["note"])
 
@@ -412,10 +458,34 @@ class TestAutoCompactGate(Base):
         self.session("claude-opus-5", 270_000)
         self.set_exact(270_000, 1_000_000)
         self.settings("project", autoCompactWindow=300000, autoCompactEnabled=True)
-        self.assertEqual(self.measure()["block_window"], 300_000)
-        self.proc = {"key": self.key, "observable": False}
-        m = self.measure()
+        self.assertEqual(self.measure()["block_window"], 1_000_000)
+        with self.all_hidden_layers_ruled_out():
+            self.assertEqual(self.measure()["block_window"], 300_000)
+            self.proc = {"key": self.key, "observable": False}
+            m = self.measure()
         self.assertEqual((m["window"], m["block_window"]), (300_000, 1_000_000))
+
+    def test_any_policy_tier_makes_settings_unresolved(self):
+        # First-wins between policy tiers is not modelled: presence alone
+        # (a managed file, a drop-in, the remote cache, the path env) is enough.
+        self.session("claude-opus-5", 270_000)
+        self.set_exact(270_000, 1_000_000)
+        self.settings("project", autoCompactWindow=300000, autoCompactEnabled=True)
+        dropins = os.path.join(self.cfg, "managed.d")
+        os.makedirs(dropins)
+        with self.all_hidden_layers_ruled_out():
+            self.assertEqual(self.measure()["block_window"], 300_000)
+            for label, path in (("managed file", os.path.join(self.cfg, "managed.json")),
+                                ("drop-in", os.path.join(dropins, "a.json")),
+                                ("remote cache", os.path.join(self.cfg, R.REMOTE_SETTINGS))):
+                with self.subTest(label):
+                    with open(path, "w") as f:
+                        json.dump({"autoCompactWindow": 900000}, f)   # first-wins would pick it
+                    m = self.measure()
+                    self.assertEqual(m["block_window"], 1_000_000)
+                    os.unlink(path)
+            m = self.measure(CLAUDE_CODE_MANAGED_SETTINGS_PATH="/elsewhere")
+            self.assertEqual(m["block_window"], 1_000_000)
 
     def test_out_of_range_setting_is_ignored(self):
         # Reviewer cases 23/24: 50000 is not a window Claude Code accepts.
@@ -439,23 +509,51 @@ class TestAutoCompactGate(Base):
         m = self.measure()
         self.assertEqual((m["window"], m["block_window"], m["note"]), (1_000_000, 1_000_000, ""))
 
+    def test_escape_hatches_cover_an_auto_compact_bound_exact_block(self):
+        import context_warn as CW
+        m = {"acw": {"window": 300_000, "resolved": True, "source": "settings"},
+             "block_window": 300_000}
+        self.assertTrue(CW.mirror_bound(m, "exact"))
+        self.assertFalse(CW.mirror_bound(dict(m, block_window=1_000_000), "exact"))
+        self.assertTrue(CW.mirror_bound({"acw": {}, "block_window": 1_000_000}, "derived"))
+        self.assertIn("CONTEXT_GUARD_DERIVE=off", CW.derived_hatches("s"))
 
+
+@unittest.skipUnless(HAVE_PROC, "needs /proc")
 class TestProcInfo(Base):
-    """proc_info() itself (the Base patch is lifted): a hook whose parent is
-    in the session registry, with and without a settings flag on its line."""
-    def run_under(self, *argv):
-        code = ("import json,os,sys,subprocess;"
-                "open(os.path.join(os.environ['CLAUDE_CONFIG_DIR'],'sessions',"
-                "f'{os.getpid()}.json'),'w').write('{}');"
-                "print(subprocess.run([sys.executable,'-c','import sys,json;"
-                "sys.path.insert(0,sys.argv[1]);import lib_context as L;"
-                "print(json.dumps(L.proc_info()))',sys.argv[1]],capture_output=True,"
-                "text=True).stdout)")
-        p = subprocess.run([sys.executable, "-c", code, HOOKS, *argv], capture_output=True,
-                           text=True, env=self.environ(), timeout=30)
+    """proc_info() itself (the Base patch is lifted): a hook two levels
+    under a process, which may or may not be a verified Claude Code."""
+    CHILD = ("import sys,json;sys.path.insert(0,sys.argv[1]);import lib_context as L;"
+             "print(json.dumps(L.proc_info()))")
+
+    def run_under(self, *argv, exe=None, entry="good", mid=None):
+        """Run proc_info in a grandchild of `exe` (default: the `claude`
+        link). `entry` is what `exe` writes into its registry entry: "good"
+        (its pid and procStart), "none", "wrong-pid", "wrong-start"; `mid`
+        adds a registered NON-claude process between them."""
+        exe = exe or claude_link(self.cfg)
+        code = r"""
+import json, os, subprocess, sys
+hooks, entry, mid, child = sys.argv[1:5]
+start = open(f"/proc/{os.getpid()}/stat").read().rsplit(")", 1)[1].split()[19]
+reg = os.path.join(os.environ["CLAUDE_CONFIG_DIR"], "sessions")
+os.makedirs(reg, exist_ok=True)
+rec = {"good": {"pid": os.getpid(), "procStart": start},
+       "wrong-pid": {"pid": os.getpid() + 1, "procStart": start},
+       "wrong-start": {"pid": os.getpid(), "procStart": str(int(start) + 7)}}.get(entry)
+if rec is not None:
+    json.dump(rec, open(os.path.join(reg, f"{os.getpid()}.json"), "w"))
+inner = [sys.executable, "-c", child, hooks]
+if mid == "1":   # a registered shell-like process between: must be walked past
+    reg_mid = "import json,os,subprocess,sys;json.dump({'pid':os.getpid()},open(os.path.join(os.environ['CLAUDE_CONFIG_DIR'],'sessions',f'{os.getpid()}.json'),'w'));sys.stdout.write(subprocess.run(sys.argv[1:],capture_output=True,text=True).stdout)"
+    inner = ["/usr/bin/env", "python3", "-c", reg_mid] + inner
+print(subprocess.run(inner, capture_output=True, text=True).stdout)
+"""
+        p = subprocess.run([exe, "-c", code, HOOKS, entry, "1" if mid else "0", self.CHILD,
+                            *argv], capture_output=True, text=True, env=self.environ(),
+                           timeout=30)
         return json.loads(p.stdout.strip().splitlines()[-1])
 
-    @unittest.skipUnless(HAVE_PROC, "needs /proc")
     def test_flags_make_the_process_unobservable(self):
         clean = self.run_under("--model", "opus")
         self.assertTrue(clean["key"])
@@ -464,6 +562,20 @@ class TestProcInfo(Base):
                      "--managed-settings", "--input-format"):
             with self.subTest(flag=flag):
                 self.assertFalse(self.run_under(flag, "x")["observable"])
+
+    def test_a_registered_process_that_is_not_claude_is_walked_past(self):
+        # Reviewer finding 1: another sandbox's claude registered at the pid
+        # of this hook's shell. The shell is registered but not claude.
+        got = self.run_under(mid=True)
+        self.assertTrue(got["key"])
+        self.assertFalse(got["key"].startswith(str(os.getpid())))
+        self.assertEqual(self.run_under(exe=sys.executable)["key"], None)
+
+    def test_the_registry_entry_must_be_the_process_own(self):
+        for entry in ("none", "wrong-pid", "wrong-start"):
+            with self.subTest(entry=entry):
+                self.assertEqual(self.run_under(entry=entry),
+                                 {"key": None, "observable": False})
 
 
 class TestNeverReadsTheAccountFile(Base):
@@ -500,8 +612,48 @@ class TestNeverReadsTheAccountFile(Base):
                          opened)
 
 
+# A stand-in for the Claude Code process: python started through a link
+# named `claude` (so /proc shows comm and argv0 `claude`), which registers
+# itself in <config>/sessions/<pid>.json with its pid and procStart, adopts
+# the test's session marker (a `proc.key` equal to _TEST_REKEY becomes its
+# own key, as if its SessionStart had written it), then runs the hook as its
+# child with the payload on stdin.
+LAUNCHER = r"""
+import json, os, subprocess, sys
+cfg, hook = sys.argv[1], sys.argv[2]
+start = open(f"/proc/{os.getpid()}/stat").read().rsplit(")", 1)[1].split()[19]
+os.makedirs(os.path.join(cfg, "sessions"), exist_ok=True)
+with open(os.path.join(cfg, "sessions", f"{os.getpid()}.json"), "w") as f:
+    json.dump({"pid": os.getpid(), "procStart": start, "sessionId": "s"}, f)
+old = os.environ.pop("_TEST_REKEY", None)
+if old:
+    p = os.path.join(cfg, "claude-kit", "context-gate", "s.json")
+    if os.path.exists(p):
+        with open(p) as f:
+            st = json.load(f)
+        if isinstance(st.get("proc"), dict) and st["proc"].get("key") == old:
+            st["proc"]["key"] = f"{os.getpid()}-{start}"
+            with open(p, "w") as f:
+                json.dump(st, f)
+r = subprocess.run([sys.executable, hook], input=sys.stdin.read(), capture_output=True,
+                   text=True)
+sys.stdout.write(r.stdout); sys.stderr.write(r.stderr); sys.exit(r.returncode)
+"""
+
+
+def claude_link(cfg):
+    d = os.path.join(cfg, "bin")
+    link = os.path.join(d, "claude")
+    if not os.path.exists(link):
+        os.makedirs(d, exist_ok=True)
+        os.symlink(sys.executable, link)
+    return link
+
+
 def run_hook(name, payload, env):
-    p = subprocess.run([sys.executable, os.path.join(HOOKS, name)], input=json.dumps(payload),
+    link = claude_link(env["CLAUDE_CONFIG_DIR"])
+    p = subprocess.run([link, "-c", LAUNCHER, env["CLAUDE_CONFIG_DIR"],
+                        os.path.join(HOOKS, name)], input=json.dumps(payload),
                        capture_output=True, text=True, env=env, timeout=30)
     out = json.loads(p.stdout) if p.stdout.strip() else {}
     return p.returncode, out, p.stderr
@@ -576,13 +728,14 @@ class TestHooks(Base):
                            input="not json", capture_output=True, text=True, env=self.environ())
         self.assertEqual((p.returncode, p.stdout.strip()), (0, "{}"))
 
-    def test_auto_compact_env_window_blocks_below_the_model_window(self):
+    def test_auto_compact_env_window_only_warns_in_this_version(self):
+        # Even with autoCompactEnabled set: remote policy cannot be ruled out.
         self.session("claude-opus-5", 460_000)
         self.settings(autoCompactEnabled=True)
-        rc, _, err = self.warn(CLAUDE_CODE_AUTO_COMPACT_WINDOW=500000)
-        self.assertEqual(rc, 2)
-        self.assertIn("of 500,000 (derived) [auto-compact window 500,000 (env)]", err)
-        self.assertEqual(self.warn()[0], 0)       # unset: 540K left of 1M
+        rc, out, _ = self.warn(CLAUDE_CODE_AUTO_COMPACT_WINDOW=500000)
+        self.assertEqual(rc, 0)
+        self.assertIn("auto-compact window 500,000 (env, unresolved)",
+                      out["hookSpecificOutput"]["additionalContext"])
 
     def test_auto_compact_env_window_without_known_enabled_only_warns(self):
         self.session("claude-opus-5", 460_000)

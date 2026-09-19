@@ -46,7 +46,7 @@ it was seen on to warn-only until then.
 Stdlib only. Nothing here prints or returns an environment value: env inputs
 become booleans, small ints and a provider name.
 """
-import glob, os, re
+import glob, os, re, sys
 from urllib.parse import urlsplit
 
 RULES_CC_VERSION = "2.1.277"
@@ -117,6 +117,17 @@ MANAGED_DROPINS = ("/etc/claude-code/managed-settings.d",
                    "/Library/Application Support/ClaudeCode/managed-settings.d")
 # The cached remote (server-managed) policy settings, under the config dir.
 REMOTE_SETTINGS = "remote-settings.json"
+# Points Claude Code at another managed-settings directory.
+MANAGED_PATH_ENV = "CLAUDE_CODE_MANAGED_SETTINGS_PATH"
+# Remote (server-managed) policy can never be positively ruled out by a hook
+# in 2.1.277: whether an account is eligible (f() in the remote-settings
+# chunk) depends on the subscription type kept in the global config, which a
+# hook never reads, and on gateway credential slots it cannot see; and when
+# the tengu_hover_rest storage backend is on (F(): CLAUDE_CODE_HOVER_REST, or
+# a server flag), the remote policy lives in that backend, not in
+# remote-settings.json. So a settings-derived auto-compact window, and an
+# autoCompactEnabled read from settings, are never resolved.
+REMOTE_POLICY_RULED_OUT = False
 _DEFAULT_PORT = {"http": 80, "https": 443, "ws": 80, "wss": 443, "ftp": 21}
 
 _ONE_M = re.compile(r"\[1m\]", re.I)
@@ -339,8 +350,13 @@ def autocompact(model_id, model_window, env, settings, observable=False, latch=F
         # Off in the highest observable layer. A hidden layer could only turn
         # it back on, which lowers the window: an under-warning, never a block.
         return {"window": None, "resolved": False, "source": "disabled_setting"}
+    # Resolved only if no layer the hook cannot read can set or cancel it: a
+    # policy tier present (any: Claude Code's managedSourcesBehavior picks
+    # among them), remote policy not ruled out, a flag layer possible, or the
+    # Claude Code process unverified all leave it unresolved.
     certain = bool(observable and settings.get("enabled") is True
-                   and not settings.get("unsure") and not env.get("sdk_entrypoint"))
+                   and not settings.get("unsure") and not settings.get("policy", True)
+                   and settings.get("remote_ruled_out") and not env.get("sdk_entrypoint"))
 
     def lowered(w, resolved, source):
         w = int(w)
@@ -372,7 +388,7 @@ def _valid_acw(v):
 
 
 def settings_autocompact(config_dir, project_dir, read_json, managed_paths=None,
-                         dropin_dirs=None):
+                         dropin_dirs=None, environ=None):
     """The autoCompactWindow and autoCompactEnabled settings, merged by
     Claude Code's precedence: policy (the managed-settings files and
     drop-ins, the cached remote policy) > local > project > user. The flag
@@ -381,14 +397,24 @@ def settings_autocompact(config_dir, project_dir, read_json, managed_paths=None,
     only these two keys, from <config>/settings.json,
     <project>/.claude/settings.json, <project>/.claude/settings.local.json,
     the managed files and drop-ins, and <config>/remote-settings.json.
-    Returns {"window": int|None, "enabled": bool|None, "unsure": bool}:
-    `unsure` when a policy file exists but cannot be read, or a layer holds
-    an autoCompactEnabled that is not a boolean. Never raises."""
+    Returns {"window": int|None, "enabled": bool|None, "unsure": bool,
+    "policy": bool, "remote_ruled_out": bool}: `unsure` when a policy file
+    exists but cannot be read, or a layer holds an autoCompactEnabled that
+    is not a boolean; `policy` when ANY policy tier may be present - a
+    managed-settings file or drop-in, remote-settings.json,
+    CLAUDE_CODE_MANAGED_SETTINGS_PATH set, or an OS with an MDM tier (macOS,
+    Windows) - since Claude Code then chooses among tiers by rules a hook
+    does not model; `remote_ruled_out` is REMOTE_POLICY_RULED_OUT. Never
+    raises."""
     if managed_paths is None:
         managed_paths = MANAGED_SETTINGS
     if dropin_dirs is None:
         dropin_dirs = MANAGED_DROPINS
-    out = {"window": None, "enabled": None, "unsure": False}
+    environ = os.environ if environ is None else environ
+    out = {"window": None, "enabled": None, "unsure": False,
+           "policy": bool(environ.get(MANAGED_PATH_ENV))
+           or sys.platform in ("darwin", "win32"),
+           "remote_ruled_out": REMOTE_POLICY_RULED_OUT}
     try:
         user = [os.path.join(config_dir, "settings.json")] if config_dir else []
         proj = [os.path.join(project_dir, ".claude", "settings.json"),
@@ -402,6 +428,8 @@ def settings_autocompact(config_dir, project_dir, read_json, managed_paths=None,
         win_set = en_set = False
         for p in reversed(user + proj + policy):     # highest precedence first
             exists = os.path.lexists(p)
+            if exists and p in policy:
+                out["policy"] = True
             d = read_json(p) if exists else None
             if not isinstance(d, dict):
                 if exists and p in policy:
@@ -417,5 +445,5 @@ def settings_autocompact(config_dir, project_dir, read_json, managed_paths=None,
                 else:
                     out["unsure"] = True
     except Exception:
-        out["unsure"] = True
+        out["unsure"] = out["policy"] = True
     return out

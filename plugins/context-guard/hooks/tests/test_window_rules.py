@@ -173,8 +173,11 @@ class TestServedCatalog(unittest.TestCase):
 
 
 class TestAutoCompact(unittest.TestCase):
-    NONE = {"window": None, "enabled": None, "unsure": False}
-    ON = {"window": None, "enabled": True, "unsure": False}
+    NONE = {"window": None, "enabled": None, "unsure": False, "policy": False,
+            "remote_ruled_out": True}
+    # Every hidden layer ruled out - a state the real settings reader never
+    # reports in 2.1.277 (REMOTE_POLICY_RULED_OUT), kept to test the rule.
+    ON = dict(NONE, enabled=True)
 
     def acw(self, model="claude-opus-5", mw=M1, e=None, s=None, observable=True, **kw):
         return R.autocompact(model, mw, e if e is not None else env(), s or self.ON,
@@ -191,8 +194,14 @@ class TestAutoCompact(unittest.TestCase):
         # An SDK session can get settings at runtime.
         e2 = env(CLAUDE_CODE_AUTO_COMPACT_WINDOW=500000, CLAUDE_CODE_ENTRYPOINT="sdk-ts")
         self.assertEqual(self.acw(e=e2)["resolved"], False)
-        # An unreadable policy file.
+        # An unreadable policy file; any policy tier present; remote policy
+        # not ruled out (what the reader always reports in 2.1.277).
         self.assertEqual(self.acw(e=e, s=dict(self.ON, unsure=True))["resolved"], False)
+        self.assertEqual(self.acw(e=e, s=dict(self.ON, policy=True))["resolved"], False)
+        self.assertEqual(self.acw(e=e, s=dict(self.ON, remote_ruled_out=False))["resolved"],
+                         False)
+        self.assertEqual(self.acw(e=e, s={k: v for k, v in self.ON.items()
+                                          if k != "policy"})["resolved"], False)
 
     def test_env_clamp(self):
         self.assertEqual(self.acw(e=env(CLAUDE_CODE_AUTO_COMPACT_WINDOW=50000))["window"], 100_000)
@@ -260,7 +269,7 @@ class TestAutoCompact(unittest.TestCase):
     def test_settings_precedence(self):
         with tempfile.TemporaryDirectory() as d:
             cfg, proj, managed, dropins, put, read = self.settings_dirs(d)
-            self.assertEqual(read(), self.NONE)
+            self.assertEqual(read(), dict(self.NONE, remote_ruled_out=False))
             put(os.path.join(cfg, "settings.json"), {"autoCompactWindow": 300000,
                                                      "env": {"X": "not read"}})
             self.assertEqual(read()["window"], 300_000)
@@ -268,11 +277,13 @@ class TestAutoCompact(unittest.TestCase):
             self.assertEqual(read()["window"], 400_000)
             put(os.path.join(proj, ".claude", "settings.local.json"),
                 {"autoCompactWindow": 450000, "autoCompactEnabled": True})
-            self.assertEqual(read(), {"window": 450_000, "enabled": True, "unsure": False})
+            self.assertEqual(read(), {"window": 450_000, "enabled": True, "unsure": False,
+                                      "policy": False, "remote_ruled_out": False})
             put(os.path.join(dropins, "10-org.json"), {"autoCompactWindow": 600000})
-            self.assertEqual(read()["window"], 600_000)
+            self.assertEqual((read()["window"], read()["policy"]), (600_000, True))
             put(managed, {"autoCompactEnabled": False})
-            self.assertEqual(read(), {"window": 600_000, "enabled": False, "unsure": False})
+            self.assertEqual(read(), {"window": 600_000, "enabled": False, "unsure": False,
+                                      "policy": True, "remote_ruled_out": False})
             put(os.path.join(cfg, R.REMOTE_SETTINGS), {"autoCompactWindow": 700000})
             self.assertEqual(read()["window"], 700_000)
 
@@ -296,6 +307,46 @@ class TestAutoCompact(unittest.TestCase):
             os.unlink(managed)
             put(os.path.join(cfg, "settings.json"), {"autoCompactEnabled": "yes"})
             self.assertEqual((read()["enabled"], read()["unsure"]), (None, True))
+
+
+class TestPolicyPresence(unittest.TestCase):
+    """Any policy tier present makes a settings-derived window unresolved,
+    whatever keys it holds (Claude Code's managedSourcesBehavior chooses
+    among tiers first-wins by default; the mirror does not model that)."""
+    ON = TestAutoCompact.ON
+    acw = TestAutoCompact.acw
+    settings_dirs = TestAutoCompact.settings_dirs
+    def test_any_tier_counts_even_without_the_keys(self):
+        with tempfile.TemporaryDirectory() as d:
+            cfg, proj, managed, dropins, put, read = self.settings_dirs(d)
+            put(os.path.join(cfg, "settings.json"),
+                {"autoCompactWindow": 300000, "autoCompactEnabled": True})
+            self.assertFalse(read()["policy"])
+            for tier, path in (("managed file", managed),
+                               ("drop-in", os.path.join(dropins, "a.json")),
+                               ("remote cache", os.path.join(cfg, R.REMOTE_SETTINGS))):
+                with self.subTest(tier):
+                    put(path, {"permissions": {}})
+                    got = read()
+                    self.assertTrue(got["policy"])
+                    self.assertFalse(self.acw(s=got)["resolved"])
+                    os.unlink(path)
+
+    def test_managed_settings_path_env_counts(self):
+        with tempfile.TemporaryDirectory() as d:
+            cfg, proj, managed, dropins, put, read = self.settings_dirs(d)
+            got = R.settings_autocompact(cfg, proj, L.read_json_file, (managed,), (dropins,),
+                                         environ={R.MANAGED_PATH_ENV: "/somewhere"})
+            self.assertTrue(got["policy"])
+
+    def test_remote_policy_is_never_ruled_out_in_this_version(self):
+        self.assertIs(R.REMOTE_POLICY_RULED_OUT, False)
+        with tempfile.TemporaryDirectory() as d:
+            cfg, proj, managed, dropins, put, read = self.settings_dirs(d)
+            put(os.path.join(cfg, "settings.json"),
+                {"autoCompactWindow": 300000, "autoCompactEnabled": True})
+            a = self.acw(s=read(), e=env(CLAUDE_CODE_AUTO_COMPACT_WINDOW=400000))
+            self.assertEqual((a["window"], a["resolved"]), (400_000, False))
 
 
 class TestProviderAndUrl(unittest.TestCase):

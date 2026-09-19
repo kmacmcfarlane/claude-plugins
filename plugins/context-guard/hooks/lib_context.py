@@ -35,6 +35,10 @@ Depth sources, in order of preference:
    latch line after its offset in the transcript or in this process's
    sidechain (subagent) transcripts, none in the process record. The latch
    is matched on apiError "long_context_credits_required" only.
+   The running Claude Code process is identified only when verified
+   (proc_info: /proc shows the claude binary and its session-registry entry
+   carries its own pid and start time); unverified, every input that
+   depends on it is unresolved.
    CONTEXT_GUARD_DERIVE=off, or the operator's CLAUDE_KIT_CONTEXT_WINDOW
    pin, turns the mirror off (and the auto-compact window below): the gate
    is then exactly the pre-mirror exact-or-inferred one. precompact_gate
@@ -64,8 +68,10 @@ autoCompactWindow setting, the model defaults): Claude Code compacts there.
 A resolved auto-compact window may bound a hard block; an unresolved one only
 warns, and a hard stop is then still measured against the model window. It
 resolves only when auto-compact is known on (autoCompactEnabled: true in a
-settings layer the hook reads) and no flag layer can be in play
-(proc_info's `observable`) - see window_rules.autocompact.
+settings layer the hook reads), no flag layer can be in play (proc_info's
+`observable`), no policy tier is present and remote policy is ruled out -
+which a hook cannot do in Claude Code 2.1.277, so today it only ever warns
+(window_rules.REMOTE_POLICY_RULED_OUT, window_rules.autocompact).
 depth() returns the MODEL window: precompact_gate proves a compaction
 proactive against it.
 
@@ -654,7 +660,12 @@ def scan_transcript(transcript_path, cache=None):
     size - bytes read; cache - the resumable state as of the last complete
       line (None when the file could not be read).
     A final line without its newline is read (as scan_usage reads it) but
-    not cached, so the next call reads it again once it is complete. Any
+    not cached, so the next call reads it again once it is complete.
+    Known limit: the cache is trusted when the path, device and inode match,
+    the file is at least as long, and the TAIL_CHECK bytes before the cached
+    offset are unchanged. A rewrite in place that keeps the inode, keeps or
+    grows the length and leaves those bytes alone is not seen (Claude Code
+    only appends to a transcript; /clear and forks write new files). Any
     error yields the empty result, as scan_usage always has."""
     out = _scan_empty()
     out["cache"] = None
@@ -875,17 +886,72 @@ SETTINGS_FLAGS = ("--settings", "--setting-sources", "--managed-settings",
                   "--input-format")
 
 
+_CLAUDE_EXE = re.compile(r"/claude/versions/[^/]+$")
+
+
+def _proc_start(pid):
+    """/proc/<pid>/stat field 22 (start time in clock ticks), or None."""
+    try:
+        with open(f"/proc/{pid}/stat") as f:
+            return int(f.read().rsplit(")", 1)[1].split()[19])
+    except Exception:
+        return None
+
+
+def _is_claude(pid):
+    """Whether /proc says pid runs the Claude Code binary: its exe resolves
+    to .../claude/versions/<v> or to a file named `claude`, or its comm or
+    argv0 basename is `claude`, or it is node running the npm package's
+    cli. Never raises."""
+    try:
+        exe = os.path.realpath(f"/proc/{pid}/exe")
+        if os.path.basename(exe) == "claude" or _CLAUDE_EXE.search(exe):
+            return True
+    except Exception:
+        pass
+    try:
+        with open(f"/proc/{pid}/comm") as f:
+            if f.read().strip() == "claude":
+                return True
+    except Exception:
+        pass
+    try:
+        with open(f"/proc/{pid}/cmdline", "rb") as f:
+            args = f.read(1 << 16).split(b"\0")
+        if args and os.path.basename(args[0]) == b"claude":
+            return True
+        return len(args) > 1 and b"@anthropic-ai/claude-code/" in args[1]
+    except Exception:
+        return False
+
+
+def _registry_matches(entry, pid, start):
+    """The registry entry was written by this very process: its `pid` is
+    pid, and its `procStart`, when present, carries the /proc start time."""
+    if not isinstance(entry, dict) or entry.get("pid") != pid:
+        return False
+    ps = entry.get("procStart")
+    if ps is None:
+        return True
+    return start is not None and str(start) in re.findall(r"\d+", str(ps))
+
+
 def proc_info():
     """The Claude Code process this hook runs under: {"key":
-    '<pid>-<starttime>' or None, "observable": bool}. Walks at most ANCESTORS
-    parents through /proc and takes the first whose pid has an entry in
-    Claude Code's session registry (<config>/sessions/<pid>.json - only its
-    existence is checked, it is never opened); the /proc start time guards
-    against pid reuse. `observable` is True only when that process's
-    /proc/<pid>/cmdline was read and carries none of SETTINGS_FLAGS (the
-    command line is only matched against flag names, never stored or
-    printed). Without /proc (non-Linux) or a registry entry: key None, not
-    observable. Never raises."""
+    '<pid>-<starttime>' or None, "observable": bool}.
+
+    Walks at most ANCESTORS parents through /proc. An ancestor counts only
+    when it is VERIFIED: /proc shows it running the Claude Code binary
+    (_is_claude), and <config>/sessions/<pid>.json exists and was written by
+    it (its `pid`, and `procStart` when present, match). The walk goes on
+    past any ancestor that fails either check - the session registry is
+    shared across sandboxes (separate pid namespaces), so a registry entry
+    alone can name another sandbox's claude at the same pid as this hook's
+    shell. `observable` is True only when the verified process's
+    /proc/<pid>/cmdline carries none of SETTINGS_FLAGS (matched against
+    flag names only, never stored or printed). Nothing verified (non-Linux,
+    no registry): key None, not observable - every input that depends on
+    this process is then unresolved. Never raises."""
     info = {"key": None, "observable": False}
     try:
         reg = os.path.join(_base_dir(), "sessions")
@@ -894,19 +960,20 @@ def proc_info():
             if not pid or pid <= 1 or pid in seen:
                 return info
             seen.add(pid)
-            if os.path.isfile(os.path.join(reg, f"{pid}.json")):
-                with open(f"/proc/{pid}/stat") as f:
-                    fields = f.read().rsplit(")", 1)[1].split()
-                info["key"] = f"{pid}-{int(fields[19])}"
-                try:
-                    with open(f"/proc/{pid}/cmdline", "rb") as f:
-                        args = f.read(1 << 20).split(b"\0")
-                    flags = tuple(x.encode() for x in SETTINGS_FLAGS)
-                    info["observable"] = bool(args and args[0]) and not any(
-                        a == fl or a.startswith(fl + b"=") for a in args for fl in flags)
-                except Exception:
-                    info["observable"] = False
-                return info
+            path = os.path.join(reg, f"{pid}.json")
+            if os.path.isfile(path) and _is_claude(pid):
+                start = _proc_start(pid)
+                if start is not None and _registry_matches(read_json_file(path), pid, start):
+                    info["key"] = f"{pid}-{start}"
+                    try:
+                        with open(f"/proc/{pid}/cmdline", "rb") as f:
+                            args = f.read(1 << 20).split(b"\0")
+                        flags = tuple(x.encode() for x in SETTINGS_FLAGS)
+                        info["observable"] = bool(args and args[0]) and not any(
+                            a == fl or a.startswith(fl + b"=") for a in args for fl in flags)
+                    except Exception:
+                        info["observable"] = False
+                    return info
             with open(f"/proc/{pid}/status") as f:
                 pid = next((int(ln.split()[1]) for ln in f if ln.startswith("PPid:")), 0)
     except Exception:
@@ -925,28 +992,47 @@ def distrusted_versions():
     return d if isinstance(d, dict) else {}
 
 
-def _sidechain_latch(transcript_path, since):
-    """(latch_at or None, readable) over this session's subagent (sidechain)
-    transcripts, <dir>/<session>/subagents/*.jsonl: a subagent's 429 sets the
-    same process-wide latch but is written there, not to the main
-    transcript. Only files touched and lines stamped at or after `since` (the
-    process start) count; a matching line with no timestamp, or a file that
-    cannot be read, makes the answer unknown (readable False)."""
+def _sidechain_latch(transcript_path, since, cache=None):
+    """(latch_at or None, readable, cache) over this session's subagent
+    (sidechain) transcripts, <dir>/<session>/subagents/*.jsonl: a subagent's
+    429 sets the same process-wide latch but is written there, not to the
+    main transcript. Only files touched and lines stamped at or after
+    `since` (the process start) count; a matching line with no timestamp, or
+    a file that cannot be read, makes the answer unknown (readable False).
+    `cache` (the previous call's, from the session state) holds per file
+    {ino, off, found, unknown}: a file with the same inode and at least
+    `off` bytes is read from `off` only; anything else is read from 0. Only
+    complete lines advance `off`. The cache is dropped when `since` changes
+    (another process)."""
     R = _rules()
+    old = cache if isinstance(cache, dict) and cache.get("since") == since else {}
+    old_files = old.get("files") if isinstance(old.get("files"), dict) else {}
+    new = {"since": since, "files": {}}
     try:
         import glob
         stem = os.path.splitext(transcript_path)[0]
         paths = glob.glob(os.path.join(glob.escape(stem), "subagents", "*.jsonl"))
     except Exception:
-        return None, False
+        return None, False, new
     found, readable = None, True
     needle = R.LATCH_API_ERROR.encode()
-    for p in paths:
+    for p in sorted(paths)[:500]:
         try:
-            if os.stat(p).st_mtime < since:
+            st_ = os.stat(p)
+            if st_.st_mtime < since:
                 continue
+            ent = old_files.get(os.path.basename(p))
+            if not (isinstance(ent, dict) and ent.get("ino") == st_.st_ino
+                    and isinstance(ent.get("off"), int) and 0 <= ent["off"] <= st_.st_size):
+                ent = {"ino": st_.st_ino, "off": 0, "found": None, "unknown": False}
+            ent = dict(ent)
             with open(p, "rb") as fh:
+                fh.seek(ent["off"])
+                off = ent["off"]
                 for line in fh:
+                    if not line.endswith(b"\n"):
+                        break                   # incomplete: read again next time
+                    off += len(line)
                     if needle not in line:
                         continue
                     try:
@@ -957,15 +1043,21 @@ def _sidechain_latch(transcript_path, since):
                         continue
                     t = _iso_ts(obj.get("timestamp"))
                     if t is None:
-                        readable = False
+                        ent["unknown"] = True
                     elif t >= since:
-                        found = max(found or 0.0, t)
+                        ent["found"] = max(ent["found"] or 0.0, t)
+                ent["off"] = off
+            new["files"][os.path.basename(p)] = ent
+            if ent["unknown"]:
+                readable = False
+            if ent["found"]:
+                found = max(found or 0.0, ent["found"])
         except Exception:
             readable = False
-    return found, readable
+    return found, readable, new
 
 
-def _latch(scan, st, transcript_path, current_key):
+def _latch(scan, st, transcript_path, current_key, side_cache=None):
     """(latch, latch_known, latch_at): whether THIS Claude Code process has
     its long-context-credits latch set.
 
@@ -976,6 +1068,8 @@ def _latch(scan, st, transcript_path, current_key):
     latch seen before a /clear). A missing, key-less or stale marker leaves
     the latch unknown - any window above 200K is then unresolved - and any
     latch line only proves "maybe"."""
+    if side_cache is None:
+        side_cache = [None]
     proc = st.get("proc") if isinstance(st.get("proc"), dict) else None
     lines = scan.get("latches") or []
     valid = (proc is not None and isinstance(proc.get("offset"), int)
@@ -987,7 +1081,8 @@ def _latch(scan, st, transcript_path, current_key):
     mine = [(o, t) for o, t in lines if o >= proc["offset"]]
     at = mine[-1][1] if mine else None
     if not mine:
-        side, readable = _sidechain_latch(transcript_path, since)
+        side, readable, cache = _sidechain_latch(transcript_path, since, st.get("sidechains"))
+        side_cache[0] = cache
         if side is not None:
             mine, at = [(None, side)], side
         elif not readable:
@@ -1019,10 +1114,17 @@ def derived_window(scan, st, environ=None, transcript_path=None, current_key=Non
     switched = False
     sw = st.get("model_switch")
     if isinstance(sw, dict) and isinstance(sw.get("to_model"), str) \
-            and isinstance(sw.get("size"), int) and sw["size"] > scan.get("model_off", -1):
+            and isinstance(sw.get("size"), int) and sw["size"] > scan.get("model_off", -1) \
+            and sw["to_model"].strip() != (scan.get("model_id") or ""):
+        # Pending until Claude Code writes a model line after it. The latest
+        # switch landing back on the model line's own model string ends it
+        # (no new model line is written when the identity did not change). A
+        # usage line after the switch does NOT end it: a response in flight
+        # at the switch lands after it and says nothing about the new model.
         switched = True
         changed = max(changed or 0.0, _finite(sw.get("at")) or 0.0) or None
-    latch, known, latch_at = _latch(scan, st, transcript_path, current_key)
+    side_cache = [None]
+    latch, known, latch_at = _latch(scan, st, transcript_path, current_key, side_cache)
     if latch and latch_at:
         changed = max(changed or 0.0, latch_at)
     served = R.served_declared(_base_dir(), R.canonical(model), read_json_file)
@@ -1031,7 +1133,7 @@ def derived_window(scan, st, environ=None, transcript_path=None, current_key=Non
     proc = st.get("proc") if isinstance(st.get("proc"), dict) else {}
     d.update(model=model, cc_version=ver, rules_version=R.RULES_CC_VERSION,
              latch=latch, latch_known=known, changed_at=changed, distrusted=False,
-             served=served,
+             served=served, side_cache=side_cache[0],
              proc_ok=current_key is not None and proc.get("key") == current_key)
     if switched:
         d.update(resolved=False, rule="model_switch_pending")
@@ -1169,7 +1271,7 @@ def measure(transcript_path, session_id=None, cwd=None, environ=None, mirror=Tru
     ex = sensor(session_id, st) if session_id else {}
     fresh = bool(ex.get("window")) and time.time() - (ex.get("at") or 0) < EXACT_MAX_AGE_S
     res = {"derived": None, "acw": {"window": None, "resolved": False, "source": "off"},
-           "note": "", "scan_cache": None}
+           "note": "", "scan_cache": None, "side_cache": None}
     if not mirror or derive_off(environ) or _pinned(environ):
         if fresh:
             res.update(tokens=ex["tokens"], model_window=ex["window"], model_pct=ex["pct"],
@@ -1212,12 +1314,13 @@ def measure(transcript_path, session_id=None, cwd=None, environ=None, mirror=Tru
                     why += f", CC {d.get('cc_version')} distrusted"
                 res["note"] = f"derived window {int(d['window']):,} unresolved ({why})"
     res["derived"] = d
+    res["side_cache"] = d.get("side_cache") if d else None
     if env is not None:
         try:
             proj = environ.get("CLAUDE_PROJECT_DIR") or cwd
             res["acw"] = R.autocompact(
                 d.get("model") if d else None, res["model_window"], env,
-                R.settings_autocompact(_base_dir(), proj, read_json_file),
+                R.settings_autocompact(_base_dir(), proj, read_json_file, environ=environ),
                 observable=pi["observable"], latch=bool(d and d.get("latch")),
                 served=d.get("served") if d else None)
         except Exception:
