@@ -23,3 +23,9 @@ updated: 2026-09-19
 - 2026-09-19 claimed by unknown@e3a28d2cc009
 
 dispatch: implementer opus — doctrine (CLAUDE.md convention, create-skill rule) (rule 2)
+
+impl: DONE 0c1c11c (sibling lint; x.md reserved; 4 -> 1 reference FAIL, remaining is a real cross-plugin pointer in ralph backlog-yaml).
+dispatch: reviewer opus — rule 4
+
+review round 1 (opus): NEEDS_CHANGES — medium 1 (any backticked sibling in the window rescues the pointer, not the named one), 2 (prefixed paths like beta/references/x.md are silently ignored while the prose says cross-plugin fails); lows 3 (backticks/one-line requirement undocumented); nits 4-6.
+dispatch: implementer opus fix round 1 — resume
