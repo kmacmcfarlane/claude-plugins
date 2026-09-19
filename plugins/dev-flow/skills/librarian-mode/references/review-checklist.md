@@ -19,7 +19,8 @@ W=<absolute worktree path>
       Scope in CLAUDE.md, nothing inside its Exclude.
 - [ ] One commit on the branch, message `<verb>: <aspect> - <description>` — plus, per
       review fix round, one or more new commits on top of it. No amend, rebase or squash
-      of a reviewed commit; nothing outside the item's files in any of them.
+      of a reviewed commit — except the secret rebuild in `references/fix-loop.md`;
+      nothing outside the item's files in any of them.
 
 ```bash
 git -C $W log --oneline main..HEAD

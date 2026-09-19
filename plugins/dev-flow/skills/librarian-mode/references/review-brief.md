@@ -96,7 +96,8 @@ run from $WORKTREE, in addition to the generic ones>
 - low / nit: style, naming, redundancy. The author may decline these with a reason. A
   commit subject or message finding is always low, except one that leaks a secret or
   credential, which is critical (`references/fix-loop.md`). Never quote a secret's value
-  in a finding: name its commit sha, file and key only.
+  in a finding or in pasted check output (redact it): name its commit sha, file and key
+  only.
 
 ## Verdict
 
