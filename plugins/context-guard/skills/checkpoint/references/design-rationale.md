@@ -102,15 +102,20 @@ Three layers, escalating; the first two are hooks, the third is a skill.
    and the long-context-credits latch a 429 leaves in the transcript — and counts tokens from
    the transcript's post-boundary `usage` blocks. A window whose every input was observed is
    *resolved* and gates like an exact one; one that depends on something a hook cannot see
-   (SDK betas, the served catalog, a 3P provider, an unknown model, an alias model switch) is
-   *unresolved* and only warns, and the depth then falls back to transcript `usage` inference
-   as before. When the status line is present it wins, and a disagreement is logged to
-   `claude-kit/context-gate/window-mismatch.jsonl` and demotes that Claude Code version to
-   warn-only (the table is copied from 2.1.277, `RULES_CC_VERSION`). The gate also scores
-   against the auto-compact window when one is configured below the model window
-   (`CLAUDE_CODE_AUTO_COMPACT_WINDOW`, the `autoCompactWindow` setting); server-side
-   client data and experiments cannot be read, so they never bound a hard stop.
-   `CONTEXT_GUARD_DERIVE=off` turns the mirror off. The account file in the home directory
+   (SDK betas, the served catalog, a 3P provider or gateway, an unknown model, a pending model
+   switch, and — above 200K — a credits latch it cannot rule out for this very process) is
+   *unresolved* and only warns (a false hard block is never acceptable); the depth then
+   falls back to transcript `usage` inference as before. When the status line is present it
+   wins, and a disagreement is logged to `claude-kit/context-gate/window-mismatch.jsonl` and
+   demotes that Claude Code version to warn-only (the table is copied from 2.1.277,
+   `RULES_CC_VERSION`). The gate also warns against the auto-compact window when one is
+   configured below the model window (`CLAUDE_CODE_AUTO_COMPACT_WINDOW`, the
+   `autoCompactWindow` setting), and hard-stops there only when every settings layer that
+   could set or cancel it was read — in practice only with `"autoCompactEnabled": true` in a
+   settings file and no settings flag on the command line; server-side client data and
+   experiments cannot be read, so they never bound a hard stop. The compaction gate keeps the
+   pre-mirror depth: a derived window never defers a compaction. `CONTEXT_GUARD_DERIVE=off`,
+   or a `CLAUDE_KIT_CONTEXT_WINDOW` pin, turns the mirror off. The account file in the home directory
    is never opened. context-guard's own deprecated copy of the status line (kept
    one release for entries that still point at it) writes the same `exact` block into
    `~/.claude/claude-kit/context-gate/<session>.json` (a historical directory name). The hooks

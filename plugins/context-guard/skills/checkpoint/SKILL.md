@@ -65,9 +65,12 @@ gate reads both and takes the one with the larger `at`. That block counts as *ex
 while `now - at` is under 600s, and once it goes stale the depth is re-derived from the
 transcript and is *inferred* (or
 `inferred, window from status line`, the literal the gate messages print when a stale block
-still supplied the window — the window is trustworthy there, the token count is not). So a
-plain `tokens`/`pct` with no fresh `exact` block is a guess: only an exact depth can
-hard-block, an inferred one only warns. The **ledger** holds the decisions, rejections,
+still supplied the window — the window is trustworthy there, the token count is not). Without a fresh
+`exact` block the gate first tries to *derive* the window (the gate state's `derived` block:
+`window`, `rule`, `resolved`), and a plain `tokens`/`pct` with neither is a guess. An exact
+depth, or a derived one with `resolved: true`, can hard-block; an inferred depth, or a derived
+one that is not resolved, only warns. `CONTEXT_GUARD_DERIVE=off` (or a
+`CLAUDE_KIT_CONTEXT_WINDOW` pin) in Claude Code's launch environment turns derivation off. The **ledger** holds the decisions, rejections,
 corrections and pointers already captured as the session ran — Step 2 is a **delta over it**,
 not a reconstruction of hours. (`context_forensics.py` in `scripts/` shows *what* filled the
 window, when that question matters.) Missing files: say so, continue.

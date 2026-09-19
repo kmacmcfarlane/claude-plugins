@@ -160,7 +160,9 @@ hand, turn on auto-update one of two ways:
 Each render also writes this session's numbers (context used, window, plan usage) to
 `~/.claude/statusline/sensor/SESSION.json` (under `$CLAUDE_CONFIG_DIR` when that is set), so hooks and tools that never see the status
 line payload can read exact depth and reset times. The format is documented in
-`references/sensor-contract.md`.
+`references/sensor-contract.md`. A reader may treat a fresh reading as exact depth and act
+on it more firmly than on its own estimate; how the one reader in this marketplace does so -
+including when it stops a prompt without this status line - is described there.
 
 ## Remove or move
 

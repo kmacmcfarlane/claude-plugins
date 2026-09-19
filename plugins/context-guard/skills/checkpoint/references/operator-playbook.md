@@ -22,16 +22,24 @@ operator never sees.** Fixing that is mostly about session *shape*, not about re
 **The gate thinks in remaining tokens, not percent.** Advisories at 60/75% used; **DUE** when
 ~150K tokens remain (1M window; 70K on 200K) — finish things, run `/checkpoint`; **HARD** at
 60K/40K left — on an *exact* depth (a fresh status-line reading) or a *derived* one (the
-window mirrored from Claude Code's own selection logic, every input observed) the gate blocks
+window mirrored from Claude Code's own selection logic, every input observed — including,
+above 200K, that this Claude Code process has not hit the long-context credits limit) the gate blocks
 every prompt until a checkpoint records; on an *inferred* depth, or a derived one it could not
 fully resolve, it only warns, because the real window may be larger than the guess — and
 that warning keeps the DUE cadence (first time, then every 3 prompts or 25K tokens), so a
 quiet stretch is not an all-clear. The whitelist that passes a blocked prompt through is
 `/checkpoint`, `/compact` and `/clear`, bare or plugin-prefixed (`/context-guard:checkpoint`).
-All of it resets per epoch (each compaction or `/clear`). The window scored is the auto-compact
-window when one is set below the model window (`/autocompact`, `CLAUDE_CODE_AUTO_COMPACT_WINDOW`),
-because that is where Claude Code compacts; the compaction gate still proves a deferral safe
-against the model window.
+All of it resets per epoch (each compaction or `/clear`). The gate also warns against the
+auto-compact window when one is set below the model window (`/autocompact`,
+`CLAUDE_CODE_AUTO_COMPACT_WINDOW`, a valid `autoCompactWindow` of 100000–1000000), because that
+is where Claude Code compacts. **The auto-compact window is advisory unless you set
+`"autoCompactEnabled": true` in a settings file** (user, project or local): without that
+line Claude Code may take the setting from its legacy global config, which the gate never
+reads, so it cannot know auto-compact is on and never hard-stops at the auto-compact window —
+it warns there and hard-stops only near the model window. A `--settings`, `--setting-sources`,
+`--autocompact` or similar flag on the `claude` command line, an SDK session, or an unreadable
+managed-settings file keeps it advisory too. The compaction gate never uses the derived or
+auto-compact window: it defers only on the depth it used before the window mirror.
 
 ## Tools, and when
 
@@ -104,8 +112,8 @@ derived window that drifted from a newer Claude Code (the block message names th
 `claude-kit/context-gate/window-mismatch.jsonl`, and that version drops to warn-only). Three
 escape hatches:
 1. Pin the window: `CLAUDE_KIT_CONTEXT_WINDOW=1000000` (tokens) in the environment Claude
-   Code is launched from; the hooks then never guess the denominator of an inferred depth.
-   It does not override a derived window — use hatch 3 for that.
+   Code is launched from; the hooks then never guess the denominator, and the pin also turns
+   the derived window off (as hatch 3 does).
 2. Emergency stand-down: record a checkpoint for the current epoch — exactly what
    `/checkpoint` records — with the plugin's own `mark_checkpoint.py`. It writes through the
    same locked read-modify-write as every hook, so a hook firing at the same moment cannot
