@@ -41,7 +41,8 @@ Model: <opus|fable> — your tier; reviewer matches the implementer (<implemente
 Store: export WI_ROOT=<absolute path to the main checkout>/.claude-sandbox/work
 CLI:   WI="python3 $(ls $WORKTREE/plugins/*/skills/work-items/scripts/wi.py | head -1)"
        <on a repo with no plugins/ tree, substitute the installed work-items plugin's
-       wi.py by absolute path: ls -t "${CLAUDE_CONFIG_DIR:-$HOME/.claude}"/plugins/cache/kmacmcfarlane/work-items/*/skills/work-items/scripts/wi.py | head -1>
+       wi.py by absolute path, resolved with the lines in references/troubleshooting.md
+       (installed_plugins.json installPath first, the ls -t cache glob as fallback)>
 Read it in full first: $WI show <id>
 Acceptance: <one or two lines, copied from the item body>
 Files in scope: <explicit list; anything else in the diff is a finding>
@@ -92,7 +93,11 @@ run from $WORKTREE, in addition to the generic ones>
 - high: wrong behaviour on the item's main path; a failing or missing test for a claimed
   behaviour.
 - medium: incorrect docs or contract, a doctrine violation, a silent failure mode.
-- low / nit: style, naming, redundancy. The author may decline these with a reason.
+- low / nit: style, naming, redundancy. The author may decline these with a reason. A
+  commit subject or message finding is always low, except one that leaks a secret or
+  credential, which is critical (`references/fix-loop.md`). Never quote a secret's value
+  in a finding or in pasted check output (redact it): name its commit sha, file and key
+  only.
 
 ## Verdict
 
@@ -132,7 +137,7 @@ NOTES: anything you noticed that is not a finding; questions for the librarian
 
 ## Re-review variant
 
-After the implementer pushes fix commits, resume the **same** reviewer (it has the context)
+After the implementer commits its fixes, resume the **same** reviewer (it has the context)
 with this in place of "What to do" — unless the fix round changed the tier (Route rules 3, 4
 and 6):
 a resumed agent keeps its model, so dispatch a fresh reviewer at the new tier with the full
@@ -143,6 +148,16 @@ Fix commits since your last review: git -C $WORKTREE log --oneline <last reviewe
 <list them>. They are new commits; the ones you reviewed are unchanged.
 Declined by the implementer, with its reasons:
 <finding number — reason, one per line; or "none">
+
+<rebuild case only — the branch was rebuilt to drop a leaked secret; replace the first
+two lines above with:>
+History was rewritten: the branch was rebuilt from its merge-base <merge-base sha> to drop
+a leaked secret, so <last reviewed sha> is no longer on it. Re-review the whole branch:
+git -C $WORKTREE log --oneline <merge-base sha>..HEAD and
+git -C $WORKTREE diff <merge-base sha>...HEAD. Then compare against the tree you reviewed:
+git -C $WORKTREE diff <last reviewed sha> HEAD must show only this round's fixes and the
+secret's removal from any file that held it (a message-only leak adds nothing); anything
+more is a finding. Check every message in the new log is clean.
 
 1. For each finding in your previous report, verify by file:line whether it is fixed,
    partly fixed, or untouched. For each declined finding: if it is low or nit and the
