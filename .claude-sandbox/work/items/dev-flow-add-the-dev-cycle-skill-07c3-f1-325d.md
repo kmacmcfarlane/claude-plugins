@@ -33,3 +33,7 @@ dispatch: implementer opus — marketplace shape + doctrine, L (rule 2); no gati
 
 - (F0 review lows, fold into the moved review-checklist) path split across lines not read; own file shadows a named sibling; only backtick fences, plain toggle (tilde/nested fences); URLs hit the directory-prefix rule; .md.bak read as .md; CLAUDE.md wording "by its backticked name".
 - (c5fc review lows) "a typo Claude Code silently ignores" is unsourced; checklist code keeps a hand copy of the 20 allowed keys (state the count so reviewers can compare); create-skill SKILL.md:44 lists only 4 of 15 optional fields.
+
+## Round log
+impl: DONE 0dfad31 (SKILL.md 13k chars; 7 references; carried notes folded; librarian-mode untouched).
+dispatch: reviewer opus — rule 4
