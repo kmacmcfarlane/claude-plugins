@@ -2,12 +2,11 @@
 id: statusline-test-session-start-never-leak-cf95
 title: statusline test_session_start_never_leaks false-fails when the checkout path contains 'context-guard'
 type: bug
-status: doing
+status: done
 priority: 2
-owner: unknown@360f41058e92
-claimed: 2026-09-21T23:12Z
 created: 2026-09-21
 updated: 2026-09-21
+closed: 2026-09-21
 refs:
   - 73a6 implementer
 ---
@@ -23,7 +22,12 @@ Found by 73a6's implementer 2026-09-21: plugins/statusline/hooks/tests/test_stan
 ## Notes
 - 2026-09-21 claimed by unknown@360f41058e92
 - dispatch: implementer sonnet — one test file, mechanical
+- 2026-09-21 done: e380b2c
 
 ## Implementer result
 - round 1 DONE 1756f50 (sonnet): scrubs the checkout root before the leak check; proved old fails under a context-guard path, new passes; still fails on a real leak.
 - dispatch: reviewer opus — rule 4
+
+## Review round 1 — CLEAR (opus) at 1756f50
+- low not taken: scrub root+os.sep (contrived sibling-name case).
+- landed e380b2c
