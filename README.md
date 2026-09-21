@@ -83,7 +83,7 @@ dependency is marked (hard) here.
 | …structured product research in a web chat session | `chat` | current; *family home under review* | — |
 | …to survive the finite context window (gate, checkpoint, rehydration, token-spend report) | `context-guard` | **current** | `statusline` (soft; exact depth when installed) |
 | …an always-on status line (context left, plan usage, model, session name) | `statusline` | **current** | `context-guard` (soft; epoch and checkpoint thresholds in the gauge when installed) |
-| …to share the status-line slot, so the data Claude Code hands the status line reaches the tools that read it whatever renders the line (the hub owns the slot and runs the hooks other plugins register, or its `tee` feeds the record from another renderer) | `statusline-hub` | **current** | — |
+| …to share the status-line slot, so the data Claude Code hands the status line reaches the tools that read it whatever renders the line (the hub owns the slot and runs the hooks other plugins register, or its `tee` feeds the record from another renderer) | `statusline-hub` | **current** | `statusline` (soft; the hub waits for its footer to register as a hub display hook, then takes over its slot) |
 | …a plan before you code: investigate → reviewed plan → verified implementation, and a standing librarian that takes custody of a repo's work (files, dispatches, reviews, lands) | `dev-flow` | **current** | `work-items` (soft; `librarian-mode` and `dev-cycle` find `wi` via the repo tree, or the installed plugin's copy; `dev-cycle` runs without it on a scratchpad record), `statusline` (soft; the fable fallback in `librarian-mode` and `dev-cycle` reads its rate-limit reset times), `context-guard` (soft; `investigate` offers a checkpoint-then-implement path when its checkpoint skill is present; `librarian-mode` answers its gate advisories with a checkpoint and weighs its manifest and ledger when it rehydrates; the fable fallback reads reset times from its older state record) |
 | …repo-durable work items and a pluggable work source | `work-items` | **current** | — |
 | …isolated execution for agent sessions (containers, and the checkout/worktree convention) | `sandbox` | **current** | claude-sandbox repo (external) |
@@ -391,6 +391,11 @@ re-adds one the user removed. It leaves the `statusline` plugin's footer in plac
 plugin registers as a hub display hook (planned next), then takes the slot over with the
 footer drawing through it. The same hook prunes sensor records older than 30 days (the tee's
 included), dead hook manifests (not refreshed for 14 days), stale caches and logs.
+
+Soft dependency on `statusline`: the hub reads that plugin's `owner.json` marker, its
+`enabledPlugins` entry and its `statusLine` command, but only to leave its footer alone
+until the footer registers as a hub display hook, and then to take over its slot. Without
+`statusline` there is nothing to wait for, and the hub takes a free slot straight away.
 
 It carries `hooks/`, with its unit tests
 (`cd plugins/statusline-hub/hooks && python3 -m unittest discover -s tests -q`):
