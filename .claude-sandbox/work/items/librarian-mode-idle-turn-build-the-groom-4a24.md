@@ -29,3 +29,8 @@ Surfaced by b020's implementer 2026-09-21: plugins/dev-flow/skills/librarian-mod
 ## Implementer result
 - round 1 DONE d652529 (sonnet): Groom table from wi needs-input --plain; hold-scoped items via wi ls --dep; b020 placeholder dropped. SKILL.md Rehydrate grep kept (finds highest N, a different query).
 - dispatch: reviewer opus — rule 4
+
+## Review round 1 — NEEDS_CHANGES (opus) at d652529
+- [medium] dropped the legacy PARKED-prefixed blocked → wi migrate-parked --apply hint; restore it.
+- lows: open-status sentence contradicts needs-input incl. parked; note every ls here exits 2 on empty; ls --dep default misses parked held items (optional --status); nit 'the scan' → wi needs-input.
+- dispatch: implementer sonnet — fix round 1 (same agent resumed)

@@ -2,12 +2,11 @@
 id: checkpoint-continue-carries-a-standing-s-81ae
 title: checkpoint continue carries a standing session mode (opener re-invokes librarian-mode)
 type: feature
-status: doing
+status: done
 priority: 2
-owner: unknown@360f41058e92
-claimed: 2026-09-21T22:44Z
 created: 2026-09-21
 updated: 2026-09-21
+closed: 2026-09-21
 refs:
   - "peer: claude-sandbox librarian (uds 246.sock)"
 ---
@@ -24,6 +23,7 @@ Peer claude-sandbox librarian 2026-09-21, relaying its operator: /context-guard:
 
 ## Notes
 - 2026-09-21 claimed by unknown@360f41058e92
+- 2026-09-21 done: c3eae2f
 
 ## Implementer result
 - round 1 DONE d6bb9b3 (opus): handoff-format mode_skill: (optional, generic); SKILL 4b fills, Step 7 leads with it; rehydrate.py names it in the header on every tier except LANDED (only /-prefixed, one line, ≤200 chars) + tests (fail 3 without); ending-the-session sets it to /dev-flow:librarian-mode start.
@@ -36,3 +36,8 @@ Peer claude-sandbox librarian 2026-09-21, relaying its operator: /context-guard:
 - dispatch: implementer opus — fix round 1 (same agent resumed)
 - fix round 1 DONE 2da22ab (opus): strict ASCII fullmatch regex + 200 cap, STALE asks to confirm, tests (fail 6 without); lows a-d fixed; commit aspect declined (merge message).
 - dispatch: reviewer opus — review r2 (same reviewer resumed)
+
+## Review round 2 — CLEAR (opus) at 2da22ab
+- all round-1 attacks + Unicode lookalikes dropped; re.ASCII verified; no-key output byte-identical to main.
+- accepted low: up to four plain-word args still reach the header (fenced; a skill-existence check would close it). Lows not taken: no non-ASCII test case (removing re.ASCII would pass the suite); SKILL.md:172 at 143 chars.
+- landed c3eae2f
