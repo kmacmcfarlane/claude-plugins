@@ -8,6 +8,8 @@ Layout, all under ${CLAUDE_CONFIG_DIR:-~/.claude}/statusline-hub/ (the hub dir):
     hooks.d/<name>.json   one manifest per hook, written by the plugin that owns
                           the hook from its own SessionStart (atomic replace)
     config.json           the user's order / disabled / separator / health window
+    wrap.json             wrap mode: the statusLine entry the hub runs inside
+                          itself, with the user's consent (see read_wrap)
     cache/<name>/<sid>.json  a display hook's last good text, per session
     log/<name>.log        a hook's stderr, capped
 
@@ -53,6 +55,9 @@ SEPARATOR = "  "
 SEPARATOR_MAX = 8
 VISIBLE_MAX = 300           # printable characters kept from one hook's line
 ORDER_MAX = 64
+WRAP = "wrap.json"
+WRAP_V = 1
+WRAP_MAX = 65536            # bytes; a wrap record holds one settings entry
 
 
 def hub_dir():
@@ -77,6 +82,10 @@ def log_dir():
 
 def run_dir():
     return os.path.join(hub_dir(), "run")
+
+
+def wrap_path():
+    return os.path.join(hub_dir(), WRAP)
 
 
 def mkdirs_private(path):
@@ -344,6 +353,73 @@ def scan(now=None, project_dirs=()):
     except Exception:
         pass
     return hooks, problems
+
+
+def hub_problem(project_dirs=()):
+    """None when the hub dir may hold code the hub runs: a private directory
+    (see private_dir_problem; "missing" when it is not there yet), not in
+    the session's project tree, not in a git work tree. Else the reason -
+    the same directory rules scan() applies to hooks.d. Never raises."""
+    try:
+        why = private_dir_problem(hub_dir())
+        if why:
+            return why
+        if in_project(project_dirs):
+            return "inside the project tree"
+        if in_git_tree():
+            return "inside a git work tree"
+        return None
+    except Exception:
+        return "unreadable"
+
+
+def read_wrap(project_dirs=()):
+    """(record, None) for the wrap record, or (None, reason) - "missing" when
+    there is none.
+
+    Wrap mode (see hub.py) runs the statusLine command the user had before
+    the hub, so this file is code the hub executes: it counts only under
+    the trust rules a manifest meets - the hub dir passes hub_problem(), and
+    the file is regular (never followed through a symlink), the user's own,
+    writable by nobody else, at most WRAP_MAX bytes. The record:
+      {"v": 1, "settings": "<abs path>", "entry": {...the statusLine value,
+       with a non-empty "command" string...}, "raw": "<that value's text as
+       it stood in the file>" | null, "running": true | false, "at": <epoch>}
+    `running` is false once the user unwrapped, or the entry was replaced by
+    something else: the record is then kept only to put the entry back.
+    Never raises."""
+    try:
+        why = hub_problem(project_dirs)
+        if why:
+            return None, why
+        try:
+            raw, st = _read_capped(wrap_path(), WRAP_MAX)
+        except FileNotFoundError:
+            return None, "missing"
+        except OSError as e:
+            return None, "a symlink" if e.errno == errno.ELOOP else "unreadable"
+        if raw is None:
+            return None, "not a regular file, or too large"
+        if st.st_uid != os.geteuid():
+            return None, "not owned by you"
+        if st.st_mode & 0o022:
+            return None, "group- or other-writable"
+        d = json.loads(raw.decode("utf-8"))
+        if not tee._is_v(d, WRAP_V):
+            return None, "unknown version"
+        entry, path, text = d.get("entry"), d.get("settings"), d.get("raw")
+        cmd = entry.get("command") if isinstance(entry, dict) else None
+        if not (isinstance(path, str) and os.path.isabs(path) and "\0" not in path):
+            return None, "no settings path"
+        if not (isinstance(cmd, str) and cmd.strip() and "\0" not in cmd):
+            return None, "no command"
+        if not (text is None or isinstance(text, str)) or \
+                not isinstance(d.get("running"), bool):
+            return None, "malformed"
+        return {"settings": path, "entry": entry, "raw": text,
+                "running": d["running"], "command": cmd}, None
+    except Exception:
+        return None, "malformed"
 
 
 def config():

@@ -23,6 +23,19 @@ same (see owner.py):
     Code's install records name the hub and no statusline@ key, nothing will
     register, and the hub yields to that entry, saying whose it is);
   - holds anything else: yield - state `yielded`, said once, never fought.
+- wrapping (the user ran /install-statusline-hub --wrap) - the marked file:
+  - holds ours: nothing;
+  - lost its statusLine, or holds the wrapped entry again (a stale
+    session's settings write, from before the wrap): put the wrapping
+    entry back - the consent was given, and --unwrap is how it is taken
+    back;
+  - holds anything else: yield - state `yielded`, said once; the wrapped
+    entry stays in the wrap record (not run), so --unwrap --replace can
+    still put it back.
+  A wrap record that is gone (deleted by hand) ends the wrap: state
+  `installed`, said once.
+- unwrapped (the user ran --unwrap): when a stale session's write puts
+  the hub's entry back, put the kept entry back again; otherwise nothing.
 - removed, yielded, deferred (or an owner.json it cannot read): nothing.
 - blocked: the work it resumes (a heal, or a first run) is retried quietly.
 - no owner.json (first run):
@@ -40,8 +53,10 @@ same (see owner.py):
   b. first-run install - into the scope where this plugin is enabled (user
      settings, else a project's git-ignored .claude/settings.local.json), when
      none of the competing files sets a statusLine. One set by another tool
-     makes the state `deferred`, said once (with the embed-mode pointer),
-     never overwritten. The statusline footer's entry there (the statusline
+     makes the state `deferred`, said once, never overwritten: the one line
+     asks whether the user wants it wrapped (what --wrap would do, and how
+     to accept), and points at embed mode and at replacing it. The hub
+     never wraps on its own (operator decision 40: ask once). The statusline footer's entry there (the statusline
      plugin's, or an older copy's) is handled as in (a). An empty slot the
      user emptied by removing the statusline footer (its marker says
      `removed` for that file) stays empty: state `removed`, said once. And
@@ -155,6 +170,78 @@ def _put(owner, data, path, expect):
 
 def _replace_hint(owner, path):
     return f"run /install-statusline-hub{_flag(owner, path)} and answer yes to replace it."
+
+
+def _write(owner, path, entry, **kw):
+    """owner.write_settings, with a settings file it cannot use as Blocked.
+    Changed propagates."""
+    try:
+        return owner.write_settings(path, entry, **kw)
+    except owner.SettingsError as e:
+        raise Blocked(path, e.reason)
+    except OSError:
+        raise Blocked(path, "unwritable")
+
+
+def _wrap_offer(owner, p):
+    """Decision 40: the one-line question a first run asks when the slot
+    holds another tool's statusLine."""
+    flag = _flag(owner, p)
+    return (f"your settings already define a statusLine ({p}); left alone. The hub can "
+            f"wrap it if you want: it keeps drawing as now, run by the hub on each "
+            f"render, so the tools that read the sensor record see this session's "
+            f"context and plan usage, and hub display hooks draw beside it. To accept, "
+            f"run /install-statusline-hub{flag} --wrap (--unwrap puts it back exactly). "
+            f"Or feed the sensor from it yourself (/statusline-hub), or to have the hub "
+            f"own the slot instead, {_replace_hint(owner, p)}")
+
+
+def heal_wrap(owner, data, marker, state):
+    """SessionStart for the states `wrapping` and `unwrapped` (module doc)."""
+    import registry
+    path = marker.get("settings")
+    if not isinstance(path, str) or not os.path.isfile(path):
+        return None
+    rec, why = registry.read_wrap()
+    if rec is None or not owner._same_path(rec["settings"], path):
+        if why not in (None, "missing"):
+            return None  # refused by the trust rules: --status says why; nothing moves
+        if state == "unwrapped":
+            owner.write_marker(data, "deferred", path, owner.command_for(data))
+            return None
+        owner.write_marker(data, "installed", path, owner.command_for(data))
+        return (f"the status line the hub wrapped in {path} is no longer on record, so "
+                f"the hub draws only its display hooks there. To use your own again, "
+                f"set it, or /install-statusline-hub{_flag(owner, path)} --remove.")
+    cur = _read(owner, path).get("statusLine")
+    kind = owner.classify(cur)
+    if state == "unwrapped":
+        if kind != "own":
+            return None
+        _write(owner, path, rec["entry"], expect_entry=cur, raw=rec["raw"])
+        return (f"put your own status line back in {path} (an older session's settings "
+                f"write had restored the hub's entry after --unwrap).")
+    if kind == "own":
+        if not rec["running"]:
+            owner.set_running(rec, True)
+        return None
+    if kind == "absent" or cur == rec["entry"]:
+        if not _script_ready(owner, data):
+            return None
+        _write(owner, path, owner.wrap_entry(rec["entry"], data), expect_entry=cur)
+        if not rec["running"]:
+            owner.set_running(rec, True)
+        what = ("dropped it" if kind == "absent" else
+                "put back the entry from before the wrap")
+        return (f"restored the wrapped status line in {path} (an older session's "
+                f"settings write had {what}; /install-statusline-hub{_flag(owner, path)} "
+                f"--unwrap puts your own back for good).")
+    owner.set_running(rec, False)
+    owner.write_marker(data, "yielded", path, owner.command_for(data))
+    return (f"the statusLine in {path} was changed by something else; left alone, and "
+            f"the hub no longer runs the status line it wrapped there. To put that one "
+            f"back, run /install-statusline-hub{_flag(owner, path)} --unwrap and answer "
+            f"yes to replace the current one.")
 
 
 def statusline_hooked():
@@ -342,11 +429,16 @@ def first_run(owner, data, proj):
         kind = owner.classify(_read(owner, p).get("statusLine"))
         if kind == "foreign":
             owner.write_marker(data, "deferred", path, owner.command_for(data))
-            return (f"your settings already define a statusLine ({p}); left alone. To "
-                    f"feed the sensor record from it, see /statusline-hub; to have the "
-                    f"hub own the slot instead, {_replace_hint(owner, path)}")
+            return _wrap_offer(owner, p)
         if kind == "own":  # installed before, its owner.json lost: adopt it
-            owner.write_marker(data, "installed", p, owner.command_for(data))
+            import registry
+            rec, _ = registry.read_wrap()
+            if rec and owner._same_path(rec["settings"], p):  # wrapped, as well
+                owner.write_marker(data, "wrapping", p, owner.command_for(data))
+                if not rec["running"]:
+                    owner.set_running(rec, True)
+            else:
+                owner.write_marker(data, "installed", p, owner.command_for(data))
             return None
         if kind == "statusline":
             return _from_statusline(owner, data, p, proj)
@@ -396,8 +488,8 @@ def run(inp):
         state = marker.get("state") if marker else None
         if state == "blocked":
             resume = marker.get("resume")
-        elif state == "installed":
-            resume = "installed"
+        elif state in ("installed", "wrapping", "unwrapped"):
+            resume = state
         else:
             return None  # removed, yielded, deferred - or unreadable: hands off
     else:
@@ -405,6 +497,8 @@ def run(inp):
     try:
         if resume == "installed":
             return heal(owner, data, marker)
+        if resume in ("wrapping", "unwrapped"):
+            return heal_wrap(owner, data, marker, resume)
         return first_run(owner, data, _project_dir(inp))
     except (owner.Changed, Wait):
         return None  # changed under us, or the statusline plugin's turn: next session
@@ -417,7 +511,7 @@ def run(inp):
         except Exception:
             return None
         return _blocked_message(owner, b.path, b.reason,
-                                "restored" if resume == "installed" else "installed")
+                                "installed" if resume == "new" else "restored")
 
 
 NOTICE = "refusal-notice.json"

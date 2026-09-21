@@ -398,17 +398,25 @@ makes that slot shareable, two ways:
 - **Embed mode.** Another renderer keeps the slot and runs `hooks/tee.py`, which writes the
   same record and prints nothing. The tools that read the record (`context-guard`'s exact
   depth, `dev-flow`'s rate-limit reset times) work there too.
+- **Wrap mode**, only on the user's consent (`/install-statusline-hub --wrap`). The hub
+  owns the slot and runs the user's previous `statusLine` command on every render. Its
+  output shows first, then the display hooks, and the record is written as in owner mode.
+  A slow command is shown from the render after (a last-good cache) and killed at 5 s, and
+  a failing or hung one costs only its own output. The previous entry is kept in the hub's
+  private `wrap.json`, never printed, and `--unwrap` puts it back byte for byte.
 
 | Skill | Description |
 |---|---|
 | `statusline-hub` | Wire the tee into a ccstatusline Custom Command widget, a Starship `custom` module, or a shell wrapper around an existing status line; the hook contract for plugin authors (`references/hook-contract.md`) |
-| `install-statusline-hub` | Optional: put the hub in another scope, remove it, or replace a status line another tool set; list registered hooks, why any is skipped, and their health |
+| `install-statusline-hub` | Optional: put the hub in another scope, remove it, replace a status line another tool set, or wrap one and unwrap it; list registered hooks, why any is skipped, and their health |
 
 It sets itself up. On the first session its SessionStart hook takes a free `statusLine` slot
 where the plugin is enabled (the same scope rules as `statusline`: user settings, or a
 project's git-ignored `.claude/settings.local.json`) and says so in one line. It never writes
-over a status line another tool set: it says so once, pointing at embed mode and the
-installer. It restores its entry when a stale session's settings write drops it, and never
+over a status line another tool set: it says so once, in a line that asks whether to wrap
+it and points at embed mode and the installer; it never wraps on its own. It restores its
+entry when a stale session's settings write drops it (or, while wrapping, writes back the
+pre-wrap entry), and never
 re-adds one the user removed, including a `statusline` footer removed before the hub
 arrived. It leaves the `statusline` plugin's footer in place until that plugin registers as
 a hub display hook (its first session start), then takes the slot over once, with the footer
@@ -438,8 +446,7 @@ It carries `hooks/`, with its unit tests
 `tests/test_vendored.py` fail when a copy drifts, whenever both plugins sit in this repo.
 `owner.py`'s settings write began as a copy of `statusline`'s too; since that plugin stopped
 writing settings it lives here only. `tests/test_handover.py` runs both plugins' session
-starts together through the slot's handover. Planned: a consent-only wrap mode for closed
-renderers.
+starts together through the slot's handover. `tests/test_wrap.py` covers wrap mode.
 
 ### sandbox
 

@@ -26,7 +26,12 @@ sharing that slot. It works two ways:
 
 Plugin authors who want their code run on every render (a display segment, or a recorder
 that gets the raw payload) register a hook: `references/hook-contract.md` is the whole
-interface. A consent-only wrap mode for closed renderers is planned; it does not exist yet.
+interface.
+
+A third way, for a renderer the user would rather not rewire: **wrap mode**. On the user's
+consent, `/install-statusline-hub --wrap` puts the hub in the slot and has it run their
+existing `statusLine` command inside it on every render, so the line looks the same and the
+sensor record is still written. That is the installer's job, not this skill's.
 
 ## Important
 

@@ -1,5 +1,5 @@
 {
-  "description": "statusline-hub: keeps the plugin-data current-hooks symlink pointing at this version's hooks, so the statusLine command in settings.json stays on an update-stable path; then puts the hub in the statusLine slot on the first session (into the scope where the plugin is enabled, never over another tool's entry, and over the statusline plugin's entry only once that plugin draws as a hub display hook), restores the entry when a stale session's settings write dropped it, and prunes old sensor records, dead hook manifests, stale caches and logs.",
+  "description": "statusline-hub: keeps the plugin-data current-hooks symlink pointing at this version's hooks, so the statusLine command in settings.json stays on an update-stable path; then puts the hub in the statusLine slot on the first session (into the scope where the plugin is enabled, never over another tool's entry - that it only offers to wrap, which the user accepts with install-statusline-hub --wrap - and over the statusline plugin's entry only once that plugin draws as a hub display hook), restores the entry (or re-applies a wrap the user accepted) when a stale session's settings write dropped or reverted it, and prunes old sensor records, dead hook manifests, stale caches and logs.",
   "hooks": {
     "SessionStart": [
       {
