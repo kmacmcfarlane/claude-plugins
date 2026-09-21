@@ -183,6 +183,20 @@ Uninstalling first deletes the plugin's data dir, which leaves the settings entr
 at a script that no longer exists (a blank footer). The last line removes the per-session
 sensor files. They are also pruned automatically after 30 days.
 
+## Known limitations
+
+The status line does not render while Claude Code shows a modal prompt — a permission
+request (documented) and, in practice, an `AskUserQuestion` dialog or plan approval. This
+is harness behavior, not a plugin bug: the [docs](https://code.claude.com/docs/en/statusline)
+state it "temporarily hides during certain UI interactions, including autocomplete
+suggestions, the help menu, and permission prompts." There is no setting to keep it
+visible. Upstream requests, all closed with the docs unchanged:
+[#21349](https://github.com/anthropics/claude-code/issues/21349) (closed as completed by
+its reporter once plan approval gained a context-remaining option; the status line itself
+still hides), [#26847](https://github.com/anthropics/claude-code/issues/26847) (duplicate
+of #21349), [#30232](https://github.com/anthropics/claude-code/issues/30232) (closed as
+stale).
+
 ## Troubleshooting
 
 Error: `Cannot add marketplace "kmacmcfarlane": its network source differs from the one
