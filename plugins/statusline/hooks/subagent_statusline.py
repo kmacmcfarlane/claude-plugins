@@ -19,7 +19,9 @@ thresholds for that window size).
 Depth. Exact when the agent's sidechain transcript can be read:
 <transcript stem>/subagents/agent-<id>.jsonl, the stem being the main
 transcript path without `.jsonl` (the task `id` of a local agent is its
-agentId, which names that file). The depth is the sum of input_tokens,
+agentId, which names that file); an agent a workflow started lives one
+directory further down, subagents/workflows/<run id>/agent-<id>.jsonl, and
+is looked for there when the direct path is missing. The depth is the sum of input_tokens,
 cache_read_input_tokens and cache_creation_input_tokens on the last line that
 carries a `usage`, reset by a compact_boundary: the same arithmetic a gate
 applies to the main transcript. It lives here in full: a plugin never
@@ -31,10 +33,15 @@ per agent the byte offset of the last complete line read, the depth as of
 there, and the file's device, inode and the TAIL_CHECK bytes before the
 offset. A file whose identity and tail still match is read from that offset
 only; anything else is read from 0. A final line without its newline is left
-for the next tick. At most BUDGET bytes are read per tick across all rows, so
-latency stays bounded whatever the transcripts weigh; a file not read to its
-end within the budget shows the approximate figure this tick and continues
-from where it stopped on the next.
+for the next tick. At most BUDGET bytes are read per tick across all rows
+(plus the rest of one line, so every tick advances), so latency stays
+bounded whatever the transcripts weigh; the rows with the least left to read
+go first, and a file not read to its end within the budget shows the
+approximate figure this tick and continues from where it stopped on the
+next. A line longer than LINE_MAX (a huge tool result) is streamed in
+chunks and never parsed whole: only the token fields after its last
+`"usage"` key are picked out. The cache keeps up to CACHE_MAX agents, the
+rows visible this tick first.
 
 Approximate, marked `~`: when there is no readable sidechain yet, no usage
 line in it yet (a new agent, or one just compacted), or the budget ran out
@@ -57,7 +64,8 @@ plugin never writes one.
 
 Text from the payload (name, description) is shown on one line: whitespace
 and control characters collapse to one space, format characters are
-dropped, and the row is cut to `columns` terminal columns. Never raises;
+dropped, and the row is cut to `columns` terminal columns (0 columns: no
+rows). Never raises;
 malformed input prints nothing, so every row keeps its default.
 """
 import json, os, re, sys, time, unicodedata
@@ -71,6 +79,11 @@ TAIL_CHECK = 64           # bytes before a cached offset that must still match
 CACHE_V = 1
 CACHE_MAX = 64            # agents kept in one session's cache
 TASKS_MAX = 64            # rows drawn per tick at most
+LINE_MAX = 1 << 20        # a longer line is streamed in chunks of this size, never parsed whole
+CARRY = 8192              # bytes of the previous chunk searched again with the next
+USAGE_WIN = 2048          # bytes after "usage" that hold its token fields
+_UFIELD = re.compile(rb'"(input_tokens|cache_read_input_tokens|cache_creation_input_tokens)"'
+                     rb'\s*:\s*(\d{1,15})')
 _SAFE_ID = re.compile(r"[A-Za-z0-9][A-Za-z0-9_-]{0,127}")
 _UNSAFE = re.compile(r"[\s\x00-\x1f\x7f-\x9f]+")
 SEP = " · "
@@ -143,6 +156,13 @@ def sidechain(transcript_path, session_id, agent_id):
         p = os.path.join(stem, "subagents", name)
         if os.path.isfile(p):
             return p
+    import glob       # a workflow's agents: subagents/workflows/<run id>/agent-<id>.jsonl
+    for stem in stems:
+        base = glob.escape(os.path.join(stem, "subagents"))
+        for pat in (("workflows", "*"), ("*",)):
+            hits = sorted(glob.glob(os.path.join(base, *pat, glob.escape(name))))
+            if hits:
+                return hits[0]
     return None
 
 
@@ -163,6 +183,39 @@ def _usage_total(line):
     return t
 
 
+def _usage_in(buf):
+    """The input-side token sum of the last `"usage"` object in `buf` (a
+    chunk of a line too long to parse whole), or None. Only the top-level
+    fields count: the first match of each name after the key."""
+    i = buf.rfind(b'"usage"')
+    if i < 0:
+        return None
+    got = {}
+    for m in _UFIELD.finditer(buf, i, i + USAGE_WIN):
+        got.setdefault(m.group(1), int(m.group(2)))
+    return sum(got.values()) if got else None
+
+
+def _long_line(fh, first):
+    """(length, depth or None, boundary) of a line longer than LINE_MAX whose
+    first LINE_MAX bytes are `first`, read on in chunks so memory stays
+    bounded; None for the length when the file ends before its newline."""
+    n, found, carry = len(first), _usage_in(first), first[-CARRY:]
+    boundary = b'"compact_boundary"' in first[:4096]
+    while True:
+        chunk = fh.readline(LINE_MAX)
+        if not chunk:
+            return None, None, False
+        n += len(chunk)
+        win = carry + chunk
+        t = _usage_in(win)
+        if t is not None:
+            found = t
+        if chunk.endswith(b"\n"):
+            return n, found, boundary
+        carry = win[-CARRY:]
+
+
 def scan(path, ent, budget):
     """(entry, done, bytes read): `ent` (a cache entry, or None) advanced
     over `path`. `done` is True when every complete line was read within
@@ -181,10 +234,28 @@ def scan(path, ent, budget):
                 off, cur = ent["off"], ent["cur"]
         fh.seek(off)
         read, done = 0, True
-        for line in fh:
+        while True:
+            if read >= budget:
+                done = off >= st.st_size
+                break
+            line = fh.readline(LINE_MAX)
+            if not line:
+                break
             if not line.endswith(b"\n"):
-                break                       # incomplete: read again next tick
-            # One line is always read, however long, so every tick advances.
+                if len(line) < LINE_MAX:
+                    break                   # incomplete: read again next tick
+                # One line is always read, however long, so every tick
+                # advances; past LINE_MAX it is streamed, not parsed.
+                n, t, boundary = _long_line(fh, line)
+                if n is None:
+                    break
+                read += n
+                off += n
+                if boundary:
+                    cur = 0
+                elif t:
+                    cur = t
+                continue
             if read + len(line) > budget and read > 0:
                 done = False
                 break
@@ -197,9 +268,6 @@ def scan(path, ent, budget):
                 t = _usage_total(line)
                 if t:
                     cur = t
-            if read >= budget:
-                done = off >= st.st_size
-                break
         tail = b""
         if off:
             k = min(TAIL_CHECK, off)
@@ -253,17 +321,27 @@ def depths(payload):
     if not isinstance(sid, str) or not sid or not isinstance(tasks, list):
         return {}
     old = load_cache(sid)
-    new, out, left = {}, {}, BUDGET
+    rows = []
     for t in tasks[:TASKS_MAX]:
         tid = t.get("id") if isinstance(t, dict) else None
         if not isinstance(tid, str):
             continue
         try:
             path = sidechain(tp, sid, tid)
+            st = os.stat(path) if path else None
         except Exception:
-            path = None
+            path = st = None
         if not path:
             continue
+        ent = old.get(tid)
+        seen = ent.get("off") if isinstance(ent, dict) and ent.get("ino") == st.st_ino \
+            and isinstance(ent.get("off"), int) and ent["off"] <= st.st_size else 0
+        rows.append((st.st_size - seen, tid, path))
+    # Least left to read first: the rows that can be exact this tick are,
+    # and one agent catching up on a long transcript cannot starve the rest.
+    rows.sort(key=lambda r: r[0])
+    new, out, left = {}, {}, BUDGET
+    for _todo, tid, path in rows:
         ent, done = old.get(tid), False
         if left > 0:
             try:
@@ -275,6 +353,10 @@ def depths(payload):
             new[tid] = ent
             if done and ent.get("cur"):
                 out[tid] = ent["cur"]
+    for tid, ent in old.items():    # rows not visible this tick keep their place
+        if len(new) >= CACHE_MAX:
+            break
+        new.setdefault(tid, ent)
     if len(new) > CACHE_MAX:
         new = dict(list(new.items())[:CACHE_MAX])
     if new != old:
@@ -370,7 +452,9 @@ def main():
     if not isinstance(d, dict) or not isinstance(d.get("tasks"), list):
         return
     cols = num(d.get("columns"))
-    cols = cols if cols else 80
+    if cols is None:
+        cols = 80       # absent: a common width; 0 is no room, so no rows
+
     try:
         exact = depths(d)
     except Exception:

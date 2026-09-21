@@ -143,6 +143,55 @@ class Rows(Hermetic):
             R.BUDGET = old
         self.assertEqual(got, {})
 
+    def test_a_workflow_agent_one_level_down_is_found(self):
+        self.subdir = os.path.join(self.proj, "sess", "subagents", "workflows", "run1")
+        self.side("a1", [usage(0, 40_000)])
+        self.assertIn("20% 40k", ANSI.sub("", self.run_rows([self.task()])["a1"]))
+
+    def test_a_long_line_is_streamed_and_its_usage_found(self):
+        sys.path.insert(0, HOOKS)
+        import subagent_statusline as R
+        old = R.LINE_MAX
+        try:
+            R.LINE_MAX = 4096
+            big = usage(0, 90_000)
+            big["message"] = {"content": [{"type": "text", "text": "y" * 50_000}],
+                              "usage": big["message"]["usage"]}
+            p = self.side("a1", [usage(0, 10_000), big])
+            ent, done, n = R.scan(p, None, 1 << 20)
+            self.assertTrue(done)
+            self.assertEqual((ent["cur"], ent["off"], n),
+                             (90_000, os.path.getsize(p), os.path.getsize(p)))
+            # The same line with no newline yet is left for the next tick.
+            raw = json.dumps(big).encode()
+            p = self.side("a2", [usage(0, 10_000)], raw_tail=raw)
+            ent, done, n = R.scan(p, None, 1 << 20)
+            self.assertEqual((ent["cur"], ent["off"]), (10_000, os.path.getsize(p) - len(raw)))
+        finally:
+            R.LINE_MAX = old
+
+    def test_least_left_to_read_goes_first(self):
+        sys.path.insert(0, HOOKS)
+        import subagent_statusline as R
+        old = R.BUDGET
+        try:
+            R.BUDGET = 2_000
+            pad = {"type": "user", "pad": "x" * 500}
+            self.side("big", [usage(0, 10_000)] + [pad] * 20)
+            self.side("small", [usage(0, 40_000)])
+            got = R.depths({"session_id": "sess", "transcript_path": self.transcript,
+                            "tasks": [self.task("big"), self.task("small")]})
+        finally:
+            R.BUDGET = old
+        self.assertEqual(got, {"small": 40_000})
+
+    def test_cache_keeps_rows_not_visible_this_tick(self):
+        self.side("a1", [usage(0, 40_000)])
+        self.side("a2", [usage(0, 50_000)])
+        self.run_rows([self.task("a1"), self.task("a2")])
+        self.run_rows([self.task("a2")])
+        self.assertEqual(sorted(self.cache()), ["a1", "a2"])
+
     # -- the approximate fallback -----------------------------------------
 
     def test_no_sidechain_falls_back_to_token_count_marked_approximate(self):
@@ -194,6 +243,9 @@ class Rows(Hermetic):
     def test_malformed_input_prints_nothing(self):
         for raw in ("", "not json", "[]", '{"tasks": "x"}', '{"tasks": [1, {"id": 3}]}'):
             self.assertEqual(self.run_rows(None, raw=raw), {})
+
+    def test_zero_columns_draws_no_rows(self):
+        self.assertEqual(self.run_rows([self.task()], columns=0), {})
 
     def test_many_tasks_are_bounded(self):
         rows = self.run_rows([self.task(f"a{i}") for i in range(100)])
@@ -255,8 +307,11 @@ class PluginDefault(unittest.TestCase):
             link = json.load(f)["hooks"]["SessionStart"][0]["hooks"][0]["command"]
         self.assertIn('ln -sfn "${CLAUDE_PLUGIN_ROOT}/hooks" "${CLAUDE_PLUGIN_DATA}/current-hooks"',
                       link)
-        with open(os.path.join(PLUGIN, "..", "..", ".claude-plugin", "marketplace.json")) as f:
-            self.assertEqual(json.load(f)["name"], "kmacmcfarlane")
+        market = os.path.join(os.path.dirname(os.path.dirname(PLUGIN)),
+                              ".claude-plugin", "marketplace.json")
+        if os.path.isfile(market):      # in this repo; an installed copy has none
+            with open(market) as f:
+                self.assertEqual(json.load(f)["name"], "kmacmcfarlane")
 
     def test_command_runs_the_renderer(self):
         with open(os.path.join(PLUGIN, "settings.json")) as f:
