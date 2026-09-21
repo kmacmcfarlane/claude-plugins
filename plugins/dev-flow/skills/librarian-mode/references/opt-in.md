@@ -50,9 +50,9 @@ Enter three times accepts the defaults.
    - `Not now` — creates nothing and stops. The only remaining decline.
 2. **Checks every change must pass** — multiSelect: up to three commands detected in
    the repo (§ Detecting checks), then always `None beyond the generic checklist` last,
-   so the question has two to four options; more through Other. Ticked commands and Other text
-   become `Checks:`. An empty submit, or only `None…` ticked, means no `Checks:` key;
-   `None…` ticked alongside commands is ignored.
+   so the question has two to four options; more through Other. Ticked commands and
+   Other text become `Checks:`. An empty submit, or only `None…` ticked, means no
+   `Checks:` key; `None…` ticked alongside commands is ignored.
 3. **Push** — options in this order:
    - `main` — fast-forward `origin/main` after each Report.
    - `none` — land to local `main` only; the push step is skipped.

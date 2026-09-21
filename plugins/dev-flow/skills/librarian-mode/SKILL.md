@@ -6,7 +6,6 @@ allowed-tools: Read, Glob, Grep, Bash, Agent, AskUserQuestion, SendMessage, List
 argument-hint: [start | status | intake <request>]
 ---
 
-
 # Librarian mode
 
 A librarian is the standing single writer of one custody layer (Critical): a
@@ -156,7 +155,8 @@ $WI add "<feature>" -t feature --parent <request-id> [--dep <other-feature-id>]
 ## The cycle
 
 Each item runs the `dev-cycle` skill's Steps 1–5 (plan when needed, route, delegate,
-review, land; a spike runs its `plan` mode and lands nothing), read as a spec — never
+review, land; a spike runs its `plan` mode — claimed, closed on its series, nothing
+landed), read as a spec — never
 invoked through the Skill tool, whose Step 0 would ask the operator. Its Step 6 is the
 Report below. Your bindings:
 
@@ -170,10 +170,13 @@ Report below. Your bindings:
   declined findings with reasons.
 - **Decision channel**: `decision N:` appended to the item and carried under the
   Report's `decisions needed` — only what dev-cycle raises there: a `SHOW_STOPPER`, a
-  scope change or reversed operator decision, the cap, a blocked item, a fable wait.
+  scope change or reversed operator decision, the cap, a blocked item, a fable wait, a
+  spike's blocking open questions.
 - **Terminal action**: `git merge --no-ff` into local `main`; the push is yours, after
-  the Report (Critical). First-start dirt never blocks it (`references/first-start.md`).
-- **Series home**: the librarian row of the `dev-cycle` skill's `references/bindings.md`.
+  the Report (Critical). An item naming another base merges into that base instead, with
+  the main checkout on it, and is never pushed. First-start dirt never blocks a merge
+  (`references/first-start.md`).
+- **Series home**: your scratchpad (`.claude-sandbox/` is outside every Scope).
 
 Dispatch a dependency group in one message, one cycle per item, so they run in parallel;
 a later group starts only after everything it depends on has landed. Fable running out
