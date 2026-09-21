@@ -36,3 +36,5 @@ From the e832 review (2026-09-19), all low/nit, no data loss: (1) _append_sectio
 - [low] test helper owned_handoff_lines has a simpler fence scanner than production; [nit] format.md:136 long line.
 - Live-store equivalence held: 10 sampled items byte-identical under base and head; no live item contains a fence.
 - dispatch: implementer opus — fix round 1 (resume, same tier)
+- round 1 fix f38ef29: unclosed opener is plain text; one-line guard on handoff/block/set/note/add; helper uses _heading_flags. Open: backlog-yaml import multi-line values.
+- dispatch: reviewer opus — round 2 (resume)

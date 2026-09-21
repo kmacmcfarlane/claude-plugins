@@ -35,3 +35,5 @@ Peer report 2026-09-20 from agent-harness-fc (their item quote-three-argument-hi
 - [medium] librarian-mode's own review-checklist §2 and both agent briefs lack the rule. Resolution: librarian-mode's checklist and agent-brief become tombstones pointing at dev-cycle's in F2 (fb09), so 68ea lands AFTER F2 and the single copy carries the lint; the dev-cycle agent-brief "reject on sight" rule is added in this fix round.
 - [low] review-checklist:178 — frontmatter without a closing --- passes silently: FAIL "frontmatter not closed".
 - dispatch: implementer opus — fix round 1 (resume, same tier)
+- round 1 fix aec45c8: agent-brief rule + "frontmatter not closed" FAIL; medium resolved by F2 tombstones (landed f39a146).
+- dispatch: reviewer opus — round 2 (resume)

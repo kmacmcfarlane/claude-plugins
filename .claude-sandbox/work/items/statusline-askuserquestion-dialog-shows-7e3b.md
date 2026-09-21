@@ -2,12 +2,11 @@
 id: statusline-askuserquestion-dialog-shows-7e3b
 title: "statusline: AskUserQuestion dialog shows no status line - verify and document"
 type: spike
-status: doing
+status: done
 priority: 3
-owner: unknown@360f41058e92
-claimed: 2026-09-21T18:07Z
 created: 2026-09-20
 updated: 2026-09-21
+closed: 2026-09-21
 refs:
   - "peer: agent-harness-fc (uds 160.sock)"
 ---
@@ -22,6 +21,10 @@ Peer relay 2026-09-19/20 from agent-harness-fc, operator: 'The AskUser question 
 
 ## Notes
 - 2026-09-21 claimed by unknown@360f41058e92
+- 2026-09-21 done: .claude-sandbox/investigations/7e3b-dialog-statusline/ (follow-ups filed)
 
 ## Dispatch
 - dispatch: researcher sonnet — default (verify a harness behaviour; no code); series .claude-sandbox/investigations/7e3b-dialog-statusline/
+
+## Result
+- research DONE (sonnet): .claude-sandbox/investigations/7e3b-dialog-statusline/00_findings.md. [V] documented harness behaviour: the status line "temporarily hides during certain UI interactions, including autocomplete suggestions, the help menu, and permission prompts"; no override setting. Issues #21349 (closed completed, no fix linked), #26847 (dup), #30232 (not_planned) — no maintainer reply. Plugin-side workaround exists in principle: PreToolUse / PermissionRequest fire as the dialog opens and a hook may return a terminalSequence (OSC 0/2 title) the harness emits — unprototyped [U]. Known-limitation note text drafted in the series; a +1 comment on #21349 drafted, not posted.

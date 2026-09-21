@@ -35,3 +35,5 @@ From 5e68 (decision 10 consistency, 2026-09-19): CLAUDE_KIT_CONTEXT_WINDOW (lib_
 - [high] invalid canonical (e.g. "1m") beside a valid alias disables the pin → mirror on → can hard-block where base could not (false-block class). Fix: first VALID name wins (validator in env_setting); flip test_invalid_canonical_pin... to pinned/rc 0; document in operator-playbook; same for LEDGER_EVERY (no ValueError).
 - [medium] test_window_mirror leaks a host pin / CONTEXT_GUARD_DERIVE=off (window() reads os.environ): 3 failures with either pin exported. Fix: scrub os.environ in Base setUp (or pass environ into window()); re-run suite with both pin names and DERIVE=off exported.
 - dispatch: implementer opus — fix round 1 (resume, same tier)
+- round 1 fix 09c5b10: first VALID name wins (validators), window()/_inferred() take caller environ, test env scrubbed; 415 OK with each pin/DERIVE exported.
+- dispatch: reviewer opus — round 2 (resume)
