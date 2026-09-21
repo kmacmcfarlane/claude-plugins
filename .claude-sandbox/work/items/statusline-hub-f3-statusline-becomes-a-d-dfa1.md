@@ -43,3 +43,15 @@ d193 07 § F3. statusline declares statusline-hub in plugin.json dependencies (p
 - open: fresh-machine race (footer at session 3); disabled footer lingers ≤14 days; context-guard rehydrate.py statusline_notice counts the hub's data dir as statusline; context-guard statusline.py:52 still names /install-statusline; framework auto-install of the hard dep unverified on 2.1.277 (#88663).
 - next (after the hold lifts): reviewer opus (fable-signal fallback) — settings handover + a hard dependency.
 - dispatch: reviewer opus — rule 4; fable signal (settings/ownership handover): fable unavailable, fallback (post-checkpoint #4)
+
+## Review round 1 — NEEDS_CHANGES (opus) at 7f3d125
+- [high] #88663 reproduced on 2.1.278: `plugin update statusline` does not pull the hub → footer lost once a stale entry drops; no notice. Fix: statusline SessionStart detects no statusline-hub@ install record and says once (stamped) to re-run `/plugin install statusline@kmacmcfarlane`; test + README/SKILL note.
+- [medium] hub heal treats kind `statusline` as foreign → permanent `yielded` after a stale write-back; repoint when statusline_hooked().
+- [medium] context-guard + dev-flow descriptions (plugin.json + marketplace) still say soft dep statusline; catalog says statusline-hub.
+- [medium] context-guard rehydrate.py:403-440 stale comment; `statusline-` prefix matches `statusline-hub-*`.
+- [medium] context-guard statusline.py:51-52 docstring credits statusline's SessionStart.
+- [medium] kit-dev update-kit repo-map.md:93-95 stale (owner, installer; hub missing).
+- [medium] checkpoint design-rationale.md:129 stale owner.
+- lows: fresh-machine race (skip wait when installed statusline has no hooks/owner.py); 14-day linger (documented); README team enabledPlugins snippet list both; refusal fallback text fragile.
+- verified live: fresh `plugin install statusline@` brings the hub (+1 dependency).
+- dispatch: implementer opus — fix round 1 (fresh agent; round-1 implementer lost at compaction; tier kept, fable-signal fallback)

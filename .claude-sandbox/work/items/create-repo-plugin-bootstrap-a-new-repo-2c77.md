@@ -46,3 +46,15 @@ answer 43: (a) new plugin create-repo; new-project-from-template stays, cross-po
 - lows: kit-dev pointer should name /create-repo:create-repo (model can't invoke it); template branch re-reads REPO/NAME and trackInHost from what new-project-from-template created; "sparse (only trackInHost set)"; quote the attach hint path; worktree-mode caveat; catalog notation "repo" vs "tool"; commit layout.
 - next: fix round 1 (resume the implementer) once the hold lifts.
 - dispatch: implementer opus — fix round 1 (fresh agent: the round-1 implementer did not survive compaction; tier kept)
+- fix round 1 DONE_WITH_CONCERNS 1af679b (opus): worktree-safe parent (git-common-dir / $CLAUDE_SANDBOX_PROJECT_DIR); purpose + REPO via quoted heredoc or Write-tool file, NAME pattern-checked; dev-flow declared soft (plugin.json, marketplace, catalog). Lows fixed: kit-dev pointer names /create-repo:create-repo, template re-read, sparse wording, attach-hint quoting, worktree caveat, catalog "repo". Declined: commit layout (carried in the merge message).
+- scope widened (librarian): README `### create-repo` section gets the dev-flow soft-dep sentence (agreement with the row); same implementer resumed.
+- 1a8e49d README section sentence (DONE)
+- dispatch: reviewer opus — review r2 (rule 4)
+
+## Review round 2 — NEEDS_CHANGES (opus) at 1a8e49d
+- round-1 mediums 1 and 3 fixed (verified in 5 locations; dev-flow declared consistently); medium 2 fixed for the purpose only.
+- [medium] SKILL.md Steps 2-6 use "$REPO" but the heredoc rule lives only in launch-command.md (Step 7); fix: rule in Important + Step 2.4, and reject REPO with $, backtick, ", \ or newline after confirmation.
+- lows: newline in --path defeats the heredoc (reproduced); try --git-common-dir before $CLAUDE_SANDBOX_PROJECT_DIR (Paseo worktree); Edit missing from allowed-tools; NAME accepts . .. leading -; fish quoting nit.
+- dispatch: implementer opus — fix round 2 (same agent resumed)
+- fix round 2 DONE 6e79159 (opus): REPO/NAME character check before any shell (REPO absolute, safe set incl. no quote; NAME leading alnum); git-common-dir first; Edit in allowed-tools; fish note. All 5 lows fixed.
+- dispatch: reviewer opus — review r3 (same reviewer resumed)

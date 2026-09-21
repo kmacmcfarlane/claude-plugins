@@ -28,3 +28,8 @@ Operator 2026-09-20: an item with open questions should sit in a 'grooming' stat
 ## Notes
 - 2026-09-21 claimed by unknown@360f41058e92
 - dispatch: implementer opus — executable logic (wi.py) + format doctrine
+
+## Implementer result
+- round 1 DONE 55249bb (opus): grooming status + groom/ungroom, needs-input (decision N without answer N, line-start only, fences ignored; includes parked), ls --dep, prime GROOMING count + HOLD line; backlog-yaml bridge maps GROOMING both ways. Deviations: default ls includes grooming; groom supersedes park and keeps a blocked reason. 146 tests; TestGrooming fails 17 without the change.
+- open: librarian-mode idle-turn.md still greps for decisions → follow-up item filed.
+- dispatch: reviewer opus — rule 4
