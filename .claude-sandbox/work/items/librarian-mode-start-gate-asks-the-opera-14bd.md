@@ -2,14 +2,13 @@
 id: librarian-mode-start-gate-asks-the-opera-14bd
 title: "librarian-mode: start gate asks the operator to /rename the session '<repo> - librarian'"
 type: feature
-status: doing
+status: done
 priority: 2
 deps:
   - librarian-mode-leans-on-dev-cycle-07c3-f-fb09
-owner: unknown@360f41058e92
-claimed: 2026-09-21T18:37Z
 created: 2026-09-19
 updated: 2026-09-21
+closed: 2026-09-21
 refs:
   - "peer: mcfacehead-plugins librarian (uds 324.sock)"
 ---
@@ -24,6 +23,7 @@ Peer idea 2026-09-19 from the mcfacehead-plugins operator via the mcfacehead-plu
 
 ## Notes
 - 2026-09-21 claimed by unknown@360f41058e92
+- 2026-09-21 done: 3e0d977
 
 ## Dispatch
 - dispatch: implementer opus — librarian behaviour; judgement (canonical name form)
@@ -31,3 +31,9 @@ Peer idea 2026-09-19 from the mcfacehead-plugins operator via the mcfacehead-plu
 ## Implementer result
 - round 1 DONE 946c533 (opus): references/session-name.md (canonical `<repo> - librarian`, repo = basename of MAIN; reads only this session's registry file by CLAUDE_PID, trusted when sessionId matches); start = Rehydrate → name gate (hard on mismatch, soft when unobservable) → idle turn; status prints the name; idle-turn.md ordering. SKILL.md 13,604 chars.
 - dispatch: reviewer opus — rule 4
+
+## Review round 1 — CLEAR (opus) at 946c533
+- registry read + trust check verified in this sandbox (mismatch: "claude-kit librarian"); basename(MAIN) right from worktrees; no rule lost in the three cuts.
+- lows carried to 1dab: decline of the rename lasts only for the conversation (record it, or say until /clear); "Dispatch nothing" should not stall cycles in flight; SKILL.md Idle turn "Only an operator hold" now has a second stopper (the gate); "show the line once more" → each message until matched or declined.
+## Landed
+- 3e0d977.

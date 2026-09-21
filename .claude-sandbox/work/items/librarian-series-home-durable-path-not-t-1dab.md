@@ -15,3 +15,7 @@ Noticed by the librarian at the F2 landing (2026-09-21). librarian-mode binds Se
 - next: —
 - blocked: —
 - learned: —
+
+## Carried from 14bd review (lows) — widen this item to include them (same file set)
+- session-name.md: record the operator's "keep the name" decline where Rehydrate reads it (or say it lasts until /clear); scope "Dispatch nothing" to new idle-turn dispatch, not cycles in flight; "show the line once more" → each message until matched or declined.
+- SKILL.md § Idle turn: name the rename gate as the second thing that holds dispatch (budget: SKILL.md is at 13,604 chars).

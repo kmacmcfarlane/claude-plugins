@@ -25,3 +25,8 @@ Peer request 2026-09-19 (claude-sandbox librarian, relayed via session 'implemen
 
 ## Dispatch
 - dispatch: implementer opus — executable logic (wi.py)
+
+## Implementer result
+- round 1 DONE a7d7969 (opus): parked status + parked: reason; park/unpark (unpark → todo, or blocked if a blocked: reason remains); migrate-parked (dry run unless --apply); excluded from next and default ls; prime PARKED <n>; claim refuses parked; bridge exports blocked "PARKED: …" and imports it back as parked. 108 tests; 57 fail on main.
+- follow-ups after landing: idle-turn.md to read status: parked; message the claude-sandbox librarian (it runs migrate-parked); b020 follows the same pattern; wi release on a parked item.
+- dispatch: reviewer opus — rule 4
