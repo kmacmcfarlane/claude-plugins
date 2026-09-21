@@ -135,7 +135,11 @@ A consumer must degrade when a verb is absent — never assume.
 ## Canonical state model
 
 `todo` · `doing` (with optional stage `implement` / `review` / `testing` / `uat` /
-`uat_feedback`) · `blocked` · `done` · `dropped`.
+`uat_feedback`) · `blocked` · `parked` · `done` · `dropped`.
+
+`parked` (deliberately deferred, never ready) has no `backlog.yaml` counterpart; it exports
+as `blocked` with a `blocked_reason` prefixed `PARKED: `, and a blocked story with that
+prefix imports as `parked` (see the Parked section of `references/format.md`).
 
 The mapping between this model and `backlog.yaml` is not restated here — it is **executable
 and canonical in `scripts/wi.py`**: `STATE_TO_BACKLOG`, `BACKLOG_TO_STATE`, and

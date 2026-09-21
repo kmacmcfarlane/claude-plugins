@@ -73,7 +73,7 @@ except `claimed` (ISO-8601 UTC to the minute).
 | `id` | `<slug>-<4hex>` | equals the filename stem; immutable; hash suffix from title+time+random so branches never collide |
 | `title` | one line, ≤120 chars | |
 | `type` | `task bug feature refactor workflow chore epic spike` | default `task`; drives backlog-yaml prefix and bugs-first |
-| `status` | `todo doing blocked done dropped` | the only authority on state |
+| `status` | `todo doing blocked parked done dropped` | the only authority on state |
 | `stage` | `implement review testing uat uat_feedback` | pipeline sub-state; meaningful only when `doing` |
 | `priority` | int 0–4, 0 highest | default 2; ↔ backlog.yaml 90/70/50/30/10 |
 | `tags` | flow list `[a, b]` | |
@@ -81,7 +81,8 @@ except `claimed` (ISO-8601 UTC to the minute).
 | `parent` | id | grouping only, no blocking |
 | `owner` | free string, e.g. `user@host` | set by `claim`, cleared by `release`/`done` |
 | `claimed` | UTC minute | stale test in `next --stale` |
-| `blocked` | string | required iff `status: blocked` |
+| `blocked` | string | required iff `status: blocked`; kept while parked, so `unpark` returns to `blocked` |
+| `parked` | one line | required iff `status: parked`; the deferral reason (set by `park`, cleared by `unpark` and `block`); `lint` flags it on a todo/doing/blocked item, and it stays on a dropped/done item as history |
 | `feedback` | one line | pipeline review feedback |
 | `mode` | `autonomous interactive mixed` | backlog's `ticket_mode` |
 | `complexity` | `low medium high` | pass-through |
@@ -113,6 +114,53 @@ Sets exactly one front-matter field. `id` and `created` are immutable (exit 1).
   `--force` does not bypass it. The item is then schema-validated as a whole;
   a value that breaks it (bad `status`, priority out of range, …) exits 3 and
   nothing is written.
+
+## Parked
+
+`parked` is deliberate deferral — "not now, on purpose" — where `blocked` is
+"cannot proceed". `wi park <id> "<reason>"` sets `status: parked` and
+`parked: <reason>`, releases any claim (`owner`, `claimed`, `stage`) and
+appends a dated Notes line; it refuses a done or dropped item. A parked item
+is never ready: `next` (every mode) leaves it out and counts it in its footer
+and `counts.parked`; `prime` shows one `PARKED <n>` line, never a list and
+never under BLOCKED; `ls` omits it by default and `ls --status parked` lists
+it. A dep on a parked item does not resolve.
+
+`wi unpark <id>` returns the item to `todo` — or to `blocked` when it still
+carries a `blocked:` reason. It never returns to `doing`: the claim was
+released on park, and whoever held it is not assumed to still be working it.
+To abandon a parked item, `wi done <id> --drop`, then `wi archive` as usual.
+
+`wi park` is the only way in. `wi set <id> status parked` exits 1 and points
+at `park`, since set would record no reason and release no claim. `wi set <id>
+status <other>` on a parked item counts as an unpark: the `parked:` reason is
+cleared and a Notes line is added. `wi release` never unparks. On a parked
+item it clears only `owner`/`claimed`/`stage`, so an agent cleaning up a
+claim the operator has since parked leaves the park in place.
+
+Before `parked` existed, deferral was spelled `wi block <id> "PARKED: …"`.
+`wi migrate-parked` lists the `blocked` items whose reason starts with
+`PARKED` (case-sensitive, a whole word) and what their parked reason would
+be. `--apply` converts them: the parked reason is the text without the
+prefix, `blocked:` is cleared, the claim is released, and a Notes line is
+added. Nothing is written without `--apply`. The prefix is `PARKED`, then an
+optional parenthesised group, then any `:`/`-`/`—` separator. The group is
+provenance, not reason: `PARKED (operator 2026-09-19): Paseo undecided` parks
+with reason `Paseo undecided`. The migration's Notes line keeps the whole
+original reason, group included (`parked (migrated from blocked: PARKED
+(operator 2026-09-19): Paseo undecided)`). A prefix with nothing after it
+keeps the whole text as the reason.
+
+The backlog-yaml bridge has no deferred state to map to: a parked item
+exports as `status: blocked` with `blocked_reason: "PARKED: <reason>"`, and
+importing a blocked story whose reason starts with `PARKED` yields a parked
+item — the same prefix rule as `migrate-parked`. The park and its reason
+round-trip. A `blocked:` reason kept under a park does not travel: the
+export carries only `PARKED: <reason>`. `import --update` keeps the store's
+own `blocked:` on a parked story, but a fresh import cannot restore it, so
+that item's `unpark` goes to `todo`. A provenance group, if any, is dropped
+from the imported reason. A ralph run over the exported backlog sees the
+item as blocked, never as work.
 
 ## Body sections
 
