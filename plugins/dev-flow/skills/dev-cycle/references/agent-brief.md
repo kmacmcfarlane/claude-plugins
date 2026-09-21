@@ -68,6 +68,9 @@ Rules that reviewers reject on sight:
   `name`. No README.md inside a skill folder.
 - No angle brackets in `name` or `description` (fine in `argument-hint`); description under
   1024 characters, what + when + triggers.
+- `argument-hint` is always a double-quoted string, since unquoted a value starting with `[`
+  is a YAML flow sequence: a list, or with a second `[...]` group a parse error that drops
+  the skill in strict loaders.
 - A change to the marketplace's shape (plugin added/moved/retired, skill added to a plugin)
   updates the README catalog and the CLAUDE.md layout block in the SAME commit.
 - Hooks, status lines and settings writes belong only in the plugin whose stated aim is

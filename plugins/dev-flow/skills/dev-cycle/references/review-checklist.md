@@ -178,6 +178,7 @@ except ImportError:
     except ImportError: print('SKIP: no strict YAML parser'); sys.exit()
 text = open(sys.argv[1]).read()
 if not text.startswith('---\n'): print('FAIL: no frontmatter'); sys.exit()
+if '\n---' not in text[4:]: print('FAIL: frontmatter not closed'); sys.exit()
 try: fm = load(text[4:].split('\n---', 1)[0])
 except Exception as e:
     m = getattr(e, 'problem_mark', None); at = f' at frontmatter line {m.line + 1}' if m else ''
