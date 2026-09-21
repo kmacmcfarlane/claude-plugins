@@ -25,7 +25,8 @@ few questions, each asked once: the cycle brief, the checks, how to land.
 - **Every Agent call carries a `model`.** An unrouted sub-agent inherits your model, the
   dearest tier (Step 2).
 - **One target, one worktree, one cycle.** Several items are several cycles; running them
-  in parallel is the caller's business.
+  in parallel, and taking the next ready one when this lands, is the caller's business
+  (`librarian-mode`'s Idle turn); a standalone run ends at its Report.
 - **Bindings first.** Step 0 resolves every binding before any dispatch, except the
   terminal action, which a standalone run asks at Land. A caller's handoff missing one
   is a setup error: stop and name it.
