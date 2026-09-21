@@ -126,11 +126,16 @@ commits on top of <reviewed sha>; never amend, rebase, or squash — the reviewe
 that sha. Report every new sha under COMMIT. A finding against a commit subject or
 message is always low (the fix-loop rule): never rewrite history for it — no reset, amend
 or rebase; decline it under DECLINED with "carried in the merge message".
-The one exception: a message that leaks a secret or credential is critical. Only then is
-the branch rebuilt: `git reset --soft <merge-base sha pasted here by the orchestrator>` and
-one recommit with every message clean — never a rebase, never onto the base branch. That
-overrides the new-commits rule above; the no-rebase prohibition below still holds.
-Never write the secret's value anywhere: name it by commit sha, file and key only.
+The one exception: a secret or credential in any committed content on this branch — a file
+in any commit, even one a later commit removed, or any message — is critical. Only then is
+the branch rebuilt: `git reset --soft <merge-base sha pasted here by the orchestrator>`,
+the secret taken out of any file that still holds it, and one recommit with every message
+clean — never a rebase, never onto the base branch. That overrides the new-commits rule
+above; the no-rebase prohibition below still holds. Before reporting, confirm
+`git log -p <merge-base sha>..HEAD` holds no trace of it, searching by key name or shape.
+Never write the secret's value anywhere — files, messages, commands, report: name it by
+commit sha, file and key only. Never call the credential safe; rotating it is the
+operator's call.
 
 <conditional — merge-conflict round only: include when Land's merge conflicted:>
 Your branch conflicts with <base> (the conflicting paths, from the aborted merge: <list>).

@@ -68,8 +68,8 @@ variant in `review-brief.md`).
 ## A bad commit subject
 
 A finding against a commit's subject or message is always graded **low**, unless the
-message leaks a secret or credential (below): history is not rewritten to fix it, so the
-implementer may always decline it (reason: "carried in the merge message"). This is the
+message leaks a secret or credential (§ A leaked secret): history is not rewritten to fix
+it, so the implementer may always decline it (reason: "carried in the merge message"). This is the
 one statement of that rule; the briefs point here.
 
 - **Record it.** Append `subject-fix: <sha> <corrected subject>` to the record sink.
@@ -85,19 +85,32 @@ the reviewer diffs from the reviewed sha, and once the base has moved since the 
 branched, a soft reset onto it stages the inverse of the base's newer commits into the
 next commit.
 
-**The exception: a secret or credential in a commit message** is critical, not low. The
-unmerged worktree branch is rebuilt without it before Land — the one case where the
-branch's history is rewritten, safe only because nothing has been merged or pushed yet.
-Re-dispatch the implementer with the merge-base sha pasted into the brief
-(`git -C "$MAIN" merge-base <base> worktree-<name>`): it rebuilds `worktree-<name>` by
-`git reset --soft <merge-base>` and a recommit with every message clean — never a
-rebase, never onto the base itself. The re-review uses the rebuild case of
-`review-brief.md` § Re-review variant: diff from the merge-base, and the old reviewed tree
-against the new.
+## A leaked secret
 
-- **Never the value.** The secret is recorded and reported by commit sha, file and key
-  name only — in the finding, the record sink (an item body may be committed and pushed)
-  and the Report alike.
-- **Rotation is a scope change.** Rotating a leaked credential is outside the change, so
-  it goes to the decision channel under SKILL.md § Step 4's "changes the scope" arm; the
-  rebuild itself is resolved inside the loop.
+A secret or credential in **any committed content on the branch** is critical: a file in
+any commit — even one a later commit removes — or any commit message. A removing commit is
+no fix, since the `--no-ff` merge at Land carries every commit; the branch history must be
+free of it before Land. A leak in a message is one case of this rule, not a separate one.
+
+1. **Check its reach first.** For each commit holding it,
+   `git -C "$MAIN" branch -a --contains <sha>` must show only `worktree-<name>`, and
+   `git -C "$MAIN" tag --contains <sha>` nothing. Anything else — a remote-tracking branch, another
+   branch, a tag, a push known to have happened — puts it out of the cycle's hands: do not
+   rebuild or land; block the item (when there is one) and raise it through the decision
+   channel at once.
+2. **Rebuild the branch** — the one case where its history is rewritten, safe only because
+   nothing has been merged or pushed. Re-dispatch the implementer with the merge-base sha
+   pasted into the brief (`git -C "$MAIN" merge-base <base> worktree-<name>`): it runs
+   `git reset --soft <merge-base>`, takes the secret out of any file that still holds it,
+   and makes one recommit with every message clean — never a rebase, never onto the base
+   itself. The re-review uses the rebuild case of `review-brief.md` § Re-review variant:
+   the whole history from the merge-base, and the old reviewed tree against the new.
+3. **Never the value.** The secret is named by commit sha, file and key only — in the
+   finding, the record sink (an item body may be committed and pushed), commit messages,
+   the Report, and any search for it (search by key name or a secret-shaped pattern, never
+   by the value).
+4. **Rotation is a scope change.** Rotating a leaked credential is outside the change: raise
+   it through the decision channel under SKILL.md § Step 4's "changes the scope" arm; the
+   rebuild itself is resolved inside the loop. The cycle never reports a credential as
+   safe — the rebuild clears the branch, not the credential, and old objects stay in the
+   local repository until pruned.
