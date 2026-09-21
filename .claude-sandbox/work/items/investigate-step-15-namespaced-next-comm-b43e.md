@@ -28,3 +28,7 @@ Operator request 2026-09-20 relayed by peer opencode-d0, from a finished investi
 
 ## Dispatch
 - dispatch: implementer opus — judgement (report format; conditional plugin check)
+
+## Implementer result
+- round 1 DONE_WITH_CONCERNS ec1e878 (opus): Next: list of three one-line options; checkpoint line only when context-guard:checkpoint is in the session skill list. +61 words.
+- concern: dev-flow now mentions context-guard (as dev-cycle model-routing and librarian ending-the-session already do) but the catalog declares no dev-flow → context-guard soft edge (principle 4). Librarian: widen scope before review — declare it.

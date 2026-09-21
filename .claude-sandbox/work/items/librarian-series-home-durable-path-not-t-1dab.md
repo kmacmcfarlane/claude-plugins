@@ -31,3 +31,11 @@ Noticed by the librarian at the F2 landing (2026-09-21). librarian-mode binds Se
 ## Implementer result
 - round 1 DONE 57947df (opus): Series home = $MAIN/.claude-sandbox/investigations/<slug>/ (tooling state like the store, not a custody edit); bindings.md librarian row; session-name.md: gate stops only new dispatch, line shown each message, decline recorded as a closed item with "name kept: <name>" (grep survives /clear); idle-turn.md names the rename gate. SKILL.md 13,644 chars.
 - dispatch: reviewer opus — rule 4
+
+## Review round 1 — NEEDS_CHANGES (opus) at 57947df
+- trims drop no rule; decline mechanism survives archive.
+- [medium] "dispatched edits never touch .claude-sandbox/" is false — plan agents write the series there; say dispatched commits never include .claude-sandbox/, agents write only the series there.
+- lows: idle-turn "only … besides" wording; SKILL.md rename gate "caps" wording; push line colon; session-name printf/grep quoting of a free-text name.
+- dispatch: implementer opus — fix round 1 (resume)
+- round 1 fix c07398f: accurate Series-home write/commit wording in SKILL.md and bindings.md; hold/gate wording; push line; single-quoted decline name. SKILL.md 13,650.
+- dispatch: reviewer opus — round 2 (resume)
