@@ -35,6 +35,10 @@ plugins/
     hooks/             # statusline, sensor, owner, session_start (first-run install, takeover, self-heal, prune) + hooks.json + unit tests
     skills/
       install-statusline/  # installer script, references/sensor-contract.md
+  statusline-hub/      # The status-line slot, shared (tee today; the dispatcher later)
+    hooks/             # tee.py (stdin -> sensor record; vendored writer) + unit tests (no hooks.json yet)
+    skills/
+      statusline-hub/  # recipes: ccstatusline Custom Command, Starship custom, shell wrapper
   work-items/          # Repo-durable work items + the work-source provider interface
     skills/
       work-items/      # wi CLI, references/{format,provider-interface}.md, tests/
@@ -96,6 +100,7 @@ current home is the real home, and is where files go.
 |---|---|---|
 | Survive the finite context window (gate, checkpoint, rehydration, token-spend report) | `plugins/context-guard/` | `plugins/context-guard/` — **landed** (Phase 1) |
 | Always-on status line (context left, plan usage, model, session name) | `plugins/statusline/` | `plugins/statusline/` — **landed** (3c48) |
+| The status-line slot, shared (the sensor-record tee today; the dispatcher that owns the slot later) | `plugins/statusline-hub/` | `plugins/statusline-hub/` — **landed** (F1, bfe2) |
 | Plan-before-code development flow, and a standing librarian that takes custody of a repo's work | `plugins/dev-flow/` | `plugins/dev-flow/` — **landed** (Phase 3) |
 | Repo-durable work items / work-source interface | `plugins/work-items/` | `plugins/work-items/` — **landed** (Phase 4) |
 | Isolated execution (containers; the checkout/worktree convention and its guard) | `plugins/sandbox/` | `plugins/sandbox/` — **landed** (Phase 5) |

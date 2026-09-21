@@ -171,7 +171,8 @@ def state_path(session_id):
 
 def sensor_path(session_id):
     """The statusline plugin's sensor record for this session (read-only here;
-    the status line is its only writer). The dir is not created."""
+    written by the status line, or by the statusline-hub tee). The dir is not
+    created."""
     return os.path.join(_base_dir(), "statusline", "sensor",
                         safe_sid(session_id) + ".json")
 

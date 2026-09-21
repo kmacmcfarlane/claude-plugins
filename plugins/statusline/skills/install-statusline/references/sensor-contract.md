@@ -24,14 +24,16 @@ No id can name a path outside its directory.
 
 ## 2. The sensor record (status line → any reader)
 
-- Path: `CFG/statusline/sensor/<safe_sid>.json`. The status line is its **only writer**. The
-  directory is created 0700 and files are 0600.
+- Path: `CFG/statusline/sensor/<safe_sid>.json`. It has two writers, both with the rules below: the
+  status line, and `statusline-hub tee` (the `statusline-hub` plugin's command, for a status
+  line drawn by another renderer). The directory is created 0700 and files are 0600.
 - Write: a unique temp file in the same directory (`.<safe_sid>.<pid>.<hex>.tmp`, created
-  exclusively), then `os.replace`. A reader never sees a torn file. There is no lock: with one
-  writer none is needed. Each render merges from the record it read (a render without an
-  `exact` block keeps the stored one; likewise `rate_limits`), and skips its write when the
-  record on disk carries an `at` newer than its own (up to 60 s ahead), so an older render
-  never regresses a newer one.
+  exclusively), then `os.replace`. There is no lock: a reader never sees a torn file;
+  interleaved writes are last-writer-wins, and the `at` check stops an older render that
+  finds a newer record on disk. Each render merges from the record it read (a render without
+  an `exact` block keeps the stored one; likewise `rate_limits`), and skips its write when the
+  record on disk carries an `at` newer than its own (up to 60 s ahead). Two renders that read
+  before either writes can still land out of order; the next render corrects it.
 - Shape:
 
   ```json
