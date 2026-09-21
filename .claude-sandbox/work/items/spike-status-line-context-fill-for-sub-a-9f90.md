@@ -15,8 +15,8 @@ refs:
 Operator 2026-09-21: our status line does not show the context fill for sub-agents when the operator switches to them in the Claude Code TUI. Is it possible? Acceptance: sourced findings (docs, changelog, issues, and read-only strings in the 2.1.27x binary) on (1) whether the statusLine command runs, and with what stdin, while a sub-agent / teammate view is focused; (2) whether the payload identifies the viewed agent (agent_id, transcript path, context_window) or only the main session; (3) any other source for a sub-agent's live depth (sidechain transcript usage lines — context-guard already scans sidechains); (4) a recommendation: feasible now (and how, in statusline / statusline-hub), feasible by deriving from the sidechain transcript, or not possible (known limitation + upstream issue).
 
 ## Handoff
-- doing: —
-- next: —
+- doing: research agent (opus) running
+- next: report the answer; file follow-ups
 - blocked: —
 - learned: —
 

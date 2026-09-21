@@ -1,13 +1,12 @@
 ---
 id: wi-front-matter-escape-amplification-cor-0401
-title: "wi: front-matter escape amplification corrupts values with : and \\\\\\\\\\\\\\\" on every rewrite"
+title: "wi: front-matter escape amplification corrupts values with : and \" on every rewrite"
 type: bug
-status: doing
+status: done
 priority: 1
-owner: unknown@360f41058e92
-claimed: 2026-09-21T19:08Z
 created: 2026-09-21
 updated: 2026-09-21
+closed: 2026-09-21
 ---
 
 Found by the ca20 reviewer (2026-09-21), pre-existing on main: a value containing both ':' and '"' gains backslashes on every rewrite — title: "x: \"y\"" becomes "x: \\\"y\\\"" after one unrelated 'wi set priority'. The parser does not unescape what the writer escapes: silent data loss that compounds; migrate and export propagate it. Acceptance: emit and parse are exact inverses for every scalar (round-trip property test over quotes, backslashes, colons, #, leading/trailing spaces, unicode); existing items already amplified are left readable (no crash) and a one-time repair is documented or offered; e832/23a8 invariants hold.
@@ -23,6 +22,7 @@ Found by the ca20 reviewer (2026-09-21), pre-existing on main: a value containin
 
 ## Notes
 - 2026-09-21 claimed by unknown@360f41058e92
+- 2026-09-21 done: 58e89c1
 
 ## Dispatch
 - dispatch: implementer opus — executable logic (wi.py parser/writer), data loss
@@ -53,3 +53,11 @@ Found by the ca20 reviewer (2026-09-21), pre-existing on main: a value containin
 ## Review round 3 — NEEDS_CHANGES (opus) at 05d9281
 - [medium] lint now fails on a value wi itself accepted ($'tab\there' via add/set): the writer must reject control chars (like line breaks) so writer and lint agree; nit docstring line length.
 - dispatch: implementer opus — fix round 3 (resume); review round 4 is the LAST before the cap
+- round 3 fix ab42a87: writer refuses tab/control chars (exit 1, nothing written); import folds them; show/lint tolerate hand-written control chars. 132 tests.
+- dispatch: reviewer opus — round 4 (FINAL, resume)
+
+## Review round 4 — CLEAR (opus) at ab42a87
+- writer and lint agree; import folds; fuzz 0 failures; live copy reader diff = this title only.
+- low (filed): batch writes name the key but not the item when a hand-written control char blocks them.
+## Landed
+- 58e89c1. 3 fix rounds. repair-escapes --apply --id run on the live store: title restored to one layer.
