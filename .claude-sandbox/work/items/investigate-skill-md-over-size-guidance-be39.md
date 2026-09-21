@@ -18,3 +18,6 @@ Noted in the 183a and F3 reviews: investigate/SKILL.md is ~5.7k words, over the 
 
 ## Carried from 4ca4 review (lows)
 - README dev-flow table: investigate row restates the escalation test (say "broad landscape (deep-investigation)"); chain-of-verification Not-when should be its own boundary (no falsifiable content / speed over accuracy); implement row: also fans out to worktrees; investigate description: comma after "feature".
+
+## Carried from b43e review (lows)
+- investigate Step 15 options: use the typeable form with a leading slash (/dev-flow:implement, /context-guard:checkpoint, /dev-flow:dev-cycle); plainer skill-list sentence; README:87 dev-flow row "rehydrates from its manifest and ledger" → "weighs its manifest and ledger when it rehydrates".

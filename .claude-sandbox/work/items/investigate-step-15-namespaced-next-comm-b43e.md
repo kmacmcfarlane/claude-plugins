@@ -2,12 +2,11 @@
 id: investigate-step-15-namespaced-next-comm-b43e
 title: "investigate Step 15: namespaced next command, checkpoint path, sub-agent option"
 type: feature
-status: doing
+status: done
 priority: 2
-owner: unknown@360f41058e92
-claimed: 2026-09-21T18:55Z
 created: 2026-09-20
 updated: 2026-09-21
+closed: 2026-09-21
 refs:
   - "peer: opencode-d0 (uds 256.sock), operator relay"
 ---
@@ -25,6 +24,7 @@ Operator request 2026-09-20 relayed by peer opencode-d0, from a finished investi
 - ordering: investigate/SKILL.md is also touched by 183a (gates may take a numbered list) and 4ca4 (description names deep-investigation). Land them in one lane or rebase; do not dispatch them in parallel.
 - source run for reference: /home/rt/work/src/github.com/kmacmcfarlane/opencode/.claude-sandbox/investigations/opencode-supervised-mode/00_initial.md
 - 2026-09-21 claimed by unknown@360f41058e92
+- 2026-09-21 done: 24373c3
 
 ## Dispatch
 - dispatch: implementer opus — judgement (report format; conditional plugin check)
@@ -34,3 +34,8 @@ Operator request 2026-09-20 relayed by peer opencode-d0, from a finished investi
 - concern: dev-flow now mentions context-guard (as dev-cycle model-routing and librarian ending-the-session already do) but the catalog declares no dev-flow → context-guard soft edge (principle 4). Librarian: widen scope before review — declare it.
 - scope widening 9061ac0: README dev-flow Depends on + prose gains context-guard (soft; …); dev-flow plugin.json and marketplace description clause (identical).
 - dispatch: reviewer opus — rule 4
+
+## Review round 1 — CLEAR (opus) at 9061ac0
+- lows carried to be39: README:87 row says librarian "rehydrates from its manifest and ledger" (prose wording "weighs" is right); options lack a leading slash (/dev-flow:implement etc. is the typeable form); nit on the skill-list wording.
+## Landed
+- 24373c3.

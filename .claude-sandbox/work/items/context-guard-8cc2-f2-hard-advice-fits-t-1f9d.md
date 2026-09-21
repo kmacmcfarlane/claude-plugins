@@ -29,3 +29,10 @@ Port plan .claude-sandbox/investigations/8cc2-turn-gate-port (00 + 01; plan revi
 - round 1 DONE_WITH_CONCERNS 0c89988 (opus): CHECKPOINT_MIN_TOKENS = 16K lean cost + 4K margin (traced to thresholds() docstring); fit_left/no_fit/COMPACT_GUIDANCE in context_warn; advice below 20K: /clear first, /compact <guidance> second (binary read suggests /compact retries on prompt-too-long, not verified live). decide() unchanged; existing tests unedited.
 - follow-ups to F1: ending-the-session.md still runs a checkpoint on the inferred-HARD advisory even when it now says a checkpoint no longer fits; operator-playbook clause for the under-20K advice.
 - dispatch: reviewer opus — rule 4 (gate code; blocking predicate untouched)
+
+## Review round 1 — NEEDS_CHANGES (opus) at 0c89988
+- blocking decision byte-identical; 1,152-case matrix base vs head: 0 exit-code differences.
+- [medium] operator-playbook clause for the under-20K advice missing (planned in F2). lows: "guidance is all that survives" overstates; model-facing text should put "end the turn and tell the operator" first.
+- dispatch: implementer opus — fix round 1 (resume)
+- round 1 fix 7604b35: playbook clause; REMEDY wording (guidance steers what the summary keeps); model told to end the turn and tell the operator.
+- dispatch: reviewer opus — round 2 (resume)
