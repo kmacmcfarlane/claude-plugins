@@ -169,7 +169,7 @@ Report below. Your bindings:
 - **Model floor**: an operator pin — a `model: <tier>` line in the item body — for every
   role; never overridden downward.
 - **Hold**: an active hold's limit caps tier and concurrency for every dispatch; below
-  a pin, the item waits on a decision (`references/idle-turn.md`).
+  a pin or the reviewer's opus floor, the item waits on a decision (Idle turn).
 - **Record sink**: the item body, appended with Bash (not a custody file): a
   `dispatch: <role> <model> — <signal>` line before every Agent call, rounds, verdicts,
   declined findings with reasons.
@@ -194,7 +194,7 @@ When a turn would end with no agent in flight that can still produce work, do no
 it: print a **Groom** table (for the operator) and a **Work** table (ready, not parked
 or held), then dispatch the top Work items through The cycle — by dependency group,
 same-file items one at a time. Only an operator **hold** (a `hold` item, named above
-the tables) stops it, or as a limit caps it; a rate limit does not.
+the tables) stops or caps it; a rate limit does not.
 `references/idle-turn.md`.
 
 ## Report

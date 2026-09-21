@@ -49,10 +49,9 @@ Groom                                        Work
   - `blocked` with a reason that names the operator — including a free-text deferral
     such as "operator holding until spare time", which is not parked (below) and not a
     `hold` item;
-  - an unanswered `decision N:` line. It is answered once a later line carries the
-    operator's reply for that N: the canonical `answer N: <reply>` (SKILL.md § Report),
-    or any older form naming decision N with the reply ("decision 45 -> a",
-    "OPERATOR <date>: decision 31 approved; 32 a", "decision 14 ANSWERED");
+  - an unanswered `decision N:` line — one with no `answer N:` line in the same item.
+    `answer N: <reply>` (SKILL.md § Report) is the only form the scan reads, so the
+    librarian writes one whenever the operator answers;
   - once the `grooming` status exists (wi item b020), every `grooming` item.
 
   A `hold` item is on the `hold:` line, not here. Items blocked on a peer or an external
@@ -70,6 +69,14 @@ Groom                                        Work
   (<hold-id>)`.
 
 Nothing in either table: say so in one line and end the turn — that is a real idle.
+
+**One-time migration of older replies.** Replies recorded before `answer N:` existed
+take other forms — "decision 45 -> a", "OPERATOR <date>: decision 31 approved; 32 a",
+"decision 14 ANSWERED", "- 43 → (a) …" — which the scan cannot see, so their decisions
+show as unanswered. The first time the Groom table runs on a store, read each item it
+lists under `decision N:`; where the body already records the operator's reply, append
+`answer N: <that reply> (migrated)` to the item and drop the row. After that pass, every
+new reply is written as `answer N:` and no migration is needed again.
 
 ## The dispatch
 
@@ -117,19 +124,23 @@ It records three things:
   - **named items** — each one depends on the hold, so it drops out of the ready queue
     by itself: `$WI block <held-id> --on <hold-id>`. List their ids in the hold's body
     too; the `hold:` line names them;
-  - **a limit** that preserves quota — at most N agents in flight, no fable, sonnet
-    only. A limit caps and does not stop: dispatch goes on inside it. It binds every
-    dispatch while it stands — idle-turn dispatch, Intake, and every fix round
-    (SKILL.md § The cycle, the Hold binding).
+  - **a limit** that preserves quota — at most N agents in flight, no fable. A limit
+    caps and does not stop: dispatch goes on inside it. It binds every dispatch while
+    it stands — idle-turn dispatch, Intake, and every fix round (SKILL.md § The cycle,
+    the Hold binding). N counts every background agent in flight, implementers and
+    reviewers alike: one item's implementer and reviewer never run at once, but a
+    reviewer on one item and an implementer on another are two.
 - **The end condition** — an event ("until the operator says bedtime"), a time ("until
   18:00"), or `until lifted` when the operator gave none; never invent one.
 
-**A limit against a `model:` pin.** The operator's more recent instruction wins, but
-never silently: when a limit caps below an item's pin (a `model: fable` pin under "no
-fable"), that item is not downgraded. It waits — `next: held (<hold-id>)` — and the clash
-goes through the decision channel as one `decision N:` on the item, carried under the
-next Report's `decisions needed`: keep it waiting, lift the pin, or exempt it from the
-hold.
+**A limit against a floor.** The operator's more recent instruction wins, but never
+silently: when a limit caps below a floor a dispatch must meet — an item's `model:` pin
+(a `model: fable` pin under "no fable"), or the reviewer's opus floor (dev-cycle's
+Step 2 rule 4, so a "sonnet only" limit clashes on every review) — that item is not
+downgraded. It waits — `next: held (<hold-id>)` — and the clash goes through the
+decision channel as one `decision N:` on the item, carried under the next Report's
+`decisions needed`: keep it waiting, lift the pin or loosen the limit, or exempt it from
+the hold.
 
 Being `blocked`, the hold item never enters the ready queue and shows on `wi prime`'s
 BLOCKED line; Rehydrate step 3 reads it explicitly with `$WI ls --tag hold`, since that
