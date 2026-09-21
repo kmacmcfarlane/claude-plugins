@@ -35,10 +35,11 @@ plugins/
     hooks/             # statusline, sensor, owner, session_start (first-run install, takeover, self-heal, prune) + hooks.json + unit tests
     skills/
       install-statusline/  # installer script, references/sensor-contract.md
-  statusline-hub/      # The status-line slot, shared (tee today; the dispatcher later)
-    hooks/             # tee.py (stdin -> sensor record; vendored writer) + unit tests (no hooks.json yet)
+  statusline-hub/      # The status-line slot, shared: owner-mode dispatcher + embed-mode tee (hook-owning)
+    hooks/             # hub (render), registry (hooks.d), tee, owner, session_start, housekeeping (prune) + hooks.json + unit tests
     skills/
-      statusline-hub/  # recipes: ccstatusline Custom Command, Starship custom, shell wrapper
+      statusline-hub/  # embed recipes (ccstatusline, Starship, shell wrapper), references/hook-contract.md
+      install-statusline-hub/  # installer script (install, remove, replace, --status)
   work-items/          # Repo-durable work items + the work-source provider interface
     skills/
       work-items/      # wi CLI, references/{format,provider-interface}.md, tests/
@@ -81,8 +82,9 @@ Where a new or moved thing goes. The full decision tree is in
 
 1. Alters harness behavior (hooks, status line, `settings.json` writes)? → only a plugin
    whose stated aim *is* that behavior (`plugins/context-guard/` for the context system,
-   `plugins/statusline/` for the status line and its settings entry, `plugins/sandbox/` for
-   the checkout/worktree guard). Never attach it to a knowledge skill.
+   `plugins/statusline/` for the status line and its settings entry, `plugins/statusline-hub/`
+   for sharing the status-line slot, `plugins/sandbox/` for the checkout/worktree guard).
+   Never attach it to a knowledge skill.
 2. Pure stack/tool knowledge? → the expertise family, in its own marketplace (`expertise`,
    repo `claude-expertise`) — not this repo.
 3. For web-UI chat sessions rather than a coding harness? → the `chat` family (home under
@@ -100,7 +102,7 @@ current home is the real home, and is where files go.
 |---|---|---|
 | Survive the finite context window (gate, checkpoint, rehydration, token-spend report) | `plugins/context-guard/` | `plugins/context-guard/` — **landed** (Phase 1) |
 | Always-on status line (context left, plan usage, model, session name) | `plugins/statusline/` | `plugins/statusline/` — **landed** (3c48) |
-| The status-line slot, shared (the sensor-record tee today; the dispatcher that owns the slot later) | `plugins/statusline-hub/` | `plugins/statusline-hub/` — **landed** (F1, bfe2) |
+| The status-line slot, shared (the owner-mode dispatcher and its hook registry; the embed-mode tee) | `plugins/statusline-hub/` | `plugins/statusline-hub/` — **landed** (F1, bfe2; owner mode F2, b28f) |
 | Plan-before-code development flow, and a standing librarian that takes custody of a repo's work | `plugins/dev-flow/` | `plugins/dev-flow/` — **landed** (Phase 3) |
 | Repo-durable work items / work-source interface | `plugins/work-items/` | `plugins/work-items/` — **landed** (Phase 4) |
 | Isolated execution (containers; the checkout/worktree convention and its guard) | `plugins/sandbox/` | `plugins/sandbox/` — **landed** (Phase 5) |

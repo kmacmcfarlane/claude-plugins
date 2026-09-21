@@ -1,60 +1,50 @@
-"""Ownership of the `statusLine` settings entry. Stdlib only.
+"""Ownership of the `statusLine` settings entry, for the hub. Stdlib only.
 
-Used by the install-statusline skill's script (explicit install and remove) and
-by the SessionStart hook, session_start.py (first-run install, takeover,
-self-heal). Both write settings only through write_settings().
+Used by the SessionStart hook (session_start.py: first-run install, takeover,
+self-heal) and by the install-statusline-hub skill's script (explicit install,
+remove, replace). Both write settings only through write_settings().
 
-- Own entry: a command running .../plugins/data/statusline-<marketplace>/
-  current-hooks/statusline.py - the update-stable path this plugin's
-  SessionStart symlink keeps current.
-- Predecessor entry: the same shape under an earlier plugin's data dir
-  (PREDECESSORS). It is replaced without asking - recognised by its command
-  path alone, marker or not; its install markers (`statusline-installed.json`
-  in those data dirs) are retired, so an older self-heal that acts on them
-  goes inert.
+- Own entry: a command running .../plugins/data/statusline-hub-<marketplace>/
+  current-hooks/hub.py - the update-stable path this plugin's SessionStart
+  symlink keeps current.
+- The statusline plugin's entry (.../plugins/data/statusline-<marketplace>/
+  current-hooks/statusline.py): taken over only once the statusline plugin
+  has registered itself as a hub display hook (a trusted hooks.d/statusline.json
+  of kind display), so the footer keeps drawing - see session_start.py.
 - Anything else is foreign: never modified without the user's explicit consent
   (the installer's --replace).
 
-Settings writes change only the `statusLine` key: the file is resolved through
-symlinks (a dotfiles link stays a link), read afresh at write time, changed,
-and written to a temp
-file in the same dir with the original mode, then os.replace()d - never
-truncated in place. The new text splices just that key's member into the
-original text (splice_key), so a hand-formatted file keeps every other byte;
-when a splice is not provably right it falls back to re-serialising the whole
-file in its own layout (dumps_like). Nothing is written when nothing changes,
-and a read-only file is refused unless the caller has the user's consent to
-write it. Messages name paths only, never setting values.
+VENDORED. Everything between the VENDORED markers is a verbatim copy of the
+statusline plugin's hooks/owner.py (a plugin may not import another plugin's
+code): the atomic, formatting-preserving settings write (only the statusLine
+key changes; read afresh at write time; temp file + os.replace; a read-only
+file refused without consent; messages name paths, never values), the data-dir
+lookup and the owner.json marker. `sensor` is this plugin's tee module, which
+carries the same vendored helpers under the same names; PLUGIN below names
+this plugin, so the copies' docstrings that say "statusline" mean it.
+tests/test_parity.py fails when a copy drifts from its source.
 
-The own marker, <plugin data>/owner.json:
+The marker, <plugin data>/owner.json, has the statusline plugin's shape and states:
   {"v": 1, "state": "installed" | "removed" | "yielded" | "deferred" | "blocked",
    "settings": "<abs path>", "command": "<our command>", "at": <epoch s>}
-- installed: the entry in `settings` is ours; SessionStart restores it when a
-  stale session's settings write drops it, and repoints a predecessor entry.
-- removed: the user ran --remove; nothing re-adds it until they install again.
-- yielded: something else replaced our entry; left alone for good.
-- deferred: a statusLine was already set on first run; never overwritten.
-- blocked: the settings file could not be used (not valid JSON, read-only,
-  unwritable, or a project file git does not ignore); said once, retried
-  quietly every session. Extra fields: "reason", and "resume" - the state
-  whose work is retried ("installed" for a heal, "new" for a first run).
-It stores only our own command and a path.
+(blocked adds "reason" and "resume"). It stores only our own command and a path.
 """
 import json, os, re, stat, time
 
-import sensor
+import tee as sensor
 
-PLUGIN = "statusline"
-SCRIPT = "statusline.py"  # what this plugin's current-hooks link leads to
-# Plugins that shipped this status line before (takeover fingerprints).
-PREDECESSORS = ("claude-kit", "context-guard")
+PLUGIN = "statusline-hub"
+SCRIPT = "hub.py"
+STATUSLINE = "statusline"
+
+_SHAPE = r'\s*python3\s+"?(?:[^"\\]|\\.)*/plugins/data/{}-[^/"]+/current-hooks/{}"?\s*'
+OWN_RE = re.compile(_SHAPE.format(re.escape(PLUGIN), re.escape(SCRIPT)))
+STATUSLINE_RE = re.compile(_SHAPE.format(re.escape(STATUSLINE), re.escape("statusline.py")))
+
+# -- VENDORED from statusline hooks/owner.py (verbatim) --
+
 MARKER = "owner.json"
-PREDECESSOR_MARKER = "statusline-installed.json"
 MARKER_V = 1
-
-_SHAPE = r'\s*python3\s+"?(?:[^"\\]|\\.)*/plugins/data/(?:{})-[^/"]+/current-hooks/statusline\.py"?\s*'
-OWN_RE = re.compile(_SHAPE.format(re.escape(PLUGIN)))
-PREDECESSOR_RE = re.compile(_SHAPE.format("|".join(map(re.escape, PREDECESSORS))))
 
 
 class SettingsError(Exception):
@@ -154,28 +144,6 @@ def installed_by_record(path):
 
 
 _SH_SPECIAL = re.compile(r'([\\"$`])')
-
-
-def command_for(data):
-    """`python3 "<data>/current-hooks/statusline.py"`: the path in shell
-    double quotes (\\, ", $ and ` escaped), kept as UTF-8 - never \\u escapes,
-    which a shell would pass through literally."""
-    path = os.path.join(data, "current-hooks", "statusline.py")
-    return 'python3 "' + _SH_SPECIAL.sub(r"\\\1", path) + '"'
-
-
-def classify(entry):
-    """'absent', 'own', 'predecessor' or 'foreign' for a statusLine value."""
-    if entry is None:
-        return "absent"
-    cmd = entry.get("command") if isinstance(entry, dict) else None
-    if not isinstance(cmd, str):
-        return "foreign"
-    if OWN_RE.fullmatch(cmd):
-        return "own"
-    if PREDECESSOR_RE.fullmatch(cmd):
-        return "predecessor"
-    return "foreign"
 
 
 def _parse(text, path):
@@ -519,45 +487,11 @@ def write_marker(data, state, settings, command, **extra):
                             "at": time.time()}, **extra), mode=0o600)
 
 
-def predecessor_markers():
-    """Install markers left in earlier plugins' data dirs."""
-    out = []
-    base = data_root()
-    try:
-        names = sorted(os.listdir(base))
-    except OSError:
-        return out
-    for name in names:
-        if any(name.startswith(p + "-") for p in PREDECESSORS):
-            m = os.path.join(base, name, PREDECESSOR_MARKER)
-            if os.path.isfile(m):
-                out.append(m)
-    return out
-
-
 def _same_path(a, b):
     try:
         return os.path.realpath(a) == os.path.realpath(b)
     except Exception:
         return False
-
-
-def retire_predecessor_markers(only_settings=None):
-    """Delete predecessor install markers (all, or only those naming
-    `only_settings`). Returns how many were removed. Never raises."""
-    n = 0
-    for m in predecessor_markers():
-        try:
-            if only_settings is not None:
-                rec = sensor._load(m) or {}
-                if not isinstance(rec.get("settings"), str) or \
-                        not _same_path(rec["settings"], only_settings):
-                    continue
-            os.remove(m)
-            n += 1
-        except Exception:
-            continue
-    return n
 
 
 def ensure_hooks_symlink(data):
@@ -576,3 +510,67 @@ def ensure_hooks_symlink(data):
         os.replace(tmp, link)  # atomic; also replaces a dangling link
     except OSError:
         pass
+
+
+# -- end VENDORED --
+
+
+def command_for(data):
+    """`python3 "<data>/current-hooks/hub.py"`: the path in shell double
+    quotes (\\, ", $ and ` escaped), kept as UTF-8."""
+    path = os.path.join(data, "current-hooks", SCRIPT)
+    return 'python3 "' + _SH_SPECIAL.sub(r"\\\1", path) + '"'
+
+
+def classify(entry):
+    """'absent', 'own', 'statusline' (the statusline plugin's own entry) or
+    'foreign' for a statusLine value."""
+    if entry is None:
+        return "absent"
+    cmd = entry.get("command") if isinstance(entry, dict) else None
+    if not isinstance(cmd, str):
+        return "foreign"
+    if OWN_RE.fullmatch(cmd):
+        return "own"
+    if STATUSLINE_RE.fullmatch(cmd):
+        return "statusline"
+    return "foreign"
+
+
+def enabled_for(settings, plugin):
+    """Whether a settings object enables `plugin` (an `enabledPlugins` key
+    `<plugin>@<marketplace>` set to true). Reads key names only."""
+    ep = settings.get("enabledPlugins") if isinstance(settings, dict) else None
+    return isinstance(ep, dict) and any(
+        isinstance(k, str) and k.startswith(plugin + "@") and v is True
+        for k, v in ep.items())
+
+
+def statusline_markers(own=None):
+    """The statusline plugin's owner.json markers, read-only: one entry per
+    statusline data dir under <config>/plugins/data/ - the marker dict, or
+    None when that dir has none (its first run has not happened, or it lost
+    it). A dir counts when it holds current-hooks/statusline.py or a marker
+    whose command is the statusline's; this plugin's own data dir (`own`)
+    never does. Never raises."""
+    out = []
+    base = data_root()
+    try:
+        names = sorted(os.listdir(base))
+    except OSError:
+        return out
+    for name in names:
+        if not name.startswith(STATUSLINE + "-"):
+            continue
+        d = os.path.join(base, name)
+        if own and _same_path(d, own):
+            continue
+        try:
+            m = read_marker(d)
+            cmd = m.get("command") if m else None
+            if (isinstance(cmd, str) and STATUSLINE_RE.fullmatch(cmd)) or \
+                    os.path.isfile(os.path.join(d, "current-hooks", "statusline.py")):
+                out.append(m)
+        except Exception:
+            continue
+    return out

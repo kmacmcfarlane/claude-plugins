@@ -1,6 +1,6 @@
 ---
 name: statusline-hub
-description: Wire the statusline-hub tee into whatever draws your status line — a ccstatusline Custom Command widget, a Starship custom module, or a shell wrapper around an existing statusLine command — so the context depth and plan usage Claude Code hands the status line reach the sensor record that context-guard and other tools read. Use when the user says "set up statusline-hub", "tee the status line", "I use ccstatusline and context-guard can't see my depth", "make context-guard work with my status line", "add the hub to ccstatusline", "keep my status line but feed the sensor", or asks how to use the hub with Starship or their own statusLine script. Not for installing the statusline plugin's own footer (install-statusline does that).
+description: Wire the statusline-hub tee into whatever draws your status line — a ccstatusline Custom Command widget, a Starship custom module, or a shell wrapper around an existing statusLine command — so the context depth and plan usage Claude Code hands the status line reach the sensor record that context-guard and other tools read. Use when the user says "set up statusline-hub", "tee the status line", "I use ccstatusline and context-guard can't see my depth", "make context-guard work with my status line", "add the hub to ccstatusline", "keep my status line but feed the sensor", or asks how to use the hub with Starship or their own statusLine script; also when a plugin author asks how to register a display or record hook with the hub (the hook contract). Not for putting the hub itself in the slot (install-statusline-hub) or installing the statusline plugin's own footer (install-statusline).
 disable-model-invocation: false
 allowed-tools: Read, Glob
 argument-hint: "[ccstatusline | starship | wrap]"
@@ -12,21 +12,31 @@ argument-hint: "[ccstatusline | starship | wrap]"
 
 Claude Code has one status-line slot, and the JSON it hands that slot on every render is the
 only live source of exact context depth and plan usage. `statusline-hub` is the plugin for
-sharing that slot. Today it ships one piece, the **tee**: a command that reads the status-line
-JSON on stdin, writes the sensor record
-(`${CLAUDE_CONFIG_DIR:-~/.claude}/statusline/sensor/<session>.json`, the same file and
-format the `statusline` plugin writes), and prints nothing. Planned next: the hub owns the
-slot itself, tees on every render, then runs registered display hooks (the `statusline`
-footer first) in parallel under timeouts; an embed mode for renderers like ccstatusline;
-and a consent-only wrap mode for closed renderers. None of that exists yet.
+sharing that slot. It works two ways:
+
+- **Owner mode**: the hub *is* the `statusLine` command. Its SessionStart takes a free slot
+  by itself; `/install-statusline-hub` installs, removes or replaces it by hand. Each render
+  it writes the sensor record, then runs the hooks other plugins register. Nothing here is
+  needed for that.
+- **Embed mode** (this skill): another renderer owns the slot, and the **tee**,
+  `hooks/tee.py`, runs inside it. The tee reads the status-line JSON on stdin, writes the
+  sensor record
+  (`${CLAUDE_CONFIG_DIR:-~/.claude}/statusline/sensor/<session>.json`, the same file and
+  format the `statusline` plugin writes), and prints nothing.
+
+Plugin authors who want their code run on every render (a display segment, or a recorder
+that gets the raw payload) register a hook: `references/hook-contract.md` is the whole
+interface. A consent-only wrap mode for closed renderers is planned; it does not exist yet.
 
 ## Important
 
 - This skill never edits `settings.json`, never registers a hook, and never edits another
   tool's config file (ccstatusline's, Starship's). It shows the user what to add; the user
   applies it, or asks for the edit explicitly.
-- The `statusline` plugin's own footer already writes the sensor record. If it is the
-  user's status line, they need none of this — say so and stop.
+- If the user's `statusLine` is the hub itself (owner mode) or the `statusline` plugin's
+  footer, the sensor record is already written on every render: they need none of this —
+  say so and stop. To have the hub own the slot instead of their renderer, that is
+  `/install-statusline-hub`, not this skill.
 - The tee prints nothing and exits 0 whatever it is fed, so a broken wiring shows nothing
   either. Always finish with the check in Step 4.
 
@@ -170,6 +180,7 @@ context-window numbers (early in a session), or a newer record was already on di
 expected, and the next render updates it.
 
 Records pile up in the sensor directory.
-Cause: pruning (records untouched for 30 days) runs from the `statusline` plugin's
-SessionStart hook; the hub has none yet. The files are small; delete old ones by hand if
-wanted.
+Cause: none, normally: the hub's SessionStart hook (and the `statusline` plugin's, when it
+is installed) deletes records untouched for 30 days, at most once a day. If they still pile
+up, the plugin is not enabled in the sessions that run the tee; the files are small, so
+delete old ones by hand if wanted.

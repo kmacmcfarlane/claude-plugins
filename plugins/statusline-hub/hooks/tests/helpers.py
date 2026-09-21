@@ -1,12 +1,13 @@
 """Shared fixtures. Hermetic: CLAUDE_CONFIG_DIR and HOME both point at a temp
 dir (so an expanduser fallback cannot reach the real ~/.claude), and the
-plugin env vars are removed. The tee runs as a subprocess, the way a
-status-line renderer runs it."""
+plugin env vars are removed. The tee and the hub run as subprocesses, the way
+a status-line renderer runs them."""
 import json, os, subprocess, sys, tempfile, unittest
 
 HOOKS = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PLUGIN = os.path.dirname(HOOKS)
 TEE = os.path.join(HOOKS, "tee.py")
+HUB = os.path.join(HOOKS, "hub.py")
 if HOOKS not in sys.path:
     sys.path.insert(0, HOOKS)
 
@@ -83,3 +84,32 @@ class Hermetic(unittest.TestCase):
         for root, _, files in os.walk(self.cfg):
             out += [os.path.join(root, f) for f in files]
         return out
+
+    # -- the hub's registry --
+
+    def hooks_d(self):
+        return os.path.join(self.cfg, "statusline-hub", "hooks.d")
+
+    def manifest(self, name, command, kind="display", mode=0o600, **extra):
+        """Write hooks.d/<name>.json (dirs 0700, file `mode`); returns its path."""
+        d = self.hooks_d()
+        for p in (os.path.dirname(d), d):
+            os.makedirs(p, mode=0o700, exist_ok=True)
+            os.chmod(p, 0o700)
+        path = os.path.join(d, name + ".json")
+        body = dict({"name": name, "kind": kind, "command": command}, **extra)
+        with open(path, "w") as f:
+            json.dump(body, f)
+        os.chmod(path, mode)
+        return path
+
+    def hub(self, payload=None, raw=None, args=(), timeout=30):
+        """(returncode, stdout bytes, stderr bytes, seconds) of one hub run;
+        `raw` bytes as is, else `payload` (defaults filled in) as JSON."""
+        import time
+        if raw is None:
+            raw = json.dumps(with_defaults(payload or {})).encode()
+        t = time.monotonic()
+        p = subprocess.run([sys.executable, HUB, *args], input=raw, capture_output=True,
+                           env=self.env, timeout=timeout, cwd=self.cfg)
+        return p.returncode, p.stdout, p.stderr, time.monotonic() - t
