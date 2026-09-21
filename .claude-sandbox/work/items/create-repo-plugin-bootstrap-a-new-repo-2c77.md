@@ -30,3 +30,10 @@ decision 43: placement — (a) new plugin create-repo as asked, with new-project
 
 ## Dispatch
 - dispatch: implementer opus — new plugin (marketplace shape) + a launcher that runs claude-sandbox
+
+## Implementer result
+- round 1 DONE_WITH_CONCERNS 76400de (opus): plugins/create-repo (skill create-repo: path confirm, bind-mount check, git init -b main, README, claude-sandbox init --yes, first commit, ONE launch+attach command; --template via kit-dev new-project-from-template when installed, else install hint); catalog/layout/marketplace; kit-dev pointer. Launch command not run (by design); flags checked against claude-sandbox --help and its source.
+- scope widening before review: kit-dev plugin.json + marketplace description name the soft pointer to create-repo (principle 4).
+- widening 4c6a764: kit-dev descriptions declare the soft pointer.
+- dispatch: reviewer opus — rule 4
+answer 43: (a) new plugin create-repo; new-project-from-template stays, cross-pointed; plus optional template goal via kit-dev (operator 2026-09-19) (migrated)

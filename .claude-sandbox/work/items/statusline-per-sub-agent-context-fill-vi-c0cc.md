@@ -15,3 +15,6 @@ From spike 9f90 (series .claude-sandbox/investigations/9f90-subagent-statusline/
 - next: —
 - blocked: —
 - learned: —
+
+## Carried from spike 9f90 (closed)
+decision 50: the drafted upstream issue (tell the statusLine which sub-agent is focused; draft in .claude-sandbox/investigations/9f90-subagent-statusline/00_findings.md) — (a) do not post; add the known-limitation line only [recommended: #76863 and #29766 were closed not_planned; subagentStatusLine covers the need]; (b) post the draft as a new issue from the operator's account.
