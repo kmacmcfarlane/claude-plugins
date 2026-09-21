@@ -96,6 +96,20 @@ lists, block lists of scalars, one level of map for `x_backlog`. No multi-line
 scalars, anchors or nesting — prose goes in the body. `lint` reports any line
 that does not parse, and `wi` never rewrites a file it could not parse.
 
+**Quoting.** A value is written bare unless a bare scalar would read back
+differently — empty, leading/trailing whitespace, `: ` or ` #` inside, a
+trailing `:`, brackets or braces, a leading YAML indicator
+(`- ? : , # & * ! | > ' " % @` and backtick), a bare `—` (which reads as empty), a control
+character, or a comma inside a flow list. Then it is a YAML double-quoted
+scalar: `\` and `"` are written as `\\` and `\"`, and control characters,
+DEL, C1, U+2028/U+2029 and the BOM as `\xNN` / `\uNNNN`. The reader decodes
+exactly those plus the other YAML escapes (`\t \0 \/ \U…` and the rest), so a value
+survives any number of rewrites byte-identical; an unknown escape, or one that
+would decode to a line break, is kept as written. A single-quoted value reads
+`''` as `'`. Older `wi` versions escaped without unescaping, so every rewrite
+of a quoted value added a layer of backslashes; `wi repair-escapes` lists
+those values with the layers peeled (a dry run until `--apply`).
+
 ## Editing fields: `wi set <id> <field> <value>`
 
 Sets exactly one front-matter field. `id` and `created` are immutable (exit 1).
