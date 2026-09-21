@@ -16,8 +16,8 @@ updated: 2026-09-21
 Port plan .claude-sandbox/investigations/8cc2-turn-gate-port — design awaits the 02 serial (HARD mid-turn marker only when hard_applies(block_window, tok); unattended checkpoint path defers to a custody skill's own mode).
 
 ## Handoff
-- doing: fix round 1 (forged-marker check) in progress
-- next: review round 2; merge HELD until F3a lands (needs decision 48)
+- doing: CLEAR at c7d4757; merge held
+- next: land right after F3a (needs decision 48); resolve hooks.json/README/checkpoint Step 5 conflicts via a conflict round
 - blocked: —
 - learned: —
 
@@ -43,3 +43,9 @@ Port plan .claude-sandbox/investigations/8cc2-turn-gate-port — design awaits t
 - lows: unwritable state dir → marker every call (pin with a test/comment); a custody skill's remaining steps (librarian push, Report) run before the final message; mode 644; commit layout noted.
 - noted follow-up: legacy in-state exact block has no future-`at` check (pre-existing).
 - dispatch: implementer opus — fix round 1 (resume)
+- round 1 fix 0b530a3 + c7d4757: turn_gate.py --check <sid> (armed only for this epoch, tier hard/hard_nofit, no checkpoint yet); unattended section runs --check first and treats the marker as hook-context only; hook silent when its record cannot land; custody steps run before the final message; 755.
+- dispatch: reviewer opus — round 2 (resume). Merge held for F3a.
+
+## Review round 2 — CLEAR (opus) at c7d4757
+- every forgery refused by --check; real HARD arms; unwritable state: hook silent, prompt gate still blocks (no regression). lows: malformed top-level epoch → traceback (fail-safe); commit layout.
+- READY TO LAND — held until F3a is on main (plan order F2 → F3a → F1). Expect hooks.json / README / checkpoint Step 5 conflicts at merge.

@@ -42,3 +42,8 @@ Found by the ca20 reviewer (2026-09-21), pre-existing on main: a value containin
 - dispatch: implementer opus — fix round 1 (resume)
 - round 1 fix bc3321d: tabs quoted; U+FFFE/surrogates escaped; lint reports control chars in values; repair-escapes heuristic documented, --key, checks bare values too; import reads "—" as none; flow-list fallback. Live copy: 1 reader diff (this title).
 - dispatch: reviewer opus — round 2 (resume)
+
+## Review round 2 — NEEDS_CHANGES (opus) at bc3321d
+- core holds (1 reader diff on live copy + history); fuzz clean except value "="; export validates.
+- [medium] lint skips tab, so "C:\temp" decodes to a tab silently: flag tabs too (wi never writes a raw tab now) + test. lows: bare "=" / "<<"; repair lists more bare values (acceptable, documented).
+- dispatch: implementer opus — fix round 2 (resume)

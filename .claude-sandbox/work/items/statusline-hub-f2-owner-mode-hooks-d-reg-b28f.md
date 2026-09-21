@@ -2,15 +2,14 @@
 id: statusline-hub-f2-owner-mode-hooks-d-reg-b28f
 title: "statusline-hub F2: owner mode + hooks.d registry (display/record kinds, health_path)"
 type: feature
-status: doing
+status: done
 priority: 1
 deps:
   - statusline-hub-f1-new-plugin-tee-command-bfe2
 parent: spike-status-line-multiplexer-dependency-d193
-owner: unknown@360f41058e92
-claimed: 2026-09-21T18:55Z
 created: 2026-09-21
 updated: 2026-09-21
+closed: 2026-09-21
 ---
 
 d193 07 § F2 + consumer requirements recorded in d193 (claude-analytics: record kind gets the raw payload byte-for-byte every render; a crashing/slow record hook leaves gauge and sensor intact; optional health_path glyph; contract doc beside sensor-contract.md; registry path CFG/statusline-hub/hooks.d/<name>.json {name, command, timeout_ms, kind}). Owner/SessionStart logic ported from statusline (states, heal, prune, consent); takeover migration from statusline's owner.json. Wrap consent: decision 40 (b) ask once. Notify agents-61 / claude-analytics session when the contract lands.
@@ -26,6 +25,7 @@ d193 07 § F2 + consumer requirements recorded in d193 (claude-analytics: record
 
 ## Notes
 - 2026-09-21 claimed by unknown@360f41058e92
+- 2026-09-21 done: 53ae9ec
 
 ## Dispatch
 - dispatch: implementer opus — executable logic, settings writes, executes registered commands (security surface: fable signal; fable unavailable (unknown); fallback)
@@ -41,3 +41,12 @@ d193 07 § F2 + consumer requirements recorded in d193 (claude-analytics: record
 - [medium] README conflicts with main (catalog rows) — conflict round. [medium] in_project misses a config dir inside the repo when CC starts in a subdir / payload lacks dirs (fails open). [medium] record runners unbounded (31 runners, ~366 MB with one hung hook). [medium] statusline owner.data_dir scan picks statusline-hub-* (F2 created it) — fix in statusline + vendored copy. [medium] hub reads statusline's data → declare statusline (soft) in row + description.
 - lows: "shell": true departs from 07 — decision (librarian): accept (an argv array can already name /bin/sh; exec stays the default) and record in 07's successor/contract; hand-written manifests pruned at 14 days; setsid grandchild holding stdout; record spec via argv can exceed MAX_ARG_STRLEN; nits.
 - dispatch: implementer opus — fix round 1 (resume; includes a merge-conflict round with main)
+- round 1 fix: 3bd6a9b (merge main, default subject → subject-fix at Land), b13fdc1 (git-tree refusal, per-hook lock, pinned manifests, spec on stdin, first-line read, U+2028/9), 0ee1c09 (statusline data-dir scan fix + vendored resync), eafa18d (statusline soft dep declared). 94 hub tests.
+- dispatch: reviewer opus — round 2 (resume)
+- tell agents-61 on landing: one live copy per record hook (a busy hook skips renders).
+
+## Review round 2 — CLEAR (opus) at eafa18d
+- hostile manifests refused incl. git-tree config dirs; hung record hook: 1 runner/12 MB (was 31/366 MB); byte-for-byte; SessionStart scenarios stable.
+- lows (to F3): scan still takes statusline-hub-* when it lacks current-hooks → name check; custom config dir inside a git-tracked dir refuses all hooks (fails safe, quiet).
+## Landed
+- 53ae9ec. 1 fix round + conflict round. agents-61 notified (contract + busy-hook skip rule).

@@ -25,3 +25,7 @@ d193 07 § F3. statusline declares statusline-hub in plugin.json dependencies (p
 
 ## Carried from F2
 - statusline owner.data_dir scan fallback picks statusline-hub-* (sorts first) — fix; statusline heal recognises the hub command and stands down quietly; statusline writes hooks.d/statusline.json as a display hook (enables the hub takeover); display hook still running when CC cancels a render is not killed — document in the contract.
+
+## Carried from F2 review (lows)
+- statusline owner.py scan: exclude names starting "statusline-hub-" outright (not only when current-hooks lacks statusline.py); resync the hub vendored copy.
+- registry in_git_tree: a custom CLAUDE_CONFIG_DIR inside a git-tracked dir under $HOME refuses all hooks quietly — surface the reason once (SessionStart message) rather than only in --status.
