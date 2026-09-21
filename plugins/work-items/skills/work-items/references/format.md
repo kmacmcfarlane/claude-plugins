@@ -82,7 +82,7 @@ except `claimed` (ISO-8601 UTC to the minute).
 | `owner` | free string, e.g. `user@host` | set by `claim`, cleared by `release`/`done` |
 | `claimed` | UTC minute | stale test in `next --stale` |
 | `blocked` | string | required iff `status: blocked`; kept while parked, so `unpark` returns to `blocked` |
-| `parked` | one line | required iff `status: parked`; the deferral reason (set by `park`, cleared by `unpark` and `block`) |
+| `parked` | one line | required iff `status: parked`; the deferral reason (set by `park`, cleared by `unpark` and `block`); `lint` flags it on a todo/doing/blocked item, and it stays on a dropped/done item as history |
 | `feedback` | one line | pipeline review feedback |
 | `mode` | `autonomous interactive mixed` | backlog's `ticket_mode` |
 | `complexity` | `low medium high` | pass-through |
@@ -131,17 +131,36 @@ carries a `blocked:` reason. It never returns to `doing`: the claim was
 released on park, and whoever held it is not assumed to still be working it.
 To abandon a parked item, `wi done <id> --drop`, then `wi archive` as usual.
 
+`wi park` is the only way in. `wi set <id> status parked` exits 1 and points
+at `park`, since set would record no reason and release no claim. `wi set <id>
+status <other>` on a parked item counts as an unpark: the `parked:` reason is
+cleared and a Notes line is added. `wi release` never unparks. On a parked
+item it clears only `owner`/`claimed`/`stage`, so an agent cleaning up a
+claim the operator has since parked leaves the park in place.
+
 Before `parked` existed, deferral was spelled `wi block <id> "PARKED: …"`.
 `wi migrate-parked` lists the `blocked` items whose reason starts with
-`PARKED` (case-sensitive) and what their parked reason would be;
-`--apply` converts them (reason without the prefix, `blocked:` cleared,
-claim released, a Notes line). Nothing is written without `--apply`.
+`PARKED` (case-sensitive, a whole word) and what their parked reason would
+be. `--apply` converts them: the parked reason is the text without the
+prefix, `blocked:` is cleared, the claim is released, and a Notes line is
+added. Nothing is written without `--apply`. The prefix is `PARKED`, then an
+optional parenthesised group, then any `:`/`-`/`—` separator. The group is
+provenance, not reason: `PARKED (operator 2026-09-19): Paseo undecided` parks
+with reason `Paseo undecided`. The migration's Notes line keeps the whole
+original reason, group included (`parked (migrated from blocked: PARKED
+(operator 2026-09-19): Paseo undecided)`). A prefix with nothing after it
+keeps the whole text as the reason.
 
 The backlog-yaml bridge has no deferred state to map to: a parked item
 exports as `status: blocked` with `blocked_reason: "PARKED: <reason>"`, and
 importing a blocked story whose reason starts with `PARKED` yields a parked
-item — the same rule as `migrate-parked` — so the round trip is exact. A
-ralph run over the exported backlog sees the item as blocked, never as work.
+item — the same prefix rule as `migrate-parked`. The park and its reason
+round-trip. A `blocked:` reason kept under a park does not travel: the
+export carries only `PARKED: <reason>`. `import --update` keeps the store's
+own `blocked:` on a parked story, but a fresh import cannot restore it, so
+that item's `unpark` goes to `todo`. A provenance group, if any, is dropped
+from the imported reason. A ralph run over the exported backlog sees the
+item as blocked, never as work.
 
 ## Body sections
 

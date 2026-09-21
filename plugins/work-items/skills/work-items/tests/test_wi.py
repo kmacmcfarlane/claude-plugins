@@ -631,6 +631,10 @@ class TestBodyPreservation(WiTestCase):
         "unpark": ("status: parked\nparked: later\n", ["unpark", IID], "insert"),
         "migrate-parked": ("status: blocked\nblocked: \"PARKED: later\"\n",
                            ["migrate-parked", "--apply"], "insert"),
+        "release-parked": ("status: parked\nparked: later\n",
+                           ["release", IID], "same"),
+        "set-unpark": ("status: parked\nparked: later\n",
+                       ["set", IID, "status", "todo"], "insert"),
         "done": ("status: doing\n", ["done", IID, "--note", "shipped"], "insert"),
         "drop": ("status: todo\n", ["done", IID, "--drop"], "insert"),
         "export": ("status: todo\n", ["export", "OUT", "--format", "backlog-yaml",
@@ -698,7 +702,8 @@ class TestBodyPreservation(WiTestCase):
         self.run_matrix(["set"])
 
     def test_park_unpark_migrate_keep_body(self):
-        self.run_matrix(["park", "unpark", "migrate-parked"])
+        self.run_matrix(["park", "unpark", "migrate-parked", "release-parked",
+                         "set-unpark"])
 
     def test_done_and_drop_keep_body(self):
         self.run_matrix(["done", "drop"])
@@ -1155,7 +1160,8 @@ class TestParked(WiTestCase):
         rec = json.loads(self.wi_ok(["show", "old-park-1111", "--json"]))
         self.assertEqual((rec["status"], rec["parked"], rec["blocked"]),
                          ("parked", "waiting for Q3 budget", None))
-        self.assertIn("parked (migrated from blocked)", rec["sections"]["Notes"])
+        self.assertIn("parked (migrated from blocked: PARKED: waiting for Q3 "
+                      "budget)", rec["sections"]["Notes"])
         for iid in ("real-block-3333", "todo-4444"):
             p = self.root / "items" / (iid + ".md")
             self.assertEqual(p.read_bytes(), before[p])
@@ -1191,6 +1197,95 @@ class TestParked(WiTestCase):
         self.wi_ok(["import", "--format", "backlog-yaml", "--update", str(out)])
         rec = json.loads(self.wi_ok(["show", "defer-1111", "--json"]))
         self.assertEqual((rec["status"], rec["parked"]), ("todo", None))
+        self.wi_ok(["lint"])
+
+    def test_release_never_unparks(self):
+        """A stale agent's cleanup `wi release` after the operator parked its
+        item must not put the item back in the ready queue."""
+        self.write_item("held-1111", status="doing", owner="agent@x",
+                        claimed="2026-08-30T10:00Z",
+                        handoff={"doing": "x", "next": "y"})
+        self.wi_ok(["park", "held-1111", "operator: not now"])
+        self.wi_ok(["release", "held-1111"])
+        rec = json.loads(self.wi_ok(["show", "held-1111", "--json"]))
+        self.assertEqual((rec["status"], rec["parked"], rec["owner"]),
+                         ("parked", "operator: not now", None))
+        self.assertEqual(run(["ls", "--ready"], self.root).returncode, 2)
+        self.wi_ok(["lint"])
+        self.assertIn("-> todo", self.wi_ok(["unpark", "held-1111"]))
+
+    def test_import_update_keeps_blocked_reason_under_a_park(self):
+        self.write_item("blk-1111", "Blocked then parked", status="blocked",
+                        blocked="vendor")
+        self.wi_ok(["park", "blk-1111", "later"])
+        out = self.tmp / "backlog.yaml"
+        self.wi_ok(["export", "--format", "backlog-yaml", str(out),
+                    "--project", "t"])
+        self.assertIn('blocked_reason: "PARKED: later"', out.read_text())
+        self.wi_ok(["import", "--format", "backlog-yaml", "--update", str(out)])
+        rec = json.loads(self.wi_ok(["show", "blk-1111", "--json"]))
+        self.assertEqual((rec["status"], rec["parked"], rec["blocked"]),
+                         ("parked", "later", "vendor"))
+        self.assertIn("-> blocked", self.wi_ok(["unpark", "blk-1111"]))
+        # a fresh import has only the export: the kept blocked reason is lost
+        fresh = self.tmp / ".fresh"
+        self.assertEqual(run(["init"], fresh).returncode, 0)
+        self.assertEqual(run(["import", "--format", "backlog-yaml", str(out)],
+                             fresh).returncode, 0)
+        rec = json.loads(run(["ls", "--status", "all", "--json"], fresh).stdout)[0]
+        self.assertEqual((rec["status"], rec["parked"], rec["blocked"]),
+                         ("parked", "later", None))
+
+    def test_provenance_group_is_not_the_reason(self):
+        real = ("PARKED (operator 2026-09-19): Paseo adoption undecided; "
+                "unblock to do it, or done --drop to archive")
+        self.assertEqual(wi.parked_reason(real),
+                         "Paseo adoption undecided; unblock to do it, or "
+                         "done --drop to archive")
+        self.assertEqual(wi.parked_reason("PARKED - later"), "later")
+        self.assertEqual(wi.parked_reason("PARKED (x)"), "PARKED (x)")
+        self.assertIsNone(wi.parked_reason("PARKEDX: no"))
+        self.assertIsNone(wi.parked_reason("parked: lower case"))
+        self.write_item("sb-1111", status="blocked", blocked=real)
+        self.wi_ok(["migrate-parked", "--apply"])
+        rec = json.loads(self.wi_ok(["show", "sb-1111", "--json"]))
+        self.assertEqual(rec["parked"], wi.parked_reason(real))
+        # the provenance survives in the Notes line
+        self.assertIn(f"parked (migrated from blocked: {real})",
+                      rec["sections"]["Notes"])
+        self.wi_ok(["lint"])
+
+    def test_lint_flags_leftover_parked_reason_on_open_items(self):
+        for st, extra in (("todo", {}), ("blocked", {"blocked": "v"}),
+                          ("doing", {"handoff": {"next": "n"}})):
+            self.write_item(f"left-{st}-1111", status=st, parked="stale",
+                            **extra)
+        self.write_item("dropped-2222", status="dropped", parked="history")
+        r = run(["lint"], self.root)
+        self.assertEqual(r.returncode, 3)
+        for st in ("todo", "doing", "blocked"):
+            self.assertIn(f"left-{st}-1111.md: parked reason on a {st} item",
+                          r.stdout)
+        self.assertNotIn("dropped-2222", r.stdout)
+
+    def test_set_status_goes_through_park_and_unpark(self):
+        self.write_item("s-1111", status="doing", owner="a@x",
+                        claimed="2026-08-30T10:00Z",
+                        handoff={"doing": "x", "next": "y"})
+        path = self.root / "items" / "s-1111.md"
+        before = path.read_bytes()
+        r = run(["set", "s-1111", "status", "parked"], self.root)
+        self.assertEqual(r.returncode, 1)
+        self.assertIn("wi park s-1111", r.stderr)
+        self.assertEqual(path.read_bytes(), before)
+        self.assertEqual(run(["set", "s-1111", "parked", "x"], self.root)
+                         .returncode, 3)
+        self.assertEqual(path.read_bytes(), before)
+        self.wi_ok(["park", "s-1111", "later"])
+        self.wi_ok(["set", "s-1111", "status", "todo"])
+        rec = json.loads(self.wi_ok(["show", "s-1111", "--json"]))
+        self.assertEqual((rec["status"], rec["parked"]), ("todo", None))
+        self.assertIn("unparked (set status todo)", rec["sections"]["Notes"])
         self.wi_ok(["lint"])
 
     def test_block_supersedes_park(self):

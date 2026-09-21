@@ -62,7 +62,10 @@ BACKLOG_TO_STATE = {"todo": ("todo", None), "in_progress": ("doing", "implement"
 # backlog.yaml has no deferred state: a parked item exports as `blocked` with
 # its reason prefixed `PARKED: `, and a blocked story whose reason starts
 # with PARKED imports as parked (the same rule `wi migrate-parked` applies).
-PARKED_PREFIX_RE = re.compile(r"^\s*PARKED\b[\s:;,.\u2014-]*")
+# An optional parenthesised group right after PARKED ("PARKED (operator
+# 2026-09-19): ...") is provenance, not reason: it is stripped from the reason;
+# migrate-parked keeps the original text in the Notes line it writes.
+PARKED_PREFIX_RE = re.compile(r"^\s*PARKED\b\s*(\([^)\n]*\))?[\s:;,.\u2014-]*")
 
 
 def parked_reason(blocked):
@@ -549,6 +552,9 @@ class Item:
             errs.append("blocked without a reason")
         if m.get("status") == "parked" and not m.get("parked"):
             errs.append("parked without a reason")
+        if m.get("parked") and m.get("status") in ("todo", "doing", "blocked"):
+            errs.append(f"parked reason on a {m['status']} item (wi unpark "
+                        "clears it; or clear the field with wi set)")
         if m.get("status") in ("done", "dropped") and not m.get("closed"):
             errs.append(f"{m['status']} without closed date")
         return errs
@@ -965,7 +971,9 @@ def cmd_release(args):
     root = resolve_root(args.root)
     with Lock(root):
         item = load_item_anywhere(root, args.id)
-        item.meta.update(owner=None, claimed=None, status="todo", stage=None)
+        item.meta.update(owner=None, claimed=None, stage=None)
+        if item.get("status") != "parked":   # releasing a claim never unparks
+            item.meta["status"] = "todo"
         item.touch()
         save_item(root, item)
     print(f"released {item.id}")
@@ -1057,7 +1065,7 @@ def cmd_unblock(args):
     return 0
 
 
-def _park(item, reason, how="parked"):
+def _park(item, reason, note=None):
     """Park `item`: deliberately deferred, out of every ready queue. A claim
     and pipeline stage are released (nobody is working a parked item); a
     `blocked:` reason is kept, so unpark can return the item to blocked.
@@ -1069,7 +1077,7 @@ def _park(item, reason, how="parked"):
         return False
     item.meta.update(status="parked", parked=reason, owner=None, claimed=None,
                      stage=None)
-    item.append_note(f"- {today()} {how}: {reason}")
+    item.append_note(f"- {today()} {note or 'parked: ' + reason}")
     item.touch()
     return True
 
@@ -1120,8 +1128,10 @@ def cmd_migrate_parked(args):
                 continue
             rows.append((item.id, reason))
             if args.apply:
+                original = item.get("blocked")
                 item.meta["blocked"] = None
-                _park(item, reason, how="parked (migrated from blocked)")
+                _park(item, reason, note=f"parked (migrated from blocked: "
+                                         f"{original})")
                 changed.append(item)
         save_items(root, changed)
     verb = "parked" if args.apply else "would park"
@@ -1149,6 +1159,15 @@ def cmd_set(args):
             item.meta[field] = [v.strip() for v in value.split(",") if v.strip()]
         elif field in INT_FIELDS:
             item.meta[field] = int(value)
+        elif field == "status" and value == "parked":
+            # parking releases the claim and records a reason: `wi park` is
+            # the one path in, so set never leaves a half-parked item
+            if item.get("status") != "parked":
+                raise WiError(1, f"use wi park {item.id} \"<reason>\" to park an item")
+        elif field == "status" and item.get("status") == "parked":
+            # leaving parked by set is an unpark: the reason goes with it
+            item.meta.update(status=value, parked=None)
+            item.append_note(f"- {today()} unparked (set status {value})")
         else:
             item.meta[field] = value
         # mirror cmd_add: deps/parent must resolve; ext: never does; --force
@@ -1765,6 +1784,10 @@ def _import_story(story, alias_map, existing_by_alias, update):
         status, blocked = "parked", None
     if update and alias in existing_by_alias:
         it = existing_by_alias[alias]
+        if parked is not None:
+            # the export carries only the park; a blocked: reason kept under
+            # it (unpark returns to blocked) lives only in the store
+            blocked = it.get("blocked")
         it.meta.update(status=status, stage=stage, blocked=blocked, parked=parked,
                        feedback=story.get("review_feedback") or None,
                        owner=story.get("claimed_by") or None,
