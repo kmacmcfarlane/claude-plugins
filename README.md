@@ -231,6 +231,17 @@ request, factors it, and dispatches each piece through `dev-cycle` with its own 
 | `chain-of-verification` | CoVe fact-verification pipeline — baseline, verify, revise |
 | `librarian-mode` | Standing single-writer custodian of a repo's custody layer — a marketplace's shared agent layer, or whatever scope an operator opts a repo in with: file, factor, route by model tier, delegate to worktree agents, review, land, report |
 
+Which dev-flow skill:
+
+| Skill | Use it when… | Not when… |
+|---|---|---|
+| `investigate` | a scoped bug or feature needs a plan: one session reads the code, settles requirements with you, writes the series | the question is a landscape — you can name three to five categories of evidence and no single one suffices (`deep-investigation`) |
+| `deep-investigation` | a broad, open-ended question needs many sources: recon, a strategy doc, cheap-model lanes against a fixed contract, one synthesis | the problem is a scoped bug or feature (`investigate`) |
+| `implement` | a finished investigation series is ready to build, hands-on in this session | there is no plan yet (`investigate`), or you want the build delegated and reviewed (`dev-cycle`) |
+| `dev-cycle` | one change — item, series, plan or this conversation — should go to merge through a sub-agent build and a review gate | one session should own every change to the repo (`librarian-mode`) |
+| `librarian-mode` | one standing session should take custody of a repo's whole stream of work | the work is a one-off change (`dev-cycle`, or a worktree and a PR) |
+| `chain-of-verification` | a factual answer must be right: baseline, independent verification, revision | the question is about code to change (`investigate`) |
+
 Soft dependency on `work-items`: the flow threads work items through `wi` when a store is
 present, and degrades to plain investigation series when it is not; `dev-cycle` then keeps
 its record in the session scratchpad. `librarian-mode` drives `wi` throughout, found through
