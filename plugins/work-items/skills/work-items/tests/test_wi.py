@@ -2804,6 +2804,13 @@ class TestB020Lows(WiTestCase):
                              want[title][1:2] + want[title][3:], title)
         self.assertEqual(run(["lint"], fresh).returncode, 0)
 
+    def test_a_new_items_refusal_names_no_file(self):
+        r = run(["add", "t", "--tag", "a\tb"], self.root)
+        self.assertEqual(r.returncode, 1, r.stderr)
+        self.assertIn("front-matter 'tags' holds a control character", r.stderr)
+        self.assertNotIn(".md", r.stderr)
+        self.assertEqual(list((self.root / "items").glob("*.md")), [])
+
     def test_front_matter_refuses_a_line_separator_in_any_field(self):
         for flag in ("--tag", "--ref"):
             for sep in (" ", " "):
