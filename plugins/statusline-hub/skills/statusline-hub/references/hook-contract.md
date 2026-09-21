@@ -116,7 +116,9 @@ file, where a reader sees it.
   once it passes 64 KiB, and pruned after 14 days untouched. It never reaches the
   terminal.
 - **Process**: each hook leads its own session. At its timeout the hub kills its whole
-  process group.
+  process group. A display hook still running when Claude Code cancels a render is
+  killed only at the hub's own timeout: if the hub process itself is killed first, nothing
+  kills the hook and it runs until it exits, so keep hooks fast and safe to run twice.
 
 ## 6. Kinds
 

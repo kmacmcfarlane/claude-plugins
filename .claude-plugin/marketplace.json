@@ -23,7 +23,7 @@
     {
       "name": "statusline-hub",
       "source": "./plugins/statusline-hub",
-      "description": "The status-line slot, shared — a tee command that records the context depth and plan usage Claude Code hands the status line into the sensor record other tools read, whatever renders your line (a ccstatusline Custom Command, a Starship custom module, or a wrapper around your own command). First piece of the shared-slot dispatcher."
+      "description": "The status-line slot, shared — the hub owns the statusLine command (taking a free slot on the first session, never another tool's without consent), records the context depth and plan usage Claude Code hands the status line into the sensor record other tools read, then runs the display and record hooks other plugins register; where another renderer keeps the slot, its tee command feeds the same record from a ccstatusline Custom Command, a Starship custom module, or a wrapper around your own command."
     },
     {
       "name": "dev-flow",
