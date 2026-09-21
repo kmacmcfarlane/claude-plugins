@@ -39,6 +39,20 @@ fresh exact record, nothing could be said, so it returns before any
 transcript read. Otherwise measure() resumes the transcript scan from the
 cache this hook saves (with the sidechain cache and the derived record) in
 its one locked state write. Any error prints {}.
+
+A message fires only when its `turn_gate` record ({epoch, tier, tok}) is
+read back from the state file after the write. Unwritable state (a
+read-only or full config dir) therefore makes the hook silent rather than
+repeat the marker on every tool call with no cadence and no record - and
+the record is what `--check` needs.
+
+Verification, for the checkpoint skill's unattended section (the marker
+text also sits in this file, its tests, the docs and any diff of them, so
+text alone proves nothing):
+    python3 turn_gate.py --check <session_id>
+exits 0 and prints "armed: ..." only when the state's `turn_gate` record is
+this epoch's (`epoch`), its `tier` is hard or hard_nofit, and no checkpoint
+has run this epoch (`checkpoint_epoch`); otherwise exit 1, "not armed: ...".
 """
 import json, os, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -85,6 +99,32 @@ def text(tier, m):
                    f"operator to run {CW.REMEDY}.")
 
 
+HARD_TIERS = ("hard", "hard_nofit")
+
+
+def armed(st):
+    """(True, why) when state `st` shows this epoch's mid-turn HARD fired
+    and no checkpoint has run since; else (False, why)."""
+    tg = st.get("turn_gate")
+    if not isinstance(tg, dict):
+        return False, "no mid-turn gate record in the state"
+    if L.checkpointed_this_epoch(st):
+        return False, "a checkpoint already ran this epoch"
+    if tg.get("epoch") != L.epoch(st):
+        return False, "the mid-turn gate record is from an earlier epoch"
+    if tg.get("tier") not in HARD_TIERS:
+        return False, f"the mid-turn gate last fired at tier {tg.get('tier')!r}, not HARD"
+    return True, f"{tg['tier']} at {tg.get('tok')} tokens, epoch {tg['epoch']}"
+
+
+def check(argv):
+    if len(argv) != 1:
+        print("usage: turn_gate.py --check <session_id>"); return 2
+    ok, why = armed(L.load_state(argv[0]))
+    print(("armed: " if ok else "not armed: ") + why)
+    return 0 if ok else 1
+
+
 def main():
     try:
         inp = json.load(sys.stdin)
@@ -103,7 +143,7 @@ def main():
     m = L.measure(inp.get("transcript_path", ""), sid, cwd=inp.get("cwd"))
     tier = tier_of(m)
     dr = L.derived_record(m)
-    fire = []
+    fire, rec = [], []
 
     def apply(s):
         if dr:
@@ -123,16 +163,21 @@ def main():
         if last.get("epoch") != ep or last.get("tier") != tier or grown:
             s["turn_gate"] = {"epoch": ep, "tier": tier, "tok": m["tokens"]}
             fire.append(tier)
+            rec.append(dict(s["turn_gate"]))
 
     if tier is not None or dr or m.get("scan_cache") or m.get("side_cache"):
         L.update_state(sid, apply)
-    if not fire:
+    if not fire or L.load_state(sid).get("turn_gate") != rec[0]:
+        # Nothing to say, or the record did not land (unwritable state):
+        # silent, never a marker that --check cannot confirm.
         print(json.dumps({})); return
     print(json.dumps({"hookSpecificOutput": {"hookEventName": "PostToolUse",
                                              "additionalContext": text(fire[0], m)}}))
 
 
 if __name__ == "__main__":
+    if sys.argv[1:2] == ["--check"]:
+        sys.exit(check(sys.argv[2:]))
     try:
         main()
     except Exception:

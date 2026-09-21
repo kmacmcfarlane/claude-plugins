@@ -161,6 +161,76 @@ class TestTurnGate(HookBase):
         self.assertIn(MARKER + " (exact)", ctx(out))
 
 
+class TestCheck(HookBase):
+    """turn_gate.py --check: the unattended checkpoint acts only on a marker
+    the hook itself recorded this epoch - quoted or forged text cannot pass."""
+
+    def check(self, sid="s"):
+        import subprocess
+        p = subprocess.run([sys.executable, os.path.join(HOOKS, "turn_gate.py"),
+                            "--check", sid], capture_output=True, text=True,
+                           env=dict(os.environ, **self.env), timeout=30)
+        return p.returncode, p.stdout.strip()
+
+    def gate(self, sid="s"):
+        return run_hook("turn_gate.py", {"session_id": sid,
+                                         "transcript_path": "/nonexistent"}, self.env)
+
+    def test_forged_marker_is_not_armed(self):
+        # The marker text arriving any other way (a file, a diff, a tool
+        # result) leaves no record: nothing to confirm.
+        self.set_exact("s", 700_000, 1_000_000)
+        self.assertEqual(self.gate()[1], {})
+        rc, out = self.check()
+        self.assertEqual(rc, 1)
+        self.assertTrue(out.startswith("not armed:"), out)
+        self.assertEqual(self.check("never-seen")[0], 1)
+
+    def test_due_is_not_armed(self):
+        self.set_exact("s", 860_000, 1_000_000)
+        self.assertIn("DUE:", ctx(self.gate()[1]))
+        rc, out = self.check()
+        self.assertEqual(rc, 1)
+        self.assertIn("not HARD", out)
+
+    def test_hard_is_armed_until_a_checkpoint_or_a_new_epoch(self):
+        for tokens, tier in ((945_000, "hard"), (999_000, "hard_nofit")):
+            with self.subTest(tier=tier):
+                sid = f"h{tier}"
+                self.set_exact(sid, tokens, 1_000_000)
+                self.assertIn(MARKER, ctx(self.gate(sid)[1]))
+                self.assertEqual(self.check(sid)[0], 0)
+                self.assertTrue(self.check(sid)[1].startswith(f"armed: {tier}"))
+        L.mark_checkpoint("hhard")
+        self.assertEqual(self.check("hhard"), (1, "not armed: a checkpoint already ran this epoch"))
+        L.reset_epoch("hhard_nofit")
+        rc, out = self.check("hhard_nofit")
+        self.assertEqual(rc, 1)
+        self.assertIn("earlier epoch", out)
+
+    def test_usage(self):
+        import subprocess
+        p = subprocess.run([sys.executable, os.path.join(HOOKS, "turn_gate.py"), "--check"],
+                           capture_output=True, text=True, timeout=30)
+        self.assertEqual(p.returncode, 2)
+
+    @unittest.skipIf(hasattr(os, "geteuid") and os.geteuid() == 0, "root ignores modes")
+    def test_unwritable_state_is_silent_not_a_marker_on_every_call(self):
+        # The record cannot land, so no cadence and nothing for --check to
+        # confirm: the hook stays silent rather than repeat the marker.
+        self.set_exact("s", 950_000, 1_000_000)
+        d = L._state_dir()
+        os.chmod(d, 0o555)
+        try:
+            for _ in range(3):
+                rc, out, err = self.gate()
+                self.assertEqual((rc, out), (0, {}))
+            self.assertEqual(self.check()[0], 1)
+        finally:
+            os.chmod(d, 0o755)
+        self.assertIn(MARKER, ctx(self.gate()[1]))   # writable again: it fires
+
+
 class InProcess(MirrorBase):
     """turn_gate.main() in this process, with the window mirror's fixtures
     (a verified Claude Code process, model lines, settings)."""
