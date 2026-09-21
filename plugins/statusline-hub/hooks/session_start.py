@@ -18,7 +18,9 @@ same (see owner.py):
   - holds the statusline footer's own entry (a stale session wrote back the
     settings it read before the takeover): repoint it at the hub, as the
     takeover (a) does, once the footer is registered as a hub display hook
-    (until then it still draws the footer: look again next session);
+    (until then it still draws the footer: look again next session - but
+    only while Claude Code records a statusline install; with none, nothing
+    will register, and the hub yields to that entry as to any other);
   - holds anything else: yield - state `yielded`, said once, never fought.
 - removed, yielded, deferred (or an owner.json it cannot read): nothing.
 - blocked: the work it resumes (a heal, or a first run) is retried quietly.
@@ -180,12 +182,14 @@ def heal(owner, data, marker):
     if kind == "own":
         return None
     if kind == "statusline":
-        if not statusline_hooked() or not _script_ready(owner, data):
-            raise Wait()
-        _put(owner, data, path, {"statusline"})
-        return (f"restored the status line in {path} (an older session's settings "
-                f"write had put the footer's earlier entry back; it draws through the "
-                f"hub).")
+        if statusline_hooked() and _script_ready(owner, data):
+            _put(owner, data, path, {"statusline"})
+            return (f"restored the status line in {path} (an older session's settings "
+                    f"write had put the footer's earlier entry back; it draws through "
+                    f"the hub).")
+        if _statusline_install_paths(owner) != []:
+            raise Wait()  # installed (or unknown): it may yet register
+        # no statusline install recorded: nothing will register; yield below
     if kind != "absent":
         owner.write_marker(data, "yielded", path, owner.command_for(data))
         return (f"the statusLine in {path} was changed by something else; left "
@@ -239,20 +243,30 @@ def _target(owner, user, proj):
     return (local, [user, shared, local], proj) if on else None
 
 
-def _statusline_installs_only_hooks(owner):
-    """Whether Claude Code records at least one statusline@ install and none
-    of them ships hooks/owner.py - every installed version registers as a hub
-    hook and never installs its own entry. Key names and install paths only;
-    False when the records cannot be read."""
+def _statusline_install_paths(owner):
+    """The install paths of every statusline@ install Claude Code records
+    (<config>/plugins/installed_plugins.json; [] when it records none), or
+    None when the records cannot be read. Key names and install paths only."""
     try:
         rec = os.path.join(owner.sensor.base_dir(), "plugins", "installed_plugins.json")
         if not stat.S_ISREG(os.stat(rec).st_mode):      # a FIFO would hang the hook
-            return False
+            return None
         with open(rec, encoding="utf-8") as f:
             recs = json.load(f).get("plugins")
-        paths = [e.get("installPath") for k, v in recs.items()
-                 if isinstance(k, str) and k.startswith("statusline@")
-                 for e in (v if isinstance(v, list) else ()) if isinstance(e, dict)]
+        return [e.get("installPath") for k, v in recs.items()
+                if isinstance(k, str) and k.startswith("statusline@")
+                for e in (v if isinstance(v, list) else ()) if isinstance(e, dict)]
+    except Exception:
+        return None
+
+
+def _statusline_installs_only_hooks(owner):
+    """Whether Claude Code records at least one statusline@ install and none
+    of them ships hooks/owner.py - every installed version registers as a hub
+    hook and never installs its own entry. False when the records cannot be
+    read."""
+    try:
+        paths = _statusline_install_paths(owner)
         return bool(paths) and all(
             isinstance(p, str) and p and os.path.isdir(os.path.join(p, "hooks")) and
             not os.path.lexists(os.path.join(p, "hooks", "owner.py")) for p in paths)
@@ -318,7 +332,7 @@ def first_run(owner, data, proj):
     _guard_local(path, proj)
     _put(owner, data, path, {"absent"})
     what = ("the statusline footer, and any other display hooks registered"
-            if statusline_hooked() else
+            if statusline_hooked() or _statusline_installs_only_hooks(owner) else
             "its registered display hooks (a blank line until one registers)")
     return (f"status line slot taken in {path}: from your next session the hub records "
             f"each render for the tools that read it and draws {what}. Undo: "

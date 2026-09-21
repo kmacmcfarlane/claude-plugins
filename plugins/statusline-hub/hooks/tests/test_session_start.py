@@ -166,7 +166,10 @@ class FirstRun(Base):
         # registers as a hook, so there is nothing to wait for
         self.write_json(self.user, BOTH_ON)
         self.records(self.fake_statusline("2.0.0", owner_py=False))
-        self.assertIn("status line slot taken", self.said())
+        msg = self.said()
+        self.assertIn("status line slot taken", msg)
+        self.assertIn("draws the statusline footer", msg)   # it registers this session
+        self.assertNotIn("blank line", msg)
         self.assertEqual(self.load()["statusLine"], self.own())
 
     def test_waits_while_an_installed_statusline_can_install_itself(self):
@@ -268,6 +271,37 @@ class Heal(Base):
         self.sl_hooked()
         self.assertIn("restored the status line", self.said())
         self.assertEqual(self.load()["statusLine"], self.own())
+
+    def plugin_records(self, *keys):
+        """installed_plugins.json recording an install for each plugin key."""
+        self.write_json(os.path.join(self.cfg, "plugins", "installed_plugins.json"),
+                        {"version": 2, "plugins": {k: [{"scope": "user", "installPath":
+                                                        os.path.join(self.cfg, k)}]
+                                                   for k in keys}})
+
+    def test_the_footers_entry_yields_once_statusline_is_uninstalled(self):
+        # a stale footer entry with no statusline install left: nothing will
+        # ever register, so waiting would be silent forever
+        self.install()
+        self.plugin_records("statusline-hub@kmacmcfarlane")
+        self.write_json(self.user, dict(HUB_ON, statusLine=self.sl_entry()))
+        before = self.raw()
+        msg = self.said()
+        self.assertIn("changed by something else", msg)
+        self.assertIn(self.user, msg)
+        self.assertNotIn(self.sl_entry()["command"], msg)   # a path, never the value
+        self.assertEqual(self.raw(), before)
+        self.assertEqual(self.marker()["state"], "yielded")
+        self.quiet()
+
+    def test_the_footers_entry_waits_while_statusline_is_installed(self):
+        self.install()
+        self.plugin_records("statusline-hub@kmacmcfarlane", "statusline@kmacmcfarlane")
+        self.write_json(self.user, dict(BOTH_ON, statusLine=self.sl_entry()))
+        before = self.raw()
+        self.quiet()
+        self.assertEqual(self.raw(), before)
+        self.assertEqual(self.marker()["state"], "installed")
 
     def test_removed_stays_removed(self):
         self.install()
