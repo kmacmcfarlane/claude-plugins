@@ -19,10 +19,16 @@ Constraints this file lives under:
 - stdlib only; read-only; no network. Dollar figures are a *local list-price
   estimate* — Claude Code has not written costUSD since 1.0.9 — and on a
   subscription plan they are not what is billed.
-- **Dedupe by `message.id`, scoped to one file.** One API response is written
-  as several lines (`apiBlockIndex` 1,2,...) that each repeat the *same* usage
-  block; summing naively over-counts roughly 3x. The dedupe must stay
-  file-scoped: a global key would collapse distinct sessions that reuse an id.
+- **Dedupe by (`message.id`, `requestId`) across every file read, keeping the
+  line with the largest `output_tokens`.** One API response is streamed as
+  several lines (`apiBlockIndex` 1,2,...); only the last carries the final
+  `output_tokens`, so keeping the first undercounts output. A resumed or forked
+  session copies earlier history into its new file with the same message.id
+  and requestId, so a per-file dedupe counts that history twice. Ties keep the
+  first line read. The key is built from what exists: a line with a message.id
+  but no requestId is keyed (id, None) — it still dedupes its own streamed
+  lines, and never matches a line that has a requestId; a line with no
+  message.id has no identity and is counted as it stands.
 - Attribution comes from the path plus the meta file: the directory gives the
   parent session, the filename gives the agentId, `meta.model` gives the
   *requested* tier (sonnet/opus/fable/inherit, or absent when inherited), and
@@ -219,16 +225,20 @@ def _stderr_warn(message):
 class Record:
     """One deduped API response, with its tokens priced and normalised."""
 
-    __slots__ = ("project", "session_id", "agent_id", "message_id", "model",
-                 "timestamp", "tokens", "cache_write_5m", "cache_write_1h",
-                 "price_key", "model_known", "cost_usd", "opus_equivalent_tokens")
+    __slots__ = ("project", "session_id", "agent_id", "message_id", "request_id",
+                 "dedupe_key", "model", "timestamp", "tokens", "cache_write_5m",
+                 "cache_write_1h", "price_key", "model_known", "cost_usd",
+                 "opus_equivalent_tokens")
 
     def __init__(self, project, session_id, agent_id, message_id, model,
-                 timestamp, tokens, cache_write_5m, cache_write_1h):
+                 timestamp, tokens, cache_write_5m, cache_write_1h,
+                 request_id=None, dedupe_key=None):
         self.project = project
         self.session_id = session_id
         self.agent_id = agent_id
         self.message_id = message_id
+        self.request_id = request_id
+        self.dedupe_key = dedupe_key
         self.model = model
         self.timestamp = timestamp
         self.tokens = tokens
@@ -298,18 +308,40 @@ class FileScan:
         self.malformed = malformed
 
 
+def dedupe_key(message, obj):
+    """The identity of one API response: (message.id, requestId), or None.
+
+    None means the line has no message.id and cannot be matched to any other
+    line, so it is never deduped. A missing requestId keys as None rather than
+    disabling the dedupe, because such a line still repeats its response once
+    per streamed block.
+    """
+    message_id = message.get("id")
+    if not message_id:
+        return None
+    return (message_id, obj.get("requestId") or None)
+
+
+def _supersedes(record, held):
+    """True when `record` should replace `held`: strictly more output tokens."""
+    return record.tokens["output"] > held.tokens["output"]
+
+
 def read_transcript(path, project=None, session_id=None, agent_id=None,
                     table=None, since=None):
     """Parse one JSONL transcript into deduped, priced records.
 
-    Dedupe is by `message.id` within this file only. Lines without a usage
+    Within this file, lines sharing a dedupe_key() collapse to the one with the
+    largest output_tokens (the last streamed line carries the final count).
+    Cross-file duplicates are removed afterwards by dedupe_scans(). `--since`
+    is applied to the surviving line, after the dedupe. Lines without a usage
     block (user turns, tool results, the compact-summary injection) are
     skipped; `compact_boundary` system lines are counted, not summed — a
     boundary resets the context window, never the spend.
     """
     path = Path(path)
-    records = []
-    seen = set()
+    candidates = []
+    best = {}
     boundaries = duplicates = skipped = malformed = 0
     with path.open(encoding="utf-8", errors="replace") as handle:
         for number, line in enumerate(handle, 1):
@@ -332,31 +364,81 @@ def read_transcript(path, project=None, session_id=None, agent_id=None,
             if not isinstance(usage, dict):
                 skipped += 1
                 continue
-            message_id = message.get("id") or "%s#%d" % (path.name, number)
-            if message_id in seen:
-                duplicates += 1
-                continue
-            seen.add(message_id)
-            timestamp = parse_timestamp(obj.get("timestamp"))
-            if since is not None and (timestamp is None or timestamp < since):
-                skipped += 1
-                continue
+            key = dedupe_key(message, obj)
             tokens, write_5m, write_1h = usage_tokens(usage)
             record = Record(
                 project=project if project is not None else path.parent.name,
                 session_id=session_id or obj.get("sessionId"),
                 agent_id=agent_id or obj.get("agentId"),
-                message_id=message_id,
+                message_id=message.get("id") or "%s#%d" % (path.name, number),
                 model=message.get("model"),
-                timestamp=timestamp,
+                timestamp=parse_timestamp(obj.get("timestamp")),
                 tokens=tokens,
                 cache_write_5m=write_5m,
                 cache_write_1h=write_1h,
+                request_id=obj.get("requestId") or None,
+                dedupe_key=key,
             )
-            if table is not None:
-                record.price(table)
-            records.append(record)
+            if key is not None and key in best:
+                duplicates += 1
+                slot = best[key]
+                if _supersedes(record, candidates[slot]):
+                    candidates[slot] = record
+                continue
+            if key is not None:
+                best[key] = len(candidates)
+            candidates.append(record)
+    records = []
+    for record in candidates:
+        if since is not None and (record.timestamp is None or record.timestamp < since):
+            skipped += 1
+            continue
+        if table is not None:
+            record.price(table)
+        records.append(record)
     return FileScan(path, records, boundaries, duplicates, skipped, malformed)
+
+
+def dedupe_scans(scans):
+    """Remove records duplicated across files, in place; return the count dropped.
+
+    For each dedupe_key the record with the most output_tokens survives, in
+    whichever file it was read from; on a tie the first one read (in `scans`
+    order) survives. Each dropped record adds one to its own file's
+    `duplicates`. Idempotent: a second pass over the same scans drops nothing.
+    """
+    winners = {}
+    losers = []
+    for scan in scans:
+        for record in scan.records:
+            key = record.dedupe_key
+            if key is None:
+                continue
+            held = winners.get(key)
+            if held is None:
+                winners[key] = (scan, record)
+            elif _supersedes(record, held[1]):
+                losers.append(held)
+                winners[key] = (scan, record)
+            else:
+                losers.append((scan, record))
+    drop = {}
+    for scan, record in losers:
+        drop.setdefault(id(scan), (scan, set()))[1].add(id(record))
+    for scan, ids in drop.values():
+        scan.records = [r for r in scan.records if id(r) not in ids]
+        scan.duplicates += len(ids)
+    return len(losers)
+
+
+def session_scans(sessions):
+    """Every FileScan in `sessions`, in read order: each main file, then its dispatches."""
+    scans = []
+    for session in sessions:
+        if session.main_scan is not None:
+            scans.append(session.main_scan)
+        scans.extend(d.scan for d in session.dispatches)
+    return scans
 
 
 # --------------------------------------------------------------------------
@@ -494,7 +576,9 @@ def read_session(session_jsonl, table=None, since=None, project=None):
                                    table=table, since=since)
             dispatches.append(Dispatch(agent_id, meta, scan))
     link_dispatches(dispatches)
-    return Session(project, session_id, main, dispatches)
+    session = Session(project, session_id, main, dispatches)
+    dedupe_scans(session_scans([session]))
+    return session
 
 
 def read_project(project_dir, table=None, since=None):
@@ -503,6 +587,7 @@ def read_project(project_dir, table=None, since=None):
     for session_jsonl in sorted(project_dir.glob("*.jsonl")):
         sessions.append(read_session(session_jsonl, table=table, since=since,
                                      project=project_dir.name))
+    dedupe_scans(session_scans(sessions))
     return sessions
 
 
@@ -648,6 +733,8 @@ def collect(args, table):
     sessions = []
     for project_dir in scope:
         sessions.extend(read_project(project_dir, table=table, since=since))
+    # A resumed or forked session can copy history across projects too.
+    dedupe_scans(session_scans(sessions))
     return sessions, [p.name for p in scope], since
 
 
