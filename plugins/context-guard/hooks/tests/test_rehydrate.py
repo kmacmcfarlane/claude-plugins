@@ -102,6 +102,38 @@ class TestRehydrate(unittest.TestCase):
         self.assertNotIn("## Doing", c)
         self.assertIn("FRESH", c)
 
+    def write_mode_skill(self, value, mode="continue"):
+        self.write_manifest(mode=mode)
+        p = os.path.join(self.repo, "HANDOFF.md")
+        t = open(p).read().replace("mode: " + mode + "\n",
+                                   "mode: " + mode + "\n" + value + "\n", 1)
+        open(p, "w").write(t)
+
+    def test_mode_skill_named_on_every_tier(self):
+        self.write_mode_skill("mode_skill: /some-plugin:some-mode start  # re-enter")
+        for source in ("startup", "clear", "compact"):
+            rc, out = self.hook(source, sid=source)
+            c = self.ctx(out)
+            self.assertEqual(rc, 0)
+            self.assertIn("FRESH", c)
+            self.assertIn("re-enter it first with `/some-plugin:some-mode start`.",
+                          c.split("\n")[0], source)
+
+    def test_mode_skill_absent_or_invalid_is_silent(self):
+        for value in ("", "mode_skill:", "mode_skill: not-a-command"):
+            self.write_mode_skill(value)
+            rc, out = self.hook("startup", sid="x" + str(len(value)))
+            c = self.ctx(out)
+            self.assertIn("FRESH", c)
+            self.assertNotIn("standing mode", c)
+
+    def test_mode_skill_not_named_when_landed(self):
+        self.write_mode_skill("mode_skill: /some-plugin:some-mode start", mode="landed")
+        rc, out = self.hook("startup")
+        c = self.ctx(out)
+        self.assertIn("LANDED", c)
+        self.assertNotIn("standing mode", c)
+
     def test_stale_label_and_reconfirm(self):
         self.write_manifest(written="2026-01-01T00:00:00Z")
         rc, out = self.hook("compact")

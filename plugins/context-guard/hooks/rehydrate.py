@@ -21,6 +21,8 @@ Tiers by source:
   resume           full only if the manifest changed or the repo moved since
                    the last injection (state manifest.sha); else header
   startup / clear  header only (~120 tokens), labelled if stale
+Every tier's header names the manifest's `mode_skill:` (the standing mode to
+re-enter first), unless the manifest is LANDED.
 No manifest and nothing to say -> {} (silent).
 
 Budget: total additionalContext <= 9,000 chars, under the harness's single
@@ -297,6 +299,17 @@ def is_landed(fm):
     return (fm.get("mode") or "").startswith("land")
 
 
+def mode_skill(fm):
+    """The optional `mode_skill:` key: the slash command that re-enters the
+    standing mode the session was running, or "" (absent, landed, not a
+    slash command). One line, capped: it rides on every tier's header."""
+    v = fm.get("mode_skill")
+    if is_landed(fm) or not isinstance(v, str):
+        return ""
+    v = " ".join(v.strip().strip("'\"").split())
+    return v[:200] if v.startswith("/") else ""
+
+
 def liveness(fm, hs, unverified_why="git unavailable"):
     """(label, reason or None). Reads the same head_state as the Next withhold:
     a recorded head missing locally or not an ancestor of HEAD (rewound,
@@ -547,6 +560,10 @@ def main():
                   f"manifest {path} "
                   f"(written {fm.get('written', '?')}, head {fm.get('head', '?')}, "
                   f"now {len(dirty.splitlines())} dirty file(s)).")
+        ms = mode_skill(fm)
+        if ms:
+            header += (f" The session was in a standing mode: re-enter it first "
+                       f"with `{ms}`.")
         moved, dead, notes = stale_checks(fm, top, live, hs)
         if len(dead) > 20:
             dead = dead[:20] + [f"(+{len(dead) - 20} more)"]

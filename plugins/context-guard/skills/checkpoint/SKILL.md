@@ -123,8 +123,10 @@ authoritative record: point **Read in full** at it and carry only what the files
 hold — environment state, corrections, refusals; the format spec's stage-boundary rule
 has the full list. Fill the frontmatter `items:` with the `wi` ids of the open or doing
 items the manifest mentions (check them against the store, not memory): the rehydration hook
-diffs that list against the store and names every one since closed as a dead claim. Then
-stand the gate down:
+diffs that list against the store and names every one since closed as a dead claim. If
+this session is running a standing mode (a skill that holds it in a role, entered by a
+command such as `/<plugin>:<mode> start`), set `mode_skill:` to that command exactly as the
+operator would type it; omit it otherwise and in a landed manifest. Then stand the gate down:
 
 ```bash
 python3 "${CLAUDE_PLUGIN_ROOT}/hooks/mark_checkpoint.py" <session-id>
@@ -162,7 +164,8 @@ this is the **last thing on screen**, after Step 6. Land mode emits nothing here
 landed` in the manifest is the whole story.
 
 Under ~5 lines. Contents: the skill or task to invoke, exactly as the operator would type
-it; `read <manifest path> in full first` (the path Step 4b actually wrote —
+it — when the manifest sets `mode_skill:`, that command leads the opener, so the next
+session re-enters the standing mode before anything else; `read <manifest path> in full first` (the path Step 4b actually wrote —
 `.claude-sandbox/HANDOFF.md` or root `HANDOFF.md`; "in full" matters — after `/clear` the
 rehydration hook injects only the manifest header, so the opener is what tells the next
 session to read the whole file); and the one or two facts that changed since the manifest
