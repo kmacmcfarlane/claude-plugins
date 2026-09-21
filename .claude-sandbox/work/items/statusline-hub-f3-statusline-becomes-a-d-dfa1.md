@@ -18,3 +18,7 @@ d193 07 § F3. statusline declares statusline-hub in plugin.json dependencies (p
 - next: —
 - blocked: —
 - learned: —
+
+## Carried from F1
+- README consumer rows: context-guard and dev-flow notes name statusline-hub (soft) as a sensor source; context-guard/hooks/statusline.py:5 tells users to install statusline for a sensor record — mention the hub.
+- statusline sensor.py docstring already names both writers (F1).

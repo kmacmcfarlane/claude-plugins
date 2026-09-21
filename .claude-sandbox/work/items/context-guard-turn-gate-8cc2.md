@@ -56,3 +56,5 @@ decision 47: where HANDOFF.md lives — (a) C: each session keeps its own manife
 ## Plan review round 3 — NEEDS_CHANGES (opus)
 - F1 cleared to build (lands after F3a). F3a: [high] a link pins whatever version is on disk even if a third session Z owns it (X checkpoints, Z overwrites, X /clears → successor inherits Z). Fix: pin only a version that was ours for the linking session, else null; tests. lows: document that a full Read of mode: handoff adopts (cat does not); hash raw text with errors="replace".
 - dispatch: planner opus — plan fix round 3 (resume); round 4 review is the last before the cap
+- plan fix round 3: serial 03_link-pins-owned-version.md — link pins only a version owned by the linking session (owned_version helper), else null; handoff-adoption documented; raw-text hash.
+- dispatch: plan reviewer opus — round 4 (last; resume)

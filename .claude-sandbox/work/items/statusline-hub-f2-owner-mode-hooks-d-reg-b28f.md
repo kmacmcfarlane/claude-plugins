@@ -18,3 +18,6 @@ d193 07 § F2 + consumer requirements recorded in d193 (claude-analytics: record
 - next: —
 - blocked: —
 - learned: —
+
+## Carried from F1
+- records written only by the hub are not pruned until the hub has its own SessionStart prune (this feature).
