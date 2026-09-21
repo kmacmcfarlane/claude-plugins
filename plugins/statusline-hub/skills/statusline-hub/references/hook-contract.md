@@ -238,10 +238,14 @@ shows no health glyph.
   session, and it writes no settings. With `--segment` the footer writes no sensor record,
   since the hub wrote it before the hook started.
 - Until that manifest exists and is trusted, the hub **never** takes the slot from the
-  footer and never races it for an empty slot. Doing either would drop the footer. Once it
-  exists, the hub's SessionStart repoints a slot the statusline plugin (or an older copy of
-  its footer) installed at the hub, and the footer keeps drawing through it. The slot
-  changes hands once: nothing moves it back.
+  footer and never races it for an empty slot. Doing either would drop the footer. (It
+  does take an empty slot at once when every statusline install Claude Code records is a
+  version without `hooks/owner.py`: such a version never installs an entry of its own, so
+  there is nothing to wait for.) Once the manifest exists, the hub's SessionStart repoints
+  a slot the statusline plugin (or an older copy of its footer) installed at the hub, and
+  the footer keeps drawing through it. The slot changes hands once: nothing moves it back.
+  If an older session writes its stale settings back over the hub's entry, putting the
+  footer's earlier entry there again, the next session repoints it at the hub too.
 - A registry refused as a whole (§ 4: the config dir inside a git work tree, or the hub
   dirs not private) runs no hooks, so it would draw no footer either; the hub's
   SessionStart says so once, naming the directory and the reason.

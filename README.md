@@ -357,7 +357,10 @@ contract both ways is `skills/install-statusline/references/sensor-contract.md`;
 
 Hard dependency on `statusline-hub` (principle 4): the footer has no function without it.
 This plugin no longer installs a status line of its own, so without the hub nothing runs the
-footer. Soft dependency on `context-guard`: when it is installed and active in the session,
+footer. `/plugin update` of a version from before the dependency does not install the hub
+(a Claude Code bug), so the hook checks Claude Code's install records: with no
+`statusline-hub` there, it says once to run `/plugin install statusline@kmacmcfarlane`
+again. Soft dependency on `context-guard`: when it is installed and active in the session,
 the gauge colours by its published thresholds and shows its epoch and `checkpoint DUE` /
 `HARD gate` labels; without it, default thresholds, no epoch, no labels, and nothing is
 written outside `~/.claude/statusline/` and the hub's registry.
@@ -492,12 +495,15 @@ Or in `.claude/settings.json` (`~/.claude/settings.json` for user scope):
     }
   },
   "enabledPlugins": {
-    "statusline@kmacmcfarlane": true
+    "statusline@kmacmcfarlane": true,
+    "statusline-hub@kmacmcfarlane": true
   }
 }
 ```
 
-Auto-install from `enabledPlugins` is unverified; the reliable path is still the explicit
+List `statusline-hub` beside `statusline`: the footer draws only through it, and enabling
+`statusline` from a settings file is not known to enable its dependency too. Auto-install from
+`enabledPlugins` is unverified; the reliable path is still the explicit
 `/plugin install statusline@kmacmcfarlane` below.
 
 ### Install plugins
@@ -512,6 +518,10 @@ itself in the status-line slot and says so (in the first session, or the second 
 footer had not registered yet), and the footer shows from the session after that.
 `/install-statusline-hub` (or `/install-statusline`, which hands off to it) is only for
 another scope, removal, or replacing a status line another tool set.
+
+Upgrading from a `statusline` that predates the hub: `/plugin update` does not install a
+new dependency, so run `/plugin install statusline@kmacmcfarlane` again (the footer says so
+at session start when the hub is missing).
 
 To keep this marketplace itself up to date automatically, see "Keep it updated" in the
 `install-statusline` skill.

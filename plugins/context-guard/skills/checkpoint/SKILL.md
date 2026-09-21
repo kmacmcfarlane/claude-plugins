@@ -58,8 +58,9 @@ the state directories keep it so existing sessions and ledgers stay readable.)
 
 The gate state gives the epoch and a depth, but **stores no source label** — the source is
 derived when the gate reads the file. The status line writes an `exact` block (`pct`,
-`tokens`, `window`, `at`) to its sensor file, `statusline/sensor/<session>.json` (the
-`statusline` plugin; absent when it is not installed). An older install whose status line
+`tokens`, `window`, `at`) to its sensor file, `statusline/sensor/<session>.json` (written
+by the `statusline-hub` plugin, which installing `statusline` brings; absent when it is not
+installed). An older install whose status line
 still runs context-guard's deprecated copy writes the block into the gate state instead; the
 gate reads both and takes the one with the larger `at`. That block counts as *exact* only
 while `now - at` is under 600s, and once it goes stale the depth is re-derived from the

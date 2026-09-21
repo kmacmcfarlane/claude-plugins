@@ -1,6 +1,7 @@
 """session_start.py: the hub hook manifest (written, refreshed, private,
 atomic), no settings writes and no messages in any state an earlier version
-left behind, prune, and never raising. Hermetic (helpers.Hermetic); the hook
+left behind, the once-only notice when statusline-hub is not installed,
+prune, and never raising. Hermetic (helpers.Hermetic); the hook
 runs as a subprocess with CLAUDE_PLUGIN_ROOT and CLAUDE_PLUGIN_DATA set, as
 Claude Code runs it."""
 import json, os, stat, subprocess, sys, time, unittest
@@ -159,6 +160,80 @@ class NoSettings(Base):
         self.quiet()
         self.assertFalse(os.path.exists(self.user))
         self.assertFalse(os.path.exists(os.path.join(self.proj, ".claude")))
+
+
+class HubMissing(Base):
+    """`/plugin update` of a version that predates the hub dependency does not
+    install the hub (Claude Code #88663): said once, naming the fix."""
+
+    def records(self, *keys, path=None):
+        recs = {k: [{"scope": "user", "installPath": path or os.path.join(self.cfg, k)}]
+                for k in keys}
+        self.write_json(os.path.join(self.cfg, "plugins", "installed_plugins.json"),
+                        {"version": 2, "plugins": recs})
+
+    def said(self):
+        rc, out, err = self.hook()
+        self.assertEqual((rc, err), (0, ""))
+        d = json.loads(out)
+        self.assertEqual(list(d), ["systemMessage"], out)
+        msg = d["systemMessage"]
+        self.assertTrue(msg.startswith("statusline: "), msg)
+        self.assertNotIn("\n", msg)
+        return msg
+
+    def test_said_once_then_cleared_when_the_hub_arrives(self):
+        self.write_json(self.user, dict(ENABLED, model="secret-value"))
+        self.records("statusline@kmacmcfarlane")
+        msg = self.said()
+        self.assertIn("statusline-hub", msg)
+        self.assertIn("/plugin install statusline@kmacmcfarlane", msg)
+        self.assertNotIn("secret-value", msg)            # key names only, never values
+        self.assertTrue(os.path.isfile(self.manifest))   # registered all the same
+        for _ in range(2):
+            self.quiet()
+        self.records("statusline@kmacmcfarlane", "statusline-hub@kmacmcfarlane")
+        self.quiet()
+        self.assertFalse(os.path.exists(os.path.join(self.data, "hub-missing-notice.json")))
+        self.records("statusline@kmacmcfarlane")          # lost again: said again
+        self.said()
+
+    def test_names_the_marketplace_it_was_installed_from(self):
+        self.records("statusline@my-fork", path=helpers.PLUGIN)
+        self.assertIn("/plugin install statusline@my-fork", self.said())
+
+    def test_quiet_whenever_the_hub_may_be_there(self):
+        def live_hub():
+            self.records("statusline@k")
+            d = os.path.join(self.cfg, "plugins", "data", "statusline-hub-kmacmcfarlane")
+            os.makedirs(d)
+            os.symlink(os.path.join(os.path.dirname(helpers.PLUGIN), "statusline-hub", "hooks"),
+                       os.path.join(d, "current-hooks"))
+
+        cases = {
+            "no install records": lambda: None,
+            "unreadable install records": lambda: self.write_json(
+                os.path.join(self.cfg, "plugins", "installed_plugins.json"), raw="{bad"),
+            "hub record": lambda: self.records("statusline@k", "statusline-hub@k"),
+            "enabled in user settings": lambda: (self.records("statusline@k"), self.write_json(
+                self.user, {"enabledPlugins": {"statusline-hub@k": True}})),
+            "enabled in the project": lambda: (self.records("statusline@k"), self.write_json(
+                os.path.join(self.proj, ".claude", "settings.local.json"),
+                {"enabledPlugins": {"statusline-hub@k": True}})),
+            "unreadable settings": lambda: (self.records("statusline@k"),
+                                            self.write_json(self.user, raw="{bad")),
+            "a live hub data dir": live_hub,
+        }
+        for name, seed in cases.items():
+            with self.subTest(name):
+                self.tearDown()
+                self.setUp()
+                seed()
+                self.quiet()
+
+    def test_no_data_dir_is_not_said(self):
+        self.records("statusline@kmacmcfarlane")
+        self.quiet(env={"CLAUDE_PLUGIN_DATA": None})
 
 
 class NeverRaises(Base):

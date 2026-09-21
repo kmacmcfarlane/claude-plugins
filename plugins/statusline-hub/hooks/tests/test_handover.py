@@ -8,7 +8,8 @@ may finish first), and each "session" also renders whatever the settings'
 statusLine command is, through a shell, as Claude Code does. Scenarios: a
 fresh machine, an existing statusline install (the upgrade), a foreign
 status line, the hub removed, the statusline plugin disabled later, an older
-copy of the footer (context-guard's) in the slot.
+copy of the footer (context-guard's) in the slot, and an upgrade that left
+the hub uninstalled (`/plugin update` does not add a new dependency).
 
 Runs only in the source repo, where plugins/statusline/ sits beside this
 plugin; an installed copy skips it."""
@@ -65,8 +66,22 @@ class Handover(helpers.Hermetic):
 
     def sl_ss(self):
         out = self._hook(SL_SS, SL_PLUGIN, self.sl_data)
-        self.assertEqual(out, {})   # the statusline plugin never has anything to say
+        # the statusline plugin has nothing to say while the hub is there
+        self.assertEqual(out, {})
         return out
+
+    def sl_ss_said(self):
+        out = self._hook(SL_SS, SL_PLUGIN, self.sl_data)
+        self.assertEqual(list(out), ["systemMessage"])
+        return out["systemMessage"]
+
+    def records(self, *keys):
+        """Claude Code's install records: each key installed from this repo."""
+        where = {"statusline": SL_PLUGIN, "statusline-hub": helpers.PLUGIN}
+        self.write_json(os.path.join(self.cfg, "plugins", "installed_plugins.json"),
+                        {"version": 2, "plugins": {
+                            f"{k}@{MKT}": [{"scope": "user", "installPath": where[k]}]
+                            for k in keys}})
 
     def session(self, hub=True, sl=True, sl_first=True):
         """One session start: the enabled plugins' hooks, in the given order.
@@ -188,6 +203,19 @@ class Handover(helpers.Hermetic):
                     self.assertEqual(self.session(sl_first=sl_first), settled)
                 self.assertEqual(len(self.messages), 1, self.messages)
 
+    def test_fresh_machine_hub_first_does_not_wait_for_a_footer_that_only_registers(self):
+        # the install records show a statusline without owner.py: it will
+        # never install its own entry, so the hub takes the slot at once
+        self.records("statusline", "statusline-hub")
+        self.write_json(self.user, BOTH_ON)
+        self.session(sl_first=False)
+        self.assertEqual(len(self.messages), 1, self.messages)
+        self.assertIn("status line slot taken", self.messages[0])
+        self.assertEqual(self.kind(), "own")
+        self.session(sl_first=False)
+        self.assertFooterViaHub()
+        self.assertEqual(len(self.messages), 1, self.messages)
+
     def setUp_fresh(self):
         self.tearDown()
         self.setUp()
@@ -218,6 +246,32 @@ class Handover(helpers.Hermetic):
                 with open(os.path.join(self.sl_data, "owner.json")) as f:
                     self.assertEqual(json.load(f)["state"], "installed")
                 self.assertFooterViaHub()
+
+    def test_upgrade_without_the_hub_is_said_once_then_fixed_by_reinstalling(self):
+        # an earlier statusline owned the slot; `/plugin update statusline`
+        # brought the new version but not its new dependency
+        self.write_json(self.user, {"enabledPlugins": {f"statusline@{MKT}": True},
+                                    "statusLine": self.sl_entry()})
+        self.sl_marker("installed")
+        self.records("statusline")
+        before = self.raw()
+        msg = self.sl_ss_said()
+        self.assertTrue(msg.startswith("statusline: "), msg)
+        self.assertIn(f"/plugin install statusline@{MKT}", msg)
+        self.assertIn("statusline-hub", msg)
+        self.assertEqual(self.raw(), before)             # no settings write
+        self.assertIn(FOOTER, self.render()[0])          # the old entry still draws
+        for _ in range(2):                               # said once
+            self.assertEqual(self.session(hub=False), before)
+        # re-running the install brings the hub: it takes over, quietly for statusline
+        self.records("statusline", "statusline-hub")
+        self.write_json(self.user, dict(BOTH_ON, statusLine=self.sl_entry()))
+        self.session()
+        self.assertEqual(len(self.messages), 2, self.messages)
+        self.assertIn("took over the status line slot", self.messages[1])
+        self.assertFalse(os.path.exists(os.path.join(self.sl_data,
+                                                     "hub-missing-notice.json")))
+        self.assertFooterViaHub()
 
     def test_foreign_status_line_is_left_alone(self):
         self.write_json(self.user, dict(BOTH_ON, statusLine=FOREIGN))

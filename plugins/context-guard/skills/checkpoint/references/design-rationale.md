@@ -90,7 +90,8 @@ Point the next session at the file by path; never paste the summary.
 
 Three layers, escalating; the first two are hooks, the third is a skill.
 
-1. **Sensor + gauge** — the status line (the `statusline` plugin) receives
+1. **Sensor + gauge** — the status line (the `statusline-hub` plugin, which records each
+   render before it runs the `statusline` footer or any other display hook) receives
    `context_window.used_percentage` and `context_window_size` (the only place Claude Code
    exposes exact depth) and writes them to its neutral sensor record,
    `${CLAUDE_CONFIG_DIR:-~/.claude}/statusline/sensor/<session>.json` (`"v": 1`; any other `v`
@@ -126,7 +127,7 @@ Three layers, escalating; the first two are hooks, the third is a skill.
    own state, and a record stamped at or before it counts as window-only. The gate publishes
    its threshold anchors and gauge labels to `claude-kit/context-gate/gauge.json` (`"v": 1`)
    at SessionStart, generated from the same `ANCHORS` constant it gates on. context-guard
-   never writes `settings.json`: the `statusLine` entry belongs to the `statusline` plugin.
+   never writes `settings.json`: the `statusLine` entry belongs to the `statusline-hub` plugin.
 2. **Bands** (`UserPromptSubmit`, 60/75/88%, once each, latching) — to the operator via
    `systemMessage`, to the model via `additionalContext`. Only one can act; only the other can
    decide.

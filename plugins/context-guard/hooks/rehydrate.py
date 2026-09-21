@@ -401,15 +401,17 @@ def _parent_by_record_uuid(sid, transcript_path):
     return None
 
 
-# The status line moved to the statusline plugin. context-guard keeps its
-# deprecated copy (hooks/statusline.py) for one release and never writes
-# settings.json: it only notices, read-only, when a settings entry still runs
-# a predecessor copy and the statusline plugin is not there to take it over.
+# The status line moved to the statusline plugin, whose footer draws through
+# the statusline-hub plugin. context-guard keeps its deprecated copy
+# (hooks/statusline.py) for one release and never writes settings.json: it
+# only notices, read-only, when a settings entry still runs a predecessor
+# copy and the statusline plugin is not there - once it is, it registers the
+# footer with the hub, and the hub's SessionStart takes the entry over.
 NOTICE_EVERY_S = 7 * 24 * 3600
 NOTICE_STAMP = ".statusline-moved-notice"
-# The predecessor fingerprint (statusline plugin's owner.py, PREDECESSOR_RE):
-# a command running <cfg>/plugins/data/{claude-kit,context-guard}-<mkt>/
-# current-hooks/statusline.py.
+# The predecessor fingerprint: a command running
+# <cfg>/plugins/data/{claude-kit,context-guard}-<mkt>/current-hooks/statusline.py
+# (the older copies statusline-hub's classify() counts as the footer's own).
 PREDECESSOR_RE = re.compile(
     r'\s*python3\s+"?[^"]*/plugins/data/(?:claude-kit|context-guard)-[^/"]+'
     r'/current-hooks/statusline\.py"?\s*')
@@ -438,16 +440,20 @@ def statusline_notice(now=None):
     """The one-line "moved" notice, or None. Read-only on settings: it fires
     when a settings file (user settings, or one a predecessor install marker
     names) still runs context-guard's or claude-kit's copy of the status line
-    AND the statusline plugin is absent - any plugins/data/statusline-* dir
-    (its owner.json lives there) means that plugin owns the setting and takes
-    it over itself, so context-guard stays silent. At most once per
+    AND the statusline plugin is absent - any plugins/data/statusline-<mkt>
+    dir means it is installed, and with it statusline-hub, whose SessionStart
+    takes the entry over once the footer registers as its display hook, so
+    context-guard stays silent. A statusline-hub-<mkt> dir alone does not
+    count: the hub takes a predecessor entry over only once the statusline
+    footer has registered. At most once per
     NOTICE_EVERY_S across all sessions (a stamp in the state dir); when the
     stamp cannot be written the notice is withheld, so it can never repeat
     every session. Never raises."""
     try:
         now = time.time() if now is None else now
         cfg = L._base_dir()
-        if _data_dirs(cfg, "statusline-"):
+        if any(not os.path.basename(d).startswith("statusline-hub-")
+               for d in _data_dirs(cfg, "statusline-")):
             return None
         stamp = os.path.join(L._state_dir(), NOTICE_STAMP)
         try:

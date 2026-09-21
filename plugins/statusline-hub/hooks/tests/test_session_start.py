@@ -148,6 +148,34 @@ class FirstRun(Base):
         self.quiet()
         self.assertNotIn("statusLine", self.load())
 
+    def records(self, *roots):
+        """installed_plugins.json recording a statusline install at each root."""
+        self.write_json(os.path.join(self.cfg, "plugins", "installed_plugins.json"),
+                        {"version": 2, "plugins": {"statusline@kmacmcfarlane": [
+                            {"scope": "user", "installPath": r} for r in roots]}})
+
+    def fake_statusline(self, name, owner_py):
+        root = os.path.join(self.cfg, "plugins", "cache", "kmacmcfarlane", "statusline", name)
+        os.makedirs(os.path.join(root, "hooks"))
+        if owner_py:
+            self.write_json(os.path.join(root, "hooks", "owner.py"), raw="")
+        return root
+
+    def test_no_wait_when_no_installed_statusline_can_install_itself(self):
+        # a fresh machine, the hub's hook first: the installed footer only
+        # registers as a hook, so there is nothing to wait for
+        self.write_json(self.user, BOTH_ON)
+        self.records(self.fake_statusline("2.0.0", owner_py=False))
+        self.assertIn("status line slot taken", self.said())
+        self.assertEqual(self.load()["statusLine"], self.own())
+
+    def test_waits_while_an_installed_statusline_can_install_itself(self):
+        self.write_json(self.user, BOTH_ON)
+        self.records(self.fake_statusline("2.0.0", owner_py=False),
+                     self.fake_statusline("1.0.0", owner_py=True))
+        self.quiet()
+        self.assertNotIn("statusLine", self.load())
+
     def test_empty_slot_taken_when_statusline_is_hooked(self):
         self.write_json(self.user, BOTH_ON)
         self.sl_hooked()
@@ -208,17 +236,38 @@ class Heal(Base):
         self.assertIn("restored the status line", self.said())
         self.assertEqual(self.load()["statusLine"], self.own())
 
-    def test_yields_to_anything_else(self):
-        for entry in (FOREIGN, None):
-            with self.subTest(entry=entry):
-                self.install()
-                self.write_json(self.user, dict(HUB_ON, statusLine=entry or self.sl_entry()))
-                before = self.raw()
-                self.assertIn("changed by something else", self.said())
-                self.assertEqual(self.raw(), before)
-                self.assertEqual(self.marker()["state"], "yielded")
-                self.quiet()
-                os.remove(os.path.join(self.data, "owner.json"))
+    def test_yields_to_a_foreign_entry(self):
+        self.install()
+        self.write_json(self.user, dict(HUB_ON, statusLine=FOREIGN))
+        before = self.raw()
+        self.assertIn("changed by something else", self.said())
+        self.assertEqual(self.raw(), before)
+        self.assertEqual(self.marker()["state"], "yielded")
+        self.quiet()
+
+    def test_a_stale_write_back_of_the_footers_entry_is_repointed(self):
+        # an older session read settings before the takeover and wrote them back
+        self.install()
+        self.sl_hooked()
+        self.write_json(self.user, dict(BOTH_ON, statusLine=self.sl_entry(), model="opus"))
+        msg = self.said()
+        self.assertIn("restored the status line", msg)
+        self.assertNotIn("changed by something else", msg)
+        self.assertEqual(self.load(), dict(BOTH_ON, statusLine=self.own(), model="opus"))
+        self.assertEqual(self.marker()["state"], "installed")
+        self.quiet()
+
+    def test_the_footers_entry_waits_while_the_footer_is_not_a_hook(self):
+        self.install()
+        self.write_json(self.user, dict(BOTH_ON, statusLine=self.sl_entry()))
+        before = self.raw()
+        for _ in range(2):
+            self.quiet()          # it still draws the footer: never yielded
+            self.assertEqual(self.raw(), before)
+            self.assertEqual(self.marker()["state"], "installed")
+        self.sl_hooked()
+        self.assertIn("restored the status line", self.said())
+        self.assertEqual(self.load()["statusLine"], self.own())
 
     def test_removed_stays_removed(self):
         self.install()
@@ -312,6 +361,25 @@ class RefusalNotice(Base):
         self.quiet()
         os.makedirs(os.path.join(self.repo, ".git"))
         self.assertIn("inside a git work tree", self.said())
+
+    def test_a_directory_reason_names_the_fix_and_an_unknown_one_is_quoted(self):
+        import session_start
+        d = os.path.join(self.cfg, "statusline-hub", "hooks.d")
+        cases = [("a symlink", "is a symlink; it must be a real directory of yours"),
+                 ("something new", "is refused (something new)")]
+        for why, want in cases:
+            with self.subTest(why=why):
+                stamp = os.path.join(self.data, session_start.NOTICE)
+                if os.path.exists(stamp):
+                    os.remove(stamp)
+                os.makedirs(self.data, exist_ok=True)
+                saved = session_start.refusal
+                session_start.refusal = lambda: (d, why)
+                try:
+                    msg = session_start.refusal_notice(self.data)
+                finally:
+                    session_start.refusal = saved
+                self.assertIn(d + " " + want, msg)
 
     def test_rides_along_with_the_slot_message(self):
         self.plant()

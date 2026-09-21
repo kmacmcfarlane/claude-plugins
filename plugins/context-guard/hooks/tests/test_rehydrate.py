@@ -363,6 +363,14 @@ class TestStatuslineHandover(TestRehydrate):
         self.assertEqual(snapshot(self.sp), before)
         self.assertFalse(os.path.exists(self.stamp()))
 
+    def test_the_hub_alone_does_not_silence_the_notice(self):
+        # statusline-hub takes a predecessor entry over only once the
+        # statusline footer registers, so its data dir alone changes nothing
+        self.settings({"statusLine": {"type": "command",
+                                      "command": self.cmd("context-guard-x")}})
+        self.data_dir("statusline-hub-kmacmcfarlane")
+        self.assertIn("moved to the `statusline` plugin", self.start())
+
     def test_silent_when_statusline_owns_the_entry(self):
         self.settings({"statusLine": {"type": "command",
                                       "command": self.cmd("statusline-kmacmcfarlane")}})

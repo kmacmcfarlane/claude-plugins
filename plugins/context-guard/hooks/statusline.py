@@ -48,8 +48,10 @@ an arbitrary string set by another agent), invisible format characters (bidi
 overrides, zero-width spaces; Unicode category Cf) are dropped, and it is
 capped at NAME_MAX terminal columns.
 
-Install: not from here any more - install the `statusline` plugin, whose
-SessionStart hook and /install-statusline take over an entry that points here.
+Install: not from here any more - install the `statusline` plugin (it brings
+statusline-hub): statusline-hub's SessionStart takes over an entry that points
+here once the statusline footer has registered as its display hook, and
+/install-statusline-hub moves or replaces it.
 """
 import json, math, os, re, sys, time, unicodedata
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))

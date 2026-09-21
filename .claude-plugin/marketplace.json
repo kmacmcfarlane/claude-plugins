@@ -13,7 +13,7 @@
     {
       "name": "context-guard",
       "source": "./plugins/context-guard",
-      "description": "Context survival for long sessions — depth gate, checkpoint workflow, session rehydration, and token-spend reporting from the local transcripts (soft dependency: statusline, for exact depth)."
+      "description": "Context survival for long sessions — depth gate, checkpoint workflow, session rehydration, and token-spend reporting from the local transcripts (soft dependency: statusline-hub, for exact depth from the sensor record it writes; installing statusline brings it)."
     },
     {
       "name": "statusline",
@@ -28,7 +28,7 @@
     {
       "name": "dev-flow",
       "source": "./plugins/dev-flow",
-      "description": "Plan-first development for agent sessions — investigation series, reviewed plans, verified implementation, a sub-agent dev cycle that carries one change from plan to merge, multi-agent research fan-outs, chain-of-verification fact-checking, and a standing librarian that takes custody of a repo's work: files, dispatches, reviews and lands (soft dependencies: work-items; statusline, for rate-limit reset times; context-guard, for checkpoint and rehydration)."
+      "description": "Plan-first development for agent sessions — investigation series, reviewed plans, verified implementation, a sub-agent dev cycle that carries one change from plan to merge, multi-agent research fan-outs, chain-of-verification fact-checking, and a standing librarian that takes custody of a repo's work: files, dispatches, reviews and lands (soft dependencies: work-items; statusline-hub, for rate-limit reset times from the sensor record it writes; context-guard, for checkpoint and rehydration)."
     },
     {
       "name": "work-items",

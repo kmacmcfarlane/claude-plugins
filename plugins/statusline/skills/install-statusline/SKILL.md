@@ -82,6 +82,11 @@ session, or in the second when it had to wait for the footer to register. The fo
 from the session after that. If you already had a status line, the hub says so and changes
 nothing; run `/install-statusline` and answer yes to replace it.
 
+Upgrading from a version of this plugin that predates the hub: `/plugin update` (and
+auto-update) does not install a new dependency, so run
+`/plugin install statusline@kmacmcfarlane` once more to bring `statusline-hub`. The session
+start says so when the hub is missing.
+
 ### Keep it updated
 
 The `claude plugin marketplace add` command has no auto-update flag. To have this
@@ -190,7 +195,19 @@ The first session said `your settings already define a statusLine`: another tool
 slot, and the hub will not fight it. Run `/install-statusline` and answer yes to replace it.
 
 The footer vanished after a `/plugin` toggle or a model change in an older session: that
-session wrote its stale copy of the settings. The next new session puts it back and says so.
+session wrote its stale copy of the settings. When `statusline-hub` is installed, the next
+new session puts the hub's entry back and says so (`restored the status line in PATH`),
+including when the stale copy held this plugin's earlier entry. Without the hub nothing
+puts it back: see the next entry.
+
+The session start said `statusline: the footer draws through the statusline-hub plugin,
+which is not installed`.
+Cause: `/plugin update` brought a version of this plugin that depends on `statusline-hub`,
+but Claude Code does not install a dependency that is new in an update. Without the hub
+nothing runs the footer once an older entry is gone.
+Solution: run `/plugin install statusline@kmacmcfarlane` again (it brings the hub), or
+`/plugin install statusline-hub@kmacmcfarlane`, then start a new session. The notice is said
+once; it comes back only if the hub goes missing again.
 
 A repo enables the plugin but no footer appears there: the automatic install happens once
 per machine, into the first settings file where the plugin is enabled. In other repos, run
