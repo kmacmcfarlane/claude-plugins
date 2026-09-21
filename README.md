@@ -88,7 +88,8 @@ dependency is marked (hard) here.
 | …repo-durable work items and a pluggable work source | `work-items` | **current** | — |
 | …isolated execution for agent sessions (containers, and the checkout/worktree convention) | `sandbox` | **current** | claude-sandbox repo (external) |
 | …unattended agent loops over a backlog ("ralph") | `ralph` | **current** | claude-sandbox repo (external; its `init-ralph` seeds `backlog.py`, and the loops run in its containers), `sandbox` (soft; its skill bootstraps and troubleshoots those containers), `work-items` (soft; the `wi` ↔ `backlog.yaml` bridge, when both stores are present) |
-| …to maintain this kit itself (skill authoring, upstream sync, templates) | `kit-dev` | **current** | claude-templates repo (external; `new-project-from-template` scaffolds from it, `update-kit` syncs to it), claude-sandbox repo (external; `new-project-from-template` bootstraps with its `init-ralph`, `update-kit` syncs to it), claude-expertise repo (external; `update-kit` syncs to it) |
+| …to start a new repo for a thread of work, with an agent session launched on it | `create-repo` | **current** | claude-sandbox repo (external; `init` bootstraps the repo's `.claude-sandbox/` and the launch command runs the session in its container; without it the repo is created all the same and the command is plain `claude`), `kit-dev` (soft; `new-project-from-template` scaffolds a claude-templates template as the goal), `sandbox` (soft; its skill troubleshoots an `init` or launch that fails), `dev-flow` (soft; the launched session runs the first investigation with its `investigate` skill when installed, and investigates directly without it) |
+| …to maintain this kit itself (skill authoring, upstream sync, templates) | `kit-dev` | **current** | claude-templates repo (external; `new-project-from-template` scaffolds from it, `update-kit` syncs to it), claude-sandbox repo (external; `new-project-from-template` bootstraps with its `init-ralph`, `update-kit` syncs to it), claude-expertise repo (external; `update-kit` syncs to it), `create-repo` (soft; `new-project-from-template` points at it for a bare repo with a session launched on it) |
 | …to make Claude good at a specific stack (Goa, Playwright, musubi-tuner, …) | one plugin per stack | **moved** to the expertise marketplace (local scaffold, remote pending) | — |
 
 Retired: the deprecated plan-execution skill and the three sub-agent definitions used only by
@@ -178,7 +179,7 @@ The plugin names above (`context-guard` — shipped at Phase 1, its data dir and
 now live state; `dev-flow` — shipped at Phase 3, no state of its own; `work-items` — shipped
 at Phase 4, no state of its own, though `wi` stores in consuming repos are not affected by a
 rename; `statusline` — shipped with item 3c48, its data dir and settings path live state from
-first install; `sandbox`, `ralph`, `kit-dev`), the second marketplace's working name (`expertise` / repo
+first install; `sandbox`, `ralph`, `kit-dev`, `create-repo`), the second marketplace's working name (`expertise` / repo
 `claude-expertise`), and the `chat` family's home are **provisional**, adopted so work can
 proceed, and confirmable or changeable at operator review. Names that have shipped state
 (a data dir, a settings path) are changed only via the rename procedure above.
@@ -206,7 +207,9 @@ it to use the kit.
 | `update-kit` | Sync skills and workflow files upstream to claude-templates / claude-plugins / claude-expertise / claude-sandbox |
 
 The four skills need nothing else here. (`librarian-mode` lived here until it moved to
-`dev-flow`, whose aim it serves.)
+`dev-flow`, whose aim it serves.) `new-project-from-template` points at the `create-repo`
+plugin for a bare repo with a session launched on it; `create-repo` uses it, when present,
+to scaffold a template.
 
 `plugins/kit-dev/` is what remains of the old kitchen-sink plugin after the factoring: its
 `hooks/`, `checkpoint` and `install-statusline` went to `context-guard` (except the checkout
@@ -450,6 +453,34 @@ in `plugin.json`. Soft dependency on a work source through the **work-source int
 documented in `work-items` — `backlog.yaml` is the default provider for unattended runs, and
 the `wi` bridge activates only when both stores are present.
 
+### create-repo
+
+Start a new repo for a thread of work you will pick up later, and hand it to an agent
+session. The skill resolves the path (beside the current repo by default, confirmed with
+you), creates the directory, runs `git init -b main`, seeds a README naming the thread's
+purpose, runs `claude-sandbox init --yes` (so the repo inherits the workspace's sandbox
+config) and makes the first commit. It then gives you one copy-paste command that launches
+the session in your own terminal with a bootstrap prompt: write the repo's `CLAUDE.md`, then
+run the thread's first investigation.
+
+| Skill | Description |
+|---|---|
+| `create-repo` | Bootstrap a thread repo — path, `git init`, purpose README, `claude-sandbox init`, first commit — then one command that launches a session on it |
+
+The skill never launches the session itself. `claude-sandbox` has no detached mode yet, so a
+session started under the agent's terminal would die with it; the command runs in yours and
+you are attached from the start.
+
+External dependency on the `claude-sandbox` tool, soft in practice: without it the repo is
+still created and committed, and the command is a plain `claude` launch, as the skill says.
+Soft dependency on `kit-dev`: name a claude-templates template as the goal and, when its
+`new-project-from-template` skill is in the session, the skill scaffolds from it; without it
+the skill gives the install command and carries on with a bare repo.
+`new-project-from-template` points back here for a bare repo. Soft dependency on `sandbox`:
+its skill troubleshoots an `init` or a launch that fails. Soft dependency on `dev-flow`: the
+launched session uses its `investigate` skill for the first investigation when installed,
+and investigates directly without it.
+
 ### chat
 
 Skills for LLM chat sessions in web UIs. Family home under review.
@@ -543,6 +574,7 @@ claude-plugins/
 ├── plugins/
 │   ├── chat/
 │   ├── context-guard/
+│   ├── create-repo/
 │   ├── dev-flow/
 │   ├── kit-dev/
 │   ├── ralph/
