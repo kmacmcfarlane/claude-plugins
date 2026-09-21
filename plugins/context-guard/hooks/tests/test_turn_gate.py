@@ -169,6 +169,7 @@ class TestCheck(HookBase):
         import subprocess
         p = subprocess.run([sys.executable, os.path.join(HOOKS, "turn_gate.py"),
                             "--check", sid], capture_output=True, text=True,
+                           stdin=subprocess.DEVNULL,  # a hook reading stdin fails fast
                            env=dict(os.environ, **self.env), timeout=30)
         return p.returncode, p.stdout.strip()
 
@@ -211,7 +212,8 @@ class TestCheck(HookBase):
     def test_usage(self):
         import subprocess
         p = subprocess.run([sys.executable, os.path.join(HOOKS, "turn_gate.py"), "--check"],
-                           capture_output=True, text=True, timeout=30)
+                           capture_output=True, text=True, stdin=subprocess.DEVNULL,
+                           timeout=30)
         self.assertEqual(p.returncode, 2)
 
     @unittest.skipIf(hasattr(os, "geteuid") and os.geteuid() == 0, "root ignores modes")
