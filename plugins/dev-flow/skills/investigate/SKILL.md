@@ -602,8 +602,15 @@ sections reflect the state after **all** passes, not a copy of the new file's se
 **Blast radius:** <self-contained | reaches: ...>
 **Sweep:** <N candidates → X verified, Y decided, Z deferred>
 
-Next: /implement <slug>
+Next:
+- dev-flow:implement <slug>
+- context-guard:checkpoint, /clear, then dev-flow:implement <slug> in the fresh session
+- dev-flow:dev-cycle <slug> — a sub-agent builds it in a worktree, reviewed before merge
 ```
+
+Print the checkpoint line only when `context-guard:checkpoint` is in this session's skill
+list: installed and enabled, with no config path to go stale. It pays after a
+context-heavy pass, since implement reads the series, not the conversation.
 
 ---
 
