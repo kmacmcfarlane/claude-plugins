@@ -822,6 +822,7 @@ class TestHardAdvice(Base):
                 self.assertIn(f"A checkpoint no longer fits in {left:,} tokens", err)
                 self.assertNotIn("Run /checkpoint", err)
                 self.assertLess(err.index("/clear"), err.index("/compact <"))
+                self.assertIn("the guidance steers what the summary keeps", err)
                 self.assertIn("then re-send:\n  please do more work", err)
 
     def test_whitelist_still_passes_below_the_minimum(self):
@@ -861,6 +862,8 @@ class TestHardAdvice(Base):
                 self.assertIn("NOT applied", ctx)
                 self.assertIn(f"checkpoint no longer fits in {left:,} tokens", ctx)
                 self.assertNotIn("Run the checkpoint skill", ctx)
+                # The model cannot run /clear or /compact: the operator does.
+                self.assertIn("end the turn and tell the operator to run /clear", ctx)
                 self.assertLess(ctx.index("/clear"), ctx.index("/compact <"))
                 self.assertIn("CONTEXT_GUARD_CONTEXT_WINDOW", ctx)
                 self.assertIn("A checkpoint no longer fits: /clear", msg)

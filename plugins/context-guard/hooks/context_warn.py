@@ -166,11 +166,14 @@ def fit_left(m, tok):
 COMPACT_GUIDANCE = "/compact <what is in flight, what was decided, what was refused>"
 
 
+REMEDY = (f"/clear if the work is already on disk, else {COMPACT_GUIDANCE} "
+          f"(the guidance steers what the summary keeps)")
+
+
 def no_fit(left, lead="A"):
-    """The under-CHECKPOINT_MIN_TOKENS advice, opening with `lead`."""
+    """Why the checkpoint advice is dropped, opening with `lead`."""
     return (f"{lead} checkpoint no longer fits in {left:,} tokens (it needs about "
-            f"{L.CHECKPOINT_MIN_TOKENS:,}). Run /clear if the work is already on "
-            f"disk, else {COMPACT_GUIDANCE} - the guidance is all that survives")
+            f"{L.CHECKPOINT_MIN_TOKENS:,})")
 
 
 def main():
@@ -223,7 +226,8 @@ def main():
             sys_do = "Checkpoint now"
         else:
             ctx_do = (f"{no_fit(left, 'If that window is right, a')}. Do not "
-                      f"start new work; end the turn and tell the operator.")
+                      f"start new work; end the turn and tell the operator to "
+                      f"run {REMEDY}.")
             sys_do = (f"A checkpoint no longer fits: /clear if the work is on "
                       f"disk, else {COMPACT_GUIDANCE}")
         emit({
@@ -253,7 +257,7 @@ def main():
         else:
             # Live-fired 2026-09-03 at 1,062 left: a checkpoint needs a turn of
             # its own, so pointing at it there wedges the session.
-            advice = f"{no_fit(left)} (/clear and /compact are whitelisted)"
+            advice = (f"{no_fit(left)}. Run {REMEDY} - both are whitelisted")
         sys.stderr.write(
             (notice + "\n" if notice else "") +
             f"[context-guard context gate] HARD STOP: {left:,} tokens left of "
