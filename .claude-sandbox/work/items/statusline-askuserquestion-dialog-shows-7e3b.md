@@ -2,10 +2,12 @@
 id: statusline-askuserquestion-dialog-shows-7e3b
 title: "statusline: AskUserQuestion dialog shows no status line - verify and document"
 type: spike
-status: todo
+status: doing
 priority: 3
+owner: unknown@360f41058e92
+claimed: 2026-09-21T18:07Z
 created: 2026-09-20
-updated: 2026-09-20
+updated: 2026-09-21
 refs:
   - "peer: agent-harness-fc (uds 160.sock)"
 ---
@@ -17,3 +19,9 @@ Peer relay 2026-09-19/20 from agent-harness-fc, operator: 'The AskUser question 
 - next: —
 - blocked: —
 - learned: —
+
+## Notes
+- 2026-09-21 claimed by unknown@360f41058e92
+
+## Dispatch
+- dispatch: researcher sonnet — default (verify a harness behaviour; no code); series .claude-sandbox/investigations/7e3b-dialog-statusline/

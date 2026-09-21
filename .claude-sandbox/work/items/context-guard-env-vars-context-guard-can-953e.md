@@ -30,3 +30,8 @@ From 5e68 (decision 10 consistency, 2026-09-19): CLAUDE_KIT_CONTEXT_WINDOW (lib_
 - round 1 DONE b3bfc9f (opus): canonical+alias via lib_context.env_setting; empty canonical falls to alias; invalid canonical wins (no pin). All 5 check suites green; revert-to-verify 7 failures/2 errors.
 - held: operator paused new dispatches 2026-09-19 until bedtime; next is reviewer opus.
 - dispatch: reviewer opus — rule 4 (impl opus)
+
+## Review round 1 — NEEDS_CHANGES (opus) at b3bfc9f
+- [high] invalid canonical (e.g. "1m") beside a valid alias disables the pin → mirror on → can hard-block where base could not (false-block class). Fix: first VALID name wins (validator in env_setting); flip test_invalid_canonical_pin... to pinned/rc 0; document in operator-playbook; same for LEDGER_EVERY (no ValueError).
+- [medium] test_window_mirror leaks a host pin / CONTEXT_GUARD_DERIVE=off (window() reads os.environ): 3 failures with either pin exported. Fix: scrub os.environ in Base setUp (or pass environ into window()); re-run suite with both pin names and DERIVE=off exported.
+- dispatch: implementer opus — fix round 1 (resume, same tier)

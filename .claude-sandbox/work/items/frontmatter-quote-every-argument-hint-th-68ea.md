@@ -25,3 +25,13 @@ Peer report 2026-09-20 from agent-harness-fc (their item quote-three-argument-hi
 
 ## Dispatch
 - dispatch: implementer opus — >3 files across several plugins; adds a lint (executable snippet)
+
+## Implementer result
+- round 1 DONE_WITH_CONCERNS 3ca1871 (opus): 18 hints quoted (text identical, checked by script), strict-YAML lint in dev-cycle review-checklist §2 (ruamel, PyYAML fallback, SKIP when neither), create-skill rule + reference. Lint on main: 3 parse FAIL + 8 list FAIL; branch: 0. Pre-existing dot-slash FAILs (34a2) only.
+- dispatch: reviewer opus — rule 4
+
+## Review round 1 — NEEDS_CHANGES (opus) at 3ca1871
+- hint text byte-identical for all 19; lint FAILs 11 on base, 0 on HEAD; SKIP path and PyYAML fallback verified; no body edits; merge-tree clean.
+- [medium] librarian-mode's own review-checklist §2 and both agent briefs lack the rule. Resolution: librarian-mode's checklist and agent-brief become tombstones pointing at dev-cycle's in F2 (fb09), so 68ea lands AFTER F2 and the single copy carries the lint; the dev-cycle agent-brief "reject on sight" rule is added in this fix round.
+- [low] review-checklist:178 — frontmatter without a closing --- passes silently: FAIL "frontmatter not closed".
+- dispatch: implementer opus — fix round 1 (resume, same tier)

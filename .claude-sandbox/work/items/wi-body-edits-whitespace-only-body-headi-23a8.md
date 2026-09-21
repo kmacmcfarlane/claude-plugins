@@ -29,3 +29,10 @@ From the e832 review (2026-09-19), all low/nit, no data loss: (1) _append_sectio
 - implementer open (not in scope): done --note / block reason / import-todo may carry line breaks too; fenced `- doing:` bullets inside Handoff still owned.
 - held: operator paused 2026-09-19; next is reviewer opus.
 - dispatch: reviewer opus — rule 4 (impl opus)
+
+## Review round 1 — NEEDS_CHANGES (opus) at 0ca993e
+- [high] _heading_flags: an unclosed fence hides the real ## Handoff after it; each handoff then appends another Handoff block (5 after 4 calls), show reports empty values, lint fails. Fix: an opener with no matching closer is not a fence (re-scan); test + format.md sentence.
+- [medium] pre-existing: block reason, set values, done/drop --note, import-todo titles accept line breaks → front-matter injection (item becomes unloadable) or a heading that hijacks Handoff. Folded into this round (same file, same one-line guard) rather than a follow-up.
+- [low] test helper owned_handoff_lines has a simpler fence scanner than production; [nit] format.md:136 long line.
+- Live-store equivalence held: 10 sampled items byte-identical under base and head; no live item contains a fence.
+- dispatch: implementer opus — fix round 1 (resume, same tier)

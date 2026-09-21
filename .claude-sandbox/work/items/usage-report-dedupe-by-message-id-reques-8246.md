@@ -2,12 +2,11 @@
 id: usage-report-dedupe-by-message-id-reques-8246
 title: "usage-report: dedupe by (message.id, requestId) across all files, keep max output_tokens"
 type: bug
-status: doing
+status: done
 priority: 1
-owner: unknown@360f41058e92
-claimed: 2026-09-21T18:01Z
 created: 2026-09-19
 updated: 2026-09-21
+closed: 2026-09-21
 refs:
   - "peer: agents-61 (uds 266.sock)"
 ---
@@ -22,6 +21,18 @@ From peer agents-61 (claude-analytics, operator decision 2026-09-19: fix in cont
 
 ## Notes
 - 2026-09-21 claimed by unknown@360f41058e92
+- 2026-09-21 done: 9c54f46
 
 ## Dispatch
 - dispatch: implementer opus — executable logic (usage_report.py)
+
+## Implementer result
+- round 1 DONE 120f1a4 (opus): key (message.id, requestId) across all files (session, project, --all), keep max output_tokens; missing requestId -> (id, None); missing id -> never deduped; --since on the kept line. 10 new tests, 9 fail on base. Open: cross-file dupes now count in duplicate_lines_dropped.
+- dispatch: reviewer opus — rule 4
+
+## Review round 1 — CLEAR (opus) at 120f1a4
+- hand-computed totals match at session/project/--all; 50 file-order shuffles identical; idempotent; 200x2000-line corpus 2.4s/~200MB (base 1.6s/134MB).
+- lows (author's call; implementer not resumed — landed as CLEAR): ties go to file-name sort order rather than the spending session (totals unaffected); --since applied per file before the cross-file pass (rare straddle counts a truncated copy); (id, None) key for lines without requestId departs from ccusage (which leaves them undeduped).
+- decision (librarian): keep (id, None) — without it streamed lines lacking requestId count ~3x; where both ids exist the result matches ccusage. Told agents-61 (parity owner).
+## Landed
+- 9c54f46 (checks green in worktree and on main)

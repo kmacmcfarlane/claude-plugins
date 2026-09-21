@@ -26,3 +26,7 @@ Operator decision 42(a) 2026-09-19: amend README principles 2 and 4 to allow a f
 
 ## Dispatch
 - dispatch: implementer opus — doctrine (README principles, catalog), marketplace shape (plugin.json dependencies)
+
+## Implementer result
+- round 1 DONE_WITH_CONCERNS 607c35c (opus): principles 2/4 amended, catalog notation (hard)/(soft)/(external), §3 bullet + §5 script checking declared deps vs catalog. Did NOT declare ralph->sandbox: ralph skills never use the sandbox plugin, only the external claude-sandbox tool, so the rule test says no; ralph row relabelled external + sandbox (soft). Open: kit-dev row "(external)" for claude-sandbox/claude-templates.
+- dispatch: reviewer opus — rule 4

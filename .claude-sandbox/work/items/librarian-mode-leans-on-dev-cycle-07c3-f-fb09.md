@@ -41,3 +41,11 @@ updated: 2026-09-19
 - preservation inventory: .claude-sandbox/investigations/07c3-dev-cycle/f2-preservation.md (copied from the session scratchpad).
 - held: operator paused 2026-09-19; next is reviewer opus with the line-level preservation sweep (plan §5 Risks, verbatim).
 - dispatch: reviewer opus — rule 4 (impl opus)
+
+## Review round 1 — NEEDS_CHANGES (opus) at f88d128
+- line-level sweep done against base + f2-preservation.md: nothing silently lost except the spike claim/close; every named change accepted; carried notes a–d present; size 12.6k judged justified.
+- [high] a spike (dev-cycle plan mode: Steps 0,1,4,6) is never `wi claim`ed nor closed (`wi done --note <series>`), so it stays in the ready queue.
+- [low] Series home pointer is circular (librarian-mode → bindings.md row → librarian-mode); [low] decision-channel list omits a spike's blocking questions; [low] non-main item base vs "merge into local main" unclear; [nit] double blank line after frontmatter; [nit] opt-in.md:53 94-char line.
+- dispatch: implementer opus — fix round 1 (resume, same tier)
+- round 1 fix 4e06111: spike claim/close added in dev-cycle Step 1 (standalone too) and The cycle; all lows/nits fixed; none declined. Implementer notes a mis-directed git add in the main checkout failed with nothing staged (verified: main clean).
+- dispatch: reviewer opus — round 2 (resume)
