@@ -24,7 +24,7 @@ container, every question deferred, a sweep with no candidates, a problem that i
   and configured mounts are visible, and a symlinked host path appears elsewhere. Check the
   `mounts:` cascade before reporting it unreachable; the `sandbox` skill has the procedure.
 - **Tempted to write an Open Question** — triage it first
-  (references/investigation-format.md). Verifiable → verify it. Requirement → ask at Step 9.
+  (`references/investigation-format.md`). Verifiable → verify it. Requirement → ask at Step 9.
 - **Background agent returns "could not determine"** — that becomes an Open Question, or a user
   question if a decision would settle it. Never promote a guess to a finding.
 - **User defers every question** — legitimate. Record each with owner and blocks-or-not, and

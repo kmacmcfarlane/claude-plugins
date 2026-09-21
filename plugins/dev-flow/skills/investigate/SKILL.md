@@ -608,7 +608,7 @@ cost you time during the run.
 Read `references/edge-cases.md` when a run goes off the main path. Most entries restate a
 step's rule; a few live only there — a path the user names that is missing inside a
 container, a user who defers every question, a sweep with no candidates, a problem that turns
-out to be several.
+out to be several (propose one series each).
 
 ---
 
