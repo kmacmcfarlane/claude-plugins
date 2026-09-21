@@ -73,8 +73,8 @@ git -C $W log -E -i --grep="$P" --format='%h (message)' $BASE..HEAD
       (`[a] [b]`) makes the whole frontmatter fail to parse, so a stricter loader drops
       the skill without a word. Quote `argument-hint` always. The strict-YAML block at the
       end of this section checks it; a `SKIP` there is a gap to report, not a pass.
-- [ ] Reference paths are bare relative paths: no dot-slash prefix, no skill-dir
-      variable (the two tokens the lint below greps for).
+- [ ] Reference paths are bare relative paths: no dot-slash or dot-dot-slash prefix on
+      a path into a skill, no skill-dir variable (what the lint below greps for).
 - [ ] No `README.md` inside the skill folder.
 - [ ] SKILL.md under ~5000 tokens; detail lives in `references/`.
 - [ ] Every `references/*.md` the SKILL.md names exists: for a sibling pointer written
@@ -106,7 +106,11 @@ for s in $(git -C $W diff --name-only $BASE...HEAD | grep -o 'plugins/[^/]*/skil
     -e compatibility | sed 's/^/FAIL: key not allowed: /'
   grep -n '^\(name\|description\):.*[<>]' $d/SKILL.md && echo "FAIL: angle brackets in name/description"
   desc=$(sed -n 's/^description: *//p' $d/SKILL.md | head -1); test ${#desc} -le 1024 || echo "FAIL: description ${#desc} chars"
-  grep -rn '[.]/\|CLAUDE_SKILL_DI[R]' $d && echo "FAIL: non-bare reference path"
+  # reference-shaped only: a dot prefix leading to references/, scripts/ or assets/, or
+  # to a .md file (a skill-root file, a sibling SKILL.md), or the skill-dir variable
+  grep -rnE '(^|[^.A-Za-z0-9_])[.][.]?/(([A-Za-z0-9_.-]+/)*(references|scripts|assets)/|([A-Za-z0-9_.-]+/)*[A-Za-z0-9_-]+[.]md)|CLAUDE_SKILL_DI[R]' $d; rc=$?
+  test $rc = 0 && echo "FAIL: non-bare reference path"
+  test $rc -gt 1 && echo "FAIL: lint pattern did not run (grep exit $rc)"
   wc -w $d/SKILL.md
   python3 - $d <<'PY'
 import os, re, sys
@@ -148,10 +152,16 @@ PY
 done
 ```
 
-The dot-slash grep also catches the prefix in prose or shell, including in a checklist
-that quotes it — which is why the pattern above is written with a bracket class, so the
-lint file passes its own lint. A hit in a code block that genuinely needs the prefix (rare)
-is reviewed by eye, not waved through.
+The dot-slash grep flags reference-shaped paths only: a `./` or `../` prefix followed by
+directories into a `references/`, `scripts/` or `assets/` folder, or by directories
+ending in a `.md` file (a skill-root file, or a sibling's `SKILL.md`), plus the
+skill-dir variable. A dot prefix on anything else — a sibling repository beside the
+project, a store under the working directory — is a real path, not a skill reference, and
+passes. It catches the prefix in prose or shell alike, including in a checklist that
+quotes it — which is why the pattern above is written with bracket classes, so the lint
+file passes its own lint. A hit in a code block that genuinely needs the prefix (rare) is
+reviewed by eye, not waved through. A grep that cannot compile the pattern (exit 2)
+is reported as a FAIL, never read as a clean pass.
 
 What the reference check reads, so a reviewer can tell a real miss from a lint gap:
 

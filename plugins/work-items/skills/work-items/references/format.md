@@ -11,7 +11,7 @@ CLI adds locking, validation and budgeted views on top. Spec of record:
 1. `$WI_ROOT` (or `--root PATH`) — worktree workers point this at the main
    checkout so claims are visible to each other.
 2. `.claude-sandbox/work/` when `.claude-sandbox/` exists in the cwd.
-3. `./.work/` otherwise.
+3. `.work/` otherwise.
 
 ```
 <root>/
