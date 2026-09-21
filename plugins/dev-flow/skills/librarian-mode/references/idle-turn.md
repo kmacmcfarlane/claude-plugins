@@ -7,10 +7,11 @@ operator hold, and why a rate limit is not one.
 ## When it fires
 
 A turn is **idle** when it would otherwise end — the Report is written, the request is
-answered, or `start` has finished Rehydrate — and no background agent is in flight that
-can still produce work. A running implementer or reviewer counts as in flight; an agent
-that returned `BLOCKED`, or an item waiting on the operator's answer, does not. `status`
-never runs it: it is read-only.
+answered, or `start` has finished Rehydrate and passed the session-name gate
+(`session-name.md`; a held gate is a wait on the operator, not an idle turn) — and no
+background agent is in flight that can still produce work. A running implementer or
+reviewer counts as in flight; an agent that returned `BLOCKED`, or an item waiting on the
+operator's answer, does not. `status` never runs it: it is read-only.
 
 A question to the operator does not make a turn busy: dispatch first, then close the turn
 with the question (Intake step 3). The Report's `decisions needed:` never waits on the
