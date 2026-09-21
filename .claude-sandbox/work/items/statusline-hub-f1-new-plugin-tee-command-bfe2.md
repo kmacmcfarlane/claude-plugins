@@ -32,3 +32,9 @@ d193 07 § F1 (.claude-sandbox/investigations/d193-statusline-multiplexer/07_rec
 ## Implementer result (scope widening)
 - 51707d9: sensor-contract §2 names both writers (and the "no lock needed" sentence); README counts unstaled. Open: statusline sensor.py docstring still says one writer (follow-up with F3).
 - dispatch: reviewer opus — rule 4
+
+## Review round 1 — NEEDS_CHANGES (opus) at 51707d9
+- byte parity verified (4 payloads, newer-wins cases); drift test catches every mutation that should fail; tee safe (50 MB garbage 22 ms, traversal ids hashed under CFG, modes 0700/0600); ccstatusline and Starship recipes checked against their docs.
+- [medium] ccstatusline's global Custom Command Cache TTL (customCommandCacheTtlSeconds) makes the tee run at most once per TTL → record up to 60 s stale silently; recipe must say TTL 0, troubleshooting names the cause.
+- lows: sensor-contract §2 overclaims concurrent safety (interleaved writes are last-writer-wins, 5/40 regress with or without the tee); sensor.py:8 and lib_context.py:174 still say one writer; README consumer rows (context-guard/dev-flow) name only statusline as the source (defer to F3); launcher `ls -td` picks newest-modified, not newest version; nits.
+- dispatch: implementer opus — fix round 1 (resume)

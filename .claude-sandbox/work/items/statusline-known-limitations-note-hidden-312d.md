@@ -32,3 +32,5 @@ From spike 7e3b (series .claude-sandbox/investigations/7e3b-dialog-statusline/00
 - [medium] "Tracked upstream" but all three issues are closed (#21349 completed, #26847 duplicate, #30232 not_planned/stale).
 - lows: separate documented (permission prompts) from observed (AskUserQuestion, plan approval); links not clickable.
 - dispatch: implementer sonnet — fix round 1 (resume)
+- round 1 fix 658ec13: closed-issue states stated; documented vs observed separated; links.
+- dispatch: reviewer opus — round 2 (resume)
