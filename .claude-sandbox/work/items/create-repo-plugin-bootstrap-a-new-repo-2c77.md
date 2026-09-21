@@ -15,8 +15,8 @@ refs:
 Operator request 2026-09-19, relayed by peer claude-sandbox-93. New plugin create-repo with a skill: mkdir + git init -b main + seed README naming the purpose; claude-sandbox init --yes (inherits workspace config); initial commit; launch a session with a bootstrap prompt (write CLAUDE.md /init-style, then the thread's first investigation); tell the user the copy-paste attach command (cd <repo> && claude-sandbox --attach). Ecosystem support where needed. Rough edges (claude-sandbox side, tracked in its store, e.g. detached launch f9dc): no detached mode yet, so a launch under the agent's pty dies with the launching session; until --detach, prefer one copy-paste command that launches AND attaches in the user's terminal; in-sandbox launch needs host-visible TMPDIR; launch lock is per-container. Principle notes: marketplace shape (catalog row, CLAUDE.md layout, marketplace.json in the same feature); overlaps kit-dev new-project-from-template; claude-sandbox is a soft dependency (degrade to plain claude).
 
 ## Handoff
-- doing: dispatched
-- next: review
+- doing: review r1 NEEDS_CHANGES (3 medium) — held by 810f
+- next: fix round 1 after the hold lifts
 - blocked: —
 - learned: —
 
@@ -37,3 +37,11 @@ decision 43: placement — (a) new plugin create-repo as asked, with new-project
 - widening 4c6a764: kit-dev descriptions declare the soft pointer.
 - dispatch: reviewer opus — rule 4
 answer 43: (a) new plugin create-repo; new-project-from-template stays, cross-pointed; plus optional template goal via kit-dev (operator 2026-09-19) (migrated)
+
+## Review round 1 — NEEDS_CHANGES (opus) at 4c6a764 (held: operator hold 810f)
+- steps verified in a scratch workspace; hostile quoting byte-exact through `sq`; flags real; safety checks hold; merge-tree clean.
+- [medium] default parent from --show-toplevel is the worktree in worktree sessions → use --git-common-dir's parent or $CLAUDE_SANDBOX_PROJECT_DIR.
+- [medium] no instruction on putting the user's purpose into $PROMPT/$NAME safely → quoted heredoc or Write-tool file, never interpolate in double quotes (else the purpose's $() runs in the agent shell).
+- [medium] bootstrap prompt names dev-flow's investigate — undeclared soft coupling → declare dev-flow (soft) in both descriptions + catalog row, or drop the name.
+- lows: kit-dev pointer should name /create-repo:create-repo (model can't invoke it); template branch re-reads REPO/NAME and trackInHost from what new-project-from-template created; "sparse (only trackInHost set)"; quote the attach hint path; worktree-mode caveat; catalog notation "repo" vs "tool"; commit layout.
+- next: fix round 1 (resume the implementer) once the hold lifts.
