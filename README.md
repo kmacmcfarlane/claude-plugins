@@ -84,7 +84,7 @@ dependency is marked (hard) here.
 | …to survive the finite context window (gate, checkpoint, rehydration, token-spend report) | `context-guard` | **current** | `statusline` (soft; exact depth when installed) |
 | …an always-on status line (context left, plan usage, model, session name) | `statusline` | **current** | `context-guard` (soft; epoch and checkpoint thresholds in the gauge when installed) |
 | …to share the status-line slot, so the data Claude Code hands the status line reaches the tools that read it whatever renders the line (today the `tee` command; a dispatcher that owns the slot is planned) | `statusline-hub` | **current** | — |
-| …a plan before you code: investigate → reviewed plan → verified implementation, and a standing librarian that takes custody of a repo's work (files, dispatches, reviews, lands) | `dev-flow` | **current** | `work-items` (soft; `librarian-mode` and `dev-cycle` find `wi` via the repo tree, or the installed plugin's copy; `dev-cycle` runs without it on a scratchpad record), `statusline` (soft; the fable fallback in `librarian-mode` and `dev-cycle` reads its rate-limit reset times) |
+| …a plan before you code: investigate → reviewed plan → verified implementation, and a standing librarian that takes custody of a repo's work (files, dispatches, reviews, lands) | `dev-flow` | **current** | `work-items` (soft; `librarian-mode` and `dev-cycle` find `wi` via the repo tree, or the installed plugin's copy; `dev-cycle` runs without it on a scratchpad record), `statusline` (soft; the fable fallback in `librarian-mode` and `dev-cycle` reads its rate-limit reset times), `context-guard` (soft; `investigate` offers a checkpoint-then-implement path when its checkpoint skill is present; `librarian-mode` answers its gate advisories with a checkpoint and rehydrates from its manifest and ledger; the fable fallback reads reset times from its older state record) |
 | …repo-durable work items and a pluggable work source | `work-items` | **current** | — |
 | …isolated execution for agent sessions (containers, and the checkout/worktree convention) | `sandbox` | **current** | claude-sandbox repo (external) |
 | …unattended agent loops over a backlog ("ralph") | `ralph` | **current** | claude-sandbox repo (external; its `init-ralph` seeds `backlog.py`, and the loops run in its containers), `sandbox` (soft; its skill bootstraps and troubleshoots those containers), `work-items` (soft; the `wi` ↔ `backlog.yaml` bridge, when both stores are present) |
@@ -255,7 +255,11 @@ the repo's own `plugins/*/skills/work-items` tree or the installed plugin's copy
 either it stops at start and says to install `work-items`. Soft dependency on `statusline`:
 when `librarian-mode` or `dev-cycle` cannot dispatch to fable, it reads the exhausted usage
 window's reset time from the status line's sensor record; without it the reset time is
-unknown and the fallback runs on opus at once.
+unknown and the fallback runs on opus at once. Soft dependency on `context-guard`:
+`investigate` offers a checkpoint, `/clear`, then implement path when the checkpoint skill
+is in the session; `librarian-mode` answers the context gate's advisories with a
+checkpoint and weighs its manifest and ledger when it rehydrates; the fable fallback also
+reads reset times from its older state record. Without it none of these fire.
 
 ### work-items
 
