@@ -20,6 +20,7 @@ head: <short-sha>
 branch: <branch>
 mode: land | continue | handoff | landed
 by: checkpoint
+mode_skill: /<plugin>:<mode> start   # optional: the standing mode to re-enter
 items:            # optional: wi ids you expect still open or in flight
   - <work-item-id>
 ---
@@ -93,6 +94,20 @@ TOC, read on demand: `path — one line on what it holds`.
   contradicts nothing there. No store: silent. When the hook trims for budget it collapses
   only the frontmatter `items:` list (LF or CRLF line endings); an `items:` line in the body
   is left alone.
+- **`mode_skill:`** (optional) names the standing mode the session was running — a skill
+  that holds the session in a role until told otherwise (a librarian, a watcher), not a
+  one-shot skill it merely used — as the slash command the operator would type to enter it,
+  arguments included (e.g. `/dev-flow:librarian-mode start`). One command, not a list. Set
+  it in every mode but *landed*; omit it when no standing mode is active. Its presence tells
+  the next session to re-enter that mode first: the checkpoint's Step 7 opener leads with it,
+  and the hook names it on the header line in every tier except LANDED. Any skill's command
+  may go here; the format knows none by name. Accepted shape, whole value (quotes around
+  it allowed): `/name` or `/plugin:name` — a letter or digit first, then letters, digits,
+  `_`, `.`, `-` — followed by at most four arguments of letters, digits and `_ . : = / -`,
+  single spaces between, ≤200 chars in all. Anything else (backticks, prose, punctuation,
+  control characters) is dropped silently: the header speaks in the hook's voice, and a
+  committed manifest is text anyone can write. On a STALE manifest the header names the
+  mode for the operator to confirm instead of telling the session to re-enter it.
 - **Stale Next is withheld, not warned.** When the recorded `head` is not an ancestor of
   HEAD, or HEAD is ≥1 commit past it, the hook replaces the `## Next` body with one line.
   Its variants:
