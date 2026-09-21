@@ -45,9 +45,10 @@ serialization, so it does little itself: it files, factors, runs each item throu
 
 `/librarian-mode [start | status | intake <request>]`
 
-- `start` (default): run Rehydrate, then wait for requests.
-- `status`: Rehydrate, then print the expected-output paragraph — read-only, never creates;
-  with no `## Librarian` section it prints "not opted in; `start` offers opt-in".
+- `start` (default): Rehydrate, then the Idle turn.
+- `status`: Rehydrate, then print the expected-output paragraph — read-only, never
+  creates or dispatches; with no `## Librarian` section it prints "not opted in; `start`
+  offers opt-in".
 - `intake <request>`: Rehydrate if not done, then Intake on `$ARGUMENTS`.
 
 ## Rehydrate
@@ -80,7 +81,7 @@ Do this at session start and after any `/clear` or compaction. Never `ls` the wh
    ```bash
    $WI prime
    $WI show <id> --brief      # for each item marked doing by you
-   $WI ls --tag hold          # an active operator hold (Idle turn)
+   $WI ls --tag hold          # active holds
    grep -rh '^decision [0-9]' "$WI_ROOT" | sort -k2 -n | tail -1  # last decision N
    ```
 
@@ -167,6 +168,8 @@ Report below. Your bindings:
   unless the item names another.
 - **Model floor**: an operator pin — a `model: <tier>` line in the item body — for every
   role; never overridden downward.
+- **Hold**: an active hold's limit caps tier and concurrency for every dispatch; below
+  a pin, the item waits on a decision (`references/idle-turn.md`).
 - **Record sink**: the item body, appended with Bash (not a custody file): a
   `dispatch: <role> <model> — <signal>` line before every Agent call, rounds, verdicts,
   declined findings with reasons.
@@ -188,11 +191,10 @@ item off and take other work.
 ## Idle turn
 
 When a turn would end with no agent in flight that can still produce work, do not end
-it: print two short tables — **Groom** (items awaiting the operator) and **Work** (ready,
-not parked, not held) — then claim and dispatch the top ready items through The cycle,
-by dependency group, items touching the same files one at a time. Only an operator
-**hold** stops the dispatch: a `hold`-tagged item in the store, not the transcript,
-named above the tables. A rate limit is not a hold: wait for the reset.
+it: print a **Groom** table (for the operator) and a **Work** table (ready, not parked
+or held), then dispatch the top Work items through The cycle — by dependency group,
+same-file items one at a time. Only an operator **hold** (a `hold` item, named above
+the tables) stops it, or as a limit caps it; a rate limit does not.
 `references/idle-turn.md`.
 
 ## Report
@@ -210,8 +212,9 @@ A spike reports its series path on `changed:`, as dev-cycle's `plan` mode does.
 `decisions needed:` is numbered — one decision per number, its options and their
 impact, recommendation first — so the operator answers "2: b". A lone decision is still
 numbered; a number is never reused, and an unanswered one keeps it. The counter lives in
-the store: raising a decision appends `decision N: <one line>` to its item's body; on
-re-entry continue from the highest N (Rehydrate step 3), else 1.
+the store: raising a decision appends `decision N: <one line>` to its item's body, and
+the reply `answer N: <reply>`; on re-entry continue from the highest N (Rehydrate step
+3), else 1.
 
 Batch several landings in one message, four lines each; anything blocked or declined
 since the last report goes under `decisions needed` of the next. Do not wait for the
