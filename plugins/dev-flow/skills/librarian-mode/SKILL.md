@@ -80,6 +80,7 @@ Do this at session start and after any `/clear` or compaction. Never `ls` the wh
    ```bash
    $WI prime
    $WI show <id> --brief      # for each item marked doing by you
+   $WI ls --tag hold          # an active operator hold (Idle turn)
    grep -rh '^decision [0-9]' "$WI_ROOT" | sort -k2 -n | tail -1  # last decision N
    ```
 
@@ -95,7 +96,8 @@ Do this at session start and after any `/clear` or compaction. Never `ls` the wh
    no `doing` item is an orphan — see Troubleshooting.
 
 Expected output: one short paragraph — items in flight, items ready, worktrees and agents
-alive, anything awaiting the operator; after an init, one clause more (first-start).
+alive, anything awaiting the operator, any active hold; after an init, one clause more
+(first-start).
 
 ## Intake
 
@@ -182,6 +184,16 @@ Dispatch a dependency group in one message, one cycle per item, so they run in p
 a later group starts only after everything it depends on has landed. Fable running out
 mid-group is one pending decision for every item it hits; meanwhile hand each waiting
 item off and take other work.
+
+## Idle turn
+
+When a turn would end with no agent in flight that can still produce work, do not end
+it: print two short tables — **Groom** (items awaiting the operator) and **Work** (ready,
+not parked, not held) — then claim and dispatch the top ready items through The cycle,
+by dependency group, items touching the same files one at a time. Only an operator
+**hold** stops the dispatch: a `hold`-tagged item in the store, not the transcript,
+named above the tables. A rate limit is not a hold: wait for the reset.
+`references/idle-turn.md`.
 
 ## Report
 

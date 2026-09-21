@@ -1,0 +1,125 @@
+# Idle turn
+
+Ready work is worked, not left waiting for the operator to notice it. This file holds the
+detail behind SKILL.md's Idle turn rule: when it fires, the two tables, the dispatch, the
+operator hold, and why a rate limit is not one.
+
+## When it fires
+
+A turn is **idle** when it would otherwise end — the Report is written, the request is
+answered — and no background agent is in flight that can still produce work. A running
+implementer or reviewer counts as in flight; an agent that returned `BLOCKED`, or an
+item waiting on the operator's answer, does not.
+
+A question to the operator does not make a turn busy: dispatch first, then close the turn
+with the question (Intake step 3). The Report's `decisions needed:` never waits on the
+queue, and the queue never waits on it.
+
+## The tables
+
+Gather from the store; never `ls` it by hand.
+
+```bash
+$WI ls --tag hold                         # active holds (closed ones drop out)
+$WI ls --status blocked --plain           # blocked: operator, parked, peers, holds
+grep -l '^decision [0-9]' "$WI_ROOT"/items/*.md   # candidates for an open decision
+$WI ls --ready --plain                    # ready, ranked
+```
+
+Print a `hold:` line first when a hold is active, then two short tables, at most seven
+rows each with `+N more` below:
+
+```
+hold: <hold-id> — <scope>, until <end condition> ("<operator's words>")
+
+Groom                                        Work
+| item | why                           |     | item | P | next                        |
+| ab12 | decision 46: <one line>       |     | cd34 | 1 | dispatch now                |
+| ef56 | blocked: operator review      |     | 7890 | 2 | after cd34 (same files)     |
+```
+
+- **Groom** — items that need the operator: `blocked` with a reason that names the
+  operator; a `decision N:` line with no answer recorded after it (an answer is a later
+  line naming `decision N` with the operator's reply, as `- decision N: <answer>`); and,
+  once the `grooming` status exists (wi item b020), every `grooming` item. The hold
+  itself is on the `hold:` line, not here. Items blocked on a peer or an external
+  dependency are counted in one line under the table, not listed.
+- **Work** — ready items (`wi ls --ready`), minus parked and held ones. Parked today is
+  `blocked` with a reason starting `PARKED`, which `--ready` already leaves out; once
+  first-class `parked` lands (wi item ca20) it is that status. `next` says what happens
+  to each row: `dispatch now`, `after <id>` (a dependency or the same files), or `held`.
+
+Nothing in either table: say so in one line and end the turn — that is a real idle.
+
+## The dispatch
+
+Then, in the same turn, claim and dispatch the top Work rows through The cycle:
+
+- **Rank order**, `wi ls --ready` as printed.
+- **File contention**: items whose Files in scope overlap run one at a time — the second
+  waits for the first to land, because two worktrees editing the same file end in a
+  merge conflict. Items with disjoint files run in parallel.
+- **Dependency groups**: one message per group, as The cycle says; a later group starts
+  only after everything it depends on has landed.
+- An item with no Files in scope yet is factored first (Factor), in the same turn.
+
+The next idle turn — when these agents have landed and nothing else is in flight — prints
+the tables again and takes the next rows.
+
+## An operator hold
+
+A hold is the operator telling the librarian to stop or slow dispatch: "pause this until
+I go to bed", "nothing on fable today", "one agent at a time". It is the **only** thing
+that stops the dispatch above, and it stops new dispatch only: agents already in flight
+finish their cycle unless the operator says otherwise. It is a request like any other, so
+it becomes a work item — and that item is where the hold lives, so a `/clear` or a
+compaction cannot lose it and the operator can always see why nothing is moving.
+
+**Recording it** — one `hold`-tagged item, kept `blocked` for as long as the hold stands:
+
+```bash
+$WI add "hold: <scope> until <end condition>" -t chore -p 0 --tag hold \
+    --desc "Operator <date>, verbatim: '<their words>'. Scope: <all dispatch | the items listed | a limit>. Ends: <end condition>." \
+    --ref "operator <date>"
+$WI block <hold-id> "HOLD: <scope> until <end condition>"
+```
+
+It records three things:
+
+- **The operator's words**, verbatim — the hold is theirs, not a paraphrase of it.
+- **Scope** — `all dispatch`; named items; or a limit that preserves quota (at most N
+  agents in flight, no fable, sonnet only). For named items, make each one depend on the
+  hold, so it drops out of the ready queue by itself: `$WI block <held-id> --on
+  <hold-id>`. A limit applies to every dispatch while the hold stands.
+- **The end condition** — an event ("until the operator says bedtime"), a time ("until
+  18:00"), or `until lifted` when the operator gave none; never invent one.
+
+Being `blocked`, the hold item never enters the ready queue and shows on `wi prime`'s
+BLOCKED line; Rehydrate step 3 reads it explicitly with `$WI ls --tag hold`, since that
+line lists only three blocked items. Every idle turn prints it on the `hold:` line.
+
+**Lifting it** — on the end condition, or on the operator's word, record why and close
+the item; closing it resolves the dependency every held item carries:
+
+```bash
+$WI unblock <hold-id>
+$WI done <hold-id> --note "lifted: <operator's words, or the end condition met>"
+```
+
+A time-based end condition is lifted by the librarian at the first turn after it
+passes, recorded the same way. Then the turn is an idle turn again, and dispatch resumes.
+
+## A quota block is not a hold
+
+A rate limit or an exhausted usage allowance is the harness saying *not yet*, not the
+operator saying *stop*. Never open a hold for one, and never leave the queue idle after
+it resets:
+
+- **Fable unavailable**: dev-cycle's Step 2 rule 6, detailed in the `dev-cycle` skill's
+  `references/model-routing.md` § Fallback — opus when the reset is over 2h away or
+  unknown, a pending decision within 2h or under a `model: fable` pin; meanwhile hand
+  each waiting item off and take other work (The cycle).
+- **Every tier limited**: hand each affected item off naming the limit and the reset
+  time (`$WI handoff <id> --blocked "rate limit, resets <time>"`), say so in one line
+  with the reset time, and resume dispatch at the first turn after the reset — the next
+  idle turn prints the tables and takes the queue again.
