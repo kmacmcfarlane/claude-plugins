@@ -191,10 +191,11 @@ is harness behavior, not a plugin bug: the [docs](https://code.claude.com/docs/e
 state it "temporarily hides during certain UI interactions, including autocomplete
 suggestions, the help menu, and permission prompts." There is no setting to keep it
 visible. Upstream requests, all closed with the docs unchanged:
-[#21349](https://github.com/anthropics/claude-code/issues/21349) (closed as completed, with
-no note on what shipped), [#26847](https://github.com/anthropics/claude-code/issues/26847)
-(duplicate of #21349), [#30232](https://github.com/anthropics/claude-code/issues/30232)
-(closed as stale).
+[#21349](https://github.com/anthropics/claude-code/issues/21349) (closed as completed by
+its reporter once plan approval gained a context-remaining option; the status line itself
+still hides), [#26847](https://github.com/anthropics/claude-code/issues/26847) (duplicate
+of #21349), [#30232](https://github.com/anthropics/claude-code/issues/30232) (closed as
+stale).
 
 ## Troubleshooting
 
