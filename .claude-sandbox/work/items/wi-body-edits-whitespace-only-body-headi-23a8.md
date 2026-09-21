@@ -38,3 +38,11 @@ From the e832 review (2026-09-19), all low/nit, no data loss: (1) _append_sectio
 - dispatch: implementer opus — fix round 1 (resume, same tier)
 - round 1 fix f38ef29: unclosed opener is plain text; one-line guard on handoff/block/set/note/add; helper uses _heading_flags. Open: backlog-yaml import multi-line values.
 - dispatch: reviewer opus — round 2 (resume)
+
+## Review round 2 — NEEDS_CHANGES (opus) at f38ef29
+- round-1 high fixed; live-copy equivalence holds on all 125 items.
+- [medium] unclosed opener still pairs with a LATER section's bare fence (CommonMark rule) → real ## Handoff hidden → duplicate Handoff (stops at 2). Fix: safety net in set_handoff/append_note — no section found but a column-0 `## Handoff`/`## Notes` line inside a fence → exit non-zero, never append a duplicate; test.
+- [medium] one-line guard is per command; misses claim --as, next --claim, add --tag/--dep/--parent/--ref/--slug, unblock --dep, import. Fix: guard once at the writer (_emit_scalar/emit_front or pre-save): reject \n/\r in any front-matter value, exit 1, write nothing.
+- [high, pre-existing on main] import --format backlog-yaml copies multi-line YAML (review_feedback: |, titles, blocked_reason) into front matter → whole store unreadable (next/ls/lint exit 3). The writer-level guard covers it if import folds or rejects such values — folded into this round.
+- [nit] lookahead O(n^2) in unclosed openers.
+- dispatch: implementer opus — fix round 2 (resume, same tier)

@@ -35,3 +35,5 @@ Operator decision 42(a) 2026-09-19: amend README principles 2 and 4 to allow a f
 - ralph reading confirmed (not declaring ralph→sandbox is right); principle 4 admits statusline→statusline-hub, forbids context-guard→hub; framework claims verified against the docs.
 - [medium] §5 script crashes on malformed/non-object plugin.json, loops chars of a string `dependencies`, reports None for a nameless entry. [medium] kit-dev row omits claude-templates / claude-sandbox (external). lows: README:429 absolute standalone claim; ralph row work-items (soft) lacks a note; README:124 restates principle 4 (drift); plugin.json vs marketplace entry declaration not settled. nit: §3 heading.
 - dispatch: implementer opus — fix round 1 (resume)
+- round 1 fix 54b27d2: §5 script hardened (unreadable/non-object/non-list/malformed entry/marketplace-entry declarations all FAIL); plugin.json-only declaration rule; kit-dev row + descriptions name claude-templates, claude-sandbox, claude-expertise (external); lows/nit fixed.
+- dispatch: reviewer opus — round 2 (resume)

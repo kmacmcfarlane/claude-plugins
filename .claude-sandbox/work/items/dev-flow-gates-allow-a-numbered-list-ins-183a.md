@@ -25,3 +25,7 @@ Peer relay 2026-09-19/20 from agent-harness-fc, operator's words: 'all options a
 
 ## Dispatch
 - dispatch: implementer opus — two skills; judgement (when a gate may take prose)
+
+## Implementer result
+- round 1 DONE_WITH_CONCERNS 713553d (opus): "Asking at a gate" section in investigate (gates 2/9/11 point at it; numbered list preferred while scope open; dialog for closed late choices, never with heavy analysis); deep-investigation Step 1 states it inline; orchestrated/non-interactive modes: ask nothing in either form. investigate +141 words (5638). Open: Step 3a base-branch consent keeps the dialog.
+- dispatch: reviewer opus — rule 4

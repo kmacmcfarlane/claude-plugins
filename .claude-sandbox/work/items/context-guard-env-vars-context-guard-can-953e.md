@@ -2,14 +2,13 @@
 id: context-guard-env-vars-context-guard-can-953e
 title: "context-guard env vars: CONTEXT_GUARD_* canonical names, CLAUDE_KIT_* aliases kept"
 type: chore
-status: doing
+status: done
 priority: 3
 deps:
   - context-guard-get-exact-depth-from-its-o-d63e
-owner: unknown@e3a28d2cc009
-claimed: 2026-09-19T05:58Z
 created: 2026-09-19
-updated: 2026-09-19
+updated: 2026-09-21
+closed: 2026-09-21
 ---
 
 From 5e68 (decision 10 consistency, 2026-09-19): CLAUDE_KIT_CONTEXT_WINDOW (lib_context, context_warn, stop_relay, tests, operator-playbook, statusline tests/helpers.py:24) and CLAUDE_KIT_LEDGER_EVERY still carry the dissolved claude-kit brand. Acceptance: canonical CONTEXT_GUARD_CONTEXT_WINDOW / CONTEXT_GUARD_LEDGER_EVERY, old names honoured as deprecated aliases (same semantics), docs name the new first, tests for both. Lands after d63e (same files).
@@ -22,6 +21,7 @@ From 5e68 (decision 10 consistency, 2026-09-19): CLAUDE_KIT_CONTEXT_WINDOW (lib_
 
 ## Notes
 - 2026-09-19 claimed by unknown@e3a28d2cc009
+- 2026-09-21 done: 99fe1f3
 
 ## Dispatch
 - dispatch: implementer opus — executable logic (hooks); gate-code fable signal: fable unavailable (unknown); fallback
@@ -37,3 +37,8 @@ From 5e68 (decision 10 consistency, 2026-09-19): CLAUDE_KIT_CONTEXT_WINDOW (lib_
 - dispatch: implementer opus — fix round 1 (resume, same tier)
 - round 1 fix 09c5b10: first VALID name wins (validators), window()/_inferred() take caller environ, test env scrubbed; 415 OK with each pin/DERIVE exported.
 - dispatch: reviewer opus — round 2 (resume)
+
+## Review round 2 — CLEAR (opus) at 09c5b10
+- 12x12 old/new value grid vs base: 0 lost pins, 0 alias-alone differences; suite green with every pin/DERIVE/LEDGER combination exported.
+## Landed
+- 99fe1f3 (checks green). 1 fix round. Fable-signal item run on opus as recorded fallback.
