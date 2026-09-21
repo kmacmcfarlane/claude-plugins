@@ -30,3 +30,10 @@ Peer request 2026-09-19 (claude-sandbox librarian, relayed via session 'implemen
 - round 1 DONE a7d7969 (opus): parked status + parked: reason; park/unpark (unpark → todo, or blocked if a blocked: reason remains); migrate-parked (dry run unless --apply); excluded from next and default ls; prime PARKED <n>; claim refuses parked; bridge exports blocked "PARKED: …" and imports it back as parked. 108 tests; 57 fail on main.
 - follow-ups after landing: idle-turn.md to read status: parked; message the claude-sandbox librarian (it runs migrate-parked); b020 follows the same pattern; wi release on a parked item.
 - dispatch: reviewer opus — rule 4
+
+## Review round 1 — NEEDS_CHANGES (opus) at a7d7969
+- temp copy of all 140 live items + the two real claude-sandbox PARKED items: migrate dry run writes nothing; --apply diffs limited to owned lines; parked never surfaces in next/ls/claim; bridge validates --strict.
+- [medium] wi release on a parked item forces todo and leaves parked: (concurrent-session path un-parks silently). [medium] export/import --update loses a parked item's blocked: reason (doc says round trip is exact).
+- lows: "PARKED (operator 2026-09-19): …" strips only "PARKED " (and the text says "unblock"); lint does not flag leftover parked: on other statuses; `wi set status parked` bypasses _park; idle-turn.md goes stale (follow-up).
+- pre-existing bugs found (filed separately): front-matter escape amplification (data loss); ext: requires appended again each round trip.
+- dispatch: implementer opus — fix round 1 (resume)

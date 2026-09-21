@@ -58,3 +58,7 @@ decision 47: where HANDOFF.md lives — (a) C: each session keeps its own manife
 - dispatch: planner opus — plan fix round 3 (resume); round 4 review is the last before the cap
 - plan fix round 3: serial 03_link-pins-owned-version.md — link pins only a version owned by the linking session (owned_version helper), else null; handoff-adoption documented; raw-text hash.
 - dispatch: plan reviewer opus — round 4 (last; resume)
+
+## Plan review round 4 — NEEDS_CHANGES (opus), format only — cap reached
+- design CLEAR in substance: the owned-version rule closes the round-3 high, two-hop chains verified, failures only degrade to a header. Only finding: [medium] 03 omits the never-omit Confirmed Assumptions section (it would read "none new beyond 02").
+decision 48: 8cc2 plan hit the 4-round cap on a format-only finding — (a) waive it and build F3a from 00–03 as written [recommended: the reviewer found the design sound; the missing section adds nothing]; (b) one more round: planner writes a 04 serial with the section, re-review.

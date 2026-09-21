@@ -2,12 +2,11 @@
 id: statusline-known-limitations-note-hidden-312d
 title: "statusline: known-limitations note — hidden during dialogs and permission prompts"
 type: chore
-status: doing
+status: done
 priority: 3
-owner: unknown@360f41058e92
-claimed: 2026-09-21T18:37Z
 created: 2026-09-21
 updated: 2026-09-21
+closed: 2026-09-21
 ---
 
 From spike 7e3b (series .claude-sandbox/investigations/7e3b-dialog-statusline/00_findings.md, drafted text there): Claude Code hides the status line during permission prompts, AskUserQuestion, plan approval (documented). Acceptance: a short Known limitations note in the statusline plugin's skill docs using the drafted text, naming the upstream issues (#21349, #26847, #30232) and the title-hook workaround if that lands.
@@ -20,6 +19,7 @@ From spike 7e3b (series .claude-sandbox/investigations/7e3b-dialog-statusline/00
 
 ## Notes
 - 2026-09-21 claimed by unknown@360f41058e92
+- 2026-09-21 done: 58f728d
 
 ## Dispatch
 - dispatch: implementer sonnet — default (one doc note)
@@ -40,3 +40,7 @@ From spike 7e3b (series .claude-sandbox/investigations/7e3b-dialog-statusline/00
 - dispatch: implementer sonnet — fix round 2 (resume)
 - round 2 fix 51833ae: #21349 closure attributed to its reporter with the reason.
 - dispatch: reviewer opus — round 3 (resume)
+
+## Review round 3 — CLEAR (opus) at 51833ae
+## Landed
+- 58f728d. 2 fix rounds.

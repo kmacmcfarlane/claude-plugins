@@ -27,3 +27,7 @@ Noticed by the librarian at the F2 landing (2026-09-21). librarian-mode binds Se
 
 ## Dispatch
 - dispatch: implementer opus — librarian behaviour, judgement (Scope vs tooling-owned paths)
+
+## Implementer result
+- round 1 DONE 57947df (opus): Series home = $MAIN/.claude-sandbox/investigations/<slug>/ (tooling state like the store, not a custody edit); bindings.md librarian row; session-name.md: gate stops only new dispatch, line shown each message, decline recorded as a closed item with "name kept: <name>" (grep survives /clear); idle-turn.md names the rename gate. SKILL.md 13,644 chars.
+- dispatch: reviewer opus — rule 4
