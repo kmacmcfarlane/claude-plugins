@@ -47,3 +47,9 @@ Found by the ca20 reviewer (2026-09-21), pre-existing on main: a value containin
 - core holds (1 reader diff on live copy + history); fuzz clean except value "="; export validates.
 - [medium] lint skips tab, so "C:\temp" decodes to a tab silently: flag tabs too (wi never writes a raw tab now) + test. lows: bare "=" / "<<"; repair lists more bare values (acceptable, documented).
 - dispatch: implementer opus — fix round 2 (resume)
+- round 2 fix 05d9281: lint reports tabs ("C:\temp"); lone = and << quoted. 129 tests; live copy lint clean.
+- dispatch: reviewer opus — round 3 (resume)
+
+## Review round 3 — NEEDS_CHANGES (opus) at 05d9281
+- [medium] lint now fails on a value wi itself accepted ($'tab\there' via add/set): the writer must reject control chars (like line breaks) so writer and lint agree; nit docstring line length.
+- dispatch: implementer opus — fix round 3 (resume); review round 4 is the LAST before the cap

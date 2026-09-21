@@ -50,3 +50,4 @@ d193 07 § F2 + consumer requirements recorded in d193 (claude-analytics: record
 - lows (to F3): scan still takes statusline-hub-* when it lacks current-hooks → name check; custom config dir inside a git-tracked dir refuses all hooks (fails safe, quiet).
 ## Landed
 - 53ae9ec. 1 fix round + conflict round. agents-61 notified (contract + busy-hook skip rule).
+- claude-analytics-8b ack 2026-09-21: contract accepted incl. the single-instance rule; sampler (Phase 2 there) will be a short record hook, argv command, manifest refreshed from SessionStart (not pinned). No action needed.
