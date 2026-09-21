@@ -28,3 +28,8 @@ Operator 2026-09-20: 'work-items that are ready and not parked should be worked 
 
 ## Dispatch
 - dispatch: implementer opus — judgement (librarian behaviour rule; where a hold lives)
+
+## Implementer result
+- round 1 DONE 3524c7b (opus): ## Idle turn in librarian-mode (Groom/Work tables, then dispatch; only a hold stops it; rate limit is not a hold); references/idle-turn.md; a hold = a work item tagged hold, kept blocked, held items --on it; Rehydrate lists `wi ls --tag hold`; dev-cycle: one clause (standalone ends at its Report). SKILL.md 13.4k.
+- implementer wish (not filed yet): wi prime shows hold-tagged items on their own line.
+- dispatch: reviewer opus — rule 4

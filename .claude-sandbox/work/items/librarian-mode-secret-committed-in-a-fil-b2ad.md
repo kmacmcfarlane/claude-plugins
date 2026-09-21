@@ -23,3 +23,8 @@ From the d72e fix round 3 (2026-09-18): the secret-rebuild rule covers a leak in
 
 ## Dispatch
 - dispatch: implementer opus — security surface (secret handling procedure): fable signal; fable unavailable (unknown); fallback
+
+## Implementer result
+- round 1 DONE a5ff60d (opus): fix-loop § A leaked secret (any committed content; reach check first; merge-base rebuild; name-never-value; rotation to the operator); checklist §1 history scan (shas/files only); review-brief step 7 history review; agent-brief fix-round clause generalised.
+- decision (librarian): yes — a secret that reached origin or another branch blocks the item, never lands, and escalates at once.
+- dispatch: reviewer opus — rule 4 (fable signal; fallback)

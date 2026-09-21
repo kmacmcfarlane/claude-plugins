@@ -15,3 +15,6 @@ From the d63e final review (2026-09-19): never verified live — (1) the plan's 
 - next: —
 - blocked: —
 - learned: —
+
+## Groom 2026-09-21
+decision 46: live conformance needs real `claude -p` runs (opus-5, opus-5[1m], haiku-4-5, DISABLE_1M) on the operator's credentials and quota — (a) an agent runs ~8 short -p calls from a scratch project dir (their own sessions; hooks write only their own session state), then adds the playbook line [recommended]; (b) the agent writes a script, the operator runs it with `!`; (c) skip the live run, add only the playbook line. Interactive /model switching (part 2) needs the operator either way.
