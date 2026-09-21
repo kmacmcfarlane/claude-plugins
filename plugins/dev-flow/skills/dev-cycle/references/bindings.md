@@ -75,6 +75,26 @@ changed:
 A file changed again keeps one line, with its latest reason. The review brief pastes this
 block, and the checklist's scope check (section 1) compares the diff against it.
 
+## Review target
+
+`review <branch>` mode's Step 0 resolves the branch's own worktree in place of Step 3
+(no `worktree-<name>` branch is created):
+
+1. An existing worktree already checked out on `<branch>`: `git -C "$MAIN" worktree list
+   --porcelain`, matched against `refs/heads/<branch>`. Use it as is.
+2. Otherwise add one, on the branch itself:
+
+   ```bash
+   git -C "$MAIN" worktree add .claude/worktrees/review-<branch> <branch>
+   ```
+
+   The same `.git/info/exclude` check as Step 3 applies before adding it.
+
+Base still resolves as usual (§ Base below) — it is what Land would merge into, not what
+the branch was built from. Files in scope, when a caller, item or plan names them, still
+bounds the reviewer's per-file grading, same as any other run; `undeclared` when nothing
+does, and the reviewer grades the whole diff against the item's or plan's stated intent.
+
 ## Checks
 
 Take the first source that answers:
@@ -122,6 +142,32 @@ go as one numbered prose list — one decision per number, each with its options
 impact, recommendation first — so the user answers by number. Never in the same turn as a
 heavy analysis: end the turn with the analysis and ask in the next. Append each raised
 decision to the record sink as `decision: <one line>` before asking.
+
+## Resume
+
+Step 0.4 reads the record sink for a target that already carries `dispatch:`, round or
+verdict lines, before any dispatch of its own — a rerun of a target that was interrupted,
+whether by the session ending, a `BLOCKED` handoff, or the operator stopping it:
+
+1. **A `CLEAR` verdict** recorded against a HEAD sha that still matches the target
+   worktree's current HEAD (`git -C "$MAIN"/<worktree path> rev-parse HEAD`): skip
+   straight to Step 5. A HEAD that has moved since — a human pushed a fix, or a dispatch
+   whose return the interrupted run never recorded — makes the recorded `CLEAR` stale;
+   treat it as no verdict and resume at Step 4 instead.
+2. **A `NEEDS_CHANGES`, `SHOW_STOPPER` or `BLOCKED` verdict, or a `dispatch:` line with no
+   verdict recorded after it**: resume at Step 4, with the round already recorded
+   counting toward the cap of 4 review rounds.
+3. **A `dispatch:` line with no return recorded at all** (the run stopped mid-dispatch,
+   before the agent reported back): treat that dispatch as never sent; re-dispatch at the
+   same role, tier and round.
+4. **No `dispatch:` line**, but a `checks:`, `decision:` or `changed:` line already
+   recorded: start at Step 1, using those recorded bindings instead of re-resolving or
+   re-asking them.
+5. **No record at all**: start at Step 1 as normal; there is nothing to resume.
+
+A resumed run never repeats a question the record sink already answers, and never
+re-dispatches a round that already returned — only one that never returned, or the next
+one the last recorded state calls for.
 
 ## Landing
 

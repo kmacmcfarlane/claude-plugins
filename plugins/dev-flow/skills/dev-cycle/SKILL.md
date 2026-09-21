@@ -49,11 +49,21 @@ Modes:
 - **full** (default): Steps 0–6.
 - **plan**: Steps 0, 1, 4 and 6 — for a spike. It produces a reviewed investigation
   series; no worktree, and nothing lands.
-- **review `<branch>`**: coming, not available yet (gate an existing branch). Say so and
-  stop.
+- **review `<branch>`**: Steps 0, 4, 5 (conditional) and 6, against an existing branch —
+  built by a human or by an earlier run, and not necessarily the orchestrator's to
+  change. Skips Step 1 (plan) and Step 3 (delegate): `references/bindings.md` § Review
+  target resolves the branch's own worktree instead of creating a `worktree-<name>` one.
+  Step 4 runs as usual. On `CLEAR`, Step 5 runs as usual. On `NEEDS_CHANGES` or
+  `SHOW_STOPPER`, before any fix loop, ask once through the decision channel whether to
+  dispatch an implementer for the findings — the fix loop needs one, and this branch may
+  not be the orchestrator's to change. Declined: report the findings under `changed:` and
+  `open questions:` in Step 6 and stop; nothing lands. Accepted: dispatch one, routed by
+  Step 2, and continue the fix loop as `full` does.
 
-There is no land-only mode. Land is the tail of full mode and runs only on a `CLEAR`
-recorded against the current HEAD sha.
+There is no land-only mode: Land is the tail of `full` and `review <branch>`, and runs
+only on a `CLEAR` recorded against the current HEAD sha. Resuming an interrupted run
+starts from the item's record (Step 0.4, `references/bindings.md` § Resume) rather than
+from Step 1.
 
 ## Step 0: Resolve the run
 
@@ -71,15 +81,29 @@ recorded against the current HEAD sha.
    type (feature, bug, chore, refactor or spike) — show it, and ask once with
    AskUserQuestion: Proceed / Discuss / Reject. Discuss: revise and ask again. Reject:
    stop, nothing written. Proceed: `$WI add` it when a store exists (that item is the
-   target), else write it to `<scratchpad>/dev-cycle/<slug>/record.md`.
+   target), else write it to `<scratchpad>/dev-cycle/<slug>/record.md`. **`review
+   <branch>` mode with no other target:** skip the cycle brief — there is nothing to plan,
+   the branch already exists; the record sink is `<scratchpad>/dev-cycle/<branch>/record.md`
+   unless a work item or plan is also named.
 
 3. **Resolve the ten bindings** from the caller, or standalone by
    `references/bindings.md`. Checks standalone: a recorded `checks:`
    line, else `## Librarian` `Checks:` read only, else detect and ask once; record the
    answer as a `checks:` line; **never write CLAUDE.md**. When the brief confirm and the
-   checks question are both due, ask them in one AskUserQuestion call.
+   checks question are both due, ask them in one AskUserQuestion call. `review <branch>`
+   mode also resolves the branch's own worktree here, instead of Step 3:
+   `references/bindings.md` § Review target.
 
-Expected output: one short paragraph — target, mode, base, checks, record sink.
+4. **Resume**, when the record sink already carries `dispatch:`, round or verdict lines
+   for this target — a rerun after an interrupt: read them and continue rather than
+   restarting from Step 1. `references/bindings.md` § Resume has the rule; in short, a
+   `CLEAR` recorded against the target worktree's current HEAD sha skips straight to
+   Step 5, and any other last state resumes at the step after it, with the round count
+   and prior bindings (`checks:`, `decision:`, `changed:`) already recorded and never
+   re-asked. No `dispatch:` line at all: start at Step 1 as normal.
+
+Expected output: one short paragraph — target, mode, base, checks, record sink, and,
+on a resume, which step it resumes at and why.
 
 ## Step 1: Plan (when needed)
 
