@@ -22,3 +22,6 @@ d193 07 § F3. statusline declares statusline-hub in plugin.json dependencies (p
 ## Carried from F1
 - README consumer rows: context-guard and dev-flow notes name statusline-hub (soft) as a sensor source; context-guard/hooks/statusline.py:5 tells users to install statusline for a sensor record — mention the hub.
 - statusline sensor.py docstring already names both writers (F1).
+
+## Carried from F2
+- statusline owner.data_dir scan fallback picks statusline-hub-* (sorts first) — fix; statusline heal recognises the hub command and stands down quietly; statusline writes hooks.d/statusline.json as a display hook (enables the hub takeover); display hook still running when CC cancels a render is not killed — document in the contract.

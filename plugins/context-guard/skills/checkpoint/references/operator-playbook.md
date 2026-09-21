@@ -29,7 +29,9 @@ fully resolve, it only warns, because the real window may be larger than the gue
 that warning keeps the DUE cadence (first time, then every 3 prompts or 25K tokens), so a
 quiet stretch is not an all-clear. The whitelist that passes a blocked prompt through is
 `/checkpoint`, `/compact` and `/clear`, bare or plugin-prefixed (`/context-guard:checkpoint`).
-All of it resets per epoch (each compaction or `/clear`). The gate also warns against the
+Under ~20K left (`CHECKPOINT_MIN_TOKENS`) the HARD advice, blocking or not, drops `/checkpoint`
+for `/clear` (the work is on disk) or `/compact <guidance>`, since a checkpoint no longer fits;
+when the gate blocks does not change. All of it resets per epoch (each compaction or `/clear`). The gate also warns against the
 auto-compact window when one is set below the model window (`/autocompact`,
 `CLAUDE_CODE_AUTO_COMPACT_WINDOW`, a valid `autoCompactWindow` of 100000–1000000), because that
 is where Claude Code compacts. **The auto-compact window is advisory: the gate warns there but never hard-stops there on

@@ -626,6 +626,15 @@ class TestBodyPreservation(WiTestCase):
         "unblock-dep": ("status: todo\ndeps:\n  - other-2222\n",
                         ["unblock", IID, "--dep", "other-2222"], "same"),
         "set": ("status: todo\n", ["set", IID, "priority", "0"], "same"),
+        "park": ("status: doing\nowner: w1\nclaimed: 2026-09-01T00:00Z\n",
+                 ["park", IID, "not this quarter"], "insert"),
+        "unpark": ("status: parked\nparked: later\n", ["unpark", IID], "insert"),
+        "migrate-parked": ("status: blocked\nblocked: \"PARKED: later\"\n",
+                           ["migrate-parked", "--apply"], "insert"),
+        "release-parked": ("status: parked\nparked: later\n",
+                           ["release", IID], "same"),
+        "set-unpark": ("status: parked\nparked: later\n",
+                       ["set", IID, "status", "todo"], "insert"),
         "done": ("status: doing\n", ["done", IID, "--note", "shipped"], "insert"),
         "drop": ("status: todo\n", ["done", IID, "--drop"], "insert"),
         "export": ("status: todo\n", ["export", "OUT", "--format", "backlog-yaml",
@@ -691,6 +700,10 @@ class TestBodyPreservation(WiTestCase):
 
     def test_set_keeps_body(self):
         self.run_matrix(["set"])
+
+    def test_park_unpark_migrate_keep_body(self):
+        self.run_matrix(["park", "unpark", "migrate-parked", "release-parked",
+                         "set-unpark"])
 
     def test_done_and_drop_keep_body(self):
         self.run_matrix(["done", "drop"])
@@ -1023,6 +1036,266 @@ class TestMergeSimulation(WiTestCase):
         self.assertEqual(titles, {"A first item", "A second item", "B only item"})
 
 
+class TestParked(WiTestCase):
+    """ca20: `parked` is a first-class deferred status, not a blocked item
+    whose reason starts with PARKED."""
+
+    def ids(self, args):
+        return [r["id"] for r in json.loads(self.wi_ok(args + ["--json"]))]
+
+    def test_park_and_unpark_round_trip(self):
+        self.write_item("defer-1111", status="doing", owner="tester@local",
+                        claimed="2026-08-30T10:00Z", stage="review",
+                        handoff={"doing": "x", "next": "y"})
+        self.wi_ok(["park", "defer-1111", "not this quarter"])
+        rec = json.loads(self.wi_ok(["show", "defer-1111", "--json"]))
+        self.assertEqual((rec["status"], rec["parked"], rec["owner"],
+                          rec["claimed"], rec["stage"]),
+                         ("parked", "not this quarter", None, None, None))
+        self.assertIn("parked: not this quarter", rec["sections"]["Notes"])
+        self.wi_ok(["lint"])
+        # re-parking with the same reason writes nothing
+        path = self.root / "items" / "defer-1111.md"
+        before = path.read_bytes()
+        self.wi_ok(["park", "defer-1111", "not this quarter"])
+        self.assertEqual(path.read_bytes(), before)
+        out = self.wi_ok(["unpark", "defer-1111"])
+        self.assertIn("-> todo", out)
+        rec = json.loads(self.wi_ok(["show", "defer-1111", "--json"]))
+        self.assertEqual((rec["status"], rec["parked"]), ("todo", None))
+        self.assertIn("unparked", rec["sections"]["Notes"])
+        self.wi_ok(["lint"])
+
+    def test_unpark_returns_blocked_item_to_blocked(self):
+        self.write_item("blk-1111", status="blocked", blocked="vendor")
+        self.wi_ok(["park", "blk-1111", "revisit in Q3"])
+        rec = json.loads(self.wi_ok(["show", "blk-1111", "--json"]))
+        self.assertEqual((rec["status"], rec["blocked"]), ("parked", "vendor"))
+        self.assertIn("-> blocked", self.wi_ok(["unpark", "blk-1111"]))
+        rec = json.loads(self.wi_ok(["show", "blk-1111", "--json"]))
+        self.assertEqual((rec["status"], rec["blocked"], rec["parked"]),
+                         ("blocked", "vendor", None))
+
+    def test_refusals(self):
+        self.write_item("todo-1111")
+        self.write_item("closed-2222", status="done")
+        for argv, code in ((["park", "todo-1111", ""], 1),
+                           (["park", "todo-1111", "a\nstatus: done"], 1),
+                           (["park", "closed-2222", "x"], 1),
+                           (["unpark", "todo-1111"], 1)):
+            with self.subTest(argv=argv):
+                path = self.root / "items" / (argv[1] + ".md")
+                before = path.read_bytes()
+                self.assertEqual(run(argv, self.root).returncode, code)
+                self.assertEqual(path.read_bytes(), before)
+        self.wi_ok(["park", "todo-1111", "later"])
+        r = run(["claim", "todo-1111"], self.root)
+        self.assertEqual(r.returncode, 1)
+        self.assertIn("unpark first", r.stderr)
+
+    def test_lint_requires_a_reason(self):
+        self.write_item("bare-1111", status="parked")
+        r = run(["lint"], self.root)
+        self.assertEqual(r.returncode, 3)
+        self.assertIn("parked without a reason", r.stdout)
+
+    def test_excluded_from_ready_next_and_default_ls(self):
+        self.write_item("ready-1111")
+        self.write_item("parked-2222", status="parked", parked="someday",
+                        priority=0)
+        self.write_item("child-3333", deps=["parked-2222"])
+        self.assertEqual(self.ids(["ls", "--ready"]), ["ready-1111"])
+        self.assertNotIn("parked-2222", self.ids(["ls"]))
+        self.assertEqual(self.ids(["ls", "--status", "parked"]), ["parked-2222"])
+        self.assertIn("parked-2222", self.ids(["ls", "--status", "all"]))
+        data = json.loads(self.wi_ok(["next", "--json"]))
+        self.assertEqual([r["id"] for r in data["ready"]], ["ready-1111"])
+        self.assertEqual(data["counts"]["parked"], 1)
+        self.assertEqual(data["counts"]["done"], 0)
+        self.assertNotIn("parked-2222", json.dumps(data["blocked"]))
+        out = self.wi_ok(["next"])
+        self.assertNotIn("parked-2222", out)
+        self.assertIn("1 parked (wi ls --status parked)", out)
+        self.assertNotIn("parked-2222", self.wi_ok(["next", "--plain"]))
+        pipe = self.wi_ok(["next", "--pipeline"])
+        self.assertNotIn("parked-2222", pipe)
+        self.assertNotIn("child-3333", pipe)   # a parked dep does not resolve
+
+    def test_prime_counts_parked_on_one_line_not_under_blocked(self):
+        self.write_item("blk-1111", status="blocked", blocked="vendor")
+        for i in range(3):
+            self.write_item(f"park-{i}-2222", status="parked", parked="later")
+        out = self.wi_ok(["prime"])
+        lines = out.split("\n")
+        self.assertIn("PARKED 3 (wi ls --status parked)", lines)
+        blocked = [ln for ln in lines if ln.startswith("BLOCKED")]
+        self.assertEqual(len(blocked), 1)
+        self.assertNotIn("park-", blocked[0])
+        self.assertEqual(sum("park-" in ln for ln in lines), 0)
+
+    def test_drop_and_archive(self):
+        self.write_item("gone-1111", status="parked", parked="later")
+        self.wi_ok(["done", "gone-1111", "--drop"])
+        self.wi_ok(["archive", "--older-than", "0d"])
+        self.assertEqual(len(list((self.root / "archive").glob("*/gone-1111.md"))), 1)
+        self.wi_ok(["lint"])
+
+    def test_migrate_parked_dry_run_then_apply(self):
+        self.write_item("old-park-1111", status="blocked",
+                        blocked="PARKED: waiting for Q3 budget")
+        self.write_item("old-park-2222", status="blocked", blocked="PARKED")
+        self.write_item("real-block-3333", status="blocked",
+                        blocked="parked car in the way")
+        self.write_item("todo-4444", blocked="PARKED: stale field")
+        items = sorted((self.root / "items").glob("*.md"))
+        before = {p: p.read_bytes() for p in items}
+        out = self.wi_ok(["migrate-parked"])
+        self.assertIn("would park\told-park-1111\twaiting for Q3 budget", out)
+        self.assertIn("would park\told-park-2222\tPARKED", out)
+        self.assertNotIn("real-block-3333", out)
+        self.assertNotIn("todo-4444", out)
+        self.assertIn("2 to migrate (dry run", out)
+        self.assertEqual({p: p.read_bytes() for p in items}, before)
+        self.wi_ok(["migrate-parked", "--apply"])
+        rec = json.loads(self.wi_ok(["show", "old-park-1111", "--json"]))
+        self.assertEqual((rec["status"], rec["parked"], rec["blocked"]),
+                         ("parked", "waiting for Q3 budget", None))
+        self.assertIn("parked (migrated from blocked: PARKED: waiting for Q3 "
+                      "budget)", rec["sections"]["Notes"])
+        for iid in ("real-block-3333", "todo-4444"):
+            p = self.root / "items" / (iid + ".md")
+            self.assertEqual(p.read_bytes(), before[p])
+        self.wi_ok(["lint"])
+        self.assertIn("0 migrated", self.wi_ok(["migrate-parked", "--apply"]))
+
+    def test_backlog_yaml_bridge_maps_parked_to_blocked_and_back(self):
+        self.write_item("defer-1111", "Deferred thing", status="parked",
+                        parked="not this quarter")
+        out = self.tmp / "backlog.yaml"
+        self.wi_ok(["export", "--format", "backlog-yaml", str(out),
+                    "--project", "t"])
+        text = out.read_text()
+        self.assertIn("status: blocked", text)
+        self.assertIn('blocked_reason: "PARKED: not this quarter"', text)
+        TestBacklogYaml._validate(self, out, self.tmp / "backlog_done.yaml")
+        fresh = self.tmp / ".fresh"
+        self.assertEqual(run(["init"], fresh).returncode, 0)
+        r = run(["import", "--format", "backlog-yaml", str(out)], fresh)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        rec = json.loads(run(["ls", "--status", "all", "--json"], fresh).stdout)[0]
+        self.assertEqual((rec["status"], rec["parked"], rec["blocked"]),
+                         ("parked", "not this quarter", None))
+        out2 = self.tmp / "backlog2.yaml"
+        self.assertEqual(run(["export", "--format", "backlog-yaml", str(out2),
+                              "--project", "t"], fresh).returncode, 0)
+        self.assertEqual(out2.read_text(), text)
+        # --update: a story unblocked upstream clears the park
+        self.wi_ok(["import", "--format", "backlog-yaml", "--update",
+                    str(out)])
+        out.write_text(text.replace("status: blocked", "status: todo")
+                       .replace('    blocked_reason: "PARKED: not this quarter"\n', ""))
+        self.wi_ok(["import", "--format", "backlog-yaml", "--update", str(out)])
+        rec = json.loads(self.wi_ok(["show", "defer-1111", "--json"]))
+        self.assertEqual((rec["status"], rec["parked"]), ("todo", None))
+        self.wi_ok(["lint"])
+
+    def test_release_never_unparks(self):
+        """A stale agent's cleanup `wi release` after the operator parked its
+        item must not put the item back in the ready queue."""
+        self.write_item("held-1111", status="doing", owner="agent@x",
+                        claimed="2026-08-30T10:00Z",
+                        handoff={"doing": "x", "next": "y"})
+        self.wi_ok(["park", "held-1111", "operator: not now"])
+        self.wi_ok(["release", "held-1111"])
+        rec = json.loads(self.wi_ok(["show", "held-1111", "--json"]))
+        self.assertEqual((rec["status"], rec["parked"], rec["owner"]),
+                         ("parked", "operator: not now", None))
+        self.assertEqual(run(["ls", "--ready"], self.root).returncode, 2)
+        self.wi_ok(["lint"])
+        self.assertIn("-> todo", self.wi_ok(["unpark", "held-1111"]))
+
+    def test_import_update_keeps_blocked_reason_under_a_park(self):
+        self.write_item("blk-1111", "Blocked then parked", status="blocked",
+                        blocked="vendor")
+        self.wi_ok(["park", "blk-1111", "later"])
+        out = self.tmp / "backlog.yaml"
+        self.wi_ok(["export", "--format", "backlog-yaml", str(out),
+                    "--project", "t"])
+        self.assertIn('blocked_reason: "PARKED: later"', out.read_text())
+        self.wi_ok(["import", "--format", "backlog-yaml", "--update", str(out)])
+        rec = json.loads(self.wi_ok(["show", "blk-1111", "--json"]))
+        self.assertEqual((rec["status"], rec["parked"], rec["blocked"]),
+                         ("parked", "later", "vendor"))
+        self.assertIn("-> blocked", self.wi_ok(["unpark", "blk-1111"]))
+        # a fresh import has only the export: the kept blocked reason is lost
+        fresh = self.tmp / ".fresh"
+        self.assertEqual(run(["init"], fresh).returncode, 0)
+        self.assertEqual(run(["import", "--format", "backlog-yaml", str(out)],
+                             fresh).returncode, 0)
+        rec = json.loads(run(["ls", "--status", "all", "--json"], fresh).stdout)[0]
+        self.assertEqual((rec["status"], rec["parked"], rec["blocked"]),
+                         ("parked", "later", None))
+
+    def test_provenance_group_is_not_the_reason(self):
+        real = ("PARKED (operator 2026-09-19): Paseo adoption undecided; "
+                "unblock to do it, or done --drop to archive")
+        self.assertEqual(wi.parked_reason(real),
+                         "Paseo adoption undecided; unblock to do it, or "
+                         "done --drop to archive")
+        self.assertEqual(wi.parked_reason("PARKED - later"), "later")
+        self.assertEqual(wi.parked_reason("PARKED (x)"), "PARKED (x)")
+        self.assertIsNone(wi.parked_reason("PARKEDX: no"))
+        self.assertIsNone(wi.parked_reason("parked: lower case"))
+        self.write_item("sb-1111", status="blocked", blocked=real)
+        self.wi_ok(["migrate-parked", "--apply"])
+        rec = json.loads(self.wi_ok(["show", "sb-1111", "--json"]))
+        self.assertEqual(rec["parked"], wi.parked_reason(real))
+        # the provenance survives in the Notes line
+        self.assertIn(f"parked (migrated from blocked: {real})",
+                      rec["sections"]["Notes"])
+        self.wi_ok(["lint"])
+
+    def test_lint_flags_leftover_parked_reason_on_open_items(self):
+        for st, extra in (("todo", {}), ("blocked", {"blocked": "v"}),
+                          ("doing", {"handoff": {"next": "n"}})):
+            self.write_item(f"left-{st}-1111", status=st, parked="stale",
+                            **extra)
+        self.write_item("dropped-2222", status="dropped", parked="history")
+        r = run(["lint"], self.root)
+        self.assertEqual(r.returncode, 3)
+        for st in ("todo", "doing", "blocked"):
+            self.assertIn(f"left-{st}-1111.md: parked reason on a {st} item",
+                          r.stdout)
+        self.assertNotIn("dropped-2222", r.stdout)
+
+    def test_set_status_goes_through_park_and_unpark(self):
+        self.write_item("s-1111", status="doing", owner="a@x",
+                        claimed="2026-08-30T10:00Z",
+                        handoff={"doing": "x", "next": "y"})
+        path = self.root / "items" / "s-1111.md"
+        before = path.read_bytes()
+        r = run(["set", "s-1111", "status", "parked"], self.root)
+        self.assertEqual(r.returncode, 1)
+        self.assertIn("wi park s-1111", r.stderr)
+        self.assertEqual(path.read_bytes(), before)
+        self.assertEqual(run(["set", "s-1111", "parked", "x"], self.root)
+                         .returncode, 3)
+        self.assertEqual(path.read_bytes(), before)
+        self.wi_ok(["park", "s-1111", "later"])
+        self.wi_ok(["set", "s-1111", "status", "todo"])
+        rec = json.loads(self.wi_ok(["show", "s-1111", "--json"]))
+        self.assertEqual((rec["status"], rec["parked"]), ("todo", None))
+        self.assertIn("unparked (set status todo)", rec["sections"]["Notes"])
+        self.wi_ok(["lint"])
+
+    def test_block_supersedes_park(self):
+        self.write_item("p-1111", status="parked", parked="later")
+        self.wi_ok(["block", "p-1111", "vendor"])
+        rec = json.loads(self.wi_ok(["show", "p-1111", "--json"]))
+        self.assertEqual((rec["status"], rec["blocked"], rec["parked"]),
+                         ("blocked", "vendor", None))
+
+
 class TestPrime(WiTestCase):
     def seed_many(self, n=40):
         for i in range(n):
@@ -1332,6 +1605,7 @@ class TestHostGitignoreUntouched(WiTestCase):
             ["claim", iid], ["handoff", iid, "--next", "go"],
             ["set", iid, "priority", "1"], ["block", iid, "--on", dep],
             ["unblock", iid, "--dep", dep], ["release", iid],
+            ["park", iid, "later"], ["unpark", iid], ["migrate-parked"],
             ["import-todo", str(todo)],
             ["export", str(repo / "backlog.yaml"), "--format", "backlog-yaml"],
             ["import", str(repo / "backlog.yaml"), "--format", "backlog-yaml"],
