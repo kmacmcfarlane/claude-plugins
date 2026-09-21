@@ -481,6 +481,9 @@ Report the outcome in one line at the Step 12 gate — e.g. *"Sweep: 5 candidate
 
 ## Step 12 — Review gate
 
+Before presenting, hold the plan to `references/quality-criteria.md` — the last point before
+anything is written.
+
 Present the full plan and pause. Nothing has been written yet.
 
 Display the plan, then output this **verbatim**:
