@@ -24,3 +24,7 @@ d193 07 § F1 (.claude-sandbox/investigations/d193-statusline-multiplexer/07_rec
 
 ## Dispatch
 - dispatch: implementer opus — marketplace shape (new plugin) + executable logic
+
+## Implementer result
+- round 1 DONE_WITH_CONCERNS d72f545 (opus): plugins/statusline-hub (plugin.json, hooks/tee.py vendored writer, tests incl. parity/drift vs statusline, skill statusline-hub with ccstatusline/Starship/wrapper recipes), README/CLAUDE.md/marketplace. Could not: sensor-contract.md "only writer" wording (out of scope).
+- scope widened by the librarian before review: that one line in statusline sensor-contract.md; the stale README counts ("three plugins whose aim is harness behavior", "all eight").

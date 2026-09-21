@@ -2,12 +2,11 @@
 id: librarian-mode-dev-cycle-idle-turn-behav-693a
 title: "librarian-mode/dev-cycle: idle-turn behaviour - show groom/work tables, then work the queue"
 type: feature
-status: doing
+status: done
 priority: 1
-owner: unknown@360f41058e92
-claimed: 2026-09-21T18:13Z
 created: 2026-09-20
 updated: 2026-09-21
+closed: 2026-09-21
 refs:
   - operator 2026-09-20
 ---
@@ -25,6 +24,7 @@ Operator 2026-09-20: 'work-items that are ready and not parked should be worked 
 
 ## Notes
 - 2026-09-21 claimed by unknown@360f41058e92
+- 2026-09-21 done: cee74a3
 
 ## Dispatch
 - dispatch: implementer opus — judgement (librarian behaviour rule; where a hold lives)
@@ -50,3 +50,8 @@ Operator 2026-09-20: 'work-items that are ready and not parked should be worked 
 - dispatch: implementer opus — fix round 2 (resume)
 - round 2 fix 5b3b860: Groom reads only `answer N:`; one-time librarian migration of legacy replies; limit below pin or reviewer opus floor → held + decision; N counts every agent.
 - dispatch: reviewer opus — round 3 (resume)
+
+## Review round 3 — CLEAR (opus) at 5b3b860
+- Groom scan verified on a live-store copy after a simulated migration. lows (landed): migration has no done-marker (harmless); one limit clash across many items could be one decision.
+## Landed
+- cee74a3. 2 fix rounds.
