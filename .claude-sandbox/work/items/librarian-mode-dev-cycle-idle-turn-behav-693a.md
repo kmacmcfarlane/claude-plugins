@@ -33,3 +33,10 @@ Operator 2026-09-20: 'work-items that are ready and not parked should be worked 
 - round 1 DONE 3524c7b (opus): ## Idle turn in librarian-mode (Groom/Work tables, then dispatch; only a hold stops it; rate limit is not a hold); references/idle-turn.md; a hold = a work item tagged hold, kept blocked, held items --on it; Rehydrate lists `wi ls --tag hold`; dev-cycle: one clause (standalone ends at its Report). SKILL.md 13.4k.
 - implementer wish (not filed yet): wi prime shows hold-tagged items on their own line.
 - dispatch: reviewer opus — rule 4
+
+## Review round 1 — NEEDS_CHANGES (opus) at 3524c7b
+- wi behaviour for holds verified on a temp store; no dispatch loop.
+- [high] a limiting hold (no fable / at most N / sonnet only) binds only the idle turn, not The cycle (Intake, fix rounds); precedence vs a model pin unstated.
+- [medium] status (read-only) and start ("wait for requests") now contradict the idle turn; [medium] --on-held items are invisible in every view; [medium] decision-answer form undefined, live store uses several forms, grep includes closed items; [medium] rate-limited items already claimed (doing) never re-enter the Work table.
+- lows: lift with done --note alone (unblock exposes the hold as a P0 ready item); PARKED convention vs free-text holds here; "after reset <time>" next value.
+- dispatch: implementer opus — fix round 1 (resume)

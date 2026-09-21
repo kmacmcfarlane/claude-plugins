@@ -2,12 +2,11 @@
 id: spike-status-line-multiplexer-dependency-d193
 title: "spike: status line multiplexer — dependency plugin vs self-contained; plugin-dependency research"
 type: spike
-status: doing
+status: done
 priority: 1
-owner: unknown@e3a28d2cc009
-claimed: 2026-09-19T06:00Z
 created: 2026-09-19
-updated: 2026-09-19
+updated: 2026-09-21
+closed: 2026-09-21
 refs:
   - operator message 2026-09-19
 ---
@@ -22,6 +21,7 @@ Operator 2026-09-19: the status line multiplexer/hook/dispatcher keeps being nee
 
 ## Notes
 - 2026-09-19 claimed by unknown@e3a28d2cc009
+- 2026-09-21 done: series .claude-sandbox/investigations/d193-statusline-multiplexer/; features statusline-hub-f1-new-plugin-tee-command-bfe2..statusline-hub-f5-wrap-mode-run-a-foreig-7e71
 
 ## Dispatch
 - dispatch: researcher opus — judgement (doctrine/marketplace shape trade-off); plan variant, no worktree; series at .claude-sandbox/investigations/d193-statusline-multiplexer/
@@ -57,3 +57,6 @@ decision 42: statusline → hub edge — (a) amend principles 2/4: a hard `depen
 - agents-61 2026-09-20: agent-telemetry series landed at claude-analytics/.claude-sandbox/investigations/agent-telemetry/ (private sidecar; host repo public). Proposal for the record-hook contract: each hook owns its errors and writes a small health file {last_ok, last_error, error, runs, errors} by atomic replace; hooks.d entry gains an OPTIONAL `health_path`; at render the hub does one small read and shows a one-glyph warning when the last run errored or there is no last_ok within N minutes. Their `ca doctor` catches it end-to-end regardless.
 - decision (librarian): accept for hub F2 as OPTIONAL — a silent recording sink that dies unnoticed is the failure mode the gauge exists to prevent, and the cost is one small read of a file the hook already writes. Constraints for the brief: health_path is optional and stays inside CFG; a missing, stale, oversized or malformed health file shows nothing (never an error, never a blank line); the read is capped like every other hub read; no glyph while the hook has never run. Reviewer checks it against the record-kind acceptance (raw payload byte-for-byte; a crashing or slow hook leaves gauge and sensor intact).
 - contract correspondence moves to the claude-analytics repo session when the operator switches.
+
+## Closed 2026-09-21
+- spike complete: series 00–07; decisions 40 (b ask), 41 (statusline-hub), 42 (a, landed as 5343). Features filed: statusline-hub-f1-new-plugin-tee-command-bfe2, statusline-hub-f2-owner-mode-hooks-d-reg-b28f, statusline-hub-f3-statusline-becomes-a-d-dfa1, statusline-hub-f4-segment-drop-dir-file-d182, statusline-hub-f5-wrap-mode-run-a-foreig-7e71.
