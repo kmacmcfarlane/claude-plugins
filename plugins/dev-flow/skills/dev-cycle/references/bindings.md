@@ -43,7 +43,7 @@ For reference, the values `librarian-mode` supplies (its own SKILL.md is authori
 | Record sink | The item body |
 | Decision channel | `decision N:` appended to the item, carried under `decisions needed` in its Report |
 | Terminal action | `git merge --no-ff` into local `main`; the push is the librarian's, after its Report; an item naming another base merges into that base, never pushed |
-| Series home | `$MAIN/.claude-sandbox/investigations/<slug>/`, as standalone — tooling state like the store, written by the cycle, never a custody edit; dispatched edits stay outside `.claude-sandbox/` |
+| Series home | `$MAIN/.claude-sandbox/investigations/<slug>/`, as standalone — tooling state like the store, written by the cycle, never a custody edit; agents write there only the series, and dispatched commits never include `.claude-sandbox/` |
 
 ## A librarian's repo
 

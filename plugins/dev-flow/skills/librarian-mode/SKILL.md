@@ -180,9 +180,9 @@ would ask the operator. Its Step 6 is the Report below. Your bindings:
   the Report (Critical). An item naming another base merges into that base instead, with
   the main checkout on it, and is never pushed. First-start dirt never blocks a merge
   (`references/first-start.md`).
-- **Series home**: `$MAIN/.claude-sandbox/investigations/<slug>/` — durable; `implement`
-  reads it. Not a Scope breach: like the store, tooling state the cycle writes, never a
-  custody edit; dispatched edits still never touch `.claude-sandbox/`.
+- **Series home**: `$MAIN/.claude-sandbox/investigations/<slug>/`, durable, `implement`'s
+  path. No Scope breach: like the store, tooling state the cycle writes, never a custody
+  edit; agents write only the series there, and commit none of it.
 
 Dispatch a dependency group in one message, one cycle per item, so they run in parallel;
 a later group starts only after everything it depends on has landed. Fable running out
@@ -195,8 +195,8 @@ When a turn would end with no agent in flight that can still produce work, do no
 it: print a **Groom** table (for the operator) and a **Work** table (ready, not parked
 or held), then dispatch the top Work items through The cycle — by dependency group,
 same-file items one at a time. Only an operator **hold** (a `hold` item, named above
-the tables) stops or caps it, and `start`'s rename gate while it waits; a rate limit
-does not.
+the tables) stops or caps it, and `start`'s rename gate stops it while it waits; a
+rate limit does not.
 `references/idle-turn.md`.
 
 ## Report
@@ -222,7 +222,7 @@ Batch several landings in one message, four lines each; anything blocked or decl
 since the last report goes under `decisions needed` of the next. Do not wait for the
 operator's review to take the next request.
 
-Then push, unless `Push: none`: `git -C "$MAIN" push origin main` — fast-forward only.
+Then, unless `Push: none`, push: `git -C "$MAIN" push origin main` — fast-forward only.
 
 ## Red flags
 

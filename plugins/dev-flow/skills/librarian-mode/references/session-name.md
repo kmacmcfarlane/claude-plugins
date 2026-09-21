@@ -73,17 +73,22 @@ hold does (`idle-turn.md` § An operator hold): an item holding the operator's w
 one body line the gate can grep. It is closed at once — it holds nothing, so it never
 enters the queue or the `hold:` line.
 
+The name is free text: set it in single quotes first (each `'` in it written `'\''`),
+so a `"`, `$` or backtick in it reaches the store as typed, then use only `"$N"`.
+
 ```bash
-$WI add "keep session name: <current name>" -t chore -p 4 \
+N='<current name>'
+$WI add "keep session name: $N" -t chore -p 4 \
     --desc "Operator <date>, verbatim: '<their words>'." --ref "operator <date>"
-printf 'name kept: %s\n' "<current name>" >> "$WI_ROOT/items/<id>.md"
+printf 'name kept: %s\n' "$N" >> "$WI_ROOT/items/<id>.md"
 $WI done <id> --note "operator kept the session name"
 ```
 
-The gate's lookup, on a `mismatch` only, with the name the read printed:
+The gate's lookup, on a `mismatch` only, with `N` set the same way to the name the read
+printed:
 
 ```bash
-grep -rqxF "name kept: <current name>" "$WI_ROOT" && echo kept   # kept → no gate
+grep -rqxF "name kept: $N" "$WI_ROOT" && echo kept   # kept → no gate
 ```
 
 A decline covers the name it was given for: after a later `/rename` to anything but the
