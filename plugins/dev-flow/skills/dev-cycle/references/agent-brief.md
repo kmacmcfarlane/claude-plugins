@@ -132,9 +132,9 @@ the branch rebuilt: `git reset --soft <merge-base sha pasted here by the orchest
 the secret taken out of any file that still holds it, and one recommit with every message
 clean — never a rebase, never onto the base branch. That overrides the new-commits rule
 above; the no-rebase prohibition below still holds. Before reporting, confirm
-`git log -p <merge-base sha>..HEAD` holds no trace of it, searching by key name or shape.
-Never write the secret's value anywhere — files, messages, commands, report: name it by
-commit sha, file and key only. Never call the credential safe; rotating it is the
+`git log -p --cc <merge-base sha>..HEAD` holds no trace of it, searching by key name or
+shape. Never write the secret's value anywhere — files, messages, commands, report: name
+it by commit sha, file and key only. Never call the credential safe; rotating it is the
 operator's call.
 
 <conditional — merge-conflict round only: include when Land's merge conflicted:>

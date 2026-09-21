@@ -89,7 +89,8 @@ union of every round's CHANGED, one file per line with its one-line reason>
 7. Review the whole branch history, not only the final diff: a secret or credential in
    any commit's patch or message is critical even when a later commit removes it, since
    the merge carries every commit. Run the history scan in the Checks below, read each
-   hit by eye, and read `git -C $WORKTREE log -p <base>..HEAD` with it in mind. For a real
+   hit by eye, and read `git -C $WORKTREE log -p --cc <base>..HEAD` with it in mind
+   (`--cc`, or a merge's resolution prints no diff). For a real
    one, put `git -C $WORKTREE branch -a --contains <sha>` in the finding — whether it
    reached anything beyond this branch.
 8. Grade every finding on the scale below, with a file:line and a one-sentence failure
