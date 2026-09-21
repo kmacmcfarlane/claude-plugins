@@ -19,3 +19,6 @@ Operator 2026-09-20: an item with open questions should sit in a 'grooming' stat
 - next: —
 - blocked: —
 - learned: —
+
+## Carried from 693a
+- adopt `answer N:` (librarian-mode Report) as the canonical reply marker for needs-input; add `wi ls --dep <id>` (items depending on an id) and a HOLD line in prime for hold-tagged items.

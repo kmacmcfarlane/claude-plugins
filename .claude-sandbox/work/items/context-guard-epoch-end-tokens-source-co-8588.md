@@ -23,3 +23,7 @@ From the 3685+fe33 round-2 review (2026-09-18), low/nit: (1) lib_context.py:324 
 
 ## Dispatch
 - dispatch: implementer opus — executable logic across two plugins (context-guard, statusline)
+
+## Implementer result
+- round 1 DONE_WITH_CONCERNS 13c5348 (opus): (1) epoch_end_tokens picks the fresher of exact/top-level (ledger only; nothing that can block changed); (2) CLAUDE_PLUGIN_ROOT claim moved to the checkpoint playbook, reworded per docs; (3) HARD STOP hatch prints the running hook's own mark_checkpoint.py path; playbook snippet reads installPath; statusline owner.data_dir prefers CLAUDE_PLUGIN_DATA → install record → cache path → scan; (4) fallback sweep stamp .swept-2, skip if both planted. 18 new tests.
+- dispatch: reviewer opus — rule 4

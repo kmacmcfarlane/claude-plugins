@@ -48,3 +48,9 @@ From the e832 review (2026-09-19), all low/nit, no data loss: (1) _append_sectio
 - dispatch: implementer opus — fix round 2 (resume, same tier)
 - round 2 fix 0e1593d: set_handoff/append_note refuse (exit 3) when the section is only inside a fence; one-line check at emit_front for every front-matter value, whole batch renders before any write; import folds multi-line values (notes excepted); linear fence scan. 96 tests; all 133 live items render unchanged in memory.
 - dispatch: reviewer opus — round 3 (resume)
+
+## Review round 3 — NEEDS_CHANGES (opus) at 0e1593d
+- all round-2 findings fixed; live-copy equivalence on all 125 items; import folding verified; fence scan 6.1s → 0.005s.
+- [medium] refusal fires on a CLOSED fenced example containing ## Notes/## Handoff with no real section (misleading message). Fix: refuse only when the hiding fence also contains a later column-0 ## line; message names both fixes; test.
+- [low, pre-existing] import notes: | containing ## Handoff shadows the imported Handoff — follow-up item or format.md line.
+- dispatch: implementer opus — fix round 3 after a high (round 2): fable signal; fable unavailable (unknown); fallback. Review round 4 is the last before the cap.

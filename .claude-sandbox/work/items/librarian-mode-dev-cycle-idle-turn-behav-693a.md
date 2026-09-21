@@ -40,3 +40,11 @@ Operator 2026-09-20: 'work-items that are ready and not parked should be worked 
 - [medium] status (read-only) and start ("wait for requests") now contradict the idle turn; [medium] --on-held items are invisible in every view; [medium] decision-answer form undefined, live store uses several forms, grep includes closed items; [medium] rate-limited items already claimed (doing) never re-enter the Work table.
 - lows: lift with done --note alone (unblock exposes the hold as a P0 ready item); PARKED convention vs free-text holds here; "after reset <time>" next value.
 - dispatch: implementer opus — fix round 1 (resume)
+- round 1 fix f393376: Hold binding in The cycle (limits cap every dispatch; limit below a pin → decision), start runs the idle turn, status exempt; held items via ls --json filter; canonical `answer N:` reply form; own doing items resume; lift = done only; after reset <time>.
+- dispatch: reviewer opus — round 2 (resume)
+- note for b020: adopt `answer N:` as the reply marker; wish: wi ls --dep <id>, HOLD line in prime.
+
+## Review round 2 — NEEDS_CHANGES (opus) at f393376
+- 6 of 8 round-1 findings fixed; wi mechanics re-verified on a temp store.
+- [medium] Groom grep only shows lines starting decision/answer: misses legacy replies; decision 43 (answered "- 43 → (a)" in 2c77) shows open. [medium] a "sonnet only" hold vs the opus reviewer floor — unresolved clash. [low] "at most N agents": does implementer+reviewer count as two?
+- dispatch: implementer opus — fix round 2 (resume)

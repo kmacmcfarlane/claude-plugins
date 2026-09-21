@@ -31,3 +31,7 @@ Mid-turn PostToolUse depth gate; HARD gate stops recommending an unaffordable ch
 ## Dispatch 2026-09-21
 - decision (librarian): the branch is 4 commits off plugin-factoring (merge-base d118f48b, early Sept), predating the context-guard move, the d63e window mirror and the statusline split; a rebase is effectively a rewrite of gate code. Run dev-cycle plan mode first: which of its four behaviours are still wanted and absent on main, and a port plan onto current main.
 - dispatch: planner opus — gate code (fable signal; fable unavailable (unknown); fallback); plan mode, no worktree; series .claude-sandbox/investigations/8cc2-turn-gate-port/
+
+## Plan result
+- planner DONE_WITH_CONCERNS (opus): series .claude-sandbox/investigations/8cc2-turn-gate-port/00_initial.md. (1) mid-turn check and (2) affordable HARD advice still wanted, absent on main — rewrite on current measure(); (3) session-addressed manifest conflicts with main's repo HANDOFF.md, but the harm is live (rehydrate injects another session's manifest on compaction); /clear regenerates the session id (verified in the binary). Port: F2 advice, F1 turn_gate, F3a authorship check (safe now), F3b location (blocked). Review nits already covered on main.
+- dispatch: plan reviewer opus — dev-cycle plan-review variant
