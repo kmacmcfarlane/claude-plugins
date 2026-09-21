@@ -35,7 +35,8 @@ plugins/
     skills/
       sandbox/
   statusline/          # Always-on status line footer, a statusline-hub display hook (hook-owning; hard-depends on statusline-hub)
-    hooks/             # statusline (renderer), sensor, session_start (registers the hub hook, prune) + hooks.json + unit tests
+    settings.json      # plugin settings default: subagentStatusLine (agent-panel rows)
+    hooks/             # statusline (renderer), subagent_statusline (agent-panel renderer), sensor, session_start (registers the hub hook, prune) + hooks.json + unit tests
     skills/
       install-statusline/  # coworker install, hands the slot to install-statusline-hub; references/sensor-contract.md
   statusline-hub/      # The status-line slot, shared: owner-mode dispatcher + embed-mode tee (hook-owning; owns the statusLine entry)
