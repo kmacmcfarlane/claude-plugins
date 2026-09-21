@@ -966,6 +966,29 @@ class TestHooks(Base):
         self.assertEqual(rc, 2)
         self.assertIn("50,000 tokens left of 1,000,000", err)
 
+    def test_derived_hard_advice_fits_the_space_left(self):
+        n = L.CHECKPOINT_MIN_TOKENS
+        for left, fits in ((50_000, True), (n, True), (n - 1, False), (1_000, False)):
+            with self.subTest(left=left):
+                self.session("claude-opus-5", 1_000_000 - left)
+                rc, out, err = self.warn()
+                self.assertEqual(rc, 2, (out, err))
+                self.assertIn(f"{left:,} tokens left of 1,000,000 (derived)", err)
+                self.assertEqual("Run /checkpoint" in err, fits)
+                self.assertEqual("checkpoint no longer fits" in err, not fits)
+                self.assertIn("CONTEXT_GUARD_DERIVE=off", err)  # hatches kept
+
+    def test_unresolved_auto_compact_window_advice_uses_the_model_window(self):
+        # 10K left of the unresolved 480K gate window, 530K of the model's:
+        # a checkpoint fits the window a hard stop is measured against.
+        self.session("claude-sonnet-5", 470_000)
+        rc, out, _ = self.warn(CLAUDE_CODE_ENTRYPOINT="local-agent")
+        self.assertEqual(rc, 0)
+        ctx = out["hookSpecificOutput"]["additionalContext"]
+        self.assertIn("UNRESOLVED", ctx)
+        self.assertIn("Run the checkpoint skill now", ctx)
+        self.assertNotIn("no longer fits", ctx + out["systemMessage"])
+
     def test_mismatch_notice_once(self):
         self.session("claude-haiku-4-5", 100_000)
         self.set_exact(100_000, 1_000_000)

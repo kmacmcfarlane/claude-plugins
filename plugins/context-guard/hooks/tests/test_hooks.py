@@ -783,6 +783,107 @@ PLAYBOOK = os.path.join(os.path.dirname(HOOKS), "skills", "checkpoint", "referen
                         "operator-playbook.md")
 
 
+class TestHardAdvice(Base):
+    """Under CHECKPOINT_MIN_TOKENS left a checkpoint cannot fit, so the
+    advice (never the block) turns to /clear or /compact. At the minimum it
+    still fits."""
+    MIN = None
+
+    def setUp(self):
+        super().setUp()
+        self.MIN = L.CHECKPOINT_MIN_TOKENS
+
+    def test_min_is_the_lean_checkpoint_cost_plus_a_margin(self):
+        self.assertEqual(self.MIN, L.CHECKPOINT_LEAN_COST + L.CHECKPOINT_MARGIN)
+        self.assertEqual(self.MIN, 20_000)
+        # Under every window's hard line, so it only ever narrows HARD advice.
+        for w in (200_000, 500_000, 1_000_000):
+            self.assertLess(self.MIN, L.thresholds(w)["hard"])
+
+    def exact_hard(self, left):
+        self.set_exact("s", 1_000_000 - left, 1_000_000)
+        return self.warn("s", "please do more work")
+
+    def test_exact_above_and_at_the_minimum_recommends_checkpoint(self):
+        for left in (50_000, self.MIN + 1, self.MIN):
+            with self.subTest(left=left):
+                rc, out, err = self.exact_hard(left)
+                self.assertEqual(rc, 2)
+                self.assertIn(f"HARD STOP: {left:,} tokens left of 1,000,000 (exact)", err)
+                self.assertIn("Run /checkpoint (or /context-guard:checkpoint", err)
+                self.assertNotIn("no longer fits", err)
+                self.assertIn("please do more work", err)
+
+    def test_exact_below_the_minimum_points_at_clear_then_compact(self):
+        for left in (self.MIN - 1, 1_062, 0):  # 1,062: the 2026-09-03 live case
+            with self.subTest(left=left):
+                rc, out, err = self.exact_hard(left)
+                self.assertEqual(rc, 2)  # the block itself is unchanged
+                self.assertIn(f"A checkpoint no longer fits in {left:,} tokens", err)
+                self.assertNotIn("Run /checkpoint", err)
+                self.assertLess(err.index("/clear"), err.index("/compact <"))
+                self.assertIn("then re-send:\n  please do more work", err)
+
+    def test_whitelist_still_passes_below_the_minimum(self):
+        for prompt in ("/clear", "/compact keep auth", "/checkpoint"):
+            self.set_exact("s", 999_000, 1_000_000)
+            self.assertEqual(self.warn("s", prompt)[0], 0, prompt)
+
+    def inferred(self, sid, left, window=200_000):
+        # No fresh status-line record: the depth is inferred - against a
+        # guessed 200K, or a stale record's window.
+        if window != 200_000:
+            st = L.load_state(sid)
+            st["exact"] = {"pct": 50.0, "tokens": window // 2, "window": window,
+                           "at": time.time() - 700}
+            L.save_state(sid, st)
+        rc, out, err = self.warn(sid, "a long prompt", self.transcript(window - left))
+        self.assertEqual((rc, err), (0, ""))
+        return (out["hookSpecificOutput"]["additionalContext"], out["systemMessage"])
+
+    def test_inferred_above_and_at_the_minimum_recommends_checkpoint(self):
+        for i, left in enumerate((30_000, self.MIN)):
+            with self.subTest(left=left):
+                ctx, msg = self.inferred(f"a{i}", left)
+                self.assertIn("HARD threshold reached by an INFERRED depth", ctx)
+                self.assertIn("Run the checkpoint skill now", ctx)
+                self.assertIn("Checkpoint now", msg)
+                self.assertNotIn("no longer fits", ctx + msg)
+
+    def test_inferred_below_the_minimum_points_at_clear_then_compact(self):
+        for i, (left, window) in enumerate(((self.MIN - 1, 200_000),
+                                            (1_000, 1_000_000))):
+            with self.subTest(left=left):
+                ctx, msg = self.inferred(f"b{i}", left, window)
+                self.assertIn(f"{left:,} tokens left of {window:,} (inferred", ctx)
+                # The phrase librarian-mode's ending-the-session.md keys on.
+                self.assertIn("HARD threshold reached by an INFERRED depth", ctx)
+                self.assertIn("NOT applied", ctx)
+                self.assertIn(f"checkpoint no longer fits in {left:,} tokens", ctx)
+                self.assertNotIn("Run the checkpoint skill", ctx)
+                self.assertLess(ctx.index("/clear"), ctx.index("/compact <"))
+                self.assertIn("CONTEXT_GUARD_CONTEXT_WINDOW", ctx)
+                self.assertIn("A checkpoint no longer fits: /clear", msg)
+                self.assertNotIn("Checkpoint now", msg)
+                self.assertIn("not blocked", msg)
+                self.assertIn("CONTEXT_GUARD_CONTEXT_WINDOW", msg)
+
+    def test_fit_left_measures_against_the_would_be_block_window(self):
+        import context_warn as CW
+        m = {"block_window": 1_000_000, "window": 500_000, "model_window": 1_000_000,
+             "acw": {"window": 500_000, "resolved": False}}
+        self.assertEqual(CW.fit_left(m, 490_000), 510_000)
+        # A depth that may not block: an unresolved lower window never
+        # shrinks it (the checkpoint advice wins while in doubt)...
+        m.update(block_window=None)
+        self.assertEqual(CW.fit_left(m, 490_000), 510_000)
+        # ...a resolved one does, as it would bound a hard stop.
+        m["acw"]["resolved"] = True
+        self.assertEqual(CW.fit_left(m, 490_000), 10_000)
+        self.assertEqual(CW.fit_left({"block_window": None, "window": 200_000,
+                                      "model_window": 200_000, "acw": {}}, 250_000), 0)
+
+
 class TestStandDownCommand(Base):
     """The two ways an operator reaches mark_checkpoint.py by hand: the command
     a derived HARD STOP prints, and the playbook's resolver snippet."""

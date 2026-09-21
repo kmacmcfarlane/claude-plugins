@@ -18,6 +18,10 @@ blocked against a guessed 200K). The window scored is the gate window
 A hard stop is measured against `block_window` - the gate window when every
 input to it resolved, else the model window - so an unresolved auto-compact
 window warns but never blocks.
+Under L.CHECKPOINT_MIN_TOKENS left (against that window) a checkpoint no
+longer fits, so the HARD and not-blocked advice points at /clear or /compact
+instead of /checkpoint. That is advice text only: when the gate blocks is
+decided by decide() alone.
 A HARD STOP caused by a derived window prints its escape hatches
 (CONTEXT_GUARD_DERIVE=off, mark_checkpoint.py <session>). The operator's
 CONTEXT_GUARD_CONTEXT_WINDOW pin (deprecated alias CLAUDE_KIT_CONTEXT_WINDOW)
@@ -141,6 +145,34 @@ def derived_hatches(sid):
             "\"If the gate blocks wrongly\").\n")
 
 
+def fit_left(m, tok):
+    """Tokens left against the window a hard stop is measured against:
+    `block_window`, or - for a depth that may not block - the window it
+    would be (_gate's rule: the model window unless a resolved auto-compact
+    window lowered it). An unresolved lower window never shrinks it, so a
+    doubtful depth leans towards the checkpoint advice, not /clear."""
+    bw = m.get("block_window")
+    if not bw:
+        acw = m.get("acw") or {}
+        win, mw = m["window"], m.get("model_window") or m["window"]
+        bw = win if win >= mw or acw.get("resolved") else mw
+    return max(bw - tok, 0)
+
+
+# The advice when a checkpoint no longer fits. /clear first: it always works.
+# /compact is the alternative when the work is not on disk; in Claude Code
+# 2.1.278 a manual compaction that overflows retries up to 3 times with the
+# oldest messages dropped (read from the binary, not live-verified).
+COMPACT_GUIDANCE = "/compact <what is in flight, what was decided, what was refused>"
+
+
+def no_fit(left, lead="A"):
+    """The under-CHECKPOINT_MIN_TOKENS advice, opening with `lead`."""
+    return (f"{lead} checkpoint no longer fits in {left:,} tokens (it needs about "
+            f"{L.CHECKPOINT_MIN_TOKENS:,}). Run /clear if the work is already on "
+            f"disk, else {COMPACT_GUIDANCE} - the guidance is all that survives")
+
+
 def main():
     try:
         inp = json.load(sys.stdin)
@@ -185,6 +217,15 @@ def main():
     if act == "hard_inferred":
         guess = "INFERRED" if src.startswith("inferred") else "UNRESOLVED"
         how = "inferred" if src.startswith("inferred") else "not fully resolved"
+        left = fit_left(m, tok)
+        if left >= L.CHECKPOINT_MIN_TOKENS:
+            ctx_do = "Run the checkpoint skill now; do not start new work."
+            sys_do = "Checkpoint now"
+        else:
+            ctx_do = (f"{no_fit(left, 'If that window is right, a')}. Do not "
+                      f"start new work; end the turn and tell the operator.")
+            sys_do = (f"A checkpoint no longer fits: /clear if the work is on "
+                      f"disk, else {COMPACT_GUIDANCE}")
         emit({
             "hookSpecificOutput": {
                 "hookEventName": "UserPromptSubmit",
@@ -193,25 +234,31 @@ def main():
                     f"{guess} depth: {remaining:,} tokens left of {win:,} "
                     f"({src}){extra}; a hard stop was NOT applied because the depth "
                     f"is {how}, not exact. A checkpoint has not run this "
-                    f"epoch. Run the checkpoint skill now; do not start new "
-                    f"work. If the real window is larger, tell the operator: "
+                    f"epoch. {ctx_do} If the real window is larger, tell the operator: "
                     f"CONTEXT_GUARD_CONTEXT_WINDOW=<tokens> in the launch "
                     f"environment pins it, and the statusline plugin gives exact depth."},
             "systemMessage":
                 f"Context: {remaining:,} tokens left of {win:,} ({src}) — "
                 f"under the hard threshold ({th['hard']:,}); not blocked because "
-                f"the depth is {how}. Checkpoint now, or pin the window with "
+                f"the depth is {how}. {sys_do}, or pin the window with "
                 f"CONTEXT_GUARD_CONTEXT_WINDOW if {win:,} is wrong.",
         })
         return
     if act == "hard":
         bw = m["block_window"] or win
+        left = max(bw - tok, 0)
+        if left >= L.CHECKPOINT_MIN_TOKENS:
+            advice = ("Run /checkpoint (or /context-guard:checkpoint - both forms are "
+                      "whitelisted) first")
+        else:
+            # Live-fired 2026-09-03 at 1,062 left: a checkpoint needs a turn of
+            # its own, so pointing at it there wedges the session.
+            advice = f"{no_fit(left)} (/clear and /compact are whitelisted)"
         sys.stderr.write(
             (notice + "\n" if notice else "") +
-            f"[context-guard context gate] HARD STOP: {max(bw - tok, 0):,} tokens left of "
+            f"[context-guard context gate] HARD STOP: {left:,} tokens left of "
             f"{bw:,} ({src}){extra}. Your prompt was NOT processed and was erased.\n"
-            f"Run /checkpoint (or /context-guard:checkpoint - both forms are "
-            f"whitelisted) first, then re-send:\n"
+            f"{advice}, then re-send:\n"
             f"  {prompt[:200]}\n"
             + (derived_hatches(sid) if mirror_bound(m, src) else ""))
         sys.exit(2)

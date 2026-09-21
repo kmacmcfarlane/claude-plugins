@@ -125,6 +125,14 @@ EXACT_MAX_AGE_S = 600
 # anchors, sorted by window; linear between, clamped outside. thresholds()
 # interpolates it and publish_gauge() serialises it - the single source.
 ANCHORS = ((200_000, 70_000, 40_000), (1_000_000, 150_000, 60_000))
+# The least a checkpoint can be run in. thresholds() prices a full checkpoint
+# at ~16-60K in the live window; the lean path is the low end, ~16K. Below
+# the lean cost plus a margin a checkpoint no longer fits, so the gate's HARD
+# advice points at /clear or /compact instead (advice text only: it never
+# changes whether the gate blocks).
+CHECKPOINT_LEAN_COST = 16_000
+CHECKPOINT_MARGIN = 4_000
+CHECKPOINT_MIN_TOKENS = CHECKPOINT_LEAN_COST + CHECKPOINT_MARGIN
 # The words the status line shows beside its gauge under `due` and `hard`.
 GAUGE_LABELS = {"due": "checkpoint DUE", "hard": "HARD gate"}
 GAUGE_V = 1
@@ -519,6 +527,7 @@ def thresholds(window):
     150K, hard 60K) - linear between, clamped outside. A full checkpoint costs
     ~16-60K in the live window and one operator exchange is p90 ~20K, so
     `hard` is the floor below which only /checkpoint itself is affordable.
+    Under CHECKPOINT_MIN_TOKENS (the lean ~16K plus a margin) not even that is.
     """
     w = max(int(window or 0), 1)
     lo_w, lo_d, lo_h = ANCHORS[0]
