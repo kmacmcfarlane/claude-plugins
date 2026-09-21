@@ -38,9 +38,14 @@ TEST_PRICES = {
 }
 
 
+DERIVED = object()
+
+
 def assistant_line(message_id, model, timestamp, block=1, agent_id=None,
                    session_id="sess", input_tokens=0, output_tokens=0,
-                   cache_read=0, cache_5m=0, cache_1h=0):
+                   cache_read=0, cache_5m=0, cache_1h=0, request_id=DERIVED):
+    """One assistant line. requestId defaults to one derived from the message
+    id (one request per response); pass None to omit it."""
     usage = {
         "input_tokens": input_tokens,
         "output_tokens": output_tokens,
@@ -53,6 +58,10 @@ def assistant_line(message_id, model, timestamp, block=1, agent_id=None,
             "apiBlockIndex": block,
             "message": {"id": message_id, "model": model, "role": "assistant",
                         "type": "message", "usage": usage}}
+    if request_id is DERIVED:
+        request_id = "req_" + message_id
+    if request_id is not None:
+        line["requestId"] = request_id
     if agent_id:
         line["agentId"] = agent_id
         line["isSidechain"] = True
@@ -214,26 +223,6 @@ class ParserTests(unittest.TestCase):
         self.assertEqual(sorted(data["by_model"]),
                          [usage_report.UNKNOWN_PREFIX + "claude-arcticfox-9"])
 
-    def test_dedupe_is_file_scoped(self):
-        """The same message.id in two sessions is two responses, not one."""
-        first = self.fixture.session("sess_a", [
-            assistant_line("msg_shared", "claude-opus-5",
-                           "2026-09-10T00:00:01.000Z", session_id="sess_a",
-                           output_tokens=100)])
-        second = self.fixture.session("sess_b", [
-            assistant_line("msg_shared", "claude-opus-5",
-                           "2026-09-10T00:00:02.000Z", session_id="sess_b",
-                           output_tokens=100)])
-        for path in (first, second):
-            scan = usage_report.read_transcript(path, table=self.table)
-            self.assertEqual(len(scan.records), 1)
-            self.assertEqual(scan.duplicates, 0)
-        sessions = usage_report.read_project(self.fixture.project, table=self.table)
-        data = usage_report.summarize(sessions, self.table)
-        self.assertEqual(len(data["sessions"]), 2)
-        self.assertEqual(data["totals"]["output"], 200)
-        self.assertEqual(data["duplicate_lines_dropped"], 0)
-
     def test_dated_model_id_resolves_to_its_family(self):
         self.table.models["claude-haiku-4-5"] = {
             "input": 1.0, "output": 5.0, "cache_write_5m": 1.25,
@@ -249,6 +238,172 @@ class ParserTests(unittest.TestCase):
         key, _, known = table.prices_for("claude-nope-1")
         self.assertFalse(known)
         self.assertEqual(key, "claude-opus-5")
+
+
+class DedupeTests(unittest.TestCase):
+    """Dedupe key (message.id, requestId), across files, max output_tokens wins.
+
+    Unlike the older fixtures, usage differs line to line here: a streamed
+    response grows output_tokens as it goes, and only its last line is final.
+    """
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.fixture = Fixture(self.tmp.name)
+        self.table = usage_report.PriceTable(TEST_PRICES, warn=lambda m: None)
+
+    def streamed(self, message_id, outputs, session_id="sess", request_id=DERIVED,
+                 minute=0):
+        return [assistant_line(message_id, "claude-opus-5",
+                               "2026-09-10T00:%02d:%02d.000Z" % (minute, i),
+                               block=i + 1, session_id=session_id,
+                               input_tokens=10, cache_read=1000,
+                               output_tokens=out, request_id=request_id)
+                for i, out in enumerate(outputs)]
+
+    def test_streamed_response_counts_its_final_output(self):
+        """(a) output_tokens grows line by line; the last, largest line is the one kept."""
+        path = self.fixture.session("sess", self.streamed("msg_1", [1, 1, 480]))
+        scan = usage_report.read_transcript(path, table=self.table)
+        self.assertEqual(len(scan.records), 1)
+        self.assertEqual(scan.duplicates, 2)
+        totals = usage_report.totals_for(scan.records)
+        self.assertEqual(totals["output"], 480)
+        # the other classes repeat on every line and are still counted once
+        self.assertEqual(totals["input"], 10)
+        self.assertEqual(totals["cache_read"], 1000)
+        self.assertAlmostEqual(scan.records[0].cost_usd,
+                               (10 * 5 + 480 * 25 + 1000 * 0.5) / 1e6)
+
+    def test_max_output_wins_even_when_not_last(self):
+        path = self.fixture.session("sess", self.streamed("msg_1", [3, 900, 2]))
+        scan = usage_report.read_transcript(path, table=self.table)
+        self.assertEqual(usage_report.totals_for(scan.records)["output"], 900)
+
+    def test_resumed_copy_in_another_file_counts_once(self):
+        """(b) A resumed session copies the response, same message.id and requestId."""
+        self.fixture.session("sess_a", self.streamed("msg_1", [1, 480],
+                                                      session_id="sess_a"))
+        # the resumed file carries the copied history, then its own new turn
+        self.fixture.session("sess_b", self.streamed("msg_1", [1, 480],
+                                                      session_id="sess_b")
+                             + self.streamed("msg_2", [1, 70], session_id="sess_b",
+                                             minute=5))
+        sessions = usage_report.read_project(self.fixture.project, table=self.table)
+        data = usage_report.summarize(sessions, self.table)
+        self.assertEqual(data["totals"]["output"], 550)
+        self.assertEqual(data["totals"]["cache_read"], 2000)
+        self.assertEqual(data["totals"]["records"], 2)
+        # one in-file duplicate per streamed pair, plus the cross-file copy
+        self.assertEqual(data["duplicate_lines_dropped"], 4)
+        by_session = {row["session_id"]: row for row in data["sessions"]}
+        # a tie keeps the first file read; the copy is dropped from the second
+        self.assertEqual(by_session["sess_a"]["totals"]["output"], 480)
+        self.assertEqual(by_session["sess_b"]["totals"]["output"], 70)
+
+    def test_cross_file_copy_with_more_output_wins(self):
+        """A truncated first copy loses to the file holding the final count."""
+        self.fixture.session("sess_a", self.streamed("msg_1", [1], session_id="sess_a"))
+        self.fixture.session("sess_b", self.streamed("msg_1", [1, 480],
+                                                      session_id="sess_b"))
+        sessions = usage_report.read_project(self.fixture.project, table=self.table)
+        data = usage_report.summarize(sessions, self.table)
+        self.assertEqual(data["totals"]["output"], 480)
+        by_session = {row["session_id"]: row for row in data["sessions"]}
+        self.assertEqual(by_session["sess_a"]["totals"]["records"], 0)
+        self.assertEqual(by_session["sess_b"]["totals"]["output"], 480)
+        # a second pass is a no-op
+        self.assertEqual(usage_report.dedupe_scans(usage_report.session_scans(sessions)), 0)
+
+    def test_copy_in_a_dispatch_file_counts_once(self):
+        """Dedupe spans a session's main file and its sub-agent files."""
+        self.fixture.session("sess", self.streamed("msg_1", [1, 40]))
+        self.fixture.dispatch("sess", "aaa", {"spawnDepth": 1},
+                              self.streamed("msg_1", [1, 40]))
+        session = usage_report.read_session(self.fixture.project / "sess.jsonl",
+                                            table=self.table)
+        self.assertEqual(usage_report.totals_for(session.all_records())["output"], 40)
+
+    def test_same_message_id_different_request_is_counted_separately(self):
+        """(c) Only the pair is an identity; a new requestId is a new response."""
+        self.fixture.session("sess_a", self.streamed("msg_1", [1, 100],
+                                                      session_id="sess_a",
+                                                      request_id="req_A"))
+        self.fixture.session("sess_b", self.streamed("msg_1", [1, 30],
+                                                      session_id="sess_b",
+                                                      request_id="req_B"))
+        path = self.fixture.session("sess_c",
+                                    self.streamed("msg_9", [5], request_id="req_X")
+                                    + self.streamed("msg_9", [6], request_id="req_Y"))
+        scan = usage_report.read_transcript(path, table=self.table)
+        self.assertEqual(len(scan.records), 2)
+        self.assertEqual(scan.duplicates, 0)
+        sessions = usage_report.read_project(self.fixture.project, table=self.table)
+        data = usage_report.summarize(sessions, self.table)
+        self.assertEqual(data["totals"]["output"], 141)
+        self.assertEqual(data["totals"]["records"], 4)
+
+    def test_line_missing_request_id_is_keyed_on_message_id_alone(self):
+        """(d) No requestId: its own streamed lines still collapse to the max, and
+        it never merges with a line of the same id that has a requestId."""
+        self.fixture.session("sess_a", self.streamed("msg_1", [1, 1, 60],
+                                                      session_id="sess_a",
+                                                      request_id=None))
+        # a resumed copy that also lacks requestId is the same response
+        self.fixture.session("sess_b", self.streamed("msg_1", [1, 60],
+                                                      session_id="sess_b",
+                                                      request_id=None)
+                             # same id, but with a requestId: kept apart
+                             + self.streamed("msg_1", [9], session_id="sess_b",
+                                             request_id="req_Z", minute=5))
+        sessions = usage_report.read_project(self.fixture.project, table=self.table)
+        data = usage_report.summarize(sessions, self.table)
+        self.assertEqual(data["totals"]["output"], 69)
+        self.assertEqual(data["totals"]["records"], 2)
+
+    def test_line_missing_message_id_is_never_deduped(self):
+        lines = [json.dumps({"type": "assistant", "requestId": "req_1",
+                             "timestamp": "2026-09-10T00:00:0%d.000Z" % i,
+                             "message": {"model": "claude-opus-5",
+                                         "usage": {"output_tokens": 5}}})
+                 for i in (1, 2)]
+        self.fixture.session("sess_a", lines)
+        self.fixture.session("sess_b", lines)
+        sessions = usage_report.read_project(self.fixture.project, table=self.table)
+        data = usage_report.summarize(sessions, self.table)
+        self.assertEqual(data["totals"]["output"], 20)
+        self.assertEqual(data["duplicate_lines_dropped"], 0)
+
+    def test_since_applies_to_the_kept_line(self):
+        """The streamed lines straddle --since; the final line decides."""
+        path = self.fixture.session("sess", [
+            assistant_line("msg_1", "claude-opus-5", "2026-09-09T23:59:59.000Z",
+                           output_tokens=1),
+            assistant_line("msg_1", "claude-opus-5", "2026-09-10T00:00:01.000Z",
+                           block=2, output_tokens=300)])
+        since = usage_report.parse_since("2026-09-10")
+        scan = usage_report.read_transcript(path, table=self.table, since=since)
+        self.assertEqual(usage_report.totals_for(scan.records)["output"], 300)
+
+    def test_dedupe_spans_projects_in_one_run(self):
+        """`--all` reads several project dirs; a copy across them counts once."""
+        self.fixture.session("sess_a", self.streamed("msg_1", [1, 480],
+                                                      session_id="sess_a"))
+        other = self.fixture.root / "-other"
+        other.mkdir()
+        (other / "sess_b.jsonl").write_text(
+            "\n".join(self.streamed("msg_1", [1, 480], session_id="sess_b")) + "\n",
+            encoding="utf-8")
+        proc = subprocess.run(
+            [sys.executable, str(SCRIPT), "--projects-dir", str(self.fixture.root),
+             "--prices", str(self.fixture.prices()), "--all", "summary", "--json"],
+            capture_output=True, text=True, env={"PYTHONDONTWRITEBYTECODE": "1",
+                                                 "PATH": "/usr/bin:/bin"})
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        data = json.loads(proc.stdout)
+        self.assertEqual(data["totals"]["output"], 480)
+        self.assertEqual(data["duplicate_lines_dropped"], 3)
 
 
 class DispatchTests(unittest.TestCase):
