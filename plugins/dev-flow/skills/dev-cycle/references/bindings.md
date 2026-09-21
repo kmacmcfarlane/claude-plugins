@@ -26,7 +26,8 @@ order given, and asks the user only where the table says so.
 | **Series home** | Where the plan phase writes an investigation series | `$MAIN/.claude-sandbox/investigations/<slug>/`, the canonical path `/implement` reads |
 
 `<scratchpad>` is the session scratchpad the system prompt names; `<slug>` is the item id,
-the series slug, or a kebab-case name made from the cycle brief's goal.
+the series slug, a kebab-case name made from the cycle brief's goal, or — `review
+<branch>` mode with no other target — `<branch>` with every `/` written `-`.
 
 ## What a librarian binds
 
@@ -78,22 +79,63 @@ block, and the checklist's scope check (section 1) compares the diff against it.
 ## Review target
 
 `review <branch>` mode's Step 0 resolves the branch's own worktree in place of Step 3
-(no `worktree-<name>` branch is created):
+(no `worktree-<name>` branch is created), and records it as `target: <branch> <worktree
+path>` (§ Record line shapes) before any dispatch:
 
-1. An existing worktree already checked out on `<branch>`: `git -C "$MAIN" worktree list
-   --porcelain`, matched against `refs/heads/<branch>`. Use it as is.
-2. Otherwise add one, on the branch itself:
+1. The main checkout is already on `<branch>` (`git -C "$MAIN" branch --show-current`
+   equals it): the worktree path is `$MAIN` itself. Land's checks, diff and merge all run
+   there directly — there is no separate worktree to add or remove.
+2. Otherwise, an existing worktree already checked out on `<branch>`: `git -C "$MAIN"
+   worktree list --porcelain`, matched against `refs/heads/<branch>`. Use its listed path
+   as is.
+3. Otherwise add one, on the branch itself, at `.claude/worktrees/review-<slug>`, `<slug>`
+   being `<branch>` with every `/` written `-` (§ The ten, `<slug>`):
 
    ```bash
-   git -C "$MAIN" worktree add .claude/worktrees/review-<branch> <branch>
+   git -C "$MAIN" worktree add .claude/worktrees/review-<slug> <branch>
    ```
 
    The same `.git/info/exclude` check as Step 3 applies before adding it.
 
+Every later step reads the worktree by this resolved absolute path, never reconstructed
+as `"$MAIN"/.claude/worktrees/<name>` — cases 1 and 2 do not live there.
+
 Base still resolves as usual (§ Base below) — it is what Land would merge into, not what
 the branch was built from. Files in scope, when a caller, item or plan names them, still
 bounds the reviewer's per-file grading, same as any other run; `undeclared` when nothing
-does, and the reviewer grades the whole diff against the item's or plan's stated intent.
+does, and the reviewer grades the whole diff against the recorded Intent (§ Intent)
+instead of an implementer's per-file reasons.
+
+## Intent
+
+`review <branch>` mode with no work item or plan (SKILL.md § Step 0.2) has no acceptance
+to grade against. Before dispatching the reviewer, collect one: ask the user for a
+one-line intent in the same question as any other Step 0 ask; if none is given, record
+`intent: commit messages are the intent` and use the branch's own commit subjects
+(`git -C <worktree path> log --oneline <base>..<branch>`) as what the reviewer grades
+against. Record it as `intent: <one line>` (§ Record line shapes) in the record sink.
+
+In this mode, "Files changed, with reasons" in the review brief holds the branch's own
+commit list, not the orchestrator's `changed:` block — there was no implementer round to
+build one from. The reviewer grades each changed file against the recorded Intent instead
+of a per-file reason; a file the Intent does not plausibly cover is still a finding at
+medium, but § Undeclared files' "no reason" rule does not apply here — a changed file is
+never itself a medium finding merely for lacking a one-line reason, since no implementer
+wrote one.
+
+## Record line shapes
+
+Fixed shapes a resume (§ Resume) parses back out of the record sink; every step that
+writes one uses this exact shape, so a resume never has to guess:
+
+- `dispatch: <role> <model> — <signal>` — SKILL.md § Step 2 rule 7, before every dispatch
+- `return: <role> <STATUS> <sha>` — SKILL.md § Step 3.5, as soon as an agent's report
+  comes back; `<sha>` is its COMMIT (implementer) or the HEAD it reviewed (reviewer)
+- `verdict: <V> round <n> at <sha>` — SKILL.md § Step 4.5, `<n>` the review round,
+  `<sha>` the HEAD reviewed
+- `target: <branch> <worktree path>` — § Review target, `review <branch>` mode only
+- `intent: <one line>` — § Intent, `review <branch>` mode with no item or plan
+- `checks:`, `decision:`, the `changed:` block — §§ Checks, Decisions, Undeclared files
 
 ## Checks
 
@@ -145,25 +187,49 @@ decision to the record sink as `decision: <one line>` before asking.
 
 ## Resume
 
-Step 0.4 reads the record sink for a target that already carries `dispatch:`, round or
-verdict lines, before any dispatch of its own — a rerun of a target that was interrupted,
-whether by the session ending, a `BLOCKED` handoff, or the operator stopping it:
+Step 0.4 reads the record sink for a target that already carries any record line
+(§ Record line shapes), before any dispatch of its own — a rerun of a target that was
+interrupted, whether by the session ending, a `BLOCKED` handoff, or the operator stopping
+it. **A scratchpad record sink cannot resume across sessions that do not share a
+scratchpad**: a fresh session's scratchpad is empty, so a store-less target only resumes
+within the session that wrote it, or one that inherits the same scratchpad.
 
-1. **A `CLEAR` verdict** recorded against a HEAD sha that still matches the target
-   worktree's current HEAD (`git -C "$MAIN"/<worktree path> rev-parse HEAD`): skip
-   straight to Step 5. A HEAD that has moved since — a human pushed a fix, or a dispatch
-   whose return the interrupted run never recorded — makes the recorded `CLEAR` stale;
-   treat it as no verdict and resume at Step 4 instead.
-2. **A `NEEDS_CHANGES`, `SHOW_STOPPER` or `BLOCKED` verdict, or a `dispatch:` line with no
-   verdict recorded after it**: resume at Step 4, with the round already recorded
-   counting toward the cap of 4 review rounds.
-3. **A `dispatch:` line with no return recorded at all** (the run stopped mid-dispatch,
-   before the agent reported back): treat that dispatch as never sent; re-dispatch at the
-   same role, tier and round.
-4. **No `dispatch:` line**, but a `checks:`, `decision:` or `changed:` line already
-   recorded: start at Step 1, using those recorded bindings instead of re-resolving or
-   re-asking them.
-5. **No record at all**: start at Step 1 as normal; there is nothing to resume.
+Evaluate in this order; the first match wins:
+
+1. **A `verdict: CLEAR round <n> at <sha>`** where `<sha>` still matches the target
+   worktree's current HEAD (`git -C <worktree path> rev-parse HEAD`, the path from
+   `target:` in `review <branch>` mode or the usual `.claude/worktrees/<name>`
+   otherwise): skip straight to Step 5. A HEAD that has moved since — a human pushed a
+   fix, or a dispatch whose `return:` the interrupted run never recorded — makes the
+   recorded `CLEAR` stale; treat it as no verdict and continue down this list.
+2. **A `verdict: NEEDS_CHANGES round <n> ...`**: resume at Step 4 as a fix round, with
+   that review's findings recorded verbatim in the record sink's FINDINGS block —
+   dispatch the fix per the fix loop, at the tier routing rule 6 gives; the round already
+   counts toward the cap of 4.
+3. **A `verdict: SHOW_STOPPER ...`, or the cap already hit** (4 `verdict:` lines with no
+   `CLEAR`): do not re-dispatch anything. Wait for a `decision:` line's recorded answer;
+   if none is recorded yet, raise it through the decision channel now, exactly as Step
+   4.4 would. A resume never re-raises a decision that already has an answer recorded.
+4. **The last recorded verdict was `BLOCKED`** (a reviewer that could not start,
+   `review-brief.md` § Verdict meanings): re-dispatch it with the setup fixed. This is
+   not a review round — it does not count toward the cap.
+5. **A `dispatch:` line with no `return:` recorded after it**: before re-dispatching,
+   check whether the prior agent is still running — `ListAgents`, and `SendMessage` to it
+   if one matches this target — rather than assume it died; a still-running agent is left
+   to finish, never duplicated. Only when none is found: treat that dispatch as never
+   sent and re-dispatch at the same role, tier and round, briefing the new agent with the
+   worktree's current HEAD (it may have moved since the stale dispatch was recorded).
+6. **No `dispatch:` line**, but a `checks:`, `target:`, `intent:`, `decision:` or
+   `changed:` line already recorded: start at Step 1 (Step 0 for `review <branch>`
+   mode), using those recorded bindings instead of re-resolving or re-asking them.
+7. **No record at all**: start at Step 1 as normal; there is nothing to resume.
+
+**Plan mode.** After a `verdict: CLEAR` for a plan review, re-check the sha256 baseline
+recorded before that review (`sha256sum <series>/[0-9][0-9]_*.md`, `review-brief.md`
+§ Plan-review variant) against the series files' current hashes. Unchanged: go straight
+to the decision channel for any blocking open questions, then Step 6. Changed — a
+written serial was edited after the fact: treat the `CLEAR` as stale and resume at Step 4
+with the plan-review variant instead, same as rule 2 above.
 
 A resumed run never repeats a question the record sink already answers, and never
 re-dispatches a round that already returned — only one that never returned, or the next
@@ -173,12 +239,28 @@ one the last recorded state calls for.
 
 Standalone, ask once at Land — AskUserQuestion, options in this order:
 
-1. `Merge to <base> locally, no push` — `git merge --no-ff` into the local base, worktree
-   removed, branch deleted. Nothing leaves the machine.
-2. `Leave the branch` — no merge; the worktree and `worktree-<name>` stay for the user;
-   the item, when there is one, gets a handoff instead of `wi done`.
+1. `Merge to <base> locally, no push` — `git merge --no-ff` into the local base, then the
+   cycle's own worktree removed and its own branch deleted (`full` mode:
+   `worktree-<name>`; `review <branch>` mode: only a worktree this cycle added itself at
+   `.claude/worktrees/review-<slug>` — never `<branch>`, which is the author's and is
+   never deleted). Nothing leaves the machine.
+2. `Leave the branch` — no merge; whatever the cycle itself added (the worktree, and in
+   `full` mode `worktree-<name>`) stays for the user; the item, when there is one, gets a
+   handoff instead of `wi done`. `review <branch>` mode never touches `<branch>` itself
+   either way — it was never the cycle's to remove.
 3. `Merge and push` — option 1, then `git -C "$MAIN" push origin <base>`, fast-forward
    only, never `--force`.
+
+`review <branch>` mode merges `<branch>` itself in place of `worktree-<name>`:
+
+```bash
+git -C "$MAIN" merge --no-ff -m "<message>" <branch>
+```
+
+from the worktree path § Review target resolved. When that path is `$MAIN` itself
+(§ Review target case 1), Land's checks and diff already ran there directly, and cleanup
+does nothing — there is no separate worktree to remove, and the main checkout is already
+on `<branch>`, which the merge then joins into `<base>` as usual.
 
 Never push unless the user picked option 3 or the invocation asked for it in words. A
 rejected push stops: never pull, rebase or force around it — report it.
