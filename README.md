@@ -83,7 +83,7 @@ dependency is marked (hard) here.
 | …structured product research in a web chat session | `chat` | current; *family home under review* | — |
 | …to survive the finite context window (gate, checkpoint, rehydration, token-spend report) | `context-guard` | **current** | `statusline` (soft; exact depth when installed) |
 | …an always-on status line (context left, plan usage, model, session name) | `statusline` | **current** | `context-guard` (soft; epoch and checkpoint thresholds in the gauge when installed) |
-| …to share the status-line slot, so the data Claude Code hands the status line reaches the tools that read it whatever renders the line (today the `tee` command; a dispatcher that owns the slot is planned) | `statusline-hub` | **current** | — |
+| …to share the status-line slot, so the data Claude Code hands the status line reaches the tools that read it whatever renders the line (the hub owns the slot and runs the hooks other plugins register, or its `tee` feeds the record from another renderer) | `statusline-hub` | **current** | — |
 | …a plan before you code: investigate → reviewed plan → verified implementation, and a standing librarian that takes custody of a repo's work (files, dispatches, reviews, lands) | `dev-flow` | **current** | `work-items` (soft; `librarian-mode` and `dev-cycle` find `wi` via the repo tree, or the installed plugin's copy; `dev-cycle` runs without it on a scratchpad record), `statusline` (soft; the fable fallback in `librarian-mode` and `dev-cycle` reads its rate-limit reset times) |
 | …repo-durable work items and a pluggable work source | `work-items` | **current** | — |
 | …isolated execution for agent sessions (containers, and the checkout/worktree convention) | `sandbox` | **current** | claude-sandbox repo (external) |
@@ -183,9 +183,10 @@ first install; `sandbox`, `ralph`, `kit-dev`), the second marketplace's working 
 proceed, and confirmable or changeable at operator review. Names that have shipped state
 (a data dir, a settings path) are changed only via the rename procedure above.
 
-`statusline-hub` is **confirmed** by the operator, not provisional: the dispatcher will put
-it into a data dir and the `statusLine` command path, so it was chosen once, before it
-shipped. It has no state of its own yet.
+`statusline-hub` is **confirmed** by the operator, not provisional: the dispatcher puts it
+into a data dir and the `statusLine` command path, so it was chosen once, before it shipped.
+Since owner mode (F2) those are live state, as is its registry path
+(`~/.claude/statusline-hub/hooks.d/`), which other plugins write to.
 
 ## Plugins today
 
@@ -286,8 +287,7 @@ Tests: `cd plugins/work-items/skills/work-items && python3 -m unittest discover 
 Survive the finite context window. Registers the context-gate hooks, the reasoning ledger and
 session rehydration — one of the plugins here whose aim *is* harness behavior (the others
 are `statusline`, for the status line, `sandbox`, for the checkout guard, and
-`statusline-hub`, for the shared status-line slot, though it registers no hooks and writes no
-settings yet).
+`statusline-hub`, for the shared status-line slot).
 
 | Skill | Description |
 |---|---|
@@ -357,24 +357,50 @@ labels; without it, default thresholds, no epoch, no labels, and nothing is writ
 ### statusline-hub
 
 The status-line slot, shared. Claude Code has one status-line slot, and the JSON it hands that
-slot on each render is the only live source of exact context depth and plan usage. Today the
-plugin ships the first piece of a dispatcher for that slot: `hooks/tee.py`, which reads the
-status-line JSON on stdin, writes the sensor record
-(`~/.claude/statusline/sensor/<session>.json`, the same file, format and rules as the
-`statusline` plugin's writer) and prints nothing. Run it from whatever renders your line and
-the tools that read the record (`context-guard`'s exact depth, `dev-flow`'s rate-limit reset
-times) work there too.
+slot on each render is the only live source of exact context depth and plan usage. The hub
+makes that slot shareable, two ways:
+
+- **Owner mode.** The hub is the `statusLine` command. Each render it writes the sensor
+  record first (`~/.claude/statusline/sensor/<session>.json`, the same file, format and rules
+  as the `statusline` plugin's writer), then runs the hooks other plugins register in
+  `~/.claude/statusline-hub/hooks.d/`:
+  - **display** hooks run in parallel under hard timeouts, with a last-good cache, and
+    their sanitised text is joined into the line;
+  - **record** hooks get the raw payload byte for byte, detached, and never block the
+    render;
+  - an optional health file per hook adds one warning glyph when that hook is failing.
+- **Embed mode.** Another renderer keeps the slot and runs `hooks/tee.py`, which writes the
+  same record and prints nothing. The tools that read the record (`context-guard`'s exact
+  depth, `dev-flow`'s rate-limit reset times) work there too.
 
 | Skill | Description |
 |---|---|
-| `statusline-hub` | Wire the tee into a ccstatusline Custom Command widget, a Starship `custom` module, or a shell wrapper around an existing status line |
+| `statusline-hub` | Wire the tee into a ccstatusline Custom Command widget, a Starship `custom` module, or a shell wrapper around an existing status line; the hook contract for plugin authors (`references/hook-contract.md`) |
+| `install-statusline-hub` | Optional: put the hub in another scope, remove it, or replace a status line another tool set; list registered hooks, why any is skipped, and their health |
 
-No hooks, no `settings.json` writes yet. The writer is a vendored copy of `statusline`'s (a
-plugin may not import another's code); `hooks/tests/test_parity.py` fails when the two drift
-and checks both write identical records, whenever both plugins sit in this repo. Unit tests:
-`cd plugins/statusline-hub/hooks && python3 -m unittest discover -s tests -q`. Planned: the
-hub owns the `statusLine` slot, tees on every render, and runs registered display hooks —
-the `statusline` footer first — in parallel under timeouts.
+It sets itself up. On the first session its SessionStart hook takes a free `statusLine` slot
+where the plugin is enabled (the same scope rules as `statusline`: user settings, or a
+project's git-ignored `.claude/settings.local.json`) and says so in one line. It never writes
+over a status line another tool set: it says so once, pointing at embed mode and the
+installer. It restores its entry when a stale session's settings write drops it, and never
+re-adds one the user removed. It leaves the `statusline` plugin's footer in place until that
+plugin registers as a hub display hook (planned next), then takes the slot over with the
+footer drawing through it. The same hook prunes sensor records older than 30 days (the tee's
+included), dead hook manifests (not refreshed for 14 days), stale caches and logs.
+
+It carries `hooks/`, with its unit tests
+(`cd plugins/statusline-hub/hooks && python3 -m unittest discover -s tests -q`):
+- `hub.py`, the owner-mode render;
+- `registry.py`, the manifests, their trust checks, config, health and output hygiene;
+- `tee.py`;
+- `owner.py` and `session_start.py`, the settings entry and the first-run, heal and takeover
+  logic;
+- `housekeeping.py`, the prune.
+
+`tee.py`'s writer, `owner.py`'s settings write and `housekeeping.py`'s sensor prune are
+vendored copies of `statusline`'s (a plugin may not import another's code).
+`tests/test_parity.py` and `tests/test_vendored.py` fail when a copy drifts, whenever both
+plugins sit in this repo. Planned: a consent-only wrap mode for closed renderers.
 
 ### sandbox
 
