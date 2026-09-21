@@ -20,8 +20,9 @@ queue, and the queue never waits on it.
 ## The tables
 
 Gather from the store; never `ls` it by hand. Every command reads open items only
-(`todo`, `doing`, `blocked`), so closed items never reach a table; `parked` is closed
-to `ls`'s default too (format.md § Parked), so the decision-line scan below adds it back
+(`todo`, `doing`, `blocked`), so closed items never reach a table; `ls` also leaves
+`parked` out by default (the `work-items` skill's format reference, § Parked — its count
+shows on `wi prime`'s `PARKED <n>` line), so the decision-line scan below adds it back
 in — an unanswered `decision N:` on a parked item still has to show in Groom.
 
 ```bash
@@ -31,7 +32,9 @@ $WI ls --status doing --plain        # the owner column marks your own
 $WI ls --ready --plain               # ready, ranked
 for id in $($WI ls --plain | cut -f1) $($WI ls --status parked --plain | cut -f1); do
   grep -H '^\(decision\|answer\) [0-9]' "$WI_ROOT/items/$id.md"; done   # decision lines,
-                                     # open items + parked
+                                     # open items + parked; a `blocked` item whose reason
+                                     # starts `PARKED` predates the status —
+                                     # `wi migrate-parked --apply` converts it
 $WI ls --json | python3 -c 'import json,sys; h=sys.argv[1]; print(*[i["id"] for i in json.load(sys.stdin) if h in (i.get("deps") or [])])' <hold-id>
                                      # the items a scoped hold holds
 ```
@@ -62,8 +65,8 @@ Groom                                        Work
   dependency are counted in one line under the table, not listed.
 - **Work** — what can move without the operator:
   - ready items (`wi ls --ready`), minus held ones. `status: parked` items already never
-    appear here — `--ready` leaves them out by itself (format.md § Parked) — so nothing
-    else has to filter for them;
+    appear here — `--ready` leaves them out by itself (the `work-items` skill's format
+    reference, § Parked) — so nothing else has to filter for them;
   - your own `doing` items with no agent in flight and no unanswered decision — an item
     handed off after a rate limit, or one whose decision the operator has since
     answered. dev-cycle claims before its Agent call, so these never show as ready.
