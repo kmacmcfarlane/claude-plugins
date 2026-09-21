@@ -52,3 +52,5 @@ updated: 2026-09-21
 - [medium] D FINDINGS block never written; E landed test needs a `landed:` line; F plan target vs plan mode conflation; G verdict `at <sha>` drops plan-mode coverage; H fix-loop.md conflict/leak paths assume worktree-<name> and rewrite branches.
 - lows: I BLOCKED verdicts counted toward cap; J review mode never claims the item.
 - dispatch: implementer sonnet — fix round 2 (tier kept, rule 6; scope widened to fix-loop.md and review-checklist.md). Next round (fix round 3) would bump per rule 3.
+- fix round 2 DONE 58bece4 (sonnet): case 1 stops and asks; resume as a last-line state machine (walk-through table in the report); findings:/landed: shapes; review-mode checklist exemption; fix-loop carve-outs; claim in Step 0; BLOCKED not counted.
+- dispatch: reviewer opus — review r3 (same reviewer resumed); last round before the cap
