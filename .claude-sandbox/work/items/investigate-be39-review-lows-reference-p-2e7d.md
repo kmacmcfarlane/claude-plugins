@@ -21,3 +21,7 @@ From the be39 review (lows): investigate/references/edge-cases.md:27 restore `re
 ## Notes
 - 2026-09-21 claimed by unknown@360f41058e92
 - dispatch: implementer sonnet — skill doc wording
+
+## Implementer result
+- round 1 DONE 038ca43 (sonnet): edge-cases.md:27 path restored; quality-criteria pointer at Step 12. Point 3 judged already met by edge-cases.md's last bullet (no edit).
+- dispatch: reviewer opus — rule 4

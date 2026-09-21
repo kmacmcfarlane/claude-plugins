@@ -23,3 +23,7 @@ From dfa1 review r2 2026-09-21 (CLEAR with lows). (1) hub session_start.py:320-3
 ## Notes
 - 2026-09-21 claimed by unknown@360f41058e92
 - dispatch: implementer opus — hub session_start owns the statusLine slot (fable signal: settings ownership; fable unavailable, fallback)
+
+## Implementer result
+- round 1 DONE 64c6513 (opus): footer wording when hub runs first; heal yields a footer entry when records readable and no statusline@; waits otherwise; tests fail 2 without. README already lists both (bbe5ea4). Open: repoint after uninstall while the 14-day manifest lingers.
+- dispatch: reviewer opus — rule 4 (fable-signal fallback)
