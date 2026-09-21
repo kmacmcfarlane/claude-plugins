@@ -181,7 +181,8 @@ def _dq_decode(v):
             continue
         width = _DQ_HEX.get(e)
         digits = v[i + 2:i + 2 + width] if width else ""
-        if width and len(digits) == width and re.fullmatch(r"[0-9A-Fa-f]+", digits):
+        if (width and len(digits) == width
+                and re.fullmatch(r"[0-9A-Fa-f]+", digits)):
             ch = int(digits, 16)
             if ch <= 0x10FFFF and chr(ch) not in "\n\r":
                 out.append(chr(ch))
@@ -265,7 +266,8 @@ def parse_front(lines):
         key, rest = m.group(1), m.group(2).strip()
         if rest.startswith("[") and rest.endswith("]"):
             inner = rest[1:-1].strip()
-            val = [_parse_scalar(x)[0] for x in _split_flow(inner)] if inner else []
+            val = [_parse_scalar(x)[0] for x in _split_flow(inner)] \
+                if inner else []
         elif rest:
             val, quoted = _parse_scalar(rest)
             if val == "" or (val == "—" and not quoted):
@@ -309,12 +311,13 @@ _BARE_UNSAFE_START = tuple("-?:,[]{}#&*!|>'\"%@`")
 
 def _emit_scalar(v, flow=False):
     """Bare when wi reads a bare scalar back unchanged and a YAML loader
-    parses it, else double-quoted with _dq_escape: mapping/comment indicators,
-    structure chars, surrounding whitespace, a leading YAML indicator, the
-    `—` that reads as empty, a lone `=` or `<<` (YAML's value and merge
-    keys), a tab or other control character, or (in a flow list) a comma. YAML's implicit typing (numbers, booleans, null, dates) is
-    left alone — `priority: 2` and `created: 2026-09-21` stay bare — so a YAML
-    loader may type a bare value that wi reads as a string."""
+    parses it, else double-quoted with _dq_escape: mapping or comment
+    indicators, structure chars, surrounding whitespace, a leading YAML
+    indicator, the `—` that reads as empty, a lone `=` or `<<` (YAML's
+    value and merge keys), a tab or other control character, or (in a flow
+    list) a comma. YAML's implicit typing (numbers, booleans, null, dates)
+    is left alone: `priority: 2` and `created: 2026-09-21` stay bare, so a
+    YAML loader may type a bare value that wi reads as a string."""
     v = str(v)
     if (v in ("", "—", "=", "<<") or v != v.strip() or v.endswith(":")
             or re.search(r":[ \t]|[ \t]#|[\[\]{}]", v)
@@ -324,20 +327,28 @@ def _emit_scalar(v, flow=False):
     return v
 
 
-def _front_one_line(key, val):
+def _front_one_line(key, val, plain=True):
     """Every front-matter value is one line: a line break would forge keys
-    (`status: done`) or leave a file no later command can parse. This is the
-    backstop behind the per-command checks; render() runs before any write,
-    so a rejected value writes nothing."""
+    (`status: done`) or leave a file no later command can parse. A tab or
+    other control character is refused too, so nothing wi writes is what
+    `wi lint` reports (there, most often a hand-written backslash path).
+    This is the backstop behind the per-command checks; render() runs before
+    any write, so a rejected value writes nothing. `plain=False` (display
+    only: `show`) lets a hand-written control character through."""
     vals = val.values() if isinstance(val, dict) else \
         val if isinstance(val, list) else [val]
     for v in vals:
         if isinstance(v, str) and ("\n" in v or "\r" in v):
             raise WiError(1, f"front-matter '{key}' must be one line; "
                              "it contains a line break")
+        if plain and isinstance(v, str) and _CONTROL_RE.search(v):
+            c = ord(_CONTROL_RE.search(v).group())
+            raise WiError(1, f"front-matter '{key}' holds a control character "
+                             f"(U+{c:04X}{', a tab' if c == 9 else ''}); "
+                             "front-matter values are plain text")
 
 
-def emit_front(meta, extra=()):
+def emit_front(meta, extra=(), plain=True):
     out = []
     for key in list(FIELD_ORDER) + [k for k in extra if k not in FIELD_ORDER]:
         if key not in meta:
@@ -345,7 +356,7 @@ def emit_front(meta, extra=()):
         val = meta[key]
         if val is None or val == [] or val == {}:
             continue
-        _front_one_line(key, val)
+        _front_one_line(key, val, plain)
         if isinstance(val, dict):
             out.append(f"{key}:")
             out.extend(f"  {k}: {_emit_scalar(v)}" for k, v in val.items())
@@ -549,9 +560,9 @@ class Item:
             raise WiError(3, f"{path}: " + "; ".join(errors))
         return cls(meta, extra, None, None, path, body=body, eol=eol)
 
-    def render(self):
+    def render(self, plain=True):
         eol = self.eol
-        front = emit_front(self.meta, self.extra).replace("\n", eol)
+        front = emit_front(self.meta, self.extra, plain).replace("\n", eol)
         return "---" + eol + front + eol + "---" + eol + self.body
 
     def _parse(self):
@@ -1312,7 +1323,8 @@ def cmd_repair_escapes(args):
     for iid, key, old, new in rows:
         print(f"{verb}\t{iid}\t{key}\t{json.dumps(old, ensure_ascii=False)}"
               f" -> {json.dumps(new, ensure_ascii=False)}")
-    print(f"{len(rows)} {'repaired' if args.apply else 'to repair (dry run; --apply to write)'}")
+    print(f"{len(rows)} " + ("repaired" if args.apply else
+                             "to repair (dry run; --apply to write)"))
     return 0
 
 
@@ -1424,7 +1436,7 @@ def cmd_show(args):
             for ref in item.get("refs"):
                 print(f"- {ref}")
     else:
-        print(item.render(), end="")
+        print(item.render(plain=False), end="")
     return 0
 
 
@@ -1695,7 +1707,7 @@ def _section_item(heading, body):
             item["priority"] = prio
             title = title[len(prefix):].lstrip(" —-")
             break
-    item["title"] = re.sub(r"\s+", " ", title).strip()[:120]
+    item["title"] = _fold(title)[:120]
     paras = body.strip().split("\n\n")
     item["desc"] = paras[0].strip() if paras else ""
     item["notes"] = "\n\n".join(p for p in paras[1:]).strip()
@@ -1715,7 +1727,7 @@ def _bullet_item(text):
     else:
         first, _, rest = text.partition("\n")
         title, rest = first, rest
-    item["title"] = re.sub(r"\s+", " ", title).strip()[:120]
+    item["title"] = _fold(title)[:120]
     item["desc"] = rest.strip()
     return item
 
@@ -1935,8 +1947,11 @@ def _fold(v):
     line (whitespace collapsed, as import-todo folds titles). YAML block
     scalars (`review_feedback: |`) are common in ralph backlogs; folding keeps
     every word and every story, where rejecting would drop the story and
-    break the requires links of the stories that name it."""
-    return v if not isinstance(v, str) else re.sub(r"\s+", " ", v).strip()
+    break the requires links of the stories that name it. Control characters
+    fold to a space as line breaks do: the writer refuses them."""
+    if not isinstance(v, str):
+        return v
+    return re.sub(r"\s+", " ", _CONTROL_RE.sub(" ", v)).strip()
 
 
 def _story_value(story, key):
@@ -2064,9 +2079,9 @@ def secret_findings(text):
 def cmd_lint(args):
     root = resolve_root(args.root)
     problems = []
-    items = []
+    items, texts = [], {}
     for path in item_paths(root, archived=True):
-        text = path.read_text()
+        text = texts[path] = path.read_text()
         if re.search(r"^(<{7}|={7}|>{7})", text, re.M):
             problems.append(f"{path}: unresolved merge conflict markers")
             continue
@@ -2108,11 +2123,12 @@ def cmd_lint(args):
                 val if isinstance(val, list) else [val]
             if any(isinstance(v, str) and _CONTROL_RE.search(v) for v in vals):
                 problems.append(
-                    f"{it.path}: front-matter '{key}' holds a control character"
-                    " — a quoted value decodes YAML escapes, so a hand-written"
-                    " backslash (\"C:\\temp\" holds a tab) must be written \\\\;"
+                    f"{it.path}: front-matter '{key}' holds a control"
+                    " character — a quoted value decodes YAML escapes, so a"
+                    " hand-written backslash (\"C:\\temp\" holds a tab)"
+                    " must be written \\\\;"
                     f" fix it with `wi set {it.id} {key} ...`")
-        for n, why in secret_findings(it.render()):
+        for n, why in secret_findings(texts[it.path]):
             problems.append(f"{it.path}:{n}: {why}")
     # cycle detection over deps
     state = {}

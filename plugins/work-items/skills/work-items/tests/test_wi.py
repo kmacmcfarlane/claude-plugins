@@ -175,10 +175,22 @@ class TestScalarRoundTrip(WiTestCase):
         return {"id": "rt-0001", "title": v, "tags": [v, "plain"],
                 "refs": [v], "x_backlog": {"k": v}}
 
+    def front_text(self, v):
+        """emit_front's layout for meta_for(v). The writer refuses a control
+        character in a value, so for those the same lines are built from
+        _emit_scalar directly: the scalar contract still round-trips."""
+        if not wi._CONTROL_RE.search(v):
+            return wi.emit_front(self.meta_for(v))
+        with self.assertRaises(wi.WiError):
+            wi.emit_front(self.meta_for(v))
+        e = wi._emit_scalar
+        return (f"id: rt-0001\ntitle: {e(v)}\ntags: [{e(v, flow=True)}, plain]"
+                f"\nrefs:\n  - {e(v)}\nx_backlog:\n  k: {e(v)}")
+
     def test_parse_emit_is_identity_in_every_context(self):
         for v in escape_values():
             with self.subTest(v=v):
-                text = wi.emit_front(self.meta_for(v))
+                text = self.front_text(v)
                 meta, _, errors = wi.parse_front(text.split("\n"))
                 self.assertEqual(errors, [])
                 self.assertEqual(meta["title"], v)
@@ -186,7 +198,7 @@ class TestScalarRoundTrip(WiTestCase):
                 self.assertEqual(meta["refs"], [v])
                 self.assertEqual(meta["x_backlog"], {"k": v})
                 # emit -> parse -> emit is stable
-                self.assertEqual(wi.emit_front(meta), text)
+                self.assertEqual(wi.emit_front(meta, plain=False), text)
 
     def test_emitted_front_matter_is_yaml_a_strict_loader_agrees_with(self):
         try:
@@ -199,7 +211,7 @@ class TestScalarRoundTrip(WiTestCase):
             if v.strip() in ("", "—"):
                 continue  # wi reads these as "no value"; YAML has no such rule
             with self.subTest(v=v):
-                text = wi.emit_front(self.meta_for(v))
+                text = self.front_text(v)
                 loaded = yaml.load(io.StringIO(text))
                 if not isinstance(loaded["title"], str):
                     continue  # YAML types a bare 0 / true; wi keeps strings
@@ -210,8 +222,8 @@ class TestScalarRoundTrip(WiTestCase):
 
     def test_item_render_is_byte_stable_across_rewrites(self):
         for v in escape_values(count=100):
-            if v.strip() in ("", "—"):
-                continue
+            if v.strip() in ("", "—") or wi._CONTROL_RE.search(v):
+                continue  # the writer refuses control characters
             with self.subTest(v=v):
                 item = wi.Item(dict(self.meta_for(v), type="task",
                                     status="todo", priority=2),
@@ -287,6 +299,46 @@ class TestScalarRoundTrip(WiTestCase):
                                  {"title": v, "tags": [v]})
                 self.assertEqual(wi.parse_front(text.split("\n"))[0],
                                  {"title": v, "tags": [v]})
+
+    def test_writer_refuses_a_tab_or_control_character(self):
+        iid = json.loads(self.wi_ok(["add", "fine", "--json"]))["id"]
+        path = self.root / "items" / f"{iid}.md"
+        before = path.read_bytes()
+        items_before = sorted(p.name for p in (self.root / "items").iterdir())
+        for args in (["add", "tab\there"], ["add", "ok", "--tag", "t\tg"],
+                     ["add", "bell\x07"], ["set", iid, "title", "x\ty"],
+                     ["set", iid, "tags", "a\x1bb"], ["block", iid, "why\there"]):
+            with self.subTest(args=args):
+                r = run(args, self.root)
+                self.assertEqual(r.returncode, 1, r.stdout + r.stderr)
+                self.assertIn("control character", r.stderr)
+                self.assertEqual(path.read_bytes(), before)
+                self.assertEqual(sorted(p.name for p in
+                                        (self.root / "items").iterdir()),
+                                 items_before)
+
+    def test_import_folds_control_characters(self):
+        src = self.tmp / "in.yaml"
+        src.write_text("schema_version: 2\nstories:\n  - id: S-001\n"
+                       '    title: "tab\\there\\x07bell"\n    status: blocked\n'
+                       '    priority: 50\n    blocked_reason: "C:\\temp"\n')
+        self.wi_ok(["import", "--format", "backlog-yaml", str(src)])
+        rec = json.loads(self.wi_ok(["ls", "--status", "all", "--json"]))[0]
+        one = json.loads(self.wi_ok(["show", rec["id"], "--json"]))
+        self.assertEqual(one["title"], "tab here bell")
+        self.assertEqual(one["blocked"], "C: emp")
+        self.wi_ok(["lint"])
+
+    def test_lint_is_clean_on_everything_wi_writes(self):
+        odd = [v for v in escape_values(count=60)
+               if v.strip() and v.strip() == v and not wi._CONTROL_RE.search(v)
+               and v not in ("—",) and "\n" not in v and len(v) <= 120]
+        dep = json.loads(self.wi_ok(["add", "dep", "--json"]))["id"]
+        for v in odd[:40]:
+            iid = json.loads(self.wi_ok(["add", v, "--tag", v, "--json"]))["id"]
+            self.wi_ok(["set", iid, "parent", dep])
+            self.wi_ok(["block", iid, v])
+        self.assertIn("lint clean", self.wi_ok(["lint"]))
 
     def test_unterminated_quote_in_flow_list_reads_the_old_way(self):
         meta, _, errors = wi.parse_front(['tags: ["abc, d, e]'])

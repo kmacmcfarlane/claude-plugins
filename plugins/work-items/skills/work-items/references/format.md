@@ -112,7 +112,9 @@ U+2028/U+2029, the BOM, U+FFFE/U+FFFF and lone surrogates as `\xNN` /
 byte-identical; an unknown escape, or one that would decode to a line break,
 is kept as written. So in a hand-written quoted value a backslash is an
 escape: write `"C:\\temp"`, not `"C:\temp"` (which holds a tab) — `lint`
-reports any front-matter value holding a tab or other control character. A
+reports any front-matter value holding a tab or other control character.
+`wi` itself never writes one: a command given one exits 1 and writes nothing,
+and `import` folds them to a space as it folds line breaks. A
 single-quoted value reads `''` as `'`. A bare `—` or an empty value reads as
 no value; a quoted `"—"` is the literal dash (`import` still reads a
 backlog field that is `—`, such as `blocked_reason`, as no value).
