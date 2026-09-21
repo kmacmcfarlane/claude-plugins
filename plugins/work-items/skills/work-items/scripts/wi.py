@@ -196,6 +196,11 @@ _DQ_ESCAPE_RE = re.compile("[\x00-\x08\x09\x0b-\x1f\x7f-\x9f\u2028\u2029"
 # included (wi never writes one raw), most often a hand-written backslash
 # path ("C:\\temp" holds a tab, "C:\\bin" a \b)
 _CONTROL_RE = re.compile("[\x00-\x08\x09\x0b-\x1f\x7f-\x9f]")
+# what the front-matter writer refuses (and lint flags, and import folds to
+# a space): a control character, or U+2028/U+2029, which a YAML 1.1 loader
+# and str.splitlines read as a line break
+_FRONT_REFUSE_RE = re.compile("[\x00-\x08\x09\x0b-\x1f\x7f-\x9f"
+                              "\u2028\u2029]")
 
 
 def _dq_escape_char(m):
@@ -380,8 +385,9 @@ def _emit_scalar(v, flow=False):
 def _front_one_line(key, val, plain=True):
     """Every front-matter value is one line: a line break would forge keys
     (`status: done`) or leave a file no later command can parse. A tab or
-    other control character is refused too, so nothing wi writes is what
-    `wi lint` reports (there, most often a hand-written backslash path).
+    other control character (or U+2028/U+2029) is refused too, so nothing
+    wi writes is what `wi lint` reports (there, most often a hand-written
+    backslash path).
     This is the backstop behind the per-command checks; render() runs before
     any write, so a rejected value writes nothing. `plain=False` (display
     only: `show`) lets a hand-written control character through."""
@@ -391,10 +397,11 @@ def _front_one_line(key, val, plain=True):
         if isinstance(v, str) and ("\n" in v or "\r" in v):
             raise WiError(1, f"front-matter '{key}' must be one line; "
                              "it contains a line break")
-        if plain and isinstance(v, str) and _CONTROL_RE.search(v):
-            c = ord(_CONTROL_RE.search(v).group())
+        if plain and isinstance(v, str) and _FRONT_REFUSE_RE.search(v):
+            c = ord(_FRONT_REFUSE_RE.search(v).group())
             raise WiError(1, f"front-matter '{key}' holds a control character "
-                             f"(U+{c:04X}{', a tab' if c == 9 else ''}); "
+                             f"(U+{c:04X}{', a tab' if c == 9 else ''}"
+                             f"{', a line separator' if c > 0xff else ''}); "
                              "front-matter values are plain text")
 
 
@@ -929,7 +936,9 @@ def save_items(root, items):
         try:
             staged.append((item, path, item.render()))
         except WiError as e:
-            raise WiError(e.code, f"{item.id} ({path}): {e}") from None
+            # name the item; its path only when it is already on disk
+            where = f"{item.id} ({item.path})" if item.path else item.id
+            raise WiError(e.code, f"{where}: {e}") from None
     for item, path, text in staged:
         item.path = path
         atomic_write(path, text)
@@ -2012,16 +2021,38 @@ def _yaml_notes(notes):
 
 # export appends an item's `ext:` deps to its blocked_reason (backlog.yaml
 # `requires` holds only story ids); import strips that suffix back off
-EXT_REQUIRES_RE = re.compile(r"(?:^|; )requires (ext:.*)$")
+def split_ext_requires(reason, ext=None, whole=True):
+    """(reason without the `requires ext:…` suffix export appends, [ext deps]).
 
-
-def split_ext_requires(reason):
-    """(reason without the `requires ext:…` suffix export appends, [ext deps])."""
-    m = EXT_REQUIRES_RE.search(reason or "")
-    if not m:
+    `ext` given (import --update: the store item's own `ext:` deps): strip
+    only the exact suffix export wrote for those deps, so a reason that
+    merely says "requires ext:" is kept whole. `ext` None (a new item): the
+    last `; requires ext:` group is the suffix; a reason that is nothing but
+    `requires ext:…` counts only when `whole` (the story is not blocked, so
+    its reason can be empty)."""
+    if not reason:
         return reason, []
-    return (reason[:m.start()] or None,
-            [d.strip() for d in re.split(r", (?=ext:)", m.group(1))])
+    if ext is not None:
+        suffix = "requires " + ", ".join(ext)
+        if not ext:
+            return reason, []
+        if reason == suffix:
+            return None, list(ext)
+        if reason.endswith("; " + suffix):
+            return reason[:-len(suffix) - 2], list(ext)
+        return reason, []
+    i = reason.rfind("; requires ext:")
+    if i >= 0:
+        head, group = reason[:i], reason[i + len("; requires "):]
+    elif whole and reason.startswith("requires ext:"):
+        head, group = None, reason[len("requires "):]
+    else:
+        return reason, []
+    return head or None, [d.strip() for d in re.split(r", (?=ext:)", group)]
+
+
+def _ext_deps(item):
+    return [d for d in item.get("deps", []) if d.startswith("ext:")]
 
 
 def _yaml_list(w, key, values, indent):
@@ -2184,7 +2215,7 @@ def _fold(v):
     fold to a space as line breaks do: the writer refuses them."""
     if not isinstance(v, str):
         return v
-    return re.sub(r"\s+", " ", _CONTROL_RE.sub(" ", v)).strip()
+    return re.sub(r"\s+", " ", _FRONT_REFUSE_RE.sub(" ", v)).strip()
 
 
 def _story_value(story, key):
@@ -2209,7 +2240,11 @@ def _import_story(story, alias_map, existing_by_alias, update):
         if key not in KNOWN_STORY_FIELDS:
             x_backlog[key] = val if isinstance(val, (str, int)) else \
                 json.dumps(val, separators=(", ", ": "))
-    blocked, _ = split_ext_requires(_story_value(story, "blocked_reason"))
+    existing = existing_by_alias.get(alias) if update else None
+    blocked, _ = split_ext_requires(
+        _story_value(story, "blocked_reason"),
+        ext=_ext_deps(existing) if existing else None,
+        whole=story.get("status") != "blocked")
     parked = parked_reason(blocked) if status == "blocked" else None
     grooming = grooming_questions(blocked) if status == "blocked" else None
     if parked is not None:
@@ -2264,7 +2299,8 @@ def _story_deps(story, alias_map):
     then the `ext:` deps export carried in blocked_reason."""
     deps = [alias_map.get(str(r), f"ext: {r}")
             for r in (story.get("requires") or [])]
-    _, ext = split_ext_requires(_fold(_story_value(story, "blocked_reason")))
+    _, ext = split_ext_requires(_fold(_story_value(story, "blocked_reason")),
+                                whole=story.get("status") != "blocked")
     return deps + [d for d in ext if d not in deps]
 
 
@@ -2363,7 +2399,8 @@ def cmd_lint(args):
             val = it.meta[key]
             vals = val.values() if isinstance(val, dict) else \
                 val if isinstance(val, list) else [val]
-            if any(isinstance(v, str) and _CONTROL_RE.search(v) for v in vals):
+            if any(isinstance(v, str) and _FRONT_REFUSE_RE.search(v)
+                   for v in vals):
                 problems.append(
                     f"{it.path}: front-matter '{key}' holds a control"
                     " character — a quoted value decodes YAML escapes, so a"

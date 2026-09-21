@@ -179,7 +179,7 @@ class TestScalarRoundTrip(WiTestCase):
         """emit_front's layout for meta_for(v). The writer refuses a control
         character in a value, so for those the same lines are built from
         _emit_scalar directly: the scalar contract still round-trips."""
-        if not wi._CONTROL_RE.search(v):
+        if not wi._FRONT_REFUSE_RE.search(v):
             return wi.emit_front(self.meta_for(v))
         with self.assertRaises(wi.WiError):
             wi.emit_front(self.meta_for(v))
@@ -222,7 +222,7 @@ class TestScalarRoundTrip(WiTestCase):
 
     def test_item_render_is_byte_stable_across_rewrites(self):
         for v in escape_values(count=100):
-            if v.strip() in ("", "—") or wi._CONTROL_RE.search(v):
+            if v.strip() in ("", "—") or wi._FRONT_REFUSE_RE.search(v):
                 continue  # the writer refuses control characters
             with self.subTest(v=v):
                 item = wi.Item(dict(self.meta_for(v), type="task",
@@ -2756,6 +2756,84 @@ class TestB020Lows(WiTestCase):
         self.assertEqual(by_title["todo-4444"]["status"], "todo")
         out2, _ = self.export(fresh, "backlog2.yaml")
         self.assertEqual(out2.read_text(), out.read_text())
+
+    def test_reasons_that_mention_requires_ext_survive_round_trips(self):
+        """Fix round 1: only the suffix export appended is stripped."""
+        self.write_item("wait-1111", status="blocked",
+                        blocked="waiting; requires ext: vendor sign-off")
+        self.write_item("legal-2222", status="blocked",
+                        blocked="requires ext: legal sign-off")
+        self.write_item("park-3333", status="parked",
+                        parked="later; requires ext: x")
+        self.write_item("mix-4444", status="blocked",
+                        blocked="a; requires ext: b; c", deps=["ext: e57"])
+        self.write_item("todo-5555", deps=["ext: z"])
+        want = {"wait-1111": ("blocked", "waiting; requires ext: vendor sign-off",
+                              None, []),
+                "legal-2222": ("blocked", "requires ext: legal sign-off",
+                               None, []),
+                "park-3333": ("parked", None, "later; requires ext: x", []),
+                "mix-4444": ("blocked", "a; requires ext: b; c", None,
+                             ["ext: e57"]),
+                "todo-5555": ("todo", None, None, ["ext: z"])}
+        items = sorted((self.root / "items").glob("*.md"))
+        snaps = []
+        for _ in range(4):
+            out, _ = self.export()
+            self.wi_ok(["import", "--format", "backlog-yaml", "--update",
+                        str(out)])
+            snaps.append((out.read_text(), [p.read_bytes() for p in items]))
+            for iid, state in want.items():
+                rec = self.show(iid)
+                self.assertEqual((rec["status"], rec["blocked"], rec["parked"],
+                                  rec["deps"] or []), state, iid)
+        self.assertEqual(snaps[1], snaps[3])
+        self.wi_ok(["lint"])
+        # a fresh import: the last `; requires ext:` group is the suffix, and
+        # a blocked story's whole reason is never taken for one
+        fresh = self.tmp / ".fresh"
+        self.assertEqual(run(["init"], fresh).returncode, 0)
+        self.assertEqual(run(["import", "--format", "backlog-yaml", str(out)],
+                             fresh).returncode, 0)
+        recs = {r["title"]: r for r in json.loads(run(
+            ["ls", "--status", "all", "--json"], fresh).stdout)}
+        for title in ("mix-4444", "legal-2222"):
+            rec = json.loads(run(["show", recs[title]["id"], "--json"],
+                                 fresh).stdout)
+            self.assertEqual((rec["blocked"], rec["deps"] or []),
+                             want[title][1:2] + want[title][3:], title)
+        self.assertEqual(run(["lint"], fresh).returncode, 0)
+
+    def test_front_matter_refuses_a_line_separator_in_any_field(self):
+        for flag in ("--tag", "--ref"):
+            for sep in (" ", " "):
+                with self.subTest(flag=flag, sep=hex(ord(sep))):
+                    r = run(["add", "t", flag, f"a{sep}b"], self.root)
+                    self.assertEqual(r.returncode, 1, r.stderr)
+                    self.assertIn(f"U+{ord(sep):04X}, a line separator",
+                                  r.stderr)
+                    # a new item's refusal names no file: none was written
+                    self.assertNotIn(".md", r.stderr)
+        self.assertEqual(list((self.root / "items").glob("*.md")), [])
+        # a hand-written escaped one is a lint finding
+        self.write_item("hand-1111")
+        path = self.root / "items" / "hand-1111.md"
+        path.write_text(path.read_text().replace(
+            "title: hand-1111", 'title: "a\\u2028b"'))
+        r = run(["lint"], self.root)
+        self.assertEqual(r.returncode, 3)
+        self.assertIn("hand-1111.md: front-matter 'title' holds a control",
+                      r.stdout)
+        # import folds one to a space, as it folds a line break
+        src = self.tmp / "in.yaml"
+        src.write_text('schema_version: 2\nstories:\n  - id: S-001\n'
+                       '    title: "x\\u2028y"\n    status: todo\n')
+        fresh = self.tmp / ".fresh"
+        self.assertEqual(run(["init"], fresh).returncode, 0)
+        self.assertEqual(run(["import", "--format", "backlog-yaml", str(src)],
+                             fresh).returncode, 0)
+        self.assertEqual(json.loads(run(["ls", "--json"], fresh).stdout)[0]
+                         ["title"], "x y")
 
     # 9d8c
     def test_batch_write_refusal_names_the_item(self):

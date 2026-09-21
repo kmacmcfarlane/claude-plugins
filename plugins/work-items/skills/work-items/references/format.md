@@ -113,8 +113,8 @@ U+2028/U+2029, the BOM, U+FFFE/U+FFFF and lone surrogates as `\xNN` /
 byte-identical; an unknown escape, or one that would decode to a line break,
 is kept as written. So in a hand-written quoted value a backslash is an
 escape: write `"C:\\temp"`, not `"C:\temp"` (which holds a tab) — `lint`
-reports any front-matter value holding a tab or other control character.
-`wi` itself never writes one: a command given one exits 1 and writes nothing,
+reports any front-matter value holding a tab or other control character,
+or U+2028/U+2029. `wi` itself never writes one: a command given one exits 1 and writes nothing,
 and `import` folds them to a space as it folds line breaks. A
 single-quoted value reads `''` as `'`. A bare `—` or an empty value reads as
 no value; a quoted `"—"` is the literal dash (`import` still reads a
@@ -196,9 +196,14 @@ item as blocked, never as work.
 
 backlog.yaml `requires` holds story ids only, so an item's `ext:` deps
 travel in its `blocked_reason`, after any reason: `vendor; requires ext: a,
-ext: b` (on its own for an item with no reason). Import strips that suffix
-back off the reason and — for a new item — restores the deps, so
-export → `import --update` round-trips byte-identical. Every exported string
+ext: b` (on its own for an item with no reason). `import --update` strips
+exactly the suffix those deps produce — the store item's own `ext:` deps —
+so a reason that itself says `requires ext:` is kept, and export →
+`import --update` round-trips byte-identical. A new item has no deps to
+check against: import takes the last `; requires ext:` group as the suffix
+(and a whole reason `requires ext:…` only on a story that is not
+`blocked`), strips it and restores those deps — so on a fresh import a
+reason ending `; requires ext: …` of its own becomes a dep. Every exported string
 value is double-quoted, a title starting `[` or `{` included; only an extra
 story field import stored as JSON (a list or mapping) is written back raw,
 as YAML flow. A `notes` value holding a character a YAML loader breaks on or
