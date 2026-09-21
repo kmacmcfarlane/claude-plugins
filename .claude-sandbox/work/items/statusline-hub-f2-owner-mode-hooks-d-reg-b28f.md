@@ -16,8 +16,8 @@ updated: 2026-09-21
 d193 07 § F2 + consumer requirements recorded in d193 (claude-analytics: record kind gets the raw payload byte-for-byte every render; a crashing/slow record hook leaves gauge and sensor intact; optional health_path glyph; contract doc beside sensor-contract.md; registry path CFG/statusline-hub/hooks.d/<name>.json {name, command, timeout_ms, kind}). Owner/SessionStart logic ported from statusline (states, heal, prune, consent); takeover migration from statusline's owner.json. Wrap consent: decision 40 (b) ask once. Notify agents-61 / claude-analytics session when the contract lands.
 
 ## Handoff
-- doing: dispatched
-- next: review
+- doing: fix round 1 + main merge (conflict round) in progress; reviewer resumes after
+- next: review round 2 (opus), then land; then F3 dfa1
 - blocked: —
 - learned: —
 
@@ -35,3 +35,9 @@ d193 07 § F2 + consumer requirements recorded in d193 (claude-analytics: record
 - scope widening before review: marketplace.json hub description must match plugin.json (F1 text stale).
 - widening e9f698d: marketplace description matches plugin.json; contract notes cancelled renders (hook may outlive a killed hub → hooks must be fast and idempotent).
 - dispatch: reviewer opus — rule 4 (fable-signal fallback)
+
+## Review round 1 — NEEDS_CHANGES (opus) at e9f698d
+- claude-analytics contract verified (byte-for-byte incl. invalid UTF-8/CRLF; crashing/sleeping record hooks don't touch render/sensor); sanitisation holds; SessionStart scenarios: never two owners, no flap.
+- [medium] README conflicts with main (catalog rows) — conflict round. [medium] in_project misses a config dir inside the repo when CC starts in a subdir / payload lacks dirs (fails open). [medium] record runners unbounded (31 runners, ~366 MB with one hung hook). [medium] statusline owner.data_dir scan picks statusline-hub-* (F2 created it) — fix in statusline + vendored copy. [medium] hub reads statusline's data → declare statusline (soft) in row + description.
+- lows: "shell": true departs from 07 — decision (librarian): accept (an argv array can already name /bin/sh; exec stays the default) and record in 07's successor/contract; hand-written manifests pruned at 14 days; setsid grandchild holding stdout; record spec via argv can exceed MAX_ARG_STRLEN; nits.
+- dispatch: implementer opus — fix round 1 (resume; includes a merge-conflict round with main)

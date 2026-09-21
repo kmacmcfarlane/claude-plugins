@@ -16,8 +16,8 @@ updated: 2026-09-21
 Port plan .claude-sandbox/investigations/8cc2-turn-gate-port — design awaits the 02 serial (HARD mid-turn marker only when hard_applies(block_window, tok); unattended checkpoint path defers to a custody skill's own mode).
 
 ## Handoff
-- doing: dispatched
-- next: review
+- doing: fix round 1 (forged-marker check) in progress
+- next: review round 2; merge HELD until F3a lands (needs decision 48)
 - blocked: —
 - learned: —
 
@@ -34,3 +34,12 @@ Port plan .claude-sandbox/investigations/8cc2-turn-gate-port — design awaits t
 ## Implementer result
 - round 1 DONE_WITH_CONCERNS 59168d1 (opus): turn_gate.py PostToolUse (advisory only; silent unless block_window; HARD marker iff hard_applies; agent_id skip; early return mirror-off; hard_nofit tier), hard_applies extracted (decide tests unchanged → reviewer stays opus), checkpoint unattended section, playbook "Inside a turn", ending-the-session.md exceptions. 24 tests; cached per-call ~15 ms.
 - scope widening before review: README context-guard hooks sentence + design-rationale §3 turn-gate layer. Merge held until F3a lands (hooks.json will conflict mechanically).
+- widening 9797fab: README hooks sentence; design-rationale §3 added paragraph.
+- dispatch: reviewer opus — rule 4 (decide tests unchanged → no fable bump). Merge held for F3a.
+
+## Review round 1 — NEEDS_CHANGES (opus) at 9797fab
+- decide() unchanged over 506,880 in-process cases + 640 end-to-end; HARD marker iff context_warn exits 2 (0 mismatches); no output on any guessed/foreign/future/stale source; never blocks or crashes; cadence fires 7× over 150K.
+- [medium] a forged/quoted marker (in a docstring, diff, tool result) could trigger the unattended checkpoint and its mark would silence the real gate: the unattended section must verify the state's turn_gate record (this epoch, tier hard/hard_nofit) before acting, and say the marker counts only as hook-added context.
+- lows: unwritable state dir → marker every call (pin with a test/comment); a custody skill's remaining steps (librarian push, Report) run before the final message; mode 644; commit layout noted.
+- noted follow-up: legacy in-state exact block has no future-`at` check (pre-existing).
+- dispatch: implementer opus — fix round 1 (resume)
