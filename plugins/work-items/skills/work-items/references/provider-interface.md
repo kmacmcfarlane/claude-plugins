@@ -29,7 +29,7 @@ a consumer may assume.
 | `close` | `done <id> [--note <ref>]` / `done <id> --drop` | *policy, not a verb*: agents never set `status: done` — closure belongs to grooming (`/backlog-grooming`); `archive` then moves closed rows |
 | `create` | `add "<title>" [-t -p --dep --parent --desc]` | `add` (heredoc), with `next-id <prefix>` |
 | `handoff` / comment | `handoff <id> --doing --next [--blocked] [--learned]` | `set-text <id> <field>` (approximate) |
-| `query` | `ls [--status --type --tag --owner --ready --json]`; `next --json` | `query --status … --fields …` |
+| `query` | `ls [--status --type --tag --owner --dep --ready --json]`; `next --json`; `needs-input --json` | `query --status … --fields …` |
 
 ### Per-verb semantics
 
@@ -135,11 +135,13 @@ A consumer must degrade when a verb is absent — never assume.
 ## Canonical state model
 
 `todo` · `doing` (with optional stage `implement` / `review` / `testing` / `uat` /
-`uat_feedback`) · `blocked` · `parked` · `done` · `dropped`.
+`uat_feedback`) · `blocked` · `parked` · `grooming` · `done` · `dropped`.
 
 `parked` (deliberately deferred, never ready) has no `backlog.yaml` counterpart; it exports
 as `blocked` with a `blocked_reason` prefixed `PARKED: `, and a blocked story with that
-prefix imports as `parked` (see the Parked section of `references/format.md`).
+prefix imports as `parked` (see the Parked section of `references/format.md`). `grooming`
+(waiting on the operator's answers, never ready) maps the same way with the prefix
+`GROOMING: ` (the Grooming section there).
 
 The mapping between this model and `backlog.yaml` is not restated here — it is **executable
 and canonical in `scripts/wi.py`**: `STATE_TO_BACKLOG`, `BACKLOG_TO_STATE`, and

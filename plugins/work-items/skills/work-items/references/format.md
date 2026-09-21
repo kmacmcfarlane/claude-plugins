@@ -73,7 +73,7 @@ except `claimed` (ISO-8601 UTC to the minute).
 | `id` | `<slug>-<4hex>` | equals the filename stem; immutable; hash suffix from title+time+random so branches never collide |
 | `title` | one line, ≤120 chars | |
 | `type` | `task bug feature refactor workflow chore epic spike` | default `task`; drives backlog-yaml prefix and bugs-first |
-| `status` | `todo doing blocked parked done dropped` | the only authority on state |
+| `status` | `todo doing blocked parked grooming done dropped` | the only authority on state |
 | `stage` | `implement review testing uat uat_feedback` | pipeline sub-state; meaningful only when `doing` |
 | `priority` | int 0–4, 0 highest | default 2; ↔ backlog.yaml 90/70/50/30/10 |
 | `tags` | flow list `[a, b]` | |
@@ -81,8 +81,9 @@ except `claimed` (ISO-8601 UTC to the minute).
 | `parent` | id | grouping only, no blocking |
 | `owner` | free string, e.g. `user@host` | set by `claim`, cleared by `release`/`done` |
 | `claimed` | UTC minute | stale test in `next --stale` |
-| `blocked` | string | required iff `status: blocked`; kept while parked, so `unpark` returns to `blocked` |
-| `parked` | one line | required iff `status: parked`; the deferral reason (set by `park`, cleared by `unpark` and `block`); `lint` flags it on a todo/doing/blocked item, and it stays on a dropped/done item as history |
+| `blocked` | string | required iff `status: blocked`; kept while parked or grooming, so `unpark` / `ungroom` returns to `blocked` |
+| `parked` | one line | required iff `status: parked`; the deferral reason (set by `park`, cleared by `unpark`, `block` and `groom`); `lint` flags it on a todo/doing/blocked/grooming item, and it stays on a dropped/done item as history |
+| `grooming` | one line | required iff `status: grooming`; the open questions for the operator (set by `groom`, cleared by `ungroom`, `park` and `block`); `lint` flags it on a todo/doing/blocked/parked item, and it stays on a dropped/done item as history |
 | `feedback` | one line | pipeline review feedback |
 | `mode` | `autonomous interactive mixed` | backlog's `ticket_mode` |
 | `complexity` | `low medium high` | pass-through |
@@ -192,6 +193,47 @@ own `blocked:` on a parked story, but a fresh import cannot restore it, so
 that item's `unpark` goes to `todo`. A provenance group, if any, is dropped
 from the imported reason. A ralph run over the exported backlog sees the
 item as blocked, never as work.
+
+## Grooming
+
+`grooming` means the item waits on the operator's answers — it has open
+questions, where `parked` is "not now" and `blocked` is "cannot proceed".
+`wi groom <id> "<questions>"` sets `status: grooming` and `grooming:
+<questions>` (one line), releases any claim (`owner`, `claimed`, `stage`),
+clears a `parked:` reason and appends a dated Notes line; it refuses a done
+or dropped item. `wi ungroom <id>` returns it to `todo` — or to `blocked`
+when it still carries a `blocked:` reason — never to `doing`. The rest
+mirrors Parked: `set status grooming` exits 1 and points at `groom`; `set
+status <other>` on a grooming item is an ungroom; `release` never ungrooms;
+`claim` refuses; `park` and `block` supersede it (and `groom` supersedes a
+park).
+
+A grooming item is never ready: `next` (every mode) leaves it out and
+counts it in its footer and `counts.grooming`; `prime` shows one
+`GROOMING <n>` line; a dep on it does not resolve. Unlike a parked item it
+needs attention, so `ls` lists it by default. The backlog-yaml bridge maps
+it as it maps a park: `status: blocked`, `blocked_reason: "GROOMING:
+<questions>"`, and a blocked story with that prefix imports as grooming.
+
+## Operator questions: `decision N:` / `answer N:`
+
+The canonical marker for a question to the operator is a body line that
+starts `decision N: <one line>`; the reply is a body line `answer N:
+<reply>`, anywhere in the same item's body (the librarian-mode Report
+convention). A decision is unanswered while its item has no `answer N:`
+line with the same N. Both must start the line — `- decision 4:` is not a
+marker — and a line inside a fenced code block is text, not a marker. N is
+never reused across the store; a revised question keeps its number.
+
+`wi needs-input` lists every open item awaiting the operator: each grooming
+item (with its questions) and each unanswered `decision N:` (with N and its
+text), on todo, doing, blocked, parked and grooming items alike; closed
+items never show. `--plain` prints `id<TAB>grooming|decision<TAB>N or
+-<TAB>text`; `--json` one record per item with `grooming` and `decisions`.
+It exits 2 when nothing awaits the operator.
+
+`wi prime` also shows a `HOLD <n>: <id> (<title>) …` line, first under the
+header, for open items tagged `hold` — an operator hold gates what may move.
 
 ## Body sections
 

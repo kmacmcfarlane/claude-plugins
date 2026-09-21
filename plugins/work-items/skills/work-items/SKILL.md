@@ -37,6 +37,9 @@ the TODO.md failure mode with extra steps.
 | `$WI done <id> [--note <sha>]` / `done --drop` | closes it in place; `implement` Step 10a½ owns this on landed work |
 | `$WI block <id> "reason"` / `--on <dep-id>` / `unblock` | runtime vs dependency blocks |
 | `$WI park <id> "reason"` / `unpark <id>` | deliberate deferral, not a block: out of `next`, one count line in `prime`, listed by `ls --status parked`; releases any claim; `unpark` → `todo` (or `blocked` if a block reason remains); `release` never unparks, `set status parked` refuses. Drop one with `done --drop` |
+| `$WI groom <id> "questions"` / `ungroom <id>` | waiting on the operator's answers: out of `next`, one `GROOMING <n>` line in `prime`, listed by `ls` and `needs-input`; releases any claim; `ungroom` → `todo` (or `blocked`); `set status grooming` refuses |
+| `$WI needs-input [--plain\|--json]` | everything awaiting the operator: grooming items and unanswered `decision N:` lines (no matching `answer N:`), with N and text; exit 2 when none |
+| `$WI ls [--status …] [--dep <id>] [--tag …] [--ready]` | list; default open statuses (`todo doing blocked grooming`); `--dep` lists the items depending on an id |
 | `$WI migrate-parked [--apply]` | converts `blocked` items whose reason starts `PARKED` (the old convention) to `parked`; a dry run until `--apply` |
 | `$WI repair-escapes [--id <id>] [--key <field>] [--apply]` | one-time, **heuristic** repair of quoted front-matter values an older `wi` escape-amplified: lists every front-matter value whose backslashes all pair as `\\` or `\"`, with those layers peeled — a value meant that way is listed too, so review the list; a dry run until `--apply`, and `--id`/`--key` narrow it |
 | `$WI set <id> <field> <value> [--force]` | one front-matter field; list fields (`tags deps refs`) take `a,b` and are **replaced whole**; `""` (or `—`) clears any field; `deps`/`parent` targets must resolve — `ext:` deps exempt, `--force` bypasses |

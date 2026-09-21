@@ -29,7 +29,7 @@ from pathlib import Path
 
 FIELD_ORDER = ["id", "title", "type", "status", "stage", "priority", "tags",
                "deps", "parent", "owner", "claimed", "blocked", "parked",
-               "feedback",
+               "grooming", "feedback",
                "mode", "complexity", "alias", "created", "updated", "closed",
                "refs", "x_backlog"]
 FLOW_LIST_FIELDS = {"tags"}
@@ -38,7 +38,7 @@ LIST_FIELDS = FLOW_LIST_FIELDS | BLOCK_LIST_FIELDS
 MAP_FIELDS = {"x_backlog"}
 INT_FIELDS = {"priority"}
 TYPES = {"task", "bug", "feature", "refactor", "workflow", "chore", "epic", "spike"}
-STATUSES = {"todo", "doing", "blocked", "parked", "done", "dropped"}
+STATUSES = {"todo", "doing", "blocked", "parked", "grooming", "done", "dropped"}
 STAGES = {"implement", "review", "testing", "uat", "uat_feedback"}
 MODES = {"autonomous", "interactive", "mixed"}
 COMPLEXITIES = {"low", "medium", "high"}
@@ -53,6 +53,7 @@ STATE_TO_BACKLOG = {("todo", None): "todo", ("doing", None): "in_progress",
                     ("doing", "review"): "review", ("doing", "testing"): "testing",
                     ("doing", "uat"): "uat", ("doing", "uat_feedback"): "uat_feedback",
                     ("blocked", None): "blocked", ("parked", None): "blocked",
+                    ("grooming", None): "blocked",
                     ("done", None): "done", ("dropped", None): "closed"}
 BACKLOG_TO_STATE = {"todo": ("todo", None), "in_progress": ("doing", "implement"),
                     "review": ("doing", "review"), "testing": ("doing", "testing"),
@@ -77,6 +78,50 @@ def parked_reason(blocked):
     if not m:
         return None
     return blocked[m.end():].strip() or blocked.strip()
+
+
+# A grooming item has no backlog.yaml state either: it exports as `blocked`
+# with its questions prefixed `GROOMING: `, and imports back by that prefix.
+GROOMING_PREFIX_RE = re.compile(r"^\s*GROOMING\b[\s:;,.\u2014-]*")
+
+
+def grooming_questions(blocked):
+    """The grooming questions carried by a blocked reason that starts with
+    GROOMING, else None; a bare `GROOMING` keeps the whole text."""
+    if not blocked:
+        return None
+    m = GROOMING_PREFIX_RE.match(blocked)
+    if not m:
+        return None
+    return blocked[m.end():].strip() or blocked.strip()
+
+
+# The librarian-mode Report convention: an operator question is a body line
+# `decision N: <text>`, its reply a body line `answer N: <reply>`.
+DECISION_RE = re.compile(r"^decision (\d+):\s*(.*)$")
+ANSWER_RE = re.compile(r"^answer (\d+):")
+
+
+def unanswered_decisions(item):
+    """[(N, text)] for each `decision N:` body line with no `answer N:` line
+    anywhere in the same body, in order, one per N. Lines inside a fenced
+    code block are text, not markers."""
+    lines = item.body.replace("\r\n", "\n").split("\n")
+    fenced = set()
+    for i, j in _fence_spans(lines):
+        fenced.update(range(i, j + 1))
+    asked, answered = {}, set()
+    for i, line in enumerate(lines):
+        if i in fenced:
+            continue
+        m = DECISION_RE.match(line)
+        if m:
+            asked.setdefault(int(m.group(1)), m.group(2).strip())
+            continue
+        m = ANSWER_RE.match(line)
+        if m:
+            answered.add(int(m.group(1)))
+    return [(n, text) for n, text in asked.items() if n not in answered]
 
 
 class WiError(Exception):
@@ -688,9 +733,16 @@ class Item:
             errs.append("blocked without a reason")
         if m.get("status") == "parked" and not m.get("parked"):
             errs.append("parked without a reason")
-        if m.get("parked") and m.get("status") in ("todo", "doing", "blocked"):
+        if m.get("parked") and m.get("status") in ("todo", "doing", "blocked",
+                                                   "grooming"):
             errs.append(f"parked reason on a {m['status']} item (wi unpark "
                         "clears it; or clear the field with wi set)")
+        if m.get("status") == "grooming" and not m.get("grooming"):
+            errs.append("grooming without questions")
+        if m.get("grooming") and m.get("status") in ("todo", "doing", "blocked",
+                                                     "parked"):
+            errs.append(f"grooming questions on a {m['status']} item (wi "
+                        "ungroom clears them; or clear the field with wi set)")
         if m.get("status") in ("done", "dropped") and not m.get("closed"):
             errs.append(f"{m['status']} without closed date")
         return errs
@@ -927,7 +979,8 @@ def rank_ready(items):
 
 
 def split_by_status(items):
-    open_items = {"doing": [], "blocked": [], "todo": [], "parked": []}
+    open_items = {"doing": [], "blocked": [], "todo": [], "parked": [],
+                  "grooming": []}
     closed = []
     for it in items:
         st = it.get("status")
@@ -1078,6 +1131,9 @@ def _claim(item, owner, steal=False):
         raise WiError(1, f"{item.id} is blocked ({item.get('blocked')}); unblock first")
     if item.get("status") == "parked":
         raise WiError(1, f"{item.id} is parked ({item.get('parked')}); unpark first")
+    if item.get("status") == "grooming":
+        raise WiError(1, f"{item.id} is grooming ({item.get('grooming')}); "
+                         "ungroom first")
     held_by = item.get("owner")
     if held_by and held_by != owner:
         if not steal:
@@ -1108,7 +1164,8 @@ def cmd_release(args):
     with Lock(root):
         item = load_item_anywhere(root, args.id)
         item.meta.update(owner=None, claimed=None, stage=None)
-        if item.get("status") != "parked":   # releasing a claim never unparks
+        # releasing a claim never unparks or ungrooms
+        if item.get("status") not in ("parked", "grooming"):
             item.meta["status"] = "todo"
         item.touch()
         save_item(root, item)
@@ -1177,8 +1234,10 @@ def cmd_block(args):
             if dep not in deps:
                 item.meta["deps"] = deps + [dep]
         else:
-            # a block supersedes a park: the item is no longer deferred
-            item.meta.update(status="blocked", blocked=args.reason, parked=None)
+            # a block supersedes a park or a grooming: the item is no longer
+            # deferred, nor waiting on the operator's answers
+            item.meta.update(status="blocked", blocked=args.reason, parked=None,
+                             grooming=None)
         item.touch()
         save_item(root, item)
     print(f"blocked {item.id}")
@@ -1211,8 +1270,8 @@ def _park(item, reason, note=None):
         raise WiError(1, f"{item.id} is {st}; a closed item cannot be parked")
     if st == "parked" and item.get("parked") == reason:
         return False
-    item.meta.update(status="parked", parked=reason, owner=None, claimed=None,
-                     stage=None)
+    item.meta.update(status="parked", parked=reason, grooming=None, owner=None,
+                     claimed=None, stage=None)
     item.append_note(f"- {today()} {note or 'parked: ' + reason}")
     item.touch()
     return True
@@ -1246,6 +1305,54 @@ def cmd_unpark(args):
         item.touch()
         save_item(root, item)
     print(f"unparked {item.id} -> {status}")
+    return 0
+
+
+def _groom(item, questions):
+    """Put `item` in grooming: it waits on the operator's answers to
+    `questions`, out of every ready queue. Mirrors _park: the claim and stage
+    are released, a `blocked:` reason is kept (ungroom returns to blocked), a
+    park is superseded. Refuses closed items. False when nothing changes."""
+    st = item.get("status")
+    if st in ("done", "dropped"):
+        raise WiError(1, f"{item.id} is {st}; a closed item cannot be groomed")
+    if st == "grooming" and item.get("grooming") == questions:
+        return False
+    item.meta.update(status="grooming", grooming=questions, parked=None,
+                     owner=None, claimed=None, stage=None)
+    item.append_note(f"- {today()} grooming: {questions}")
+    item.touch()
+    return True
+
+
+def cmd_groom(args):
+    _one_line("questions", args.questions)
+    questions = (args.questions or "").strip()
+    if not questions:
+        raise WiError(1, "groom takes the open questions")
+    root = resolve_root(args.root)
+    with Lock(root):
+        item = load_item_anywhere(root, args.id)
+        if _groom(item, questions):
+            save_item(root, item)
+    print(f"grooming {item.id}")
+    return 0
+
+
+def cmd_ungroom(args):
+    """Back to `todo`, or to `blocked` when the item still carries a blocked
+    reason; never to `doing` (the claim was released on groom)."""
+    root = resolve_root(args.root)
+    with Lock(root):
+        item = load_item_anywhere(root, args.id)
+        if item.get("status") != "grooming":
+            raise WiError(1, f"{item.id} is {item.get('status')}, not grooming")
+        status = "blocked" if item.get("blocked") else "todo"
+        item.meta.update(status=status, grooming=None)
+        item.append_note(f"- {today()} ungroomed")
+        item.touch()
+        save_item(root, item)
+    print(f"ungroomed {item.id} -> {status}")
     return 0
 
 
@@ -1351,10 +1458,19 @@ def cmd_set(args):
             # the one path in, so set never leaves a half-parked item
             if item.get("status") != "parked":
                 raise WiError(1, f"use wi park {item.id} \"<reason>\" to park an item")
+        elif field == "status" and value == "grooming":
+            # like parked: `wi groom` is the one path in, with the questions
+            if item.get("status") != "grooming":
+                raise WiError(1, f"use wi groom {item.id} \"<questions>\" to "
+                                 "groom an item")
         elif field == "status" and item.get("status") == "parked":
             # leaving parked by set is an unpark: the reason goes with it
             item.meta.update(status=value, parked=None)
             item.append_note(f"- {today()} unparked (set status {value})")
+        elif field == "status" and item.get("status") == "grooming":
+            # leaving grooming by set is an ungroom: the questions go with it
+            item.meta.update(status=value, grooming=None)
+            item.append_note(f"- {today()} ungroomed (set status {value})")
         else:
             item.meta[field] = value
         # mirror cmd_add: deps/parent must resolve; ext: never does; --force
@@ -1384,8 +1500,17 @@ def cmd_ls(args):
     items = load_all(root, archived=args.status == "all")
     by_id = {it.id: it for it in items}
     statuses = (set(STATUSES) if args.status == "all"
-                else set((args.status or "todo,doing,blocked").split(",")))
+                else set((args.status or "todo,doing,blocked,grooming")
+                         .split(",")))
     rows = [it for it in items if it.get("status") in statuses]
+    if args.dep:
+        # items depending on an id: resolve it when it names an item (a
+        # prefix or alias works), else match the dep string as written
+        try:
+            dep = resolve_id(load_all(root, archived=True), args.dep).id
+        except WiError:
+            dep = args.dep
+        rows = [it for it in rows if dep in it.get("deps", [])]
     if args.type:
         rows = [it for it in rows if it.get("type", "task") == args.type]
     if args.tag:
@@ -1467,6 +1592,7 @@ def cmd_next(args):
                           "ready": [item_json(it) for it in ready[:args.limit]],
                           "counts": {"ready": len(ready), "waiting": waiting,
                                      "parked": len(grouped["parked"]),
+                                     "grooming": len(grouped["grooming"]),
                                      "done": len(closed)}}, indent=1))
         return 0
     out = []
@@ -1504,6 +1630,8 @@ def cmd_next(args):
             out.append(f"  P{it.get('priority', 2)} {it.id}  {it.get('title')}")
     parked = (f" · {len(grouped['parked'])} parked (wi ls --status parked)"
               if grouped["parked"] else "")
+    if grouped["grooming"]:
+        parked += f" · {len(grouped['grooming'])} grooming (wi needs-input)"
     out.append(f"{max(0, len(ready) - args.limit)} more ready · {waiting} waiting "
                f"on deps{parked} · {len(closed)} done (wi ls --status done)")
     print("\n".join(out))
@@ -1571,6 +1699,12 @@ def cmd_prime(args):
             return True
         return False
 
+    holds = [it for it in items if it.get("status") not in ("done", "dropped")
+             and "hold" in it.get("tags", [])]
+    if holds:
+        # an operator hold gates what may move: first, before any work line
+        take(f"HOLD {len(holds)}: " + " ".join(
+            f"{it.id} ({it.get('title')})" for it in holds[:3]))
     for it in doing:
         who = "you" if it.get("owner") == default_owner() else it.get("owner", "-")
         take(f"DOING  P{it.get('priority', 2)} {it.id}  {it.get('title')}  "
@@ -1583,6 +1717,9 @@ def cmd_prime(args):
     if grouped["blocked"]:
         take(f"BLOCKED {len(grouped['blocked'])}: " + " ".join(
             f"{it.id} ({it.get('blocked')})" for it in grouped["blocked"][:3]))
+    if grouped["grooming"]:
+        # waiting on the operator: a count; wi needs-input lists the questions
+        take(f"GROOMING {len(grouped['grooming'])} (wi needs-input)")
     if grouped["parked"]:
         # deliberately deferred: a count, never a list — see wi ls --status parked
         take(f"PARKED {len(grouped['parked'])} (wi ls --status parked)")
@@ -1605,6 +1742,46 @@ def cmd_prime(args):
         text = "\n".join(lines)
     print(text)
     return 0
+
+
+def needs_input(items):
+    """Every open item awaiting the operator, as (item, [(kind, n, text)]):
+    kind `grooming` (its questions) or `decision` (an unanswered
+    `decision N:` line). Parked items count; closed ones never do."""
+    out = []
+    for it in items:
+        if it.get("status") in ("done", "dropped"):
+            continue
+        asks = []
+        if it.get("status") == "grooming":
+            asks.append(("grooming", None, it.get("grooming") or ""))
+        asks += [("decision", n, text) for n, text in unanswered_decisions(it)]
+        if asks:
+            out.append((it, asks))
+    return out
+
+
+def cmd_needs_input(args):
+    root = resolve_root(args.root)
+    rows = needs_input(rank_ready(load_all(root)))
+    if args.json:
+        print(json.dumps([{"id": it.id, "title": it.get("title"),
+                           "status": it.get("status"),
+                           "grooming": it.get("grooming"),
+                           "decisions": [{"n": n, "text": text}
+                                         for kind, n, text in asks
+                                         if kind == "decision"]}
+                          for it, asks in rows], indent=1))
+        return 0 if rows else 2
+    for it, asks in rows:
+        for kind, n, text in asks:
+            if args.plain:
+                print("\t".join([it.id, kind, "-" if n is None else str(n),
+                                 text]))
+            else:
+                label = "grooming" if n is None else f"decision {n}"
+                print(f"{it.id}  {label}: {text}")
+    return 0 if rows else 2
 
 
 # ── import-todo ─────────────────────────────────────────────────────────────
@@ -1862,6 +2039,8 @@ def emit_backlog(project, stories_items, by_id):
         blocked = it.get("blocked") or ""
         if m.get("status") == "parked":
             blocked = "PARKED: " + (it.get("parked") or "")
+        elif m.get("status") == "grooming":
+            blocked = "GROOMING: " + (it.get("grooming") or "")
         if ext:
             blocked = (blocked + "; " if blocked else "") + "requires " + ", ".join(ext)
         for key, val in (("blocked_reason", blocked),
@@ -1978,15 +2157,19 @@ def _import_story(story, alias_map, existing_by_alias, update):
                 json.dumps(val, separators=(", ", ": "))
     blocked = _story_value(story, "blocked_reason")
     parked = parked_reason(blocked) if status == "blocked" else None
+    grooming = grooming_questions(blocked) if status == "blocked" else None
     if parked is not None:
         status, blocked = "parked", None
+    elif grooming is not None:
+        status, blocked = "grooming", None
     if update and alias in existing_by_alias:
         it = existing_by_alias[alias]
-        if parked is not None:
-            # the export carries only the park; a blocked: reason kept under
-            # it (unpark returns to blocked) lives only in the store
+        if parked is not None or grooming is not None:
+            # the export carries only the park (or grooming); a blocked:
+            # reason kept under it lives only in the store
             blocked = it.get("blocked")
         it.meta.update(status=status, stage=stage, blocked=blocked, parked=parked,
+                       grooming=grooming,
                        feedback=_story_value(story, "review_feedback"),
                        owner=_story_value(story, "claimed_by"),
                        x_backlog=x_backlog or None)
@@ -1998,7 +2181,7 @@ def _import_story(story, alias_map, existing_by_alias, update):
     title = str(story["title"])[:120]
     meta = {"id": make_id(title, today()), "title": title, "status": status,
             "stage": stage, "priority": priority, "alias": alias,
-            "blocked": blocked, "parked": parked,
+            "blocked": blocked, "parked": parked, "grooming": grooming,
             "feedback": _story_value(story, "review_feedback"),
             "owner": _story_value(story, "claimed_by"),
             "mode": _story_value(story, "ticket_mode"),
@@ -2215,6 +2398,13 @@ def build_parser():
             ("id", {}), ("reason", {})],
         ("unpark", cmd_unpark, "return a parked item to todo (or blocked)"): [
             ("id", {})],
+        ("groom", cmd_groom, "hold an item for the operator's answers to its "
+         "open questions"): [("id", {}), ("questions", {})],
+        ("ungroom", cmd_ungroom, "return a grooming item to todo (or blocked)"): [
+            ("id", {})],
+        ("needs-input", cmd_needs_input, "list every item awaiting the "
+         "operator: grooming items and unanswered decision N: lines"): [
+            ("--json",), ("--plain",)],
         ("migrate-parked", cmd_migrate_parked,
          "convert blocked items whose reason starts PARKED to parked"): [
             ("--apply",)],
@@ -2224,7 +2414,7 @@ def build_parser():
             ("--id", {}), ("--key", {}), ("--apply",)],
         ("ls", cmd_ls, "list items"): [
             ("--status", {}), ("--type", {}), ("--tag", {}), ("--owner", {}),
-            ("--ready",), ("--json",), ("--plain",)],
+            ("--dep", {}), ("--ready",), ("--json",), ("--plain",)],
         ("set", cmd_set, "set one front-matter field"): [
             ("id", {}), ("field", {}), ("value", {}), ("--force",)],
         ("import-todo", cmd_import_todo, "import a TODO.md"): [
