@@ -28,7 +28,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 FIELD_ORDER = ["id", "title", "type", "status", "stage", "priority", "tags",
-               "deps", "parent", "owner", "claimed", "blocked", "feedback",
+               "deps", "parent", "owner", "claimed", "blocked", "parked",
+               "feedback",
                "mode", "complexity", "alias", "created", "updated", "closed",
                "refs", "x_backlog"]
 FLOW_LIST_FIELDS = {"tags"}
@@ -37,7 +38,7 @@ LIST_FIELDS = FLOW_LIST_FIELDS | BLOCK_LIST_FIELDS
 MAP_FIELDS = {"x_backlog"}
 INT_FIELDS = {"priority"}
 TYPES = {"task", "bug", "feature", "refactor", "workflow", "chore", "epic", "spike"}
-STATUSES = {"todo", "doing", "blocked", "done", "dropped"}
+STATUSES = {"todo", "doing", "blocked", "parked", "done", "dropped"}
 STAGES = {"implement", "review", "testing", "uat", "uat_feedback"}
 MODES = {"autonomous", "interactive", "mixed"}
 COMPLEXITIES = {"low", "medium", "high"}
@@ -51,13 +52,28 @@ STATE_TO_BACKLOG = {("todo", None): "todo", ("doing", None): "in_progress",
                     ("doing", "implement"): "in_progress",
                     ("doing", "review"): "review", ("doing", "testing"): "testing",
                     ("doing", "uat"): "uat", ("doing", "uat_feedback"): "uat_feedback",
-                    ("blocked", None): "blocked", ("done", None): "done",
-                    ("dropped", None): "closed"}
+                    ("blocked", None): "blocked", ("parked", None): "blocked",
+                    ("done", None): "done", ("dropped", None): "closed"}
 BACKLOG_TO_STATE = {"todo": ("todo", None), "in_progress": ("doing", "implement"),
                     "review": ("doing", "review"), "testing": ("doing", "testing"),
                     "uat": ("doing", "uat"), "uat_feedback": ("doing", "uat_feedback"),
                     "blocked": ("blocked", None), "done": ("done", None),
                     "closed": ("dropped", None)}
+# backlog.yaml has no deferred state: a parked item exports as `blocked` with
+# its reason prefixed `PARKED: `, and a blocked story whose reason starts
+# with PARKED imports as parked (the same rule `wi migrate-parked` applies).
+PARKED_PREFIX_RE = re.compile(r"^\s*PARKED\b[\s:;,.\u2014-]*")
+
+
+def parked_reason(blocked):
+    """The parked reason carried by a blocked reason that starts with PARKED,
+    else None; a bare `PARKED` keeps the whole text as its reason."""
+    if not blocked:
+        return None
+    m = PARKED_PREFIX_RE.match(blocked)
+    if not m:
+        return None
+    return blocked[m.end():].strip() or blocked.strip()
 
 
 class WiError(Exception):
@@ -531,6 +547,8 @@ class Item:
             errs.append(f"invalid alias '{m['alias']}'")
         if m.get("status") == "blocked" and not m.get("blocked"):
             errs.append("blocked without a reason")
+        if m.get("status") == "parked" and not m.get("parked"):
+            errs.append("parked without a reason")
         if m.get("status") in ("done", "dropped") and not m.get("closed"):
             errs.append(f"{m['status']} without closed date")
         return errs
@@ -767,7 +785,7 @@ def rank_ready(items):
 
 
 def split_by_status(items):
-    open_items = {"doing": [], "blocked": [], "todo": []}
+    open_items = {"doing": [], "blocked": [], "todo": [], "parked": []}
     closed = []
     for it in items:
         st = it.get("status")
@@ -916,6 +934,8 @@ def default_owner():
 def _claim(item, owner, steal=False):
     if item.get("status") == "blocked":
         raise WiError(1, f"{item.id} is blocked ({item.get('blocked')}); unblock first")
+    if item.get("status") == "parked":
+        raise WiError(1, f"{item.id} is parked ({item.get('parked')}); unpark first")
     held_by = item.get("owner")
     if held_by and held_by != owner:
         if not steal:
@@ -1013,7 +1033,8 @@ def cmd_block(args):
             if dep not in deps:
                 item.meta["deps"] = deps + [dep]
         else:
-            item.meta.update(status="blocked", blocked=args.reason)
+            # a block supersedes a park: the item is no longer deferred
+            item.meta.update(status="blocked", blocked=args.reason, parked=None)
         item.touch()
         save_item(root, item)
     print(f"blocked {item.id}")
@@ -1033,6 +1054,80 @@ def cmd_unblock(args):
         item.touch()
         save_item(root, item)
     print(f"unblocked {item.id}")
+    return 0
+
+
+def _park(item, reason, how="parked"):
+    """Park `item`: deliberately deferred, out of every ready queue. A claim
+    and pipeline stage are released (nobody is working a parked item); a
+    `blocked:` reason is kept, so unpark can return the item to blocked.
+    Refuses closed items. Returns False when nothing would change."""
+    st = item.get("status")
+    if st in ("done", "dropped"):
+        raise WiError(1, f"{item.id} is {st}; a closed item cannot be parked")
+    if st == "parked" and item.get("parked") == reason:
+        return False
+    item.meta.update(status="parked", parked=reason, owner=None, claimed=None,
+                     stage=None)
+    item.append_note(f"- {today()} {how}: {reason}")
+    item.touch()
+    return True
+
+
+def cmd_park(args):
+    _one_line("reason", args.reason)
+    reason = (args.reason or "").strip()
+    if not reason:
+        raise WiError(1, "park takes a reason")
+    root = resolve_root(args.root)
+    with Lock(root):
+        item = load_item_anywhere(root, args.id)
+        if _park(item, reason):
+            save_item(root, item)
+    print(f"parked {item.id}")
+    return 0
+
+
+def cmd_unpark(args):
+    """Back to `todo`, or to `blocked` when the item still carries a blocked
+    reason. The claim was released on park, so never back to `doing`."""
+    root = resolve_root(args.root)
+    with Lock(root):
+        item = load_item_anywhere(root, args.id)
+        if item.get("status") != "parked":
+            raise WiError(1, f"{item.id} is {item.get('status')}, not parked")
+        status = "blocked" if item.get("blocked") else "todo"
+        item.meta.update(status=status, parked=None)
+        item.append_note(f"- {today()} unparked")
+        item.touch()
+        save_item(root, item)
+    print(f"unparked {item.id} -> {status}")
+    return 0
+
+
+def cmd_migrate_parked(args):
+    """Convert `status: blocked` items whose reason starts with PARKED (the
+    convention before `parked` existed) to parked. Dry run unless --apply."""
+    root = resolve_root(args.root)
+    rows = []
+    with Lock(root):
+        changed = []
+        for item in load_all(root):
+            if item.get("status") != "blocked":
+                continue
+            reason = parked_reason(item.get("blocked"))
+            if reason is None:
+                continue
+            rows.append((item.id, reason))
+            if args.apply:
+                item.meta["blocked"] = None
+                _park(item, reason, how="parked (migrated from blocked)")
+                changed.append(item)
+        save_items(root, changed)
+    verb = "parked" if args.apply else "would park"
+    for iid, reason in rows:
+        print(f"{verb}\t{iid}\t{reason}")
+    print(f"{len(rows)} {'migrated' if args.apply else 'to migrate (dry run; --apply to write)'}")
     return 0
 
 
@@ -1165,6 +1260,7 @@ def cmd_next(args):
                           "blocked": [item_json(it) for it in grouped["blocked"]],
                           "ready": [item_json(it) for it in ready[:args.limit]],
                           "counts": {"ready": len(ready), "waiting": waiting,
+                                     "parked": len(grouped["parked"]),
                                      "done": len(closed)}}, indent=1))
         return 0
     out = []
@@ -1200,8 +1296,10 @@ def cmd_next(args):
         out.append("READY")
         for it in ready[:args.limit]:
             out.append(f"  P{it.get('priority', 2)} {it.id}  {it.get('title')}")
+    parked = (f" · {len(grouped['parked'])} parked (wi ls --status parked)"
+              if grouped["parked"] else "")
     out.append(f"{max(0, len(ready) - args.limit)} more ready · {waiting} waiting "
-               f"on deps · {len(closed)} done (wi ls --status done)")
+               f"on deps{parked} · {len(closed)} done (wi ls --status done)")
     print("\n".join(out))
     return 0 if (doing or grouped["blocked"] or ready) else 2
 
@@ -1279,6 +1377,9 @@ def cmd_prime(args):
     if grouped["blocked"]:
         take(f"BLOCKED {len(grouped['blocked'])}: " + " ".join(
             f"{it.id} ({it.get('blocked')})" for it in grouped["blocked"][:3]))
+    if grouped["parked"]:
+        # deliberately deferred: a count, never a list — see wi ls --status parked
+        take(f"PARKED {len(grouped['parked'])} (wi ls --status parked)")
     shown = 0
     for i, it in enumerate(ready):
         prefix = "READY  " if shown == 0 else "       "
@@ -1553,6 +1654,8 @@ def emit_backlog(project, stories_items, by_id):
         # stands in when the item has no ## Testing section
         _yaml_list(w, "testing", testing or ["<unspecified>"], "    ")
         blocked = it.get("blocked") or ""
+        if m.get("status") == "parked":
+            blocked = "PARKED: " + (it.get("parked") or "")
         if ext:
             blocked = (blocked + "; " if blocked else "") + "requires " + ", ".join(ext)
         for key, val in (("blocked_reason", blocked),
@@ -1657,9 +1760,12 @@ def _import_story(story, alias_map, existing_by_alias, update):
             x_backlog[key] = val if isinstance(val, (str, int)) else \
                 json.dumps(val, separators=(", ", ": "))
     blocked = story.get("blocked_reason") or None
+    parked = parked_reason(blocked) if status == "blocked" else None
+    if parked is not None:
+        status, blocked = "parked", None
     if update and alias in existing_by_alias:
         it = existing_by_alias[alias]
-        it.meta.update(status=status, stage=stage, blocked=blocked,
+        it.meta.update(status=status, stage=stage, blocked=blocked, parked=parked,
                        feedback=story.get("review_feedback") or None,
                        owner=story.get("claimed_by") or None,
                        x_backlog=x_backlog or None)
@@ -1671,7 +1777,8 @@ def _import_story(story, alias_map, existing_by_alias, update):
     title = str(story["title"])[:120]
     meta = {"id": make_id(title, today()), "title": title, "status": status,
             "stage": stage, "priority": priority, "alias": alias,
-            "blocked": blocked, "feedback": story.get("review_feedback") or None,
+            "blocked": blocked, "parked": parked,
+            "feedback": story.get("review_feedback") or None,
             "owner": story.get("claimed_by") or None,
             "mode": story.get("ticket_mode") or None,
             "complexity": story.get("complexity") or None,
@@ -1871,6 +1978,13 @@ def build_parser():
         ("block", cmd_block, "block on a reason or another item"): [
             ("id", {}), ("reason", dict(nargs="?")), ("--on", {})],
         ("unblock", cmd_unblock, "clear a block"): [("id", {}), ("--dep", {})],
+        ("park", cmd_park, "defer an item deliberately, with a reason"): [
+            ("id", {}), ("reason", {})],
+        ("unpark", cmd_unpark, "return a parked item to todo (or blocked)"): [
+            ("id", {})],
+        ("migrate-parked", cmd_migrate_parked,
+         "convert blocked items whose reason starts PARKED to parked"): [
+            ("--apply",)],
         ("ls", cmd_ls, "list items"): [
             ("--status", {}), ("--type", {}), ("--tag", {}), ("--owner", {}),
             ("--ready",), ("--json",), ("--plain",)],
