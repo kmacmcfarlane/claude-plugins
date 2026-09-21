@@ -165,15 +165,16 @@ landed` in the manifest is the whole story.
 
 Under ~5 lines. Contents: the skill or task to invoke, exactly as the operator would type
 it — when the manifest sets `mode_skill:`, that command leads the opener, so the next
-session re-enters the standing mode before anything else; `read <manifest path> in full first` (the path Step 4b actually wrote —
-`.claude-sandbox/HANDOFF.md` or root `HANDOFF.md`; "in full" matters — after `/clear` the
-rehydration hook injects only the manifest header, so the opener is what tells the next
-session to read the whole file); and the one or two facts that changed since the manifest
+session re-enters the standing mode before anything else (with `then <next-skill>` as
+well, the mode still leads and the next skill goes in the facts); `read <manifest path>
+in full first` (the path Step 4b actually wrote — `.claude-sandbox/HANDOFF.md` or root
+`HANDOFF.md`; "in full" matters — after `/clear` the rehydration hook injects only the
+manifest header, so the opener is what tells the next session to read the whole file); and the one or two facts that changed since the manifest
 was written — pull these from the drift note or the `Aware of` lines you just wrote (the
 lean path has no drift note; use the `Aware of` lines), never restate the whole manifest.
 
 ```text
-/<skill-or-task> <args> — read <manifest path> in full first; <fact that changed>; <fact that changed>
+/<mode_skill or skill-or-task> <args> — read <manifest path> in full first; <fact that changed>; <fact that changed>
 ```
 
 At a stage boundary, one of those facts is always: **do not re-run the previous stage** — its

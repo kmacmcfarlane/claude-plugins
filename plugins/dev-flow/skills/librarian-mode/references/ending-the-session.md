@@ -36,20 +36,21 @@ the step in hand, then:
    Step 0 question 3 up front with the `/compact <guidance>` arm of its Step 5 (not
    `/rewind`), so only question 2 is left to ask. Custody holds throughout: its residue
    goes into item bodies (append) or new items (`$WI add`), never into CLAUDE.md or a
-   skill file; the manifest's `mode_skill:` names this skill,
-   `mode_skill: /dev-flow:librarian-mode start`, so the opener re-enters librarian mode; its commits are store-only — the work-item store, and the manifest only
+   skill file; its commits are store-only — the work-item store, and the manifest only
    when the repo tracks it (`trackInHost` governs `.claude-sandbox/HANDOFF.md`; an
    untracked manifest stays out of the commit).
-   Anything that would change a custody file becomes a work item.
+   Anything that would change a custody file becomes a work item. The manifest names
+   this skill as its standing mode, `mode_skill: /dev-flow:librarian-mode start`, so the
+   opener re-enters librarian mode.
 3. **Push** — `main`, as above, after the checkpoint so its store commits reach origin; a
    rejection stops the same way and goes under `decisions needed` in the closing message.
 4. **Prompt the operator to compact, and stop.** The closing message is the final Report
    of the sequence above: the four-line Report for anything landed since the last one,
    the push outcome, then the checkpoint's own close — its `/compact <guidance>`
    recommendation, to run at the operator's convenience (the next morning is fine), and
-   last its Step 7 opener, led by `/dev-flow:librarian-mode start`, then `read <manifest
-   path> in full first` and the facts changed since the manifest. Never run `/compact` yourself, and
-   start no new work — no dispatch, no merge — in that turn.
+   last its Step 7 opener, led by `/dev-flow:librarian-mode start`, then `read
+   <manifest path> in full first` and the facts changed since the manifest. Never run
+   `/compact` yourself, and start no new work — no dispatch, no merge — in that turn.
 
 The checkpoint stands the gate down, so nothing warns again before the compaction.
 Requests that arrive in that gap are filed through Intake as usual and held — no

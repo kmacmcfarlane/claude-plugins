@@ -20,9 +20,13 @@ Tiers by source:
   compact          full manifest + the ledger tail (reasoning survives)
   resume           full only if the manifest changed or the repo moved since
                    the last injection (state manifest.sha); else header
-  startup / clear  header only (~120 tokens), labelled if stale
+  startup / clear  header only (one line, ~100-150 tokens with a
+                   mode_skill), labelled if stale
 Every tier's header names the manifest's `mode_skill:` (the standing mode to
-re-enter first), unless the manifest is LANDED.
+re-enter first), unless the manifest is LANDED; a STALE manifest's mode is
+named for confirmation, not as an order. Only a strict slash-command shape is
+shown (MODE_SKILL_RE): the header speaks in the hook's voice, and the manifest
+is repo-committed text.
 No manifest and nothing to say -> {} (silent).
 
 Budget: total additionalContext <= 9,000 chars, under the harness's single
@@ -59,6 +63,10 @@ _FM_OPEN = re.compile(r"[ \t]*---[ \t]*(\r?\n)")
 _FM_CLOSE = re.compile(r"^[ \t]*---[ \t]*\r?$", re.M)
 _ITEMS_RE = re.compile(r"^items:[^\n]*\n(?:[ \t]*-[^\n]*\n)*", re.M)
 _git_hung = []
+# `/name` or `/plugin:name`, then at most four short plain arguments; nothing
+# else (no backticks, quotes, prose punctuation or control characters) passes.
+MODE_SKILL_RE = re.compile(
+    r"/[A-Za-z0-9][\w.-]*(?::[\w.-]+)?(?: [\w.:=/-]+){0,4}", re.ASCII)
 
 
 def git(cwd, *args, ok=False):
@@ -301,13 +309,15 @@ def is_landed(fm):
 
 def mode_skill(fm):
     """The optional `mode_skill:` key: the slash command that re-enters the
-    standing mode the session was running, or "" (absent, landed, not a
-    slash command). One line, capped: it rides on every tier's header."""
+    standing mode the session was running, or "" when absent, landed, or not
+    exactly MODE_SKILL_RE (dropped silently: it rides on every tier's header)."""
     v = fm.get("mode_skill")
     if is_landed(fm) or not isinstance(v, str):
         return ""
-    v = " ".join(v.strip().strip("'\"").split())
-    return v[:200] if v.startswith("/") else ""
+    v = v.strip()
+    if len(v) >= 2 and v[0] == v[-1] and v[0] in "'\"":
+        v = v[1:-1]
+    return v if len(v) <= 200 and MODE_SKILL_RE.fullmatch(v) else ""
 
 
 def liveness(fm, hs, unverified_why="git unavailable"):
@@ -561,7 +571,10 @@ def main():
                   f"(written {fm.get('written', '?')}, head {fm.get('head', '?')}, "
                   f"now {len(dirty.splitlines())} dirty file(s)).")
         ms = mode_skill(fm)
-        if ms:
+        if ms and live == "STALE":
+            header += (f" The manifest names a standing mode, `{ms}`; it is STALE, "
+                       f"so confirm with the operator before re-entering it.")
+        elif ms:
             header += (f" The session was in a standing mode: re-enter it first "
                        f"with `{ms}`.")
         moved, dead, notes = stale_checks(fm, top, live, hs)

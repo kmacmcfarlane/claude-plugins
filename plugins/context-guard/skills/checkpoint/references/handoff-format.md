@@ -20,7 +20,7 @@ head: <short-sha>
 branch: <branch>
 mode: land | continue | handoff | landed
 by: checkpoint
-mode_skill: <slash-command>   # optional: the standing mode to re-enter, e.g. /some-plugin:some-mode start
+mode_skill: /<plugin>:<mode> start   # optional: the standing mode to re-enter
 items:            # optional: wi ids you expect still open or in flight
   - <work-item-id>
 ---
@@ -101,7 +101,13 @@ TOC, read on demand: `path — one line on what it holds`.
   it in every mode but *landed*; omit it when no standing mode is active. Its presence tells
   the next session to re-enter that mode first: the checkpoint's Step 7 opener leads with it,
   and the hook names it on the header line in every tier except LANDED. Any skill's command
-  may go here; the format knows none by name.
+  may go here; the format knows none by name. Accepted shape, whole value (quotes around
+  it allowed): `/name` or `/plugin:name` — a letter or digit first, then letters, digits,
+  `_`, `.`, `-` — followed by at most four arguments of letters, digits and `_ . : = / -`,
+  single spaces between, ≤200 chars in all. Anything else (backticks, prose, punctuation,
+  control characters) is dropped silently: the header speaks in the hook's voice, and a
+  committed manifest is text anyone can write. On a STALE manifest the header names the
+  mode for the operator to confirm instead of telling the session to re-enter it.
 - **Stale Next is withheld, not warned.** When the recorded `head` is not an ancestor of
   HEAD, or HEAD is ≥1 commit past it, the hook replaces the `## Next` body with one line.
   Its variants:
