@@ -1,6 +1,6 @@
 ---
 name: install-statusline
-description: Install, move or remove the always-on status line — a one-line footer showing context left (tokens and percent), plan usage limits with reset countdowns, model, effort and session name — plus each sub-agent's context fill in the agent panel. The footer draws through statusline-hub, which owns the status-line slot and installs itself on the first session; this skill covers the coworker install, and hands moving, removing or replacing the slot to the install-statusline-hub skill. Use when the user says "install the statusline", "set up the status line", "set up the context gauge", "remove the statusline", "move the statusline to this project", or "replace my status line with this one".
+description: Install, move or remove the always-on status line — a one-line footer showing context left (tokens and percent; each sub-agent's in the agent panel), plan usage limits with reset countdowns, model, effort and session name. The footer draws through statusline-hub, which owns the status-line slot and installs itself on the first session; this skill covers the coworker install, and hands moving, removing or replacing the slot to the install-statusline-hub skill. Use when the user says "install the statusline", "set up the status line", "set up the context gauge", "remove the statusline", "move the statusline to this project", or "replace my status line with this one".
 disable-model-invocation: false
 allowed-tools: Bash, Read, AskUserQuestion
 argument-hint: "[--user | --local | --project] [--remove]"

@@ -86,8 +86,9 @@ Where a new or moved thing goes. The full decision tree is in
 
 1. Alters harness behavior (hooks, status line, `settings.json` writes)? → only a plugin
    whose stated aim *is* that behavior (`plugins/context-guard/` for the context system,
-   `plugins/statusline/` for the status line's footer, `plugins/statusline-hub/` for the
-   status-line slot and its settings entry, `plugins/sandbox/` for the checkout/worktree guard).
+   `plugins/statusline/` for the status line's footer and the agent-panel rows
+   (`subagentStatusLine`), `plugins/statusline-hub/` for the status-line slot and its
+   settings entry, `plugins/sandbox/` for the checkout/worktree guard).
    Never attach it to a knowledge skill.
 2. Pure stack/tool knowledge? → the expertise family, in its own marketplace (`expertise`,
    repo `claude-expertise`) — not this repo.
