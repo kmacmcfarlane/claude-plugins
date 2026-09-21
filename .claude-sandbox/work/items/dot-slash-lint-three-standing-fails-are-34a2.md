@@ -34,3 +34,5 @@ From 07c3 F0/F1 (2026-09-19): review-checklist §2's dot-slash grep FAILs on kit
 - [medium] .md branch allows at most one dir: ../../dev-flow/skills/dev-cycle/SKILL.md now passes (coverage loss). Fix ([A-Za-z0-9_.-]+/)* + prose l.154.
 - [low] grep exit 2 (bad pattern) silently passes — note or guard.
 - dispatch: implementer opus — fix round 1 (resume)
+- round 1 fix dd72b99: any depth before .md; rc guard FAILs when grep cannot run.
+- dispatch: reviewer opus — round 2 (resume)

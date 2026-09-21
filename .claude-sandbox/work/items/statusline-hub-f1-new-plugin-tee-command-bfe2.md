@@ -38,3 +38,5 @@ d193 07 § F1 (.claude-sandbox/investigations/d193-statusline-multiplexer/07_rec
 - [medium] ccstatusline's global Custom Command Cache TTL (customCommandCacheTtlSeconds) makes the tee run at most once per TTL → record up to 60 s stale silently; recipe must say TTL 0, troubleshooting names the cause.
 - lows: sensor-contract §2 overclaims concurrent safety (interleaved writes are last-writer-wins, 5/40 regress with or without the tee); sensor.py:8 and lib_context.py:174 still say one writer; README consumer rows (context-guard/dev-flow) name only statusline as the source (defer to F3); launcher `ls -td` picks newest-modified, not newest version; nits.
 - dispatch: implementer opus — fix round 1 (resume)
+- round 1 fix df00a29: ccstatusline TTL 0 in recipe + troubleshooting; contract concurrency wording; sensor.py/lib_context docstrings name both writers; launcher wording; README aim. Declined: README consumer rows (F3), allowed-tools nit.
+- dispatch: reviewer opus — round 2 (resume)

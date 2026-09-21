@@ -52,3 +52,7 @@ Mid-turn PostToolUse depth gate; HARD gate stops recommending an unaffordable ch
 decision 47: where HANDOFF.md lives — (a) C: each session keeps its own manifest (config dir, per session) for its own memory, plus a repo HANDOFF.md written only in handoff mode for the next session [recommended by the planner; honours "no repo-singleton session state" and keeps product-repo stage handoffs]; (b) A: keep one repo HANDOFF.md, made safe by the lineage check (smallest change; concurrent sessions still overwrite each other); (c) B′: per-session only (breaks product-repo stage handoffs and unattended chains).
 - plan fix round 2: serial 02_review-round-2.md — adoption pinned to manifest version (manifest_sha); Read adopts only mode: handoff; conditional header wording; F1 HARD marker iff hard_applies(block_window, tok); one-main-session-per-process noted; unattended section defers to a custody skill's mode.
 - dispatch: plan reviewer opus — round 3 (resume)
+
+## Plan review round 3 — NEEDS_CHANGES (opus)
+- F1 cleared to build (lands after F3a). F3a: [high] a link pins whatever version is on disk even if a third session Z owns it (X checkpoints, Z overwrites, X /clears → successor inherits Z). Fix: pin only a version that was ours for the linking session, else null; tests. lows: document that a full Read of mode: handoff adopts (cat does not); hash raw text with errors="replace".
+- dispatch: planner opus — plan fix round 3 (resume); round 4 review is the last before the cap

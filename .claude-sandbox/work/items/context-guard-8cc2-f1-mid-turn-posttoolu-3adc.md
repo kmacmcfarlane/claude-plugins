@@ -18,3 +18,7 @@ Port plan .claude-sandbox/investigations/8cc2-turn-gate-port — design awaits t
 - next: —
 - blocked: —
 - learned: —
+
+## Carried from 8cc2-F2
+- librarian-mode ending-the-session.md keys on "HARD threshold reached by an INFERRED depth" and runs a checkpoint (continue); below CHECKPOINT_MIN_TOKENS the advisory now says a checkpoint no longer fits → align there (F1 already edits that file).
+- operator-playbook: one clause on the under-20K advice (plan 00).

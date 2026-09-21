@@ -34,3 +34,7 @@ From spike 7e3b (series .claude-sandbox/investigations/7e3b-dialog-statusline/00
 - dispatch: implementer sonnet — fix round 1 (resume)
 - round 1 fix 658ec13: closed-issue states stated; documented vs observed separated; links.
 - dispatch: reviewer opus — round 2 (resume)
+
+## Review round 2 — NEEDS_CHANGES (opus) at 658ec13
+- [medium] #21349 was closed by its reporter, who noted plan approval gained a context-remaining option — "no note on what shipped" is wrong.
+- dispatch: implementer sonnet — fix round 2 (resume)
