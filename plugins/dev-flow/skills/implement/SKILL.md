@@ -237,9 +237,10 @@ build/typecheck, its lint. Record which **verification tier** they represent (th
 
 ## Step 6 — Review gate 1: the plan
 
-**Ask the decision-class questions first**, per the `investigate` skill's § Asking at a gate —
-a numbered list answered free-form is preferred while scope is open, `AskUserQuestion` for a
-closed choice late in the task. End the turn there. Keep the defer option either way:
+**If there are decision-class questions, ask them first**, per the `investigate` skill's §
+Asking at a gate — a numbered list answered free-form is preferred while scope is open,
+`AskUserQuestion` for a closed choice late in the task. Each question carries the evidence and
+the recommendation it rests on. End the turn there. Keep the defer option either way:
 
 > **Leave open and record in the investigation** — defer this; it stays under Open Questions
 > with its owner and whether it blocks implementation.
@@ -247,7 +248,8 @@ closed choice late in the task. End the turn there. Keep the defer option either
 A blocking question's defer option must say plainly that deferring means **not implementing
 yet**. That is a legitimate outcome, never a slip.
 
-**Once every decision question is answered or deferred**, present:
+**If there are none, skip straight to the plan.** Once every decision question is answered or
+deferred, present:
 
 1. **The composed plan** — approach, files to modify, patterns, risks — and that you read the
    full series.
