@@ -208,24 +208,41 @@ def emit_front(meta, extra=()):
 FENCE_RE = re.compile(r"^ {0,3}(`{3,}|~{3,})")
 
 
+def _fence_open(content):
+    """The opening run (``` / ~~~ ...) when `content` opens a fence, else None.
+    A backtick run with a backtick later on the line is inline code."""
+    m = FENCE_RE.match(content)
+    if m and not (m.group(1)[0] == "`" and "`" in content[m.end():]):
+        return m.group(1)
+    return None
+
+
+def _fence_closes(content, run):
+    """True when `content` closes a fence opened by `run`: a run of the same
+    character at least as long, with nothing but whitespace after it."""
+    m = FENCE_RE.match(content)
+    return bool(m and m.group(1)[0] == run[0] and len(m.group(1)) >= len(run)
+                and not content[m.end():].strip())
+
+
 def _heading_flags(lines):
     """For each line, True when it is a `## ` section heading: it starts with
-    `## ` and is not inside a fenced code block (``` or ~~~, CommonMark-style:
-    the fence closes on a run of the same character at least as long, with
-    nothing but whitespace after it; an unclosed fence runs to the end)."""
-    flags, fence = [], None
-    for line in lines:
-        content = line.rstrip("\r\n")
-        m = FENCE_RE.match(content)
-        if fence is None:
-            if m and not (m.group(1)[0] == "`" and "`" in content[m.end():]):
-                fence = m.group(1)
-            flags.append(fence is None and content.startswith("## "))
-        else:
-            if (m and m.group(1)[0] == fence[0] and len(m.group(1)) >= len(fence)
-                    and not content[m.end():].strip()):
-                fence = None
-            flags.append(False)
+    `## ` and is not inside a fenced code block (``` or ~~~). An opener with
+    no matching closer is not a fence — it must not hide every later heading
+    (a real `## Handoff` after a pasted, unclosed block stays the section)."""
+    contents = [line.rstrip("\r\n") for line in lines]
+    flags, i, n = [False] * len(contents), 0, len(contents)
+    while i < n:
+        run = _fence_open(contents[i])
+        if run:
+            j = i + 1
+            while j < n and not _fence_closes(contents[j], run):
+                j += 1
+            if j < n:
+                i = j + 1  # opener..closer inclusive are code, not headings
+                continue
+        flags[i] = contents[i].startswith("## ")
+        i += 1
     return flags
 
 
@@ -796,6 +813,7 @@ def cmd_init(args):
 
 
 def cmd_add(args):
+    _one_line("title", args.title)
     root = resolve_root(args.root)
     created = today()
     title = args.title.strip()
@@ -873,14 +891,18 @@ def cmd_release(args):
     return 0
 
 
+def _one_line(what, val):
+    """Values written into front matter, a Handoff bullet or a Notes line are
+    one line (format.md): a line break would add front-matter keys, leave
+    lines the next rewrite does not own, or inject a `## ` heading. Called
+    before anything is read or written, so a rejected value writes nothing."""
+    if val is not None and ("\n" in val or "\r" in val):
+        raise WiError(1, f"{what} must be one line; it contains a line break")
+
+
 def cmd_handoff(args):
-    # Handoff values are one line each (format.md): a line break would leave
-    # lines the next rewrite does not own, or inject a heading. Reject before
-    # anything is read or written.
     for key in HANDOFF_KEYS:
-        val = getattr(args, key)
-        if val is not None and ("\n" in val or "\r" in val):
-            raise WiError(1, f"--{key} must be one line; it contains a line break")
+        _one_line(f"--{key}", getattr(args, key))
     root = resolve_root(args.root)
     with Lock(root):
         item = load_item_anywhere(root, args.id)
@@ -902,6 +924,7 @@ def cmd_handoff(args):
 
 def cmd_done(args):
     root = resolve_root(args.root)
+    _one_line("--note", args.note)
     status = "dropped" if args.drop else "done"
     with Lock(root):
         item = load_item_anywhere(root, args.id)
@@ -916,6 +939,8 @@ def cmd_done(args):
 
 
 def cmd_block(args):
+    _one_line("reason", args.reason)
+    _one_line("--on", args.on)
     root = resolve_root(args.root)
     if bool(args.reason) == bool(args.on):
         raise WiError(1, "block takes a reason or --on <id>, not both/neither")
@@ -953,6 +978,7 @@ def cmd_unblock(args):
 def cmd_set(args):
     root = resolve_root(args.root)
     field, value = args.field, args.value
+    _one_line("value", value)
     if field in ("id", "created"):
         raise WiError(1, f"'{field}' is immutable")
     if field not in FIELD_ORDER:

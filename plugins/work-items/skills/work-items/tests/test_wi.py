@@ -198,6 +198,17 @@ class TestImportTodo(WiTestCase):
         self.assertIn("plans/fix.md", refs)
         self.assertFalse(any(r.startswith("https:") for r in refs))
 
+    def test_multiline_titles_are_folded_to_one_line(self):
+        """import-todo titles never carry a line break into front matter: a
+        bold title wrapped across lines, or with CR/CRLF, is folded."""
+        todo = self.tmp / "TODO.md"
+        todo.write_bytes(b"- **Wrapped\r\n  title: here** \xe2\x80\x94 body\r\n"
+                         b"- **Second\r  one.** rest\n")
+        self.wi_ok(["import-todo", str(todo)])
+        titles = sorted(it["title"] for it in self.items())
+        self.assertEqual(titles, ["Second one", "Wrapped title: here"])
+        self.wi_ok(["lint"])
+
     def test_dry_run_writes_nothing(self):
         out = self.wi_ok(["import-todo", "--dry-run",
                           str(FIXTURES / "ptp_todo.md")])
@@ -472,6 +483,12 @@ BODY_SHAPES = {
         "## Notes\n- 2026-09-01 n1\n```markdown\n## Handoff\n- doing: fake\n"
         "- next: fake\n```\n\n## Handoff\n- doing: d\n- next: —\n"
         "- blocked: —\n- learned: —\n"),
+    # unclosed fences (a pasted ```sh with no closer, a ```` "closed" by ```)
+    # are not fences: the real Handoff after them is still the section
+    "unclosed-fence": (
+        "\nDesc.\n\n## Notes\n- 2026-09-01 n1\n````\n```\n```sh\nmake\n\n"
+        "## Handoff\n- doing: OLD\n- next: OLDNEXT\n- blocked: —\n"
+        "- learned: —\n"),
 }
 
 NOTE_LINE_RE = re.compile(r"^- \d{4}-\d{2}-\d{2} .*$")
@@ -500,19 +517,14 @@ class TestBodyPreservation(WiTestCase):
         return re.findall(r"[^\n]*\n|[^\n]+\Z", text)
 
     def owned_handoff_lines(self, body_lines):
-        """Indices of the first `- key:` line of each key in ## Handoff (the
-        first heading outside a ``` / ~~~ fence)."""
-        owned, seen, inside, fence = set(), set(), False, None
+        """Indices of the first `- key:` line of each key in ## Handoff. What
+        counts as a heading is production's fence rule (wi._heading_flags),
+        pinned on its own by test_fenced_headings_are_not_sections and
+        test_unclosed_fence_does_not_hide_handoff."""
+        owned, seen, inside = set(), set(), False
+        flags = wi._heading_flags(body_lines)
         for i, line in enumerate(body_lines):
-            c = line.rstrip("\r\n")
-            if fence:
-                if c.startswith(fence):
-                    fence = None
-                continue
-            if c.startswith(("```", "~~~")):
-                fence = c[:3]
-                continue
-            if line.startswith("## "):
+            if flags[i]:
                 if inside:
                     break
                 inside = line.rstrip("\r\n") == "## Handoff"
@@ -745,6 +757,30 @@ class TestBodyPreservation(WiTestCase):
                              "````\n```\n~~~\n## B\n````\n## C\n")
         self.assertEqual([n for n, _ in item.sections], ["A", "C"])
 
+    def test_unclosed_fence_does_not_hide_handoff(self):
+        for eol in ("\n", "\r\n"):
+            with self.subTest(eol=repr(eol)):
+                path = self.write_raw(BODY_SHAPES["unclosed-fence"], eol,
+                                      "status: doing\nowner: tester@local\n"
+                                      "claimed: 2026-09-01T00:00Z\n")
+                for n in range(3):
+                    self.wi_ok(["handoff", self.IID, "--doing", f"NEW{n}",
+                                "--learned", f"L{n}"])
+                after = self.split_body(path.read_bytes().decode(), eol)
+                self.assertEqual(after.count("## Handoff"), 1, after)
+                self.assertIn(eol.join(["## Handoff", "- doing: NEW2",
+                                        "- next: OLDNEXT", "- blocked: —",
+                                        "- learned: L2", ""]), after)
+                rec = json.loads(self.wi_ok(["show", self.IID, "--json"]))
+                self.assertEqual((rec["handoff"]["doing"], rec["handoff"]["next"]),
+                                 ("NEW2", "OLDNEXT"))
+                self.wi_ok(["lint"])
+                path.unlink()
+        # model level: each unclosed opener is plain text, a closed pair
+        # after it still hides its heading
+        flags = wi._heading_flags(["```sh", "## A", "~~~", "## B", "~~~", "## C"])
+        self.assertEqual(flags, [False, True, False, False, False, True])
+
     def test_handoff_value_with_line_break_is_rejected_unwritten(self):
         path = self.write_raw(BODY_SHAPES["no-notes"], "\n", "status: doing\n")
         raw = path.read_bytes()
@@ -756,6 +792,34 @@ class TestBodyPreservation(WiTestCase):
                     self.assertEqual(r.returncode, 1, r.stdout + r.stderr)
                     self.assertIn(f"--{key} must be one line", r.stderr)
                     self.assertEqual(path.read_bytes(), raw)
+
+    def test_other_one_line_values_with_line_break_are_rejected_unwritten(self):
+        """block reason / --on, set value, done|drop --note and add title are
+        one line too: no front-matter key or heading injection, no write."""
+        path = self.write_raw(BODY_SHAPES["no-notes"], "\n", "status: todo\n")
+        raw = path.read_bytes()
+        cases = [
+            (["block", self.IID, "waiting\nstatus: done"], "reason"),
+            (["block", self.IID, "--on", "other\r\n- x"], "--on"),
+            (["set", self.IID, "title", "x\npriority: 0"], "value"),
+            (["set", self.IID, "blocked", "a\rb"], "value"),
+            (["done", self.IID, "--note", "ok\n## Handoff\n- doing: injected"],
+             "--note"),
+            (["done", self.IID, "--drop", "--note", "gone\r\n"], "--note"),
+        ]
+        for argv, what in cases:
+            with self.subTest(argv=argv):
+                r = run(argv, self.root)
+                self.assertEqual(r.returncode, 1, r.stdout + r.stderr)
+                self.assertIn(f"{what} must be one line", r.stderr)
+                self.assertEqual(path.read_bytes(), raw)
+        before = sorted(p.name for p in (self.root / "items").iterdir())
+        r = run(["add", "two\nlines"], self.root)
+        self.assertEqual(r.returncode, 1, r.stdout + r.stderr)
+        self.assertIn("title must be one line", r.stderr)
+        self.assertEqual(sorted(p.name for p in (self.root / "items").iterdir()),
+                         before)
+        self.wi_ok(["lint"])
 
     def test_write_side_keeps_line_endings_byte_exact(self):
         """newline='' on write: mixed CRLF / LF / lone CR outside the owned
