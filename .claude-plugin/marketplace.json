@@ -8,7 +8,7 @@
     {
       "name": "kit-dev",
       "source": "./plugins/kit-dev",
-      "description": "Maintainer tooling for this plugin ecosystem — skill creation, project scaffolding, upstream kit sync, and factoring analysis (external: the claude-templates repo, which scaffolding reads, and the claude-templates, claude-sandbox and claude-expertise repos, which upstream sync writes)."
+      "description": "Maintainer tooling for this plugin ecosystem — skill creation, project scaffolding, upstream kit sync, and factoring analysis (external: the claude-templates repo, which scaffolding reads, and the claude-templates, claude-sandbox and claude-expertise repos, which upstream sync writes; soft dependency: create-repo, which new-project-from-template points at for a bare repo with a session launched on it)."
     },
     {
       "name": "context-guard",
