@@ -32,7 +32,7 @@ systemMessage says so.
 Set timeout: 10 in hooks.json: this event is fail-open on timeout, so a slow
 hook silently disables the gate.
 """
-import json, os, re, sys, time
+import json, os, re, shlex, sys, time
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import lib_context as L
 
@@ -120,17 +120,14 @@ def mirror_bound(m, src):
                                   and m.get("block_window") == acw.get("window"))
 
 
-_SH_SPECIAL = re.compile(r'([\\"$`])')
-
-
 def mark_checkpoint_command(sid):
-    """`python3 "<path>" <sid>` for the mark_checkpoint.py beside this hook -
+    """`python3 <path> <sid>` for the mark_checkpoint.py beside this hook -
     the installed copy that is running now, so no lookup (and no guess among
-    several data dirs) is needed. The path is in shell double quotes with
-    \\, ", $ and ` escaped."""
+    several data dirs) is needed. The path is shlex-quoted (single quotes
+    when it needs any), so nothing in it expands - not $, ` or \\, and not
+    the ! that bash history expansion would act on inside double quotes."""
     path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "mark_checkpoint.py")
-    quoted = _SH_SPECIAL.sub(r"\\\1", path)
-    return f'python3 "{quoted}" {L.safe_sid(sid)}'
+    return f"python3 {shlex.quote(path)} {L.safe_sid(sid)}"
 
 
 def derived_hatches(sid):

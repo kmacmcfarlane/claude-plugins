@@ -2,7 +2,7 @@
 inferred), the credits latch and its process marker, the status-line cross
 -check and its distrust list, the auto-compact window, the bookkeeping hook,
 and the account file that must never be opened."""
-import builtins, io, json, os, subprocess, sys, tempfile, time, unittest
+import builtins, io, json, os, shlex, subprocess, sys, tempfile, time, unittest
 from datetime import datetime, timezone
 from unittest import mock
 
@@ -813,7 +813,8 @@ class TestHooks(Base):
         self.session("claude-opus-5", 950_000)
         rc, _, err = self.warn()
         self.assertEqual(rc, 2)
-        for s_ in ("CONTEXT_GUARD_DERIVE=off", "mark_checkpoint.py\" s",
+        cmd = "python3 %s s" % shlex.quote(os.path.join(HOOKS, "mark_checkpoint.py"))
+        for s_ in ("CONTEXT_GUARD_DERIVE=off", cmd,
                    "operator-playbook.md", "If the gate blocks wrongly"):
             self.assertIn(s_, err)
         self.set_exact(950_000, 1_000_000)          # an exact block keeps main's text

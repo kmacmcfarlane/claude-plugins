@@ -145,14 +145,32 @@ escape hatches:
    Claude Code substitutes it into a plugin's `SKILL.md` text and exports it to hook
    processes, but it is not in the Bash tool's environment, and this reference file is read,
    not substituted. The path comes from the harness's own install record,
-   `installed_plugins.json` `plugins['context-guard@kmacmcfarlane'][0].installPath`; the
-   fallback, when that record is missing or unreadable, is the update-stable `current-hooks`
-   link in the newest `context-guard-*` data dir (one per marketplace the plugin was
-   installed from — list them with plain `ls -d` and pick yours if unsure):
+   `installed_plugins.json`, whose `plugins['context-guard@kmacmcfarlane']` holds one entry
+   per install scope. The snippet takes the `installPath` of the entry that applies where it
+   runs, not the first one listed: a `local` or `project` entry whose `projectPath` is the
+   current directory or one above it (the deepest such path, `local` before `project`),
+   else the `user` entry — so run it from the project directory. The fallback, when that
+   record is missing, unreadable or has no entry that applies, is the update-stable
+   `current-hooks` link in the newest `context-guard-*` data dir (one per marketplace the
+   plugin was installed from — list them with plain `ls -d` and pick yours if unsure):
 
 ```bash
 P="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/plugins"
-MC="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["plugins"]["context-guard@kmacmcfarlane"][0]["installPath"])' "$P/installed_plugins.json" 2>/dev/null)/hooks/mark_checkpoint.py"
+MC="$(python3 - "$P/installed_plugins.json" 2>/dev/null <<'PY'
+import json, os, sys
+es = json.load(open(sys.argv[1]))["plugins"]["context-guard@kmacmcfarlane"]
+cwd = os.path.realpath(os.getcwd())
+def rank(e):  # the scope that applies here: deepest project/local path, then user
+    pp = e.get("projectPath")
+    if e.get("scope") in ("local", "project") and pp:
+        pp = os.path.realpath(pp)
+        if cwd == pp or cwd.startswith(pp.rstrip("/") + "/"):
+            return (2, len(pp), e["scope"] == "local")
+    return (1, 0, False) if e.get("scope") == "user" else (0, 0, False)
+best = max(es, key=rank)
+print(best["installPath"] if rank(best)[0] else "")
+PY
+)/hooks/mark_checkpoint.py"
 test -f "$MC" || MC="$(ls -td "$P"/data/context-guard-*/ 2>/dev/null | head -1)current-hooks/mark_checkpoint.py"
 python3 "$MC" <session_id>
 ```

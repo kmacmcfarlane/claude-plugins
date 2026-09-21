@@ -1,6 +1,6 @@
 """End-to-end hook tests: each hook is run as a subprocess with JSON on stdin
 and CLAUDE_CONFIG_DIR pointed at a temp dir, the way Claude Code runs it."""
-import importlib, io, json, os, subprocess, sys, tempfile, time, unittest
+import importlib, io, json, os, shlex, subprocess, sys, tempfile, time, unittest
 from unittest import mock
 
 HOOKS = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -958,7 +958,7 @@ class TestStandDownCommand(Base):
     def test_hatch_names_the_script_beside_the_hook(self):
         import context_warn as CW
         cmd = CW.mark_checkpoint_command("s")
-        self.assertEqual(cmd, 'python3 "%s" s' % os.path.join(HOOKS, "mark_checkpoint.py"))
+        self.assertEqual(cmd, "python3 %s s" % shlex.quote(os.path.join(HOOKS, "mark_checkpoint.py")))
         self.assertIn(cmd, CW.derived_hatches("s"))
         self.assertNotIn("ls -td", CW.derived_hatches("s"))
 
@@ -971,6 +971,18 @@ class TestStandDownCommand(Base):
                              capture_output=True, text=True).stdout
         self.assertEqual(out, '/p a/$x/`y`/"q"/b\\s/hooks/mark_checkpoint.pys')
 
+    def test_hatch_path_survives_bash_history_expansion(self):
+        # ! inside double quotes is history-expanded by an interactive bash
+        # (set -H, history on); with a space and a ' as well, the path must
+        # still come back whole.
+        import context_warn as CW
+        odd = "/p a/it's!x/!!/hooks/context_warn.py"
+        with mock.patch.object(CW, "__file__", odd):
+            cmd = CW.mark_checkpoint_command("s")
+        p = subprocess.run(["bash", "-c", "set -H -o history\n" + cmd.replace("python3", "printf %s", 1)],
+                           capture_output=True, text=True)
+        self.assertEqual((p.returncode, p.stdout), (0, "/p a/it's!x/!!/hooks/mark_checkpoint.pys"))
+
     def snippet(self):
         with open(PLAYBOOK, encoding="utf-8") as f:
             text = f.read()
@@ -982,10 +994,10 @@ class TestStandDownCommand(Base):
         with open(os.path.join(d, "mark_checkpoint.py"), "w") as f:
             f.write("import sys; print(%r, sys.argv[1])\n" % tag)
 
-    def run_snippet(self):
+    def run_snippet(self, cwd=None):
         e = dict(os.environ, CLAUDE_CONFIG_DIR=self.tmp.name)
         p = subprocess.run(["bash", "-c", self.snippet()], capture_output=True,
-                           text=True, env=e, timeout=30)
+                           text=True, env=e, timeout=30, cwd=cwd or self.tmp.name)
         return p.stdout.strip()
 
     def test_playbook_prefers_the_install_record(self):
@@ -999,6 +1011,39 @@ class TestStandDownCommand(Base):
             json.dump({"version": 2, "plugins": {"context-guard@kmacmcfarlane": [
                 {"scope": "user", "installPath": inst}]}}, f)
         self.assertEqual(self.run_snippet(), "record sid-1")
+
+    def test_playbook_picks_the_install_by_scope_not_position(self):
+        plugins = os.path.join(self.tmp.name, "plugins")
+        proj, other = (os.path.join(self.tmp.name, n) for n in ("proj", "other"))
+        os.makedirs(os.path.join(proj, "sub"))
+        os.makedirs(other)
+        inst = {}
+        for tag in ("other", "project", "local", "user"):
+            inst[tag] = os.path.join(plugins, "cache", "kmacmcfarlane", "context-guard", tag)
+            self.fake_script(os.path.join(inst[tag], "hooks"), tag)
+        # a newer data dir, taken only when no record entry applies
+        self.fake_script(os.path.join(plugins, "data", "context-guard-zzz",
+                                      "current-hooks"), "data")
+
+        def record(*entries):
+            with open(os.path.join(plugins, "installed_plugins.json"), "w") as f:
+                json.dump({"version": 2, "plugins": {
+                    "context-guard@kmacmcfarlane": list(entries)}}, f)
+
+        other_e = {"scope": "project", "projectPath": other, "installPath": inst["other"]}
+        proj_e = {"scope": "project", "projectPath": proj, "installPath": inst["project"]}
+        local_e = {"scope": "local", "projectPath": proj, "installPath": inst["local"]}
+        user_e = {"scope": "user", "installPath": inst["user"]}
+        record(other_e, user_e)          # [0] is another project's install
+        self.assertEqual(self.run_snippet(proj), "user sid-1")
+        self.assertEqual(self.run_snippet(other), "other sid-1")
+        record(other_e, user_e, proj_e)  # this project's, also from a subdirectory
+        self.assertEqual(self.run_snippet(proj), "project sid-1")
+        self.assertEqual(self.run_snippet(os.path.join(proj, "sub")), "project sid-1")
+        record(proj_e, local_e, user_e)  # local before project at the same path
+        self.assertEqual(self.run_snippet(proj), "local sid-1")
+        record(other_e)                  # nothing applies here: the data dir
+        self.assertEqual(self.run_snippet(proj), "data sid-1")
 
     def test_playbook_falls_back_to_the_data_dir(self):
         plugins = os.path.join(self.tmp.name, "plugins")
