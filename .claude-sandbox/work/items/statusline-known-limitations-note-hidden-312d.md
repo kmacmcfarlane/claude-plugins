@@ -27,3 +27,8 @@ From spike 7e3b (series .claude-sandbox/investigations/7e3b-dialog-statusline/00
 ## Implementer result
 - round 1 DONE dca7de5 (sonnet): ## Known limitations in install-statusline SKILL.md.
 - dispatch: reviewer opus — rule 4 floor
+
+## Review round 1 — NEEDS_CHANGES (opus) at dca7de5
+- [medium] "Tracked upstream" but all three issues are closed (#21349 completed, #26847 duplicate, #30232 not_planned/stale).
+- lows: separate documented (permission prompts) from observed (AskUserQuestion, plan approval); links not clickable.
+- dispatch: implementer sonnet — fix round 1 (resume)

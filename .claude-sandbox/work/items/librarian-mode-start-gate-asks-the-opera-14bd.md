@@ -27,3 +27,7 @@ Peer idea 2026-09-19 from the mcfacehead-plugins operator via the mcfacehead-plu
 
 ## Dispatch
 - dispatch: implementer opus — librarian behaviour; judgement (canonical name form)
+
+## Implementer result
+- round 1 DONE 946c533 (opus): references/session-name.md (canonical `<repo> - librarian`, repo = basename of MAIN; reads only this session's registry file by CLAUDE_PID, trusted when sessionId matches); start = Rehydrate → name gate (hard on mismatch, soft when unobservable) → idle turn; status prints the name; idle-turn.md ordering. SKILL.md 13,604 chars.
+- dispatch: reviewer opus — rule 4
