@@ -245,9 +245,10 @@ shows no health glyph.
   a slot the statusline plugin (or an older copy of its footer) installed at the hub, and
   the footer keeps drawing through it. The slot changes hands once: nothing moves it back.
   If an older session writes its stale settings back over the hub's entry, putting the
-  footer's earlier entry there again, the next session repoints it at the hub too. With no
-  statusline install recorded (it was uninstalled) nothing will register, so the hub yields
-  to that entry as to any other and says so once.
+  footer's earlier entry there again, the next session repoints it at the hub too. Once
+  Claude Code's install records name the hub and no statusline install (it was
+  uninstalled), nothing will register, so the hub yields to that entry and says once whose
+  it is; while it cannot be sure, it waits.
 - A registry refused as a whole (§ 4: the config dir inside a git work tree, or the hub
   dirs not private) runs no hooks, so it would draw no footer either; the hub's
   SessionStart says so once, naming the directory and the reason.

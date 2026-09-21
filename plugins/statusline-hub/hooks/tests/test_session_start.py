@@ -172,6 +172,13 @@ class FirstRun(Base):
         self.assertNotIn("blank line", msg)
         self.assertEqual(self.load()["statusLine"], self.own())
 
+    def test_a_disabled_statusline_gets_no_footer_wording(self):
+        self.write_json(self.user, HUB_ON)
+        self.records(self.fake_statusline("2.0.0", owner_py=False))
+        msg = self.said()
+        self.assertIn("status line slot taken", msg)
+        self.assertIn("blank line until one registers", msg)
+
     def test_waits_while_an_installed_statusline_can_install_itself(self):
         self.write_json(self.user, BOTH_ON)
         self.records(self.fake_statusline("2.0.0", owner_py=False),
@@ -272,36 +279,55 @@ class Heal(Base):
         self.assertIn("restored the status line", self.said())
         self.assertEqual(self.load()["statusLine"], self.own())
 
-    def plugin_records(self, *keys):
-        """installed_plugins.json recording an install for each plugin key."""
+    HUB_REC = {"statusline-hub@kmacmcfarlane": [{"scope": "user", "installPath": "/x/hub"}]}
+
+    def plugin_records(self, plugins):
+        """installed_plugins.json with this `plugins` object."""
         self.write_json(os.path.join(self.cfg, "plugins", "installed_plugins.json"),
-                        {"version": 2, "plugins": {k: [{"scope": "user", "installPath":
-                                                        os.path.join(self.cfg, k)}]
-                                                   for k in keys}})
+                        {"version": 2, "plugins": plugins})
+
+    def footer_entry_back(self, plugins):
+        self.install()
+        self.plugin_records(plugins)
+        self.write_json(self.user, dict(HUB_ON, statusLine=self.sl_entry()))
+        return self.raw()
 
     def test_the_footers_entry_yields_once_statusline_is_uninstalled(self):
-        # a stale footer entry with no statusline install left: nothing will
-        # ever register, so waiting would be silent forever
-        self.install()
-        self.plugin_records("statusline-hub@kmacmcfarlane")
-        self.write_json(self.user, dict(HUB_ON, statusLine=self.sl_entry()))
-        before = self.raw()
+        # a stale footer entry, the records name the hub and no statusline:
+        # nothing will ever register, so waiting would be silent forever
+        before = self.footer_entry_back(dict(self.HUB_REC))
         msg = self.said()
-        self.assertIn("changed by something else", msg)
+        self.assertIn("footer's entry", msg)
+        self.assertIn("no longer installed", msg)
         self.assertIn(self.user, msg)
         self.assertNotIn(self.sl_entry()["command"], msg)   # a path, never the value
         self.assertEqual(self.raw(), before)
         self.assertEqual(self.marker()["state"], "yielded")
         self.quiet()
 
-    def test_the_footers_entry_waits_while_statusline_is_installed(self):
-        self.install()
-        self.plugin_records("statusline-hub@kmacmcfarlane", "statusline@kmacmcfarlane")
-        self.write_json(self.user, dict(BOTH_ON, statusLine=self.sl_entry()))
-        before = self.raw()
+    def waits(self, plugins):
+        """Unsure whether statusline is uninstalled: the footer's entry waits."""
+        before = self.footer_entry_back(plugins)
         self.quiet()
         self.assertEqual(self.raw(), before)
         self.assertEqual(self.marker()["state"], "installed")
+
+    SL = "statusline@kmacmcfarlane"
+
+    def test_the_footers_entry_waits_while_statusline_is_installed(self):
+        self.waits(dict(self.HUB_REC, **{self.SL: [{"scope": "user", "installPath": "/x/sl"}]}))
+
+    def test_the_footers_entry_waits_on_a_v1_shaped_statusline_record(self):
+        self.waits(dict(self.HUB_REC, **{self.SL: {"installPath": "/x/sl"}}))
+
+    def test_the_footers_entry_waits_on_an_empty_statusline_record(self):
+        self.waits(dict(self.HUB_REC, **{self.SL: []}))
+
+    def test_the_footers_entry_waits_on_empty_records(self):
+        self.waits({})
+
+    def test_the_footers_entry_waits_when_the_records_do_not_name_the_hub(self):
+        self.waits({"other@kmacmcfarlane": [{"scope": "user", "installPath": "/x/o"}]})
 
     def test_removed_stays_removed(self):
         self.install()
