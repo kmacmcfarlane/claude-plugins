@@ -477,7 +477,9 @@ Soft dependency on `kit-dev`: name a claude-templates template as the goal and, 
 `new-project-from-template` skill is in the session, the skill scaffolds from it; without it
 the skill gives the install command and carries on with a bare repo.
 `new-project-from-template` points back here for a bare repo. Soft dependency on `sandbox`:
-its skill troubleshoots an `init` or a launch that fails.
+its skill troubleshoots an `init` or a launch that fails. Soft dependency on `dev-flow`: the
+launched session uses its `investigate` skill for the first investigation when installed,
+and investigates directly without it.
 
 ### chat
 
