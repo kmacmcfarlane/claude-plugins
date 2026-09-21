@@ -175,7 +175,7 @@ with no plugins/ tree most are vacuous:
       outside the plugin whose stated aim is that behavior.
       `grep -rln 'hooks\|settings.json' $W/plugins --include=*.json` shows nothing new
       outside it.
-- [ ] **Dependencies soft, declared, directional.** Any new cross-plugin reference is named
+- [ ] **Dependencies soft by default, declared, directional.** Any new cross-plugin reference is named
       in the plugin description and the catalog row.
 - [ ] **Hard dependencies only where they must be.** Every `plugin.json` `dependencies`
       entry is same-marketplace (no `marketplace` key naming another), the dependent has no
@@ -224,8 +224,9 @@ for p in $(git -C $W diff --name-only $BASE...HEAD | grep '\.py$'); do python3 -
 - [ ] `.claude-plugin/marketplace.json`, when present, still lists exactly the plugins
       on disk.
 - [ ] Hard dependencies match the catalog: every `dependencies` entry in a `plugin.json`
-      (or a marketplace entry) is same-marketplace and marked (hard) in README.md's catalog
-      row for its plugin, every (hard) there is declared, and no
+      is a name or an object with a `name`, same-marketplace, and marked (hard) in
+      README.md's catalog row for its plugin; every (hard) there is declared; no
+      `marketplace.json` entry declares `dependencies` (plugin.json is the one place); no
       `allowCrossMarketplaceDependenciesOn` is set.
 
 ```bash
@@ -233,17 +234,27 @@ for j in $(git -C $W diff --name-only $BASE...HEAD | grep '\.json$'); do python3
 test -f $W/.claude-plugin/marketplace.json && python3 -c "import json,os,sys; m=json.load(open('$W/.claude-plugin/marketplace.json')); names={p['name'] for p in m['plugins']}; disk=set(os.listdir('$W/plugins')); print('marketplace==disk' if names==disk else 'FAIL: '+str(names^disk))"
 test -f $W/.claude-plugin/marketplace.json && python3 - "$W" <<'EOF'
 import json, os, re, sys
-w = sys.argv[1]; m = json.load(open(f'{w}/.claude-plugin/marketplace.json'))
-bad = []; declared = set()
+w = sys.argv[1]; bad = []; declared = set()
+def load(f):
+    try: d = json.load(open(f))
+    except (OSError, ValueError) as e: bad.append(f'{f} unreadable ({e.__class__.__name__})'); return None
+    if not isinstance(d, dict): bad.append(f'{f} is not a JSON object'); return None
+    return d
+m = load(f'{w}/.claude-plugin/marketplace.json') or {}
 if 'allowCrossMarketplaceDependenciesOn' in m: bad.append('allowCrossMarketplaceDependenciesOn is set')
-srcs = [(e['name'], e.get('dependencies', [])) for e in m['plugins']]
+for e in m.get('plugins', []) if isinstance(m.get('plugins'), list) else []:
+    if isinstance(e, dict) and 'dependencies' in e:
+        bad.append(f"marketplace entry {e.get('name')} declares dependencies; declare them in its plugin.json")
 for p in sorted(os.listdir(f'{w}/plugins')):
     f = f'{w}/plugins/{p}/.claude-plugin/plugin.json'
-    if os.path.exists(f): srcs.append((p, json.load(open(f)).get('dependencies', [])))
-for p, deps in srcs:
+    if not os.path.exists(f): continue
+    deps = (load(f) or {}).get('dependencies', [])
+    if not isinstance(deps, list): bad.append(f'{p}: dependencies is not a list'); continue
     for d in deps:
-        n, mk = (d, None) if isinstance(d, str) else (d.get('name'), d.get('marketplace'))
-        if mk not in (None, m['name']): bad.append(f'{p} -> {n}@{mk} crosses marketplaces')
+        if isinstance(d, str) and d: n, mk = d, None
+        elif isinstance(d, dict) and isinstance(d.get('name'), str) and d['name']: n, mk = d['name'], d.get('marketplace')
+        else: bad.append(f'{p} has a malformed dependency entry: {d!r}'); continue
+        if mk not in (None, m.get('name')): bad.append(f'{p} -> {n}@{mk} crosses marketplaces')
         declared.add((p, n))
 marked = set()
 for line in open(f'{w}/README.md') if os.path.exists(f'{w}/README.md') else []:
