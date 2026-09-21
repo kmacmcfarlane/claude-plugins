@@ -84,7 +84,7 @@ dependency is marked (hard) here.
 | …to survive the finite context window (gate, checkpoint, rehydration, token-spend report) | `context-guard` | **current** | `statusline` (soft; exact depth when installed) |
 | …an always-on status line (context left, plan usage, model, session name) | `statusline` | **current** | `context-guard` (soft; epoch and checkpoint thresholds in the gauge when installed) |
 | …to share the status-line slot, so the data Claude Code hands the status line reaches the tools that read it whatever renders the line (today the `tee` command; a dispatcher that owns the slot is planned) | `statusline-hub` | **current** | — |
-| …a plan before you code: investigate → reviewed plan → verified implementation, and a standing librarian that takes custody of a repo's work (files, dispatches, reviews, lands) | `dev-flow` | **current** | `work-items` (soft; `librarian-mode` and `dev-cycle` find `wi` via the repo tree, or the installed plugin's copy; `dev-cycle` runs without it on a scratchpad record), `statusline` (soft; the fable fallback in `librarian-mode` and `dev-cycle` reads its rate-limit reset times), `context-guard` (soft; `investigate` offers a checkpoint-then-implement path when its checkpoint skill is present; `librarian-mode` answers its gate advisories with a checkpoint and rehydrates from its manifest and ledger; the fable fallback reads reset times from its older state record) |
+| …a plan before you code: investigate → reviewed plan → verified implementation, and a standing librarian that takes custody of a repo's work (files, dispatches, reviews, lands) | `dev-flow` | **current** | `work-items` (soft; `librarian-mode` and `dev-cycle` find `wi` via the repo tree, or the installed plugin's copy; `dev-cycle` runs without it on a scratchpad record), `statusline` (soft; the fable fallback in `librarian-mode` and `dev-cycle` reads its rate-limit reset times), `context-guard` (soft; `investigate` offers a checkpoint-then-implement path when its checkpoint skill is present; `librarian-mode` answers its gate advisories with a checkpoint and weighs its manifest and ledger when it rehydrates; the fable fallback reads reset times from its older state record) |
 | …repo-durable work items and a pluggable work source | `work-items` | **current** | — |
 | …isolated execution for agent sessions (containers, and the checkout/worktree convention) | `sandbox` | **current** | claude-sandbox repo (external) |
 | …unattended agent loops over a backlog ("ralph") | `ralph` | **current** | claude-sandbox repo (external; its `init-ralph` seeds `backlog.py`, and the loops run in its containers), `sandbox` (soft; its skill bootstraps and troubleshoots those containers), `work-items` (soft; the `wi` ↔ `backlog.yaml` bridge, when both stores are present) |
@@ -241,12 +241,12 @@ Which dev-flow skill:
 
 | Skill | Use it when… | Not when… |
 |---|---|---|
-| `investigate` | a scoped bug or feature needs a plan: one session reads the code, settles requirements with you, writes the series | the question is a landscape — you can name three to five categories of evidence and no single one suffices (`deep-investigation`) |
+| `investigate` | a scoped bug or feature needs a plan: one session reads the code, settles requirements with you, writes the series | the question is a broad landscape (`deep-investigation`) |
 | `deep-investigation` | a broad, open-ended question needs many sources: recon, a strategy doc, cheap-model lanes against a fixed contract, one synthesis | the problem is a scoped bug or feature (`investigate`) |
-| `implement` | a finished investigation series is ready to build, hands-on in this session | there is no plan yet (`investigate`), or you want the build delegated and reviewed (`dev-cycle`) |
+| `implement` | a finished investigation series is ready to build, hands-on in this session, fanning out to worktrees when the plan does | there is no plan yet (`investigate`), or you want the build delegated and reviewed (`dev-cycle`) |
 | `dev-cycle` | one change — item, series, plan or this conversation — should go to merge through a sub-agent build and a review gate | one session should own every change to the repo (`librarian-mode`) |
 | `librarian-mode` | one standing session should take custody of a repo's whole stream of work | the work is a one-off change (`dev-cycle`, or a worktree and a PR) |
-| `chain-of-verification` | a factual answer must be right: baseline, independent verification, revision | the question is about code to change (`investigate`) |
+| `chain-of-verification` | a factual answer must be right: baseline, independent verification, revision | the prompt has no falsifiable factual content, or speed matters more than accuracy |
 
 Soft dependency on `work-items`: the flow threads work items through `wi` when a store is
 present, and degrades to plain investigation series when it is not; `dev-cycle` then keeps

@@ -1,6 +1,6 @@
 ---
 name: investigate
-description: Investigate a problem before implementing it — resolve repos, survey branches, load project context, search and read the code, gather requirements with the user, then write a reviewed plan to .claude-sandbox/investigations/{slug}/ for the implement skill to consume. Use when the user says "investigate", "look into", "research this issue", "figure out how to fix", "plan this work", or picks an item off TODO.md. Also use to re-investigate an existing series. For a scoped bug or feature one session can read its way to a plan; a broad, open-ended landscape question — three to five categories of evidence, no single one enough — escalates to the deep-investigation skill.
+description: Investigate a problem before implementing it — resolve repos, survey branches, load project context, search and read the code, gather requirements with the user, then write a reviewed plan to .claude-sandbox/investigations/{slug}/ for the implement skill to consume. Use when the user says "investigate", "look into", "research this issue", "figure out how to fix", "plan this work", or picks an item off TODO.md. Also use to re-investigate an existing series. For a scoped bug or feature, one session can read its way to a plan; a broad, open-ended landscape question — three to five categories of evidence, no single one enough — escalates to the deep-investigation skill.
 disable-model-invocation: false
 allowed-tools: Read, Write, Edit, Glob, Grep, Bash, Agent, WebSearch, WebFetch, AskUserQuestion
 argument-hint: "<issue description | wi item id | TODO item>"
@@ -196,24 +196,9 @@ Record the resolved path and, where known, the remote for each repo.
 ## Step 3a — Survey open branches and choose the base
 
 Run this for every resolved repo. Discovering at implement time that the work should have been
-based on an in-flight branch is expensive; the survey is cheap.
-
-```bash
-git -C <repo> fetch --prune
-git -C <repo> remote show origin | grep 'HEAD branch'    # detect the default, don't assume
-git -C <repo> branch -a --sort=-committerdate \
-  --format='%(refname:short) %(committerdate:relative)' | head -30
-```
-
-A branch is a **strong candidate** when it touches the same area this work will target
-(`git -C <repo> diff --stat origin/<default>...<candidate>`), or is a rebased variant of one
-that does.
-
-Vet each candidate before offering it as a base:
-
-- **Not behind default** — `git -C <repo> log --oneline <candidate>..origin/<default>`. Any
-  commits listed mean the candidate is missing default-branch work.
-- Prefer the variant that is on current default and is the most complete superset.
+based on an in-flight branch is expensive; the survey is cheap. The commands, what makes a
+branch a strong candidate (it touches the same area, or is a rebased variant of one that
+does), and how to vet one are in `references/branch-survey.md`.
 
 **The default branch is the base unless proven otherwise.** When there is no overlap, say so
 in one line and move on — do not emit an empty branch-strategy table. Only when branching off
@@ -474,45 +459,20 @@ The plan exists but **nothing has been written to disk** — the last point wher
 cheap to close. Step 9 caught what you could anticipate before writing; this catches what the
 concrete plan surfaced, which is usually more and sharper.
 
-**1. Sweep your own draft.** Look for hedged language ("likely", "presumably", "should be",
-"may need"), any claim with no `file:line` or command behind it, a choice left implicit, a
-section written thinly because you did not know, and anything already sitting in Open
-Questions. Each is a candidate.
+The full procedure — the candidate signals, the classification table, the verification
+agent's brief, the defer wording — is in `references/open-question-sweep.md`. Follow it; in
+short:
 
-**2. Classify every candidate:**
-
-| Class | Test | Handling |
-|---|---|---|
-| **Agent-verifiable** | The answer exists somewhere reachable — code, `git`, a config, a running system, docs | Batch into one background agent (step 3) |
-| **User decision** | An opinion, a scope call, a preference. "Should we also…", "is X in scope", "which behaviour" | Ask the user (step 4) |
-| **External / blocked** | Depends on someone else's decision, or a system you cannot reach | Straight to Open Questions, with owner and blocks-or-not |
-
-A question that is both — verifiable in principle, but only matters given a decision — goes to
-the user first. Do not verify a branch that may be discarded.
-
-**3. Launch ONE background agent for the verifiable batch — first**, so it works while the
-user reads. One agent for the whole batch, not one per question; the point is to keep
-high-volume tool output out of your context and return only findings. Use a fresh
-`general-purpose` agent with a self-contained brief: the questions, the repo paths and their
-SHAs, and what counts as verified (a command's output, a `file:line`, a doc quote). Require it
-to report **answer / evidence / confidence** per question, and to say "could not determine"
-rather than guess. Tell it to flag any *new* uncertainty it finds.
-
-**4. Meanwhile, ask the user the decision-class questions**, per **Asking at a gate**. Every
-one carries a defer option, offered as a dialog option or, in a list, as a closing line: any
-item may be answered "leave open". Its wording:
-
-> **Leave open and record in the investigation** — defer this; it will be listed under Open
-> Questions with its owner and whether it blocks implementation.
-
-Deferring is one click or one word, never a negotiation. Some questions genuinely need data
-nobody has yet, and forcing an answer produces a worse record than an honest Open Question.
-
-**5. Fold in and loop.** Verified facts become findings **with their evidence**; decisions
-become **Confirmed Assumptions**; deferred and external items become **Open Questions** with
-owner and blocks-or-not. If either source produced a *new* question, run another round —
-verification frequently reveals a second-order question. **Stop** when a round yields nothing
-new, or when everything remaining is deferred or external.
+1. **Sweep your own draft** for candidates: hedged language, claims with no `file:line` or
+   command behind them, implicit choices, thin sections, anything already in Open Questions.
+2. **Classify each**: agent-verifiable, user decision, or external/blocked (straight to Open
+   Questions with owner and blocks-or-not). One that is both goes to the user first.
+3. **Launch ONE background agent for the whole verifiable batch — first**, so it works while
+   the user reads.
+4. **Meanwhile, ask the user the decision-class questions**, per **Asking at a gate**, every
+   one with a defer option.
+5. **Fold in and loop** — findings with evidence, Confirmed Assumptions, Open Questions —
+   until a round yields nothing new or everything remaining is deferred or external.
 
 Report the outcome in one line at the Step 12 gate — e.g. *"Sweep: 5 candidates → 2 verified,
 2 decided by you, 1 deferred."* — so the reviewer can see the section was earned.
@@ -603,14 +563,15 @@ sections reflect the state after **all** passes, not a copy of the new file's se
 **Sweep:** <N candidates → X verified, Y decided, Z deferred>
 
 Next:
-- dev-flow:implement <slug>
-- context-guard:checkpoint, /clear, then dev-flow:implement <slug> in the fresh session
-- dev-flow:dev-cycle <slug> — a sub-agent builds it in a worktree, reviewed before merge
+- /dev-flow:implement <slug>
+- /context-guard:checkpoint, /clear, then /dev-flow:implement <slug> in the fresh session
+- /dev-flow:dev-cycle <slug> — a sub-agent builds it in a worktree, reviewed before merge
 ```
 
-Print the checkpoint line only when `context-guard:checkpoint` is in this session's skill
-list: installed and enabled, with no config path to go stale. It pays after a
-context-heavy pass, since implement reads the series, not the conversation.
+Print the checkpoint line only when `context-guard:checkpoint` appears in this session's
+list of available skills, which means it is installed and enabled. Check that list, not a
+config path, which can go stale. The line pays after a context-heavy pass, since implement
+reads the series, not the conversation.
 
 ---
 
@@ -641,72 +602,15 @@ cost you time during the run.
 
 ## Edge Cases
 
-- **No argument and nothing in the conversation to anchor on** — ask for an observable symptom,
-  a component, or a goal. Do not guess a problem.
-- **Description is thin** — expected. Step 2 fills it in. Only stop when there is nothing to
-  anchor on at all.
-- **`TODO.md` does not exist** — say so, treat the argument as ad hoc text, do not create it.
-- **Slug already exists** — re-investigation. Read the whole series first, confirm intent, then
-  write the *next* serial. Never edit an existing file.
-- **`.claude-sandbox/` not scaffolded** — warn once, continue, recommend `claude-sandbox init`.
-  Never create `.claude-sandbox/CLAUDE.md`.
-- **Repo has no local checkout** — ask: path, clone, or exclude. Never clone silently.
-- **Branch survey finds nothing** — one line saying every repo bases off its default. No empty
-  table.
-- **A non-default base looks right** — explicit `AskUserQuestion` consent, never silent.
-- **Requirements gate unresolved** — do not build the plan. Loop until the user confirms.
-- **An answer at the gate opens a question the code can settle** — go back to Steps 4–8 and
-  settle it, then resume the gate. Interleaving is expected.
-- **A path the user names does not exist** — inside a claude-sandbox container only the project
-  and configured mounts are visible, and a symlinked host path appears elsewhere. Check the
-  `mounts:` cascade before reporting it unreachable; the `sandbox` skill has the procedure.
-- **Tempted to write an Open Question** — triage it first
-  (`references/investigation-format.md`). Verifiable → verify it. Requirement → ask at Step 9.
-- **Background agent returns "could not determine"** — that becomes an Open Question, or a user
-  question if a decision would settle it. Never promote a guess to a finding.
-- **User defers every question** — legitimate. Record each with owner and blocks-or-not, and
-  do not re-ask on the next loop iteration.
-- **Sweep finds no candidates** — say so in one line at the gate and move on.
-- **No relevant code found anywhere** — still write the plan; say so in Existing Architecture
-  and suggest where else to look.
-- **User rejects at the gate** — nothing written. Confirm that to the user.
-- **Problem turns out to be several problems** — say so, and propose one series each rather
-  than one plan covering all of them. Cross-reference the sibling slugs in each Out of Scope.
+Read `references/edge-cases.md` when a run goes off the main path. Most entries restate a
+step's rule; a few live only there — a path the user names that is missing inside a
+container, a user who defers every question, a sweep with no candidates, a problem that turns
+out to be several.
 
 ---
 
 ## Quality Criteria
 
-- The scoping gate ran before exploration, or its omission was stated and justified.
-- Project context is loaded before searching, trimmed to what applies, with a reason per
-  omission.
-- Context-heavy exploration was delegated to subagents; `file:line` findings came back, not
-  file dumps.
-- Claims about what the code does are backed by having run the build or tests, not by reading
-  alone, wherever running was possible.
-- Where the plan rests on a low-level nuance of a tool's behaviour, the tool's **source** was
-  read and cited — or the claim is marked as documentation-only for `implement` to re-verify.
-- Where it rests on a fact outside the codebase, the **primary** source was opened and cited,
-  or the claim is marked secondhand; and any such fact contradicted by the live system was
-  reconciled rather than left standing.
-- Where the plan offered genuinely-open alternatives, a discriminating measurement was taken
-  before one was recommended — or its absence is stated and the dependent choice flagged.
-- Any new convention the work introduces was checked against existing ones first; adopting an
-  existing convention is the default, and diverging is stated and justified in the plan.
-- The requirements gate **blocked** the plan and looped until the user confirmed there was
-  nothing left — including looping back to exploration when an answer opened a question the
-  code could settle.
-- The sweep ran against the drafted plan before anything was written: candidates classified,
-  the verifiable batch in **one** background agent launched *before* the user was asked,
-  a defer option on every user question, looping until a round produced nothing new. Its
-  outcome is reported at the gate.
-- Open Questions contain **only** genuinely external or blocked items, each naming an owner
-  and whether it blocks implementation.
-- Findings cite `file:line`, and are flagged as point-in-time.
-- Blast radius is assessed and stated — including an explicit "self-contained" when it is.
-- The file follows the standard outline and the writing rule, and carries a concrete
-  **Proposed Fix** or **Implementation Approach**.
-- Serials are append-only: a re-investigation writes the next serial with a `Supersedes` block
-  and edits nothing.
-- `INDEX.md` was rewritten wholesale with a provenance line carrying per-repo SHAs.
-- The review gate fired before anything was written to disk.
+The checklist a finished run is held to — every gate, sweep, citation and serial rule
+restated as an outcome — is in `references/quality-criteria.md`. Hold the run to it before
+the Step 15 report.
