@@ -46,3 +46,5 @@ From the e832 review (2026-09-19), all low/nit, no data loss: (1) _append_sectio
 - [high, pre-existing on main] import --format backlog-yaml copies multi-line YAML (review_feedback: |, titles, blocked_reason) into front matter → whole store unreadable (next/ls/lint exit 3). The writer-level guard covers it if import folds or rejects such values — folded into this round.
 - [nit] lookahead O(n^2) in unclosed openers.
 - dispatch: implementer opus — fix round 2 (resume, same tier)
+- round 2 fix 0e1593d: set_handoff/append_note refuse (exit 3) when the section is only inside a fence; one-line check at emit_front for every front-matter value, whole batch renders before any write; import folds multi-line values (notes excepted); linear fence scan. 96 tests; all 133 live items render unchanged in memory.
+- dispatch: reviewer opus — round 3 (resume)
