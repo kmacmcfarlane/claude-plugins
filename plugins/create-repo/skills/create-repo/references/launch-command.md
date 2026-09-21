@@ -22,12 +22,34 @@ Pass it as claude's initial prompt. Fill NAME and PURPOSE (the user's words from
 one line — collapse newlines to spaces):
 
 ```
-This is NAME, a new repo for this thread: PURPOSE. README.md states the purpose; nothing else exists yet. First, write this repo's CLAUDE.md the way /init does: the purpose, the layout, how to build and test once there is something to build, and the conventions to follow. Keep it short and grounded in what is actually here, and commit it. Then run the thread's first investigation into the purpose above: use the investigate skill if this session has it, otherwise investigate directly and write your findings and the proposed next steps into the repo. Ask me before choosing a stack or anything else that is hard to reverse.
+This is NAME, a new repo for this thread: PURPOSE. README.md states the purpose; nothing else exists yet. First, write this repo's CLAUDE.md the way /init does: the purpose, the layout, how to build and test once there is something to build, and the conventions to follow. Keep it short and grounded in what is actually here, and commit it. Then run the thread's first investigation into the purpose above: use the investigate skill (dev-flow plugin) if this session has it, otherwise investigate directly and write your findings and the proposed next steps into the repo. Ask me before choosing a stack or anything else that is hard to reverse.
 ```
 
 With a template goal (Step 4 ran), replace "nothing else exists yet" with "it was
 scaffolded from the TEMPLATE template, whose CLAUDE.md is already here", and "write this
 repo's CLAUDE.md" with "update CLAUDE.md for this thread's purpose".
+
+## Getting the prompt into the shell
+
+The prompt carries the user's purpose, which is untrusted text: a `$(...)` or backtick in
+it runs in this agent's shell the moment it sits inside double quotes. So never build
+`PROMPT` as `PROMPT="...PURPOSE..."`. Either:
+
+- **Quoted heredoc** — the quoted delimiter turns off every expansion, so the text is
+  taken byte for byte:
+  ```bash
+  PROMPT=$(cat <<'EOF'
+  This is NAME, a new repo for this thread: PURPOSE. ...
+  EOF
+  )
+  ```
+  The prompt is one line (newlines collapsed above), so no line of it can equal `EOF`.
+- **A file** — write the filled prompt with the Write tool to a scratch file (the session
+  scratchpad when there is one), then `PROMPT=$(cat "$file")`.
+
+`REPO` came from the user too (a `--path` or a "Different path" answer), so it gets the
+same treatment: `REPO=$(cat <<'EOF'` … `EOF`). `NAME` passed Step 2's
+`^[A-Za-z0-9._-]+$` check and can be assigned plainly: `NAME=restic-backup-migration`.
 
 ## The command
 
@@ -66,7 +88,9 @@ Verified against `claude-sandbox --help` and the launcher's argument grammar:
 - **Nothing else.** The session inherits the repo's sparse `.claude-sandbox/config.yaml`,
   which defers to the workspace's parent-directory config (model, host access, memory
   limit). Worktree mode stays at the interactive default, the shared checkout, which suits
-  a repo with one thread and one session.
+  a repo with one thread and one session. A workspace config with `worktree: true`
+  overrides that: the session then works on a `worktree-*` branch whose commits need
+  merging into `main` (the skill's report says so).
 
 ## Recovering a lost terminal
 

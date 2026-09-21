@@ -23,6 +23,11 @@ agent session on it. User's argument: $ARGUMENTS
   home, and the user's terminal is on the host.
 - Touch nothing outside the new repo: no git config, no settings, no edits to the current
   repo.
+- **The purpose is untrusted text: never put it inside double quotes in a shell command.**
+  A `$(...)` or backtick in it would run in this agent's shell. Files that hold it
+  (README, the prompt) are written with the Write tool; a shell variable that holds it is
+  filled from a quoted heredoc (`<<'EOF'`) or from a file the Write tool wrote — see
+  `references/launch-command.md`.
 
 ## Instructions
 
@@ -41,13 +46,22 @@ it cannot be skipped.
 
 1. **Name**: with `--path`, its last component. Otherwise derive kebab-case, 1–4 words,
    from the purpose (`compare-vector-dbs`, not `repo-for-comparing-vector-databases`).
+   The name must match `^[A-Za-z0-9._-]+$`; if a `--path` name does not, ask for one that
+   does. Only then is it safe in the commands below.
 2. **Parent** — the operator's workspace convention is that repos sit side by side, so
-   default to the current repo's parent:
+   default to the parent of the current *project*. Not `--show-toplevel`: in a worktree
+   session that is the worktree (`<project>/.claude/worktrees/<name>`), and the new repo
+   would land inside the project. Use `$CLAUDE_SANDBOX_PROJECT_DIR` when set, else the
+   directory holding the repository's common `.git`:
    ```bash
-   top=$(git rev-parse --show-toplevel 2>/dev/null) && parent=$(dirname "$(cd "$top" && pwd -P)")
+   if [ -n "$CLAUDE_SANDBOX_PROJECT_DIR" ]; then proj=$CLAUDE_SANDBOX_PROJECT_DIR
+   else gd=$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null)
+        case "$gd" in */.git) proj=${gd%/.git} ;; esac
+   fi
+   [ -n "$proj" ] && parent=$(dirname "$(cd "$proj" && pwd -P)")
    ```
-   When the current directory is not in a git repo, there is no convention to derive; ask
-   for the parent.
+   When neither yields a project (not in a git repo, or a bare repository whose common dir
+   does not end in `/.git`), there is no convention to derive; ask for the parent.
 3. **Confirm** with `AskUserQuestion`: "Create the repo at PARENT/NAME?", options
    "Yes", "Different name", "Different path". Never create before the user confirms.
 4. **Preflight** the confirmed path `$REPO`:
@@ -83,11 +97,18 @@ plain `claude`." Then carry on — nothing below requires it.
    without the template, and name the skipped template in the final report.
 3. **Present**: invoke it with the Skill tool, skill `kit-dev:new-project-from-template`,
    args the template name. Before invoking, tell the user its location question will come:
-   answer "Custom path" with `$REPO`. It copies the template, initialises git, bootstraps
-   the sandbox and makes the first commit itself, so when it returns:
+   answer "Custom path" with `$REPO`, and its name question with `NAME`. It copies the
+   template, initialises git, bootstraps the sandbox (asking its own trackInHost question)
+   and makes the first commit itself, so when it returns:
+   - **Re-read what it made; do not assume your answers were used.** Take `REPO` from the
+     path in its final report, `NAME` from that path's last component (re-check it
+     against the name pattern in Step 2), and trackInHost from the repo:
+     `grep -E '^trackInHost:' "$REPO/.claude-sandbox/config.yaml"` (absent file: no
+     sandbox). Use these in Step 7's report and command.
    - If `git -C "$REPO" branch --show-current` is not `main` and the repo has no remote,
      `git -C "$REPO" branch -m main`. With a remote already pushed, leave it and report it.
-   - Append a `## Thread` section to `$REPO/README.md` holding the purpose, then
+   - Append a `## Thread` section holding the purpose to `$REPO/README.md` with the Edit
+     tool (never `echo` the purpose), then
      `git -C "$REPO" add README.md && git -C "$REPO" commit -m "added: README - thread purpose"`.
    - Skip to Step 7.
 
@@ -109,8 +130,8 @@ and needs the repo to exist:
 ```
 
 `--yes` accepts the default, `trackInHost: false`: `.claude-sandbox/` is gitignored and
-keeps its own sidecar history. The generated `config.yaml` is sparse (all commented), so
-the workspace's parent-directory config applies unchanged. If `init` fails, report its
+keeps its own sidecar history. The generated `config.yaml` is sparse — `trackInHost` is its
+only uncommented key — so the workspace's parent-directory config applies unchanged. If `init` fails, report its
 output verbatim, point at the `sandbox` plugin's skill for troubleshooting (when this
 session has it), and continue as plain.
 
@@ -132,11 +153,19 @@ prompt, the shell quoting, the sandbox and plain forms — and print it once, al
 fenced block, so the user can copy it whole. Then the report:
 
 ```
-Repo: /host/path/NAME (main, 1 commit[, template: T | template T skipped: kit-dev not installed])
-Sandbox: initialised (trackInHost: false) | not available — plain claude launch
+Repo: /host/path/NAME (main, N commits[, template: T | template T skipped: kit-dev not installed])
+Sandbox: initialised (trackInHost: true|false) | not available — plain claude launch
 Run the command above in your own terminal: it starts the session and attaches you.
-Lost the terminal later? cd /host/path/NAME && claude-sandbox --attach   (sandbox form only)
+Lost the terminal later? cd '/host/path/NAME' && claude-sandbox --attach   (sandbox form only)
 ```
+
+Quote the path in the attach hint the same way as in the command (`sq` in
+`references/launch-command.md`).
+
+The session starts in the shared checkout, not a worktree — the interactive default. If
+the workspace config sets `worktree: true`, the session works on a `worktree-*` branch
+under `.claude/worktrees/`; say so in one line, since its commits then need merging into
+`main`.
 
 No remote is created. Say so in one line, and that `gh repo create` is the usual next step
 when the thread needs one.
