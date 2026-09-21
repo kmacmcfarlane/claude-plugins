@@ -186,11 +186,15 @@ sensor files. They are also pruned automatically after 30 days.
 ## Known limitations
 
 The status line does not render while Claude Code shows a modal prompt — a permission
-request, an `AskUserQuestion` dialog, or plan approval. This is harness behavior, not a
-plugin bug: the docs state it "temporarily hides during certain UI interactions, including
-autocomplete suggestions, the help menu, and permission prompts"
-(`https://code.claude.com/docs/en/statusline`). There is no setting to keep it visible.
-Tracked upstream: `anthropics/claude-code#21349`, `#26847`, `#30232`.
+request (documented) and, in practice, an `AskUserQuestion` dialog or plan approval. This
+is harness behavior, not a plugin bug: the [docs](https://code.claude.com/docs/en/statusline)
+state it "temporarily hides during certain UI interactions, including autocomplete
+suggestions, the help menu, and permission prompts." There is no setting to keep it
+visible. Upstream requests, all closed with the docs unchanged:
+[#21349](https://github.com/anthropics/claude-code/issues/21349) (closed as completed, with
+no note on what shipped), [#26847](https://github.com/anthropics/claude-code/issues/26847)
+(duplicate of #21349), [#30232](https://github.com/anthropics/claude-code/issues/30232)
+(closed as stale).
 
 ## Troubleshooting
 
