@@ -87,8 +87,8 @@ Stop if the composed plan has **no Proposed Fix, Implementation Approach or Reco
 
 When the invocation says to run without stopping, the gates change form rather than vanishing:
 
-- **Gates 1 and 6** — decide yourself, and record each decision under **Confirmed Assumptions**
-  in the outcome file, framed as something a reviewer may overturn.
+- **Gate 1 (Step 6, the plan)** — decide yourself, and record each decision under
+  **Confirmed Assumptions** in the outcome file, framed as something a reviewer may overturn.
 - **Gate 2 (the diff)** — approve only on a passing verification at the planned tier. A failing
   or incomplete verification is still a stop: report it and leave the work uncommitted.
 - **Step 10a (terminal action)** — do the least irreversible thing the invocation authorises.
@@ -113,13 +113,18 @@ numbered; a renumber updates this list in the same commit.
 - **Step 4 (Resolve repos and re-verify the base branch)** — skipped: no fetch, no branch,
   no worktree. The given base holds. Every edit goes in the given worktree; nothing is run
   or written in the main checkout.
-- **Step 6 (gate 1) and Step 9 (gate 2)** — non-interactive. Gate 2 passes on verification
-  at the planned tier; the orchestrator's review replaces its approval. A failing
-  verification is still a stop, reported, never committed around.
+- **Step 6 (gate 1) and Step 9 (gate 2)** — non-interactive. Gate 1's decisions go under
+  DEVIATIONS in the return, since there is no outcome file to hold them. Gate 2 passes on
+  verification at the planned tier; the orchestrator's review replaces its approval. A
+  failing verification is still a stop, reported, never committed around.
 - **Step 7 (Implement)** — inline only, in the given worktree: no fan-out, no
-  `EnterWorktree`, no integration branch, no merge. A plan revision or a missed in-scope
-  issue is reported (DEVIATIONS, OPEN QUESTIONS), never recorded on the series or silently
-  built.
+  `EnterWorktree`, no integration branch, no merge. Before the first edit, regenerate
+  anything checked in that the base may carry stale (codegen, mocks, generated clients) in
+  the given worktree; a diff means the base shipped stale ones — reconcile it and say so
+  under DEVIATIONS. A plan revision or a missed in-scope issue is reported (DEVIATIONS,
+  OPEN QUESTIONS), never recorded on the series or silently built.
+- **Step 8 (Verify)** — a step that needs a human action is not a wait: commit once the
+  rest passes at the planned tier, and list the human-gated step under COULD NOT DO.
 - **Step 10 (Finalize)** — only **10d (Documentation follow-ups)** runs, inside the worktree
   and inside the same change, without the propose step: a doc the change made wrong is part
   of the change. It edits existing docs only, and a fix outside the orchestrator's declared
@@ -128,7 +133,7 @@ numbered; a renumber updates this list in the same commit.
 - **Step 11 (Report), Step 12 (Retrospective)** — replaced by the return below; no retro.
 - **Questions** — never `AskUserQuestion`. Take the least irreversible choice and record it
   under DEVIATIONS; one that blocks goes under OPEN QUESTIONS, with `NEEDS_CONTEXT` when you
-  cannot go on. A verification needing a human action is COULD NOT DO, not a wait.
+  cannot go on.
 
 Stop after verify and commit, and return this shape (a brief that adds fields, such as
 COMMIT, wins):

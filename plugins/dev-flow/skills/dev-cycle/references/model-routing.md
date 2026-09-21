@@ -215,8 +215,8 @@ every role on that item.
 `list`." Code inside Ground: opus; no security surface, so fable does not apply.
 Implementer opus; reviewer opus. Both briefs carry the Checks binding (say `go test`
 over every package and `make lint`) and the Workflow binding; a feature, so the
-implementer uses /investigate then /implement's build and verify steps in its worktree,
-non-interactively, per the brief's dev-flow block — none of their git or dialogs. "Fix a
+implementer runs /investigate then /implement in its worktree, each in its orchestrated
+mode (each skill's § Running under an orchestrator) — none of their git or dialogs. "Fix a
 typo in the README": docs only, sonnet, reviewer opus. "Let `run` bind-mount the host's
 docker socket": a non-trivial change to a mount and a socket, fable for both roles. Item
 body for the first:
