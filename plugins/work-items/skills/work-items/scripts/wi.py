@@ -239,13 +239,13 @@ def _fence_closes(content, run):
                 and not content[m.end():].strip())
 
 
-def _heading_flags(lines):
-    """For each line, True when it is a `## ` section heading: it starts with
-    `## ` and is not inside a fenced code block (``` or ~~~). An opener with
-    no matching closer is not a fence — it must not hide every later heading
-    (a real `## Handoff` after a pasted, unclosed block stays the section)."""
+def _fence_spans(lines):
+    """(opener index, closer index) of every fenced code block (``` or ~~~).
+    An opener with no matching closer is not a fence — it must not hide
+    every later heading (a real `## Handoff` after a pasted, unclosed block
+    stays the section)."""
     contents = [line.rstrip("\r\n") for line in lines]
-    flags, i, n = [False] * len(contents), 0, len(contents)
+    spans, i, n = [], 0, len(contents)
     # per fence char, the shortest run already known to have no closer
     # anywhere after an earlier opener: a later opener at least that long
     # has none either, so each such lookahead is skipped (linear, not n²)
@@ -257,11 +257,20 @@ def _heading_flags(lines):
             while j < n and not _fence_closes(contents[j], run):
                 j += 1
             if j < n:
-                i = j + 1  # opener..closer inclusive are code, not headings
+                spans.append((i, j))  # opener..closer inclusive are code
+                i = j + 1
                 continue
             no_closer[run[0]] = len(run)
-        flags[i] = contents[i].startswith("## ")
         i += 1
+    return spans
+
+
+def _heading_flags(lines):
+    """For each line, True when it is a `## ` section heading: it starts with
+    `## ` and is not inside a fenced code block (see _fence_spans)."""
+    flags = [line.startswith("## ") for line in lines]
+    for i, j in _fence_spans(lines):
+        flags[i:j + 1] = [False] * (j + 1 - i)
     return flags
 
 
@@ -330,13 +339,20 @@ def _content(line):
     return line.rstrip("\r\n")
 
 
-def _fenced_only(lines, name):
-    """True when `## name` exists only as a column-0 line inside a fenced
-    block. An unclosed opener can pair with a later block's opener and turn
-    the real heading into code; appending a second section then would split
-    the record, so the caller refuses instead."""
-    return any(_content(line).startswith("## ")
-               and _content(line)[3:].strip() == name for line in lines)
+def _fence_hides_section(lines, name):
+    """True when a fence looks like it swallowed the real `## name` section:
+    a column-0 `## name` line inside it is followed, in the same fence, by
+    another column-0 `## ` line. That is the sign of an unclosed opener
+    pairing with a later block's fence across sections; appending a second
+    section then would split the record, so the caller refuses. A closed
+    example holding only `## name` (and no later heading) is left alone and
+    a real section is appended as usual."""
+    for i, j in _fence_spans(lines):
+        hits = [k for k in range(i + 1, j) if lines[k].startswith("## ")]
+        for pos, k in enumerate(hits):
+            if _content(lines[k])[3:].strip() == name and pos + 1 < len(hits):
+                return True
+    return False
 
 
 def _section_span(lines, name):
@@ -425,10 +441,11 @@ class Item:
         self.body = body + f"## {name}" + eol + text.replace("\n", eol) + eol
 
     def _refuse_fenced(self, lines, name):
-        if _fenced_only(lines, name):
+        if _fence_hides_section(lines, name):
             raise WiError(3, f"{self.path or self.id}: '## {name}' is inside a "
-                             "fenced code block (an unclosed ``` or ~~~ pairs "
-                             "with a later fence); close the fence, then retry")
+                             "fenced code block that runs across sections; add "
+                             f"a real '## {name}' heading outside the fence, or "
+                             "close an unclosed ``` or ~~~ above it, then retry")
 
     def set_handoff(self, h):
         """Rewrite only the four `- key:` bullets of `## Handoff` (the first

@@ -133,9 +133,11 @@ text after a block belongs to that block. A `## ` line inside a fenced code
 block (```` ``` ```` or `~~~`) is text, not a heading. A fence opener with no
 matching closer is not a fence: it does not hide the headings after it. An
 unclosed opener can still pair with a later block's fence and hide the
-headings between them; when `## Handoff` or `## Notes` then exists only
-inside that span, `handoff`, `claim` and `done` exit 3 and write nothing
-rather than add a second section — close the fence and retry.
+headings between them. When `## Handoff` or `## Notes` then exists only
+inside such a fence, followed there by another `## ` line, `handoff`,
+`claim` and `done` exit 3 and write nothing rather than add a second
+section: add a real heading outside the fence, or close the unclosed one.
+A closed example holding only that heading is text; the section is added.
 Every rewriting command edits the body in place: bytes outside the lines it
 owns — trailing unheaded text, spacing between sections, section order, CRLF
 line endings — are kept exactly. Front matter is re-emitted in canonical form.
@@ -146,6 +148,9 @@ written — for a command that writes several items, none of them. The
 imports fold instead: `import-todo` folds a title wrapped across lines, and
 `import --format backlog-yaml` collapses the whitespace of every story value
 except `notes` (a `review_feedback: |` block scalar becomes one line).
+Imported `notes` are markdown and land in the body as is: a `## Handoff`
+line inside them becomes a real section, and one above the imported
+`doing:`/`next:` lines shadows the imported Handoff.
 
 ## Session-start rule
 

@@ -854,7 +854,34 @@ class TestBodyPreservation(WiTestCase):
                 r = run(["claim", self.IID], self.root)
                 self.assertEqual(r.returncode, 3, r.stdout + r.stderr)
                 self.assertIn("'## Notes' is inside a fenced code block", r.stderr)
+                self.assertIn("add a real '## Notes' heading outside the fence",
+                              r.stderr)
+                self.assertIn("close an unclosed ``` or ~~~ above it", r.stderr)
                 self.assertEqual(path.read_bytes(), raw)
+                path.unlink()
+
+    def test_closed_fenced_example_does_not_block_appending(self):
+        """A closed example holding `## Notes` / `## Handoff` (and no later
+        heading in the same fence) is text: the real section is appended."""
+        example = ("\nDesc.\n\n```markdown\n## Handoff\n- doing: example\n"
+                   "```\n\n~~~\n## Notes\n- 2020-01-01 example\n~~~\n")
+        for eol in ("\n", "\r\n"):
+            with self.subTest(eol=repr(eol)):
+                path = self.write_raw(example, eol, "status: todo\n")
+                before = self.split_body(path.read_bytes().decode(), eol)
+                self.wi_ok(["claim", self.IID])
+                self.wi_ok(["handoff", self.IID, "--doing", "D", "--next", "N"])
+                self.wi_ok(["done", self.IID, "--note", "ok"])
+                after = self.split_body(path.read_bytes().decode(), eol)
+                self.assertTrue(after.startswith(before), after)
+                tail = after[len(before):].replace(eol, "\n")
+                self.assertEqual(
+                    tail, f"\n## Notes\n- {wi.today()} claimed by tester@local\n"
+                          f"- {wi.today()} done: ok\n\n## Handoff\n- doing: D\n"
+                          "- next: N\n- blocked: —\n- learned: —\n")
+                item = wi.Item.parse(path.read_bytes().decode())
+                self.assertEqual([n for n, _ in item.sections], ["Notes", "Handoff"])
+                self.wi_ok(["lint"])
                 path.unlink()
 
     def test_many_unclosed_openers_scan_linearly(self):
