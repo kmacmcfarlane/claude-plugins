@@ -21,6 +21,11 @@
       "description": "Always-on status line — context left, plan usage limits, model and session name at a glance (optional: works with context-guard, which adds its epoch and checkpoint thresholds to the gauge)."
     },
     {
+      "name": "statusline-hub",
+      "source": "./plugins/statusline-hub",
+      "description": "The status-line slot, shared — a tee command that records the context depth and plan usage Claude Code hands the status line into the sensor record other tools read, whatever renders your line (a ccstatusline Custom Command, a Starship custom module, or a wrapper around your own command). First piece of the shared-slot dispatcher."
+    },
+    {
       "name": "dev-flow",
       "source": "./plugins/dev-flow",
       "description": "Plan-first development for agent sessions — investigation series, reviewed plans, verified implementation, a sub-agent dev cycle that carries one change from plan to merge, multi-agent research fan-outs, chain-of-verification fact-checking, and a standing librarian that takes custody of a repo's work: files, dispatches, reviews and lands (soft dependencies: work-items; statusline, for rate-limit reset times)."
