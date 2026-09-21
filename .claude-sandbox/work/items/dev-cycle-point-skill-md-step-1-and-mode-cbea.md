@@ -19,3 +19,10 @@ From the F3 (4a6b) implementer, 2026-09-19: dev-cycle/SKILL.md ~l.90 and l.97-98
 - next: —
 - blocked: —
 - learned: —
+
+## Carried from F3 review (lows)
+- investigate mode lists inputs as Series home + base only, but its Step 6 bullet relies on "a worktree the orchestrator gave": add "and, when it has one, the worktree".
+- implement mode: gate decisions have no home once 10b (outcome file) is off: say they go under DEVIATIONS.
+- implement mode: dropping EnterWorktree also drops Step 7's "regenerate stale checked-in artifacts first": restore it for the given worktree.
+- implement mode: a human-gated verification — say commit at the planned tier and list the gap under COULD NOT DO.
+- implement non-interactive section says "Gates 1 and 6" (likely "1 and 2").
