@@ -3,7 +3,7 @@ name: usage-report
 description: Report Claude Code token spend across conversations — per session, per model and per sub-agent dispatch — from the local transcripts, so model routing can be measured. Stub. The parser, the versioned price table and its tests are in place; the report tables, the worked instructions and the catalog row land in the follow-up feature that completes this skill.
 disable-model-invocation: true
 allowed-tools: Bash, Read
-argument-hint: scan | summary [--all] [--since 7d] [--json]
+argument-hint: "scan | summary [--all] [--since 7d] [--json]"
 ---
 
 # Usage report

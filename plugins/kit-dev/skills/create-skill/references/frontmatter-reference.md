@@ -54,10 +54,10 @@ description: What it does and when to use it. Include specific trigger phrases.
 ```yaml
 ---
 name: skill-name
-description: [required description]
+description: "[required description]"
 allowed-tools: Read, Write, Edit
 model: sonnet
-argument-hint: [file-path] [options]
+argument-hint: "[file-path] [options]"
 disable-model-invocation: true
 license: MIT
 compatibility: Requires network access and Python 3.10+
@@ -103,6 +103,7 @@ allowed-tools: Bash(git:*), Bash(npm:*), Read
 
 ### argument-hint (house-required)
 - Brief hint shown in autocomplete
+- Always a double-quoted string: `argument-hint: "[file-path] [options]"`. Unquoted, a value that starts with `[` is a YAML flow sequence: `[file-path]` loads as a list, not a string, and `[file-path] [options]` fails to parse, taking the whole frontmatter with it, so a stricter YAML loader drops the skill without a word. Escape an inner double quote as `\"`. The dev-cycle review checklist's strict-YAML check (in the dev-flow plugin) catches both.
 - Use square brackets for each argument: `[file-path]`, `[issue-number] [options]`
 - Use descriptive names, not `arg1`/`arg2`
 
@@ -152,6 +153,9 @@ description: "Does things
 
 # Wrong - name has spaces or capitals
 name: My Cool Skill
+
+# Wrong - unquoted argument-hint starting with [ (a list; with a second [...] group, a parse error)
+argument-hint: [file-path] [options]
 
 # Risky - pre-approves every Bash command, side effects included
 allowed-tools: Bash

@@ -3,7 +3,7 @@ name: create-skill
 description: Bootstrap a new Claude Code skill from a description. Use when the user wants to create a new skill/slash command.
 disable-model-invocation: true
 allowed-tools: Read, Write, Glob, Grep, Bash
-argument-hint: <description of the skill to create>
+argument-hint: "<description of the skill to create>"
 ---
 
 # Create a new Claude Code skill
@@ -39,7 +39,7 @@ Before writing any skill, consult `references/best-practices.md` for Anthropic's
      - Read-only research: `Read, Glob, Grep`
      - Code modification: `Read, Write, Edit, Glob, Grep, Bash`
      - Bash-heavy: `Bash, Read, Glob`
-   - `argument-hint`: a brief hint shown in autocomplete (e.g. `<file-path>`, `<issue-number>`)
+   - `argument-hint`: a brief hint shown in autocomplete (e.g. `<file-path>`, `<issue-number>`), always written as a double-quoted string
    - `context: fork` if the skill should run in an isolated subagent
    - Optional fields: `model`, `license`, `compatibility`, `metadata` (author, version, mcp-server, category, tags). House rule: every skill declares the five keys in the structure below; any other field must be one the Claude Code skills docs define. The set is closed because undocumented keys are usually typos, and uploads to claude.ai or the Skills API hard-fail on unknown keys. The allowed list lives in `references/frontmatter-reference.md`.
 
@@ -55,7 +55,7 @@ Before writing any skill, consult `references/best-practices.md` for Anthropic's
    description: <What it does. When to use it. Key trigger phrases.>
    disable-model-invocation: <true|false>
    allowed-tools: <comma-separated tool list>
-   argument-hint: <hint>
+   argument-hint: "<hint>"
    ---
 
    # <Title>
@@ -104,6 +104,7 @@ Before writing any skill, consult `references/best-practices.md` for Anthropic's
    - Folder name must match the `name` field in frontmatter.
    - Do NOT include a `README.md` inside the skill folder. All documentation goes in `SKILL.md` or `references/`.
    - No XML angle brackets anywhere in frontmatter.
+   - Double-quote `argument-hint`, always: `argument-hint: "[file-path] [options]"`. An unquoted value that starts with `[` is a YAML flow sequence, so `[file-path]` loads as a list, not a string, and with a second `[...]` group after it the whole frontmatter fails to parse and the skill silently disappears in stricter YAML loaders. Escape an inner double quote as `\"`.
    - To point into a sibling skill of the same plugin, put its backticked name right before a bare path: the `other-skill` skill's `references/x.md`. Never a parent-directory path, never a path into another plugin.
 
 7. **Create the skill directory and file:**

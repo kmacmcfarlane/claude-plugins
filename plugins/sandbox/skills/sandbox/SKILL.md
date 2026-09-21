@@ -3,7 +3,7 @@ name: sandbox
 description: "Guides setup, configuration, and troubleshooting of claude-sandbox Docker containers. Use when user asks about claude-sandbox, sandbox configuration, .claude-sandbox/config.yaml, .claude-sandbox/Dockerfile, config cascade, bootstrapping a project (claude-sandbox init / init-ralph), ralph loops, container isolation, host access flags (--docker-socket, --aws, --git, --ssh), worktree mode (--worktree, --no-worktree, the worktree config key), model selection (--model), image rebuilding (--rebuild), or Claude Code version updates. Also triggers on sandbox launch errors, entrypoint issues, volume mount problems, a session that died or vanished mid-command, OOM, or a container/build exiting with code 137."
 disable-model-invocation: false
 allowed-tools: "Read, Glob, Grep, Bash, Edit, Write, Agent"
-argument-hint: [init | config | worktree | troubleshoot | question]
+argument-hint: "[init | config | worktree | troubleshoot | question]"
 ---
 
 # claude-sandbox Skill

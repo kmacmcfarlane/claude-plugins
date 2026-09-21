@@ -3,7 +3,7 @@ name: factor-analysis
 description: Analyze how a repository, plugin, library, or toolset should be factored into coherent standalone pieces — cohesion evidence, candidate shapes, scenario matrix, doctrine, staged decisions. Use when the user asks "should this be its own plugin/package/module", "what's the right shape for this repo", "find the natural splits", "how should we bucket this", "factor this", or when a grab-bag project needs better boundaries. Not for planning a single scoped change (use investigate) or executing an agreed refactor (use implement).
 disable-model-invocation: false
 allowed-tools: Read, Glob, Grep, Bash, Agent, AskUserQuestion, WebSearch
-argument-hint: [what to factor, e.g. "this repo" or a directory]
+argument-hint: "[what to factor, e.g. \"this repo\" or a directory]"
 ---
 
 # Factor analysis

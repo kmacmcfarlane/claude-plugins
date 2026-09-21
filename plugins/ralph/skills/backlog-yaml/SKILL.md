@@ -3,7 +3,7 @@ name: backlog-yaml
 description: Backlog YAML management via the backlog.py CLI tool. Auto-activates when working with backlog.yaml, story status changes, ticket creation, or querying stories. Trigger phrases include "backlog", "story status", "set status", "add ticket", "query stories", "next id", "validate backlog".
 disable-model-invocation: false
 allowed-tools: "Read, Bash, Glob, Grep"
-argument-hint: [optional backlog.py subcommand or question]
+argument-hint: "[optional backlog.py subcommand or question]"
 ---
 
 # Backlog YAML Management

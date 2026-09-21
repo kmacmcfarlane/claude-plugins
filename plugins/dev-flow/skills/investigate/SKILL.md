@@ -3,7 +3,7 @@ name: investigate
 description: Investigate a problem before implementing it — resolve repos, survey branches, load project context, search and read the code, gather requirements with the user, then write a reviewed plan to .claude-sandbox/investigations/{slug}/ for the implement skill to consume. Use when the user says "investigate", "look into", "research this issue", "figure out how to fix", "plan this work", or picks an item off TODO.md. Also use to re-investigate an existing series.
 disable-model-invocation: false
 allowed-tools: Read, Write, Edit, Glob, Grep, Bash, Agent, WebSearch, WebFetch, AskUserQuestion
-argument-hint: <issue description | wi item id | TODO item>
+argument-hint: "<issue description | wi item id | TODO item>"
 ---
 
 # Investigate

@@ -3,7 +3,7 @@ name: implement
 description: Implement an investigation produced by the investigate skill — read the whole series from .claude-sandbox/investigations/{slug}/, triage its open questions, plan the work, build it (in isolated git worktrees when the plan fans out), verify with the project's own tests, then record the outcome and update the docs. Use when the user says "implement", "build the plan", "do the investigation", "carry out {slug}", or asks to act on a completed investigation.
 disable-model-invocation: false
 allowed-tools: Read, Write, Edit, Glob, Grep, Bash, Agent, TaskCreate, TaskUpdate, TaskGet, TaskList, AskUserQuestion
-argument-hint: <investigation-slug>
+argument-hint: "<investigation-slug>"
 ---
 
 # Implement

@@ -3,7 +3,7 @@ name: new-project-from-template
 description: "Create a new project from a claude-templates template. Use when user wants to start a new project, scaffold a repo, or bootstrap from a template. Triggers: 'new project', 'create project', 'scaffold', 'from template', 'bootstrap project'."
 disable-model-invocation: false
 allowed-tools: Read, Write, Edit, Glob, Grep, Bash, AskUserQuestion, Agent
-argument-hint: <optional template name>
+argument-hint: "<optional template name>"
 ---
 
 # New Project From Template

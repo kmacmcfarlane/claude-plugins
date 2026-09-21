@@ -3,7 +3,7 @@ name: backlog-entry
 description: Interactively create new backlog entries (stories, bugs, refactoring) in backlog.yaml. Use when user says "new story", "add backlog entry", "new bug", "new ticket", "backlog entry", "create story", "file a bug", "add to backlog", or "batch tickets". Supports single and batch ticket creation with auto-linking requires dependencies.
 disable-model-invocation: false
 allowed-tools: "Read, Bash, AskUserQuestion, Grep"
-argument-hint: <description of the feature, bug, or task>
+argument-hint: "<description of the feature, bug, or task>"
 ---
 
 # Backlog Entry Creator
