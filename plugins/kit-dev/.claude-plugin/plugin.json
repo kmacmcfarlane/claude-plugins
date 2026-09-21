@@ -1,6 +1,6 @@
 {
   "name": "kit-dev",
-  "description": "Maintainer tooling for this plugin ecosystem — skill creation, project scaffolding, upstream kit sync, and factoring analysis.",
+  "description": "Maintainer tooling for this plugin ecosystem — skill creation, project scaffolding, upstream kit sync, and factoring analysis (external: the claude-templates repo, which scaffolding reads, and the claude-templates, claude-sandbox and claude-expertise repos, which upstream sync writes).",
   "author": {
     "name": "Kyle McFarlane"
   },

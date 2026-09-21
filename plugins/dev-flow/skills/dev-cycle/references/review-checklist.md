@@ -201,13 +201,20 @@ with no plugins/ tree most are vacuous:
 
 - [ ] **One plugin, one aim.** No plugin description gained an "and".
 - [ ] **Standalone test.** Nothing new requires another plugin from this marketplace to be
-      useful, unless declared as a soft dependency in the catalog.
+      useful, unless declared as a soft dependency in the catalog, or as a hard one in the
+      dependent's `plugin.json` `dependencies` — the test then covers the plugin plus its
+      declared hard dependencies.
 - [ ] **Harness-behavior quarantine.** No hook, status line, or `settings.json` write
       outside the plugin whose stated aim is that behavior.
       `grep -rln 'hooks\|settings.json' $W/plugins --include=*.json` shows nothing new
       outside it.
-- [ ] **Dependencies soft, declared, directional.** Any new cross-plugin reference is named
+- [ ] **Dependencies soft by default, declared, directional.** Any new cross-plugin reference is named
       in the plugin description and the catalog row.
+- [ ] **Hard dependencies only where they must be.** Every `plugin.json` `dependencies`
+      entry is same-marketplace (no `marketplace` key naming another), the dependent has no
+      function at all without it, and it is not a data read that could fall back; the
+      catalog marks it (hard), and every catalog (hard) is declared. §5's hard-dependency
+      script checks the mechanical half.
 - [ ] **Names are API.** No plugin renamed; the marketplace `name` untouched; no `claude-`
       prefix on a new plugin.
 - [ ] **New aim → new plugin.** A new capability did not stretch an existing description.
@@ -249,10 +256,48 @@ for p in $(git -C $W diff --name-only $BASE...HEAD | grep '\.py$'); do python3 -
 - [ ] Every `.json` in the diff parses.
 - [ ] `.claude-plugin/marketplace.json`, when present, still lists exactly the plugins
       on disk.
+- [ ] Hard dependencies match the catalog: every `dependencies` entry in a `plugin.json`
+      is a name or an object with a `name`, same-marketplace, and marked (hard) in
+      README.md's catalog row for its plugin; every (hard) there is declared; no
+      `marketplace.json` entry declares `dependencies` (plugin.json is the one place); no
+      `allowCrossMarketplaceDependenciesOn` is set.
 
 ```bash
 for j in $(git -C $W diff --name-only $BASE...HEAD | grep '\.json$'); do python3 -m json.tool $W/$j >/dev/null && echo "ok $j" || echo "FAIL $j"; done
 test -f $W/.claude-plugin/marketplace.json && python3 -c "import json,os,sys; m=json.load(open('$W/.claude-plugin/marketplace.json')); names={p['name'] for p in m['plugins']}; disk=set(os.listdir('$W/plugins')); print('marketplace==disk' if names==disk else 'FAIL: '+str(names^disk))"
+test -f $W/.claude-plugin/marketplace.json && python3 - "$W" <<'EOF'
+import json, os, re, sys
+w = sys.argv[1]; bad = []; declared = set()
+def load(f):
+    try: d = json.load(open(f))
+    except (OSError, ValueError) as e: bad.append(f'{f} unreadable ({e.__class__.__name__})'); return None
+    if not isinstance(d, dict): bad.append(f'{f} is not a JSON object'); return None
+    return d
+m = load(f'{w}/.claude-plugin/marketplace.json') or {}
+if 'allowCrossMarketplaceDependenciesOn' in m: bad.append('allowCrossMarketplaceDependenciesOn is set')
+for e in m.get('plugins', []) if isinstance(m.get('plugins'), list) else []:
+    if isinstance(e, dict) and 'dependencies' in e:
+        bad.append(f"marketplace entry {e.get('name')} declares dependencies; declare them in its plugin.json")
+for p in sorted(os.listdir(f'{w}/plugins')):
+    f = f'{w}/plugins/{p}/.claude-plugin/plugin.json'
+    if not os.path.exists(f): continue
+    deps = (load(f) or {}).get('dependencies', [])
+    if not isinstance(deps, list): bad.append(f'{p}: dependencies is not a list'); continue
+    for d in deps:
+        if isinstance(d, str) and d: n, mk = d, None
+        elif isinstance(d, dict) and isinstance(d.get('name'), str) and d['name']: n, mk = d['name'], d.get('marketplace')
+        else: bad.append(f'{p} has a malformed dependency entry: {d!r}'); continue
+        if mk not in (None, m.get('name')): bad.append(f'{p} -> {n}@{mk} crosses marketplaces')
+        declared.add((p, n))
+marked = set()
+for line in open(f'{w}/README.md') if os.path.exists(f'{w}/README.md') else []:
+    c = [x.strip() for x in line.split('|')]
+    if len(c) >= 6 and (r := re.fullmatch(r'`([^`]+)`', c[2])):
+        marked |= {(r.group(1), n) for n in re.findall(r'`([^`]+)` \(hard', c[4])}
+bad += [f'{p} declares {n}; catalog does not mark it (hard)' for p, n in sorted(declared - marked)]
+bad += [f'catalog marks {p} -> {n} (hard); not declared' for p, n in sorted(marked - declared)]
+print('\n'.join('FAIL: ' + b for b in bad) or f'hard deps: catalog==declared ({len(declared)})')
+EOF
 ```
 
 ## 6. After the merge, on the base
