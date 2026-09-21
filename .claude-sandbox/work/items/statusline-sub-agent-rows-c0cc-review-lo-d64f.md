@@ -23,3 +23,7 @@ From c0cc review r3 2026-09-21 (CLEAR with lows). (1) subagent_statusline._usage
 ## Notes
 - 2026-09-21 claimed by unknown@360f41058e92
 - dispatch: implementer opus — renderer logic
+
+## Implementer result
+- round 1 DONE 9a5132e (opus): streamed structural scanner (root → message → usage only, strings skipped); chunk-straddle tests; no borrowing; README catalog row + decision tree. Open: invalid JSON inside skipped values not detected; compact_boundary checked only in first 4096 bytes on the long path.
+- dispatch: reviewer opus — rule 4
