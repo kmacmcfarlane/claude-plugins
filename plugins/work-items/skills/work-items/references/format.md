@@ -82,8 +82,8 @@ except `claimed` (ISO-8601 UTC to the minute).
 | `owner` | free string, e.g. `user@host` | set by `claim`, cleared by `release`/`done` |
 | `claimed` | UTC minute | stale test in `next --stale` |
 | `blocked` | string | required iff `status: blocked`; kept while parked or grooming, so `unpark` / `ungroom` returns to `blocked` |
-| `parked` | one line | required iff `status: parked`; the deferral reason (set by `park`, cleared by `unpark`, `block` and `groom`); `lint` flags it on a todo/doing/blocked/grooming item, and it stays on a dropped/done item as history |
-| `grooming` | one line | required iff `status: grooming`; the open questions for the operator (set by `groom`, cleared by `ungroom`, `park` and `block`); `lint` flags it on a todo/doing/blocked/parked item, and it stays on a dropped/done item as history |
+| `parked` | one line | required iff `status: parked`; the deferral reason (set by `park`, cleared by `unpark`, `block` and `groom`); `lint` flags it on a todo/doing/blocked/grooming item (clear it with `wi set <id> parked ""`), and it stays on a dropped/done item as history |
+| `grooming` | one line | required iff `status: grooming`; the open questions for the operator (set by `groom`, cleared by `ungroom`, `park` and `block`); `lint` flags it on a todo/doing/blocked/parked item (clear it with `wi set <id> grooming ""`), and it stays on a dropped/done item as history |
 | `feedback` | one line | pipeline review feedback |
 | `mode` | `autonomous interactive mixed` | backlog's `ticket_mode` |
 | `complexity` | `low medium high` | pass-through |
@@ -194,6 +194,17 @@ that item's `unpark` goes to `todo`. A provenance group, if any, is dropped
 from the imported reason. A ralph run over the exported backlog sees the
 item as blocked, never as work.
 
+backlog.yaml `requires` holds story ids only, so an item's `ext:` deps
+travel in its `blocked_reason`, after any reason: `vendor; requires ext: a,
+ext: b` (on its own for an item with no reason). Import strips that suffix
+back off the reason and — for a new item — restores the deps, so
+export → `import --update` round-trips byte-identical. Every exported string
+value is double-quoted, a title starting `[` or `{` included; only an extra
+story field import stored as JSON (a list or mapping) is written back raw,
+as YAML flow. A `notes` value holding a character a YAML loader breaks on or
+rejects raw (U+2028, NEL, a control character) is written as a double-quoted
+scalar instead of a `|-` block.
+
 ## Grooming
 
 `grooming` means the item waits on the operator's answers — it has open
@@ -223,7 +234,10 @@ starts `decision N: <one line>`; the reply is a body line `answer N:
 convention). A decision is unanswered while its item has no `answer N:`
 line with the same N. Both must start the line — `- decision 4:` is not a
 marker — and a line inside a fenced code block is text, not a marker. N is
-never reused across the store; a revised question keeps its number.
+never reused across the store; a revised question keeps its number: add a
+new `decision N:` line (or edit the old one in place) — when N repeats,
+`needs-input` shows the last line's text. `answer 40:` answers decision 40
+only, never decision 4.
 
 `wi needs-input` lists every open item awaiting the operator: each grooming
 item (with its questions) and each unanswered `decision N:` (with N and its
@@ -264,8 +278,12 @@ owns — trailing unheaded text, spacing between sections, section order, CRLF
 line endings — are kept exactly. Front matter is re-emitted in canonical form.
 
 Every value a command writes into front matter, a Handoff bullet or a Notes
-line is one line. One containing a line break exits 1 and nothing is
-written — for a command that writes several items, none of them. The
+line is one line. One containing a line break — any character
+`str.splitlines` or a YAML 1.1 loader breaks on, U+2028/U+2029 and NEL
+included — exits 1 and nothing is written — for a command that writes
+several items, none of them. A batch write (`export`, `archive`,
+`import --update`) refused over a hand-written value names the item and its
+path. The
 imports fold instead: `import-todo` folds a title wrapped across lines, and
 `import --format backlog-yaml` collapses the whitespace of every story value
 except `notes` (a `review_feedback: |` block scalar becomes one line).

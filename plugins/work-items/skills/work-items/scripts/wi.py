@@ -104,8 +104,9 @@ ANSWER_RE = re.compile(r"^answer (\d+):")
 
 def unanswered_decisions(item):
     """[(N, text)] for each `decision N:` body line with no `answer N:` line
-    anywhere in the same body, in order, one per N. Lines inside a fenced
-    code block are text, not markers."""
+    anywhere in the same body, in order of each N's first line, one per N.
+    A repeated N is a revised question: its text is the last line's. Lines
+    inside a fenced code block are text, not markers."""
     lines = item.body.replace("\r\n", "\n").split("\n")
     fenced = set()
     for i, j in _fence_spans(lines):
@@ -116,7 +117,7 @@ def unanswered_decisions(item):
             continue
         m = DECISION_RE.match(line)
         if m:
-            asked.setdefault(int(m.group(1)), m.group(2).strip())
+            asked[int(m.group(1))] = m.group(2).strip()
             continue
         m = ANSWER_RE.match(line)
         if m:
@@ -128,6 +129,10 @@ class WiError(Exception):
     def __init__(self, code, msg):
         super().__init__(msg)
         self.code = code
+
+
+class AmbiguousId(WiError):
+    """A prefix matching more than one item: never read as "no match"."""
 
 
 def today():
@@ -735,14 +740,14 @@ class Item:
             errs.append("parked without a reason")
         if m.get("parked") and m.get("status") in ("todo", "doing", "blocked",
                                                    "grooming"):
-            errs.append(f"parked reason on a {m['status']} item (wi unpark "
-                        "clears it; or clear the field with wi set)")
+            errs.append(f"parked reason on a {m['status']} item (clear it: "
+                        f"wi set {m.get('id')} parked \"\")")
         if m.get("status") == "grooming" and not m.get("grooming"):
             errs.append("grooming without questions")
         if m.get("grooming") and m.get("status") in ("todo", "doing", "blocked",
                                                      "parked"):
-            errs.append(f"grooming questions on a {m['status']} item (wi "
-                        "ungroom clears them; or clear the field with wi set)")
+            errs.append(f"grooming questions on a {m['status']} item (clear "
+                        f"them: wi set {m.get('id')} grooming \"\")")
         if m.get("status") in ("done", "dropped") and not m.get("closed"):
             errs.append(f"{m['status']} without closed date")
         return errs
@@ -918,8 +923,13 @@ def save_item(root, item):
 def save_items(root, items):
     """Render every item before writing any, so a value the writer rejects
     (see _front_one_line) leaves the whole batch unwritten."""
-    staged = [(item, item.path or root / "items" / (item.id + ".md"),
-               item.render()) for item in items]
+    staged = []
+    for item in items:
+        path = item.path or root / "items" / (item.id + ".md")
+        try:
+            staged.append((item, path, item.render()))
+        except WiError as e:
+            raise WiError(e.code, f"{item.id} ({path}): {e}") from None
     for item, path, text in staged:
         item.path = path
         atomic_write(path, text)
@@ -947,7 +957,7 @@ def resolve_id(items, ref):
     if len(matches) == 1:
         return matches[0]
     if len(matches) > 1:
-        raise WiError(2, f"ambiguous id '{ref}': " + ", ".join(it.id for it in matches))
+        raise AmbiguousId(2, f"ambiguous id '{ref}': " + ", ".join(it.id for it in matches))
     raise WiError(2, f"no item matching '{ref}'")
 
 
@@ -1173,13 +1183,23 @@ def cmd_release(args):
     return 0
 
 
+# every character str.splitlines (or a YAML 1.1 loader: NEL, U+2028/U+2029)
+# reads as a line break
+_LINE_BREAK_RE = re.compile("[\n\r\x0b\x0c\x1c-\x1e\x85\u2028\u2029]")
+
+
 def _one_line(what, val):
     """Values written into front matter, a Handoff bullet or a Notes line are
     one line (format.md): a line break would add front-matter keys, leave
-    lines the next rewrite does not own, or inject a `## ` heading. Called
-    before anything is read or written, so a rejected value writes nothing."""
-    if val is not None and ("\n" in val or "\r" in val):
-        raise WiError(1, f"{what} must be one line; it contains a line break")
+    lines the next rewrite does not own, or inject a `## ` heading. Every
+    Unicode line separator counts (U+2028 in a Notes line splits the
+    exported `notes: |-` block). Called before anything is read or written,
+    so a rejected value writes nothing."""
+    m = val is not None and _LINE_BREAK_RE.search(val)
+    if m:
+        c = ord(m.group())
+        raise WiError(1, f"{what} must be one line; it contains a line break"
+                         + ("" if c in (10, 13) else f" (U+{c:04X})"))
 
 
 def cmd_handoff(args):
@@ -1505,9 +1525,12 @@ def cmd_ls(args):
     rows = [it for it in items if it.get("status") in statuses]
     if args.dep:
         # items depending on an id: resolve it when it names an item (a
-        # prefix or alias works), else match the dep string as written
+        # prefix or alias works), else match the dep string as written; an
+        # ambiguous prefix is an error, not an empty list
         try:
             dep = resolve_id(load_all(root, archived=True), args.dep).id
+        except AmbiguousId:
+            raise
         except WiError:
             dep = args.dep
         rows = [it for it in rows if dep in it.get("deps", [])]
@@ -1960,13 +1983,45 @@ BACKLOG_DEFAULTS = [("priority_order", "higher_is_more_important"),
                     ("requires_field", "requires")]
 
 
-def _yaml_scalar(v):
+def _yaml_scalar(v, json_ok=False):
+    """A backlog.yaml value, double-quoted. `json_ok` (x_backlog values
+    only): a list or mapping import stored JSON-encoded passes through raw,
+    since JSON is YAML flow; any other value starting `[` or `{` — a title
+    `[wip] x` — is quoted like the rest."""
     if isinstance(v, int):
         return str(v)
     v = str(v)
-    if v.startswith(("[", "{")):  # JSON-encoded passthrough; JSON is YAML flow
-        return v
+    if json_ok and v.startswith(("[", "{")):
+        try:
+            if isinstance(json.loads(v), (list, dict)):
+                return v
+        except ValueError:
+            pass
     return '"' + _dq_escape(v) + '"'
+
+
+def _yaml_notes(notes):
+    """`notes:` as a `|-` block, or — when it holds a character a YAML
+    loader reads as a line break or rejects raw (U+2028, NEL, a control
+    character) — as a double-quoted scalar with those escaped."""
+    if _DQ_ESCAPE_RE.search(notes.replace("\t", " ")):
+        return ['    notes: "' + _dq_escape(notes).replace("\n", "\\n") + '"']
+    return ["    notes: |-"] + ["      " + ln if ln.strip() else ""
+                                for ln in notes.split("\n")]
+
+
+# export appends an item's `ext:` deps to its blocked_reason (backlog.yaml
+# `requires` holds only story ids); import strips that suffix back off
+EXT_REQUIRES_RE = re.compile(r"(?:^|; )requires (ext:.*)$")
+
+
+def split_ext_requires(reason):
+    """(reason without the `requires ext:…` suffix export appends, [ext deps])."""
+    m = EXT_REQUIRES_RE.search(reason or "")
+    if not m:
+        return reason, []
+    return (reason[:m.start()] or None,
+            [d.strip() for d in re.split(r", (?=ext:)", m.group(1))])
 
 
 def _yaml_list(w, key, values, indent):
@@ -2052,10 +2107,9 @@ def emit_backlog(project, stories_items, by_id):
                 w.append(f"    {key}: {_yaml_scalar(val)}")
         notes = _notes_for_export(it)
         if notes:
-            w.append("    notes: |-")
-            w.extend("      " + ln if ln.strip() else "" for ln in notes.split("\n"))
+            w.extend(_yaml_notes(notes))
         for key, val in (it.get("x_backlog") or {}).items():
-            w.append(f"    {key}: {_yaml_scalar(val)}")
+            w.append(f"    {key}: {_yaml_scalar(val, json_ok=True)}")
     return "\n".join(w) + "\n"
 
 
@@ -2155,7 +2209,7 @@ def _import_story(story, alias_map, existing_by_alias, update):
         if key not in KNOWN_STORY_FIELDS:
             x_backlog[key] = val if isinstance(val, (str, int)) else \
                 json.dumps(val, separators=(", ", ": "))
-    blocked = _story_value(story, "blocked_reason")
+    blocked, _ = split_ext_requires(_story_value(story, "blocked_reason"))
     parked = parked_reason(blocked) if status == "blocked" else None
     grooming = grooming_questions(blocked) if status == "blocked" else None
     if parked is not None:
@@ -2201,11 +2255,17 @@ def _import_story(story, alias_map, existing_by_alias, update):
     if notes:
         sections.append(("Notes", notes))
     item = Item(meta, [], desc, sections)
-    deps = []
-    for req in story.get("requires") or []:
-        deps.append(alias_map.get(str(req), f"ext: {req}"))
-    item.meta["deps"] = deps
+    item.meta["deps"] = _story_deps(story, alias_map)
     return item, True
+
+
+def _story_deps(story, alias_map):
+    """A new item's deps: each `requires` id (an unknown one as `ext: <id>`),
+    then the `ext:` deps export carried in blocked_reason."""
+    deps = [alias_map.get(str(r), f"ext: {r}")
+            for r in (story.get("requires") or [])]
+    _, ext = split_ext_requires(_fold(_story_value(story, "blocked_reason")))
+    return deps + [d for d in ext if d not in deps]
 
 
 def cmd_import(args):
@@ -2231,8 +2291,7 @@ def cmd_import(args):
             pending.append((story, item, created))
         for story, item, created in pending:
             if created:
-                item.meta["deps"] = [alias_map.get(str(r), f"ext: {r}")
-                                     for r in (story.get("requires") or [])]
+                item.meta["deps"] = _story_deps(story, alias_map)
                 n_new += 1
             else:
                 n_upd += 1

@@ -21,7 +21,9 @@ WI="python3 ${CLAUDE_PLUGIN_ROOT}/skills/work-items/scripts/wi.py"
 
 ## Session-start rule
 
-`$WI prime` (≤300 tokens: what's in flight, what's ready) — then `$WI show <id> --brief` for
+`$WI prime` (≤300 tokens: what's in flight, what's ready; a first `HOLD <n>: …` line lists
+open items tagged `hold`, an operator hold that gates what may move — honour it before
+picking work) — then `$WI show <id> --brief` for
 the **one** item being worked. Never `ls` the whole store into context to pick a task; that is
 the TODO.md failure mode with extra steps.
 
