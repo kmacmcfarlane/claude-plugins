@@ -2,11 +2,13 @@
 id: statusline-hub-f3-statusline-becomes-a-d-dfa1
 title: "statusline-hub F3: statusline becomes a display hook (hard dependency on the hub)"
 type: feature
-status: todo
+status: doing
 priority: 2
 deps:
   - statusline-hub-f2-owner-mode-hooks-d-reg-b28f
 parent: spike-status-line-multiplexer-dependency-d193
+owner: unknown@360f41058e92
+claimed: 2026-09-21T19:50Z
 created: 2026-09-21
 updated: 2026-09-21
 ---
@@ -14,8 +16,8 @@ updated: 2026-09-21
 d193 07 § F3. statusline declares statusline-hub in plugin.json dependencies (principle 4 as amended by 5343: statusline has no function without the hub), catalog (hard); stops writing settings; the hub owns the sensor write. context-guard/analytics/dev-flow stay soft readers.
 
 ## Handoff
-- doing: —
-- next: —
+- doing: dispatched
+- next: review
 - blocked: —
 - learned: —
 
@@ -29,3 +31,9 @@ d193 07 § F3. statusline declares statusline-hub in plugin.json dependencies (p
 ## Carried from F2 review (lows)
 - statusline owner.py scan: exclude names starting "statusline-hub-" outright (not only when current-hooks lacks statusline.py); resync the hub vendored copy.
 - registry in_git_tree: a custom CLAUDE_CONFIG_DIR inside a git-tracked dir under $HOME refuses all hooks quietly — surface the reason once (SessionStart message) rather than only in --status.
+
+## Notes
+- 2026-09-21 claimed by unknown@360f41058e92
+
+## Dispatch
+- dispatch: implementer opus — executable logic + settings ownership + a hard plugin dependency (doctrine); fable signal (settings/ownership handover): fable unavailable (unknown); fallback
