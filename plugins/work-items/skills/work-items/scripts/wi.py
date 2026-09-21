@@ -181,6 +181,19 @@ def _emit_scalar(v):
     return v
 
 
+def _front_one_line(key, val):
+    """Every front-matter value is one line: a line break would forge keys
+    (`status: done`) or leave a file no later command can parse. This is the
+    backstop behind the per-command checks; render() runs before any write,
+    so a rejected value writes nothing."""
+    vals = val.values() if isinstance(val, dict) else \
+        val if isinstance(val, list) else [val]
+    for v in vals:
+        if isinstance(v, str) and ("\n" in v or "\r" in v):
+            raise WiError(1, f"front-matter '{key}' must be one line; "
+                             "it contains a line break")
+
+
 def emit_front(meta, extra=()):
     out = []
     for key in list(FIELD_ORDER) + [k for k in extra if k not in FIELD_ORDER]:
@@ -189,6 +202,7 @@ def emit_front(meta, extra=()):
         val = meta[key]
         if val is None or val == [] or val == {}:
             continue
+        _front_one_line(key, val)
         if isinstance(val, dict):
             out.append(f"{key}:")
             out.extend(f"  {k}: {_emit_scalar(v)}" for k, v in val.items())
@@ -232,15 +246,20 @@ def _heading_flags(lines):
     (a real `## Handoff` after a pasted, unclosed block stays the section)."""
     contents = [line.rstrip("\r\n") for line in lines]
     flags, i, n = [False] * len(contents), 0, len(contents)
+    # per fence char, the shortest run already known to have no closer
+    # anywhere after an earlier opener: a later opener at least that long
+    # has none either, so each such lookahead is skipped (linear, not n²)
+    no_closer = {}
     while i < n:
         run = _fence_open(contents[i])
-        if run:
+        if run and len(run) < no_closer.get(run[0], len(run) + 1):
             j = i + 1
             while j < n and not _fence_closes(contents[j], run):
                 j += 1
             if j < n:
                 i = j + 1  # opener..closer inclusive are code, not headings
                 continue
+            no_closer[run[0]] = len(run)
         flags[i] = contents[i].startswith("## ")
         i += 1
     return flags
@@ -309,6 +328,15 @@ def _raw_lines(text):
 
 def _content(line):
     return line.rstrip("\r\n")
+
+
+def _fenced_only(lines, name):
+    """True when `## name` exists only as a column-0 line inside a fenced
+    block. An unclosed opener can pair with a later block's opener and turn
+    the real heading into code; appending a second section then would split
+    the record, so the caller refuses instead."""
+    return any(_content(line).startswith("## ")
+               and _content(line)[3:].strip() == name for line in lines)
 
 
 def _section_span(lines, name):
@@ -396,6 +424,12 @@ class Item:
             body += eol
         self.body = body + f"## {name}" + eol + text.replace("\n", eol) + eol
 
+    def _refuse_fenced(self, lines, name):
+        if _fenced_only(lines, name):
+            raise WiError(3, f"{self.path or self.id}: '## {name}' is inside a "
+                             "fenced code block (an unclosed ``` or ~~~ pairs "
+                             "with a later fence); close the fence, then retry")
+
     def set_handoff(self, h):
         """Rewrite only the four `- key:` bullets of `## Handoff` (the first
         of each key); a missing bullet is inserted after its predecessor.
@@ -403,6 +437,7 @@ class Item:
         lines = _raw_lines(self.body)
         span = _section_span(lines, "Handoff")
         if span is None:
+            self._refuse_fenced(lines, "Handoff")
             self._append_section("Handoff", emit_handoff(h))
             return
         start, end = span
@@ -434,6 +469,7 @@ class Item:
         lines = _raw_lines(self.body)
         span = _section_span(lines, "Notes")
         if span is None:
+            self._refuse_fenced(lines, "Notes")
             self._append_section("Notes", line)
             return
         start, end = span
@@ -647,9 +683,17 @@ def atomic_write(path, text):
 
 
 def save_item(root, item):
-    path = item.path or root / "items" / (item.id + ".md")
-    item.path = path
-    atomic_write(path, item.render())
+    save_items(root, [item])
+
+
+def save_items(root, items):
+    """Render every item before writing any, so a value the writer rejects
+    (see _front_one_line) leaves the whole batch unwritten."""
+    staged = [(item, item.path or root / "items" / (item.id + ".md"),
+               item.render()) for item in items]
+    for item, path, text in staged:
+        item.path = path
+        atomic_write(path, text)
 
 
 def item_paths(root, archived=False):
@@ -1368,7 +1412,7 @@ def cmd_import_todo(args):
     root = resolve_root(args.root)
     text = Path(args.path).read_text()
     parsed = parse_todo(text)
-    created_rows, skipped_rows = [], []
+    created_rows, skipped_rows, new_items = [], [], []
     with Lock(root):
         items = load_all(root, archived=True)
         markers = {r for it in items for r in it.get("refs", [])}
@@ -1396,8 +1440,9 @@ def cmd_import_todo(args):
                 sections.append(("Notes", rec["notes"]))
             item = Item(meta, [], rec["desc"], sections)
             created_rows.append((iid, rec["title"]))
-            if not args.dry_run:
-                save_item(root, item)
+            new_items.append(item)
+        if not args.dry_run:
+            save_items(root, new_items)
     for iid, title in created_rows:
         print(f"{'would create' if args.dry_run else 'created'}\t{iid}\t{title}")
     for marker, title in skipped_rows:
@@ -1520,9 +1565,10 @@ def cmd_export(args):
         items = load_all(root, archived=True)
         by_id = {it.id: it for it in items}
         exportable = [it for it in items if it.get("type", "task") != "epic"]
-        for it in allocate_aliases(root, exportable):
+        written = allocate_aliases(root, exportable)
+        for it in written:
             it.touch()
-            save_item(root, it)
+        save_items(root, written)
         active = [it for it in exportable if it.get("status") not in ("done", "dropped")]
         closed = [it for it in exportable if it.get("status") in ("done", "dropped")]
         project = args.project or Path.cwd().name
@@ -1570,7 +1616,20 @@ KNOWN_STORY_FIELDS = {"id", "title", "priority", "status", "requires", "acceptan
                       "claimed_by", "ticket_mode", "complexity"}
 
 
+def _fold(v):
+    """A backlog value written into front matter or one bullet, folded to one
+    line (whitespace collapsed, as import-todo folds titles). YAML block
+    scalars (`review_feedback: |`) are common in ralph backlogs; folding keeps
+    every word and every story, where rejecting would drop the story and
+    break the requires links of the stories that name it."""
+    return v if not isinstance(v, str) else re.sub(r"\s+", " ", v).strip()
+
+
 def _import_story(story, alias_map, existing_by_alias, update):
+    story = {k: ([_fold(x) for x in v] if isinstance(v, list) and
+                 k in ("requires", "acceptance", "testing") else
+                 v if k == "notes" else _fold(v))
+             for k, v in story.items()}
     alias = str(story["id"])
     status, stage = BACKLOG_TO_STATE[story.get("status", "todo")]
     p = int(story.get("priority", 50))
@@ -1649,7 +1708,7 @@ def cmd_import(args):
                 n_new += 1
             else:
                 n_upd += 1
-            save_item(root, item)
+        save_items(root, [item for _, item, _ in pending])
     print(f"imported {n_new} new, updated {n_upd}")
     return 0
 

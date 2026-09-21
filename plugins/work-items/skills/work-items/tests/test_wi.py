@@ -283,6 +283,43 @@ class TestBacklogYaml(WiTestCase):
             self.assertIn(key, text)
         return "structural"
 
+    def test_import_folds_multiline_values(self):
+        """Block scalars and multi-line titles fold to one line; the store
+        stays loadable and every story is imported."""
+        src = self.tmp / "in.yaml"
+        src.write_text(
+            "schema_version: 2\nstories:\n"
+            "  - id: S-001\n    title: \"two\\nlines\"\n    status: blocked\n"
+            "    priority: 50\n    review_feedback: |\n      first point\n"
+            "      status: done\n    blocked_reason: >-\n      a\n\n      b\n"
+            "    acceptance:\n      - \"x\\n## Handoff\"\n    odd_field: |\n"
+            "      p\n      q\n"
+            "  - id: S-002\n    title: plain\n    status: todo\n"
+            "    requires: [S-001]\n")
+        self.wi_ok(["import", "--format", "backlog-yaml", str(src)])
+        recs = {r["alias"]: r for r in json.loads(
+            self.wi_ok(["ls", "--status", "all", "--json"]))}
+        self.assertEqual(set(recs), {"S-001", "S-002"})
+        one = json.loads(self.wi_ok(["show", recs["S-001"]["id"], "--json"]))
+        self.assertEqual(one["title"], "two lines")
+        self.assertEqual(one["feedback"], "first point status: done")
+        self.assertEqual(one["blocked"], "a b")
+        self.assertEqual(one["status"], "blocked")
+        self.assertEqual(recs["S-002"]["deps"], [one["id"]])
+        text = (self.root / "items" / (one["id"] + ".md")).read_text()
+        self.assertIn("- [ ] x ## Handoff\n", text)
+        self.assertIn("odd_field: p q", text)
+        self.assertEqual(text.count("\n## Handoff"), 1)
+        self.wi_ok(["lint"])
+        # --update folds too
+        src.write_text("schema_version: 2\nstories:\n  - id: S-001\n"
+                       "    title: t\n    status: blocked\n    blocked_reason: r\n"
+                       "    review_feedback: |\n      again\n      here\n")
+        self.wi_ok(["import", "--format", "backlog-yaml", "--update", str(src)])
+        one = json.loads(self.wi_ok(["show", recs["S-001"]["id"], "--json"]))
+        self.assertEqual(one["feedback"], "again here")
+        self.wi_ok(["lint"])
+
     def test_import_update_touches_pipeline_fields_only(self):
         self.seed()
         out = self.tmp / "backlog.yaml"
@@ -781,6 +818,56 @@ class TestBodyPreservation(WiTestCase):
         flags = wi._heading_flags(["```sh", "## A", "~~~", "## B", "~~~", "## C"])
         self.assertEqual(flags, [False, True, False, False, False, True])
 
+    # an unclosed ```sh in Notes pairs with the opener of a normal block in a
+    # later section: the real Handoff (and the later heading) become code
+    CROSS_SECTION = (
+        "\nDesc.\n\n## Notes\n- 2026-09-01 n1\n```sh\nmake\n\n## Handoff\n"
+        "- doing: OLD\n- next: OLDNEXT\n- blocked: —\n- learned: —\n\n"
+        "## Implementer result\n```\nlog\n```\n")
+
+    def test_fence_paired_across_sections_refuses_not_duplicates(self):
+        for eol in ("\n", "\r\n"):
+            with self.subTest(eol=repr(eol), shape="handoff hidden"):
+                path = self.write_raw(self.CROSS_SECTION, eol, "status: doing\n")
+                raw = path.read_bytes()
+                for argv in (["handoff", self.IID, "--doing", "NEW",
+                              "--learned", "L"],
+                             ["handoff", self.IID, "--next", "N"]):
+                    r = run(argv, self.root)
+                    self.assertEqual(r.returncode, 3, r.stdout + r.stderr)
+                    self.assertIn("'## Handoff' is inside a fenced code block",
+                                  r.stderr)
+                    self.assertEqual(path.read_bytes(), raw)
+                # Notes is still a real section: a note is appended in place
+                self.wi_ok(["done", self.IID, "--note", "ok"])
+                after = path.read_bytes().decode()
+                self.assertTrue(after.endswith(self.split_body(
+                    raw.decode(), eol) + f"- {wi.today()} done: ok{eol}"))
+                self.assertEqual(after.count("## Handoff"), 1)
+                path.unlink()
+            with self.subTest(eol=repr(eol), shape="notes hidden"):
+                body = self.CROSS_SECTION.replace(
+                    "## Notes\n- 2026-09-01 n1\n```sh\nmake\n\n## Handoff",
+                    "```sh\nmake\n\n## Notes\n- 2026-09-01 n1\n\n## Handoff")
+                path = self.write_raw(body, eol, "status: todo\n")
+                raw = path.read_bytes()
+                r = run(["claim", self.IID], self.root)
+                self.assertEqual(r.returncode, 3, r.stdout + r.stderr)
+                self.assertIn("'## Notes' is inside a fenced code block", r.stderr)
+                self.assertEqual(path.read_bytes(), raw)
+                path.unlink()
+
+    def test_many_unclosed_openers_scan_linearly(self):
+        lines = ["```sh", "x", "## H"] * 5000
+        start = time.monotonic()
+        flags = wi._heading_flags(lines)
+        self.assertLess(time.monotonic() - start, 1.0)
+        self.assertEqual(sum(flags), 5000)
+        # the memo does not skip a shorter opener that does have a closer
+        self.assertEqual(wi._heading_flags(
+            ["````", "## A", "```", "## B", "```", "## C"]),
+            [False, True, False, False, False, True])
+
     def test_handoff_value_with_line_break_is_rejected_unwritten(self):
         path = self.write_raw(BODY_SHAPES["no-notes"], "\n", "status: doing\n")
         raw = path.read_bytes()
@@ -820,6 +907,40 @@ class TestBodyPreservation(WiTestCase):
         self.assertEqual(sorted(p.name for p in (self.root / "items").iterdir()),
                          before)
         self.wi_ok(["lint"])
+
+    def test_front_matter_writer_rejects_line_breaks(self):
+        """The writer-level backstop: every command that puts a value into
+        front matter exits 1 and writes nothing when it holds a line break."""
+        path = self.write_raw(BODY_SHAPES["no-notes"], "\n", "status: todo\n")
+        raw = path.read_bytes()
+        for argv in (["claim", self.IID, "--as", "me\npriority: x"],
+                     ["next", "--pipeline", "--one", "--claim", "w\r\nstatus: done"]):
+            with self.subTest(argv=argv):
+                r = run(argv, self.root)
+                self.assertEqual(r.returncode, 1, r.stdout + r.stderr)
+                self.assertIn("front-matter 'owner' must be one line", r.stderr)
+                self.assertEqual(path.read_bytes(), raw)
+        before = sorted(p.name for p in (self.root / "items").iterdir())
+        for flag, key in (("--tag", "tags"), ("--dep", "deps"),
+                          ("--parent", "parent"), ("--ref", "refs")):
+            with self.subTest(flag=flag):
+                r = run(["add", "ok title", flag, "a\nstatus: done", "--force"],
+                        self.root)
+                self.assertEqual(r.returncode, 1, r.stdout + r.stderr)
+                self.assertIn(f"front-matter '{key}' must be one line", r.stderr)
+        self.assertEqual(sorted(p.name for p in (self.root / "items").iterdir()),
+                         before)
+        self.wi_ok(["lint"])
+        # model level: dict (x_ extras) and list values are checked too
+        with self.assertRaises(wi.WiError):
+            wi.emit_front({"id": "x", "x_backlog": {"k": "a\nb"}}, ["x_backlog"])
+        # a batch writes nothing when any one item is rejected
+        todo = self.tmp / "TODO.md"
+        todo.write_text("## First\nfine\n\n## Second\nsee [x](a\nb)\n")
+        r = run(["import-todo", str(todo)], self.root)
+        self.assertEqual(r.returncode, 1, r.stdout + r.stderr)
+        self.assertEqual(sorted(p.name for p in (self.root / "items").iterdir()),
+                         before)
 
     def test_write_side_keeps_line_endings_byte_exact(self):
         """newline='' on write: mixed CRLF / LF / lone CR outside the owned

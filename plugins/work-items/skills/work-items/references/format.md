@@ -131,15 +131,21 @@ Sets exactly one front-matter field. `id` and `created` are immutable (exit 1).
 A section runs from its `## ` heading to the next `## ` heading, so unheaded
 text after a block belongs to that block. A `## ` line inside a fenced code
 block (```` ``` ```` or `~~~`) is text, not a heading. A fence opener with no
-matching closer is not a fence: it does not hide the headings after it.
+matching closer is not a fence: it does not hide the headings after it. An
+unclosed opener can still pair with a later block's fence and hide the
+headings between them; when `## Handoff` or `## Notes` then exists only
+inside that span, `handoff`, `claim` and `done` exit 3 and write nothing
+rather than add a second section — close the fence and retry.
 Every rewriting command edits the body in place: bytes outside the lines it
 owns — trailing unheaded text, spacing between sections, section order, CRLF
 line endings — are kept exactly. Front matter is re-emitted in canonical form.
 
-Every value a command writes is one line: an `add` title, a `set` value, a
-`block` reason or `--on`, a `done`/`--drop` `--note`, and each `handoff`
-value. One containing a line break exits 1 and nothing is written.
-`import-todo` folds a title wrapped across lines onto one line.
+Every value a command writes into front matter, a Handoff bullet or a Notes
+line is one line. One containing a line break exits 1 and nothing is
+written — for a command that writes several items, none of them. The
+imports fold instead: `import-todo` folds a title wrapped across lines, and
+`import --format backlog-yaml` collapses the whitespace of every story value
+except `notes` (a `review_feedback: |` block scalar becomes one line).
 
 ## Session-start rule
 
