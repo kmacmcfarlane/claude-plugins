@@ -16,8 +16,8 @@ updated: 2026-09-21
 d193 07 § F3. statusline declares statusline-hub in plugin.json dependencies (principle 4 as amended by 5343: statusline has no function without the hub), catalog (hard); stops writing settings; the hub owns the sensor write. context-guard/analytics/dev-flow stay soft readers.
 
 ## Handoff
-- doing: dispatched
-- next: review
+- doing: built 7f3d125; review not started (hold 810f)
+- next: dispatch reviewer after the hold lifts
 - blocked: —
 - learned: —
 
@@ -37,3 +37,8 @@ d193 07 § F3. statusline declares statusline-hub in plugin.json dependencies (p
 
 ## Dispatch
 - dispatch: implementer opus — executable logic + settings ownership + a hard plugin dependency (doctrine); fable signal (settings/ownership handover): fable unavailable (unknown); fallback
+
+## Implementer result (held: operator hold 810f)
+- round 1 DONE_WITH_CONCERNS 7f3d125 (opus, fable-signal fallback): statusline writes hooks.d/statusline.json (display, --segment) each session and no longer writes settings; statusline owner.py + installer DELETED (07 § F3), hub owner.py is the only copy; statusline declares statusline-hub (hard) — catalog/§5 show 1 declared; hub takes over older context-guard/claude-kit footer entries; honours a statusline removed marker; refusal notice for directory-level refusals; test_handover covers every scenario. Suites: statusline 151, hub 142, all green.
+- open: fresh-machine race (footer at session 3); disabled footer lingers ≤14 days; context-guard rehydrate.py statusline_notice counts the hub's data dir as statusline; context-guard statusline.py:52 still names /install-statusline; framework auto-install of the hard dep unverified on 2.1.277 (#88663).
+- next (after the hold lifts): reviewer opus (fable-signal fallback) — settings handover + a hard dependency.
