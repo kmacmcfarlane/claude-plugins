@@ -192,7 +192,14 @@ export carries only `PARKED: <reason>`. `import --update` keeps the store's
 own `blocked:` on a parked story, but a fresh import cannot restore it, so
 that item's `unpark` goes to `todo`. A provenance group, if any, is dropped
 from the imported reason. A ralph run over the exported backlog sees the
-item as blocked, never as work.
+item as blocked, never as work. That prefix rule eats any punctuation after
+`PARKED`, so a reason that itself starts with punctuation (`-`, `— later`,
+`...`) — or one that starts and ends with `"` — exports quoted:
+`blocked_reason: "PARKED: \"- later\""`. Import reads `PARKED: "…"` (the
+prefix, one space, then text wrapped in double quotes) verbatim, before the
+prefix rule, so every reason round-trips byte-identical from the first
+cycle; `migrate-parked` reads only hand-written text and never unwraps the
+quotes.
 
 backlog.yaml `requires` holds story ids only, so an item's `ext:` deps
 travel in its `blocked_reason`, after any reason: `vendor; requires ext: a,
@@ -229,7 +236,9 @@ counts it in its footer and `counts.grooming`; `prime` shows one
 `GROOMING <n>` line; a dep on it does not resolve. Unlike a parked item it
 needs attention, so `ls` lists it by default. The backlog-yaml bridge maps
 it as it maps a park: `status: blocked`, `blocked_reason: "GROOMING:
-<questions>"`, and a blocked story with that prefix imports as grooming.
+<questions>"`, and a blocked story with that prefix imports as grooming —
+questions starting with punctuation (`- [ ] x`) export quoted, `GROOMING:
+"- [ ] x"`, and import back verbatim, as a park reason does.
 
 ## Operator questions: `decision N:` / `answer N:`
 
@@ -290,8 +299,11 @@ several items, none of them. A batch write (`export`, `archive`,
 `import --update`) refused over a hand-written value names the item and its
 path. The
 imports fold instead: `import-todo` folds a title wrapped across lines, and
-`import --format backlog-yaml` collapses the whitespace of every story value
-except `notes` (a `review_feedback: |` block scalar becomes one line).
+`import --format backlog-yaml` folds every story value except `notes` that
+holds a line break or a refused character — whitespace collapsed, ends
+trimmed (a `review_feedback: |` block scalar becomes one line). A one-line
+value is kept as the YAML loader read it, surrounding spaces, runs of
+spaces and NBSP included, so an exported title imports back unchanged.
 Imported `notes` are markdown and land in the body as is: a `## Handoff`
 line inside them becomes a real section, and one above the imported
 `doing:`/`next:` lines shadows the imported Handoff.
