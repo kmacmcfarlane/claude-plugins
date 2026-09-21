@@ -179,7 +179,7 @@ class TestScalarRoundTrip(WiTestCase):
         """emit_front's layout for meta_for(v). The writer refuses a control
         character in a value, so for those the same lines are built from
         _emit_scalar directly: the scalar contract still round-trips."""
-        if not wi._CONTROL_RE.search(v):
+        if not wi._FRONT_REFUSE_RE.search(v):
             return wi.emit_front(self.meta_for(v))
         with self.assertRaises(wi.WiError):
             wi.emit_front(self.meta_for(v))
@@ -222,7 +222,7 @@ class TestScalarRoundTrip(WiTestCase):
 
     def test_item_render_is_byte_stable_across_rewrites(self):
         for v in escape_values(count=100):
-            if v.strip() in ("", "—") or wi._CONTROL_RE.search(v):
+            if v.strip() in ("", "—") or wi._FRONT_REFUSE_RE.search(v):
                 continue  # the writer refuses control characters
             with self.subTest(v=v):
                 item = wi.Item(dict(self.meta_for(v), type="task",
@@ -332,7 +332,8 @@ class TestScalarRoundTrip(WiTestCase):
     def test_lint_is_clean_on_everything_wi_writes(self):
         odd = [v for v in escape_values(count=60)
                if v.strip() and v.strip() == v and not wi._CONTROL_RE.search(v)
-               and v not in ("—",) and "\n" not in v and len(v) <= 120]
+               and v not in ("—",) and not wi._LINE_BREAK_RE.search(v)
+               and len(v) <= 120]
         dep = json.loads(self.wi_ok(["add", "dep", "--json"]))["id"]
         for v in odd[:40]:
             iid = json.loads(self.wi_ok(["add", v, "--tag", v, "--json"]))["id"]
@@ -2557,6 +2558,308 @@ class TestDetailsBlocks(unittest.TestCase):
         self.assertNotIn("old problem was 6-12x over target", titles)
         self.assertEqual(sum(1 for i in items if i["status"] == "done"), 1)
         self.assertIn("still open thing", titles)
+
+
+
+class TestB020Lows(WiTestCase):
+    """b020 review lows, folded with 0c59, b9e8 and 9d8c: lint hints that
+    work, decision text, ls --dep ambiguity, line separators, and an export
+    that loads and round-trips."""
+
+    def show(self, iid):
+        return json.loads(self.wi_ok(["show", iid, "--json"]))
+
+    def export(self, root=None, name="backlog.yaml"):
+        out = self.tmp / name
+        r = run(["export", "--format", "backlog-yaml", str(out),
+                 "--project", "test"], root or self.root)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        return out, out.with_name(out.stem + "_done" + out.suffix)
+
+    def load_yaml(self, path):
+        from ruamel.yaml import YAML
+        return YAML(typ="safe").load(path.read_text())
+
+    # (1)
+    def test_lint_hint_for_a_stray_field_names_a_command_that_clears_it(self):
+        self.write_item("gp-1111", status="grooming", grooming="which?",
+                        parked="stale")
+        self.write_item("pg-2222", status="parked", parked="later",
+                        grooming="stale")
+        self.write_item("tp-3333", parked="stale")
+        r = run(["lint"], self.root)
+        self.assertEqual(r.returncode, 3)
+        for iid, field in (("gp-1111", "parked"), ("pg-2222", "grooming"),
+                           ("tp-3333", "parked")):
+            line = [ln for ln in r.stdout.splitlines() if iid in ln][0]
+            self.assertNotIn("unpark", line)
+            self.assertNotIn("ungroom", line)
+            cmd = f'wi set {iid} {field} ""'
+            self.assertIn(cmd, line)
+            self.wi_ok(["set", iid, field, ""])
+        self.assertIn("lint clean", self.wi_ok(["lint"]))
+        self.assertEqual((self.show("gp-1111")["status"],
+                          self.show("pg-2222")["status"]), ("grooming", "parked"))
+
+    # (2)
+    def test_needs_input_keeps_the_last_text_of_a_repeated_decision(self):
+        self.write_item("rev-1111", sections=(
+            "## Notes\ndecision 4: first wording\ndecision 5: other\n"
+            "decision 4: revised wording\n"))
+        data = json.loads(self.wi_ok(["needs-input", "--json"]))
+        self.assertEqual(data[0]["decisions"],
+                         [{"n": 4, "text": "revised wording"},
+                          {"n": 5, "text": "other"}])
+
+    # (3)
+    def test_answer_40_does_not_answer_decision_4(self):
+        self.write_item("num-1111", sections=(
+            "## Notes\ndecision 4: open?\ndecision 40: answered\n"
+            "answer 40: yes\n"))
+        self.assertEqual(self.wi_ok(["needs-input"]).splitlines(),
+                         ["num-1111  decision 4: open?"])
+
+    # (4)
+    def test_ls_dep_refuses_an_ambiguous_prefix(self):
+        self.write_item("abc-1111")
+        self.write_item("abc-2222")
+        self.write_item("child-3333", deps=["abc-1111", "ext: vendor"])
+        r = run(["ls", "--dep", "abc"], self.root)
+        self.assertEqual(r.returncode, 2)
+        self.assertIn("ambiguous id 'abc'", r.stderr)
+        self.assertEqual([x["id"] for x in json.loads(self.wi_ok(
+            ["ls", "--dep", "abc-1", "--json"]))], ["child-3333"])
+        self.assertEqual([x["id"] for x in json.loads(self.wi_ok(
+            ["ls", "--dep", "ext: vendor", "--json"]))], ["child-3333"])
+
+    # (6)
+    def test_one_line_writer_refuses_every_line_separator(self):
+        self.write_item("t-1111", status="doing", owner="tester@local",
+                        claimed="2026-08-30T10:00Z",
+                        handoff={"doing": "x", "next": "y"})
+        path = self.root / "items" / "t-1111.md"
+        before = path.read_bytes()
+        for sep in ("\u2028", "\u2029", "\x85", "\x0b", "\x0c", "\x1c"):
+            for argv in (["handoff", "t-1111", "--next", f"a{sep}b"],
+                         ["done", "t-1111", "--note", f"a{sep}b"],
+                         ["block", "t-1111", f"a{sep}b"],
+                         ["park", "t-1111", f"a{sep}b"],
+                         ["groom", "t-1111", f"a{sep}b"],
+                         ["set", "t-1111", "title", f"a{sep}b"],
+                         ["add", f"a{sep}b"]):
+                with self.subTest(sep=hex(ord(sep)), argv=argv[0]):
+                    r = run(argv, self.root)
+                    self.assertEqual(r.returncode, 1, r.stderr)
+                    self.assertIn(f"U+{ord(sep):04X}", r.stderr)
+                    self.assertEqual(path.read_bytes(), before)
+        self.assertEqual(len(list((self.root / "items").glob("*.md"))), 1)
+
+    def test_export_of_a_hand_written_line_separator_stays_loadable(self):
+        self.write_item("sep-1111")
+        path = self.root / "items" / "sep-1111.md"
+        path.write_text(path.read_text().replace(
+            "Description of sep-1111.", "one\u2028two\x85three"))
+        out, done_out = self.export()
+        story = self.load_yaml(out)["stories"][0]
+        self.assertTrue(story["notes"].startswith("one\u2028two\x85three"))
+        self.assertIn('notes: "one\\u2028two\\x85three', out.read_text())
+        fresh = self.tmp / ".fresh"
+        self.assertEqual(run(["init"], fresh).returncode, 0)
+        self.assertEqual(run(["import", "--format", "backlog-yaml", str(out)],
+                             fresh).returncode, 0)
+        out2, _ = self.export(fresh, "backlog2.yaml")
+        self.assertEqual(out2.read_text(), out.read_text())
+
+    # 0c59
+    def test_export_quotes_values_starting_with_a_bracket_or_brace(self):
+        titles = ["[wip] x", "{curly} y", "[1, 2]", "{}", "[", "- dash",
+                  "? q", "& anchor", "* star", "! tag", "| pipe", "> fold",
+                  "% pct", "@ at", "` tick", "# hash"]
+        for t in titles:
+            self.wi_ok(["add", t])
+        self.write_item("acc-9999", sections="## Acceptance\n- [ ] [x] done\n")
+        out, done_out = self.export()
+        loaded = self.load_yaml(out)["stories"]
+        self.assertEqual(sorted(s["title"] for s in loaded),
+                         sorted(titles + ["acc-9999"]))
+        acc = [s for s in loaded if s["title"] == "acc-9999"][0]
+        self.assertEqual(acc["acceptance"], ["[x] done"])
+        TestBacklogYaml._validate(self, out, done_out)
+        fresh = self.tmp / ".fresh"
+        self.assertEqual(run(["init"], fresh).returncode, 0)
+        self.assertEqual(run(["import", "--format", "backlog-yaml", str(out)],
+                             fresh).returncode, 0)
+        out2, _ = self.export(fresh, "backlog2.yaml")
+        self.assertEqual(out2.read_text(), out.read_text())
+
+    def test_export_passes_a_json_encoded_extra_field_through(self):
+        src = self.tmp / "in.yaml"
+        src.write_text("schema_version: 2\nstories:\n  - id: S-001\n"
+                       "    title: t\n    status: todo\n    priority: 50\n"
+                       "    labels: [a, b]\n    meta: {k: v}\n"
+                       '    note_like: "[not json"\n')
+        self.wi_ok(["import", "--format", "backlog-yaml", str(src)])
+        out, _ = self.export()
+        story = self.load_yaml(out)["stories"][0]
+        self.assertEqual((story["labels"], story["meta"], story["note_like"]),
+                         (["a", "b"], {"k": "v"}, "[not json"))
+
+    # (7) = b9e8
+    def test_ext_deps_round_trip_idempotently(self):
+        self.write_item("blk-1111", status="blocked", blocked="vendor",
+                        deps=["ext: upstream fix", "ext:other"])
+        self.write_item("park-2222", status="parked", parked="later",
+                        deps=["ext: x"])
+        self.write_item("groom-3333", status="grooming", grooming="which?",
+                        deps=["ext: y"])
+        self.write_item("todo-4444", deps=["ext: z"])
+        items = sorted((self.root / "items").glob("*.md"))
+        snapshots = []
+        for _ in range(4):
+            out, _ = self.export()
+            text = out.read_text()
+            self.wi_ok(["import", "--format", "backlog-yaml", "--update",
+                        str(out)])
+            snapshots.append((text, [p.read_bytes() for p in items]))
+        self.assertEqual(snapshots[1], snapshots[2])
+        self.assertEqual(snapshots[2], snapshots[3])
+        self.assertEqual(text.count("requires ext:"), 4, text)
+        self.assertIn(
+            'blocked_reason: "vendor; requires ext: upstream fix, ext:other"',
+            text)
+        self.assertIn('blocked_reason: "requires ext: z"', text)
+        want = {"blk-1111": ("blocked", "vendor", None, None),
+                "park-2222": ("parked", None, "later", None),
+                "groom-3333": ("grooming", None, None, "which?"),
+                "todo-4444": ("todo", None, None, None)}
+        for iid, state in want.items():
+            rec = self.show(iid)
+            self.assertEqual((rec["status"], rec["blocked"], rec["parked"],
+                              rec["grooming"]), state, iid)
+        self.wi_ok(["lint"])
+        # a fresh import restores the ext: deps from the suffix
+        fresh = self.tmp / ".fresh"
+        self.assertEqual(run(["init"], fresh).returncode, 0)
+        self.assertEqual(run(["import", "--format", "backlog-yaml", str(out)],
+                             fresh).returncode, 0)
+        recs = {r["alias"]: r for r in json.loads(run(
+            ["ls", "--status", "all", "--json"], fresh).stdout)}
+        by_title = {r["title"]: r for r in recs.values()}
+        self.assertEqual(by_title["blk-1111"]["deps"],
+                         ["ext: upstream fix", "ext:other"])
+        self.assertEqual(by_title["park-2222"]["deps"], ["ext: x"])
+        self.assertEqual(by_title["groom-3333"]["deps"], ["ext: y"])
+        self.assertEqual(by_title["todo-4444"]["deps"], ["ext: z"])
+        blk = json.loads(run(["show", by_title["blk-1111"]["id"], "--json"],
+                             fresh).stdout)
+        self.assertEqual(blk["blocked"], "vendor")
+        self.assertEqual(by_title["todo-4444"]["status"], "todo")
+        out2, _ = self.export(fresh, "backlog2.yaml")
+        self.assertEqual(out2.read_text(), out.read_text())
+
+    def test_reasons_that_mention_requires_ext_survive_round_trips(self):
+        """Fix round 1: only the suffix export appended is stripped."""
+        self.write_item("wait-1111", status="blocked",
+                        blocked="waiting; requires ext: vendor sign-off")
+        self.write_item("legal-2222", status="blocked",
+                        blocked="requires ext: legal sign-off")
+        self.write_item("park-3333", status="parked",
+                        parked="later; requires ext: x")
+        self.write_item("mix-4444", status="blocked",
+                        blocked="a; requires ext: b; c", deps=["ext: e57"])
+        self.write_item("todo-5555", deps=["ext: z"])
+        want = {"wait-1111": ("blocked", "waiting; requires ext: vendor sign-off",
+                              None, []),
+                "legal-2222": ("blocked", "requires ext: legal sign-off",
+                               None, []),
+                "park-3333": ("parked", None, "later; requires ext: x", []),
+                "mix-4444": ("blocked", "a; requires ext: b; c", None,
+                             ["ext: e57"]),
+                "todo-5555": ("todo", None, None, ["ext: z"])}
+        items = sorted((self.root / "items").glob("*.md"))
+        snaps = []
+        for _ in range(4):
+            out, _ = self.export()
+            self.wi_ok(["import", "--format", "backlog-yaml", "--update",
+                        str(out)])
+            snaps.append((out.read_text(), [p.read_bytes() for p in items]))
+            for iid, state in want.items():
+                rec = self.show(iid)
+                self.assertEqual((rec["status"], rec["blocked"], rec["parked"],
+                                  rec["deps"] or []), state, iid)
+        self.assertEqual(snaps[1], snaps[3])
+        self.wi_ok(["lint"])
+        # a fresh import: the last `; requires ext:` group is the suffix, and
+        # a blocked story's whole reason is never taken for one
+        fresh = self.tmp / ".fresh"
+        self.assertEqual(run(["init"], fresh).returncode, 0)
+        self.assertEqual(run(["import", "--format", "backlog-yaml", str(out)],
+                             fresh).returncode, 0)
+        recs = {r["title"]: r for r in json.loads(run(
+            ["ls", "--status", "all", "--json"], fresh).stdout)}
+        for title in ("mix-4444", "legal-2222"):
+            rec = json.loads(run(["show", recs[title]["id"], "--json"],
+                                 fresh).stdout)
+            self.assertEqual((rec["blocked"], rec["deps"] or []),
+                             want[title][1:2] + want[title][3:], title)
+        self.assertEqual(run(["lint"], fresh).returncode, 0)
+
+    def test_a_new_items_refusal_names_no_file(self):
+        r = run(["add", "t", "--tag", "a\tb"], self.root)
+        self.assertEqual(r.returncode, 1, r.stderr)
+        self.assertIn("front-matter 'tags' holds a control character", r.stderr)
+        self.assertNotIn(".md", r.stderr)
+        self.assertEqual(list((self.root / "items").glob("*.md")), [])
+
+    def test_front_matter_refuses_a_line_separator_in_any_field(self):
+        for flag in ("--tag", "--ref"):
+            for sep in (" ", " "):
+                with self.subTest(flag=flag, sep=hex(ord(sep))):
+                    r = run(["add", "t", flag, f"a{sep}b"], self.root)
+                    self.assertEqual(r.returncode, 1, r.stderr)
+                    self.assertIn(f"U+{ord(sep):04X}, a line separator",
+                                  r.stderr)
+                    # a new item's refusal names no file: none was written
+                    self.assertNotIn(".md", r.stderr)
+        self.assertEqual(list((self.root / "items").glob("*.md")), [])
+        # a hand-written escaped one is a lint finding
+        self.write_item("hand-1111")
+        path = self.root / "items" / "hand-1111.md"
+        path.write_text(path.read_text().replace(
+            "title: hand-1111", 'title: "a\\u2028b"'))
+        r = run(["lint"], self.root)
+        self.assertEqual(r.returncode, 3)
+        self.assertIn("hand-1111.md: front-matter 'title' holds a control",
+                      r.stdout)
+        # import folds one to a space, as it folds a line break
+        src = self.tmp / "in.yaml"
+        src.write_text('schema_version: 2\nstories:\n  - id: S-001\n'
+                       '    title: "x\\u2028y"\n    status: todo\n')
+        fresh = self.tmp / ".fresh"
+        self.assertEqual(run(["init"], fresh).returncode, 0)
+        self.assertEqual(run(["import", "--format", "backlog-yaml", str(src)],
+                             fresh).returncode, 0)
+        self.assertEqual(json.loads(run(["ls", "--json"], fresh).stdout)[0]
+                         ["title"], "x y")
+
+    # 9d8c
+    def test_batch_write_refusal_names_the_item(self):
+        self.write_item("ok-1111")
+        self.write_item("bad-2222")
+        path = self.root / "items" / "bad-2222.md"
+        path.write_text(path.read_text().replace(
+            "title: bad-2222", 'title: "C:\\temp"'))
+        before = {p.name: p.read_bytes()
+                  for p in (self.root / "items").glob("*.md")}
+        out = self.tmp / "backlog.yaml"
+        r = run(["export", "--format", "backlog-yaml", str(out)], self.root)
+        self.assertEqual(r.returncode, 1)
+        self.assertIn("bad-2222", r.stderr)
+        self.assertIn(str(path), r.stderr)
+        self.assertIn("front-matter 'title' holds a control character", r.stderr)
+        self.assertFalse(out.exists())
+        self.assertEqual({p.name: p.read_bytes()
+                          for p in (self.root / "items").glob("*.md")}, before)
 
 
 if __name__ == "__main__":
