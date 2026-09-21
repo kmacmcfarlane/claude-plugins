@@ -42,7 +42,12 @@ would answer it, and does no single one of them suffice?** If yes, fan out.
 
 ## Step 1 — Gather the run inputs (blocking)
 
-One `AskUserQuestion` round, with a recommendation on each. You need:
+One round, with a recommendation on each. The gate blocks on the user's answer, not on a
+widget: while the question itself is still open — the usual state here — ask it as a
+**numbered list in your reply** that the user answers free-form, since "none of these, and here
+is why" is a common and useful answer that fixed options fight. Keep `AskUserQuestion` for a
+closed choice with enumerable options, and never open it in the same turn as heavy analysis.
+You need:
 
 1. **The question**, and what decision it feeds. A fan-out with no downstream decision produces
    a library, not an answer.
@@ -213,8 +218,9 @@ non-interactively** below.
 Overnight and unattended runs are the normal case for this skill; the gates change form rather
 than disappearing, exactly as in `investigate`:
 
-- Decide Step 1's six inputs yourself from the invocation and the repo, and record each under
-  **Confirmed Assumptions** in the strategy doc, framed as something a reviewer may overturn.
+- Ask nothing, in either form. Decide Step 1's six inputs yourself from the invocation and the
+  repo, and record each under **Confirmed Assumptions** in the strategy doc, framed as
+  something a reviewer may overturn.
 - The pacing constraint is the one to get right unattended: with no stated reason, **default to
   full parallel** and say so, rather than building a wave schedule for a constraint you invented.
 - Treat Step 7's review gate as Save, and report every recorded decision together at the end.
