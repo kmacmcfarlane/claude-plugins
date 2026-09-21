@@ -28,3 +28,13 @@ From b020 review 2026-09-21 (CLEAR with lows). Fix: (1) lint hint for grooming i
 
 ## Notes
 - 2026-09-21 claimed by unknown@360f41058e92
+
+## Implementer result
+- round 1 DONE 38b82a7 (opus): all points + folded 0c59/b9e8/9d8c; TestB020Lows 10 tests (fail 48+3 without; answer-40 is a pin test). Deviations: wi set … "" hint for all statuses; export quotes a notes value holding line separators; import restores ext deps on new items only.
+- dispatch: reviewer opus — rule 4
+
+## Review round 1 — NEEDS_CHANGES (opus) at 38b82a7
+- fuzz (78 items, every YAML indicator) validates --strict; live-store copy lint clean, 3 cycles byte-identical; 0c59 really fixed (main fails to parse the same export).
+- [high] wi.py:2015,2212 suffix strip not tied to the ext deps export appended: a real reason containing "; requires ext:" is cut, "requires ext: …" alone becomes None (lint fails). Fix: on --update strip only the exact suffix built from the item's ext deps; new item: last group; tests for both reasons over N cycles.
+- lows: format.md:281 overstates which writes refuse separators (or add _LINE_BREAK_RE to _front_one_line); 9d8c prefix on single-item path names an unwritten file; cycle-0 drift for punctuation-only park/groom reasons (out of scope → follow-up if not fixed).
+- dispatch: implementer opus — fix round 1 (same agent resumed)

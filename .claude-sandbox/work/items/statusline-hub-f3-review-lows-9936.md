@@ -27,3 +27,10 @@ From dfa1 review r2 2026-09-21 (CLEAR with lows). (1) hub session_start.py:320-3
 ## Implementer result
 - round 1 DONE 64c6513 (opus): footer wording when hub runs first; heal yields a footer entry when records readable and no statusline@; waits otherwise; tests fail 2 without. README already lists both (bbe5ea4). Open: repoint after uninstall while the 14-day manifest lingers.
 - dispatch: reviewer opus — rule 4 (fable-signal fallback)
+
+## Review round 1 — NEEDS_CHANGES (opus) at 64c6513
+- [medium] session_start.py:256-258,190 permanent yield keyed on parsed install list: a non-list statusline@ value (v1 shape), plugins {} or no statusline-hub@ record (--plugin-dir) → yields wrongly. Fix: yield only when plugins is a dict holding statusline-hub@ and no statusline@ key at all; None otherwise; test v1-shaped value → Wait.
+- lows: _statusline_installs_only_hooks ignores enabled state; yield message could say the leftover entry belongs to the removed statusline plugin. Deferral judged legit: repoint while a ≤14-day manifest lingers.
+- dispatch: implementer opus — fix round 1 (same agent resumed)
+- fix round 1 DONE 815efbc (opus): yield only when plugins is a dict with statusline-hub@ and no statusline@ key (any shape); five wait tests; lows a,b fixed; fail 6 without.
+- dispatch: reviewer opus — review r2 (same reviewer resumed)

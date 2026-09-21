@@ -24,3 +24,10 @@ decision 50: the drafted upstream issue (tell the statusLine which sub-agent is 
 ## Notes
 - 2026-09-21 claimed by unknown@360f41058e92
 - dispatch: implementer opus — executable logic (renderer) + a settings default; decision 50 (upstream issue) does not gate it: the known-limitation line ships either way
+
+## Implementer result
+- round 1 DONE_WITH_CONCERNS ff555d2 (opus): subagent_statusline.py renderer (exact from sidechain, incremental 8 MiB/tick, approx fallback labelled); plugin settings.json default subagentStatusLine via current-hooks link (${CLAUDE_PLUGIN_ROOT} not expanded there; user value always wins; no user settings write); prune; 24 tests; docs + #76863 limitation. Verified docs + binary 2.1.278; hand-run on a 10 MB sidechain.
+- scope widened (librarian): CLAUDE.md layout line for statusline/hooks gets subagent_statusline + plugin settings.json (same-feature layout rule); catalog row left as is.
+- dispatch: implementer opus — widening (same agent resumed), then reviewer opus
+- widening DONE c1be970: CLAUDE.md layout lists subagent_statusline + plugin settings.json.
+- dispatch: reviewer opus — rule 4
