@@ -93,6 +93,9 @@ When the invocation says to run without stopping, the gates change form rather t
   or incomplete verification is still a stop: report it and leave the work uncommitted.
 - **Step 10a (terminal action)** — do the least irreversible thing the invocation authorises.
   Absent an explicit instruction, commit locally and leave the push to the user.
+- **Step 4 (base drift), Step 7 (a plan revision or an in-scope issue) and Step 8 (a step
+  needing human action)** — same rule as above: decide the least irreversible choice and
+  record it under Confirmed Assumptions, unless it blocks.
 - A **blocking** open question still blocks. Say so and stop rather than guessing past it.
 
 Report every recorded decision together at the end so the user reviews them in one pass.
@@ -116,7 +119,8 @@ numbered; a renumber updates this list in the same commit.
 - **Step 6 (gate 1) and Step 9 (gate 2)** — non-interactive. Gate 1's decisions go under
   DEVIATIONS in the return, since there is no outcome file to hold them. Gate 2 passes on
   verification at the planned tier; the orchestrator's review replaces its approval. A
-  failing verification is still a stop, reported, never committed around.
+  failing verification is still a stop, reported, never committed around; a verification
+  incomplete only by a human-gated step is Step 8's case — committed, not a stop.
 - **Step 7 (Implement)** — inline only, in the given worktree: no fan-out, no
   `EnterWorktree`, no integration branch, no merge. Before the first edit, regenerate
   anything checked in that the base may carry stale (codegen, mocks, generated clients) in
@@ -237,7 +241,9 @@ Present:
 6. **Open-question status** — what staleness closed, what the background agent verified with
    evidence, what still **blocks**, and what you need decided now.
 
-**Ask the decision-class questions here**, via `AskUserQuestion`, each with the defer option:
+**Ask the decision-class questions here**, per the `investigate` skill's § Asking at a gate —
+a numbered list answered free-form is preferred while scope is open, `AskUserQuestion` for a
+closed choice late in the task; end the turn on the list. Keep the defer option either way:
 
 > **Leave open and record in the investigation** — defer this; it stays under Open Questions
 > with its owner and whether it blocks implementation.
