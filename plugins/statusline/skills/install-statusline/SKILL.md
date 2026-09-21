@@ -3,7 +3,7 @@ name: install-statusline
 description: Install, move or remove the always-on status line — a one-line footer showing context left (tokens and percent), plan usage limits with reset countdowns, model, effort and session name. The plugin installs it by itself on the first session; use this to put it in another scope, remove it, or replace a status line another tool set. Use when the user says "install the statusline", "set up the status line", "set up the context gauge", "remove the statusline", "move the statusline to this project", or "replace my status line with this one".
 disable-model-invocation: false
 allowed-tools: Bash, Read, AskUserQuestion
-argument-hint: [--user | --local | --project] [--remove]
+argument-hint: "[--user | --local | --project] [--remove]"
 ---
 
 # Install the status line

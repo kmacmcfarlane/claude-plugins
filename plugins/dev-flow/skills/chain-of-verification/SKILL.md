@@ -3,7 +3,7 @@ name: chain-of-verification
 description: Run Chain-of-Verification (CoVe) on a prompt to reduce hallucinations. Generates a baseline response, plans verification questions, answers them independently via subagent, then revises. Use when user says "cove", "chain of verification", "verify this", "fact-check this response", "reduce hallucinations", or wants a high-accuracy factual answer.
 disable-model-invocation: false
 allowed-tools: Agent, WebSearch, WebFetch, Read, Glob, Grep
-argument-hint: [question or prompt to verify]
+argument-hint: "[question or prompt to verify]"
 ---
 
 # Chain-of-Verification (CoVe)

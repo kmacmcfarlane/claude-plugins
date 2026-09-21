@@ -3,7 +3,7 @@ name: deep-investigation
 description: Run a multi-agent deep-research fan-out for a broad, open-ended question — recon the corpora, write a canonical strategy doc (lanes, output contract, ledger), launch many research lanes on a cheaper model against a fixed contract, then synthesize in one pass into an investigation series. Use when the user says "deep research", "deep investigation", "fan out", "map the landscape of", "what should X become", "research this overnight", or when a question is too broad for one session to read its way through. Do NOT use for a scoped bug or feature — that is the investigate skill.
 disable-model-invocation: false
 allowed-tools: Read, Write, Edit, Glob, Grep, Bash, Agent, WebSearch, WebFetch, AskUserQuestion
-argument-hint: <broad research question>
+argument-hint: "<broad research question>"
 ---
 
 # Deep investigation

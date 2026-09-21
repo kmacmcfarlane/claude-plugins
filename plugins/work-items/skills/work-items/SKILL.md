@@ -3,7 +3,7 @@ name: work-items
 description: Repo-durable work items via the `wi` CLI — one markdown file per item in `.work/` (or `.claude-sandbox/work/`), with ready-ranking, claims, handoff blocks, TODO.md import, and a backlog-yaml bridge. Auto-activates when a repo has a work-item store, or when the user says "what's next", "work item", "next task", "claim it", "hand it off", "mark it done", or asks to migrate a TODO.md. Not for unattended ralph runs (backlog-yaml owns those).
 disable-model-invocation: false
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
-argument-hint: [next | show <id> | add | done <id> | import-todo <path>]
+argument-hint: "[next | show <id> | add | done <id> | import-todo <path>]"
 ---
 
 # Work items

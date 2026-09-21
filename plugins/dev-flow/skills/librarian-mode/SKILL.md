@@ -3,7 +3,7 @@ name: librarian-mode
 description: Put this session into librarian mode — the standing single-writer custodian of the custody layer its operator opts in at start — a plugin marketplace's shared agent layer (skills, plugins, hooks), a docs tree, or any repo, product code included. Every request from the operator or a peer session becomes a work item first; the librarian factors it into independently landable features, routes each dispatch to a model tier by explicit signals, delegates each to a background agent in a harness-native worktree, gates every result through a review sub-agent with a fix loop until it comes back clear, merges what lands into local main, and reports in four lines (changed, verified, open questions, decisions needed). Use when the user says "librarian mode", "act as librarian", "you are the librarian", "take requests for the kit", or asks one session to own every change to a repo, its docs, or its shared skills and plugins. Not for one-off feature work — that gets a worktree and a PR.
 disable-model-invocation: false
 allowed-tools: Read, Glob, Grep, Bash, Agent, AskUserQuestion, SendMessage, ListAgents, EnterWorktree
-argument-hint: [start | status | intake <request>]
+argument-hint: "[start | status | intake <request>]"
 ---
 
 # Librarian mode

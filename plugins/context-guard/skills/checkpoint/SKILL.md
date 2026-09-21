@@ -3,7 +3,7 @@ name: checkpoint
 description: Land the state of a long session before context is compacted or cleared — ask the operator the goal from here (land / continue / handoff), write the reasoning that exists only in this conversation as a delta over the session ledger, route every finding to the repo that owns it, write the HANDOFF.md rehydration manifest, record the checkpoint so the context gate stands down, then hand the operator the decision. Use when the gate warns (DUE/HARD), when an auto-compaction is deferred, when the user says "checkpoint", "we're running out of context", "wrap this up", or before switching topics after a long thread. Also use at a stage boundary in a skill chain — the next skill reads its inputs from files this session already published — regardless of window health.
 disable-model-invocation: false
 allowed-tools: Read, Write, Edit, Glob, Grep, Bash, Agent, AskUserQuestion
-argument-hint: [land | continue | handoff] [then <next-skill>] [optional focus]
+argument-hint: "[land | continue | handoff] [then <next-skill>] [optional focus]"
 ---
 
 # Checkpoint

@@ -53,6 +53,12 @@ git -C $W diff --stat $BASE...HEAD
 - [ ] No angle brackets in `name` or `description` (they are allowed in `argument-hint`,
       where about half the skills here use them); description under 1024 characters and
       states what + when + trigger phrases.
+- [ ] The frontmatter parses under a strict YAML parser, and `name`, `description` and
+      `argument-hint` each load as a string. An unquoted value that starts with `[` is a
+      flow sequence: one bracket group loads as a list, and a second group after it
+      (`[a] [b]`) makes the whole frontmatter fail to parse, so a stricter loader drops
+      the skill without a word. Quote `argument-hint` always. The strict-YAML block at the
+      end of this section checks it; a `SKIP` there is a gap to report, not a pass.
 - [ ] Reference paths are bare relative paths: no dot-slash prefix, no skill-dir
       variable (the two tokens the lint below greps for).
 - [ ] No `README.md` inside the skill folder.
@@ -156,6 +162,33 @@ What the reference check reads, so a reviewer can tell a real miss from a lint g
   are not read.
 - **Extensions.** Only a path ending in `.md` counts: `.mdx`, `.md.bak` and other
   longer names are not read as `.md`. A sentence-ending full stop after `.md` is fine.
+
+The strict-YAML check (ruamel.yaml's safe loader, else PyYAML's; `SKIP` when neither
+imports, never a silent pass):
+
+```bash
+for s in $(git -C $W diff --name-only $BASE...HEAD | grep -o 'plugins/[^/]*/skills/[^/]*' | sort -u); do
+  echo "== $s (strict YAML)"
+  python3 - $W/$s/SKILL.md <<'PY'
+import sys
+try:
+    from ruamel.yaml import YAML; load = YAML(typ='safe').load
+except ImportError:
+    try: import yaml; load = yaml.safe_load
+    except ImportError: print('SKIP: no strict YAML parser'); sys.exit()
+text = open(sys.argv[1]).read()
+if not text.startswith('---\n'): print('FAIL: no frontmatter'); sys.exit()
+if '\n---' not in text[4:]: print('FAIL: frontmatter not closed'); sys.exit()
+try: fm = load(text[4:].split('\n---', 1)[0])
+except Exception as e:
+    m = getattr(e, 'problem_mark', None); at = f' at frontmatter line {m.line + 1}' if m else ''
+    print(f"FAIL: frontmatter does not parse{at}: {getattr(e, 'problem', None) or type(e).__name__}"); sys.exit()
+if not isinstance(fm, dict): print('FAIL: frontmatter is not a mapping'); sys.exit()
+for k in ('name', 'description', 'argument-hint'):
+    if k in fm and not isinstance(fm[k], str): print(f'FAIL: {k} loads as {type(fm[k]).__name__}, not a string')
+PY
+done
+```
 
 ## 3. Doctrine
 

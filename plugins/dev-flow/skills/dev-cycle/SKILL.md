@@ -3,7 +3,7 @@ name: dev-cycle
 description: Carry one change from plan to merge through sub-agents — resolve the target (a work item, an investigation series, a plan file, or the current conversation), plan it when it needs one, route each dispatch to a model tier by explicit signals, delegate the build to a background agent in its own git worktree, gate the result through a review sub-agent with a fix loop capped at four review rounds, run the repo's checks, land it the way the user chooses (a local merge first, never a push unasked), and report in four lines. Use when the user says "dev cycle", "run the dev cycle on", "take this item to merge", "build this through sub-agents", "implement and review this", or wants one work item or plan carried to a reviewed, landed change without a standing librarian. Not for a session that owns a repo's whole stream of work (librarian-mode) or a hands-on plan-and-build session (investigate, implement).
 disable-model-invocation: false
 allowed-tools: Read, Write, Glob, Grep, Bash, Agent, AskUserQuestion, SendMessage, ListAgents, EnterWorktree
-argument-hint: [wi-id | slug | plan-path] [plan | review branch]
+argument-hint: "[wi-id | slug | plan-path] [plan | review branch]"
 ---
 
 # Dev cycle

@@ -3,7 +3,7 @@ name: product-research
 description: Structured, goal-driven product research that runs requirements gathering, broad web search, candidate analysis, and a comparison writeup with prices, vendor links, and pros/cons. Use this whenever the user is trying to decide what to buy, asks for recommendations, wants options compared, or says things like "what's the best X", "help me pick a Y", "I need something that does Z" — even if they don't use the word "research". Also use it when the user invokes it by name with a goal statement as the argument.
 disable-model-invocation: false
 allowed-tools: WebSearch, WebFetch, Read
-argument-hint: [goal statement - what to buy and the job it must do]
+argument-hint: "[goal statement - what to buy and the job it must do]"
 ---
 
 # Product Research
