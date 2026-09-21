@@ -203,8 +203,8 @@ or through `dev-cycle`, which takes one change from plan to merge through sub-ag
 routed implementer in its own worktree, a review gate with a capped fix loop, the repo's
 checks, a local merge on the user's say-so). Plus the research and verification techniques
 that feed it, and a standing librarian that takes custody of a repo's work: it files every
-request, dispatches it to worktree agents (spikes and features through `investigate` and
-`implement`), reviews, and lands.
+request, factors it, and dispatches each piece through `dev-cycle` with its own bindings
+(its Scope, checks and decision channel), then reports what landed.
 
 | Skill | Description |
 |---|---|

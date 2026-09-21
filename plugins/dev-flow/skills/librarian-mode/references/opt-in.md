@@ -49,26 +49,21 @@ Enter three times accepts the defaults.
      for the list.
    - `Not now` — creates nothing and stops. The only remaining decline.
 2. **Checks every change must pass** — multiSelect: up to three commands detected in
-   the repo (below), then always `None beyond the generic checklist` last, so the
-   question has two to four options; more through Other. Ticked commands and Other text
-   become `Checks:`. An empty submit, or only `None…` ticked, means no `Checks:` key;
-   `None…` ticked alongside commands is ignored.
+   the repo (§ Detecting checks), then always `None beyond the generic checklist` last,
+   so the question has two to four options; more through Other. Ticked commands and
+   Other text become `Checks:`. An empty submit, or only `None…` ticked, means no
+   `Checks:` key; `None…` ticked alongside commands is ignored.
 3. **Push** — options in this order:
    - `main` — fast-forward `origin/main` after each Report.
    - `none` — land to local `main` only; the push step is skipped.
 
 ## Detecting checks
 
-Look, do not run: read the files named below. At most three command options; list the
-rest in the question text so the operator can paste them into Other.
-
-| Evidence | Offered command |
-|---|---|
-| `go.mod` at the root | `go test` with the all-packages pattern: `.` then `/...`, written joined (split here only to pass the dot-slash lint) |
-| a `Makefile` with a `test:` target | `make test` |
-| `package.json` with a `scripts.test` entry | `npm test` |
-| `scripts/check-*.sh` | each script, by path |
-| `plugins/*/hooks/tests/` | `(cd plugins/<p>/hooks && python3 -m unittest discover -s tests -q)` |
+Look, do not run. The evidence table — which file offers which command — is the
+`dev-cycle` skill's `references/bindings.md` § Checks, the one copy, shared with a
+standalone cycle's checks question. At most three command options; list the rest in the
+question text so the operator can paste them into Other. Unlike that standalone
+question, the answer here is written to CLAUDE.md, as `Checks:` (below).
 
 ## Writing the answer
 

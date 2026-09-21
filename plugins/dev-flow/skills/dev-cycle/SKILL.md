@@ -92,7 +92,9 @@ clear acceptance skips it, and so does a target that already has a series or pla
   the plan-review variant; a `NEEDS_CHANGES` re-dispatches the plan agent, which
   revises by a new serial per the `investigate` skill's
   `references/investigation-format.md`. After `CLEAR`, its blocking open questions go
-  to the decision channel; then Step 6.
+  to the decision channel; then Step 6. With a work item: `$WI claim <id>` before the
+  plan dispatch (unless already yours); after `CLEAR`, `$WI done <id> --note <series
+  path>`, or `$WI handoff <id>` naming the series while blocking questions are open.
 - **A feature in full mode:** no separate dispatch; the implementer runs /investigate
   then /implement in its worktree through the brief's dev-flow block — `librarian-mode`'s
   current block, reused until those skills own an orchestrated mode

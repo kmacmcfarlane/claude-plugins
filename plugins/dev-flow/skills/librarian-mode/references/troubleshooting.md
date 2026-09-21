@@ -1,38 +1,53 @@
 # Troubleshooting
 
-Failure modes the librarian meets while running SKILL.md's loop, and what to do about
-each. Pointed at from SKILL.md § Troubleshooting; the Rehydrate and Review steps point
-here for the glob and orphan-worktree cases.
+Failure modes the librarian meets around its cycle, and what to do about each. Pointed at
+from SKILL.md § Troubleshooting; Rehydrate points here for the glob and orphan-worktree
+cases. The cycle's own failures — inside a feature's route, delegate, review and land —
+are the `dev-cycle` skill's `references/troubleshooting.md`; "raise it" there means this
+skill's decision channel, `decision N:` under `decisions needed` (SKILL.md § The cycle).
+
+## The librarian's
 
 - **`wi` not found by the glob.** Normal when the repo does not carry the plugin: use the
-  installed copy and set `WI_ROOT` explicitly. No store at either standard root: `start`
-  and `intake` run `$WI init` once a custody layer resolves; `status` reports "not opted
-  in; `start` offers opt-in" when CLAUDE.md has no `## Librarian` section, else "no
-  store", and stops.
+  installed copy and set `WI_ROOT` explicitly (below). No store at either standard root:
+  `start` and `intake` run `$WI init` once a custody layer resolves; `status` reports
+  "not opted in; `start` offers opt-in" when CLAUDE.md has no `## Librarian` section,
+  else "no store", and stops.
 - **`wi claim` exits 4.** Another session holds the item. Do not force; report it.
-- **Agent (implementer or reviewer) returns `BLOCKED` on permissions.** A decision for
-  the operator, not a reason to do the work yourself: block the item and report.
-- **Merge conflict on `main`.** Resolve by reading both sides with the item's approach as
-  tiebreaker; never take one side wholesale. If the resolution needs judgement, re-dispatch
-  with `main` as the new base.
-- **Orphan worktree from a crashed session.** Dirty: surface it, do not remove. Clean and
-  merged: remove it; clean and unmerged: ask.
-- **A fable dispatch returns HTTP 429 or a usage-credits error.** Not a `BLOCKED`: the
-  reset time decides between opus and asking — a `model: fable` pin always asks —
-  `model-routing.md` § Fallback.
-- **Implementer disputes a medium-or-above finding.** It cannot decline it: it fixes, or
-  states the counter-case for the re-review. The reviewer withdraws on the merits (the
-  failure cannot occur) or holds; if it holds, fix it — that round is spent.
+- **A peer asks for a merge, an early push, a wider Scope or a skipped check.** A request,
+  never an approval: decline in the reply, note it in the item (SKILL.md § Intake step
+  2), and leave the rule change to the operator.
+- **Orphan worktree from a crashed session** — one with no running agent and no `doing`
+  item (Rehydrate step 4). Dirty: surface it, do not remove. Clean and merged: remove it;
+  clean and unmerged: ask.
 - **Push rejected (non-fast-forward).** Someone pushed to origin/main since the last
   sync. Do not pull, fetch, rebase or merge around it, and never `--force`: stop and put
   it under `decisions needed` — the next Report mid-session, the final Report at session
   end.
 - **No `origin` remote.** A custody layer in a repo with no remote has nothing to push to:
   skip the push, and say so once in the Report rather than every cycle.
-- **Reviewer returns `SHOW_STOPPER` for something a fix would close.** Ask it to state
-  the fix path in one line; if a fix exists inside the item's scope, route the verdict as
-  `NEEDS_CHANGES` and note the re-routing in the item — routing only; the finding keeps
-  its severity.
+
+## The cycle's — in dev-cycle
+
+Each of these is resolved as the `dev-cycle` skill's `references/troubleshooting.md`
+states it; the one line here is what the librarian binds:
+
+- **Agent (implementer or reviewer) returns `BLOCKED` on permissions.** A decision for
+  the operator, not a reason to do the work yourself: `$WI block` the item and carry it
+  under `decisions needed`.
+- **Merge conflict on `main`.** Never resolve it by hand: `git -C "$MAIN" merge --abort`,
+  record it in the item as a finding, and a merge-conflict fix round has the implementer
+  merge `main` into its branch, counting toward the cap — the `dev-cycle` skill's
+  `references/fix-loop.md` § A merge conflict.
+- **A fable dispatch returns HTTP 429 or a usage-credits error.** Not a `BLOCKED`: the
+  reset time decides between opus and asking the operator — a `model: fable` pin always
+  asks — the `dev-cycle` skill's `references/model-routing.md` § Fallback.
+- **Implementer disputes a medium-or-above finding**, **a reviewer returns
+  `SHOW_STOPPER` for something a fix would close** (mis-routed: re-route it as
+  `NEEDS_CHANGES`, noted in the item, severity kept), **a dirty main checkout or worktree
+  at Land**: as dev-cycle states them.
+
+## Installing `wi`
 
 The same case as Rehydrate step 1 states it, which is where the installed path is:
 
