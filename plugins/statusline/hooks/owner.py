@@ -45,6 +45,7 @@ import json, os, re, stat, time
 import sensor
 
 PLUGIN = "statusline"
+SCRIPT = "statusline.py"  # what this plugin's current-hooks link leads to
 # Plugins that shipped this status line before (takeover fingerprints).
 PREDECESSORS = ("claude-kit", "context-guard")
 MARKER = "owner.json"
@@ -93,7 +94,10 @@ def data_dir(script_path=None, scan=True):
     3. the name derived from the plugin cache path this code runs from
        (plugins/cache/<mkt>/statusline/);
     4. with `scan`, the first <config>/plugins/data/statusline-* dir - a
-       guess when the plugin came from several marketplaces, so last.
+       guess when the plugin came from several marketplaces, so last. A dir
+       whose current-hooks link leads somewhere without SCRIPT belongs to
+       another plugin whose name extends this one (statusline-hub-<mkt>
+       sorts before statusline-<mkt>) and is never taken.
     None when none of those applies."""
     d = os.environ.get("CLAUDE_PLUGIN_DATA")
     if d:
@@ -108,8 +112,12 @@ def data_dir(script_path=None, scan=True):
         return os.path.join(base, f"{PLUGIN}-{m.group(1)}")
     try:
         for name in (sorted(os.listdir(base)) if scan else ()):
-            if name.startswith(PLUGIN + "-") and os.path.isdir(os.path.join(base, name)):
-                return os.path.join(base, name)
+            d = os.path.join(base, name)
+            hooks = os.path.join(d, "current-hooks")
+            if name.startswith(PLUGIN + "-") and os.path.isdir(d) and (
+                    not os.path.lexists(hooks) or
+                    os.path.isfile(os.path.join(hooks, SCRIPT))):
+                return d
     except OSError:
         pass
     return None

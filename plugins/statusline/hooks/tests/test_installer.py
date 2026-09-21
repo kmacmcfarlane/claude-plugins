@@ -525,6 +525,25 @@ class AtomicWrite(helpers.Hermetic):
         got = owner.data_dir("/x/.claude/plugins/cache/mkt/statusline/1.2.0/x.py")
         self.assertEqual(got, os.path.join(self.cfg, "plugins", "data", "statusline-mkt"))
 
+    def test_scan_never_takes_the_hubs_data_dir(self):
+        # statusline-hub-<mkt> sorts before statusline-<mkt>; its current-hooks
+        # link leads to the hub's hooks, which have no statusline.py
+        os.environ.pop("CLAUDE_PLUGIN_DATA", None)
+        data = os.path.join(self.cfg, "plugins", "data")
+        hub_hooks = os.path.join(self.cfg, "hub-src", "hooks")
+        os.makedirs(hub_hooks)
+        open(os.path.join(hub_hooks, "hub.py"), "w").close()
+        os.makedirs(os.path.join(data, "statusline-hub-mkt"))
+        os.symlink(hub_hooks, os.path.join(data, "statusline-hub-mkt", "current-hooks"))
+        os.makedirs(os.path.join(data, "statusline-mkt"))
+        self.assertEqual(owner.data_dir("/elsewhere/x.py"),
+                         os.path.join(data, "statusline-mkt"))
+        # a statusline dir with its own link still counts
+        os.symlink(os.path.dirname(os.path.abspath(owner.__file__)),
+                   os.path.join(data, "statusline-mkt", "current-hooks"))
+        self.assertEqual(owner.data_dir("/elsewhere/x.py"),
+                         os.path.join(data, "statusline-mkt"))
+
     def test_unreadable_install_record_falls_back(self):
         os.environ.pop("CLAUDE_PLUGIN_DATA", None)
         p = os.path.join(self.cfg, "plugins", "installed_plugins.json")

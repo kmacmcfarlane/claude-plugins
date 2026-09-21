@@ -7,7 +7,7 @@ plugin may not import another plugin's code. Here each copied definition is
 compared, as parsed code, with its source; every definition between a copy's
 VENDORED markers must be on the list; and every name the copied functions
 reach in their source is copied too, or is one the hub defines for itself on
-purpose (PLUGIN, classify). The tee's own copy is test_parity.py's.
+purpose (PLUGIN, SCRIPT, classify). The tee's own copy is test_parity.py's.
 
 Runs only in the source repo, where plugins/statusline/hooks/ sits beside this
 plugin; an installed copy skips it."""
@@ -30,7 +30,7 @@ FROM_OWNER = ("MARKER", "MARKER_V", "SettingsError", "Changed", "hooks_dir", "pl
               "splice_key", "_splice_settings", "ReadOnly", "_crlf", "write_settings",
               "enabled_in", "read_marker", "write_marker", "_same_path",
               "ensure_hooks_symlink")
-OWN_ON_PURPOSE = {"PLUGIN", "classify"}
+OWN_ON_PURPOSE = {"PLUGIN", "SCRIPT", "classify"}
 FROM_SENSOR = ("PRUNE_DAYS", "PRUNE_EVERY_S", "TMP_STALE_S", "PRUNE_STAMP", "_TMP",
                "prune_tmp", "prune")
 # names the pruning reaches in sensor.py that the hub imports from its tee copy
