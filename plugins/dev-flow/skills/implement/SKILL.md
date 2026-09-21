@@ -99,6 +99,51 @@ Report every recorded decision together at the end so the user reviews them in o
 
 ---
 
+## Running under an orchestrator
+
+When another skill dispatches this one as a sub-agent (`dev-cycle`'s implementer, a
+`deep-investigation` POC break-out), the orchestrator owns git, landing, the work item and
+every dialog. It gives the **series** (a directory, anywhere, or a single plan file), the
+**worktree** to edit in and the **base** branch, and its brief sets the commit. Run as
+**Running non-interactively** above, with these changes. Steps are named as well as
+numbered; a renumber updates this list in the same commit.
+
+- **Step 1 (Resolve the series)** — skipped. Take the given series and start at Step 2
+  (Read the whole series); a single plan file is the whole plan.
+- **Step 4 (Resolve repos and re-verify the base branch)** — skipped: no fetch, no branch,
+  no worktree. The given base holds. Every edit goes in the given worktree; nothing is run
+  or written in the main checkout.
+- **Step 6 (gate 1) and Step 9 (gate 2)** — non-interactive. Gate 2 passes on verification
+  at the planned tier; the orchestrator's review replaces its approval. A failing
+  verification is still a stop, reported, never committed around.
+- **Step 7 (Implement)** — inline only, in the given worktree: no fan-out, no
+  `EnterWorktree`, no integration branch, no merge. A plan revision or a missed in-scope
+  issue is reported (DEVIATIONS, OPEN QUESTIONS), never recorded on the series or silently
+  built.
+- **Step 10 (Finalize)** — only **10d (Documentation follow-ups)** runs, inside the worktree
+  and inside the same change, without the propose step: a doc the change made wrong is part
+  of the change. It edits existing docs only, and a fix outside the orchestrator's declared
+  scope goes under OPEN QUESTIONS. No terminal action (10a), work-item update (10a½),
+  outcome (10b) or index write (10c). Commit once, as the brief says, with 10a's hygiene.
+- **Step 11 (Report), Step 12 (Retrospective)** — replaced by the return below; no retro.
+- **Questions** — never `AskUserQuestion`. Take the least irreversible choice and record it
+  under DEVIATIONS; one that blocks goes under OPEN QUESTIONS, with `NEEDS_CONTEXT` when you
+  cannot go on. A verification needing a human action is COULD NOT DO, not a wait.
+
+Stop after verify and commit, and return this shape (a brief that adds fields, such as
+COMMIT, wins):
+
+```
+STATUS: DONE | DONE_WITH_CONCERNS | NEEDS_CONTEXT | BLOCKED
+CHANGED: files, absolute paths, a phrase each
+VERIFIED: each command, its outcome and the tier reached
+DEVIATIONS: from the plan or brief, with why
+COULD NOT DO: anything asked for that is not in the commit
+OPEN QUESTIONS: each marked blocking or not
+```
+
+---
+
 ## Step 3 — Triage open questions
 
 An investigation ships with open questions by design. **Implementing while they sit untouched

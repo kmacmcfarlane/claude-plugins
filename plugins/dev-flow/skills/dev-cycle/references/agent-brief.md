@@ -83,26 +83,19 @@ to copy and from where — absolute paths>
 <the Workflow binding, verbatim>
 
 <conditional — a feature with no plan yet (dev-flow block):>
-Use the dev-flow skills for their method, not their git or their dialogs: a feature
-through /investigate then /implement. Invoke both as running non-interactively (each
-skill's § Running non-interactively), and:
-- /investigate: its research, requirements and plan steps. Write the series under
-  <the Series home binding, absolute>, never inside $WORKTREE, and name that path in
-  your report. Skip its branch survey (the base is fixed above) and its retrospective.
-- /implement, on that series: its plan, build and verify steps and its review gates,
-  with every edit made in $WORKTREE itself. Its Step 1 looks for series only under
-  .claude-sandbox/investigations/ and would stop with "No investigations found" when the
-  series is elsewhere: skip Step 1, take the series to be the path above, and start at
-  its Step 2, reading every file of the series there. Skip its repo and base-branch step
-  (no fetch, no new branch or worktree, nothing run in the main checkout), its whole
-  Finalize step (no terminal action, merge, push, work-item update, outcome or index
-  write) and its retrospective. The Commit section below is the only commit.
-- A question either skill would put to the user: take the least irreversible choice
-  and record it under DEVIATIONS, or, if it blocks, under OPEN QUESTIONS
-  (NEEDS_CONTEXT when you cannot go on). Never AskUserQuestion.
-- `git -C $WORKTREE status --short` is empty apart from your commit before you report.
-<conditional — a given plan: the same block without its /investigate bullet; /implement
-runs on the given series or plan file from its Step 2.>
+Use the dev-flow skills for their method: /investigate, then /implement on the series it
+wrote, each in its orchestrated mode (each skill's § Running under an orchestrator), with
+these inputs:
+- Series home: <the Series home binding, absolute> — never inside $WORKTREE; name the
+  series path in your report.
+- Worktree: $WORKTREE. Base: the Base branch above.
+The Commit section below is the only commit; the documentation follow-ups implement's mode
+keeps belong in it. Never AskUserQuestion: a question either skill would put to the user
+is the least irreversible choice under DEVIATIONS, or, if it blocks, under OPEN QUESTIONS
+(NEEDS_CONTEXT when you cannot go on). `git -C $WORKTREE status --short` is empty apart
+from your commit before you report.
+<conditional — a given plan: the same block without /investigate and the Series home
+line; /implement runs in its orchestrated mode on the given series or plan file.>
 
 ## Verification — run all, report outcomes verbatim
 
@@ -184,8 +177,9 @@ COMMIT: sha and message subject — in a fix round, every new sha
 
 For SKILL.md § Step 1 (`plan` mode, or a spike): one background `general-purpose` agent,
 no worktree. Use the brief above with these changes: drop the WORKTREE lines, Files in
-scope, Verification and Commit; set What to do to the /investigate bullet of the dev-flow
-block alone, writing the series to the Series home binding; replace the prohibitions'
+scope, Verification and Commit; set What to do to /investigate alone, in its orchestrated
+mode (the `investigate` skill's § Running under an orchestrator) with the Series home
+binding and the Base, and no worktree; replace the prohibitions'
 worktree lines with "Do not edit, commit or stage anything in the repository; write only
 under the Series home". Report shape: STATUS, SERIES (absolute path), OPEN QUESTIONS (each
 marked blocking or not), DEVIATIONS. The series is gated like a change, by
@@ -207,12 +201,13 @@ findings overturned; regenerate `INDEX.md`.
 ## dev-flow
 
 `investigate` and `implement` ship in the dev-flow plugin beside this skill, so they are
-present wherever a cycle runs; there is nothing to detect. The dev-flow block above is the
-one `librarian-mode` uses today, reused unchanged in substance: it drives the two skills
-through their non-interactive mode and suppresses their git and dialogs by step. When
-investigate and implement gain their own "running under an orchestrator" mode, this block
-becomes a one-line pointer to it. Bugs, chores and refactors with clear acceptance never
-need the block.
+present wherever a cycle runs; there is nothing to detect. Each owns a "Running under an
+orchestrator" mode: given series, worktree and base, no git or dialogs of its own, and a
+fixed return shape. The dev-flow block above only points at those modes and names the
+inputs, so when either skill renumbers its steps, its own mode changes in the same commit
+and this brief does not. implement's mode keeps its documentation follow-ups, so docs the
+change made wrong land in the change. Bugs, chores and refactors with clear acceptance
+never need the block.
 
 ## Sharpening a brief for re-dispatch
 

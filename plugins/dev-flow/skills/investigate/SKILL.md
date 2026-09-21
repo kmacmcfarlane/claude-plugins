@@ -108,6 +108,36 @@ me afterwards" — the blocking gates (Steps 2, 9, 11, 12) do not disappear, the
 
 ---
 
+## Running under an orchestrator
+
+When another skill dispatches this one as a sub-agent (`dev-cycle`'s plan agent or
+implementer, a `deep-investigation` POC spec), the orchestrator owns git, the work item and
+every dialog. It gives a **Series home** (an absolute directory for the series) and the
+**base** branch. Run as **Running non-interactively** above, with these changes, named as
+well as numbered so a renumber updates this list in the same commit:
+
+- **Step 1 / 1a (Resolve the issue, the series)** — the orchestrator's brief is the
+  description; a work item is read, never claimed. The series lives at the Series home,
+  never inside the repo or a worktree; one already there is extended by its next serial.
+- **Step 2 (Scoping gate), Step 9 (Requirements gate), Step 11 (Open-question sweep)** — no
+  dialog. The verification agent still runs; each question you would ask becomes an Open
+  Question marked blocking or not.
+- **Step 3a (Survey open branches)** — skipped, no fetch: the given base holds. Record it in
+  Confirmed Assumptions and Deployment & Rollout Notes.
+- **Step 6 (Explore)** — create no branch or worktree; a probe that needs repo edits runs in
+  a worktree the orchestrator gave, reverted before the plan is written, or is left to
+  `implement` to settle.
+- **Step 12 (Review gate)** — Save; the orchestrator's review replaces it. **Step 13/14
+  (Write, Rewrite the index)** — at the Series home.
+- **Step 15 (Report), Step 16 (Retrospective)** — replaced by the return below; no retro.
+- Never `AskUserQuestion`. Each gate decision you made yourself is a Confirmed Assumption,
+  as above, and is listed again under DEVIATIONS in the return.
+
+Return: `STATUS` (DONE, DONE_WITH_CONCERNS, NEEDS_CONTEXT or BLOCKED), `SERIES` (the absolute
+path), `OPEN QUESTIONS` (each marked blocking or not), `DEVIATIONS` (with why).
+
+---
+
 ## Step 2 — Scoping gate (blocking)
 
 **A short round to make the problem investigable.** Not the requirements gate — that is Step 9,
