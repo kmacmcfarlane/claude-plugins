@@ -45,10 +45,11 @@ serialization, so it does little itself: it files, factors, runs each item throu
 
 `/librarian-mode [start | status | intake <request>]`
 
-- `start` (default): Rehydrate, then the Idle turn.
-- `status`: Rehydrate, then print the expected-output paragraph — read-only, never
-  creates or dispatches; with no `## Librarian` section it prints "not opted in; `start`
-  offers opt-in".
+- `start` (default): Rehydrate, the session-name gate so peers find you
+  (`references/session-name.md`), then the Idle turn.
+- `status`: Rehydrate, then print the expected-output paragraph and the session name —
+  read-only, never creates or dispatches; with no `## Librarian` section it prints
+  "not opted in; `start` offers opt-in".
 - `intake <request>`: Rehydrate if not done, then Intake on `$ARGUMENTS`.
 
 ## Rehydrate
@@ -63,7 +64,7 @@ Do this at session start and after any `/clear` or compaction. Never `ls` the wh
    WI="python3 $(ls "$MAIN"/plugins/*/skills/work-items/scripts/wi.py | head -1)"
    ```
 
-   An empty glob is normal when the repo does not carry the plugin: use the installed
+   An empty glob means the repo does not carry the plugin: use the installed
    copy (`references/troubleshooting.md`). No store yet, or a `.work/` one:
    `references/first-start.md`. `MAIN` is not this session's cwd: a worktree session —
    say so and route every edit through dispatch (Red flags).
@@ -245,10 +246,9 @@ At 75% or DUE: its § At 75%.
 
 ## Examples
 
-Two requests carried end to end, the second needing an operator decision first:
+Two requests end to end, one awaiting an operator decision:
 `references/walkthroughs.md`.
 
 ## Troubleshooting
 
-`references/troubleshooting.md` — `wi`, claims, peers, pushes, orphan worktrees; the
-cycle's cases point on to dev-cycle's.
+`references/troubleshooting.md` — `wi`, claims, peers, pushes, orphan worktrees.
