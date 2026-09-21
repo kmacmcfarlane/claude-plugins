@@ -52,7 +52,7 @@ verbs, capability differences and canonical state mapping are in
 
 ## Rules
 
-- The store is resolved `WI_ROOT` → `.claude-sandbox/work/` → `./.work/`; create only via
+- The store is resolved `WI_ROOT` → `.claude-sandbox/work/` → `.work/`; create only via
   `$WI init`, and only when the user asks for the store.
 - Working an item follows the checkout/worktree rule — process stays in the checkout, the
   item's edits go in a worktree (from there, `WI_ROOT` points at the main checkout's store);

@@ -94,7 +94,7 @@ only immutable-field, unknown-field, and title-length rejections exit 1.
 ### `wi` — this plugin
 
 One markdown file per item under a store resolved `WI_ROOT` → `.claude-sandbox/work/` →
-`./.work/`. `status:` is the only authority on state; files never move on completion.
+`.work/`. `status:` is the only authority on state; files never move on completion.
 Mutations take `flock(<root>/.lock)` and write tmp+rename. Stdlib-only Python; the item file
 format, resolver rule and secret rule are canonical in `references/format.md` — that file is
 wi-provider detail, not part of this contract. Provider-local verbs beyond the contract:
