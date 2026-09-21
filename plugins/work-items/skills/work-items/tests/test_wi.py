@@ -145,7 +145,7 @@ class TestFrontMatter(WiTestCase):
 ESCAPE_ALPHABET = (':', '"', '\\', '#', ' ', "'", ',', '[', ']', '{', '}', '-',
                    '—', 'é', '日', '🙂', '\t', '\x07', '\x1b', '\x85',
                    '\u2028', '\ufeff', 'a', 'Z', '0', '&', '*', '!', '|', '>',
-                   '%', '@', '`', '?')
+                   '%', '@', '`', '?', '\ufffe', '\uffff')
 
 
 def escape_values(count=400, seed=0x0401):
@@ -154,12 +154,17 @@ def escape_values(count=400, seed=0x0401):
     fixed = ['x: "y"', 'x: \\"y\\"', '\\', '"', '""', 'a\\', ' lead',
              'trail ', ' both ', 'c:\\dir', 'x: c:\\dir', '#hash', 'a #b',
              'end:', '—', '— x', "it's", "'q'", '"q"', 'a, b', '[x]',
-             '\\\\\\"', 'say "hi"', '日本: "語"']
+             '\\\\\\"', 'say "hi"', '日本: "語"', 'a\tb', 'ab\t c',
+             '\t', 'x\ufffey', '\uffff']
     for v in fixed:
         yield v
     for _ in range(count):
         yield "".join(rng.choice(ESCAPE_ALPHABET)
                       for _ in range(rng.randint(1, 12)))
+    # a tab among characters that alone would stay bare: a bare tab is
+    # the one thing a YAML loader rejects that wi read back fine
+    for _ in range(count // 8):
+        yield "".join(rng.choice("ab c1\t") for _ in range(rng.randint(2, 8)))
 
 
 class TestScalarRoundTrip(WiTestCase):
@@ -260,6 +265,46 @@ class TestScalarRoundTrip(WiTestCase):
         self.assertEqual(wi.Item.parse(out).render(), out)
 
 
+    def test_tab_and_reader_hostile_characters_are_never_bare(self):
+        for v in ("a\tb", "ab\t c", "x\ufffey", "\ud800"):
+            with self.subTest(v=v):
+                out = wi._emit_scalar(v)
+                self.assertTrue(out.startswith('"'), out)
+                self.assertNotIn("\t", out)
+                self.assertEqual(wi._parse_scalar(out)[0], v)
+        self.assertEqual(wi._emit_scalar("a\tb"), '"a\\tb"')
+
+    def test_unterminated_quote_in_flow_list_reads_the_old_way(self):
+        meta, _, errors = wi.parse_front(['tags: ["abc, d, e]'])
+        self.assertEqual(errors, [])
+        self.assertEqual(meta["tags"], ['"abc', "d", "e"])
+
+    def test_hand_written_backslash_path_is_a_lint_finding(self):
+        self.write_item("path-1111")
+        self.write_item("tab-2222", title="a\tb")  # wi-written: fine
+        p = self.root / "items" / "path-1111.md"
+        p.write_text(p.read_text().replace(
+            "title: path-1111", 'title: "C:\\Users\\foo\\bar"'))
+        r = run(["lint"], self.root)
+        self.assertEqual(r.returncode, 3)
+        self.assertIn("path-1111.md: front-matter 'title' holds a control", r.stdout)
+        self.assertIn("wi set path-1111 title", r.stdout)
+        self.assertNotIn("tab-2222", r.stdout)
+
+    def test_import_reads_a_dash_placeholder_as_no_value(self):
+        src = self.tmp / "in.yaml"
+        src.write_text("schema_version: 2\nstories:\n  - id: S-001\n"
+                       "    title: t\n    status: todo\n    priority: 50\n"
+                       '    review_feedback: "—"\n    claimed_by: "—"\n')
+        self.wi_ok(["import", "--format", "backlog-yaml", str(src)])
+        rec = json.loads(self.wi_ok(["ls", "--status", "all", "--json"]))[0]
+        one = json.loads(self.wi_ok(["show", rec["id"], "--json"]))
+        self.assertIsNone(one.get("feedback"))
+        self.assertIsNone(one.get("owner"))
+        text = (self.root / "items" / (rec["id"] + ".md")).read_text()
+        self.assertNotIn("—\"", text)
+
+
 class TestRepairEscapes(WiTestCase):
     AMPLIFIED = 'title: "x: \\\\\\\\\\\\\\"y\\\\\\\\\\\\\\""'  # "y" after 3 rewrites
 
@@ -294,6 +339,54 @@ class TestRepairEscapes(WiTestCase):
         before = path.read_bytes()
         self.wi_ok(["repair-escapes", "--apply", "--id", "legit-2222"])
         self.assertEqual(path.read_bytes(), before)
+
+    def amplify(self, iid, extra=""):
+        path = self.root / "items" / f"{iid}.md"
+        path.write_text(path.read_text().replace(
+            f"title: {iid}", self.AMPLIFIED + extra))
+        return path
+
+    def test_id_repairs_one_and_leaves_another_amplified_item_alone(self):
+        self.write_item("amp-1111")
+        self.write_item("amp-2222")
+        one, two = self.amplify("amp-1111"), self.amplify("amp-2222")
+        before = two.read_bytes()
+        out = self.wi_ok(["repair-escapes", "--apply", "--id", "amp-1111"])
+        self.assertIn("repaired\tamp-1111\ttitle", out)
+        self.assertNotIn("amp-2222", out)
+        self.assertIn('title: "x: \\"y\\""\n', one.read_text())
+        self.assertEqual(two.read_bytes(), before)
+        self.assertIn("amp-2222", self.wi_ok(["repair-escapes"]))
+
+    def test_lists_and_maps_and_key_filter(self):
+        self.write_item("amp-1111")
+        amp = '"a\\\\\\"b"'  # a"b after two rewrites
+        path = self.amplify("amp-1111", f"\ntags: [{amp}, plain]\n"
+                            f"refs:\n  - {amp}\n  - plain\n"
+                            f"x_backlog:\n  k: {amp}\n  j: plain")
+        dry = self.wi_ok(["repair-escapes"])
+        for key in ("title", "tags", "refs", "x_backlog"):
+            self.assertIn(f"would repair\tamp-1111\t{key}\t", dry)
+        self.assertIn("4 to repair", dry)
+        self.wi_ok(["repair-escapes", "--apply", "--key", "tags"])
+        rec = json.loads(self.wi_ok(["show", "amp-1111", "--json"]))
+        self.assertEqual(rec["tags"], ['a"b', "plain"])
+        self.assertIn("3 to repair", self.wi_ok(["repair-escapes"]))
+        self.wi_ok(["repair-escapes", "--apply"])
+        item = wi.Item.parse(path.read_text())
+        self.assertEqual(item.get("refs"), ['a"b', "plain"])
+        self.assertEqual(item.get("x_backlog"), {"k": 'a"b', "j": "plain"})
+        self.assertEqual(item.get("title"), 'x: "y"')
+
+    def test_heuristic_also_lists_a_value_meant_with_escapes(self):
+        """Documented limit: a value whose backslashes all pair is listed
+        whether or not an older wi amplified it — review the dry run."""
+        title = 'wi: document why \\" and \\\\ are escaped'
+        iid = json.loads(self.wi_ok(["add", title, "--json"]))["id"]
+        path = self.root / "items" / f"{iid}.md"
+        before = path.read_bytes()
+        self.assertIn(iid, self.wi_ok(["repair-escapes"]))
+        self.assertEqual(path.read_bytes(), before)  # dry run writes nothing
 
 
 class TestImportTodo(WiTestCase):

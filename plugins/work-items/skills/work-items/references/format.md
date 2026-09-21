@@ -96,19 +96,33 @@ lists, block lists of scalars, one level of map for `x_backlog`. No multi-line
 scalars, anchors or nesting — prose goes in the body. `lint` reports any line
 that does not parse, and `wi` never rewrites a file it could not parse.
 
-**Quoting.** A value is written bare unless a bare scalar would read back
-differently — empty, leading/trailing whitespace, `: ` or ` #` inside, a
-trailing `:`, brackets or braces, a leading YAML indicator
-(`- ? : , # & * ! | > ' " % @` and backtick), a bare `—` (which reads as empty), a control
-character, or a comma inside a flow list. Then it is a YAML double-quoted
-scalar: `\` and `"` are written as `\\` and `\"`, and control characters,
-DEL, C1, U+2028/U+2029 and the BOM as `\xNN` / `\uNNNN`. The reader decodes
-exactly those plus the other YAML escapes (`\t \0 \/ \U…` and the rest), so a value
-survives any number of rewrites byte-identical; an unknown escape, or one that
-would decode to a line break, is kept as written. A single-quoted value reads
-`''` as `'`. Older `wi` versions escaped without unescaping, so every rewrite
-of a quoted value added a layer of backslashes; `wi repair-escapes` lists
-those values with the layers peeled (a dry run until `--apply`).
+**Quoting.** A value is written bare unless wi would read it back
+differently or a YAML loader would reject it — empty, leading/trailing
+whitespace, `: ` or ` #` inside, a trailing `:`, brackets or braces, a leading
+YAML indicator (`- ? : , # & * ! | > ' " % @` and backtick), a bare `—`, a tab
+or other control character, or a comma inside a flow list. YAML's implicit
+typing is left alone (`priority: 2` and dates stay bare), so a YAML loader may
+read a bare `true`, `null` or `0x10` as a non-string where wi reads a string.
+A quoted value is a YAML double-quoted scalar: `\` and `"` are written as
+`\\` and `\"`, tab as `\t`, and other control characters, DEL, C1,
+U+2028/U+2029, the BOM, U+FFFE/U+FFFF and lone surrogates as `\xNN` /
+`\uNNNN`. The reader decodes exactly those plus the other YAML escapes
+(`\0 \/ \U…` and the rest), so a value survives any number of rewrites
+byte-identical; an unknown escape, or one that would decode to a line break,
+is kept as written. So in a hand-written quoted value a backslash is an
+escape: write `"C:\\bin"`, not `"C:\bin"` (which holds a `\b`) — `lint`
+reports any front-matter value holding a control character other than tab. A
+single-quoted value reads `''` as `'`. A bare `—` or an empty value reads as
+no value; a quoted `"—"` is the literal dash (`import` still reads a
+backlog field that is `—`, such as `blocked_reason`, as no value).
+
+Older `wi` versions escaped without unescaping, so every rewrite of a quoted
+value added a layer of backslashes. `wi repair-escapes` finds them by a
+heuristic — every front-matter value (quoted or not: the current writer
+may have rewritten one bare) whose backslashes all pair as `\\` or `\"`,
+with all such layers peeled — so it also lists a value meant that way: review
+the dry run, narrow with `--id` / `--key`, then `--apply` (or fix one value
+with `wi set`).
 
 ## Editing fields: `wi set <id> <field> <value>`
 
