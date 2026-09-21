@@ -1,5 +1,5 @@
 {
-  "description": "statusline: keeps the plugin-data current-hooks symlink pointing at this version's hooks, so a statusLine entry an earlier version installed keeps drawing until the hub takes it over; then registers the footer as a statusline-hub display hook (its hooks.d manifest, refreshed every session), says once when statusline-hub is not installed (a /plugin update does not add a new dependency), and prunes old sensor files. It writes no settings: the statusline-hub plugin owns the statusLine entry.",
+  "description": "statusline: keeps the plugin-data current-hooks symlink pointing at this version's hooks, so a statusLine entry an earlier version installed keeps drawing until the hub takes it over, and so the plugin's settings.json subagentStatusLine default (which cannot use plugin path variables) reaches subagent_statusline.py; then registers the footer as a statusline-hub display hook (its hooks.d manifest, refreshed every session), says once when statusline-hub is not installed (a /plugin update does not add a new dependency), and prunes old sensor and sub-agent cache files. It writes no settings: the statusline-hub plugin owns the statusLine entry.",
   "hooks": {
     "SessionStart": [
       {

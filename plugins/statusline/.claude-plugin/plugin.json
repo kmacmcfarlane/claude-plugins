@@ -1,6 +1,6 @@
 {
   "name": "statusline",
-  "description": "Always-on status line — context left, plan usage limits, model and session name at a glance (requires statusline-hub: the footer draws as one of its display hooks; optional: works with context-guard, which adds its epoch and checkpoint thresholds to the gauge).",
+  "description": "Always-on status line — context left, plan usage limits, model and session name at a glance, plus each sub-agent's context fill in the agent panel (requires statusline-hub: the footer draws as one of its display hooks; optional: works with context-guard, which adds its epoch and checkpoint thresholds to the gauge).",
   "dependencies": [
     "statusline-hub"
   ],

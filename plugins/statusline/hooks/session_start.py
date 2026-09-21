@@ -42,7 +42,9 @@ Only key names are read, never values; anything it cannot read counts as
 the hub being there.
 
 Then sensor.prune(): sensor records older than 30 days and orphaned temp
-files, at most once a day; plus orphaned temp files in the data dir an
+files, at most once a day; subagent_statusline.prune(): the sub-agent rows'
+per-session caches (${CLAUDE_CONFIG_DIR:-~/.claude}/statusline/subagents/)
+older than 30 days and orphaned temp files there; plus orphaned temp files in the data dir an
 earlier version wrote its marker into.
 """
 import json, os, re, stat, sys
@@ -239,6 +241,8 @@ def main():
         msg = hub_notice(sensor, os.environ.get("CLAUDE_PLUGIN_DATA"), _project_dir(inp))
         try:
             sensor.prune(keep=inp.get("session_id"))
+            import subagent_statusline
+            subagent_statusline.prune(keep=inp.get("session_id"))
             data = os.environ.get("CLAUDE_PLUGIN_DATA")
             if data:
                 sensor.prune_tmp(data)
