@@ -83,7 +83,7 @@ dependency is marked (hard) here.
 | …structured product research in a web chat session | `chat` | current; *family home under review* | — |
 | …to survive the finite context window (gate, checkpoint, rehydration, token-spend report) | `context-guard` | **current** | `statusline` (soft; exact depth when installed) |
 | …an always-on status line (context left, plan usage, model, session name) | `statusline` | **current** | `context-guard` (soft; epoch and checkpoint thresholds in the gauge when installed) |
-| …the status-line slot, shared: the data Claude Code hands the status line reaches the tools that read it, whatever renders the line (today the `tee` command; the dispatcher that owns the slot is planned) | `statusline-hub` | **current** | — |
+| …to share the status-line slot, so the data Claude Code hands the status line reaches the tools that read it whatever renders the line (today the `tee` command; a dispatcher that owns the slot is planned) | `statusline-hub` | **current** | — |
 | …a plan before you code: investigate → reviewed plan → verified implementation, and a standing librarian that takes custody of a repo's work (files, dispatches, reviews, lands) | `dev-flow` | **current** | `work-items` (soft; `librarian-mode` and `dev-cycle` find `wi` via the repo tree, or the installed plugin's copy; `dev-cycle` runs without it on a scratchpad record), `statusline` (soft; the fable fallback in `librarian-mode` and `dev-cycle` reads its rate-limit reset times) |
 | …repo-durable work items and a pluggable work source | `work-items` | **current** | — |
 | …isolated execution for agent sessions (containers, and the checkout/worktree convention) | `sandbox` | **current** | claude-sandbox repo (external) |

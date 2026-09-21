@@ -48,12 +48,13 @@ Expected output: an absolute path ending in `statusline-hub/<version>/hooks/tee.
 
 Foreign configs should not embed a versioned path. Offer to write this launcher to
 `~/.local/bin/statusline-hub-tee` (the user may pick another directory on their `PATH`), with
-Write, then `chmod +x` it. It runs the most recently installed copy of the tee, and when
+Write, then `chmod +x` it. It runs the most recently modified installed copy of the tee
+(normally the one the last install or update wrote), and when
 none is installed it drains stdin and prints nothing:
 
 ```sh
 #!/bin/sh
-# statusline-hub tee launcher: runs the most recently installed copy of the tee.
+# statusline-hub tee launcher: runs the most recently modified installed copy of the tee.
 t=$(ls -td "${CLAUDE_CONFIG_DIR:-$HOME/.claude}"/plugins/cache/kmacmcfarlane/statusline-hub/*/hooks/tee.py 2>/dev/null | head -n 1)
 [ -n "$t" ] && exec python3 "$t"
 cat >/dev/null
@@ -74,6 +75,10 @@ If the user declines, use `python3 "<the path from Step 1>"` wherever the recipe
 3. The widget shows nothing; it only writes the record. Put it anywhere on the line.
 
 ccstatusline runs widgets one after another, so this adds one short process to each render.
+The tee needs ccstatusline's global Custom Command cache TTL
+(`customCommandCacheTtlSeconds`) at 0, its default: with caching on, a cached widget is not
+re-run when only token counts change, so the record goes up to that many seconds stale. The
+setting applies to every Custom Command widget.
 
 **Starship** (a `custom` module does not get Claude Code's stdin, so the script that runs
 Starship must pass the JSON on). In that script:
@@ -159,8 +164,10 @@ Cause: the command was not found or failed to start.
 Solution: use the launcher's absolute path; check `python3` is on that `PATH`.
 
 The record exists but is old.
-Cause: the payload carried no usable context-window numbers (early in a session), or a newer
-record was already on disk. Both are expected; the next render updates it.
+Cause: ccstatusline's Custom Command cache TTL is above 0, so the widget reuses its cached
+run instead of calling the tee. Set it to 0. Otherwise the payload carried no usable
+context-window numbers (early in a session), or a newer record was already on disk; both are
+expected, and the next render updates it.
 
 Records pile up in the sensor directory.
 Cause: pruning (records untouched for 30 days) runs from the `statusline` plugin's
