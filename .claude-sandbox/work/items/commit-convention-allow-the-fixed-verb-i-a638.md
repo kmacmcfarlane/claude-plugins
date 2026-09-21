@@ -2,16 +2,24 @@
 id: commit-convention-allow-the-fixed-verb-i-a638
 title: "commit convention: allow the fixed: verb in agent-brief and review guidance"
 type: chore
-status: todo
+status: doing
 priority: 4
+owner: unknown@360f41058e92
+claimed: 2026-09-21T18:37Z
 created: 2026-09-18
-updated: 2026-09-18
+updated: 2026-09-21
 ---
 
 From the d72e review (2026-09-18): agent-brief.md's Commit section allows added/updated/removed/bumped, but main's history uses fixed: 19+ times and librarian briefs today allow it. Decide and align agent-brief, review-brief and any CLAUDE.md/README convention text. Lands after 07c3 F1/F2 (agent-brief moves to dev-cycle).
 
 ## Handoff
-- doing: —
-- next: —
+- doing: dispatched
+- next: review
 - blocked: —
 - learned: —
+
+## Notes
+- 2026-09-21 claimed by unknown@360f41058e92
+
+## Dispatch
+- dispatch: implementer sonnet — default (verb list in briefs). decision (librarian): allow fixed: — main's history uses it 19+ times and a commit-subject finding is low anyway

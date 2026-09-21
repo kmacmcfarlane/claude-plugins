@@ -14,8 +14,8 @@ updated: 2026-09-21
 d193 07 § F1 (.claude-sandbox/investigations/d193-statusline-multiplexer/07_recommendation-dispatcher.md). Operator-approved name statusline-hub (decision 41). New plugin skeleton (plugin.json, catalog row, marketplace.json entry, CLAUDE.md layout); a tee CLI that writes the sensor record v1 exactly as statusline's sensor.py does (vendored copy; no cross-plugin import) with a parity test against statusline's contract tests; docs: ccstatusline Custom Command, Starship custom, shell-wrapper recipes. No SessionStart, no settings writes.
 
 ## Handoff
-- doing: —
-- next: —
+- doing: in review (opus) at 51707d9
+- next: land on CLEAR, then F2
 - blocked: —
 - learned: —
 
@@ -28,3 +28,7 @@ d193 07 § F1 (.claude-sandbox/investigations/d193-statusline-multiplexer/07_rec
 ## Implementer result
 - round 1 DONE_WITH_CONCERNS d72f545 (opus): plugins/statusline-hub (plugin.json, hooks/tee.py vendored writer, tests incl. parity/drift vs statusline, skill statusline-hub with ccstatusline/Starship/wrapper recipes), README/CLAUDE.md/marketplace. Could not: sensor-contract.md "only writer" wording (out of scope).
 - scope widened by the librarian before review: that one line in statusline sensor-contract.md; the stale README counts ("three plugins whose aim is harness behavior", "all eight").
+
+## Implementer result (scope widening)
+- 51707d9: sensor-contract §2 names both writers (and the "no lock needed" sentence); README counts unstaled. Open: statusline sensor.py docstring still says one writer (follow-up with F3).
+- dispatch: reviewer opus — rule 4
