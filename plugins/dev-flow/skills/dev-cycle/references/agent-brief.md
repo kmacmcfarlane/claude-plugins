@@ -114,7 +114,7 @@ session of this repository, so a pop can apply another run's changes here.
 ## Commit
 
 One commit in the worktree. Message format `<verb>: <aspect> - <description>` with verb one
-of added / updated / removed / bumped; body explains what and why. Write the message to a
+of added / updated / removed / bumped / fixed; body explains what and why. Write the message to a
 file under <absolute scratchpad path> and use `git commit -F <path>`. Stage the specific
 paths; never `git add .` or `git add -A`. Do not commit anything under .claude-sandbox/ or
 .claude/.
