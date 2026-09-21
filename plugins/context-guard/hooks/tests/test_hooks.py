@@ -432,6 +432,70 @@ class TestStopRelay(Base):
                                           CLAUDE_KIT_LEDGER_EVERY="10000"))
 
 
+class TestLegacyFutureSkew(Base):
+    """73a6: a legacy in-state exact block (the deprecated statusline copy)
+    stamped beyond FUTURE_SKEW_S is not exact for any consumer - the prompt
+    gate's HARD block, the PreCompact deferral and the Stop relay - while a
+    fresh legacy block still is."""
+
+    def put_legacy(self, sid, tokens, window, ahead):
+        st = L.load_state(sid)
+        st["exact"] = {"pct": 100.0 * tokens / window, "tokens": tokens,
+                       "window": window, "at": time.time() + ahead}
+        L.save_state(sid, st)
+
+    SKEW = 3600
+
+    def test_prompt_gate_does_not_hard_block_on_a_skewed_block(self):
+        self.put_legacy("s", 950_000, 1_000_000, self.SKEW)
+        rc, out, err = self.warn("s", "please do more work")
+        self.assertEqual(rc, 0, err)
+        self.assertNotIn("HARD STOP", err)
+
+    def test_prompt_gate_still_hard_blocks_on_a_fresh_block(self):
+        self.put_legacy("s", 950_000, 1_000_000, 0)
+        rc, out, err = self.warn("s", "please do more work")
+        self.assertEqual(rc, 2)
+        self.assertIn("HARD STOP", err)
+
+    def test_prompt_gate_small_skew_is_still_exact(self):
+        self.put_legacy("s", 950_000, 1_000_000, 30)
+        rc, out, err = self.warn("s", "please do more work")
+        self.assertEqual(rc, 2)
+
+    def gate(self, sid):
+        return run_hook("precompact_gate.py",
+                        {"session_id": sid, "trigger": "auto",
+                         "transcript_path": "/nonexistent"}, self.env)
+
+    def test_precompact_does_not_defer_on_a_skewed_block(self):
+        self.put_legacy("s", 900_000, 1_000_000, self.SKEW)
+        rc, out, err = self.gate("s")
+        self.assertEqual(rc, 0, err)
+        self.assertFalse(L.load_state("s").get("compact_deferred"))
+
+    def test_precompact_still_defers_on_a_fresh_block(self):
+        self.put_legacy("s", 900_000, 1_000_000, 0)
+        rc, out, err = self.gate("s")
+        self.assertEqual(rc, 2)
+
+    def relay(self, sid):
+        return run_hook("stop_relay.py",
+                        {"session_id": sid, "transcript_path": "/nonexistent",
+                         "stop_hook_active": False, "last_assistant_message": ""},
+                        self.env)
+
+    def test_stop_relay_ignores_a_skewed_block(self):
+        self.put_legacy("s", 900_000, 1_000_000, self.SKEW)
+        rc, out, _ = self.relay("s")
+        self.assertEqual(out, {})
+
+    def test_stop_relay_still_reads_a_fresh_block(self):
+        self.put_legacy("s", 900_000, 1_000_000, 0)
+        rc, out, _ = self.relay("s")
+        self.assertIn("checkpoint", json.dumps(out))
+
+
 class TestLedgerPointer(Base):
     def point(self, payload):
         payload.setdefault("session_id", "s")

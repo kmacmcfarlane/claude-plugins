@@ -249,6 +249,44 @@ class TestSensorHardening(Base):
         self.write_sensor("s", 500_000, 1_000_000, at=time.time() + 30)
         self.assertEqual(L.depth("", "s")[3], "exact")
 
+    # 73a6: the same rule for the legacy in-state block.
+    def test_legacy_future_at_beyond_skew_is_rejected(self):
+        self.write_legacy("s", 500_000, 1_000_000, at=time.time() + L.FUTURE_SKEW_S + 60)
+        self.assertEqual(L.sensor("s"), {})
+        tok, win, pct, src = L.depth("", "s")
+        self.assertTrue(src.startswith("inferred"), src)
+        m = L.measure("", "s")
+        self.assertIsNone(m["block_window"])
+        self.assertTrue(L.measure("", "s", mirror=False)["source"].startswith("inferred"))
+
+    def test_legacy_non_finite_at_is_rejected(self):
+        for at in (float("inf"), "soon", True):
+            L.save_state("s", {"exact": {"pct": 50.0, "tokens": 500_000,
+                                         "window": 1_000_000, "at": at}})
+            self.assertEqual(L.sensor("s"), {}, at)
+            self.assertTrue(L.depth("", "s")[3].startswith("inferred"), at)
+
+    def test_legacy_future_at_does_not_outdate_the_sensor(self):
+        # A skewed legacy block has the larger `at`; it must not win.
+        self.write_sensor("s", 420_000, 1_000_000, at=time.time() - 5)
+        self.write_legacy("s", 900_000, 1_000_000, at=time.time() + 3600)
+        self.assertEqual(L.sensor("s")["tokens"], 420_000)
+        self.assertEqual(L.depth("", "s")[::3], (420_000, "exact"))
+
+    def test_legacy_small_clock_skew_is_accepted(self):
+        self.write_legacy("s", 500_000, 1_000_000, at=time.time() + 30)
+        self.assertEqual(L.depth("", "s")[3], "exact")
+
+    def test_legacy_window_only_demoted_block_is_kept(self):
+        # _reset's demotion ({"window", "at": 0}) is not a future stamp.
+        L.save_state("s", {"exact": {"window": 1_000_000, "at": 0}})
+        self.assertEqual(L.sensor("s"), {"window": 1_000_000, "at": 0})
+
+    def test_epoch_end_ignores_a_skewed_legacy_block(self):
+        self.write_legacy("s", 900_000, 1_000_000, at=time.time() + 3600)
+        L.reset_epoch("s")
+        self.assertEqual(L.load_state("s")["epoch_end_tokens"], 0)
+
     def _read_in_child(self, sid="s", timeout=10):
         """sensor_record in a subprocess, so a regression that blocks on a
         FIFO fails the test instead of hanging the suite."""
