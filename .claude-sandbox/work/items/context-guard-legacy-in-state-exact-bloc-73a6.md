@@ -2,8 +2,10 @@
 id: context-guard-legacy-in-state-exact-bloc-73a6
 title: "context-guard: legacy in-state exact block lacks the future-at check"
 type: bug
-status: todo
+status: doing
 priority: 3
+owner: unknown@360f41058e92
+claimed: 2026-09-21T23:07Z
 created: 2026-09-21
 updated: 2026-09-21
 ---
@@ -11,7 +13,11 @@ updated: 2026-09-21
 From the 8cc2-F1 review (pre-existing): only the sensor file's exact block is rejected when its at is in the future (lib_context._sensor_exact); a clock-skewed legacy in-state exact block from the deprecated statusline copy counts as fresh for the prompt gate's block and the turn gate. Acceptance: the same future-skew rule for both sources; a test.
 
 ## Handoff
-- doing: —
-- next: —
+- doing: implementer dispatched (opus, agent a8001c2ebaa7f37bb)
+- next: on DONE: review r1 (opus)
 - blocked: —
 - learned: —
+
+## Notes
+- 2026-09-21 claimed by unknown@360f41058e92
+- dispatch: implementer opus — executable logic (gate hook)
