@@ -398,7 +398,7 @@ Commit hygiene:
 
 - Stage specific files. Never `git add .` or `git add -A`.
 - Message format `<verb>: <aspect> - <description>`, verb one of `added`, `updated`, `removed`,
-  `bumped`. One such entry per line for a commit spanning distinct changes.
+  `bumped`, `fixed`. One such entry per line for a commit spanning distinct changes.
 - Write multi-line messages to a temp file and use `git commit -F <file>`. Never HEREDOC or
   `$()` in git commands.
 
