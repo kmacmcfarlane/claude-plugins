@@ -2,10 +2,12 @@
 id: context-guard-env-vars-context-guard-can-953e
 title: "context-guard env vars: CONTEXT_GUARD_* canonical names, CLAUDE_KIT_* aliases kept"
 type: chore
-status: todo
+status: doing
 priority: 3
 deps:
   - context-guard-get-exact-depth-from-its-o-d63e
+owner: unknown@e3a28d2cc009
+claimed: 2026-09-19T05:58Z
 created: 2026-09-19
 updated: 2026-09-19
 ---
@@ -17,3 +19,14 @@ From 5e68 (decision 10 consistency, 2026-09-19): CLAUDE_KIT_CONTEXT_WINDOW (lib_
 - next: —
 - blocked: —
 - learned: —
+
+## Notes
+- 2026-09-19 claimed by unknown@e3a28d2cc009
+
+## Dispatch
+- dispatch: implementer opus — executable logic (hooks); gate-code fable signal: fable unavailable (unknown); fallback
+
+## Implementer result
+- round 1 DONE b3bfc9f (opus): canonical+alias via lib_context.env_setting; empty canonical falls to alias; invalid canonical wins (no pin). All 5 check suites green; revert-to-verify 7 failures/2 errors.
+- held: operator paused new dispatches 2026-09-19 until bedtime; next is reviewer opus.
+- dispatch: reviewer opus — rule 4 (impl opus)

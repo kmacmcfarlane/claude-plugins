@@ -17,3 +17,7 @@ Operator decision 8 (2026-09-19): ask the 'Agent telemetry collection options' a
 - next: —
 - blocked: —
 - learned: —
+
+## Found 2026-09-19
+- decision 8 resolved by lookup: the 'Agent telemetry collection options' session is peer `agents-61` (registry pid 266, cwd kmacmcfarlane/agents, session ba4716eb). 'Agent telemetry collection options' is its ai-title; the peer registry shows only the derived name (nameSource: derived), so ListAgents never showed the title. Claude Code behaviour, not a claude-sandbox bug; strengthens 14bd (rename gate).
+- agents-61 reply 2026-09-19 (intent, their investigation not yet saved): fix usage-report in place (filed as bug, dedupe), then retire it into new repo kmacmcfarlane/claude-analytics (own plugin in this marketplace, github source); 7e8f/8482 stay held, not built; e5a7 closes at retirement. Their interface need: a sink registry in the status line (see d193).

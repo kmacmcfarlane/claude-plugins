@@ -27,3 +27,6 @@ entry) must be visible in the report — a separate row or a marker — not sile
 - librarian 2026-09-16: held until the plugin-factoring reconcile (9b93) lands, so usage-report is placed once in the factored layout.
 
 - 2026-09-18: plugin-factoring merged (0d8b4c9); hold released. Paths moved: claude-kit dissolved into kit-dev/context-guard/dev-flow/work-items/chat/sandbox/ralph.
+
+## Hold 2026-09-19
+- Do NOT build: operator intends usage-report to retire into kmacmcfarlane/claude-analytics (peer agents-61); close when `ca report usage` reaches parity and the skill is removed (their Phase 3).
