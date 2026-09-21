@@ -2,12 +2,11 @@
 id: frontmatter-quote-every-argument-hint-th-68ea
 title: "frontmatter: quote every argument-hint (three break strict YAML parsers) + add a strict-parse lint"
 type: bug
-status: doing
+status: done
 priority: 1
-owner: unknown@360f41058e92
-claimed: 2026-09-21T18:01Z
 created: 2026-09-20
 updated: 2026-09-21
+closed: 2026-09-21
 refs:
   - "peer: agent-harness-fc (uds 160.sock)"
 ---
@@ -22,6 +21,7 @@ Peer report 2026-09-20 from agent-harness-fc (their item quote-three-argument-hi
 
 ## Notes
 - 2026-09-21 claimed by unknown@360f41058e92
+- 2026-09-21 done: f128089
 
 ## Dispatch
 - dispatch: implementer opus — >3 files across several plugins; adds a lint (executable snippet)
@@ -37,3 +37,8 @@ Peer report 2026-09-20 from agent-harness-fc (their item quote-three-argument-hi
 - dispatch: implementer opus — fix round 1 (resume, same tier)
 - round 1 fix aec45c8: agent-brief rule + "frontmatter not closed" FAIL; medium resolved by F2 tombstones (landed f39a146).
 - dispatch: reviewer opus — round 2 (resume)
+
+## Review round 2 — CLEAR (opus) at aec45c8
+- medium resolved by F2 tombstones on main; lint fixtures all behave; [nit] empty frontmatter reports "not closed" (required-keys check catches it anyway).
+## Landed
+- f128089 (checks green; strict-YAML sweep on main: 0 failures). 1 fix round.

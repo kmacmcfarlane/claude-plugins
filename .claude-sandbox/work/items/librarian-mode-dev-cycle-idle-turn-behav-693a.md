@@ -2,10 +2,12 @@
 id: librarian-mode-dev-cycle-idle-turn-behav-693a
 title: "librarian-mode/dev-cycle: idle-turn behaviour - show groom/work tables, then work the queue"
 type: feature
-status: todo
+status: doing
 priority: 1
+owner: unknown@360f41058e92
+claimed: 2026-09-21T18:13Z
 created: 2026-09-20
-updated: 2026-09-20
+updated: 2026-09-21
 refs:
   - operator 2026-09-20
 ---
@@ -20,3 +22,9 @@ Operator 2026-09-20: 'work-items that are ready and not parked should be worked 
 
 ## Hold record
 - 2026-09-19: operator paused new dispatches ("until I am ready to go to bed"). 2026-09-21: lifted - "work through any items in the work-item queue that you can" (decision 45 -> a). The hold lived only in the transcript; this item makes it visible.
+
+## Notes
+- 2026-09-21 claimed by unknown@360f41058e92
+
+## Dispatch
+- dispatch: implementer opus — judgement (librarian behaviour rule; where a hold lives)

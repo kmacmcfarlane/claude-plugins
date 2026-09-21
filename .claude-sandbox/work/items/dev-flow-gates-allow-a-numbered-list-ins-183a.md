@@ -2,10 +2,12 @@
 id: dev-flow-gates-allow-a-numbered-list-ins-183a
 title: "dev-flow gates: allow a numbered list instead of AskUserQuestion while scope is open"
 type: feature
-status: todo
+status: doing
 priority: 2
+owner: unknown@360f41058e92
+claimed: 2026-09-21T18:14Z
 created: 2026-09-20
-updated: 2026-09-20
+updated: 2026-09-21
 refs:
   - "peer: agent-harness-fc (uds 160.sock)"
 ---
@@ -17,3 +19,9 @@ Peer relay 2026-09-19/20 from agent-harness-fc, operator's words: 'all options a
 - next: —
 - blocked: —
 - learned: —
+
+## Notes
+- 2026-09-21 claimed by unknown@360f41058e92
+
+## Dispatch
+- dispatch: implementer opus — two skills; judgement (when a gate may take prose)
