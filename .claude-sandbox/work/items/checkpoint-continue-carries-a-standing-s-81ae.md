@@ -24,3 +24,7 @@ Peer claude-sandbox librarian 2026-09-21, relaying its operator: /context-guard:
 
 ## Notes
 - 2026-09-21 claimed by unknown@360f41058e92
+
+## Implementer result
+- round 1 DONE d6bb9b3 (opus): handoff-format mode_skill: (optional, generic); SKILL 4b fills, Step 7 leads with it; rehydrate.py names it in the header on every tier except LANDED (only /-prefixed, one line, ≤200 chars) + tests (fail 3 without); ending-the-session sets it to /dev-flow:librarian-mode start.
+- dispatch: reviewer opus — rule 4

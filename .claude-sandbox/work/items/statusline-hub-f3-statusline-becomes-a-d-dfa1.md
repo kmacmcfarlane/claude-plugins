@@ -16,8 +16,8 @@ updated: 2026-09-21
 d193 07 § F3. statusline declares statusline-hub in plugin.json dependencies (principle 4 as amended by 5343: statusline has no function without the hub), catalog (hard); stops writing settings; the hub owns the sensor write. context-guard/analytics/dev-flow stay soft readers.
 
 ## Handoff
-- doing: review r1 dispatched (opus, agent ac459b787fc1f2105)
-- next: on verdict: CLEAR → land; else fix round via a fresh opus implementer
+- doing: review r2 dispatched (opus, reviewer resumed)
+- next: CLEAR → land (expect a rehydrate.py conflict with 81ae)
 - blocked: —
 - learned: —
 
@@ -55,3 +55,5 @@ d193 07 § F3. statusline declares statusline-hub in plugin.json dependencies (p
 - lows: fresh-machine race (skip wait when installed statusline has no hooks/owner.py); 14-day linger (documented); README team enabledPlugins snippet list both; refusal fallback text fragile.
 - verified live: fresh `plugin install statusline@` brings the hub (+1 dependency).
 - dispatch: implementer opus — fix round 1 (fresh agent; round-1 implementer lost at compaction; tier kept, fable-signal fallback)
+- fix round 1 DONE bbe5ea4 (opus): hub-missing notice (3 signals absent → say once, stamped); heal repoints a stale statusline entry when hooked, else waits; context-guard rehydrate prefix fix + test; descriptions/credits updated; repo-map mirrors layout; README #88663 note + team snippet both plugins; race low + refusal text fixed. Declined low: 14-day linger (documented).
+- dispatch: reviewer opus — review r2 (same reviewer resumed)

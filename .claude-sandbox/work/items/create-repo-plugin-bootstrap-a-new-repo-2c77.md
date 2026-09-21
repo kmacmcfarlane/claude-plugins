@@ -2,12 +2,11 @@
 id: create-repo-plugin-bootstrap-a-new-repo-2c77
 title: "create-repo plugin: bootstrap a new repo and launch an attachable agent session on it"
 type: feature
-status: doing
+status: done
 priority: 2
-owner: unknown@360f41058e92
-claimed: 2026-09-21T19:50Z
 created: 2026-09-19
 updated: 2026-09-21
+closed: 2026-09-21
 refs:
   - "peer: claude-sandbox-93 (uds 91.sock), operator relay"
 ---
@@ -27,6 +26,7 @@ decision 43: placement — (a) new plugin create-repo as asked, with new-project
 
 ## Notes
 - 2026-09-21 claimed by unknown@360f41058e92
+- 2026-09-21 done: 9923bb7
 
 ## Dispatch
 - dispatch: implementer opus — new plugin (marketplace shape) + a launcher that runs claude-sandbox
@@ -58,3 +58,7 @@ answer 43: (a) new plugin create-repo; new-project-from-template stays, cross-po
 - dispatch: implementer opus — fix round 2 (same agent resumed)
 - fix round 2 DONE 6e79159 (opus): REPO/NAME character check before any shell (REPO absolute, safe set incl. no quote; NAME leading alnum); git-common-dir first; Edit in allowed-tools; fish note. All 5 lows fixed.
 - dispatch: reviewer opus — review r3 (same reviewer resumed)
+
+## Review round 3 — CLEAR (opus) at 6e79159
+- nits not taken (wording): fish note reason (\\ collapse, not '\''); Step 2.4 trailing-newline strip could be said. Hostile paths all refused; no bypass via template branch or --path.
+- landed 9923bb7
