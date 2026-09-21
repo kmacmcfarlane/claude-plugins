@@ -93,9 +93,16 @@ When the invocation says to run without stopping, the gates change form rather t
   or incomplete verification is still a stop: report it and leave the work uncommitted.
 - **Step 10a (terminal action)** — do the least irreversible thing the invocation authorises.
   Absent an explicit instruction, commit locally and leave the push to the user.
-- **Step 4 (base drift), Step 7 (a plan revision or an in-scope issue) and Step 8 (a step
-  needing human action)** — same rule as above: decide the least irreversible choice and
-  record it under Confirmed Assumptions, unless it blocks.
+- **Step 4 (base drift)** — the recorded base holds. Leaving it, or adopting a non-default
+  base nobody recorded, is a blocking **Open Question**: stop. An unresolved repo is the same:
+  stop, never clone silently.
+- **Step 7 (a plan revision or a missed in-scope issue)** — a plan revision: take the least
+  irreversible choice (carry it into the outcome file) and record it under Confirmed
+  Assumptions. A missed in-scope issue is a finding, not license to expand scope: record it as
+  a non-blocking **Open Question**, never silently fixed and never silently dropped.
+- **Step 8 (a step needing human action)** — record it as manual, deferred; verification is
+  then incomplete, so Gate 2's stop applies. (Running under an orchestrator differs on
+  purpose: it commits and lists the step under COULD NOT DO.)
 - A **blocking** open question still blocks. Say so and stop rather than guessing past it.
 
 Report every recorded decision together at the end so the user reviews them in one pass.
@@ -230,7 +237,17 @@ build/typecheck, its lint. Record which **verification tier** they represent (th
 
 ## Step 6 — Review gate 1: the plan
 
-Present:
+**Ask the decision-class questions first**, per the `investigate` skill's § Asking at a gate —
+a numbered list answered free-form is preferred while scope is open, `AskUserQuestion` for a
+closed choice late in the task. End the turn there. Keep the defer option either way:
+
+> **Leave open and record in the investigation** — defer this; it stays under Open Questions
+> with its owner and whether it blocks implementation.
+
+A blocking question's defer option must say plainly that deferring means **not implementing
+yet**. That is a legitimate outcome, never a slip.
+
+**Once every decision question is answered or deferred**, present:
 
 1. **The composed plan** — approach, files to modify, patterns, risks — and that you read the
    full series.
@@ -239,17 +256,7 @@ Present:
 4. **Branch strategy per repo**, including whether the recorded base still holds.
 5. **Verification plan** — the exact commands, and the tier they reach.
 6. **Open-question status** — what staleness closed, what the background agent verified with
-   evidence, what still **blocks**, and what you need decided now.
-
-**Ask the decision-class questions here**, per the `investigate` skill's § Asking at a gate —
-a numbered list answered free-form is preferred while scope is open, `AskUserQuestion` for a
-closed choice late in the task; end the turn on the list. Keep the defer option either way:
-
-> **Leave open and record in the investigation** — defer this; it stays under Open Questions
-> with its owner and whether it blocks implementation.
-
-A blocking question's defer option must say plainly that deferring means **not implementing
-yet**. That is a legitimate outcome, never a slip.
+   evidence, what still **blocks**, and how each decision question above was resolved.
 
 Then output **verbatim**:
 
