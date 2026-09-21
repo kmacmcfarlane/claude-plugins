@@ -349,11 +349,23 @@ until the hub takes it over, once, after the footer has registered: the footer d
 sides of the change, and nothing moves the slot back. The hook also prunes sensor files older
 than 30 days.
 
+It also draws the agent panel's sub-agent rows (`name · 43% 86k/200k · description`): each
+agent's context fill, exact from its sidechain transcript (`<session>/subagents/agent-<id>.jsonl`,
+read incrementally), else Claude Code's own token count marked `~`. That ships as the
+`subagentStatusLine` default in the plugin's own `settings.json`, the lowest settings layer,
+so no settings are written and a user-set `subagentStatusLine` always wins. Known limitation:
+the footer always shows the main session's context and does not follow a sub-agent opened
+from the panel, because Claude Code does not tell a status-line command which agent is in view
+([anthropics/claude-code#76863](https://github.com/anthropics/claude-code/issues/76863),
+closed not planned); the agent's fill is in its panel row.
+
 It also carries `hooks/` — `statusline.py` (the renderer; with `--segment`, as the hub runs
 it, it writes no sensor record, since the hub already did; run directly, as the older entry
-does, it writes the record itself), `sensor.py` (the sensor record's writer, its pruning, and
-the gauge policy) and `session_start.py` (the hook registration and prune above), after the
-`current-hooks` link command that keeps an older entry's path current — with its unit tests
+does, it writes the record itself), `subagent_statusline.py` (the sub-agent rows),
+`sensor.py` (the sensor record's writer, its pruning, and the gauge policy) and
+`session_start.py` (the hook registration and prune above), after the `current-hooks` link
+command that keeps an older entry's path current, and the path the `settings.json` default
+names (plugin settings cannot use the plugin's path variables) — with its unit tests
 (`cd plugins/statusline/hooks && python3 -m unittest discover -s tests -q`). The data
 contract both ways is `skills/install-statusline/references/sensor-contract.md`; its
 `test_contract.py` checks parity with `context-guard` whenever both sit in this repo.

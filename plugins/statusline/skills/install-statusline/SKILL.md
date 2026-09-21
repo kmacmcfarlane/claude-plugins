@@ -1,6 +1,6 @@
 ---
 name: install-statusline
-description: Install, move or remove the always-on status line — a one-line footer showing context left (tokens and percent), plan usage limits with reset countdowns, model, effort and session name. The footer draws through statusline-hub, which owns the status-line slot and installs itself on the first session; this skill covers the coworker install, and hands moving, removing or replacing the slot to the install-statusline-hub skill. Use when the user says "install the statusline", "set up the status line", "set up the context gauge", "remove the statusline", "move the statusline to this project", or "replace my status line with this one".
+description: Install, move or remove the always-on status line — a one-line footer showing context left (tokens and percent; each sub-agent's in the agent panel), plan usage limits with reset countdowns, model, effort and session name. The footer draws through statusline-hub, which owns the status-line slot and installs itself on the first session; this skill covers the coworker install, and hands moving, removing or replacing the slot to the install-statusline-hub skill. Use when the user says "install the statusline", "set up the status line", "set up the context gauge", "remove the statusline", "move the statusline to this project", or "replace my status line with this one".
 disable-model-invocation: false
 allowed-tools: Bash, Read, AskUserQuestion
 argument-hint: "[--user | --local | --project] [--remove]"
@@ -129,6 +129,34 @@ hand, turn on auto-update one of two ways:
   instantly, unless `statusLine.refreshInterval` is set. On macOS (no `/proc`) the hub
   between Claude Code and the footer hides the `/rename` name until the payload carries it.
 
+### Sub-agent rows
+
+While sub-agents run, the agent panel below the prompt shows one row per sub-agent. This
+plugin draws each row as `name · 43% 86k/200k · description`: the agent's own context fill,
+coloured like the footer's gauge. The fill is exact, read from the agent's transcript
+(`SESSION/subagents/agent-ID.jsonl` beside the session's transcript); after the first read,
+each refresh reads only the lines added since the last one. A `~` marks an approximate figure (`~43% ~86k/200k`):
+Claude Code's own token count for the agent, shown until the transcript has a reading, for
+example in the first seconds of a new agent or right after it compacts. That count
+overstates the depth, more the longer the agent runs. The rows refresh every 5 seconds.
+Agent-team teammates get no row from this plugin; Claude Code does not pass them to it.
+
+It is on by default, with nothing written to your settings: the plugin's own
+`settings.json` ships a default `subagentStatusLine` (Claude Code 2.1.205 or later for the
+percentages). Plugin defaults are the lowest settings layer, so a `subagentStatusLine` you
+set in any settings file wins over it and is never touched. To keep Claude Code's default
+rows, set one that prints nothing:
+
+```json
+{ "subagentStatusLine": { "type": "command", "command": "true" } }
+```
+
+If another enabled plugin also ships a `subagentStatusLine`, Claude Code uses the one it
+loads last. The default reaches the script through this plugin's data directory
+(`~/.claude/plugins/data/statusline-kmacmcfarlane/`), because a plugin's `settings.json`
+cannot name the plugin's own install path; installed from a marketplace under another name,
+set `subagentStatusLine` yourself to `python3 ".../plugins/data/statusline-NAME/current-hooks/subagent_statusline.py"`.
+
 Each render also records this session's numbers (context used, window, plan usage) in
 `~/.claude/statusline/sensor/SESSION.json` (under `$CLAUDE_CONFIG_DIR` when that is set),
 so hooks and tools that never see the status line payload can read exact depth and reset
@@ -150,7 +178,8 @@ rm -rf "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/statusline" "${CLAUDE_CONFIG_DIR:-$H
 
 Uninstalling first deletes the hub's data dir, which leaves the settings entry pointing at
 a script that no longer exists (a blank footer). The last line removes the per-session
-sensor files and the hub's registry. Sensor files are also pruned automatically after 30
+sensor files, the sub-agent rows' read cache and the hub's registry. The sub-agent rows go
+with the plugin: their default lives in the plugin, not in your settings. Sensor files are also pruned automatically after 30
 days. Uninstalling only this plugin leaves the hub in the slot: its footer disappears within
 14 days, or at once if you delete `~/.claude/statusline-hub/hooks.d/statusline.json`.
 
@@ -167,6 +196,12 @@ its reporter once plan approval gained a context-remaining option; the status li
 still hides), [#26847](https://github.com/anthropics/claude-code/issues/26847) (duplicate
 of #21349), [#30232](https://github.com/anthropics/claude-code/issues/30232) (closed as
 stale).
+
+The footer always shows the main session's context. While you view a sub-agent (opened from
+the agent panel or `/tasks`), it does not switch to that agent: Claude Code does not tell a
+status-line command which agent is in view
+([#76863](https://github.com/anthropics/claude-code/issues/76863), closed as not planned).
+The agent's fill is in its row of the agent panel instead (see Sub-agent rows).
 
 ## Troubleshooting
 

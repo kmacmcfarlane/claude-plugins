@@ -35,7 +35,8 @@ plugins/
     skills/
       sandbox/
   statusline/          # Always-on status line footer, a statusline-hub display hook (hook-owning; hard-depends on statusline-hub)
-    hooks/             # statusline (renderer), sensor, session_start (registers the hub hook, prune) + hooks.json + unit tests
+    settings.json      # plugin settings default: subagentStatusLine (agent-panel rows)
+    hooks/             # statusline (renderer), subagent_statusline (agent-panel renderer), sensor, session_start (registers the hub hook, prune) + hooks.json + unit tests
     skills/
       install-statusline/  # coworker install, hands the slot to install-statusline-hub; references/sensor-contract.md
   statusline-hub/      # The status-line slot, shared: owner-mode dispatcher + embed-mode tee (hook-owning; owns the statusLine entry)
@@ -85,8 +86,9 @@ Where a new or moved thing goes. The full decision tree is in
 
 1. Alters harness behavior (hooks, status line, `settings.json` writes)? → only a plugin
    whose stated aim *is* that behavior (`plugins/context-guard/` for the context system,
-   `plugins/statusline/` for the status line's footer, `plugins/statusline-hub/` for the
-   status-line slot and its settings entry, `plugins/sandbox/` for the checkout/worktree guard).
+   `plugins/statusline/` for the status line's footer and the agent-panel rows
+   (`subagentStatusLine`), `plugins/statusline-hub/` for the status-line slot and its
+   settings entry, `plugins/sandbox/` for the checkout/worktree guard).
    Never attach it to a knowledge skill.
 2. Pure stack/tool knowledge? → the expertise family, in its own marketplace (`expertise`,
    repo `claude-expertise`) — not this repo.
