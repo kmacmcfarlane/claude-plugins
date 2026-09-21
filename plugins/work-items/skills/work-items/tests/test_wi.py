@@ -1614,6 +1614,244 @@ class TestParked(WiTestCase):
                          ("blocked", "vendor", None))
 
 
+class TestGrooming(WiTestCase):
+    """b020: `grooming` holds an item for the operator's answers, and
+    `needs-input` lists everything awaiting the operator."""
+
+    def ids(self, args):
+        return [r["id"] for r in json.loads(self.wi_ok(args + ["--json"]))]
+
+    def show(self, iid):
+        return json.loads(self.wi_ok(["show", iid, "--json"]))
+
+    def test_groom_and_ungroom_round_trip(self):
+        self.write_item("g-1111", status="doing", owner="tester@local",
+                        claimed="2026-08-30T10:00Z", stage="review",
+                        handoff={"doing": "x", "next": "y"})
+        self.wi_ok(["groom", "g-1111", "a or b? which store?"])
+        rec = self.show("g-1111")
+        self.assertEqual((rec["status"], rec["grooming"], rec["owner"],
+                          rec["claimed"], rec["stage"]),
+                         ("grooming", "a or b? which store?", None, None, None))
+        self.assertIn("grooming: a or b? which store?", rec["sections"]["Notes"])
+        self.wi_ok(["lint"])
+        path = self.root / "items" / "g-1111.md"
+        before = path.read_bytes()
+        self.wi_ok(["groom", "g-1111", "a or b? which store?"])
+        self.assertEqual(path.read_bytes(), before)
+        self.assertIn("-> todo", self.wi_ok(["ungroom", "g-1111"]))
+        rec = self.show("g-1111")
+        self.assertEqual((rec["status"], rec["grooming"]), ("todo", None))
+        self.assertIn("ungroomed", rec["sections"]["Notes"])
+        self.wi_ok(["lint"])
+
+    def test_ungroom_returns_blocked_item_to_blocked(self):
+        self.write_item("b-1111", status="blocked", blocked="vendor")
+        self.wi_ok(["groom", "b-1111", "wait or switch vendor?"])
+        self.assertEqual(self.show("b-1111")["blocked"], "vendor")
+        self.assertIn("-> blocked", self.wi_ok(["ungroom", "b-1111"]))
+        rec = self.show("b-1111")
+        self.assertEqual((rec["status"], rec["blocked"], rec["grooming"]),
+                         ("blocked", "vendor", None))
+
+    def test_refusals(self):
+        self.write_item("t-1111")
+        self.write_item("closed-2222", status="done")
+        for argv, code in ((["groom", "t-1111", ""], 1),
+                           (["groom", "t-1111", "a\nstatus: done"], 1),
+                           (["groom", "closed-2222", "x"], 1),
+                           (["ungroom", "t-1111"], 1)):
+            with self.subTest(argv=argv):
+                path = self.root / "items" / (argv[1] + ".md")
+                before = path.read_bytes()
+                self.assertEqual(run(argv, self.root).returncode, code)
+                self.assertEqual(path.read_bytes(), before)
+        self.wi_ok(["groom", "t-1111", "which?"])
+        r = run(["claim", "t-1111"], self.root)
+        self.assertEqual(r.returncode, 1)
+        self.assertIn("ungroom first", r.stderr)
+
+    def test_lint_requires_questions_and_flags_leftovers(self):
+        self.write_item("bare-1111", status="grooming")
+        for st, extra in (("todo", {}), ("blocked", {"blocked": "v"}),
+                          ("parked", {"parked": "later"}),
+                          ("doing", {"handoff": {"next": "n"}})):
+            self.write_item(f"left-{st}-2222", status=st, grooming="stale",
+                            **extra)
+        self.write_item("dropped-3333", status="dropped", grooming="history")
+        r = run(["lint"], self.root)
+        self.assertEqual(r.returncode, 3)
+        self.assertIn("bare-1111.md: grooming without questions", r.stdout)
+        for st in ("todo", "doing", "blocked", "parked"):
+            self.assertIn(f"left-{st}-2222.md: grooming questions on a {st} "
+                          "item", r.stdout)
+        self.assertNotIn("dropped-3333", r.stdout)
+
+    def test_not_ready_but_in_default_ls(self):
+        self.write_item("ready-1111")
+        self.write_item("groom-2222", status="grooming", grooming="which?",
+                        priority=0)
+        self.write_item("child-3333", deps=["groom-2222"])
+        self.assertEqual(self.ids(["ls", "--ready"]), ["ready-1111"])
+        self.assertIn("groom-2222", self.ids(["ls"]))
+        self.assertEqual(self.ids(["ls", "--status", "grooming"]), ["groom-2222"])
+        data = json.loads(self.wi_ok(["next", "--json"]))
+        self.assertEqual([r["id"] for r in data["ready"]], ["ready-1111"])
+        self.assertEqual(data["counts"]["grooming"], 1)
+        out = self.wi_ok(["next"])
+        self.assertNotIn("groom-2222", out)
+        self.assertIn("1 grooming (wi needs-input)", out)
+        pipe = self.wi_ok(["next", "--pipeline"])
+        self.assertNotIn("groom-2222", pipe)
+        self.assertNotIn("child-3333", pipe)   # a grooming dep does not resolve
+
+    def test_release_never_ungrooms(self):
+        self.write_item("h-1111", status="doing", owner="agent@x",
+                        claimed="2026-08-30T10:00Z",
+                        handoff={"doing": "x", "next": "y"})
+        self.wi_ok(["groom", "h-1111", "which?"])
+        self.wi_ok(["release", "h-1111"])
+        self.assertEqual(self.show("h-1111")["status"], "grooming")
+        self.wi_ok(["lint"])
+
+    def test_park_block_and_groom_supersede_each_other(self):
+        self.write_item("s-1111", status="parked", parked="later")
+        self.wi_ok(["groom", "s-1111", "which?"])
+        rec = self.show("s-1111")
+        self.assertEqual((rec["status"], rec["parked"], rec["grooming"]),
+                         ("grooming", None, "which?"))
+        self.wi_ok(["park", "s-1111", "later"])
+        rec = self.show("s-1111")
+        self.assertEqual((rec["status"], rec["parked"], rec["grooming"]),
+                         ("parked", "later", None))
+        self.wi_ok(["groom", "s-1111", "which?"])
+        self.wi_ok(["block", "s-1111", "vendor"])
+        rec = self.show("s-1111")
+        self.assertEqual((rec["status"], rec["blocked"], rec["grooming"]),
+                         ("blocked", "vendor", None))
+        self.wi_ok(["lint"])
+
+    def test_set_status_goes_through_groom_and_ungroom(self):
+        self.write_item("s-1111")
+        path = self.root / "items" / "s-1111.md"
+        before = path.read_bytes()
+        r = run(["set", "s-1111", "status", "grooming"], self.root)
+        self.assertEqual(r.returncode, 1)
+        self.assertIn("wi groom s-1111", r.stderr)
+        self.assertEqual(run(["set", "s-1111", "grooming", "x"], self.root)
+                         .returncode, 3)
+        self.assertEqual(path.read_bytes(), before)
+        self.wi_ok(["groom", "s-1111", "which?"])
+        self.wi_ok(["set", "s-1111", "status", "todo"])
+        rec = self.show("s-1111")
+        self.assertEqual((rec["status"], rec["grooming"]), ("todo", None))
+        self.assertIn("ungroomed (set status todo)", rec["sections"]["Notes"])
+        self.wi_ok(["lint"])
+
+    def test_backlog_yaml_bridge_maps_grooming_to_blocked_and_back(self):
+        self.write_item("g-1111", "Needs answers", status="grooming",
+                        grooming="a or b?")
+        out = self.tmp / "backlog.yaml"
+        self.wi_ok(["export", "--format", "backlog-yaml", str(out),
+                    "--project", "t"])
+        text = out.read_text()
+        self.assertIn("status: blocked", text)
+        self.assertIn('blocked_reason: "GROOMING: a or b?"', text)
+        TestBacklogYaml._validate(self, out, self.tmp / "backlog_done.yaml")
+        fresh = self.tmp / ".fresh"
+        self.assertEqual(run(["init"], fresh).returncode, 0)
+        r = run(["import", "--format", "backlog-yaml", str(out)], fresh)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        rec = json.loads(run(["ls", "--status", "all", "--json"], fresh).stdout)[0]
+        self.assertEqual((rec["status"], rec["grooming"], rec["blocked"]),
+                         ("grooming", "a or b?", None))
+        self.wi_ok(["import", "--format", "backlog-yaml", "--update", str(out)])
+        self.assertEqual(self.show("g-1111")["grooming"], "a or b?")
+        self.wi_ok(["lint"])
+
+    def test_needs_input_lists_grooming_and_unanswered_decisions(self):
+        self.write_item("groom-1111", status="grooming", grooming="which store?",
+                        priority=1)
+        self.write_item("dec-2222", sections=(
+            "## Notes\n"
+            "decision 3: a or b\n"
+            "decision 4: keep the alias?\n"
+            "- 2026-09-20 operator said something\n"
+            "answer 3: a\n"
+            "decision 7: already answered further down\n"
+            "```\ndecision 9: an example in a fence\n```\n"
+            "answer 7: yes\n"))
+        self.write_item("parked-3333", status="parked", parked="later",
+                        sections="## Notes\ndecision 5: revisit when?\n")
+        self.write_item("answered-4444",
+                        sections="## Notes\ndecision 6: x\nanswer 6: y\n")
+        self.write_item("closed-5555", status="done",
+                        sections="## Notes\ndecision 8: never shown\n")
+        self.write_item("indented-6666",
+                        sections="## Notes\n- decision 10: not the marker\n")
+        out = self.wi_ok(["needs-input"])
+        self.assertEqual(out.splitlines(), [
+            "groom-1111  grooming: which store?",
+            "dec-2222  decision 4: keep the alias?",
+            "parked-3333  decision 5: revisit when?"])
+        plain = self.wi_ok(["needs-input", "--plain"]).splitlines()
+        self.assertIn("groom-1111\tgrooming\t-\twhich store?", plain)
+        self.assertIn("dec-2222\tdecision\t4\tkeep the alias?", plain)
+        data = json.loads(self.wi_ok(["needs-input", "--json"]))
+        self.assertEqual([r["id"] for r in data],
+                         ["groom-1111", "dec-2222", "parked-3333"])
+        self.assertEqual(data[1]["decisions"], [{"n": 4, "text": "keep the alias?"}])
+        self.assertEqual(data[0]["grooming"], "which store?")
+        self.wi_ok(["lint"])
+
+    def test_needs_input_empty_exits_2(self):
+        self.write_item("t-1111")
+        r = run(["needs-input"], self.root)
+        self.assertEqual((r.returncode, r.stdout), (2, ""))
+
+    def test_needs_input_reads_crlf_bodies(self):
+        path = self.root / "items" / "crlf-1111.md"
+        path.write_bytes(
+            b"---\r\nid: crlf-1111\r\ntitle: c\r\nstatus: todo\r\n"
+            b"created: 2026-08-01\r\nupdated: 2026-08-01\r\n---\r\n\r\n"
+            b"decision 2: crlf?\r\n")
+        self.assertIn("crlf-1111  decision 2: crlf?",
+                      self.wi_ok(["needs-input"]))
+
+    def test_prime_shows_grooming_count_and_hold_line(self):
+        self.write_item("blk-1111", status="blocked", blocked="vendor")
+        self.write_item("g-2222", status="grooming", grooming="which?")
+        self.write_item("g-3333", status="grooming", grooming="when?")
+        self.write_item("park-4444", status="parked", parked="later")
+        self.write_item("hold-5555", "Operator hold until review", tags=["hold"])
+        self.write_item("oldhold-6666", "Old hold", status="done", tags=["hold"])
+        lines = self.wi_ok(["prime"]).split("\n")
+        self.assertIn("GROOMING 2 (wi needs-input)", lines)
+        self.assertIn("PARKED 1 (wi ls --status parked)", lines)
+        # the HOLD line comes first, right under the header
+        self.assertEqual(lines[1], "HOLD 1: hold-5555 (Operator hold until review)")
+        self.assertFalse(any("oldhold" in ln for ln in lines))   # closed: no hold
+        self.assertFalse(any("g-2222" in ln for ln in lines))    # a count, not a list
+
+    def test_ls_dep_lists_dependents(self):
+        self.write_item("base-1111")
+        self.write_item("kid-2222", deps=["base-1111"])
+        self.write_item("kid-3333", deps=["base-1111", "ext: vendor"],
+                        status="blocked", blocked="v")
+        self.write_item("other-4444")
+        self.write_item("donekid-5555", deps=["base-1111"], status="done")
+        self.assertEqual(sorted(self.ids(["ls", "--dep", "base-1111"])),
+                         ["kid-2222", "kid-3333"])
+        self.assertEqual(sorted(self.ids(["ls", "--dep", "base"])),
+                         ["kid-2222", "kid-3333"])   # a prefix resolves
+        self.assertEqual(sorted(self.ids(["ls", "--dep", "base-1111",
+                                          "--status", "all"])),
+                         ["donekid-5555", "kid-2222", "kid-3333"])
+        self.assertEqual(self.ids(["ls", "--dep", "ext: vendor"]), ["kid-3333"])
+        self.assertEqual(run(["ls", "--dep", "other-4444"], self.root)
+                         .returncode, 2)
+
+
 class TestPrime(WiTestCase):
     def seed_many(self, n=40):
         for i in range(n):
@@ -1924,6 +2162,7 @@ class TestHostGitignoreUntouched(WiTestCase):
             ["set", iid, "priority", "1"], ["block", iid, "--on", dep],
             ["unblock", iid, "--dep", dep], ["release", iid],
             ["park", iid, "later"], ["unpark", iid], ["migrate-parked"],
+            ["groom", iid, "which?"], ["needs-input"], ["ungroom", iid],
             ["repair-escapes"],
             ["import-todo", str(todo)],
             ["export", str(repo / "backlog.yaml"), "--format", "backlog-yaml"],
