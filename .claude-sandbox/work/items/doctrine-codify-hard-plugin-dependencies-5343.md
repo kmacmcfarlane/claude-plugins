@@ -2,13 +2,12 @@
 id: doctrine-codify-hard-plugin-dependencies-5343
 title: "doctrine: codify hard plugin dependencies (principles 2/4) + declare ralph→sandbox"
 type: chore
-status: doing
+status: done
 priority: 1
 parent: spike-status-line-multiplexer-dependency-d193
-owner: unknown@360f41058e92
-claimed: 2026-09-21T18:01Z
 created: 2026-09-19
 updated: 2026-09-21
+closed: 2026-09-21
 refs:
   - operator decision 42
 ---
@@ -23,6 +22,7 @@ Operator decision 42(a) 2026-09-19: amend README principles 2 and 4 to allow a f
 
 ## Notes
 - 2026-09-21 claimed by unknown@360f41058e92
+- 2026-09-21 done: 37ef5a0
 
 ## Dispatch
 - dispatch: implementer opus — doctrine (README principles, catalog), marketplace shape (plugin.json dependencies)
@@ -37,3 +37,8 @@ Operator decision 42(a) 2026-09-19: amend README principles 2 and 4 to allow a f
 - dispatch: implementer opus — fix round 1 (resume)
 - round 1 fix 54b27d2: §5 script hardened (unreadable/non-object/non-list/malformed entry/marketplace-entry declarations all FAIL); plugin.json-only declaration rule; kit-dev row + descriptions name claude-templates, claude-sandbox, claude-expertise (external); lows/nit fixed.
 - dispatch: reviewer opus — round 2 (resume)
+
+## Review round 2 — CLEAR (opus) at 54b27d2
+- lows (landed as CLEAR): kit-dev description should also name the claude-sandbox tool; §5 script silent on a non-list marketplace plugins field (marketplace==disk crashes on it first); nit: checklist:178 102 chars. Carried to 2c77 (create-repo touches the same catalog) — no, filed on this item only; pick up with the next kit-dev edit.
+## Landed
+- 37ef5a0 (checks green; marketplace.json parses). 1 fix round.

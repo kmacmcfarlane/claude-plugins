@@ -29,3 +29,8 @@ Peer relay 2026-09-19/20 from agent-harness-fc, operator's words: 'all options a
 ## Implementer result
 - round 1 DONE_WITH_CONCERNS 713553d (opus): "Asking at a gate" section in investigate (gates 2/9/11 point at it; numbered list preferred while scope open; dialog for closed late choices, never with heavy analysis); deep-investigation Step 1 states it inline; orchestrated/non-interactive modes: ask nothing in either form. investigate +141 words (5638). Open: Step 3a base-branch consent keeps the dialog.
 - dispatch: reviewer opus — rule 4
+
+## Review round 1 — NEEDS_CHANGES (opus) at 713553d
+- [medium] the shared rule never says the turn ENDS on the list; nothing enforces the stop now the dialog is gone (Step 2 has no "wait"; Step 11 background agent return could be read as licence to move on).
+- lows: tighten Step 2/Step 11 wording; recommendation for both forms; align criterion wording with deep-investigation.
+- dispatch: implementer opus — fix round 1 (resume)
