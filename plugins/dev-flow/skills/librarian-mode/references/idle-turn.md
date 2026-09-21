@@ -100,7 +100,8 @@ the tables again and takes the next rows.
 
 A hold is the operator telling the librarian to stop or slow dispatch: "pause this until
 I go to bed", "nothing on fable today", "one agent at a time". It is the **only** thing
-that stops or caps the dispatch above, and it acts on new dispatch only: agents already
+that stops or caps the dispatch above besides `start`'s session-name gate while it waits
+(`session-name.md`), and it acts on new dispatch only: agents already
 in flight finish their cycle unless the operator says otherwise. It is a request like
 any other, so it becomes a work item — and that item is where the hold lives, so a
 `/clear` or a compaction cannot lose it and the operator can always see why nothing is
