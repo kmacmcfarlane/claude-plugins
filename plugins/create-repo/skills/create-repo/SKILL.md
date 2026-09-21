@@ -2,7 +2,7 @@
 name: create-repo
 description: "Bootstrap a new git repo for a thread of work to pick up later — resolve the path beside the current repo, git init -b main, seed a README naming its purpose, claude-sandbox init, first commit — then hand the user one copy-paste command that launches an agent session on it with a bootstrap prompt (write CLAUDE.md, then run the thread's first investigation). Optionally scaffolds a claude-templates template as the goal through kit-dev's new-project-from-template. Use when the user says 'create a repo', 'new repo for this', 'start a thread repo', 'spin up a repo and a session', or 'bootstrap a repo we can use later'. Not for scaffolding a stack project without a session (new-project-from-template does that)."
 disable-model-invocation: true
-allowed-tools: Bash, Read, Write, AskUserQuestion, Skill
+allowed-tools: Bash, Read, Write, Edit, AskUserQuestion, Skill
 argument-hint: "[purpose of the thread] [--template NAME] [--path DIR]"
 ---
 
@@ -28,6 +28,12 @@ agent session on it. User's argument: $ARGUMENTS
   (README, the prompt) are written with the Write tool; a shell variable that holds it is
   filled from a quoted heredoc (`<<'EOF'`) or from a file the Write tool wrote — see
   `references/launch-command.md`.
+- **The path and name are checked before any shell sees them.** `REPO` must be an absolute
+  path of only `A-Z a-z 0-9 . _ / @ + , : ~ -` and spaces — no `$`, backtick, quote,
+  backslash or newline; `NAME` must match `^[A-Za-z0-9][A-Za-z0-9._-]*$`. Anything else:
+  ask for another (Step 2). Once checked they are safe in single quotes, and shell
+  variables do not survive between Bash calls, so **re-set them at the top of every Bash
+  call** that uses them: `REPO='/checked/path'; NAME='checked-name'`.
 
 ## Instructions
 
@@ -46,25 +52,35 @@ it cannot be skipped.
 
 1. **Name**: with `--path`, its last component. Otherwise derive kebab-case, 1–4 words,
    from the purpose (`compare-vector-dbs`, not `repo-for-comparing-vector-databases`).
-   The name must match `^[A-Za-z0-9._-]+$`; if a `--path` name does not, ask for one that
-   does. Only then is it safe in the commands below.
+   The name must match `^[A-Za-z0-9][A-Za-z0-9._-]*$` (so not `.`, `..` or `-x`); if a
+   `--path` name does not, ask for one that does. Only then is it safe in the commands
+   below.
 2. **Parent** — the operator's workspace convention is that repos sit side by side, so
    default to the parent of the current *project*. Not `--show-toplevel`: in a worktree
    session that is the worktree (`<project>/.claude/worktrees/<name>`), and the new repo
-   would land inside the project. Use `$CLAUDE_SANDBOX_PROJECT_DIR` when set, else the
-   directory holding the repository's common `.git`:
+   would land inside the project. Use the directory holding the repository's common
+   `.git`, else `$CLAUDE_SANDBOX_PROJECT_DIR` (which, in a sandbox launched from a linked
+   worktree elsewhere, is that worktree — hence second):
    ```bash
-   if [ -n "$CLAUDE_SANDBOX_PROJECT_DIR" ]; then proj=$CLAUDE_SANDBOX_PROJECT_DIR
-   else gd=$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null)
-        case "$gd" in */.git) proj=${gd%/.git} ;; esac
-   fi
+   proj=; gd=$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null)
+   case "$gd" in */.git) proj=${gd%/.git} ;; esac
+   [ -z "$proj" ] && proj=$CLAUDE_SANDBOX_PROJECT_DIR
    [ -n "$proj" ] && parent=$(dirname "$(cd "$proj" && pwd -P)")
    ```
    When neither yields a project (not in a git repo, or a bare repository whose common dir
    does not end in `/.git`), there is no convention to derive; ask for the parent.
 3. **Confirm** with `AskUserQuestion`: "Create the repo at PARENT/NAME?", options
    "Yes", "Different name", "Different path". Never create before the user confirms.
-4. **Preflight** the confirmed path `$REPO`:
+4. **Check the characters** of the confirmed path before it reaches any shell (the rule
+   in Important). Check it by reading it; when in doubt, write it with the Write tool to a
+   scratch file and test that file, which no shell expansion touches:
+   ```bash
+   python3 -c 'import re,sys; s=open(sys.argv[1]).read().rstrip("\n"); sys.exit(0 if re.fullmatch(r"/[A-Za-z0-9._/@+,:~ -]+", s) else 1)' "$file" && echo safe
+   ```
+   Not safe (including a newline anywhere inside it): say which character is refused and
+   ask for another path. From here on every Bash call starts `REPO='...'` with the checked
+   path.
+5. **Preflight** the confirmed path `$REPO`:
    ```bash
    test -e "$REPO" && ls -A "$REPO" | head -1    # any output: non-empty, STOP and ask
    ```
@@ -101,8 +117,8 @@ plain `claude`." Then carry on — nothing below requires it.
    template, initialises git, bootstraps the sandbox (asking its own trackInHost question)
    and makes the first commit itself, so when it returns:
    - **Re-read what it made; do not assume your answers were used.** Take `REPO` from the
-     path in its final report, `NAME` from that path's last component (re-check it
-     against the name pattern in Step 2), and trackInHost from the repo:
+     path in its final report, `NAME` from that path's last component (re-check both
+     against the rule in Important), and trackInHost from the repo:
      `grep -E '^trackInHost:' "$REPO/.claude-sandbox/config.yaml"` (absent file: no
      sandbox). Use these in Step 7's report and command.
    - If `git -C "$REPO" branch --show-current` is not `main` and the repo has no remote,

@@ -47,9 +47,9 @@ it runs in this agent's shell the moment it sits inside double quotes. So never 
 - **A file** — write the filled prompt with the Write tool to a scratch file (the session
   scratchpad when there is one), then `PROMPT=$(cat "$file")`.
 
-`REPO` came from the user too (a `--path` or a "Different path" answer), so it gets the
-same treatment: `REPO=$(cat <<'EOF'` … `EOF`). `NAME` passed Step 2's
-`^[A-Za-z0-9._-]+$` check and can be assigned plainly: `NAME=restic-backup-migration`.
+`REPO` and `NAME` passed the character check (SKILL.md, Important and Step 2), so they are
+assigned in single quotes at the top of the same Bash call:
+`REPO='/home/me/work/restic-backup-migration'; NAME='restic-backup-migration'`.
 
 ## The command
 
@@ -73,6 +73,10 @@ echo "cd $(sq "$REPO") && claude --name $(sq "$NAME") $(sq "$PROMPT")"
 ```
 
 Print the resulting line, not the `echo` — that line is what the user copies.
+
+The `'\''` escape is POSIX-shell quoting (bash, zsh, sh). In fish, a quote inside single
+quotes is `\'` instead, so a fish user runs the line from a POSIX shell: type `bash`,
+then paste it.
 
 ## Why these flags
 
