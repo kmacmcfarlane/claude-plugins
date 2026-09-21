@@ -86,6 +86,21 @@ If `.claude-sandbox/config.yaml` is absent, warn once and continue — see
 
 ---
 
+## Asking at a gate
+
+A blocking gate (Steps 2, 9, 11) blocks on the user's answer, not on a widget; either form
+carries your recommendation on each question. While scope is still open — scoping, early
+requirements rounds, "what are we even building" — **prefer a numbered list in your reply**,
+answered free-form: the honest answer is often "none of these, and here is why", which fixed
+options fight, and an answer that redefines the problem is one to re-scope from. Keep
+`AskUserQuestion` for a closed choice late in a task, and never in the same turn as heavy
+analysis — the dialog hides both that and the status line.
+
+**End the turn on the list.** Your recommendation is not the answer, and a background agent's
+return is not either: fold it in and keep waiting.
+
+---
+
 ## Running non-interactively
 
 When the invocation says to run without stopping — an unattended session, or "do it and ask
@@ -119,8 +134,8 @@ well as numbered so a renumber updates this list in the same commit:
 - **Step 1 / 1a (Resolve the issue, the series)** — the orchestrator's brief is the
   description; a work item is read, never claimed. The series lives at the Series home,
   never inside the repo or a worktree; one already there is extended by its next serial.
-- **Step 2 (Scoping gate), Step 9 (Requirements gate), Step 11 (Open-question sweep)** — no
-  dialog. The verification agent still runs; each question you would ask becomes an Open
+- **Step 2 (Scoping gate), Step 9 (Requirements gate), Step 11 (Open-question sweep)** — nothing
+  asked. The verification agent still runs; each question you would ask becomes an Open
   Question marked blocking or not.
 - **Step 3a (Survey open branches)** — skipped, no fetch: the given base holds. Record it in
   Confirmed Assumptions and Deployment & Rollout Notes.
@@ -130,8 +145,8 @@ well as numbered so a renumber updates this list in the same commit:
 - **Step 12 (Review gate)** — Save; the orchestrator's review replaces it. **Step 13/14
   (Write, Rewrite the index)** — at the Series home.
 - **Step 15 (Report), Step 16 (Retrospective)** — replaced by the return below; no retro.
-- Never `AskUserQuestion`. Each gate decision you made yourself is a Confirmed Assumption,
-  as above, and is listed again under DEVIATIONS in the return.
+- Never ask the user — no dialog, no numbered list. Each gate decision you made yourself is a
+  Confirmed Assumption, as above, and is listed again under DEVIATIONS in the return.
 
 Return: `STATUS` (DONE, DONE_WITH_CONCERNS, NEEDS_CONTEXT or BLOCKED), `SERIES` (the absolute
 path), `OPEN QUESTIONS` (each marked blocking or not), `DEVIATIONS` (with why).
@@ -151,8 +166,8 @@ Ask only what you cannot answer yourself and what would change *where you look*:
 - What does "done" look like, roughly?
 - Is anything explicitly out of scope?
 
-Keep it to one `AskUserQuestion` round with 2–4 questions. Give a recommendation on each where
-you have one, so the cheap path is confirming rather than composing an answer.
+One round of 2–4 questions, per **Asking at a gate** — scope is open here, so a numbered list.
+Then **wait**.
 
 **Skip this gate only when the description already answers all of it** — a well-specified
 TODO item sometimes does. Say that you skipped it and why.
@@ -382,7 +397,7 @@ only what it cannot.
    fact the plan depends on (Step 6d), so a wrong one is caught here rather than after money
    is spent or a migration is half done.
 3. **Your open questions** — ambiguities, missing acceptance criteria, edge cases, anything
-   Step 7 raised.
+   Step 7 raised — asked per **Asking at a gate**.
 
 Then **wait**.
 
@@ -405,8 +420,7 @@ and the whole cost of this skill is paid on the assumption that this gate actual
 
 Two practical notes:
 
-- Ask in batches of a few related questions rather than one at a time, and give a
-  recommendation with each where you have one.
+- Ask in batches of a few related questions rather than one at a time.
 - Say where you are — "that opens one more thing about X, checking the code now" — so a
   multi-round gate reads as progress rather than stalling.
 
@@ -469,7 +483,7 @@ Questions. Each is a candidate.
 | Class | Test | Handling |
 |---|---|---|
 | **Agent-verifiable** | The answer exists somewhere reachable — code, `git`, a config, a running system, docs | Batch into one background agent (step 3) |
-| **User decision** | An opinion, a scope call, a preference. "Should we also…", "is X in scope", "which behaviour" | `AskUserQuestion` (step 4) |
+| **User decision** | An opinion, a scope call, a preference. "Should we also…", "is X in scope", "which behaviour" | Ask the user (step 4) |
 | **External / blocked** | Depends on someone else's decision, or a system you cannot reach | Straight to Open Questions, with owner and blocks-or-not |
 
 A question that is both — verifiable in principle, but only matters given a decision — goes to
@@ -483,14 +497,15 @@ SHAs, and what counts as verified (a command's output, a `file:line`, a doc quot
 to report **answer / evidence / confidence** per question, and to say "could not determine"
 rather than guess. Tell it to flag any *new* uncertainty it finds.
 
-**4. Meanwhile, ask the user the decision-class questions.** Every one carries a defer option,
-worded:
+**4. Meanwhile, ask the user the decision-class questions**, per **Asking at a gate**. Every
+one carries a defer option, offered as a dialog option or, in a list, as a closing line: any
+item may be answered "leave open". Its wording:
 
 > **Leave open and record in the investigation** — defer this; it will be listed under Open
 > Questions with its owner and whether it blocks implementation.
 
-Deferring is one click, never a negotiation. Some questions genuinely need data nobody has
-yet, and forcing an answer produces a worse record than an honest Open Question.
+Deferring is one click or one word, never a negotiation. Some questions genuinely need data
+nobody has yet, and forcing an answer produces a worse record than an honest Open Question.
 
 **5. Fold in and loop.** Verified facts become findings **with their evidence**; decisions
 become **Confirmed Assumptions**; deferred and external items become **Open Questions** with
@@ -674,7 +689,7 @@ cost you time during the run.
   nothing left — including looping back to exploration when an answer opened a question the
   code could settle.
 - The sweep ran against the drafted plan before anything was written: candidates classified,
-  the verifiable batch in **one** background agent launched *before* the `AskUserQuestion`,
+  the verifiable batch in **one** background agent launched *before* the user was asked,
   a defer option on every user question, looping until a round produced nothing new. Its
   outcome is reported at the gate.
 - Open Questions contain **only** genuinely external or blocked items, each naming an owner
