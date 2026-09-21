@@ -106,4 +106,6 @@ Solution: run `--status`. The sensor record is still written on every render eit
 A hook is listed as skipped.
 Cause: it breaks a trust or format rule; the reason is printed.
 Solution: the plugin that owns the hook must write its manifest as the contract says. For
-a hand-written hook, fix the file's mode (`chmod 600`) or its fields.
+a hand-written hook, fix the file's mode (`chmod 600`) or its fields. A hand-written
+manifest skipped as `not refreshed for 14 days` needs `"pinned": true` in it: nothing
+refreshes it, and without the pin the prune pass also deletes it.

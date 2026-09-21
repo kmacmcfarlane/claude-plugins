@@ -229,19 +229,21 @@ class Prune(Base):
         old = time.time() - 40 * 86400
         dead = self.manifest("dead", ["true"])
         live = self.manifest("live", ["true"])
+        pinned = self.manifest("pinned", ["true"], pinned=True)
         rec = self.write_json(self.sensor_file("gone"), {"v": 1})
         mine = self.write_json(self.sensor_file("s1"), {"v": 1})
         cache = self.write_json(os.path.join(self.cfg, "statusline-hub", "cache", "dead",
                                              "x.json"), {"at": 1, "text": "t"})
         log = self.write_json(os.path.join(self.cfg, "statusline-hub", "log", "dead.log"),
                               raw="x")
-        for p in (dead, rec, mine, cache, log):
+        for p in (dead, rec, mine, cache, log, pinned):
             os.utime(p, (old, old))
         self.quiet()
         for p in (dead, rec, cache, log):
             self.assertFalse(os.path.exists(p), p)
         self.assertFalse(os.path.exists(os.path.dirname(cache)))
         self.assertTrue(os.path.exists(live))
+        self.assertTrue(os.path.exists(pinned))  # hand-written and pinned: kept
         self.assertTrue(os.path.exists(mine))  # the current session's record stays
 
     def test_creates_a_private_hooks_dir(self):

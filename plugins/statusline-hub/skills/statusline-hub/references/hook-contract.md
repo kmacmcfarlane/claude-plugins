@@ -60,6 +60,7 @@ manifest's `name` field.
 | `timeout_ms` | no | Display: default 150, clamped to 10–250. Record: default 1000, clamped to 10–10000. |
 | `health_path` | no | An absolute path inside `CFG` to your health file (§ 7). Anything else is ignored, and the hook still runs. |
 | `order` | no | An integer hint for display position (lower first). The user's `config.json` wins. |
+| `pinned` | no | `true` exempts the manifest from the 14-day staleness rule (§ 8). For a manifest a person writes by hand; a plugin refreshes its own instead. |
 | `v` | no | `1`. Any other value makes the hub skip the manifest. |
 
 Other keys are ignored, so a newer manifest stays readable. The program (`command[0]`)
@@ -79,6 +80,8 @@ it is refused.
   render may read it at any moment.
 - To unregister, delete your file. If you forget, it is pruned 14 days after your last
   refresh.
+- **Writing one by hand?** Nothing refreshes it, so it would be ignored, then pruned,
+  after 14 days. Add `"pinned": true` to keep it; delete it yourself when you are done.
 
 ## 4. Trust: which manifests run
 
@@ -91,17 +94,23 @@ Otherwise it skips the manifest silently: nothing runs, and the line is unaffect
 - The manifest is a regular file, opened without following a symlink, owned by the user,
   **not writable by group or others**, at most 16 KiB, and modified within the last 14
   days.
-- `CFG` does not lie inside the session's project tree. A config dir relocated into a
-  repository never supplies hooks, so files from a cloned repo never run. A home
-  directory, or a directory above it, does not count as a project tree.
+- `CFG` does not lie inside the session's project tree. A home directory, or a directory
+  above it, does not count as a project tree.
+- `CFG` does not lie inside a git work tree: no `.git` in `CFG` or in any directory above
+  it, up to but not including the home directory. The default `~/.claude` is exempt,
+  since a repository cannot relocate it, and a dotfiles repo there is the user's own.
+  Together with the rule above, this means a config dir relocated into a cloned repo never
+  supplies hooks. That holds even when Claude Code started in a subdirectory, or the
+  payload names no directory.
 - At most 32 manifests are read, in name order.
 
 **Why no shell by default.** The exec form never expands, globs, redirects or chains, so a
 path with spaces or `$` in it is just a path, and nothing in a string `command` can smuggle
 in a second command. It also costs no extra `sh` start-up on every render. A manifest can
-still ask for a shell with `"shell": true`. That grants nothing new, since whoever can
-write the manifest can already name any program, but it has to be said explicitly, in the
-file, where a reader sees it.
+still ask for a shell with `"shell": true`. That departs from a strict "never a shell" rule
+on purpose, and grants nothing new: an argv array can already name `/bin/sh -c`, and
+whoever can write the manifest can already name any program. What the flag adds is that
+the shell has to be asked for explicitly, in the file, where a reader sees it.
 
 ## 5. How every hook runs
 
@@ -128,7 +137,9 @@ file, where a reader sees it.
   all within a 250 ms budget per render. Display hooks share that budget rather than
   adding to it.
 - **On time, exit 0**: the first line of stdout (at most 4 KiB read) is sanitised and
-  shown, and cached as this session's last-good text. Empty output means "show nothing
+  shown, and cached as this session's last-good text. The hub stops reading at the end of
+  the first line, so a background child that keeps stdout open does not make the hook
+  count as timed out, as long as the hook itself exits 0 in time. Empty output means "show nothing
   this time".
 - **Timeout, non-zero exit, or a failed start**: the last-good text is shown if it is
   under 60 s old, otherwise nothing. A failing hook costs only its own slot, never the
@@ -138,7 +149,8 @@ file, where a reader sees it.
   so a colour cannot bleed into the next hook's text. Every other escape sequence is
   dropped: cursor moves, clears, window titles, hyperlinks. Other control characters are
   dropped too, with a tab becoming a space. Unicode format characters (bidi overrides,
-  zero-width padding) are dropped, except a joiner. At most 300 printable characters are
+  zero-width padding) are dropped, except a joiner, and so are the Unicode line and
+  paragraph separators (U+2028, U+2029). At most 300 printable characters are
   kept.
 - **Order**: the user's `config.json` `order` first, then `order` hints, then name.
   Segments are joined with the configured separator (two spaces by default).
@@ -150,9 +162,14 @@ file, where a reader sees it.
 - It runs **detached**. The render hands the payload to one background runner in its own
   session and returns without waiting. Nothing the runner or your hook does can hold the
   render, its stdout, the line or the sensor record.
-- The runner kills your hook at its `timeout_ms`. Renders can overlap, so keep a record
-  hook short and safe to run concurrently with itself: use an atomic replace or an
-  append, never a read-modify-write without a lock.
+- **At most one live instance per hook.** A record hook still running from an earlier
+  render is skipped for this one: it gets no payload for that render. So "every render"
+  means every render the hook is free for. A hook that finishes within the gap between
+  renders sees them all, and a hung hook costs one process, not one per render. The runner
+  holds a per-hook lock (`run/<name>.lock`) while the hook runs, releases it when the hook
+  exits, and kills the hook at its `timeout_ms`.
+- Keep a record hook short. Write its outputs by atomic replace or append: even with one
+  instance, a render the hook skipped is not replayed.
 - stdout is discarded.
 
 ## 7. Health (optional, any kind)
@@ -191,9 +208,10 @@ glyph. `/install-statusline-hub --status` shows each hook's health.
 
 ## 8. Liveness and pruning
 
-- A manifest not modified for **14 days** is ignored at render. The hub's SessionStart
-  prune pass deletes it. That is how a hook of an uninstalled or disabled plugin dies
-  away, since its SessionStart no longer refreshes the file.
+- A manifest not modified for **14 days** is ignored at render, unless it says
+  `"pinned": true`. The hub's SessionStart prune pass deletes it, again unless pinned.
+  That is how a hook of an uninstalled or disabled plugin dies away, since its
+  SessionStart no longer refreshes the file.
 - The same pass deletes last-good cache entries older than a day, logs untouched for 14
   days, and orphaned temp files. It also deletes sensor records untouched for 30 days,
   including records only the hub's tee ever wrote.

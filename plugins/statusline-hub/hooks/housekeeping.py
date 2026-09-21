@@ -9,12 +9,13 @@
   tests/test_parity.py fails when the copy drifts.
 - prune_hub(): the hub's own dirs - hooks.d manifests not refreshed for
   registry.STALE_DAYS (a plugin that stopped refreshing its manifest was
-  uninstalled or disabled: its hook is dead), last-good cache entries older
+  uninstalled or disabled: its hook is dead; a manifest that says
+  "pinned": true is kept), last-good cache entries older
   than CACHE_DAYS, logs older than LOG_DAYS, orphaned temp files.
 
 Nothing here raises.
 """
-import os, re, stat, time
+import json, os, re, stat, time
 
 import registry
 from tee import safe_sid, sensor_dir
@@ -130,6 +131,43 @@ def _prune_files(d, older_than, now, suffixes, recurse=False):
     return n
 
 
+def _pinned(path):
+    """Whether the manifest at path says "pinned": true (a capped read that
+    never follows a symlink). Never raises."""
+    try:
+        raw, _ = registry._read_capped(path, registry.MANIFEST_MAX)
+        d = json.loads(raw.decode("utf-8")) if raw is not None else None
+        return isinstance(d, dict) and d.get("pinned") is True
+    except Exception:
+        return False
+
+
+def prune_manifests(now=None):
+    """Delete hooks.d manifests not modified for registry.STALE_DAYS, except
+    pinned ones, plus orphaned temp files. Returns how many went. Never
+    raises."""
+    n = 0
+    try:
+        now = time.time() if now is None else now
+        d = registry.hooks_dir()
+        if registry.private_dir_problem(d):
+            return 0
+        n += prune_tmp(d, now)
+        with os.scandir(d) as it:
+            for e in it:
+                try:
+                    if e.name.endswith(".json") and e.is_file(follow_symlinks=False) and \
+                            now - e.stat(follow_symlinks=False).st_mtime > \
+                            registry.STALE_DAYS * 86400 and not _pinned(e.path):
+                        os.unlink(e.path)
+                        n += 1
+                except OSError:
+                    continue
+    except Exception:
+        pass
+    return n
+
+
 def prune_hub(now=None):
     """Prune the hub's dirs (see the module doc). Does nothing to a dir that
     fails the registry's trust check (a symlink, someone else's). Returns how
@@ -139,9 +177,7 @@ def prune_hub(now=None):
         now = time.time() if now is None else now
         if registry.private_dir_problem(registry.hub_dir()):
             return 0
-        if not registry.private_dir_problem(registry.hooks_dir()):
-            n += _prune_files(registry.hooks_dir(), registry.STALE_DAYS * 86400, now,
-                              (".json",))
+        n += prune_manifests(now)
         n += _prune_files(registry.cache_dir(), CACHE_DAYS * 86400, now, (".json",),
                           recurse=True)
         n += _prune_files(registry.log_dir(), LOG_DAYS * 86400, now, (".log",))

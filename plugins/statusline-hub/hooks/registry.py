@@ -18,10 +18,14 @@ holds, and is otherwise skipped (never run, never an error on the line):
 - the manifest is a regular file (opened without following a symlink),
   owned by this user, writable by nobody else, at most MANIFEST_MAX bytes,
   touched within STALE_DAYS (a plugin refreshes its manifest every session
-  start, so an uninstalled plugin's hook fades out, then is pruned);
-- the hub dir does not lie inside the session's project tree (a config dir
-  relocated into a repository never supplies hooks), unless that project is
-  the home directory or above it;
+  start, so an uninstalled plugin's hook fades out, then is pruned) - unless
+  it says "pinned": true, which a hand-written manifest may;
+- the hub dir does not lie inside the session's project tree, unless that
+  project is the home directory or above it; nor inside a git work tree (a
+  `.git` in the config dir or any directory above it, up to but not
+  including the home directory), unless it is the default ~/.claude - so a
+  config dir relocated into a cloned repository never supplies hooks, even
+  when Claude Code was started in a subdirectory or the payload names no dir;
 - its fields validate (see parse()).
 """
 import datetime, errno, json, math, os, re, shlex, stat, time, unicodedata
@@ -142,6 +146,30 @@ def in_project(project_dirs):
     return False
 
 
+def in_git_tree():
+    """Whether the config dir lies inside a git work tree: a `.git` (dir or
+    file) in it or in any directory above it, stopping below the home
+    directory (a home kept in git does not count). The default ~/.claude is
+    exempt, since a repository cannot relocate it (a dotfiles repo there is
+    the user's own). Fails closed."""
+    try:
+        cfg = os.path.realpath(tee.base_dir())
+        home = os.path.realpath(os.path.expanduser("~"))
+        if cfg == os.path.realpath(os.path.join(home, ".claude")):
+            return False
+        d = cfg
+        while d != home:
+            if os.path.lexists(os.path.join(d, ".git")):
+                return True
+            parent = os.path.dirname(d)
+            if parent == d:
+                return False
+            d = parent
+        return False
+    except Exception:
+        return True
+
+
 def _read_capped(path, cap, follow=False):
     """(bytes, stat) of a regular file at path, read without following a final
     symlink (unless `follow`) and without blocking on a FIFO; None when it is
@@ -228,7 +256,8 @@ def parse(name, raw):
     Fields: name (must equal the file name), kind ("display" | "record"),
     command (see _argv), shell (optional bool, default false), timeout_ms
     (optional int, clamped to the kind's range), health_path (optional),
-    order (optional int hint), v (optional, must be 1). Other keys are
+    order (optional int hint), pinned (optional bool: exempt from the
+    staleness rule), v (optional, must be 1). Other keys are
     ignored, so a newer manifest stays readable."""
     try:
         d = json.loads(raw.decode("utf-8"))
@@ -246,6 +275,9 @@ def parse(name, raw):
     shell = d.get("shell", False)
     if not isinstance(shell, bool):
         return None, "shell is not true or false"
+    pinned = d.get("pinned", False)
+    if not isinstance(pinned, bool):
+        return None, "pinned is not true or false"
     argv = _argv(d.get("command"), shell)
     if argv is None:
         return None, "command is not valid"
@@ -253,7 +285,7 @@ def parse(name, raw):
     t = _int(d.get("timeout_ms"))
     t = default if t is None or t <= 0 else min(max(t, TIMEOUT_MIN_MS), top)
     hook = {"name": name, "kind": kind, "argv": argv, "timeout_ms": t,
-            "order": _int(d.get("order")) or 0, "health_path": None}
+            "order": _int(d.get("order")) or 0, "health_path": None, "pinned": pinned}
     if d.get("health_path") is not None:
         hook["health_path"] = _health_path(d.get("health_path"))
     return hook, None
@@ -273,6 +305,9 @@ def scan(now=None, project_dirs=()):
                 return hooks, problems
         if in_project(project_dirs):
             problems.append((hub_dir(), "inside the project tree"))
+            return hooks, problems
+        if in_git_tree():
+            problems.append((hub_dir(), "inside a git work tree"))
             return hooks, problems
         names = sorted(n for n in os.listdir(hooks_dir()) if n.endswith(".json")
                        and not n.startswith("."))
@@ -296,12 +331,12 @@ def scan(now=None, project_dirs=()):
             if st.st_mode & 0o022:
                 problems.append((name, "group- or other-writable"))
                 continue
-            if now - st.st_mtime > STALE_DAYS * 86400:
-                problems.append((name, f"not refreshed for {STALE_DAYS} days"))
-                continue
             hook, why = parse(name, raw)
             if hook is None:
                 problems.append((name, why))
+                continue
+            if not hook["pinned"] and now - st.st_mtime > STALE_DAYS * 86400:
+                problems.append((name, f"not refreshed for {STALE_DAYS} days"))
                 continue
             hooks.append(hook)
         for fn in names[MANIFESTS_MAX:]:
@@ -331,7 +366,9 @@ def config():
             out[key] = names if key == "order" else set(names)
     sep = d.get("separator")
     if isinstance(sep, str):
-        sep = "".join(c for c in _ESCAPE.sub("", sep) if unicodedata.category(c)[0] != "C")
+        sep = "".join(c for c in _ESCAPE.sub("", sep)
+                      if unicodedata.category(c) not in ("Zl", "Zp")
+                      and unicodedata.category(c)[0] != "C")
         out["separator"] = sep[:SEPARATOR_MAX]
     n = _int(d.get("health_stale_min"))
     if n is not None and n > 0:
@@ -422,7 +459,7 @@ _SGR = re.compile(r"\x1b\[[0-9;:]{0,48}m")
 # ST), or a lone two-character escape.
 _ESCAPE = re.compile(r"\x1b(?:\[[0-?]*[ -/]*[@-~]?|[\]PX^_][^\x07\x1b]*(?:\x07|\x1b\\)?|.)?",
                      re.S)
-ZWJ = "‍"
+ZWJ = "\u200d"
 RESET = "\x1b[0m"
 
 
@@ -432,7 +469,7 @@ def sanitise(text):
     moves, window titles, hyperlinks, clears) dropped; other control
     characters (C0, DEL, C1) dropped, a tab becoming a space; Unicode format
     characters (bidi overrides, zero-width padding; category Cf, except a
-    joiner) and lone surrogates dropped; at most VISIBLE_MAX printable
+    joiner), the Unicode line and paragraph separators (Zl, Zp) and lone surrogates dropped; at most VISIBLE_MAX printable
     characters; ends with a colour reset when it used colour, so nothing
     bleeds into the next hook's text. Returns "" for a non-string. Never
     raises."""
@@ -455,7 +492,7 @@ def sanitise(text):
                 continue
             i += 1
             cat = unicodedata.category(ch)
-            if cat in ("Cc", "Cs") or (cat == "Cf" and ch != ZWJ):
+            if cat in ("Cc", "Cs", "Zl", "Zp") or (cat == "Cf" and ch != ZWJ):
                 continue
             out.append(ch)
             seen += 1

@@ -13,7 +13,9 @@ Each render, in this order:
    so a render Claude Code cancels still leaves the record fresh.
 3. Record hooks: hand the payload, byte for byte, to one detached runner
    (`hub.py --run-records`, its own session, no stdout or stderr shared with
-   the render) that runs each record hook under its timeout. The render never
+   the render) that runs each record hook under its timeout. A record hook
+   whose previous instance is still running is skipped for this render (a
+   per-hook lock), so a hung hook costs one process, not one per render. The render never
    waits for it; a record hook that crashes or hangs cannot touch the line or
    the sensor record.
 4. Display hooks: spawn all at once, each with the payload on stdin (its own
@@ -45,7 +47,7 @@ DISPLAY_BUDGET_MS = 250   # every display hook is done or dropped by then
 OUT_MAX = 4096            # stdout bytes read from one display hook
 LAST_GOOD_S = 60
 LOG_MAX = 65536           # a hook's log is emptied once it grows past this
-GLYPH = "⚠"          # a record hook's health file says it is failing
+GLYPH = "\u26a0"          # a record hook's health file says it is failing
 
 
 def _obj(v):
@@ -216,7 +218,9 @@ def run_displays(hooks, data, sid, now):
                 except OSError:
                     chunk = b""
                 st[2] += chunk[:OUT_MAX - len(st[2])]
-                if not chunk or len(st[2]) >= OUT_MAX:
+                # the first line is all that shows: stop reading at its end, so
+                # a grandchild that keeps stdout open cannot hold the hook
+                if not chunk or len(st[2]) >= OUT_MAX or b"\n" in st[2]:
                     sel.unregister(st[1].stdout)
                     reading.discard(name)
         for name, (h, p, buf, deadline, timed_out) in live.items():
@@ -251,15 +255,51 @@ def run_displays(hooks, data, sid, now):
 
 # -- record hooks ------------------------------------------------------------
 
-def dispatch_records(hooks, data):
-    """Hand the payload to one detached runner for the record hooks; returns
-    at once. Never raises."""
+def _lock(name):
+    """An fd holding an exclusive, non-blocking flock on run/<name>.lock - the
+    one live instance of record hook `name` - or None when another instance
+    holds it or the lock cannot be taken. Never raises."""
+    fd = None
     try:
+        import fcntl
+        if not R.mkdirs_private(R.run_dir()):
+            return None
+        fd = os.open(os.path.join(R.run_dir(), name + ".lock"),
+                     os.O_RDWR | os.O_CREAT | getattr(os, "O_NOFOLLOW", 0) |
+                     getattr(os, "O_CLOEXEC", 0), 0o600)
+        fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        return fd
+    except Exception:
+        if fd is not None:
+            os.close(fd)
+        return None
+
+
+def _free(hook):
+    """Whether no instance of record hook `hook` is running now (a probe: the
+    runner takes the lock for real)."""
+    fd = _lock(hook["name"])
+    if fd is None:
+        return False
+    os.close(fd)
+    return True
+
+
+def dispatch_records(hooks, data):
+    """Hand the payload to one detached runner for the record hooks that are
+    not still running from an earlier render; returns at once. The runner's
+    stdin is `<spec length>\\n<spec JSON><payload>`, so neither the spec's
+    size nor the payload's is bound by the argument-length limit. Never
+    raises."""
+    try:
+        free = [h for h in hooks if _free(h)]
+        if not free:
+            return
         spec = json.dumps([{k: h[k] for k in ("name", "kind", "argv", "timeout_ms")}
-                           for h in hooks])
-        fd = payload_fd(data)
+                           for h in free]).encode("utf-8")
+        fd = payload_fd(b"%d\n" % len(spec) + spec + data)
         try:
-            subprocess.Popen([sys.executable, os.path.abspath(__file__), "--run-records", spec],
+            subprocess.Popen([sys.executable, os.path.abspath(__file__), "--run-records"],
                              stdin=fd, stdout=subprocess.DEVNULL,
                              stderr=subprocess.DEVNULL, cwd=workdir(), close_fds=True,
                              start_new_session=True)
@@ -269,30 +309,49 @@ def dispatch_records(hooks, data):
         pass
 
 
-def run_records(spec):
-    """The detached runner: start every record hook with the payload read from
-    stdin, byte for byte, then kill any still running at its timeout."""
+SPEC_MAX = 1 << 22
+
+
+def run_records():
+    """The detached runner: read the spec and the payload from stdin, start
+    each record hook whose lock it gets (at most one live instance per hook:
+    one still running from an earlier render is skipped this time) with the
+    payload byte for byte, release each lock as its hook exits, and kill any
+    hook still running at its timeout."""
+    head = sys.stdin.buffer.readline(24)
+    n = int(head)
+    if not 0 <= n <= SPEC_MAX:
+        return
+    spec = json.loads(sys.stdin.buffer.read(n).decode("utf-8"))
     data = sys.stdin.buffer.read(READ_MAX + 1)
     if len(data) > READ_MAX:
         return
-    procs = []
+    live = []
     t0 = time.monotonic()
-    for h in json.loads(spec):
-        try:
-            procs.append((spawn(h, data, subprocess.DEVNULL), t0 + h["timeout_ms"] / 1000.0))
-        except Exception:
+    for h in spec:
+        lock = _lock(h["name"])
+        if lock is None:
             continue
-    for p, deadline in procs:
         try:
-            p.wait(timeout=max(deadline - time.monotonic(), 0))
-        except subprocess.TimeoutExpired:
-            kill(p)
+            live.append((spawn(h, data, subprocess.DEVNULL),
+                         t0 + h["timeout_ms"] / 1000.0, lock))
+        except Exception:
+            os.close(lock)
+    while live:
+        t = time.monotonic()
+        for item in list(live):
+            p, deadline, lock = item
             try:
-                p.wait(timeout=1)
+                if p.poll() is None and t >= deadline:
+                    kill(p)
+                    p.wait(timeout=1)
             except Exception:
                 pass
-        except Exception:
-            pass
+            if p.poll() is not None or t >= deadline:
+                os.close(lock)
+                live.remove(item)
+        if live:
+            time.sleep(0.02)
 
 
 # -- render ------------------------------------------------------------------
@@ -349,9 +408,9 @@ def status():
 
 
 def main(argv):
-    if len(argv) >= 3 and argv[1] == "--run-records":
+    if len(argv) >= 2 and argv[1] == "--run-records":
         try:
-            run_records(argv[2])
+            run_records()
         except BaseException:
             pass
         return 0

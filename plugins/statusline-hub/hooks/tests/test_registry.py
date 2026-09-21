@@ -120,6 +120,54 @@ class Manifests(helpers.Hermetic):
         os.environ["HOME"] = os.path.join(self.cfg, "home")
         self.assertEqual(self.names(project_dirs=[self.cfg]), ["a"])
 
+    def use_config(self, path):
+        """Point CLAUDE_CONFIG_DIR at `path` (HOME at a dir of its own)."""
+        home = tempfile.TemporaryDirectory()
+        self.addCleanup(home.cleanup)
+        os.environ["HOME"] = home.name
+        os.environ["CLAUDE_CONFIG_DIR"] = path
+        return home.name
+
+    def test_never_from_a_git_work_tree(self):
+        # Claude Code started in a subdirectory of a cloned repo whose settings
+        # relocate the config dir into the repo: the payload names only the
+        # subdirectory, which does not contain the config dir.
+        repo = os.path.join(self.cfg, "repo")
+        os.makedirs(os.path.join(repo, ".git"))
+        os.makedirs(os.path.join(repo, "sub"))
+        self.use_config(os.path.join(repo, "cfg"))
+        self.cfg = os.path.join(repo, "cfg")
+        self.manifest("a", ["echo"])
+        self.assertEqual(self.names(project_dirs=[os.path.join(repo, "sub")]), [])
+        self.assertEqual(self.names(), [])  # no dirs in the payload: still refused
+        self.assertIn("inside a git work tree", dict(R.scan()[1]).values())
+        os.rmdir(os.path.join(repo, ".git"))
+        self.assertEqual(self.names(project_dirs=[os.path.join(repo, "sub")]), ["a"])
+
+    def test_git_above_home_or_in_the_default_config_dir_does_not_count(self):
+        home = self.use_config(self.cfg)
+        # the default ~/.claude, kept in a dotfiles repo
+        default = os.path.join(home, ".claude")
+        os.makedirs(os.path.join(default, ".git"))
+        os.environ["CLAUDE_CONFIG_DIR"] = default
+        self.cfg = default
+        self.manifest("a", ["echo"])
+        self.assertEqual(self.names(), ["a"])
+        # a relocated config dir under a home that is itself a git work tree
+        os.makedirs(os.path.join(home, ".git"))
+        other = os.path.join(home, "cfg2")
+        os.environ["CLAUDE_CONFIG_DIR"] = self.cfg = other
+        self.manifest("a", ["echo"])
+        self.assertEqual(self.names(), ["a"])
+
+    def test_pinned_manifests_do_not_go_stale(self):
+        p = self.manifest("mine", ["echo"], pinned=True)
+        old = time.time() - (R.STALE_DAYS * 86400 + 60)
+        os.utime(p, (old, old))
+        self.assertEqual(self.names(), ["mine"])
+        self.manifest("bad", ["echo"], pinned="yes")
+        self.assertEqual(self.problem("bad"), "pinned is not true or false")
+
     def test_health_path_stays_inside_the_config_dir(self):
         self.manifest("a", ["echo"], kind="record",
                       health_path=os.path.join(self.cfg, "x", "health.json"))
@@ -205,6 +253,7 @@ class Sanitise(unittest.TestCase):
                          "abcde f")
         self.assertEqual(R.sanitise("न्‍ष"), "न्‍ष")
         self.assertEqual(R.sanitise("\x1b[31m  \x1b[0m"), "")
+        self.assertEqual(R.sanitise("a\u2028b\u2029c"), "abc")
         self.assertEqual(R.sanitise(None), "")
         self.assertEqual(len(R.sanitise("x" * 5000)), R.VISIBLE_MAX)
 

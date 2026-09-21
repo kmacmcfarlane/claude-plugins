@@ -85,6 +85,24 @@ class Render(helpers.Hermetic):
         with open(os.path.join(R.log_dir(), "d.log")) as f:
             self.assertIn("boom to stderr", f.read())
 
+    def test_first_line_counts_even_if_a_grandchild_keeps_stdout(self):
+        self.manifest("a", ["/bin/sh", "-c", "echo hi; sleep 5 & exit 0"], timeout_ms=250)
+        self.manifest("b", ["echo", "b"])
+        out, secs = self.line()
+        self.assertEqual(out, b"hi  b")
+        self.assertLess(secs, 2)
+
+    def test_config_dir_in_a_git_tree_runs_nothing(self):
+        repo = os.path.join(self.cfg, "repo")
+        os.makedirs(os.path.join(repo, ".git"))
+        cfg = os.path.join(repo, "cfg")
+        marker = os.path.join(self.cfg, "ran")
+        self.env["CLAUDE_CONFIG_DIR"] = os.environ["CLAUDE_CONFIG_DIR"] = self.cfg = cfg
+        self.manifest("a", ["touch", marker])
+        out, _ = self.line({"workspace": {"project_dir": os.path.join(repo, "sub")}})
+        self.assertEqual(out, b"")
+        self.assertFalse(os.path.exists(marker))
+
     def test_empty_output_is_nothing_to_show(self):
         self.manifest("a", ["echo", "x"])
         self.assertEqual(self.line()[0], b"x")
@@ -178,6 +196,42 @@ class Records(helpers.Hermetic):
         else:
             os.kill(pid, 9)
             self.fail("record hook outlived its timeout")
+
+
+    def test_one_live_instance_per_record_hook(self):
+        # renders every few ms while a slow record hook runs: it starts once,
+        # not once per render; once it is done, the next render starts it again
+        count = os.path.join(self.cfg, "count")
+        self.manifest("r", py(f"import time; open({count!r}, 'a').write('x'); time.sleep(1.5)"),
+                      kind="record", timeout_ms=5000)
+        self.hub()
+        self.assertTrue(wait_for(count))
+        for _ in range(6):
+            self.hub()
+        time.sleep(0.3)
+        with open(count) as f:
+            self.assertEqual(f.read(), "x")
+        time.sleep(1.6)
+        self.hub()
+        end = time.monotonic() + 5
+        while time.monotonic() < end:
+            with open(count) as f:
+                if f.read() == "xx":
+                    break
+            time.sleep(0.05)
+        else:
+            self.fail("the hook did not run again once free")
+
+    def test_a_huge_spec_is_not_an_argument(self):
+        # 12 manifests of ~12 KB each: a spec of ~150 KB, over the 128 KB a
+        # single argv string may take on Linux
+        big = ["x" * 4000] * 3
+        for i in range(12):
+            got = os.path.join(self.cfg, f"got{i}")
+            self.manifest(f"r{i}", py(f"open({got!r}, 'w').write('ran')") + big, kind="record")
+        self.hub()
+        for i in range(12):
+            self.assertTrue(wait_for(os.path.join(self.cfg, f"got{i}")), i)
 
 
 class HealthGlyph(helpers.Hermetic):
