@@ -141,6 +141,161 @@ class TestFrontMatter(WiTestCase):
                            "done": False}])
 
 
+# Characters the escape bug fed on, plus the ones a bare scalar cannot hold.
+ESCAPE_ALPHABET = (':', '"', '\\', '#', ' ', "'", ',', '[', ']', '{', '}', '-',
+                   '—', 'é', '日', '🙂', '\t', '\x07', '\x1b', '\x85',
+                   '\u2028', '\ufeff', 'a', 'Z', '0', '&', '*', '!', '|', '>',
+                   '%', '@', '`', '?')
+
+
+def escape_values(count=400, seed=0x0401):
+    import random
+    rng = random.Random(seed)
+    fixed = ['x: "y"', 'x: \\"y\\"', '\\', '"', '""', 'a\\', ' lead',
+             'trail ', ' both ', 'c:\\dir', 'x: c:\\dir', '#hash', 'a #b',
+             'end:', '—', '— x', "it's", "'q'", '"q"', 'a, b', '[x]',
+             '\\\\\\"', 'say "hi"', '日本: "語"']
+    for v in fixed:
+        yield v
+    for _ in range(count):
+        yield "".join(rng.choice(ESCAPE_ALPHABET)
+                      for _ in range(rng.randint(1, 12)))
+
+
+class TestScalarRoundTrip(WiTestCase):
+    """emit and parse are exact inverses (0401): no rewrite ever changes a
+    value, and a quoted value never gains a backslash."""
+
+    def meta_for(self, v):
+        return {"id": "rt-0001", "title": v, "tags": [v, "plain"],
+                "refs": [v], "x_backlog": {"k": v}}
+
+    def test_parse_emit_is_identity_in_every_context(self):
+        for v in escape_values():
+            with self.subTest(v=v):
+                text = wi.emit_front(self.meta_for(v))
+                meta, _, errors = wi.parse_front(text.split("\n"))
+                self.assertEqual(errors, [])
+                self.assertEqual(meta["title"], v)
+                self.assertEqual(meta["tags"], [v, "plain"])
+                self.assertEqual(meta["refs"], [v])
+                self.assertEqual(meta["x_backlog"], {"k": v})
+                # emit -> parse -> emit is stable
+                self.assertEqual(wi.emit_front(meta), text)
+
+    def test_emitted_front_matter_is_yaml_a_strict_loader_agrees_with(self):
+        try:
+            from ruamel.yaml import YAML
+        except ImportError:
+            self.skipTest("ruamel.yaml not installed")
+        import io
+        yaml = YAML(typ="safe")
+        for v in escape_values(count=150):
+            if v.strip() in ("", "—"):
+                continue  # wi reads these as "no value"; YAML has no such rule
+            with self.subTest(v=v):
+                text = wi.emit_front(self.meta_for(v))
+                loaded = yaml.load(io.StringIO(text))
+                if not isinstance(loaded["title"], str):
+                    continue  # YAML types a bare 0 / true; wi keeps strings
+                self.assertEqual(loaded["title"], v)
+                self.assertEqual(loaded["tags"], [v, "plain"])
+                self.assertEqual(loaded["refs"], [v])
+                self.assertEqual(loaded["x_backlog"], {"k": v})
+
+    def test_item_render_is_byte_stable_across_rewrites(self):
+        for v in escape_values(count=100):
+            if v.strip() in ("", "—"):
+                continue
+            with self.subTest(v=v):
+                item = wi.Item(dict(self.meta_for(v), type="task",
+                                    status="todo", priority=2),
+                               [], "desc", [])
+                first = item.render()
+                again = wi.Item.parse(first)
+                self.assertEqual(again.get("title"), v)
+                again.meta["priority"] = 3
+                again.meta["priority"] = 2
+                self.assertEqual(wi.Item.parse(again.render()).render(), first)
+
+    def test_reported_case_survives_real_commands(self):
+        title = 'x: "y" \\z'
+        tag = 'k: "v", \\w'
+        reason = 'ext: waits on "a: b" \\ c'
+        iid = json.loads(self.wi_ok(["add", title, "--tag", tag,
+                                     "--dep", reason, "--json"]))["id"]
+        path = self.root / "items" / f"{iid}.md"
+        written = path.read_text()
+        self.assertIn('title: "x: \\"y\\" \\\\z"\n', written)
+        for args in (["set", iid, "priority", "1"],
+                     ["set", iid, "priority", "3"],
+                     ["handoff", iid, "--next", "go"],
+                     ["handoff", iid, "--doing", "more"],
+                     ["set", iid, "priority", "2"]):
+            self.wi_ok(args)
+        rec = json.loads(self.wi_ok(["show", iid, "--json"]))
+        self.assertEqual(rec["title"], title)
+        self.assertEqual(rec["tags"], [tag])
+        self.assertEqual(rec["deps"], [reason])
+        fm = lambda t: t.split("\n---\n", 1)[0]
+        self.assertEqual(fm(path.read_text()).replace("priority: 2", ""),
+                         fm(written).replace("priority: 2", ""))
+        self.wi_ok(["done", iid])
+        rec = json.loads(self.wi_ok(["show", iid, "--json"]))
+        self.assertEqual((rec["title"], rec["tags"], rec["deps"]),
+                         (title, [tag], [reason]))
+        self.assertEqual(path.read_text().count("\\"), written.count("\\"))
+
+    def test_hand_written_legacy_scalars_still_load(self):
+        text = CANONICAL.replace(
+            "title: Replication task 3 destination retention is a no-op",
+            "title: 'it''s \"fine\"'\nnote_a: \"bad \\q escape\"\n"
+            "note_b: \"unterminated \\\"\nnote_c: \"a\\nb\"")
+        item = wi.Item.parse(text, path="x.md")
+        self.assertEqual(item.get("title"), 'it\'s "fine"')
+        self.assertEqual(item.get("note_a"), "bad \\q escape")
+        self.assertEqual(item.get("note_b"), "unterminated \\")
+        self.assertEqual(item.get("note_c"), "a\\nb")  # never a line break
+        out = item.render()
+        self.assertEqual(wi.Item.parse(out).render(), out)
+
+
+class TestRepairEscapes(WiTestCase):
+    AMPLIFIED = 'title: "x: \\\\\\\\\\\\\\"y\\\\\\\\\\\\\\""'  # "y" after 3 rewrites
+
+    def seed(self):
+        self.write_item("amp-1111")
+        self.write_item("legit-2222", title="x: c:\\dir \\n")
+        path = self.root / "items" / "amp-1111.md"
+        path.write_text(path.read_text().replace("title: amp-1111", self.AMPLIFIED))
+        return path
+
+    def test_amplified_item_loads_and_dry_run_names_it(self):
+        path = self.seed()
+        before = path.read_bytes()
+        self.assertEqual(run(["lint"], self.root).returncode, 0)
+        out = self.wi_ok(["repair-escapes"])
+        self.assertIn("would repair\tamp-1111\ttitle", out)
+        self.assertIn('-> "x: \\"y\\""', out)
+        self.assertNotIn("legit-2222", out)
+        self.assertIn("1 to repair (dry run", out)
+        self.assertEqual(path.read_bytes(), before)
+
+    def test_apply_repairs_and_is_then_clean(self):
+        path = self.seed()
+        self.wi_ok(["repair-escapes", "--apply"])
+        self.assertIn('title: "x: \\"y\\""\n', path.read_text())
+        rec = json.loads(self.wi_ok(["show", "amp-1111", "--json"]))
+        self.assertEqual(rec["title"], 'x: "y"')
+        self.assertIn("0 to repair", self.wi_ok(["repair-escapes"]))
+
+    def test_id_limits_the_repair(self):
+        path = self.seed()
+        before = path.read_bytes()
+        self.wi_ok(["repair-escapes", "--apply", "--id", "legit-2222"])
+        self.assertEqual(path.read_bytes(), before)
+
+
 class TestImportTodo(WiTestCase):
     def items(self):
         return json.loads(self.wi_ok(["ls", "--status", "all", "--json"]))
@@ -1606,6 +1761,7 @@ class TestHostGitignoreUntouched(WiTestCase):
             ["set", iid, "priority", "1"], ["block", iid, "--on", dep],
             ["unblock", iid, "--dep", dep], ["release", iid],
             ["park", iid, "later"], ["unpark", iid], ["migrate-parked"],
+            ["repair-escapes"],
             ["import-todo", str(todo)],
             ["export", str(repo / "backlog.yaml"), "--format", "backlog-yaml"],
             ["import", str(repo / "backlog.yaml"), "--format", "backlog-yaml"],
