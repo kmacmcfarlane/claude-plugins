@@ -317,12 +317,15 @@ def sweep_stale(keep=None, now=None):
     older than LOCK_MAX_AGE_S - or gone, with the lock itself that old. The
     session `keep` is never touched, and a lock someone holds is skipped: it is
     removed only while this call holds it. Runs at most once per SWEEP_EVERY_S
-    (a `.swept` stamp). Returns the names removed; never raises."""
+    (a stamp: the first of SWEEP_STAMPS that is a regular file or absent; see
+    _sweep_stamp). Returns the names removed; never raises."""
     removed = []
     try:
         now = time.time() if now is None else now
         d = _state_dir()
-        stamp = os.path.join(d, ".swept")
+        stamp = _sweep_stamp(d)
+        if stamp is None:
+            return removed
         try:
             if now - os.lstat(stamp).st_mtime < SWEEP_EVERY_S:
                 return removed
@@ -366,11 +369,36 @@ def sweep_stale(keep=None, now=None):
     return removed
 
 
+# The sweep's once-a-day stamp, then its fallback. A stamp that is not a
+# regular file (a planted symlink, FIFO or directory) can never be re-dated -
+# _touch_stamp refuses to follow or block on it - so its lstat mtime would
+# age past SWEEP_EVERY_S once and the sweep would run on every hook call. Such
+# a name is passed over for the next; with every name blocked the sweep does
+# not run at all (it is housekeeping: skipping it costs disk, running it
+# unthrottled costs every hook a directory scan).
+SWEEP_STAMPS = (".swept", ".swept-2")
+
+
+def _sweep_stamp(d):
+    """The path of the first SWEEP_STAMPS name in d that is a regular file or
+    absent, else None. Never follows a symlink."""
+    for name in SWEEP_STAMPS:
+        p = os.path.join(d, name)
+        try:
+            if stat.S_ISREG(os.lstat(p).st_mode):
+                return p
+        except FileNotFoundError:
+            return p
+        except OSError:
+            continue
+    return None
+
+
 def _touch_stamp(stamp, now):
     """Create or re-date a stamp file without truncating and without
     following a symlink or blocking (O_NOFOLLOW, O_NONBLOCK: a planted link or
-    a FIFO without a reader fails the open and the stamp is silently skipped). Returns True when the stamp was dated. Never
-    raises."""
+    a FIFO without a reader fails the open and the stamp is silently skipped).
+    Returns True when the stamp was dated. Never raises."""
     fd = None
     try:
         fd = os.open(stamp, os.O_WRONLY | os.O_CREAT | _NOFOLLOW | _NONBLOCK,
@@ -421,14 +449,10 @@ def reset_epoch(session_id, compact_summary=None):
 def _reset(st, compact_summary, session_id=None):
     # The fill the ending epoch reached, read under the lock before the demote
     # below drops it (postcompact_epoch logs it in the ledger's epoch header).
-    # The status line's exact record (the fresher of the sensor file and the
-    # legacy in-state block) is the source; the top-level `tokens` that
-    # context_warn.decide() stores on every prompt (the depth it last scored,
-    # exact or inferred) is the fallback. Read before epoch_at moves, which
-    # would demote it.
+    # Read before epoch_at moves, which would demote it.
     try:
         end = sensor(session_id, st) if session_id else (st.get("exact") or {})
-        st["epoch_end_tokens"] = int(end.get("tokens") or st.get("tokens") or 0)
+        st["epoch_end_tokens"] = _epoch_end_tokens(end, st)
     except (TypeError, ValueError, AttributeError):
         st["epoch_end_tokens"] = 0
     st["epoch"] = epoch(st) + 1
@@ -452,6 +476,29 @@ def _reset(st, compact_summary, session_id=None):
         st["exact"] = {"window": int(ex["window"]), "at": 0}
     if compact_summary is not None:
         st["compact_summary"] = compact_summary[:20000]
+
+
+def _epoch_end_tokens(end, st):
+    """The ending epoch's fill, from two writers: the status line's exact
+    record `end` (the fresher of the sensor file and the legacy in-state
+    block, dated by `at`) and the top-level `tokens` that
+    context_warn.decide() stores on every prompt (the depth it last scored,
+    exact or inferred, dated by `tokens_at`). The fresher wins; a tie goes to
+    the exact record. A top-level count stamped at or before the state's
+    `epoch_at` scored an earlier epoch and is not used, nor is one stamped
+    more than FUTURE_SKEW_S ahead of now. A count with no `tokens_at`
+    (state written before it existed) is the fallback only. The ledger header
+    is its only reader: nothing here feeds the gate or can block."""
+    ex_tok = int(end.get("tokens") or 0)
+    top_tok = int(st.get("tokens") or 0)
+    top_at = _finite(st.get("tokens_at"))
+    if top_at is not None:
+        cut = _finite(st.get("epoch_at"))
+        if (cut is not None and top_at <= cut) or top_at > time.time() + FUTURE_SKEW_S:
+            top_tok = 0
+        elif ex_tok and top_tok and top_at > (_finite(end.get("at")) or 0.0):
+            return top_tok
+    return ex_tok or top_tok
 
 
 def mark_checkpoint(session_id):

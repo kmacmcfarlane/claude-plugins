@@ -67,6 +67,15 @@ class Base(unittest.TestCase):
 
 
 class TestContextWarn(Base):
+    def test_scored_depth_is_dated(self):
+        # reset_epoch takes the fresher of this and the exact record
+        self.set_exact("s", 100_000, 1_000_000)
+        before = time.time()
+        self.warn("s")
+        st = L.load_state("s")
+        self.assertEqual(st["tokens"], 100_000)
+        self.assertTrue(before - 1 <= st["tokens_at"] <= time.time() + 1)
+
     def test_silent_when_shallow(self):
         self.set_exact("s", 100_000, 1_000_000)
         rc, out, _ = self.warn("s")
@@ -768,6 +777,69 @@ class TestStatusline(Base):
         self.assertEqual((rc, err), (0, ""))
         self.assertIn("  (beta)  ", line)
         self.assertNotIn("AI title", line)
+
+
+PLAYBOOK = os.path.join(os.path.dirname(HOOKS), "skills", "checkpoint", "references",
+                        "operator-playbook.md")
+
+
+class TestStandDownCommand(Base):
+    """The two ways an operator reaches mark_checkpoint.py by hand: the command
+    a derived HARD STOP prints, and the playbook's resolver snippet."""
+
+    def test_hatch_names_the_script_beside_the_hook(self):
+        import context_warn as CW
+        cmd = CW.mark_checkpoint_command("s")
+        self.assertEqual(cmd, 'python3 "%s" s' % os.path.join(HOOKS, "mark_checkpoint.py"))
+        self.assertIn(cmd, CW.derived_hatches("s"))
+        self.assertNotIn("ls -td", CW.derived_hatches("s"))
+
+    def test_hatch_path_is_shell_quoted(self):
+        import context_warn as CW
+        odd = '/p a/$x/`y`/"q"/b\\s/hooks/context_warn.py'
+        with mock.patch.object(CW, "__file__", odd):
+            cmd = CW.mark_checkpoint_command("s")
+        out = subprocess.run(["sh", "-c", cmd.replace("python3", "printf %s", 1)],
+                             capture_output=True, text=True).stdout
+        self.assertEqual(out, '/p a/$x/`y`/"q"/b\\s/hooks/mark_checkpoint.pys')
+
+    def snippet(self):
+        with open(PLAYBOOK, encoding="utf-8") as f:
+            text = f.read()
+        block = text.split("```bash\nP=", 1)[1].split("```", 1)[0]
+        return "P=" + block.replace("<session_id>", "sid-1")
+
+    def fake_script(self, d, tag):
+        os.makedirs(d, exist_ok=True)
+        with open(os.path.join(d, "mark_checkpoint.py"), "w") as f:
+            f.write("import sys; print(%r, sys.argv[1])\n" % tag)
+
+    def run_snippet(self):
+        e = dict(os.environ, CLAUDE_CONFIG_DIR=self.tmp.name)
+        p = subprocess.run(["bash", "-c", self.snippet()], capture_output=True,
+                           text=True, env=e, timeout=30)
+        return p.stdout.strip()
+
+    def test_playbook_prefers_the_install_record(self):
+        plugins = os.path.join(self.tmp.name, "plugins")
+        inst = os.path.join(plugins, "cache", "kmacmcfarlane", "context-guard", "9.9.9")
+        self.fake_script(os.path.join(inst, "hooks"), "record")
+        # a newer data dir, which the old `ls -td | head -1` pick would take
+        self.fake_script(os.path.join(plugins, "data", "context-guard-zzz",
+                                      "current-hooks"), "data")
+        with open(os.path.join(plugins, "installed_plugins.json"), "w") as f:
+            json.dump({"version": 2, "plugins": {"context-guard@kmacmcfarlane": [
+                {"scope": "user", "installPath": inst}]}}, f)
+        self.assertEqual(self.run_snippet(), "record sid-1")
+
+    def test_playbook_falls_back_to_the_data_dir(self):
+        plugins = os.path.join(self.tmp.name, "plugins")
+        self.fake_script(os.path.join(plugins, "data", "context-guard-kmacmcfarlane",
+                                      "current-hooks"), "data")
+        self.assertEqual(self.run_snippet(), "data sid-1")        # no record
+        with open(os.path.join(plugins, "installed_plugins.json"), "w") as f:
+            f.write("{not json")
+        self.assertEqual(self.run_snippet(), "data sid-1")        # unreadable record
 
 
 if __name__ == "__main__":

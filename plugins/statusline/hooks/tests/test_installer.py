@@ -492,6 +492,52 @@ class AtomicWrite(helpers.Hermetic):
                              "install-statusline/scripts/install_statusline.py")
         self.assertEqual(got, os.path.join(self.cfg, "plugins", "data", "statusline-mkt"))
 
+    def record(self, key, install_path):
+        p = os.path.join(self.cfg, "plugins", "installed_plugins.json")
+        os.makedirs(os.path.dirname(p), exist_ok=True)
+        self.write_json(p, {"version": 2, "plugins": {
+            "other@mkt": [{"scope": "user", "installPath": "/elsewhere"}],
+            key: [{"scope": "project", "installPath": "/not/this/one"},
+                  {"scope": "user", "installPath": install_path}]}})
+
+    def test_data_dir_from_the_install_record_beats_the_scan(self):
+        # two data dirs; the sorted-first scan would take statusline-aaa
+        os.environ.pop("CLAUDE_PLUGIN_DATA", None)
+        for n in ("statusline-aaa", "statusline-my-mkt"):
+            os.makedirs(os.path.join(self.cfg, "plugins", "data", n))
+        root = os.path.join(self.cfg, "src", "statusline")
+        script = os.path.join(root, "skills", "install-statusline", "scripts", "x.py")
+        self.record("statusline@my.mkt", root)       # "." -> "-", Claude Code's id rule
+        self.assertEqual(owner.data_dir(script),
+                         os.path.join(self.cfg, "plugins", "data", "statusline-my-mkt"))
+
+    def test_install_record_for_another_path_is_not_used(self):
+        os.environ.pop("CLAUDE_PLUGIN_DATA", None)
+        self.record("statusline@my-mkt", os.path.join(self.cfg, "src", "statusline"))
+        self.assertIsNone(owner.installed_by_record(
+            os.path.join(self.cfg, "src", "statusline-2", "x.py")))
+        got = owner.data_dir("/x/.claude/plugins/cache/mkt/statusline/1.2.0/x.py")
+        self.assertEqual(got, os.path.join(self.cfg, "plugins", "data", "statusline-mkt"))
+
+    def test_cache_path_beats_the_scan(self):
+        os.environ.pop("CLAUDE_PLUGIN_DATA", None)
+        os.makedirs(os.path.join(self.cfg, "plugins", "data", "statusline-aaa"))
+        got = owner.data_dir("/x/.claude/plugins/cache/mkt/statusline/1.2.0/x.py")
+        self.assertEqual(got, os.path.join(self.cfg, "plugins", "data", "statusline-mkt"))
+
+    def test_unreadable_install_record_falls_back(self):
+        os.environ.pop("CLAUDE_PLUGIN_DATA", None)
+        p = os.path.join(self.cfg, "plugins", "installed_plugins.json")
+        os.makedirs(os.path.dirname(p), exist_ok=True)
+        for bad in ("{not json", "[]", '{"plugins": {"statusline@m": "x"}}',
+                    '{"plugins": {"statusline@m": [7, {"installPath": 7}]}}'):
+            with open(p, "w") as f:
+                f.write(bad)
+            self.assertIsNone(owner.installed_by_record("/m/x.py"))
+        os.remove(p)
+        os.mkfifo(p)                                  # never opened: no hang
+        self.assertIsNone(owner.installed_by_record("/m/x.py"))
+
 
 if __name__ == "__main__":
     unittest.main()

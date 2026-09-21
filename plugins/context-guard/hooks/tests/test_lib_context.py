@@ -344,6 +344,26 @@ class TestSweep(Base):
         L.sweep_stale(now=time.time() + 9 * 86400)
         self.assertFalse(os.path.exists(dangling))
 
+    def test_planted_stamp_falls_back_and_keeps_the_daily_limit(self):
+        # a .swept symlink can never be re-dated; without the fallback stamp
+        # its lstat mtime ages past a day and every hook call sweeps
+        os.symlink(os.path.join(self.tmp.name, "nowhere"), os.path.join(self.d(), ".swept"))
+        old = time.time() - 3 * 86400
+        os.utime(os.path.join(self.d(), ".swept"), (old, old), follow_symlinks=False)
+        self.touch(".a.1.abcdef012345.tmp", 2)
+        self.assertEqual(len(L.sweep_stale()), 1)
+        self.assertTrue(os.path.isfile(os.path.join(self.d(), ".swept-2")))
+        self.touch(".b.1.abcdef012345.tmp", 2)
+        self.assertEqual(L.sweep_stale(), [])        # the fallback stamp holds
+        self.assertEqual(len(L.sweep_stale(now=time.time() + 2 * 86400)), 1)
+
+    def test_every_stamp_planted_skips_the_sweep(self):
+        for name in L.SWEEP_STAMPS:
+            os.mkdir(os.path.join(self.d(), name))
+        self.touch(".a.1.abcdef012345.tmp", 2)
+        self.assertEqual(L.sweep_stale(now=time.time() + 9 * 86400), [])
+        self.assertIn(".a.1.abcdef012345.tmp", os.listdir(self.d()))
+
     def test_acquire_rejects_lock_on_orphaned_inode(self):
         # A waiter that opened the lock file before the sweep unlinked it wins
         # the flock on a dead inode; it must re-open the path, not trust it.

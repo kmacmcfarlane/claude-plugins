@@ -40,7 +40,7 @@ The own marker, <plugin data>/owner.json:
   whose work is retried ("installed" for a heal, "new" for a first run).
 It stores only our own command and a path.
 """
-import json, os, re, time
+import json, os, re, stat, time
 
 import sensor
 
@@ -84,24 +84,64 @@ def data_root():
 
 
 def data_dir(script_path=None, scan=True):
-    """This plugin's persistent data dir: $CLAUDE_PLUGIN_DATA, else (with
-    `scan`) the first <config>/plugins/data/statusline-* dir, else the name
-    derived from the plugin cache path this code runs from
-    (plugins/cache/<mkt>/statusline/). None when none of those applies."""
+    """This plugin's persistent data dir, first match of:
+    1. $CLAUDE_PLUGIN_DATA (set for hooks; not in the Bash tool's environment);
+    2. the harness's install record: the `statusline@<mkt>` entry of
+       <config>/plugins/installed_plugins.json whose installPath holds the
+       code running now (script_path) names it, <data>/<id> with Claude
+       Code's id rule (installed_by_record);
+    3. the name derived from the plugin cache path this code runs from
+       (plugins/cache/<mkt>/statusline/);
+    4. with `scan`, the first <config>/plugins/data/statusline-* dir - a
+       guess when the plugin came from several marketplaces, so last.
+    None when none of those applies."""
     d = os.environ.get("CLAUDE_PLUGIN_DATA")
     if d:
         return d
+    here = os.path.abspath(script_path or __file__)
     base = data_root()
+    d = installed_by_record(here)
+    if d:
+        return d
+    m = re.search(r"/plugins/cache/([^/]+)/" + re.escape(PLUGIN) + "/", here)
+    if m:
+        return os.path.join(base, f"{PLUGIN}-{m.group(1)}")
     try:
         for name in (sorted(os.listdir(base)) if scan else ()):
             if name.startswith(PLUGIN + "-") and os.path.isdir(os.path.join(base, name)):
                 return os.path.join(base, name)
     except OSError:
         pass
-    m = re.search(r"/plugins/cache/([^/]+)/" + re.escape(PLUGIN) + "/",
-                  os.path.abspath(script_path or __file__))
-    if m:
-        return os.path.join(base, f"{PLUGIN}-{m.group(1)}")
+    return None
+
+
+def installed_by_record(path):
+    """The data dir of the `statusline@<mkt>` install whose installPath
+    (in <config>/plugins/installed_plugins.json, `plugins` -> key -> list of
+    records) contains `path`, or None. The dir is <config>/plugins/data/<id>,
+    <id> being the key with every character outside [A-Za-z0-9_-] replaced
+    by "-" (Claude Code's own rule, so statusline@mkt -> statusline-mkt).
+    Reads key names and install paths only. Never raises."""
+    try:
+        rec = os.path.join(sensor.base_dir(), "plugins", "installed_plugins.json")
+        if not stat.S_ISREG(os.stat(rec).st_mode):      # a FIFO would hang the hook
+            return None
+        with open(rec, encoding="utf-8") as f:
+            recs = json.load(f).get("plugins")
+        here = os.path.realpath(path)
+        for key, entries in (recs.items() if isinstance(recs, dict) else ()):
+            if not (isinstance(key, str) and key.startswith(PLUGIN + "@")):
+                continue
+            for e in (entries if isinstance(entries, list) else ()):
+                ip = e.get("installPath") if isinstance(e, dict) else None
+                if not (isinstance(ip, str) and ip):
+                    continue
+                root = os.path.realpath(ip)
+                if here == root or here.startswith(root.rstrip(os.sep) + os.sep):
+                    return os.path.join(data_root(),
+                                        re.sub(r"[^A-Za-z0-9_-]", "-", key))
+    except Exception:
+        pass
     return None
 
 
