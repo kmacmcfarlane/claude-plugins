@@ -2,12 +2,11 @@
 id: work-items-first-class-parked-status-wi-ca20
 title: "work-items: first-class parked status (wi park / unpark)"
 type: feature
-status: doing
+status: done
 priority: 2
-owner: unknown@360f41058e92
-claimed: 2026-09-21T18:37Z
 created: 2026-09-19
 updated: 2026-09-21
+closed: 2026-09-21
 refs:
   - "peer: implement headless paseo support (uds 242.sock), for claude-sandbox librarian"
 ---
@@ -22,6 +21,7 @@ Peer request 2026-09-19 (claude-sandbox librarian, relayed via session 'implemen
 
 ## Notes
 - 2026-09-21 claimed by unknown@360f41058e92
+- 2026-09-21 done: d6ba6da
 
 ## Dispatch
 - dispatch: implementer opus — executable logic (wi.py)
@@ -39,3 +39,8 @@ Peer request 2026-09-19 (claude-sandbox librarian, relayed via session 'implemen
 - dispatch: implementer opus — fix round 1 (resume)
 - round 1 fix 8dd4d35: release never unparks; import --update keeps blocked:; provenance "(…)" stripped, whole text in the Notes line; lint flags stray parked:; set status parked refuses. 113 tests.
 - dispatch: reviewer opus — round 2 (resume)
+
+## Review round 2 — CLEAR (opus) at 8dd4d35
+- concurrent release, bridge round trips, migrate on the real claude-sandbox reasons all hold. lows: nested "(…)" provenance leaves a fragment (full text in Notes); idle-turn.md goes stale (filed).
+## Landed
+- d6ba6da. 1 fix round. claude-sandbox librarian notified.
