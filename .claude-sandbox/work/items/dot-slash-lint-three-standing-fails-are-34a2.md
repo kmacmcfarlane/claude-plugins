@@ -23,3 +23,8 @@ From 07c3 F0/F1 (2026-09-19): review-checklist §2's dot-slash grep FAILs on kit
 
 ## Dispatch
 - dispatch: implementer opus — lint snippet (executable) + 3 skills
+
+## Implementer result
+- round 1 DONE fe66ebf (opus): §2 grep flags only reference-shaped ./ ../ paths (into references/scripts/assets or a .md) + the skill-dir variable; work-items ./.work/ → .work/; sibling-repo paths in kit-dev left (real commands). All 19 skills clean; fixture with real references FAILs.
+- decision (librarian): narrowing the lint supersedes bc3e's "reword, do not narrow" — this item's acceptance allowed it, and the old grep flagged real sibling-repo commands.
+- dispatch: reviewer opus — rule 4

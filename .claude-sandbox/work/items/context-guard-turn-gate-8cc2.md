@@ -42,3 +42,11 @@ Mid-turn PostToolUse depth gate; HARD gate stops recommending an unaffordable ch
 - [high] F1 can end an unattended turn on an inferred depth (DUE text + ported unattended section) — informational only off BLOCKING_SOURCES.
 - mediums: F3a before F1; agent_type skip wrong; fork parent persisted; ending-the-session.md is a definite F1 file; F1 routing must argue the blocking-predicate refactor (or fable reviewer); B′ costs overstated.
 - dispatch: planner opus — plan fix round 1 (resume); revision as serial 01 with Supersedes
+- plan fix round 1: serial 01_review-round-1.md — F3a adoption rule (writer / descent via fork parent + /clear predecessor, chain ≤8 / whole-file Read), new hooks/lineage.py; F1 silent off blocking sources, distinct HARD mid-turn marker, agent_id skip; order F2 → F3a → F1 → F3b; OQ1 recommendation now C.
+- dispatch: plan reviewer opus — round 2 (resume)
+
+## Plan review round 2 — NEEDS_CHANGES (opus)
+- all 11 round-1 findings resolved; F2 cleared to dispatch. New: [high] adoption keyed on author not version (a fork parent's later rewrite reaches the child); [medium] a bystander's Read adopts — the hook's own header invites it (adopt by Read only for mode: handoff); [medium] F1 test treats an unresolved auto-compact window as non-blocking — restate as "no HARD marker unless hard_applies(block_window, tok)"; lows: one-main-session-per-process assumption; unattended section defers to a custody skill's mode.
+- features filed: context-guard-8cc2-f2-hard-advice-fits-t-1f9d (dispatched), context-guard-8cc2-f3a-re-inject-handoff-5126, context-guard-8cc2-f1-mid-turn-posttoolu-3adc, context-guard-8cc2-f3b-where-handoff-md-a49b (blocked on decision 47).
+- dispatch: planner opus — plan fix round 2 (serial 02)
+decision 47: where HANDOFF.md lives — (a) C: each session keeps its own manifest (config dir, per session) for its own memory, plus a repo HANDOFF.md written only in handoff mode for the next session [recommended by the planner; honours "no repo-singleton session state" and keeps product-repo stage handoffs]; (b) A: keep one repo HANDOFF.md, made safe by the lineage check (smallest change; concurrent sessions still overwrite each other); (c) B′: per-session only (breaks product-repo stage handoffs and unattended chains).

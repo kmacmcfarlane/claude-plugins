@@ -23,3 +23,7 @@ From spike 7e3b (series .claude-sandbox/investigations/7e3b-dialog-statusline/00
 
 ## Dispatch
 - dispatch: implementer sonnet — default (one doc note)
+
+## Implementer result
+- round 1 DONE dca7de5 (sonnet): ## Known limitations in install-statusline SKILL.md.
+- dispatch: reviewer opus — rule 4 floor

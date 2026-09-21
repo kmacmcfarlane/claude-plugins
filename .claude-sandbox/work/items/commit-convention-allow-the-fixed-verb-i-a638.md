@@ -23,3 +23,7 @@ From the d72e review (2026-09-18): agent-brief.md's Commit section allows added/
 
 ## Dispatch
 - dispatch: implementer sonnet — default (verb list in briefs). decision (librarian): allow fixed: — main's history uses it 19+ times and a commit-subject finding is low anyway
+
+## Implementer result
+- round 1 DONE 35f2552 (sonnet): fixed added to the verb lists in dev-cycle agent-brief and implement SKILL.md (the only two enumerations).
+- dispatch: reviewer opus — rule 4 floor
