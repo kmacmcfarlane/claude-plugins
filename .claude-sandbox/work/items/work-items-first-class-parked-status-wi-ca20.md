@@ -37,3 +37,5 @@ Peer request 2026-09-19 (claude-sandbox librarian, relayed via session 'implemen
 - lows: "PARKED (operator 2026-09-19): …" strips only "PARKED " (and the text says "unblock"); lint does not flag leftover parked: on other statuses; `wi set status parked` bypasses _park; idle-turn.md goes stale (follow-up).
 - pre-existing bugs found (filed separately): front-matter escape amplification (data loss); ext: requires appended again each round trip.
 - dispatch: implementer opus — fix round 1 (resume)
+- round 1 fix 8dd4d35: release never unparks; import --update keeps blocked:; provenance "(…)" stripped, whole text in the Notes line; lint flags stray parked:; set status parked refuses. 113 tests.
+- dispatch: reviewer opus — round 2 (resume)

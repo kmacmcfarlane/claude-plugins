@@ -15,3 +15,6 @@ Found by the ca20 reviewer (2026-09-21), pre-existing on main: a value containin
 - next: —
 - blocked: —
 - learned: —
+
+## Also seen (1dab review)
+- wi add escapes a title containing " or \ twice; a strict YAML loader reads it back with extra backslashes. Same root as the amplification above — cover add in the fix and its test.

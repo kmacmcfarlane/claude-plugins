@@ -26,3 +26,7 @@ From the 183a review: implement/SKILL.md (~l.235) decision-question sweep still 
 
 ## Dispatch
 - dispatch: implementer sonnet — default (apply an existing rule by pointer)
+
+## Implementer result
+- round 1 DONE 81ecaf6 (sonnet): decision sweep points at investigate § Asking at a gate; orchestrator Step 9 human-gated clause; non-interactive section covers Steps 4/7/8 prompts in its own vocabulary.
+- dispatch: reviewer opus — rule 4 floor
