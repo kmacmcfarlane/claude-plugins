@@ -83,8 +83,11 @@ block, and the checklist's scope check (section 1) compares the diff against it.
 path>` (§ Record line shapes) before any dispatch:
 
 1. The main checkout is already on `<branch>` (`git -C "$MAIN" branch --show-current`
-   equals it): the worktree path is `$MAIN` itself. Land's checks, diff and merge all run
-   there directly — there is no separate worktree to add or remove.
+   equals it): the worktree path is `$MAIN` itself for reading and reviewing — there is
+   no separate worktree to add. Land is different: merging still needs the main checkout
+   on `<base>` (SKILL.md § Step 5.3), which case 1 does not satisfy, and the cycle never
+   checks `<base>` out over `<branch>` to get there. Land in this case stops and asks
+   instead of merging (§ Landing below, `troubleshooting.md` § Landing).
 2. Otherwise, an existing worktree already checked out on `<branch>`: `git -C "$MAIN"
    worktree list --porcelain`, matched against `refs/heads/<branch>`. Use its listed path
    as is.
@@ -126,13 +129,29 @@ wrote one.
 ## Record line shapes
 
 Fixed shapes a resume (§ Resume) parses back out of the record sink; every step that
-writes one uses this exact shape, so a resume never has to guess:
+writes one uses this exact shape, so a resume never has to guess. Read them in the order
+they appear in the record sink — the record is a log, and § Resume acts on its **last**
+line, not the first match anywhere in it:
 
-- `dispatch: <role> <model> — <signal>` — SKILL.md § Step 2 rule 7, before every dispatch
-- `return: <role> <STATUS> <sha>` — SKILL.md § Step 3.5, as soon as an agent's report
-  comes back; `<sha>` is its COMMIT (implementer) or the HEAD it reviewed (reviewer)
-- `verdict: <V> round <n> at <sha>` — SKILL.md § Step 4.5, `<n>` the review round,
-  `<sha>` the HEAD reviewed
+- `dispatch: <role> <model> — <signal>` — SKILL.md § Step 2 rule 7, written before every
+  dispatch (implementer or reviewer)
+- `return: <role> <STATUS> <sha>` — SKILL.md § Step 3.5, written as soon as an
+  **implementer's** report comes back; `<sha>` is its COMMIT. A reviewer's return is its
+  `verdict:` line below — it never gets a separate `return:` of its own.
+- `verdict: <V> round <n> at <sha>` — SKILL.md § Step 4.5, written as soon as a
+  **reviewer's** report comes back, and counts as that dispatch's return. `<n>` is the
+  review round, counted only for `CLEAR`, `NEEDS_CHANGES` and `SHOW_STOPPER` (§ Resume
+  rule 6 excludes `BLOCKED` from the count, since it never reached a verdict on the
+  change). `<sha>` is the HEAD reviewed for a change; for a **plan-mode** review, in its
+  place: `at <series path>` (the review covers the whole series, not one sha) — a
+  finding's own file:line still names the serial.
+- `findings: …` — SKILL.md § Step 4.5, written together with a `NEEDS_CHANGES` or
+  `SHOW_STOPPER` verdict: the reviewer's FINDINGS section, pasted verbatim, one line per
+  finding in the reviewer's own numbering. § Resume rule 5 hands this block to the fix
+  dispatch unchanged — it is the source `fix-loop.md`'s NEEDS_CHANGES round reads from.
+- `landed: <merge sha>` — SKILL.md § Step 5.5, written once Land's merge succeeds, before
+  `$WI done`/`$WI handoff`. § Resume checks this first (rule 1): its presence means the
+  target already landed, full stop.
 - `target: <branch> <worktree path>` — § Review target, `review <branch>` mode only
 - `intent: <one line>` — § Intent, `review <branch>` mode with no item or plan
 - `checks:`, `decision:`, the `changed:` block — §§ Checks, Decisions, Undeclared files
@@ -194,42 +213,66 @@ it. **A scratchpad record sink cannot resume across sessions that do not share a
 scratchpad**: a fresh session's scratchpad is empty, so a store-less target only resumes
 within the session that wrote it, or one that inherits the same scratchpad.
 
-Evaluate in this order; the first match wins:
+Read the record sink in order and act on its **last** relevant line — not the first one
+anywhere in it that a rule happens to match. Evaluate in this order; the first that
+applies wins:
 
-1. **A `verdict: CLEAR round <n> at <sha>`** where `<sha>` still matches the target
-   worktree's current HEAD (`git -C <worktree path> rev-parse HEAD`, the path from
-   `target:` in `review <branch>` mode or the usual `.claude/worktrees/<name>`
-   otherwise): skip straight to Step 5. A HEAD that has moved since — a human pushed a
-   fix, or a dispatch whose `return:` the interrupted run never recorded — makes the
-   recorded `CLEAR` stale; treat it as no verdict and continue down this list.
-2. **A `verdict: NEEDS_CHANGES round <n> ...`**: resume at Step 4 as a fix round, with
-   that review's findings recorded verbatim in the record sink's FINDINGS block —
-   dispatch the fix per the fix loop, at the tier routing rule 6 gives; the round already
-   counts toward the cap of 4.
-3. **A `verdict: SHOW_STOPPER ...`, or the cap already hit** (4 `verdict:` lines with no
-   `CLEAR`): do not re-dispatch anything. Wait for a `decision:` line's recorded answer;
-   if none is recorded yet, raise it through the decision channel now, exactly as Step
-   4.4 would. A resume never re-raises a decision that already has an answer recorded.
-4. **The last recorded verdict was `BLOCKED`** (a reviewer that could not start,
-   `review-brief.md` § Verdict meanings): re-dispatch it with the setup fixed. This is
-   not a review round — it does not count toward the cap.
-5. **A `dispatch:` line with no `return:` recorded after it**: before re-dispatching,
-   check whether the prior agent is still running — `ListAgents`, and `SendMessage` to it
-   if one matches this target — rather than assume it died; a still-running agent is left
-   to finish, never duplicated. Only when none is found: treat that dispatch as never
-   sent and re-dispatch at the same role, tier and round, briefing the new agent with the
-   worktree's current HEAD (it may have moved since the stale dispatch was recorded).
-6. **No `dispatch:` line**, but a `checks:`, `target:`, `intent:`, `decision:` or
-   `changed:` line already recorded: start at Step 1 (Step 0 for `review <branch>`
-   mode), using those recorded bindings instead of re-resolving or re-asking them.
-7. **No record at all**: start at Step 1 as normal; there is nothing to resume.
+1. **A `landed: <merge sha>` line anywhere.** The target already landed: stop and report
+   "already landed". Never re-dispatch, never re-run Land.
+2. **The last line is a `dispatch:` with nothing recorded after it** (no matching
+   `return:` or `verdict:` — the run stopped mid-dispatch, before the agent reported
+   back, or while it was still working): before re-dispatching, check whether that agent
+   is still running — `ListAgents`, and `SendMessage` to it if one matches this target —
+   rather than assume it died; a still-running agent is left to finish, never
+   duplicated. Only when none is found: treat the dispatch as never sent and re-dispatch
+   at the same role, tier and round, briefing the new agent with the worktree's current
+   HEAD (it may have moved since the stale dispatch was recorded).
+3. **The last line is an implementer's `return:`, with no reviewer `dispatch:` after
+   it** (the implementer reported back but the run stopped before reviewing it): resume
+   at Step 4 and dispatch a reviewer. Use the re-review variant when a prior `verdict:`
+   already exists for this target (this is a fix round); otherwise the full
+   review-brief.
+4. **The last line is `verdict: CLEAR round <n> at <sha>`.** A `verdict:` line counts as
+   the reviewer's own return — rule 2 above already covers an unanswered reviewer
+   dispatch, so a recorded `CLEAR` always has one. Compare `<sha>` — or, for a
+   **plan-mode** target, the sha256 baseline (`sha256sum <series>/[0-9][0-9]_*.md`,
+   `review-brief.md` § Plan-review variant) — against the current state; this is the
+   only place plan mode reads differently, everything else above and below applies to it
+   unchanged:
+   - **Unchanged** (the worktree's HEAD still matches `<sha>`, `git -C <worktree path>
+     rev-parse HEAD`; plan mode: every serial's hash still matches its recorded baseline):
+     skip straight to Step 5 (`full` and `review <branch>`), or, `plan` mode — there is
+     no Step 5 to land into — straight to the decision channel for any blocking open
+     questions, then Step 6.
+   - **Changed** (a human pushed a fix, a dispatch whose `return:`/`verdict:` the
+     interrupted run never recorded, or a written serial edited after the fact): the
+     recorded `CLEAR` is stale. Treat it as no verdict and resume at Step 4 with a fresh
+     review dispatch — the full brief, not the re-review variant, since this reviews work
+     the last `CLEAR` never saw.
+5. **The last line is `verdict: NEEDS_CHANGES round <n> ...`, and `<n>` is under the cap**
+   (fewer than 4 `verdict:` lines counted as rounds so far — see rule 6): resume at Step 4
+   as a fix round. Dispatch the implementer with the `findings:` block recorded alongside
+   that verdict, verbatim, per the fix loop; the round already counts toward the cap of 4.
+   A `NEEDS_CHANGES` that is itself the 4th counted round falls to rule 6 instead, not
+   this one — the cap is checked before a new fix round is opened.
+6. **The last line is `verdict: SHOW_STOPPER ...`, or the cap is already hit** (4
+   `verdict:` lines counted as rounds — `CLEAR`, `NEEDS_CHANGES` or `SHOW_STOPPER` only;
+   `BLOCKED` is never a round — with no `CLEAR` among them, the last of the 4 included):
+   do not re-dispatch anything.
+   Wait for a `decision:` line's recorded answer; if none is recorded yet, raise it
+   through the decision channel now, exactly as Step 4.4 would. A resume never re-raises
+   a decision that already has an answer recorded.
+7. **The last line is `verdict: BLOCKED`** (a reviewer that could not start,
+   `review-brief.md` § Verdict meanings): re-dispatch it with the setup fixed. Not a
+   round — it does not count toward the cap.
+8. **No `dispatch:`, `return:` or `verdict:` line**, but a `checks:`, `target:`,
+   `intent:`, `decision:` or `changed:` line already recorded: start at Step 1 (Step 0
+   for `review <branch>` mode), using those recorded bindings instead of re-resolving or
+   re-asking them.
+9. **No record at all**: start at Step 1 as normal; there is nothing to resume.
 
-**Plan mode.** After a `verdict: CLEAR` for a plan review, re-check the sha256 baseline
-recorded before that review (`sha256sum <series>/[0-9][0-9]_*.md`, `review-brief.md`
-§ Plan-review variant) against the series files' current hashes. Unchanged: go straight
-to the decision channel for any blocking open questions, then Step 6. Changed — a
-written serial was edited after the fact: treat the `CLEAR` as stale and resume at Step 4
-with the plan-review variant instead, same as rule 2 above.
+`review <branch>` and `plan` targets never share a record sink, so a `verdict:` line is
+never ambiguous about which shape (sha or series path) it carries.
 
 A resumed run never repeats a question the record sink already answers, and never
 re-dispatches a round that already returned — only one that never returned, or the next
@@ -257,10 +300,17 @@ Standalone, ask once at Land — AskUserQuestion, options in this order:
 git -C "$MAIN" merge --no-ff -m "<message>" <branch>
 ```
 
-from the worktree path § Review target resolved. When that path is `$MAIN` itself
-(§ Review target case 1), Land's checks and diff already ran there directly, and cleanup
-does nothing — there is no separate worktree to remove, and the main checkout is already
-on `<branch>`, which the merge then joins into `<base>` as usual.
+from the worktree path § Review target resolved, once the main checkout is on `<base>`
+(SKILL.md § Step 5.3) — the same requirement `full` mode has. § Review target's case 1
+(the main checkout already on `<branch>` itself) never satisfies that on its own:
+checking `<base>` out over `<branch>` to get there would mean checking out over the
+user's own work, which the cycle never does. **Case 1 at Land stops and asks**
+(`troubleshooting.md` § Landing, "the main checkout is not on the base") instead of
+merging — the user switches the main checkout to `<base>` themselves and Land re-runs
+its checks and diff, or picks `Leave the branch`, which never needs the main checkout
+touched. Cases 2 and 3 (an existing or added worktree elsewhere) merge normally once the
+main checkout, separately, is on `<base>`; cleanup then removes only a worktree case 3
+added, never `<branch>` itself.
 
 Never push unless the user picked option 3 or the invocation asked for it in words. A
 rejected push stops: never pull, rebase or force around it — report it.

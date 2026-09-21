@@ -27,16 +27,16 @@ Pointed at from SKILL.md § Troubleshooting and from `fix-loop.md` for the permi
 - **`review <branch>` comes back `NEEDS_CHANGES` or `SHOW_STOPPER` and the operator
   declines to dispatch an implementer.** Report the findings and stop; nothing lands and
   nothing is fixed here — they go back to the branch's author.
-- **A resumed run's record sink names a worktree that no longer exists.** First check
-  whether the target already landed — a `return:` or `verdict:` line naming a merge sha,
-  or a `wi done`/`wi handoff` note recording one, means it did: stop and report "already
-  landed", never re-dispatch. Otherwise, if the branch itself still exists (`git -C
-  "$MAIN" rev-parse --verify <branch or worktree-<name>>` succeeds): re-add the worktree
-  onto it *without* `-b` (`git -C "$MAIN" worktree add .claude/worktrees/<name> <branch>`)
-  — recreating the branch would lose its commits. Rebuild from the base with `-b` only
-  when neither the worktree nor the branch exists at all. In every case, treat it as no
-  `dispatch:` line for that round (§ Review target for `review <branch>` mode) and
-  re-dispatch.
+- **A resumed run's record sink names a worktree that no longer exists.** § Resume's rule
+  1 already covers "already landed" — a `landed:` line means stop, never re-dispatch.
+  Otherwise, if the branch itself still exists (`git -C "$MAIN" rev-parse --verify
+  <branch or worktree-<name>>` succeeds): re-add the worktree onto it *without* `-b`
+  (`git -C "$MAIN" worktree add .claude/worktrees/<name> <branch>`) — recreating the
+  branch would lose its commits. Rebuild from the base with `-b` only when neither the
+  worktree nor the branch exists at all. Either way, once the worktree is back,
+  re-evaluate `bindings.md` § Resume from the record sink as it stands — do not assume
+  the next step is a re-dispatch; the last recorded line (a `verdict:`, a `return:`, or
+  nothing since the last dispatch) still decides that.
 
 ## Dispatch and review
 

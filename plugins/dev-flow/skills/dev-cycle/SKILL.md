@@ -102,12 +102,13 @@ from Step 1.
    answer as a `checks:` line; **never write CLAUDE.md**. When the brief confirm and the
    checks question are both due, ask them in one AskUserQuestion call. `review <branch>`
    mode also resolves the branch's own worktree here, instead of Step 3:
-   `references/bindings.md` § Review target.
+   `references/bindings.md` § Review target, and claims a named item here too (Step 3 is
+   skipped): `$WI claim <id>` when it is not already yours.
 
 4. **Resume**, when the record sink already carries any record line for this target — a
    rerun after an interrupt: evaluate `references/bindings.md` § Resume in order, first
-   match wins, and continue from what it says instead of restarting at Step 1. A plan
-   target follows that section's plan-mode rule instead.
+   match wins, and continue from what it says instead of restarting at Step 1. `plan`
+   mode differs only in how it reads a `CLEAR`, per that section's rule 4.
 
 Expected output: one short paragraph — target, mode, base, checks, record sink, and,
 on a resume, which step it resumes at and why.
@@ -216,10 +217,12 @@ re-dispatch or resume with findings = review round n+1; cap 4 review rounds.
    inside the loop. The one exception: `review <branch>` mode's ask, before any fix loop,
    whether to dispatch an implementer at all (Usage) — a mode-entry decision, not a
    severity escalation.
-5. **Record the result** as `verdict: <V> round <n> at <sha>` (`references/bindings.md`
-   § Record line shapes) plus, in the record sink: findings fixed, findings declined
-   with reasons, and the reviewer NOTES worth keeping. Reviewer questions you cannot
-   settle go on Step 6's `open questions:`.
+5. **Record the result** as `verdict: <V> round <n> at <sha>` plus, on a
+   `NEEDS_CHANGES` or `SHOW_STOPPER`, the reviewer's FINDINGS pasted verbatim as a
+   `findings:` block (`references/bindings.md` § Record line shapes) — what a fix
+   dispatch reads. Also record: findings fixed, findings declined with reasons, and the
+   reviewer NOTES worth keeping. Reviewer questions you cannot settle go on Step 6's
+   `open questions:`.
 
 ## Step 5: Land
 
@@ -234,6 +237,8 @@ Only after a `CLEAR` recorded against the current HEAD.
    the declared Files in scope is a rejection, however good. With Files in scope
    `undeclared`, every changed file must carry the implementer's one-line reason and
    have survived the reviewer's per-file grading; one that did not is a rejection.
+   `review <branch>` mode grades against the recorded Intent instead
+   (`references/bindings.md` § Intent) — no per-file reason is required there.
 3. **Take the terminal action.** A caller's binding as given. Standalone, ask once
    (`references/bindings.md` § Landing): `Merge to <base> locally, no push` first, then
    `Leave the branch`, then `Merge and push`. To merge, the main checkout must be on the
@@ -256,7 +261,8 @@ Only after a `CLEAR` recorded against the current HEAD.
    `git branch -d` the branch. A dirty worktree is never removed: report it and ask.
    `review <branch>` mode never deletes `<branch>` and removes only a worktree this cycle
    added itself (`references/bindings.md` § Landing).
-5. **Close the item**: `$WI done <id> --note <merge-sha>`; for `Leave the branch`,
+5. **Close the item**: record `landed: <merge sha>` (`references/bindings.md` § Record
+   line shapes), then `$WI done <id> --note <merge-sha>`; for `Leave the branch`,
    `$WI handoff <id>` with `--next` naming the branch.
 
 A red check or a doctrine miss stops the landing: `$WI handoff <id> --blocked "<what>"`
