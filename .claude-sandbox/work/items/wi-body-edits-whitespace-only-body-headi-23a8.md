@@ -2,12 +2,11 @@
 id: wi-body-edits-whitespace-only-body-headi-23a8
 title: "wi body edits: whitespace-only body heading, fenced headings, newline in --doing, import --update coverage"
 type: chore
-status: doing
+status: done
 priority: 4
-owner: unknown@e3a28d2cc009
-claimed: 2026-09-19T05:58Z
 created: 2026-09-19
-updated: 2026-09-19
+updated: 2026-09-21
+closed: 2026-09-21
 ---
 
 From the e832 review (2026-09-19), all low/nit, no data loss: (1) _append_section glues '## Notes' onto a whitespace-only body with no trailing newline (wi.py:348); (2) a fenced '## Handoff' inside Notes makes later notes land inside the fence (section scan ignores fences); (3) --doing/--next values with a newline leave unowned lines or inject headings — reject or escape newlines; (4) no test covers newline='' on the write side; (5) import --update not in the preservation matrix.
@@ -20,6 +19,7 @@ From the e832 review (2026-09-19), all low/nit, no data loss: (1) _append_sectio
 
 ## Notes
 - 2026-09-19 claimed by unknown@e3a28d2cc009
+- 2026-09-21 done: 421baaf
 
 ## Dispatch
 - dispatch: implementer opus — executable logic (wi.py)
@@ -54,3 +54,8 @@ From the e832 review (2026-09-19), all low/nit, no data loss: (1) _append_sectio
 - [medium] refusal fires on a CLOSED fenced example containing ## Notes/## Handoff with no real section (misleading message). Fix: refuse only when the hiding fence also contains a later column-0 ## line; message names both fixes; test.
 - [low, pre-existing] import notes: | containing ## Handoff shadows the imported Handoff — follow-up item or format.md line.
 - dispatch: implementer opus — fix round 3 after a high (round 2): fable signal; fable unavailable (unknown); fallback. Review round 4 is the last before the cap.
+
+## Review round 4 — CLEAR (opus) at 40340fb
+- live-copy equivalence on all 135 items; e832 invariant held every round. lows accepted: a closed example with ## Notes + another ## in the same fence still refuses (message gives a working fix); unclosed-fence leftovers render like CommonMark, no bytes lost.
+## Landed
+- 421baaf. 3 fix rounds (round 3 fable-signal on opus fallback).

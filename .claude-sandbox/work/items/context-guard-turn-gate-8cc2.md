@@ -35,3 +35,10 @@ Mid-turn PostToolUse depth gate; HARD gate stops recommending an unaffordable ch
 ## Plan result
 - planner DONE_WITH_CONCERNS (opus): series .claude-sandbox/investigations/8cc2-turn-gate-port/00_initial.md. (1) mid-turn check and (2) affordable HARD advice still wanted, absent on main — rewrite on current measure(); (3) session-addressed manifest conflicts with main's repo HANDOFF.md, but the harm is live (rehydrate injects another session's manifest on compaction); /clear regenerates the session id (verified in the binary). Port: F2 advice, F1 turn_gate, F3a authorship check (safe now), F3b location (blocked). Review nits already covered on main.
 - dispatch: plan reviewer opus — dev-cycle plan-review variant
+
+## Plan review round 1 — NEEDS_CHANGES (opus)
+- verdicts, manifest-injection claim and /clear sid claim all verified (binary 2.1.278); Open Question 4 answerable: skip on agent_id only.
+- [high] F3a breaks the handoff/stage-boundary flow: a successor after /clear or a fresh session loses its inherited manifest (incl. CORRECTION/REFUSED) on compaction → adoption rule (clear predecessor via _proc record, a Read of the manifest, fork parent).
+- [high] F1 can end an unattended turn on an inferred depth (DUE text + ported unattended section) — informational only off BLOCKING_SOURCES.
+- mediums: F3a before F1; agent_type skip wrong; fork parent persisted; ending-the-session.md is a definite F1 file; F1 routing must argue the blocking-predicate refactor (or fable reviewer); B′ costs overstated.
+- dispatch: planner opus — plan fix round 1 (resume); revision as serial 01 with Supersedes
