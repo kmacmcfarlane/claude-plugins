@@ -127,9 +127,10 @@ me afterwards" — the blocking gates (Steps 2, 9, 11, 12) do not disappear, the
 
 When another skill dispatches this one as a sub-agent (`dev-cycle`'s plan agent or
 implementer, a `deep-investigation` POC spec), the orchestrator owns git, the work item and
-every dialog. It gives a **Series home** (an absolute directory for the series) and the
-**base** branch. Run as **Running non-interactively** above, with these changes, named as
-well as numbered so a renumber updates this list in the same commit:
+every dialog. It gives a **Series home** (an absolute directory for the series), the
+**base** branch and, when it has one, the **worktree**. Run as **Running
+non-interactively** above, with these changes, named as well as numbered so a renumber
+updates this list in the same commit:
 
 - **Step 1 / 1a (Resolve the issue, the series)** — the orchestrator's brief is the
   description; a work item is read, never claimed. The series lives at the Series home,

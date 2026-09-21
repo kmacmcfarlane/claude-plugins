@@ -88,8 +88,9 @@ clear acceptance skips it, and so does a target that already has a series or pla
 
 - **`plan` mode or a spike:** dispatch one plan agent, routed by Step 2 with opus as its
   minimum (a plan is judgement) and the Model floor respected, with the plan variant in
-  `references/agent-brief.md`: /investigate, non-interactively, writing the series to
-  the Series home; no worktree. Record the series path. Its `DONE` goes to Step 4 with
+  `references/agent-brief.md`: /investigate in its orchestrated mode (the `investigate`
+  skill's § Running under an orchestrator), writing the series to the Series home; no
+  worktree. Record the series path. Its `DONE` goes to Step 4 with
   the plan-review variant; a `NEEDS_CHANGES` re-dispatches the plan agent, which
   revises by a new serial per the `investigate` skill's
   `references/investigation-format.md`. After `CLEAR`, its blocking open questions go
@@ -97,8 +98,8 @@ clear acceptance skips it, and so does a target that already has a series or pla
   plan dispatch (unless already yours); after `CLEAR`, `$WI done <id> --note <series
   path>`, or `$WI handoff <id>` naming the series while blocking questions are open.
 - **A feature in full mode:** no separate dispatch; the implementer runs /investigate
-  then /implement in its worktree through the brief's dev-flow block — `librarian-mode`'s
-  current block, reused until those skills own an orchestrated mode
+  then /implement in its worktree, each in its orchestrated mode (each skill's § Running
+  under an orchestrator), as the brief's dev-flow block directs
   (`references/agent-brief.md` § dev-flow).
 
 ## Step 2: Route
