@@ -99,10 +99,11 @@ that does not parse, and `wi` never rewrites a file it could not parse.
 **Quoting.** A value is written bare unless wi would read it back
 differently or a YAML loader would reject it — empty, leading/trailing
 whitespace, `: ` or ` #` inside, a trailing `:`, brackets or braces, a leading
-YAML indicator (`- ? : , # & * ! | > ' " % @` and backtick), a bare `—`, a tab
-or other control character, or a comma inside a flow list. YAML's implicit
-typing is left alone (`priority: 2` and dates stay bare), so a YAML loader may
-read a bare `true`, `null` or `0x10` as a non-string where wi reads a string.
+YAML indicator (`- ? : , # & * ! | > ' " % @` and backtick), a bare `—`, a
+lone `=` or `<<`, a tab or other control character, or a comma inside a flow
+list. YAML's implicit typing is left alone (`priority: 2` and dates stay
+bare), so a YAML loader may read a bare `true`, `null` or `0x10` as a
+non-string where wi reads a string.
 A quoted value is a YAML double-quoted scalar: `\` and `"` are written as
 `\\` and `\"`, tab as `\t`, and other control characters, DEL, C1,
 U+2028/U+2029, the BOM, U+FFFE/U+FFFF and lone surrogates as `\xNN` /
@@ -110,8 +111,8 @@ U+2028/U+2029, the BOM, U+FFFE/U+FFFF and lone surrogates as `\xNN` /
 (`\0 \/ \U…` and the rest), so a value survives any number of rewrites
 byte-identical; an unknown escape, or one that would decode to a line break,
 is kept as written. So in a hand-written quoted value a backslash is an
-escape: write `"C:\\bin"`, not `"C:\bin"` (which holds a `\b`) — `lint`
-reports any front-matter value holding a control character other than tab. A
+escape: write `"C:\\temp"`, not `"C:\temp"` (which holds a tab) — `lint`
+reports any front-matter value holding a tab or other control character. A
 single-quoted value reads `''` as `'`. A bare `—` or an empty value reads as
 no value; a quoted `"—"` is the literal dash (`import` still reads a
 backlog field that is `—`, such as `blocked_reason`, as no value).

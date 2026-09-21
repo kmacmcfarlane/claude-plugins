@@ -142,9 +142,10 @@ _DQ_HEX = {"x": 2, "u": 4, "U": 8}
 # reader rejects raw) are written as escapes, never raw — and never bare
 _DQ_ESCAPE_RE = re.compile("[\x00-\x08\x09\x0b-\x1f\x7f-\x9f\u2028\u2029"
                            "\ufeff\ufffe\uffff\ud800-\udfff]")
-# what `wi lint` flags in a decoded value: a control character other than
-# tab, most often a hand-written backslash path ("C:\\bin" holds \b)
-_CONTROL_RE = re.compile("[\x00-\x08\x0b-\x1f\x7f-\x9f]")
+# what `wi lint` flags in a decoded value: any control character, tab
+# included (wi never writes one raw), most often a hand-written backslash
+# path ("C:\\temp" holds a tab, "C:\\bin" a \b)
+_CONTROL_RE = re.compile("[\x00-\x08\x09\x0b-\x1f\x7f-\x9f]")
 
 
 def _dq_escape_char(m):
@@ -310,12 +311,12 @@ def _emit_scalar(v, flow=False):
     """Bare when wi reads a bare scalar back unchanged and a YAML loader
     parses it, else double-quoted with _dq_escape: mapping/comment indicators,
     structure chars, surrounding whitespace, a leading YAML indicator, the
-    `—` that reads as empty, a tab or other control character, or (in a flow
-    list) a comma. YAML's implicit typing (numbers, booleans, null, dates) is
+    `—` that reads as empty, a lone `=` or `<<` (YAML's value and merge
+    keys), a tab or other control character, or (in a flow list) a comma. YAML's implicit typing (numbers, booleans, null, dates) is
     left alone — `priority: 2` and `created: 2026-09-21` stay bare — so a YAML
     loader may type a bare value that wi reads as a string."""
     v = str(v)
-    if (v == "" or v != v.strip() or v == "—" or v.endswith(":")
+    if (v in ("", "—", "=", "<<") or v != v.strip() or v.endswith(":")
             or re.search(r":[ \t]|[ \t]#|[\[\]{}]", v)
             or v.startswith(_BARE_UNSAFE_START) or _DQ_ESCAPE_RE.search(v)
             or (flow and "," in v)):
@@ -2109,7 +2110,7 @@ def cmd_lint(args):
                 problems.append(
                     f"{it.path}: front-matter '{key}' holds a control character"
                     " — a quoted value decodes YAML escapes, so a hand-written"
-                    " backslash (\"C:\\bin\" holds \\b) must be written \\\\;"
+                    " backslash (\"C:\\temp\" holds a tab) must be written \\\\;"
                     f" fix it with `wi set {it.id} {key} ...`")
         for n, why in secret_findings(it.render()):
             problems.append(f"{it.path}:{n}: {why}")

@@ -274,6 +274,20 @@ class TestScalarRoundTrip(WiTestCase):
                 self.assertEqual(wi._parse_scalar(out)[0], v)
         self.assertEqual(wi._emit_scalar("a\tb"), '"a\\tb"')
 
+    def test_yaml_value_and_merge_keys_are_quoted(self):
+        try:
+            from ruamel.yaml import YAML
+        except ImportError:
+            self.skipTest("ruamel.yaml not installed")
+        for v in ("=", "<<"):
+            with self.subTest(v=v):
+                text = wi.emit_front({"title": v, "tags": [v]})
+                self.assertEqual(text, f'title: "{v}"\ntags: ["{v}"]')
+                self.assertEqual(YAML(typ="safe").load(text),
+                                 {"title": v, "tags": [v]})
+                self.assertEqual(wi.parse_front(text.split("\n"))[0],
+                                 {"title": v, "tags": [v]})
+
     def test_unterminated_quote_in_flow_list_reads_the_old_way(self):
         meta, _, errors = wi.parse_front(['tags: ["abc, d, e]'])
         self.assertEqual(errors, [])
@@ -281,15 +295,19 @@ class TestScalarRoundTrip(WiTestCase):
 
     def test_hand_written_backslash_path_is_a_lint_finding(self):
         self.write_item("path-1111")
-        self.write_item("tab-2222", title="a\tb")  # wi-written: fine
-        p = self.root / "items" / "path-1111.md"
-        p.write_text(p.read_text().replace(
-            "title: path-1111", 'title: "C:\\Users\\foo\\bar"'))
+        self.write_item("temp-2222")
+        self.write_item("clean-3333", title="C:\\temp")  # wi-written: fine
+        for iid, raw in (("path-1111", '"C:\\Users\\foo\\bar"'),
+                         ("temp-2222", '"C:\\temp\\tools"')):
+            p = self.root / "items" / f"{iid}.md"
+            p.write_text(p.read_text().replace(f"title: {iid}", f"title: {raw}"))
         r = run(["lint"], self.root)
         self.assertEqual(r.returncode, 3)
         self.assertIn("path-1111.md: front-matter 'title' holds a control", r.stdout)
         self.assertIn("wi set path-1111 title", r.stdout)
-        self.assertNotIn("tab-2222", r.stdout)
+        # \t is the likeliest escape in a Windows path: C:<TAB>emp<TAB>ools
+        self.assertIn("temp-2222.md: front-matter 'title' holds a control", r.stdout)
+        self.assertNotIn("clean-3333", r.stdout)
 
     def test_import_reads_a_dash_placeholder_as_no_value(self):
         src = self.tmp / "in.yaml"
