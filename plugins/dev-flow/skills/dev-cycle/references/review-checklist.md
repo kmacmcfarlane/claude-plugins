@@ -107,8 +107,10 @@ for s in $(git -C $W diff --name-only $BASE...HEAD | grep -o 'plugins/[^/]*/skil
   grep -n '^\(name\|description\):.*[<>]' $d/SKILL.md && echo "FAIL: angle brackets in name/description"
   desc=$(sed -n 's/^description: *//p' $d/SKILL.md | head -1); test ${#desc} -le 1024 || echo "FAIL: description ${#desc} chars"
   # reference-shaped only: a dot prefix leading to references/, scripts/ or assets/, or
-  # straight to a .md file (a skill-root file, a sibling SKILL.md), or the skill-dir variable
-  grep -rnE '(^|[^.A-Za-z0-9_])[.][.]?/(([A-Za-z0-9_.-]+/)*(references|scripts|assets)/|([A-Za-z0-9_.-]+/)?[A-Za-z0-9_-]+[.]md)|CLAUDE_SKILL_DI[R]' $d && echo "FAIL: non-bare reference path"
+  # to a .md file (a skill-root file, a sibling SKILL.md), or the skill-dir variable
+  grep -rnE '(^|[^.A-Za-z0-9_])[.][.]?/(([A-Za-z0-9_.-]+/)*(references|scripts|assets)/|([A-Za-z0-9_.-]+/)*[A-Za-z0-9_-]+[.]md)|CLAUDE_SKILL_DI[R]' $d; rc=$?
+  test $rc = 0 && echo "FAIL: non-bare reference path"
+  test $rc -gt 1 && echo "FAIL: lint pattern did not run (grep exit $rc)"
   wc -w $d/SKILL.md
   python3 - $d <<'PY'
 import os, re, sys
@@ -151,14 +153,15 @@ done
 ```
 
 The dot-slash grep flags reference-shaped paths only: a `./` or `../` prefix followed by
-directories into a `references/`, `scripts/` or `assets/` folder, or by at most one
-directory and a `.md` file (a skill-root file, or a sibling's `SKILL.md`), plus the
+directories into a `references/`, `scripts/` or `assets/` folder, or by directories
+ending in a `.md` file (a skill-root file, or a sibling's `SKILL.md`), plus the
 skill-dir variable. A dot prefix on anything else — a sibling repository beside the
 project, a store under the working directory — is a real path, not a skill reference, and
 passes. It catches the prefix in prose or shell alike, including in a checklist that
 quotes it — which is why the pattern above is written with bracket classes, so the lint
 file passes its own lint. A hit in a code block that genuinely needs the prefix (rare) is
-reviewed by eye, not waved through.
+reviewed by eye, not waved through. A grep that cannot compile the pattern (exit 2)
+is reported as a FAIL, never read as a clean pass.
 
 What the reference check reads, so a reviewer can tell a real miss from a lint gap:
 
