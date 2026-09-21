@@ -8,9 +8,9 @@ are honoured, but single-fire is the real guard):
 1. Relay a deferred auto-compaction or an unanswered DUE: PreCompact's stderr
    is only documented to reach the user for manual triggers, so the model
    hears about a deferral here.
-2. The ledger nudge: every CLAUDE_KIT_LEDGER_EVERY tokens of growth (default
-   60K), ask for ledger lines — skipped when the last assistant message
-   already contains them, and 'nothing new' is an acceptable one-line answer.
+2. The ledger nudge: every CONTEXT_GUARD_LEDGER_EVERY tokens of growth
+   (deprecated alias CLAUDE_KIT_LEDGER_EVERY; default 60K), ask for ledger
+   lines — skipped when the last assistant message already contains them, and 'nothing new' is an acceptable one-line answer.
 """
 import json, os, re, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -37,7 +37,7 @@ def main():
         print(json.dumps({})); return
     remaining = max(win - tok, 0)
     th = L.thresholds(win)
-    every = int(os.environ.get("CLAUDE_KIT_LEDGER_EVERY", "60000") or 60000)
+    every = int(L.env_setting(L.LEDGER_EVERY_ENV, valid=L._is_int) or 60000)
     res = {}
 
     def apply(st):

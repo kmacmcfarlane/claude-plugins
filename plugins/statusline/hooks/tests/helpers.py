@@ -21,7 +21,8 @@ DEFAULT_GAUGE = {
                    "anchors": [{"window": 200000, "due": 70000, "hard": 40000},
                                {"window": 1000000, "due": 150000, "hard": 60000}]},
     "labels": {"due": "checkpoint DUE", "hard": "HARD gate"}}
-DROP = ("CLAUDE_PLUGIN_DATA", "CLAUDE_PLUGIN_ROOT", "CLAUDE_KIT_CONTEXT_WINDOW")
+DROP = ("CLAUDE_PLUGIN_DATA", "CLAUDE_PLUGIN_ROOT",
+        "CONTEXT_GUARD_CONTEXT_WINDOW", "CLAUDE_KIT_CONTEXT_WINDOW")
 
 
 class Hermetic(unittest.TestCase):

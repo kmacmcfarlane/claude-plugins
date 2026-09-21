@@ -53,6 +53,14 @@ class Base(unittest.TestCase):
         self.cfg = self.tmp.name
         self.proj = os.path.join(self.cfg, "proj")
         os.makedirs(os.path.join(self.proj, ".claude"))
+        # Scrub the process environment too, not only the environ handed to
+        # measure(): lib code that reads os.environ must not see a host pin
+        # or CONTEXT_GUARD_DERIVE. Restored on cleanup.
+        scrub = mock.patch.dict(os.environ)
+        scrub.start()
+        self.addCleanup(scrub.stop)
+        for k in [k for k in os.environ if k.startswith(SCRUB)]:
+            del os.environ[k]
         os.environ["CLAUDE_CONFIG_DIR"] = self.cfg
         global L, R
         import lib_context as L
@@ -812,11 +820,39 @@ class TestHooks(Base):
         self.assertNotIn("CONTEXT_GUARD_DERIVE", self.warn()[2])
 
     def test_pin_beats_derivation(self):
-        # Reviewer case 35: CLAUDE_KIT_CONTEXT_WINDOW wins, as on main.
+        # Reviewer case 35: the window pin wins, as on main - under the
+        # canonical name and under the deprecated alias alike.
+        for name in ("CONTEXT_GUARD_CONTEXT_WINDOW", "CLAUDE_KIT_CONTEXT_WINDOW"):
+            with self.subTest(name=name):
+                self.session("claude-haiku-4-5", 185_000)
+                rc, out, _ = self.warn(**{name: 1000000})
+                self.assertEqual((rc, out), (0, {}))
+                self.assertNotIn("derived", L.load_state("s"))
+
+    def test_malformed_canonical_pin_falls_back_to_a_valid_alias(self):
+        # A mistyped new name beside a working old-name pin must not switch
+        # the pin off: that would turn derivation back on and could hard-block
+        # (a false block). The valid alias pins; the haiku session is not
+        # blocked, and derivation never ran.
+        for bad in ("big", "1m", " 1000000", "1_000_000"):
+            with self.subTest(bad=bad):
+                self.session("claude-haiku-4-5", 185_000)
+                rc, out, _ = self.warn(CONTEXT_GUARD_CONTEXT_WINDOW=bad,
+                                       CLAUDE_KIT_CONTEXT_WINDOW=1000000)
+                self.assertEqual((rc, out), (0, {}))
+                self.assertNotIn("derived", L.load_state("s"))
+                m = self.measure(CONTEXT_GUARD_CONTEXT_WINDOW=bad,
+                                 CLAUDE_KIT_CONTEXT_WINDOW=1000000)
+                self.assertEqual(m["model_window"], 1_000_000)
+                self.assertIsNone(m["derived"])
+
+    def test_pin_follows_the_callers_environ(self):
+        # measure() scores the window from the environ it is handed, not
+        # os.environ: the pin check and the pinned window read one source.
         self.session("claude-haiku-4-5", 185_000)
-        rc, out, _ = self.warn(CLAUDE_KIT_CONTEXT_WINDOW=1000000)
-        self.assertEqual((rc, out), (0, {}))
-        self.assertNotIn("derived", L.load_state("s"))
+        with mock.patch.dict(os.environ, {"CONTEXT_GUARD_CONTEXT_WINDOW": "700000"}):
+            m = self.measure(CONTEXT_GUARD_CONTEXT_WINDOW=500000)
+        self.assertEqual(m["model_window"], 500_000)
 
     def test_non_default_port_on_the_anthropic_host_only_warns(self):
         # Reviewer case 31.

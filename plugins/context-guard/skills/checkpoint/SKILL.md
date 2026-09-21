@@ -70,7 +70,8 @@ still supplied the window — the window is trustworthy there, the token count i
 `window`, `rule`, `resolved`), and a plain `tokens`/`pct` with neither is a guess. An exact
 depth, or a derived one with `resolved: true`, can hard-block; an inferred depth, or a derived
 one that is not resolved, only warns. `CONTEXT_GUARD_DERIVE=off` (or a
-`CLAUDE_KIT_CONTEXT_WINDOW` pin) in Claude Code's launch environment turns derivation off. The **ledger** holds the decisions, rejections,
+`CONTEXT_GUARD_CONTEXT_WINDOW` pin; deprecated alias `CLAUDE_KIT_CONTEXT_WINDOW`) in Claude
+Code's launch environment turns derivation off. The **ledger** holds the decisions, rejections,
 corrections and pointers already captured as the session ran — Step 2 is a **delta over it**,
 not a reconstruction of hours. (`context_forensics.py` in `scripts/` shows *what* filled the
 window, when that question matters.) Missing files: say so, continue.

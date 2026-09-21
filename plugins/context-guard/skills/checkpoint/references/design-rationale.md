@@ -114,7 +114,9 @@ Three layers, escalating; the first two are hooks, the third is a skill.
    that could set or cancel it was read; server-managed policy can never be ruled out from a
    hook on 2.1.277, so in practice the auto-compact window only warns. The compaction gate keeps the
    pre-mirror depth: a derived window never defers a compaction. `CONTEXT_GUARD_DERIVE=off`,
-   or a `CLAUDE_KIT_CONTEXT_WINDOW` pin, turns the mirror off. The account file in the home directory
+   or a `CLAUDE_KIT_CONTEXT_WINDOW` pin, turns the mirror off. (That pin, and
+   `CLAUDE_KIT_LEDGER_EVERY`, were later renamed `CONTEXT_GUARD_CONTEXT_WINDOW` and
+   `CONTEXT_GUARD_LEDGER_EVERY`; the old names remain deprecated aliases.) The account file in the home directory
    is never opened. context-guard's own deprecated copy of the status line (kept
    one release for entries that still point at it) writes the same `exact` block into
    `~/.claude/claude-kit/context-gate/<session>.json` (a historical directory name). The hooks

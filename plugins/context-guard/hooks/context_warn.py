@@ -20,8 +20,8 @@ input to it resolved, else the model window - so an unresolved auto-compact
 window warns but never blocks.
 A HARD STOP caused by a derived window prints its escape hatches
 (CONTEXT_GUARD_DERIVE=off, mark_checkpoint.py <session>). The operator's
-CLAUDE_KIT_CONTEXT_WINDOW pin turns the mirror off, as it pinned the window
-before it.
+CONTEXT_GUARD_CONTEXT_WINDOW pin (deprecated alias CLAUDE_KIT_CONTEXT_WINDOW)
+turns the mirror off, as it pinned the window before it.
 The first time the mirror disagrees with the status line in a session (the
 Claude Code version is then distrusted: derived depth warns only), a one-line
 systemMessage says so.
@@ -181,13 +181,13 @@ def main():
                     f"is {how}, not exact. A checkpoint has not run this "
                     f"epoch. Run the checkpoint skill now; do not start new "
                     f"work. If the real window is larger, tell the operator: "
-                    f"CLAUDE_KIT_CONTEXT_WINDOW=<tokens> in the launch "
+                    f"CONTEXT_GUARD_CONTEXT_WINDOW=<tokens> in the launch "
                     f"environment pins it, and the statusline plugin gives exact depth."},
             "systemMessage":
                 f"Context: {remaining:,} tokens left of {win:,} ({src}) — "
                 f"under the hard threshold ({th['hard']:,}); not blocked because "
                 f"the depth is {how}. Checkpoint now, or pin the window with "
-                f"CLAUDE_KIT_CONTEXT_WINDOW if {win:,} is wrong.",
+                f"CONTEXT_GUARD_CONTEXT_WINDOW if {win:,} is wrong.",
         })
         return
     if act == "hard":
