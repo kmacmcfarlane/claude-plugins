@@ -3,7 +3,8 @@
 
 Claude Code hands the status line `context_window.used_percentage` and
 `context_window_size` on every render -- the only place those exact figures are
-exposed. This prints a one-line gauge and writes the same numbers to this
+exposed. This prints a one-line gauge; run as the whole status line (not as a
+hub hook, see How it runs below) it also writes the same numbers to this
 session's sensor record, ${CLAUDE_CONFIG_DIR:-~/.claude}/statusline/sensor/
 <sid>.json (see sensor.py and references/sensor-contract.md), so hooks that
 never see the payload can act on exact depth.
@@ -39,16 +40,21 @@ walked lazily -- the direct parent's entry first, then one /proc read per
 further ancestor, stopping at the first entry for this session -- at most
 ANCESTORS reads and never a directory scan; any missing or malformed source
 just falls through. Without /proc (non-Linux) only the direct parent is
-checked, so the chain degrades to payload-only when a shell sits between the
-session and this script. Either name is sanitised before it is shown: runs of
+checked, so the chain degrades to payload-only when a shell or the hub sits
+between the session and this script. Either name is sanitised before it is shown: runs of
 whitespace or control characters collapse to one space (a peer or hook name is
 an arbitrary string set by another agent), invisible format characters (bidi
 overrides, zero-width spaces; Unicode category Cf) are dropped, and it is
 capped at NAME_MAX terminal columns.
 
-Installed by the plugin's SessionStart hook (session_start.py) on the first
-session, or by hand with the install-statusline skill; either writes:
-  "statusLine": {"type": "command", "command": "python3 /path/to/statusline.py"}
+How it runs. The statusline-hub plugin owns the `statusLine` entry: it writes
+the sensor record itself on every render, then runs this file as one of its
+display hooks with `--segment` (registered by session_start.py), and shows
+the line printed here. With `--segment` this file writes no sensor record -
+the hub's tee already did, before any hook started. Run without it (a
+`statusLine` entry an earlier version of this plugin installed, until the
+hub takes that entry over; or one set by hand), it is the whole status line:
+it writes the record, then prints the line.
 """
 import json, math, os, re, sys, time, unicodedata
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -56,6 +62,8 @@ import sensor as S
 
 WINDOWS = (("five_hour", "5h"), ("seven_day", "7d"), ("spend_limit", "$"))
 MAX_AHEAD = 366 * 86400  # a reset further out than this is not a window we know
+# Run as a statusline-hub display hook: the hub wrote the sensor record already.
+SEGMENT = "--segment" in sys.argv[1:]
 
 
 def countdown(secs):
@@ -163,7 +171,7 @@ def limits_record(rate_limits, now=None):
 
 
 REGISTRY_MAX_BYTES = 65536  # a registry entry is a few hundred bytes; cap the read
-ANCESTORS = 4  # python -> [sh ->] claude: how far up to look for the session pid
+ANCESTORS = 4  # python -> [hub ->] [sh ->] claude: how far up to look for the session pid
 EXPLICIT = ("user", "peer", "hook", "collision")  # nameSource values the operator set
 NAME_MAX = 60  # widest name shown, in terminal columns; wider ones end in an ellipsis
 SCAN_MAX = 8 * NAME_MAX  # code points kept from a name: a flood of combining marks ends here
@@ -281,8 +289,8 @@ def ancestor_pids():
 
     Lazy: each further ancestor costs one /proc read, taken only if the caller
     asks for it. Without /proc (non-Linux) the walk ends after the direct
-    parent, so a shell between the session and this script hides the registry
-    there and the name falls back to the payload.
+    parent, so a shell or the hub between the session and this script hides
+    the registry there and the name falls back to the payload.
     """
     pids, pid = [], os.getppid()
     for _ in range(ANCESTORS):
@@ -399,7 +407,7 @@ def main():
     if not isinstance(sid, str):
         sid = None
 
-    if sid:
+    if sid and not SEGMENT:
         try:
             exact = ({"pct": pct, "tokens": tok, "window": size, "at": now}
                      if pct is not None and size else None)

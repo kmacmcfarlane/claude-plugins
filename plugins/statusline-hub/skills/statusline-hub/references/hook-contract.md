@@ -87,7 +87,9 @@ it is refused.
 
 A manifest runs code as the user, so the hub counts one only when **all** of these hold.
 Otherwise it skips the manifest silently: nothing runs, and the line is unaffected.
-`/install-statusline-hub --status` says which rule a skipped manifest broke.
+`/install-statusline-hub --status` says which rule a skipped manifest broke. When a rule
+about the directories refuses every manifest, the hub's SessionStart also says so, once
+(§ 10).
 
 - `CFG/statusline-hub` and `hooks.d` are real directories, not symlinks, owned by the user
   running the hub, and **not writable by group or others**.
@@ -230,8 +232,23 @@ shows no health glyph.
 - The hub only runs hooks when it is the `statusLine` command: owner mode. With a foreign
   status line the hub stays deferred, and that renderer can still feed the sensor record
   through `hub tee` (the `statusline-hub` skill's recipes).
-- The `statusline` plugin's footer joins as a display hook in the feature after this one.
-  Until it writes `hooks.d/statusline.json` (kind `display`), the hub **never** takes the
-  slot from it and never races it for an empty slot. Doing either would drop the footer.
-  Once that manifest exists, the hub's SessionStart repoints a slot the statusline plugin
-  installed at the hub, and the footer keeps drawing through it.
+- The `statusline` plugin's footer is a display hook, the first to follow this contract:
+  its SessionStart writes `hooks.d/statusline.json` (kind `display`, command
+  `["python3", "<its hooks dir>/statusline.py", "--segment"]`, `timeout_ms` 250) every
+  session, and it writes no settings. With `--segment` the footer writes no sensor record,
+  since the hub wrote it before the hook started.
+- Until that manifest exists and is trusted, the hub **never** takes the slot from the
+  footer and never races it for an empty slot. Doing either would drop the footer. (It
+  does take an empty slot at once when every statusline install Claude Code records is a
+  version without `hooks/owner.py`: such a version never installs an entry of its own, so
+  there is nothing to wait for.) Once the manifest exists, the hub's SessionStart repoints
+  a slot the statusline plugin (or an older copy of its footer) installed at the hub, and
+  the footer keeps drawing through it. The slot changes hands once: nothing moves it back.
+  If an older session writes its stale settings back over the hub's entry, putting the
+  footer's earlier entry there again, the next session repoints it at the hub too.
+- A registry refused as a whole (§ 4: the config dir inside a git work tree, or the hub
+  dirs not private) runs no hooks, so it would draw no footer either; the hub's
+  SessionStart says so once, naming the directory and the reason.
+- A plugin disabled or uninstalled stops refreshing its manifest, so its hook keeps
+  running until the manifest is 14 days old (§ 8). To stop one at once, list it under
+  `disabled` in `config.json` (§ 9), or delete its manifest.

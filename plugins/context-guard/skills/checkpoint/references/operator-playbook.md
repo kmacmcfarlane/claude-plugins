@@ -67,7 +67,7 @@ auto-compact window: it defers only on the depth it used before the window mirro
 | "use a subagent to …" | read-heavy research, log digging, doc reading | returns 1–2K tokens; the reads never enter your window |
 | `Explore` / `Plan` agents | codebase survey before implementation | skip CLAUDE.md, cheap, read-only |
 | `/context` | any time you want the truth | free |
-| status line | always | shows `used_percentage`; when the `statusline` plugin is installed its reading wins over the gate's derived window and cross-checks it |
+| status line | always | shows `used_percentage`; when the `statusline-hub` plugin records it (installing `statusline` brings it) its reading wins over the gate's derived window and cross-checks it |
 
 Environment & knobs: `/autocompact 900k` lowers the auto-compact trigger so the gate's deferral
 is provably safe (`CLAUDE_CODE_AUTO_COMPACT_WINDOW=900000` per project — plain integer, `900k`
@@ -121,7 +121,7 @@ A hard block needs a fresh exact reading or a resolved derived window (the mirro
 Code's own window selection); an inferred depth or an unresolved derived one only warns. So a
 wrong block means a fresh-but-wrong record, e.g. one written just before a compaction, or a
 derived window that drifted from a newer Claude Code (the block message names the source:
-`derived`; with the `statusline` plugin installed a drift is caught, logged to
+`derived`; with a sensor record from `statusline-hub` a drift is caught, logged to
 `claude-kit/context-gate/window-mismatch.jsonl`, and that version drops to warn-only). Three
 escape hatches:
 1. Pin the window: `CONTEXT_GUARD_CONTEXT_WINDOW=1000000` (tokens) in the environment Claude

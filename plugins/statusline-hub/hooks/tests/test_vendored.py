@@ -1,13 +1,18 @@
-"""Parity of the hub's other vendored copies with the statusline plugin.
+"""Parity of the hub's other vendored copy with the statusline plugin.
 
-owner.py carries statusline's settings-ownership code (the atomic,
-formatting-preserving statusLine write, the data-dir lookup, the owner.json
-marker) and housekeeping.py its sensor-record prune, both verbatim, because a
+housekeeping.py carries statusline's sensor-record prune verbatim, because a
 plugin may not import another plugin's code. Here each copied definition is
-compared, as parsed code, with its source; every definition between a copy's
-VENDORED markers must be on the list; and every name the copied functions
-reach in their source is copied too, or is one the hub defines for itself on
-purpose (PLUGIN, SCRIPT, classify). The tee's own copy is test_parity.py's.
+compared, as parsed code, with its source; every definition between the
+copy's VENDORED markers must be on the list; and every name the copied
+functions reach in their source is copied too, or is one the hub imports from
+its tee copy (held to its source by test_parity.py). The tee's own copy is
+test_parity.py's.
+
+owner.py was a copy of statusline's settings-ownership code too, until the
+statusline plugin handed the slot to the hub and stopped writing settings:
+its owner.py is gone, and the hub's is the only copy (test_owner.py). Here
+that is held too: no VENDORED markers left in owner.py, and no owner.py in
+the statusline plugin for it to drift from.
 
 Runs only in the source repo, where plugins/statusline/hooks/ sits beside this
 plugin; an installed copy skips it."""
@@ -16,21 +21,11 @@ import ast, os, unittest
 import helpers
 
 SL_HOOKS = os.path.join(os.path.dirname(helpers.PLUGIN), "statusline", "hooks")
-SL_OWNER = os.path.join(SL_HOOKS, "owner.py")
 SL_SENSOR = os.path.join(SL_HOOKS, "sensor.py")
-BESIDE = os.path.isfile(SL_OWNER) and os.path.isfile(SL_SENSOR)
+BESIDE = os.path.isfile(SL_SENSOR)
 OWNER = os.path.join(helpers.HOOKS, "owner.py")
 HOUSEKEEPING = os.path.join(helpers.HOOKS, "housekeeping.py")
 
-FROM_OWNER = ("MARKER", "MARKER_V", "SettingsError", "Changed", "hooks_dir", "plugin_root",
-              "data_root", "data_dir", "installed_by_record", "_SH_SPECIAL", "_parse",
-              "_read_text", "read_settings", "_default_mode", "atomic_write_text",
-              "atomic_write_json", "_INDENT", "_ESCAPED", "_layout", "dumps_like", "_WS",
-              "_MISSING", "_skip_ws", "_end_of_string", "_end_of_value", "_members", "_lead",
-              "splice_key", "_splice_settings", "ReadOnly", "_crlf", "write_settings",
-              "enabled_in", "read_marker", "write_marker", "_same_path",
-              "ensure_hooks_symlink")
-OWN_ON_PURPOSE = {"PLUGIN", "SCRIPT", "classify"}
 FROM_SENSOR = ("PRUNE_DAYS", "PRUNE_EVERY_S", "TMP_STALE_S", "PRUNE_STAMP", "_TMP",
                "prune_tmp", "prune")
 # names the pruning reaches in sensor.py that the hub imports from its tee copy
@@ -75,8 +70,10 @@ class Drift(unittest.TestCase):
                                  f"{name} drifted from {os.path.basename(src)}")
         self.assertEqual(sorted(defs(mine_path, *region(mine_path))), sorted(names))
 
-    def test_owner_copy_matches(self):
-        self.check(OWNER, SL_OWNER, FROM_OWNER)
+    def test_owner_is_no_longer_a_copy(self):
+        with open(OWNER, encoding="utf-8") as f:
+            self.assertNotIn("# -- VENDORED", f.read())
+        self.assertFalse(os.path.exists(os.path.join(SL_HOOKS, "owner.py")))
 
     def test_prune_copy_matches(self):
         self.check(HOUSEKEEPING, SL_SENSOR, FROM_SENSOR)
@@ -94,9 +91,6 @@ class Drift(unittest.TestCase):
                     if n.id not in stop:
                         todo.append(n.id)
         return seen - set(names)
-
-    def test_owner_copy_is_complete(self):
-        self.assertEqual(self.reached(SL_OWNER, FROM_OWNER, OWN_ON_PURPOSE), OWN_ON_PURPOSE)
 
     def test_prune_copy_is_complete(self):
         self.assertEqual(self.reached(SL_SENSOR, FROM_SENSOR, FROM_TEE), FROM_TEE)

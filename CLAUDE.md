@@ -34,12 +34,12 @@ plugins/
     hooks/             # Checkout guard + hooks.json + unit tests
     skills/
       sandbox/
-  statusline/          # Always-on status line + its settings entry (hook-owning)
-    hooks/             # statusline, sensor, owner, session_start (first-run install, takeover, self-heal, prune) + hooks.json + unit tests
+  statusline/          # Always-on status line footer, a statusline-hub display hook (hook-owning; hard-depends on statusline-hub)
+    hooks/             # statusline (renderer), sensor, session_start (registers the hub hook, prune) + hooks.json + unit tests
     skills/
-      install-statusline/  # installer script, references/sensor-contract.md
-  statusline-hub/      # The status-line slot, shared: owner-mode dispatcher + embed-mode tee (hook-owning)
-    hooks/             # hub (render), registry (hooks.d), tee, owner, session_start, housekeeping (prune) + hooks.json + unit tests
+      install-statusline/  # coworker install, hands the slot to install-statusline-hub; references/sensor-contract.md
+  statusline-hub/      # The status-line slot, shared: owner-mode dispatcher + embed-mode tee (hook-owning; owns the statusLine entry)
+    hooks/             # hub (render), registry (hooks.d), tee, owner, session_start (install, takeover, heal, refusal notice), housekeeping (prune) + hooks.json + unit tests
     skills/
       statusline-hub/  # embed recipes (ccstatusline, Starship, shell wrapper), references/hook-contract.md
       install-statusline-hub/  # installer script (install, remove, replace, --status)
@@ -85,8 +85,8 @@ Where a new or moved thing goes. The full decision tree is in
 
 1. Alters harness behavior (hooks, status line, `settings.json` writes)? → only a plugin
    whose stated aim *is* that behavior (`plugins/context-guard/` for the context system,
-   `plugins/statusline/` for the status line and its settings entry, `plugins/statusline-hub/`
-   for sharing the status-line slot, `plugins/sandbox/` for the checkout/worktree guard).
+   `plugins/statusline/` for the status line's footer, `plugins/statusline-hub/` for the
+   status-line slot and its settings entry, `plugins/sandbox/` for the checkout/worktree guard).
    Never attach it to a knowledge skill.
 2. Pure stack/tool knowledge? → the expertise family, in its own marketplace (`expertise`,
    repo `claude-expertise`) — not this repo.

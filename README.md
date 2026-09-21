@@ -81,10 +81,10 @@ dependency is marked (hard) here.
 |---|---|---|---|
 | …project context for the `ai-scripts` Python CLI utilities | `ai-scripts` | **moved** to the expertise marketplace (local scaffold, remote pending) | — |
 | …structured product research in a web chat session | `chat` | current; *family home under review* | — |
-| …to survive the finite context window (gate, checkpoint, rehydration, token-spend report) | `context-guard` | **current** | `statusline` (soft; exact depth when installed) |
-| …an always-on status line (context left, plan usage, model, session name) | `statusline` | **current** | `context-guard` (soft; epoch and checkpoint thresholds in the gauge when installed) |
-| …to share the status-line slot, so the data Claude Code hands the status line reaches the tools that read it whatever renders the line (the hub owns the slot and runs the hooks other plugins register, or its `tee` feeds the record from another renderer) | `statusline-hub` | **current** | `statusline` (soft; the hub waits for its footer to register as a hub display hook, then takes over its slot) |
-| …a plan before you code: investigate → reviewed plan → verified implementation, and a standing librarian that takes custody of a repo's work (files, dispatches, reviews, lands) | `dev-flow` | **current** | `work-items` (soft; `librarian-mode` and `dev-cycle` find `wi` via the repo tree, or the installed plugin's copy; `dev-cycle` runs without it on a scratchpad record), `statusline` (soft; the fable fallback in `librarian-mode` and `dev-cycle` reads its rate-limit reset times), `context-guard` (soft; `investigate` offers a checkpoint-then-implement path when its checkpoint skill is present; `librarian-mode` answers its gate advisories with a checkpoint and weighs its manifest and ledger when it rehydrates; the fable fallback reads reset times from its older state record) |
+| …to survive the finite context window (gate, checkpoint, rehydration, token-spend report) | `context-guard` | **current** | `statusline-hub` (soft; exact depth from the sensor record it writes, when it owns the status-line slot or tees from another renderer; installing `statusline` brings it) |
+| …an always-on status line (context left, plan usage, model, session name) | `statusline` | **current** | `statusline-hub` (hard; the hub owns the status-line slot, and the footer draws as one of its display hooks), `context-guard` (soft; epoch and checkpoint thresholds in the gauge when installed) |
+| …to share the status-line slot, so the data Claude Code hands the status line reaches the tools that read it whatever renders the line (the hub owns the slot and runs the hooks other plugins register, or its `tee` feeds the record from another renderer) | `statusline-hub` | **current** | `statusline` (soft; its footer is the hub's first display hook, and the hub takes over a slot an earlier `statusline` version installed once that footer has registered) |
+| …a plan before you code: investigate → reviewed plan → verified implementation, and a standing librarian that takes custody of a repo's work (files, dispatches, reviews, lands) | `dev-flow` | **current** | `work-items` (soft; `librarian-mode` and `dev-cycle` find `wi` via the repo tree, or the installed plugin's copy; `dev-cycle` runs without it on a scratchpad record), `statusline-hub` (soft; the fable fallback in `librarian-mode` and `dev-cycle` reads rate-limit reset times from the sensor record it writes; installing `statusline` brings it), `context-guard` (soft; `investigate` offers a checkpoint-then-implement path when its checkpoint skill is present; `librarian-mode` answers its gate advisories with a checkpoint and weighs its manifest and ledger when it rehydrates; the fable fallback reads reset times from its older state record) |
 | …repo-durable work items and a pluggable work source | `work-items` | **current** | — |
 | …isolated execution for agent sessions (containers, and the checkout/worktree convention) | `sandbox` | **current** | claude-sandbox repo (external) |
 | …unattended agent loops over a backlog ("ralph") | `ralph` | **current** | claude-sandbox repo (external; its `init-ralph` seeds `backlog.py`, and the loops run in its containers), `sandbox` (soft; its skill bootstraps and troubleshoots those containers), `work-items` (soft; the `wi` ↔ `backlog.yaml` bridge, when both stores are present) |
@@ -107,8 +107,8 @@ The contributor decision tree. Answer in order; the first match wins.
 
 1. **Does it alter harness behavior?** Hooks, a status line, `settings.json` writes,
    background state. → It belongs *only* in a plugin whose stated aim is that behavior
-   (today `context-guard` for the context system, `statusline` for the status line and its
-   setting, `statusline-hub` for sharing the status-line slot, `sandbox` for the
+   (today `context-guard` for the context system, `statusline` for the status line's
+   footer, `statusline-hub` for the status-line slot and its setting, `sandbox` for the
    checkout/worktree guard). Never bolt it onto a knowledge skill
    (principle 3).
 2. **Is it pure stack/tool knowledge** — "make Claude good at X"? → Expertise family, which
@@ -256,9 +256,10 @@ Soft dependency on `work-items`: the flow threads work items through `wi` when a
 present, and degrades to plain investigation series when it is not; `dev-cycle` then keeps
 its record in the session scratchpad. `librarian-mode` drives `wi` throughout, found through
 the repo's own `plugins/*/skills/work-items` tree or the installed plugin's copy; without
-either it stops at start and says to install `work-items`. Soft dependency on `statusline`:
-when `librarian-mode` or `dev-cycle` cannot dispatch to fable, it reads the exhausted usage
-window's reset time from the status line's sensor record; without it the reset time is
+either it stops at start and says to install `work-items`. Soft dependency on
+`statusline-hub`: when `librarian-mode` or `dev-cycle` cannot dispatch to fable, it reads
+the exhausted usage window's reset time from the sensor record the hub writes on every
+status-line render (installing `statusline` brings the hub); without it the reset time is
 unknown and the fallback runs on opus at once. Soft dependency on `context-guard`:
 `investigate` offers a checkpoint, `/clear`, then implement path when the checkpoint skill
 is in the session; `librarian-mode` answers the context gate's advisories with a
@@ -307,8 +308,9 @@ It also carries `hooks/` — the depth gate, the ledger, the SessionStart rehydr
 `usage-report` skill has its own suite:
 `cd plugins/context-guard/skills/usage-report && python3 -m unittest discover -s tests -q`.
 
-Soft dependency on `statusline`: its sensor record gives the gate exact depth. Without it the
-gate derives the window itself, mirroring Claude Code's own selection logic from the
+Soft dependency on `statusline-hub`: the sensor record it writes on every status-line render
+(as the `statusLine` command, or through its tee from another renderer; installing
+`statusline` brings the hub) gives the gate exact depth. Without it the gate derives the window itself, mirroring Claude Code's own selection logic from the
 transcript's model line and the `CLAUDE_CODE_*` window variables (`hooks/window_rules.py`).
 A hard block needs an exact depth, or a derived one whose every input was observed; a derived
 window that depends on something a hook cannot see (SDK betas, a 3P provider or gateway, an
@@ -322,7 +324,8 @@ keeps rendering. While such an entry is active and `statusline` is not installed
 shows a "moved to the `statusline` plugin" notice at most once a week.
 
 Upgrading from `claude-kit`: install `context-guard` for the context system. For the status
-line, install `statusline` and run its `/install-statusline`, which replaces the old entry.
+line, install `statusline`: the `statusline-hub` it brings takes over the old entry once the
+footer has registered.
 Hook state stays in `~/.claude/claude-kit/` (a historical directory name,
 kept deliberately — renaming it would be a migration for cosmetics). See
 [Migrating from `claude-kit`](#migrating-from-claude-kit) for the whole-machine checklist.
@@ -330,36 +333,40 @@ kept deliberately — renaming it would be a migration for cosmetics). See
 ### statusline
 
 An always-on status line: a one-line footer with context left (bar, percent, tokens), plan
-usage limits with reset countdowns (Pro/Max), model, effort and session name. Installable on
-its own — the plugin to hand a coworker who wants only the footer.
+usage limits with reset countdowns (Pro/Max), model, effort and session name — the plugin to
+hand a coworker who wants the footer. It draws through `statusline-hub`, which installs with
+it.
 
 | Skill | Description |
 |---|---|
-| `install-statusline` | Optional: install into another scope, remove, or replace a status line another tool set; coworker install steps |
+| `install-statusline` | The coworker install; hands moving, removing or replacing the status line to `/install-statusline-hub` |
 
-It sets itself up: on the first session its SessionStart hook installs the `statusLine`
-entry into the settings file where the plugin is enabled (user settings, or the per-user
-`.claude/settings.local.json` when only a project enables it, and only when git ignores that
-file) and says so in one line. It never writes over a status line another tool set; it says
-so once and leaves it. A settings file it cannot use (invalid, read-only, not git-ignored)
-is named once, with the fix, and retried quietly. It takes
-over an entry left by the older copy of this status line (recognised by its path, marker or
-not), puts the entry back when a stale session's settings write drops it, never re-adds one
-the user removed, and prunes sensor files older than 30 days.
+It writes no settings. On every session start its SessionStart hook registers the footer as
+the hub's first display hook (`~/.claude/statusline-hub/hooks.d/statusline.json`, per the
+hub's hook contract), and the hub, which owns the `statusLine` slot, runs it on every render.
+A slot that an earlier version of this plugin installed keeps running the footer directly
+until the hub takes it over, once, after the footer has registered: the footer draws on both
+sides of the change, and nothing moves the slot back. The hook also prunes sensor files older
+than 30 days.
 
-It also carries `hooks/` — `statusline.py` (the renderer), `sensor.py` (its per-session sensor
-record, `~/.claude/statusline/sensor/<session>.json`, and its pruning), `owner.py` (the settings
-entry's ownership and its atomic, formatting-preserving write) and `session_start.py` (the
-first-run install, takeover and self-heal above), after the `current-hooks` link command — with
-its unit tests
+It also carries `hooks/` — `statusline.py` (the renderer; with `--segment`, as the hub runs
+it, it writes no sensor record, since the hub already did; run directly, as the older entry
+does, it writes the record itself), `sensor.py` (the sensor record's writer, its pruning, and
+the gauge policy) and `session_start.py` (the hook registration and prune above), after the
+`current-hooks` link command that keeps an older entry's path current — with its unit tests
 (`cd plugins/statusline/hooks && python3 -m unittest discover -s tests -q`). The data
 contract both ways is `skills/install-statusline/references/sensor-contract.md`; its
 `test_contract.py` checks parity with `context-guard` whenever both sit in this repo.
 
-Soft dependency on `context-guard`: when it is installed and active in the session, the gauge
-colours by its published thresholds and shows its epoch and `checkpoint DUE` / `HARD gate`
-labels; without it, default thresholds, no epoch, no labels, and nothing is written outside
-`~/.claude/statusline/`.
+Hard dependency on `statusline-hub` (principle 4): the footer has no function without it.
+This plugin no longer installs a status line of its own, so without the hub nothing runs the
+footer. `/plugin update` of a version from before the dependency does not install the hub
+(a Claude Code bug), so the hook checks Claude Code's install records: with no
+`statusline-hub` there, it says once to run `/plugin install statusline@kmacmcfarlane`
+again. Soft dependency on `context-guard`: when it is installed and active in the session,
+the gauge colours by its published thresholds and shows its epoch and `checkpoint DUE` /
+`HARD gate` labels; without it, default thresholds, no epoch, no labels, and nothing is
+written outside `~/.claude/statusline/` and the hub's registry.
 
 ### statusline-hub
 
@@ -390,15 +397,20 @@ where the plugin is enabled (the same scope rules as `statusline`: user settings
 project's git-ignored `.claude/settings.local.json`) and says so in one line. It never writes
 over a status line another tool set: it says so once, pointing at embed mode and the
 installer. It restores its entry when a stale session's settings write drops it, and never
-re-adds one the user removed. It leaves the `statusline` plugin's footer in place until that
-plugin registers as a hub display hook (planned next), then takes the slot over with the
-footer drawing through it. The same hook prunes sensor records older than 30 days (the tee's
-included), dead hook manifests (not refreshed for 14 days), stale caches and logs.
+re-adds one the user removed, including a `statusline` footer removed before the hub
+arrived. It leaves the `statusline` plugin's footer in place until that plugin registers as
+a hub display hook (its first session start), then takes the slot over once, with the footer
+drawing through it. When it refuses every registered hook for a reason that lies with its
+directories (a config dir inside a git repository, say), it says so once. The same hook
+prunes sensor records older than 30 days (the tee's included), dead hook manifests (not
+refreshed for 14 days), stale caches and logs.
 
-Soft dependency on `statusline`: the hub reads that plugin's `owner.json` marker, its
-`enabledPlugins` entry and its `statusLine` command, but only to leave its footer alone
-until the footer registers as a hub display hook, and then to take over its slot. Without
-`statusline` there is nothing to wait for, and the hub takes a free slot straight away.
+Soft dependency on `statusline`: its footer is the hub's first display hook. The hub also
+reads the `owner.json` marker an earlier `statusline` version left, its `enabledPlugins`
+entry and its `statusLine` command, but only to leave the footer alone until it registers
+as a hub display hook, and then to take over its slot (or an older copy's, from
+`context-guard`'s or `claude-kit`'s data dir). Without `statusline` there is nothing to wait
+for, and the hub takes a free slot straight away, drawing only the hooks others register.
 
 It carries `hooks/`, with its unit tests
 (`cd plugins/statusline-hub/hooks && python3 -m unittest discover -s tests -q`):
@@ -409,10 +421,13 @@ It carries `hooks/`, with its unit tests
   logic;
 - `housekeeping.py`, the prune.
 
-`tee.py`'s writer, `owner.py`'s settings write and `housekeeping.py`'s sensor prune are
-vendored copies of `statusline`'s (a plugin may not import another's code).
-`tests/test_parity.py` and `tests/test_vendored.py` fail when a copy drifts, whenever both
-plugins sit in this repo. Planned: a consent-only wrap mode for closed renderers.
+`tee.py`'s writer and `housekeeping.py`'s sensor prune are vendored copies of
+`statusline`'s (a plugin may not import another's code). `tests/test_parity.py` and
+`tests/test_vendored.py` fail when a copy drifts, whenever both plugins sit in this repo.
+`owner.py`'s settings write began as a copy of `statusline`'s too; since that plugin stopped
+writing settings it lives here only. `tests/test_handover.py` runs both plugins' session
+starts together through the slot's handover. Planned: a consent-only wrap mode for closed
+renderers.
 
 ### sandbox
 
@@ -511,12 +526,15 @@ Or in `.claude/settings.json` (`~/.claude/settings.json` for user scope):
     }
   },
   "enabledPlugins": {
-    "statusline@kmacmcfarlane": true
+    "statusline@kmacmcfarlane": true,
+    "statusline-hub@kmacmcfarlane": true
   }
 }
 ```
 
-Auto-install from `enabledPlugins` is unverified; the reliable path is still the explicit
+List `statusline-hub` beside `statusline`: the footer draws only through it, and enabling
+`statusline` from a settings file is not known to enable its dependency too. Auto-install from
+`enabledPlugins` is unverified; the reliable path is still the explicit
 `/plugin install statusline@kmacmcfarlane` below.
 
 ### Install plugins
@@ -526,9 +544,15 @@ Auto-install from `enabledPlugins` is unverified; the reliable path is still the
 /plugin install statusline@kmacmcfarlane
 ```
 
-After installing `statusline`, start a new session: it adds the footer to your settings and
-says so, and the footer shows from the session after that. `/install-statusline` is only for
+Installing `statusline` installs `statusline-hub` with it. Start a new session: the hub puts
+itself in the status-line slot and says so (in the first session, or the second when the
+footer had not registered yet), and the footer shows from the session after that.
+`/install-statusline-hub` (or `/install-statusline`, which hands off to it) is only for
 another scope, removal, or replacing a status line another tool set.
+
+Upgrading from a `statusline` that predates the hub: `/plugin update` does not install a
+new dependency, so run `/plugin install statusline@kmacmcfarlane` again (the footer says so
+at session start when the hub is missing).
 
 To keep this marketplace itself up to date automatically, see "Keep it updated" in the
 `install-statusline` skill.
@@ -552,12 +576,12 @@ The `claude-kit` plugin is gone from the marketplace. Per machine, once:
    `sandbox`'s) would otherwise all fire in that session — two gates, two relays, two
    guards. It no longer exists in the marketplace, so removing it also stops the duplicate
    skills showing up.
-4. **Take over the status line:** install `statusline` and start one session. Its
-   SessionStart hook recognises an entry that points into `plugins/data/claude-kit-*/` or
-   `plugins/data/context-guard-*/` by its path (no marker needed), repoints it at the
-   `statusline` plugin, retires the old installer markers so no older heal restores the old
-   entry, and says `took over an existing status line setting in PATH`. Verify the gauge
-   renders in the next session. (`/install-statusline` does the same by hand.)
+4. **Take over the status line:** install `statusline` (it brings `statusline-hub`) and
+   start a session or two. Once the footer has registered with the hub, the hub's
+   SessionStart recognises an entry that points into `plugins/data/claude-kit-*/` or
+   `plugins/data/context-guard-*/` by its path (no marker needed), repoints it at the hub,
+   and says `took over the status line slot in PATH`. Verify the gauge renders in the next
+   session. (`/install-statusline-hub --replace` does it by hand.)
 5. **Expertise packs** (`goa`, `playwright`, `musubi-tuner`, `ai-scripts`) arrive when the
    `claude-expertise` repo gains a remote and that marketplace is registered. Until then they
    are not installable anywhere — this is the one gap the refactor leaves open.

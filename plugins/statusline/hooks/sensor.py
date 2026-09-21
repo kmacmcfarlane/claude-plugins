@@ -5,8 +5,9 @@ tests/test_contract.py enforces parity with the gauge publisher's own copy when
 both plugins sit side by side in the source repo.
 
 The sensor record: ${CLAUDE_CONFIG_DIR:-~/.claude}/statusline/sensor/<sid>.json
-(v1: `exact`, `rate_limits`), written by statusline.py and by the
-statusline-hub plugin's tee (a vendored copy of this writer). No lock: a
+(v1: `exact`, `rate_limits`), written by the statusline-hub plugin's render
+and tee (a vendored copy of this writer), and by statusline.py only when it
+runs as the whole status line rather than as a hub display hook. No lock: a
 render writes a unique temp file in the same dir (O_EXCL, 0600) and
 os.replace()s it, so a reader never sees a torn file. Overlapping writes of
 one session are last-writer-wins; each merges from what it read (a render

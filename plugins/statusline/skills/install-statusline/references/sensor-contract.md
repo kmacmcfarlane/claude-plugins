@@ -24,9 +24,12 @@ No id can name a path outside its directory.
 
 ## 2. The sensor record (status line → any reader)
 
-- Path: `CFG/statusline/sensor/<safe_sid>.json`. It has two writers, both with the rules below: the
-  status line, and `statusline-hub tee` (the `statusline-hub` plugin's command, for a status
-  line drawn by another renderer). The directory is created 0700 and files are 0600.
+- Path: `CFG/statusline/sensor/<safe_sid>.json`. Its writers all follow the rules below:
+  the `statusline-hub` plugin, before its display hooks run on each render it owns and
+  through its `tee` command for a status line another renderer draws; and the status line
+  itself, only when it runs as the whole status line (an entry set before the hub took the
+  slot over, or one set by hand). Run as the hub's display hook, it writes nothing. The
+  directory is created 0700 and files are 0600.
 - Write: a unique temp file in the same directory (`.<safe_sid>.<pid>.<hex>.tmp`, created
   exclusively), then `os.replace`. There is no lock: a reader never sees a torn file;
   interleaved writes are last-writer-wins, and the `at` check stops an older render that

@@ -1,6 +1,6 @@
 {
   "name": "context-guard",
-  "description": "Context survival for long sessions — depth gate, checkpoint workflow, session rehydration, and token-spend reporting from the local transcripts (soft dependency: statusline, for exact depth).",
+  "description": "Context survival for long sessions — depth gate, checkpoint workflow, session rehydration, and token-spend reporting from the local transcripts (soft dependency: statusline-hub, for exact depth from the sensor record it writes; installing statusline brings it).",
   "author": {
     "name": "Kyle McFarlane"
   },

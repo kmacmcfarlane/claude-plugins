@@ -2,49 +2,74 @@
 """SessionStart: keep the hub in the statusLine slot where it belongs, then prune.
 
 Stdlib only. Never raises, never exits non-zero, and prints exactly one JSON
-object: {} or {"systemMessage": "statusline-hub: <one line>"}. Settings are
+object: {} or {"systemMessage": "statusline-hub: <one line>"} (the slot's
+message and the refusal notice below, when both fire, share it). Settings are
 written only through owner.write_settings (only the statusLine key, atomic, a
 read-only file refused), and never over an entry some other tool installed.
 
-Ported from the statusline plugin's session_start.py; the states in
-<data>/owner.json are the same (see owner.py):
+Ported from the statusline plugin's session_start.py, from before that
+plugin handed the slot to the hub; the states in <data>/owner.json are the
+same (see owner.py):
 
 - installed - the marked settings file:
   - lost its statusLine (a stale session's settings write dropped it): put
     ours back;
   - holds ours: nothing;
-  - holds anything else (the statusline plugin's entry included): yield -
-    state `yielded`, said once, never fought.
+  - holds the statusline footer's own entry (a stale session wrote back the
+    settings it read before the takeover): repoint it at the hub, as the
+    takeover (a) does, once the footer is registered as a hub display hook
+    (until then it still draws the footer: look again next session);
+  - holds anything else: yield - state `yielded`, said once, never fought.
 - removed, yielded, deferred (or an owner.json it cannot read): nothing.
 - blocked: the work it resumes (a heal, or a first run) is retried quietly.
 - no owner.json (first run):
   a. takeover from the statusline plugin - a settings file its owner.json
-     marks `installed` still holds its entry. The hub repoints that entry at
-     itself only once the statusline plugin has registered itself as a hub
-     display hook (a trusted hooks.d/statusline.json of kind display), so the
-     footer keeps drawing through the hub. Until then (a statusline plugin
-     that predates its hook mode) the hub leaves the slot alone, writes no
-     marker and says nothing: it looks again next session.
+     (written by the versions that still owned the slot) marks `installed`
+     still holds its entry. The hub repoints that entry at itself only once
+     the statusline plugin has registered itself as a hub display hook (a
+     trusted hooks.d/statusline.json of kind display), so the footer keeps
+     drawing through the hub. Until then (the statusline plugin's hook runs
+     alongside this one, so on the first session after an upgrade its
+     manifest may not be there yet; or a version that predates its hook
+     mode) the hub leaves the slot alone, writes no marker and says
+     nothing: it looks again next session. The statusline plugin itself
+     writes no settings, so the slot moves once and never back.
   b. first-run install - into the scope where this plugin is enabled (user
      settings, else a project's git-ignored .claude/settings.local.json), when
      none of the competing files sets a statusLine. One set by another tool
      makes the state `deferred`, said once (with the embed-mode pointer),
-     never overwritten. The statusline plugin's entry there is handled as in
-     (a). And while the statusline plugin is enabled there and still about to
-     install itself (no marker yet, or one saying installed or blocked), the
-     hub waits the same way rather than race it for an empty slot.
+     never overwritten. The statusline footer's entry there (the statusline
+     plugin's, or an older copy's) is handled as in (a). An empty slot the
+     user emptied by removing the statusline footer (its marker says
+     `removed` for that file) stays empty: state `removed`, said once. And
+     while the statusline plugin is enabled there but not yet registered as
+     a hook (no marker, or one saying installed or blocked: a version that
+     may still install itself), the hub waits the same way rather than race
+     it for an empty slot - unless every statusline install Claude Code
+     records (<config>/plugins/installed_plugins.json) is a version without
+     hooks/owner.py, which could not install itself: then nothing is
+     coming, and the hub takes the slot on the first session.
   The entry is written only once the current-hooks link resolves.
 
 A settings file it must use but cannot - not valid JSON, read-only,
 unwritable, a project settings.local.json git does not ignore - makes the
 state `blocked`, said once with the fix; later sessions retry quietly.
 
-Finally the prune pass (housekeeping.py): sensor records untouched for 30
+Then the prune pass (housekeeping.py): sensor records untouched for 30
 days (the hub's tee writes them too), dead hooks.d manifests, stale last-good
 cache and logs, orphaned temp files. It also creates the hub's hooks.d (0700)
 so a plugin registering a hook finds it private.
+
+Finally the refusal notice: when manifests sit in hooks.d but the registry
+refuses every one of them for a reason that lies with the directory, not the
+manifest - the config dir inside a git work tree, or the hub dir or hooks.d a
+symlink, someone else's, or writable by others - the hub says so once, naming
+the directory and the reason (a stamp in its data dir remembers the reason;
+it clears when the refusal does, so a new refusal is said again). Without
+it such a machine would show no hooks and say nothing, since the renders
+cannot speak and --status is only read on request.
 """
-import json, os, subprocess, sys
+import json, os, stat, subprocess, sys
 
 PREFIX = "statusline-hub: "
 GIT_TIMEOUT_S = 2
@@ -154,6 +179,13 @@ def heal(owner, data, marker):
     kind = owner.classify(_read(owner, path).get("statusLine"))
     if kind == "own":
         return None
+    if kind == "statusline":
+        if not statusline_hooked() or not _script_ready(owner, data):
+            raise Wait()
+        _put(owner, data, path, {"statusline"})
+        return (f"restored the status line in {path} (an older session's settings "
+                f"write had put the footer's earlier entry back; it draws through the "
+                f"hub).")
     if kind != "absent":
         owner.write_marker(data, "yielded", path, owner.command_for(data))
         return (f"the statusLine in {path} was changed by something else; left "
@@ -207,10 +239,32 @@ def _target(owner, user, proj):
     return (local, [user, shared, local], proj) if on else None
 
 
+def _statusline_installs_only_hooks(owner):
+    """Whether Claude Code records at least one statusline@ install and none
+    of them ships hooks/owner.py - every installed version registers as a hub
+    hook and never installs its own entry. Key names and install paths only;
+    False when the records cannot be read."""
+    try:
+        rec = os.path.join(owner.sensor.base_dir(), "plugins", "installed_plugins.json")
+        if not stat.S_ISREG(os.stat(rec).st_mode):      # a FIFO would hang the hook
+            return False
+        with open(rec, encoding="utf-8") as f:
+            recs = json.load(f).get("plugins")
+        paths = [e.get("installPath") for k, v in recs.items()
+                 if isinstance(k, str) and k.startswith("statusline@")
+                 for e in (v if isinstance(v, list) else ()) if isinstance(e, dict)]
+        return bool(paths) and all(
+            isinstance(p, str) and p and os.path.isdir(os.path.join(p, "hooks")) and
+            not os.path.lexists(os.path.join(p, "hooks", "owner.py")) for p in paths)
+    except Exception:
+        return False
+
+
 def _statusline_pending(owner, data, files):
     """Whether the statusline plugin is enabled in one of `files` and may yet
-    install its own entry (no marker, or installed / blocked)."""
-    if statusline_hooked():
+    install its own entry (no marker, or installed / blocked, and an
+    installed version that can)."""
+    if statusline_hooked() or _statusline_installs_only_hooks(owner):
         return False
     try:
         if not any(owner.enabled_for(owner.read_settings(p), owner.STATUSLINE)
@@ -221,6 +275,14 @@ def _statusline_pending(owner, data, files):
     markers = owner.statusline_markers(own=data)
     return not markers or any(m is None or m.get("state") in ("installed", "blocked")
                               for m in markers)
+
+
+def _statusline_removed(owner, data, path):
+    """Whether a statusline plugin marker says the user removed the footer
+    from the settings file at `path`."""
+    return any(m and m.get("state") == "removed" and isinstance(m.get("settings"), str)
+               and owner._same_path(m["settings"], path)
+               for m in owner.statusline_markers(own=data))
 
 
 def first_run(owner, data, proj):
@@ -244,15 +306,22 @@ def first_run(owner, data, proj):
             return None
         if kind == "statusline":
             return _from_statusline(owner, data, p, proj)
+    if _statusline_removed(owner, data, path):
+        owner.write_marker(data, "removed", path, owner.command_for(data))
+        return (f"the statusline footer was removed from {path} earlier, so the hub "
+                f"leaves that status line slot empty. To turn it on: "
+                f"/install-statusline-hub{_flag(owner, path)}")
     if _statusline_pending(owner, data, compete):
         raise Wait()
     if not _script_ready(owner, data):
         return None
     _guard_local(path, proj)
     _put(owner, data, path, {"absent"})
+    what = ("the statusline footer, and any other display hooks registered"
+            if statusline_hooked() else
+            "its registered display hooks (a blank line until one registers)")
     return (f"status line slot taken in {path}: from your next session the hub records "
-            f"each render for the tools that read it and draws its registered display "
-            f"hooks (a blank line until one registers). Undo: "
+            f"each render for the tools that read it and draws {what}. Undo: "
             f"/install-statusline-hub{_flag(owner, path)} --remove")
 
 
@@ -306,6 +375,63 @@ def run(inp):
                                 "restored" if resume == "installed" else "installed")
 
 
+NOTICE = "refusal-notice.json"
+# The registry's reasons about a directory itself (registry.private_dir_problem),
+# which the fix "a real directory of yours that only you can write" answers.
+DIR_REASONS = ("a symlink", "not a directory", "not owned by you", "group- or other-writable")
+
+
+def refusal():
+    """(directory, reason) when the registry refuses every manifest for a
+    reason that lies with a directory and at least one manifest is there to
+    refuse; else None."""
+    import registry
+    _, problems = registry.scan()
+    dirs = {os.path.abspath(registry.hub_dir()), os.path.abspath(registry.hooks_dir())}
+    hit = next(((d, why) for d, why in problems if os.path.abspath(d) in dirs), None)
+    if not hit:
+        return None
+    try:
+        names = [n for n in os.listdir(registry.hooks_dir())
+                 if n.endswith(".json") and not n.startswith(".")]
+    except OSError:
+        names = []
+    return hit if names else None
+
+
+def refusal_notice(data):
+    """The one-line refusal notice, once per reason (see the module doc), or
+    None. A notice it cannot record is withheld, so it never repeats every
+    session. Never raises."""
+    try:
+        if not data:
+            return None
+        import owner, registry
+        stamp = os.path.join(data, NOTICE)
+        hit = refusal()
+        if not hit:
+            if os.path.lexists(stamp):
+                os.unlink(stamp)
+            return None
+        d, why = hit
+        said = owner.sensor._load(stamp)
+        if isinstance(said, dict) and said.get("dir") == d and said.get("why") == why:
+            return None
+        owner.atomic_write_json(stamp, {"v": 1, "dir": d, "why": why}, mode=0o600)
+        if why == "inside a git work tree":
+            fix = (f"the config dir {owner.sensor.base_dir()} is inside a git work tree, "
+                   f"where a cloned repository could plant hooks. Keep CLAUDE_CONFIG_DIR "
+                   f"outside any repository (the default ~/.claude is exempt)")
+        elif why in DIR_REASONS:
+            fix = f"{d} is {why}; it must be a real directory of yours that only you can write"
+        else:   # a reason this text does not know: named as the registry gives it
+            fix = f"{d} is refused ({why})"
+        return (f"the hooks registered in {registry.hooks_dir()} are not run: {fix}. "
+                f"/install-statusline-hub --status lists them.")
+    except Exception:
+        return None
+
+
 def housekeeping(inp):
     import housekeeping as H, owner, registry
     registry.mkdirs_private(registry.hooks_dir())
@@ -334,6 +460,13 @@ def main():
             housekeeping(inp)
         except Exception:
             pass
+        try:
+            import owner
+            note = refusal_notice(owner.data_dir(__file__, scan=False))
+        except Exception:
+            note = None
+        if note:
+            msg = f"{msg} {note}" if msg else note
     except BaseException:
         msg = None
     try:

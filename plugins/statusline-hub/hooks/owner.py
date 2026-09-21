@@ -7,27 +7,47 @@ remove, replace). Both write settings only through write_settings().
 - Own entry: a command running .../plugins/data/statusline-hub-<marketplace>/
   current-hooks/hub.py - the update-stable path this plugin's SessionStart
   symlink keeps current.
-- The statusline plugin's entry (.../plugins/data/statusline-<marketplace>/
-  current-hooks/statusline.py): taken over only once the statusline plugin
-  has registered itself as a hub display hook (a trusted hooks.d/statusline.json
-  of kind display), so the footer keeps drawing - see session_start.py.
+- The statusline footer's own entry (.../plugins/data/statusline-<marketplace>/
+  current-hooks/statusline.py, as an earlier version of the statusline plugin
+  installed it; or the same under the claude-kit- or context-guard- data dir,
+  where older copies of that footer lived): taken over only once the
+  statusline plugin has registered itself as a hub display hook (a trusted
+  hooks.d/statusline.json of kind display), so the footer keeps drawing - see
+  session_start.py.
 - Anything else is foreign: never modified without the user's explicit consent
   (the installer's --replace).
 
-VENDORED. Everything between the VENDORED markers is a verbatim copy of the
-statusline plugin's hooks/owner.py (a plugin may not import another plugin's
-code): the atomic, formatting-preserving settings write (only the statusLine
-key changes; read afresh at write time; temp file + os.replace; a read-only
-file refused without consent; messages name paths, never values), the data-dir
-lookup and the owner.json marker. `sensor` is this plugin's tee module, which
-carries the same vendored helpers under the same names; PLUGIN below names
-this plugin, so the copies' docstrings that say "statusline" mean it.
-tests/test_parity.py fails when a copy drifts from its source.
+The settings write started as the statusline plugin's own; since that plugin
+draws as a hub display hook it writes no settings, and this is the only copy.
+It changes only the `statusLine` key: the file is resolved through symlinks
+(a dotfiles link stays a link), read afresh at write time, changed, and
+written to a temp file in the same dir with the original mode, then
+os.replace()d - never truncated in place. The new text splices just that
+key's member into the original text (splice_key), so a hand-formatted file
+keeps every other byte; when a splice is not provably right it falls back to
+re-serialising the whole file in its own layout (dumps_like). Nothing is
+written when nothing changes, and a read-only file is refused unless the
+caller has the user's consent to write it. Messages name paths only, never
+setting values. `sensor` is this plugin's tee module, which carries the
+sensor helpers (base_dir, _load, _is_v, _mkstemp).
 
-The marker, <plugin data>/owner.json, has the statusline plugin's shape and states:
+The marker, <plugin data>/owner.json (the statusline plugin's earlier
+versions kept one of the same shape in their own data dir, which the
+takeover reads):
   {"v": 1, "state": "installed" | "removed" | "yielded" | "deferred" | "blocked",
    "settings": "<abs path>", "command": "<our command>", "at": <epoch s>}
-(blocked adds "reason" and "resume"). It stores only our own command and a path.
+- installed: the entry in `settings` is ours; SessionStart restores it when a
+  stale session's settings write drops it.
+- removed: the user ran --remove (or had removed the statusline footer from
+  that file before the hub arrived); nothing re-adds it until they install
+  again.
+- yielded: something else replaced our entry; left alone for good.
+- deferred: a statusLine was already set on first run; never overwritten.
+- blocked: the settings file could not be used (not valid JSON, read-only,
+  unwritable, or a project file git does not ignore); said once, retried
+  quietly every session. Extra fields: "reason", and "resume" - the state
+  whose work is retried ("installed" for a heal, "new" for a first run).
+It stores only our own command and a path.
 """
 import json, os, re, stat, time
 
@@ -37,11 +57,14 @@ PLUGIN = "statusline-hub"
 SCRIPT = "hub.py"
 STATUSLINE = "statusline"
 
+# Data dirs the statusline footer's own entry has run from: the statusline
+# plugin's, and those of the plugins that shipped the footer before it.
+FOOTER_HOMES = (STATUSLINE, "context-guard", "claude-kit")
+
 _SHAPE = r'\s*python3\s+"?(?:[^"\\]|\\.)*/plugins/data/{}-[^/"]+/current-hooks/{}"?\s*'
 OWN_RE = re.compile(_SHAPE.format(re.escape(PLUGIN), re.escape(SCRIPT)))
-STATUSLINE_RE = re.compile(_SHAPE.format(re.escape(STATUSLINE), re.escape("statusline.py")))
-
-# -- VENDORED from statusline hooks/owner.py (verbatim) --
+STATUSLINE_RE = re.compile(_SHAPE.format(
+    "(?:" + "|".join(map(re.escape, FOOTER_HOMES)) + ")", re.escape("statusline.py")))
 
 MARKER = "owner.json"
 MARKER_V = 1
@@ -77,17 +100,16 @@ def data_root():
 def data_dir(script_path=None, scan=True):
     """This plugin's persistent data dir, first match of:
     1. $CLAUDE_PLUGIN_DATA (set for hooks; not in the Bash tool's environment);
-    2. the harness's install record: the `statusline@<mkt>` entry of
+    2. the harness's install record: the `statusline-hub@<mkt>` entry of
        <config>/plugins/installed_plugins.json whose installPath holds the
        code running now (script_path) names it, <data>/<id> with Claude
        Code's id rule (installed_by_record);
     3. the name derived from the plugin cache path this code runs from
-       (plugins/cache/<mkt>/statusline/);
-    4. with `scan`, the first <config>/plugins/data/statusline-* dir - a
-       guess when the plugin came from several marketplaces, so last. A dir
-       whose current-hooks link leads somewhere without SCRIPT belongs to
-       another plugin whose name extends this one (statusline-hub-<mkt>
-       sorts before statusline-<mkt>) and is never taken.
+       (plugins/cache/<mkt>/statusline-hub/);
+    4. with `scan`, the first <config>/plugins/data/statusline-hub-* dir -
+       a guess when the plugin came from several marketplaces, so last. A
+       dir whose current-hooks link leads somewhere without SCRIPT is not
+       this plugin's and is never taken.
     None when none of those applies."""
     d = os.environ.get("CLAUDE_PLUGIN_DATA")
     if d:
@@ -114,11 +136,12 @@ def data_dir(script_path=None, scan=True):
 
 
 def installed_by_record(path):
-    """The data dir of the `statusline@<mkt>` install whose installPath
+    """The data dir of the `statusline-hub@<mkt>` install whose installPath
     (in <config>/plugins/installed_plugins.json, `plugins` -> key -> list of
     records) contains `path`, or None. The dir is <config>/plugins/data/<id>,
     <id> being the key with every character outside [A-Za-z0-9_-] replaced
-    by "-" (Claude Code's own rule, so statusline@mkt -> statusline-mkt).
+    by "-" (Claude Code's own rule, so statusline-hub@mkt ->
+    statusline-hub-mkt).
     Reads key names and install paths only. Never raises."""
     try:
         rec = os.path.join(sensor.base_dir(), "plugins", "installed_plugins.json")
@@ -466,7 +489,7 @@ def write_settings(path, entry, allow_read_only=False, expect=None):
 
 def enabled_in(settings):
     """Whether a settings object enables this plugin (an `enabledPlugins` key
-    `statusline@<marketplace>` set to true). Reads key names only."""
+    `statusline-hub@<marketplace>` set to true). Reads key names only."""
     ep = settings.get("enabledPlugins") if isinstance(settings, dict) else None
     return isinstance(ep, dict) and any(
         isinstance(k, str) and k.startswith(PLUGIN + "@") and v is True
@@ -512,8 +535,6 @@ def ensure_hooks_symlink(data):
         pass
 
 
-# -- end VENDORED --
-
 
 def command_for(data):
     """`python3 "<data>/current-hooks/hub.py"`: the path in shell double
@@ -523,8 +544,9 @@ def command_for(data):
 
 
 def classify(entry):
-    """'absent', 'own', 'statusline' (the statusline plugin's own entry) or
-    'foreign' for a statusLine value."""
+    """'absent', 'own', 'statusline' (the statusline footer's own entry,
+    from the statusline plugin or an older copy - FOOTER_HOMES) or 'foreign'
+    for a statusLine value."""
     if entry is None:
         return "absent"
     cmd = entry.get("command") if isinstance(entry, dict) else None
