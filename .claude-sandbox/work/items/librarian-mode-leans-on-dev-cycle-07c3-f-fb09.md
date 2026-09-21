@@ -2,15 +2,14 @@
 id: librarian-mode-leans-on-dev-cycle-07c3-f-fb09
 title: librarian-mode leans on dev-cycle (07c3 F2)
 type: feature
-status: doing
+status: done
 priority: 2
 deps:
   - dev-flow-add-the-dev-cycle-skill-07c3-f1-325d
 parent: dev-flow-new-dev-cycle-skill-investigate-07c3
-owner: unknown@e3a28d2cc009
-claimed: 2026-09-19T05:57Z
 created: 2026-09-18
-updated: 2026-09-19
+updated: 2026-09-21
+closed: 2026-09-21
 ---
 
 07c3 plan §F2: 'The cycle' section with librarian bindings; moved references tombstoned; SKILL.md drops to ~11-12k chars. Reviewer gets a line-level preservation sweep. Size M-L; opus/opus.
@@ -30,6 +29,7 @@ updated: 2026-09-19
 
 ## Notes
 - 2026-09-19 claimed by unknown@e3a28d2cc009
+- 2026-09-21 done: f39a146
 
 ## Dispatch
 - decision (librarian): standalone /dev-cycle in a repo with a ## Librarian section honours its Scope/Exclude as the Ground binding (never refuses; never widens). Least surprise, keeps custody; no operator trade-off.
@@ -49,3 +49,9 @@ updated: 2026-09-19
 - dispatch: implementer opus — fix round 1 (resume, same tier)
 - round 1 fix 4e06111: spike claim/close added in dev-cycle Step 1 (standalone too) and The cycle; all lows/nits fixed; none declined. Implementer notes a mis-directed git add in the main checkout failed with nothing staged (verified: main clean).
 - dispatch: reviewer opus — round 2 (resume)
+
+## Review round 2 — CLEAR (opus) at 4e06111
+- every round-1 finding resolved; merge with F3 checked by meaning (orchestrated-mode block agrees with The cycle).
+- nits (author's call, landed as CLEAR): dev-cycle bindings.md:45 librarian Terminal action row lacks the non-main-base clause; SKILL.md:158-160 uneven wrap. Carried to cbea.
+## Landed
+- f39a146 (checks green in worktree and on main). 1 fix round.
