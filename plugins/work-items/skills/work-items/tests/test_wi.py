@@ -198,6 +198,17 @@ class TestImportTodo(WiTestCase):
         self.assertIn("plans/fix.md", refs)
         self.assertFalse(any(r.startswith("https:") for r in refs))
 
+    def test_multiline_titles_are_folded_to_one_line(self):
+        """import-todo titles never carry a line break into front matter: a
+        bold title wrapped across lines, or with CR/CRLF, is folded."""
+        todo = self.tmp / "TODO.md"
+        todo.write_bytes(b"- **Wrapped\r\n  title: here** \xe2\x80\x94 body\r\n"
+                         b"- **Second\r  one.** rest\n")
+        self.wi_ok(["import-todo", str(todo)])
+        titles = sorted(it["title"] for it in self.items())
+        self.assertEqual(titles, ["Second one", "Wrapped title: here"])
+        self.wi_ok(["lint"])
+
     def test_dry_run_writes_nothing(self):
         out = self.wi_ok(["import-todo", "--dry-run",
                           str(FIXTURES / "ptp_todo.md")])
@@ -271,6 +282,43 @@ class TestBacklogYaml(WiTestCase):
                     "acceptance:", "testing:"):
             self.assertIn(key, text)
         return "structural"
+
+    def test_import_folds_multiline_values(self):
+        """Block scalars and multi-line titles fold to one line; the store
+        stays loadable and every story is imported."""
+        src = self.tmp / "in.yaml"
+        src.write_text(
+            "schema_version: 2\nstories:\n"
+            "  - id: S-001\n    title: \"two\\nlines\"\n    status: blocked\n"
+            "    priority: 50\n    review_feedback: |\n      first point\n"
+            "      status: done\n    blocked_reason: >-\n      a\n\n      b\n"
+            "    acceptance:\n      - \"x\\n## Handoff\"\n    odd_field: |\n"
+            "      p\n      q\n"
+            "  - id: S-002\n    title: plain\n    status: todo\n"
+            "    requires: [S-001]\n")
+        self.wi_ok(["import", "--format", "backlog-yaml", str(src)])
+        recs = {r["alias"]: r for r in json.loads(
+            self.wi_ok(["ls", "--status", "all", "--json"]))}
+        self.assertEqual(set(recs), {"S-001", "S-002"})
+        one = json.loads(self.wi_ok(["show", recs["S-001"]["id"], "--json"]))
+        self.assertEqual(one["title"], "two lines")
+        self.assertEqual(one["feedback"], "first point status: done")
+        self.assertEqual(one["blocked"], "a b")
+        self.assertEqual(one["status"], "blocked")
+        self.assertEqual(recs["S-002"]["deps"], [one["id"]])
+        text = (self.root / "items" / (one["id"] + ".md")).read_text()
+        self.assertIn("- [ ] x ## Handoff\n", text)
+        self.assertIn("odd_field: p q", text)
+        self.assertEqual(text.count("\n## Handoff"), 1)
+        self.wi_ok(["lint"])
+        # --update folds too
+        src.write_text("schema_version: 2\nstories:\n  - id: S-001\n"
+                       "    title: t\n    status: blocked\n    blocked_reason: r\n"
+                       "    review_feedback: |\n      again\n      here\n")
+        self.wi_ok(["import", "--format", "backlog-yaml", "--update", str(src)])
+        one = json.loads(self.wi_ok(["show", recs["S-001"]["id"], "--json"]))
+        self.assertEqual(one["feedback"], "again here")
+        self.wi_ok(["lint"])
 
     def test_import_update_touches_pipeline_fields_only(self):
         self.seed()
@@ -465,6 +513,19 @@ BODY_SHAPES = {
     "no-notes": (
         "\nDesc.\n\n## Handoff\n- doing: —\n- next: —\n- blocked: —\n"
         "- learned: —\n\ntrailing without heading\n"),
+    # 23a8: headings (and Handoff bullets) inside fenced code blocks are text;
+    # Notes precede the real Handoff and end in a fence
+    "fenced-headings": (
+        "\nDesc.\n\n~~~\n## Handoff\n- doing: tilde fake\n~~~\n\n"
+        "## Notes\n- 2026-09-01 n1\n```markdown\n## Handoff\n- doing: fake\n"
+        "- next: fake\n```\n\n## Handoff\n- doing: d\n- next: —\n"
+        "- blocked: —\n- learned: —\n"),
+    # unclosed fences (a pasted ```sh with no closer, a ```` "closed" by ```)
+    # are not fences: the real Handoff after them is still the section
+    "unclosed-fence": (
+        "\nDesc.\n\n## Notes\n- 2026-09-01 n1\n````\n```\n```sh\nmake\n\n"
+        "## Handoff\n- doing: OLD\n- next: OLDNEXT\n- blocked: —\n"
+        "- learned: —\n"),
 }
 
 NOTE_LINE_RE = re.compile(r"^- \d{4}-\d{2}-\d{2} .*$")
@@ -493,10 +554,14 @@ class TestBodyPreservation(WiTestCase):
         return re.findall(r"[^\n]*\n|[^\n]+\Z", text)
 
     def owned_handoff_lines(self, body_lines):
-        """Indices of the first `- key:` line of each key in ## Handoff."""
+        """Indices of the first `- key:` line of each key in ## Handoff. What
+        counts as a heading is production's fence rule (wi._heading_flags),
+        pinned on its own by test_fenced_headings_are_not_sections and
+        test_unclosed_fence_does_not_hide_handoff."""
         owned, seen, inside = set(), set(), False
+        flags = wi._heading_flags(body_lines)
         for i, line in enumerate(body_lines):
-            if line.startswith("## "):
+            if flags[i]:
                 if inside:
                     break
                 inside = line.rstrip("\r\n") == "## Handoff"
@@ -565,7 +630,14 @@ class TestBodyPreservation(WiTestCase):
         "drop": ("status: todo\n", ["done", IID, "--drop"], "insert"),
         "export": ("status: todo\n", ["export", "OUT", "--format", "backlog-yaml",
                                       "--project", "t"], "same"),
+        "import-update": ("status: todo\nalias: S-001\n",
+                          ["import", "--format", "backlog-yaml", "--update", "IN"],
+                          "same"),
     }
+
+    IMPORT_YAML = ("schema_version: 2\nstories:\n  - id: S-001\n"
+                   "    title: keep body\n    status: in_progress\n"
+                   "    priority: 50\n    claimed_by: w9\n")
 
     def run_matrix(self, names):
         for shape, body in BODY_SHAPES.items():
@@ -578,7 +650,9 @@ class TestBodyPreservation(WiTestCase):
                         self.write_item("other-2222", status="done")
                         path = self.write_raw(body, eol, front)
                         before = self.split_body(path.read_bytes().decode(), eol)
-                        argv = [str(self.tmp / "b.yaml") if a == "OUT" else a
+                        (self.tmp / "in.yaml").write_text(self.IMPORT_YAML)
+                        argv = [str(self.tmp / "b.yaml") if a == "OUT" else
+                                str(self.tmp / "in.yaml") if a == "IN" else a
                                 for a in argv]
                         self.wi_ok(argv)
                         raw = path.read_bytes().decode()
@@ -590,8 +664,11 @@ class TestBodyPreservation(WiTestCase):
                             continue
                         h = None
                         if kind.startswith("handoff"):
-                            old = wi.parse_handoff(before.replace("\r\n", "\n")
-                                                   .split("## Handoff", 1)[1])
+                            b_lines = self.lines(before)
+                            old = wi.parse_handoff("".join(
+                                b_lines[i] for i in sorted(
+                                    self.owned_handoff_lines(b_lines)))
+                                .replace("\r\n", "\n"))
                             h = {k: getattr_arg(argv, k) or old[k] or "—"
                                  for k in wi.HANDOFF_KEYS}
                         self.assert_only_owned_changes(
@@ -620,6 +697,13 @@ class TestBodyPreservation(WiTestCase):
 
     def test_export_alias_writeback_keeps_body(self):
         self.run_matrix(["export"])
+
+    def test_import_update_keeps_body(self):
+        self.run_matrix(["import-update"])
+        # the update did land: pipeline fields changed, body did not
+        rec = json.loads(self.wi_ok(["show", self.IID, "--json"]))
+        self.assertEqual((rec["status"], rec["stage"], rec["owner"]),
+                         ("doing", "implement", "w9"))
 
     def test_archive_moves_file_byte_identical(self):
         for shape, body in BODY_SHAPES.items():
@@ -663,6 +747,252 @@ class TestBodyPreservation(WiTestCase):
         after = self.split_body(path.read_text(), "\n")
         self.assertTrue(after.startswith(before), after)
         self.assertIn("## Notes\n- ", after[len(before):])
+
+    def test_whitespace_only_body_without_newline_gets_heading_on_own_line(self):
+        for eol in ("\n", "\r\n"):
+            for body in ("   ", "\t", eol + "  "):
+                with self.subTest(eol=repr(eol), body=repr(body)):
+                    path = self.write_raw("", eol, "status: todo\n")
+                    path.write_bytes(path.read_bytes() + body.encode())
+                    self.wi_ok(["claim", self.IID])
+                    after = self.split_body(path.read_bytes().decode(), eol)
+                    self.assertEqual(
+                        after, body + eol + "## Notes" + eol
+                        + f"- {wi.today()} claimed by tester@local" + eol)
+        # and at the model level, for every section-appending path
+        item = wi.Item.parse("---\nid: x\n---\n  ")
+        item.set_handoff({"doing": "d"})
+        self.assertEqual(item.body, "  \n## Handoff\n- doing: d\n- next: —\n"
+                                    "- blocked: —\n- learned: —\n")
+        self.assertEqual(item.handoff()["doing"], "d")
+
+    def test_fenced_headings_are_not_sections(self):
+        for eol in ("\n", "\r\n"):
+            with self.subTest(eol=repr(eol)):
+                path = self.write_raw(BODY_SHAPES["fenced-headings"], eol,
+                                      "status: doing\n")
+                self.wi_ok(["handoff", self.IID, "--doing", "real",
+                            "--learned", "L1"])
+                after = self.split_body(path.read_bytes().decode(), eol)
+                expected = BODY_SHAPES["fenced-headings"].replace(
+                    "- next: fake\n```\n\n",
+                    f"- next: fake\n```\n- {wi.today()} learned: L1\n\n").replace(
+                    "## Handoff\n- doing: d\n- next: —\n- blocked: —\n"
+                    "- learned: —\n",
+                    "## Handoff\n- doing: real\n- next: —\n- blocked: —\n"
+                    "- learned: L1\n")
+                self.assertEqual(after, expected.replace("\n", eol))
+                rec = json.loads(self.wi_ok(["show", self.IID, "--json"]))
+                self.assertEqual(rec["handoff"]["doing"], "real")
+                self.assertEqual(rec["summary"], "Desc.")
+        item = wi.Item.parse("---\nid: x\n---\n" + BODY_SHAPES["fenced-headings"])
+        self.assertEqual([n for n, _ in item.sections], ["Notes", "Handoff"])
+        self.assertIn("## Handoff", item.section("Notes"))
+        # a backtick run with a backtick after it is inline code, not a fence;
+        # a shorter or different-character run does not close a fence
+        item = wi.Item.parse("---\nid: x\n---\n``` a ` b\n## A\n"
+                             "````\n```\n~~~\n## B\n````\n## C\n")
+        self.assertEqual([n for n, _ in item.sections], ["A", "C"])
+
+    def test_unclosed_fence_does_not_hide_handoff(self):
+        for eol in ("\n", "\r\n"):
+            with self.subTest(eol=repr(eol)):
+                path = self.write_raw(BODY_SHAPES["unclosed-fence"], eol,
+                                      "status: doing\nowner: tester@local\n"
+                                      "claimed: 2026-09-01T00:00Z\n")
+                for n in range(3):
+                    self.wi_ok(["handoff", self.IID, "--doing", f"NEW{n}",
+                                "--learned", f"L{n}"])
+                after = self.split_body(path.read_bytes().decode(), eol)
+                self.assertEqual(after.count("## Handoff"), 1, after)
+                self.assertIn(eol.join(["## Handoff", "- doing: NEW2",
+                                        "- next: OLDNEXT", "- blocked: —",
+                                        "- learned: L2", ""]), after)
+                rec = json.loads(self.wi_ok(["show", self.IID, "--json"]))
+                self.assertEqual((rec["handoff"]["doing"], rec["handoff"]["next"]),
+                                 ("NEW2", "OLDNEXT"))
+                self.wi_ok(["lint"])
+                path.unlink()
+        # model level: each unclosed opener is plain text, a closed pair
+        # after it still hides its heading
+        flags = wi._heading_flags(["```sh", "## A", "~~~", "## B", "~~~", "## C"])
+        self.assertEqual(flags, [False, True, False, False, False, True])
+
+    # an unclosed ```sh in Notes pairs with the opener of a normal block in a
+    # later section: the real Handoff (and the later heading) become code
+    CROSS_SECTION = (
+        "\nDesc.\n\n## Notes\n- 2026-09-01 n1\n```sh\nmake\n\n## Handoff\n"
+        "- doing: OLD\n- next: OLDNEXT\n- blocked: —\n- learned: —\n\n"
+        "## Implementer result\n```\nlog\n```\n")
+
+    def test_fence_paired_across_sections_refuses_not_duplicates(self):
+        for eol in ("\n", "\r\n"):
+            with self.subTest(eol=repr(eol), shape="handoff hidden"):
+                path = self.write_raw(self.CROSS_SECTION, eol, "status: doing\n")
+                raw = path.read_bytes()
+                for argv in (["handoff", self.IID, "--doing", "NEW",
+                              "--learned", "L"],
+                             ["handoff", self.IID, "--next", "N"]):
+                    r = run(argv, self.root)
+                    self.assertEqual(r.returncode, 3, r.stdout + r.stderr)
+                    self.assertIn("'## Handoff' is inside a fenced code block",
+                                  r.stderr)
+                    self.assertEqual(path.read_bytes(), raw)
+                # Notes is still a real section: a note is appended in place
+                self.wi_ok(["done", self.IID, "--note", "ok"])
+                after = path.read_bytes().decode()
+                self.assertTrue(after.endswith(self.split_body(
+                    raw.decode(), eol) + f"- {wi.today()} done: ok{eol}"))
+                self.assertEqual(after.count("## Handoff"), 1)
+                path.unlink()
+            with self.subTest(eol=repr(eol), shape="notes hidden"):
+                body = self.CROSS_SECTION.replace(
+                    "## Notes\n- 2026-09-01 n1\n```sh\nmake\n\n## Handoff",
+                    "```sh\nmake\n\n## Notes\n- 2026-09-01 n1\n\n## Handoff")
+                path = self.write_raw(body, eol, "status: todo\n")
+                raw = path.read_bytes()
+                r = run(["claim", self.IID], self.root)
+                self.assertEqual(r.returncode, 3, r.stdout + r.stderr)
+                self.assertIn("'## Notes' is inside a fenced code block", r.stderr)
+                self.assertIn("add a real '## Notes' heading outside the fence",
+                              r.stderr)
+                self.assertIn("close an unclosed ``` or ~~~ above it", r.stderr)
+                self.assertEqual(path.read_bytes(), raw)
+                path.unlink()
+
+    def test_closed_fenced_example_does_not_block_appending(self):
+        """A closed example holding `## Notes` / `## Handoff` (and no later
+        heading in the same fence) is text: the real section is appended."""
+        example = ("\nDesc.\n\n```markdown\n## Handoff\n- doing: example\n"
+                   "```\n\n~~~\n## Notes\n- 2020-01-01 example\n~~~\n")
+        for eol in ("\n", "\r\n"):
+            with self.subTest(eol=repr(eol)):
+                path = self.write_raw(example, eol, "status: todo\n")
+                before = self.split_body(path.read_bytes().decode(), eol)
+                self.wi_ok(["claim", self.IID])
+                self.wi_ok(["handoff", self.IID, "--doing", "D", "--next", "N"])
+                self.wi_ok(["done", self.IID, "--note", "ok"])
+                after = self.split_body(path.read_bytes().decode(), eol)
+                self.assertTrue(after.startswith(before), after)
+                tail = after[len(before):].replace(eol, "\n")
+                self.assertEqual(
+                    tail, f"\n## Notes\n- {wi.today()} claimed by tester@local\n"
+                          f"- {wi.today()} done: ok\n\n## Handoff\n- doing: D\n"
+                          "- next: N\n- blocked: —\n- learned: —\n")
+                item = wi.Item.parse(path.read_bytes().decode())
+                self.assertEqual([n for n, _ in item.sections], ["Notes", "Handoff"])
+                self.wi_ok(["lint"])
+                path.unlink()
+
+    def test_many_unclosed_openers_scan_linearly(self):
+        lines = ["```sh", "x", "## H"] * 5000
+        start = time.monotonic()
+        flags = wi._heading_flags(lines)
+        self.assertLess(time.monotonic() - start, 1.0)
+        self.assertEqual(sum(flags), 5000)
+        # the memo does not skip a shorter opener that does have a closer
+        self.assertEqual(wi._heading_flags(
+            ["````", "## A", "```", "## B", "```", "## C"]),
+            [False, True, False, False, False, True])
+
+    def test_handoff_value_with_line_break_is_rejected_unwritten(self):
+        path = self.write_raw(BODY_SHAPES["no-notes"], "\n", "status: doing\n")
+        raw = path.read_bytes()
+        for key in wi.HANDOFF_KEYS:
+            for bad in ("one\ntwo", "one\r\n## Injected", "trail\r"):
+                with self.subTest(key=key, value=repr(bad)):
+                    r = run(["handoff", self.IID, "--doing", "ok",
+                             "--" + key, bad], self.root)
+                    self.assertEqual(r.returncode, 1, r.stdout + r.stderr)
+                    self.assertIn(f"--{key} must be one line", r.stderr)
+                    self.assertEqual(path.read_bytes(), raw)
+
+    def test_other_one_line_values_with_line_break_are_rejected_unwritten(self):
+        """block reason / --on, set value, done|drop --note and add title are
+        one line too: no front-matter key or heading injection, no write."""
+        path = self.write_raw(BODY_SHAPES["no-notes"], "\n", "status: todo\n")
+        raw = path.read_bytes()
+        cases = [
+            (["block", self.IID, "waiting\nstatus: done"], "reason"),
+            (["block", self.IID, "--on", "other\r\n- x"], "--on"),
+            (["set", self.IID, "title", "x\npriority: 0"], "value"),
+            (["set", self.IID, "blocked", "a\rb"], "value"),
+            (["done", self.IID, "--note", "ok\n## Handoff\n- doing: injected"],
+             "--note"),
+            (["done", self.IID, "--drop", "--note", "gone\r\n"], "--note"),
+        ]
+        for argv, what in cases:
+            with self.subTest(argv=argv):
+                r = run(argv, self.root)
+                self.assertEqual(r.returncode, 1, r.stdout + r.stderr)
+                self.assertIn(f"{what} must be one line", r.stderr)
+                self.assertEqual(path.read_bytes(), raw)
+        before = sorted(p.name for p in (self.root / "items").iterdir())
+        r = run(["add", "two\nlines"], self.root)
+        self.assertEqual(r.returncode, 1, r.stdout + r.stderr)
+        self.assertIn("title must be one line", r.stderr)
+        self.assertEqual(sorted(p.name for p in (self.root / "items").iterdir()),
+                         before)
+        self.wi_ok(["lint"])
+
+    def test_front_matter_writer_rejects_line_breaks(self):
+        """The writer-level backstop: every command that puts a value into
+        front matter exits 1 and writes nothing when it holds a line break."""
+        path = self.write_raw(BODY_SHAPES["no-notes"], "\n", "status: todo\n")
+        raw = path.read_bytes()
+        for argv in (["claim", self.IID, "--as", "me\npriority: x"],
+                     ["next", "--pipeline", "--one", "--claim", "w\r\nstatus: done"]):
+            with self.subTest(argv=argv):
+                r = run(argv, self.root)
+                self.assertEqual(r.returncode, 1, r.stdout + r.stderr)
+                self.assertIn("front-matter 'owner' must be one line", r.stderr)
+                self.assertEqual(path.read_bytes(), raw)
+        before = sorted(p.name for p in (self.root / "items").iterdir())
+        for flag, key in (("--tag", "tags"), ("--dep", "deps"),
+                          ("--parent", "parent"), ("--ref", "refs")):
+            with self.subTest(flag=flag):
+                r = run(["add", "ok title", flag, "a\nstatus: done", "--force"],
+                        self.root)
+                self.assertEqual(r.returncode, 1, r.stdout + r.stderr)
+                self.assertIn(f"front-matter '{key}' must be one line", r.stderr)
+        self.assertEqual(sorted(p.name for p in (self.root / "items").iterdir()),
+                         before)
+        self.wi_ok(["lint"])
+        # model level: dict (x_ extras) and list values are checked too
+        with self.assertRaises(wi.WiError):
+            wi.emit_front({"id": "x", "x_backlog": {"k": "a\nb"}}, ["x_backlog"])
+        # a batch writes nothing when any one item is rejected
+        todo = self.tmp / "TODO.md"
+        todo.write_text("## First\nfine\n\n## Second\nsee [x](a\nb)\n")
+        r = run(["import-todo", str(todo)], self.root)
+        self.assertEqual(r.returncode, 1, r.stdout + r.stderr)
+        self.assertEqual(sorted(p.name for p in (self.root / "items").iterdir()),
+                         before)
+
+    def test_write_side_keeps_line_endings_byte_exact(self):
+        """newline='' on write: mixed CRLF / LF / lone CR outside the owned
+        lines come back byte for byte after a rewrite."""
+        body = ("\r\nDesc\rwith lone CR.\nLF line\r\n\r\n## Handoff\r\n"
+                "- doing: —\r\n- next: —\n- blocked: —\r\n- learned: —\r\n"
+                "\ntail LF\ntail CRLF\r\n")
+        path = self.write_raw("", "\r\n", "status: doing\n")
+        path.write_bytes(path.read_bytes() + body.encode())
+        self.wi_ok(["handoff", self.IID, "--doing", "D", "--next", "N"])
+        after = self.split_body(path.read_bytes().decode(), "\r\n")
+        self.assertEqual(after, body.replace("- doing: —\r\n", "- doing: D\r\n")
+                         .replace("- next: —\n", "- next: N\n"))
+        # atomic_write itself opens with newline='' and writes the text as is
+        seen, real_open = [], open
+
+        def recording_open(*a, **kw):
+            seen.append(kw.get("newline"))
+            return real_open(*a, **kw)
+        wi.open = recording_open
+        self.addCleanup(delattr, wi, "open")
+        target = self.tmp / "w.md"
+        wi.atomic_write(target, "a\r\nb\nc\rd")
+        self.assertEqual(seen, [""])
+        self.assertEqual(target.read_bytes(), b"a\r\nb\nc\rd")
 
 
 def getattr_arg(argv, key):
