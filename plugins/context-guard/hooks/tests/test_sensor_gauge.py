@@ -350,6 +350,53 @@ class TestEpochDemotion(Base):
         self.write_legacy("s", 800_000, 1_000_000, at=now - 5)
         self.assertEqual(L.reset_epoch("s")["epoch_end_tokens"], 800_000)
 
+    def scored(self, sid, tokens, at):
+        """What context_warn.decide() stores on a prompt: the scored depth."""
+        L.update_state(sid, lambda st: st.update(tokens=tokens, tokens_at=at))
+
+    def test_epoch_end_tokens_prefers_a_fresher_scored_depth(self):
+        # the status line last rendered long ago; the gate scored a later prompt
+        now = time.time()
+        self.write_sensor("s", 700_000, 1_000_000, at=now - 600)
+        self.scored("s", 820_000, now - 5)
+        self.assertEqual(L.reset_epoch("s")["epoch_end_tokens"], 820_000)
+
+    def test_epoch_end_tokens_prefers_a_fresher_exact_record(self):
+        now = time.time()
+        self.scored("s", 700_000, now - 600)
+        self.write_sensor("s", 820_000, 1_000_000, at=now - 5)
+        self.assertEqual(L.reset_epoch("s")["epoch_end_tokens"], 820_000)
+
+    def test_epoch_end_tokens_tie_goes_to_the_exact_record(self):
+        now = time.time() - 5
+        self.write_sensor("s", 820_000, 1_000_000, at=now)
+        self.scored("s", 700_000, now)
+        self.assertEqual(L.reset_epoch("s")["epoch_end_tokens"], 820_000)
+
+    def test_epoch_end_tokens_ignores_a_scored_depth_from_an_earlier_epoch(self):
+        # two compactions with no prompt between: the top-level count scored
+        # the epoch before last, and the demoted exact record has no tokens
+        self.scored("s", 900_000, time.time() - 60)
+        L.reset_epoch("s")
+        self.assertEqual(L.reset_epoch("s")["epoch_end_tokens"], 0)
+
+    def test_epoch_end_tokens_ignores_a_future_stamp(self):
+        now = time.time()
+        self.write_sensor("s", 700_000, 1_000_000, at=now - 5)
+        self.scored("s", 820_000, now + 3600)
+        self.assertEqual(L.reset_epoch("s")["epoch_end_tokens"], 700_000)
+
+    def test_epoch_end_tokens_scored_depth_alone(self):
+        self.scored("s", 640_000, time.time() - 5)
+        self.assertEqual(L.reset_epoch("s")["epoch_end_tokens"], 640_000)
+
+    def test_epoch_end_tokens_unstamped_depth_is_only_the_fallback(self):
+        # state written before tokens_at existed keeps the old order
+        now = time.time()
+        L.update_state("s", lambda st: st.update(tokens=820_000))
+        self.write_sensor("s", 700_000, 1_000_000, at=now - 600)
+        self.assertEqual(L.reset_epoch("s")["epoch_end_tokens"], 700_000)
+
     def test_postcompact_hook_with_new_path_record(self):
         self.write_sensor("s", 900_000, 1_000_000, at=time.time() - 5)
         code, out, err = self.run_hook("postcompact_epoch.py",

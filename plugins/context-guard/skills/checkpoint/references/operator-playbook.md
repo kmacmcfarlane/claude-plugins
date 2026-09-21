@@ -136,17 +136,23 @@ escape hatches:
    there is the live session; `gauge.json`, `window-mismatch.jsonl` and the `_`-prefixed
    files are not sessions). It refuses, exiting non-zero and
    writing nothing, when no state file exists for that id — a mistyped id, since a live
-   session always has one. The gate stays down until the next compaction or `/clear`. Run it
-   through the stable plugin-data path, which works the same from a Bash tool call inside the
-   session and from a plain terminal (`CLAUDE_PLUGIN_ROOT` is set for hooks, not for the Bash
-   tool, so a `${CLAUDE_PLUGIN_ROOT}/hooks/...` form does not work there). `ls -td … | head -1`
-   picks the most recently refreshed `context-guard-*` data dir if more than one exists (one
-   per marketplace the plugin was installed from — list them with plain `ls -d` and pick yours
-   if unsure):
+   session always has one. The gate stays down until the next compaction or `/clear`. The
+   HARD STOP message itself prints this command with the script's absolute path filled in;
+   to run it by hand, resolve the path as below, which works the same from a Bash tool call
+   inside the session and from a plain terminal. `${CLAUDE_PLUGIN_ROOT}` does not work here:
+   Claude Code substitutes it into a plugin's `SKILL.md` text and exports it to hook
+   processes, but it is not in the Bash tool's environment, and this reference file is read,
+   not substituted. The path comes from the harness's own install record,
+   `installed_plugins.json` `plugins['context-guard@kmacmcfarlane'][0].installPath`; the
+   fallback, when that record is missing or unreadable, is the update-stable `current-hooks`
+   link in the newest `context-guard-*` data dir (one per marketplace the plugin was
+   installed from — list them with plain `ls -d` and pick yours if unsure):
 
 ```bash
-d=$(ls -td "${CLAUDE_CONFIG_DIR:-$HOME/.claude}"/plugins/data/context-guard-*/ | head -1)
-python3 "${d}current-hooks/mark_checkpoint.py" <session_id>
+P="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/plugins"
+MC="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["plugins"]["context-guard@kmacmcfarlane"][0]["installPath"])' "$P/installed_plugins.json" 2>/dev/null)/hooks/mark_checkpoint.py"
+test -f "$MC" || MC="$(ls -td "$P"/data/context-guard-*/ 2>/dev/null | head -1)current-hooks/mark_checkpoint.py"
+python3 "$MC" <session_id>
 ```
 3. Turn the window mirror off: `CONTEXT_GUARD_DERIVE=off` in the environment Claude Code is
    launched from. The gate is then exactly what it was before the mirror: exact from the

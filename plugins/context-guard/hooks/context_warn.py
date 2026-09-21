@@ -28,7 +28,7 @@ systemMessage says so.
 Set timeout: 10 in hooks.json: this event is fail-open on timeout, so a slow
 hook silently disables the gate.
 """
-import json, os, re, sys
+import json, os, re, sys, time
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import lib_context as L
 
@@ -59,7 +59,9 @@ def decide(st, tok, win, pct, src, whitelisted, block_win=_UNSET):
         block_win = win if src in L.BLOCKING_SOURCES else None
     ep = L.epoch(st)
     st["prompt_n"] = int(st.get("prompt_n", 0)) + 1
-    st.update(tokens=tok, pct=round(pct, 1), window=win)
+    # tokens_at dates the depth scored here, so reset_epoch can take the
+    # fresher of it and the status line's exact record for epoch_end_tokens.
+    st.update(tokens=tok, tokens_at=time.time(), pct=round(pct, 1), window=win)
     if not tok:
         return None
     remaining = max(win - tok, 0)
@@ -114,6 +116,19 @@ def mirror_bound(m, src):
                                   and m.get("block_window") == acw.get("window"))
 
 
+_SH_SPECIAL = re.compile(r'([\\"$`])')
+
+
+def mark_checkpoint_command(sid):
+    """`python3 "<path>" <sid>` for the mark_checkpoint.py beside this hook -
+    the installed copy that is running now, so no lookup (and no guess among
+    several data dirs) is needed. The path is in shell double quotes with
+    \\, ", $ and ` escaped."""
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "mark_checkpoint.py")
+    quoted = _SH_SPECIAL.sub(r"\\\1", path)
+    return f'python3 "{quoted}" {L.safe_sid(sid)}'
+
+
 def derived_hatches(sid):
     """Escape hatches printed under a HARD STOP that a derived (mirrored)
     window caused, in case the mirror is wrong."""
@@ -121,8 +136,7 @@ def derived_hatches(sid):
             "Claude Code's window selection, not from the status line alone): set "
             "CONTEXT_GUARD_DERIVE=off in the environment Claude Code is launched "
             "from, or stand the gate down for this epoch with\n"
-            f"  python3 \"$(ls -td \"${{CLAUDE_CONFIG_DIR:-$HOME/.claude}}\"/plugins/data/"
-            f"context-guard-*/ | head -1)current-hooks/mark_checkpoint.py\" {L.safe_sid(sid)}\n"
+            f"  {mark_checkpoint_command(sid)}\n"
             "(context-guard skills/checkpoint/references/operator-playbook.md, "
             "\"If the gate blocks wrongly\").\n")
 

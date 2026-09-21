@@ -6,8 +6,10 @@ object: {} or {"systemMessage": "statusline: <one line>"}. It writes settings
 only through owner.write_settings (only the statusLine key, atomic, a
 read-only file refused) and never touches an entry some other tool installed.
 
-The data dir is $CLAUDE_PLUGIN_DATA, else the one derived from the plugin cache
-path this file runs from; with neither, only the prune runs. Then, by the
+The data dir is $CLAUDE_PLUGIN_DATA, else the one installed_plugins.json's
+record for this install names, else the one derived from the plugin cache
+path this file runs from (owner.data_dir, scan=False); with none, only the
+prune runs. Then, by the
 state in <data>/owner.json (see owner.py):
 
 - installed - the marked settings file:
