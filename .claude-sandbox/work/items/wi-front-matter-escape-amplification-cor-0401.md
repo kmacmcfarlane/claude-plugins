@@ -31,3 +31,5 @@ Found by the ca20 reviewer (2026-09-21), pre-existing on main: a value containin
 - round 1 DONE_WITH_CONCERNS aab13b6 (opus): scalar emit/parse exact inverses (control chars escaped; unknown escapes kept; YAML indicators quoted; flow lists split outside quotes); repair-escapes [--id] [--apply] dry-run by default; 121 tests; property test vs ruamel. Live store (temp copy): 1 amplified item (this one, title). "wi add escapes twice" did not reproduce — same root cause (reader).
 - scope widening before review: SKILL.md command row + format.md quoting line.
 - after landing: librarian runs repair-escapes --apply --id on this item.
+- widening feb4d69: SKILL.md repair-escapes row; format.md Quoting paragraph.
+- dispatch: reviewer opus — rule 4
