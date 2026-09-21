@@ -273,8 +273,10 @@ Tests: `cd plugins/work-items/skills/work-items && python3 -m unittest discover 
 ### context-guard
 
 Survive the finite context window. Registers the context-gate hooks, the reasoning ledger and
-session rehydration — one of the three plugins here whose aim *is* harness behavior (the
-others are `statusline`, for the status line, and `sandbox`, for the checkout guard).
+session rehydration — one of the plugins here whose aim *is* harness behavior (the others
+are `statusline`, for the status line, `sandbox`, for the checkout guard, and
+`statusline-hub`, for the shared status-line slot, though it registers no hooks and writes no
+settings yet).
 
 | Skill | Description |
 |---|---|
@@ -465,7 +467,7 @@ The `claude-kit` plugin is gone from the marketplace. Per machine, once:
 1. **Refresh the marketplace** so the new plugin list is visible:
    `/plugin marketplace update kmacmcfarlane`.
 2. **Install what that machine actually needs** (`/plugin install <name>@kmacmcfarlane`) —
-   the primary dev machine typically takes all eight; a work machine may want only
+   the primary dev machine typically takes all of them; a work machine may want only
    `context-guard`, plus `dev-flow` / `work-items` if you use the plan-first flow; an
    inference box like `lucy` wants expertise packs rather than these.
 3. **Uninstall `claude-kit` in the same `/plugin` sitting, before the first session**:
