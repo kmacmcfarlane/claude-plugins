@@ -141,6 +141,324 @@ class TestFrontMatter(WiTestCase):
                            "done": False}])
 
 
+# Characters the escape bug fed on, plus the ones a bare scalar cannot hold.
+ESCAPE_ALPHABET = (':', '"', '\\', '#', ' ', "'", ',', '[', ']', '{', '}', '-',
+                   '—', 'é', '日', '🙂', '\t', '\x07', '\x1b', '\x85',
+                   '\u2028', '\ufeff', 'a', 'Z', '0', '&', '*', '!', '|', '>',
+                   '%', '@', '`', '?', '\ufffe', '\uffff')
+
+
+def escape_values(count=400, seed=0x0401):
+    import random
+    rng = random.Random(seed)
+    fixed = ['x: "y"', 'x: \\"y\\"', '\\', '"', '""', 'a\\', ' lead',
+             'trail ', ' both ', 'c:\\dir', 'x: c:\\dir', '#hash', 'a #b',
+             'end:', '—', '— x', "it's", "'q'", '"q"', 'a, b', '[x]',
+             '\\\\\\"', 'say "hi"', '日本: "語"', 'a\tb', 'ab\t c',
+             '\t', 'x\ufffey', '\uffff']
+    for v in fixed:
+        yield v
+    for _ in range(count):
+        yield "".join(rng.choice(ESCAPE_ALPHABET)
+                      for _ in range(rng.randint(1, 12)))
+    # a tab among characters that alone would stay bare: a bare tab is
+    # the one thing a YAML loader rejects that wi read back fine
+    for _ in range(count // 8):
+        yield "".join(rng.choice("ab c1\t") for _ in range(rng.randint(2, 8)))
+
+
+class TestScalarRoundTrip(WiTestCase):
+    """emit and parse are exact inverses (0401): no rewrite ever changes a
+    value, and a quoted value never gains a backslash."""
+
+    def meta_for(self, v):
+        return {"id": "rt-0001", "title": v, "tags": [v, "plain"],
+                "refs": [v], "x_backlog": {"k": v}}
+
+    def front_text(self, v):
+        """emit_front's layout for meta_for(v). The writer refuses a control
+        character in a value, so for those the same lines are built from
+        _emit_scalar directly: the scalar contract still round-trips."""
+        if not wi._CONTROL_RE.search(v):
+            return wi.emit_front(self.meta_for(v))
+        with self.assertRaises(wi.WiError):
+            wi.emit_front(self.meta_for(v))
+        e = wi._emit_scalar
+        return (f"id: rt-0001\ntitle: {e(v)}\ntags: [{e(v, flow=True)}, plain]"
+                f"\nrefs:\n  - {e(v)}\nx_backlog:\n  k: {e(v)}")
+
+    def test_parse_emit_is_identity_in_every_context(self):
+        for v in escape_values():
+            with self.subTest(v=v):
+                text = self.front_text(v)
+                meta, _, errors = wi.parse_front(text.split("\n"))
+                self.assertEqual(errors, [])
+                self.assertEqual(meta["title"], v)
+                self.assertEqual(meta["tags"], [v, "plain"])
+                self.assertEqual(meta["refs"], [v])
+                self.assertEqual(meta["x_backlog"], {"k": v})
+                # emit -> parse -> emit is stable
+                self.assertEqual(wi.emit_front(meta, plain=False), text)
+
+    def test_emitted_front_matter_is_yaml_a_strict_loader_agrees_with(self):
+        try:
+            from ruamel.yaml import YAML
+        except ImportError:
+            self.skipTest("ruamel.yaml not installed")
+        import io
+        yaml = YAML(typ="safe")
+        for v in escape_values(count=150):
+            if v.strip() in ("", "—"):
+                continue  # wi reads these as "no value"; YAML has no such rule
+            with self.subTest(v=v):
+                text = self.front_text(v)
+                loaded = yaml.load(io.StringIO(text))
+                if not isinstance(loaded["title"], str):
+                    continue  # YAML types a bare 0 / true; wi keeps strings
+                self.assertEqual(loaded["title"], v)
+                self.assertEqual(loaded["tags"], [v, "plain"])
+                self.assertEqual(loaded["refs"], [v])
+                self.assertEqual(loaded["x_backlog"], {"k": v})
+
+    def test_item_render_is_byte_stable_across_rewrites(self):
+        for v in escape_values(count=100):
+            if v.strip() in ("", "—") or wi._CONTROL_RE.search(v):
+                continue  # the writer refuses control characters
+            with self.subTest(v=v):
+                item = wi.Item(dict(self.meta_for(v), type="task",
+                                    status="todo", priority=2),
+                               [], "desc", [])
+                first = item.render()
+                again = wi.Item.parse(first)
+                self.assertEqual(again.get("title"), v)
+                again.meta["priority"] = 3
+                again.meta["priority"] = 2
+                self.assertEqual(wi.Item.parse(again.render()).render(), first)
+
+    def test_reported_case_survives_real_commands(self):
+        title = 'x: "y" \\z'
+        tag = 'k: "v", \\w'
+        reason = 'ext: waits on "a: b" \\ c'
+        iid = json.loads(self.wi_ok(["add", title, "--tag", tag,
+                                     "--dep", reason, "--json"]))["id"]
+        path = self.root / "items" / f"{iid}.md"
+        written = path.read_text()
+        self.assertIn('title: "x: \\"y\\" \\\\z"\n', written)
+        for args in (["set", iid, "priority", "1"],
+                     ["set", iid, "priority", "3"],
+                     ["handoff", iid, "--next", "go"],
+                     ["handoff", iid, "--doing", "more"],
+                     ["set", iid, "priority", "2"]):
+            self.wi_ok(args)
+        rec = json.loads(self.wi_ok(["show", iid, "--json"]))
+        self.assertEqual(rec["title"], title)
+        self.assertEqual(rec["tags"], [tag])
+        self.assertEqual(rec["deps"], [reason])
+        fm = lambda t: t.split("\n---\n", 1)[0]
+        self.assertEqual(fm(path.read_text()).replace("priority: 2", ""),
+                         fm(written).replace("priority: 2", ""))
+        self.wi_ok(["done", iid])
+        rec = json.loads(self.wi_ok(["show", iid, "--json"]))
+        self.assertEqual((rec["title"], rec["tags"], rec["deps"]),
+                         (title, [tag], [reason]))
+        self.assertEqual(path.read_text().count("\\"), written.count("\\"))
+
+    def test_hand_written_legacy_scalars_still_load(self):
+        text = CANONICAL.replace(
+            "title: Replication task 3 destination retention is a no-op",
+            "title: 'it''s \"fine\"'\nnote_a: \"bad \\q escape\"\n"
+            "note_b: \"unterminated \\\"\nnote_c: \"a\\nb\"")
+        item = wi.Item.parse(text, path="x.md")
+        self.assertEqual(item.get("title"), 'it\'s "fine"')
+        self.assertEqual(item.get("note_a"), "bad \\q escape")
+        self.assertEqual(item.get("note_b"), "unterminated \\")
+        self.assertEqual(item.get("note_c"), "a\\nb")  # never a line break
+        out = item.render()
+        self.assertEqual(wi.Item.parse(out).render(), out)
+
+
+    def test_tab_and_reader_hostile_characters_are_never_bare(self):
+        for v in ("a\tb", "ab\t c", "x\ufffey", "\ud800"):
+            with self.subTest(v=v):
+                out = wi._emit_scalar(v)
+                self.assertTrue(out.startswith('"'), out)
+                self.assertNotIn("\t", out)
+                self.assertEqual(wi._parse_scalar(out)[0], v)
+        self.assertEqual(wi._emit_scalar("a\tb"), '"a\\tb"')
+
+    def test_yaml_value_and_merge_keys_are_quoted(self):
+        try:
+            from ruamel.yaml import YAML
+        except ImportError:
+            self.skipTest("ruamel.yaml not installed")
+        for v in ("=", "<<"):
+            with self.subTest(v=v):
+                text = wi.emit_front({"title": v, "tags": [v]})
+                self.assertEqual(text, f'title: "{v}"\ntags: ["{v}"]')
+                self.assertEqual(YAML(typ="safe").load(text),
+                                 {"title": v, "tags": [v]})
+                self.assertEqual(wi.parse_front(text.split("\n"))[0],
+                                 {"title": v, "tags": [v]})
+
+    def test_writer_refuses_a_tab_or_control_character(self):
+        iid = json.loads(self.wi_ok(["add", "fine", "--json"]))["id"]
+        path = self.root / "items" / f"{iid}.md"
+        before = path.read_bytes()
+        items_before = sorted(p.name for p in (self.root / "items").iterdir())
+        for args in (["add", "tab\there"], ["add", "ok", "--tag", "t\tg"],
+                     ["add", "bell\x07"], ["set", iid, "title", "x\ty"],
+                     ["set", iid, "tags", "a\x1bb"], ["block", iid, "why\there"]):
+            with self.subTest(args=args):
+                r = run(args, self.root)
+                self.assertEqual(r.returncode, 1, r.stdout + r.stderr)
+                self.assertIn("control character", r.stderr)
+                self.assertEqual(path.read_bytes(), before)
+                self.assertEqual(sorted(p.name for p in
+                                        (self.root / "items").iterdir()),
+                                 items_before)
+
+    def test_import_folds_control_characters(self):
+        src = self.tmp / "in.yaml"
+        src.write_text("schema_version: 2\nstories:\n  - id: S-001\n"
+                       '    title: "tab\\there\\x07bell"\n    status: blocked\n'
+                       '    priority: 50\n    blocked_reason: "C:\\temp"\n')
+        self.wi_ok(["import", "--format", "backlog-yaml", str(src)])
+        rec = json.loads(self.wi_ok(["ls", "--status", "all", "--json"]))[0]
+        one = json.loads(self.wi_ok(["show", rec["id"], "--json"]))
+        self.assertEqual(one["title"], "tab here bell")
+        self.assertEqual(one["blocked"], "C: emp")
+        self.wi_ok(["lint"])
+
+    def test_lint_is_clean_on_everything_wi_writes(self):
+        odd = [v for v in escape_values(count=60)
+               if v.strip() and v.strip() == v and not wi._CONTROL_RE.search(v)
+               and v not in ("—",) and "\n" not in v and len(v) <= 120]
+        dep = json.loads(self.wi_ok(["add", "dep", "--json"]))["id"]
+        for v in odd[:40]:
+            iid = json.loads(self.wi_ok(["add", v, "--tag", v, "--json"]))["id"]
+            self.wi_ok(["set", iid, "parent", dep])
+            self.wi_ok(["block", iid, v])
+        self.assertIn("lint clean", self.wi_ok(["lint"]))
+
+    def test_unterminated_quote_in_flow_list_reads_the_old_way(self):
+        meta, _, errors = wi.parse_front(['tags: ["abc, d, e]'])
+        self.assertEqual(errors, [])
+        self.assertEqual(meta["tags"], ['"abc', "d", "e"])
+
+    def test_hand_written_backslash_path_is_a_lint_finding(self):
+        self.write_item("path-1111")
+        self.write_item("temp-2222")
+        self.write_item("clean-3333", title="C:\\temp")  # wi-written: fine
+        for iid, raw in (("path-1111", '"C:\\Users\\foo\\bar"'),
+                         ("temp-2222", '"C:\\temp\\tools"')):
+            p = self.root / "items" / f"{iid}.md"
+            p.write_text(p.read_text().replace(f"title: {iid}", f"title: {raw}"))
+        r = run(["lint"], self.root)
+        self.assertEqual(r.returncode, 3)
+        self.assertIn("path-1111.md: front-matter 'title' holds a control", r.stdout)
+        self.assertIn("wi set path-1111 title", r.stdout)
+        # \t is the likeliest escape in a Windows path: C:<TAB>emp<TAB>ools
+        self.assertIn("temp-2222.md: front-matter 'title' holds a control", r.stdout)
+        self.assertNotIn("clean-3333", r.stdout)
+
+    def test_import_reads_a_dash_placeholder_as_no_value(self):
+        src = self.tmp / "in.yaml"
+        src.write_text("schema_version: 2\nstories:\n  - id: S-001\n"
+                       "    title: t\n    status: todo\n    priority: 50\n"
+                       '    review_feedback: "—"\n    claimed_by: "—"\n')
+        self.wi_ok(["import", "--format", "backlog-yaml", str(src)])
+        rec = json.loads(self.wi_ok(["ls", "--status", "all", "--json"]))[0]
+        one = json.loads(self.wi_ok(["show", rec["id"], "--json"]))
+        self.assertIsNone(one.get("feedback"))
+        self.assertIsNone(one.get("owner"))
+        text = (self.root / "items" / (rec["id"] + ".md")).read_text()
+        self.assertNotIn("—\"", text)
+
+
+class TestRepairEscapes(WiTestCase):
+    AMPLIFIED = 'title: "x: \\\\\\\\\\\\\\"y\\\\\\\\\\\\\\""'  # "y" after 3 rewrites
+
+    def seed(self):
+        self.write_item("amp-1111")
+        self.write_item("legit-2222", title="x: c:\\dir \\n")
+        path = self.root / "items" / "amp-1111.md"
+        path.write_text(path.read_text().replace("title: amp-1111", self.AMPLIFIED))
+        return path
+
+    def test_amplified_item_loads_and_dry_run_names_it(self):
+        path = self.seed()
+        before = path.read_bytes()
+        self.assertEqual(run(["lint"], self.root).returncode, 0)
+        out = self.wi_ok(["repair-escapes"])
+        self.assertIn("would repair\tamp-1111\ttitle", out)
+        self.assertIn('-> "x: \\"y\\""', out)
+        self.assertNotIn("legit-2222", out)
+        self.assertIn("1 to repair (dry run", out)
+        self.assertEqual(path.read_bytes(), before)
+
+    def test_apply_repairs_and_is_then_clean(self):
+        path = self.seed()
+        self.wi_ok(["repair-escapes", "--apply"])
+        self.assertIn('title: "x: \\"y\\""\n', path.read_text())
+        rec = json.loads(self.wi_ok(["show", "amp-1111", "--json"]))
+        self.assertEqual(rec["title"], 'x: "y"')
+        self.assertIn("0 to repair", self.wi_ok(["repair-escapes"]))
+
+    def test_id_limits_the_repair(self):
+        path = self.seed()
+        before = path.read_bytes()
+        self.wi_ok(["repair-escapes", "--apply", "--id", "legit-2222"])
+        self.assertEqual(path.read_bytes(), before)
+
+    def amplify(self, iid, extra=""):
+        path = self.root / "items" / f"{iid}.md"
+        path.write_text(path.read_text().replace(
+            f"title: {iid}", self.AMPLIFIED + extra))
+        return path
+
+    def test_id_repairs_one_and_leaves_another_amplified_item_alone(self):
+        self.write_item("amp-1111")
+        self.write_item("amp-2222")
+        one, two = self.amplify("amp-1111"), self.amplify("amp-2222")
+        before = two.read_bytes()
+        out = self.wi_ok(["repair-escapes", "--apply", "--id", "amp-1111"])
+        self.assertIn("repaired\tamp-1111\ttitle", out)
+        self.assertNotIn("amp-2222", out)
+        self.assertIn('title: "x: \\"y\\""\n', one.read_text())
+        self.assertEqual(two.read_bytes(), before)
+        self.assertIn("amp-2222", self.wi_ok(["repair-escapes"]))
+
+    def test_lists_and_maps_and_key_filter(self):
+        self.write_item("amp-1111")
+        amp = '"a\\\\\\"b"'  # a"b after two rewrites
+        path = self.amplify("amp-1111", f"\ntags: [{amp}, plain]\n"
+                            f"refs:\n  - {amp}\n  - plain\n"
+                            f"x_backlog:\n  k: {amp}\n  j: plain")
+        dry = self.wi_ok(["repair-escapes"])
+        for key in ("title", "tags", "refs", "x_backlog"):
+            self.assertIn(f"would repair\tamp-1111\t{key}\t", dry)
+        self.assertIn("4 to repair", dry)
+        self.wi_ok(["repair-escapes", "--apply", "--key", "tags"])
+        rec = json.loads(self.wi_ok(["show", "amp-1111", "--json"]))
+        self.assertEqual(rec["tags"], ['a"b', "plain"])
+        self.assertIn("3 to repair", self.wi_ok(["repair-escapes"]))
+        self.wi_ok(["repair-escapes", "--apply"])
+        item = wi.Item.parse(path.read_text())
+        self.assertEqual(item.get("refs"), ['a"b', "plain"])
+        self.assertEqual(item.get("x_backlog"), {"k": 'a"b', "j": "plain"})
+        self.assertEqual(item.get("title"), 'x: "y"')
+
+    def test_heuristic_also_lists_a_value_meant_with_escapes(self):
+        """Documented limit: a value whose backslashes all pair is listed
+        whether or not an older wi amplified it — review the dry run."""
+        title = 'wi: document why \\" and \\\\ are escaped'
+        iid = json.loads(self.wi_ok(["add", title, "--json"]))["id"]
+        path = self.root / "items" / f"{iid}.md"
+        before = path.read_bytes()
+        self.assertIn(iid, self.wi_ok(["repair-escapes"]))
+        self.assertEqual(path.read_bytes(), before)  # dry run writes nothing
+
+
 class TestImportTodo(WiTestCase):
     def items(self):
         return json.loads(self.wi_ok(["ls", "--status", "all", "--json"]))
@@ -1606,6 +1924,7 @@ class TestHostGitignoreUntouched(WiTestCase):
             ["set", iid, "priority", "1"], ["block", iid, "--on", dep],
             ["unblock", iid, "--dep", dep], ["release", iid],
             ["park", iid, "later"], ["unpark", iid], ["migrate-parked"],
+            ["repair-escapes"],
             ["import-todo", str(todo)],
             ["export", str(repo / "backlog.yaml"), "--format", "backlog-yaml"],
             ["import", str(repo / "backlog.yaml"), "--format", "backlog-yaml"],

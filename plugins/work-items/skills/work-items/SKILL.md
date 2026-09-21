@@ -38,6 +38,7 @@ the TODO.md failure mode with extra steps.
 | `$WI block <id> "reason"` / `--on <dep-id>` / `unblock` | runtime vs dependency blocks |
 | `$WI park <id> "reason"` / `unpark <id>` | deliberate deferral, not a block: out of `next`, one count line in `prime`, listed by `ls --status parked`; releases any claim; `unpark` → `todo` (or `blocked` if a block reason remains); `release` never unparks, `set status parked` refuses. Drop one with `done --drop` |
 | `$WI migrate-parked [--apply]` | converts `blocked` items whose reason starts `PARKED` (the old convention) to `parked`; a dry run until `--apply` |
+| `$WI repair-escapes [--id <id>] [--key <field>] [--apply]` | one-time, **heuristic** repair of quoted front-matter values an older `wi` escape-amplified: lists every front-matter value whose backslashes all pair as `\\` or `\"`, with those layers peeled — a value meant that way is listed too, so review the list; a dry run until `--apply`, and `--id`/`--key` narrow it |
 | `$WI set <id> <field> <value> [--force]` | one front-matter field; list fields (`tags deps refs`) take `a,b` and are **replaced whole**; `""` (or `—`) clears any field; `deps`/`parent` targets must resolve — `ext:` deps exempt, `--force` bypasses |
 | `$WI import-todo TODO.md` | idempotent migration; then replace TODO.md with the deprecation notice from `references/format.md` |
 | `$WI export/import --format backlog-yaml` | the ralph bridge — backlog.yaml stays authoritative for unattended runs |

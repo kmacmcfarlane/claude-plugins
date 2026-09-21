@@ -128,16 +128,131 @@ def age_str(claimed):
 
 # ── Front matter (strict subset) ────────────────────────────────────────────
 
+# Scalars are emitted bare when that reads back unchanged, else as a YAML
+# double-quoted scalar. The escapes below are the whole contract, and
+# _dq_decode is the exact inverse of _dq_escape: parse(emit(v)) == v for
+# every one-line string, so a rewrite never changes a value's bytes.
+_DQ_SIMPLE = {"\\": "\\", '"': '"', "/": "/", "t": "\t", "0": "\0",
+              "a": "\a", "b": "\b", "e": "\x1b", "v": "\v", "f": "\f",
+              " ": " ", "_": "\xa0", "N": "\x85", "L": "\u2028",
+              "P": "\u2029"}
+_DQ_HEX = {"x": 2, "u": 4, "U": 8}
+# Tab, C0/C1 controls, DEL, the characters YAML or str.splitlines treat as
+# line or byte-order marks, U+FFFE/U+FFFF and lone surrogates (which a YAML
+# reader rejects raw) are written as escapes, never raw — and never bare
+_DQ_ESCAPE_RE = re.compile("[\x00-\x08\x09\x0b-\x1f\x7f-\x9f\u2028\u2029"
+                           "\ufeff\ufffe\uffff\ud800-\udfff]")
+# what `wi lint` flags in a decoded value: any control character, tab
+# included (wi never writes one raw), most often a hand-written backslash
+# path ("C:\\temp" holds a tab, "C:\\bin" a \b)
+_CONTROL_RE = re.compile("[\x00-\x08\x09\x0b-\x1f\x7f-\x9f]")
+
+
+def _dq_escape_char(m):
+    c = ord(m.group())
+    if c == 0x09:
+        return "\\t"
+    return f"\\x{c:02x}" if c < 0x100 else f"\\u{c:04x}"
+
+
+def _dq_escape(v):
+    v = v.replace("\\", "\\\\").replace('"', '\\"')
+    return _DQ_ESCAPE_RE.sub(_dq_escape_char, v)
+
+
+def _dq_decode(v):
+    """Decode a whole double-quoted scalar `"..."`; None when `v` is not
+    exactly one well-formed one (legacy input is then read leniently). An
+    unknown escape, or one that would decode to a line break, is kept as
+    written: a hand-edited file loads, and stays one line."""
+    out, i, n = [], 1, len(v)
+    while i < n:
+        c = v[i]
+        if c == '"':
+            return "".join(out) if i == n - 1 else None
+        if c != "\\" or i + 1 >= n:
+            out.append(c)
+            i += 1
+            continue
+        e = v[i + 1]
+        if e in _DQ_SIMPLE:
+            out.append(_DQ_SIMPLE[e])
+            i += 2
+            continue
+        width = _DQ_HEX.get(e)
+        digits = v[i + 2:i + 2 + width] if width else ""
+        if (width and len(digits) == width
+                and re.fullmatch(r"[0-9A-Fa-f]+", digits)):
+            ch = int(digits, 16)
+            if ch <= 0x10FFFF and chr(ch) not in "\n\r":
+                out.append(chr(ch))
+                i += 2 + width
+                continue
+        out.append(c)  # unknown or unsafe escape: keep the backslash
+        i += 1
+    return None
+
+
+def _parse_scalar(text):
+    """(value, quoted) for one scalar token."""
+    v = text.strip()
+    if len(v) >= 2 and v[0] == v[-1] == '"':
+        dec = _dq_decode(v)
+        return (v[1:-1] if dec is None else dec), True
+    if len(v) >= 2 and v[0] == v[-1] == "'":
+        inner = v[1:-1]
+        if re.fullmatch(r"(?:[^']|'')*", inner):
+            inner = inner.replace("''", "'")
+        return inner, True
+    return v, False
+
+
 def _unquote(v):
-    v = v.strip()
-    if len(v) >= 2 and v[0] == v[-1] and v[0] in "'\"":
-        return v[1:-1]
+    return _parse_scalar(v)[0]
+
+
+def _split_flow(inner):
+    """Split a flow list's inside on the commas outside quoted scalars."""
+    parts, cur, quote, i = [], [], None, 0
+    while i < len(inner):
+        c = inner[i]
+        cur.append(c)
+        if quote == '"' and c == "\\" and i + 1 < len(inner):
+            cur.append(inner[i + 1])
+            i += 1
+        elif quote and c == quote:
+            quote = None
+        elif not quote and c in "\"'" and not "".join(cur[:-1]).strip():
+            quote = c
+        elif not quote and c == ",":
+            cur.pop()
+            parts.append("".join(cur))
+            cur = []
+        i += 1
+    if quote:  # an unterminated quote: read it the old way, comma by comma
+        return [x for x in inner.split(",") if x.strip()]
+    parts.append("".join(cur))
+    return [x for x in parts if x.strip()]
+
+
+def _looks_amplified(v):
+    """True when every backslash in `v` is half of a `\\\\` or `\\"` pair —
+    the trace an older wi left: its reader never unescaped, so each rewrite of
+    a quoted value doubled its backslashes and escaped its quotes again."""
+    return "\\" in v and re.fullmatch(r'(?:[^\\]|\\[\\"])*', v) is not None
+
+
+def _deamplify(v):
+    while _looks_amplified(v):
+        v = re.sub(r'\\([\\"])', r"\1", v)
     return v
 
 
 def parse_front(lines):
-    """Return (meta, extra_keys, errors). Scalars stay strings; `—`/'' → None."""
+    """Return (meta, extra_keys, errors). Scalars stay strings; a bare `—` or
+    an empty value → None."""
     meta, extra, errors = {}, [], []
+
     i = 0
     while i < len(lines):
         line = lines[i]
@@ -151,10 +266,11 @@ def parse_front(lines):
         key, rest = m.group(1), m.group(2).strip()
         if rest.startswith("[") and rest.endswith("]"):
             inner = rest[1:-1].strip()
-            val = [_unquote(x) for x in inner.split(",") if x.strip()] if inner else []
+            val = [_parse_scalar(x)[0] for x in _split_flow(inner)] \
+                if inner else []
         elif rest:
-            val = _unquote(rest)
-            if val in ("—", ""):
+            val, quoted = _parse_scalar(rest)
+            if val == "" or (val == "—" and not quoted):
                 val = None
         else:
             block, submap = [], {}
@@ -164,8 +280,8 @@ def parse_front(lines):
                 sub = lines[i].strip()
                 i += 1
                 if sub.startswith("- "):
-                    item = _unquote(sub[2:])
-                    if item.endswith(":"):
+                    item, quoted = _parse_scalar(sub[2:])
+                    if item.endswith(":") and not quoted:
                         errors.append(f"nested structure under {key}: {sub!r}")
                     block.append(item)
                 elif re.match(r"^[A-Za-z_][A-Za-z0-9_]*:", sub):
@@ -190,30 +306,49 @@ def parse_front(lines):
     return meta, extra, errors
 
 
-def _emit_scalar(v):
-    """Quote only when a bare scalar would mis-read: mapping/comment
-    indicators, structure chars, or surrounding whitespace."""
+_BARE_UNSAFE_START = tuple("-?:,[]{}#&*!|>'\"%@`")
+
+
+def _emit_scalar(v, flow=False):
+    """Bare when wi reads a bare scalar back unchanged and a YAML loader
+    parses it, else double-quoted with _dq_escape: mapping or comment
+    indicators, structure chars, surrounding whitespace, a leading YAML
+    indicator, the `—` that reads as empty, a lone `=` or `<<` (YAML's
+    value and merge keys), a tab or other control character, or (in a flow
+    list) a comma. YAML's implicit typing (numbers, booleans, null, dates)
+    is left alone: `priority: 2` and `created: 2026-09-21` stay bare, so a
+    YAML loader may type a bare value that wi reads as a string."""
     v = str(v)
-    if (v == "" or v != v.strip() or ": " in v or " #" in v or v.endswith(":")
-            or re.search(r"[\[\]{}]", v) or v.startswith(("-", "'", '"', "#"))):
-        return '"' + v.replace("\\", "\\\\").replace('"', '\\"') + '"'
+    if (v in ("", "—", "=", "<<") or v != v.strip() or v.endswith(":")
+            or re.search(r":[ \t]|[ \t]#|[\[\]{}]", v)
+            or v.startswith(_BARE_UNSAFE_START) or _DQ_ESCAPE_RE.search(v)
+            or (flow and "," in v)):
+        return '"' + _dq_escape(v) + '"'
     return v
 
 
-def _front_one_line(key, val):
+def _front_one_line(key, val, plain=True):
     """Every front-matter value is one line: a line break would forge keys
-    (`status: done`) or leave a file no later command can parse. This is the
-    backstop behind the per-command checks; render() runs before any write,
-    so a rejected value writes nothing."""
+    (`status: done`) or leave a file no later command can parse. A tab or
+    other control character is refused too, so nothing wi writes is what
+    `wi lint` reports (there, most often a hand-written backslash path).
+    This is the backstop behind the per-command checks; render() runs before
+    any write, so a rejected value writes nothing. `plain=False` (display
+    only: `show`) lets a hand-written control character through."""
     vals = val.values() if isinstance(val, dict) else \
         val if isinstance(val, list) else [val]
     for v in vals:
         if isinstance(v, str) and ("\n" in v or "\r" in v):
             raise WiError(1, f"front-matter '{key}' must be one line; "
                              "it contains a line break")
+        if plain and isinstance(v, str) and _CONTROL_RE.search(v):
+            c = ord(_CONTROL_RE.search(v).group())
+            raise WiError(1, f"front-matter '{key}' holds a control character "
+                             f"(U+{c:04X}{', a tab' if c == 9 else ''}); "
+                             "front-matter values are plain text")
 
 
-def emit_front(meta, extra=()):
+def emit_front(meta, extra=(), plain=True):
     out = []
     for key in list(FIELD_ORDER) + [k for k in extra if k not in FIELD_ORDER]:
         if key not in meta:
@@ -221,13 +356,14 @@ def emit_front(meta, extra=()):
         val = meta[key]
         if val is None or val == [] or val == {}:
             continue
-        _front_one_line(key, val)
+        _front_one_line(key, val, plain)
         if isinstance(val, dict):
             out.append(f"{key}:")
             out.extend(f"  {k}: {_emit_scalar(v)}" for k, v in val.items())
         elif isinstance(val, list):
             if key in FLOW_LIST_FIELDS:
-                out.append(f"{key}: [" + ", ".join(_emit_scalar(v) for v in val) + "]")
+                out.append(f"{key}: [" + ", ".join(_emit_scalar(v, flow=True)
+                                                   for v in val) + "]")
             else:
                 out.append(f"{key}:")
                 out.extend(f"  - {_emit_scalar(v)}" for v in val)
@@ -424,9 +560,9 @@ class Item:
             raise WiError(3, f"{path}: " + "; ".join(errors))
         return cls(meta, extra, None, None, path, body=body, eol=eol)
 
-    def render(self):
+    def render(self, plain=True):
         eol = self.eol
-        front = emit_front(self.meta, self.extra).replace("\n", eol)
+        front = emit_front(self.meta, self.extra, plain).replace("\n", eol)
         return "---" + eol + front + eol + "---" + eol + self.body
 
     def _parse(self):
@@ -1141,6 +1277,57 @@ def cmd_migrate_parked(args):
     return 0
 
 
+def cmd_repair_escapes(args):
+    """One-time repair of values an older wi escape-amplified: its reader did
+    not unescape what its writer escaped, so every rewrite of a quoted value
+    added a layer of backslashes (`"` -> `\\"` -> `\\\\\\"`). The file still
+    loads. The test is a heuristic: it lists every value (quoted or not — the
+    current writer may have rewritten an amplified value bare) whose every
+    backslash pairs as `\\\\` or `\\"`, with all such layers peeled — and a
+    value can be meant that way (a title about escapes), so review the list
+    first: a dry run until --apply; --id and --key narrow what it touches, and
+    `wi set` fixes one value by hand instead."""
+    root = resolve_root(args.root)
+    rows, changed = [], []
+    with Lock(root):
+        for item in load_all(root, archived=True):
+            if args.id and item.id != args.id:
+                continue
+            fixes = []
+            for key in [k for k in FIELD_ORDER if k in item.meta] + \
+                    [k for k in item.extra if k not in FIELD_ORDER]:
+                if args.key and key != args.key:
+                    continue
+                val = item.meta.get(key)
+                fix = (lambda v: _deamplify(v) if isinstance(v, str) else v)
+                if isinstance(val, dict):
+                    new = {k: fix(v) for k, v in val.items()}
+                    pairs = [(val[k], new[k]) for k in val]
+                elif isinstance(val, list):
+                    new = [fix(v) for v in val]
+                    pairs = list(zip(val, new))
+                else:
+                    new = fix(val) if isinstance(val, str) else val
+                    pairs = [(val, new)]
+                pairs = [(a, b) for a, b in pairs if a != b]
+                if pairs:
+                    fixes.append((key, new, pairs))
+            for key, new, pairs in fixes:
+                rows.extend((item.id, key, a, b) for a, b in pairs)
+                if args.apply:
+                    item.meta[key] = new
+            if args.apply and fixes:
+                changed.append(item)
+        save_items(root, changed)
+    verb = "repaired" if args.apply else "would repair"
+    for iid, key, old, new in rows:
+        print(f"{verb}\t{iid}\t{key}\t{json.dumps(old, ensure_ascii=False)}"
+              f" -> {json.dumps(new, ensure_ascii=False)}")
+    print(f"{len(rows)} " + ("repaired" if args.apply else
+                             "to repair (dry run; --apply to write)"))
+    return 0
+
+
 def cmd_set(args):
     root = resolve_root(args.root)
     field, value = args.field, args.value
@@ -1249,7 +1436,7 @@ def cmd_show(args):
             for ref in item.get("refs"):
                 print(f"- {ref}")
     else:
-        print(item.render(), end="")
+        print(item.render(plain=False), end="")
     return 0
 
 
@@ -1520,7 +1707,7 @@ def _section_item(heading, body):
             item["priority"] = prio
             title = title[len(prefix):].lstrip(" —-")
             break
-    item["title"] = re.sub(r"\s+", " ", title).strip()[:120]
+    item["title"] = _fold(title)[:120]
     paras = body.strip().split("\n\n")
     item["desc"] = paras[0].strip() if paras else ""
     item["notes"] = "\n\n".join(p for p in paras[1:]).strip()
@@ -1540,7 +1727,7 @@ def _bullet_item(text):
     else:
         first, _, rest = text.partition("\n")
         title, rest = first, rest
-    item["title"] = re.sub(r"\s+", " ", title).strip()[:120]
+    item["title"] = _fold(title)[:120]
     item["desc"] = rest.strip()
     return item
 
@@ -1602,7 +1789,7 @@ def _yaml_scalar(v):
     v = str(v)
     if v.startswith(("[", "{")):  # JSON-encoded passthrough; JSON is YAML flow
         return v
-    return '"' + v.replace("\\", "\\\\").replace('"', '\\"') + '"'
+    return '"' + _dq_escape(v) + '"'
 
 
 def _yaml_list(w, key, values, indent):
@@ -1760,8 +1947,19 @@ def _fold(v):
     line (whitespace collapsed, as import-todo folds titles). YAML block
     scalars (`review_feedback: |`) are common in ralph backlogs; folding keeps
     every word and every story, where rejecting would drop the story and
-    break the requires links of the stories that name it."""
-    return v if not isinstance(v, str) else re.sub(r"\s+", " ", v).strip()
+    break the requires links of the stories that name it. Control characters
+    fold to a space as line breaks do: the writer refuses them."""
+    if not isinstance(v, str):
+        return v
+    return re.sub(r"\s+", " ", _CONTROL_RE.sub(" ", v)).strip()
+
+
+def _story_value(story, key):
+    """A backlog field as a front-matter value: empty, or the `—` placeholder
+    wi itself reads as "no value", is None — so a `blocked_reason: "—"` never
+    lands as a literal dash now that a quoted `—` reads back as one."""
+    v = story.get(key) or None
+    return None if v == "—" else v
 
 
 def _import_story(story, alias_map, existing_by_alias, update):
@@ -1778,7 +1976,7 @@ def _import_story(story, alias_map, existing_by_alias, update):
         if key not in KNOWN_STORY_FIELDS:
             x_backlog[key] = val if isinstance(val, (str, int)) else \
                 json.dumps(val, separators=(", ", ": "))
-    blocked = story.get("blocked_reason") or None
+    blocked = _story_value(story, "blocked_reason")
     parked = parked_reason(blocked) if status == "blocked" else None
     if parked is not None:
         status, blocked = "parked", None
@@ -1789,8 +1987,8 @@ def _import_story(story, alias_map, existing_by_alias, update):
             # it (unpark returns to blocked) lives only in the store
             blocked = it.get("blocked")
         it.meta.update(status=status, stage=stage, blocked=blocked, parked=parked,
-                       feedback=story.get("review_feedback") or None,
-                       owner=story.get("claimed_by") or None,
+                       feedback=_story_value(story, "review_feedback"),
+                       owner=_story_value(story, "claimed_by"),
                        x_backlog=x_backlog or None)
         if status in ("done", "dropped") and not it.get("closed"):
             it.meta["closed"] = today()
@@ -1801,10 +1999,10 @@ def _import_story(story, alias_map, existing_by_alias, update):
     meta = {"id": make_id(title, today()), "title": title, "status": status,
             "stage": stage, "priority": priority, "alias": alias,
             "blocked": blocked, "parked": parked,
-            "feedback": story.get("review_feedback") or None,
-            "owner": story.get("claimed_by") or None,
-            "mode": story.get("ticket_mode") or None,
-            "complexity": story.get("complexity") or None,
+            "feedback": _story_value(story, "review_feedback"),
+            "owner": _story_value(story, "claimed_by"),
+            "mode": _story_value(story, "ticket_mode"),
+            "complexity": _story_value(story, "complexity"),
             "created": today(), "updated": today(),
             "x_backlog": x_backlog or None}
     if status in ("done", "dropped"):
@@ -1881,9 +2079,9 @@ def secret_findings(text):
 def cmd_lint(args):
     root = resolve_root(args.root)
     problems = []
-    items = []
+    items, texts = [], {}
     for path in item_paths(root, archived=True):
-        text = path.read_text()
+        text = texts[path] = path.read_text()
         if re.search(r"^(<{7}|={7}|>{7})", text, re.M):
             problems.append(f"{path}: unresolved merge conflict markers")
             continue
@@ -1918,7 +2116,19 @@ def cmd_lint(args):
                 problems.append(f"{it.path}: doing without a ## Handoff block")
             elif not h.get("next"):
                 problems.append(f"{it.path}: doing with empty handoff next:")
-        for n, why in secret_findings(it.render()):
+        for key in [k for k in FIELD_ORDER if k in it.meta] + \
+                [k for k in it.extra if k not in FIELD_ORDER]:
+            val = it.meta[key]
+            vals = val.values() if isinstance(val, dict) else \
+                val if isinstance(val, list) else [val]
+            if any(isinstance(v, str) and _CONTROL_RE.search(v) for v in vals):
+                problems.append(
+                    f"{it.path}: front-matter '{key}' holds a control"
+                    " character — a quoted value decodes YAML escapes, so a"
+                    " hand-written backslash (\"C:\\temp\" holds a tab)"
+                    " must be written \\\\;"
+                    f" fix it with `wi set {it.id} {key} ...`")
+        for n, why in secret_findings(texts[it.path]):
             problems.append(f"{it.path}:{n}: {why}")
     # cycle detection over deps
     state = {}
@@ -2008,6 +2218,10 @@ def build_parser():
         ("migrate-parked", cmd_migrate_parked,
          "convert blocked items whose reason starts PARKED to parked"): [
             ("--apply",)],
+        ("repair-escapes", cmd_repair_escapes,
+         "list (or --apply) a heuristic repair of backslash layers an older "
+         "wi added to quoted values"): [
+            ("--id", {}), ("--key", {}), ("--apply",)],
         ("ls", cmd_ls, "list items"): [
             ("--status", {}), ("--type", {}), ("--tag", {}), ("--owner", {}),
             ("--ready",), ("--json",), ("--plain",)],
