@@ -481,6 +481,9 @@ Report the outcome in one line at the Step 12 gate — e.g. *"Sweep: 5 candidate
 
 ## Step 12 — Review gate
 
+Before presenting, hold the plan to `references/quality-criteria.md` — the last point before
+anything is written.
+
 Present the full plan and pause. Nothing has been written yet.
 
 Display the plan, then output this **verbatim**:
@@ -605,7 +608,7 @@ cost you time during the run.
 Read `references/edge-cases.md` when a run goes off the main path. Most entries restate a
 step's rule; a few live only there — a path the user names that is missing inside a
 container, a user who defers every question, a sweep with no candidates, a problem that turns
-out to be several.
+out to be several (propose one series each).
 
 ---
 
