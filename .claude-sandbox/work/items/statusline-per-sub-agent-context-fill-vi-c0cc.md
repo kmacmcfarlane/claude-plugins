@@ -15,7 +15,7 @@ From spike 9f90 (series .claude-sandbox/investigations/9f90-subagent-statusline/
 ## Handoff
 - doing: implementer dispatched (opus, agent a2fc00d5652990edd)
 - next: on DONE: review r1 (opus)
-- blocked: —
+- blocked: land stopped: marketplace.json description not mirrored (fix round 1)
 - learned: —
 
 ## Carried from spike 9f90 (closed)
@@ -31,3 +31,10 @@ decision 50: the drafted upstream issue (tell the statusLine which sub-agent is 
 - dispatch: implementer opus — widening (same agent resumed), then reviewer opus
 - widening DONE c1be970: CLAUDE.md layout lists subagent_statusline + plugin settings.json.
 - dispatch: reviewer opus — rule 4
+
+## Review round 1 — CLEAR (opus) at c1be970
+- verified docs + 2.1.278 binary independently (plugin settings allowlist agent/subagentStatusLine; user value wins; no ${CLAUDE_PLUGIN_ROOT} expansion; fresh install fails quietly to default rows); injection/traversal neutralised; 128 MB sidechain ticks ≤0.24 s.
+- lows: single huge line bypasses the 8 MiB budget / later rows starve; cache drops rows not visible this tick; workflow agents' transcriptSubdir not searched; plugin.json 'plus' clause (principle 1), catalog/placement text; two commits; test reads marketplace.json by relative path; columns 0.
+## Land stopped (librarian reading) — counts as review round 2
+- [medium] doctrine: plugin.json description changed but .claude-plugin/marketplace.json's statusline description was not — every other plugin mirrors word for word (main: all SAME). Mirror it, folding the sub-agent fill into the one clause (reviewer low, principle 1); CLAUDE.md placement rule 1 names subagentStatusLine for statusline.
+- dispatch: implementer opus — fix round 1 (same agent resumed)

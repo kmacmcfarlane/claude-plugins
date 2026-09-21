@@ -41,3 +41,14 @@ updated: 2026-09-21
 - [medium] plan mode resume not covered.
 - lows: NEEDS_CHANGES ask contradicts Step 4.4 and the red flag; <branch> raw in paths (feature/x); git -C "$MAIN"/<path> for an outside worktree; declined path item handling.
 - dispatch: implementer sonnet — fix round 1 (tier kept, rule 6); scope widened to references/review-brief.md, agent-brief.md
+- fix round 1 DONE d802a19 (sonnet): review-mode brief variants, review-mode Land, Intent + record-line shapes, ordered resume map, ListAgents check, plan-mode resume, troubleshooting landed/re-add; all lows fixed.
+- dispatch: reviewer opus — review r2 (same reviewer resumed)
+
+## Review round 2 — NEEDS_CHANGES (opus) at d802a19
+- round-1: 1,4,10 fixed; 2,3,5,6,7,8,9 partial.
+- [high] A case 1 (main checkout on <branch>): merge is a no-op ("Already up to date", reproduced) yet the item closes → Land stops and asks, or reviews in an added worktree and merges only when main is on base.
+- [high] B resume order: rules 2/3 match any earlier verdict, not the last state; "dispatch with no return" (most common interrupt) hits rule 2 → duplicate fix, ListAgents skipped; stale CLEAR undefined; no reviewer return line.
+- [high] C review mode fails at Land: Step 5.2 "implementer's reason", checklist §1 changed-block and one-commit checks.
+- [medium] D FINDINGS block never written; E landed test needs a `landed:` line; F plan target vs plan mode conflation; G verdict `at <sha>` drops plan-mode coverage; H fix-loop.md conflict/leak paths assume worktree-<name> and rewrite branches.
+- lows: I BLOCKED verdicts counted toward cap; J review mode never claims the item.
+- dispatch: implementer sonnet — fix round 2 (tier kept, rule 6; scope widened to fix-loop.md and review-checklist.md). Next round (fix round 3) would bump per rule 3.
