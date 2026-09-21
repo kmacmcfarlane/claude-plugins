@@ -2,13 +2,14 @@
 id: dev-cycle-review-branch-mode-resume-from-426a
 title: "dev-cycle: review <branch> mode + resume from item record (07c3 F4)"
 type: feature
-status: doing
+status: blocked
 priority: 3
 deps:
   - dev-flow-add-the-dev-cycle-skill-07c3-f1-325d
 parent: dev-flow-new-dev-cycle-skill-investigate-07c3
 owner: unknown@360f41058e92
 claimed: 2026-09-21T23:07Z
+blocked: "decision 51: review cap hit on § Resume rules 3/5"
 created: 2026-09-18
 updated: 2026-09-21
 ---
@@ -18,7 +19,7 @@ updated: 2026-09-21
 ## Handoff
 - doing: implementer dispatched (sonnet, agent ad99423445ed4c9a0)
 - next: on DONE: review r1 (opus)
-- blocked: —
+- blocked: review cap hit (4 rounds); decision 51
 - learned: —
 
 ## Notes
@@ -54,3 +55,11 @@ updated: 2026-09-21
 - dispatch: implementer sonnet — fix round 2 (tier kept, rule 6; scope widened to fix-loop.md and review-checklist.md). Next round (fix round 3) would bump per rule 3.
 - fix round 2 DONE 58bece4 (sonnet): case 1 stops and asks; resume as a last-line state machine (walk-through table in the report); findings:/landed: shapes; review-mode checklist exemption; fix-loop carve-outs; claim in Step 0; BLOCKED not counted.
 - dispatch: reviewer opus — review r3 (same reviewer resumed); last round before the cap
+
+## Review round 3 (4th review, cap) — NEEDS_CHANGES (opus) at 58bece4
+- round-2 A, C-J fixed; B partial. Core guarantees hold (CLEAR at current HEAD only; checks always run; landed stops reruns; no land-only mode).
+- [high] bindings.md:252-257 § Resume rule 5: a resumed review-mode run with last verdict NEEDS_CHANGES dispatches an implementer onto the author's branch, bypassing the operator's recorded "dispatch an implementer?" answer (declined / unanswered).
+- [medium] bindings.md:230-234 rule 3 reviews after ANY implementer return; NEEDS_CONTEXT / BLOCKED must follow Step 3.5.
+- lows: define "relevant" lines (dispatch/return/verdict/landed); rule 7 re-dispatches a BLOCKED reviewer without the twice-at-most count.
+- reviewer: both are a few lines in § Resume rules 3 and 5, not a sign the brief or target is wrong.
+decision 51: 426a hit the 4-review cap on a few-line § Resume fix (rule 5 review-mode dispatch answer; rule 3 return status) — (a) waive the cap for one more fix round on opus (rule 3: fix round 3 after a high → fable, unavailable → opus) plus one review [recommended: the fixes are specified line-by-line; everything else is CLEAR]; (b) land review mode without resume: split § Resume into a new item and have the implementer revert it on this branch, then review; (c) park 426a as is.
