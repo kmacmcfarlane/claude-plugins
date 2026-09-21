@@ -2,15 +2,14 @@
 id: statusline-hub-f3-statusline-becomes-a-d-dfa1
 title: "statusline-hub F3: statusline becomes a display hook (hard dependency on the hub)"
 type: feature
-status: doing
+status: done
 priority: 2
 deps:
   - statusline-hub-f2-owner-mode-hooks-d-reg-b28f
 parent: spike-status-line-multiplexer-dependency-d193
-owner: unknown@360f41058e92
-claimed: 2026-09-21T19:50Z
 created: 2026-09-21
 updated: 2026-09-21
+closed: 2026-09-21
 ---
 
 d193 07 § F3. statusline declares statusline-hub in plugin.json dependencies (principle 4 as amended by 5343: statusline has no function without the hub), catalog (hard); stops writing settings; the hub owns the sensor write. context-guard/analytics/dev-flow stay soft readers.
@@ -34,6 +33,7 @@ d193 07 § F3. statusline declares statusline-hub in plugin.json dependencies (p
 
 ## Notes
 - 2026-09-21 claimed by unknown@360f41058e92
+- 2026-09-21 done: 24ec4eb
 
 ## Dispatch
 - dispatch: implementer opus — executable logic + settings ownership + a hard plugin dependency (doctrine); fable signal (settings/ownership handover): fable unavailable (unknown); fallback
@@ -57,3 +57,7 @@ d193 07 § F3. statusline declares statusline-hub in plugin.json dependencies (p
 - dispatch: implementer opus — fix round 1 (fresh agent; round-1 implementer lost at compaction; tier kept, fable-signal fallback)
 - fix round 1 DONE bbe5ea4 (opus): hub-missing notice (3 signals absent → say once, stamped); heal repoints a stale statusline entry when hooked, else waits; context-guard rehydrate prefix fix + test; descriptions/credits updated; repo-map mirrors layout; README #88663 note + team snippet both plugins; race low + refusal text fixed. Declined low: 14-day linger (documented).
 - dispatch: reviewer opus — review r2 (same reviewer resumed)
+
+## Review round 2 — CLEAR (opus) at bbe5ea4
+- all round-1 findings closed; hub-missing notice verified live (said once, cleared on reinstall). Lows (not fixed, carried to follow-up): fresh-machine message wording when hub runs first; heal waits forever on a footer entry after statusline uninstall (wait only while a statusline@ install record exists); README team snippet still only statusline@; 7f3d125 verb (carried in merge message).
+- landed 24ec4eb

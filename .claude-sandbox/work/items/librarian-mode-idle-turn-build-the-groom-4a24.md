@@ -25,3 +25,7 @@ Surfaced by b020's implementer 2026-09-21: plugins/dev-flow/skills/librarian-mod
 ## Notes
 - 2026-09-21 claimed by unknown@360f41058e92
 - dispatch: implementer sonnet — one doc file, no judgement signal
+
+## Implementer result
+- round 1 DONE d652529 (sonnet): Groom table from wi needs-input --plain; hold-scoped items via wi ls --dep; b020 placeholder dropped. SKILL.md Rehydrate grep kept (finds highest N, a different query).
+- dispatch: reviewer opus — rule 4
