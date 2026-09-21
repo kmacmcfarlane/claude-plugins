@@ -37,7 +37,7 @@ def main():
         print(json.dumps({})); return
     remaining = max(win - tok, 0)
     th = L.thresholds(win)
-    every = int(L.env_setting(L.LEDGER_EVERY_ENV) or 60000)
+    every = int(L.env_setting(L.LEDGER_EVERY_ENV, valid=L._is_int) or 60000)
     res = {}
 
     def apply(st):

@@ -71,7 +71,7 @@ Environment & knobs: `/autocompact 900k` lowers the auto-compact trigger so the 
 is provably safe (`CLAUDE_CODE_AUTO_COMPACT_WINDOW=900000` per project — plain integer, `900k`
 reads as 900, which Claude Code raises to its 100K floor, and the gate then scores against
 100K too); `CONTEXT_GUARD_LEDGER_EVERY` tunes the ledger nudge (default 60000; the deprecated alias
-`CLAUDE_KIT_LEDGER_EVERY` still works, and the new name wins when both are set);
+`CLAUDE_KIT_LEDGER_EVERY` still works, and the new name wins when both are valid integers);
 `CLAUDE_CODE_TASK_LIST_ID=<name>` shares a task list across sessions.
 
 ## Session shapes that stay in the band
@@ -125,7 +125,9 @@ escape hatches:
 1. Pin the window: `CONTEXT_GUARD_CONTEXT_WINDOW=1000000` (tokens) in the environment Claude
    Code is launched from; the hooks then never guess the denominator, and the pin also turns
    the derived window off (as hatch 3 does). The deprecated alias `CLAUDE_KIT_CONTEXT_WINDOW`
-   still works; the new name wins when both are set.
+   still works. The new name wins when both are valid (digits only, no `1m`, spaces or
+   underscores); a malformed new name never switches off a valid old-name pin — the old one
+   then applies, since a pin can only remove derived blocks.
 2. Emergency stand-down: record a checkpoint for the current epoch — exactly what
    `/checkpoint` records — with the plugin's own `mark_checkpoint.py`. It writes through the
    same locked read-modify-write as every hook, so a hook firing at the same moment cannot

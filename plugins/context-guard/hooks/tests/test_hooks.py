@@ -412,6 +412,12 @@ class TestStopRelay(Base):
         self.assertFalse(self.ledger_every(CONTEXT_GUARD_LEDGER_EVERY="50000",
                                            CLAUDE_KIT_LEDGER_EVERY="10000"))
 
+    def test_ledger_every_invalid_canonical_falls_to_valid_alias(self):
+        # A mistyped new name beside a valid old one: the alias applies, and
+        # the hook does not crash.
+        self.assertTrue(self.ledger_every(CONTEXT_GUARD_LEDGER_EVERY="10k",
+                                          CLAUDE_KIT_LEDGER_EVERY="10000"))
+
     def test_ledger_every_empty_canonical_falls_to_alias(self):
         self.assertTrue(self.ledger_every(CONTEXT_GUARD_LEDGER_EVERY="",
                                           CLAUDE_KIT_LEDGER_EVERY="10000"))

@@ -194,11 +194,20 @@ class TestDepth(Base):
         os.environ["CONTEXT_GUARD_CONTEXT_WINDOW"] = "500000"
         os.environ["CLAUDE_KIT_CONTEXT_WINDOW"] = "300000"
         self.assertEqual(L.window(100_000), 500_000)
-        # A set but invalid canonical value still wins: no pin, as an invalid
-        # value always meant.
-        os.environ["CONTEXT_GUARD_CONTEXT_WINDOW"] = "lots"
+        self.assertTrue(L._pinned(os.environ))
+        # A malformed canonical value never switches off a valid alias pin:
+        # the pin only removes derived blocks, so falling through is fail-safe.
+        for bad in ("lots", "1m", " 1000000", "1_000_000"):
+            with self.subTest(bad=bad):
+                os.environ["CONTEXT_GUARD_CONTEXT_WINDOW"] = bad
+                self.assertEqual(L.window(100_000), 300_000)
+                self.assertTrue(L._pinned(os.environ))
+        # Both malformed: no pin, as an invalid value always meant.
+        os.environ["CONTEXT_GUARD_CONTEXT_WINDOW"] = "1m"
+        os.environ["CLAUDE_KIT_CONTEXT_WINDOW"] = "1m"
         self.assertEqual(L.window(100_000), 200_000)
         self.assertFalse(L._pinned(os.environ))
+        os.environ["CLAUDE_KIT_CONTEXT_WINDOW"] = "300000"
         # An empty canonical value counts as unset: the alias applies.
         os.environ["CONTEXT_GUARD_CONTEXT_WINDOW"] = ""
         self.assertEqual(L.window(100_000), 300_000)
@@ -226,6 +235,17 @@ class TestEnvSetting(Base):
         self.assertEqual(L.env_setting(names, {"CANON": "x", "ALIAS": "2"}), "x")
         self.assertEqual(L.env_setting(names, {"CANON": "", "ALIAS": "2"}), "2")
         self.assertIsNone(L.env_setting(names, {"CANON": "", "ALIAS": ""}))
+
+    def test_validator_picks_the_first_valid_value(self):
+        names, dig = ("CANON", "ALIAS"), str.isdigit
+        self.assertEqual(L.env_setting(names, {"CANON": "1", "ALIAS": "2"}, dig), "1")
+        self.assertEqual(L.env_setting(names, {"CANON": "x", "ALIAS": "2"}, dig), "2")
+        self.assertEqual(L.env_setting(names, {"CANON": "1", "ALIAS": "y"}, dig), "1")
+        # Nothing valid: the first non-empty value, raw, for the reader to
+        # reject exactly as before.
+        self.assertEqual(L.env_setting(names, {"CANON": "x", "ALIAS": "y"}, dig), "x")
+        self.assertEqual(L.env_setting(names, {"ALIAS": "y"}, dig), "y")
+        self.assertIsNone(L.env_setting(names, {"CANON": ""}, dig))
 
     def test_names(self):
         self.assertEqual(L.WINDOW_ENV,

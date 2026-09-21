@@ -752,31 +752,55 @@ def scan_transcript(transcript_path, cache=None):
 
 # Operator settings read from the environment: canonical name, then the
 # deprecated alias it replaced (the claude-kit brand is dissolved). The alias
-# keeps exactly the same semantics; the canonical name wins when both are set.
+# keeps exactly the same semantics; the canonical name wins when both are
+# valid, and a valid alias beats an invalid canonical value (a mistyped new
+# name must not switch off a working old-name pin: that could hard-block).
 WINDOW_ENV = ("CONTEXT_GUARD_CONTEXT_WINDOW", "CLAUDE_KIT_CONTEXT_WINDOW")
 LEDGER_EVERY_ENV = ("CONTEXT_GUARD_LEDGER_EVERY", "CLAUDE_KIT_LEDGER_EVERY")
 
 
-def env_setting(names, environ=None):
+def env_setting(names, environ=None, valid=None):
     """The value of the first of `names` (canonical, then deprecated alias)
-    that is set to a non-empty string in environ (default os.environ), else
-    None. An empty value counts as unset, as every reader treated it before
-    the alias existed. The value is returned raw: a set but invalid canonical
-    value still wins over the alias, and each reader validates it as before."""
+    set in environ (default os.environ) to a non-empty value that `valid`
+    accepts (any non-empty value when `valid` is None). An empty value counts
+    as unset, as every reader treated it before the alias existed. When no
+    name holds a valid value, the first non-empty value is returned raw, so a
+    reader sees an invalid value exactly as it did before; None when every
+    name is unset or empty."""
     environ = os.environ if environ is None else environ
+    raw = None
     for name in names:
         v = environ.get(name)
-        if v:
+        if not v:
+            continue
+        if valid is None or valid(v):
             return v
-    return None
+        if raw is None:
+            raw = v
+    return raw
 
 
-def window(peak, floor=0):
+def _is_int(v):
+    """v parses as int() - what the ledger-nudge interval always accepted."""
+    try:
+        int(v)
+        return True
+    except (TypeError, ValueError):
+        return False
+
+
+def _is_window(v):
+    """v is a window pin window() accepts: digits only."""
+    return v.isdigit()
+
+
+def window(peak, floor=0, environ=None):
     """Guess the window from the session's peak usage. `floor` is a window that
     was once reported exactly (by the status line): the guess never returns
     less than it. CONTEXT_GUARD_CONTEXT_WINDOW (deprecated alias
-    CLAUDE_KIT_CONTEXT_WINDOW) pins the window outright."""
-    env = env_setting(WINDOW_ENV)
+    CLAUDE_KIT_CONTEXT_WINDOW) pins the window outright; `environ` defaults
+    to os.environ."""
+    env = env_setting(WINDOW_ENV, environ, _is_window)
     if env and env.isdigit():
         return int(env)
     small, large = DEFAULTS
@@ -1287,14 +1311,14 @@ def _append_capped(path, line, keep):
 def _pinned(environ):
     """CONTEXT_GUARD_CONTEXT_WINDOW (the operator's pin; deprecated alias
     CLAUDE_KIT_CONTEXT_WINDOW) is set, as window() reads it."""
-    v = env_setting(WINDOW_ENV, environ)
+    v = env_setting(WINDOW_ENV, environ, _is_window)
     return bool(v and v.isdigit())
 
 
-def _inferred(res, ex, cur, peak, boundary):
+def _inferred(res, ex, cur, peak, boundary, environ=None):
     """The pre-mirror inferred depth (a stale exact record floors it)."""
     known = int(ex.get("window") or 0)
-    w = window(peak, floor=known)
+    w = window(peak, floor=known, environ=environ)
     src = "inferred"
     if known:
         if not boundary:
@@ -1341,7 +1365,7 @@ def measure(transcript_path, session_id=None, cwd=None, environ=None, mirror=Tru
             res.update(tokens=ex["tokens"], model_window=ex["window"], model_pct=ex["pct"],
                        source="exact")
             return _gate(res, True)
-        _inferred(res, ex, *scan_usage(transcript_path))
+        _inferred(res, ex, *scan_usage(transcript_path), environ=environ)
         return _gate(res, False)
     R = _rules()
     pi = proc_info()
@@ -1370,7 +1394,7 @@ def measure(transcript_path, session_id=None, cwd=None, environ=None, mirror=Tru
                        source="derived")
             blocking = True
         else:
-            _inferred(res, ex, scan["cur"], scan["peak"], scan["boundary"])
+            _inferred(res, ex, scan["cur"], scan["peak"], scan["boundary"], environ=environ)
             blocking = False
             if d and d.get("window"):
                 why = d["rule"]
