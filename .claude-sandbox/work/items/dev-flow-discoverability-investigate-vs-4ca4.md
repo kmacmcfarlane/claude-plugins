@@ -2,12 +2,11 @@
 id: dev-flow-discoverability-investigate-vs-4ca4
 title: "dev-flow discoverability: investigate vs deep-investigation at listing level"
 type: chore
-status: doing
+status: done
 priority: 3
-owner: unknown@360f41058e92
-claimed: 2026-09-21T18:25Z
 created: 2026-09-20
 updated: 2026-09-21
+closed: 2026-09-21
 refs:
   - "peer: agent-harness-fc (uds 160.sock)"
 ---
@@ -22,6 +21,7 @@ Peer relay 2026-09-19/20 from agent-harness-fc: the operator who commissioned bo
 
 ## Notes
 - 2026-09-21 claimed by unknown@360f41058e92
+- 2026-09-21 done: 19be497
 
 ## Dispatch
 - dispatch: implementer opus — README text (doctrine surface) + two skill descriptions
@@ -29,3 +29,8 @@ Peer relay 2026-09-19/20 from agent-harness-fc: the operator who commissioned bo
 ## Implementer result
 - round 1 DONE_WITH_CONCERNS d196c43 (opus): investigate/deep-investigation descriptions name each other with the escalation test; README "Which dev-flow skill" table (6 rows). plugin.json untouched (aim unchanged, principle 1).
 - dispatch: reviewer opus — rule 4
+
+## Review round 1 — CLEAR (opus) at d196c43
+- lows (landed as CLEAR; carry to be39, which rewrites investigate): README:240 restates the escalation test (drift) → "broad landscape (deep-investigation)"; README:245 CoVe "Not when" is not the skill's own boundary; README:242 implement also fans out to worktrees; nit: comma in investigate description.
+## Landed
+- 19be497.

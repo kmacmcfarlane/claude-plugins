@@ -15,3 +15,6 @@ Noted in the 183a and F3 reviews: investigate/SKILL.md is ~5.7k words, over the 
 - next: —
 - blocked: —
 - learned: —
+
+## Carried from 4ca4 review (lows)
+- README dev-flow table: investigate row restates the escalation test (say "broad landscape (deep-investigation)"); chain-of-verification Not-when should be its own boundary (no falsifiable content / speed over accuracy); implement row: also fans out to worktrees; investigate description: comma after "feature".

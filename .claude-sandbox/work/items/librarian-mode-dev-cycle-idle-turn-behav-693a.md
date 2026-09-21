@@ -48,3 +48,5 @@ Operator 2026-09-20: 'work-items that are ready and not parked should be worked 
 - 6 of 8 round-1 findings fixed; wi mechanics re-verified on a temp store.
 - [medium] Groom grep only shows lines starting decision/answer: misses legacy replies; decision 43 (answered "- 43 → (a)" in 2c77) shows open. [medium] a "sonnet only" hold vs the opus reviewer floor — unresolved clash. [low] "at most N agents": does implementer+reviewer count as two?
 - dispatch: implementer opus — fix round 2 (resume)
+- round 2 fix 5b3b860: Groom reads only `answer N:`; one-time librarian migration of legacy replies; limit below pin or reviewer opus floor → held + decision; N counts every agent.
+- dispatch: reviewer opus — round 3 (resume)
