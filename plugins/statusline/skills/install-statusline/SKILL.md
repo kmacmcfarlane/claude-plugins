@@ -1,6 +1,6 @@
 ---
 name: install-statusline
-description: Install, move or remove the always-on status line — a one-line footer showing context left (tokens and percent), plan usage limits with reset countdowns, model, effort and session name. The plugin installs it by itself on the first session; use this to put it in another scope, remove it, or replace a status line another tool set. Use when the user says "install the statusline", "set up the status line", "set up the context gauge", "remove the statusline", "move the statusline to this project", or "replace my status line with this one".
+description: Install, move or remove the always-on status line — a one-line footer showing context left (tokens and percent), plan usage limits with reset countdowns, model, effort and session name. The footer draws through statusline-hub, which owns the status-line slot and installs itself on the first session; this skill covers the coworker install, and hands moving, removing or replacing the slot to the install-statusline-hub skill. Use when the user says "install the statusline", "set up the status line", "set up the context gauge", "remove the statusline", "move the statusline to this project", or "replace my status line with this one".
 disable-model-invocation: false
 allowed-tools: Bash, Read, AskUserQuestion
 argument-hint: "[--user | --local | --project] [--remove]"
@@ -14,20 +14,22 @@ The footer looks like this:
 [Opus 5·high] my-repo  (session name)  ████░░░░░░ 42%  580k left  5h ██░░░░░░░░ 23% resets 2h10m  7d █████████░ 91% resets 3d
 ```
 
-## You may not need this skill
+## How it is set up
 
-The plugin sets itself up. On the first session after it is installed, its SessionStart hook
-adds the entry to the settings file where the plugin is enabled and shows one line, e.g.
-`statusline: status line installed in ~/.claude/settings.json; it shows from your next
-session.` It never replaces a status line another tool set: it says so once and leaves it.
-It also takes over an older copy of this same status line, and puts the entry back if an
-older session's settings write drops it. It never re-adds an entry you removed. If the
-settings file cannot be used (not valid JSON, read-only, or a project's
-`settings.local.json` that git does not ignore), it says so once, naming the file and the
-fix, and retries quietly in later sessions.
+Claude Code has one status-line slot. The `statusline-hub` plugin owns it: this plugin
+depends on it, and installing this plugin installs the hub too. Each render, the hub
+writes the sensor record other tools read, then runs the footer as one of its display
+hooks. This plugin writes no settings. At each session start it only registers the footer
+with the hub.
 
-Run this skill to install into another scope, to remove the status line, or to replace a
-status line another tool set.
+On the first session after install (or the second, when the footer had not registered yet
+as the hub looked), the hub puts itself in the slot where the plugins are enabled, and says
+so in one line, e.g. `statusline-hub: status line slot taken in
+~/.claude/settings.json: …`. The footer shows from the session after that. If the footer is
+already in the slot from an earlier version of this plugin, the hub takes that entry over
+once, with the footer drawing on both sides of the change, and says
+`took over the status line slot in PATH`. It never replaces a status line another tool
+set. It says so once and leaves it.
 
 ## Instructions
 
@@ -38,62 +40,26 @@ status line another tool set.
 - one scope: `--user`, `--local` or `--project`
 - `--remove`
 
-If it contains anything else, do not run the installer. Tell the user which words it accepts
-and stop. The consent flags `--replace` and `--write-read-only` are never taken from
-`$ARGUMENTS`: add one only after the user answers yes to its own question in Step 3.
+If it contains anything else, stop and tell the user which words it accepts.
 
-### Step 2: Pick the scope
+### Step 2: Hand it to the hub's installer
 
-- `--user` (default): your user settings file, `~/.claude/settings.json` (or
-  `$CLAUDE_CONFIG_DIR/settings.json`). The right choice on a personal machine.
-- `--local`: `.claude/settings.local.json` in the current repo — only you, only this repo.
-- `--project`: `.claude/settings.json` in the current repo. It is shared with everyone who
-  uses the repo, it **overrides each teammate's own status line**, and the command it writes
-  is an absolute path on this machine. Confirm with the user before using it. For a team,
-  prefer enabling the plugin for the repo: each person's first session installs it into
-  their own `settings.local.json`.
+Moving the status line to another scope, removing it, or replacing a status line another
+tool set are all changes to the slot. The slot belongs to `statusline-hub`, so run its
+skill, `/install-statusline-hub`, with the same arguments. Follow that skill's steps: its
+consent questions (replace, write a read-only file) are asked there, one at a time.
 
-### Step 3: Run the installer
+- `--project` writes the team-shared `.claude/settings.json` with an absolute path from this
+  machine. Confirm with the user first, or suggest `--local`. For a team, prefer enabling
+  the plugin for the repo: each person's first session installs it into their own
+  `settings.local.json`.
+- `--remove` takes the hub out of the slot, and the footer with it. The hub never adds it
+  back by itself; installing again turns it back on.
 
-Pass the checked arguments (none means `--user`):
+If `/install-statusline-hub` is not available, `statusline-hub` is not installed or not
+enabled. Run the coworker install below; it brings the hub along.
 
-```bash
-python3 "${CLAUDE_PLUGIN_ROOT}/skills/install-statusline/scripts/install_statusline.py" $ARGUMENTS
-```
-
-Expected output: `installed statusLine in PATH` (or `updated` when it was already there),
-the script path it points at, and `It shows from the next session.` Tell the user to start a
-new session (or restart Claude Code) to see it.
-
-The command it writes is an absolute path under the plugin's data dir
-(`plugins/data/statusline-*/current-hooks/statusline.py`), which survives plugin updates:
-the plugin's SessionStart hook keeps the `current-hooks` link pointing at the installed
-version, and the installer creates that link itself if no session has run it yet. Running
-the installer again is harmless.
-
-Each exit code other than 0 means nothing was written:
-
-| Exit | Meaning | What to do |
-|---|---|---|
-| 1 | An error: the settings file is not valid JSON, the plugin's data dir was not found, or the entry changed while writing | Show the message; see Troubleshooting |
-| 2 | Usage error: an unknown flag, or two scopes | Show the usage line it printed; fix the arguments |
-| 3 | The settings file has a *different* status line (from another tool or your own script) | Ask: "Replace the existing status line in PATH?" Only on a yes, run the same command with `--replace` added |
-| 4 | The settings file is read-only | Ask: "PATH is read-only. Write it anyway? Its mode is kept." Only on a yes, run the same command with `--write-read-only` added |
-
-Ask the two questions separately: a yes to one is not a yes to the other. A command with
-`--replace` can still exit 4, and then the second question is asked.
-
-An earlier copy of this same status line (installed from another plugin of this
-marketplace) is recognised and replaced without asking.
-
-Settings are changed in place. The file is read again at the moment of writing, and only
-its `statusLine` entry is changed, so edits made meanwhile by another session are kept. Only
-that entry's text changes: the rest of the file keeps its formatting byte for byte,
-including CRLF line endings. When that splice cannot be proved right (an empty `{}`, a
-repeated `statusLine` key, or removing the file's only key), the whole file is written again
-in its own indent style and line endings. An empty (0-byte) settings file counts as `{}`.
-
-### Step 4: Verify
+### Step 3: Verify
 
 In the next session the footer shows the gauge. Before the first reply of a session it may
 read `ctx --` (the numbers arrive with the first response). That is not a fault.
@@ -108,12 +74,13 @@ claude plugin install statusline@kmacmcfarlane
 ```
 
 Or inside a session: `/plugin marketplace add https://github.com/kmacmcfarlane/claude-plugins.git`,
-then `/plugin install statusline@kmacmcfarlane`. Nothing else from the marketplace is needed.
+then `/plugin install statusline@kmacmcfarlane`. That also installs `statusline-hub`, its
+one dependency. Nothing else from the marketplace is needed.
 
-Then start a new session. It shows `statusline: status line installed in PATH; it shows from
-your next session.` The footer appears from the session after that. If you already had a
-status line, the message says so instead and nothing is changed; run `/install-statusline`
-and answer yes to replace it.
+Then start a new session. The hub says in one line when it takes the slot: in the first
+session, or in the second when it had to wait for the footer to register. The footer shows
+from the session after that. If you already had a status line, the hub says so and changes
+nothing; run `/install-statusline` and answer yes to replace it.
 
 ### Keep it updated
 
@@ -154,34 +121,33 @@ hand, turn on auto-update one of two ways:
   gave itself), else the automatic title. It is shown on one line whatever it contains:
   control characters collapse to spaces, invisible format characters are dropped, and it is
   cut to 60 terminal columns with an ellipsis. The footer re-renders on the next event, not
-  instantly, unless `statusLine.refreshInterval` is set. On macOS (no `/proc`) a shell
-  between Claude Code and the script hides the `/rename` name until the payload carries it.
+  instantly, unless `statusLine.refreshInterval` is set. On macOS (no `/proc`) the hub
+  between Claude Code and the footer hides the `/rename` name until the payload carries it.
 
-Each render also writes this session's numbers (context used, window, plan usage) to
-`~/.claude/statusline/sensor/SESSION.json` (under `$CLAUDE_CONFIG_DIR` when that is set), so hooks and tools that never see the status
-line payload can read exact depth and reset times. The format is documented in
-`references/sensor-contract.md`. A reader may treat a fresh reading as exact depth and act
-on it more firmly than on its own estimate; how the one reader in this marketplace does so -
-including when it stops a prompt without this status line - is described there.
+Each render also records this session's numbers (context used, window, plan usage) in
+`~/.claude/statusline/sensor/SESSION.json` (under `$CLAUDE_CONFIG_DIR` when that is set),
+so hooks and tools that never see the status line payload can read exact depth and reset
+times. The hub writes it. The format is documented in `references/sensor-contract.md`. A
+reader may treat a fresh reading as exact depth and act on it more firmly than on its own
+estimate; how the one reader in this marketplace does so - including when it stops a prompt
+without this status line - is described there.
 
-## Remove or move
+## Uninstall
 
-- Move to another scope: install in the new one, then remove from the old one.
-- Remove: `/install-statusline --remove` (add the scope flag it was installed with, e.g.
-  `/install-statusline --local --remove`). It deletes only an entry this plugin installed; a
-  different status line exits 3 and needs a yes to `--replace`. After a removal the plugin
-  never adds the entry back by itself; installing again with this skill turns it back on.
-- Uninstall the plugin **after** removing the entry, in this order:
+Remove the entry first, then the plugins, in this order:
 
 ```bash
-python3 "${CLAUDE_PLUGIN_ROOT}/skills/install-statusline/scripts/install_statusline.py" --remove
+# in a session: /install-statusline --remove   (add the scope flag it was installed with)
 claude plugin uninstall statusline@kmacmcfarlane
-rm -rf "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/statusline"
+claude plugin uninstall statusline-hub@kmacmcfarlane
+rm -rf "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/statusline" "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/statusline-hub"
 ```
 
-Uninstalling first deletes the plugin's data dir, which leaves the settings entry pointing
-at a script that no longer exists (a blank footer). The last line removes the per-session
-sensor files. They are also pruned automatically after 30 days.
+Uninstalling first deletes the hub's data dir, which leaves the settings entry pointing at
+a script that no longer exists (a blank footer). The last line removes the per-session
+sensor files and the hub's registry. Sensor files are also pruned automatically after 30
+days. Uninstalling only this plugin leaves the hub in the slot: its footer disappears within
+14 days, or at once if you delete `~/.claude/statusline-hub/hooks.d/statusline.json`.
 
 ## Known limitations
 
@@ -213,36 +179,18 @@ Solution, in order:
   found`.)
 - Or skip both: change the source declared in settings to match exactly what you're adding.
 
-Error: `the plugin's data dir was not found`
-Cause: the plugin is not installed, or the script was run from a plain checkout.
-Solution: install the plugin (above), start one session, run the skill again.
+No footer after two sessions.
+Cause: the hub is not in the slot (another status line is there, or it was removed), or it
+does not run the footer.
+Solution: run `/install-statusline-hub --status`. It lists the footer's hook as
+`statusline`, or says why it is skipped. A config dir inside a git repository refuses every
+hook, and the hub says so at session start.
 
-Error: `... is missing - the current-hooks link could not be created`
-Cause: the link could not be made (a read-only config dir, say).
-Solution: start one session with the plugin enabled (its SessionStart hook makes the link),
-then run the skill again.
-
-Error: `... is not readable JSON; left unchanged`
-Cause: the settings file has a syntax error. The installer never overwrites a file it cannot
-parse.
-Solution: fix the file, then run the skill again.
+The first session said `your settings already define a statusLine`: another tool owns the
+slot, and the hub will not fight it. Run `/install-statusline` and answer yes to replace it.
 
 The footer vanished after a `/plugin` toggle or a model change in an older session: that
 session wrote its stale copy of the settings. The next new session puts it back and says so.
-To fix it at once, run the installer again.
-
-The first session said `your settings already define a statusLine`, or later said
-`was changed by something else; left alone`: another tool owns the entry, and the plugin will
-not fight it. Run `/install-statusline` and answer yes to replace it.
-
-The first session said `... is read-only`, `... is not valid JSON` or `... could not be
-written; status line not installed`: fix what it names, then start a new session (it retries
-quietly each session), or run `/install-statusline`.
-
-The first session said `... settings.local.json is not git-ignored`: the entry is an absolute
-path on your machine and must not be committed. Add `.claude/settings.local.json` to the
-repo's `.gitignore` and start a new session, or run `/install-statusline` to put it in your
-user settings.
 
 A repo enables the plugin but no footer appears there: the automatic install happens once
 per machine, into the first settings file where the plugin is enabled. In other repos, run

@@ -140,9 +140,13 @@ class FirstRun(Base):
         self.assertNotIn("statusLine", self.load())
         self.sl_marker("installed")
         self.quiet()
-        self.sl_marker("removed")  # the user removed statusline's line: free
-        self.said()
-        self.assertEqual(self.load()["statusLine"], self.own())
+        self.sl_marker("removed")  # the user removed statusline's line: kept empty
+        msg = self.said()
+        self.assertIn("footer was removed from", msg)
+        self.assertNotIn("statusLine", self.load())
+        self.assertEqual(self.marker()["state"], "removed")
+        self.quiet()
+        self.assertNotIn("statusLine", self.load())
 
     def test_empty_slot_taken_when_statusline_is_hooked(self):
         self.write_json(self.user, BOTH_ON)
@@ -259,9 +263,63 @@ class Prune(Base):
         old = time.time() - 40 * 86400
         os.utime(f, (old, old))
         os.symlink(victim, os.path.join(self.cfg, "statusline-hub"))
+        msg = self.said()   # its hooks are refused: said once
+        self.assertIn("is a symlink", msg)
         self.quiet()
         self.assertTrue(os.path.exists(f))
         self.assertEqual(sorted(os.listdir(victim)), ["hooks.d"])
+
+
+class RefusalNotice(Base):
+    """A config dir inside a git work tree refuses every hook: said once, at
+    session start, rather than only by --status."""
+
+    def setUp(self):
+        super().setUp()
+        # HOME above the config dir, which sits in a cloned repository
+        self.home = os.path.join(self.cfg, "home")
+        self.repo = os.path.join(self.home, "src", "repo")
+        os.makedirs(os.path.join(self.repo, ".git"))
+        cfg = os.path.join(self.repo, "cfg")
+        os.makedirs(cfg)
+        self.env.update(HOME=self.home, CLAUDE_CONFIG_DIR=cfg,
+                        CLAUDE_PLUGIN_DATA=os.path.join(cfg, "plugins", "data",
+                                                        "statusline-hub-kmacmcfarlane"))
+        self.cfg_in_repo = cfg
+
+    def plant(self):
+        d = os.path.join(self.cfg_in_repo, "statusline-hub", "hooks.d")
+        os.makedirs(d, mode=0o700, exist_ok=True)
+        os.chmod(os.path.dirname(d), 0o700)
+        path = os.path.join(d, "x.json")
+        with open(path, "w") as f:
+            json.dump({"name": "x", "kind": "display", "command": ["echo", "hi"]}, f)
+        os.chmod(path, 0o600)
+        return path
+
+    def test_said_once_only_when_a_hook_is_refused(self):
+        self.quiet()                      # nothing registered: nothing refused
+        self.plant()
+        msg = self.said()
+        self.assertIn("are not run", msg)
+        self.assertIn("inside a git work tree", msg)
+        self.assertIn(self.cfg_in_repo, msg)
+        self.assertIn("--status", msg)
+        for _ in range(2):
+            self.quiet()
+        # the refusal clears (the repository goes), then comes back: said again
+        os.rmdir(os.path.join(self.repo, ".git"))
+        self.quiet()
+        os.makedirs(os.path.join(self.repo, ".git"))
+        self.assertIn("inside a git work tree", self.said())
+
+    def test_rides_along_with_the_slot_message(self):
+        self.plant()
+        self.write_json(os.path.join(self.cfg_in_repo, "settings.json"), HUB_ON)
+        msg = self.said()
+        self.assertIn("status line slot taken", msg)
+        self.assertIn("inside a git work tree", msg)
+        self.assertEqual(msg.count("statusline-hub: "), 1)
 
 
 class NeverRaises(Base):

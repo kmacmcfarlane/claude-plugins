@@ -1,30 +1,46 @@
-"""The install-statusline script and owner.py: explicit install and remove,
-fingerprints, predecessor-marker retirement, and the atomic settings write."""
-import collections, json, os, stat, subprocess, sys, unittest
+"""owner.py, and the install-statusline-hub script over it: the atomic,
+formatting-preserving settings write, fingerprints, the data-dir lookup.
+
+These moved here with the code: owner.py was a vendored copy of the
+statusline plugin's, whose own tests held it, until that plugin handed the
+slot to the hub and dropped its copy. Hermetic; the script runs as a
+subprocess."""
+import collections, json, os, shutil, stat, subprocess, sys, unittest
 from unittest import mock
 
 import helpers
 import owner
 
-PRED_CMD = 'python3 "{cfg}/plugins/data/context-guard-kmacmcfarlane/current-hooks/statusline.py"'
-LEGACY_CMD = "python3 {cfg}/plugins/data/claude-kit-kmacmcfarlane/current-hooks/statusline.py"
+SCRIPT = os.path.join(helpers.PLUGIN, "skills", "install-statusline-hub", "scripts",
+                      "install_hub.py")
 FOREIGN = {"type": "command", "command": "bash ~/bin/my-prompt.sh", "padding": 1}
+ROOT_SKIP = unittest.skipIf(hasattr(os, "geteuid") and os.geteuid() == 0, "root writes anything")
 
 
 class Base(helpers.Hermetic):
     def setUp(self):
         super().setUp()
-        self.data = os.path.join(self.cfg, "plugins", "data", "statusline-test")
+        self.data = os.path.join(self.cfg, "plugins", "data", "statusline-hub-test")
         self.env["CLAUDE_PLUGIN_DATA"] = self.data
         self.proj = os.path.join(self.cfg, "proj")
         os.makedirs(self.proj)
         self.settings = os.path.join(self.cfg, "settings.json")
 
-    def install(self, *args, env=None, script=helpers.INSTALLER):
+    def install(self, *args, env=None, script=SCRIPT):
         e = dict(self.env, **(env or {}))
         p = subprocess.run([sys.executable, script, *args], cwd=self.proj,
                            capture_output=True, text=True, env=e, timeout=30)
         return p.returncode, p.stdout, p.stderr
+
+    def plain_copy(self):
+        """The installer of a copy of this plugin at a temp path that is not
+        under plugins/cache/, so owner.data_dir() cannot derive a data dir
+        from the script's own path."""
+        dst = os.path.join(self.cfg, "src", "statusline-hub")
+        if not os.path.isdir(dst):
+            shutil.copytree(helpers.PLUGIN, dst, ignore=shutil.ignore_patterns(
+                "__pycache__", "tests"))
+        return os.path.join(dst, os.path.relpath(SCRIPT, helpers.PLUGIN))
 
     def load(self, path=None):
         with open(path or self.settings) as f:
@@ -33,13 +49,8 @@ class Base(helpers.Hermetic):
     def seed(self, obj, path=None):
         return self.write_json(path or self.settings, obj)
 
-    def pred_marker(self, plugin, settings=None):
-        d = os.path.join(self.cfg, "plugins", "data", plugin + "-kmacmcfarlane")
-        return self.write_json(os.path.join(d, "statusline-installed.json"),
-                               {"settings": settings or self.settings, "command": "x"})
-
     def own_cmd(self):
-        return "python3 " + json.dumps(os.path.join(self.data, "current-hooks", "statusline.py"))
+        return "python3 " + json.dumps(os.path.join(self.data, "current-hooks", "hub.py"))
 
     def marker(self):
         with open(os.path.join(self.data, "owner.json")) as f:
@@ -51,7 +62,6 @@ class Install(Base):
         rc, out, err = self.install()
         self.assertEqual((rc, err), (0, ""))
         self.assertIn(f"installed statusLine in {self.settings}", out)
-        self.assertIn("It shows from the next session.", out)
         self.assertEqual(self.load(), {"statusLine": {"type": "command",
                                                       "command": self.own_cmd()}})
         link = os.path.join(self.data, "current-hooks")
@@ -71,51 +81,10 @@ class Install(Base):
         self.assertIn("updated statusLine", out)
         self.assertEqual(self.load(), before)
 
-    def test_installed_command_renders(self):
-        self.install()
-        cmd = self.load()["statusLine"]["command"]
-        p = subprocess.run(cmd, shell=True, input=json.dumps(
-            {"session_id": "s", "context_window": helpers.CTX,
-             "model": {"display_name": "M"}}),
-            capture_output=True, text=True, env=self.env, timeout=30)
-        self.assertIn("580k left", p.stdout)
-
-    def test_predecessor_is_repointed_and_markers_retired(self):
-        for cmd in (PRED_CMD, LEGACY_CMD):
-            with self.subTest(cmd=cmd):
-                self.seed({"statusLine": {"type": "command", "command": cmd.format(cfg=self.cfg)},
-                           "model": "opus"})
-                a = self.pred_marker("context-guard")
-                b = self.pred_marker("claude-kit", settings="/somewhere/else.json")
-                rc, out, _ = self.install()
-                self.assertEqual(rc, 0)
-                self.assertIn("replaced statusLine", out)
-                self.assertEqual(self.load()["statusLine"]["command"], self.own_cmd())
-                self.assertEqual(self.load()["model"], "opus")
-                self.assertFalse(os.path.exists(a))
-                self.assertFalse(os.path.exists(b))
-
-    def test_foreign_needs_replace(self):
-        self.seed({"statusLine": FOREIGN, "x": 1})
-        with open(self.settings, "rb") as f:
-            raw = f.read()
-        rc, out, _ = self.install()
-        self.assertEqual(rc, 3)
-        self.assertIn("already has a different statusLine; left unchanged", out)
-        with open(self.settings, "rb") as f:
-            self.assertEqual(f.read(), raw)
-        self.assertFalse(os.path.exists(os.path.join(self.data, "owner.json")))
-        rc, out, _ = self.install("--write-read-only")   # the other consent is not this one
-        self.assertEqual(rc, 3)
-        rc, out, _ = self.install("--replace")
-        self.assertEqual(rc, 0)
-        self.assertEqual(self.load(), {"statusLine": {"type": "command",
-                                                      "command": self.own_cmd()}, "x": 1})
-
     def test_unrelated_keys_survive(self):
         other = {"model": "opus", "env": {"A": "é", "B": [1, 2.5, None, True]},
                  "hooks": {"Stop": [{"matcher": "", "hooks": []}]},
-                 "enabledPlugins": {"statusline@kmacmcfarlane": True}}
+                 "enabledPlugins": {"statusline-hub@kmacmcfarlane": True}}
         self.seed(other)
         self.install()
         got = self.load()
@@ -177,14 +146,14 @@ class Install(Base):
         self.assertFalse(os.path.exists(self.settings))
 
     def test_existing_data_dir_is_found_without_env(self):
-        found = os.path.join(self.cfg, "plugins", "data", "statusline-mkt")
+        found = os.path.join(self.cfg, "plugins", "data", "statusline-hub-mkt")
         os.makedirs(found)
         e = dict(self.env)
         e.pop("CLAUDE_PLUGIN_DATA")
         p = subprocess.run([sys.executable, self.plain_copy()], cwd=self.proj,
                            capture_output=True, text=True, env=e, timeout=30)
         self.assertEqual(p.returncode, 0, p.stderr)
-        self.assertIn("statusline-mkt/current-hooks/statusline.py",
+        self.assertIn("statusline-hub-mkt/current-hooks/hub.py",
                       self.load()["statusLine"]["command"])
 
 
@@ -226,7 +195,7 @@ class Layout(Base):
         self.assertEqual(rc, 0)
         self.assertEqual(os.stat(self.settings).st_ino, ino)
 
-    @unittest.skipIf(hasattr(os, "geteuid") and os.geteuid() == 0, "root writes anything")
+    @ROOT_SKIP
     def test_read_only_settings_are_refused_without_consent(self):
         for args, st in (((), {"a": 1}),
                          (("--remove",), {"a": 1, "statusLine": {
@@ -253,7 +222,6 @@ class Layout(Base):
         self.assertEqual(rc, 0)
         self.assertEqual(self.load()["statusLine"]["command"], self.own_cmd())
         self.assertEqual(stat.S_IMODE(os.stat(self.settings).st_mode), 0o444)
-
 
     def test_mixed_hand_formatted_layout_keeps_every_other_byte(self):
         # a hand-edited file: mixed indents, one-line nested objects, odd
@@ -285,7 +253,8 @@ class Layout(Base):
 
 
 class FreshWrite(helpers.Hermetic):
-    ENTRY = {"type": "command", "command": "python3 /x/plugins/data/statusline-m/current-hooks/statusline.py"}
+    ENTRY = {"type": "command",
+             "command": "python3 /x/plugins/data/statusline-hub-m/current-hooks/hub.py"}
 
     def setUp(self):
         super().setUp()
@@ -319,7 +288,7 @@ class FreshWrite(helpers.Hermetic):
         with open(self.p, "rb") as f:
             raw = f.read()
         with self.assertRaises(owner.Changed):
-            owner.write_settings(self.p, self.ENTRY, expect={"absent", "own", "predecessor"})
+            owner.write_settings(self.p, self.ENTRY, expect={"absent", "own", "statusline"})
         with open(self.p, "rb") as f:
             self.assertEqual(f.read(), raw)
 
@@ -346,7 +315,7 @@ class FreshWrite(helpers.Hermetic):
 class NonAscii(Base):
     def test_non_ascii_home_gives_a_working_command(self):
         cfg = os.path.join(self.cfg, "jos\u00e9", ".claude")
-        data = os.path.join(cfg, "plugins", "data", "statusline-m")
+        data = os.path.join(cfg, "plugins", "data", "statusline-hub-m")
         env = {"CLAUDE_CONFIG_DIR": cfg, "HOME": os.path.dirname(cfg),
                "CLAUDE_PLUGIN_DATA": data}
         for text in (None, '{\n  "a": "\\u00e9"\n}\n'):       # plain, and an ASCII-escaped file
@@ -365,14 +334,16 @@ class NonAscii(Base):
                     {"session_id": "s", "context_window": helpers.CTX,
                      "model": {"display_name": "M"}}),
                     capture_output=True, text=True, env=dict(self.env, **env), timeout=30)
-                self.assertIn("580k left", p.stdout, p.stderr)
+                self.assertEqual((p.returncode, p.stderr), (0, ""))
+                with open(os.path.join(cfg, "statusline", "sensor", "s.json")) as f:
+                    self.assertEqual(json.load(f)["exact"]["pct"], 42.0)
 
     def test_shell_specials_in_the_path_are_quoted(self):
         cmd = owner.command_for('/h/a$b`c"d\\e')
-        self.assertEqual(cmd, 'python3 "/h/a\\$b\\`c\\"d\\\\e/current-hooks/statusline.py"')
+        self.assertEqual(cmd, 'python3 "/h/a\\$b\\`c\\"d\\\\e/current-hooks/hub.py"')
         out = subprocess.run("printf %s " + cmd[len("python3 "):], shell=True,
                              capture_output=True, text=True).stdout
-        self.assertEqual(out, '/h/a$b`c"d\\e/current-hooks/statusline.py')
+        self.assertEqual(out, '/h/a$b`c"d\\e/current-hooks/hub.py')
 
 
 class Splice(unittest.TestCase):
@@ -418,20 +389,10 @@ class Remove(Base):
         self.seed({"statusLine": FOREIGN})
         rc, out, _ = self.install("--remove")
         self.assertEqual(rc, 3)
-        self.assertIn("was not installed by this plugin", out)
+        self.assertIn("was not installed by the hub", out)
         self.assertEqual(self.load()["statusLine"], FOREIGN)
         rc, _, _ = self.install("--remove", "--replace")
         self.assertEqual((rc, self.load()), (0, {}))
-
-    def test_remove_predecessor_retires_only_its_markers(self):
-        self.seed({"statusLine": {"type": "command",
-                                  "command": PRED_CMD.format(cfg=self.cfg)}})
-        mine = self.pred_marker("context-guard")
-        other = self.pred_marker("claude-kit", settings="/somewhere/else.json")
-        rc, _, _ = self.install("--remove")
-        self.assertEqual((rc, self.load()), (0, {}))
-        self.assertFalse(os.path.exists(mine))
-        self.assertTrue(os.path.exists(other))
 
     def test_remove_from_another_scope_keeps_the_install_marker(self):
         self.install()
@@ -453,20 +414,22 @@ class Usage(Base):
 
 class Classify(unittest.TestCase):
     def test_fingerprints(self):
-        own = ['python3 "/h/.claude/plugins/data/statusline-kmacmcfarlane/current-hooks/statusline.py"',
-               "python3 /h/.claude/plugins/data/statusline-x/current-hooks/statusline.py",
-               '  python3  "/a b/plugins/data/statusline-m/current-hooks/statusline.py"  ']
-        pred = ['python3 "/h/plugins/data/context-guard-kmacmcfarlane/current-hooks/statusline.py"',
-                "python3 /h/plugins/data/claude-kit-kmacmcfarlane/current-hooks/statusline.py"]
+        own = ['python3 "/h/.claude/plugins/data/statusline-hub-kmacmcfarlane/current-hooks/hub.py"',
+               "python3 /h/.claude/plugins/data/statusline-hub-x/current-hooks/hub.py",
+               '  python3  "/a b/plugins/data/statusline-hub-m/current-hooks/hub.py"  ']
+        footer = ['python3 "/h/plugins/data/statusline-kmacmcfarlane/current-hooks/statusline.py"',
+                  'python3 "/h/plugins/data/context-guard-kmacmcfarlane/current-hooks/statusline.py"',
+                  "python3 /h/plugins/data/claude-kit-kmacmcfarlane/current-hooks/statusline.py"]
         foreign = ["bash ~/x.sh",
-                   'python3 "/h/plugins/data/statusline-x/current-hooks/statusline.py" && rm -rf ~',
+                   'python3 "/h/plugins/data/statusline-hub-x/current-hooks/hub.py" && rm -rf ~',
+                   "python3 /h/plugins/data/other-x/current-hooks/hub.py",
                    "python3 /h/plugins/data/other-x/current-hooks/statusline.py",
-                   "python3 /h/plugins/data/statusline-x/current-hooks/other.py",
-                   "python3 /h/plugins/data/statusline-x/y/current-hooks/statusline.py"]
+                   "python3 /h/plugins/data/statusline-hub-x/current-hooks/other.py",
+                   "python3 /h/plugins/data/statusline-hub-x/y/current-hooks/hub.py"]
         for c in own:
             self.assertEqual(owner.classify({"command": c}), "own", c)
-        for c in pred:
-            self.assertEqual(owner.classify({"command": c}), "predecessor", c)
+        for c in footer:
+            self.assertEqual(owner.classify({"command": c}), "statusline", c)
         for c in foreign:
             self.assertEqual(owner.classify({"command": c}), "foreign", c)
         self.assertEqual(owner.classify(None), "absent")
@@ -486,11 +449,12 @@ class AtomicWrite(helpers.Hermetic):
             self.assertEqual(f.read(), raw)
         self.assertEqual(os.listdir(self.cfg), ["settings.json"])
 
-    def test_data_dir_from_cache_path(self):
+
+class DataDir(helpers.Hermetic):
+    def setUp(self):
+        super().setUp()
         os.environ.pop("CLAUDE_PLUGIN_DATA", None)
-        got = owner.data_dir("/x/.claude/plugins/cache/mkt/statusline/1.2.0/skills/"
-                             "install-statusline/scripts/install_statusline.py")
-        self.assertEqual(got, os.path.join(self.cfg, "plugins", "data", "statusline-mkt"))
+        self.base = os.path.join(self.cfg, "plugins", "data")
 
     def record(self, key, install_path):
         p = os.path.join(self.cfg, "plugins", "installed_plugins.json")
@@ -500,56 +464,37 @@ class AtomicWrite(helpers.Hermetic):
             key: [{"scope": "project", "installPath": "/not/this/one"},
                   {"scope": "user", "installPath": install_path}]}})
 
-    def test_data_dir_from_the_install_record_beats_the_scan(self):
-        # two data dirs; the sorted-first scan would take statusline-aaa
-        os.environ.pop("CLAUDE_PLUGIN_DATA", None)
-        for n in ("statusline-aaa", "statusline-my-mkt"):
-            os.makedirs(os.path.join(self.cfg, "plugins", "data", n))
-        root = os.path.join(self.cfg, "src", "statusline")
-        script = os.path.join(root, "skills", "install-statusline", "scripts", "x.py")
-        self.record("statusline@my.mkt", root)       # "." -> "-", Claude Code's id rule
-        self.assertEqual(owner.data_dir(script),
-                         os.path.join(self.cfg, "plugins", "data", "statusline-my-mkt"))
+    def test_from_cache_path(self):
+        got = owner.data_dir("/x/.claude/plugins/cache/mkt/statusline-hub/1.2.0/skills/"
+                             "install-statusline-hub/scripts/install_hub.py")
+        self.assertEqual(got, os.path.join(self.base, "statusline-hub-mkt"))
+
+    def test_the_install_record_beats_the_scan(self):
+        for n in ("statusline-hub-aaa", "statusline-hub-my-mkt"):
+            os.makedirs(os.path.join(self.base, n))
+        root = os.path.join(self.cfg, "src", "statusline-hub")
+        self.record("statusline-hub@my.mkt", root)   # "." -> "-", Claude Code's id rule
+        self.assertEqual(owner.data_dir(os.path.join(root, "hooks", "x.py")),
+                         os.path.join(self.base, "statusline-hub-my-mkt"))
 
     def test_install_record_for_another_path_is_not_used(self):
-        os.environ.pop("CLAUDE_PLUGIN_DATA", None)
-        self.record("statusline@my-mkt", os.path.join(self.cfg, "src", "statusline"))
+        self.record("statusline-hub@my-mkt", os.path.join(self.cfg, "src", "statusline-hub"))
         self.assertIsNone(owner.installed_by_record(
-            os.path.join(self.cfg, "src", "statusline-2", "x.py")))
-        got = owner.data_dir("/x/.claude/plugins/cache/mkt/statusline/1.2.0/x.py")
-        self.assertEqual(got, os.path.join(self.cfg, "plugins", "data", "statusline-mkt"))
+            os.path.join(self.cfg, "src", "statusline-hub-2", "x.py")))
 
-    def test_cache_path_beats_the_scan(self):
-        os.environ.pop("CLAUDE_PLUGIN_DATA", None)
-        os.makedirs(os.path.join(self.cfg, "plugins", "data", "statusline-aaa"))
-        got = owner.data_dir("/x/.claude/plugins/cache/mkt/statusline/1.2.0/x.py")
-        self.assertEqual(got, os.path.join(self.cfg, "plugins", "data", "statusline-mkt"))
-
-    def test_scan_never_takes_the_hubs_data_dir(self):
-        # statusline-hub-<mkt> sorts before statusline-<mkt>; its current-hooks
-        # link leads to the hub's hooks, which have no statusline.py
-        os.environ.pop("CLAUDE_PLUGIN_DATA", None)
-        data = os.path.join(self.cfg, "plugins", "data")
-        hub_hooks = os.path.join(self.cfg, "hub-src", "hooks")
-        os.makedirs(hub_hooks)
-        open(os.path.join(hub_hooks, "hub.py"), "w").close()
-        os.makedirs(os.path.join(data, "statusline-hub-mkt"))
-        os.symlink(hub_hooks, os.path.join(data, "statusline-hub-mkt", "current-hooks"))
-        os.makedirs(os.path.join(data, "statusline-mkt"))
+    def test_scan_never_takes_the_statusline_plugins_dir(self):
+        # statusline-<mkt> does not start with statusline-hub-, whatever sorts first
+        os.makedirs(os.path.join(self.base, "statusline-mkt"))
+        self.assertIsNone(owner.data_dir("/elsewhere/x.py"))
+        os.makedirs(os.path.join(self.base, "statusline-hub-mkt"))
         self.assertEqual(owner.data_dir("/elsewhere/x.py"),
-                         os.path.join(data, "statusline-mkt"))
-        # a statusline dir with its own link still counts
-        os.symlink(os.path.dirname(os.path.abspath(owner.__file__)),
-                   os.path.join(data, "statusline-mkt", "current-hooks"))
-        self.assertEqual(owner.data_dir("/elsewhere/x.py"),
-                         os.path.join(data, "statusline-mkt"))
+                         os.path.join(self.base, "statusline-hub-mkt"))
 
     def test_unreadable_install_record_falls_back(self):
-        os.environ.pop("CLAUDE_PLUGIN_DATA", None)
         p = os.path.join(self.cfg, "plugins", "installed_plugins.json")
         os.makedirs(os.path.dirname(p), exist_ok=True)
-        for bad in ("{not json", "[]", '{"plugins": {"statusline@m": "x"}}',
-                    '{"plugins": {"statusline@m": [7, {"installPath": 7}]}}'):
+        for bad in ("{not json", "[]", '{"plugins": {"statusline-hub@m": "x"}}',
+                    '{"plugins": {"statusline-hub@m": [7, {"installPath": 7}]}}'):
             with open(p, "w") as f:
                 f.write(bad)
             self.assertIsNone(owner.installed_by_record("/m/x.py"))

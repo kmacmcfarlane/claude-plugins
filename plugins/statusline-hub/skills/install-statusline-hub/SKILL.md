@@ -17,7 +17,8 @@ argument-hint: "[--user | --local | --project] [--remove] [--status]"
   turn, and getting a yes. They are separate questions: `--replace` overwrites or removes
   a status line some other tool set, and `--write-read-only` writes a file the user made
   read-only.
-- Before the `statusline` plugin draws as a hub display hook, replacing its footer with the
+- Before the `statusline` plugin draws as a hub display hook (it registers itself at each
+  session start, so this is only before its first session), replacing its footer with the
   hub drops the footer until it does. The script refuses without `--replace` and says so;
   relay that before asking.
 
@@ -26,8 +27,12 @@ argument-hint: "[--user | --local | --project] [--remove] [--status]"
 On the first session after install, the hub's SessionStart puts it in a free slot where the
 plugin is enabled and says so in one line. It never replaces a status line another tool
 set: it says so once and leaves it. It leaves the `statusline` plugin's footer in place
-until that plugin registers as a hub display hook. It puts the entry back if an older
-session's settings write drops it, and never re-adds one the user removed.
+until that plugin registers as a hub display hook (from its first session), then takes the
+slot over with the footer drawing through the hub. It puts the entry back if an older
+session's settings write drops it, and never re-adds one the user removed (that includes a
+`statusline` footer the user removed before the hub arrived). If the hub's hooks are
+refused as a whole (a config dir inside a git repository, say), it says so once at session
+start; `--status` gives the detail.
 
 ## Instructions
 
@@ -89,7 +94,8 @@ User says: "Make the hub my status line."
 Actions: run the script. It exits 3 naming the file. Ask "Replace the status line set in
 that file with the hub?" On a yes, rerun with `--replace`.
 Result: the hub owns the slot from the next session. It shows only the display hooks
-registered with it (none yet means a blank line), so tell the user that.
+registered with it (the `statusline` footer when that plugin is installed; none means a
+blank line), so tell the user that.
 
 Example 2: a warning sign on the line
 User says: "What is the ⚠ at the end of my status line?"
@@ -99,8 +105,8 @@ or its log.
 ## Troubleshooting
 
 The line is blank after install.
-Cause: no display hook is registered yet (the `statusline` footer registers in a later
-release), or every hook failed.
+Cause: no display hook is registered (the `statusline` plugin, which registers the
+footer at each session start, is not installed or enabled), or every hook failed.
 Solution: run `--status`. The sensor record is still written on every render either way.
 
 A hook is listed as skipped.

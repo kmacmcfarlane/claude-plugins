@@ -2,8 +2,8 @@
 """Status line: the always-on context gauge, and the sensor for the gate hooks.
 
 DEPRECATED: the status line moved to the `statusline` plugin
-(/plugin install statusline@kmacmcfarlane), which writes its own sensor record
-that lib_context reads first. This copy stays one release so existing
+(/plugin install statusline@kmacmcfarlane; it brings statusline-hub, which
+feeds lib_context the sensor record). This copy stays one release so existing
 statusLine entries that still point at it keep rendering and keep feeding the
 gate its legacy in-state `exact` block; context-guard no longer installs,
 restores or migrates any statusLine entry, and the SessionStart hook only

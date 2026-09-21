@@ -1,5 +1,5 @@
 {
-  "description": "statusline: keeps the plugin-data current-hooks symlink pointing at this version's hooks, so the statusLine command in settings.json stays on an update-stable path; then installs the statusLine entry on the first session (into the scope where the plugin is enabled, never over another tool's entry), takes over an earlier copy of this status line, restores the entry when a stale session's settings write dropped it, and prunes old sensor files.",
+  "description": "statusline: keeps the plugin-data current-hooks symlink pointing at this version's hooks, so a statusLine entry an earlier version installed keeps drawing until the hub takes it over; then registers the footer as a statusline-hub display hook (its hooks.d manifest, refreshed every session) and prunes old sensor files. It writes no settings: the statusline-hub plugin owns the statusLine entry.",
   "hooks": {
     "SessionStart": [
       {
