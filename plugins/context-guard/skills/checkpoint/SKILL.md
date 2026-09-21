@@ -22,6 +22,26 @@ do Steps 0, 2, 4b only, then emit the Step 7 one-line opener (continue / handoff
 checkpoint is when a handoff is likeliest and the next session has the least to go on. Keep
 the whole checkpoint under a screen.
 
+## Invoked by the mid-turn gate (unattended)
+
+This section applies **only** when the checkpoint was started by a message that opens
+`[context-guard context gate] HARD, mid-turn` — the mid-turn check's marker, printed only
+on a depth that could hard-block. The DUE advisories (at a prompt or mid-turn), the prompt
+gate's HARD messages and an operator's `/checkpoint` all run the steps below as written.
+Under the marker nobody may be watching, and a question would stall the turn:
+
+- **Mode**: the mode a custody skill in charge of this session has named for its
+  checkpoints (librarian-mode names `continue`); otherwise `handoff`.
+- **Step 0 is skipped entirely** — questions 1, 2 and 3; no `AskUserQuestion`. The ≤10-line
+  inventory question 2 would have confirmed goes into the manifest's `Doing` and
+  `Aware of` as `BELIEF` lines, each marked unconfirmed (`BELIEF (unconfirmed: no operator)
+  …`). The `Goal` line quotes the operator's last stated goal, as ever.
+- **Lean path**: Steps 2 and 4b (with the mark), then Step 5's one sentence and the Step 7
+  opener as the turn's **final message**; end the turn there. The operator decides the
+  window on return.
+- **When the marker says a checkpoint no longer fits** (under ~20K left), do not start one:
+  end the turn with the three-line brief it asks for.
+
 ## Step 0 — Ask the goal, in one round
 
 The operator holds the one input nobody else has. Ask exactly this (pre-drafted answers make

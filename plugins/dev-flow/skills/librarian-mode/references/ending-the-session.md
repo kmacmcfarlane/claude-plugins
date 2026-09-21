@@ -24,17 +24,30 @@ repo) do not replace this; the librarian rehydrates from `wi prime` and git.
 The trigger is the first of these context-gate advisories to arrive, matched by its
 body, not its bracketed prefix (the prefix names the owning plugin, today
 `[context-guard context gate]`, and has changed before): the "…% of the window is used"
-one at 75%, "DUE: … tokens left", or "HARD threshold reached by an INFERRED depth". They
-ride on the operator's prompts: a band crossed while the librarian works through agent
+one at 75%, "DUE: … tokens left" (at a prompt, or mid-turn), "HARD threshold reached by
+an INFERRED depth", or "HARD, mid-turn". The prompt-gate advisories ride on the
+operator's prompts: a band crossed while the librarian works through agent
 notifications latches, and its advisory arrives with the operator's next prompt — act on
-it then. The session does not end
+it then. The two mid-turn ones ("DUE: … tokens left …, mid-turn" and "HARD, mid-turn")
+arrive inside a turn, after a tool call, and only on a depth that could hard-block: on
+the DUE, finish the turn's work and run the sequence at its natural end; on the HARD,
+start nothing new and run it now. Either way the mode is the librarian's own `continue`,
+never the gate's `handoff` — the checkpoint skill defers to a custody skill's mode. The
+session does not end
 here: it checkpoints, the operator compacts when convenient, and it continues. Finish
 the step in hand, then:
 
 1. **Handoffs** — `$WI handoff` on every open item, as above.
 2. **Checkpoint** — run the checkpoint skill with the argument `continue`, and answer its
    Step 0 question 3 up front with the `/compact <guidance>` arm of its Step 5 (not
-   `/rewind`), so only question 2 is left to ask. Custody holds throughout: its residue
+   `/rewind`), so only question 2 is left to ask. The one exception is the "HARD,
+   mid-turn" marker: there the checkpoint skill's unattended section skips Step 0
+   entirely, question 2 included, and writes the inventory into the manifest as `BELIEF`
+   lines — still in mode `continue`. When the advisory says a checkpoint no longer fits
+   (under ~20K left, context-guard's `CHECKPOINT_MIN_TOKENS`), do not start one: finish
+   step 1 and step 3 if they still fit, then close with a three-line brief (in flight,
+   decided or refused, the one next action) and the `/clear` or `/compact <guidance>` the
+   advisory names, for the operator to run. Custody holds throughout: its residue
    goes into item bodies (append) or new items (`$WI add`), never into CLAUDE.md or a
    skill file; its commits are store-only — the work-item store, and the manifest only
    when the repo tracks it (`trackInHost` governs `.claude-sandbox/HANDOFF.md`; an
