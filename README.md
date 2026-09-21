@@ -37,15 +37,23 @@ repo; link here.
 1. **One plugin, one aim.** The description completes "install this if you want ___" in one
    clause. If it needs an "and", it is two plugins.
 2. **Standalone test.** Every plugin is independently installable and useful with nothing
-   else from the marketplace present. Whatever fails that test lives *inside* the plugin
-   whose aim it serves.
+   else from the marketplace present — except the hard dependencies it declares in
+   `plugin.json` (principle 4), which count as part of the install because the framework
+   brings them. The test is applied to the plugin plus its declared hard dependencies.
+   Whatever fails that test lives *inside* the plugin whose aim it serves.
 3. **Harness-behavior quarantine.** Hooks, status lines, and settings writes belong only in a
    plugin whose stated aim *is* that behavior. Knowledge skills never carry hooks as
    passengers.
-4. **Dependencies: soft, declared, directional.** A dependency degrades gracefully when the
-   other side is absent (the work-items ↔ backlog bridge is the model), is declared in the
-   plugin description and the catalog, and points at a named support plugin or an external
-   repo. Never undocumented peer prose-coupling.
+4. **Dependencies: soft by default, declared, directional — hard only when it cannot be
+   otherwise.** A dependency degrades gracefully when the other side is absent (the
+   work-items ↔ backlog bridge is the model), is declared in the plugin description and the
+   catalog, and points at a named support plugin or an external repo. The one exception: a
+   plugin may list another in its `plugin.json` `dependencies` — a **hard** dependency: the
+   framework installs it with the dependent, and disables the dependent while it is missing
+   or disabled — only when the dependent has no function at all without it, the edge stays
+   within this marketplace, and the catalog marks it (hard). A plugin that merely reads
+   another's data is never hard: it keeps a fallback, because a hard edge would switch it
+   off whenever the support plugin is off. Never undocumented peer prose-coupling.
 5. **Names are API.** Names end up in plugin data dirs, absolute paths inside `settings.json`,
    hook state dirs, and muscle memory. Choose for decades. See *Naming practices* below.
 6. **New aim → new plugin.** Never stretch an existing description to cover something new.
@@ -60,6 +68,13 @@ Problem-indexed. **Status is load-bearing:** *current* rows exist on disk today 
 installable from this marketplace; *moved* rows live in the expertise marketplace, not here.
 Names are **provisional** pending operator review.
 
+**Depends on** uses one notation (principle 4). **(hard)** — declared in the dependent's
+`plugin.json` `dependencies`: installing the dependent installs it, and the dependent is
+disabled without it. **(soft; …)** — not declared; the dependent degrades when it is absent,
+and the note says what it gains when present. **(external)** — a tool or repo outside this
+marketplace, named in the plugin description, never declared. Every (hard) in this column is
+declared in `plugin.json`, and every declared dependency is marked (hard) here.
+
 | Aim — "install this if you want…" | Plugin | Status | Depends on |
 |---|---|---|---|
 | …project context for the `ai-scripts` Python CLI utilities | `ai-scripts` | **moved** to the expertise marketplace (local scaffold, remote pending) | — |
@@ -69,7 +84,7 @@ Names are **provisional** pending operator review.
 | …a plan before you code: investigate → reviewed plan → verified implementation, and a standing librarian that takes custody of a repo's work (files, dispatches, reviews, lands) | `dev-flow` | **current** | `work-items` (soft; `librarian-mode` and `dev-cycle` find `wi` via the repo tree, or the installed plugin's copy; `dev-cycle` runs without it on a scratchpad record), `statusline` (soft; the fable fallback in `librarian-mode` and `dev-cycle` reads its rate-limit reset times) |
 | …repo-durable work items and a pluggable work source | `work-items` | **current** | — |
 | …isolated execution for agent sessions (containers, and the checkout/worktree convention) | `sandbox` | **current** | claude-sandbox repo (external) |
-| …unattended agent loops over a backlog ("ralph") | `ralph` | **current** | `sandbox` (hard), `work-items` (soft) |
+| …unattended agent loops over a backlog ("ralph") | `ralph` | **current** | claude-sandbox repo (external; its `init-ralph` seeds `backlog.py`, and the loops run in its containers), `sandbox` (soft; its skill bootstraps and troubleshoots those containers), `work-items` (soft) |
 | …to maintain this kit itself (skill authoring, upstream sync, templates) | `kit-dev` | **current** | — |
 | …to make Claude good at a specific stack (Goa, Playwright, musubi-tuner, …) | one plugin per stack | **moved** to the expertise marketplace (local scaffold, remote pending) | — |
 
@@ -106,7 +121,8 @@ Every plugin in the aim→home table now exists on disk, so the home the table n
 home you write to. If a future phase ever plans a move again, write to the **current** home
 until that phase lands — a planned destination is never a place to put files today.
 
-Cross-plugin cooperation follows principle 4: soft, declared, directional. The work-items ↔
+Cross-plugin cooperation follows principle 4: soft by default, declared, directional; a
+hard `plugin.json` dependency only where the dependent does nothing without it. The work-items ↔
 backlog bridge (activates only when both stores are present, degrades silently otherwise) is
 the pattern to copy.
 
@@ -350,9 +366,11 @@ CLI-mediated reads and writes, entry authoring, and the human grooming pass that
 | `backlog-entry` | Create backlog entries (stories, bugs, refactoring) in `backlog.yaml` |
 | `backlog-grooming` | Conversational backlog grooming and UAT review |
 
-Hard dependency on `sandbox`: the loops run inside `claude-sandbox`, and `backlog.py` itself
-is seeded per project by `claude-sandbox init-ralph` (canonical in the claude-sandbox repo,
-not shipped here). Soft dependency on a work source through the **work-source interface**
+Requires the `claude-sandbox` tool (external): the loops run inside its containers, and
+`backlog.py` itself is seeded per project by `claude-sandbox init-ralph` (canonical in the
+claude-sandbox repo, not shipped here). Soft dependency on `sandbox`: its skill bootstraps
+and troubleshoots those containers, but ralph's skills never call it, so it is not declared
+in `plugin.json`. Soft dependency on a work source through the **work-source interface**
 documented in `work-items` — `backlog.yaml` is the default provider for unattended runs, and
 the `wi` bridge activates only when both stores are present.
 
