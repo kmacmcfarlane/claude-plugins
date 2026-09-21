@@ -10,6 +10,10 @@ argument-hint: "<optional template name>"
 
 Create a new project scaffolded from a claude-templates template. User's argument: $ARGUMENTS
 
+For a bare repo for a thread of work, with an agent session launched on it and no stack
+template, use the `create-repo` plugin's `create-repo` skill instead
+(`/plugin install create-repo@kmacmcfarlane`); it calls this skill when given a template.
+
 ## Instructions
 
 ### Step 1: Find the templates repo

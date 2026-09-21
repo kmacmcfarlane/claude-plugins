@@ -18,6 +18,9 @@ plugins/
     hooks/             # Gate, ledger, rehydrate, gauge.json publish (+ deprecated statusline copy) + unit tests
     skills/
       {checkpoint,usage-report}/
+  create-repo/         # Start a new repo for a thread of work, with a session launched on it
+    skills/
+      create-repo/     # references/launch-command.md
   dev-flow/            # Plan before you code; the librarian that takes custody of a repo
     skills/
       {investigate,implement,dev-cycle,deep-investigation,chain-of-verification,librarian-mode}/
@@ -107,6 +110,7 @@ current home is the real home, and is where files go.
 | Repo-durable work items / work-source interface | `plugins/work-items/` | `plugins/work-items/` — **landed** (Phase 4) |
 | Isolated execution (containers; the checkout/worktree convention and its guard) | `plugins/sandbox/` | `plugins/sandbox/` — **landed** (Phase 5) |
 | Unattended agent loops over a backlog ("ralph") | `plugins/ralph/` | `plugins/ralph/` — **landed** (Phase 5) |
+| Start a new repo for a thread of work, with an agent session launched on it | `plugins/create-repo/` | `plugins/create-repo/` — **landed** (2c77) |
 | Maintaining this kit itself | `plugins/kit-dev/` | `plugins/kit-dev/` — **landed** (Phase 6) |
 | Stack expertise ("make Claude good at X") | the `expertise` marketplace (repo `claude-expertise`) — not this repo | moved to the expertise marketplace (local scaffold, remote pending) — **landed** (Phase 2) |
 | Web-UI chat-session skills | `plugins/chat/` | family home under review |

@@ -46,6 +46,11 @@
       "description": "Isolated execution for Claude Code sessions — configure, bootstrap and troubleshoot claude-sandbox containers, with the checkout/worktree convention their launcher follows enforced by a PreToolUse guard."
     },
     {
+      "name": "create-repo",
+      "source": "./plugins/create-repo",
+      "description": "Start a new repo for a thread of work — the directory, git init, a README naming its purpose, claude-sandbox init and a first commit — then one copy-paste command that launches an agent session on it to write its CLAUDE.md and run the thread's first investigation (external: the claude-sandbox tool, degrading to a plain claude launch without it; soft dependencies: kit-dev, to scaffold a claude-templates template as the goal; sandbox, to troubleshoot a failed init or launch)."
+    },
+    {
       "name": "ralph",
       "source": "./plugins/ralph",
       "description": "Unattended agent loops over a backlog — the backlog.yaml workflow for ralph runs. Requires the claude-sandbox tool (see the sandbox plugin); consumes a work source through the work-source interface, with backlog.yaml as the default provider (soft dependency: work-items, whose work-source provider interface it implements)."

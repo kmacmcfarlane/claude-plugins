@@ -1,0 +1,9 @@
+{
+  "name": "create-repo",
+  "description": "Start a new repo for a thread of work — the directory, git init, a README naming its purpose, claude-sandbox init and a first commit — then one copy-paste command that launches an agent session on it to write its CLAUDE.md and run the thread's first investigation (external: the claude-sandbox tool, degrading to a plain claude launch without it; soft dependencies: kit-dev, to scaffold a claude-templates template as the goal; sandbox, to troubleshoot a failed init or launch).",
+  "author": {
+    "name": "Kyle McFarlane"
+  },
+  "homepage": "https://github.com/kmacmcfarlane/claude-plugins",
+  "repository": "https://github.com/kmacmcfarlane/claude-plugins"
+}
