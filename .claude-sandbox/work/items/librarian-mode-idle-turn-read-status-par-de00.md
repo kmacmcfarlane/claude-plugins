@@ -23,3 +23,12 @@ ca20 landed a real parked status. librarian-mode/references/idle-turn.md (~l.22,
 
 ## Dispatch
 - dispatch: implementer sonnet — default (reference wording)
+
+## Implementer result
+- round 1 DONE 5303406 (sonnet): idle-turn.md uses status: parked; Groom decision scan adds ls --status parked; Work table relies on --ready excluding parked.
+- dispatch: reviewer opus — rule 4 floor
+
+## Review round 1 — NEEDS_CHANGES (opus) at 5303406
+- every named command verified on a temp store.
+- [medium] "(format.md § Parked)" is a bare cross-plugin file pointer → "the `work-items` skill's format reference, § Parked". lows: "closed to ls default" wording; pre-migration PARKED-blocked items note; acceptance command list partially cited.
+- dispatch: implementer sonnet — fix round 1 (resume)

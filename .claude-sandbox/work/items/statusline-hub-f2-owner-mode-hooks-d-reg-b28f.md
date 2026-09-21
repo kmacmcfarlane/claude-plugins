@@ -29,3 +29,7 @@ d193 07 § F2 + consumer requirements recorded in d193 (claude-analytics: record
 
 ## Dispatch
 - dispatch: implementer opus — executable logic, settings writes, executes registered commands (security surface: fable signal; fable unavailable (unknown); fallback)
+
+## Implementer result
+- round 1 DONE_WITH_CONCERNS a6e91c4 (opus, fable-signal fallback): hub.py render (sensor first; record hooks detached with exact bytes; display hooks parallel 150/250 ms, last-good 60 s; health ⚠), registry.py (manifest trust: private, user-owned, ≤16 KiB, not in project tree; exec without shell unless "shell": true; output cleaned keeping SGR), owner.py/session_start.py/housekeeping.py ported (vendored-drift test), hook-contract.md, new install-statusline-hub skill. 87 hub tests. Takeover DEFERRED until statusline registers hooks.d/statusline.json (F3).
+- scope widening before review: marketplace.json hub description must match plugin.json (F1 text stale).
