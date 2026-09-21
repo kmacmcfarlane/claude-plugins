@@ -144,6 +144,17 @@ Three layers, escalating; the first two are hooks, the third is a skill.
    the one that improves the next session. Step 4 delegates the mechanical flush to a **fork**
    (inherits history + cache; a fresh subagent starts empty and is the wrong primitive here).
 
+**Added later: the mid-turn check** (`PostToolUse`, `hooks/turn_gate.py`). The layers above
+see only turn boundaries, and an unattended turn has none: one 53-minute tool loop filled a
+1M window from 860K to 999K with nothing able to speak to the model (2026-09-02). The check
+runs after every main-thread tool call and is advisory only — it never blocks. It is silent
+unless the depth could hard-block (exact, or derived and resolved), because mid-turn text
+built on a guessed window could only end a working turn early. Under the DUE line it asks
+for a checkpoint at the turn's natural end; its HARD marker (`HARD, mid-turn`) is printed
+exactly when the prompt gate would block (`lib_context.hard_applies`, one rule for both),
+and it is the only message on which the checkpoint skill runs unattended — no questions,
+a custody skill's mode or else `handoff`.
+
 ## 4. Context injection beyond CLAUDE.md
 
 The operator's model — a repo directory as the logical entrypoint that pulls in context, other

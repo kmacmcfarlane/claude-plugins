@@ -298,7 +298,8 @@ settings yet).
 | `checkpoint` | Land a long session's state before compaction; rehydration manifest + ledger |
 | `usage-report` | Token spend per session, model and sub-agent dispatch from the local transcripts (stub: parser, price table and tests; report tables follow) |
 
-It also carries `hooks/` — the depth gate, the ledger, the SessionStart rehydration, and
+It also carries `hooks/` — the depth gate, the mid-turn turn gate (`PostToolUse`, advisory
+only), the ledger, the SessionStart rehydration, and
 `gauge.json`, the thresholds and labels it publishes for the status line — with its unit tests
 (`cd plugins/context-guard/hooks && python3 -m unittest discover -s tests -q`). The
 `usage-report` skill has its own suite:
