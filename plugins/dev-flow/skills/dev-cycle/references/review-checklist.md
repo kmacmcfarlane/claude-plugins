@@ -28,13 +28,27 @@ where such a repo's own gates come in.
 - [ ] Nothing under `.claude-sandbox/` or `.claude/`, nothing outside the Ground binding.
 - [ ] One commit on the branch, message `<verb>: <aspect> - <description>` — plus, per
       review fix round, one or more new commits on top of it. No amend, rebase or squash
-      of a reviewed commit — except the secret rebuild in `fix-loop.md`; a merge of the
-      base only in a merge-conflict round (`fix-loop.md` § A merge conflict); nothing
-      outside the files in scope in any of them.
+      of a reviewed commit — except the secret rebuild (`fix-loop.md` § A leaked
+      secret); a merge of the base only in a merge-conflict round (`fix-loop.md` § A
+      merge conflict); nothing outside the files in scope in any of them.
+- [ ] No secret or credential anywhere in the branch history — every file in every
+      commit's patch, a later removal notwithstanding, and every message; the final diff
+      alone does not show it, and neither does a plain `git log` for what a merge's
+      resolution added. The scan below prints shas and file names only; read each hit by
+      eye (`git -C $W show --remerge-diff <sha> -- <file>`) — a real credential is
+      critical, named by sha, file and key, never its value (`fix-loop.md` § A leaked
+      secret). A pattern misses shapes it does not know: read
+      `git -C $W log -p --cc $BASE..HEAD` with it in mind.
 
 ```bash
 git -C $W log --oneline $BASE..HEAD
 git -C $W diff --stat $BASE...HEAD
+# history scan: commits (and files) whose patch or message matches a secret shape;
+# --remerge-diff (git 2.36+) covers a merge's resolution. Older git: --cc instead, which
+# flags every merge whose base side matched too — read each one flagged.
+P="(key|secret|token|pass(w(or)?d)?).?[[:space:]]*[:=]{1,2}[[:space:]]*([\"'][^\"']{12,}[\"']|[^[:space:]\"']{16,})|-----BEGIN [A-Z ]*PRIVATE KEY|A(KIA|SIA)[0-9A-Z]{16}|gh[pousr]_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|sk-(ant|proj)-[A-Za-z0-9_-]{16,}|xox[abprs]-|AGE-SECRET-KEY-1[0-9A-Z]{10,}|://[^/[:space:]:@]+:[^/[:space:]@]+@"
+git -C $W log --remerge-diff -E -i -G"$P" --format='%h' --name-only $BASE..HEAD
+git -C $W log -E -i --grep="$P" --format='%h (message)' $BASE..HEAD
 ```
 
 ## 2. Skill hygiene (every skill directory touched)

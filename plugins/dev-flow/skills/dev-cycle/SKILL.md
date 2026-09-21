@@ -166,8 +166,9 @@ re-dispatch or resume with findings = review round n+1; cap 4 review rounds.
    - medium: incorrect docs or contract, a doctrine violation, a silent failure mode.
    - low / nit: style, naming, redundancy — the author may decline each with a reason.
 
-   **Medium and above must be fixed.** A commit-subject finding is always low, except a
-   leaked secret, which is critical (`references/fix-loop.md`).
+   **Medium and above must be fixed.** A commit-subject finding is always low; a leaked
+   secret in any committed content is critical (`references/fix-loop.md` § A leaked
+   secret).
 3. **Fix loop.** Verdicts are `CLEAR`, `NEEDS_CHANGES`, `SHOW_STOPPER` and `BLOCKED`; who
    is resumed and who is re-dispatched: `references/fix-loop.md`. Repeat until `CLEAR`.
    **Cap: 4 review rounds** — the first review plus three fix rounds; a fourth without

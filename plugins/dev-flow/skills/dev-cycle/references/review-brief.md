@@ -86,7 +86,14 @@ union of every round's CHANGED, one file per line with its one-line reason>
    them — empty input, a missing file, a second run, a path with a space, the branch name
    the docs say versus the one the code makes — then test each one. A vague worry is not a
    finding; a reproduction is.
-7. Grade every finding on the scale below, with a file:line and a one-sentence failure
+7. Review the whole branch history, not only the final diff: a secret or credential in
+   any commit's patch or message is critical even when a later commit removes it, since
+   the merge carries every commit. Run the history scan in the Checks below, read each
+   hit by eye, and read `git -C $WORKTREE log -p --cc <base>..HEAD` with it in mind
+   (`--cc`, or a merge's resolution prints no diff). For a real
+   one, put `git -C $WORKTREE branch -a --contains <sha>` in the finding — whether it
+   reached anything beyond this branch.
+8. Grade every finding on the scale below, with a file:line and a one-sentence failure
    scenario: what a user does, and what goes wrong.
 
 ## Checks — run all, report outcomes verbatim
@@ -102,10 +109,11 @@ $WORKTREE, in addition to the generic ones>
   behaviour.
 - medium: incorrect docs or contract, a doctrine violation, a silent failure mode.
 - low / nit: style, naming, redundancy. The author may decline these with a reason. A
-  commit subject or message finding is always low, except one that leaks a secret or
-  credential, which is critical (the dev-cycle skill's fix-loop rule). Never quote a
-  secret's value in a finding or in pasted check output (redact it): name its commit
-  sha, file and key only.
+  commit subject or message finding is always low.
+- A secret or credential in any committed content on the branch — a file in any commit,
+  removed later or not, or any message — is critical (the dev-cycle skill's fix-loop
+  rule, § A leaked secret). Never quote its value in a finding, a note or pasted check
+  output (redact it): name its commit sha, file and key only. Never call it safe.
 
 ## Verdict
 
@@ -167,8 +175,9 @@ a leaked secret, so <last reviewed sha> is no longer on it. Re-review the whole 
 git -C $WORKTREE log --oneline <merge-base sha>..HEAD and
 git -C $WORKTREE diff <merge-base sha>...HEAD. Then compare against the tree you reviewed:
 git -C $WORKTREE diff <last reviewed sha> HEAD must show only this round's fixes and the
-secret's removal from any file that held it (a message-only leak adds nothing); anything
-more is a finding. Check every message in the new log is clean.
+secret's removal from any file that still held it there (a leak a later commit already
+removed, or one in a message, adds nothing); anything more is a finding. Then re-run the
+history scan: no trace of the secret in any patch or message from <merge-base sha> on.
 
 <merge-conflict round only — the branch now carries a merge of <base>; add:>
 The new commits include <merge sha>, a merge of <base> made to resolve a conflict at Land.
