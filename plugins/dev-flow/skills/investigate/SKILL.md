@@ -88,13 +88,16 @@ If `.claude-sandbox/config.yaml` is absent, warn once and continue — see
 
 ## Asking at a gate
 
-A blocking gate (Steps 2, 9, 11) blocks on the user's answer, not on a widget. While scope is
-still open — scoping, early requirements rounds, "what are we even building" — **prefer a
-numbered list in your reply**, each item with your recommendation, answered free-form: the
-honest answer is often "none of these, and here is why", which fixed options fight, and an
-answer that redefines the problem is one to re-scope from. Keep `AskUserQuestion` for a closed
-choice late in a task, and never in the same turn as heavy analysis — the dialog hides both
-that and the status line.
+A blocking gate (Steps 2, 9, 11) blocks on the user's answer, not on a widget; either form
+carries your recommendation on each question. While scope is still open — scoping, early
+requirements rounds, "what are we even building" — **prefer a numbered list in your reply**,
+answered free-form: the honest answer is often "none of these, and here is why", which fixed
+options fight, and an answer that redefines the problem is one to re-scope from. Keep
+`AskUserQuestion` for a closed choice late in a task, and never in the same turn as heavy
+analysis — the dialog hides both that and the status line.
+
+**End the turn on the list.** Your recommendation is not the answer, and a background agent's
+return is not either: fold it in and keep waiting.
 
 ---
 
@@ -164,7 +167,7 @@ Ask only what you cannot answer yourself and what would change *where you look*:
 - Is anything explicitly out of scope?
 
 One round of 2–4 questions, per **Asking at a gate** — scope is open here, so a numbered list.
-A recommendation on each makes the cheap path confirming rather than composing an answer.
+Then **wait**.
 
 **Skip this gate only when the description already answers all of it** — a well-specified
 TODO item sometimes does. Say that you skipped it and why.
@@ -495,8 +498,8 @@ to report **answer / evidence / confidence** per question, and to say "could not
 rather than guess. Tell it to flag any *new* uncertainty it finds.
 
 **4. Meanwhile, ask the user the decision-class questions**, per **Asking at a gate**. Every
-one carries a defer option — a dialog option, or in a numbered list one line saying any item
-may be answered "leave open":
+one carries a defer option, offered as a dialog option or, in a list, as a closing line: any
+item may be answered "leave open". Its wording:
 
 > **Leave open and record in the investigation** — defer this; it will be listed under Open
 > Questions with its owner and whether it blocks implementation.

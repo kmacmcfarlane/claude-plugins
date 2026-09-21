@@ -46,8 +46,8 @@ One round, with a recommendation on each. The gate blocks on the user's answer, 
 widget: while the question itself is still open — the usual state here — ask it as a
 **numbered list in your reply** that the user answers free-form, since "none of these, and here
 is why" is a common and useful answer that fixed options fight. Keep `AskUserQuestion` for a
-closed choice with enumerable options, and never open it in the same turn as heavy analysis.
-You need:
+closed choice late in a task, and never open it in the same turn as heavy analysis. **End the
+turn on the list**: your recommendation is not the answer. You need:
 
 1. **The question**, and what decision it feeds. A fan-out with no downstream decision produces
    a library, not an answer.
