@@ -214,8 +214,10 @@ scratchpad**: a fresh session's scratchpad is empty, so a store-less target only
 within the session that wrote it, or one that inherits the same scratchpad.
 
 Read the record sink in order and act on its **last** relevant line — not the first one
-anywhere in it that a rule happens to match. Evaluate in this order; the first that
-applies wins:
+anywhere in it that a rule happens to match. The relevant lines are `dispatch:`,
+`return:`, `verdict:` and `landed:`; a `findings:`, `decision:`, `checks:`, `target:`,
+`intent:` or `changed:` line after them never displaces them as "the last line", though
+rules 3, 5, 6 and 7 read them. Evaluate in this order; the first that applies wins:
 
 1. **A `landed: <merge sha>` line anywhere.** The target already landed: stop and report
    "already landed". Never re-dispatch, never re-run Land.
@@ -228,10 +230,16 @@ applies wins:
    at the same role, tier and round, briefing the new agent with the worktree's current
    HEAD (it may have moved since the stale dispatch was recorded).
 3. **The last line is an implementer's `return:`, with no reviewer `dispatch:` after
-   it** (the implementer reported back but the run stopped before reviewing it): resume
-   at Step 4 and dispatch a reviewer. Use the re-review variant when a prior `verdict:`
-   already exists for this target (this is a fix round); otherwise the full
-   review-brief.
+   it** (the implementer reported back but the run stopped before reviewing it). Its
+   `<STATUS>` decides:
+   - `DONE` or `DONE_WITH_CONCERNS`: resume at Step 4 and dispatch a reviewer. Use the
+     re-review variant when a prior `verdict:` already exists for this target (this is a
+     fix round); otherwise the full review-brief.
+   - `NEEDS_CONTEXT` or `BLOCKED`: never a review. Resume at SKILL.md § Step 3.5 for that
+     status: `NEEDS_CONTEXT` re-dispatches with the answer recorded in the record sink
+     (at least opus), and gets that answer first when none is recorded; `BLOCKED` waits
+     for its `decision:` line's recorded answer, raising it through the decision channel
+     only when none is recorded yet (rule 6's never-re-raise applies).
 4. **The last line is `verdict: CLEAR round <n> at <sha>`.** A `verdict:` line counts as
    the reviewer's own return — rule 2 above already covers an unanswered reviewer
    dispatch, so a recorded `CLEAR` always has one. Compare `<sha>` — or, for a
@@ -255,6 +263,12 @@ applies wins:
    that verdict, verbatim, per the fix loop; the round already counts toward the cap of 4.
    A `NEEDS_CHANGES` that is itself the 4th counted round falls to rule 6 instead, not
    this one — the cap is checked before a new fix round is opened.
+   **`review <branch>` mode dispatches onto the author's branch only on a recorded yes**
+   to SKILL.md Usage's "dispatch an implementer for the findings?" `decision:`. Declined
+   recorded: take Usage's declined path (report the findings in Step 6, `$WI handoff`,
+   stop; nothing lands). No answer recorded — no such `decision:` line, or one without
+   an answer: raise it through the decision channel now, and dispatch nothing until it is
+   answered yes.
 6. **The last line is `verdict: SHOW_STOPPER ...`, or the cap is already hit** (4
    `verdict:` lines counted as rounds — `CLEAR`, `NEEDS_CHANGES` or `SHOW_STOPPER` only;
    `BLOCKED` is never a round — with no `CLEAR` among them, the last of the 4 included):
@@ -263,8 +277,11 @@ applies wins:
    through the decision channel now, exactly as Step 4.4 would. A resume never re-raises
    a decision that already has an answer recorded.
 7. **The last line is `verdict: BLOCKED`** (a reviewer that could not start,
-   `review-brief.md` § Verdict meanings): re-dispatch it with the setup fixed. Not a
-   round — it does not count toward the cap.
+   `review-brief.md` § Verdict meanings): re-dispatch it with the setup fixed — twice at
+   most, counting the consecutive `verdict: BLOCKED` lines since the last other
+   `verdict:`. A third `BLOCKED` is not re-dispatched: `$WI block` (when there is an item)
+   and raise it through the decision channel, unless its `decision:` already has an
+   answer recorded. Not a round — it does not count toward the cap.
 8. **No `dispatch:`, `return:` or `verdict:` line**, but a `checks:`, `target:`,
    `intent:`, `decision:` or `changed:` line already recorded: start at Step 1 (Step 0
    for `review <branch>` mode), using those recorded bindings instead of re-resolving or
