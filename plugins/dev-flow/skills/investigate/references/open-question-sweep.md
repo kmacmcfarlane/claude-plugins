@@ -9,6 +9,14 @@ Look for hedged language ("likely", "presumably", "should be", "may need"), any 
 `file:line` or command behind it, a choice left implicit, a section written thinly because
 you did not know, and anything already sitting in Open Questions. Each is a candidate.
 
+One candidate is standing, not draft-dependent: ownership and contract facts about
+neighbouring components recorded earlier in this investigation (an earlier serial of the
+series, or an earlier step of this pass). Ownership can move while the investigation runs;
+re-check any such fact against current HEAD of the repo that owns the neighbour (its base
+branch) and the repo's ownership record (a README catalog, CODEOWNERS, a placement table in
+CLAUDE.md) — where none exists, the owning code itself at HEAD (`git log` on its path) — before
+the review gate, even if the draft states it with confidence.
+
 ## 2. Classify every candidate
 
 | Class | Test | Handling |
