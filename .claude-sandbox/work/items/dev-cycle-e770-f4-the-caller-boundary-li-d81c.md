@@ -34,3 +34,4 @@ agent: implementer a1cdaa872072a3b48 round 1
 return: implementer DONE_WITH_CONCERNS b4ed234 (SKILL.md +49 bytes: two required riders)
 changed: librarian-mode SKILL.md (Rehydrate steps 3-4, fable-group clause), references/ending-the-session.md (four sites)
 dispatch: reviewer opus — rule 4 floor (impl sonnet)
+agent: reviewer aae2e168adc2b1526 round 1

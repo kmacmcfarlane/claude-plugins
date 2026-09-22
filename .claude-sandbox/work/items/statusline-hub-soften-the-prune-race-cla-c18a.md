@@ -2,8 +2,10 @@
 id: statusline-hub-soften-the-prune-race-cla-c18a
 title: "statusline-hub: soften the prune-race claim in hook-contract § 11; test or drop _dead_segment's read-vs-lstat check"
 type: chore
-status: todo
+status: doing
 priority: 4
+owner: Kyle-McFarlane@bf9f9839222c
+claimed: 2026-09-22T23:24Z
 created: 2026-09-22
 updated: 2026-09-22
 refs:
@@ -17,3 +19,9 @@ refs:
 - next: —
 - blocked: —
 - learned: —
+
+## Notes
+- 2026-09-22 claimed by Kyle-McFarlane@bf9f9839222c
+
+target: full statusline-hub-soften-the-prune-race-cla-c18a /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude/worktrees/statusline-hub-soften-the-prune-race-cla-c18a
+dispatch: implementer opus — executable logic (statusline-hub hooks test), rule 2

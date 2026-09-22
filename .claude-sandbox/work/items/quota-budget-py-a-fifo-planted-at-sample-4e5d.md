@@ -2,8 +2,10 @@
 id: quota-budget-py-a-fifo-planted-at-sample-4e5d
 title: "quota_budget.py: a FIFO planted at samples.jsonl or a sink day-file blocks open indefinitely"
 type: bug
-status: todo
+status: doing
 priority: 4
+owner: Kyle-McFarlane@bf9f9839222c
+claimed: 2026-09-22T23:24Z
 created: 2026-09-22
 updated: 2026-09-22
 refs:
@@ -17,3 +19,9 @@ refs:
 - next: —
 - blocked: —
 - learned: —
+
+## Notes
+- 2026-09-22 claimed by Kyle-McFarlane@bf9f9839222c
+
+target: full quota-budget-py-a-fifo-planted-at-sample-4e5d /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude/worktrees/quota-budget-py-a-fifo-planted-at-sample-4e5d
+dispatch: implementer opus — executable logic (quota_budget.py), small local edit
