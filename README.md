@@ -79,7 +79,7 @@ dependency is marked (hard) here.
 | …to survive the finite context window (gate, checkpoint, rehydration, token-spend report) | `context-guard` | **current** | `statusline-hub` (soft; exact depth from the sensor record it writes, when it owns the status-line slot or tees from another renderer; installing `statusline` brings it) |
 | …an always-on status line (context left — the session's and each sub-agent's, in the agent panel — plan usage, model, session name) | `statusline` | **current** | `statusline-hub` (hard; the hub owns the status-line slot, and the footer draws as one of its display hooks), `context-guard` (soft; epoch and checkpoint thresholds in the gauge when installed) |
 | …to share the status-line slot, so the data Claude Code hands the status line reaches the tools that read it whatever renders the line (the hub owns the slot and runs the hooks other plugins register, or its `tee` feeds the record from another renderer) | `statusline-hub` | **current** | `statusline` (soft; its footer is the hub's first display hook, and the hub takes over a slot an earlier `statusline` version installed once that footer has registered) |
-| …a plan before you code: investigate → reviewed plan → verified implementation, and a standing librarian that takes custody of a repo's work (files, dispatches, reviews, lands) | `dev-flow` | **current** | `work-items` (soft; `librarian-mode` and `dev-cycle` find `wi` via the repo tree, or the installed plugin's copy; `dev-cycle` runs without it on a scratchpad record), `statusline-hub` (soft; the fable fallback in `librarian-mode` and `dev-cycle` reads rate-limit reset times, and `librarian-mode`'s quota sense reads its five-hour and weekly usage, from the sensor record it writes; without it the quota sense has a reading only from a live `claude-analytics` sink, and otherwise reports no signal; installing `statusline` brings it), `claude-analytics` (external, planned, soft; the quota sense reads its sampler's sink as usage history when it is live, and samples the sensor record itself into `${CLAUDE_CONFIG_DIR}/claude-kit/librarian/` without it), `context-guard` (soft; `investigate` offers a checkpoint-then-implement path when its checkpoint skill is present; `librarian-mode` answers its gate advisories with a checkpoint and weighs its manifest and ledger when it rehydrates; the fable fallback reads reset times from its older state record), `kit-dev` (soft; the `investigate` and `implement` retrospectives hand findings to its user-invoked `update-kit`; without it the findings stand as the record) |
+| …a plan before you code: investigate → reviewed plan → verified implementation, research that lands as sourced findings or a curated knowledge base, and a standing librarian that takes custody of a repo's work (files, dispatches, reviews, lands) | `dev-flow` | **current** | `work-items` (soft; `librarian-mode` and `dev-cycle` find `wi` via the repo tree, or the installed plugin's copy; `dev-cycle` runs without it on a scratchpad record), `statusline-hub` (soft; the fable fallback in `librarian-mode` and `dev-cycle` reads rate-limit reset times, `librarian-mode`'s quota sense reads its five-hour and weekly usage, and the `research` skills read its usage windows to size a run, from the sensor record it writes; without it the quota sense has a reading only from a live `claude-analytics` sink, and otherwise reports no signal; installing `statusline` brings it), `claude-analytics` (external, planned, soft; the quota sense reads its sampler's sink as usage history when it is live, and samples the sensor record itself into `${CLAUDE_CONFIG_DIR}/claude-kit/librarian/` without it), `context-guard` (soft; `investigate` offers a checkpoint-then-implement path when its checkpoint skill is present; the `research` skills checkpoint before synthesis when it is; `librarian-mode` answers its gate advisories with a checkpoint and weighs its manifest and ledger when it rehydrates; the fable fallback reads reset times from its older state record), `kit-dev` (soft; the `investigate` and `implement` retrospectives hand findings to its user-invoked `update-kit`; without it the findings stand as the record) |
 | …repo-durable work items and a pluggable work source | `work-items` | **current** | — |
 | …isolated execution for agent sessions (containers, and the checkout/worktree convention) | `sandbox` | **current** | claude-sandbox repo (external) |
 | …unattended agent loops over a backlog ("ralph") | `ralph` | **current** | claude-sandbox repo (external; its `init-ralph` seeds `backlog.py`, and the loops run in its containers), `sandbox` (soft; its skill bootstraps and troubleshoots those containers), `work-items` (soft; the `wi` ↔ `backlog.yaml` bridge, when both stores are present) |
@@ -223,7 +223,8 @@ A plan before you code. Investigate a problem into a reviewed plan series under
 or through `dev-cycle`, which takes one change from plan to merge through sub-agents (a
 routed implementer in its own worktree, a review gate with a capped fix loop, the repo's
 checks, a local merge on the user's say-so). Plus the research and verification techniques
-that feed it, and a standing librarian that takes custody of a repo's work: it files every
+that feed it — including a `research` family that turns any question into sourced, verified
+findings and, where a repo keeps one, a curated knowledge base — and a standing librarian that takes custody of a repo's work: it files every
 request, factors it, and dispatches each piece through `dev-cycle` with its own bindings
 (its Scope, checks and decision channel), then reports what landed.
 
@@ -233,6 +234,10 @@ request, factors it, and dispatches each piece through `dev-cycle` with its own 
 | `implement` | Carry out an investigation series — plan, build, verify, record the outcome |
 | `dev-cycle` | Carry one change — a work item, a plan, or the conversation — from plan to merge through sub-agents: route by model tier, build in a worktree, review with a capped fix loop, run the checks, land |
 | `deep-investigation` | Multi-agent research fan-out — strategy doc, lanes on a cheap model, one-pass synthesis |
+| `research` | Research a question into sourced, verified findings — intensity with its cost stated, lanes on a cheap model, a verifier that is not the author, one synthesis, landed as a reply, report, run record or knowledge-base note |
+| `research-deep` | The research skill at deep or exhaustive intensity — rounds, a gap gate, an adversarial lane, a forked synthesis |
+| `research-refine` | Extend or correct an existing research run — pull a thread, re-check a claim, change scope; a new run that supersedes the old |
+| `research-prune` | Curate a research knowledge base — fit check against its charter, propose and execute a rebalance, archive superseded notes, regenerate indexes |
 | `chain-of-verification` | CoVe fact-verification pipeline — baseline, verify, revise |
 | `librarian-mode` | Standing single-writer custodian of a repo's custody layer — a marketplace's shared agent layer, or whatever scope an operator opts a repo in with: file, factor, route by model tier, delegate to worktree agents, review, land, report |
 
@@ -242,10 +247,25 @@ Which dev-flow skill:
 |---|---|---|
 | `investigate` | a scoped bug or feature needs a plan: one session reads the code, settles requirements with you, writes the series | the question is a broad landscape (`deep-investigation`) |
 | `deep-investigation` | a broad, open-ended question needs many sources: recon, a strategy doc, cheap-model lanes against a fixed contract, one synthesis | the problem is a scoped bug or feature (`investigate`) |
+| `research` | a question needs a sourced answer, kept or not: quick on its own, or lanes at a stated cost, verified and landed where the repo says | it is a bug or feature in this repo (`investigate`), or a fan-out writing a series' plan (`deep-investigation`) |
+| `research-deep` | the question is too broad for one round and the operator has said so | the question is narrow (`research`), or the fan-out feeds an investigation series (`deep-investigation`) |
+| `research-refine` | a prior run exists and a thread, claim or scope needs another pass | there is no prior run (`research`) |
+| `research-prune` | a knowledge base is strained: rebalance, archive, re-index | new research is wanted (`research`) |
 | `implement` | a finished investigation series is ready to build, hands-on in this session, fanning out to worktrees when the plan does | there is no plan yet (`investigate`), or you want the build delegated and reviewed (`dev-cycle`) |
 | `dev-cycle` | one change — item, series, plan or this conversation — should go to merge through a sub-agent build and a review gate | one session should own every change to the repo (`librarian-mode`) |
 | `librarian-mode` | one standing session should take custody of a repo's whole stream of work | the work is a one-off change (`dev-cycle`, or a worktree and a PR) |
 | `chain-of-verification` | a factual answer must be right: baseline, independent verification, revision | the prompt has no falsifiable factual content, or speed matters more than accuracy |
+
+The research family lives in `dev-flow` by operator decision (2026-09-22): its lanes, verifier
+and run record are the superset of `deep-investigation`'s, one plugin lets the two share
+references, and `deep-investigation` is planned to become a thin caller over `research`.
+
+The plugin ships two agents for the research family: `research-lane` (sonnet, effort medium —
+gathers evidence for one lane and writes one findings file to a fixed shape) and
+`research-verifier` (haiku, effort low — checks sampled claims against their sources and scores
+the run). Their contract lives in the agent body, so every dispatch loads it. Soft dependency
+on `statusline-hub` for the research skills: they read the usage windows from its sensor record
+to pick an intensity that fits; without it they ask.
 
 Soft dependency on `work-items`: the flow threads work items through `wi` when a store is
 present, and degrades to plain investigation series when it is not; `dev-cycle` then keeps
