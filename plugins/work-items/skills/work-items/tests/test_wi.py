@@ -1277,7 +1277,8 @@ class TestClaim(WiTestCase):
     def test_claim_refuses_unknown_dep(self):
         # an id that resolves to no item never counts as met (as in `next`)
         self.write_item("kid-1111", deps=["ghost-9999"])
-        self.assert_claim_refused("kid-1111", "ghost-9999 (not in items/")
+        self.assert_claim_refused("kid-1111",
+                                  "ghost-9999 (unknown: in neither items/")
 
     def test_next_claim_still_skips_unmet_dep(self):
         self.write_item("base-1111", priority=3)
@@ -1285,6 +1286,119 @@ class TestClaim(WiTestCase):
         rec = json.loads(self.wi_ok(["next", "--pipeline", "--one", "--claim",
                                      "worker-1", "--json"]))
         self.assertEqual(rec["id"], "base-1111")
+
+    def test_claim_allows_dep_at_doing_stage_uat(self):
+        # 1d1c rider: a dep awaiting UAT counts as met, for claim as for next
+        self.write_item("uat-1111", status="doing", stage="uat")
+        self.write_item("kid-2222", deps=["uat-1111"])
+        self.assertIn("kid-2222", self.wi_ok(["next", "--plain"]))
+        self.wi_ok(["claim", "kid-2222"])
+        rec = json.loads(self.wi_ok(["show", "kid-2222", "--json"]))
+        self.assertEqual((rec["status"], rec["owner"]), ("doing", "tester@local"))
+
+    def test_reclaim_owned_doing_item_with_unmet_deps_unchanged(self):
+        # 1d1c rider: the dep gate applies to a todo item only; re-claiming
+        # an item this owner already holds stays a no-op success
+        self.write_item("base-1111")
+        self.write_item("kid-2222", status="doing", deps=["base-1111"],
+                        owner="tester@local", claimed="2026-08-01T00:00Z")
+        path = self.root / "items" / "kid-2222.md"
+        before = path.read_text()
+        out = self.wi_ok(["claim", "kid-2222"])
+        self.assertIn("claimed kid-2222 as tester@local", out)
+        self.assertEqual(path.read_text(), before)
+
+    def archive_by_hand(self, iid):
+        """Move an item into archive/ as a file (how a non-closed item gets
+        there: `wi archive` moves closed items only)."""
+        dest = self.root / "archive" / "2026" / f"{iid}.md"
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        (self.root / "items" / f"{iid}.md").rename(dest)
+
+    def assert_ready_everywhere(self, iid, ready):
+        """next, next --pipeline, ls --ready and show --json give one answer."""
+        check = self.assertIn if ready else self.assertNotIn
+        check(iid, run(["next", "--plain"], self.root).stdout)
+        check(iid, run(["next", "--pipeline"], self.root).stdout)
+        check(iid, run(["ls", "--ready", "--plain"], self.root).stdout)
+        prime = run(["prime"], self.root).stdout
+        ready_lines = prime[prime.index("READY"):] if "READY" in prime else ""
+        check(iid, ready_lines)
+        rec = json.loads(self.wi_ok(["show", iid, "--json"]))
+        self.assertEqual(rec["ready"], ready)
+        self.assertEqual(rec["blocked_by_unresolved"] == [], ready)
+
+    def test_archived_done_dep_is_met_for_next_ls_show_and_claim(self):
+        self.write_item("fin-1111", status="done")
+        self.write_item("gone-2222", status="dropped")
+        self.write_item("kid-3333", deps=["fin-1111", "gone-2222"])
+        self.wi_ok(["archive", "--older-than", "0s"])
+        self.assertFalse((self.root / "items" / "fin-1111.md").exists())
+        self.assertTrue((self.root / "archive" / "2026" / "fin-1111.md").exists())
+        self.assert_ready_everywhere("kid-3333", True)
+        self.wi_ok(["claim", "kid-3333"])
+        rec = json.loads(self.wi_ok(["show", "kid-3333", "--json"]))
+        self.assertEqual((rec["status"], rec["owner"]), ("doing", "tester@local"))
+
+    def test_archived_dep_not_closed_is_judged_by_its_status(self):
+        self.write_item("wip-1111")
+        self.write_item("kid-2222", deps=["wip-1111"])
+        self.archive_by_hand("wip-1111")
+        self.assert_ready_everywhere("kid-2222", False)
+        rec = json.loads(self.wi_ok(["show", "kid-2222", "--json"]))
+        self.assertEqual(rec["blocked_by_unresolved"], ["wip-1111"])
+        self.assert_claim_refused("kid-2222", "wip-1111 (todo)")
+        # the same archived dep at doing+uat is met, as it would be in items/
+        self.write_item("uat-3333", status="doing", stage="uat")
+        self.write_item("kid-4444", deps=["uat-3333"])
+        self.archive_by_hand("uat-3333")
+        self.assert_ready_everywhere("kid-4444", True)
+
+    def test_id_in_items_and_archive_items_copy_wins_everywhere(self):
+        # a half-finished hand move: the items/ copy (todo) is current, the
+        # archive/ copy (done) is stale; every command must judge by items/
+        self.write_item("dup-1111", status="done")
+        self.archive_by_hand("dup-1111")
+        text = (self.root / "archive" / "2026" / "dup-1111.md").read_text()
+        text = text.replace("status: done", "status: todo")
+        text = re.sub(r"(?m)^closed:.*\n", "", text)
+        (self.root / "items" / "dup-1111.md").write_text(text)
+        self.write_item("kid-2222", deps=["dup-1111"])
+        self.assert_ready_everywhere("kid-2222", False)
+        self.assertNotIn("kid-2222", run(["ls", "--status", "all", "--ready",
+                                          "--plain"], self.root).stdout)
+        self.assert_claim_refused("kid-2222", "dup-1111 (todo)")
+
+    def test_unparseable_archive_file_is_skipped_not_fatal(self):
+        self.write_item("fin-1111", status="done")
+        self.write_item("kid-2222", deps=["fin-1111"])
+        self.write_item("wait-3333", deps=["ghost-9999"])  # forces the read
+        self.wi_ok(["archive", "--older-than", "0s"])
+        arch = self.root / "archive" / "2026"
+        (arch / "junk-aaaa.md").write_text("no front matter here\n")
+        (arch / "bin-bbbb.md").write_bytes(b"\xff\xfe\x00garbage\x80")
+        for cmd in (["next", "--plain"], ["prime"], ["ls", "--ready", "--plain"]):
+            r = run(cmd, self.root)
+            self.assertEqual(r.returncode, 0, r.stderr)
+            self.assertIn("kid-2222", r.stdout)
+            self.assertNotIn("Traceback", r.stderr)
+            self.assertIn("junk-aaaa.md", r.stderr)
+            self.assertIn("bin-bbbb.md", r.stderr)
+
+    def test_dep_index_reads_the_archive_once_and_only_on_a_miss(self):
+        self.write_item("live-1111", status="done")
+        for iid in ("fin-2222", "fin-3333"):
+            self.write_item(iid, status="done")
+            self.archive_by_hand(iid)
+        items = wi.load_all(self.root)
+        with mock.patch.object(wi, "load_paths", wraps=wi.load_paths) as lp:
+            idx = wi.DepIndex(self.root, items)
+            self.assertTrue(wi.dep_resolved("live-1111", idx))
+            self.assertEqual(lp.call_count, 0)
+            self.assertTrue(wi.dep_resolved("fin-2222", idx))
+            self.assertTrue(wi.dep_resolved("fin-3333", idx))
+            self.assertFalse(wi.dep_resolved("ghost-9999", idx))
+            self.assertEqual(lp.call_count, 1)
 
     def test_eight_concurrent_claims_one_winner(self):
         self.write_item("race-1111")

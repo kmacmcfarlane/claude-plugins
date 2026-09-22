@@ -1129,16 +1129,33 @@ def load_all(root, archived=False):
     reservation, not an item: it is skipped with a warning naming it, so
     one interrupted write does not stop every command; `wi lint` reports it
     with the fix. Its name stays taken (taken_ids reads the file stems)."""
+    return load_paths(item_paths(root, archived))
+
+
+def load_paths(paths, lenient=False):
+    """Parse each path. `lenient`: a file that does not read or parse is
+    skipped with a one-time warning, as if absent (DepIndex's archive read,
+    so one bad archived file cannot stop commands that never needed it)."""
     items = []
-    for path in item_paths(root, archived):
-        text = read_raw(path)
+    for path in paths:
+        try:
+            text = read_raw(path)
+            item = Item.parse(text, path) if text else None
+        except (WiError, UnicodeDecodeError, OSError) as e:
+            if not lenient:
+                raise
+            if path not in _warned_stale:
+                _warned_stale.add(path)
+                print(f"wi: skipping {path}: unreadable ({e}); "
+                      "treated as absent", file=sys.stderr)
+            continue
         if not text:
             if path not in _warned_stale:
                 _warned_stale.add(path)
                 print(f"wi: skipping {path}: {STALE_RESERVATION}; "
                       "`wi lint` names the fix", file=sys.stderr)
             continue
-        items.append(Item.parse(text, path))
+        items.append(item)
     return items
 
 
@@ -1160,6 +1177,44 @@ def load_item_anywhere(root, ref):
 
 # ── Readiness and ranking ───────────────────────────────────────────────────
 
+class DepIndex:
+    """The id → item lookup every readiness question resolves deps against:
+    the command's loaded items first, then archive/ — an archived item is
+    judged by its status like any other, so a done or dropped dep stays met
+    after `wi archive`. The archive is read once per command, and only when a
+    dep is not among the loaded items (a store whose deps all live in items/
+    never reads it). `in`/`[]` see only the loaded items; `get` sees both."""
+
+    def __init__(self, root, items, archived=False):
+        """`archived`: `items` already holds archive/ (nothing more to read).
+        The first entry for an id wins — load_all lists items/ before
+        archive/, and the items/ copy is the current one."""
+        self.items = {}
+        for it in items:
+            self.items.setdefault(it.id, it)
+        self.root, self._archive = root, ({} if archived else None)
+
+    def __contains__(self, key):
+        return key in self.items
+
+    def __getitem__(self, key):
+        return self.items[key]
+
+    def get(self, key, default=None):
+        if key in self.items:
+            return self.items[key]
+        if self._archive is None:
+            loaded = set(self.items)
+            self._archive = {}
+            arch = self.root / "archive" if self.root is not None else None
+            if arch is not None and arch.is_dir():
+                for it in load_paths(sorted(arch.glob("*/*.md")),
+                                     lenient=True):
+                    if it.id not in loaded:
+                        self._archive.setdefault(it.id, it)
+        return self._archive.get(key, default)
+
+
 def dep_resolved(dep, by_id):
     if dep.startswith("ext:"):
         return False
@@ -1172,8 +1227,9 @@ def dep_resolved(dep, by_id):
 
 
 def unmet_deps(item, by_id):
-    """The item's deps that do not resolve (dep_resolved): the one rule both
-    the ready queue (is_ready) and `claim` apply."""
+    """The item's deps that do not resolve (dep_resolved): the one rule the
+    ready queue (is_ready: next, ls --ready, prime), `claim` and `show --json`
+    apply, over a DepIndex (loaded items, then archive/)."""
     return [d for d in item.get("deps", []) if not dep_resolved(d, by_id)]
 
 
@@ -1399,9 +1455,9 @@ def cmd_claim(args):
     with Lock(root):
         item = load_item_anywhere(root, args.id)
         if item.get("status") == "todo":
-            # the ready queue's own rule over the ready queue's own universe
-            # (items/, as `next` loads it): claim takes nothing `next` hides
-            by_id = {it.id: it for it in load_all(root)}
+            # the ready queue's own rule over the ready queue's own lookup
+            # (items/, then archive/): claim takes nothing `next` hides
+            by_id = DepIndex(root, load_all(root))
             unmet = unmet_deps(item, by_id)
             if unmet:
                 def why(d):
@@ -1409,7 +1465,7 @@ def cmd_claim(args):
                         return f"{d} (external, never resolves)"
                     dep = by_id.get(d)
                     return f"{d} ({dep.get('status')})" if dep else \
-                        f"{d} (not in items/: unknown or archived)"
+                        f"{d} (unknown: in neither items/ nor archive/)"
                 raise WiError(1, f"{item.id} waits on unmet deps: "
                                  + ", ".join(why(d) for d in unmet)
                                  + f"; finish or drop them, or `wi unblock "
@@ -1769,7 +1825,7 @@ def cmd_set(args):
 def cmd_ls(args):
     root = resolve_root(args.root)
     items = load_all(root, archived=args.status == "all")
-    by_id = {it.id: it for it in items}
+    by_id = DepIndex(root, items, archived=args.status == "all")
     statuses = (set(STATUSES) if args.status == "all"
                 else set((args.status or "todo,doing,blocked,grooming")
                          .split(",")))
@@ -1807,15 +1863,14 @@ def cmd_ls(args):
 def cmd_show(args):
     root = resolve_root(args.root)
     items = load_all(root, archived=True)
-    by_id = {it.id: it for it in items}
+    by_id = DepIndex(root, items, archived=True)
     item = resolve_id(items, args.id)
     if args.json:
         rec = item_json(item, by_id)
         rec["body"] = item.desc
         rec["sections"] = dict(item.sections)
         rec["acceptance"] = parse_acceptance(item)
-        rec["blocked_by_unresolved"] = [d for d in item.get("deps", [])
-                                        if not dep_resolved(d, by_id)]
+        rec["blocked_by_unresolved"] = unmet_deps(item, by_id)
         print(json.dumps(rec, indent=1))
     elif args.brief:
         for key in FIELD_ORDER:
@@ -1853,7 +1908,7 @@ def cmd_next(args):
     if args.pipeline:
         return next_pipeline(root, args)
     items = load_all(root)
-    by_id = {it.id: it for it in items}
+    by_id = DepIndex(root, items)
     grouped, closed = split_by_status(items)
     doing = sorted(grouped["doing"],
                    key=lambda it: (it.get("priority", 2), it.get("updated", "")))
@@ -1915,7 +1970,7 @@ def cmd_next(args):
 def next_pipeline(root, args):
     with Lock(root):
         items = load_all(root)
-        by_id = {it.id: it for it in items}
+        by_id = DepIndex(root, items)
         ordered = pipeline_queues(items, by_id)
         if args.non_interactive:
             ordered = [(q, it) for q, it in ordered if it.get("mode") != "interactive"]
@@ -1946,7 +2001,7 @@ def next_pipeline(root, args):
 def cmd_prime(args):
     root = resolve_root(args.root)
     items = load_all(root)
-    by_id = {it.id: it for it in items}
+    by_id = DepIndex(root, items)
     grouped, closed = split_by_status(items)
     me = default_owner(root)
     doing = sorted(grouped["doing"], key=lambda it: (
