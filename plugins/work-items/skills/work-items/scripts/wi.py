@@ -2174,19 +2174,25 @@ def _section_item(heading, body):
 # the bold title alone (`~~**T**~~ rest`, `**~~T~~** rest`); a strike opening
 # on the bold title and closing later on the same line (`~~**T** rest~~`,
 # anything after it on that line or below is description); and, with no bold,
-# a struck first line, optionally followed by a note after a dash or in
-# parentheses (`~~T~~`, `~~T~~ — done`, `~~T~~ (2026-09-01)`), as the heading
-# rule reads `## ~~T~~ — DONE date`. A strike over part of the title or only
-# the trailing text is an edit, not a closure: the entry stays open and keeps
-# its markers. ~~ and ** are stripped from a closed entry's title.
+# a struck first line with nothing after it, a parenthesis after it, or a
+# dash then a closure word or a date (`~~T~~`, `~~T~~ (2026-09-01)`,
+# `~~T~~ — DONE 2026-09-01`, `~~T~~ — fixed`). Any other text after the dash
+# (`~~Migrate to PG15~~ — PG16 instead`) is a replacement, not a closure. A
+# strike over part of the title or only the trailing text is an edit, not a
+# closure either: the entry stays open and keeps its markers. ~~ and ** are
+# stripped from a closed entry's title; an empty strike never closes.
 _NO_TILDES = r"(?:(?!~~).)"
 STRUCK_TITLE_RE = re.compile(
     rf"^(?:~~\*\*({_NO_TILDES}+?)\*\*~~|\*\*~~({_NO_TILDES}+?)~~\*\*)"
     r"[.:]?\s*[—-]*\s*(.*)$", re.S)
 STRUCK_BOLD_ENTRY_RE = re.compile(
     rf"^~~\*\*({_NO_TILDES}+?)\*\*((?:(?!~~)[^\n])*)~~(.*)$", re.S)
+_CLOSURE_WORD = r"(?:done|fixed|landed|closed|resolved|dropped|merged|wontfix)\b"
+_DATE = r"\d{4}-\d{2}-\d{2}"
 STRUCK_PLAIN_LINE_RE = re.compile(
-    r"^~~((?:(?!~~)[^\n])+)~~\s*(?:(?:[—-]+\s*|(?=\())(.*))?$")
+    r"^~~((?:(?!~~)[^\n])*\S(?:(?!~~)[^\n])*)~~\s*"
+    rf"(?:(?=\()(.*)|[—-]+\s*({_CLOSURE_WORD}.*|{_DATE}[.:]?\s*(?:\(.*\))?))?$",
+    re.I)
 BOLD_TITLE_RE = re.compile(r"^\*\*(.+?)\*\*[.:]?\s*[—-]*\s*(.*)$", re.S)
 
 
@@ -2203,19 +2209,24 @@ def _open_bullet_title(text):
 
 def _struck_bullet_title(text):
     """(title, rest) when a strike covers the entry's whole title, else None."""
-    m = STRUCK_TITLE_RE.match(text)
-    if m:
-        return (m.group(1) or m.group(2)).rstrip("."), m.group(3)
-    m = STRUCK_BOLD_ENTRY_RE.match(text)
-    if m:
-        inner = re.sub(r"^[.:]?\s*[—-]*\s*", "", m.group(2).strip())
-        return m.group(1).rstrip("."), (inner + m.group(3)).strip()
     first, _, cont = text.partition("\n")
-    m = STRUCK_PLAIN_LINE_RE.match(first.rstrip())
+    found = None
+    m = STRUCK_TITLE_RE.match(text)
+    m2 = STRUCK_BOLD_ENTRY_RE.match(text)
+    m3 = STRUCK_PLAIN_LINE_RE.match(first.rstrip())
     if m:
-        note = (m.group(2) or "").strip()
-        return m.group(1).strip().rstrip("."), (note + "\n" + cont).strip()
-    return None
+        found = (m.group(1) or m.group(2)), m.group(3)
+    elif m2:
+        inner = re.sub(r"^[.:]?\s*[—-]*\s*", "", m2.group(2).strip())
+        tail = m2.group(3).lstrip(" \t")
+        sep = " " if inner and tail and not tail.startswith("\n") else ""
+        found = m2.group(1), (inner + sep + tail).strip()
+    elif m3:
+        note = (m3.group(2) or m3.group(3) or "").strip()
+        found = m3.group(1), (note + "\n" + cont).strip()
+    if not found or not _fold(found[0]).strip(" .*~"):
+        return None
+    return found[0].strip().rstrip("."), found[1]
 
 
 def _bullet_item(text):

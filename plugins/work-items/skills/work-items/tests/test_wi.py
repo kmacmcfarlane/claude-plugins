@@ -617,15 +617,41 @@ class TestImportTodo(WiTestCase):
                 show = json.loads(self.wi_ok(["show", it["id"], "--json"]))
                 self.assertEqual(show["body"].strip(), desc)
 
-    def test_plain_struck_first_line_with_a_note_is_closed(self):
-        it = self.import_one("- [ ] ~~Retire the old runner~~ — done 2026-09-01")
-        self.assertEqual((it["title"], it["status"]),
-                         ("Retire the old runner", "done"))
-        # without a dash or parenthesis the strike covers only part of the
-        # first-line title, so the entry stays open, markers kept
-        it = self.import_one("- [ ] ~~Retire~~ the old runner")
-        self.assertEqual((it["title"], it["status"]),
-                         ("~~Retire~~ the old runner", "todo"))
+    def test_plain_struck_first_line_closes_only_on_a_closure_note(self):
+        """With no bold, a struck first line closes when nothing follows it,
+        a parenthesis follows, or a dash then a closure word or a date."""
+        for line in ("- [ ] ~~Migrate to PG15~~",
+                     "- [ ] ~~Migrate to PG15~~ — DONE 2026-09-01",
+                     "- [ ] ~~Migrate to PG15~~ — fixed",
+                     "- [ ] ~~Migrate to PG15~~ - 2026-09-01",
+                     "- [ ] ~~Migrate to PG15~~ (2026-09-01)"):
+            with self.subTest(line=line):
+                it = self.import_one(line)
+                self.assertEqual((it["title"], it["status"]),
+                                 ("Migrate to PG15", "done"))
+
+    def test_plain_struck_first_line_replaced_or_partial_stays_open(self):
+        """`~~X~~ — Y instead` is a replacement, and `~~X~~ rest` a strike
+        over part of the title: both stay open with their markers."""
+        for line in ("- [ ] ~~Migrate to PG15~~ — PG16 instead",
+                     "- [ ] ~~Migrate~~ to PG15"):
+            with self.subTest(line=line):
+                it = self.import_one(line)
+                self.assertEqual((it["title"], it["status"]),
+                                 (line[6:], "todo"))
+
+    def test_empty_strike_never_closes(self):
+        for line in ("- [ ] ~~ ~~", "- [ ] ~~** **~~ rest"):
+            with self.subTest(line=line):
+                it = self.import_one(line)
+                self.assertEqual((it["title"], it["status"]), (line[6:], "todo"))
+                self.wi_ok(["lint"])
+
+    def test_whole_entry_strike_joins_inside_and_after_with_a_space(self):
+        it = self.import_one("- [ ] ~~**Retire the old runner** x~~y")
+        self.assertEqual(it["status"], "done")
+        show = json.loads(self.wi_ok(["show", it["id"], "--json"]))
+        self.assertEqual(show["body"].strip(), "x y")
 
     def test_strike_in_rest_after_a_struck_title_is_kept(self):
         it = self.import_one("- [ ] ~~**Retire the old runner**~~ rest ~~old~~ new")
