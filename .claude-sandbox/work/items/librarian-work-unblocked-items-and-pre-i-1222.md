@@ -60,3 +60,14 @@ answer G2: operator asks whether P0 should mean parked/don't-schedule, with a se
 - 2026-09-22 held for the next wave (quota: weekly 32%, ~2× the sustainable pace): caef (fable), 8cc2 F3b planner (serial 04), dev-cycle-design-resume-whole-split-from-e770 planner, 3adc conflict round.
 decision 62: weekly quota burn — 32% → 34% in ~35 min (~3.4 %/h vs the sustainable 0.37 %/h; at this pace the week runs out in ~1 day, reset in 5.7 days). Held wave: caef (fable security hardening), 8cc2 F3b planner, e770 resume planner, 3adc conflict round. (a) hold new dispatch until the 5-hour window resets and then run one item at a time, most valuable first (F3b planner) [recommended: keeps the week usable; in-flight H3/H5 finish]; (b) dispatch the held four now (answer 53 stands); (c) pause everything but reviews of in-flight work until you say go.
 answer 62: superseded — operator 2026-09-22: 'continue with the work queue'; dispatch resumes (no cap), the librarian keeps reporting the burn rate (operator 2026-09-22)
+
+## Queue plan under the quota meter (session e9bb00fc, 2026-09-22, operator: "see how much you can get done without overrunning the reserve")
+Meter at start (quota_budget.py, intent present): 5h used 22 (reserve 25, resets 1.3h); weekly used 42 (reserve 15, resets 132.8h), headroom 43 pts, allowed 0.32 pts/h; binding weekly.
+Rules: HARD STOP of new dispatch at weekly used >= 85 (the reserve) or 5h used >= 75; in-flight cycles finish. SOFT CHECKPOINT at weekly 64 (half the headroom): report the burn and keep going unless the operator stops it. Meter re-read before every wave; per-wave cost recorded here to calibrate. Cheapest tier the routing rules allow; fable only where rule 3 demands it.
+Waves (disjoint files within a wave; a later wave waits on its deps):
+W1: F3b-4 0426 (opus/opus); e770 F2 1709 (opus/opus); 1f7f team-summary (sonnet/opus)
+W2: F3b-3 c3e1 (opus/opus, carries 3a8f's docstring rider); e770 F3 acdd (opus/opus); d978 team-summary nits (sonnet/opus, after 1f7f)
+W3: F3b-5 b495 (sonnet/opus); e770 F4 d81c (sonnet/opus); 09e1 + 5dbf dev-cycle docs (sonnet/opus, after F3); 4b6a, 5cde, 99b4 review lows (sonnet/opus)
+W4: wi fixes one at a time (same script): 1d1c, 59ce, fc04, bf1b, then 8e14 (opus); read_list c121; lineage 87fd; ledger 6641; docs 8519, 0900, 5a18
+W5 (judgement, planner first, most expensive): c79e librarian F2 (opus plan), 8ab6 loop items, bace H7 spike, 0599, ee7b, 3460, 09f1, d05d, bfd6, b8d6, 0d6b (gate code: fable), caef (fable) last
+Held for the operator/peers, not dispatched: e466 (iterate with operator), 4b0e (peer coordination), 32cc/380c (blocked), e5a7/7e8f (another session's claim), 680a/919c/d3a8/8189/segment 40ed/8c2c/7647/a95a/8482/8605/fa54/9ec9/bb7e taken after W5 as budget allows.
