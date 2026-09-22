@@ -38,8 +38,13 @@ This dialog, and the Scope question alone above, are the librarian's only modal 
 (SKILL.md § Intake step 3 sends every other decision through the numbered channel). They
 are allowed because nothing can be in flight by construction: they run in Rehydrate,
 before this session has dispatched an agent or taken a peer's request. So run ListAgents
-first: a background agent still running (a re-entry after compaction) means no dialog —
-raise the opt-in as a numbered `decision N:` and dispatch nothing until it is answered.
+first: a background agent still running (a re-entry after compaction, or an agent from
+earlier non-librarian work) means no dialog — raise the questions that path asks (Scope,
+Checks and Push; Scope alone for a section with no `Scope:` line) as numbered decisions,
+each with the options below, and dispatch nothing until they are answered. With a store,
+they go on a work item for the opt-in (reuse the open one a previous re-entry filed);
+with none, they ride in the Report as numbered decisions with no item and are filed on
+one once the store exists — the store is never created early for them.
 
 1. **Scope** — what the librarian owns. Options, in this order:
    - `Whole repo` — every tracked path except `.claude-sandbox/` and `.claude/`, which
