@@ -46,35 +46,39 @@ Plain text, in this order:
 
 2. **One bullet per landed change**, a bold short title, then a colon and a short
    statement of WHAT changed for the people and agents who use the repo — never a commit
-   subject or an item id. Several items that make one visible change share a bullet.
-   Order the bullets by what the reader feels: the change most people will notice first,
-   invisible plumbing last.
+   subject or an item id. Leave out how the change was made or reviewed: no tiers,
+   models, review rounds, fix rounds or verdicts. Several items that make one visible
+   change share a bullet. Order the bullets by what the reader feels: the change most
+   people will notice first, invisible plumbing last.
 
-3. **One sub-bullet under each of those, two at most.** WHAT ONLY: what a user or agent
-   can now do, or what now behaves differently — never why it was needed, how it works
-   internally, its mechanism, its rationale, or the evidence behind it. At most two short
-   fragments per line, semicolon-separated, not full sentences.
+3. **One sub-bullet under each of those, two at most.** WHAT ONLY: an observable effect —
+   what a user or agent can now do, or notices behaving differently — never why it was
+   needed, how it works internally, its mechanism, its rationale, or the evidence behind
+   it. At most two short fragments per line, semicolon-separated, not full sentences, and
+   each fragment observable on its own — if it names a check, a stamp, a counter or
+   anything else the code does, it is HOW, not WHAT.
 
 4. **Maintenance and plumbing collapsed into ONE bullet**, marked `(maintenance)` —
    tests, refactors, dependency bumps, store bookkeeping. No sub-bullet needed; if one is
    useful, the same WHAT-only, two-fragment rule applies.
 
-5. **A closing line**: whether anything requires action on existing work — a migration,
-   a re-run of a setup step, a config written before this that now needs an update — or
-   `Nothing on existing work needs action.` This is distinct from the header's pickup
-   step, which is about picking up the change itself, not fixing something older.
+5. **A closing line**: whether anything requires action on existing work — a rule people
+   now follow, a migration, a re-run of a setup step, a config written before this that
+   now needs an update — or `Nothing on existing work needs action.` This is distinct
+   from the header's pickup step, which is about picking up the change itself, not
+   fixing or adjusting something older.
 
 Rules that keep it pasteable:
 
-- **Never a table.** Tables paste badly into chat, email and phones.
+- **Never a table.** Tables paste badly into chat, email and phones. No headings.
 - Bold appears only on a bullet's title. Nesting goes one level deep — the WHAT-only
   sub-bullet — and no deeper.
 - Put it in its own fenced `text` block, separate from the Report, so the operator can
   copy it exactly as written. The fence only marks what to copy; it is not part of the
   message.
-- Backticks only around a command a reader must type or a commit range, where Slack and
-  Teams, the main targets, show it as code. Everywhere else write names plainly: in
-  email or SMS the backticks appear as literal characters.
+- Backticks only around a command a reader must type, where Slack and Teams, the main
+  targets, show it as code. Everywhere else write names plainly, including a commit
+  range: in email or SMS the backticks appear as literal characters.
 - Keep it short. A sub-bullet that needs a third fragment is carrying rationale or
   mechanism — cut it back to WHAT.
 - Paths are fine. Secret values never appear, just as in the Report.
@@ -84,14 +88,13 @@ Rules that keep it pasteable:
 A push that landed three visible changes and a round of maintenance:
 
 ```text
-claude-plugins updates, pushed to main (`eda3422..71345aa`) — run `/plugin marketplace update kmacmcfarlane`, then `/reload-plugins`.
+claude-plugins updates, pushed to main (eda3422..71345aa) — run `/plugin marketplace update kmacmcfarlane`, then `/reload-plugins`.
 - **Plan-usage pacing**: the librarian slows down near a plan limit instead of stalling.
-  - Checks quota before each dispatch; skips a wave when quota is thin.
+  - A wave with plenty of quota left runs full speed; a wave running low moves slower instead of stopping.
 - **Stable checkpoints**: a resumed session no longer treats a fresh handoff as stale.
-  - Checkpoints stamp their own time; resume reads that instead of the session clock.
-- **Agent panel context**: each sub-agent's status line now shows how much context it
-  has left.
-  - Reads the same depth counter the main status line already shows.
+  - Resuming right after a checkpoint picks up right where it left off; no stale-handoff false alarm.
+- **Agent panel context**: each sub-agent's status line now shows how much context it has left.
+  - Shows per agent in the agent panel; updates as the agent works.
 - **Housekeeping** (maintenance): dependency bumps and test cleanup across three plugins.
 Nothing on existing work needs action.
 ```
