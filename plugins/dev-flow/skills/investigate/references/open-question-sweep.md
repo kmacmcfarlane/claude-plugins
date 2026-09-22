@@ -9,6 +9,11 @@ Look for hedged language ("likely", "presumably", "should be", "may need"), any 
 `file:line` or command behind it, a choice left implicit, a section written thinly because
 you did not know, and anything already sitting in Open Questions. Each is a candidate.
 
+One candidate is standing, not draft-dependent: ownership and contract facts about
+neighbouring components recorded in an earlier round of this same investigation. Ownership can
+move while the investigation runs; re-check any such fact against current HEAD and the README
+catalog before the review gate, even if the draft states it with confidence.
+
 ## 2. Classify every candidate
 
 | Class | Test | Handling |
