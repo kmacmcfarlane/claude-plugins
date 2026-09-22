@@ -1128,8 +1128,9 @@ def main():
     top = resolve_top(fm, cwd) if path else cwd
     seen_new = None
     notice = None
-    # A LANDED manifest says the thread is done: its /clear is the fresh start
-    # the land path asks for, so it keeps the header.
+    # A LANDED manifest (one an older version wrote: the skill no longer
+    # writes `mode: land*`) says the thread is done: its /clear is a fresh
+    # start, so it keeps the header.
     clear_pred = linked_clear_pred(st, pred, version) \
         if source == "clear" and path and not is_landed(fm) else None
     # Its reasoning trail, read up front so the systemMessage names it only

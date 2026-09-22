@@ -1,14 +1,27 @@
 #!/usr/bin/env python3
 """Stand the context gate down: record that a checkpoint completed this epoch.
 
-Run by the checkpoint skill (Step 4b), right after it writes the manifest:
-    python3 mark_checkpoint.py "$CLAUDE_CODE_SESSION_ID"
+Run by the checkpoint skill (Step 4b), right after it drafts the manifest:
+    python3 mark_checkpoint.py --from <draft> "$CLAUDE_CODE_SESSION_ID"
+    python3 mark_checkpoint.py "$CLAUDE_CODE_SESSION_ID"   (no draft: stamp only)
 DUE stops re-firing, HARD stops blocking, and a deferred auto-compaction is
 allowed to proceed on its next attempt. Refuses (exit 1, nothing written)
 when the session has no state file: a live session always has one, so that
 means a mistyped id, not a session to create.
 
-First it stamps the manifest's machine fields (stamp_manifest), so the model
+With `--from <draft>` it first INSTALLS the draft (install_draft): the
+skill writes the manifest with the Write tool into its session scratchpad,
+which the harness allows without a prompt, and this script - a plain Bash
+command - copies it to the session's own store path. The Write tool never
+targets the store: that path is in the config dir, outside the project and
+inside a protected directory, so writing it there prompts in default and
+acceptEdits modes and is denied in dontAsk, which stalls an unattended
+checkpoint (8cc2-F3b-4 r1). The copy uses the same id resolution and the same
+ownership-by-realpath guard as the stamp, creates the store directories 0700,
+and replaces the file atomically; a failed install stamps nothing and leaves
+the draft as it was. handoff_path.py stays a lookup that writes nothing.
+
+Then it stamps the manifest's machine fields (stamp_manifest), so the model
 never types them. The manifest it stamps is THIS SESSION'S OWN, at
 ${CLAUDE_CONFIG_DIR:-~/.claude}/claude-kit/handoff/<safe_sid>/HANDOFF.md,
 when that file exists; otherwise - transitionally, while the checkpoint skill
@@ -196,6 +209,75 @@ def _write_atomic(real, raw, new, mode):
                 pass
 
 
+DRAFT_MAX = 256 * 1024
+
+
+class InstallRefused(Exception):
+    """A draft that was not installed; the message says why."""
+
+
+def install_draft(draft, sid, environ=None):
+    """Copy the manifest drafted at `draft` to this session's own store path,
+    L.manifest_path(this_session(sid, environ)), and return that path. Raises
+    InstallRefused, having written nothing to the store, when the draft is
+    missing or unreadable, the id is not a plain one, or the store path (the
+    file, or the <sid>/ directory above it) is not really ours - a link
+    planted there resolves out of place and is refused, never written
+    through. The store directories are created 0700; the file is written to a
+    temp file in its own directory and os.replace'd in, 0600. The draft is
+    only read."""
+    want = this_session(sid, environ)
+    if not L._SAFE_SID.fullmatch(want or ""):
+        raise InstallRefused("the session id is not a plain id")
+    try:
+        if not os.path.isfile(draft):
+            raise InstallRefused(f"no draft manifest at {draft}")
+        if os.path.getsize(draft) > DRAFT_MAX:
+            raise InstallRefused(f"the draft {draft} is over {DRAFT_MAX:,} bytes")
+        with open(draft, "rb") as fh:
+            data = fh.read(DRAFT_MAX + 1)
+    except InstallRefused:
+        raise
+    except OSError as e:
+        raise InstallRefused(f"the draft {draft} could not be read "
+                             f"({type(e).__name__})")
+    target = store_manifest_path(want)
+    root = os.path.realpath(L.handoff_root())
+    home = os.path.join(root, L.safe_sid(want))
+    try:
+        os.makedirs(root, mode=0o700, exist_ok=True)
+        if not os.path.lexists(os.path.dirname(target)):
+            os.mkdir(os.path.dirname(target), 0o700)
+    except OSError as e:
+        raise InstallRefused(f"the store directory for {target} could not be "
+                             f"created ({type(e).__name__})")
+    if os.path.realpath(os.path.dirname(target)) != home or \
+            (os.path.lexists(target) and not own_store_manifest(target, want)):
+        raise InstallRefused(f"{target} is not this session's own manifest "
+                             f"(a link resolves out of place); nothing written")
+    if os.path.lexists(target) and os.path.realpath(draft) == os.path.realpath(target):
+        return target                  # already in place
+    fd, tmp = tempfile.mkstemp(dir=home, prefix=".HANDOFF.", suffix=".tmp")
+    try:
+        with os.fdopen(fd, "wb") as fh:
+            fh.write(data)
+            fh.flush()
+            os.fsync(fh.fileno())
+        os.chmod(tmp, 0o600)
+        os.replace(tmp, os.path.join(home, L.MANIFEST_NAME))
+        tmp = None
+    finally:
+        if tmp:
+            try:
+                os.unlink(tmp)
+            except OSError:
+                pass
+    if not own_store_manifest(target, want):
+        raise InstallRefused(f"{target} is not this session's own manifest "
+                             f"after the copy")
+    return target
+
+
 def _scratchpad_manifests(want):
     """A HANDOFF.md at the top of this session's scratchpad (the wrong place:
     the rehydration hook never reads it). Not deeper: scratch repos and test
@@ -250,7 +332,8 @@ def stamp_manifest(sid, cwd=None, environ=None, now=None):
             for p in _scratchpad_manifests(want):
                 warn.append(f"mark_checkpoint.py: warning: {p} is in the session "
                             f"scratchpad, where the rehydration hook never looks; "
-                            f"write the manifest per Step 4b instead.")
+                            f"install it with `mark_checkpoint.py --from {p} "
+                            f"<session_id>` (Step 4b).")
             return out, warn
         body = text.split("\n---", 1)[-1] if text.startswith("---") else text
         if len(body) > WRITE_BUDGET:
@@ -346,8 +429,11 @@ def session_warnings(sid, cwd=None, environ=None):
 
 
 def main(argv):
+    draft = None
+    if len(argv) == 4 and argv[1] == "--from" and not argv[3].startswith("-"):
+        draft, argv = argv[2], [argv[0], argv[3]]
     if len(argv) != 2:
-        sys.exit("usage: mark_checkpoint.py <session_id>")
+        sys.exit("usage: mark_checkpoint.py [--from <draft>] <session_id>")
     sid = argv[1]
     if not os.path.exists(L.state_path(sid)):
         # A live session always has state (every prompt's gate hook writes it), so
@@ -357,10 +443,23 @@ def main(argv):
                  f"check the session id — nothing recorded.")
     # Stamp first, in its own guard: it must precede anything that pins a
     # version, and nothing it does may keep the gate from standing down.
+    installed, refused = [], []
+    if draft is not None:
+        try:
+            installed.append(f"installed {draft} as {install_draft(draft, sid)}")
+        except InstallRefused as e:
+            refused.append(f"mark_checkpoint.py: not installed, so not stamped: "
+                           f"{e}. Fix it and run this again.")
+        except Exception as e:
+            refused.append(f"mark_checkpoint.py: not installed, so not stamped: "
+                           f"{type(e).__name__}. Run this again.")
     try:
-        stamped, warns = stamp_manifest(sid)
+        # A draft that did not install stamps nothing: whatever store file is
+        # there is an older one, not what this checkpoint wrote.
+        stamped, warns = stamp_manifest(sid) if not refused else ([], refused)
     except Exception:
         stamped, warns = [], []
+    stamped = installed + stamped
     st = L.mark_checkpoint(sid)
     print(f"checkpoint recorded for epoch {L.epoch(st)}")
     for s in stamped:

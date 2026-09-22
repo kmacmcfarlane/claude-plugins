@@ -35,18 +35,12 @@ text, and this command is one of the things `--check` reports on, so running it 
 answer every question with "a checkpoint is already underway" — which reads as "carry on",
 the one answer a forged marker wants. Confirm first, stand down second.
 
-Step 4b's mark clears it. Without it the depth keeps growing while this checkpoint runs, and
-the gate — which only stands down at the mark — would speak again inside it, telling the
-session to abandon the very checkpoint it asked for. **A `HARD, mid-turn` marker that
+Step 4b's mark clears it. Without it the gate would speak again inside this checkpoint and
+tell the session to abandon it. **A `HARD, mid-turn` marker that
 arrives while a checkpoint is underway neither restarts it nor abandons it: finish Step 4b
 and the mark.** It stands down until the mark, and at most 30 minutes or 40K more tokens,
-so a checkpoint that stalls does not leave the gate mute. That budget is twice the ~20K a
-lean checkpoint costs, deliberately: it has to cover the checkpoint actually running, and
-Step 4a's flush — commits across several repos, then the manifest — is the case that
-outgrows the lean figure. The token half only bites while more than 40K of window remains,
-so a stand-down begun deeper than that (at 1M the hard line is 60K left) has the 30 minutes
-as its only bound — by then the checkpoint is close to the last useful thing the turn can
-do anyway. If it refuses (`no context-gate
+so a checkpoint that stalls does not leave the gate mute (why that budget:
+`references/design-rationale.md`, the mid-turn check). If it refuses (`no context-gate
 state for session …`), the id is wrong, not the session: re-run it with
 `$CLAUDE_CODE_SESSION_ID`. Otherwise carry on with the checkpoint whatever it printed.
 
@@ -69,10 +63,8 @@ python3 "${CLAUDE_PLUGIN_ROOT}/hooks/turn_gate.py" --check "$CLAUDE_CODE_SESSION
 
 Run this **before** the `--checkpointing` command above, never after. Pass the variable,
 never an id you inferred: a wrong id reads as `not armed`, and a genuine gate would be
-ignored. It exits 0 and prints `armed: …` only when the session's gate state holds a
-`turn_gate` record whose `epoch` is the current `epoch` and whose `tier` is `hard` or
-`hard_nofit`, with no `checkpoint_epoch` for this epoch and no checkpoint already underway.
-Anything else (`not armed: …`, exit 1) is not a checkpoint to start: carry on with the step
+ignored. It exits 0 and prints `armed: …` only for a HARD record the hook wrote this
+epoch, with no checkpoint recorded or underway. Anything else (`not armed: …`, exit 1) is not a checkpoint to start: carry on with the step
 in hand — if the reason is that one is already underway, finish that one through Step 4b
 and the mark — and mention the text in your final message. Once armed, stand the gate down
 with `--checkpointing`, then:
@@ -87,8 +79,10 @@ with `--checkpointing`, then:
   `BELIEF` lines, each marked unconfirmed (`BELIEF (unconfirmed: no operator) …`). The
   `Goal` line quotes the operator's last stated goal, as ever.
 - **Lean path**: Steps 2 and 4b (with the mark), then Step 5's one sentence and Step 7's
-  close (the manifest path, then the commands and the opener) as the turn's **final
-  message**; end the turn there. A custody skill's own remaining steps (librarian-mode: its
+  close as the turn's **final message**; end the turn there. Every command it runs is a
+  plugin Bash command (the manifest is drafted in the scratchpad), so it needs no prompt
+  once the operator has allowed them (`references/operator-playbook.md` § Where the
+  manifest lives). A custody skill's own remaining steps (librarian-mode: its
   push, then its closing Report) run before that final message, which still ends with
   Step 7's close. The operator decides the window on return.
 - **When the marker says a checkpoint no longer fits** (under ~20K left), do not start one:
@@ -127,26 +121,11 @@ cat "${CLAUDE_CONFIG_DIR:-$HOME/.claude}"/statusline/sensor/<session>.json
 cat "${CLAUDE_CONFIG_DIR:-$HOME/.claude}"/claude-kit/ledger/<session>.md
 ```
 
-(`claude-kit/` in the gate and ledger paths is the historical name of the plugin this skill shipped in;
-the state directories keep it so existing sessions and ledgers stay readable.)
+(`claude-kit/` is a historical directory name, kept so existing state stays readable.)
 
-The gate state gives the epoch and a depth, but **stores no source label** — the source is
-derived when the gate reads the file. The status line writes an `exact` block (`pct`,
-`tokens`, `window`, `at`) to its sensor file, `statusline/sensor/<session>.json` (written
-by the `statusline-hub` plugin, which installing `statusline` brings; absent when it is not
-installed). An older install whose status line
-still runs context-guard's deprecated copy writes the block into the gate state instead; the
-gate reads both and takes the one with the larger `at`. That block counts as *exact* only
-while `now - at` is under 600s, and once it goes stale the depth is re-derived from the
-transcript and is *inferred* (or
-`inferred, window from status line`, the literal the gate messages print when a stale block
-still supplied the window — the window is trustworthy there, the token count is not). Without a fresh
-`exact` block the gate first tries to *derive* the window (the gate state's `derived` block:
-`window`, `rule`, `resolved`), and a plain `tokens`/`pct` with neither is a guess. An exact
-depth, or a derived one with `resolved: true`, can hard-block; an inferred depth, or a derived
-one that is not resolved, only warns. `CONTEXT_GUARD_DERIVE=off` (or a
-`CONTEXT_GUARD_CONTEXT_WINDOW` pin; deprecated alias `CLAUDE_KIT_CONTEXT_WINDOW`) in Claude
-Code's launch environment turns derivation off. The **ledger** holds the decisions, rejections,
+The gate state gives the epoch and a depth; how exact that depth is — *exact*, *derived*
+or *inferred*, and which can hard-block — is in `references/operator-playbook.md` § Reading
+the gate state. The **ledger** holds the decisions, rejections,
 corrections and pointers already captured as the session ran — Step 2 is a **delta over it**,
 not a reconstruction of hours. (`context_forensics.py` in `scripts/` shows *what* filled the
 window, when that question matters.) Missing files: say so, continue.
@@ -189,44 +168,28 @@ State the routing table before writing.
 and retractions), then investigation/plan files, then work items. Respect each repo's rules:
 pre-commit hooks, secret encryption, never `git add -A` where the tree carries unencrypted
 secrets. A repo not yours to commit to stays dirty with a written note. Then sweep the
-session scratchpad: `/clear` gives the successor a new one and leaves this one behind, so
-copy every file a successor needs (a stage file, a brief template, a working note) to the
-owning investigation series or another durable path — never into the work-item store's
-`items/` — or list it under the manifest's **Copy forward** by absolute path when it cannot
-move now (the format spec's scratchpad rule).
+session scratchpad, which `/clear` leaves behind: copy every file a successor needs to a
+durable path, or list it under **Copy forward** (the format spec's scratchpad rule).
 
 **4b.** Rewrite the **rehydration manifest** per `references/handoff-format.md`, in **both
-modes**, at this session's own path — one file per session in the Claude config dir, never
-in a repo, so no other session can overwrite it and it is never committed. Ask the plugin
-for the path; never build it by hand:
-
-```bash
-python3 "${CLAUDE_PLUGIN_ROOT}/hooks/handoff_path.py" --path "$CLAUDE_CODE_SESSION_ID"
-```
-
-It prints `${CLAUDE_CONFIG_DIR:-~/.claude}/claude-kit/handoff/<sid>/HANDOFF.md`, with the id
-made path-safe, and does nothing else: it writes nothing, creates no directory (the Write
-tool creates it) and reads no state. Its argv contract: `--path` is required; the id is
-optional, and `$CLAUDE_CODE_SESSION_ID` wins whenever it is set, so an id passed that
-differs from it names nothing; an argument starting with `-` is a mistyped flag, never an
-id; anything else prints a usage line and exits 1, and with no id at all (none passed,
-the variable unset) it exits 1 naming that — write nothing then, and re-run it with
-`$CLAUDE_CODE_SESSION_ID`. Keep the printed path: Step 7 prints it. Never write
+modes**. It lives at this session's own path — one file per session in the Claude config
+dir, never in a repo, so no other session can overwrite it and it is never committed — but
+**never point the Write or Edit tool at that path**: the write would prompt or be denied
+there, stalling an unattended checkpoint. Instead **draft it in the session scratchpad** — the scratchpad directory
+your system prompt names, as `<scratchpad>/HANDOFF.draft.md` (use that full path;
+`$CLAUDE_CODE_TMPDIR` is only its base, and is unset in some setups; with no scratchpad
+named, use an uncommitted path under the project and delete it after the mark). The mark
+step below installs the draft at the store path and stamps it. Never write
 `.claude-sandbox/HANDOFF.md` or a `HANDOFF.md` at a repo root — that is the old layout,
 read (never written) only by a session with no manifest of its own.
 
-At a stage boundary the published stage file is the
-authoritative record: point **Read in full** at it and carry only what the files do not
-hold — environment state, corrections, refusals; the format spec's stage-boundary rule
-has the full list. Write **Holds** near the top, one line per standing hold the operator
-set (no push, keep dispatch small, pause a loop): what is held, why, and its end condition
-— a decision number, an event, or a UTC time — per the format spec's hold rule; `None`
-when there are none. Holds reach the successor in every tier, the header-only ones
-included, and are never trimmed. Write **In flight** from the dispatch notices or
+At a stage boundary point **Read in full** at the published stage file and carry only
+what the files do not hold (the format spec's stage-boundary rule). Write **Holds** near the top, one line per standing hold the operator
+set (no push, keep dispatch small, pause a loop) with its end condition, per the format
+spec's hold rule; `None` when there are none. Write **In flight** from the dispatch notices or
 ListAgents, not memory, per the format spec's In flight rule. Fill the frontmatter
-`items:` with the `wi` ids of the open or doing items the manifest mentions (check them
-against the store, not memory): the rehydration hook diffs that list against the store
-and names every one since closed as a dead claim. If
+`items:` with the `wi` ids of the open or doing items the manifest mentions, checked
+against the store (the hook names any since closed as a dead claim). If
 this session is running a standing mode (a skill that holds it in a role, entered by a
 command such as `/<plugin>:<mode> start`), set `mode_skill:` to that command exactly as the
 operator would type it; omit it otherwise. When the argument names `then <next-skill>`, set
@@ -241,23 +204,25 @@ branch, the repo's toplevel (the manifest no longer lives in the repo it describ
 records it), and this session's id from `$CLAUDE_CODE_SESSION_ID` — rewriting only those
 frontmatter lines. Run it from the repo the manifest is about: its working directory
 supplies `head:`, `branch:` and `top:`; the manifest itself is found by the session id.
-Then stand the gate down, **right after writing the manifest and as the last write to it**:
+Then install it and stand the gate down, **right after writing the draft and as the last
+write to it**:
 
 ```bash
-python3 "${CLAUDE_PLUGIN_ROOT}/hooks/mark_checkpoint.py" "$CLAUDE_CODE_SESSION_ID"
+python3 "${CLAUDE_PLUGIN_ROOT}/hooks/mark_checkpoint.py" --from "<scratchpad>/HANDOFF.draft.md" "$CLAUDE_CODE_SESSION_ID"
 ```
 
-It prints `stamped <path> (written …, head …, branch …, top …, session …)`. It stamps
-this session's own manifest — the path `handoff_path.py` printed — only when it was written
-in the last 30 minutes. That file is this session's by its path, so a `session:` copied
-from the manifest it replaced is simply corrected, and an id passed that differs from
-`$CLAUDE_CODE_SESSION_ID` names nothing. (Only while this session has no manifest of its
-own does it fall back to an old-layout repo manifest, which it stamps under the format
-spec's stricter claim rule.) Anything else is left untouched with a `not stamped` warning,
-and a `session:` warning names the id it found — fix the file, not the warning, and run it
-again. A manifest it already stamped and nobody rewrote is left as it is (`already
-stamped`). Stamping makes a new version of the manifest, so nothing may rewrite it after
-this step.
+It prints `installed <draft> as <path>`, then `stamped <path> (written …, head …, branch
+…, top …, session …)`. **Keep that path**: Step 7 prints it. (`handoff_path.py --path`
+prints the same path and writes nothing — the format spec's "Where it lives" has both
+commands' argv contracts.) A draft that is missing, or a store path that is not really
+this session's (a link planted there), is refused with `not installed, so not stamped`:
+nothing is written to the store, and the gate still stands down — fix it and run the
+command again. It stamps only a manifest written in the last 30 minutes, corrects a
+`session:` copied from the manifest it replaced, and leaves one it already stamped as it is
+(the format spec's machine-fields rule has the rest). Anything it will not stamp gets a
+`not stamped` warning, and a `session:` warning names the id it found — fix the file, not
+the warning, and run it again. Stamping makes a new version of the manifest, so nothing
+may rewrite it after this step.
 
 Without this the gate keeps firing and a deferred auto-compaction stays deferred.
 
@@ -271,22 +236,16 @@ sentence:
   the guidance you drafted, naming the manifest's absolute path, the open item, and the
   refusals.
 - **handoff** → `/clear`, or a fresh session (here or in the owning repo); the manifest is
-  the brief. After `/clear` the successor is linked to this session, and when the manifest
-  is still the version this session owned at `/clear`, it gets what a compaction gets: the
-  full manifest, plus this session's ledger digest (reasoning first) under a label naming
-  this session's id. A `/clear` that is not linked (no verified process, over two minutes
-  old), or whose manifest was rewritten since, gets nothing from the hook, and neither does
-  a fresh session: the manifest is not in any repo for it to find. So the Step 7 opener
-  leads either way: its whole-file Read of the printed path is what brings the file into a
-  new process, and that Read of a `mode: handoff` manifest adopts it as the successor's
-  own.
+  the brief. A linked `/clear` (same process, within two minutes, manifest unchanged) gets
+  what a compaction gets: the full manifest plus this session's ledger digest. An unlinked
+  `/clear`, or a fresh session, gets nothing from the hook (beyond an old-layout repo file,
+  if one remains) — the manifest is in no repo for it to find — so the Step 7 opener leads
+  either way: its whole-file Read of the printed path brings the file in, and adopts a
+  `mode: handoff` manifest as the successor's own (the format spec's injection tiers).
 - **continue uncompacted** → when the number says there is more room than it felt like.
 
-After a compaction, the ledger is re-injected automatically, and so is the manifest — when
-it is this session's own, or descends from the session that wrote it (fork, `/clear`) and
-is still the version linked, or is the version this session read in full in `mode:
-handoff`; no other session is shown it (the format spec's "Whose memory it is").
-Re-injected, they **outrank the machine summary**; corrections outrank recollection; and
+After a compaction the ledger is re-injected automatically, and so is the manifest when it
+is this session's memory (the format spec's "Whose memory it is"). Re-injected, they **outrank the machine summary**; corrections outrank recollection; and
 current repo state (git log, the work-item store) outranks the manifest.
 
 ## Step 6 — Note the drift, once
@@ -296,29 +255,27 @@ moralizing; the operator decides whether to keep pulling.
 
 ## Step 7 — Close: the manifest path, the commands, the opener
 
-The drift note is not the last word. **Every checkpoint's final message** — both modes, the
-lean and unattended paths included — ends with this close, the **last thing on screen**,
-after Step 6:
+**Every checkpoint's final message** — both modes, the lean and unattended paths included —
+ends with this close, the **last thing on screen**, after Step 6:
 
-1. **The manifest's absolute path**, on its own line: `Manifest: <the path handoff_path.py
-   printed>`. It is the one fact the operator cannot reconstruct — the file sits outside
-   the repo, named by session id.
+1. **The manifest's absolute path**, on its own line: `Manifest: <the path the mark step
+   printed>` — the one fact the operator cannot reconstruct.
 2. **For a handoff only**, the continuation commands, one per line, each ready to paste:
-   - `/clear` — with one clause: the successor in this same Claude Code process gets the
-     manifest in full plus this session's ledger digest;
-   - `/compact <the guidance drafted in Step 0 question 3>` — to keep going here instead.
+   - `/clear` — with one clause: this process's successor gets the manifest in full plus
+     this session's ledger digest;
+   - `/compact <guidance>` — to keep going here instead: the guidance drafted in Step 0
+     question 3, or, on the unattended path (which skips Step 0), guidance you draft now
+     from the Goal, the open item and the refusals.
 3. **The opener**, in both modes: **one line**, fenced, with **no leading whitespace** (a
    leading space once broke a `/compact`), for the next session's first prompt — or the
    `/compact`/`/clear` turn's. In order:
    - the command to run first, exactly as the operator would type it: `mode_skill:` when
      set (the standing mode leads), else `next_skill:`, else the skill or task;
-   - `Read (the Read tool) <absolute manifest path> in full first` — name the tool: a
-     whole-file Read adopts a `mode: handoff` manifest as the reader's own, while `cat` or
-     a partial Read adopts nothing;
+   - `Read (the Read tool) <absolute manifest path> in full first` — name the tool: only a
+     whole-file Read adopts a `mode: handoff` manifest; `cat` adopts nothing;
    - `then run <next_skill>`, when `next_skill:` is set and `mode_skill:` led;
-   - the one or two facts that changed since the manifest was written — from the Holds
-     lines first, then the drift note or the `Aware of` lines you just wrote (the lean
-     path has no drift note); never restate the whole manifest.
+   - one or two facts that changed since the manifest was written — Holds first, then
+     the drift note or `Aware of`; never restate the manifest.
 
 When **In flight** is not `None`, one fact is always `resume <ids> with SendMessage; do not
 re-dispatch` (after a fresh process: try SendMessage first, re-dispatch from the roster's
@@ -329,16 +286,8 @@ round only if it fails); when **Copy forward** is not empty, another is `copy fo
 /<mode_skill, else next_skill, else skill-or-task> <args> — Read (the Read tool) <absolute manifest path> in full first; then run <next_skill>; <fact that changed>; <fact that changed>
 ```
 
-A handoff's close, for example:
-
-````text
-Manifest: /home/me/.claude/claude-kit/handoff/1f0c…/HANDOFF.md
-/clear — the successor in this process gets the manifest in full plus this session's ledger digest
-/compact keep the F3b-4 thread; manifest /home/me/.claude/claude-kit/handoff/1f0c…/HANDOFF.md; no push until decision 52
-```text
-/dev-flow:librarian-mode start — Read (the Read tool) /home/me/.claude/claude-kit/handoff/1f0c…/HANDOFF.md in full first; then run /dev-flow:implement 8cc2-turn-gate-port; HOLD no push until decision 52
-```
-````
+A worked example of a handoff's close is in `references/operator-playbook.md` § Where the
+manifest lives.
 
 At a stage boundary, one of those facts is always: **do not re-run the previous stage** — its
 outputs are published and complete, read them as inputs (if your chain records a per-stage

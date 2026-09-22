@@ -328,7 +328,9 @@ it publishes for the status line — with its unit tests
 
 The rehydration manifest is one file per session, in the config dir, never in a repo:
 `${CLAUDE_CONFIG_DIR:-~/.claude}/claude-kit/handoff/<sid>/HANDOFF.md`, whose path
-`hooks/handoff_path.py --path` prints (a lookup, not a registered hook). It is re-injected
+`hooks/handoff_path.py --path` prints (a lookup, not a registered hook); the checkpoint
+drafts it in the session scratchpad and `hooks/mark_checkpoint.py --from` installs it
+there. It is re-injected
 in full only into a session that owns that version: its author, a fork or `/clear`
 successor it links, or a session that read a handoff manifest in full. A `HANDOFF.md` of
 the old layout (`.claude-sandbox/` or the repo root) is still read, never written.

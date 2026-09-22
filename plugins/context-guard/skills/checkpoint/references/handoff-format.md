@@ -18,6 +18,30 @@ for a session that has no manifest of its own (by the ownership rule below), and
 per session where that session's own manifest lives. Nothing rewrites or deletes it: the
 operator removes it when they choose.
 
+## Where it lives
+
+Two commands, both in the plugin's `hooks/`, both taking the session id the same way:
+`$CLAUDE_CODE_SESSION_ID` wins whenever it is set, so an id passed that differs from it
+names nothing, and the path is built from the id made path-safe, so no id can name a path
+outside the store.
+
+- **`mark_checkpoint.py --from <draft> <session_id>`** — Step 4b's write. The Write tool
+  drafts the manifest in the session scratchpad; this command copies the draft to the
+  session's store path and then stamps it (the machine-fields rule below). The Write tool
+  never targets the store itself: it is outside the project and inside a protected
+  directory, so that write prompts, or is denied, and an unattended checkpoint would stall.
+  The install creates the store directories `0700` and writes the file `0600` through a
+  temp file and an atomic replace; it only reads the draft. It refuses — `not installed,
+  so not stamped`, nothing written to the store, the gate still stood down — when the draft
+  is missing or unreadable (or over 256 KB), when the id is not a plain one, or when the
+  store path, the file or its `<sid>/` directory, is a link that resolves anywhere but
+  itself. Without `--from` it only stamps (and stands the gate down), as before.
+- **`handoff_path.py --path [<session_id>]`** — prints the store path and does nothing
+  else: it writes nothing, creates no directory and reads no state. `--path` is required;
+  the id is optional; an argument starting with `-` is a mistyped flag, never an id; any
+  other shape prints a usage line and exits 1, and with no id at all (none passed, the
+  variable unset) it exits 1 naming that.
+
 ## Format
 
 ```markdown

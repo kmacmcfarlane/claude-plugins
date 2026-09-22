@@ -158,7 +158,14 @@ built on a guessed window could only end a working turn early. Under the DUE lin
 for a checkpoint at the turn's natural end; its HARD marker (`HARD, mid-turn`) is printed
 exactly when the prompt gate would block (`lib_context.hard_applies`, one rule for both),
 and it is the only message on which the checkpoint skill runs unattended — no questions,
-a custody skill's mode or else `handoff`.
+a custody skill's mode or else `handoff`. Once a checkpoint is underway
+(`turn_gate.py --checkpointing`) the check stands down until the mark, for at most 30
+minutes or 40K more tokens. That budget is twice the ~20K a lean checkpoint costs,
+deliberately: it has to cover the checkpoint actually running, and Step 4a's flush —
+commits across several repos, then the manifest — is the case that outgrows the lean
+figure. The token half only bites while more than 40K of window remains, so a stand-down
+begun deeper than that (at 1M the hard line is 60K left) has the 30 minutes as its only
+bound — by then the checkpoint is close to the last useful thing the turn can do anyway.
 
 ## 4. Context injection beyond CLAUDE.md
 

@@ -135,6 +135,33 @@ is never committed. Its path cannot be guessed, so **every checkpoint's last mes
 it**; a handoff also prints `/clear`, `/compact <guidance>` and a one-line opener to paste,
 whose "Read (the Read tool) <path> in full" is what hands the file to a new session.
 
+A handoff's close, for example (a session in librarian mode, handing on to an implement
+run):
+
+````text
+Manifest: /home/me/.claude/claude-kit/handoff/1f0c…/HANDOFF.md
+/clear — the successor in this process gets the manifest in full plus this session's ledger digest
+/compact keep the F3b-4 thread; manifest /home/me/.claude/claude-kit/handoff/1f0c…/HANDOFF.md; no push until decision 52
+```text
+/dev-flow:librarian-mode start — Read (the Read tool) /home/me/.claude/claude-kit/handoff/1f0c…/HANDOFF.md in full first; then run /dev-flow:implement 8cc2-turn-gate-port; HOLD no push until decision 52
+```
+````
+
+**Unattended checkpoints need three commands allowed.** The checkpoint writes the manifest
+only through its draft in the session scratchpad (which needs no prompt) and a plugin
+command that installs it, so an unattended checkpoint runs without a prompt once these
+Bash commands are allowed (`permissions.allow` in a settings file, or "don't ask again"
+at the first prompt). `<root>` is the plugin's install path — the `installPath` the
+snippet under "If the gate blocks wrongly" finds; it carries the plugin version, so the
+rules need re-adding after an update. They match the command as the skill runs it, the
+script path in double quotes:
+
+```text
+Bash(python3 "<root>/hooks/turn_gate.py":*)
+Bash(python3 "<root>/hooks/mark_checkpoint.py":*)
+Bash(python3 "<root>/hooks/handoff_path.py":*)
+```
+
 - **A bystander sees nothing.** A session that starts in a repo where another session
   checkpointed gets no manifest line at all (it used to get a one-line foreign header).
   To pass work on, paste the opener; to look without taking it over, `cat` the path.
@@ -149,6 +176,26 @@ whose "Read (the Read tool) <path> in full" is what hands the file to a new sess
   `learned`, so before handing off across that boundary, copy into the item's body the
   manifest's Holds, In flight, Copy forward, Read in full and every CORRECTION/REFUSED
   line. Goal, Doing, Scrolls and the other Aware-of lines do not cross.
+
+## Reading the gate state (checkpoint Step 1)
+
+The gate state gives the epoch and a depth, but **stores no source label** — the source is
+derived when the gate reads the file. The status line writes an `exact` block (`pct`,
+`tokens`, `window`, `at`) to its sensor file, `statusline/sensor/<session>.json` (written
+by the `statusline-hub` plugin, which installing `statusline` brings; absent when it is not
+installed). An older install whose status line
+still runs context-guard's deprecated copy writes the block into the gate state instead; the
+gate reads both and takes the one with the larger `at`. That block counts as *exact* only
+while `now - at` is under 600s, and once it goes stale the depth is re-derived from the
+transcript and is *inferred* (or
+`inferred, window from status line`, the literal the gate messages print when a stale block
+still supplied the window — the window is trustworthy there, the token count is not). Without a fresh
+`exact` block the gate first tries to *derive* the window (the gate state's `derived` block:
+`window`, `rule`, `resolved`), and a plain `tokens`/`pct` with neither is a guess. An exact
+depth, or a derived one with `resolved: true`, can hard-block; an inferred depth, or a derived
+one that is not resolved, only warns. `CONTEXT_GUARD_DERIVE=off` (or a
+`CONTEXT_GUARD_CONTEXT_WINDOW` pin; deprecated alias `CLAUDE_KIT_CONTEXT_WINDOW`) in Claude
+Code's launch environment turns derivation off.
 
 ## If the gate blocks wrongly
 
