@@ -286,7 +286,7 @@ Only after a `CLEAR` recorded against the current HEAD — the last `verdict:` l
    (`references/bindings.md` § Landing): `Merge to <base> locally, no push` first, then
    `Leave the branch`, then `Merge and push`. Merging needs the main checkout on the
    base. Dirt the cycle wrote itself — the record sink or store, the Series home,
-   `.claude/worktrees/` — never blocks a merge; any other dirt the merge touches or
+   `.claude/worktrees/` — never blocks a merge; any other dirt the merge would touch or
    the user owns means stop and ask, never stash
    (`references/troubleshooting.md` § Landing):
 
@@ -331,7 +331,7 @@ decisions needed: <numbered list, or none>
 `plan` mode reports the series path on `changed:`, its review on `verified:`, blocking
 questions under `decisions needed:`.
 
-`Merge and push` (Step 5.3) also adds a team summary after the four lines:
+`Merge and push` (Step 5.3) adds a team summary after the four lines:
 `references/bindings.md` § Landing.
 
 ## Red flags
