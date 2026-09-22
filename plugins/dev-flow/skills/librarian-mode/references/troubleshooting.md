@@ -43,10 +43,10 @@ skill's decision channel, `decision N:` under `decisions needed` (SKILL.md § Th
      with the list as its evidence — a judgment, not a must; say which you chose.
   2. **Merge, uncommitted.** On `main` in the main checkout:
      `git -C "$MAIN" merge --no-ff --no-commit origin/main`. If git refuses to start —
-     tracked dirt or staged changes in a file the incoming commits touch, untracked
-     files in the way — stop and raise it; clear nothing to make it start. From here
-     until the merge is committed or aborted, **no other commit to `main`**: no store
-     commit, no landing.
+     tracked dirt in a file the incoming commits touch, staged changes anywhere,
+     untracked files in the way — stop and raise it; clear nothing to make it start.
+     From here until the merge is committed or aborted, **no other commit to `main`**:
+     no store commit, no landing.
   3. **Check the result.** Run every `Checks:` command from `$MAIN` against the merged
      tree. All green: `git -C "$MAIN" commit --no-edit`, a merge commit.
   4. **Push, then send the incoming lines.** `git -C "$MAIN" push origin main` — now a
@@ -69,7 +69,10 @@ skill's decision channel, `decision N:` under `decisions needed` (SKILL.md § Th
   MERGE_HEAD` succeeds at Rehydrate step 4, or before any store commit: a push-rejection
   merge was interrupted between step 2 and its commit or abort (a crash, a `/clear`).
   Never commit it as found — its Checks result is gone: `git -C "$MAIN" merge --abort`,
-  then redo § Push rejected from step 1.
+  then redo § Push rejected from step 1. A leftover `MERGE_HEAD` in a worktree branch,
+  from a conflict round's own merge of `origin/main` there (not here), is not this case:
+  compare it against `origin/main` before choosing the redo — only the main checkout's
+  stalled push-rejection merge gets aborted and redone this way.
 - **No `origin` remote.** A custody layer in a repo with no remote has nothing to push to:
   skip the push, and say so once in the Report rather than every cycle.
 

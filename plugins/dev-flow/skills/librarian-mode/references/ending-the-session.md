@@ -121,14 +121,13 @@ compacts when convenient, and it continues. Finish the step in hand, then:
    the push outcome with its `incoming:` lines, then its team summary, then the
    checkpoint's own close — its `/compact <guidance>` recommendation, to run at the
    operator's convenience (the next morning is fine), the manifest's absolute path, and
-   last its Step 7 opener, led by
-   `/dev-flow:librarian-mode start`, then `Read (the Read tool) <absolute manifest path>
-   in full first`, then —
-   when the roster is not `None` — `resume <ids> with SendMessage; do not re-dispatch`
-   naming every id on it, then — when Copy forward is not empty — `copy forward <paths>
-   first` (the checkpoint's Step 7), and the facts changed since the manifest, Holds
-   first. Never run `/compact` yourself, and start no new work — no dispatch, no merge —
-   in that turn (step 3's merge of `origin/main` through a rejected push is not new work).
+   last its Step 7 opener, led by `/dev-flow:librarian-mode start`, then `Read (the Read
+   tool) <absolute manifest path> in full first`, then — when the roster is not `None` —
+   `resume <ids> with SendMessage; do not re-dispatch` naming every id on it, then —
+   when Copy forward is not empty — `copy forward <paths> first` (the checkpoint's Step
+   7), and the facts changed since the manifest, Holds first. Never run `/compact`
+   yourself, and start no new work — no dispatch, no merge — in that turn (step 3's
+   merge of `origin/main` through a rejected push is not new work).
 
 The checkpoint stands the gate down, so nothing warns again before the compaction.
 Requests that arrive in that gap are filed through Intake as usual and held — no

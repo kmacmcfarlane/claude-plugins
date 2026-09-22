@@ -245,8 +245,8 @@ gone out; inside the final Report at session end and 75%/DUE
 
 After each push (with `Push: none`, each batch), one team summary for people who did not
 watch the run, prose or bullets, never a table, after the push outcome and its
-`incoming:` lines: `references/team-summary.md` (no reflog: note `origin/main` before
-pushing).
+`incoming:` lines: `references/team-summary.md` (once `origin/main@{1}` has failed,
+note `origin/main` before pushing; no `origin` remote: local only, no pickup step).
 
 ## Red flags
 
