@@ -57,8 +57,11 @@ optional `references/`, `scripts/`, `assets/`.
 - **Skill location**: `plugins/<plugin>/skills/<name>/SKILL.md` (never `.claude/skills/`).
 - **Agent location**: `plugins/<plugin>/agents/<name>.md` — auto-loaded by the plugin system.
   Agent `.md` files define role, tools, and model. Task-specific context is injected via the
-  Agent prompt, not baked into the definition. *No plugin here ships agents today* — the last
-  three were retired with the deprecated plan-execution skill they served (Phase 3).
+  Agent prompt, not baked into the definition. `dev-flow` ships two: `research-lane` and
+  `research-verifier`, the workers of the `research` skill family — their contract (file shape,
+  evidence and security rules, effort pin) lives in the agent body so every lane loads it by
+  construction. (The three agents that served the deprecated plan-execution skill were retired
+  at Phase 3.)
 - **Hook location**: `plugins/<plugin>/hooks/<name>.py` — registered in that plugin's
   `plugins/<plugin>/hooks/hooks.json`, which lists each hook under its event (`PreToolUse`,
   `UserPromptSubmit`, `SessionStart`, `Stop`, …) with a `matcher` and a `command` that names
@@ -108,7 +111,7 @@ current home is the real home, and is where files go.
 | Survive the finite context window (gate, checkpoint, rehydration, token-spend report) | `plugins/context-guard/` | `plugins/context-guard/` — **landed** (Phase 1) |
 | Always-on status line (context left, plan usage, model, session name) | `plugins/statusline/` | `plugins/statusline/` — **landed** (3c48) |
 | The status-line slot, shared (the owner-mode dispatcher and its hook registry; the embed-mode tee) | `plugins/statusline-hub/` | `plugins/statusline-hub/` — **landed** (F1, bfe2; owner mode F2, b28f) |
-| Plan-before-code development flow, and a standing librarian that takes custody of a repo's work | `plugins/dev-flow/` | `plugins/dev-flow/` — **landed** (Phase 3) |
+| Plan-before-code development flow, research that lands as sourced findings or a curated knowledge base, and a standing librarian that takes custody of a repo's work | `plugins/dev-flow/` | `plugins/dev-flow/` — **landed** (Phase 3) |
 | Repo-durable work items / work-source interface | `plugins/work-items/` | `plugins/work-items/` — **landed** (Phase 4) |
 | Isolated execution (containers; the checkout/worktree convention and its guard) | `plugins/sandbox/` | `plugins/sandbox/` — **landed** (Phase 5) |
 | Unattended agent loops over a backlog ("ralph") | `plugins/ralph/` | `plugins/ralph/` — **landed** (Phase 5) |
