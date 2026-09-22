@@ -10,9 +10,13 @@ record is a log, read in the order it was written, and what `resume.md` reads to
 interrupted run up again; a line that is missing reads there as not recorded:
 
 - `dispatch: <role> <model> — <signal>` — SKILL.md § Step 2 rule 7, written before every
-  dispatch (implementer, planner or reviewer)
+  dispatch (implementer, planner or reviewer), and before every SendMessage that resumes
+  an agent for a new round, as `dispatch: <role> <model> — resume` (SKILL.md § Step 4.3
+  writes it through rule 7), so that no round opens without a phase line
 - `agent: <role> <id> round <n>` — SKILL.md § Step 2 rule 7, written as soon as the Agent
-  call returns an id, directly under the `dispatch:` line it belongs to. `<n>` is the
+  call returns an id, directly under the `dispatch:` line it belongs to; under a
+  `— resume` dispatch it repeats the resumed agent's id with the round it now serves.
+  `<n>` is the
   round that dispatch serves (the first build or the first review is round 1). It is what
   SKILL.md § Step 4.3 resumes an agent by and what a caller copies into a handoff: an id
   that lives only in `ListAgents` is gone with the process, so the record carries it. A
@@ -62,9 +66,9 @@ interrupted run up again; a line that is missing reads there as not recorded:
   added or rewrote since the review being re-run, and they go into the re-review brief's
   "Files changed, with reasons" slot (`fix-loop.md` § A NEEDS_CHANGES round). A plan
   re-review pastes `none` there only when no earlier `baseline:` exists to diff against —
-  a record written before this line existed. The `verdict:` line's `at <series path>` cannot say this, naming the series and not its
-  state. A list that has not moved means the planner wrote nothing; that is a finding for
-  the re-review, not a new baseline.
+  a record written before this line existed. The `verdict:` line's `at <series path>`
+  cannot say this, naming the series and not its state. A list that has not moved means
+  the planner wrote nothing; that is a finding for the re-review, not a new baseline.
 - `findings: …` — SKILL.md § Step 4.5, written together with a `NEEDS_CHANGES` or
   `SHOW_STOPPER` verdict: the reviewer's FINDINGS section, pasted verbatim, one line per
   finding in the reviewer's own numbering — the source `fix-loop.md`'s NEEDS_CHANGES
@@ -93,9 +97,10 @@ interrupted run up again; a line that is missing reads there as not recorded:
     repo-relative path here resolves against the wrong tree.
 
   Every later step reads the workspace from this line instead of reconstructing it.
-- `intent: <one line>` — `bindings.md` § Intent, `review <branch>` mode with no item or plan
-- `decision: <question> — options: <a> | <b> | <c>` — `bindings.md` § Decisions, written before a
-  decision is raised. **Self-contained**: the question in full and its options,
+- `intent: <one line>` — `bindings.md` § Intent, `review <branch>` mode with no item or
+  plan
+- `decision: <question> — options: <a> | <b> | <c>` — `bindings.md` § Decisions, written
+  before a decision is raised. **Self-contained**: the question in full and its options,
   recommendation first, so that a reader who was not in the session that raised it can put
   it to a human verbatim. Under a caller it composes as
   `decision N: <question> — options: …`, so the caller's numbered channel is unchanged.

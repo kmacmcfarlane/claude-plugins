@@ -21,12 +21,14 @@ SKILL.md § Step 4.
 ## A NEEDS_CHANGES round
 
 - `NEEDS_CHANGES`: hand the findings, verbatim, to the **implementer** — resume the same
-  agent (SendMessage; it has the context) only when its tier is unchanged (a resumed
+  agent (SendMessage, its `— resume` pair recorded first by SKILL.md § Step 2 rule 7;
+  it has the context) only when its tier is unchanged (a resumed
   agent keeps its model); on a tier change (a round's bump or the fable fallback), or if
   gone, re-dispatch with the full brief, the findings and the fix-round clause from
   `agent-brief.md`. Tell it explicitly: **fix as new commit(s) on top of the reviewed
   sha, never amend, report each new sha**, and for each low/nit it declines, the reason.
-  Then resume the **reviewer** — re-dispatched fresh only when its own tier changed
+  Then resume the **reviewer** (its `— resume` pair recorded the same way) —
+  re-dispatched fresh only when its own tier changed
   (rule 4), or if gone — with the re-review variant in `review-brief.md`, pasting the
   new shas, the declined list and, every round, the cumulative "Files changed, with
   reasons" — the record sink's `changed:` block after this round's CHANGED was merged

@@ -41,7 +41,7 @@ few questions, each asked once: the cycle brief, the checks, how to land.
 | Target | Meaning |
 |---|---|
 | `<wi-id>` | A work item: acceptance, files, base, any `model:` pin; the record lines go into it |
-| `<investigation-slug>` / `<plan-path>` | An existing plan — a series under `.claude-sandbox/investigations/<slug>/`, or any plan file. Skips Step 1 |
+| `<investigation-slug>` / `<plan-path>` | An existing plan — a series under `.claude-sandbox/investigations/<slug>/`, or any plan file. Skips Step 1, except in `plan` mode |
 | *(none)* | The current conversation (Step 0.2) |
 
 Modes:
@@ -95,34 +95,31 @@ only on a `CLEAR` recorded against the current HEAD sha.
    `<branch>` with every `/` written `-`, unless a work item or plan is also named.
 
 3. **Resolve the ten bindings** from the caller, or standalone by
-   `references/bindings.md`. Checks standalone: a recorded `checks:`
-   line, else `## Librarian` `Checks:` read only, else detect and ask once; record the
-   answer as a `checks:` line; **never write CLAUDE.md**. When the brief confirm and the
+   `references/bindings.md`, the Record sink first: before anything below writes a line
+   or adds a worktree, Step 0.4 reduces the record and the repository as they stand, so
+   this run's own writes never read as an interrupted one. Checks standalone: a recorded
+   `checks:` line, else `## Librarian` `Checks:` read only, else detect and ask once;
+   record the answer as a `checks:` line; **never write CLAUDE.md**. When the brief confirm and the
    checks question are both due, ask them in one AskUserQuestion call. `review <branch>`
    mode also resolves the branch's own worktree here, instead of Step 3:
    `references/bindings.md` § Review target, and claims a named item here too (Step 3 is
    skipped): `$WI claim <id>` when it is not already yours.
 
    Then record the run itself, before any dispatch, as one
-   `target: <mode> <ref> <workspace>` line (`references/record-lines.md`) — unless the record
-   already carries one, which a resumed run keeps: the mode as **one bare word** naming
-   the path this run will take, decided in
-   this order — `review` when the invocation was `review <branch>` (the branch is the
-   next field, never repeated here); otherwise `plan` when the run takes Step 1's
-   plan-agent bullet, which produces a series and ends at Step 6 with no worktree;
-   otherwise `full`. Then the target as given (the branch, item id, slug or plan path),
-   then the workspace as an **absolute** path: the path `references/bindings.md` § Review
-   target resolved in `review <branch>` mode, `"$MAIN"/.claude/worktrees/<name>` for the
-   worktree Step 3.1 will add in a `full` run, or the series path for a plan run, which
-   has no worktree. Every later step reads the workspace from that line rather than
-   rebuilding it from the item id, and a relative path here would resolve against
-   whatever working directory that later step happens to have.
+   `target: <mode> <ref> <workspace>` line — unless the record already carries one,
+   which a resumed run keeps. The mode is one bare word for the path this run takes:
+   `review` for `review <branch>`; otherwise `plan` when the run takes Step 1's
+   plan-agent bullet; otherwise `full`. The ref is the target as given; the workspace
+   is **absolute** — the path `references/bindings.md` § Review target resolved
+   (`review`), `"$MAIN"/.claude/worktrees/<name>` (`full`), or the series path (`plan`). Every later
+   step reads the workspace from this line, never rebuilding it
+   (`references/record-lines.md`, `target:`).
 
-4. **Resume.** Read the record sink and reduce it to one state, then take the one action
-   that state names: `references/resume.md`, the same table in every mode. Nothing
-   recorded is S0 and the run goes on to Step 1; any other state is an interrupted run
-   taken up where its record stops — never re-planned, re-dispatched or re-landed past
-   what the record says.
+4. **Resume.** Reduce the record sink, as Step 0.3 found it before writing, to one
+   state, then take the one action that state names: `references/resume.md`, the same
+   table in every mode. S0 and S1 go on to Step 0.3's writes and then Step 1; any other
+   state is an interrupted run taken up where its record stops — never re-planned,
+   re-dispatched or re-landed past what the record says.
 
 Expected output: one short paragraph — target, mode, base, checks, record sink, and the
 resume state with the facts that selected it (`references/resume.md` § The resume
@@ -151,7 +148,8 @@ the plan agent revises, by a new serial.
   `investigate` skill's `references/investigation-format.md`. After `CLEAR`, its
   blocking open questions go to the decision channel; then Step 6. With a work item:
   `$WI claim <id>` before the plan dispatch (unless already yours); after `CLEAR`,
-  `$WI done <id> --note <series path>`, or `$WI handoff <id>` naming the series while blocking questions are open.
+  `$WI done <id> --note <series path>`, or `$WI handoff <id>` naming the series while
+  blocking questions are open.
 - **A feature in full mode:** no separate dispatch; the implementer runs /investigate
   then /implement in its worktree, each in its orchestrated mode (each skill's § Running
   under an orchestrator), as the brief's dev-flow block directs
@@ -183,7 +181,10 @@ re-dispatch or resume with findings = review round n+1; cap 4 review rounds.
    within 2h, or a `model: fable` pin → ask through the decision channel.
 7. **Record each dispatch** in the record sink before the call:
    `dispatch: <role> <model> — <signal>`. Then, the moment the Agent call returns an id,
-   append `agent: <role> <id> round <n>` under it (`references/record-lines.md`). The record,
+   append `agent: <role> <id> round <n>` under it (`references/record-lines.md`). A
+   SendMessage that resumes an agent for a new round is recorded the same way, before
+   it is sent: `dispatch: <role> <model> — resume` and `agent: <role> <same id> round
+   <n>`, so every round opens with a phase line a resume can probe. The record,
    not `ListAgents`, is what a later turn or another session has to go on, and a
    `dispatch:` with no `agent:` under it says the call never returned one.
 8. **The Model floor binding** is a floor for every role; rule 4 still applies above it.
@@ -243,9 +244,10 @@ re-dispatch or resume with findings = review round n+1; cap 4 review rounds.
    secret).
 3. **Fix loop.** Verdicts are `CLEAR`, `NEEDS_CHANGES`, `SHOW_STOPPER` and `BLOCKED`; who
    is resumed and who is re-dispatched: `references/fix-loop.md`. An agent you resume is
-   the one its `agent:` line names (`references/record-lines.md`) —
-   SendMessage to that recorded id, never one remembered from this turn alone; a
-   re-dispatch writes a fresh `dispatch:` and `agent:` pair. Repeat until `CLEAR`.
+   the one its `agent:` line names (`references/record-lines.md`) — SendMessage to that
+   recorded id, never one remembered from this turn alone, with its `— resume` pair
+   written first (rule 7); a re-dispatch writes a fresh `dispatch:` and `agent:` pair.
+   Repeat until `CLEAR`.
    **Cap: 4 review rounds** — the first review plus three fix rounds; a fourth without
    `CLEAR` means the brief or the target is wrong, not the code: block it and raise it.
    Never argue a severity down.

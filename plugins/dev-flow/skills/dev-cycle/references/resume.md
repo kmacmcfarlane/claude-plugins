@@ -1,8 +1,10 @@
 # Resume
 
 How a run takes an interrupted cycle up again, from its record alone: one state, one next
-action. SKILL.md § Step 0.4 runs it on every invocation, once the bindings are resolved —
-a record with nothing in it is S0 and the run simply starts. A caller resuming several
+action. SKILL.md § Step 0.4 runs it on every invocation, on the record and the repository
+as Step 0 found them — before this run writes a line or adds a worktree, so nothing this
+run does reads as an interrupted one. A record with nothing in it is S0 and the run
+simply starts. A caller resuming several
 targets runs it once per target, in whatever order its own queue says. `full`, `plan` and
 `review` read the same facts and the same table; the mode changes only what a fact is
 computed from.
@@ -14,7 +16,8 @@ resume.
 **Reduce first, then read one table.** Every cross-cutting test — freshness, the cap,
 retries, the brief variant, the decision gate — is a fact computed once in § The
 reduction. **No row recomputes a fact, and the GATE is evaluated once, for the selected
-row's question.**
+row's question** — `review` mode's S11 reads the dispatch permission's pair only to
+choose that question (§ The state table, the dispatch permission).
 
 ## Phase lines and riders
 
@@ -77,6 +80,10 @@ words. `<workspace>` below is that line's third field.
    | `full` or `review`, the last verdict `CLEAR` | the full brief — the new commits are work no finding describes |
    | `full` or `review`, the last verdict `NEEDS_CHANGES` or `SHOW_STOPPER` | § Re-review variant, the recorded `findings:` pasted for verification |
 
+   In `review` mode every row is taken on top of § Review-mode variant: its worktree,
+   branch check, claims and intent replacements always apply, since the workspace is on
+   `<branch>`, never on `worktree-<name>`.
+
    The secret-rebuild case is not a row: it is selected by the critical finding inside the
    `findings:` block a fix round hands forward (`fix-loop.md` § A leaked secret).
 7. **GATE(q)** — `ANSWERED` | `PENDING` | `NONE`, for the one question `q` the selected
@@ -84,7 +91,7 @@ words. `<workspace>` below is that line's third field.
 
    | arm | the pair read | its value |
    |---|---|---|
-   | **state-scoped** — every question but one | the last `decision:` or `answer:` recorded after the last phase line | an `answer:` → `ANSWERED`; a `decision:` with no `answer:` after it → `PENDING`; neither → `NONE` |
+   | **state-scoped** — every question but one | the last `decision:` or `answer:` recorded after the last phase line, skipping the tagged decision's own lines — its `decision:`, its `answer:` (a caller's `answer N:` by its number) and `spent:` — which only the run-scoped arm reads | an `answer:` → `ANSWERED`; a `decision:` with no `answer:` after it → `PENDING`; neither → `NONE` |
    | **run-scoped** — `q` is `review` mode's dispatch permission | the last `decision: dispatch-permission` anywhere in the record | its `answer:` recorded → `ANSWERED`; none → `PENDING`; no such line, or a `spent:` line recorded after it → `NONE` |
 
    Under a caller the tagged line is its `decision N:` carrying the same tag, and its
@@ -97,18 +104,23 @@ words. `<workspace>` below is that line's third field.
    `dispatch:` — a re-dispatch appends a new pair, so a resume of a resume probes every id
    it made. No `agent:` line in it → `none`: the Agent call never returned an id. Otherwise
    probe each id: `ListAgents` first; an id it does not list gets a SendMessage asking for
-   its status, because a fresh process may not list an agent that is alive. Listed, or
-   answering, counts as alive — a finished one included, since it holds a report to
-   collect. An unlisted id whose SendMessage fails counts as gone.
-9. **REMNANT** — `present` | `absent`, computed when SINK is `unreachable`: `present` when
-   any of these names the target —
-   - a worktree or branch the cycle would have made for it: `.claude/worktrees/<slug>` or
-     `.claude/worktrees/review-<slug>` in `git -C "$MAIN" worktree list --porcelain`, or
-     `worktree-<slug>` in `git -C "$MAIN" branch --list`;
-   - an agent in `ListAgents` whose task names it;
-   - a series directory under the Series home carrying at least one `NN_*.md` serial —
-     **only when the target was not given as a slug or plan path**: a handed-in series is
-     the run's input, not evidence of an interrupted run.
+   its status, because a fresh process may not list an agent that is alive. Running, or
+   answering, counts as alive; so does a finished one whose report carries a `STATUS`
+   (a reviewer's: a verdict), since it holds a report to collect. A finished one whose
+   report carries none — an error, a fable 429 that cut it off — counts as gone, and so
+   does an unlisted id whose SendMessage fails. The same id repeated under a `— resume`
+   dispatch is probed once.
+9. **REMNANT** — `present` | `absent`, computed when SINK is `unreachable`. **An artefact
+   is a remnant only when the run the record belonged to created it and the target was
+   never handed it** — one rule, not a list to widen case by case. The artefacts a cycle
+   creates are a `worktree-<slug>` branch and its worktree (`full`, SKILL.md § Step 3.1),
+   a `.claude/worktrees/review-<slug>` worktree (`review`, `bindings.md` § Review target
+   case 3), an agent whose task names the target, and a series directory under the
+   Series home (`plan`). Anything the target was handed is input, not a remnant: a series
+   given as a slug or plan path, and a worktree already on `<branch>` — a `review-<slug>`
+   one an earlier run added included — which § Review target's case 2 reuses as it
+   stands, so in `review` mode only a live agent is ever a remnant. `present` when any
+   remnant exists; `absent` otherwise.
 
 **CHANNEL** is not computed: it is the Decision channel binding's durability, `durable` or
 `ephemeral` (`bindings.md` § The ten).
