@@ -40,3 +40,6 @@ findings:
 filed separately: create-repo bootstrap prompt names an existing series path.
 dispatch: implementer opus — fix round 1 (resume)
 agent: implementer ab3c9d45a0eab13c3 round 2
+return: implementer DONE c81b590
+dispatch: reviewer opus — review r2 (resume)
+agent: reviewer a8b6adb9fe5179633 round 2

@@ -2,15 +2,14 @@
 id: dev-cycle-e770-f4-the-caller-boundary-li-d81c
 title: "dev-cycle e770 F4: the caller boundary, librarian-mode points at dev-cycle's resume"
 type: feature
-status: doing
+status: done
 priority: 3
 deps:
   - dev-cycle-e770-f3-resume-whole-plus-the-acdd
 parent: dev-flow-new-dev-cycle-skill-investigate-07c3
-owner: Kyle-McFarlane@bf9f9839222c
-claimed: 2026-09-22T23:10Z
 created: 2026-09-22
 updated: 2026-09-22
+closed: 2026-09-22
 refs:
   - e770
 ---
@@ -47,3 +46,8 @@ agent: implementer a1cdaa872072a3b48 round 2
 return: implementer DONE fb386a8
 dispatch: reviewer opus — review r2 (resume)
 agent: reviewer aae2e168adc2b1526 round 2
+verdict: CLEAR round 2 at fb386a8
+lows: :112 wording applied after the merge as a one-line typo bypass; :96 "(and In flight)" declined — harmless, the roster is built from the same agent: lines; +219 bytes recorded, from the fixes the review asked for.
+landed: ee39b6d
+- 2026-09-22 done: ee39b6d
+wording low applied 25817c4 (librarian bypass)
