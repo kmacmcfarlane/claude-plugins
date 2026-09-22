@@ -24,3 +24,5 @@ answer 58: (a) confirmed (operator 2026-09-22)
 ## Notes
 - 2026-09-22 claimed by unknown@360f41058e92
 dispatch: implementer opus — two plugins (dev-flow dev-cycle references, kit-dev create-skill) + doctrine (house frontmatter rule)
+impl r0 DONE 246e529 (opus): review-checklist §2 requires name+description only (closed 20-key list kept); agent-brief reject-on-sight rule relaxed; create-skill SKILL.md + frontmatter-reference.md mark the three keys optional (absence = desired default). §2 over all 22 skills: 0 FAIL before/after; synthetic two-key skill passes, unknown key still fails. README/CLAUDE.md do not state the rule.
+dispatch: reviewer opus — rule 4
