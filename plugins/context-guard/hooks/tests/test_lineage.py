@@ -995,5 +995,187 @@ class TestMarkStamps(Base):
                          b"---\nitems:\n  - session: x\nwritten: W\nsession: S\n---\n")
 
 
+class TestMarkStampsTheOwnPath(Base):
+    """8cc2-F3b-2: the mark step stamps THIS SESSION'S OWN manifest, in the
+    per-session store, when that file exists - and the legacy repo manifest
+    until the checkpoint skill writes the store path."""
+    def run_cli(self, sid, env_sid=None):
+        env = dict(os.environ, CLAUDE_CONFIG_DIR=self.cfg.name)
+        env.pop("CLAUDE_CODE_SESSION_ID", None)
+        if env_sid:
+            env["CLAUDE_CODE_SESSION_ID"] = env_sid
+        return subprocess.run([sys.executable, os.path.join(HOOKS, "mark_checkpoint.py"),
+                               sid], capture_output=True, text=True, env=env,
+                              cwd=self.repo, timeout=30)
+
+    def store_path(self, sid):
+        import mark_checkpoint as M
+        return M.store_manifest_path(sid)
+
+    def store_checkpoint(self, sid, owner="<stamped>", doing="Building the thing."):
+        """`sid` writes its own manifest into the store (Step 4b, after F3b-4)."""
+        p = self.store_path(sid)
+        os.makedirs(os.path.dirname(p), exist_ok=True)
+        writef(p, MANIFEST.format(
+            session=f"session: {owner}\n" if owner else "",
+            written=time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+            head=self.head, mode="handoff", doing=doing))
+        return p
+
+    def stat_of(self, path):
+        with open(path, "rb") as fh:
+            return fh.read(), os.stat(path).st_mtime_ns
+
+    def test_target_is_the_store_file_then_the_legacy_repo_file(self):
+        import mark_checkpoint as M
+        path, _top, text, is_store = M.stamp_target("S", self.repo)
+        self.assertEqual((path, text, is_store), (None, None, False))
+        self.checkpoint("S")
+        path, top, _text, is_store = M.stamp_target("S", self.repo)
+        self.assertEqual((path, is_store), (self.path, False))
+        self.assertEqual(top, self.git("rev-parse", "--show-toplevel"))
+        p = self.store_checkpoint("S")
+        path, _top, _text, is_store = M.stamp_target("S", self.repo)
+        self.assertEqual((path, is_store), (p, True))
+
+    def test_the_store_file_is_stamped_and_the_repo_file_untouched(self):
+        L.save_state("S", {"epoch": 1})
+        self.checkpoint("S")                      # a fresh legacy repo manifest
+        before = self.stat_of(self.path)
+        p = self.store_checkpoint("S")
+        r = self.run_cli("S", env_sid="S")
+        self.assertEqual((r.returncode, r.stderr), (0, ""))
+        self.assertIn(f"stamped {p}", r.stdout)
+        fm = R.front_matter(readf(p))
+        self.assertEqual(fm["session"], "S")
+        self.assertEqual(fm["head"], self.head)
+        self.assertEqual(fm["branch"], self.git("rev-parse", "--abbrev-ref", "HEAD"))
+        self.assertEqual(fm["top"], self.git("rev-parse", "--show-toplevel"))
+        self.assertTrue(fm["written"].endswith("Z"))
+        # The repo manifest is not this session's memory any more: not read,
+        # not stamped, not re-dated - byte for byte and mtime for mtime.
+        self.assertEqual(self.stat_of(self.path), before)
+        self.assertEqual(L.load_state("S")["checkpoint_epoch"], 1)
+
+    def test_a_copied_predecessor_id_in_the_store_file_is_corrected(self):
+        # The claim test collapses on the store path: the file is S's because
+        # no other session can name it. In the repo file the same manifest is
+        # a peer's and is left alone (TestMarkStamps).
+        L.save_state("S", {"epoch": 0})
+        p = self.store_checkpoint("S", owner="X")
+        self.assertEqual(self.run_cli("S", env_sid="S").stderr, "")
+        self.assertEqual(R.front_matter(readf(p))["session"], "S")
+
+    def test_an_argv_id_that_is_not_the_env_still_names_nothing(self):
+        # env X, argv Y, Y's own store manifest: X does not take it (H1).
+        L.save_state("Y", {"epoch": 0})
+        p = self.store_checkpoint("Y")
+        before = self.stat_of(p)
+        r = self.run_cli("Y", env_sid="X")
+        self.assertEqual(r.returncode, 0)
+        self.assertEqual(self.stat_of(p), before)
+        self.assertIn("no rehydration manifest to stamp", r.stdout)
+        self.assertIn(self.store_path("X"), r.stdout)
+
+    def test_a_repeated_mark_on_the_store_file_does_not_redate(self):
+        L.save_state("S", {"epoch": 0})
+        p = self.store_checkpoint("S")
+        self.assertIn("stamped", self.run_cli("S", env_sid="S").stdout)
+        once = self.stat_of(p)
+        time.sleep(1.1)
+        r = self.run_cli("S", env_sid="S")
+        self.assertIn("already stamped", r.stdout)
+        self.assertEqual(self.stat_of(p), once)
+
+    def test_an_old_store_manifest_is_not_stamped(self):
+        L.save_state("S", {"epoch": 0})
+        p = self.store_checkpoint("S")
+        old = time.time() - 2 * 3600
+        os.utime(p, (old, old))
+        before = self.stat_of(p)
+        r = self.run_cli("S", env_sid="S")
+        self.assertEqual(self.stat_of(p), before)
+        self.assertIn("was last written 120 min ago", r.stderr)
+        self.assertIn("checkpoint recorded", r.stdout)
+
+    def test_no_manifest_anywhere_names_the_store_path_first(self):
+        L.save_state("S", {"epoch": 0})
+        r = self.run_cli("S", env_sid="S")
+        self.assertIn("no rehydration manifest to stamp", r.stdout)
+        self.assertLess(r.stdout.index(self.store_path("S")),
+                        r.stdout.index("HANDOFF.md at the repo root"))
+
+    def test_session_warnings_read_the_store_manifest(self):
+        import mark_checkpoint as M
+        self.checkpoint("S")                       # the repo file is S's: fine
+        p = self.store_checkpoint("S", owner="X")  # the store file is not
+        w = M.session_warnings("S", cwd=self.repo, environ={"CLAUDE_CODE_SESSION_ID": "S"})
+        self.assertEqual(len(w), 1)
+        self.assertIn(f"{p} has `session: X`", w[0])
+        self.assertNotIn(self.path, w[0])
+
+    def test_top_is_stamped_on_the_legacy_manifest_too(self):
+        L.save_state("S", {"epoch": 0})
+        writef(self.path, SPEC_EXAMPLE)
+        self.assertEqual(self.run_cli("S", env_sid="S").returncode, 0)
+        self.assertEqual(R.front_matter(readf(self.path))["top"],
+                         self.git("rev-parse", "--show-toplevel"))
+
+
+class TestHandoffPath(Base):
+    """8cc2-F3b-2: handoff_path.py --path prints this session's own manifest
+    path. It is a lookup: it writes nothing and records no checkpoint."""
+    def run_path(self, *args, env_sid=None):
+        env = dict(os.environ, CLAUDE_CONFIG_DIR=self.cfg.name)
+        env.pop("CLAUDE_CODE_SESSION_ID", None)
+        if env_sid:
+            env["CLAUDE_CODE_SESSION_ID"] = env_sid
+        return subprocess.run([sys.executable, os.path.join(HOOKS, "handoff_path.py")]
+                              + list(args), capture_output=True, text=True,
+                              env=env, cwd=self.repo, timeout=30)
+
+    def store_path(self, sid):
+        import mark_checkpoint as M
+        return M.store_manifest_path(sid)
+
+    def test_the_env_session_wins_over_the_id_given_and_nothing_is_written(self):
+        p = self.run_path("--path", "Y", env_sid="X")
+        self.assertEqual((p.returncode, p.stderr), (0, ""))
+        self.assertEqual(p.stdout.strip(), self.store_path("X"))
+        self.assertTrue(os.path.isabs(p.stdout.strip()))
+        # A lookup creates no directory, no state and no gate record.
+        self.assertFalse(os.path.exists(os.path.dirname(self.store_path("X"))))
+        for sid in ("X", "Y"):
+            self.assertFalse(os.path.isfile(L.state_path(sid)))
+
+    def test_the_id_given_is_used_when_the_env_has_none(self):
+        self.assertEqual(self.run_path("--path", "S").stdout.strip(),
+                         self.store_path("S"))
+
+    def test_the_env_alone_is_enough(self):
+        self.assertEqual(self.run_path("--path", env_sid="S").stdout.strip(),
+                         self.store_path("S"))
+
+    def test_no_id_at_all_refuses(self):
+        p = self.run_path("--path")
+        self.assertEqual(p.returncode, 1)
+        self.assertIn("no session id", p.stderr)
+        self.assertEqual(p.stdout, "")
+
+    def test_usage(self):
+        for args in ([], ["S"], ["--path", "S", "extra"], ["--pathx", "S"]):
+            p = self.run_path(*args)
+            self.assertEqual(p.returncode, 1, args)
+            self.assertIn("usage: handoff_path.py --path", p.stderr)
+
+    def test_a_garbled_id_cannot_name_a_path_outside_the_store(self):
+        p = self.run_path("--path", "../../etc/x")
+        self.assertEqual(p.returncode, 0, p.stderr)
+        out = p.stdout.strip()
+        self.assertTrue(out.startswith(os.path.join(
+            self.cfg.name, "claude-kit", "handoff") + os.sep), out)
+        self.assertNotIn("..", out)
+
+
 if __name__ == "__main__":
     unittest.main()
