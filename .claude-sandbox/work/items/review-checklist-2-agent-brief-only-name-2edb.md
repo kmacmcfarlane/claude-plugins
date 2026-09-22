@@ -2,8 +2,10 @@
 id: review-checklist-2-agent-brief-only-name-2edb
 title: "review-checklist §2 + agent-brief: only name and description are required frontmatter keys"
 type: chore
-status: todo
+status: doing
 priority: 2
+owner: unknown@360f41058e92
+claimed: 2026-09-22T15:43Z
 created: 2026-09-22
 updated: 2026-09-22
 refs:
@@ -18,3 +20,7 @@ Relayed 2026-09-22 by peer 'marketplace - librarian', quoting the operator's rul
 - blocked: —
 - learned: —
 answer 58: (a) confirmed (operator 2026-09-22)
+
+## Notes
+- 2026-09-22 claimed by unknown@360f41058e92
+dispatch: implementer opus — two plugins (dev-flow dev-cycle references, kit-dev create-skill) + doctrine (house frontmatter rule)

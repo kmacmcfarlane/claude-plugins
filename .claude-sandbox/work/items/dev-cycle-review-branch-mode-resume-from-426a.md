@@ -75,3 +75,4 @@ answer 51: (a) another round approved (operator 2026-09-22)
 - both mediums predate 0f0a254 (from 58bece4).
 decision 57: 426a's waived round is not CLEAR — the § Resume state machine drew new mediums for the fifth review running (a cap mismatch between rules 5/6; decision answers never recorded). Review mode itself has been CLEAR since round 4. (a) land review mode without § Resume: the implementer reverts § Resume on this branch, a short review confirms, and § Resume becomes a new item planned first (plan mode) so its state machine is designed whole [recommended: stops a fix-by-fix spiral; everything else is ready]; (b) one more fix round for the two mediums + lows and one review; (c) park 426a.
 answer 57: (b) one more fix round for the two mediums + lows and one review (operator 2026-09-22)
+- dispatch: implementer opus — fix round 4 (answer 57), resume the round-3 opus implementer
