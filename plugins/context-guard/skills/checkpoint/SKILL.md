@@ -127,11 +127,18 @@ items the manifest mentions (check them against the store, not memory): the rehy
 diffs that list against the store and names every one since closed as a dead claim. If
 this session is running a standing mode (a skill that holds it in a role, entered by a
 command such as `/<plugin>:<mode> start`), set `mode_skill:` to that command exactly as the
-operator would type it; omit it otherwise and in a landed manifest. Then stand the gate down:
+operator would type it; omit it otherwise and in a landed manifest. Set `session:` to **this
+session's id, read from `$CLAUDE_CODE_SESSION_ID`** (`echo "$CLAUDE_CODE_SESSION_ID"` in a
+Bash call; it follows `/clear`) — never the id in the manifest being replaced, which after a
+`/clear` or a handoff is the predecessor's. The rehydration hook re-injects a manifest by that
+field, so a copied id makes this session's own manifest foreign to it and hands its goal to
+the other session. Then stand the gate down:
 
 ```bash
-python3 "${CLAUDE_PLUGIN_ROOT}/hooks/mark_checkpoint.py" <session-id>
+python3 "${CLAUDE_PLUGIN_ROOT}/hooks/mark_checkpoint.py" "$CLAUDE_CODE_SESSION_ID"
 ```
+
+It warns when the repo manifest's `session:` is not that id; fix the field, not the warning.
 
 Without this the gate keeps firing and a deferred auto-compaction stays deferred.
 

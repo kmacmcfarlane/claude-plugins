@@ -14,7 +14,7 @@ injection cap.
 ---
 handoff: 1
 repo: <name>
-session: <session-id>
+session: <session-id>   # $CLAUDE_CODE_SESSION_ID: this session, never the replaced manifest's
 written: 2026-08-30T21:40:00Z
 head: <short-sha>
 branch: <branch>
@@ -130,6 +130,12 @@ TOC, read on demand: `path — one line on what it holds`.
   Either check degrades to the plain manifest if git or the store fails.
 - Injection tiers: `compact` → full + ledger tail; `resume`/`fork` → full only when the file
   or repo changed since last injection, else one header line; `startup`/`clear` → header only.
+- **`session:` is the author's own id**, read from `$CLAUDE_CODE_SESSION_ID` when the
+  manifest is written (Claude Code sets it for every Bash call, and it follows `/clear`).
+  Never copy it from the manifest being replaced: after `/clear` or a handoff that id is the
+  predecessor's, and since the field is the ownership key below, the new manifest would be
+  foreign to its author and re-injected in full into the predecessor. `mark_checkpoint.py`
+  warns when the manifest's `session:` is not the id it is given.
 - **Whose memory it is.** Those tiers apply only to a manifest this session owns. Ownership
   names a *version* — the `session:` field plus the hash of the file's raw text — so a
   rewrite is a new version. A version is this session's when:
@@ -146,7 +152,9 @@ TOC, read on demand: `path — one line on what it holds`.
   predecessor or an adopted author — gets one header line on every source, naming the path
   and the author session, with no body, no precedence line and no standing mode: "If the
   operator's opener names this manifest, read it in full; otherwise it is another session's
-  and not your memory." The ledger tail and `/compact` guidance still inject on `compact`.
+  and not your memory." The derived check lines still follow it — dead claims, unparseable
+  `items:`, and the Next-withheld line — since they describe the file, not anyone's memory.
+  The ledger tail and `/compact` guidance still inject on `compact`.
 - **Reading adopts; `cat` looks.** A whole-file Read (no offset, no limit) of a `mode:
   handoff` manifest adopts that version: it is re-injected into this session after a
   compaction. To look without adopting, use `cat` (a Bash read) or a Read with an offset or

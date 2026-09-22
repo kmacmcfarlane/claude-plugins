@@ -13,7 +13,8 @@ pins the version on disk now only when it was the ending session's own
 a third session overwrote is never handed to the successor.
 
 PostToolUse, tool Read: a whole-file Read (no offset, no limit) of this
-repo's manifest whose frontmatter says `mode: handoff` records
+repo's manifest (by a path named HANDOFF.md; its realpath must be the
+manifest's) whose frontmatter says `mode: handoff` records
 `manifest_adopted` = {owner, sha, at} - that version, and only that one, is
 then this session's. A `continue` or `landed` manifest is never adopted; a
 partial Read, `cat` or `grep` looks without adopting. Skipped inside a
@@ -63,6 +64,10 @@ def post_read(inp):
     if not isinstance(ti, dict):
         return
     fp = ti.get("file_path")
+    # A cheap pre-filter before any git call, on every Read: only a path whose
+    # own name is HANDOFF.md can adopt. A Read through a differently named
+    # symlink to the manifest does not adopt - that fails safe (a header, not
+    # the full manifest). The realpath comparison below is the identity test.
     if not isinstance(fp, str) or os.path.basename(fp) != MANIFEST_NAME:
         return
     if ti.get("offset") is not None or ti.get("limit") is not None:
