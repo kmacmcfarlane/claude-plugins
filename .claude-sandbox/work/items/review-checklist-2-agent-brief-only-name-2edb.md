@@ -26,3 +26,5 @@ answer 58: (a) confirmed (operator 2026-09-22)
 dispatch: implementer opus — two plugins (dev-flow dev-cycle references, kit-dev create-skill) + doctrine (house frontmatter rule)
 impl r0 DONE 246e529 (opus): review-checklist §2 requires name+description only (closed 20-key list kept); agent-brief reject-on-sight rule relaxed; create-skill SKILL.md + frontmatter-reference.md mark the three keys optional (absence = desired default). §2 over all 22 skills: 0 FAIL before/after; synthetic two-key skill passes, unknown key still fails. README/CLAUDE.md do not state the rule.
 dispatch: reviewer opus — rule 4
+review r1 (opus) at 246e529: CLEAR. Mutation tests: two-key skill passes; missing name/description, unknown key, "Model", duplicate, angle brackets, 1100-char description all FAIL; §2 over all 22 skills 0 FAIL. Lows: review-checklist.md:75 "Quote argument-hint always" → "whenever it is present"; create-skill template example `disable-model-invocation: true` could be copy-pasted; agent-brief.md:72 rewrap. Filed as a follow-up.
+Review result: 1 round, 0 fix rounds; impl opus, review opus. Land checks (librarian): seven suites OK; diff read — 4 files in scope.
