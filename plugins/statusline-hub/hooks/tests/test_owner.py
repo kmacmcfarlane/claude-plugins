@@ -469,6 +469,39 @@ class DataDir(helpers.Hermetic):
                              "install-statusline-hub/scripts/install_hub.py")
         self.assertEqual(got, os.path.join(self.base, "statusline-hub-mkt"))
 
+    # marketplace names with characters outside [A-Za-z0-9_-], and the data-dir
+    # name Claude Code gives each (every such character -> "-")
+    ODD = (("my.mkt", "statusline-hub-my-mkt"),
+           ("a@b", "statusline-hub-a-b"),
+           ("my mkt", "statusline-hub-my-mkt"),
+           ("m+k~t", "statusline-hub-m-k-t"),
+           ("mkt\u00e9", "statusline-hub-mkt-"),
+           ("ok_name-1", "statusline-hub-ok_name-1"))
+
+    def test_data_name_is_claude_codes_id_rule(self):
+        for mkt, want in self.ODD:
+            with self.subTest(mkt=mkt):
+                self.assertEqual(owner.data_name("statusline-hub@" + mkt), want)
+
+    def test_from_cache_path_with_an_odd_marketplace_name(self):
+        for mkt, want in self.ODD:
+            with self.subTest(mkt=mkt):
+                got = owner.data_dir("/x/.claude/plugins/cache/" + mkt +
+                                     "/statusline-hub/1.2.0/hooks/hub.py")
+                self.assertEqual(got, os.path.join(self.base, want))
+
+    def test_cache_path_and_install_record_agree(self):
+        for mkt, want in self.ODD:
+            with self.subTest(mkt=mkt):
+                root = os.path.join(self.cfg, "plugins", "cache", mkt,
+                                    "statusline-hub", "1.2.0")
+                self.record("statusline-hub@" + mkt, root)
+                here = os.path.join(root, "hooks", "hub.py")
+                self.assertEqual(owner.installed_by_record(here),
+                                 os.path.join(self.base, want))
+                os.remove(os.path.join(self.cfg, "plugins", "installed_plugins.json"))
+                self.assertEqual(owner.data_dir(here), os.path.join(self.base, want))
+
     def test_the_install_record_beats_the_scan(self):
         for n in ("statusline-hub-aaa", "statusline-hub-my-mkt"):
             os.makedirs(os.path.join(self.base, n))
