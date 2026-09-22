@@ -254,6 +254,10 @@ added, never `<branch>` itself.
 Never push unless the user picked option 3 or the invocation asked for it in words. A
 rejected push stops: never pull, rebase or force around it — report it.
 
+Option 3 also means Step 6 adds one team summary after the Report, in the shape the
+`librarian-mode` skill's `references/team-summary.md` defines — read there, not restated
+here.
+
 ## Store
 
 A work-item store is optional. Look in the main checkout for `.claude-sandbox/work/`, then
