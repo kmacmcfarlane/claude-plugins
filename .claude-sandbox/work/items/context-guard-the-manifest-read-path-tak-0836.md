@@ -17,3 +17,5 @@ Found by F3b-2's implementer after merging F3b-1 (landed 92c9738), 2026-09-22. r
 - next: —
 - blocked: —
 - learned: —
+
+CONFIRMED by the F3b-2 reviewer on the landed code, 2026-09-22, with a probe: with <store>/S/HANDOFF.md a symlink to a file carrying session: PEER, read_store_manifest("S") returns that path and resolve_manifest({}, "S", cwd) returns kind "own" with the peer's body — injected in full as this session's own memory, bypassing is_ours and the foreign header. The read path is the MORE exposed twin of the write-path hole F3b-2 closed: injection needs only the link, where the write path also needed the file to be stampable. _sealed uses the same reader but still requires the pinned sha, so the "own" arm is the exposure. mark_checkpoint's own_store_manifest is the ready-made test.
