@@ -23,3 +23,4 @@ From 5408 review r2 (lows): (1) archive hard-link path — a kill between link a
 ## Notes
 - 2026-09-22 claimed by unknown@360f41058e92
 - dispatch: implementer opus — wi.py store integrity
+- 2026-09-22: worktree fast-forwarded to main; answer 53 lifts the hold. dispatch: implementer opus — wi.py store integrity

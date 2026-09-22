@@ -63,3 +63,4 @@ updated: 2026-09-22
 - reviewer: both are a few lines in § Resume rules 3 and 5, not a sign the brief or target is wrong.
 decision 51: 426a hit the 4-review cap on a few-line § Resume fix (rule 5 review-mode dispatch answer; rule 3 return status) — (a) waive the cap for one more fix round on opus (rule 3: fix round 3 after a high → fable, unavailable → opus) plus one review [recommended: the fixes are specified line-by-line; everything else is CLEAR]; (b) land review mode without resume: split § Resume into a new item and have the implementer revert it on this branch, then review; (c) park 426a as is.
 answer 51: (a) another round approved (operator 2026-09-22)
+- dispatch: implementer opus — fix round 3 after a high (rule 3 → fable; fable fallback → opus per answer 51's recommendation); fresh agent in the same worktree (the sonnet implementer cannot be resumed at a higher tier)
