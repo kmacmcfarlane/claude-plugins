@@ -25,7 +25,7 @@ intensity: standard
 shape: run
 destination: <resolved path, and which rule fired>
 staging: <scratchpad>/research/<run>/   # where lanes, the verifier and the synthesis write
-status: PLANNING | RUNNING | VERIFYING | SYNTHESIZING | DONE | DONE_WITH_CONCERNS | BLOCKED
+status: PLANNING | RUNNING | VERIFYING | SYNTHESIZING | HELD | DONE | DONE_WITH_CONCERNS | BLOCKED
 ---
 # 00 — Research brief: <question>
 

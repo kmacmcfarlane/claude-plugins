@@ -236,12 +236,13 @@ the storage reference. Both are written in staging. Ledger `SYNTHESIS DONE`.
 `sources.md`, `tools/` — is copied to the destination only now, and only when the verifier's
 security check passed. With a security concern open, nothing fetched-derived reaches a tracked
 tree: the run is **held**. A held run is moved out of the session-scoped scratchpad to a
-durable ignored path — `.claude-sandbox/research/_held/<run>/` when `git check-ignore -q`
-says that path is ignored — and the brief's `staging:` is rewritten to it with status
-`HELD`, so `research-refine`'s clean-first path can find it in a later session. When no
-ignored durable path exists, the run stays in the scratchpad and the brief and the report
-say plainly that it is lost with the session. Then, per the shape (storage reference
-§ Shapes):
+durable ignored path — `.claude-sandbox/research/_held/<run>/` when the ignore check in the
+storage reference (§ The ignore check: asked of the owning repo, and of every enclosing one)
+says it is ignored — and the brief's `staging:` is rewritten to it with status `HELD`, so
+`research-refine`'s clean-first path can find it in a later session. When no ignored durable
+path exists, the run stays in the scratchpad and the brief and the report say plainly that
+it is lost with the session. **A held run stops here**: nothing below runs for it, and the
+report's `STATUS` is `HELD`. Otherwise, per the shape (storage reference § Shapes):
 
 - `report` — one file at the destination with frontmatter; the run's working files stay in
   staging.
@@ -272,10 +273,12 @@ Overnight and chained runs are normal. Gates change form rather than disappearin
 - Steps 1, 3, 4 decide from the invocation and the repo; each decision is recorded under the
   brief's **Confirmed assumptions**, framed as something a reviewer may overturn.
 - Intensity is judged by the turn that started the run (`intensity-and-routing.md` rule
-  zero): an operator-authored calling prompt — a ralph or dev-cycle brief the operator wrote,
-  a scheduled run they set up — that names a preset counts as the operator naming it, and
-  defaults to this skill's `standard` when it names none; a run the model started on its own
-  is `quick`. A missing quota record is assumed clear and the assumption recorded.
+  zero): an on-disk prompt file the operator wrote that the run starts from (a ralph prompt
+  file, a scheduled run's prompt) that names a preset counts as the operator naming it, and
+  defaults to this skill's `standard` when it names none; a run started from an Agent-tool
+  prompt is `quick` unless that prompt cites an operator decision recorded in a readable file
+  under the operator's name. A missing quota record is assumed clear and the assumption
+  recorded.
 - The threads-not-pulled turn does not ask; it reports.
 - The verifier's mandatory-axis concerns ship as `DONE_WITH_CONCERNS`; a security concern
   holds the run per Step 10 (moved to the durable held path when one exists, else declared

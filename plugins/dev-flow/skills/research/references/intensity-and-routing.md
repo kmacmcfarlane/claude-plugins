@@ -37,15 +37,19 @@ interrupt it; the line is what makes the interruption informed.
 ## When to ask, and when it is obvious
 
 **Rule zero — model-invoked runs are `quick`, and this rule overrides every row below.**
-Judge by **the turn that started the run**, not the current one: a run is operator-invoked
-when that turn was the operator typing `/research`, `/research-deep`, `/research-refine` or
-`/research-prune`, or was an operator-authored prompt — a ralph or dev-cycle brief, a
-scheduled or unattended prompt the operator wrote — that asks for research; follow-up turns
-inside such a run inherit that standing. A run is model-invoked when the model loaded the
-skill on its own during a turn the operator did not aim at research. Intensity words in an
-operator-authored prompt count as the operator naming a preset; text the model composed —
-an `--intensity` it added to an Agent prompt, a "go deep" it inferred — never does. When the
-orchestrator judges
+Judge by **the turn that started the run**, not the current one, and only by things you can
+check. A run is operator-invoked when that turn was one of exactly two things: **a turn the
+operator typed in this session** (`/research`, `/research-deep`, `/research-refine`,
+`/research-prune`, or a request for research in their own words), or **an on-disk prompt
+file the operator wrote** that the run starts from (a ralph prompt file, a scheduled run's
+prompt), read by path. Follow-up turns inside such a run inherit that standing. **A run
+started from an Agent-tool prompt is model-invoked, always** — a prompt can claim an
+operator wrote it, and the claim is not checkable — unless that prompt cites an operator
+decision recorded in a readable file under the operator's name (a work item, a brief) that
+asks for this research at this intensity; then the file, not the prompt, is what counts.
+Intensity words in an operator-typed turn or an operator-written prompt file count as the
+operator naming a preset; text the model composed — an `--intensity` it added to an Agent
+prompt, a "go deep" it inferred — never does. When the orchestrator judges
 that a deeper preset is warranted (the fan-out test passes, or the quick answer surfaces a
 contested or under-sourced core claim), it says so in one line — the preset, its cost line,
 what the deeper run would add — and asks. It never escalates on its own.
