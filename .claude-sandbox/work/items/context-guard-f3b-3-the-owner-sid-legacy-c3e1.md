@@ -34,3 +34,13 @@ changed: hooks/rehydrate.py, hooks/mark_checkpoint.py, tests/{test_rehydrate,tes
 librarian: test_rehydrate_stale.py accepted into Files in scope (a fixture the copy freezes by design, same change as the in-scope tests).
 dispatch: reviewer opus — rule 4, implementer tier
 agent: reviewer a05d99543406d4ed4 round 1
+verdict: NEEDS_CHANGES round 1 at 1e37c0b
+findings:
+- [medium] rehydrate.py:1210 — copy trusts the repo file's session: line alone: a peer editing S's stamped file in place (keeping session: S; its own mark refuses) gets its body copied into S's store at S's next SessionStart, and S keeps it as own memory permanently, where main drops to the foreign header once P rewrites. Pass: copy only while the bytes are still S's stamp — mtime within STAMP_TOUCH_S after written: (mark_checkpoint's _own_stamp relation); else fall back to the live read; test the in-place edit.
+- [medium] rehydrate.py:1123-1125 — the <sid>/ dir-link guard is untested (mutant green; with it removed a planted <store>/S -> elsewhere gets HANDOFF.md written into elsewhere). Pass: a TestLegacyCopy case with a symlinked <sid>/ dir: no copy, target dir empty, no legacy_copy.
+- [low] :1113-1115 CRLF manifests never copied (raw-bytes sha vs text-mode sha) — hash as read_text reads, or document.
+- [low] mark_checkpoint.py:369 — a FIFO at legacy_copy.path hangs the mark (gate stand-down blocks). Pass: S_ISREG before reading.
+notes: copy mechanics, warn-only, trim decision, four lows and 3a8f all confirmed; the warning retires with the copy (08 OQ: agree).
+librarian: medium 1 takes the reviewer's pass (the obvious fail-safe fix, no operator decision: it narrows what is copied, never widens).
+dispatch: implementer opus — fix round 1 (resume)
+agent: implementer a3dabe735be8fe6d2 round 2

@@ -2,12 +2,11 @@
 id: wi-import-todo-misses-a-strikethrough-th-bf1b
 title: wi import-todo misses a strikethrough that wraps only the bold title
 type: bug
-status: doing
+status: done
 priority: 3
-owner: Kyle-McFarlane@bf9f9839222c
-claimed: 2026-09-22T22:48Z
 created: 2026-09-22
 updated: 2026-09-22
+closed: 2026-09-22
 refs:
   - "peer: agents - librarian (uds 122.sock), operator relay"
 ---
@@ -56,3 +55,10 @@ findings:
 - [low, record only] any text after a closure word accepted — deliberate, kept.
 dispatch: implementer opus — fix round 3 (resume); medium, not critical/high, so no rule-3 bump; the last round under the cap
 agent: implementer ae88fb9e69adfe405 round 4
+return: implementer DONE a715d3b
+dispatch: reviewer opus — review r4 (resume), the last round under the cap
+agent: reviewer a9569a76c211e6e99 round 4
+verdict: CLEAR round 4 at a715d3b
+lows (may-decline) carried to 9197: closure word/date followed by a contradicting caveat still closes; paren-branch date lacks (?![\w-]); unicode punctuation after a closure word.
+landed: 8a3af59
+- 2026-09-22 done: 8a3af59

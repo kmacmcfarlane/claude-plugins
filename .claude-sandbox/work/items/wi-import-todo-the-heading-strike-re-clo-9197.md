@@ -17,3 +17,4 @@ bf1b review r2 note, 2026-09-22: STRIKE_RE's \w[\w /]*? after the dash accepts a
 - next: —
 - blocked: —
 - learned: —
+- riders from bf1b review r4 (2026-09-22), for the list rule too: a closure word or date followed by a contradicting caveat ("(done) but reopen") still closes — accept only a closing paren/end after it; the paren-branch date needs (?![\w-]) like the dash branch; unicode punctuation after a closure word passes the guard.
