@@ -70,8 +70,11 @@ Every gate answered without the operator (unattended runs), framed so a reviewer
 it.
 
 ## Threads not pulled
-Appended after each round: the follow-ups the gap gate did not launch, each with its expected
-value in one clause. This section is what the operator reads to decide whether to continue.
+Appended after each round, one line per thread, in the orchestrator's words only:
+`- T<n>: lane <id>, sub-question <n>, gap condition <n> — <value, one clause>`. Never a phrase
+copied from a findings file: this section is written before verification. The operator reads
+it to decide whether to continue; `research-refine` reads it for the pointer and restates
+the mission from the sub-question.
 
 ## Parked
 Anything deliberately not actioned (an existing run on a neighbouring question, a KB

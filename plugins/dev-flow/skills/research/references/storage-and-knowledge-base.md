@@ -13,12 +13,15 @@ to exactly one resolved destination; nothing else on disk changes. A run never c
 tracked file in a repo unless that repo has said, with a marker or a flag, that it wants
 research checked in.
 
-**Staging.** Everything a lane or the verifier writes — findings, `verification.md`, the
-synthesis and `sources.md` drafted from them, a report draft, a quick run's `--to` file —
-lands first in `<scratchpad>/research/<run>/`, the run's staging area, named in the brief's
-frontmatter. It is copied to the destination only after the verifier's whole-file security
-scan passes. The brief is the one file written at the destination before that, because the
-orchestrator authors it and it carries no fetched text.
+**Staging.** Everything drafted from fetched pages — lane findings, a report draft, a quick
+run's `--to` file — lands first in `<scratchpad>/research/<run>/`, the run's staging area,
+named in the brief's frontmatter, and is scanned there by the verifier. The verifier's sheet,
+the synthesis and `sources.md` are written after that scan, from scanned files, into the
+same staging area, and the whole record is copied to the destination only on a clean scan.
+The brief is the one file written at the destination before that, because the orchestrator
+authors it and it carries no fetched text. A run held on a security concern moves to
+`.claude-sandbox/research/_held/<run>/` when that path is ignored (`git check-ignore -q`),
+else it is lost with the session and the brief says so.
 
 ## Destination resolution
 
@@ -40,8 +43,9 @@ scratchpad instead (shape `run`, in staging), with a line saying why. Never assu
 sidecar is untracked.
 
 When two KB roots are in scope (a repo-level one and a subdirectory one), prefer the nearer.
-When rule 5 fires in a repo that has no `.claude-sandbox/`, create `.claude-sandbox/research/`
-and say so; do not fall back to a tracked path.
+When rule 5's path does not exist yet, create it only if `git check-ignore -q` reports it
+would be ignored (the repo's `.gitignore` covers `.claude-sandbox/` or the path); otherwise
+the untracked-only rule sends the run to the scratchpad. Never create a tracked path.
 
 **Promotion out of the sidecar** — "this was worth keeping, check it in" — is a separate,
 explicit step, and it is gated: it refuses unless the run's `verification.md` exists and its

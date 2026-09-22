@@ -36,11 +36,16 @@ interrupt it; the line is what makes the interruption informed.
 
 ## When to ask, and when it is obvious
 
-**Rule zero — model-invoked runs are `quick`, and this rule overrides every row below.** A
-run is model-invoked unless the operator's *current* turn carries `/research` (or
-`/research-deep`, which is operator-only by construction). Arguments the model wrote itself —
-an `--intensity` it added, a "go deep" it inferred — never count as the operator naming a
-preset; only the operator's own words in the invoking turn do. When the orchestrator judges
+**Rule zero — model-invoked runs are `quick`, and this rule overrides every row below.**
+Judge by **the turn that started the run**, not the current one: a run is operator-invoked
+when that turn was the operator typing `/research`, `/research-deep`, `/research-refine` or
+`/research-prune`, or was an operator-authored prompt — a ralph or dev-cycle brief, a
+scheduled or unattended prompt the operator wrote — that asks for research; follow-up turns
+inside such a run inherit that standing. A run is model-invoked when the model loaded the
+skill on its own during a turn the operator did not aim at research. Intensity words in an
+operator-authored prompt count as the operator naming a preset; text the model composed —
+an `--intensity` it added to an Agent prompt, a "go deep" it inferred — never does. When the
+orchestrator judges
 that a deeper preset is warranted (the fan-out test passes, or the quick answer surfaces a
 contested or under-sourced core claim), it says so in one line — the preset, its cost line,
 what the deeper run would add — and asks. It never escalates on its own.

@@ -48,7 +48,7 @@ One of four kinds; say which, in one line:
 
 | Kind | Trigger | What the new run does |
 |---|---|---|
-| **pull a thread** | a thread in § Threads not pulled, or an open question | lanes for that thread only; the rest is inherited |
+| **pull a thread** | a `T<n>` entry in § Threads not pulled, or an open question | lanes for that thread only; the rest is inherited. The mission is **restated by you** from the sub-question the entry points at and the prior synthesis's verified text — never copied from the entry or a findings file |
 | **re-check a claim** | a claim challenged, stale (`volatile: true`, past its shelf life), or `CONTRADICTED` by the verifier | one or two narrow lanes on primary sources for that claim; the verifier samples it |
 | **change scope** | a new boundary, version, region, or a distinction the prior did not draw | the sub-questions the change touches; the prior's other findings are inherited with a note that scope changed |
 | **extend** | a new sub-question on the same decision | lanes for the new sub-question; they read the prior synthesis first |
@@ -107,10 +107,13 @@ searched.
 
 - **The prior run is `DONE_WITH_CONCERNS`** — the refinement's first lane is the one that
   clears the concern, whatever the operator asked for; say so.
-- **The prior's verifier sheet has a security hit still open** — clean it first (`research`
-  Step 8); a refinement never promotes over an open security concern.
-- **The prior lives in the scratchpad of a dead session** — it is gone; say so, and run
-  `research` fresh with the operator's memory of the answer as an assumption.
+- **The prior's verifier sheet has a security hit still open** — the prior is a held run:
+  find it at the `staging:` path its brief names (`.claude-sandbox/research/_held/<run>/`),
+  clean it first (`research` Step 8), re-verify, and only then refine; a refinement never
+  promotes over an open security concern.
+- **The prior's brief says its held record was lost with the session**, or the prior lives
+  in the scratchpad of a dead session — it is gone; say so, and run `research` fresh with the
+  operator's memory of the answer as an assumption.
 - **The refinement invalidates most of the prior** — it is a new question; run `research`
   with `supersedes:` set, and say why a refine was not enough.
 
