@@ -97,18 +97,19 @@ DEVIATION. Return `STATUS`, `SERIES` (absolute path), `OPEN QUESTIONS` (each blo
 
 ## Step 2 — Scoping gate (blocking)
 
-**A short round to make the problem investigable** — not the requirements gate (Step 9, after
-the code is read). Ask
-only what you cannot answer yourself and what would change *where you look*:
+**A short round to make the problem investigable**, not the requirements gate (Step 9). Ask
+only what you cannot answer yourself and what changes *where you look*:
 
 - What is the observable symptom, or the goal? (What happens now vs what should happen.)
 - Where does it show up — which command, endpoint, screen, file?
-- What does "done" look like, roughly?
+- Which repo owns this work? If the target may not exist yet — a new plugin, repo, or tool —
+  say so and point to the create-repo skill.
+- What does "done" look like?
 - Is anything explicitly out of scope?
 
-One round of 2–4 questions, per **Asking at a gate** — scope is open here, so a numbered list.
-Then **wait**. **Skip it only when the description already answers all of it**, saying so and
-why. Never ask what the code will tell you — that is Step 6.
+One round of 2–4 questions, per **Asking at a gate** — scope is open, so a numbered list. Then
+**wait**. **Skip it only when the description already answers it**, saying why. Never ask what
+the code will tell you — that's Step 6.
 
 ---
 
