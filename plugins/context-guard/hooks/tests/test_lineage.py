@@ -461,7 +461,10 @@ class TestCompactSummaryOnce(Base):
         L.reset_epoch("X", compact_summary="the summary")
         self.assertIn(self.SUMMARY, self.start("X", "compact"))
         self.assertNotIn("compact_summary", L.load_state("X"))
+        # X's repo manifest was X's own, so that SessionStart copied it into
+        # X's store (8cc2-F3b-3): X's next checkpoint rewrites the copy.
         self.checkpoint("X", doing="Changed, so resume is full again.")
+        os.replace(self.path, L.manifest_path("X"))
         c = self.start("X", "resume")
         self.assertFull(c)
         self.assertNotIn(self.SUMMARY, c)
@@ -1599,6 +1602,190 @@ class TestMarkStampsTheOwnPath(Base):
         self.assertEqual(self.run_cli("S", env_sid="S").returncode, 0)
         self.assertEqual(R.front_matter(readf(self.path))["top"],
                          self.git("rev-parse", "--show-toplevel"))
+
+
+class TestLegacyCopyArms(StoreBase):
+    """8cc2-F3b-3 (serial 05): only the owner == sid arm copies. A pinned,
+    adopted, ownerless or foreign repo manifest stays a LIVE read, re-sealed
+    on every SessionStart; a copy would freeze its seal."""
+
+    def test_an_adopted_foreign_manifest_is_not_copied(self):
+        # Plan-review round 1's first failure case: B adopts A's handoff; A
+        # rewrites it with a CORRECTION; B must fall to the foreign header,
+        # not keep reading a frozen private copy.
+        self.checkpoint("A", mode="handoff")
+        self.read("B")
+        self.assertFull(self.start("B", "compact"))
+        self.assertFalse(os.path.exists(L.manifest_path("B")))
+        self.checkpoint("A", mode="handoff", doing="CORRECTION: not that way.")
+        self.assertForeign(self.start("B", "compact"))
+        self.assertFalse(os.path.exists(L.manifest_path("B")))
+        self.assertNotIn("legacy_copy", L.load_state("B"))
+
+    def test_a_pinned_manifest_is_not_copied_by_the_fork_child(self):
+        self.checkpoint("P")
+        self.assertFull(self.fork("P", "C"))
+        self.assertFalse(os.path.exists(L.manifest_path("C")))
+        self.assertNotIn("legacy_copy", L.load_state("C"))
+
+    def test_an_ownerless_manifest_is_copied_by_no_session(self):
+        # The second failure case: a hand-written repo file every session
+        # starting in the repo would otherwise copy and re-own.
+        self.checkpoint(None)
+        for sid in ("X", "Y", "Z"):
+            self.assertFull(self.start(sid, "compact"))
+            self.assertFalse(os.path.exists(L.manifest_path(sid)), sid)
+
+    def test_a_copy_is_pinned_with_a_real_owner_at_clear(self):
+        self.checkpoint("X")
+        self.start("X", "startup")
+        self.assertTrue(os.path.exists(L.manifest_path("X")))
+        c = self.clear("X", "Y")
+        self.assertFull(c)
+        self.assertIn(L.manifest_path("X"), c)       # step 2: inherited
+        pin = L.lineage_of(L.load_state("Y"))[0]["manifest"]
+        self.assertEqual(pin["owner"], "X")
+        self.assertNotIn("<stamped>", readf(L.manifest_path("X")))
+
+
+class TestStampGuardWarnsOnly(StoreBase):
+    """8cc2-F3b-3 (serial 08): after the copy, the mark step warns when the
+    legacy repo file's bytes differ from the copied sha - and does nothing
+    else: no refresh, no import, no refusal, no state write."""
+    WARN = "has changed since the copy"
+    OWN = "If this session wrote it"
+    PEER = "nothing here needs doing"
+
+    def run_cli(self, sid, env_sid=None):
+        env = dict(os.environ, CLAUDE_CONFIG_DIR=self.cfg.name)
+        env.pop("CLAUDE_CODE_SESSION_ID", None)
+        if env_sid:
+            env["CLAUDE_CODE_SESSION_ID"] = env_sid
+        return subprocess.run([sys.executable, os.path.join(HOOKS, "mark_checkpoint.py"),
+                               sid], capture_output=True, text=True, env=env,
+                              cwd=self.repo, timeout=30)
+
+    def snap(self, path):
+        with open(path, "rb") as fh:
+            return fh.read(), os.stat(path).st_mtime_ns
+
+    def copied(self, sid="X", age=None):
+        """`sid`'s own repo manifest, copied into its store by a SessionStart;
+        `age` seconds old when given (the copy keeps the source's mtime)."""
+        self.checkpoint(sid)
+        if age:
+            t = time.time() - age
+            os.utime(self.path, (t, t))
+        self.start(sid, "startup")
+        p = L.manifest_path(sid)
+        self.assertTrue(os.path.exists(p))
+        self.assertIn("legacy_copy", L.load_state(sid))
+        return p
+
+    def rewrite(self, owner, doing):
+        with open(self.path, "w") as fh:
+            fh.write(MANIFEST.format(
+                session=f"session: {owner}\n",
+                written=time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                head=self.head, mode="handoff", doing=doing))
+
+    def test_a_checkout_that_moves_only_the_mtime_is_silent(self):
+        p = self.copied()
+        t = time.time() + 5
+        os.utime(self.path, (t, t))              # same bytes, new mtime
+        r = self.run_cli("X", env_sid="X")
+        self.assertNotIn(self.WARN, r.stderr)
+        self.assertIn(f"stamped {p}", r.stdout)  # a fresh copy: the window passes
+        self.assertEqual(R.front_matter(readf(p))["session"], "X")
+        self.clear("X", "Y")
+        self.assertEqual(L.lineage_of(L.load_state("Y"))[0]["manifest"]["owner"], "X")
+
+    def test_this_sessions_old_step_4b_rewrite_warns_and_imports_nothing(self):
+        # The motivating case: skill text from before the store layout wrote
+        # the repo file with the placeholder still in `session:`.
+        p = self.copied()
+        self.rewrite("<stamped>", "Written by the old Step 4b.")
+        r = self.run_cli("X", env_sid="X")
+        self.assertEqual(r.returncode, 0)
+        self.assertIn(self.WARN, r.stderr)
+        self.assertIn(self.OWN, r.stderr)
+        self.assertIn(self.path, r.stderr)
+        self.assertIn(p, r.stderr)
+        self.assertIn("--from <draft>", r.stderr)
+        self.assertIn(f"stamped {p}", r.stdout)  # stamped as it stands
+        store = readf(p)
+        self.assertNotIn("Written by the old Step 4b.", store)   # never refreshed
+        self.assertEqual(R.front_matter(store)["session"], "X")
+        self.assertIn("session: <stamped>", readf(self.path))    # repo untouched
+        self.assertIn("checkpoint recorded", r.stdout)
+
+    def test_a_peers_rewrite_warns_with_the_peer_wording_and_copies_nothing(self):
+        p = self.copied(age=2 * 3600)
+        before = self.snap(p)
+        self.rewrite("PEER", "The peer's own work.")
+        repo = self.snap(self.path)
+        r = self.run_cli("X", env_sid="X")
+        self.assertIn(self.WARN, r.stderr)
+        self.assertIn("It names session PEER", r.stderr)
+        self.assertIn(self.PEER, r.stderr)
+        self.assertNotIn(self.OWN, r.stderr)
+        self.assertEqual(self.snap(p), before)          # byte for byte
+        self.assertEqual(self.snap(self.path), repo)    # the peer's, untouched
+        # And a fresh copy is stamped, but still carries none of the peer's.
+        q = self.copied("Z")
+        self.rewrite("PEER", "The peer's own work.")
+        r = self.run_cli("Z", env_sid="Z")
+        self.assertIn(self.PEER, r.stderr)
+        self.assertIn(f"stamped {q}", r.stdout)
+        self.assertNotIn("The peer's own work.", readf(q))
+
+    def test_a_copy_older_than_the_window_refuses_and_both_warnings_print(self):
+        p = self.copied(age=2 * 3600)
+        before = self.snap(p)
+        self.rewrite("<stamped>", "Stranded in the repo file.")
+        r = self.run_cli("X", env_sid="X")
+        self.assertIn("was last written 120 min ago", r.stderr)   # the window
+        self.assertIn(self.WARN, r.stderr)                        # the guard
+        self.assertEqual(self.snap(p), before)
+        store = readf(p)
+        self.assertEqual(R.front_matter(store)["session"], "X")   # a real owner
+        self.assertNotIn("<stamped>", store)
+        # ...so the round-3 cascade cannot start: /clear pins a real owner.
+        self.clear("X", "Y")
+        self.assertEqual(L.lineage_of(L.load_state("Y"))[0]["manifest"]["owner"], "X")
+
+    def test_no_record_or_a_vanished_repo_file_is_skipped(self):
+        import mark_checkpoint as M
+        env = {"CLAUDE_CODE_SESSION_ID": "X"}
+        p = self.store_checkpoint("X")                  # no legacy_copy at all
+        L.save_state("X", {"epoch": 0})
+        _out, warn = M.stamp_manifest("X", cwd=self.repo, environ=env)
+        self.assertEqual(warn, [])
+        for rec in ({"sha": "0" * 12, "path": os.path.join(self.repo, "gone.md"),
+                     "at": 1}, {"sha": 1, "path": None}, "garbage"):
+            L.save_state("X", {"epoch": 0, "legacy_copy": rec})
+            _out, warn = M.stamp_manifest("X", cwd=self.repo, environ=env)
+            self.assertFalse([w for w in warn if self.WARN in w or
+                              "not stamped" in w], rec)
+        self.assertTrue(os.path.exists(p))
+
+    def test_the_warning_stands_on_every_mark(self):
+        self.copied()
+        self.rewrite("<stamped>", "Written by the old Step 4b.")
+        for _ in range(3):
+            self.assertIn(self.WARN, self.run_cli("X", env_sid="X").stderr)
+
+    def test_the_guard_writes_no_state(self):
+        import mark_checkpoint as M
+        self.copied()
+        self.rewrite("<stamped>", "Written by the old Step 4b.")
+        sp = L.state_path("X")
+        before = self.snap(sp)
+        time.sleep(0.01)
+        _out, warn = M.stamp_manifest("X", cwd=self.repo,
+                                      environ={"CLAUDE_CODE_SESSION_ID": "X"})
+        self.assertTrue([w for w in warn if self.WARN in w])
+        self.assertEqual(self.snap(sp), before)
 
 
 class TestMarkInstallsTheDraft(Base):
