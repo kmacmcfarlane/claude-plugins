@@ -375,9 +375,8 @@ available skills — that list, not a config path, which can go stale.
 
 Offer a lightweight retrospective, with the prompt in `references/retrospective.md`. On
 **Yes**, note the friction — a missed search idiom, an undocumented step, a wrong assumption —
-then **read and follow `update-kit`'s SKILL.md** from the `claude-plugins` checkout: it is
-user-invoked only and cannot be called through the Skill tool, and it owns the mechanics, which
-are not re-derived here.
+present it, and **ask the user to run `/kit-dev:update-kit`**: it is user-invoked only, and its
+workflow is not replicated here.
 
 ---
 
