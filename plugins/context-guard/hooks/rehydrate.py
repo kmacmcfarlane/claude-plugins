@@ -29,6 +29,22 @@ shown (MODE_SKILL_RE): the header speaks in the hook's voice, and the manifest
 is repo-committed text.
 No manifest and nothing to say -> {} (silent).
 
+Those tiers apply only to a manifest that is OURS (is_ours). Ownership names a
+manifest VERSION, {owner: its `session:`, sha: L.manifest_sha(raw text)}:
+  - no `session:` (hand-written): everyone's, as before this rule;
+  - `session:` is this session: every version;
+  - the exact version a lineage link pinned: the /clear predecessor
+    (link_clear, from the `cleared` record lineage.py writes at
+    SessionEnd(clear)) or the fork parent (adopt_fork_state), and their own
+    lineage in turn - a link pins a version only if it was the linking
+    session's own (L.owned_version), else nothing;
+  - the exact `mode: handoff` version this session read in full
+    (lineage.py, PostToolUse Read: state `manifest_adopted`).
+Anything else - another session's manifest, or a later rewrite of a linked or
+adopted one - gets one foreign header line on every source (foreign_header):
+no body, no precedence preamble, no standing mode. The ledger tail and the
+/compact guidance still inject on compact: they are this session's own.
+
 Budget: total additionalContext <= 9,000 chars, under the harness's single
 10,000-char cap (overflow would be replaced by a file stub, silently dropping
 the mandatory tiers). Trim order: the frontmatter `items:` list, Scrolls, then
@@ -49,7 +65,7 @@ claude-kit's) deprecated copy and that plugin is not installed
 Never exits non-zero: the staleness checks degrade to the plain manifest on
 any internal error, and anything else degrades to {}.
 """
-import glob, hashlib, json, os, re, subprocess, sys, time
+import glob, json, os, re, subprocess, sys, time
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import lib_context as L
 import ledger
@@ -498,15 +514,11 @@ def statusline_notice(now=None):
         return None
 
 
-def adopt_fork_state(sid, transcript_path):
-    """A fork/branch gets a new session id, orphaning the parent's ledger and
-    staged /compact guidance (Bug B, live-fired 2026-08-31 via /branch). Two
-    recovery strategies: copied parent records that still carry the parent
-    sessionId (/branch), else matching a copied record uuid against sibling
-    transcripts (--fork-session, which rewrites sessionIds)."""
-    if os.path.exists(L.ledger_path(sid)) or not transcript_path \
-            or not os.path.exists(transcript_path):
-        return
+def fork_parent(sid, transcript_path):
+    """The session this fork/branch was copied from, or None. Two recovery
+    strategies: copied parent records that still carry the parent sessionId
+    (/branch), else matching a copied record uuid against sibling transcripts
+    (--fork-session, which rewrites sessionIds)."""
     parent = None
     try:
         with open(transcript_path, errors="replace") as fh:
@@ -523,21 +535,112 @@ def adopt_fork_state(sid, transcript_path):
         if not parent:
             parent = _parent_by_record_uuid(sid, transcript_path)
     except Exception:
-        return
+        return None
+    return parent if isinstance(parent, str) and parent else None
+
+
+def adopt_fork_state(sid, transcript_path, version=None):
+    """A fork/branch gets a new session id, orphaning the parent's ledger and
+    staged /compact guidance (Bug B, live-fired 2026-08-31 via /branch): copy
+    them over unless this session already has its own ledger. Also link the
+    child to its parent (state `lineage`), once, even when the ledger exists:
+    the parent first, pinning the manifest `version` on disk now only if it
+    was the parent's own (L.owned_version, with the parent's state), then the
+    parent's lineage. Returns the parent, or None."""
+    if not transcript_path or not os.path.exists(transcript_path):
+        return None
+    has_ledger = os.path.exists(L.ledger_path(sid))
+    has_lineage = "lineage" in L.load_state(sid)
+    if has_ledger and has_lineage:
+        return None
+    parent = fork_parent(sid, transcript_path)
     if not parent:
-        return
+        return None
     try:
-        pl = L.ledger_path(parent)
-        if os.path.exists(pl):
-            with open(L.ledger_path(sid), "w") as out:
-                out.write(f"# ledger {sid} (adopted from parent {parent})\n")
-                out.write(open(pl, errors="replace").read())
         pst = L.load_state(parent)
-        if pst.get("custom_instructions"):
-            L.update_state(sid, lambda st: st.setdefault(
-                "custom_instructions", pst["custom_instructions"]))
+        if not has_ledger:
+            pl = L.ledger_path(parent)
+            if os.path.exists(pl):
+                with open(L.ledger_path(sid), "w") as out:
+                    out.write(f"# ledger {sid} (adopted from parent {parent})\n")
+                    out.write(open(pl, errors="replace").read())
+            if pst.get("custom_instructions"):
+                L.update_state(sid, lambda st: st.setdefault(
+                    "custom_instructions", pst["custom_instructions"]))
+        if not has_lineage:
+            pin = version if L.owned_version(pst, parent, version) else None
+            lin = L.linked_lineage(parent, pin, pst.get("lineage"))
+            L.update_state(sid, lambda st: st.setdefault("lineage", lin))
     except Exception:
         pass
+    return parent
+
+
+def link_clear(sid, now=None):
+    """SessionStart(clear): /clear ran SessionEnd(clear) for the old session
+    in this same process (lineage.py wrote `cleared` on the process record),
+    then regenerated the session id. Pop that record and, when it is recent
+    (CLEAR_LINK_MAX_AGE_S) and names another session, set this session's
+    lineage: the predecessor with the version it pinned, then its lineage.
+    No verified process (proc_key None): no link."""
+    key = L.proc_key()
+    if not key:
+        return
+    rec_sid = L.PROC_PREFIX + key
+    if not isinstance(L.load_state(rec_sid).get("cleared"), dict):
+        return
+    box = []
+    L.update_state(rec_sid, lambda p: box.append(p.pop("cleared", None)))
+    c = box[0] if box else None
+    if not isinstance(c, dict):
+        return
+    old, at = c.get("sid"), L._finite(c.get("at"))
+    now = time.time() if now is None else now
+    if not isinstance(old, str) or not old or old == sid or at is None \
+            or L._future_skewed(at) or now - at > L.CLEAR_LINK_MAX_AGE_S:
+        return
+    lin = L.linked_lineage(old, c.get("manifest"), c.get("lineage"))
+    L.update_state(sid, lambda st: st.__setitem__("lineage", lin))
+
+
+def manifest_version(text, fm=None):
+    """{owner, sha}: the manifest's `session:` (None when absent or not a
+    plain string) and L.manifest_sha of the raw text."""
+    fm = front_matter(text) if fm is None else fm
+    owner = fm.get("session")
+    return {"owner": owner if isinstance(owner, str) and owner else None,
+            "sha": L.manifest_sha(text)}
+
+
+def is_ours(st, sid, v):
+    """The injection rule: an ownerless (hand-written) manifest is everyone's;
+    otherwise only a version this session owns (L.owned_version)."""
+    return not v["owner"] or L.owned_version(st, sid, v)
+
+
+def read_manifest(cwd):
+    """(path, top, raw text or None). The raw text, read with
+    errors="replace", is what manifest_sha hashes."""
+    path, top = manifest_path(cwd)
+    if not path:
+        return None, top, None
+    try:
+        with open(path, errors="replace") as fh:
+            return path, top, fh.read()
+    except Exception:
+        return None, top, None
+
+
+def foreign_header(label, path, owner):
+    """The one line a session gets for a manifest that is not its own. The
+    author id comes from repo text, so only a safe session-id token is
+    echoed."""
+    who = f"session {owner}" if isinstance(owner, str) \
+        and L._SAFE_SID.fullmatch(owner) else "another session"
+    return (f"[context-guard rehydration] {label} manifest {path}, written by "
+            f"{who} (not this session). If the operator's opener names this "
+            f"manifest, read it in full; otherwise it is another session's and "
+            f"not your memory.")
 
 
 def main():
@@ -551,10 +654,17 @@ def main():
 
     sid = inp.get("session_id", "unknown")
     source = inp.get("source", "startup")
-    if source == "fork":
-        adopt_fork_state(sid, inp.get("transcript_path"))
     cwd = inp.get("cwd") or os.getcwd()
-    path, top = manifest_path(cwd)
+    path, top, text = read_manifest(cwd)
+    fm = front_matter(text) if path else {}
+    version = manifest_version(text, fm) if path else None
+    if source == "fork":
+        adopt_fork_state(sid, inp.get("transcript_path"), version)
+    elif source == "clear":
+        try:
+            link_clear(sid)
+        except Exception:
+            pass
 
     parts, sysmsg = [], None
     # Read-only snapshot: the git and store checks below are slow, so the
@@ -563,16 +673,16 @@ def main():
     seen_new = None
 
     if path:
-        text = open(path, errors="replace").read()
-        fm = front_matter(text)
-        sha = hashlib.sha1(text.encode()).hexdigest()[:12]
+        sha = version["sha"]
+        ours = is_ours(st, sid, version)
         hs = None if is_landed(fm) else head_state(fm, top)
         rec = fm.get("head")
         live, why = liveness(fm, hs, unverified_reason(top) if hs is None
                              and not is_landed(fm) and isinstance(rec, str) and rec
                              else "git unavailable")
         dirty = git(top, "status", "--porcelain") or ""
-        header = (f"[context-guard rehydration] {live}{f' ({why})' if why else ''} "
+        label = f"{live}{f' ({why})' if why else ''}"
+        header = (f"[context-guard rehydration] {label} "
                   f"manifest {path} "
                   f"(written {fm.get('written', '?')}, head {fm.get('head', '?')}, "
                   f"now {len(dirty.splitlines())} dirty file(s)).")
@@ -595,9 +705,16 @@ def main():
             text = withhold_next(text, moved)
 
         seen = st.get("manifest") or {}
-        full = source == "compact" or (
-            source in ("resume", "fork") and (seen.get("sha") != sha or seen.get("top") != top))
-        if full:
+        full = ours and (source == "compact" or (
+            source in ("resume", "fork") and (seen.get("sha") != sha or seen.get("top") != top)))
+        if not ours:
+            # Another session's manifest (or a version of it this session
+            # never linked or adopted): never its memory. No body, no
+            # precedence preamble, no standing mode; nothing that invites an
+            # unrelated session to read, and so adopt, it.
+            parts.append(foreign_header(label, path, version["owner"])
+                         + "".join("\n" + c for c in (checks, moved) if c))
+        elif full:
             preamble = ("Precedence: current repo state (git log, the work-item "
                         "store) beats this manifest; this manifest and the ledger beat "
                         "any machine summary of the old conversation; CORRECTION/"
@@ -616,7 +733,9 @@ def main():
         else:
             parts.append(header + " Read it before resuming its thread."
                          + "".join("\n" + c for c in (checks, moved) if c))
-        seen_new = {"sha": sha, "top": top}
+        if ours:
+            # `manifest` = the version last shown to this session as its own.
+            seen_new = {"sha": sha, "top": top}
 
     if source == "compact":
         lt = ledger.tail(sid, max_chars=LEDGER_BUDGET)

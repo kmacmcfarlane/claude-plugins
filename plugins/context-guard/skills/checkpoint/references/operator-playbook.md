@@ -67,6 +67,7 @@ auto-compact window: it defers only on the depth it used before the window mirro
 | "use a subagent to …" | read-heavy research, log digging, doc reading | returns 1–2K tokens; the reads never enter your window |
 | `Explore` / `Plan` agents | codebase survey before implementation | skip CLAUDE.md, cheap, read-only |
 | `/context` | any time you want the truth | free |
+| Read `HANDOFF.md` in full vs `cat` | taking over a `mode: handoff` manifest vs only looking at another session's | a whole-file Read adopts that version (re-injected after your next compaction); `cat` or a Read with offset/limit adopts nothing |
 | status line | always | shows `used_percentage`; when the `statusline-hub` plugin records it (installing `statusline` brings it) its reading wins over the gate's derived window and cross-checks it |
 
 Environment & knobs: `/autocompact 900k` lowers the auto-compact trigger so the gate's deferral

@@ -144,13 +144,19 @@ sentence:
 - **continue** → `/rewind` → *Summarize up to here* at the **last ledger epoch header** (keeps
   the current thread verbatim, condenses only the old part) — or `/compact <guidance>` with
   the guidance you drafted, naming the manifest path, the open item, and the refusals.
-- **handoff** → `/clear`, or a fresh session in the owning repo; the manifest is the brief and
-  the rehydration hook will inject it there.
+- **handoff** → `/clear`, or a fresh session in the owning repo; the manifest is the brief.
+  After `/clear` the successor is linked to this session and gets the manifest header; a
+  fresh session gets a header naming this session as the author; either way the Step 7
+  opener's "read … in full" is what brings the whole file in, and that full Read of a
+  `mode: handoff` manifest adopts it as the successor's own.
 - **continue uncompacted** → when the number says there is more room than it felt like.
 
-After a compaction, the manifest + ledger are re-injected automatically and **outrank the
-machine summary**; corrections outrank recollection; and current repo state (git log, the
-work-item store) outranks the manifest.
+After a compaction, the ledger is re-injected automatically, and so is the manifest — when
+this session wrote it, descends from the session that did (fork, `/clear`), or has read that
+version in full in `mode: handoff`; any other session gets a one-line header (the format
+spec's "Whose memory it is"). Re-injected, they **outrank the machine summary**; corrections
+outrank recollection; and current repo state (git log, the work-item store) outranks the
+manifest.
 
 ## Step 6 — Note the drift, once
 

@@ -6,7 +6,7 @@ sys.path.insert(0, HOOKS)
 MANIFEST = """---
 handoff: 1
 repo: demo
-session: old
+session: s
 written: {written}
 head: {head}
 mode: {mode}
@@ -112,7 +112,7 @@ class TestRehydrate(unittest.TestCase):
     def test_mode_skill_named_on_every_tier(self):
         self.write_mode_skill("mode_skill: /some-plugin:some-mode start  # re-enter")
         for source in ("startup", "clear", "compact"):
-            rc, out = self.hook(source, sid=source)
+            rc, out = self.hook(source)
             c = self.ctx(out)
             self.assertEqual(rc, 0)
             self.assertIn("FRESH", c)
@@ -122,7 +122,7 @@ class TestRehydrate(unittest.TestCase):
     def test_mode_skill_absent_or_invalid_is_silent(self):
         for value in ("", "mode_skill:", "mode_skill: not-a-command"):
             self.write_mode_skill(value)
-            rc, out = self.hook("startup", sid="x" + str(len(value)))
+            rc, out = self.hook("startup")
             c = self.ctx(out)
             self.assertIn("FRESH", c)
             self.assertNotIn("standing mode", c)
@@ -135,7 +135,7 @@ class TestRehydrate(unittest.TestCase):
                "'/x start\"")
         for i, value in enumerate(bad):
             self.write_mode_skill("mode_skill: " + value)
-            rc, out = self.hook("startup", sid=f"bad{i}")
+            rc, out = self.hook("startup")
             c = self.ctx(out)
             self.assertEqual(rc, 0)
             self.assertIn("FRESH", c, repr(value))
@@ -147,7 +147,7 @@ class TestRehydrate(unittest.TestCase):
         for i, value in enumerate(("/review", "/p:mode start", "'/p:mode start'",
                                    "/p.x:m-1 go key=v path/a.b")):
             self.write_mode_skill("mode_skill: " + value)
-            rc, out = self.hook("startup", sid=f"ok{i}")
+            rc, out = self.hook("startup")
             self.assertIn("re-enter it first with `" + value.strip("'") + "`.",
                           self.ctx(out))
 
