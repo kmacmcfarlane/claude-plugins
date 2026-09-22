@@ -17,3 +17,4 @@ refs:
 - next: —
 - blocked: —
 - learned: —
+- rider from 1d1c review (2026-09-22): add claim tests for a dep at doing+stage uat (met) and for re-claiming an owned doing item with unmet deps (unchanged).

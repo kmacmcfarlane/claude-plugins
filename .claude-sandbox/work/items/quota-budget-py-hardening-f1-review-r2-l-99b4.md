@@ -30,3 +30,11 @@ return: implementer DONE e1cc057
 changed: quota_budget.py, scripts/tests/test_quota_budget.py, references/budget.md
 dispatch: reviewer opus — rule 4, implementer tier
 agent: reviewer a6e630e2326326e41 round 1
+verdict: NEEDS_CHANGES round 1 at e1cc057
+findings:
+- [medium] quota_budget.py:323 — append_sample opens samples.jsonl O_WRONLY|O_APPEND|O_CREAT without O_NOFOLLOW: a planted symlink writes a sample line to a target outside the store, exit 0 (probe A). Same hazard L2 closes, worse (writes content); L2 is moot while this is open. Pass: O_NOFOLLOW there, failing as a store write error; test beside the lock-symlink test; optionally read_jsonl too.
+- [low] budget.md:170 — "not a regular file (a symlink…)" is conflict/unusable, but a symlink to a parseable claim is refreshed (link replaced). Pass: wording.
+- [low] budget.md:8 — overlong line; reflow.
+- [nit] no run_qb test for a parse-callback exception reaching main (rc 1, internal error).
+notes: deviations all accepted; F2's idle turn must know unusable:true cannot be cleared by --takeover; FIFO at samples.jsonl blocks open — out of scope.
+dispatch: implementer opus — fix round 1 (resume)

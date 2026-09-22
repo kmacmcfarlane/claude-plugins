@@ -2,12 +2,11 @@
 id: wi-claim-allows-a-dependency-blocked-ite-1d1c
 title: wi claim allows a dependency-blocked item
 type: bug
-status: doing
+status: done
 priority: 3
-owner: unknown@bf9f9839222c
-claimed: 2026-09-22T22:26Z
 created: 2026-09-22
 updated: 2026-09-22
+closed: 2026-09-22
 refs:
   - "peer: agents - librarian (uds 122.sock), operator relay"
 ---
@@ -30,3 +29,7 @@ return: implementer DONE 2c7e9bb
 changed: wi.py, tests/test_wi.py, SKILL.md (claim row), references/format.md (deps row)
 dispatch: reviewer opus — rule 4, implementer tier
 agent: reviewer a817cbd835b9bd49f round 1
+verdict: CLEAR round 1 at 2c7e9bb
+low carried to cc39: pin with tests (a) a dep at doing+stage uat counts as met for claim, (b) re-claim of an owned doing item with unmet deps unchanged; nit: a todo item with a stray foreign owner and unmet deps now exits 1 instead of 4 and refuses --steal (barely reachable)
+landed: 64deb4b
+- 2026-09-22 done: 64deb4b

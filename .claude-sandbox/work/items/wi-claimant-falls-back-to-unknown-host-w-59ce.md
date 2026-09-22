@@ -2,8 +2,10 @@
 id: wi-claimant-falls-back-to-unknown-host-w-59ce
 title: wi claimant falls back to unknown@<host> when USER is unset
 type: bug
-status: todo
+status: doing
 priority: 3
+owner: unknown@bf9f9839222c
+claimed: 2026-09-22T22:36Z
 created: 2026-09-22
 updated: 2026-09-22
 refs:
@@ -17,3 +19,10 @@ Relayed 2026-09-22 from the agents store (wi-claimant-falls-back-to-unknown-host
 - next: —
 - blocked: —
 - learned: —
+
+## Notes
+- 2026-09-22 claimed by unknown@bf9f9839222c
+
+target: full wi-claimant-falls-back-to-unknown-host-w-59ce /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude/worktrees/wi-claimant-falls-back-to-unknown-host-w-59ce
+dispatch: implementer opus — executable logic (scripts/wi.py), rule 2
+agent: implementer a94dc4899be9d4077 round 1
