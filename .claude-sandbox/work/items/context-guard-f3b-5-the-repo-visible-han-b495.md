@@ -41,3 +41,6 @@ findings:
 - [low] :143 restates handoff-format.md:47-48 — replace with the pointer; [low] :141-142 vs :199-202 — "on the same host and config dir".
 dispatch: implementer sonnet — fix round 1 (resume)
 agent: implementer aefc6634251c2dd06 round 2
+return: implementer DONE b7fa1d4
+dispatch: reviewer opus — review r2 (resume)
+agent: reviewer a9f57490722831112 round 2
