@@ -2,13 +2,14 @@
 id: dev-cycle-review-branch-mode-resume-from-426a
 title: "dev-cycle: review <branch> mode + resume from item record (07c3 F4)"
 type: feature
-status: doing
+status: blocked
 priority: 3
 deps:
   - dev-flow-add-the-dev-cycle-skill-07c3-f1-325d
 parent: dev-flow-new-dev-cycle-skill-investigate-07c3
 owner: unknown@360f41058e92
 claimed: 2026-09-21T23:07Z
+blocked: round 6 NEEDS_CHANGES; decision 59
 created: 2026-09-18
 updated: 2026-09-22
 ---
@@ -78,3 +79,10 @@ answer 57: (b) one more fix round for the two mediums + lows and one review (ope
 - dispatch: implementer opus — fix round 4 (answer 57), resume the round-3 opus implementer
 - fix round 4 DONE 54f022c (opus, answer 57): one cap test (counts CLEAR/NEEDS_CHANGES/SHOW_STOPPER, excluding only a CLEAR current at HEAD) used by rules 4–6; `decision:`/`answer:` shapes (librarian's `decision N:`/`answer N:` equivalent) written in § Decisions and Step 3.5, read by rules 3/5/6/7; lows fixed; state-walk table in the report; deviation: rule 4's stale-CLEAR branch runs the cap test.
 - dispatch: reviewer opus — review r6 (the answer-57 round; resume the r5 reviewer)
+
+## Review round 6 (answer 57) — NEEDS_CHANGES (opus) at 54f022c
+- round-5 mediums and lows fixed; the deviation is judged correct; state walk: no double dispatch, no land without a current CLEAR, checks always run, no action on the author's branch without a yes.
+- [medium] bindings.md:265, 294, 300, 308 — "recorded but unanswered → wait" deadlocks a standalone resume: the AskUserQuestion that asked died with the old session; the new one waits and never asks. Pass: standalone re-asks the same question (no new decision: line); only a caller's persistent channel (librarian `decision N:`) waits.
+- [medium] bindings.md:285-295 — review mode: a recorded "no", then the author pushes fixes, and the rerun re-reports the old findings forever; rules 5/6 lack rule 4's stale-sha test. Pass: a verdict whose <sha> ≠ HEAD is stale in rules 5/6 → fresh review under the cap test; the old "no" is not reused.
+- [low] rule 7 reuses an answer recorded before the latest BLOCKED run.
+decision 59: 426a — the approved round (57b) fixed its findings, but § Resume drew two new mediums for the sixth review running (a standalone resume waits forever on a question nobody still asks; review mode can never re-review a branch after a "no"). Review mode itself has been CLEAR since round 4. (a) land review mode without § Resume: the implementer reverts § Resume (and its Step 0 hooks) on this branch, a short review confirms, and § Resume becomes a new item planned first in dev-cycle plan mode so the state machine is designed whole, with these six rounds of findings as its input [recommended: every fix round has exposed a new edge; a design pass is cheaper than more rounds]; (b) another fix round for the two mediums + the low; (c) park 426a as is.
