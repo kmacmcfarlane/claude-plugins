@@ -97,6 +97,13 @@ CHECKPOINT_GRACE_S = 30 * 60
 # case that outgrows it. Being told to abandon one step from the mark is a
 # worse failure than the extra silence, and past this much growth no
 # checkpoint fits, so speaking again is right.
+#
+# What it does NOT do, plainly: this clock only bites while more than
+# CHECKPOINT_BUDGET_TOKENS of window remain. A stand-down begun deeper than
+# that - at 1M the hard line is 60K left, so anywhere under about 40K left -
+# can exhaust the window before the budget is spent, and CHECKPOINT_GRACE_S
+# is then the only belt. That is accepted: the deeper the start, the closer
+# the checkpoint is to being the last useful thing the turn can do.
 CHECKPOINT_BUDGET_TOKENS = 2 * L.CHECKPOINT_MIN_TOKENS
 
 
@@ -141,6 +148,22 @@ def depth_now(sid, st):
         return int(st.get("tokens") or 0) or None
     except (TypeError, ValueError, AttributeError):
         return None
+
+
+def anchor_standdown(s, tok):
+    """Give a stand-down that was written with no depth its anchor from the
+    first measurement after it, in place, under the caller's lock. --checkpointing
+    has no transcript, so it can only record a depth the state already knows;
+    with no fresh exact record and no prompt scored yet there is none, and
+    without this the token budget would never apply to that stand-down."""
+    cs = s.get("checkpoint_started")
+    if not (isinstance(cs, dict) and cs.get("tok") is None and tok):
+        return
+    try:
+        if cs.get("epoch") == L.epoch(s):
+            cs["tok"] = int(tok)
+    except (TypeError, ValueError):
+        pass
 
 
 def tier_of(m):
@@ -266,10 +289,22 @@ def main():
         print(json.dumps({})); return
     sid = inp.get("session_id") or "unknown"
     st = L.load_state(sid)
-    if (L.checkpointed_this_epoch(st)
-            or checkpoint_in_flight(st, tok=depth_now(sid, st))):
+    if L.checkpointed_this_epoch(st):
         print(json.dumps({})); return
-    if L.mirror_off() and not L.exact_fresh(L.sensor(sid, st)):
+    ex = L.sensor(sid, st) or {}
+    # A stand-down may skip the transcript read only when the cheap depth can
+    # answer its token budget - that is, on a fresh exact record. Without one
+    # (statusline-hub is a SOFT dependency, so a derived-only session is a
+    # documented configuration) depth_now is stale or absent, the budget would
+    # never bite, and the stand-down would silently fall back to wall clock
+    # alone. So fall through to measure() and let apply()'s locked re-check
+    # decide on the measured depth. That costs an incremental scan per tool
+    # call while a checkpoint runs, which is what the hook does anyway when it
+    # is not standing down.
+    cheap = depth_now(sid, st) if L.exact_fresh(ex) else None
+    if cheap is not None and checkpoint_in_flight(st, tok=cheap):
+        print(json.dumps({})); return
+    if L.mirror_off() and not L.exact_fresh(ex):
         # The depth would be inferred: nothing to say, so read nothing.
         print(json.dumps({})); return
 
@@ -285,6 +320,7 @@ def main():
             s["scan"] = m["scan_cache"]
         if m.get("side_cache"):
             s["sidechains"] = m["side_cache"]
+        anchor_standdown(s, m["tokens"])
         if (tier is None or L.checkpointed_this_epoch(s)
                 or checkpoint_in_flight(s, tok=m["tokens"])):
             # Re-read under the lock: a checkpoint may have started, or

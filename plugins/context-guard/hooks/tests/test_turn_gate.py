@@ -530,6 +530,70 @@ class TestBlockingSources(InProcess):
         self.assertEqual(L.load_state("s")["derived"]["window"], 1_000_000)
 
 
+class TestStandDownWithoutAStatusLine(InProcess):
+    """statusline-hub is a SOFT dependency, so a session whose depth is
+    DERIVED, or whose exact record has gone stale, is a documented
+    configuration - and there the cheap depth cannot answer the stand-down's
+    token budget. The hook must measure rather than return early, or the
+    stand-down silently falls back to the wall clock alone."""
+
+    def standdown(self, sid="s"):
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            rc = TG.checkpointing([sid])
+        self.assertEqual(rc, 0, buf.getvalue())
+        return buf.getvalue().strip()
+
+    def sweep(self, start):
+        """(spent, was the hook silent) for each step, growing the transcript
+        rather than rebuilding it, so the stand-down record survives."""
+        seen = []
+        for spent in (5_000, TG.CHECKPOINT_BUDGET_TOKENS, 44_000):
+            self.write(usage_line(start + spent), append=True)
+            seen.append((spent, ctx(self.gate()) == ""))
+        return seen
+
+    def test_a_derived_only_session_still_lapses_on_tokens(self):
+        self.session("claude-opus-5", 950_000)
+        self.assertTrue(ctx(self.gate()).startswith(MARKER + " (derived): 50,000"))
+        self.assertNotIn("exact", L.load_state("s"))       # no status line here
+        # A real session has the prompt gate's last scored depth; without even
+        # that, the first measurement anchors the record (below).
+        L.update_state("s", lambda s: s.__setitem__("tokens", 950_000))
+        self.standdown()
+        self.assertEqual(L.load_state("s")["checkpoint_started"]["tok"], 950_000)
+        self.assertEqual(self.sweep(950_000),
+                         [(5_000, True), (TG.CHECKPOINT_BUDGET_TOKENS, True),
+                          (44_000, False)])
+
+    def test_a_stale_exact_record_still_lapses_on_tokens(self):
+        self.session("claude-opus-5", 950_000)
+        self.set_exact(950_000, 1_000_000, at=time.time() - 700)
+        self.assertFalse(L.exact_fresh(L.load_state("s")["exact"]))
+        self.assertIn(MARKER, ctx(self.gate()))
+        L.update_state("s", lambda s: s.__setitem__("tokens", 950_000))
+        self.standdown()
+        self.assertEqual(self.sweep(950_000),
+                         [(5_000, True), (TG.CHECKPOINT_BUDGET_TOKENS, True),
+                          (44_000, False)])
+
+    def test_a_stand_down_with_no_depth_at_all_is_anchored_by_the_first_call(self):
+        # --checkpointing has no transcript, so with neither a fresh exact
+        # record nor a scored prompt it can record no depth. The budget must
+        # still apply: the next measurement fills it in.
+        self.session("claude-opus-5", 950_000)
+        self.assertIn(MARKER, ctx(self.gate()))
+        self.standdown()
+        self.assertIsNone(L.load_state("s")["checkpoint_started"]["tok"])
+        self.write(usage_line(951_000), append=True)
+        self.assertEqual(ctx(self.gate()), "")
+        self.assertEqual(L.load_state("s")["checkpoint_started"]["tok"], 951_000)
+        self.write(usage_line(951_000 + TG.CHECKPOINT_BUDGET_TOKENS), append=True)
+        self.assertEqual(ctx(self.gate()), "")
+        self.write(usage_line(951_000 + TG.CHECKPOINT_BUDGET_TOKENS + 1), append=True)
+        self.assertNotEqual(ctx(self.gate()), "")
+
+
 class TestRegisteredInHooksJson(unittest.TestCase):
     """The hook runs after EVERY tool call, in its own PostToolUse group, and
     it takes nothing away from the groups already there. Pinned because this

@@ -43,7 +43,10 @@ and the mark.** It stands down until the mark, and at most 30 minutes or 40K mor
 so a checkpoint that stalls does not leave the gate mute. That budget is twice the ~20K a
 lean checkpoint costs, deliberately: it has to cover the checkpoint actually running, and
 Step 4a's flush — commits across several repos, then the manifest — is the case that
-outgrows the lean figure. If it refuses (`no context-gate
+outgrows the lean figure. The token half only bites while more than 40K of window remains,
+so a stand-down begun deeper than that (at 1M the hard line is 60K left) has the 30 minutes
+as its only bound — by then the checkpoint is close to the last useful thing the turn can
+do anyway. If it refuses (`no context-gate
 state for session …`), the id is wrong, not the session: re-run it with
 `$CLAUDE_CODE_SESSION_ID`. Otherwise carry on with the checkpoint whatever it printed.
 
