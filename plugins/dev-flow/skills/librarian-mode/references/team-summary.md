@@ -12,7 +12,7 @@ read it in Slack, Teams, an email or on a phone. Pointed at from SKILL.md § Rep
   final Report (`ending-the-session.md`); the summary follows that Report, after the
   push outcome and its `incoming:` lines, in the same closing message.
 - **`Push: none`, or no `origin` remote**: one summary per landing batch, right after its
-  Report, and its first line says the changes are local only (not pushed).
+  Report, and its header line says the changes are local only (not pushed).
 - **No summary** for a rejected push that stops on a conflict, a red check or a
   decision (nothing reached origin; it goes under `decisions needed`) — a rejection
   merged through and pushed gets its summary, of this session's landings, not the
@@ -23,22 +23,12 @@ read it in Slack, Teams, an email or on a phone. Pointed at from SKILL.md § Rep
 
 Plain text, in this order:
 
-1. **A lead line**: the repo and what happened, such as `claude-plugins updates, pushed to
-   main:`. With `Push: none`, say `local only, not pushed`.
-2. **One bullet per change, about one line each.** Say what changed for the people and
-   agents who use the repo: what they can do now, what behaves differently, what was
-   fixed. Leave out how the change was made or reviewed: no tiers, models, review rounds,
-   fix rounds or verdicts, and no item ids unless a teammate needs one to look something
-   up. Several items that make one visible change share a bullet. Internal-only work
-   (tests, refactors, store bookkeeping) goes into one last bullet or is left out.
-3. **A do-line**: what a human reader must now DO, or `Nothing to do.` That covers a rule
-   people now follow, or a command to run. In a plugin marketplace, a change under
-   `plugins/` reaches a user only after `/plugin marketplace update <marketplace name>`
-   (the `name` in `.claude-plugin/marketplace.json`) and then `/reload-plugins`.
-4. **The commit range, last**: `Commits: <old>..<new>`, short shas. `old` is origin's
-   `main` before the push and `new` is `main` after it. Read both after the push: a
-   successful push updates the tracking ref and logs it, so the entry before that one is
-   the old tip:
+1. **A header line**: where it landed and the action needed to pick it up, in one line.
+   Name the repo, the push outcome, the commit range, and the pickup step (or say none is
+   needed). In a plugin marketplace, a change under `plugins/` reaches a user only after
+   `/plugin marketplace update <marketplace name>` (the `name` in
+   `.claude-plugin/marketplace.json`) and then `/reload-plugins`. `old` is `origin/main`
+   before the push and `new` is `main` after it:
 
    ```bash
    OLD=$(git -C "$MAIN" rev-parse --short 'origin/main@{1}')
@@ -51,40 +41,60 @@ Plain text, in this order:
    push's own output (the `<old>..<new>  main -> main` line), and from then on note
    `git -C "$MAIN" rev-parse --short origin/main` before each push (SKILL.md § Report).
    With `Push: none` or no `origin`, `old` is `main` before the batch's first merge (that
-   merge's first parent), and the line says `(local main)`.
+   merge's first parent), the header says `local only, not pushed`, and it carries no
+   pickup step.
+
+2. **One bullet per landed change**, a bold short title, then a colon and a short
+   statement of WHAT changed for the people and agents who use the repo — never a commit
+   subject or an item id. Leave out how the change was made or reviewed: no tiers,
+   models, review rounds, fix rounds or verdicts. Several items that make one visible
+   change share a bullet. Order the bullets by what the reader feels: the change most
+   people will notice first, invisible plumbing last.
+
+3. **One sub-bullet under each of those, two at most.** WHAT ONLY: an observable effect —
+   what a user or agent can now do, or notices behaving differently — never why it was
+   needed, how it works internally, its mechanism, its rationale, or the evidence behind
+   it. At most two short fragments per line, semicolon-separated, not full sentences, and
+   each fragment observable on its own — if it names a check, a stamp, a counter or
+   anything else the code does, it is HOW, not WHAT.
+
+4. **Maintenance and plumbing collapsed into ONE bullet**, marked `(maintenance)` —
+   tests, refactors, dependency bumps, store bookkeeping. No sub-bullet needed; if one is
+   useful, the same WHAT-only, two-fragment rule applies.
+
+5. **A closing line**: whether anything requires action on existing work — a rule people
+   now follow, a migration, a re-run of a setup step, a config written before this that
+   now needs an update — or `Nothing on existing work needs action.` This is distinct
+   from the header's pickup step, which is about picking up the change itself, not
+   fixing or adjusting something older.
 
 Rules that keep it pasteable:
 
-- **Never a table.** Tables paste badly into chat, email and phones. Also leave out
-  headings, nested bullets and bold.
+- **Never a table.** Tables paste badly into chat, email and phones. No headings.
+- Bold appears only on a bullet's title. Nesting goes one level deep — the WHAT-only
+  sub-bullet — and no deeper.
 - Put it in its own fenced `text` block, separate from the Report, so the operator can
   copy it exactly as written. The fence only marks what to copy; it is not part of the
   message.
 - Backticks only around a command a reader must type, where Slack and Teams, the main
-  targets, show it as code. Everywhere else write names plainly: in email or SMS the
-  backticks appear as literal characters.
-- Keep it short. If a bullet needs a second line, it is describing how the change was
-  made, not what changed.
+  targets, show it as code. Everywhere else write names plainly, including a commit
+  range: in email or SMS the backticks appear as literal characters.
+- Keep it short. A sub-bullet that needs a third fragment is carrying rationale or
+  mechanism — cut it back to WHAT.
 - Paths are fine. Secret values never appear, just as in the Report.
 
 ## Example
 
-A push that landed three items and changed plugin files:
+A push that landed three visible changes and a round of maintenance:
 
 ```text
-claude-plugins updates, pushed to main:
-- The librarian now reads plan quota before it dispatches, and slows down near a limit instead of stalling.
-- Checkpoints stamp their own time fields, so a resumed session no longer reads a fresh handoff as stale.
-- The agent panel shows how much context each sub-agent has left.
-What you need to do: run `/plugin marketplace update kmacmcfarlane`, then `/reload-plugins`.
-Commits: eda3422..71345aa
-```
-
-A docs tree with `Push: none`:
-
-```text
-handbook updates, local only, not pushed:
-- The onboarding page now covers laptop setup on Fedora.
-Nothing to do.
-Commits: 1a2b3c4..5d6e7f8 (local main)
+claude-plugins updates, pushed to main (eda3422..71345aa) — run `/plugin marketplace update kmacmcfarlane`, then `/reload-plugins`.
+- **Plan-usage pacing**: the librarian slows down near a plan limit instead of stalling.
+  - A wave with plenty of quota left runs full speed; a wave running low moves slower instead of stopping.
+- **Stable checkpoints**: a resumed session no longer treats a fresh handoff as stale.
+  - Resuming right after a checkpoint picks up right where it left off; no stale-handoff false alarm.
+- **Agent panel context**: each sub-agent's status line now shows how much context it has left.
+  - Shows per agent in the agent panel; updates as the agent works.
+- **Housekeeping** (maintenance): dependency bumps and test cleanup across three plugins.
+Nothing on existing work needs action.
 ```
