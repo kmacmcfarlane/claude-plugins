@@ -560,7 +560,11 @@ def status():
         print(f"  {name}: skipped ({why})")
     rec, why = R.read_wrap([os.getcwd(), os.environ.get("CLAUDE_PROJECT_DIR")])
     if rec:
-        print(f"wrap: {'running' if rec['running'] else 'kept, not running'} - the "
+        if not R.wrap_applies(rec):  # run_inner refuses it; never claim it runs
+            state = "kept, not run (not the user settings file)"
+        else:
+            state = "running" if rec["running"] else "kept, not running"
+        print(f"wrap: {state} - the "
               f"statusLine that was in {rec['settings']} (timeout {INNER_MAX_MS} ms, "
               f"stderr in {os.path.join(R.log_dir(), INNER + '.log')})")
     elif why != "missing":
