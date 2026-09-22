@@ -61,3 +61,5 @@ review r2 (opus) on fbdd08b: NEEDS_CHANGES. §1–§3, §5 clean; strict YAML no
 - N6 [low] storage…:43 — "create .claude-sandbox/research/" contradicts untracked-only rule.
 - N7 [low] 5aef0dd subject (F21 carried).
 dispatch: fix round 2 → implementer = peer agent-research
+fix r2 (peer agent-research): b4e0fb4 — N1–N6 fixed; N7 carried (no amend).
+dispatch: reviewer opus — review r3 (resume reviewer on b4e0fb4)
