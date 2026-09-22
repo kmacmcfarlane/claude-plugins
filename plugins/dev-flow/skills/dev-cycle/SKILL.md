@@ -69,9 +69,7 @@ Modes:
   the fix loop as `full` does.
 
 There is no land-only mode: Land is the tail of `full` and `review <branch>`, and runs
-only on a `CLEAR` recorded against the current HEAD sha. Resuming an interrupted run
-starts from the item's record (Step 0.4, `references/bindings.md` § Resume) rather than
-from Step 1.
+only on a `CLEAR` recorded against the current HEAD sha.
 
 ## Step 0: Resolve the run
 
@@ -105,13 +103,7 @@ from Step 1.
    `references/bindings.md` § Review target, and claims a named item here too (Step 3 is
    skipped): `$WI claim <id>` when it is not already yours.
 
-4. **Resume**, when the record sink already carries any record line for this target — a
-   rerun after an interrupt: evaluate `references/bindings.md` § Resume in order, first
-   match wins, and continue from what it says instead of restarting at Step 1. `plan`
-   mode differs only in how it reads a `CLEAR`, per that section's rule 4.
-
-Expected output: one short paragraph — target, mode, base, checks, record sink, and,
-on a resume, which step it resumes at and why.
+Expected output: one short paragraph — target, mode, base, checks, record sink.
 
 ## Step 1: Plan (when needed)
 
@@ -182,8 +174,7 @@ re-dispatch or resume with findings = review round n+1; cap 4 review rounds.
    background `general-purpose` agent with the routed `model`.
 4. **Return contract**: `STATUS` (`DONE` | `DONE_WITH_CONCERNS` | `NEEDS_CONTEXT` |
    `BLOCKED`) and the report shape in the brief.
-5. **On return**: record `return: <role> <STATUS> <sha>` (`references/bindings.md`
-   § Record line shapes), then merge its CHANGED into the record sink's cumulative
+5. **On return**: merge its CHANGED into the record sink's cumulative
    `changed:` block (`references/bindings.md` § Undeclared files). `DONE` and
    `DONE_WITH_CONCERNS` go to Step 4. `NEEDS_CONTEXT`: record the answer as an
    `answer:` line (`references/bindings.md` § Record line shapes), re-dispatch with it,
@@ -262,8 +253,7 @@ Only after a `CLEAR` recorded against the current HEAD.
    `git branch -d` the branch. A dirty worktree is never removed: report it and ask.
    `review <branch>` mode never deletes `<branch>` and removes only a worktree this cycle
    added itself (`references/bindings.md` § Landing).
-5. **Close the item**: record `landed: <merge sha>` (`references/bindings.md` § Record
-   line shapes), then `$WI done <id> --note <merge-sha>`; for `Leave the branch`,
+5. **Close the item**: `$WI done <id> --note <merge-sha>`; for `Leave the branch`,
    `$WI handoff <id>` with `--next` naming the branch.
 
 A red check or a doctrine miss stops the landing: `$WI handoff <id> --blocked "<what>"`

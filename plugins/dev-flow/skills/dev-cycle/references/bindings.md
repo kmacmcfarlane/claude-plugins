@@ -128,30 +128,22 @@ wrote one.
 
 ## Record line shapes
 
-Fixed shapes a resume (§ Resume) parses back out of the record sink; every step that
-writes one uses this exact shape, so a resume never has to guess. Read them in the order
-they appear in the record sink — the record is a log, and § Resume acts on its **last**
-line, not the first match anywhere in it:
+Fixed shapes for the lines the steps append to the record sink; every step that writes
+one uses this exact shape. The record is a log, read in the order it was written:
 
 - `dispatch: <role> <model> — <signal>` — SKILL.md § Step 2 rule 7, written before every
   dispatch (implementer or reviewer)
-- `return: <role> <STATUS> <sha>` — SKILL.md § Step 3.5, written as soon as an
-  **implementer's** report comes back; `<sha>` is its COMMIT. A reviewer's return is its
-  `verdict:` line below — it never gets a separate `return:` of its own.
 - `verdict: <V> round <n> at <sha>` — SKILL.md § Step 4.5, written as soon as a
-  **reviewer's** report comes back, and counts as that dispatch's return. `<n>` is the
-  review round, counted only for `CLEAR`, `NEEDS_CHANGES` and `SHOW_STOPPER` (§ Resume
-  rule 6 excludes `BLOCKED` from the count, since it never reached a verdict on the
-  change). `<sha>` is the HEAD reviewed for a change; for a **plan-mode** review, in its
-  place: `at <series path>` (the review covers the whole series, not one sha) — a
-  finding's own file:line still names the serial.
+  **reviewer's** report comes back. `<n>` is the review round, counted only for
+  `CLEAR`, `NEEDS_CHANGES` and `SHOW_STOPPER` — a `BLOCKED` never reached a verdict on
+  the change, so it is never a round (`review-brief.md` § Verdict meanings). `<sha>` is
+  the HEAD reviewed for a change; for a **plan-mode** review, in its place:
+  `at <series path>` (the review covers the whole series, not one sha) — a finding's own
+  file:line still names the serial.
 - `findings: …` — SKILL.md § Step 4.5, written together with a `NEEDS_CHANGES` or
   `SHOW_STOPPER` verdict: the reviewer's FINDINGS section, pasted verbatim, one line per
-  finding in the reviewer's own numbering. § Resume rule 5 hands this block to the fix
-  dispatch unchanged — it is the source `fix-loop.md`'s NEEDS_CHANGES round reads from.
-- `landed: <merge sha>` — SKILL.md § Step 5.5, written once Land's merge succeeds, before
-  `$WI done`/`$WI handoff`. § Resume checks this first (rule 1): its presence means the
-  target already landed, full stop.
+  finding in the reviewer's own numbering — the source `fix-loop.md`'s NEEDS_CHANGES
+  round hands to the fix dispatch unchanged.
 - `target: <branch> <worktree path>` — § Review target, `review <branch>` mode only
 - `intent: <one line>` — § Intent, `review <branch>` mode with no item or plan
 - `decision: <one line>` — § Decisions, written before a decision is raised
@@ -160,7 +152,7 @@ line, not the first match anywhere in it:
   `decision:` line's text (or, for a `NEEDS_CONTEXT`, the question). A caller's numbered
   pair — librarian-mode's `decision N: …` and `answer N: <reply>`, matched by `N` — is
   the same pair and is read the same way. A `decision:` with no matching `answer:` is
-  unanswered.
+  unanswered, and an answered one is never raised again.
 - `checks:`, the `changed:` block — §§ Checks, Undeclared files
 
 ## Checks
@@ -210,115 +202,12 @@ go as one numbered prose list — one decision per number, each with its options
 impact, recommendation first — so the user answers by number. Never in the same turn as a
 heavy analysis: end the turn with the analysis and ask in the next. Append each raised
 decision to the record sink as `decision: <one line>` before asking, and the reply as
-`answer: <decision> — <reply>` (§ Record line shapes) as soon as it arrives — the line
-§ Resume reads to tell an answered decision from an unanswered one.
+`answer: <decision> — <reply>` (§ Record line shapes) as soon as it arrives.
 
 ## Resume
 
-Step 0.4 reads the record sink for a target that already carries any record line
-(§ Record line shapes), before any dispatch of its own — a rerun of a target that was
-interrupted, whether by the session ending, a `BLOCKED` handoff, or the operator stopping
-it. **A scratchpad record sink cannot resume across sessions that do not share a
-scratchpad**: a fresh session's scratchpad is empty, so a store-less target only resumes
-within the session that wrote it, or one that inherits the same scratchpad.
-
-Read the record sink in order and act on its **last** relevant line — not the first one
-anywhere in it that a rule happens to match. The relevant lines are `dispatch:`,
-`return:`, `verdict:` and `landed:`; a `findings:`, `decision:`, `answer:`, `checks:`,
-`target:`, `intent:` or `changed:` line after them never displaces them as "the last
-line", though rules 3–7 read them. A decision is **answered** when its `answer:` line
-(§ Record line shapes) is recorded, and it is acted on as that answer says, exactly as the
-step that raised it would have; an answered decision is never raised again.
-
-**The cap test**, the one rules 4–6 use. Count the `verdict:` lines that are rounds —
-`CLEAR`, `NEEDS_CHANGES` or `SHOW_STOPPER`, never `BLOCKED` — leaving out only a `CLEAR`
-that is still current (its `<sha>` is the worktree's HEAD; plan mode: every serial still
-matches its baseline). A stale `CLEAR` is a round like any other. Fewer than 4: **under
-the cap**. 4 or more: **the cap is hit** — SKILL.md § Step 4.3's "a fourth without
-`CLEAR`", since a stale `CLEAR` is no `CLEAR` of the change as it stands. An answered
-waiver never changes the count: rule 6 acts on it, and the next round's verdict hits the
-cap again, as a new decision.
-
-Evaluate in this order; the first that applies wins:
-
-1. **A `landed: <merge sha>` line anywhere.** The target already landed: stop and report
-   "already landed". Never re-dispatch, never re-run Land.
-2. **The last line is a `dispatch:` with nothing recorded after it** (no matching
-   `return:` or `verdict:` — the run stopped mid-dispatch, before the agent reported
-   back, or while it was still working): before re-dispatching, check whether that agent
-   is still running — `ListAgents`, and `SendMessage` to it if one matches this target —
-   rather than assume it died; a still-running agent is left to finish, never
-   duplicated. Only when none is found: treat the dispatch as never sent and re-dispatch
-   at the same role, tier and round, briefing the new agent with the worktree's current
-   HEAD (it may have moved since the stale dispatch was recorded).
-3. **The last line is an implementer's `return:`, with no reviewer `dispatch:` after
-   it** (the implementer reported back but the run stopped before reviewing it). Its
-   `<STATUS>` decides:
-   - `DONE` or `DONE_WITH_CONCERNS`: resume at Step 4 and dispatch a reviewer. Use the
-     re-review variant when a prior `verdict:` already exists for this target (this is a
-     fix round); otherwise the full review-brief.
-   - `NEEDS_CONTEXT` or `BLOCKED`: never a review. Resume at SKILL.md § Step 3.5 for that
-     status, reading the `answer:` lines recorded after this `return:`. `NEEDS_CONTEXT`:
-     answered → re-dispatch with that answer (at least opus); unanswered → get the answer
-     first and record it as an `answer:` line. `BLOCKED`: answered → act on the answer;
-     unanswered → `$WI block` when there is an item and raise it through the decision
-     channel, unless its `decision:` is already recorded, in which case wait for it.
-4. **The last line is `verdict: CLEAR round <n> at <sha>`.** A `verdict:` line counts as
-   the reviewer's own return — rule 2 above already covers an unanswered reviewer
-   dispatch, so a recorded `CLEAR` always has one. Compare `<sha>` — or, for a
-   **plan-mode** target, the sha256 baseline (`sha256sum <series>/[0-9][0-9]_*.md`,
-   `review-brief.md` § Plan-review variant) — against the current state; this is the
-   only place plan mode reads differently, everything else above and below applies to it
-   unchanged:
-   - **Unchanged** (the worktree's HEAD still matches `<sha>`, `git -C <worktree path>
-     rev-parse HEAD`; plan mode: every serial's hash still matches its recorded baseline):
-     skip straight to Step 5 (`full` and `review <branch>`), or, `plan` mode — there is
-     no Step 5 to land into — straight to the decision channel for any blocking open
-     questions, then Step 6.
-   - **Changed** (a human pushed a fix, a dispatch whose `return:`/`verdict:` the
-     interrupted run never recorded, or a written serial edited after the fact): the
-     recorded `CLEAR` is stale. Under the cap: resume at Step 4 with a fresh review
-     dispatch — the full brief, not the re-review variant, since this reviews work the
-     last `CLEAR` never saw. The cap hit: rule 6.
-5. **The last line is `verdict: NEEDS_CHANGES round <n> ...`, and the cap test says under
-   the cap** (this verdict counted): resume at Step 4 as a fix round. Dispatch the
-   implementer with the `findings:` block recorded alongside that verdict, verbatim, per
-   the fix loop. A `NEEDS_CHANGES` that brings the count to 4 hits the cap and falls to
-   rule 6 instead — the cap is checked before a new fix round is opened.
-   **`review <branch>` mode dispatches onto the author's branch only on a recorded yes**
-   — an `answer:` of yes to SKILL.md Usage's "dispatch an implementer for the findings?"
-   `decision:`. Answered no: take Usage's declined path (report the findings in Step 6;
-   `$WI handoff <id>` noting they went back to the branch's author, when there is an
-   item, no item: nothing further; stop; nothing lands). Unanswered — no such `decision:`
-   line, or one with no `answer:`: raise it through the decision channel now (when it is
-   already recorded, wait for it instead), and dispatch nothing until it is answered
-   yes.
-6. **The last line is `verdict: SHOW_STOPPER ...`, or the cap test says the cap is hit**:
-   do not re-dispatch on the verdict alone. Read the `decision:` recorded after that last
-   `verdict:` and its `answer:`. Answered → act on the answer exactly as Step 4.4 (or,
-   for `review <branch>` mode's dispatch ask, Usage) would have — a waiver opens the fix
-   round it grants, a park or block stops. Recorded but unanswered → wait for it. None
-   recorded → raise it through the decision channel now, exactly as Step 4.4 would.
-7. **The last line is `verdict: BLOCKED`** (a reviewer that could not start,
-   `review-brief.md` § Verdict meanings): re-dispatch it with the setup fixed — twice at
-   most, counting the consecutive `verdict: BLOCKED` lines since the last other
-   `verdict:`. A third `BLOCKED`, or any `BLOCKED` on a permission denial
-   (`fix-loop.md` § The verdicts), is not re-dispatched: `$WI block` (when there is an
-   item) and raise it through the decision channel — when its `decision:` is already
-   recorded, wait for its `answer:`, and act on that answer once recorded. Not a round —
-   it does not count toward the cap.
-8. **No `dispatch:`, `return:` or `verdict:` line**, but a `checks:`, `target:`,
-   `intent:`, `decision:`, `answer:` or `changed:` line already recorded: start at
-   Step 1 (Step 0 for `review <branch>` mode), using those recorded bindings instead of
-   re-resolving or re-asking them.
-9. **No record at all**: start at Step 1 as normal; there is nothing to resume.
-
-`review <branch>` and `plan` targets never share a record sink, so a `verdict:` line is
-never ambiguous about which shape (sha or series path) it carries.
-
-A resumed run never repeats a question the record sink already answers, and never
-re-dispatches a round that already returned — only one that never returned, or the next
-one the last recorded state calls for.
+Resuming an interrupted run is not specified yet; see work item
+dev-cycle-design-resume-whole-split-from-e770.
 
 ## Landing
 
