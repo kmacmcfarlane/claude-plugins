@@ -20,12 +20,17 @@ then this session's. A `continue` or `landed` manifest is never adopted; a
 partial Read, `cat` or `grep` looks without adopting. Skipped inside a
 subagent (`agent_id` present), whose Read is not the main session's.
 
+The same PostToolUse(Read) also follows a rehydrated manifest's "Read in
+full" list through (read_list.mark_read): a whole-file Read of a listed path,
+by realpath, marks it read; context_warn.py names the unread ones once.
+
 The version is lib_context.manifest_sha of the raw text, the same function
 rehydrate.py uses. Never blocks, never raises: prints {} and exits 0.
 """
 import json, os, sys, time
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import lib_context as L
+import read_list
 
 MANIFEST_NAME = "HANDOFF.md"
 
@@ -104,6 +109,10 @@ def main():
     if ev == "SessionEnd":
         session_end(inp)
     elif ev == "PostToolUse":
+        try:
+            read_list.mark_read(L, inp)
+        except Exception:
+            pass
         post_read(inp)
 
 

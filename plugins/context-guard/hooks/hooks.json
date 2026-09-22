@@ -1,5 +1,5 @@
 {
-  "description": "context-guard: context guardrails — epoch-aware depth gate (advisory/DUE/HARD in remaining tokens), defer-while-proactive compaction gate, Stop relay + reasoning-ledger nudge, free ledger pointers, the current-hooks symlink (stable path for mark_checkpoint.py), the manifest lineage (SessionEnd(clear) links a /clear successor; a whole-file Read of a handoff manifest adopts it), and the window mirror's SessionStart/PostModelSwitch bookkeeping.",
+  "description": "context-guard: context guardrails — epoch-aware depth gate (advisory/DUE/HARD in remaining tokens), defer-while-proactive compaction gate, Stop relay + reasoning-ledger nudge, free ledger pointers, the current-hooks symlink (stable path for mark_checkpoint.py), the manifest lineage (SessionEnd(clear) links a /clear successor; a whole-file Read of a handoff manifest adopts it, and of a rehydrated manifest's Read-in-full path marks it read; the next prompt names the unread ones once), and the window mirror's SessionStart/PostModelSwitch bookkeeping.",
   "hooks": {
     "UserPromptSubmit": [
       {
