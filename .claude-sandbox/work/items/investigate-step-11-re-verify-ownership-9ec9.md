@@ -30,3 +30,9 @@ return: implementer DONE 11dfe3b
 changed: plugins/dev-flow/skills/investigate/references/open-question-sweep.md
 dispatch: reviewer opus — rule 4 floor (impl sonnet)
 agent: reviewer acd23d54846fa4f06 round 1
+verdict: NEEDS_CHANGES round 1 at 11dfe3b
+findings:
+- [medium] open-question-sweep.md:14-15 — re-check target is "current HEAD and the README catalog" with no fallback; investigate runs in any repo. Pass: the repo's ownership record generically (README catalog, CODEOWNERS, a CLAUDE.md placement table), else the owning code at HEAD (git log on its path).
+- [low] :13 "an earlier round" overloaded — pass: "recorded earlier in this investigation (an earlier serial of the series, or an earlier step of this pass)".
+- [nit] :14 "current HEAD" — which repo/branch: "current HEAD of the repo that owns the neighbour (its base branch)".
+dispatch: implementer sonnet — fix round 1 (resume)

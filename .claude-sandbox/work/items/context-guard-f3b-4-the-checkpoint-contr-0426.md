@@ -2,13 +2,12 @@
 id: context-guard-f3b-4-the-checkpoint-contr-0426
 title: "context-guard F3b-4: the checkpoint contract (continue|handoff, printed path, commands, opener, next_skill)"
 type: feature
-status: doing
+status: done
 priority: 1
 parent: context-guard-8cc2-f3b-where-handoff-md-a49b
-owner: unknown@bf9f9839222c
-claimed: 2026-09-22T22:11Z
 created: 2026-09-22
 updated: 2026-09-22
+closed: 2026-09-22
 refs:
   - a49b
 ---
@@ -53,3 +52,9 @@ findings:
 - [low] operator-playbook.md:150-163 — allow rules are literal prefix matches; add "run the command exactly as printed".
 notes: round-1 medium closed end to end; install safety verified by hand; successor Read prompt acceptable (interactive).
 dispatch: implementer opus — fix round 2 (resume)
+return: implementer DONE eb400fa
+dispatch: reviewer opus — review r3 (resume); last round before the cap
+verdict: CLEAR round 3 at eb400fa
+nits declined by the librarian: future-dated draft mtime (the Write tool always sets now); written: records install time (immaterial to tiers)
+landed: 48a4bae
+- 2026-09-22 done: 48a4bae
