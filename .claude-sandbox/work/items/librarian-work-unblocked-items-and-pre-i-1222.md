@@ -45,3 +45,4 @@ decision 52: push of main rejected — origin/main has eda3422 (operator, GitHub
 - G6: phase 1 simple with expectations of the operator's own quota need; later phases e.g. vacation mode at the top end.
 - G1, G2, decision 52: deferred — operator wants more thinking from me first. Context at ~50%: no deep research.
 - New standard: every message ends with a two-line recap (recap; operator's next steps). Lettered+numbered lists stay.
+- agents librarian filed 374f (comms standards) and 8ad9 (multi-agent budget coordination, blocked on this series path); points at claude-analytics investigations/agent-telemetry: a status-line quota sampler (record hook on statusline-hub) is already designed there — F1 must read its sink when present rather than sample twice.
