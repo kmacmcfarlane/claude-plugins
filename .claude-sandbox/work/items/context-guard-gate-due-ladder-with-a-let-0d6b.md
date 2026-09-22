@@ -17,3 +17,4 @@ Relayed 2026-09-22 from the agents store (gate-due-ladder-offer-let-it-ride-re-a
 - next: —
 - blocked: —
 - learned: —
+- see also: agents decision 0007 corrects the compaction facts 0004 stated (item filed for the context-guard text).
