@@ -25,3 +25,5 @@ answer 58: (a) confirm both: librarian-mode stops using AskUserQuestion (P1); on
 ## Notes
 - 2026-09-22 claimed by unknown@360f41058e92
 dispatch: implementer opus — custody rule change across librarian-mode SKILL.md + references and dev-cycle (likely > 3 files; doctrine for decisions)
+impl r0 DONE 6b536a1 (opus): Intake step 3 — every decision numbered, never AskUserQuestion (reason stated; opt-in excepted); Red flags line; opt-in.md: only modal, runs before any dispatch, ListAgents first (agent running → numbered decision instead); walkthroughs, idle-turn, first-start, troubleshooting reworded; ending-the-session.md: librarian answers checkpoint Step 0 Q2 itself (no modal at 75%/DUE). SKILL.md 2104 → 2131 words. OQs: dev-cycle § Decisions, investigate Step 11, implement Step 6 and checkpoint Step 0 can ask modally with agents in flight.
+dispatch: reviewer opus — rule 4
