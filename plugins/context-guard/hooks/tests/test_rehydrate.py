@@ -219,6 +219,151 @@ class TestRehydrate(unittest.TestCase):
         self.assertIn(".claude-sandbox", self.ctx(out))
 
 
+class TestLegacyArmMatchesMain(unittest.TestCase):
+    """8cc2-F3b-1's regression guard (06 § Acceptance scoping): for an
+    UNMIGRATED repo — a repo HANDOFF.md and no store manifest anywhere — the
+    injected block is byte-for-byte what `main` produces, for every source and
+    every ownership arm, after removing the single legacy_notice line. The
+    notice is asserted on its own, below. Skipped where the `main` ref or git
+    is unavailable."""
+
+    REL = "plugins/context-guard/hooks"
+    SOURCES = ("startup", "resume", "compact", "clear", "fork")
+    # the three ownership arms the legacy path still decides, and the two
+    # modes that take different tiers
+    OWNERS = ("own", "none", "peer")
+    MODES = ("continue", "landed")
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.repo = self.tmp.name
+        for c in (["init", "-q"], ["commit", "-q", "--allow-empty", "-m", "x"]):
+            subprocess.run(["git", "-C", self.repo, "-c", "user.email=t@t",
+                            "-c", "user.name=t"] + c, check=True, capture_output=True)
+        self.head = subprocess.run(["git", "-C", self.repo, "rev-parse", "--short", "HEAD"],
+                                   capture_output=True, text=True).stdout.strip()
+        self.manifest()
+        self.tp = os.path.join(self.repo, "child.jsonl")
+        with open(self.tp, "w") as fh:
+            fh.write(json.dumps({"type": "user", "sessionId": "parent-sid"}) + "\n")
+        self.old_env = os.environ.get("CLAUDE_CONFIG_DIR")
+        self.base = self.checkout_main()
+
+    def tearDown(self):
+        self.tmp.cleanup()
+        if self.old_env is None:
+            os.environ.pop("CLAUDE_CONFIG_DIR", None)
+        else:
+            os.environ["CLAUDE_CONFIG_DIR"] = self.old_env
+
+    def manifest(self, owner="own", mode="continue"):
+        """The repo manifest of the old layout. `owner`: this session's id
+        (own), no `session:` line at all (none — a hand-written manifest is
+        everyone's), or another session's (peer — the foreign header)."""
+        text = MANIFEST.format(
+            written=time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+            head=self.head, mode=mode, scrolls="- x.md — notes")
+        if owner == "none":
+            text = text.replace("session: s\n", "")
+        elif owner == "peer":
+            text = text.replace("session: s\n", "session: other-session\n")
+        with open(os.path.join(self.repo, "HANDOFF.md"), "w") as fh:
+            fh.write(text)
+
+    def git(self, *args):
+        # From the repo TOP: `<rev>:<path>` is read relative to the current
+        # prefix in a subdirectory, and would silently resolve to nothing.
+        top = subprocess.run(["git", "-C", HOOKS, "rev-parse", "--show-toplevel"],
+                             capture_output=True, text=True)
+        if top.returncode != 0:
+            raise unittest.SkipTest("not a git checkout")
+        p = subprocess.run(["git", "-C", top.stdout.strip()] + list(args),
+                           capture_output=True, text=True)
+        if p.returncode != 0:
+            raise unittest.SkipTest(f"git {args[0]} unavailable here: {p.stderr.strip()}")
+        return p.stdout
+
+    def checkout_main(self):
+        """main's copy of the hooks, in a directory of its own."""
+        d = tempfile.TemporaryDirectory()
+        self.addCleanup(d.cleanup)
+        for name in self.git("ls-tree", "--name-only", f"main:{self.REL}").split():
+            if name.endswith(".py"):
+                with open(os.path.join(d.name, name), "w") as fh:
+                    fh.write(self.git("show", f"main:{self.REL}/{name}"))
+        if not os.path.exists(os.path.join(d.name, "rehydrate.py")):
+            raise unittest.SkipTest("no rehydrate.py on main")
+        return d.name
+
+    def inject(self, hooks, source, cfg):
+        """(additionalContext, systemMessage) from `hooks`' rehydrate.py, with
+        its own fresh config dir so both sides see the same empty state."""
+        os.environ["CLAUDE_CONFIG_DIR"] = cfg
+        import ledger
+        ledger.append("s", "R", "rejected the obvious fix")
+        payload = {"session_id": "s", "source": source, "cwd": self.repo}
+        if source == "fork":
+            payload["transcript_path"] = self.tp
+        p = subprocess.run([sys.executable, os.path.join(hooks, "rehydrate.py")],
+                           input=json.dumps(payload), capture_output=True,
+                           text=True, env=dict(os.environ, CLAUDE_CONFIG_DIR=cfg),
+                           timeout=30)
+        self.assertEqual((p.returncode, p.stderr), (0, ""), source)
+        out = json.loads(p.stdout) if p.stdout.strip() else {}
+        return ((out.get("hookSpecificOutput") or {}).get("additionalContext", ""),
+                out.get("systemMessage"))
+
+    def notice(self, cfg):
+        os.environ["CLAUDE_CONFIG_DIR"] = cfg
+        sys.path.insert(0, HOOKS)
+        import rehydrate as R
+        return R.legacy_notice("s", os.path.join(self.repo, "HANDOFF.md"))
+
+    def test_every_source_and_arm_matches_main_once_the_notice_is_removed(self):
+        for owner in self.OWNERS:
+            for mode in self.MODES:
+                self.manifest(owner, mode)
+                for source in self.SOURCES:
+                    with self.subTest(owner=owner, mode=mode, source=source), \
+                            tempfile.TemporaryDirectory() as a, \
+                            tempfile.TemporaryDirectory() as b:
+                        was, wmsg = self.inject(self.base, source, a)
+                        now, nmsg = self.inject(HOOKS, source, b)
+                        self.assertIn("\n\n" + self.notice(b), now)
+                        # Stripped from both sides, so the guard still reads
+                        # "the legacy arm behaves as main's" once this change
+                        # IS main.
+                        self.assertEqual(now.replace("\n\n" + self.notice(b), "", 1),
+                                         was.replace("\n\n" + self.notice(a), "", 1))
+                        self.assertEqual(nmsg, wmsg)
+                        self.assertTrue(was)
+
+    def test_the_arms_really_are_different_injections(self):
+        """The parameters above discriminate: without this the cross product
+        could be six copies of one tier."""
+        seen = {}
+        for owner in self.OWNERS:
+            for mode in self.MODES:
+                self.manifest(owner, mode)
+                with tempfile.TemporaryDirectory() as cfg:
+                    seen[(owner, mode)] = self.inject(HOOKS, "compact", cfg)[0]
+        self.assertIn("Precedence:", seen[("own", "continue")])
+        self.assertIn("(not this session)", seen[("peer", "continue")])
+        self.assertIn("Precedence:", seen[("none", "continue")])   # everyone's
+        self.assertIn("LANDED", seen[("own", "landed")])
+        self.assertEqual(len(set(seen.values())), len(seen))
+
+    def test_the_notice_names_both_paths_and_fires_once(self):
+        with tempfile.TemporaryDirectory() as cfg:
+            first, _ = self.inject(HOOKS, "startup", cfg)
+            again, _ = self.inject(HOOKS, "startup", cfg)
+        n = self.notice(cfg)
+        self.assertIn(os.path.join(self.repo, "HANDOFF.md"), n)
+        self.assertIn(os.path.join("claude-kit", "handoff", "s", "HANDOFF.md"), n)
+        self.assertEqual(first.count(n), 1)
+        self.assertNotIn(n, again)
+
+
 class TestForkAdoption(TestRehydrate):
     def test_fork_adopts_parent_ledger_and_instructions(self):
         ledger.append("parent-sid", "X", "rejected the obvious fix")

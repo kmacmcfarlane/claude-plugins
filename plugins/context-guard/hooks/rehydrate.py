@@ -40,8 +40,25 @@ shown (MODE_SKILL_RE): the header speaks in the hook's voice, and the manifest
 is repo-committed text.
 No manifest and nothing to say -> {} (silent).
 
-Those tiers apply only to a manifest that is OURS (is_ours). Ownership names a
-manifest VERSION, {owner: its `session:`, sha: L.manifest_sha(raw text)}:
+WHICH manifest is this session's memory is resolve_manifest's question, and
+the answer is one file per session, at
+${CLAUDE_CONFIG_DIR:-~/.claude}/claude-kit/handoff/<safe_sid>/HANDOFF.md
+(L.manifest_path). First hit wins: own (that path exists - ours by the path,
+no comparison), inherited (the newest lineage entry whose pin still seals its
+session's store manifest), adopted (the same for manifest_adopted), legacy
+(the repo file of the old layout, read LIVE and READ-ONLY - nothing here ever
+writes, rewrites or deletes it), else none. A pin is a seal, not an address:
+the linked session id says which file to read, the pin says whether it is
+still the version promised, and a pin that no longer seals is skipped. Every
+derived check (head, dead claims, dirty count, Read-in-full paths) runs against
+the repo the manifest records in `top:`, else the cwd's toplevel (resolve_top).
+
+Those tiers apply only to a manifest that is OURS. own, inherited and adopted
+are ours by construction; the legacy repo file, which every session in the repo
+can see, is still decided by is_ours on the bytes read this SessionStart, so an
+unmigrated repo behaves exactly as it did before the store existed (plus one
+legacy_notice line, once per session). Ownership names a manifest VERSION,
+{owner: its `session:`, sha: L.manifest_sha(raw text)}:
   - no `session:` (hand-written): everyone's, as before this rule;
   - `session:` is this session: every version;
   - the exact version a lineage link pinned: the /clear predecessor
@@ -129,12 +146,29 @@ def git(cwd, *args, ok=False):
         return None
 
 
-def manifest_path(cwd):
-    top = git(cwd, "rev-parse", "--show-toplevel") or cwd
+_top_cache = {}
+
+
+def git_top(cwd):
+    """The cwd's git toplevel, else the cwd. Cached for this process (one
+    SessionStart), because the legacy arm and resolve_top would otherwise pay
+    for the same `rev-parse --show-toplevel` twice."""
+    if cwd not in _top_cache:
+        _top_cache[cwd] = git(cwd, "rev-parse", "--show-toplevel") or cwd
+    return _top_cache[cwd]
+
+
+def legacy_manifest_path(cwd):
+    """The repo manifest of the OLD layout: <top>/.claude-sandbox/HANDOFF.md,
+    else <top>/HANDOFF.md, plus the git toplevel. Read live and read-only:
+    nothing here ever writes, rewrites or deletes it (8cc2-F3b). Named
+    `legacy_` so no caller confuses it with L.manifest_path(sid), the store
+    path of a session's own manifest."""
+    top = git_top(cwd)
     for base in (os.path.join(top, ".claude-sandbox"), top):
         if base.endswith(".claude-sandbox") and not os.path.isdir(base):
             continue
-        p = os.path.join(base, "HANDOFF.md")
+        p = os.path.join(base, L.MANIFEST_NAME)
         if os.path.exists(p):
             return p, top
     return None, top
@@ -789,14 +823,15 @@ def fork_parent(sid, transcript_path):
     return parent if isinstance(parent, str) and parent else None
 
 
-def adopt_fork_state(sid, transcript_path, version=None):
+def adopt_fork_state(sid, transcript_path, cwd=None):
     """A fork/branch gets a new session id, orphaning the parent's ledger and
     staged /compact guidance (Bug B, live-fired 2026-08-31 via /branch): copy
     them over unless this session already has its own ledger. Also link the
     child to its parent (state `lineage`), once, even when the ledger exists:
-    the parent first, pinning the manifest `version` on disk now only if it
-    was the parent's own (L.owned_version, with the parent's state), then the
-    parent's lineage. Returns the parent, or None."""
+    the parent first, pinning the version on disk now of the PARENT'S OWN
+    manifest (own_manifest: its store file, else the legacy repo file) only if
+    it was the parent's own (L.owned_version, with the parent's state), then
+    the parent's lineage. Returns the parent, or None."""
     if not transcript_path or not os.path.exists(transcript_path):
         return None
     has_ledger = os.path.exists(L.ledger_path(sid))
@@ -818,6 +853,8 @@ def adopt_fork_state(sid, transcript_path, version=None):
                 L.update_state(sid, lambda st: st.setdefault(
                     "custom_instructions", pst["custom_instructions"]))
         if not has_lineage:
+            p, t = own_manifest(parent, cwd or os.getcwd())
+            version = manifest_version(t) if p else None
             pin = version if L.owned_version(pst, parent, version) else None
             lin = L.linked_lineage(parent, pin, pst.get("lineage"))
             L.update_state(sid, lambda st: st.setdefault("lineage", lin))
@@ -886,17 +923,138 @@ def is_ours(st, sid, v):
     return not v["owner"] or L.owned_version(st, sid, v)
 
 
-def read_manifest(cwd):
-    """(path, top, raw text or None). The raw text, read with
-    errors="replace", is what manifest_sha hashes."""
-    path, top = manifest_path(cwd)
-    if not path:
-        return None, top, None
+def read_text(path):
+    """A file's raw text, read with errors="replace" - what manifest_sha
+    hashes - or None when it cannot be read."""
     try:
         with open(path, errors="replace") as fh:
-            return path, top, fh.read()
+            return fh.read()
     except Exception:
+        return None
+
+
+def read_manifest(cwd):
+    """(path, top, raw text or None) for the LEGACY repo manifest. The raw
+    text, read with errors="replace", is what manifest_sha hashes."""
+    path, top = legacy_manifest_path(cwd)
+    if not path:
         return None, top, None
+    text = read_text(path)
+    return (path, top, text) if text is not None else (None, top, None)
+
+
+def read_store_manifest(sid):
+    """(path, raw text) of `sid`'s own per-session manifest, or (None, None)."""
+    p = L.manifest_path(sid)
+    if not os.path.exists(p):
+        return None, None
+    text = read_text(p)
+    return (p, text) if text is not None else (None, None)
+
+
+def own_manifest(sid, cwd):
+    """The manifest a PIN SITE reads for session `sid`: its own store file when
+    it exists, else the legacy repo manifest. (path, text) or (None, None).
+
+    All four pin sites resolve this way - SessionEnd(clear) (lineage.py), fork
+    (adopt_fork_state), Read adoption (lineage.py) and the successor's
+    inheritance (resolve_manifest). A site that resolved differently from the
+    site that will read its pin would be a silent break."""
+    p, t = read_store_manifest(sid)
+    if p:
+        return p, t
+    path, _top, text = read_manifest(cwd)
+    return (path, text) if path else (None, None)
+
+
+def _sealed(author, pin):
+    """(path, text) of `author`'s store manifest when its version on disk NOW
+    is exactly the pin {owner, sha}; None otherwise. A pin is a seal, not an
+    address: the linked session id says which file to read, and the pin only
+    says whether it is still the version that was promised."""
+    want = L._version(pin)
+    if want is None or not isinstance(author, str) or not author:
+        return None
+    p, t = read_store_manifest(author)
+    if not p or manifest_version(t) != want:
+        return None
+    return p, t
+
+
+def resolve_manifest(st, sid, cwd):
+    """Which manifest is this session's memory: (path, text, kind, author),
+    first hit wins, else (None, None, None, None).
+
+      own        L.manifest_path(sid) exists. Ours by the PATH - no sha and no
+                 owner comparison; this is the common case.
+      inherited  the newest lineage entry whose pinned {owner, sha} still is
+                 the version of that ENTRY'S SESSION's store manifest. The
+                 lookup is e["sid"], the session the link names, never the
+                 pin's `owner` (frontmatter content, which during migration
+                 can name a session that never wrote a store manifest).
+      adopted    the same, for manifest_adopted["sid"] - the store manifest
+                 this session read in full.
+      legacy     the repo file of the old layout, read live and read-only.
+                 Its tier is decided by today's is_ours on the bytes read this
+                 SessionStart, so an unmigrated repo behaves as it always did.
+      none       no manifest.
+
+    A pin that no longer seals (a rewrite since the link, or an author with no
+    store file) is SKIPPED and the search falls through - the fail-safe
+    direction: a header or nothing, never another session's memory."""
+    p, t = read_store_manifest(sid)
+    if p:
+        return p, t, "own", sid
+    for e in L.lineage_of(st):
+        got = _sealed(e["sid"], e.get("manifest"))
+        if got:
+            return got[0], got[1], "inherited", e["sid"]
+    ad = (st or {}).get("manifest_adopted")
+    if isinstance(ad, dict):
+        got = _sealed(ad.get("sid"), ad)
+        if got:
+            return got[0], got[1], "adopted", ad["sid"]
+    path, _top, text = read_manifest(cwd)
+    if path:
+        return path, text, "legacy", None
+    return None, None, None, None
+
+
+def resolve_top(fm, cwd):
+    """The repo every derived check runs against (head_state, dead_claims,
+    store_root, the dirty count, read_list.paths_from_manifest): the manifest's
+    `top:` when it is a string naming an existing directory, resolved with
+    realpath; else the cwd's git toplevel; else the cwd. `(head unverified)` is
+    not an alternative to that fallback - it is the existing liveness reason
+    for a resolved directory that is not a repo.
+
+    `top:` is repo text, used verbatim: no `~` expansion and no shell, so a
+    `top:` of `~` names nothing and falls back rather than pointing every
+    derived check at the reader's home. The mark step writes an absolute
+    path."""
+    v = fm.get("top") if isinstance(fm, dict) else None
+    if isinstance(v, str) and v.strip():
+        v = v.strip()
+        if len(v) >= 2 and v[0] == v[-1] and v[0] in "'\"":
+            v = v[1:-1].strip()
+        try:
+            if v and os.path.isabs(v) and os.path.isdir(v):
+                return os.path.realpath(v)
+        except Exception:
+            pass
+    return git_top(cwd)
+
+
+def legacy_notice(sid, path):
+    """The one line that tells an operator the layout moved, appended once per
+    session to whatever tier the legacy arm produced. A session that resolved a
+    store manifest is never told about a repo file that is not its memory."""
+    return (f"[context-guard rehydration] {path} is a repo manifest of the old "
+            f"layout: read here, never written. The manifest becomes one file "
+            f"per session - this session's own is {L.manifest_path(sid)} - once "
+            f"a later update points the checkpoint skill's Step 4b there; until "
+            f"then Step 4b still writes the repo file. Nothing rewrites or "
+            f"deletes it: remove it when you choose.")
 
 
 def foreign_header(label, path, owner):
@@ -923,12 +1081,12 @@ def main():
     sid = inp.get("session_id", "unknown")
     source = inp.get("source", "startup")
     cwd = inp.get("cwd") or os.getcwd()
-    path, top, text = read_manifest(cwd)
-    fm = front_matter(text) if path else {}
-    version = manifest_version(text, fm) if path else None
     pred = None
+    # The link/adopt block runs FIRST: steps 2 and 3 of resolve_manifest read
+    # `lineage` and `manifest_adopted`, so a fork child or a /clear successor
+    # must be linked before its manifest is resolved.
     if source == "fork":
-        adopt_fork_state(sid, inp.get("transcript_path"), version)
+        adopt_fork_state(sid, inp.get("transcript_path"), cwd)
     elif source == "clear":
         try:
             pred = link_clear(sid)
@@ -942,7 +1100,12 @@ def main():
     # Read-only snapshot: the git and store checks below are slow, so the
     # write-back at the end is a locked update of only the keys this hook owns.
     st = L.load_state(sid)
+    path, text, kind, _author = resolve_manifest(st, sid, cwd)
+    fm = front_matter(text) if path else {}
+    version = manifest_version(text, fm) if path else None
+    top = resolve_top(fm, cwd) if path else cwd
     seen_new = None
+    notice = None
     # A LANDED manifest says the thread is done: its /clear is the fresh start
     # the land path asks for, so it keeps the header.
     clear_pred = linked_clear_pred(st, pred, version) \
@@ -956,7 +1119,10 @@ def main():
 
     if path:
         sha = version["sha"]
-        ours = is_ours(st, sid, version)
+        # own/inherited/adopted were decided by resolve_manifest - by the path,
+        # or by a pin that still seals the file. Only the legacy repo file,
+        # which every session in the repo can see, still asks the F3a question.
+        ours = True if kind != "legacy" else is_ours(st, sid, version)
         hs = None if is_landed(fm) else head_state(fm, top)
         rec = fm.get("head")
         try:
@@ -991,6 +1157,10 @@ def main():
             text = withhold_next(text, moved)
         holds = holds_block(text) if ours else ""
 
+        if kind == "legacy" and not st.get("legacy_notice"):
+            # Computed before the tiers so the trim pays for it: the budget
+            # below is the whole injection's, and the notice is part of it.
+            notice = legacy_notice(sid, path)
         seen = st.get("manifest") or {}
         full = ours and (source == "compact" or bool(clear_pred) or (
             source in ("resume", "fork") and (seen.get("sha") != sha or seen.get("top") != top)))
@@ -1018,7 +1188,7 @@ def main():
             summary_used = bool(st.get("compact_summary"))
             parts += [header, preamble] + ([checks] if checks else []) + \
                 [trim(annotate_holds(text), CAP - len(header) - len(preamble) - len(checks)
-                      - LEDGER_BUDGET - 400)]
+                      - len(notice or "") - LEDGER_BUDGET - 400)]
             reads_new = RL.paths_from_manifest(text, top, cwd)
             sysmsg = (f"Rehydrated from {live}{f' ({why})' if why else ''} manifest "
                       f"({fm.get('written', '?')})"
@@ -1027,6 +1197,8 @@ def main():
         else:
             parts.append(header + " Read it before resuming its thread."
                          + "".join("\n" + c for c in (holds, checks, moved) if c))
+        if notice:
+            parts.append(notice)
         if ours:
             # `manifest` = the version last shown to this session as its own.
             seen_new = {"sha": sha, "top": top}
@@ -1054,6 +1226,8 @@ def main():
     def write_back(cur):
         if seen_new is not None:
             cur["manifest"] = seen_new
+        if notice is not None:
+            cur["legacy_notice"] = True
         if reads_new is not None:
             try:
                 RL.record(cur, reads_new)

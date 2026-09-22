@@ -8,17 +8,23 @@ then regenerates the id and runs SessionStart(clear) in the SAME Claude Code
 process. So the ending session leaves `cleared` = {sid, lineage, manifest,
 at} on the process record _proc-<key> (lib_context.proc_key; no verified
 process, no record, no link), and rehydrate.link_clear pops it. `manifest`
-pins the version on disk now only when it was the ending session's own
-(lib_context.owned_version with that session's state), else None: a manifest
-a third session overwrote is never handed to the successor.
+pins the version on disk now - of this session's OWN manifest, its store file
+if it has one, else the legacy repo file (rehydrate.own_manifest) - only when
+it was the ending session's own (lib_context.owned_version with that session's
+state), else None: a manifest a third session overwrote is never handed to the
+successor.
 
-PostToolUse, tool Read: a whole-file Read (no offset, no limit) of this
-repo's manifest (by a path named HANDOFF.md; its realpath must be the
-manifest's) whose frontmatter says `mode: handoff` records
-`manifest_adopted` = {owner, sha, at} - that version, and only that one, is
-then this session's. A `continue` or `landed` manifest is never adopted; a
-partial Read, `cat` or `grep` looks without adopting. Skipped inside a
-subagent (`agent_id` present), whose Read is not the main session's.
+PostToolUse, tool Read: a whole-file Read (no offset, no limit) of a manifest
+(by a path named HANDOFF.md) whose frontmatter says `mode: handoff` records
+`manifest_adopted` = {owner, sha, at, sid?} - that version, and only that one,
+is then this session's. The path is another session's store manifest
+(lib_context.manifest_sid decides that, and its session directory is recorded
+as `sid`: the address) or, during the migration window, the legacy repo
+manifest, by realpath (no `sid`: the pin seals that file). A session never
+adopts its OWN store file - it is already ours by path. A `continue` or
+`landed` manifest is never adopted; a partial Read, `cat` or `grep` looks
+without adopting. Skipped inside a subagent (`agent_id` present), whose Read is
+not the main session's.
 
 The same PostToolUse(Read) also follows a rehydrated manifest's "Read in
 full" list through (read_list.mark_read): a whole-file Read of a listed path,
@@ -32,7 +38,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import lib_context as L
 import read_list
 
-MANIFEST_NAME = "HANDOFF.md"
+MANIFEST_NAME = L.MANIFEST_NAME
 
 
 def _rehydrate():
@@ -52,7 +58,11 @@ def session_end(inp):
     R = _rehydrate()
     st = L.load_state(sid)
     pin = None
-    path, _top, text = R.read_manifest(inp.get("cwd") or os.getcwd())
+    # Store-else-legacy, the same resolution every other pin site uses: this
+    # session's own manifest when it has one, else the legacy repo file it is
+    # still writing. A site that resolved differently from the site that reads
+    # its pin would leave every linked /clear with a foreign header.
+    path, text = R.own_manifest(sid, inp.get("cwd") or os.getcwd())
     if path:
         v = R.manifest_version(text)
         if L.owned_version(st, sid, v):
@@ -82,12 +92,22 @@ def post_read(inp):
         return
     R = _rehydrate()
     cwd = inp.get("cwd") or os.getcwd()
-    path, _top, text = R.read_manifest(cwd)
-    if not path:
-        return
-    target = fp if os.path.isabs(fp) else os.path.join(cwd, fp)
-    if os.path.realpath(target) != os.path.realpath(path):
-        return
+    target = os.path.realpath(fp if os.path.isabs(fp) else os.path.join(cwd, fp))
+    # Whose manifest is this? A path inside the per-session store answers with
+    # its own session directory (L.manifest_sid: realpath containment, the sid
+    # is the first component, the relative path is exactly <sid>/HANDOFF.md).
+    # Anything else is compared, as before, against the legacy repo manifest.
+    store = L.manifest_sid(target)
+    if store is not None:
+        if store == L.safe_sid(sid):
+            return          # its own store file: ours by path, nothing to record
+        text = R.read_text(target)
+        if text is None:
+            return
+    else:
+        path, _top, text = R.read_manifest(cwd)
+        if not path or target != os.path.realpath(path):
+            return
     fm = R.front_matter(text)
     if fm.get("mode") != "handoff":
         return
@@ -95,6 +115,11 @@ def post_read(inp):
     if not v["owner"]:
         return                       # ownerless: already everyone's
     rec = {"owner": v["owner"], "sha": v["sha"], "at": time.time()}
+    if store is not None:
+        # The ADDRESS of the file read, kept apart from the pin that seals it.
+        # A record with no `sid` (this arm, or one written before the store
+        # existed) seals the legacy repo file and addresses no store directory.
+        rec["sid"] = store
     L.update_state(sid, lambda st: st.__setitem__("manifest_adopted", rec))
 
 
