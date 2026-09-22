@@ -103,7 +103,19 @@ only on a `CLEAR` recorded against the current HEAD sha.
    `references/bindings.md` § Review target, and claims a named item here too (Step 3 is
    skipped): `$WI claim <id>` when it is not already yours.
 
-Expected output: one short paragraph — target, mode, base, checks, record sink.
+   Then record the run itself, before any dispatch, as one
+   `target: <mode> <ref> <workspace>` line (`references/bindings.md` § Record line
+   shapes): the mode as invoked; the branch, item id or slug it runs on; and the
+   workspace — the path `references/bindings.md` § Review target resolved in
+   `review <branch>` mode, the
+   `.claude/worktrees/<name>` path Step 3.1 will add in `full` mode, or the series path
+   in `plan` mode, which has no worktree. Every later step reads the workspace from that
+   line rather than rebuilding it from the item id.
+
+Expected output: one short paragraph — target, mode, base, checks, record sink. When the
+record sink is the scratchpad run record, say there too that the run is **not resumable
+outside this session**: a scratchpad sink is session-scoped by contract
+(`references/bindings.md` § The ten, Record sink).
 
 ## Step 1: Plan (when needed)
 
@@ -114,7 +126,12 @@ clear acceptance skips it, and so does a target that already has a series or pla
   minimum (a plan is judgement) and the Model floor respected, with the plan variant in
   `references/agent-brief.md`: /investigate in its orchestrated mode (the `investigate`
   skill's § Running under an orchestrator), writing the series to the Series home; no
-  worktree. Record the series path. Its `DONE` goes to Step 4 with
+  worktree. Record the series path, and record the plan agent's report as soon as it
+  comes back: `return: planner <STATUS> <series path>` (`references/bindings.md`
+  § Record line shapes). Step 3.5 writes the implementer's `return:` and never runs in
+  `plan` mode, so this is the only producer return a plan run records; a `BLOCKED` one
+  carries its reason, `permission` or `setup`, exactly as Step 3.5's does. Its `DONE`
+  goes to Step 4 with
   the plan-review variant; a `NEEDS_CHANGES` re-dispatches the plan agent, which
   revises by a new serial per the `investigate` skill's
   `references/investigation-format.md`. After `CLEAR`, its blocking open questions go
@@ -151,7 +168,10 @@ re-dispatch or resume with findings = review round n+1; cap 4 review rounds.
    § Fallback): fable unavailable and the reset over 2h or unknown → opus, recorded;
    within 2h, or a `model: fable` pin → ask through the decision channel.
 7. **Record each dispatch** in the record sink before the call:
-   `dispatch: <role> <model> — <signal>`.
+   `dispatch: <role> <model> — <signal>`. Then, the moment the Agent call returns an id,
+   append `agent: <role> <id> round <n>` under it (`references/bindings.md` § Record line
+   shapes). The record, not `ListAgents`, is what a later turn or another session has to
+   go on, and a `dispatch:` with no `agent:` under it says the call never returned one.
 8. **The Model floor binding** is a floor for every role; rule 4 still applies above it.
    Never go below it.
 
@@ -174,21 +194,30 @@ re-dispatch or resume with findings = review round n+1; cap 4 review rounds.
    background `general-purpose` agent with the routed `model`.
 4. **Return contract**: `STATUS` (`DONE` | `DONE_WITH_CONCERNS` | `NEEDS_CONTEXT` |
    `BLOCKED`) and the report shape in the brief.
-5. **On return**: merge its CHANGED into the record sink's cumulative
+5. **On return**: record it as `return: <role> <STATUS> <sha>` (`references/bindings.md`
+   § Record line shapes), `<sha>` being the implementer's COMMIT, and merge its CHANGED
+   into the record sink's cumulative
    `changed:` block (`references/bindings.md` § Undeclared files). `DONE` and
    `DONE_WITH_CONCERNS` go to Step 4. `NEEDS_CONTEXT`: record the answer as an
    `answer:` line (`references/bindings.md` § Record line shapes), re-dispatch with it,
-   at least opus. `BLOCKED`: `$WI block` when there is an
-   item, and raise it through the decision channel.
+   at least opus. `BLOCKED`: write the reason on the `return:` line — `permission` or
+   `setup`, the closed set, read off the agent's own report — then `$WI block` when there
+   is an item, and raise it through the decision channel. That reason is what tells a
+   permission denial, which is never re-dispatched, from a setup failure, which
+   `references/troubleshooting.md` § Dispatch and review re-dispatches once fixed; a
+   `BLOCKED` with no reason reads as `permission`.
 
 ## Step 4: Review
 
 1. **Dispatch a reviewer**: one background `general-purpose` agent, review-only, `model`
-   per rule 4, briefed from `references/review-brief.md`, with the commands from
+   per rule 4, briefed from `references/review-brief.md`, against what the producer
+   returned — the sha, or the series path, on the last `return:` line
+   (`references/bindings.md` § Record line shapes) — with the commands from
    `references/review-checklist.md` plus the Checks binding — what you run at Land. A
    plan-mode series gets the plan-review variant in `references/review-brief.md`
-   instead; before each such review, record `sha256sum <series>/[0-9][0-9]_*.md` in the
-   record sink, the baseline its re-review checks the written serials against.
+   instead; before each such review, record the output of
+   `sha256sum <series>/[0-9][0-9]_*.md` as a `baseline: <sha256 list>` line, the baseline
+   a later plan review re-runs that command against to tell whether the series has moved.
 2. **Severity scale** (defined in the review brief):
    - critical: data loss, security, breaks the harness or another plugin.
    - high: wrong on the main path; a failing or missing test for a claimed behaviour.
@@ -199,7 +228,10 @@ re-dispatch or resume with findings = review round n+1; cap 4 review rounds.
    secret in any committed content is critical (`references/fix-loop.md` § A leaked
    secret).
 3. **Fix loop.** Verdicts are `CLEAR`, `NEEDS_CHANGES`, `SHOW_STOPPER` and `BLOCKED`; who
-   is resumed and who is re-dispatched: `references/fix-loop.md`. Repeat until `CLEAR`.
+   is resumed and who is re-dispatched: `references/fix-loop.md`. An agent you resume is
+   the one its `agent:` line names (`references/bindings.md` § Record line shapes) —
+   SendMessage to that recorded id, never one remembered from this turn alone; a
+   re-dispatch writes a fresh `dispatch:` and `agent:` pair. Repeat until `CLEAR`.
    **Cap: 4 review rounds** — the first review plus three fix rounds; a fourth without
    `CLEAR` means the brief or the target is wrong, not the code: block it and raise it.
    Never argue a severity down.
@@ -212,19 +244,24 @@ re-dispatch or resume with findings = review round n+1; cap 4 review rounds.
 5. **Record the result** as `verdict: <V> round <n> at <sha>` plus, on a
    `NEEDS_CHANGES` or `SHOW_STOPPER`, the reviewer's FINDINGS pasted verbatim as a
    `findings:` block (`references/bindings.md` § Record line shapes) — what a fix
-   dispatch reads. Also record: findings fixed, findings declined with reasons, and the
+   dispatch reads. A `BLOCKED` reviewer is not a round and carries its reason in place of
+   a round number — `verdict: BLOCKED at <token> — permission | setup`, the same closed
+   set Step 3.5 writes, with the same default when it is missing. Also record: findings
+   fixed, findings declined with reasons, and the
    reviewer NOTES worth keeping. Reviewer questions you cannot settle go on Step 6's
    `open questions:`.
 
 ## Step 5: Land
 
-Only after a `CLEAR` recorded against the current HEAD.
+Only after a `CLEAR` recorded against the current HEAD — the last `verdict:` line
+(`references/bindings.md` § Record line shapes), whose `at <sha>` must still equal
+`git -C <workspace> rev-parse HEAD`.
 
 1. **Run the checks yourself** in the worktree: `references/review-checklist.md`, the
    Checks binding included. A verdict is not a check output.
-2. **Read the diff** in full — `git -C <worktree path> diff <base>...HEAD`, the
-   absolute path Step 0 resolved (`.claude/worktrees/<name>` in `full` mode, or the path
-   `references/bindings.md` § Review target resolved) — against the repo's doctrine and
+2. **Read the diff** in full — `git -C <workspace> diff <base>...HEAD`, `<workspace>`
+   being the absolute path the `target:` line records (`references/bindings.md` § Record
+   line shapes), never one rebuilt from the item id — against the repo's doctrine and
    the Workflow binding. A file outside
    the declared Files in scope is a rejection, however good. With Files in scope
    `undeclared`, every changed file must carry the implementer's one-line reason and
@@ -253,8 +290,11 @@ Only after a `CLEAR` recorded against the current HEAD.
    `git branch -d` the branch. A dirty worktree is never removed: report it and ask.
    `review <branch>` mode never deletes `<branch>` and removes only a worktree this cycle
    added itself (`references/bindings.md` § Landing).
-5. **Close the item**: `$WI done <id> --note <merge-sha>`; for `Leave the branch`,
-   `$WI handoff <id>` with `--next` naming the branch.
+5. **Record the landing, then close the item**: the moment the merge succeeds, append
+   `landed: <merge sha>` to the record sink (`references/bindings.md` § Record line
+   shapes) — before `$WI done <id> --note <merge-sha>`, so a run that dies between the
+   two still says it landed. For `Leave the branch` nothing merged: no `landed:` line,
+   and `$WI handoff <id>` with `--next` naming the branch instead.
 
 A red check or a doctrine miss stops the landing: `$WI handoff <id> --blocked "<what>"`
 (no item: a `blocked:` line in the record sink), and it goes back into the fix loop as a
@@ -270,6 +310,10 @@ verified: review <CLEAR after N fix round(s)> (impl <tier>, review <tier>); <eac
 open questions: <list, or none>
 decisions needed: <numbered list, or none>
 ```
+
+The `verified:` line's last clause comes from the record: the `landed:` line's merge sha
+when Step 5.5 wrote one (`references/bindings.md` § Record line shapes), else `branch
+left`; `pushed` when the terminal action included a push.
 
 `plan` mode reports the series path on `changed:`, its review on `verified:`, and its
 blocking questions under `decisions needed:`.
