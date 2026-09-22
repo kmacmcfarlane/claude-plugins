@@ -93,3 +93,5 @@ fix r5 (peer, answer 56a): 985faec — _held/.gitignore written first, then the 
 dispatch: reviewer opus — verify-only review (resume)
 verify review (opus) on 985faec: CLEAR — _held/ durable in sidecar, tracked and host-ignored modes; lost (declared) on a non-repo root or no .claude-sandbox/; git status clean in both repos. Carried low: 5aef0dd subject. Residuals: rule-zero work-item exception trusts a model-writable file; spec R9 lacks HELD.
 land (librarian): test merge against main conflicts in .claude-plugin/marketplace.json, README.md, plugins/dev-flow/.claude-plugin/plugin.json (F1 9882's dependency wording vs research's description rows). Land stopped; conflict round → implementer (peer) merges main into the branch and resolves keeping both; reviewer verifies the resolution.
+conflict round (peer): merge commit 8fecab6 — main merged into the branch; descriptions keep F1 clauses + research clause, byte-identical; README row both sides; eda3422 + F1 name-status kept; seven Checks OK per peer.
+dispatch: reviewer opus — resolution-only verify (resume)
