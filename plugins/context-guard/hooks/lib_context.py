@@ -257,6 +257,30 @@ def manifest_sid(path):
     return sid if sid not in (".", "..") and _SAFE_SID.fullmatch(sid) else None
 
 
+def own_store_manifest(path, sid):
+    """Whether `path` really IS `sid`'s own manifest in the store, and not a
+    symlink - at the file, or at the <sid>/ directory above it - pointing at
+    something else. The store directory is shared by every session that reads
+    this config dir, so the path existing is not the same as it being ours,
+    and it is ownership by path that collapses every other test: the mark
+    step's claim test on the write side, and is_ours plus the foreign header
+    on the read side. Without this, a planted link would make an arbitrary
+    file "ours" - rewritten with no warning by the writer, injected in full
+    as this session's memory by the reader. Decided on realpath, so a link
+    out of the store resolves out of the store and fails. A path that fails
+    is not this session's manifest and falls through to the legacy arm and
+    its claim test, exactly as a missing file does.
+
+    manifest_sid is the store's own identity test, and safe_sid is
+    idempotent, so the component it returns compares directly with
+    safe_sid(sid): never strip or re-hash it. Any exception is False: a path
+    that cannot be resolved is not ours either."""
+    try:
+        return manifest_sid(path) == safe_sid(sid)
+    except Exception:
+        return False
+
+
 def load_state(session_id):
     try:
         with open(state_path(session_id)) as f:

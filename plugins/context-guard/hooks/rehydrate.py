@@ -944,9 +944,19 @@ def read_manifest(cwd):
 
 
 def read_store_manifest(sid):
-    """(path, raw text) of `sid`'s own per-session manifest, or (None, None)."""
+    """(path, raw text) of `sid`'s own per-session manifest, or (None, None).
+
+    The file must exist AND really be `sid`'s (L.own_store_manifest, the test
+    the mark step applies before it writes): the store directory is shared by
+    every session reading this config dir, and this reader is the one gate
+    between it and a session's memory - every caller (own_manifest's pin
+    sites, resolve_manifest's own arm, _sealed) takes the file it returns on
+    the path alone, with no owner comparison. A symlink planted at
+    <sid>/HANDOFF.md, or at the <sid>/ directory above it, resolves out of
+    that session's slot and is (None, None): no store manifest, so the caller
+    falls through to its next arm exactly as it does for a missing file."""
     p = L.manifest_path(sid)
-    if not os.path.exists(p):
+    if not os.path.exists(p) or not L.own_store_manifest(p, sid):
         return None, None
     text = read_text(p)
     return (p, text) if text is not None else (None, None)
@@ -985,8 +995,9 @@ def resolve_manifest(st, sid, cwd):
     """Which manifest is this session's memory: (path, text, kind, author),
     first hit wins, else (None, None, None, None).
 
-      own        L.manifest_path(sid) exists. Ours by the PATH - no sha and no
-                 owner comparison; this is the common case.
+      own        L.manifest_path(sid) exists and is really that path (not a
+                 planted link: read_store_manifest). Ours by the PATH - no sha
+                 and no owner comparison; this is the common case.
       inherited  the newest lineage entry whose pinned {owner, sha} still is
                  the version of that ENTRY'S SESSION's store manifest. The
                  lookup is e["sid"], the session the link names, never the
