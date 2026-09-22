@@ -32,13 +32,15 @@ Two questions, asked with the same command, answered at different depths.
   repository in claude-sandbox's sidecar mode is not a problem here: that repo exists to
   commit verified runs, exactly as it commits investigations.
 - **Held runs (`_held/`)** — unverified content must be ignored at **every level**, because
-  the sidecar repo tracks what the host ignores. From the nearest *existing* parent of the
-  candidate path, run `git -C <parent> check-ignore -q <rest>` (the remainder of the path,
-  relative to that parent); then, while that parent's repo root is itself inside another
-  repo, repeat from that root's parent for the remainder. Ignored at every level → usable,
-  and the skill writes `_held/.gitignore` containing `*` so every level agrees by
-  construction from then on. Any level tracked, or the nearest parent not in a repo at all
-  → the held run stays in the scratchpad and is declared lost with the session.
+  the sidecar repo tracks what the host ignores. **First**, when `.claude-sandbox/` exists,
+  create `.claude-sandbox/research/_held/` and write `_held/.gitignore` containing `*`, so
+  every repo that could see the directory ignores its contents by construction. **Then** run
+  the check: from the nearest *existing* parent of the candidate path, run
+  `git -C <parent> check-ignore -q <rest>` (the remainder of the path, relative to that
+  parent); then, while that parent's repo root is itself inside another repo, repeat from
+  that root's parent for the remainder. Ignored at every level → usable. Any level still
+  tracked, or `.claude-sandbox/` absent, or the nearest parent not in a repo at all → the
+  held run stays in the scratchpad and is declared lost with the session.
 
 ## Destination resolution
 
