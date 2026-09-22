@@ -703,6 +703,66 @@ class TestMarkStamps(Base):
         self.assertEqual(readf(self.path), "someone else's\n")
         self.assertEqual([n for n in os.listdir(self.repo) if n.endswith(".tmp")], [])
 
+    # ── fix round 1: who may claim, and when ───────────────────────────────
+    def live(self, sid):
+        L.update_state(sid, lambda st: st.setdefault("epoch", 0))
+
+    def test_an_argv_id_that_is_not_the_env_grants_nothing(self):
+        # env X, argv Y, a fresh manifest of Y's: X does not take it.
+        self.live("Y")
+        self.checkpoint("Y")
+        before = self.raw()
+        p = self.run_cli("Y", env_sid="X")
+        self.assertEqual(p.returncode, 0)
+        self.assertEqual(self.raw(), before)
+        self.assertIn("not stamped", p.stderr)
+        self.assertIn("is not $CLAUDE_CODE_SESSION_ID (X)", p.stderr)
+
+    def test_untouched_fork_parent_manifest_is_left_alone(self):
+        self.checkpoint("P")
+        self.fork("P", "C")
+        self.assertTrue(L.lineage_of(L.load_state("C"))[0]["manifest"])
+        self.live("C")
+        before = self.raw()
+        p = self.run_cli("C", env_sid="C")      # C marks without writing
+        self.assertEqual(self.raw(), before)
+        self.assertIn("not stamped", p.stderr)
+        self.assertFull(self.start("P", "compact"))   # still the parent's
+
+    def test_untouched_clear_predecessor_manifest_is_not_redated(self):
+        self.checkpoint("X")
+        self.clear("X", "S")
+        self.live("S")
+        before = self.raw()
+        self.run_cli("S", env_sid="S")
+        self.assertEqual(self.raw(), before)
+        self.assertFull(self.start("S", "compact"))   # owned through the pin
+
+    def test_untouched_adopted_manifest_is_left_alone(self):
+        self.checkpoint("X")
+        self.live("B")
+        self.read("B")
+        before = self.raw()
+        p = self.run_cli("B", env_sid="B")
+        self.assertEqual(self.raw(), before)
+        self.assertIn("not stamped", p.stderr)
+
+    def test_a_repeated_mark_does_not_redate(self):
+        self.live("S")
+        writef(self.path, SPEC_EXAMPLE)
+        self.assertIn("stamped", self.run_cli("S", env_sid="S").stdout)
+        once = self.raw()
+        time.sleep(1.1)
+        p = self.run_cli("S", env_sid="S")
+        self.assertEqual(self.raw(), once)
+        self.assertIn("already stamped", p.stdout)
+        self.assertEqual(p.stderr, "")
+        # A rewrite since (the model's next Step 4b) is stamped again.
+        writef(self.path, readf(self.path).replace("Building", "Built"))
+        os.utime(self.path, (time.time() + 5, time.time() + 5))
+        self.assertIn(f"stamped {self.path}", self.run_cli("S", env_sid="S").stdout)
+        self.assertNotEqual(self.raw(), once)
+
     def test_restamp_shapes(self):
         import mark_checkpoint as M
         f = {"written": "W", "session": "S"}

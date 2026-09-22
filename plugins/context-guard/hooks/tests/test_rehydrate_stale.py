@@ -423,7 +423,9 @@ class TestRehydrateStale(unittest.TestCase):
             with self.subTest(v=v):
                 self.assertEqual(rh.stamp_epoch(v), t)
         for v in ("", None, "2026-08-31 21:00 CDT", "WRITTEN_TS", "<stamped>",
-                  "2026-13-01T00:00:00Z", "2026-09-22T06:00:00Z trailing"):
+                  "2026-13-01T00:00:00Z", "2026-09-22T06:00:00Z trailing",
+                  "2026-09-22T06:00:00+99:99", "2026-09-22T06:00:00+15:00",
+                  "2026-09-22T06:00:00-05:60"):
             with self.subTest(v=v):
                 self.assertIsNone(rh.stamp_epoch(v))
 
@@ -473,6 +475,14 @@ class TestRehydrateStale(unittest.TestCase):
         old = time.time() - 2 * 86400
         os.utime(p, (old, old))
         self.assertIn("AGED (stamp unreadable) manifest", self.header(self.hook()))
+
+    def test_future_mtime_is_not_trusted_either(self):
+        rh = self.rh()
+        now = time.time()
+        self.assertEqual(rh.liveness({}, None, mtime=now + 30 * 86400, now=now),
+                         ("AGED", "no stamp, file time in the future"))
+        self.assertEqual(rh.liveness({}, None, mtime=now + 60, now=now),
+                         ("FRESH", "no stamp"))
 
     def test_stamp_reason_joins_the_head_reason(self):
         self.manifest(head="deadbee", written="garbled")

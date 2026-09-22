@@ -25,11 +25,18 @@ It stamps only a manifest this checkpoint plausibly just wrote:
     checkpoint's Step 4b; stamping it would pass stale memory off as fresh);
   - with frontmatter;
   - whose `session:` is empty, not a session-id token (a placeholder such as
-    `<stamped>`), this session, a session in its lineage (the /clear
-    predecessor or fork parent whose manifest it replaced) or the author of
-    the version it adopted by a full Read. Any other session's id may be a
-    concurrent peer's manifest: that is left untouched, and the warning below
-    names it.
+    `<stamped>`) or this session - $CLAUDE_CODE_SESSION_ID when set (an id
+    given that differs from it grants nothing), else the id given;
+  - or names a session in its lineage (the /clear predecessor or fork
+    parent) or the author of the version it adopted by a full Read, AND the
+    file is no longer the version that link pinned or that Read adopted: it
+    was rewritten since, with the id copied. Untouched, it is still that
+    session's (a fork parent may be live) and is left alone.
+Any other session's id may be a concurrent peer's manifest: that is left
+untouched, and the warning below names it. A manifest this session already
+stamped and nobody rewrote since (the same head, branch and session, and
+an mtime within STAMP_TOUCH_S of its `written:`) is left as it is, so
+repeated marks do not re-date it.
 Stamping never fails the checkpoint: every problem is a warning, and the gate
 record (L.mark_checkpoint) is exactly what it would be without a manifest.
 
@@ -47,6 +54,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import lib_context as L
 
 STAMP_WINDOW_S = 30 * 60
+STAMP_TOUCH_S = 3
 WRITE_BUDGET = 6000
 STAMP_KEYS = ("written", "head", "branch", "session")
 _KEY_LINE = re.compile(rb"(written|head|branch|session)[ \t]*:")
@@ -85,16 +93,36 @@ def restamp(raw, fields):
     return b"".join(out + lines[close:])
 
 
-def _claimable(owner, sid, want, st):
-    """Whether this checkpoint may put its own id over `session: owner`."""
+def _claimable(owner, sha, want, st):
+    """Whether this checkpoint may put `want` over `session: owner` on the
+    version with hash `sha`. `want` is this session ($CLAUDE_CODE_SESSION_ID,
+    else the id given): an id given that is not the env's grants nothing. A
+    lineage session or the author of the adopted version is claimable only
+    when the file is no longer the version that link pinned or that Read
+    adopted - it was rewritten since; untouched, it is still that session's
+    (and already this one's through the pin), so it is left alone."""
     if not isinstance(owner, str) or not owner or not L._SAFE_SID.fullmatch(owner):
         return True                     # none, or a placeholder
-    if owner in (sid, want):
+    if owner == want:
         return True
-    if any(e["sid"] == owner for e in L.lineage_of(st)):
-        return True
+    for e in L.lineage_of(st):
+        if e["sid"] == owner and e["manifest"] and e["manifest"]["sha"] != sha:
+            return True
     ad = st.get("manifest_adopted") if isinstance(st, dict) else None
-    return isinstance(ad, dict) and ad.get("owner") == owner
+    return isinstance(ad, dict) and ad.get("owner") == owner \
+        and isinstance(ad.get("sha"), str) and ad["sha"] != sha
+
+
+def _own_stamp(fm, fields, mtime):
+    """Whether the file already carries this stamp, untouched since: `head`,
+    `branch` and `session` are what it would write, and the mtime is within
+    STAMP_TOUCH_S after `written:` (the mark step writes both at once; a
+    rewrite moves the mtime, and a copied stamp is older). Then a repeated
+    mark leaves it as it is instead of re-dating it."""
+    import rehydrate as R
+    t = R.stamp_epoch(fm.get("written"))
+    return t is not None and 0 <= mtime - t < STAMP_TOUCH_S and all(
+        fm.get(k) == fields[k] for k in ("head", "branch", "session") if k in fields)
 
 
 def _write_atomic(real, raw, new, mode):
@@ -169,10 +197,12 @@ def stamp_manifest(sid, cwd=None, environ=None, now=None):
                         f"{int(age // 60)} min ago, so this checkpoint did not write "
                         f"it; rewrite it (Step 4b), then run this again.")
             return out, warn
-        owner = R.manifest_version(text)["owner"]
-        if not _claimable(owner, sid, want, L.load_state(want)):
+        fm = R.front_matter(text)
+        v = R.manifest_version(text, fm)
+        if not _claimable(v["owner"], v["sha"], want, L.load_state(want)):
             warn.append(f"mark_checkpoint.py: not stamped: {path} names another "
-                        f"session in `session:` (see below).")
+                        f"session in `session:` and was not rewritten by this one "
+                        f"(see below).")
             return out, warn
         head = R.git(top, "rev-parse", "--short", "HEAD")
         fields = {"written": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(now)),
@@ -182,6 +212,10 @@ def stamp_manifest(sid, cwd=None, environ=None, now=None):
             branch = R.git(top, "rev-parse", "--abbrev-ref", "HEAD")
             if branch:
                 fields["branch"] = branch
+        if _own_stamp(fm, fields, fst.st_mtime):
+            out.append(f"{path} already stamped (written {fm.get('written')}); "
+                       f"not rewritten since, so left as it is")
+            return out, warn
         new = restamp(raw, fields)
         if new is None:
             warn.append(f"mark_checkpoint.py: not stamped: {path} has no "

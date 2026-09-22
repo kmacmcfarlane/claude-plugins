@@ -141,12 +141,14 @@ python3 "${CLAUDE_PLUGIN_ROOT}/hooks/mark_checkpoint.py" "$CLAUDE_CODE_SESSION_I
 ```
 
 It prints `stamped <path> (written …, head …, branch …, session …)`. It stamps only a
-manifest written in the last 30 minutes whose `session:` is a placeholder, this session,
-or the session whose manifest this one replaced (its `/clear` predecessor, fork parent, or
-the author of a handoff it read in full); anything else is left untouched with a `not
-stamped` warning, and a `session:` warning names the id it found — fix the file, not the
-warning, and run it again. Stamping makes a new version of the manifest, so nothing may
-rewrite it after this step.
+manifest written in the last 30 minutes whose `session:` is a placeholder or this session
+(`$CLAUDE_CODE_SESSION_ID`; an id passed that differs from it counts for nothing) — or
+names the session whose manifest this one replaced (its `/clear` predecessor, fork parent,
+or the author of a handoff it read in full) *and* the file has been rewritten since that
+link or Read. Anything else is left untouched with a `not stamped` warning, and a
+`session:` warning names the id it found — fix the file, not the warning, and run it again.
+A manifest it already stamped and nobody rewrote is left as it is (`already stamped`).
+Stamping makes a new version of the manifest, so nothing may rewrite it after this step.
 
 Without this the gate keeps firing and a deferred auto-compaction stays deferred.
 

@@ -368,6 +368,8 @@ def stamp_epoch(value):
     z = (m.group(7) or "Z").upper()
     if z != "Z":
         hh, mm = int(z[1:3]), int(z[-2:])
+        if hh > 14 or mm > 59:
+            return None
         t -= (1 if z[0] == "+" else -1) * (hh * 3600 + mm * 60)
     return t
 
@@ -376,7 +378,9 @@ def manifest_age(fm, mtime=None, now=None):
     """(age in hours or None, reason or None). The `written:` stamp when it is
     readable and not ahead of now by more than STAMP_SKEW_S; else the file's
     mtime, with the reason the stamp was not trusted: `no stamp`, `stamp
-    unreadable`, `stamp in the future`."""
+    unreadable`, `stamp in the future`. An mtime also ahead of now by more
+    than STAMP_SKEW_S gives no age, and `, file time in the future` is added
+    (liveness then reads it AGED: nothing trustworthy dates the file)."""
     now = time.time() if now is None else now
     raw = fm.get("written")
     t = stamp_epoch(raw)
@@ -385,8 +389,11 @@ def manifest_age(fm, mtime=None, now=None):
     why = ("stamp in the future" if t is not None
            else "stamp unreadable" if isinstance(raw, str) and raw.strip()
            else "no stamp")
-    age = (max(now - mtime, 0) / 3600) if isinstance(mtime, (int, float)) else None
-    return age, why
+    if not isinstance(mtime, (int, float)):
+        return None, why
+    if mtime - now > STAMP_SKEW_S:
+        return None, why + ", file time in the future"
+    return max(now - mtime, 0) / 3600, why
 
 
 def liveness(fm, hs, unverified_why="git unavailable", mtime=None, now=None):
@@ -412,7 +419,7 @@ def liveness(fm, hs, unverified_why="git unavailable", mtime=None, now=None):
     if (age_h is not None and age_h > 7 * 24) or (drift is not None and drift > 30):
         return "STALE", reason
     if (age_h is not None and age_h > 24) or drift or why \
-            or stamp_why == "stamp in the future":
+            or (stamp_why and "in the future" in stamp_why):
         return "AGED", reason
     return "FRESH", reason
 

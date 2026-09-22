@@ -136,11 +136,15 @@ TOC, read on demand: `path — one line on what it holds`.
   `mark_checkpoint.py` at the end of Step 4b: write each as `<stamped>`. It rewrites those
   frontmatter lines only (adding any that are missing before the closing `---`), leaves
   every other byte as written, and replaces the file atomically. It stamps only a manifest
-  written in the last 30 minutes whose `session:` is a placeholder, the author, or the
-  session whose manifest the author replaced (its `/clear` predecessor or fork parent, or
-  the author of a `handoff` it read in full) — so an id copied from the replaced manifest
-  is corrected, and a concurrent peer's manifest is never claimed. It warns when the
-  manifest's `session:` is still not the id it is given. Hand-typed stamps were wrong in
+  written in the last 30 minutes whose `session:` is a placeholder or the author
+  (`$CLAUDE_CODE_SESSION_ID`; an id passed that differs from it grants nothing), or names
+  the session whose manifest the author replaced — its `/clear` predecessor or fork parent,
+  or the author of a `handoff` it read in full — when the file is no longer the version
+  that link pinned or that Read adopted (it was rewritten, the id copied). So a copied id
+  is corrected, while an untouched predecessor's or parent's manifest and a concurrent
+  peer's are never claimed; those get a `not stamped` warning. A manifest already stamped
+  and not rewritten since is left as it is, so a repeated mark does not re-date it. It
+  warns when the manifest's `session:` is still not the author's id. Hand-typed stamps were wrong in
   13 of 15 sampled writes (some hours in the future, read as FRESH), and since `session:`
   is the ownership key below, a copied id makes the new manifest foreign to its author and
   re-injects it in full into the predecessor.
@@ -148,7 +152,9 @@ TOC, read on demand: `path — one line on what it holds`.
   unreadable (`2026-08-31 21:00 CDT`, a placeholder) or future stamp — more than 10 minutes
   ahead — is not trusted: the file's mtime ages the manifest instead, and the label names
   why, `(no stamp)`, `(stamp unreadable)` or `(stamp in the future)` (joined to any head
-  reason with `; `). A future stamp is never FRESH: at least AGED.
+  reason with `; `). A future stamp is never FRESH: at least AGED. An mtime also more than
+  10 minutes ahead dates nothing: the reason adds `, file time in the future`, and the
+  label is at least AGED. An offset beyond ±14:59 is unreadable.
 - **Whose memory it is.** Those tiers apply only to a manifest this session owns. Ownership
   names a *version* — the `session:` field plus the hash of the file's raw text — so a
   rewrite is a new version. A version is this session's when:
