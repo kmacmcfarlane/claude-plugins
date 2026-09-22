@@ -18,3 +18,4 @@ Split from 426a by operator answer 59(a), 2026-09-22. 426a lands review <branch>
 - next: —
 - blocked: —
 - learned: —
+- from 426a final review (low): the shipped dev-cycle bindings.md '## Resume' heading points at this item's id, which marketplace installs cannot reach; the redesign replaces it (or, until then, 'not specified yet: an interrupted run restarts at Step 0').

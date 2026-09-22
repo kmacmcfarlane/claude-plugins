@@ -90,3 +90,5 @@ librarian (answer 59a): the § Resume work stays recoverable because 426a merges
 dispatch: implementer opus — revert § Resume (and its Step 0/SKILL.md hooks) on this branch as a new commit (resume abb824e); then reviewer opus — confirm review mode stands alone (resume a393294)
 - revert DONE 3becdf5 (opus, answer 59a): § Resume body → pointer to e770 (heading kept); return:/landed: shapes and writes removed; Step 0.4 removed; troubleshooting resume row removed; review mode + decision:/answer: shapes kept; grep clean.
 - dispatch: reviewer opus — confirm review mode stands alone (resume a393294)
+- review (opus) at 3becdf5: CLEAR — review mode stands alone; no dangling pointers; every kept record shape written and read. Lows: the shipped `## Resume` heading points at a local work-item id (unreachable for marketplace installs) → moved to e770; fa4ef02 subject mentions resume → carried in the merge message.
+- Review result: 7 reviews over the item's life (cap waived by answers 51, 57; split by 59); review mode CLEAR since r4; impl sonnet r1–r2, opus r3–r5; review opus.
