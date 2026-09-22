@@ -63,3 +63,11 @@ review r2 (opus) on fbdd08b: NEEDS_CHANGES. §1–§3, §5 clean; strict YAML no
 dispatch: fix round 2 → implementer = peer agent-research
 fix r2 (peer agent-research): b4e0fb4 — N1–N6 fixed; N7 carried (no amend).
 dispatch: reviewer opus — review r3 (resume reviewer on b4e0fb4)
+
+review r3 (opus) on b4e0fb4: NEEDS_CHANGES. §1–§3, §5 clean; strict YAML ok; six Checks OK. N1, N4, N5, N6 fixed; N2 gaps fixed but new spoof path (M2); N3 mostly (M1); N7 carried.
+- M1 [medium] research/SKILL.md:237-243, storage…:22-24, 46-48 — held-run check-ignore runs from host repo; in claude-sandbox sidecar mode (.claude-sandbox/ its own git repo) the path is ignored by host but tracked by the sidecar (reproduced). Pass: run check-ignore from the nearest existing parent (`git -C <parent> check-ignore -q <rest>`) so the owning repo answers, or require ignored by every enclosing repo (e.g. skill writes a .gitignore in _held/).
+- M2 [medium] intensity-and-routing.md:39-48 — "operator-authored prompt" satisfiable by model text; dev-cycle briefs are model-written; Agent-tool prompt can assert operator authorship. Pass: operator-invoked = a turn the operator typed in this session, or an on-disk prompt file the operator wrote that the run starts from (ralph prompt file); an Agent-tool starting prompt is always model-invoked unless it cites an operator decision recorded in a readable file (work item/brief under the operator's name); drop "dev-cycle brief" from the examples.
+- M3 [low] run-record.md:28 — status: list lacks HELD.
+- M4 [low] SKILL.md:243-244 — "Then, per the shape" reads as landing continues for a held run.
+- M5 [low] 5aef0dd subject (carried).
+dispatch: fix round 3 → peer agent-research; review r4 is the last before the cap
