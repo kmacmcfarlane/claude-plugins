@@ -91,3 +91,5 @@ decision 56: 5ef7 final (waived) review is not CLEAR on one fail-safe medium —
 answer 56: (a) one more micro-round: the _held/.gitignore reorder only, then a verify-only review (operator 2026-09-22)
 fix r5 (peer, answer 56a): 985faec — _held/.gitignore written first, then the every-level check; .claude-sandbox/ absent = lost-with-session; 1 file +9/−7.
 dispatch: reviewer opus — verify-only review (resume)
+verify review (opus) on 985faec: CLEAR — _held/ durable in sidecar, tracked and host-ignored modes; lost (declared) on a non-repo root or no .claude-sandbox/; git status clean in both repos. Carried low: 5aef0dd subject. Residuals: rule-zero work-item exception trusts a model-writable file; spec R9 lacks HELD.
+land (librarian): test merge against main conflicts in .claude-plugin/marketplace.json, README.md, plugins/dev-flow/.claude-plugin/plugin.json (F1 9882's dependency wording vs research's description rows). Land stopped; conflict round → implementer (peer) merges main into the branch and resolves keeping both; reviewer verifies the resolution.
