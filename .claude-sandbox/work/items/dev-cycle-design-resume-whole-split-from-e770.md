@@ -2,9 +2,11 @@
 id: dev-cycle-design-resume-whole-split-from-e770
 title: "dev-cycle: design § Resume whole (split from 426a)"
 type: feature
-status: todo
+status: doing
 priority: 3
 parent: dev-flow-new-dev-cycle-skill-investigate-07c3
+owner: unknown@360f41058e92
+claimed: 2026-09-22T17:54Z
 created: 2026-09-22
 updated: 2026-09-22
 refs:
@@ -19,3 +21,7 @@ Split from 426a by operator answer 59(a), 2026-09-22. 426a lands review <branch>
 - blocked: —
 - learned: —
 - from 426a final review (low): the shipped dev-cycle bindings.md '## Resume' heading points at this item's id, which marketplace installs cannot reach; the redesign replaces it (or, until then, 'not specified yet: an interrupted run restarts at Step 0').
+dispatch: planner opus — plan mode, no worktree; series .claude-sandbox/investigations/e770-dev-cycle-resume/
+
+## Notes
+- 2026-09-22 claimed by unknown@360f41058e92
