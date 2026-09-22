@@ -79,7 +79,8 @@ state `blocked`, said once with the fix; later sessions retry quietly.
 
 Then the prune pass (housekeeping.py): sensor records untouched for 30
 days (the hub's tee writes them too), dead hooks.d manifests, stale last-good
-cache and logs, orphaned temp files. It also creates the hub's hooks.d (0700)
+cache and logs, segment files no render will show again, orphaned temp
+files. It also creates the hub's hooks.d (0700)
 so a plugin registering a hook finds it private.
 
 Finally the refusal notice: when manifests sit in hooks.d but the registry

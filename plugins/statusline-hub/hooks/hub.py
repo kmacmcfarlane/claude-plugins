@@ -29,7 +29,11 @@ Each render, in this order:
    group.
 5. Health: for each hook with a health_path, one capped read; any "warn"
    appends GLYPH once.
-6. Print the segments joined by the configured separator, in order.
+6. Segments: read the drop dir (registry.scan_segments; files other tools
+   write, no code runs), each file capped, stale or expired ones dropped.
+7. Print the display hooks' segments and the drop-dir segments joined by
+   the configured separator, in order; when COLUMNS says the line is too
+   wide, drop-dir segments go first, lowest priority first.
 
 Wrap mode (the user consented, with install-statusline-hub --wrap, to the hub
 running the statusLine command their user settings held before it): when the
@@ -492,6 +496,59 @@ def run_inner(sid):
         os.close(lock)
 
 
+# -- composing the line ------------------------------------------------------
+
+def arrange_parts(displays, texts, drops, cfg):
+    """[(text, priority)] in display order: the display hooks' texts (priority
+    None: never dropped for width) and the segment drop dir's segments, sorted
+    together by the user's `order`, then each one's `order` hint, then name
+    (a display hook before a segment of the same name). `displays` is already
+    in that order (registry.arrange); the sort keeps it."""
+    rank = {n: i for i, n in enumerate(cfg["order"])}
+    keyed = [((rank.get(h["name"], len(rank)), h["order"], h["name"], 0), texts[h["name"]], None)
+             for h in displays if texts.get(h["name"])]
+    keyed += [((rank.get(s["name"], len(rank)), s["order"], s["name"], 1), s["text"],
+               s["priority"]) for s in drops]
+    keyed.sort(key=lambda k: k[0])
+    return [(text, prio) for _, text, prio in keyed]
+
+
+def term_columns():
+    """The terminal width from COLUMNS, or None when it is not set to a
+    positive integer."""
+    try:
+        n = int(os.environ.get("COLUMNS", ""))
+        return n if n > 0 else None
+    except Exception:
+        return None
+
+
+def join_line(parts, inner, sep):
+    line = sep.join(text for text, _ in parts)
+    if inner:
+        if line and "\x1b" in inner:
+            inner += R.RESET  # its colour must not bleed into the segments
+        line = f"{inner}{sep}{line}" if line else inner
+    return line
+
+
+def fit_line(parts, inner, sep, cols):
+    """The line: the wrapped command's output (when there is one) first, the
+    parts after it on its last line. With `cols` known and the last line
+    wider, drop-dir segments go one at a time - the lowest priority first,
+    and of equal ones the last shown - until it fits or none is left. A
+    display hook's text and the wrapped output are never dropped."""
+    parts = list(parts)
+    line = join_line(parts, inner, sep)
+    while cols and R.columns(line.rsplit("\n", 1)[-1]) > cols:
+        drop = [i for i, (_, prio) in enumerate(parts) if prio is not None]
+        if not drop:
+            break
+        del parts[min(drop, key=lambda i: (parts[i][1], -i))]
+        line = join_line(parts, inner, sep)
+    return line
+
+
 # -- render ------------------------------------------------------------------
 
 def render(data, now=None):
@@ -519,7 +576,8 @@ def render(data, now=None):
         if records:
             dispatch_records(records, data)
         segs = run_displays(displays, data, sid, now) if displays else {}
-        line = cfg["separator"].join(segs[h["name"]] for h in displays if segs.get(h["name"]))
+        parts = arrange_parts(displays, segs, R.segments(sid, now, project_dirs(d), cfg), cfg)
+        inner = None
         if wrapped:
             if runner is not None:
                 try:
@@ -528,10 +586,7 @@ def render(data, now=None):
                 except subprocess.TimeoutExpired:
                     pass
             inner = inner_get(sid, time.time())  # the runner stamps it after `now`
-            if inner:
-                if line and "\x1b" in inner:
-                    inner += R.RESET  # its colour must not bleed into the segments
-                line = f"{inner}{cfg['separator']}{line}" if line else inner
+        line = fit_line(parts, inner, cfg["separator"], term_columns())
         if any(R.health(h["health_path"], now, cfg["health_stale_min"])
                for h in hooks if h.get("health_path")):
             line = f"{line} {GLYPH}" if line else GLYPH
@@ -556,6 +611,15 @@ def status():
                                      or "ok or unknown")
         print(f"  {h['name']}: {h['kind']}, {state}, timeout {h['timeout_ms']} ms, "
               f"runs {os.path.basename(h['argv'][0])}{health}")
+    for name, why in problems:
+        print(f"  {name}: skipped ({why})")
+    segs, problems = R.scan_segments(None, now, [os.getcwd(), os.environ.get("CLAUDE_PROJECT_DIR")])
+    if segs or problems:
+        print(f"segments: {R.segments_dir()} (session files are read per render)")
+    for sg in segs:
+        state = "disabled in config.json" if sg["name"] in cfg["disabled"] else \
+            ("shows" if sg["text"] else "empty")
+        print(f"  {sg['name']}: all sessions, {state}, priority {sg['priority']}")
     for name, why in problems:
         print(f"  {name}: skipped ({why})")
     rec, why = R.read_wrap([os.getcwd(), os.environ.get("CLAUDE_PROJECT_DIR")])
