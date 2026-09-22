@@ -17,3 +17,4 @@ Relayed 2026-09-22 by peer 'marketplace - librarian', quoting the operator's rul
 - next: —
 - blocked: —
 - learned: —
+answer 58: (a) confirmed (operator 2026-09-22)

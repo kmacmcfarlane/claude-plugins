@@ -2,11 +2,10 @@
 id: review-and-land-agent-research-s-researc-5ef7
 title: review and land agent-research's research skill family (branch worktree-research-skills)
 type: feature
-status: blocked
+status: doing
 priority: 1
 owner: unknown@360f41058e92
 claimed: 2026-09-22T08:33Z
-blocked: final review not CLEAR (one fail-safe medium); decision 56
 created: 2026-09-22
 updated: 2026-09-22
 refs:
@@ -89,3 +88,4 @@ review r5 (opus, final waived round) on 76c3ffc: NEEDS_CHANGES. §1–§3, §5 c
 - Q1 [medium] storage-and-knowledge-base.md:35-41 — `_held/.gitignore` (`*`) is written only after the every-level check passes, so in sidecar-repo and tracked modes the check fails first and held runs are lost with the session (fails safe; no leak). Pass (tested): write `.claude-sandbox/research/_held/.gitignore` first when `.claude-sandbox/` exists, then run the check → USABLE in sidecar and tracked mode, nothing shows in either repo's status; non-repo root still lost.
 - low: 5aef0dd subject (carried). Notes: spec R9 lacks HELD (edit the spec next time).
 decision 56: 5ef7 final (waived) review is not CLEAR on one fail-safe medium — held runs are lost with the session in both standard sandbox modes because a .gitignore is written after the check it should satisfy; the fix is a one-sentence reorder the reviewer already tested. (a) one more micro-round: that reorder only, then a verify-only review [recommended: minutes of work, lands the skills as specified]; (b) land now at 76c3ffc and fix it as a follow-up item (safe: nothing leaks, held runs just are not durable yet); (c) hold.
+answer 56: (a) one more micro-round: the _held/.gitignore reorder only, then a verify-only review (operator 2026-09-22)

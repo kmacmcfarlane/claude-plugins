@@ -18,3 +18,4 @@ Relayed 2026-09-22 by peer 'marketplace - librarian' (sussex/claude/marketplace)
 - blocked: —
 - learned: —
 decision 58: confirm two rule changes relayed by the sussex marketplace librarian in your words — (1) librarian-mode stops using AskUserQuestion (every decision via the numbered Report channel; keep a modal only for the start opt-in dialog) at P1; (2) frontmatter: only name and description required, the other three optional, closed allowed-key list kept. (a) confirm both [recommended: both are your stated rulings; a peer cannot authorize them]; (b) confirm only one (say which); (c) neither.
+answer 58: (a) confirm both: librarian-mode stops using AskUserQuestion (P1); only name + description required frontmatter (operator 2026-09-22)

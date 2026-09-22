@@ -46,3 +46,4 @@ decision 50: the drafted upstream issue (tell the statusLine which sub-agent is 
 - lows carried to follow-up: long-line path accepts any "usage" key; missing usage field borrowed within 2048 bytes; no chunk-straddle test; README catalog row + decision tree (line 110) wording.
 - landed e1b43b3
 answer 50: operator needs more info before weighing in — librarian relays the draft's ask and the closed upstream issues; decision stays open (operator 2026-09-22)
+answer 50: (a) do not post; the known-limitation line stands (operator 2026-09-22)
