@@ -42,3 +42,7 @@ decision (librarian, 2026-09-22) on R1: mode and N move to F2. F2 owns the mode 
 dispatch: fix round 1 implementer opus — resume a363290 (tier kept, rule 6)
 fix r1 (opus, a363290): 12ac598 — R1 per decision (budget.md cites it); R2–R12 fixed (72 tests; race test fails 3/3 on a9e4edb); R13 declined (needs amend — accepted). New store file samples.lock (flock). OQs → F2 (c79e).
 dispatch: reviewer opus — review r2 (resume r1 reviewer on 12ac598)
+
+review r2 (opus) on 12ac598: CLEAR. R2–R12 fixed (16-way create race → 1 created/15 conflict ×3; 8×50 concurrent appends under prune → 400/400). Lows L1–L4 (replaced-unreadable too wide: oversized/mode-000 foreign claim replaced; samples.lock opened O_WRONLY without O_NOFOLLOW — read-only lock exits 1, planted symlink creates target outside store; read_jsonl `except Exception` hides parser bugs; budget.md:8 decision citation ungrammatical) — author's call; librarian filed them as a follow-up item rather than a third round (quota; none medium+).
+Review result: 2 review rounds, 1 fix round (+ one pre-review scope addition); findings fixed R2–R12; declined R13 (needs amend); final verdict CLEAR; impl opus, review opus.
+land checks (librarian, worktree 12ac598): all seven suites OK; diff read against doctrine — 9 files, all in item scope.
