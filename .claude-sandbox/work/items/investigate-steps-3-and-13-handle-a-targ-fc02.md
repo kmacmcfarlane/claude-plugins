@@ -17,3 +17,4 @@ bb7e reviewer note, 2026-09-22: Step 2 now asks which repo owns the work, but St
 - next: —
 - blocked: —
 - learned: —
+- riders from bb7e review r2 (2026-09-22): README ### dev-flow soft-dependency paragraph gains one create-repo sentence; dev-flow plugin.json description is 1072 chars — trim its dependency parenthetical.

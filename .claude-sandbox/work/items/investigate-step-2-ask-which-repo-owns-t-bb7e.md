@@ -2,12 +2,11 @@
 id: investigate-step-2-ask-which-repo-owns-t-bb7e
 title: "investigate Step 2: ask which repo owns the work when its target may not exist yet"
 type: chore
-status: doing
+status: done
 priority: 3
-owner: Kyle-McFarlane@bf9f9839222c
-claimed: 2026-09-22T22:48Z
 created: 2026-09-22
 updated: 2026-09-22
+closed: 2026-09-22
 refs:
   - "peer: agents - librarian (uds 122.sock); agents retro/2026-09-20-agent-telemetry-investigate-run.md @ agents 74b45f9 § candidate skill changes"
 ---
@@ -41,3 +40,7 @@ return: implementer DONE 39f94d5
 changed: + plugins/dev-flow/.claude-plugin/plugin.json (description), README.md (dev-flow catalog row)
 dispatch: reviewer opus — review r2 (resume)
 agent: reviewer a01a4385d96cd4e01 round 2
+verdict: CLEAR round 2 at 39f94d5
+lows carried to fc02: README dev-flow soft-dependency prose omits create-repo; plugin.json description now 1072 chars
+landed: 49da78f
+- 2026-09-22 done: 49da78f

@@ -39,3 +39,10 @@ dispatch: implementer opus — fix round 1 (resume)
 return: implementer DONE 7dc3546
 dispatch: reviewer opus — review r2 (resume)
 agent: reviewer a9569a76c211e6e99 round 2
+verdict: NEEDS_CHANGES round 2 at 7dc3546 (both r1 mediums confirmed closed by the reviewer's own main-then-HEAD reproduction)
+findings:
+- [medium] wi.py:2190 STRUCK_PLAIN_LINE_RE — any text after a dash closes: `- [ ] ~~Migrate to PG15~~ — PG16 instead` imports done and the open task leaves the queue. Pass: close a plain struck line only when nothing follows, a paren follows, or a dash is followed by a closure word (done/fixed/landed/closed/resolved/dropped/merged/wontfix) and/or a date; test the `~~X~~ — Y instead` shape stays open.
+- [low] wi.py:2213-2216 empty strike `~~ ~~` imports done with an empty title (lint fails). Pass: None on empty; require non-space inside.
+- [low] wi.py:2211 `~~**T** x~~y` desc `xy` — join with a space.
+dispatch: implementer opus — fix round 2 (resume)
+agent: implementer ae88fb9e69adfe405 round 3
