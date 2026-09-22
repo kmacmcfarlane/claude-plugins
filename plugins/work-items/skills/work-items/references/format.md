@@ -86,7 +86,7 @@ except `claimed` (ISO-8601 UTC to the minute).
 | `stage` | `implement review testing uat uat_feedback` | pipeline sub-state; meaningful only when `doing` |
 | `priority` | int 0–4, 0 highest | default 2; ↔ backlog.yaml 90/70/50/30/10 |
 | `tags` | flow list `[a, b]` | |
-| `deps` | block list of ids or `ext: <text>` | structural "cannot start until"; `ext:` never resolves |
+| `deps` | block list of ids or `ext: <text>` | structural "cannot start until"; `ext:` never resolves, nor does an id absent from `items/`; `claim` refuses a `todo` item whose deps do not all resolve, by the same rule as `next` |
 | `parent` | id | grouping only, no blocking |
 | `owner` | free string, e.g. `user@host` | set by `claim`, cleared by `release`/`done` |
 | `claimed` | UTC minute | stale test in `next --stale` |

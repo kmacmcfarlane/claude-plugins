@@ -1089,6 +1089,53 @@ class TestClaim(WiTestCase):
         self.write_item("blocked-1111", status="blocked", blocked="reason")
         self.assertEqual(run(["claim", "blocked-1111"], self.root).returncode, 1)
 
+    def assert_claim_refused(self, iid, *named):
+        path = self.root / "items" / f"{iid}.md"
+        before = path.read_text()
+        r = run(["claim", iid], self.root)
+        self.assertEqual(r.returncode, 1, r.stderr + r.stdout)
+        for text in named:
+            self.assertIn(text, r.stderr)
+        self.assertEqual(path.read_text(), before)  # nothing written
+        return r
+
+    def test_claim_refuses_unmet_dep(self):
+        # the live-fired case: `block --on` leaves status todo, so only the
+        # dep keeps it out of `next`; claim must refuse it the same way
+        self.write_item("base-1111")
+        self.write_item("kid-2222")
+        self.wi_ok(["block", "kid-2222", "--on", "base-1111"])
+        self.assertNotIn("kid-2222", self.wi_ok(["next", "--plain"]))
+        self.assert_claim_refused("kid-2222", "base-1111 (todo)")
+
+    def test_claim_names_every_unmet_dep_only(self):
+        self.write_item("wip-1111", status="doing")
+        self.write_item("fin-2222", status="done")
+        self.write_item("kid-3333", deps=["wip-1111", "fin-2222", "ext: vendor"])
+        r = self.assert_claim_refused("kid-3333", "wip-1111 (doing)",
+                                      "ext: vendor (external")
+        self.assertNotIn("fin-2222", r.stderr)
+
+    def test_claim_allows_done_and_dropped_deps(self):
+        self.write_item("fin-1111", status="done")
+        self.write_item("gone-2222", status="dropped")
+        self.write_item("kid-3333", deps=["fin-1111", "gone-2222"])
+        self.wi_ok(["claim", "kid-3333"])
+        rec = json.loads(self.wi_ok(["show", "kid-3333", "--json"]))
+        self.assertEqual((rec["status"], rec["owner"]), ("doing", "tester@local"))
+
+    def test_claim_refuses_unknown_dep(self):
+        # an id that resolves to no item never counts as met (as in `next`)
+        self.write_item("kid-1111", deps=["ghost-9999"])
+        self.assert_claim_refused("kid-1111", "ghost-9999 (not in items/")
+
+    def test_next_claim_still_skips_unmet_dep(self):
+        self.write_item("base-1111", priority=3)
+        self.write_item("kid-2222", priority=0, deps=["base-1111"])
+        rec = json.loads(self.wi_ok(["next", "--pipeline", "--one", "--claim",
+                                     "worker-1", "--json"]))
+        self.assertEqual(rec["id"], "base-1111")
+
     def test_eight_concurrent_claims_one_winner(self):
         self.write_item("race-1111")
         specs = [(str(self.root), "race-1111", f"worker-{n}@host")
