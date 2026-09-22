@@ -264,7 +264,9 @@ unknown and the fallback runs on opus at once. Soft dependency on `context-guard
 `investigate` offers a checkpoint, `/clear`, then implement path when the checkpoint skill
 is in the session; `librarian-mode` answers the context gate's advisories with a
 checkpoint and weighs its manifest and ledger when it rehydrates; the fable fallback also
-reads reset times from its older state record. Without it none of these fire.
+reads reset times from its older state record. Without it none of these fire. Soft
+dependency on `kit-dev`: the `investigate` and `implement` retrospectives hand their findings
+to its user-invoked `update-kit`; without it the findings stand as the record.
 
 ### work-items
 
