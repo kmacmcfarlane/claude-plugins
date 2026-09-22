@@ -71,3 +71,5 @@ review r3 (opus) on b4e0fb4: NEEDS_CHANGES. §1–§3, §5 clean; strict YAML ok
 - M4 [low] SKILL.md:243-244 — "Then, per the shape" reads as landing continues for a held run.
 - M5 [low] 5aef0dd subject (carried).
 dispatch: fix round 3 → peer agent-research; review r4 is the last before the cap
+fix r3 (peer agent-research): 1c89cde — M1–M4 fixed, 4 files +46/−30; M5 carried.
+dispatch: reviewer opus — review r4 (cap round; resume reviewer on 1c89cde)
