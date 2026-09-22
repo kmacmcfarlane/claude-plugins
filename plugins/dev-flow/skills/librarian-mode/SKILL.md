@@ -188,7 +188,8 @@ would ask the operator. Its Step 6 is the Report below. Your bindings:
 - **Decision channel**: `decision N:` appended to the item and carried under the
   Report's `decisions needed` — only what dev-cycle raises there: a `SHOW_STOPPER`, a
   scope change or reversed operator decision, the cap, a blocked item, a fable wait, a
-  spike's blocking open questions.
+  spike's blocking open questions. **Durable**: the question lives in the committed item
+  body and is answered to whichever session is librarian next.
 - **Terminal action**: `git merge --no-ff` into local `main`; the push is yours, after
   the Report (Critical). An item naming another base merges into that base instead, with
   the main checkout on it, and is never pushed. First-start dirt never blocks a merge
