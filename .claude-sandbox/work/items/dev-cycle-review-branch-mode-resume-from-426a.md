@@ -88,3 +88,5 @@ decision 59: 426a — the approved round (57b) fixed its findings, but § Resume
 answer 59: (a) land review mode without § Resume; record the work already done and the current feedback for the redesign (operator 2026-09-22)
 librarian (answer 59a): the § Resume work stays recoverable because 426a merges with its full history (fa4ef02…54f022c) plus a revert commit on top; the redesign is item dev-cycle-design-resume-whole-split-from-e770, whose body carries the shas and the open findings; this body keeps the six review rounds verbatim.
 dispatch: implementer opus — revert § Resume (and its Step 0/SKILL.md hooks) on this branch as a new commit (resume abb824e); then reviewer opus — confirm review mode stands alone (resume a393294)
+- revert DONE 3becdf5 (opus, answer 59a): § Resume body → pointer to e770 (heading kept); return:/landed: shapes and writes removed; Step 0.4 removed; troubleshooting resume row removed; review mode + decision:/answer: shapes kept; grep clean.
+- dispatch: reviewer opus — confirm review mode stands alone (resume a393294)
