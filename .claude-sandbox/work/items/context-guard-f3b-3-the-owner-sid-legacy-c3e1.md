@@ -44,3 +44,6 @@ notes: copy mechanics, warn-only, trim decision, four lows and 3a8f all confirme
 librarian: medium 1 takes the reviewer's pass (the obvious fail-safe fix, no operator decision: it narrows what is copied, never widens).
 dispatch: implementer opus — fix round 1 (resume)
 agent: implementer a3dabe735be8fe6d2 round 2
+return: implementer DONE 169dec5
+dispatch: reviewer opus — review r2 (resume)
+agent: reviewer a05d99543406d4ed4 round 2

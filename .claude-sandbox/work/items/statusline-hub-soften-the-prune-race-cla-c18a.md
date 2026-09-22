@@ -25,3 +25,8 @@ refs:
 
 target: full statusline-hub-soften-the-prune-race-cla-c18a /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude/worktrees/statusline-hub-soften-the-prune-race-cla-c18a
 dispatch: implementer opus — executable logic (statusline-hub hooks test), rule 2
+agent: implementer a2b25e2beac04943f round 1
+return: implementer DONE fd01a1d
+changed: statusline-hub hook-contract.md § 11, hooks/housekeeping.py (docstrings), hooks/tests/test_segments.py
+dispatch: reviewer opus — rule 4, implementer tier
+agent: reviewer a4c285f70fe3ddc17 round 1

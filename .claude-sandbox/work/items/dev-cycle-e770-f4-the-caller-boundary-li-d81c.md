@@ -35,3 +35,12 @@ return: implementer DONE_WITH_CONCERNS b4ed234 (SKILL.md +49 bytes: two required
 changed: librarian-mode SKILL.md (Rehydrate steps 3-4, fable-group clause), references/ending-the-session.md (four sites)
 dispatch: reviewer opus — rule 4 floor (impl sonnet)
 agent: reviewer aae2e168adc2b1526 round 1
+verdict: NEEDS_CHANGES round 1 at b4ed234
+findings:
+- [medium] SKILL.md:95-96 — §2 reference lint FAIL: sibling name and path split across an indented wrap. Pass: name and path on one line.
+- [medium] SKILL.md:95-96 — pointer targets § LIVE (the fact) not Group B (S3a/S3b/S13, the action) — the librarian never runs Step 0.4, so this is its only route; and ids named from "doing:/dispatch: line" where dispatch: never carries an id. Pass: "Take each doing item's record up by the `dev-cycle` skill's `references/resume.md`, whose § LIVE probes the ids its agent: lines (and In flight) name, and whose Group B attaches or salvages."
+- [medium] SKILL.md:111 — orphan rule lost ListAgents, the only detector of agents no item records. Pass: "no live agent (step 3's probes; ListAgents for one no item records) and no doing item".
+- [medium] SKILL.md:206 — "(references/model-routing.md § Fallback)" resolves to librarian-mode's own stub. Pass: the `dev-cycle` skill's references/model-routing.md § Fallback.
+- [low] ending-the-session.md:13 repeats record-lines rationale; [low] SKILL.md:205 "its pair" ambiguous.
+dispatch: implementer sonnet — fix round 1 (resume)
+agent: implementer a1cdaa872072a3b48 round 2

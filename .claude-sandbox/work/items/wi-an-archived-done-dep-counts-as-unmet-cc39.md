@@ -26,3 +26,8 @@ refs:
 
 target: full wi-an-archived-done-dep-counts-as-unmet-cc39 /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude/worktrees/wi-an-archived-done-dep-counts-as-unmet-cc39
 dispatch: implementer opus — executable logic (wi.py), rule 2
+agent: implementer abb14e345a6345416 round 1
+return: implementer DONE 9d7b88a
+changed: wi.py (DepIndex, load_paths), tests/test_wi.py, references/format.md (deps row), SKILL.md (next row)
+dispatch: reviewer opus — rule 4, implementer tier
+agent: reviewer a123dd58079c56144 round 1
