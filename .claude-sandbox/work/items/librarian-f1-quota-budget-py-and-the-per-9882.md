@@ -29,3 +29,14 @@ librarian on OQs (2026-09-22): OQ1 add the new suite to CLAUDE.md `## Librarian`
 dispatch: implementer opus — scope addition before review r1 (resume a363290; doctrine/shape signal)
 impl r0b (opus, a363290): DONE at a9e4edb — CLAUDE.md Checks line, README dev-flow row (claude-analytics soft, store named), plugin.json + marketplace.json mirrored. OQ: claude-analytics named before it exists (same as OQ6).
 dispatch: reviewer opus — executable logic + marketplace shape (rule 4, implementer opus)
+
+review r1 (opus) on a9e4edb: NEEDS_CHANGES. Seven Checks OK; §1–§5 clean. Findings:
+- R1 [high] quota_budget.py:520-594 — plan § F1 says prints mode/N/next_check (absent signal → normal, N=2); script prints neither.
+- R2 [medium] :132, :261 — RecursionError from deeply nested JSON escapes readers → exit 1 every call; poisoned samples line persists through prune.
+- R3 [medium] :539, :547 — future-stamped sink line keeps sink "live" and wins max(at).
+- R4 [medium] :434-471 — claim create/refresh is read-then-replace; 12 concurrent sessions all got `created`; refresh can clobber a takeover.
+- R5 [medium] tests — no tests for R2/R3/R4, usage-cache-*.jsonl ignored by the sink, epoch ms heuristic, worktree→main repo_name.
+- R6–R13 [low] budget.md dir-mode wording; exit-code 1 on internal error undocumented; glob claude-analytics* → claude-analytics-*; README/plugin.json/marketplace.json name claude-analytics as shipping (suggest "external, planned"); README "without it … no signal" not quite true; refresh nulls stored identity fields; prune drops concurrent appends / no fsync; a9e4edb subject form.
+- reviewer note: allowed rate unbounded just before a reset — F2 should cap/ignore a window about to reset.
+decision (librarian, 2026-09-22) on R1: mode and N move to F2. F2 owns the mode table and the N formula (per-agent rates, active-librarian count), and the agents policy (c79e) changes that count to claims heartbeats via serial 01 before F2; computing N in F1 would bake in a formula about to change. F1 prints the numbers behind them + next_check; budget.md cites this decision. Not an operator decision reversed (plan text, not operator).
+dispatch: fix round 1 implementer opus — resume a363290 (tier kept, rule 6)
