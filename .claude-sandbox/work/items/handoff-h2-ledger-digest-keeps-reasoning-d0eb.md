@@ -34,3 +34,5 @@ review r2 (opus) at c21f67c: NEEDS_CHANGES. Committed == tested (git archive ide
 - [medium] ledger.py:144-155 — a cut but nothing left out → closing note with an empty count ("[ledger digest:  line(s) left out…]"), realistic for any small ledger with one long line. Pass: no note when nothing is left out, or "N line(s) cut; full ledger <path>"; test.
 - [low] below ~40+len(path) the clamp returns a stub ("[ledger di") → return "". nit: doc "half the budget" vs code half the room.
 dispatch: implementer opus — fix round 2 (resume)
+fix r2 DONE 3dd30ee (opus): closing line reports left-out and/or cut counts, none when neither; "" below the minimum budget; doc defines the room; 2 checks fail on c21f67c.
+dispatch: reviewer opus — review r3 (resume)
