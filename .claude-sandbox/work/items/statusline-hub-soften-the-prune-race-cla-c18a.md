@@ -2,12 +2,11 @@
 id: statusline-hub-soften-the-prune-race-cla-c18a
 title: "statusline-hub: soften the prune-race claim in hook-contract § 11; test or drop _dead_segment's read-vs-lstat check"
 type: chore
-status: doing
+status: done
 priority: 4
-owner: Kyle-McFarlane@bf9f9839222c
-claimed: 2026-09-22T23:24Z
 created: 2026-09-22
 updated: 2026-09-22
+closed: 2026-09-22
 refs:
   - 5cde review r1
 ---
@@ -30,3 +29,7 @@ return: implementer DONE fd01a1d
 changed: statusline-hub hook-contract.md § 11, hooks/housekeeping.py (docstrings), hooks/tests/test_segments.py
 dispatch: reviewer opus — rule 4, implementer tier
 agent: reviewer a4c285f70fe3ddc17 round 1
+verdict: CLEAR round 1 at fd01a1d
+nits declined by the librarian: mock.patch.object style; § 11 understates the guarantee (true as written)
+landed: 2765571
+- 2026-09-22 done: 2765571
