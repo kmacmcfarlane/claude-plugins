@@ -60,10 +60,10 @@ way, keeping 8 days and dropping any line that does not parse. Append and prune 
 an exclusive `flock` on `samples.lock`, so a prune never loses a concurrent append.
 `samples.jsonl` and `samples.lock` are opened without following a symlink: one planted at
 either name fails the append as a store write error, and nothing outside the store is
-created or written. The script creates each directory it is missing with mode 0700, from `claude-kit/` down. It
-also sets the directory it writes into to 0700 on every write (`librarian/` and
-`claims/`), even when that directory already existed. Directories above those, including
-an existing `claude-kit/`, keep their modes. The store holds percentages,
+created or written. The script creates each directory it is missing with mode 0700, from
+`claude-kit/` down. It also sets the directory it writes into to 0700 on every write
+(`librarian/` and `claims/`), even when that directory already existed. Directories above
+those, including an existing `claude-kit/`, keep their modes. The store holds percentages,
 session ids and intent, never a settings value. The script never reads a settings file or
 Claude Code's user-level state file.
 
