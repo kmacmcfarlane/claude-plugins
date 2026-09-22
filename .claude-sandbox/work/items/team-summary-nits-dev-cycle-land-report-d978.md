@@ -41,3 +41,6 @@ findings:
 - [nit] :95 stalling vs erroring out; :97 restates parent.
 dispatch: implementer sonnet — fix round 1 (resume)
 agent: implementer a93454c614a233434 round 2
+return: implementer DONE 9f5c1e2
+dispatch: reviewer opus — review r2 (resume)
+agent: reviewer a4b5a5f9094e72a37 round 2
