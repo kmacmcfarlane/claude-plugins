@@ -2,16 +2,15 @@
 id: dev-cycle-review-branch-mode-resume-from-426a
 title: "dev-cycle: review <branch> mode + resume from item record (07c3 F4)"
 type: feature
-status: blocked
+status: doing
 priority: 3
 deps:
   - dev-flow-add-the-dev-cycle-skill-07c3-f1-325d
 parent: dev-flow-new-dev-cycle-skill-investigate-07c3
 owner: unknown@360f41058e92
 claimed: 2026-09-21T23:07Z
-blocked: "decision 51: review cap hit on § Resume rules 3/5"
 created: 2026-09-18
-updated: 2026-09-21
+updated: 2026-09-22
 ---
 
 07c3 plan §F4. Size S-M; sonnet/opus.
@@ -63,3 +62,17 @@ updated: 2026-09-21
 - lows: define "relevant" lines (dispatch/return/verdict/landed); rule 7 re-dispatches a BLOCKED reviewer without the twice-at-most count.
 - reviewer: both are a few lines in § Resume rules 3 and 5, not a sign the brief or target is wrong.
 decision 51: 426a hit the 4-review cap on a few-line § Resume fix (rule 5 review-mode dispatch answer; rule 3 return status) — (a) waive the cap for one more fix round on opus (rule 3: fix round 3 after a high → fable, unavailable → opus) plus one review [recommended: the fixes are specified line-by-line; everything else is CLEAR]; (b) land review mode without resume: split § Resume into a new item and have the implementer revert it on this branch, then review; (c) park 426a as is.
+answer 51: (a) another round approved (operator 2026-09-22)
+- dispatch: implementer opus — fix round 3 after a high (rule 3 → fable; fable fallback → opus per answer 51's recommendation); fresh agent in the same worktree (the sonnet implementer cannot be resumed at a higher tier)
+- fix round 3 DONE 0f0a254 (opus, cap waived by answer 51): § Resume rule 5 dispatches onto the author's branch only on a recorded yes (decline → report/handoff/stop; unanswered → raise the decision); rule 3 by return status (NEEDS_CONTEXT/BLOCKED → Step 3.5); relevant lines = dispatch:/return:/verdict:/landed:; rule 7 BLOCKED reviewer at most twice.
+- dispatch: reviewer opus — review r5 (the waived round; fresh reviewer, the r1–r4 reviewer ran in the prior session)
+
+## Review round 5 (waived by answer 51) — NEEDS_CHANGES (opus, fresh reviewer) at 0f0a254
+- round-3 high, medium and both lows fixed; every last-line state walked: no double dispatch, no action on the author's branch without a recorded yes, no land without CLEAR at HEAD, checks always run.
+- [medium] bindings.md:260-265, 272-274 — rules 5 and 6 define the cap differently: CLEAR r1 → HEAD moves → NEEDS_CHANGES r2–r4 → interrupt matches no rule. Pass: one cap test (count verdict rounds; exclude only a CLEAR current at HEAD) used by both.
+- [medium] bindings.md:204-205, 129-157 (+ rules 3/5/6/7) — every guard reads a decision's "recorded answer" but no step writes one; no answer shape in § Record line shapes; resume re-raises answered decisions; caller's `decision N:`/`answer N:` not matched. Pass: add `answer:` shape, write it in § Decisions and Step 3.5, read it in rules 3/5/6/7, name `answer N:` equivalent.
+- lows: rule 5 declined path `$WI handoff` without "(no item: nothing further)"; rule 7 re-dispatches a permission-denied BLOCKED (should block + decide); rule 6 silent on acting once an answer is recorded.
+- both mediums predate 0f0a254 (from 58bece4).
+decision 57: 426a's waived round is not CLEAR — the § Resume state machine drew new mediums for the fifth review running (a cap mismatch between rules 5/6; decision answers never recorded). Review mode itself has been CLEAR since round 4. (a) land review mode without § Resume: the implementer reverts § Resume on this branch, a short review confirms, and § Resume becomes a new item planned first (plan mode) so its state machine is designed whole [recommended: stops a fix-by-fix spiral; everything else is ready]; (b) one more fix round for the two mediums + lows and one review; (c) park 426a.
+answer 57: (b) one more fix round for the two mediums + lows and one review (operator 2026-09-22)
+- dispatch: implementer opus — fix round 4 (answer 57), resume the round-3 opus implementer

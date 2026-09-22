@@ -135,4 +135,5 @@ Checks:
 - (cd plugins/work-items/skills/work-items && python3 -m unittest discover -s tests -q)
 - (cd plugins/context-guard/skills/usage-report && python3 -m unittest discover -s tests -q)
 - (cd plugins/statusline-hub/hooks && python3 -m unittest discover -s tests -q)
+- (cd plugins/dev-flow/skills/librarian-mode/scripts && python3 -m unittest discover -s tests -q)
 Push: main

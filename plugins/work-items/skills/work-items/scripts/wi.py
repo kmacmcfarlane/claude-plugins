@@ -17,10 +17,12 @@ Constraints this file lives under:
 import argparse
 import fcntl
 import fnmatch
+import glob
 import hashlib
 import json
 import os
 import re
+import shlex
 import subprocess
 import sys
 import time
@@ -987,22 +989,44 @@ def _refuse_existing(dst):
     return WiError(3, f"refusing to overwrite existing {dst}; nothing written for it")
 
 
+def _half_moved(a, b):
+    """True when `a` and `b` are two hard links to one file — the state a
+    kill between link and unlink leaves: same device and inode (the last
+    component not followed), at least two links, and parent directories
+    that resolve to different directories. One directory entry reached by
+    two paths (a symlinked or bind-mounted directory) fails the last two
+    tests: unlinking either path would delete the only copy."""
+    try:
+        sa, sb = os.lstat(a), os.lstat(b)
+        pa, pb = (os.path.realpath(os.path.dirname(os.path.abspath(x)))
+                  for x in (a, b))
+    except OSError:
+        return False
+    return ((sa.st_dev, sa.st_ino) == (sb.st_dev, sb.st_ino)
+            and sa.st_nlink >= 2 and pa != pb)
+
+
 def _move_no_clobber(src, dst):
     """Move `src` to `dst`, never replacing an existing `dst` (WiError 3).
 
-    A hard link is the atomic no-clobber rename. Where the filesystem has
-    none, the name is reserved with O_EXCL and `src` is renamed over that
+    A hard link is the atomic no-clobber rename. A `dst` that already is
+    `src` (a kill between link and unlink) is the move half done: it is
+    finished by unlinking `src`. Where the filesystem has no hard links,
+    the name is reserved with O_EXCL and `src` is renamed over that
     empty reservation, so the content still lands in one step; if the rename
     fails, the reservation is removed while it is still ours (same inode,
     size 0) and WiError is raised — never a half-written file under `dst`.
     On any error `src` is left in place."""
     try:
         os.link(src, dst)
+        linked = True
     except FileExistsError:
-        raise _refuse_existing(dst) from None
+        if not _half_moved(src, dst):
+            raise _refuse_existing(dst) from None
+        linked = True  # linked by an earlier, killed move
     except OSError:
-        pass  # no hard links on this filesystem: reserve the name instead
-    else:
+        linked = False  # no hard links on this filesystem: reserve the name
+    if linked:
         try:
             os.unlink(src)
         except OSError as e:
@@ -1081,10 +1105,39 @@ def item_paths(root, archived=False):
     return paths
 
 
+STALE_RESERVATION = ("empty file: a name reserved by a write whose content "
+                     "never landed (killed mid-write, unless one is in "
+                     "flight this instant)")
+_warned_stale = set()
+
+
+def stale_reservation_fix(path):
+    """How to clear an empty item file (see STALE_RESERVATION). The
+    no-hard-link create writes its content to `<name>.tmp<pid>` first, so a
+    tmp beside the file still holds it; otherwise nothing was written there
+    (an interrupted archive left its source in items/)."""
+    tmps = sorted(path.parent.glob(glob.escape(path.name) + ".tmp*"))
+    if tmps:
+        return (f"its content is in {tmps[0]}: "
+                f"mv {shlex.quote(str(tmps[0]))} {shlex.quote(str(path))}")
+    return f"nothing was written to it: rm {shlex.quote(str(path))}"
+
+
 def load_all(root, archived=False):
+    """Every item under items/ (and archive/). An empty file is a stale
+    reservation, not an item: it is skipped with a warning naming it, so
+    one interrupted write does not stop every command; `wi lint` reports it
+    with the fix. Its name stays taken (taken_ids reads the file stems)."""
     items = []
     for path in item_paths(root, archived):
-        items.append(Item.parse(read_raw(path), path))
+        text = read_raw(path)
+        if not text:
+            if path not in _warned_stale:
+                _warned_stale.add(path)
+                print(f"wi: skipping {path}: {STALE_RESERVATION}; "
+                      "`wi lint` names the fix", file=sys.stderr)
+            continue
+        items.append(Item.parse(text, path))
     return items
 
 
@@ -2507,6 +2560,10 @@ def cmd_lint(args):
     items, texts = [], {}
     for path in item_paths(root, archived=True):
         text = texts[path] = path.read_text()
+        if not text:
+            problems.append(f"{path}: {STALE_RESERVATION}; "
+                            f"{stale_reservation_fix(path)}")
+            continue
         if re.search(r"^(<{7}|={7}|>{7})", text, re.M):
             problems.append(f"{path}: unresolved merge conflict markers")
             continue
@@ -2518,7 +2575,11 @@ def cmd_lint(args):
         items.append(item)
     by_id = {}
     for it in items:
-        if it.id in by_id:
+        if it.id in by_id and _half_moved(by_id[it.id].path, it.path):
+            problems.append(f"{it.path}: the same file as {by_id[it.id].path} "
+                            "(an archive killed between link and unlink); "
+                            "`wi archive` finishes the move")
+        elif it.id in by_id:
             problems.append(f"{it.path}: duplicate id {it.id}")
         by_id[it.id] = it
     aliases = {}
@@ -2594,14 +2655,21 @@ def cmd_archive(args):
         for item in load_all(root):
             if item.get("status") not in ("done", "dropped") or not item.get("closed"):
                 continue
+            dest = root / "archive" / item.get("closed")[:4] / item.path.name
+            if _half_moved(item.path, dest):
+                # a move killed between link and unlink: finish it, whatever
+                # the cutoff (_move_no_clobber unlinks the source)
+                moves.append((item.path, dest))
+                continue
             closed = datetime.strptime(item.get("closed"), "%Y-%m-%d").replace(
                 tzinfo=timezone.utc)
             if (now - closed).total_seconds() < cutoff:
                 continue
-            dest = root / "archive" / item.get("closed")[:4] / item.path.name
             if dest.exists():
-                raise WiError(3, f"refusing to archive {item.path}: {dest} "
-                                 "already exists; nothing archived")
+                why = f"{STALE_RESERVATION}; `wi lint` names the fix" \
+                    if dest.stat().st_size == 0 else "already exists"
+                raise WiError(3, f"refusing to archive {item.path}: {dest}: "
+                                 f"{why}; nothing archived")
             moves.append((item.path, dest))
         for src, dest in moves:
             dest.parent.mkdir(parents=True, exist_ok=True)

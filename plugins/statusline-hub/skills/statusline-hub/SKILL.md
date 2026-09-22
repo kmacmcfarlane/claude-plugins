@@ -1,6 +1,6 @@
 ---
 name: statusline-hub
-description: Wire the statusline-hub tee into whatever draws your status line — a ccstatusline Custom Command widget, a Starship custom module, or a shell wrapper around an existing statusLine command — so the context depth and plan usage Claude Code hands the status line reach the sensor record that context-guard and other tools read. Use when the user says "set up statusline-hub", "tee the status line", "I use ccstatusline and context-guard can't see my depth", "make context-guard work with my status line", "add the hub to ccstatusline", "keep my status line but feed the sensor", or asks how to use the hub with Starship or their own statusLine script; also when a plugin author asks how to register a display or record hook with the hub (the hook contract). Not for putting the hub itself in the slot (install-statusline-hub) or installing the statusline plugin's own footer (install-statusline).
+description: Wire the statusline-hub tee into whatever draws your status line — a ccstatusline Custom Command widget, a Starship custom module, or a shell wrapper around an existing statusLine command — so the context depth and plan usage Claude Code hands the status line reach the sensor record that context-guard and other tools read. Use when the user says "set up statusline-hub", "tee the status line", "I use ccstatusline and context-guard can't see my depth", "make context-guard work with my status line", "add the hub to ccstatusline", "keep my status line but feed the sensor", or asks how to use the hub with Starship or their own statusLine script; also when a plugin author asks how to register a display or record hook with the hub, or drop a segment file on the line (the hook contract). Not for putting the hub itself in the slot (install-statusline-hub) or installing the statusline plugin's own footer (install-statusline).
 disable-model-invocation: false
 allowed-tools: Read, Glob
 argument-hint: "[ccstatusline | starship | wrap]"
@@ -26,7 +26,8 @@ sharing that slot. It works two ways:
 
 Plugin authors who want their code run on every render (a display segment, or a recorder
 that gets the raw payload) register a hook: `references/hook-contract.md` is the whole
-interface.
+interface. A tool with only a few words to show drops a segment file instead, and no code
+runs (its § 11).
 
 A third way, for a renderer the user would rather not rewire: **wrap mode**. On the user's
 consent, `/install-statusline-hub --wrap` puts the hub in the slot and has it run their

@@ -197,7 +197,7 @@ or held), then dispatch the top Work items through The cycle — by dependency g
 same-file items one at a time. Only an operator **hold** (a `hold` item, named above
 the tables) stops or caps it, and `start`'s rename gate stops it while it waits; a
 rate limit does not.
-`references/idle-turn.md`.
+`references/idle-turn.md`; the quota sense and its store: `references/budget.md`.
 
 ## Report
 

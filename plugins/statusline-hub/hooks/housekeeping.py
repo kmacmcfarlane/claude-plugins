@@ -11,7 +11,9 @@
   registry.STALE_DAYS (a plugin that stopped refreshing its manifest was
   uninstalled or disabled: its hook is dead; a manifest that says
   "pinned": true is kept), last-good cache entries older
-  than CACHE_DAYS, logs older than LOG_DAYS, orphaned temp files. The wrap
+  than CACHE_DAYS, logs older than LOG_DAYS, segment files no render will
+  show again (past expires_at, or untouched for registry.SEGMENT_AGE_MAX_S),
+  orphaned temp files. The wrap
   record (wrap.json) is never pruned: it holds the user's own entry.
 
 Nothing here raises.
@@ -169,6 +171,61 @@ def prune_manifests(now=None):
     return n
 
 
+def _dead_segment(path, now):
+    """Whether the segment file at path is one no render will show again:
+    untouched for registry.SEGMENT_AGE_MAX_S, or past its expires_at. A file
+    that cannot be read or parsed is judged by its age alone. Never raises."""
+    try:
+        st = os.lstat(path)
+        if not stat.S_ISREG(st.st_mode):
+            return False
+        if now - st.st_mtime > registry.SEGMENT_AGE_MAX_S:
+            return True
+        raw, _ = registry._read_capped(path, registry.SEGMENT_MAX)
+        d = json.loads(raw.decode("utf-8")) if raw is not None else None
+        exp = registry._number(d.get("expires_at")) if isinstance(d, dict) else None
+        return exp is not None and now >= exp
+    except Exception:
+        return False
+
+
+def prune_segments(now=None):
+    """Delete segment files no render will show again (see _dead_segment),
+    in the drop dir and one level of provider dirs, removing a provider dir
+    left empty, plus orphaned temp files. A dir that fails the trust check
+    is left alone. Returns how many files went. Never raises."""
+    n = 0
+    try:
+        now = time.time() if now is None else now
+        d = registry.segments_dir()
+        if registry.private_dir_problem(d):
+            return 0
+        with os.scandir(d) as it:
+            subs = [e.path for e in it
+                    if e.is_dir(follow_symlinks=False) and not e.name.startswith(".")]
+        for sub in [d] + subs:
+            if sub != d and registry.private_dir_problem(sub):
+                continue
+            n += prune_tmp(sub, now)
+            with os.scandir(sub) as it:
+                for e in it:
+                    try:
+                        if e.name.endswith(".json") and not e.name.startswith(".") and \
+                                _dead_segment(e.path, now):
+                            os.unlink(e.path)
+                            n += 1
+                    except OSError:
+                        continue
+            if sub != d:
+                try:
+                    os.rmdir(sub)  # only succeeds when empty
+                except OSError:
+                    pass
+    except Exception:
+        pass
+    return n
+
+
 def prune_hub(now=None):
     """Prune the hub's dirs (see the module doc). Does nothing to a dir that
     fails the registry's trust check (a symlink, someone else's). Returns how
@@ -184,6 +241,7 @@ def prune_hub(now=None):
                           recurse=True)
         n += _prune_files(registry.log_dir(), LOG_DAYS * 86400, now, (".log",))
         n += _prune_files(registry.run_dir(), TMP_STALE_S, now, (".tmp",))
+        n += prune_segments(now)
     except Exception:
         pass
     return n

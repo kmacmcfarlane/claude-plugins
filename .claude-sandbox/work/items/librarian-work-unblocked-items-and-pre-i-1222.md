@@ -15,8 +15,8 @@ refs:
 Operator 2026-09-22: an idle librarian should work new items as they arrive when no operator decision is needed (doc-only requests nearly always; skill changes often; implementation or complex skill changes warrant an investigation round). Investigations can run without waiting on the operator, so when the operator returns the decisions are ready to present. Today items queue up waiting for attention when many are unblocked or at least investigable. Question: how to achieve this without accidentally running the operator's quota into the ground. Acceptance: an investigation series with findings and a recommendation (routing rules for what proceeds unattended vs what waits; quota guards; how investigations pre-run and park their decisions), presented to the operator; decisions raised by number.
 
 ## Handoff
-- doing: series written: .claude-sandbox/investigations/1222-unattended-librarian/00_initial.md (00 + INDEX); factored into F1-F5
-- next: on answers (G1/G2, decision 53): dispatch F1 (opus) after the model switch back to opus
+- doing: session ea8d6e rehydrated 08:24Z; F1 agent a363290 alive; research-skills landing filed as 5ef7 (peer will signal ready)
+- next: F1 DONE -> opus review -> land; hold d182/220b until decision 53; no push until 52
 - blocked: —
 - learned: —
 
@@ -51,3 +51,9 @@ decision 52: push of main rejected — origin/main has eda3422 (operator, GitHub
 - F1 librarian-f1-quota-budget-py-and-the-per-9882 → F2 librarian-f2-idle-turn-modes-concurrency-c79e → F3 librarian-f3-pre-investigation-per-item-a9be ∥ F4 librarian-f4-librarian-calls-call-n-mark-ef9f ∥ F5 librarian-f5-operator-intent-phrases-and-4f7d (see the series). d05d closes into F3 once F3 lands.
 decision 53: interim cap until F2 lands — (a) open a hold `limit: 4 agents in flight, no fable` now [recommended]; (b) no cap; (c) a different N.
 - 2026-09-22: agents librarian's view on the active-librarian divisor recorded on F2 (c79e); a 01 serial follows their librarian-budget-policy series.
+- agents 8ad9 policy answer recorded on F2 (c79e); 01 serial pending (supersedes 00 § F2 N formula/divisor; F1 claims → claims/<repo>.json).
+- CORRECTION 00 contradicts itself on the away 5-hour reserve (F1: 5%, F5: 10%); the agents policy picks 10% — 01 will say so.
+answer 53: (b) no interim limit — the real feature (F2) is being delivered (operator 2026-09-22)
+answer 52: (a) — operator: 'Why would we forbid doing a pull? That seems like a weird policy'; librarian merges origin/main (merge, never rebase/force), runs Checks, pushes; rule revision filed (operator 2026-09-22)
+answer G1: the quota reserve plan as written (F1 constants: 5h 25/10/0/5 present/away/done/vacation, weekly 15/15/15/10 — away 10 per the agents-policy correction) (operator 2026-09-22)
+answer G2: operator asks whether P0 should mean parked/don't-schedule, with a separate blocked+reason. Librarian: wi already has both — `wi park <id> <reason>` (status parked, never scheduled) and `wi block <id> <reason|item>` (schedulable at its priority once unblocked); P0 is the highest priority and priorities gate scheduling only through F2's mode table. No change needed; confirm in F2 serial 01 (operator 2026-09-22)
