@@ -2,12 +2,11 @@
 id: investigate-steps-3-and-13-handle-a-targ-fc02
 title: "investigate: Steps 3 and 13 handle a target repo that does not exist yet (where the series lands)"
 type: chore
-status: doing
+status: done
 priority: 3
-owner: Kyle-McFarlane@bf9f9839222c
-claimed: 2026-09-22T23:24Z
 created: 2026-09-22
 updated: 2026-09-22
+closed: 2026-09-22
 refs:
   - bb7e review r1
 ---
@@ -43,3 +42,7 @@ agent: implementer ab3c9d45a0eab13c3 round 2
 return: implementer DONE c81b590
 dispatch: reviewer opus — review r2 (resume)
 agent: reviewer a8b6adb9fe5179633 round 2
+verdict: CLEAR round 2 at c81b590
+lows carried to cd09: sidecar location + ask-before-commit in the move; the old home INDEX.md Moved-to note commit
+landed: 0501068
+- 2026-09-22 done: 0501068

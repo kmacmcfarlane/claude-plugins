@@ -17,3 +17,4 @@ fc02 review r1, 2026-09-22: when an investigation moves to a repo create-repo is
 - next: —
 - blocked: —
 - learned: —
+- riders from fc02 review r2 (2026-09-22): investigation-format.md § A repo not yet created — name the sidecar as <new-repo>/.claude-sandbox/'s own git and whether to ask before committing there (sandbox skill sidecar SOP); say whether the old home's INDEX.md Moved-to note is committed alongside.
