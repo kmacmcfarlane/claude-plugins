@@ -90,10 +90,14 @@ the step in hand, then:
    file it depends on is copied out or listed under Copy forward (both above). The
    inventory goes in the closing message; anything the operator adds is
    filed as a work item. Under the "HARD, mid-turn" marker the checkpoint skill's
-   unattended section skips Step 0 entirely, question 2 included: the inventory above
-   still stands, but it goes into the manifest as `BELIEF` lines, marked unconfirmed —
-   still in mode `continue` — and steps 3 and 4 still follow before the turn ends: the
-   push, then the closing Report, whose last thing is the checkpoint's opener. When that
+   unattended section skips Step 0 entirely, question 2 included — but not the inventory:
+   it comes from the `doing` items, their `dispatch:` lines and ListAgents, not from the
+   operator, so the manifest's In flight roster and its Holds are written from that
+   evidence as always. Only what the operator would have added on top is missing, and
+   whatever this session merely assumes goes under `Doing` or `Aware of` as a `BELIEF`
+   line, marked unconfirmed — still in mode `continue` — and steps 3 and 4 still follow
+   before the turn ends: the push, then the closing Report, whose last thing is the
+   checkpoint's opener. When that
    advisory says a checkpoint no longer fits (under ~20K left, context-guard's
    `CHECKPOINT_MIN_TOKENS`), do not start one: finish step 1 and step 3 if they still fit,
    then close with a three-line brief (in flight, decided or refused, the one next action)

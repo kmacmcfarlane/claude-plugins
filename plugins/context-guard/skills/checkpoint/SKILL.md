@@ -47,10 +47,13 @@ text in your final message. Once armed:
 
 - **Mode**: the mode a custody skill in charge of this session has named for its
   checkpoints (librarian-mode names `continue`); otherwise `handoff`.
-- **Step 0 is skipped entirely** — questions 1, 2 and 3; no `AskUserQuestion`. The ≤10-line
-  inventory question 2 would have confirmed goes into the manifest's `Doing` and
-  `Aware of` as `BELIEF` lines, each marked unconfirmed (`BELIEF (unconfirmed: no operator)
-  …`). The `Goal` line quotes the operator's last stated goal, as ever.
+- **Step 0 is skipped entirely** — questions 1, 2 and 3; no `AskUserQuestion`. Step 4b is
+  not reduced with it: `Holds` and `In flight` come from the session's own evidence (the
+  operator's standing holds, the dispatch notices or ListAgents), never from question 2, so
+  they are written as always. What is lost is only what the operator would have added, so
+  anything this session merely assumes goes into the manifest's `Doing` and `Aware of` as
+  `BELIEF` lines, each marked unconfirmed (`BELIEF (unconfirmed: no operator) …`). The
+  `Goal` line quotes the operator's last stated goal, as ever.
 - **Lean path**: Steps 2 and 4b (with the mark), then Step 5's one sentence and the Step 7
   opener as the turn's **final message**; end the turn there. A custody skill's own
   remaining steps (librarian-mode: its push, then its closing Report) run before that final

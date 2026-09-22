@@ -216,6 +216,33 @@ class TestCheck(HookBase):
                            timeout=30)
         self.assertEqual(p.returncode, 2)
 
+    def test_a_refused_stamp_still_disarms_the_gate(self):
+        # mark_checkpoint.py stamps only a manifest written recently and owned
+        # here; anything else is left alone with a warning. The gate must stand
+        # down all the same - it keys on the state record, not on the stamp -
+        # or an unattended turn would re-fire the marker after every tool call
+        # with no way to ever silence it.
+        import subprocess
+        self.set_exact("s", 999_000, 1_000_000)
+        self.assertIn(MARKER, ctx(self.gate()[1]))
+        self.assertEqual(self.check()[0], 0)
+        repo = os.path.join(self.tmp.name, "repo")
+        os.makedirs(repo)
+        stale = os.path.join(repo, "HANDOFF.md")
+        with open(stale, "w") as fh:
+            fh.write("---\nmode: handoff\nwritten: <stamped>\n"
+                     "session: <stamped>\n---\n\n## Doing\nx\n")
+        old = time.time() - 6 * 3600          # older than STAMP_WINDOW_S
+        os.utime(stale, (old, old))
+        p = subprocess.run([sys.executable, os.path.join(HOOKS, "mark_checkpoint.py"), "s"],
+                           capture_output=True, text=True, cwd=repo,
+                           env=dict(os.environ, **self.env), timeout=30)
+        self.assertEqual(p.returncode, 0, p.stderr)
+        self.assertIn("checkpoint recorded", p.stdout)
+        self.assertIn("not stamped", p.stdout + p.stderr)
+        self.assertEqual(self.check(), (1, "not armed: a checkpoint already ran this epoch"))
+        self.assertEqual(self.gate()[1], {})
+
     @unittest.skipIf(hasattr(os, "geteuid") and os.geteuid() == 0, "root ignores modes")
     def test_unwritable_state_is_silent_not_a_marker_on_every_call(self):
         # The record cannot land, so no cadence and nothing for --check to
@@ -382,6 +409,42 @@ class TestBlockingSources(InProcess):
         self.assertEqual(seen[0], cache)
         self.assertEqual(L.load_state("s")["scan"]["size"], os.path.getsize(self.tpath))
         self.assertEqual(L.load_state("s")["derived"]["window"], 1_000_000)
+
+
+class TestRegisteredInHooksJson(unittest.TestCase):
+    """The hook runs after EVERY tool call, in its own PostToolUse group, and
+    it takes nothing away from the groups already there. Pinned because this
+    file is where the mid-turn gate and the manifest lineage meet: both add a
+    PostToolUse group, so a merge that keeps only one side is silent at
+    runtime."""
+
+    def setUp(self):
+        self.d = json.loads(open(os.path.join(HOOKS, "hooks.json")).read())["hooks"]
+        self.post = self.d["PostToolUse"]
+
+    def cmds(self, matcher):
+        return [h["command"] for g in self.post if g["matcher"] == matcher
+                for h in g["hooks"]]
+
+    def test_turn_gate_runs_on_every_tool(self):
+        self.assertIn('python3 "${CLAUDE_PLUGIN_ROOT}/hooks/turn_gate.py"', self.cmds(""))
+
+    def test_turn_gate_has_a_timeout(self):
+        hooks = [h for g in self.post if g["matcher"] == "" for h in g["hooks"]
+                 if h["command"].endswith('turn_gate.py"')]
+        self.assertEqual([h.get("timeout") for h in hooks], [10])
+
+    def test_the_other_groups_are_untouched(self):
+        self.assertIn('python3 "${CLAUDE_PLUGIN_ROOT}/hooks/ledger_pointer.py"',
+                      self.cmds("Bash|Write|Edit"))
+        self.assertIn('python3 "${CLAUDE_PLUGIN_ROOT}/hooks/lineage.py"',
+                      self.cmds("Read"))
+
+    def test_the_gate_never_shares_a_group_with_another_hook(self):
+        # An empty matcher matches every tool; lineage.py and ledger_pointer.py
+        # must keep their own narrower groups rather than ride along here.
+        self.assertEqual(self.cmds(""),
+                         ['python3 "${CLAUDE_PLUGIN_ROOT}/hooks/turn_gate.py"'])
 
 
 class TestHardApplies(unittest.TestCase):
