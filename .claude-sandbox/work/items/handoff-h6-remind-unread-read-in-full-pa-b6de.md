@@ -33,3 +33,5 @@ review r1 (opus) at e461b9d: NEEDS_CHANGES. Seven Checks OK; decide() untouched;
 dispatch: implementer opus — fix round 1 (resume)
 fix r1 DONE_WITH_CONCERNS 994fa46 (opus): take/record never raise (try/except; tolerant unread/mark_read); fenced headings skipped; reminder says 'Read tool, no offset or limit'; 4 new tests (fail on e461b9d); (b) partly declined — the Read tool reports no line coverage. Note: implementer's git checkout wiped uncommitted edits once; re-applied before commit.
 dispatch: reviewer opus — review r2 (resume)
+review r2 (opus) at 994fa46: CLEAR — committed == tested; test_break 6/6; 20,000-record fuzz raised 0 times; gate write completes on a malformed record. Low: '##\t' heading no longer matched; an unclosed earlier fence hides the section (quiet) — follow-up.
+Review result: 2 rounds, 1 fix round; impl opus, review opus. Land checks (librarian): seven suites OK; diff read.
