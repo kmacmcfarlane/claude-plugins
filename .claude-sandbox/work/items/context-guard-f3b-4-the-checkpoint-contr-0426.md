@@ -45,3 +45,11 @@ dispatch: implementer opus — fix round 1 (resume)
 return: implementer DONE_WITH_CONCERNS 7851aba
 changed: + hooks/mark_checkpoint.py (--from install), hooks/tests/test_lineage.py
 dispatch: reviewer opus — review r2 (resume)
+verdict: NEEDS_CHANGES round 2 at 7851aba
+findings:
+- [medium] mark_checkpoint.py:220-278 install_draft — the installed file's mtime is always now, so the 30-min STAMP_WINDOW guard never fires on --from: a 3h-old draft (e.g. a draft Write refused after compaction) is sealed and printed as this checkpoint's manifest. Pass: judge age by the draft (refuse/warn not stamped when the draft is older than STAMP_WINDOW_S, or os.utime the installed file to the draft's mtime); test with an old draft.
+- [low] :432-434 lone --from reads as sid "--from" — usage error like handoff_path.py.
+- [low] ledger_pointer no longer records "P wrote HANDOFF.md" — install appends ledger.append(sid, "P", "installed HANDOFF.md", ref=target).
+- [low] operator-playbook.md:150-163 — allow rules are literal prefix matches; add "run the command exactly as printed".
+notes: round-1 medium closed end to end; install safety verified by hand; successor Read prompt acceptable (interactive).
+dispatch: implementer opus — fix round 2 (resume)

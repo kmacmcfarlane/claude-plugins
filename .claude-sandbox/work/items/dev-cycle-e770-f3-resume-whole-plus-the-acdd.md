@@ -30,3 +30,8 @@ Plan of record .claude-sandbox/investigations/e770-dev-cycle-resume (00 § F3 as
 target: full dev-cycle-e770-f3-resume-whole-plus-the-acdd /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude/worktrees/dev-cycle-e770-f3-resume-whole-plus-the-acdd
 dispatch: implementer opus — breadth (4+ files) and the design judgement itself; plan routes opus
 agent: implementer aac6b13990af22e83 round 1
+return: implementer DONE_WITH_CONCERNS 9a1c200
+changed: dev-cycle SKILL.md, references/{resume.md (new), record.md (new, moved), bindings.md, troubleshooting.md, fix-loop.md, agent-brief.md, review-brief.md, model-routing.md}
+librarian on OQs: F4 rider filed (librarian-mode appends the group fable decision/answer to every covered item); record.md name — the reviewer may call a rename, the name was the librarian's rider not a plan fact.
+dispatch: reviewer opus — rule 4, implementer tier
+agent: reviewer a36d24345154d3595 round 1

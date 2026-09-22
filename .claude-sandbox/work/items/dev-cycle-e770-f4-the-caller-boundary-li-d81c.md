@@ -20,3 +20,4 @@ Plan of record .claude-sandbox/investigations/e770-dev-cycle-resume (00 § F4; s
 - next: —
 - blocked: —
 - learned: —
+- rider from F3 (2026-09-22): model-routing.md § Fallback now asks a caller to append the one group fable decision N:/answer N: to EVERY item it covers; librarian-mode must say it does.
