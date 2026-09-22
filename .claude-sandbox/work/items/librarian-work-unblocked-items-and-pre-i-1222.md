@@ -50,3 +50,4 @@ decision 52: push of main rejected — origin/main has eda3422 (operator, GitHub
 ## Factored 2026-09-22
 - F1 librarian-f1-quota-budget-py-and-the-per-9882 → F2 librarian-f2-idle-turn-modes-concurrency-c79e → F3 librarian-f3-pre-investigation-per-item-a9be ∥ F4 librarian-f4-librarian-calls-call-n-mark-ef9f ∥ F5 librarian-f5-operator-intent-phrases-and-4f7d (see the series). d05d closes into F3 once F3 lands.
 decision 53: interim cap until F2 lands — (a) open a hold `limit: 4 agents in flight, no fable` now [recommended]; (b) no cap; (c) a different N.
+- 2026-09-22: agents librarian's view on the active-librarian divisor recorded on F2 (c79e); a 01 serial follows their librarian-budget-policy series.

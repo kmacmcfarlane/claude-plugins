@@ -18,3 +18,4 @@ idle-turn.md mode table (full/normal/conservative/stop), N from allowed rate ÷ 
 - next: —
 - blocked: —
 - learned: —
+- agents librarian 2026-09-22: the registry name-pattern divisor clashes with librarian-mode session-name.md:24-25 (read only your own registry file; never list the directory); prefer a self-written claim/heartbeat file with an expiry in the per-subscription store. Their policy series: agents .claude-sandbox/investigations/librarian-budget-policy/ (in progress) — fold its answer into a 01 serial before dispatching F2.
