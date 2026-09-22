@@ -5,8 +5,8 @@ is a snapshot only its author can write; the facts around it — age, drift, dir
 — are computed live by `hooks/rehydrate.py` at injection). Work-addressed (class b1):
 lives at `.claude-sandbox/HANDOFF.md` when `.claude-sandbox/` exists (so `trackInHost`
 governs it), else `HANDOFF.md` at the repo root. Write-side budget **≤6,000 chars**;
-the hook trims Scrolls → Aware-of and never the mandatory tiers (nor In flight or Copy
-forward), under its 9,000-char injection cap.
+the hook trims Scrolls → Aware-of and never the mandatory tiers, under its 9,000-char
+injection cap.
 
 ## Format
 
@@ -31,7 +31,7 @@ items:            # optional: wi ids you expect still open or in flight
 mode: <land|continue|handoff> — operator: "<their last stated goal, verbatim>"
 
 ## In flight
-One line per live or resumable agent this session dispatched; `None` when drained.
+One line per agent this session dispatched that is not finished; `None` when drained.
 - <role> — <work item> — agent <id> — round <n> — waiting on <what>
 
 ## Read in full
@@ -65,23 +65,31 @@ TOC, read on demand: `path — one line on what it holds`.
 - **Secrets: path and key, never value.** A manifest lands in git; sops and `kind: Secret`
   gates do not see prose. Name where a secret lives, never what it is.
 - **In flight is a roster, not a summary.** Every agent this session dispatched that is
-  running or resumable gets a line — implementer and reviewer alike, since a reviewer's
-  rounds of context are the costliest thing to lose. `round` is the review or fix round the
+  not finished gets a line — implementer and reviewer alike, since a reviewer's rounds of
+  context are the costliest thing to lose — whether it is still running or has returned
+  and will be resumed (a reviewer awaiting a fix round, an implementer awaiting its
+  findings). `None` only when no such agent is left. `round` is the review or fix round the
   agent is on (`1` for a first pass); `waiting on` is what the agent or its next step waits
   for (its own return, a review, a fix round, an operator decision). Background agents
   survive `/clear` in the same Claude Code process and resume by id (verified): the
   successor resumes each one with `SendMessage` to its id and **does not re-dispatch it
   fresh** — a fresh agent re-derives every round the old one holds. Their output files
   stay under the predecessor's session dir (`…/<old session>/tasks/`); `/clear` does not
-  move them. A fresh process (the session exited and relaunched) cannot resume them; there
-  the roster tells the successor what to re-dispatch and from which round. The hook never
-  trims this section.
+  move them. After a fresh process (the session exited and relaunched) resuming is
+  unverified: try `SendMessage` first, and re-dispatch from the roster's round only if it
+  fails. When In flight is not `None`, the checkpoint's Step 7 opener names the ids to
+  resume, so the rule reaches the successor before it acts. In flight and Copy forward are
+  not in the hook's trim list (`items:`, Scrolls, Aware-of), so they survive trimming — by
+  omission, not by a rule in the hook; a change to the trim order (the 5039 H3 item) must
+  keep it so.
 - **Nothing a successor needs lives only in a session scratchpad.** The scratchpad is
   session-scoped: `/clear` gives the successor a new, empty one while `tasks/` stays
   behind, so a path into the old scratchpad works only by accident. Before writing the
   manifest, copy every such file — a stage file, a brief template, a working note — to the
-  work item or its investigation series and name the copy; or, when it cannot move now,
-  list it under **Copy forward** by absolute path. Never point Read in full or Scrolls
+  owning investigation series (or another durable path outside the work-item store) and
+  name the copy; or, when it cannot move now, list it under **Copy forward** by absolute
+  path. Never copy it into the store's `items/` directory: a file there that is not a work
+  item makes `wi ls`, `wi next` and `wi lint` fail. Never point Read in full or Scrolls
   into a scratchpad.
 - **Stage boundary in a skill chain:** the published stage file is the authoritative record —
   **Read in full** points at it, and the manifest carries only what the files do not hold

@@ -117,8 +117,9 @@ pre-commit hooks, secret encryption, never `git add -A` where the tree carries u
 secrets. A repo not yours to commit to stays dirty with a written note. Then sweep the
 session scratchpad: `/clear` gives the successor a new one and leaves this one behind, so
 copy every file a successor needs (a stage file, a brief template, a working note) to the
-work item or its investigation series — or list it under the manifest's **Copy forward** by
-absolute path when it cannot move now.
+owning investigation series or another durable path — never into the work-item store's
+`items/` — or list it under the manifest's **Copy forward** by absolute path when it cannot
+move now (the format spec's scratchpad rule).
 
 **4b.** Rewrite the **rehydration manifest** per `references/handoff-format.md` — at
 `.claude-sandbox/HANDOFF.md` if that directory exists, else `HANDOFF.md` at the repo
@@ -126,12 +127,8 @@ root — in **all three modes** (*land* writes `mode: landed` so the next sessio
 one header line, not a stale goal). At a stage boundary the published stage file is the
 authoritative record: point **Read in full** at it and carry only what the files do not
 hold — environment state, corrections, refusals; the format spec's stage-boundary rule
-has the full list. Write **In flight** as a roster: one line per agent this session
-dispatched that is running or resumable — implementer and reviewer alike — with its role,
-work item, agent id, round and what it is waiting on (ids from the dispatch notices or
-ListAgents, not memory); `None` when drained. Background agents survive `/clear` and resume
-by id (verified), so the successor resumes each with `SendMessage` and never re-dispatches
-it fresh. Fill the frontmatter `items:` with the `wi` ids of the open or doing
+has the full list. Write **In flight** from the dispatch notices or ListAgents, not
+memory, per the format spec's In flight rule. Fill the frontmatter `items:` with the `wi` ids of the open or doing
 items the manifest mentions (check them against the store, not memory): the rehydration hook
 diffs that list against the store and names every one since closed as a dead claim. If
 this session is running a standing mode (a skill that holds it in a role, entered by a
@@ -164,8 +161,7 @@ sentence:
   After `/clear` the successor is linked to this session and gets the manifest header; a
   fresh session gets a header naming this session as the author; either way the Step 7
   opener's "read … in full" is what brings the whole file in, and that full Read of a
-  `mode: handoff` manifest adopts it as the successor's own. The successor resumes the
-  In flight agents by id with `SendMessage`, and copies the Copy forward files first.
+  `mode: handoff` manifest adopts it as the successor's own.
 - **continue uncompacted** → when the number says there is more room than it felt like.
 
 After a compaction, the ledger is re-injected automatically, and so is the manifest — when
@@ -196,6 +192,10 @@ in full first` (the path Step 4b actually wrote — `.claude-sandbox/HANDOFF.md`
 manifest header, so the opener is what tells the next session to read the whole file); and the one or two facts that changed since the manifest
 was written — pull these from the drift note or the `Aware of` lines you just wrote (the
 lean path has no drift note; use the `Aware of` lines), never restate the whole manifest.
+When **In flight** is not `None`, one fact is always `resume <ids> with SendMessage; do not
+re-dispatch` (after a fresh process: try SendMessage first, re-dispatch from the roster's
+round only if it fails); when **Copy forward** is not empty, another is `copy forward
+<paths> first`.
 
 ```text
 /<mode_skill or skill-or-task> <args> — read <manifest path> in full first; <fact that changed>; <fact that changed>
@@ -212,5 +212,6 @@ gate or label, it is already set). Drop this line only when the mode isn't a sta
 - Step 2's recall is never delegated and never skipped; Step 4b is never skipped.
 - Path and key, never value.
 - Never run the checkpoint inside a sub-agent: it shares the parent's session id, so it
-  would write the parent's `session:` and stand the parent's gate down.
+  would write the parent's `session:` and stand the parent's gate down. A sub-agent
+  reports that a checkpoint is due; the parent runs it.
 - A checkpoint that itself burns the remaining window has failed; prefer the lean path late.

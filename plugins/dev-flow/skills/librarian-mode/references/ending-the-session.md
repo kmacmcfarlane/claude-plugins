@@ -12,20 +12,18 @@ on **every** open item — yours and the ones dispatched. For a dispatched item,
 names each live role's agent id and round (`implementer <id> round 2, reviewer <id> round
 3`), so the id survives in the store even where the manifest does not reach.
 
-**In-flight roster.** Every checkpoint this session runs gets the checkpoint skill's In
-flight roster, built from the `dispatch:` lines on the `doing` items and ListAgents, never
-from memory: one line per live or resumable agent — role, work item, agent id, round,
-what it is waiting on — reviewers included, since a reviewer's rounds are what a fresh
-dispatch re-derives at full cost. Background agents survive `/clear` and resume by id
-(verified): after Rehydrate, resume each with `SendMessage` to its id; never re-dispatch a
-role the roster lists as resumable.
+**In-flight roster.** Every checkpoint this session runs fills the checkpoint skill's In
+flight roster, following that skill's In flight rule (who counts, and resuming by id
+rather than re-dispatching), with the entries built from the `dispatch:` lines on the
+`doing` items and ListAgents, never from memory.
 
 **Brief templates.** The templates are the `dev-cycle` skill's `references/agent-brief.md`
-and `references/review-brief.md`; the filled common briefs a run writes (the common brief,
-the common review brief) sit in the session scratchpad, which `/clear` leaves behind. Copy
-each one the successor will reuse to a durable path beside the item or its investigation
-series and name that path in the item's handoff, or list it under the manifest's Copy
-forward line by absolute path.
+and `references/review-brief.md`; any filled brief the run keeps in the session
+scratchpad stays behind at `/clear`. Copy each one the successor will reuse into the
+item's investigation series directory (or another durable path outside the store) and name
+that path in the item's handoff — never into the store's `items/`, where a file that is
+not a work item makes `wi ls`, `wi next` and `wi lint` fail — or list it under the
+manifest's Copy forward line by absolute path.
 
 Then push what landed:
 `git -C "$MAIN" push origin main` — `main` only, fast-forward only, never `--force`,
@@ -74,7 +72,9 @@ the step in hand, then:
    the push outcome, then the checkpoint's own close — its `/compact <guidance>`
    recommendation, to run at the operator's convenience (the next morning is fine), and
    last its Step 7 opener, led by `/dev-flow:librarian-mode start`, then `read
-   <manifest path> in full first` and the facts changed since the manifest. Never run
+   <manifest path> in full first`, then — when the roster is not `None` — `resume <ids>
+   with SendMessage; do not re-dispatch` naming every id on it, and the facts changed
+   since the manifest. Never run
    `/compact` yourself, and start no new work — no dispatch, no merge — in that turn.
 
 The checkpoint stands the gate down, so nothing warns again before the compaction.
