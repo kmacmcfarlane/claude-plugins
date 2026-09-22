@@ -2,13 +2,12 @@
 id: handoff-h4-in-flight-roster-role-agent-i-a824
 title: "handoff H4: in-flight roster (role, agent id, round) and no handoff files in session scratchpads"
 type: feature
-status: doing
+status: done
 priority: 1
 parent: context-guard-compact-and-clear-handoffs-5039
-owner: unknown@360f41058e92
-claimed: 2026-09-22T16:00Z
 created: 2026-09-22
 updated: 2026-09-22
+closed: 2026-09-22
 ---
 
 Checkpoint handoff format gains an in-flight list per role with agent ids and round; rule: files a successor needs are never left only in a session scratchpad (copy to the item/series or list for copy). Docs across context-guard checkpoint and dev-flow librarian-mode ending-the-session. Opus/opus. Plan: .claude-sandbox/investigations/5039-handoff-failures/00_findings.md § fix plan.
@@ -35,3 +34,4 @@ fix r1 DONE 0e707ca (opus): one full In flight rule in handoff-format (returned-
 dispatch: reviewer opus — review r2 (resume)
 review r2 (opus) at 0e707ca: CLEAR. One full rule, pointers resolve; Step 7 and the librarian closing line agree on resume. Low: librarian closing line omits the Copy forward fact; nits: "survive the section trim"; SKILL.md:131 reflow — moved to H3 (same docs).
 Review result: 2 rounds, 1 fix round; 3 mediums fixed, rehearsal waived (librarian, reason recorded); impl opus, review opus. Land checks (librarian): seven suites OK in the worktree; diff read — 3 files in scope.
+- 2026-09-22 done: 85a8eec
