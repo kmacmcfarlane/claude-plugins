@@ -26,6 +26,13 @@ status-only close is a two-line front-matter change that merges cleanly
 against any body edit. `wi archive --older-than 90d` moves closed items in a
 dedicated commit.
 
+A write killed mid-way never blocks the store. An item in both `items/` and
+`archive/` as one file (a kill between hard link and unlink) is a move half
+done: the next `wi archive` finishes it, whatever the cutoff. An empty item
+file is a name reserved by a write that never landed: every command skips it
+with a warning naming it, its name stays taken, and `wi lint` gives the fix
+(`mv` the `.tmp` file beside it holding the content, or `rm` it).
+
 ## Example item
 
 ```markdown

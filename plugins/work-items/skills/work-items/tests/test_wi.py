@@ -746,7 +746,14 @@ class TestIdCollisions(WiTestCase):
         self.wi_ok(["lint"])
 
     def test_exhausted_retries_fail_loudly_and_write_nothing(self):
-        const = lambda k: bytes(k)
+        # the same bytes every draw, and a bound: a retry loop without its
+        # ID_TRIES cap fails here instead of hanging the suite
+        calls = itertools.count(1)
+
+        def const(k):
+            if next(calls) > wi.ID_TRIES + 8:
+                raise AssertionError("id retry drew past ID_TRIES: unbounded")
+            return bytes(k)
         taken = "dup-" + self.zero_suffix("dup")
         self.write_item(taken, "kept")
         before = (self.root / "items" / f"{taken}.md").read_text()
@@ -870,6 +877,75 @@ class TestIdCollisions(WiTestCase):
         self.assertEqual(r.returncode, 3, r.stderr)
         self.assertEqual(dest.read_text(), "already archived\n")
         self.assertTrue((self.root / "items" / "old-1111.md").exists())
+
+    def test_archive_finishes_a_move_killed_between_link_and_unlink(self):
+        """220b: the hard link landed, the unlink did not. Archive finishes
+        the move (whatever the cutoff) instead of refusing forever."""
+        self.write_item("old-1111", status="done", closed=wi.today())
+        src = self.root / "items" / "old-1111.md"
+        before = src.read_text()
+        dest = self.root / "archive" / wi.today()[:4] / "old-1111.md"
+        dest.parent.mkdir(parents=True)
+        os.link(src, dest)
+        r = run(["lint"], self.root)
+        self.assertEqual(r.returncode, 3)
+        self.assertIn("`wi archive` finishes the move", r.stdout)
+        r = run(["archive"], self.root)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertIn("archived 1", r.stdout)
+        self.assertFalse(src.exists())
+        self.assertEqual(dest.read_text(), before)
+        self.wi_ok(["show", "old-1111", "--brief"])
+        self.wi_ok(["lint"])
+        # an unrelated file at the destination is still refused
+        self.write_item("old-2222", status="done", closed="2026-01-02")
+        other = self.root / "archive" / "2026" / "old-2222.md"
+        other.write_text(before)
+        self.assertEqual(run(["archive", "--older-than", "0d"],
+                             self.root).returncode, 3)
+        self.assertTrue((self.root / "items" / "old-2222.md").exists())
+
+    def test_empty_item_file_is_a_stale_reservation(self):
+        """220b: a kill between the O_EXCL reservation and the rename leaves
+        an empty item file. Commands skip it, naming it; lint names the fix;
+        its name stays taken."""
+        self.write_item("kept-1111", "kept")
+        self.write_item("lost-2222", "lost")
+        item = self.root / "items" / "lost-2222.md"
+        tmp = item.with_name(item.name + ".tmp4242")
+        item.rename(tmp)
+        item.write_text("")
+        r = run(["ls", "--status", "all"], self.root)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertIn("kept-1111", r.stdout)
+        self.assertIn(f"skipping {item}", r.stderr)
+        self.assertIn("wi lint", r.stderr)
+        self.wi_ok(["show", "kept-1111", "--brief"])
+        r = run(["lint"], self.root)
+        self.assertEqual(r.returncode, 3)
+        self.assertIn(f"{item}: empty file", r.stdout)
+        self.assertIn(f"mv {tmp} {item}", r.stdout)
+        # the reserved name is not handed out again
+        self.assertIn("lost-2222", wi.taken_ids(self.root, []))
+        # the lint fix restores the item
+        tmp.rename(item)
+        self.wi_ok(["show", "lost-2222", "--brief"])
+        self.wi_ok(["lint"])
+        # an archive killed after reserving its destination: source intact,
+        # nothing written to the reservation, archive refuses naming it
+        self.write_item("old-3333", status="done", closed="2026-01-02")
+        dest = self.root / "archive" / "2026" / "old-3333.md"
+        dest.parent.mkdir(parents=True)
+        dest.write_text("")
+        r = run(["archive", "--older-than", "0d"], self.root)
+        self.assertEqual(r.returncode, 3)
+        self.assertIn("empty file", r.stderr)
+        self.assertTrue((self.root / "items" / "old-3333.md").exists())
+        r = run(["lint"], self.root)
+        self.assertIn(f"rm {dest}", r.stdout)
+        dest.unlink()
+        self.wi_ok(["archive", "--older-than", "0d"])
+        self.wi_ok(["lint"])
 
 class TestNextRanking(WiTestCase):
     def seed(self):
