@@ -2,15 +2,14 @@
 id: context-guard-8cc2-f1-mid-turn-posttoolu-3adc
 title: "context-guard 8cc2-F1: mid-turn PostToolUse depth check (silent unless it could hard-block)"
 type: feature
-status: doing
+status: done
 priority: 1
 deps:
   - context-guard-8cc2-f3a-re-inject-handoff-5126
 parent: context-guard-turn-gate-8cc2
-owner: unknown@360f41058e92
-claimed: 2026-09-21T19:08Z
 created: 2026-09-21
 updated: 2026-09-22
+closed: 2026-09-22
 ---
 
 Port plan .claude-sandbox/investigations/8cc2-turn-gate-port — design awaits the 02 serial (HARD mid-turn marker only when hard_applies(block_window, tok); unattended checkpoint path defers to a custody skill's own mode).
@@ -27,6 +26,7 @@ Port plan .claude-sandbox/investigations/8cc2-turn-gate-port — design awaits t
 
 ## Notes
 - 2026-09-21 claimed by unknown@360f41058e92
+- 2026-09-22 done: 15f271c
 
 ## Dispatch
 - dispatch: implementer opus — new PostToolUse hook in gate code; plan says the blocking predicate extraction must leave decide tests unchanged (else fable reviewer). Lands only after F3a.
