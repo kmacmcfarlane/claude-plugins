@@ -19,3 +19,10 @@ idle-turn.md mode table (full/normal/conservative/stop), N from allowed rate ÷ 
 - blocked: —
 - learned: —
 - agents librarian 2026-09-22: the registry name-pattern divisor clashes with librarian-mode session-name.md:24-25 (read only your own registry file; never list the directory); prefer a self-written claim/heartbeat file with an expiry in the per-subscription store. Their policy series: agents .claude-sandbox/investigations/librarian-budget-policy/ (in progress) — fold its answer into a 01 serial before dispatching F2.
+- agents 8ad9 policy answer 2026-09-22 (reviewed CLEAR; operator ratification pending as agents decision 4; values are defaults), series agents .claude-sandbox/investigations/librarian-budget-policy/ (00-02):
+  - active librarians = fresh claim files with demand, claims/<repo>.json (session_id, session_name, pid, pidDomain, procStart from own registry file; heartbeat at; in_flight; demand); stale 2 h idle / 4 h in flight; takeover on pid match or no live same-name session (in_flight reset); two live writers (ListAgents or a claim flip) → E0 hold both; tombstones only for idle claims (>30 min, name absent); non-librarian claims keyed claims/<repo>.<kind>.json.
+  - N: ONE estate-wide pool, N_total = floor(share × allowed rate ÷ per-slot rate), share 0.5 present / 1.0 away — replaces this item's per-librarian quotient; estate-wide P0 floor slot when N_total = 0 and mode ≠ stop, E0 if a P0 waits > 30 min; absent signal N_total = 2.
+  - self-wake ≤ 1 h while held by the pool AND under a two-writer hold; claims.log.jsonl; optional slot token.
+  - OQ14: do background agents survive /clear? If so a same-process /clear keeps in_flight.
+  - At today's pace the pool is 0 while the operator is present, 1 away; estate burning ~2× the sustainable weekly pace.
+- Before dispatch: write 1222 serial 01 folding this in (supersedes 00 § F2 N formula and divisor).

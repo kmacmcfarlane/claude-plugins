@@ -16,3 +16,4 @@ Reads the claude-analytics sink when installed, else samples the sensor record; 
 - next: —
 - blocked: —
 - learned: —
+- agents policy: claims move to claims/<repo>.json (not per session); samples/intent unchanged; away 5h reserve 10% (00 said 5 in F1).
