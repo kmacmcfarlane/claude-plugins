@@ -104,7 +104,7 @@ only on a `CLEAR` recorded against the current HEAD sha.
    skipped): `$WI claim <id>` when it is not already yours.
 
    Then record the run itself, before any dispatch, as one
-   `target: <mode> <ref> <workspace>` line (`references/record.md`) — unless the record
+   `target: <mode> <ref> <workspace>` line (`references/record-lines.md`) — unless the record
    already carries one, which a resumed run keeps: the mode as **one bare word** naming
    the path this run will take, decided in
    this order — `review` when the invocation was `review <branch>` (the branch is the
@@ -144,7 +144,7 @@ the plan agent revises, by a new serial.
   `references/agent-brief.md`: /investigate in its orchestrated mode (the `investigate`
   skill's § Running under an orchestrator), writing the series to the Series home; no
   worktree. Record the plan agent's report as soon as it comes back:
-  `return: planner <STATUS> <series path>` (`references/record.md`) — this bullet is
+  `return: planner <STATUS> <series path>` (`references/record-lines.md`) — this bullet is
   that line's only writer for a planner, and a `BLOCKED` one carries its reason exactly
   as Step 3.5's does. Its `DONE` goes to Step 4 with the plan-review variant; a
   `NEEDS_CHANGES` re-dispatches the plan agent, which revises by a new serial per the
@@ -183,7 +183,7 @@ re-dispatch or resume with findings = review round n+1; cap 4 review rounds.
    within 2h, or a `model: fable` pin → ask through the decision channel.
 7. **Record each dispatch** in the record sink before the call:
    `dispatch: <role> <model> — <signal>`. Then, the moment the Agent call returns an id,
-   append `agent: <role> <id> round <n>` under it (`references/record.md`). The record,
+   append `agent: <role> <id> round <n>` under it (`references/record-lines.md`). The record,
    not `ListAgents`, is what a later turn or another session has to go on, and a
    `dispatch:` with no `agent:` under it says the call never returned one.
 8. **The Model floor binding** is a floor for every role; rule 4 still applies above it.
@@ -208,7 +208,7 @@ re-dispatch or resume with findings = review round n+1; cap 4 review rounds.
    background `general-purpose` agent with the routed `model`.
 4. **Return contract**: `STATUS` (`DONE` | `DONE_WITH_CONCERNS` | `NEEDS_CONTEXT` |
    `BLOCKED`) and the report shape in the brief.
-5. **On return**: record it as `return: <role> <STATUS> <sha>` (`references/record.md`),
+5. **On return**: record it as `return: <role> <STATUS> <sha>` (`references/record-lines.md`),
    `<sha>` being the implementer's COMMIT, and merge its CHANGED into the record sink's
    cumulative `changed:` block (`references/bindings.md` § Undeclared files). `DONE` and
    `DONE_WITH_CONCERNS` go to Step 4. `NEEDS_CONTEXT`: record the answer as an `answer:`
@@ -223,7 +223,7 @@ re-dispatch or resume with findings = review round n+1; cap 4 review rounds.
 1. **Dispatch a reviewer**: one background `general-purpose` agent, review-only, `model`
    per rule 4, briefed from `references/review-brief.md`, against what the producer
    returned — the sha, or the series path, on the last `return:` line
-   (`references/record.md`). In `review <branch>` mode before any fix round there is no
+   (`references/record-lines.md`). In `review <branch>` mode before any fix round there is no
    producer and no `return:` line: review the tip of `<branch>` in the workspace the
    `target:` line records. Brief it with the commands from
    `references/review-checklist.md` plus the Checks binding — what you run at Land. A
@@ -231,7 +231,7 @@ re-dispatch or resume with findings = review round n+1; cap 4 review rounds.
    instead; before **every** such review record the output of
    `sha256sum <series>/[0-9][0-9]_*.md` as a `baseline: <sha256 list>` line, and from the
    second review on read the previous one too — its diff names the serials the re-review
-   is given (`references/record.md`, `baseline:`).
+   is given (`references/record-lines.md`, `baseline:`).
 2. **Severity scale** (defined in the review brief):
    - critical: data loss, security, breaks the harness or another plugin.
    - high: wrong on the main path; a failing or missing test for a claimed behaviour.
@@ -243,7 +243,7 @@ re-dispatch or resume with findings = review round n+1; cap 4 review rounds.
    secret).
 3. **Fix loop.** Verdicts are `CLEAR`, `NEEDS_CHANGES`, `SHOW_STOPPER` and `BLOCKED`; who
    is resumed and who is re-dispatched: `references/fix-loop.md`. An agent you resume is
-   the one its `agent:` line names (`references/record.md`) —
+   the one its `agent:` line names (`references/record-lines.md`) —
    SendMessage to that recorded id, never one remembered from this turn alone; a
    re-dispatch writes a fresh `dispatch:` and `agent:` pair. Repeat until `CLEAR`.
    **Cap: 4 review rounds** — the first review plus three fix rounds; a fourth without
@@ -257,7 +257,7 @@ re-dispatch or resume with findings = review round n+1; cap 4 review rounds.
    severity escalation.
 5. **Record the result** as `verdict: <V> round <n> at <sha>` plus, on a
    `NEEDS_CHANGES` or `SHOW_STOPPER`, the reviewer's FINDINGS pasted verbatim as a
-   `findings:` block (`references/record.md`) — what a fix dispatch reads. A `BLOCKED`
+   `findings:` block (`references/record-lines.md`) — what a fix dispatch reads. A `BLOCKED`
    reviewer is not a round and carries its reason in place of a round number —
    `verdict: BLOCKED at <token> — permission | setup`, the same closed set Step 3.5
    writes. Also record: findings fixed, findings declined with reasons, and the reviewer
@@ -267,7 +267,7 @@ re-dispatch or resume with findings = review round n+1; cap 4 review rounds.
 ## Step 5: Land
 
 Only after a `CLEAR` recorded against the current HEAD — the last `verdict:` line
-(`references/record.md`), whose `at <sha>` must still equal
+(`references/record-lines.md`), whose `at <sha>` must still equal
 `git -C <workspace> rev-parse HEAD`.
 
 1. **Run the checks yourself** in `<workspace>`: `references/review-checklist.md`, the
@@ -303,7 +303,7 @@ Only after a `CLEAR` recorded against the current HEAD — the last `verdict:` l
    `review <branch>` mode never deletes `<branch>` and removes only a worktree this cycle
    added itself (`references/bindings.md` § Landing).
 5. **Record the landing, then close the item**: the moment the merge succeeds, append
-   `landed: <merge sha>` to the record sink (`references/record.md`) — before
+   `landed: <merge sha>` to the record sink (`references/record-lines.md`) — before
    `$WI done <id> --note <merge-sha>`, so a run that dies between the two still says it
    landed. For `Leave the branch` nothing merged: no `landed:` line,
    and `$WI handoff <id>` with `--next` naming the branch instead.
@@ -324,7 +324,7 @@ decisions needed: <numbered list, or none>
 ```
 
 `verified:`'s merge sha is read back from the `landed:` line Step 5.5 recorded
-(`references/record.md`), not from memory.
+(`references/record-lines.md`), not from memory.
 
 `plan` mode reports the series path on `changed:`, its review on `verified:`, and its
 blocking questions under `decisions needed:`.

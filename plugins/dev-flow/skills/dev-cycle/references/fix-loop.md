@@ -32,7 +32,7 @@ SKILL.md § Step 4.
   reasons" — the record sink's `changed:` block after this round's CHANGED was merged
   in, so a file a fix round added arrives with its reason. A plan has no worktree diff
   and no `changed:` block: a plan-mode re-review pastes there the serials the
-  `baseline:` diff names as added or rewritten (SKILL.md § Step 4.1, `record.md`), and
+  `baseline:` diff names as added or rewritten (SKILL.md § Step 4.1, `record-lines.md`), and
   "none" only when no earlier `baseline:` exists to diff against. The reviewer verifies
   each prior finding by file:line, re-runs the same checks, attacks the fix, and rules
   each declined one DECLINED or OPEN.
@@ -55,7 +55,7 @@ The orchestrator never resolves a conflict by hand. When Land's merge conflicts:
    the base brought in with the merge: before merging it into the `changed:` block, drop
    every path that `git -C <workspace> diff --stat <base>...HEAD` does not show — the
    three-dot diff, taken after the merge, holds only the change's own side.
-   `<workspace>` is the path the record's `target:` line carries (`record.md`), never one
+   `<workspace>` is the path the record's `target:` line carries (`record-lines.md`), never one
    rebuilt from the item id.
 4. Re-review from the last reviewed sha, with the merge-conflict case of
    `review-brief.md` § Re-review variant, which judges the resolution with

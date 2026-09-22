@@ -7,7 +7,7 @@ targets runs it once per target, in whatever order its own queue says. `full`, `
 `review` read the same facts and the same table; the mode changes only what a fact is
 computed from.
 
-It reads the lines `record.md` fixes, git, and the agents. It writes one line of its own,
+It reads the lines `record-lines.md` fixes, git, and the agents. It writes one line of its own,
 `spent:` (§ The GATE); every other line is written by the step that owns it, never by a
 resume.
 
@@ -26,7 +26,7 @@ They move the run, and only a phase line can be its last state. Every other line
 it.
 
 A line that is missing reads as **not recorded**, and every default escalates: a
-`BLOCKED` with no reason reads as `permission` (`record.md`), an unreadable freshness test
+`BLOCKED` with no reason reads as `permission` (`record-lines.md`), an unreadable freshness test
 as `STALE`, an untagged dispatch permission as not found. None of them lands, and none
 dispatches twice. A record written before a shape existed is therefore legal input.
 
@@ -88,7 +88,7 @@ words. `<workspace>` below is that line's third field.
    | **run-scoped** — `q` is `review` mode's dispatch permission | the last `decision: dispatch-permission` anywhere in the record | its `answer:` recorded → `ANSWERED`; none → `PENDING`; no such line, or a `spent:` line recorded after it → `NONE` |
 
    Under a caller the tagged line is its `decision N:` carrying the same tag, and its
-   untagged `answer N:` pairs by the number (`record.md`, `answer:`). The run-scoped
+   untagged `answer N:` pairs by the number (`record-lines.md`, `answer:`). The run-scoped
    arm matches a literal tag, so no other "yes" — a cap waiver, a `NEEDS_CONTEXT` answer —
    is ever read as permission to touch the author's branch; an untagged pair from an older
    record is not found, and the question is asked again.

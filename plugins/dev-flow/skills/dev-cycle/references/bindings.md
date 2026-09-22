@@ -20,7 +20,7 @@ order given, and asks the user only where the table says so.
 | **Workflow** | Free-text repo workflow notes the change must follow | A `Workflow:` line in CLAUDE.md's `## Librarian` section, read only; otherwise none |
 | **Base** | The branch the worktree starts from and the merge lands on | Named by the item or plan (implement's recorded base, re-verified); otherwise the default branch, § Base |
 | **Model floor** | The lowest tier any role on this change may run | A `model: <tier>` line in the item body, or the invocation's own words ("at least opus"); otherwise none |
-| **Record sink** | Where the run's record lines are appended, in the shapes the reference file `record.md` fixes (not the run record of the same name below) | The item body when a store holds the target; otherwise always the scratchpad run record, `<scratchpad>/dev-cycle/<slug>/record.md`. Never a file in an investigation series: series files belong to `/implement` and are append-only. An item body is durable across sessions; **a scratchpad sink is session-scoped by contract**, so a store-less run's record cannot be read outside the session that wrote it (or one that inherits the same scratchpad) — Step 0's summary says so |
+| **Record sink** | Where the run's record lines are appended (`record-lines.md`) | The item body when a store holds the target; otherwise always the scratchpad run record, `<scratchpad>/dev-cycle/<slug>/record.md`. Never a file in an investigation series: series files belong to `/implement` and are append-only. An item body is durable across sessions; **a scratchpad sink is session-scoped by contract**, so a store-less run's record cannot be read outside the session that wrote it (or one that inherits the same scratchpad) — Step 0's summary says so |
 | **Decision channel** | How a decision reaches a human, and the channel's **durability**: **durable** when the question outlives the session that raised it and a human answers it to whichever session reads it next (a caller's channel on a committed item), **ephemeral** when it exists only as a live prompt in this session. A caller states the durability with the channel; a channel supplied without it is a missing binding | AskUserQuestion, or § Decisions' numbered prose list for two or more — both **ephemeral** |
 | **Terminal action** | What Land does with a `CLEAR`, checked branch | Asked once at Land, § Landing |
 | **Series home** | Where the plan phase writes an investigation series | `$MAIN/.claude-sandbox/investigations/<slug>/`, the canonical path `/implement` reads |
@@ -80,7 +80,7 @@ block, and the checklist's scope check (section 1) compares the diff against it.
 
 `review <branch>` mode's Step 0 resolves the branch's own worktree in place of Step 3
 (no `worktree-<name>` branch is created), and records it as the workspace of the run's
-`target:` line — `target: review <branch> <worktree path>` (`record.md`) —
+`target:` line — `target: review <branch> <worktree path>` (`record-lines.md`) —
 before any dispatch:
 
 1. The main checkout is already on `<branch>` (`git -C "$MAIN" branch --show-current`
@@ -120,7 +120,7 @@ to grade against. Before dispatching the reviewer, collect one: ask the user for
 one-line intent in the same question as any other Step 0 ask; if none is given, record
 `intent: commit messages are the intent` and use the branch's own commit subjects
 (`git -C <worktree path> log --oneline <base>..<branch>`) as what the reviewer grades
-against. Record it as `intent: <one line>` (`record.md`) in the record sink.
+against. Record it as `intent: <one line>` (`record-lines.md`) in the record sink.
 
 In this mode, "Files changed, with reasons" in the review brief holds the branch's own
 commit list, not the orchestrator's `changed:` block — there was no implementer round to
@@ -132,7 +132,7 @@ wrote one.
 
 ## Record line shapes
 
-Moved to `record.md`, the one copy.
+Moved to `record-lines.md`, the one copy.
 
 ## Checks
 
@@ -183,7 +183,7 @@ heavy analysis: end the turn with the analysis and ask in the next. Append each 
 decision to the record sink as `decision: <question> — options: <a> | <b> | <c>` before
 asking — the question in full and its options, recommendation first, so the line can be
 put to a human verbatim by a reader who was not there — and the reply as
-`answer: <decision> — <reply>` (`record.md`) as soon as it arrives.
+`answer: <decision> — <reply>` (`record-lines.md`) as soon as it arrives.
 
 A **pending** decision — a `decision:` with no `answer:` — never makes a run wait on a
 question this session is not asking: one whose prompt is gone, or one on a durable
