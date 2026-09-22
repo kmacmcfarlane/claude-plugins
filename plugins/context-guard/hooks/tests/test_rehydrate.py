@@ -358,13 +358,25 @@ class TestModeListAgrees(unittest.TestCase):
                       self.read("skills/checkpoint/references/handoff-format.md"))
 
 
-class TestLegacyArmMatchesMain(unittest.TestCase):
+class TestLegacyArmMatchesPreStore(unittest.TestCase):
     """8cc2-F3b-1's regression guard (06 § Acceptance scoping): for an
     UNMIGRATED repo — a repo HANDOFF.md and no store manifest anywhere — the
-    injected block is byte-for-byte what `main` produces, for every source and
-    every ownership arm, after removing the single legacy_notice line. The
-    notice is asserted on its own, below. Skipped where the `main` ref or git
-    is unavailable.
+    injected block is byte-for-byte what the hooks produced BEFORE the
+    per-session store (BASELINE), for every source and every ownership arm,
+    after removing the single legacy_notice line. The notice is asserted on
+    its own, below. Skipped where git, or the BASELINE commit (a tarball
+    install, a shallow clone), is unavailable.
+
+    The baseline is a pinned commit, not `main` and not the merge-base with
+    main (ba8f). `main` moves: every worktree cut before a context-guard
+    change lands on main went red here though it touched no context-guard
+    file. The merge-base would stop that, but it judges only "this branch
+    left the arm as its parent had it", so a chain of branches could each
+    drift the arm a little and every one pass. What this guards is "the
+    legacy arm is the pre-store behaviour", and that is one fixed tree:
+    main's side of the F3b merge (92c9738^1). A change that means to alter
+    what an unmigrated repo is injected re-pins BASELINE in the same commit,
+    and says why.
 
     The notice is paid for out of the injection's own 9,000-char budget (it is
     computed before the tiers and subtracted from the trim budget), so for a
@@ -380,6 +392,9 @@ class TestLegacyArmMatchesMain(unittest.TestCase):
     pins both regimes."""
 
     REL = "plugins/context-guard/hooks"
+    # e8ff7fd, "chore: work-item store - F3b-1 CLEAR": main just before the
+    # per-session manifest store merged (92c9738^1). A full sha, never a ref.
+    BASELINE = "e8ff7fde87a83e87a85e7507d2269c2f0b506585"
     SOURCES = ("startup", "resume", "compact", "clear", "fork")
     # the three ownership arms the legacy path still decides, and the two
     # modes that take different tiers
@@ -399,7 +414,7 @@ class TestLegacyArmMatchesMain(unittest.TestCase):
         with open(self.tp, "w") as fh:
             fh.write(json.dumps({"type": "user", "sessionId": "parent-sid"}) + "\n")
         self.old_env = os.environ.get("CLAUDE_CONFIG_DIR")
-        self.base = self.checkout_main()
+        self.base = self.checkout_baseline()
 
     def tearDown(self):
         self.tmp.cleanup()
@@ -435,16 +450,23 @@ class TestLegacyArmMatchesMain(unittest.TestCase):
             raise unittest.SkipTest(f"git {args[0]} unavailable here: {p.stderr.strip()}")
         return p.stdout
 
-    def checkout_main(self):
-        """main's copy of the hooks, in a directory of its own."""
+    def checkout_baseline(self):
+        """BASELINE's copy of the hooks, in a directory of its own."""
+        self.git("rev-parse", "--show-toplevel")   # skips outside a checkout
+        try:
+            self.git("cat-file", "-e", f"{self.BASELINE}^{{commit}}")
+        except unittest.SkipTest:
+            raise unittest.SkipTest(f"baseline commit {self.BASELINE[:7]} is not in "
+                                    "this clone (shallow?)") from None
         d = tempfile.TemporaryDirectory()
         self.addCleanup(d.cleanup)
-        for name in self.git("ls-tree", "--name-only", f"main:{self.REL}").split():
+        rev = f"{self.BASELINE}:{self.REL}"
+        for name in self.git("ls-tree", "--name-only", rev).split():
             if name.endswith(".py"):
                 with open(os.path.join(d.name, name), "w") as fh:
-                    fh.write(self.git("show", f"main:{self.REL}/{name}"))
+                    fh.write(self.git("show", f"{rev}/{name}"))
         if not os.path.exists(os.path.join(d.name, "rehydrate.py")):
-            raise unittest.SkipTest("no rehydrate.py on main")
+            raise unittest.SkipTest(f"no rehydrate.py at {self.BASELINE[:7]}")
         return d.name
 
     def inject(self, hooks, source, cfg):
@@ -479,7 +501,15 @@ class TestLegacyArmMatchesMain(unittest.TestCase):
         """`text` without its one legacy_notice line, whatever its wording."""
         return self.NOTICE_LINE.sub("", text, count=1)
 
-    def test_every_source_and_arm_matches_main_once_the_notice_is_removed(self):
+    def test_the_baseline_is_a_fixed_pre_store_tree(self):
+        """BASELINE is an immutable sha (not a ref that moves with main), and
+        its hooks predate the store: no legacy_notice, no store path."""
+        self.assertRegex(self.BASELINE, r"^[0-9a-f]{40}$")
+        with open(os.path.join(self.base, "rehydrate.py")) as fh:
+            self.assertNotIn("def legacy_notice", fh.read())
+        self.assertFalse(os.path.exists(os.path.join(self.base, "handoff_path.py")))
+
+    def test_every_source_and_arm_matches_the_baseline_once_the_notice_is_removed(self):
         for owner in self.OWNERS:
             for mode in self.MODES:
                 self.manifest(owner, mode)
@@ -490,10 +520,10 @@ class TestLegacyArmMatchesMain(unittest.TestCase):
                         was, wmsg = self.inject(self.base, source, a)
                         now, nmsg = self.inject(HOOKS, source, b)
                         self.assertIn("\n\n" + self.notice(b), now)
-                        # Stripped from both sides, so the guard still reads
-                        # "the legacy arm behaves as main's" once this change
-                        # IS main - by its shape, not its text, so a notice
-                        # reworded on one side (F3b-4's) is still one line.
+                        # Stripped from both sides - by its shape, not its
+                        # text, so a reworded notice (F3b-4's) is still one
+                        # line, and a re-pinned BASELINE that carries the
+                        # notice itself compares the same way.
                         self.assertEqual(self.strip_notice(now), self.strip_notice(was))
                         self.assertEqual(nmsg, wmsg)
                         self.assertTrue(was)
@@ -539,7 +569,7 @@ class TestLegacyArmMatchesMain(unittest.TestCase):
 
     def test_a_trimming_manifest_pays_for_the_notice(self):
         # Ordinary regime: the notice's room comes off the unprotected
-        # sections; every protected one is whole, and main agrees.
+        # sections; every protected one is whole, and the baseline agrees.
         self.trimming()
         with tempfile.TemporaryDirectory() as cfg, \
                 tempfile.TemporaryDirectory() as ref:
