@@ -1174,6 +1174,91 @@ class TestResolveOrder(StoreBase):
         self.assertEqual(self.start("C", "compact"), "")
 
 
+class TestStoreReadIsOursByRealpath(StoreBase):
+    """0836: the READ path takes <store>/<sid>/HANDOFF.md only when it really
+    is that session's file (L.own_store_manifest, the mark step's test). The
+    store is shared by every session in the config dir; a link planted there
+    must not become this session's memory. The guard sits in
+    read_store_manifest, the one reader behind own_manifest, resolve_manifest's
+    own arm and _sealed, so these tests cover every caller at once."""
+
+    def plant_link(self, sid, target):
+        """<store>/<sid>/HANDOFF.md as a symlink to `target`."""
+        p = L.manifest_path(sid)
+        os.makedirs(os.path.dirname(p))
+        os.symlink(target, p)
+        self.assertTrue(os.path.exists(p))
+        return p
+
+    def test_a_link_to_a_peer_file_outside_the_store_is_not_own(self):
+        # The probe that confirmed the item: repo HANDOFF.md carrying
+        # `session: PEER`, linked in at S's slot. Main answered kind "own".
+        self.checkpoint("PEER")
+        self.plant_link("S", self.path)
+        self.assertEqual(R.read_store_manifest("S"), (None, None))
+        path, _t, kind, author = R.resolve_manifest({}, "S", self.repo)
+        self.assertEqual((path, kind, author), (self.path, "legacy", None))
+        self.assertForeign(self.start("S", "compact"))   # is_ours decides, as ever
+
+    def test_a_link_to_another_sessions_store_manifest_is_not_own(self):
+        x = self.store_checkpoint("X")
+        self.plant_link("S", x)
+        self.assertEqual(R.read_store_manifest("S"), (None, None))
+        self.assertEqual(R.resolve_manifest({}, "S", self.repo), (None,) * 4)
+        self.assertEqual(self.start("S", "compact"), "")
+        # X itself still reads its own file: the guard is per session.
+        self.assertEqual(R.read_store_manifest("X")[0], x)
+
+    def test_a_linked_session_directory_is_not_own(self):
+        self.checkpoint("PEER")
+        p = L.manifest_path("S")
+        os.makedirs(os.path.dirname(os.path.dirname(p)))
+        os.symlink(self.repo, os.path.dirname(p))       # <sid>/ -> the repo
+        self.assertTrue(os.path.exists(p))               # and so <sid>/HANDOFF.md
+        self.assertEqual(R.read_store_manifest("S"), (None, None))
+        self.assertEqual(R.resolve_manifest({}, "S", self.repo)[2], "legacy")
+        self.assertForeign(self.start("S", "compact"))
+
+    def test_the_plain_own_file_still_resolves_as_own(self):
+        p = self.store_checkpoint("S")
+        self.assertEqual(R.read_store_manifest("S")[0], p)
+        path, _t, kind, author = R.resolve_manifest({}, "S", self.repo)
+        self.assertEqual((path, kind, author), (p, "own", "S"))
+        self.assertFull(self.start("S", "compact"))
+
+    def test_a_failing_own_falls_through_to_a_legacy_file_that_is_ours(self):
+        # The fall-through is the same one a missing file takes: the legacy
+        # arm, judged by is_ours on its own bytes - here S's, so full.
+        self.checkpoint("S")
+        x = self.store_checkpoint("X")
+        self.plant_link("S", x)
+        path, _t, kind, _a = R.resolve_manifest({}, "S", self.repo)
+        self.assertEqual((path, kind), (self.path, "legacy"))
+        c = self.start("S", "compact")
+        self.assertFull(c)
+        self.assertIn(self.path, c)
+        self.assertIn("a repo manifest of the old layout", c)   # the legacy notice
+
+    def test_own_manifest_at_a_pin_site_takes_the_same_fall_through(self):
+        self.checkpoint("S")
+        self.plant_link("S", self.store_checkpoint("X"))
+        self.assertEqual(R.own_manifest("S", self.repo)[0], self.path)
+
+    def test_a_pin_does_not_seal_through_a_planted_link(self):
+        # The inherited arm reads the author's slot through the same reader:
+        # a link at P's slot pointing at a byte-identical copy outside the
+        # store still carries the pinned sha, and must still seal nothing.
+        p = self.store_checkpoint("P")
+        self.fork("P", "C")
+        copy = os.path.join(self.repo, "copy.md")
+        writef(copy, readf(p))
+        os.remove(p)
+        os.symlink(copy, p)
+        self.assertEqual(R.resolve_manifest(L.load_state("C"), "C", self.repo),
+                         (None,) * 4)
+        self.assertEqual(self.start("C", "compact"), "")
+
+
 class TestStoreLinks(StoreBase):
     def test_fork_inherits_the_parents_store_manifest(self):
         # Also the call-order guard: resolve_manifest runs AFTER the link, so

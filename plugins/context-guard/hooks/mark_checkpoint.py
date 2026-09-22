@@ -47,7 +47,7 @@ path, so no other session can be writing it, and a `session:` copied from a
 predecessor's manifest is simply corrected. The path is built from
 this_session(sid, environ) - $CLAUDE_CODE_SESSION_ID first - so an argv id
 that differs from the env's still names nothing. Ownership by path is only
-as good as the path, so it is checked by realpath (own_store_manifest): a
+as good as the path, so it is checked by realpath (L.own_store_manifest): a
 symlink planted at that file, or at the <sid>/ directory above it, resolves
 out of the store, is not this session's manifest, and is left to the legacy
 arm's claim test rather than rewritten as ours.
@@ -92,23 +92,10 @@ def store_manifest_path(sid):
 
 
 def own_store_manifest(path, sid):
-    """Whether `path` really IS `sid`'s own manifest in the store, and not a
-    symlink - at the file, or at the <sid>/ directory above it - pointing at
-    something else. The store directory is shared by every session that reads
-    this config dir, so the path existing is not the same as it being ours,
-    and it is ownership by path that collapses the claim test: without this,
-    a planted link would make an arbitrary file "ours" and have it rewritten
-    with no warning. Decided on realpath, so a link out of the store resolves
-    out of the store and fails. A path that fails is not this session's
-    manifest and falls through to the legacy arm and its claim test.
-
-    L.manifest_sid is the store's own identity test, and safe_sid is
-    idempotent, so the component it returns compares directly with
-    L.safe_sid(sid): never strip or re-hash it."""
-    try:
-        return L.manifest_sid(path) == L.safe_sid(sid)
-    except Exception:
-        return False
+    """L.own_store_manifest, the store's ownership-by-path test, shared with
+    rehydrate's read path so both sides of the store answer "ours?" the same
+    way (0836). Kept under this name for the docstrings above that cite it."""
+    return L.own_store_manifest(path, sid)
 
 
 class TargetUnreadable(Exception):

@@ -389,6 +389,35 @@ class TestSweep(Base):
             L._release(fd)
 
 
+class TestOwnStoreManifest(Base):
+    """The store's ownership-by-path test, shared by the mark step (write)
+    and rehydrate's read_store_manifest (read)."""
+    def test_the_real_file_is_ours_and_nothing_else_is(self):
+        p = L.manifest_path("S")
+        os.makedirs(os.path.dirname(p))
+        with open(p, "w") as fh:
+            fh.write("x")
+        self.assertTrue(L.own_store_manifest(p, "S"))
+        self.assertFalse(L.own_store_manifest(p, "T"))          # another session
+        self.assertFalse(L.own_store_manifest(p + ".bak", "S"))  # not a manifest
+        self.assertFalse(L.own_store_manifest(None, "S"))        # exceptions are False
+        self.assertFalse(L.own_store_manifest(p, None))
+        outside = os.path.join(self.tmp.name, "peer.md")
+        with open(outside, "w") as fh:
+            fh.write("x")
+        link = L.manifest_path("L")
+        os.makedirs(os.path.dirname(link))
+        os.symlink(outside, link)
+        self.assertFalse(L.own_store_manifest(link, "L"))       # a link out
+        # An unsafe id compares through safe_sid, never the raw id.
+        raw = "a/b"
+        q = L.manifest_path(raw)
+        os.makedirs(os.path.dirname(q))
+        with open(q, "w") as fh:
+            fh.write("x")
+        self.assertTrue(L.own_store_manifest(q, raw))
+
+
 class TestMarkCheckpointCli(Base):
     def run_cli(self, sid):
         import subprocess
