@@ -27,3 +27,11 @@ From c0cc review r3 2026-09-21 (CLEAR with lows). (1) subagent_statusline._usage
 ## Implementer result
 - round 1 DONE 9a5132e (opus): streamed structural scanner (root → message → usage only, strings skipped); chunk-straddle tests; no borrowing; README catalog row + decision tree. Open: invalid JSON inside skipped values not detected; compact_boundary checked only in first 4096 bytes on the long path.
 - dispatch: reviewer opus — rule 4
+
+## Review round 1 — NEEDS_CHANGES (opus) at 9a5132e
+- acceptance 1-4 met; 205,978 real lines 0 mismatches; 2.06M fuzz runs, valid lines 0 mismatches, 0 exceptions. Both open questions judged not defects (compact markers all before byte 4096).
+- [medium] Python-level loop per bracket/token: ~4.5 MB/s on dense structure; a >~20 MB dense line exceeds the 5 s kill, the cache offset never advances → every later tick killed, rows stuck on default. Fix: a deadline/token cap in _long_line marking the scan bad but returning n so the offset advances; test with a patched small cap.
+- lows: _SKIP backtracking ~190 MB peak per 1 MiB chunk of "", (fix claim or possessive/atomic, or smaller chunk); commit-message timing wording (carried in merge message).
+- dispatch: implementer opus — fix round 1 (same agent resumed)
+- fix round 1 DONE 964b9a5 (opus): LINE_SECS 1.0 per line + TICK_SECS 1.5 per tick (line passed over, offset advances, depth kept); stateless regexes (0 MiB growth vs 165); worst tick ~3 s; tests fail 2 without. Declined: commit wording (merge message).
+- dispatch: reviewer opus — review r2 (same reviewer resumed)
