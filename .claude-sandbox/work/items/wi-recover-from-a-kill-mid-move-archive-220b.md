@@ -24,3 +24,5 @@ From 5408 review r2 (lows): (1) archive hard-link path — a kill between link a
 - 2026-09-22 claimed by unknown@360f41058e92
 - dispatch: implementer opus — wi.py store integrity
 - 2026-09-22: worktree fast-forwarded to main; answer 53 lifts the hold. dispatch: implementer opus — wi.py store integrity
+- impl r0 DONE a70f389 (opus): _same_file (lstat dev/inode), move/archive finish a linked move, load_all skips a 0-byte item with a warning naming lint, lint names both kill states and fixes; bounded exhaustion test (fails in 0.04s vs hang on an unbounded loop); 2 new tests fail on main. OQs: empty file never auto-removed (add writes outside the lock); stray .tmp<pid> after a create-path kill.
+- dispatch: reviewer opus — rule 4
