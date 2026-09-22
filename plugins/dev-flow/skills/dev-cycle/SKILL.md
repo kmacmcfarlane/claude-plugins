@@ -105,12 +105,16 @@ only on a `CLEAR` recorded against the current HEAD sha.
 
    Then record the run itself, before any dispatch, as one
    `target: <mode> <ref> <workspace>` line (`references/bindings.md` § Record line
-   shapes): the mode as invoked; the branch, item id or slug it runs on; and the
-   workspace — the path `references/bindings.md` § Review target resolved in
-   `review <branch>` mode, the
-   `.claude/worktrees/<name>` path Step 3.1 will add in `full` mode, or the series path
-   in `plan` mode, which has no worktree. Every later step reads the workspace from that
-   line rather than rebuilding it from the item id.
+   shapes): the mode **the run will actually take** — `plan` for `plan` mode and for a
+   spike, whichever was typed, since a spike takes Step 1's plan dispatch and Step 4's
+   plan-review variant and never reaches Step 3 or Land; `review <branch>`; otherwise
+   `full` — then the target as given (the branch, item id, slug or plan path), then the
+   workspace as an **absolute** path: the path `references/bindings.md` § Review target
+   resolved in `review <branch>` mode, `"$MAIN"/.claude/worktrees/<name>` for the
+   worktree Step 3.1 will add in a `full` run, or the series path for a plan run, which
+   has no worktree. Every later step reads the workspace from that line rather than
+   rebuilding it from the item id, and a relative path here would resolve against
+   whatever working directory that later step happens to have.
 
 Expected output: one short paragraph — target, mode, base, checks, record sink. When the
 record sink is the scratchpad run record, say there too that the run is **not resumable
@@ -122,15 +126,18 @@ outside this session**: a scratchpad sink is session-scoped by contract
 Runs for `plan` mode, a spike, and a feature with no plan. A bug, chore or refactor with
 clear acceptance skips it, and so does a target that already has a series or plan file.
 
-- **`plan` mode or a spike:** dispatch one plan agent, routed by Step 2 with opus as its
+- **`plan` mode or a spike** — one run, recorded as mode `plan` either way (Step 0.3),
+  because what follows is the same and nothing here reaches Step 3 or Land: dispatch one
+  plan agent, routed by Step 2 with opus as its
   minimum (a plan is judgement) and the Model floor respected, with the plan variant in
   `references/agent-brief.md`: /investigate in its orchestrated mode (the `investigate`
   skill's § Running under an orchestrator), writing the series to the Series home; no
   worktree. Record the series path, and record the plan agent's report as soon as it
   comes back: `return: planner <STATUS> <series path>` (`references/bindings.md`
-  § Record line shapes). Step 3.5 writes the implementer's `return:` and never runs in
-  `plan` mode, so this is the only producer return a plan run records; a `BLOCKED` one
-  carries its reason, `permission` or `setup`, exactly as Step 3.5's does. Its `DONE`
+  § Record line shapes). This bullet is that line's only writer: Step 3.5 writes the
+  implementer's `return:`, and no run that comes through here reaches Step 3. A
+  `BLOCKED` one carries its reason, `permission` or `setup`, exactly as Step 3.5's does.
+  Its `DONE`
   goes to Step 4 with
   the plan-review variant; a `NEEDS_CHANGES` re-dispatches the plan agent, which
   revises by a new serial per the `investigate` skill's
@@ -212,12 +219,17 @@ re-dispatch or resume with findings = review round n+1; cap 4 review rounds.
 1. **Dispatch a reviewer**: one background `general-purpose` agent, review-only, `model`
    per rule 4, briefed from `references/review-brief.md`, against what the producer
    returned — the sha, or the series path, on the last `return:` line
-   (`references/bindings.md` § Record line shapes) — with the commands from
+   (`references/bindings.md` § Record line shapes). In `review <branch>` mode before any
+   fix round there is no producer and no `return:` line: review the tip of `<branch>` in
+   the workspace the `target:` line records. Brief it with the commands from
    `references/review-checklist.md` plus the Checks binding — what you run at Land. A
-   plan-mode series gets the plan-review variant in `references/review-brief.md`
+   plan run's series gets the plan-review variant in `references/review-brief.md`
    instead; before each such review, record the output of
-   `sha256sum <series>/[0-9][0-9]_*.md` as a `baseline: <sha256 list>` line, the baseline
-   a later plan review re-runs that command against to tell whether the series has moved.
+   `sha256sum <series>/[0-9][0-9]_*.md` as a `baseline: <sha256 list>` line. Before a
+   plan **re**-review, first re-run that command and diff it against the last `baseline:`
+   line: what changed is the serials the planner added or rewrote since the review being
+   re-run, which is what the re-review is asked to check, and an unmoved list means the
+   planner wrote nothing — a finding for the re-review, not a new baseline.
 2. **Severity scale** (defined in the review brief):
    - critical: data loss, security, breaks the harness or another plugin.
    - high: wrong on the main path; a failing or missing test for a claimed behaviour.
@@ -311,9 +323,8 @@ open questions: <list, or none>
 decisions needed: <numbered list, or none>
 ```
 
-The `verified:` line's last clause comes from the record: the `landed:` line's merge sha
-when Step 5.5 wrote one (`references/bindings.md` § Record line shapes), else `branch
-left`; `pushed` when the terminal action included a push.
+`verified:`'s merge sha is read back from the `landed:` line Step 5.5 recorded
+(`references/bindings.md` § Record line shapes), not from memory.
 
 `plan` mode reports the series path on `changed:`, its review on `verified:`, and its
 blocking questions under `decisions needed:`.

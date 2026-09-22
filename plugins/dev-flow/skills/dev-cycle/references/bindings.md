@@ -99,7 +99,9 @@ before any dispatch:
    git -C "$MAIN" worktree add .claude/worktrees/review-<slug> <branch>
    ```
 
-   The same `.git/info/exclude` check as Step 3 applies before adding it.
+   The same `.git/info/exclude` check as Step 3 applies before adding it. The path that
+   command takes is relative to `$MAIN`; what is recorded is the absolute one,
+   `"$MAIN"/.claude/worktrees/review-<slug>`.
 
 Every later step reads the worktree by this resolved absolute path, as the `target:`
 line carries it, never reconstructed as `"$MAIN"/.claude/worktrees/<name>` — cases 1 and
@@ -131,7 +133,11 @@ wrote one.
 ## Record line shapes
 
 Fixed shapes for the lines the steps append to the record sink; every step that writes
-one uses this exact shape, and each shape below names the **one** step that writes it. The
+one uses this exact shape, and each shape below names the step, or steps, that write it —
+**one writer per role**, so that no two steps can write the same line about the same
+thing. Two shapes have two writers, each for a different role: `return:` (SKILL.md
+§ Step 3.5 for an implementer, § Step 1 for a planner) and `answer:` (§ Decisions for a
+raised decision, SKILL.md § Step 3.5 for a `NEEDS_CONTEXT`). The
 record is a log, read in the order it was written:
 
 - `dispatch: <role> <model> — <signal>` — SKILL.md § Step 2 rule 7, written before every
@@ -165,8 +171,15 @@ record is a log, read in the order it was written:
   verdict: BLOCKED at <token> — permission | setup
   ```
 
-  A closed set of two values, taken from the agent's own report by the step that writes
-  the line, never widened and never invented by a reader. `permission` is the
+  `<token>` is what the dispatch was pointed at — the HEAD it was given, or the series
+  path — and on a `BLOCKED` it is a **locator only**, saying what the setup failed on. It
+  is never a freshness token: a `BLOCKED` reached no verdict on the change, so nothing
+  compares it against anything. Where the writer has no such value (a reviewer blocked
+  before it could read the workspace), it writes the workspace instead, and never
+  fabricates a sha.
+
+  The reason is a closed set of two values, taken from the agent's own report by the step
+  that writes the line, never widened and never invented by a reader. `permission` is the
   permission-denial case (`troubleshooting.md` § Dispatch and review): never
   re-dispatched, always a decision for a human. `setup` is everything else — the brief,
   the worktree, the environment — fixable and re-dispatchable within `fix-loop.md`'s
@@ -174,22 +187,36 @@ record is a log, read in the order it was written:
   conservative value, so a line written before this shape existed still has one.
 - `baseline: <sha256 list>` — SKILL.md § Step 4.1, written before each plan-mode review:
   the output of `sha256sum <series>/[0-9][0-9]_*.md` over the serials that review covers.
-  A later plan review re-runs the same command and compares it against the recorded line
-  to tell whether the series has moved since — which the `verdict:` line's
-  `at <series path>` cannot say, since it names the series and not its state.
+  Step 4.1 also **reads** the last one, before a plan-mode re-review: re-running the same
+  command and diffing it against that line is what says which serials the planner added
+  or rewrote since the review being re-run, which is what the re-review is asked to check
+  — the `verdict:` line's `at <series path>` cannot say it, naming the series and not its
+  state. A list that has not moved means the planner wrote nothing; that is a finding for
+  the re-review, not a new baseline.
 - `findings: …` — SKILL.md § Step 4.5, written together with a `NEEDS_CHANGES` or
   `SHOW_STOPPER` verdict: the reviewer's FINDINGS section, pasted verbatim, one line per
   finding in the reviewer's own numbering — the source `fix-loop.md`'s NEEDS_CHANGES
   round hands to the fix dispatch unchanged.
 - `target: <mode> <ref> <workspace>` — SKILL.md § Step 0.3, **every mode**, written before
-  any dispatch. `<mode>` is `full`, `plan` or `review <branch>`, recorded rather than
-  inferred later. `<ref>` is the branch (`review <branch>`), the item id or slug (`full`),
-  or the series path (`plan`). `<workspace>` is the absolute path the run's work lives at:
-  the path § Review target resolved (`review <branch>`), the `.claude/worktrees/<name>`
-  path SKILL.md § Step 3.1 adds (`full`), or — `plan` mode having no worktree — the series
-  path. In `plan` mode the ref and the workspace therefore name the same thing; the line
-  still carries three fields so that every mode parses alike. Every later step reads the
-  workspace from this line instead of reconstructing it.
+  any dispatch.
+  - `<mode>` is `full`, `plan` or `review <branch>`: recorded, never inferred later, and
+    it names **the run the cycle actually takes, not the word the user typed**. A spike
+    records `plan` however it was invoked, because a spike takes Step 1's plan dispatch,
+    Step 4's plan-review variant and Step 6, and never reaches Step 3 or Land
+    (SKILL.md §§ Usage, Step 1) — so its record must reduce as a plan run's does.
+    Everything else that reaches Step 3 records `full`.
+  - `<ref>` is the target as the run was given it: the branch (`review <branch>`), or the
+    item id, series slug or plan path (`full`, `plan`). It says what was asked for; the
+    workspace says where the work is.
+  - `<workspace>` is the **absolute** path the run's work lives at, and it is written
+    absolute even when the command that made it took a relative one: the path § Review
+    target resolved (`review <branch>`), `"$MAIN"/.claude/worktrees/<name>` for the
+    worktree SKILL.md § Step 3.1 adds (`full`), or — a plan run having no worktree — the
+    series path under the Series home. A later step, or a later session, runs
+    `git -C <workspace>` from a working directory this one cannot predict, so a
+    repo-relative path here resolves against the wrong tree.
+
+  Every later step reads the workspace from this line instead of reconstructing it.
 - `intent: <one line>` — § Intent, `review <branch>` mode with no item or plan
 - `decision: <question> — options: <a> | <b> | <c>` — § Decisions, written before a
   decision is raised. **Self-contained**: the question in full and its options,
