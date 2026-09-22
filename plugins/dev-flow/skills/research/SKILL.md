@@ -236,9 +236,9 @@ the storage reference. Both are written in staging. Ledger `SYNTHESIS DONE`.
 `sources.md`, `tools/` — is copied to the destination only now, and only when the verifier's
 security check passed. With a security concern open, nothing fetched-derived reaches a tracked
 tree: the run is **held**. A held run is moved out of the session-scoped scratchpad to a
-durable ignored path — `.claude-sandbox/research/_held/<run>/` when the ignore check in the
-storage reference (§ The ignore check: asked of the owning repo, and of every enclosing one)
-says it is ignored — and the brief's `staging:` is rewritten to it with status `HELD`, so
+durable ignored path — `.claude-sandbox/research/_held/<run>/` when the held-path check in
+the storage reference (§ The ignore check) says it is ignored — and the brief's `staging:`
+is rewritten to it with status `HELD`, so
 `research-refine`'s clean-first path can find it in a later session. When no ignored durable
 path exists, the run stays in the scratchpad and the brief and the report say plainly that
 it is lost with the session. **A held run stops here**: nothing below runs for it, and the

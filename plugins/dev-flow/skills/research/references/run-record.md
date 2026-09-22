@@ -157,7 +157,7 @@ to <staging>/verification.md.
 Printed to the operator (and returned to a calling skill) in this shape and no other:
 
 ```
-STATUS: DONE | DONE_WITH_CONCERNS | BLOCKED
+STATUS: DONE | DONE_WITH_CONCERNS | HELD | BLOCKED
 RUN: <destination> (<n> lanes, <n> rounds, <n> sources, verifier <supported>/<sampled>)
 ANSWER: <two or three sentences, with the overall confidence>
 KEY FINDINGS: <= 5 bullets

@@ -20,17 +20,25 @@ the synthesis and `sources.md` are written after that scan, from scanned files, 
 same staging area, and the whole record is copied to the destination only on a clean scan.
 The brief is the one file written at the destination before that, because the orchestrator
 authors it and it carries no fetched text. A run held on a security concern moves to
-`.claude-sandbox/research/_held/<run>/` when the ignore check (below) says that path is
-ignored, else it is lost with the session and the brief says so.
+`.claude-sandbox/research/_held/<run>/` when the held-path check (§ The ignore check) says
+that path is ignored, else it is lost with the session and the brief says so.
 
-**The ignore check.** A path is untracked-safe only when the repo that *owns* it says so, and
-every repo enclosing that one agrees — `.claude-sandbox/` is its own git repository in
-claude-sandbox's sidecar mode, and it tracks what the host repo ignores. So: from the nearest
-*existing* parent of the candidate path, run `git -C <parent> check-ignore -q <rest>` (the
-remainder of the path, relative to that parent); then, while that parent's repo root is
-itself inside another repo, repeat from that root's parent for the remainder. Ignored at
-every level → usable. Any level tracked, or the nearest parent not in a repo at all → treat
-the path as checked-in.
+## The ignore check
+
+Two questions, asked with the same command, answered at different depths.
+
+- **Clean runs (rules 4 and 5)** — ask the **host repo**: `git check-ignore -q <path>` from
+  the working directory. Ignored → the sidecar is usable. The sidecar being its own git
+  repository in claude-sandbox's sidecar mode is not a problem here: that repo exists to
+  commit verified runs, exactly as it commits investigations.
+- **Held runs (`_held/`)** — unverified content must be ignored at **every level**, because
+  the sidecar repo tracks what the host ignores. From the nearest *existing* parent of the
+  candidate path, run `git -C <parent> check-ignore -q <rest>` (the remainder of the path,
+  relative to that parent); then, while that parent's repo root is itself inside another
+  repo, repeat from that root's parent for the remainder. Ignored at every level → usable,
+  and the skill writes `_held/.gitignore` containing `*` so every level agrees by
+  construction from then on. Any level tracked, or the nearest parent not in a repo at all
+  → the held run stays in the scratchpad and is declared lost with the session.
 
 ## Destination resolution
 
@@ -46,15 +54,15 @@ Resolve in this order and stop at the first hit. Say which rule fired, in one li
 
 Rules 4 and 5 are **untracked-only**. Whether `.claude-sandbox/` is ignored is a per-repo
 choice (some repos commit their investigations, and in sidecar mode it is a repo of its own),
-so before either fires run the ignore check (§ The principle) on the candidate directory:
-ignored at every level → use it; otherwise the path counts as checked-in, and with no marker
-or flag the run goes to the scratchpad instead (shape `run`, in staging), with a line saying
-why. Never assume the sidecar is untracked.
+so before either fires run the clean-run check (§ The ignore check) on the candidate
+directory: ignored by the host repo → use it; tracked, or not a git repo → the path counts
+as checked-in, and with no marker or flag the run goes to the scratchpad instead (shape
+`run`, in staging), with a line saying why. Never assume the sidecar is untracked.
 
 When two KB roots are in scope (a repo-level one and a subdirectory one), prefer the nearer.
-When rule 5's path does not exist yet, create it only if the ignore check, run from its
-nearest existing parent, reports it would be ignored at every level; otherwise the
-untracked-only rule sends the run to the scratchpad. Never create a tracked path.
+When rule 5's path does not exist yet, create it only if the clean-run check (§ The ignore
+check) reports the host repo would ignore it; otherwise the untracked-only rule sends the run
+to the scratchpad. Never create a tracked path.
 
 **Promotion out of the sidecar** — "this was worth keeping, check it in" — is a separate,
 explicit step, and it is gated: it refuses unless the run's `verification.md` exists and its
