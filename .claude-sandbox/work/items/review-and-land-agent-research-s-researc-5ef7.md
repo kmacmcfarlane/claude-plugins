@@ -6,7 +6,7 @@ status: blocked
 priority: 1
 owner: unknown@360f41058e92
 claimed: 2026-09-22T08:33Z
-blocked: review cap hit at r4; decision 54
+blocked: final review not CLEAR (one fail-safe medium); decision 56
 created: 2026-09-22
 updated: 2026-09-22
 refs:
@@ -84,3 +84,8 @@ decision 54: 5ef7 (research skills) hit the 4-round review cap — round 4 found
 answer 54: (a) do another round (operator 2026-09-22)
 fix r4 (peer agent-research, cap waived by answer 54): 76c3ffc — P1–P5 fixed, 4 files +31/−23.
 dispatch: reviewer opus — review r5 (final, per answer 54; resume reviewer on 76c3ffc)
+
+review r5 (opus, final waived round) on 76c3ffc: NEEDS_CHANGES. §1–§3, §5 clean; strict YAML ok; six Checks OK. P1–P5 fixed; security path and cost gate clean.
+- Q1 [medium] storage-and-knowledge-base.md:35-41 — `_held/.gitignore` (`*`) is written only after the every-level check passes, so in sidecar-repo and tracked modes the check fails first and held runs are lost with the session (fails safe; no leak). Pass (tested): write `.claude-sandbox/research/_held/.gitignore` first when `.claude-sandbox/` exists, then run the check → USABLE in sidecar and tracked mode, nothing shows in either repo's status; non-repo root still lost.
+- low: 5aef0dd subject (carried). Notes: spec R9 lacks HELD (edit the spec next time).
+decision 56: 5ef7 final (waived) review is not CLEAR on one fail-safe medium — held runs are lost with the session in both standard sandbox modes because a .gitignore is written after the check it should satisfy; the fix is a one-sentence reorder the reviewer already tested. (a) one more micro-round: that reorder only, then a verify-only review [recommended: minutes of work, lands the skills as specified]; (b) land now at 76c3ffc and fix it as a follow-up item (safe: nothing leaks, held runs just are not durable yet); (c) hold.
