@@ -49,3 +49,6 @@ Port plan .claude-sandbox/investigations/8cc2-turn-gate-port — design awaits t
 ## Review round 2 — CLEAR (opus) at c7d4757
 - every forgery refused by --check; real HARD arms; unwritable state: hook silent, prompt gate still blocks (no regression). lows: malformed top-level epoch → traceback (fail-safe); commit layout.
 - READY TO LAND — held until F3a is on main (plan order F2 → F3a → F1). Expect hooks.json / README / checkpoint Step 5 conflicts at merge.
+
+2026-09-22 (this session): F3a landed (4ca4646) and H1–H6 landed on top, so the hold is lifted but the branch is 309 commits behind with 3 conflicts (README.md, hooks/hooks.json, librarian-mode ending-the-session.md). Its review (CLEAR at c7d4757) predates every 5039 change to rehydrate/context_warn, so the conflict round must re-verify, not just merge.
+dispatch: implementer opus — conflict round + re-verify (fresh agent; the r1 implementer ran in session 0c7eafc7); gate code = fable signal, fable unavailable → opus, recorded
