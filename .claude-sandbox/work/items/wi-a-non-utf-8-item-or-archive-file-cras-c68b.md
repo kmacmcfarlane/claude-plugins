@@ -25,3 +25,7 @@ cc39 implementer OQ, 2026-09-22 (pre-existing on main): claim, show, lint and ev
 
 target: full wi-a-non-utf-8-item-or-archive-file-cras-c68b /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude/worktrees/wi-a-non-utf-8-item-or-archive-file-cras-c68b
 dispatch: implementer opus — executable logic (wi.py), rule 2
+return: implementer DONE 87e4d23
+changed: wi.py (read_raw decode → WiError 3; lint via read_raw), tests/test_wi.py
+dispatch: reviewer opus — rule 4, implementer tier
+agent: reviewer ae37871f87893f897 round 1
