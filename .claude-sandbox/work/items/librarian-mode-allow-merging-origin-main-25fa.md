@@ -31,3 +31,5 @@ review r1 (opus) at 073bf9e: NEEDS_CHANGES. Every git command in the procedure w
 - [medium] troubleshooting.md:41-45 — the uncommitted merge while Checks run has no "no other commit to main until commit/abort" rule and no recovery if the session dies mid-merge (a store commit would complete the merge silently). Pass: the rule + a Rehydrate/troubleshooting entry: MERGE_HEAD present → merge --abort, redo.
 - lows: threshold wording (> 5, must vs may, Scope overlap defined generically); step 2 should cover any refusal to start; strictly-behind → merge --ff-only, nothing to push; trigger names "(fetch first)"; pushes pause while a conflict decision is open (same number); 75%/DUE step 4 "no merge" exempts the push's merge; red-flag bullet wording.
 dispatch: implementer opus — fix round 1 (resume)
+fix r1 DONE 2dbf401 (opus): one incoming: rule in four places (with the push outcome: follow-up mid-session, final Report at session end/75%); no other commit to main until commit/abort + MERGE_HEAD recovery in Rehydrate step 4 and troubleshooting; all lows fixed; SKILL.md 2320 words.
+dispatch: reviewer opus — review r2 (resume)
