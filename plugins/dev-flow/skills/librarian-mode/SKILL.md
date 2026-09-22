@@ -109,7 +109,7 @@ Do this at session start and after any `/clear` or compaction. Never `ls` the wh
    landing merge, told apart by comparing `MERGE_HEAD` against `origin/main` and the
    `worktree-*` branch tips — `merge --abort`, then the matching redo, or a decision
    when neither matches (`references/troubleshooting.md`).
-   A worktree with no live agent (step 3's probes; ListAgents for one no item records)
+   A worktree with no live agent (step 3's probes; ListAgents for any agent no item records)
    and no `doing` item is an orphan — see Troubleshooting.
 
 Expected output: one short paragraph — items in flight, items ready, worktrees and agents
