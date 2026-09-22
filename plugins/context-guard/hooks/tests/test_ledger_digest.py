@@ -136,6 +136,50 @@ class TestDigest(LedgerCase):
         self.assertIn("no push until decision 52", ledger.digest("h", budget=2500))
 
 
+    def test_rc_capped_at_half_the_room_when_d_lines_wait(self):
+        # R/C text alone is over the whole budget; D lines are present too.
+        lines = ["# ledger h"]
+        for i in range(60):
+            lines.append(f"- R refusal {i:02d} padded out to about sixty characters.")
+            lines.append(f"- D decision {i:02d} padded out to about sixty characters")
+        self.write("h", "\n".join(lines) + "\n")
+        d = ledger.digest("h", budget=2500)
+        self.assertLessEqual(len(d), 2500)
+        room = 2500 - 200 - len(L.ledger_path("h"))
+        r = [l for l in d.splitlines() if l.startswith("- R ")]
+        dd = [l for l in d.splitlines() if l.startswith("- D ")]
+        self.assertTrue(dd, "no D line kept: R/C took the whole room")
+        self.assertLessEqual(sum(len(l) + 1 for l in r), room // 2)
+        self.assertGreater(sum(len(l) + 1 for l in r), room // 2 - 70)
+        self.assertIn("- R refusal 59 ", d)             # newest R kept
+        self.assertNotIn("- R refusal 00 ", d)          # oldest R dropped
+        self.assertIn("- D decision 59 ", d)
+
+    def test_overlong_line_cut_not_dropped(self):
+        lines = ["# ledger o", "- C " + "corrected " * 400]
+        lines += [f"- P commit {i:07x}: merged: branch-{i} -> /some/long/repo/path" for i in range(80)]
+        self.write("o", "\n".join(lines) + "\n")
+        d = ledger.digest("o", budget=2500)
+        self.assertLessEqual(len(d), 2500)
+        c = [l for l in d.splitlines() if l.startswith("- C ")]
+        self.assertEqual(len(c), 1)
+        self.assertTrue(c[0].endswith(" [cut]"))
+
+    def test_small_budget_is_never_exceeded(self):
+        self.shaped()
+        for budget in (0, 1, 50, 120, 200, 300, 600, 1000):
+            self.assertLessEqual(len(ledger.digest("s", budget=budget)), budget, budget)
+        self.assertIn("left out", ledger.digest("s", budget=300))
+
+    def test_hash_lines_other_than_the_title_are_kept(self):
+        lines = ["# ledger k (successor of 0c7eafc7)"]
+        lines += [f"- P commit {i:07x}: merged: branch-{i} -> /some/long/repo/path" for i in range(200)]
+        self.write("k", "\n".join(lines) + "\n")
+        d = ledger.digest("k", budget=2500)
+        self.assertEqual(d.splitlines()[0], "# ledger k (successor of 0c7eafc7)")
+        self.write("t", "# ledger t\n- D one\n")
+        self.assertEqual(ledger.digest("t"), "- D one")
+
 class TestCompactInjection(LedgerCase):
     def setUp(self):
         super().setUp()

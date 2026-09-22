@@ -130,11 +130,13 @@ TOC, read on demand: `path — one line on what it holds`.
   Either check degrades to the plain manifest if git or the store fails.
 - Injection tiers: `compact` → full + ledger digest; `resume`/`fork` → full only when the file
   or repo changed since last injection, else one header line; `startup`/`clear` → header only.
-- **The ledger digest** (2,500 chars) keeps reasoning ahead of pointers: `R`/`C` lines from
-  every epoch first, then `D`/`X`/`U`/`Q`, then the machine-written `P` pointers in what is
-  left — newest first within a kind, printed in file order under their epoch headers. When
-  anything is left out, a last line counts it and names the ledger file. The ledger file is
-  never rewritten.
+- **The ledger digest** (2,500 chars, never exceeded) keeps reasoning ahead of pointers:
+  `R`/`C` lines from every epoch first (newest first, up to half the budget), then
+  `D`/`X`/`U`/`Q` ranked together newest first, then the remaining `R`/`C`, then the
+  machine-written `P` pointers in what is left. A line too long for half the budget is cut
+  with a ` [cut]` marker, not dropped. Kept lines print in file order under their epoch
+  headers. When anything is left out, a last line counts it and names the ledger file. The
+  ledger file is never rewritten.
 - **`session:` is the author's own id**, read from `$CLAUDE_CODE_SESSION_ID` when the
   manifest is written (Claude Code sets it for every Bash call, and it follows `/clear`).
   Never copy it from the manifest being replaced: after `/clear` or a handoff that id is the

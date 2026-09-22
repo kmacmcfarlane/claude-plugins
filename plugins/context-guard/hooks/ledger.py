@@ -42,7 +42,8 @@ def tail(session_id, max_chars=4000):
     """Newest-first bounded read (raw, every kind alike). Re-injection after
     compaction uses digest(), which keeps reasoning ahead of pointers."""
     try:
-        lines = open(L.ledger_path(session_id), errors="replace").read().splitlines()
+        with open(L.ledger_path(session_id), errors="replace") as fh:
+            lines = fh.read().splitlines()
     except Exception:
         return ""
     out, size = [], 0
@@ -69,12 +70,15 @@ def _tier(line):
 
 def digest(session_id, budget=2500):
     """Bounded read for re-injection after compaction, by kind rather than by
-    recency: R and C lines from every epoch first (newest first while they
-    fill half the budget), then D/X/U/Q newest first, then the rest of R/C,
-    then P pointers newest first. The kept lines print in file order under
-    their epoch headers (a header only when a kept line follows it), and when
-    anything is left out a closing line counts it and names the ledger file.
-    The ledger itself is only read. Returns "" for a missing or empty ledger.
+    recency: R and C lines from every epoch first (newest first, up to half
+    the room), then D/X/U/Q ranked together newest first, then the remaining
+    R/C, then P pointers newest first. A line too long for half the room is
+    cut with a marker rather than dropped. The kept lines print in file order
+    under their epoch headers (a header only when a kept line follows it), and
+    when anything is left out a closing line counts it and names the ledger
+    file. The whole result never exceeds `budget` chars. `# ` lines other than
+    the plain `# ledger <sid>` title count as reasoning. The ledger itself is
+    only read. Returns "" for a missing or empty ledger.
     """
     try:
         path = L.ledger_path(session_id)
@@ -82,15 +86,17 @@ def digest(session_id, budget=2500):
             lines = fh.read().splitlines()
     except Exception:
         return ""
+    title = f"# ledger {session_id}"
     head_of, entries, cur = {}, [], None
     for i, ln in enumerate(lines):
         if ln.startswith("## "):
             cur = i
-        elif ln.strip() and not ln.startswith("# "):
+        elif ln.strip() and ln.strip() != title:
             head_of[i] = cur
             entries.append(i)
     if not entries:
         return ""
+    disp = {i: lines[i] for i in entries}
 
     def render(keep):
         out, shown = [], set()
@@ -99,14 +105,18 @@ def digest(session_id, budget=2500):
             if h is not None and h not in shown:
                 shown.add(h)
                 out += ([""] if out else []) + [lines[h]]
-            out.append(lines[i])
+            out.append(disp[i])
         return out
 
-    whole = render(entries)
-    if len("\n".join(whole)) <= budget:
-        return "\n".join(whole)
+    whole = "\n".join(render(entries))
+    if len(whole) <= budget:
+        return whole
 
     room = max(0, budget - 200 - len(path))   # the closing line's share
+    cut = max(40, room // 2 - 80)             # fits the R/C pass with a header
+    for i in entries:
+        if len(disp[i]) > cut:
+            disp[i] = disp[i][:cut - 6] + " [cut]"
     kept, heads, size = set(), set(), 0
 
     def take(idxs, limit):
@@ -115,7 +125,7 @@ def digest(session_id, budget=2500):
             if i in kept:
                 continue
             h = head_of[i]
-            cost = len(lines[i]) + 1
+            cost = len(disp[i]) + 1
             if h is not None and h not in heads:
                 cost += len(lines[h]) + 2          # header plus its blank line
             if size + cost > limit:
@@ -135,7 +145,11 @@ def digest(session_id, budget=2500):
     np = sum(1 for i in left if _tier(lines[i]) == 2)
     nr = len(left) - np
     bits = [f"{n} {w}" for n, w in ((nr, "reasoning"), (np, "pointer")) if n]
-    out = render(kept)
-    out.append(f"[ledger digest: {' and '.join(bits)} line(s) left out, pointers "
-               f"first, then the oldest reasoning; the full ledger is {path}]")
-    return "\n".join(out)
+    body = "\n".join(render(kept))
+    for note in (f"[ledger digest: {' and '.join(bits)} line(s) left out, pointers "
+                 f"first, then older reasoning by kind; the full ledger is {path}]",
+                 f"[ledger digest: {len(left)} line(s) left out; {path}]"):
+        out = (body + "\n" + note) if body else note
+        if len(out) <= budget:
+            return out
+    return out[:budget]
