@@ -333,10 +333,11 @@ Loop until Save or Reject.
 ## Step 13 — Write the investigation
 
 `mkdir -p` the series directory — the current repo's until the owning repo exists, then
-moved (§ A repo not yet created) — and `ls` it: the serial is the highest `NN` plus one, `00`
-for a new series. **Never reuse a serial or overwrite a file** — one at your serial means you
-misread the directory. Write `NN_<name>.md` with the Write tool, per
-`references/investigation-format.md`; on `01`+ the `Supersedes` block comes first, always.
+moved (`references/investigation-format.md` § A repo not yet created) — and `ls` it: the
+serial is the highest `NN` plus one, `00` for a new series. **Never reuse a serial or
+overwrite a file** — one at your serial means you misread the directory. Write `NN_<name>.md`
+with the Write tool, per `references/investigation-format.md`; on `01`+ the `Supersedes`
+block comes first, always.
 
 ---
 

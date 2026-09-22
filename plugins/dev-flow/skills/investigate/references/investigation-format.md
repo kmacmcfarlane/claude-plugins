@@ -49,14 +49,20 @@ series cannot start there:
   Step 3 resolves no path for the future repo and asks nothing about it; it records a
   **Confirmed Assumption** naming the future repo — its intended name and owner, and that it
   does not exist at this pass. Provenance lists only repos actually read.
-- **Once it exists** — the next session working in the new repo moves the series: copy the
-  whole directory, serials byte-for-byte, to the new repo's
-  `.claude-sandbox/investigations/<slug>/` and commit it there; regenerate that `INDEX.md`
-  with a note under the provenance line — `Moved from <old-repo>@<short-sha>:<old-path> on
-  {YYYY-MM-DD}`. In the old home, rewrite only `INDEX.md`, with a `Moved to <new-repo>:<path>`
-  note at its top; its serials stay (append-only, never deleted). Never rewrite git history
-  to carry the files across. The next serial is written in the new home only. Under an
-  orchestrator the move is the orchestrator's, never asked.
+- **Once it exists** — the session that holds the series moves it, as soon as the repo exists:
+  typically right after create-repo returns and before the user runs its launch command. That
+  session can reach both repos; the launched one usually cannot see the old home and starts
+  its own first investigation. Copy the whole directory, serials byte-for-byte, to the new
+  repo's `.claude-sandbox/investigations/<slug>/` and commit it there — in the host repo or
+  the sidecar, per the tracking mode (§ Interaction with `claude-sandbox init`). Regenerate
+  that `INDEX.md` with a note under the provenance line — `Moved from
+  <old-repo>:<old-path>@<short-sha> on {YYYY-MM-DD}`, the SHA of the commit that last touched
+  the series in whichever history holds it, or `uncommitted` when none does. In the old home,
+  rewrite only `INDEX.md`, with a `Moved to <new-repo>:<path>` note at its top; its serials
+  stay (append-only, never deleted). Never rewrite git history to carry the files across. The
+  next serial is written in the new home only. A later session in the new repo makes the move
+  only as a fallback, when told where the series is. Under an orchestrator the move is the
+  orchestrator's, never asked.
 
 ## The two rules
 
