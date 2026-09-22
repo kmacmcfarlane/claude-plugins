@@ -31,7 +31,7 @@ the TODO.md failure mode with extra steps.
 
 | | |
 | --- | --- |
-| `$WI next [--plain\|--json]` | ready-ranked queue: `todo` with all deps done, priority then age |
+| `$WI next [--plain\|--json]` | ready-ranked queue: `todo` with every dep met (done, dropped or in UAT, archived or not), priority then age |
 | `$WI show <id> [--brief]` | one item; `--brief` for front matter + handoff only |
 | `$WI add` | new item (`<slug>-<4hex>` id); describe, don't dump — path and key, never value |
 | `$WI claim <id>` / `release <id>` | atomic; claims as `WI_OWNER`, else `<user>@<host>` from `$USER`, git `user.name`, then the login name (`references/format.md` § Claimant); a stale `claimed:` shows up in `next`; refuses (exit 1) a `blocked`, `parked` or `grooming` item, and a `todo` item with any dep `next` counts as unmet, naming each |
