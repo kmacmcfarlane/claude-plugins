@@ -185,8 +185,9 @@ re-dispatch or resume with findings = review round n+1; cap 4 review rounds.
 5. **On return**: record `return: <role> <STATUS> <sha>` (`references/bindings.md`
    § Record line shapes), then merge its CHANGED into the record sink's cumulative
    `changed:` block (`references/bindings.md` § Undeclared files). `DONE` and
-   `DONE_WITH_CONCERNS` go to Step 4. `NEEDS_CONTEXT`: answer in the record sink,
-   re-dispatch with the answer, at least opus. `BLOCKED`: `$WI block` when there is an
+   `DONE_WITH_CONCERNS` go to Step 4. `NEEDS_CONTEXT`: record the answer as an
+   `answer:` line (`references/bindings.md` § Record line shapes), re-dispatch with it,
+   at least opus. `BLOCKED`: `$WI block` when there is an
    item, and raise it through the decision channel.
 
 ## Step 4: Review
