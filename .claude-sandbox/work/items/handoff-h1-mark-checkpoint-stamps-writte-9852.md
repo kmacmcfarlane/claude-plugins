@@ -36,3 +36,5 @@ review r2 (opus) at 8883a9a: CLEAR. Both mediums fixed (probe + probe2); "alread
 land (librarian): test merge conflicts with main in skills/checkpoint/references/handoff-format.md (H4 a824 + H2 d0eb landed there). Conflict round → implementer merges main into the branch; reviewer verifies the resolution.
 conflict round DONE eb83d76 (merge of main): handoff-format keeps H4 roster/Copy forward, H2 digest rule, H1 machine-fields/Age; old session: bullet replaced by Machine fields; reviewer low applied; 556 tests OK (+ TZ=Asia/Tokyo).
 dispatch: reviewer opus — resolution-only verify (resume)
+resolution verify (opus) at eb83d76: CLEAR — all three features kept; old session: bullet's substance in Machine fields; rehydrate/SKILL auto-merge coherent; 556 tests OK (+ Tokyo). Low: the wording fix rode in the merge resolution (visible only with --remerge-diff).
+Review result: 3 review rounds + resolution verify, 1 fix round + 1 conflict round; impl opus, review opus. Land checks (librarian): seven suites OK; diff read.
