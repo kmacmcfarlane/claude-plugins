@@ -15,8 +15,8 @@ refs:
 Operator 2026-09-22: an idle librarian should work new items as they arrive when no operator decision is needed (doc-only requests nearly always; skill changes often; implementation or complex skill changes warrant an investigation round). Investigations can run without waiting on the operator, so when the operator returns the decisions are ready to present. Today items queue up waiting for attention when many are unblocked or at least investigable. Question: how to achieve this without accidentally running the operator's quota into the ground. Acceptance: an investigation series with findings and a recommendation (routing rules for what proceeds unattended vs what waits; quota guards; how investigations pre-run and park their decisions), presented to the operator; decisions raised by number.
 
 ## Handoff
-- doing: answers recorded; running investigate in-session (fable)
-- next: present findings + numbered decisions; then prompt for the opus switch
+- doing: series written: .claude-sandbox/investigations/1222-unattended-librarian/00_initial.md (00 + INDEX); factored into F1-F5
+- next: on answers (G1/G2, decision 53): dispatch F1 (opus) after the model switch back to opus
 - blocked: —
 - learned: —
 
@@ -46,3 +46,7 @@ decision 52: push of main rejected — origin/main has eda3422 (operator, GitHub
 - G1, G2, decision 52: deferred — operator wants more thinking from me first. Context at ~50%: no deep research.
 - New standard: every message ends with a two-line recap (recap; operator's next steps). Lettered+numbered lists stay.
 - agents librarian filed 374f (comms standards) and 8ad9 (multi-agent budget coordination, blocked on this series path); points at claude-analytics investigations/agent-telemetry: a status-line quota sampler (record hook on statusline-hub) is already designed there — F1 must read its sink when present rather than sample twice.
+
+## Factored 2026-09-22
+- F1 librarian-f1-quota-budget-py-and-the-per-9882 → F2 librarian-f2-idle-turn-modes-concurrency-c79e → F3 librarian-f3-pre-investigation-per-item-a9be ∥ F4 librarian-f4-librarian-calls-call-n-mark-ef9f ∥ F5 librarian-f5-operator-intent-phrases-and-4f7d (see the series). d05d closes into F3 once F3 lands.
+decision 53: interim cap until F2 lands — (a) open a hold `limit: 4 agents in flight, no fable` now [recommended]; (b) no cap; (c) a different N.
