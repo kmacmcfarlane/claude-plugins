@@ -23,3 +23,7 @@ Reads the claude-analytics sink when installed, else samples the sensor record; 
 ## Notes
 - 2026-09-22 claimed by unknown@360f41058e92
 - dispatch: implementer opus — executable logic (new script + store); weekly at 26% with 6.1 days left (~2x sustainable pace): single dispatch while decision 53 is open
+
+impl r0 (opus, a363290): DONE_WITH_CONCERNS at 5233da5 — 5 files, 51 new tests; all six Checks green per agent.
+librarian on OQs (2026-09-22): OQ1 add the new suite to CLAUDE.md `## Librarian` Checks in this feature (a Checks line for a suite this item creates is part of the item); OQ2 in scope — README dev-flow row/section must stop claiming "no state of its own", name claude-analytics as the soft quota sink (fallback self-sampling), widen the statusline-hub soft-dep wording, and mirror the words in dev-flow plugin.json + marketplace.json per plan § F1. OQ3/OQ4 stay as briefed (flat reserves, done-for-the-day 5h reserve 0) — agents policy OQ3/decaying reserve are F2 inputs. OQ5 → F2. OQ6 → claude-analytics / agents 8ad9, not this repo.
+dispatch: implementer opus — scope addition before review r1 (resume a363290; doctrine/shape signal)
