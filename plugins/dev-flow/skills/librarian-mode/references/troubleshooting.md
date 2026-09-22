@@ -20,11 +20,12 @@ skill's decision channel, `decision N:` under `decisions needed` (SKILL.md § Th
 - **Orphan worktree from a crashed session** — one with no running agent and no `doing`
   item (Rehydrate step 4). Dirty: surface it, do not remove. Clean and merged: remove it;
   clean and unmerged: raise it as a numbered decision.
-- **Push rejected (non-fast-forward).** Someone pushed to origin/main since the last
-  sync — the operator or another trusted pusher. Merge it in, never around it: no
-  rebase, no reset, no `--force`. The rule the merge keeps is that nothing unreviewed
-  lands silently — every incoming commit is named to the operator, and nothing is
-  pushed until the Checks pass on the result.
+- **Push rejected (non-fast-forward or fetch first).** Someone pushed to origin/main
+  since the last sync — the operator or another trusted pusher. Merge it in, never
+  around it: no rebase, no reset, no `--force`. The rule the merge keeps is that nothing
+  unreviewed lands silently — every incoming commit is named to the operator, and
+  nothing is pushed until the Checks pass on the result. While a push-rejection decision
+  is open, skip every later push and carry that decision under the same number.
 
   1. **Fetch and look.**
 
@@ -32,21 +33,28 @@ skill's decision channel, `decision N:` under `decisions needed` (SKILL.md § Th
      git -C "$MAIN" fetch origin
      git -C "$MAIN" log --format='%h %s — %an' main..origin/main   # the incoming commits
      git -C "$MAIN" diff --stat main...origin/main                  # what they touch
+     git -C "$MAIN" log --oneline origin/main..main                 # local commits
      ```
 
-     More than a handful of commits (five is the line), or a diff that reaches heavily
-     into Scope — a file an in-flight item or the change just landed touches, or a
-     rewrite of a skill's SKILL.md: you may raise a numbered decision instead of
-     merging, with the list as its evidence.
+     No local commits (`main` strictly behind): `git -C "$MAIN" merge --ff-only
+     origin/main`, send the `incoming:` lines, and there is nothing to push. More than
+     five incoming commits, or an incoming file that an in-flight item or this
+     session's landings touch: you may raise a numbered decision instead of merging,
+     with the list as its evidence — a judgment, not a must; say which you chose.
   2. **Merge, uncommitted.** On `main` in the main checkout:
-     `git -C "$MAIN" merge --no-ff --no-commit origin/main`. Tracked dirt in a file the
-     incoming commits touch makes git refuse to start: stop and raise it.
+     `git -C "$MAIN" merge --no-ff --no-commit origin/main`. If git refuses to start —
+     tracked dirt or staged changes in a file the incoming commits touch, untracked
+     files in the way — stop and raise it; clear nothing to make it start. From here
+     until the merge is committed or aborted, **no other commit to `main`**: no store
+     commit, no landing.
   3. **Check the result.** Run every `Checks:` command from `$MAIN` against the merged
      tree. All green: `git -C "$MAIN" commit --no-edit`, a merge commit.
-  4. **Report and push.** Name the incoming commits, one line each, as the Report's
-     `incoming:` lines (SKILL.md § Report), then `git -C "$MAIN" push origin main` —
-     now a fast-forward. A second rejection repeats from step 1 once; a third is a
-     decision.
+  4. **Push, then send the incoming lines.** `git -C "$MAIN" push origin main` — now a
+     fast-forward — then one `incoming: <sha> <subject> — <author>` line per incoming
+     commit. The `incoming:` lines go with the push outcome: a short follow-up message
+     mid-session, since the Report has gone out; inside the final Report at session end
+     and 75%/DUE (SKILL.md § Report). A second rejection repeats from step 1 once; a
+     third is a decision.
 
   **A conflict at step 2, or a red check at step 3, stops:** `git -C "$MAIN" merge
   --abort`, so `main` is as it was before the merge, and raise a numbered decision
@@ -57,6 +65,11 @@ skill's decision channel, `decision N:` under `decisions needed` (SKILL.md § Th
   `dev-cycle` skill's `references/fix-loop.md` § A merge conflict — and lands it through
   The cycle; the other is the operator resolving it on origin. The decision goes under
   `decisions needed` — the next Report mid-session, the final Report at session end.
+- **A merge of `origin/main` left uncommitted.** `git -C "$MAIN" rev-parse -q --verify
+  MERGE_HEAD` succeeds at Rehydrate step 4, or before any store commit: a push-rejection
+  merge was interrupted between step 2 and its commit or abort (a crash, a `/clear`).
+  Never commit it as found — its Checks result is gone: `git -C "$MAIN" merge --abort`,
+  then redo § Push rejected from step 1.
 - **No `origin` remote.** A custody layer in a repo with no remote has nothing to push to:
   skip the push, and say so once in the Report rather than every cycle.
 

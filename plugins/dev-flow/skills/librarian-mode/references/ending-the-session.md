@@ -28,12 +28,13 @@ manifest's Copy forward line by absolute path.
 Then push what landed:
 `git -C "$MAIN" push origin main` — `main` only, fast-forward only, never `--force`,
 never worktree branches or tags. With `Push: none` in `## Librarian`, skip every push
-here and below; the final Report says what stays on local `main`. A rejected
-non-fast-forward push is merged through, never rebased, reset or forced: merge
-`origin/main`, re-run the Checks, push, and list the incoming commits as the final
-Report's `incoming:` lines; a conflict or a red check aborts the merge and goes under
-`decisions needed` in the final Report — `references/troubleshooting.md` § Push
-rejected. Send that final Report last, so
+here and below; the final Report says what stays on local `main`. A rejected push
+(non-fast-forward or fetch first) is merged through, never rebased, reset or forced:
+merge `origin/main`, re-run the Checks, push, and send the `incoming:` lines. The
+`incoming:` lines go with the push outcome: a short follow-up message mid-session, since
+the Report has gone out; inside the final Report at session end and 75%/DUE. A conflict
+or a red check aborts the merge and goes under `decisions needed` in the final Report —
+`references/troubleshooting.md` § Push rejected. Send that final Report last, so
 it reports the push as well as the landings — here and at 75%/DUE below, the push precedes
 its Report; everywhere else the Report comes first. The context-gate ledger
 (session-addressed, one per session) and HANDOFF (work-addressed, class b1, one per
@@ -79,7 +80,8 @@ the step in hand, then:
    <manifest path> in full first`, then — when the roster is not `None` — `resume <ids>
    with SendMessage; do not re-dispatch` naming every id on it, and the facts changed
    since the manifest. Never run
-   `/compact` yourself, and start no new work — no dispatch, no merge — in that turn.
+   `/compact` yourself, and start no new work — no dispatch, no merge — in that turn
+   (step 3's merge of `origin/main` through a rejected push is not new work).
 
 The checkpoint stands the gate down, so nothing warns again before the compaction.
 Requests that arrive in that gap are filed through Intake as usual and held — no
