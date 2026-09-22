@@ -279,7 +279,9 @@ class TestHolds(unittest.TestCase):
             for i in range(20))
         self.write(holds=many)
         c = self.ctx("startup")
-        block = c[c.index("Holds this manifest records"):]
+        # to the end of the header tier's own block: the legacy_notice line is
+        # a part of its own, separated by a blank line, and is not a hold.
+        block = c[c.index("Holds this manifest records"):].split("\n\n")[0]
         self.assertLessEqual(len(block), rh.HOLDS_BUDGET)
         self.assertNotIn("\x1b", c)
         for ch in ("\u202e", "\u061c", "\ufeff", "\u2062"):

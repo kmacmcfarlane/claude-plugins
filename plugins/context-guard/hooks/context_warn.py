@@ -80,7 +80,7 @@ def decide(st, tok, win, pct, src, whitelisted, block_win=_UNSET):
         # the advisories. The operator has already acted on the depth.
         return None
     if remaining <= th["hard"] and not whitelisted:
-        if block_win and max(block_win - tok, 0) <= L.thresholds(block_win)["hard"]:
+        if L.hard_applies(block_win, tok):
             return "hard"
         # A guess never blocks: the window may be larger than inferred.
         # Same cadence as DUE so a long stretch under a guessed 200K

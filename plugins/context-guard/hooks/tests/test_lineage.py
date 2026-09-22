@@ -826,8 +826,10 @@ class TestMarkStamps(Base):
         # version, and S's own successor gets it as its own.
         self.end_clear("S")
         self.start("T", "clear")
-        self.assertEqual(L.lineage_of(L.load_state("T"))[0],
+        head = L.lineage_of(L.load_state("T"))[0]
+        self.assertEqual({k: head[k] for k in ("sid", "manifest")},
                          {"sid": "S", "manifest": new})
+        self.assertLessEqual(abs(head["at"] - time.time()), 60)   # the link time
         self.assertFull(self.start("T", "compact"))
 
     def test_adopted_author_id_is_replaced(self):
@@ -993,6 +995,351 @@ class TestMarkStamps(Base):
         # Only column-0 keys are machine fields; an `items:` entry is not.
         self.assertEqual(M.restamp(b"---\nitems:\n  - session: x\n---\n", f),
                          b"---\nitems:\n  - session: x\nwritten: W\nsession: S\n---\n")
+
+
+# ── 8cc2-F3b-1: the per-session manifest store ─────────────────────────────
+STORE_MANIFEST = """---
+handoff: 1
+repo: demo
+{session}written: {written}
+head: {head}
+{top}mode: {mode}
+---
+## Doing
+{doing}
+
+## Goal
+mode: {mode} — operator: "finish phase 2"
+
+## Read in full
+{reads}
+
+## Aware of
+- REFUSED sudo for dd
+
+## Next
+wi show thing-1a2b
+"""
+
+
+class StoreBase(Base):
+    """A session's own manifest at
+    ${CLAUDE_CONFIG_DIR}/claude-kit/handoff/<safe_sid>/HANDOFF.md, written by
+    the author itself: no repo file anywhere unless a test writes one."""
+
+    def store_checkpoint(self, sid, owner=None, mode="handoff",
+                         doing="Building the thing.", head=None, top=None,
+                         reads="a/plan.md — the plan"):
+        p = L.manifest_path(sid)
+        os.makedirs(os.path.dirname(p), exist_ok=True)
+        writef(p, STORE_MANIFEST.format(
+            session=f"session: {owner or sid}\n",
+            written=time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+            head=head or self.head, top=f"top: {top}\n" if top else "",
+            mode=mode, doing=doing, reads=reads))
+        return p
+
+
+class TestStorePath(StoreBase):
+    def test_the_store_path_is_one_directory_per_session(self):
+        p = L.manifest_path("X")
+        self.assertEqual(os.path.basename(p), "HANDOFF.md")
+        self.assertEqual(os.path.dirname(p),
+                         os.path.join(L.handoff_root(), "X"))
+        self.assertFalse(os.path.exists(L.handoff_root()))   # never created here
+
+    def test_manifest_path_of_a_recovered_component_is_the_same_path(self):
+        # safe_sid is idempotent: a component read back out of a path feeds
+        # straight into manifest_path. An implementer who re-hashed it fails.
+        for sid in ("X", "a/b/../..", "." * 200, ""):
+            p = os.path.realpath(L.manifest_path(sid))
+            os.makedirs(os.path.dirname(p), exist_ok=True)
+            writef(p, "x")
+            got = L.manifest_sid(p)
+            self.assertEqual(got, L.safe_sid(sid), sid)
+            self.assertEqual(os.path.realpath(L.manifest_path(got)), p, sid)
+
+    def test_containment_rejects_everything_but_a_session_manifest(self):
+        root = L.handoff_root()
+        os.makedirs(os.path.join(root, "X"))
+        writef(os.path.join(root, "X", "HANDOFF.md"), "x")
+        self.assertEqual(L.manifest_sid(os.path.join(root, "X", "HANDOFF.md")), "X")
+        os.makedirs(os.path.join(root, "X", "sub"))
+        writef(os.path.join(root, "X", "sub", "HANDOFF.md"), "x")
+        os.makedirs(root + "-old" + os.sep + "X")
+        writef(os.path.join(root + "-old", "X", "HANDOFF.md"), "x")
+        outside = os.path.join(self.repo, "HANDOFF.md")
+        writef(outside, "x")
+        os.makedirs(os.path.join(root, "Y"))
+        os.symlink(outside, os.path.join(root, "Y", "HANDOFF.md"))
+        for bad in (root, root + os.sep,
+                    os.path.join(root, "X"),                  # the session dir
+                    os.path.join(root, "X", "sub", "HANDOFF.md"),
+                    os.path.join(root + "-old", "X", "HANDOFF.md"),
+                    os.path.join(root, "Y", "HANDOFF.md"),    # symlink out
+                    os.path.join(root, "..", "HANDOFF.md"),
+                    outside):
+            self.assertIsNone(L.manifest_sid(bad), bad)
+
+    def test_a_second_spelling_of_the_same_store_is_the_same_store(self):
+        # /home/claude -> /home/rt in the sandbox: a Read through either
+        # spelling must resolve to the same session directory.
+        p = self.store_checkpoint("X")
+        alt = os.path.join(self.tmp.name, "alt-cfg")
+        os.symlink(self.cfg.name, alt)
+        through_alt = os.path.join(alt, "claude-kit", "handoff", "X", "HANDOFF.md")
+        self.assertNotEqual(through_alt, p)
+        self.assertEqual(L.manifest_sid(through_alt), "X")
+
+
+class TestResolveOrder(StoreBase):
+    def test_own_store_manifest_is_full_on_compact(self):
+        self.store_checkpoint("X")
+        c = self.start("X", "compact")
+        self.assertFull(c)
+        self.assertIn(L.manifest_path("X"), c)
+
+    def test_a_peer_in_the_same_repo_sees_nothing(self):
+        self.store_checkpoint("X")
+        self.assertEqual(self.start("B", "compact"), "")
+        self.assertEqual(self.start("B", "startup"), "")
+
+    def test_own_store_file_wins_over_a_legacy_repo_file(self):
+        self.checkpoint("X", doing="The repo file's goal.")
+        self.store_checkpoint("X", doing="The store file's goal.")
+        c = self.start("X", "compact")
+        self.assertIn("The store file's goal.", c)
+        self.assertNotIn("The repo file's goal.", c)
+        self.assertNotIn(self.path, c)              # the repo file is not read
+
+    def test_a_pin_whose_author_has_no_store_file_falls_through(self):
+        # Newest first: a link to a session that never wrote a store manifest
+        # is skipped, and the next entry that still seals wins.
+        self.store_checkpoint("X")
+        v = R.manifest_version(readf(L.manifest_path("X")))
+        L.save_state("B", {"lineage": [
+            {"sid": "GONE", "manifest": {"owner": "GONE", "sha": "0123456789ab"}},
+            {"sid": "X", "manifest": v}]})
+        self.assertFull(self.start("B", "compact"))
+
+    def test_the_lookup_is_the_linked_sid_not_the_pins_owner(self):
+        # 05's rule, both arms. B owns a store manifest and the pin S carries
+        # names B as that VERSION's owner — but the link names A, which has no
+        # store file. Keying the lookup on the pin's `owner` (frontmatter
+        # content) would hand S the whole of B's private manifest; keying it on
+        # the linked session id finds nothing, which is the point of the rule.
+        self.store_checkpoint("B", doing="B's private memory.")
+        v = R.manifest_version(readf(L.manifest_path("B")))
+        for st in ({"lineage": [{"sid": "A", "manifest": v}]},
+                   {"manifest_adopted": dict(v, at=time.time(), sid="A")}):
+            with self.subTest(arm=sorted(st)[0]):
+                L.save_state("S", dict(st))
+                c = self.start("S", "compact")
+                self.assertNotIn("B's private memory.", c)
+                self.assertEqual(c, "")
+        # The control: the same pin, addressed to B, does resolve.
+        for st in ({"lineage": [{"sid": "B", "manifest": v}]},
+                   {"manifest_adopted": dict(v, at=time.time(), sid="B")}):
+            with self.subTest(arm=sorted(st)[0], addressed="B"):
+                L.save_state("S", dict(st))
+                self.assertFull(self.start("S", "compact"))
+
+    def test_own_store_manifest_is_ours_by_the_path_whatever_session_says(self):
+        # Between Step 4b's write and the mark step the file carries
+        # `session: <stamped>`, and an author can copy a predecessor's id into
+        # it. The file at manifest_path(sid) is this session's by its PATH: an
+        # ownership test here would answer "another session's" and hand the
+        # session a foreign header instead of its own memory.
+        for owner in ("<stamped>", "PREDECESSOR"):
+            with self.subTest(owner=owner):
+                self.store_checkpoint("X", owner=owner)
+                self.assertFull(self.start("X", "compact"))
+        # ... and an ownerless one (no `session:` line at all) too.
+        p = self.store_checkpoint("X")
+        writef(p, readf(p).replace("session: X\n", ""))
+        self.assertFull(self.start("X", "compact"))
+
+    def test_a_pin_that_seals_nothing_falls_through_to_legacy(self):
+        self.checkpoint("X")
+        v = R.manifest_version(readf(self.path))
+        L.save_state("B", {"lineage": [{"sid": "GONE", "manifest": v}]})
+        c = self.start("B", "compact")
+        self.assertFull(c)                          # the legacy file, by the pin
+        self.assertIn(self.path, c)
+
+    def test_a_rewritten_pinned_store_manifest_injects_nothing(self):
+        self.store_checkpoint("P")
+        self.fork("P", "C")
+        self.store_checkpoint("P", doing="Parent's new goal.")
+        self.assertEqual(self.start("C", "compact"), "")
+
+
+class TestStoreLinks(StoreBase):
+    def test_fork_inherits_the_parents_store_manifest(self):
+        # Also the call-order guard: resolve_manifest runs AFTER the link, so
+        # the fork's OWN SessionStart already injects the parent's manifest.
+        self.store_checkpoint("P")
+        self.assertFull(self.fork("P", "C"))
+        self.assertEqual(L.load_state("C")["lineage"][0]["sid"], "P")
+        self.assertIn(L.manifest_path("P"), self.start("C", "compact"))
+
+    def test_fork_pins_the_legacy_file_when_the_parent_has_no_store_file(self):
+        self.checkpoint("P")
+        self.fork("P", "C")
+        self.assertEqual(L.load_state("C")["lineage"][0]["manifest"]["owner"], "P")
+        self.assertFull(self.start("C", "compact"))
+
+    def test_linked_clear_with_no_store_file_anywhere_is_full_with_the_digest(self):
+        # 5039's FM1, as a standing guard: after F3b-1 and before the skill
+        # writes the store, SessionEnd(clear) must still pin the LEGACY file,
+        # or every linked /clear falls to a foreign header with no digest.
+        import ledger
+        self.checkpoint("X")
+        ledger.append("X", "R", "the predecessor's reasoning")
+        c = self.clear("X", "S")
+        self.assertFalse(os.path.exists(L.handoff_root()))
+        self.assertFull(c)
+        self.assertIn("the predecessor's reasoning", c)
+        self.assertIn("predecessor X", c)
+
+    def test_linked_clear_with_a_store_file_is_full_with_the_digest(self):
+        import ledger
+        self.store_checkpoint("X")
+        ledger.append("X", "R", "the predecessor's reasoning")
+        c = self.clear("X", "S")
+        self.assertFull(c)
+        self.assertIn(L.manifest_path("X"), c)
+        self.assertIn("the predecessor's reasoning", c)
+
+    def test_read_of_another_sessions_store_manifest_adopts_it(self):
+        self.store_checkpoint("X", mode="handoff")
+        self.read("B", path=L.manifest_path("X"))
+        self.assertEqual(L.load_state("B")["manifest_adopted"]["sid"], "X")
+        self.assertFull(self.start("B", "compact"))
+        self.store_checkpoint("X", mode="handoff", doing="X's new goal.")
+        self.assertEqual(self.start("B", "compact"), "")   # the seal is broken
+
+    def test_a_session_never_adopts_its_own_store_manifest(self):
+        self.store_checkpoint("B", mode="handoff")
+        self.read("B", path=L.manifest_path("B"))
+        self.assertNotIn("manifest_adopted", L.load_state("B"))
+        self.assertFull(self.start("B", "compact"))       # ours by the path
+
+    def test_a_read_outside_the_store_adopts_nothing(self):
+        self.store_checkpoint("X", mode="handoff")
+        root = L.handoff_root()
+        os.makedirs(os.path.join(root + "-old", "X"))
+        sibling = os.path.join(root + "-old", "X", "HANDOFF.md")
+        writef(sibling, readf(L.manifest_path("X")))
+        self.read("B", path=sibling)
+        self.assertNotIn("manifest_adopted", L.load_state("B"))
+
+    def test_an_adoption_with_no_sid_seals_the_legacy_file_only(self):
+        # A record written before the store existed (or a Read of a legacy
+        # repo manifest) addresses no store directory.
+        self.checkpoint("X", mode="handoff")
+        self.read("B")
+        rec = L.load_state("B")["manifest_adopted"]
+        self.assertNotIn("sid", rec)
+        self.store_checkpoint("X", mode="handoff", doing="X's store goal.")
+        c = self.start("B", "compact")
+        self.assertIn(self.path, c)                  # the legacy file it sealed
+        self.assertNotIn("X's store goal.", c)
+
+
+class TestResolvedTop(StoreBase):
+    def repo2(self):
+        d = os.path.join(self.tmp.name, "other")
+        os.makedirs(d)
+        for c in (["init", "-q"], ["commit", "-q", "--allow-empty", "-m", "y"]):
+            subprocess.run(["git", "-C", d, "-c", "user.email=t@t",
+                            "-c", "user.name=t"] + c, check=True, capture_output=True)
+        head = subprocess.run(["git", "-C", d, "rev-parse", "--short", "HEAD"],
+                              capture_output=True, text=True).stdout.strip()
+        return d, head
+
+    def test_top_drives_the_head_check(self):
+        d, head = self.repo2()
+        self.store_checkpoint("X", head=head, top=d)
+        self.assertIn("FRESH", self.start("X", "startup"))
+        # Without `top:` the same head is not a commit of the cwd's repo.
+        self.store_checkpoint("X", head=head)
+        self.assertIn("not found locally", self.start("X", "startup"))
+
+    def test_an_unusable_top_falls_back_to_the_cwd_toplevel(self):
+        for top in (os.path.join(self.tmp.name, "gone"), "", "[]"):
+            with self.subTest(top=top):
+                self.store_checkpoint("X", top=top or None)
+                self.assertIn("FRESH", self.start("X", "startup"))
+
+    def test_top_is_repo_text_taken_verbatim(self):
+        # No `~` expansion and no relative resolution: `top:` is repo text, and
+        # either would point every derived check — git -C among them — somewhere
+        # the manifest never named: the reader's home, or whatever directory the
+        # hook happens to have been started in.
+        d, head = self.repo2()
+        fallback = R.resolve_top({}, self.repo)
+        self.assertEqual(R.resolve_top({"top": "~"}, self.repo), fallback)
+        self.assertNotEqual(fallback, os.path.realpath(os.path.expanduser("~")))
+        old = os.getcwd()
+        os.chdir(os.path.dirname(d))         # where the bare name IS a directory
+        try:
+            self.assertEqual(R.resolve_top({"top": os.path.basename(d)}, self.repo),
+                             fallback)
+        finally:
+            os.chdir(old)
+        # An absolute one is still used, end to end.
+        self.store_checkpoint("X", head=head, top=d)
+        self.assertIn("FRESH", self.start("X", "startup"))
+
+    def test_read_in_full_resolves_against_the_repo_not_the_store_dir(self):
+        os.makedirs(os.path.join(self.repo, "a"))
+        writef(os.path.join(self.repo, "a", "plan.md"), "the plan")
+        self.store_checkpoint("X")
+        self.assertIn("## Read in full", self.start("X", "compact"))
+        rec = L.load_state("X")["read_list"]
+        self.assertEqual([p["path"] for p in rec["paths"]],
+                         [os.path.join(self.repo, "a", "plan.md")])
+
+    def test_a_non_git_cwd_works_end_to_end(self):
+        plain = tempfile.TemporaryDirectory()      # outside any git repo
+        self.addCleanup(plain.cleanup)
+        d = plain.name
+        self.store_checkpoint("X")
+        out = self._run(R, {"session_id": "X", "source": "compact", "cwd": d,
+                            "hook_event_name": "SessionStart"})
+        c = (out.get("hookSpecificOutput") or {}).get("additionalContext", "")
+        self.assertFull(c)
+        self.assertIn("head unverified", c)
+
+
+class TestLegacyNotice(StoreBase):
+    MARK = "is a repo manifest of the old layout"
+
+    def test_the_notice_fires_once_per_session(self):
+        self.checkpoint("X")
+        c = self.start("X", "startup")
+        self.assertEqual(c.count(self.MARK), 1)
+        self.assertIn(self.path, c)
+        self.assertIn(L.manifest_path("X"), c)
+        self.assertNotIn(self.MARK, self.start("X", "startup"))
+        self.assertNotIn(self.MARK, self.start("X", "compact"))
+
+    def test_the_notice_rides_on_a_foreign_header_too(self):
+        self.checkpoint("Y")
+        c = self.start("B", "compact")
+        self.assertForeign(c)
+        self.assertEqual(c.count(self.MARK), 1)
+
+    def test_no_notice_for_a_session_with_its_own_store_manifest(self):
+        self.checkpoint("X")
+        self.store_checkpoint("X")
+        self.assertNotIn(self.MARK, self.start("X", "compact"))
+        self.assertNotIn(self.MARK, self.start("X", "startup"))
+
+    def test_no_notice_without_a_repo_file(self):
+        self.store_checkpoint("X")
+        self.assertNotIn(self.MARK, self.start("X", "compact"))
 
 
 class TestMarkStampsTheOwnPath(Base):

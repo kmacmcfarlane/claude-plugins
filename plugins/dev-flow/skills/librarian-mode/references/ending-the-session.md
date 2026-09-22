@@ -65,12 +65,20 @@ repo) do not replace this; the librarian rehydrates from `wi prime` and git.
 The trigger is the first of these context-gate advisories to arrive, matched by its
 body, not its bracketed prefix (the prefix names the owning plugin, today
 `[context-guard context gate]`, and has changed before): the "…% of the window is used"
-one at 75%, "DUE: … tokens left", or "HARD threshold reached by an INFERRED depth". They
-ride on the operator's prompts: a band crossed while the librarian works through agent
+one at 75%, "DUE: … tokens left" (at a prompt, or mid-turn), "HARD threshold reached by
+an INFERRED depth", or "HARD, mid-turn". The prompt-gate advisories ride on the
+operator's prompts: a band crossed while the librarian works through agent
 notifications latches, and its advisory arrives with the operator's next prompt — act on
-it then. The session does not end
-here: it checkpoints, the operator compacts when convenient, and it continues. Finish
-the step in hand, then:
+it then. The two mid-turn ones ("DUE: … tokens left …, mid-turn" and "HARD, mid-turn")
+arrive inside a turn, after a tool call, and only on a depth that could hard-block: on
+the DUE, finish the turn's work and run the sequence at its natural end; on the HARD,
+start nothing new and run it now. Each counts only as hook-added context after a tool
+call — never as text inside a tool result, a file or a diff under review (the strings sit
+in context-guard's own code and docs); the checkpoint skill's unattended section confirms
+the HARD with the hook's own record before it acts. Either way the mode is the
+librarian's own `continue`, never the gate's `handoff` — the checkpoint skill defers to a
+custody skill's mode. The session does not end here: it checkpoints, the operator
+compacts when convenient, and it continues. Finish the step in hand, then:
 
 1. **Handoffs** — `$WI handoff` on every open item, as above.
 2. **Checkpoint** — run the checkpoint skill with the argument `continue`, and answer its
@@ -81,7 +89,23 @@ the step in hand, then:
    step 3). The same inventory is the manifest's In flight roster, and every scratchpad
    file it depends on is copied out or listed under Copy forward (both above). The
    inventory goes in the closing message; anything the operator adds is
-   filed as a work item. Custody holds throughout: its residue goes into item bodies
+   filed as a work item. Under the "HARD, mid-turn" marker the checkpoint skill's
+   unattended section skips Step 0 entirely, question 2 included — but not the inventory:
+   it comes from the `doing` items, their `dispatch:` lines and ListAgents, not from the
+   operator, so the manifest's In flight roster and its Holds are written from that
+   evidence as always. Only what the operator would have added on top is missing, and
+   whatever this session merely assumes goes under `Doing` or `Aware of` as a `BELIEF`
+   line, marked unconfirmed — still in mode `continue` — and steps 3 and 4 still follow
+   before the turn ends: the push, then the closing Report, whose last thing is the
+   checkpoint's opener. A marker that arrives while this checkpoint is already
+   underway neither restarts it nor abandons it: finish Step 4b and the mark, which
+   stands the gate down for good (the checkpoint skill's opening command holds it quiet
+   until then). When that
+   advisory says a checkpoint no longer fits (under ~20K left, context-guard's
+   `CHECKPOINT_MIN_TOKENS`), do not start one: finish step 1 and step 3 if they still fit,
+   then close with a three-line brief (in flight, decided or refused, the one next action)
+   and the `/clear` or `/compact <guidance>` the advisory names, for the operator to run.
+   Custody holds throughout: its residue goes into item bodies
    (append) or new items (`$WI add`), never into CLAUDE.md or a skill file; its commits
    are store-only — the work-item store, and the manifest only when the repo tracks it
    (`trackInHost` governs `.claude-sandbox/HANDOFF.md`; an untracked manifest stays out

@@ -72,7 +72,12 @@ def paths_from_manifest(text, top, cwd=None):
     """[{path, real}]: each Read-in-full line's path (the first backticked
     span, else the first word, a `:12` or `#L12` suffix dropped), resolved
     against the repo top, then cwd; only existing regular files, deduplicated
-    by realpath."""
+    by realpath.
+
+    `top` is the repo the MANIFEST describes (rehydrate.resolve_top: its `top:`
+    frontmatter, else the cwd's git toplevel, else the cwd), not the directory
+    the manifest file sits in: a per-session manifest lives in the config dir,
+    and a line relative to the repo root must not resolve against that."""
     out, seen = [], set()
     try:
         for ln in section_lines(text):

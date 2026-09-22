@@ -15,8 +15,8 @@ refs:
 Operator 2026-09-22: an idle librarian should work new items as they arrive when no operator decision is needed (doc-only requests nearly always; skill changes often; implementation or complex skill changes warrant an investigation round). Investigations can run without waiting on the operator, so when the operator returns the decisions are ready to present. Today items queue up waiting for attention when many are unblocked or at least investigable. Question: how to achieve this without accidentally running the operator's quota into the ground. Acceptance: an investigation series with findings and a recommendation (routing rules for what proceeds unattended vs what waits; quota guards; how investigations pre-run and park their decisions), presented to the operator; decisions raised by number.
 
 ## Handoff
-- doing: session a1a4c97c at 75% context; 5039 H1-H6 all landed and pushed; 3adc, F3b and e770 in flight
-- next: H7 spike, caef (fable), 8ab6 loop items, 0599/ee7b/8e14 and the review-low follow-ups remain queued
+- doing: session a1a4c97c near its context limit; 3adc landed and pushed (3cf6dc4); four agents in flight, all resumable by id
+- next: queue after F3b and e770: H7 spike, caef (fable), the 8ab6 loop items, 0599, ee7b, 8e14 and the review-low follow-ups
 - blocked: —
 - learned: —
 

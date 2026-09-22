@@ -2,15 +2,14 @@
 id: context-guard-8cc2-f1-mid-turn-posttoolu-3adc
 title: "context-guard 8cc2-F1: mid-turn PostToolUse depth check (silent unless it could hard-block)"
 type: feature
-status: doing
+status: done
 priority: 1
 deps:
   - context-guard-8cc2-f3a-re-inject-handoff-5126
 parent: context-guard-turn-gate-8cc2
-owner: unknown@360f41058e92
-claimed: 2026-09-21T19:08Z
 created: 2026-09-21
 updated: 2026-09-22
+closed: 2026-09-22
 ---
 
 Port plan .claude-sandbox/investigations/8cc2-turn-gate-port — design awaits the 02 serial (HARD mid-turn marker only when hard_applies(block_window, tok); unattended checkpoint path defers to a custody skill's own mode).
@@ -27,6 +26,7 @@ Port plan .claude-sandbox/investigations/8cc2-turn-gate-port — design awaits t
 
 ## Notes
 - 2026-09-21 claimed by unknown@360f41058e92
+- 2026-09-22 done: 15f271c
 
 ## Dispatch
 - dispatch: implementer opus — new PostToolUse hook in gate code; plan says the blocking predicate extraction must leave decide tests unchanged (else fable reviewer). Lands only after F3a.
@@ -69,3 +69,19 @@ review r2 (opus) at fadd0ed: NEEDS_CHANGES. Round-1 medium fixed and replayed on
 - low: commit layout (known). nit: a malformed top-level epoch blames the state dir.
 librarian: REVERSING my second settlement — the reviewer is right that the grace bounds the wrong unit, and the two-line token lapse is cheap; take it. My first settlement (no hook-side escalation belt) stands, and the reviewer agrees with it.
 dispatch: implementer opus — fix round 2 (resume)
+fix r2 DONE ead6975 (opus): checkpoint_in_flight moved last in armed() so it can only soften an answer that was otherwise ARMED (a genuine DUE record plus a stand-down now answers "not HARD"; a four-shape sweep confirms no reason is masked); SKILL.md no longer says "first, in every path" — the stand-down runs after Step 0 or after --check confirms, with a paragraph on why running it first answers every question the way a forged marker wants; --checkpointing refuses an id with no state file (verified: no file written, and mark_checkpoint still refuses afterwards); the record carries tok and lapses on either clock; the malformed-epoch diagnosis. 663 tests; safety sweep 12,832 cases 0 mismatches.
+librarian on the implementer's open question about the boundary: WIDEN it to 2× CHECKPOINT_MIN_TOKENS. 20K is the lean path's cost, and the failure the stand-down exists to prevent — a checkpoint told to abandon one step from the mark — is worse than the extra silence; Step 4a committing several repos is exactly the case that outgrows 20K. The implementer's reading (speaking is correct once a checkpoint genuinely no longer fits) stands above that line.
+dispatch: implementer opus — widen the lapse budget to 2× and move the boundary test, then reviewer opus — review r3 (resume)
+budget widened DONE 7a81647 (opus): CHECKPOINT_BUDGET_TOKENS = 2 * L.CHECKPOINT_MIN_TOKENS (40K) as a named constant so the two cannot drift, with a test asserting the relation as well as the behaviour; the librarian's reasoning recorded in the constant's comment, the module docstring and the skill. Boundary tests: silent at the old line and at the budget exactly, speaking one token past it; round 1's reproduction sweeps silently to the budget across the tier flip and the DUE cadence. 663 tests; safety sweep 12,832 cases 0 mismatches.
+dispatch: reviewer opus — review r3 (resume)
+review r3 (opus) at 7a81647: NEEDS_CHANGES. Both round-2 mediums properly closed and at the right layer (the masking sweep now names the real reason in all five shapes; --checkpointing refuses a typo id, writes nothing, and mark_checkpoint still refuses afterwards). Boundary pinned at 40K; safety property re-run (4,335 cases, 0 mismatches).
+- [medium] turn_gate.py:236-247 (depth_now) + :268-270 — the token lapse does not operate without a FRESH EXACT record, i.e. without statusline-hub, which context-guard declares a SOFT dependency: main() decides the in-flight question from the cheap depth and returns before measure(), so apply()'s authoritative re-check never runs. Reproduced twice against HEAD — a derived-only session stays SILENT at 20K, 44K and 60K spent (window overfull at the last), and a stale exact record stays SILENT at 44K. So the stand-down reverts to wall-clock-only, exactly the settlement this commit reversed. No test catches it: every token-lapse test sets a fresh exact record, and all 663 pass with the defect present. Pass: take the early return on checkpoint_in_flight only when the cheap depth is trustworthy, else fall through to measure() so apply() decides on m["tokens"] (the reviewer ran that shape: 663 green, boundary unchanged, both reproductions become SPEAKS at 44K); pin it with a derived-only test.
+- [low] the budget's justification holds only in part: at 1M the hard line is 60K left while the budget is 40K, so below ~40K left the wall clock is the only belt (measured: a stand-down at 60K left fires the token clock at 20K left; at 40K left or below, never). The reviewer does not dispute the 40K choice; the comment and SKILL.md should say so plainly rather than imply the token clock covers the hard band generally.
+- low: commit layout (known).
+dispatch: implementer opus — fix round 3 (resume)
+fix r3 DONE 7de4126 (opus): the stand-down's early return is conditional on L.exact_fresh, so a derived-only or stale-exact session falls through to measure() and apply()'s locked re-check decides on m["tokens"] — both reviewer reproductions now SPEAK at 44K and are pinned. One addition beyond the brief, flagged: anchor_standdown() fills a null tok from the first measurement after the stand-down (in place, under the lock, this epoch only), because a stand-down in a session's FIRST turn has no depth to record at all and would otherwise escape the budget regardless of where the re-check runs. The low is done: the token clock bites only while more than CHECKPOINT_BUDGET_TOKENS of window remain, so a stand-down begun under ~40K left has the wall clock as its only bound — stated in the constant's comment and in SKILL.md with the accepted reason. 666 tests; safety sweep 12,832 cases 0 mismatches.
+librarian: the anchor is accepted — it closes the same gap for the first-turn case and is bounded to this epoch's record. The cost (a derived-only session runs the incremental scan on every tool call while a checkpoint is in flight, ~15 ms steady and cached) is the same work the hook does when not standing down; accepted, and the reviewer may dispute.
+dispatch: reviewer opus — review r4 (resume)
+review r4 (opus) at 7de4126: CLEAR. Both reproductions fixed (derived-only: SILENT/SPEAKS/SPEAKS at 20K/44K/60K; stale exact: SPEAKS at 44K); boundary exact at the constant; mutation L pins the fix. anchor_standdown judged correct, bounded and safe: anchors once, epoch-bound, refuses a falsy depth, never raises on a malformed record, and survives 16 concurrent hooks × 3 runs with one consistent anchor — accepted as defence in depth. Cost measured on a 26 MB transcript: the fall-through is 15.2–16.7 ms per tool call, ~3.5 ms over the early return and exactly what the hook already costs when not standing down, against a 10 s timeout. Safety property re-confirmed over 19,035 cases, 0 mismatches both ways; 120 non-blocking cases, 0 spoke. Across four rounds the measurement path was never touched.
+- lows: a null anchor plus a fresh exact record appearing mid-checkpoint leaves the stand-down wall-clock-only; the reviewer tried the obvious tightening and it does not recover the budget either way — reachable only where the depth is too shallow for HARD, capped by the grace, recommendation leave it with a docstring clause. Commit layout (known).
+Review result: 4 review rounds, 3 fix rounds + a conflict round with re-verification; impl opus, review opus (gate code = fable signal, fable unavailable → opus recorded).
