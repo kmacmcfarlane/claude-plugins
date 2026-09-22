@@ -269,22 +269,22 @@ re-dispatch or resume with findings = review round n+1; cap 4 review rounds.
 ## Step 5: Land
 
 Only after a `CLEAR` recorded against the current HEAD — the last `verdict:` line
-(`references/record-lines.md`), whose `at <sha>` must still equal
+(`references/record-lines.md`), whose `at <sha>` must equal
 `git -C <workspace> rev-parse HEAD`.
 
-1. **Run the checks yourself** in `<workspace>`: `references/review-checklist.md`, the
-   Checks binding included. A verdict is not a check output.
+1. **Run the checks yourself** in `<workspace>`: `references/review-checklist.md` plus
+   the Checks binding. A verdict is not a check output.
 2. **Read the diff** in full — `git -C <workspace> diff <base>...HEAD`, `<workspace>`
-   being the absolute path the `target:` line records, never one rebuilt from the item
-   id — against the repo's doctrine and the Workflow binding. A file outside the
-   declared Files in scope is a rejection, however good. With Files in scope
+   being the `target:` line's absolute path, never rebuilt from the item
+   id — against the repo's doctrine and the Workflow binding. A file outside declared
+   Files in scope is a rejection, however good. With Files in scope
    `undeclared`, every changed file must carry the implementer's one-line reason and
    have survived the reviewer's per-file grading; one that did not is a rejection.
    `review <branch>` mode grades against the recorded Intent instead
-   (`references/bindings.md` § Intent) — no per-file reason is required there.
+   (`references/bindings.md` § Intent) — no per-file reason needed there.
 3. **Take the terminal action.** A caller's binding as given. Standalone, ask once
    (`references/bindings.md` § Landing): `Merge to <base> locally, no push` first, then
-   `Leave the branch`, then `Merge and push`. To merge, the main checkout must be on the
+   `Leave the branch`, then `Merge and push`. Merging needs the main checkout on the
    base. Dirt the cycle wrote itself — the record sink or store, the Series home,
    `.claude/worktrees/` — never blocks a merge; any other dirt the merge would touch or
    the user owns means stop and ask, never stash
@@ -311,7 +311,7 @@ Only after a `CLEAR` recorded against the current HEAD — the last `verdict:` l
    and `$WI handoff <id>` with `--next` naming the branch instead.
 
 A red check or a doctrine miss stops the landing: `$WI handoff <id> --blocked "<what>"`
-(no item: a `blocked:` line in the record sink), and it goes back into the fix loop as a
+(no item: a `blocked:` line in the record sink), and it re-enters the fix loop as a
 finding, counting toward the cap. **Never merge to make a check pass later.**
 
 ## Step 6: Report
@@ -325,11 +325,14 @@ open questions: <list, or none>
 decisions needed: <numbered list, or none>
 ```
 
-`verified:`'s merge sha is read back from the `landed:` line Step 5.5 recorded
-(`references/record-lines.md`), not from memory.
+`verified:`'s merge sha comes from the `landed:` line Step 5.5 recorded
+(`references/record-lines.md`), never memory.
 
-`plan` mode reports the series path on `changed:`, its review on `verified:`, and its
-blocking questions under `decisions needed:`.
+`plan` mode reports the series path on `changed:`, its review on `verified:`, blocking
+questions under `decisions needed:`.
+
+`Merge and push` (Step 5.3) adds a team summary after the four lines:
+`references/bindings.md` § Landing.
 
 ## Red flags
 

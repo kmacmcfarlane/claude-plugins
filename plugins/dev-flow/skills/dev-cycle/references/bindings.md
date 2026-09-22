@@ -254,6 +254,17 @@ added, never `<branch>` itself.
 Never push unless the user picked option 3 or the invocation asked for it in words. A
 rejected push stops: never pull, rebase or force around it — report it.
 
+Option 3 (or a push the invocation asked for in words), once the push succeeds, also
+means Step 6 adds one team summary after the Report — a rejected push gets none. The
+shape is the `librarian-mode` skill's `references/team-summary.md`, read there and not
+restated here, with one clause read against this cycle instead of a librarian's: its
+commit-range recipe reads `main`/`origin/main` as `<base>`/`origin/<base>`; its
+librarian-only timing (the `incoming:` lines, its own SKILL.md § Report,
+`ending-the-session.md`, 75%/DUE, noting `origin/<base>` before each push) does not
+apply — the summary simply follows the four lines; and its bullets cover only this
+cycle's own landing — another commit the push carried is noted as not the cycle's, or
+folded into the maintenance bullet.
+
 ## Store
 
 A work-item store is optional. Look in the main checkout for `.claude-sandbox/work/`, then
