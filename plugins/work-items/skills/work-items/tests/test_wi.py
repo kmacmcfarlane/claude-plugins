@@ -548,6 +548,156 @@ class TestImportTodo(WiTestCase):
         self.assertEqual(titles, ["Second one", "Wrapped title: here"])
         self.wi_ok(["lint"])
 
+    def import_one(self, line):
+        """Import a one-entry TODO.md into a fresh store; return its item."""
+        self.root = Path(tempfile.mkdtemp(dir=self.tmp)) / ".work"
+        self.assertEqual(run(["init"], self.root).returncode, 0)
+        todo = self.tmp / "TODO.md"
+        todo.write_text("# TODO\n\n" + line + "\n")
+        self.wi_ok(["import-todo", str(todo)])
+        items = self.items()
+        self.assertEqual(len(items), 1, items)
+        return items[0]
+
+    def test_strike_over_only_the_bold_title_is_closed(self):
+        """bf1b: `~~**Title**~~ rest` imported open with the markers in the
+        title. A strike covering the whole title closes the entry, whichever
+        side of the bold it sits on; ~~ and ** are stripped."""
+        for line in ("- [ ] ~~**Retire the old runner**~~ rest of it",
+                     "- [ ] **~~Retire the old runner~~** — rest of it",
+                     "- [ ] ~~**Retire the old runner.**~~ rest of it"):
+            with self.subTest(line=line):
+                it = self.import_one(line)
+                self.assertEqual((it["title"], it["status"]),
+                                 ("Retire the old runner", "done"))
+                self.assertTrue(it["closed"])
+
+    def test_strike_over_the_whole_entry_is_closed(self):
+        for line, title in (("- [ ] ~~**Retire the old runner** rest~~",
+                             "Retire the old runner"),
+                            ("- [ ] ~~plain struck entry~~", "plain struck entry")):
+            with self.subTest(line=line):
+                it = self.import_one(line)
+                self.assertEqual((it["title"], it["status"]), (title, "done"))
+
+    def test_checked_box_with_title_strike_is_done_and_stripped(self):
+        it = self.import_one("- [x] ~~**Retire the old runner**~~ rest")
+        self.assertEqual((it["title"], it["status"]),
+                         ("Retire the old runner", "done"))
+
+    def test_partial_strikes_stay_open(self):
+        """A strike over part of the title, or over only the trailing text,
+        is an edit, not a closure — the rule closes an entry only when the
+        strike covers its whole title — so the entry stays open and the
+        struck text is kept as written."""
+        for line, title in (("- [ ] **Retire ~~the old~~ runner** rest",
+                             "Retire ~~the old~~ runner"),
+                            ("- [ ] **Retire the old runner** ~~was 5 hosts~~ 3",
+                             "Retire the old runner")):
+            with self.subTest(line=line):
+                it = self.import_one(line)
+                self.assertEqual((it["title"], it["status"]), (title, "todo"))
+
+    def test_whole_entry_strike_judged_on_the_title_line(self):
+        """A whole-entry strike closes the entry when it opens on the bold
+        title and closes on that line: continuation lines, and a note after
+        the strike on the same line, are description (the trailing-note case
+        is closed — the strike covers the whole title)."""
+        for line, desc in (
+                ("- [ ] ~~**Retire the old runner** rest~~\n  → done in abc123",
+                 "rest\n→ done in abc123"),
+                ("- [ ] ~~**Retire the old runner** rest~~ (done 2026-09-01)",
+                 "rest (done 2026-09-01)"),
+                ("- [ ] ~~**Retire the old runner** rest~~ then ~~more~~",
+                 "rest then ~~more~~")):
+            with self.subTest(line=line):
+                it = self.import_one(line)
+                self.assertEqual((it["title"], it["status"]),
+                                 ("Retire the old runner", "done"))
+                show = json.loads(self.wi_ok(["show", it["id"], "--json"]))
+                self.assertEqual(show["body"].strip(), desc)
+
+    def test_plain_struck_first_line_closes_only_on_a_closure_note(self):
+        """With no bold, a struck first line closes when nothing follows it,
+        a parenthesis follows, or a dash then a closure word or a date."""
+        for line in ("- [ ] ~~Migrate to PG15~~",
+                     "- [ ] ~~Migrate to PG15~~ — DONE 2026-09-01",
+                     "- [ ] ~~Migrate to PG15~~ — fixed",
+                     "- [ ] ~~Migrate to PG15~~ - 2026-09-01",
+                     "- [ ] ~~Migrate to PG15~~ (2026-09-01)",
+                     "- [ ] ~~Migrate to PG15~~ (done)"):
+            with self.subTest(line=line):
+                it = self.import_one(line)
+                self.assertEqual((it["title"], it["status"]),
+                                 ("Migrate to PG15", "done"))
+
+    def test_plain_struck_first_line_replaced_or_partial_stays_open(self):
+        """`~~X~~ — Y instead` is a replacement, and `~~X~~ rest` a strike
+        over part of the title: both stay open with their markers."""
+        for line in ("- [ ] ~~Migrate to PG15~~ — PG16 instead",
+                     "- [ ] ~~Migrate~~ to PG15"):
+            with self.subTest(line=line):
+                it = self.import_one(line)
+                self.assertEqual((it["title"], it["status"]),
+                                 (line[6:], "todo"))
+
+    def test_plain_struck_first_line_with_a_caveat_stays_open(self):
+        """A parenthesis closes only when it opens on a closure word or a
+        date, and a closure word must be a whole word: `fixed-width`,
+        `closed-source`, `done-ish` and `done?` are not closures."""
+        for line in ("- [ ] ~~Use Redis~~ (use Memcached instead)",
+                     "- [ ] ~~Use Redis~~ (not yet)",
+                     "- [ ] ~~Use Redis~~ — fixed-width font",
+                     "- [ ] ~~Use Redis~~ — closed-source alternative",
+                     "- [ ] ~~Use Redis~~ — done-ish, reopen",
+                     "- [ ] ~~Use Redis~~ — done? not yet"):
+            with self.subTest(line=line):
+                it = self.import_one(line)
+                self.assertEqual((it["title"], it["status"]),
+                                 (line[6:], "todo"))
+
+    def test_empty_strike_never_closes(self):
+        for line in ("- [ ] ~~ ~~", "- [ ] ~~** **~~ rest"):
+            with self.subTest(line=line):
+                it = self.import_one(line)
+                self.assertEqual((it["title"], it["status"]), (line[6:], "todo"))
+                self.wi_ok(["lint"])
+
+    def test_whole_entry_strike_joins_inside_and_after_with_a_space(self):
+        it = self.import_one("- [ ] ~~**Retire the old runner** x~~y")
+        self.assertEqual(it["status"], "done")
+        show = json.loads(self.wi_ok(["show", it["id"], "--json"]))
+        self.assertEqual(show["body"].strip(), "x y")
+
+    def test_strike_in_rest_after_a_struck_title_is_kept(self):
+        it = self.import_one("- [ ] ~~**Retire the old runner**~~ rest ~~old~~ new")
+        self.assertEqual((it["title"], it["status"]),
+                         ("Retire the old runner", "done"))
+        show = json.loads(self.wi_ok(["show", it["id"], "--json"]))
+        self.assertEqual(show["body"].strip(), "rest ~~old~~ new")
+
+    def test_reimport_skips_entries_imported_under_the_pre_bf1b_title(self):
+        """Before bf1b a struck entry imported open under its literal first
+        line; a re-import must recognise that item by its old marker and
+        create nothing, keeping import-todo idempotent across the fix."""
+        entries = ("- [ ] ~~**Retire runner**~~ rest",
+                   "- [ ] ~~**Whole thing** rest~~")
+        legacy = ("~~**Retire runner**~~ rest", "~~**Whole thing** rest~~")
+        for n, title in enumerate(legacy):
+            self.write_item(f"legacy-{n}", title,
+                            refs=[wi.todo_marker(title)])
+        todo = self.tmp / "TODO.md"
+        todo.write_text("# TODO\n\n" + "\n".join(entries) + "\n")
+        out = self.wi_ok(["import-todo", str(todo)])
+        self.assertNotIn("created", out)
+        self.assertEqual(out.count("skipped"), 2)
+        self.assertEqual(len(self.items()), 2)
+
+    def test_literal_tilde_in_title_is_not_a_strike(self):
+        it = self.import_one("- [ ] **Move ~/bin to ~5 GiB disk** rest")
+        self.assertEqual((it["title"], it["status"]),
+                         ("Move ~/bin to ~5 GiB disk", "todo"))
+
     def test_dry_run_writes_nothing(self):
         out = self.wi_ok(["import-todo", "--dry-run",
                           str(FIXTURES / "ptp_todo.md")])
