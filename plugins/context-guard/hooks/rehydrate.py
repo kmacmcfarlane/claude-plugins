@@ -63,6 +63,10 @@ Scrolls, Next, the Aware-of lines other than CORRECTION/REFUSED, then any
 other unprotected section; never Doing, Goal, Holds, In flight, Read in full
 or Copy forward.
 
+A full injection of our own manifest also records its Read-in-full paths
+(read_list.py): a whole-file Read marks each one, and the next prompt names
+the unread ones once (context_warn.py).
+
 SessionStart is also where the gauge policy is published, first thing
 (L.publish_gauge: gauge.json, the threshold anchors and labels for the
 statusline plugin; rewritten only when missing or different), and where
@@ -82,6 +86,7 @@ import glob, json, os, re, subprocess, sys, time
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import lib_context as L
 import ledger
+import read_list as RL
 
 CAP = 9000
 LEDGER_BUDGET = 2500
@@ -909,6 +914,7 @@ def main():
     # write-back at the end is a locked update of only the keys this hook owns.
     st = L.load_state(sid)
     seen_new = None
+    reads_new = None     # this injection's Read-in-full list (read_list.py)
 
     if path:
         sha = version["sha"]
@@ -971,6 +977,7 @@ def main():
             parts += [header, preamble] + ([checks] if checks else []) + \
                 [trim(annotate_holds(text), CAP - len(header) - len(preamble) - len(checks)
                       - LEDGER_BUDGET - 400)]
+            reads_new = RL.paths_from_manifest(text, top, cwd)
             sysmsg = (f"Rehydrated from {live}{f' ({why})' if why else ''} manifest "
                       f"({fm.get('written', '?')}).")
         else:
@@ -996,6 +1003,11 @@ def main():
     def write_back(cur):
         if seen_new is not None:
             cur["manifest"] = seen_new
+        if reads_new is not None:
+            try:
+                RL.record(cur, reads_new)
+            except Exception:
+                pass
         if source == "compact" and "custom_instructions" in st \
                 and cur.get("custom_instructions") == st.get("custom_instructions"):
             # Consumed once; a newer /compact guidance written meanwhile stays.
