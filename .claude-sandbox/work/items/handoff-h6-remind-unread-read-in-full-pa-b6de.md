@@ -2,15 +2,14 @@
 id: handoff-h6-remind-unread-read-in-full-pa-b6de
 title: "handoff H6: remind unread Read-in-full paths once, in the next prompt's context"
 type: feature
-status: doing
+status: done
 priority: 1
 deps:
   - handoff-h1-mark-checkpoint-stamps-writte-9852
 parent: context-guard-compact-and-clear-handoffs-5039
-owner: unknown@360f41058e92
-claimed: 2026-09-22T16:47Z
 created: 2026-09-22
 updated: 2026-09-22
+closed: 2026-09-22
 ---
 
 Track the manifest's Read-in-full list against Read tool calls; one context line on the next prompt naming unread ones; no extra turn. Opus/opus. Plan: .claude-sandbox/investigations/5039-handoff-failures/00_findings.md § fix plan.
@@ -35,3 +34,4 @@ fix r1 DONE_WITH_CONCERNS 994fa46 (opus): take/record never raise (try/except; t
 dispatch: reviewer opus — review r2 (resume)
 review r2 (opus) at 994fa46: CLEAR — committed == tested; test_break 6/6; 20,000-record fuzz raised 0 times; gate write completes on a malformed record. Low: '##\t' heading no longer matched; an unclosed earlier fence hides the section (quiet) — follow-up.
 Review result: 2 rounds, 1 fix round; impl opus, review opus. Land checks (librarian): seven suites OK; diff read.
+- 2026-09-22 done: ae7ea81
