@@ -24,3 +24,6 @@ Track the manifest's Read-in-full list against Read tool calls; one context line
 ## Notes
 - 2026-09-22 claimed by unknown@360f41058e92
 dispatch: implementer opus — context-guard hook logic
+impl r0 DONE_WITH_CONCERNS e461b9d (opus): read_list.py (parse ## Read in full → existing files, realpath dedup, ≤10), recorded only on a full owned injection; lineage.py marks a whole-file Read; context_warn appends one line on the next non-whitelisted, non-hard, non-sub-agent prompt; 18 tests (fail on main). Deviations: Bash cat does not count (OQ6); header-only tiers record nothing; whitelisted/HARD prompts carry the reminder forward.
+librarian on OQ (timing): keep "next prompt" — after a manual /compact or /clear it is an up-front nudge on the opener, after an auto-compaction mid-turn a follow-through; both are useful and arming after the first turn needs new ordering state. Overlap with H3 noted (read_list._SECTION must follow any heading rename).
+dispatch: reviewer opus — hook logic
