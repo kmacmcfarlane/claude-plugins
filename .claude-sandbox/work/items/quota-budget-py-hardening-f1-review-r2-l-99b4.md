@@ -2,12 +2,11 @@
 id: quota-budget-py-hardening-f1-review-r2-l-99b4
 title: "quota_budget.py hardening: F1 review r2 lows"
 type: chore
-status: doing
+status: done
 priority: 3
-owner: unknown@bf9f9839222c
-claimed: 2026-09-22T22:26Z
 created: 2026-09-22
 updated: 2026-09-22
+closed: 2026-09-22
 refs:
   - 9882 review r2
 ---
@@ -38,3 +37,8 @@ findings:
 - [nit] no run_qb test for a parse-callback exception reaching main (rc 1, internal error).
 notes: deviations all accepted; F2's idle turn must know unusable:true cannot be cleared by --takeover; FIFO at samples.jsonl blocks open — out of scope.
 dispatch: implementer opus — fix round 1 (resume)
+return: implementer DONE 60d6d77
+dispatch: reviewer opus — review r2 (resume)
+verdict: CLEAR round 2 at 60d6d77
+landed: a5c7aaa
+- 2026-09-22 done: a5c7aaa

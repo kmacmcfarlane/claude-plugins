@@ -42,3 +42,6 @@ findings:
 notes: dropping land is operator answer 47 (04:14-15, 05:344); legacy-arm strip still has teeth; carried lows closed.
 librarian decision on the medium (the obvious best way, within F3b-4's aim): the Write tool never targets the store. Step 4b drafts the manifest in the session scratchpad (no prompt); the mark step — already a plugin Bash command the checkpoint runs — gains an install option that copies the draft into L.manifest_path(sid) atomically (same own_store_manifest guard, 0700 dirs, temp+os.replace) and then stamps it. handoff_path.py stays write-free (05's property kept). Files in scope widened: hooks/mark_checkpoint.py and its tests. Playbook names the Bash command operators allowlist for unattended use.
 dispatch: implementer opus — fix round 1 (resume)
+return: implementer DONE_WITH_CONCERNS 7851aba
+changed: + hooks/mark_checkpoint.py (--from install), hooks/tests/test_lineage.py
+dispatch: reviewer opus — review r2 (resume)
