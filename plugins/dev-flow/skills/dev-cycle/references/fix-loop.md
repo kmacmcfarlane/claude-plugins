@@ -65,6 +65,17 @@ A plan-mode series never reaches a merge; its fix rounds add a new serial with a
 `Supersedes` block and regenerate `INDEX.md`, never edit a written one (the plan-review
 variant in `review-brief.md`).
 
+**`review <branch>` mode.** A merge conflict at Land is a finding against `<branch>`
+itself, made by whoever built it, not something this cycle resolves on its own say-so. If
+no implementer is active for this run (the decision-channel ask was never made, or was
+declined), record the conflict as a finding and route it through that same
+before-any-fix-loop ask (SKILL.md § Usage): dispatch one with the review-mode fix variant
+to resolve it, or report it back to the branch's author and stop — never resolved
+inline either way. If an implementer is already active in this run (the ask was already
+accepted), it resolves the conflict exactly as `full` mode does, on `<branch>` in place
+of `worktree-<name>`. Either way the resolution is a new commit on `<branch>`, never a
+rebase or a reset of anything the author already wrote.
+
 ## A bad commit subject
 
 A finding against a commit's subject or message is always graded **low**, unless the
@@ -75,10 +86,11 @@ one statement of that rule; the briefs point here.
 - **Record it.** Append `subject-fix: <sha> <corrected subject>` to the record sink.
 - **Carry it at Land.** SKILL.md § Step 5 merges with one `-m` per paragraph, so git
   separates them with blank lines and never folds a correction into the subject:
-  `-m "merge: <aspect> - <description> - land worktree-<name> (<item id or slug>)"`, then
-  one `-m "<sha> should read: <corrected subject>"` per `subject-fix:` in the record.
-  A terminal action that does not merge (the branch is left for the user) reports each
-  `subject-fix:` line instead.
+  `-m "merge: <aspect> - <description> - land worktree-<name> (<item id or slug>)"` — in
+  `review <branch>` mode, `-m "merge: <aspect> - <description> - land <branch> (<item id
+  or slug, or the recorded intent>)"` — then one `-m "<sha> should read: <corrected
+  subject>"` per `subject-fix:` in the record. A terminal action that does not merge (the
+  branch is left for the user) reports each `subject-fix:` line instead.
 
 Never brief `git reset --soft <base>`, an amend, a rebase or a squash to redo a subject:
 the reviewer diffs from the reviewed sha, and once the base has moved since the worktree
@@ -114,3 +126,11 @@ free of it before Land. A leak in a message is one case of this rule, not a sepa
    rebuild itself is resolved inside the loop. The cycle never reports a credential as
    safe — the rebuild clears the branch, not the credential, and old objects stay in the
    local repository until pruned.
+
+**`review <branch>` mode never rebuilds.** Step 2's rebuild rewrites the branch's own
+history — a `git reset --soft` and one clean recommit — safe only because the cycle built
+that history itself. In `review <branch>` mode the history is the author's; the cycle
+never rewrites or soft-resets it, whether or not an implementer is active for this run. A
+leaked secret found here is always reported back to the branch's author, or raised
+through the decision channel when step 1's reach check finds it went beyond the branch —
+never rebuilt, and never landed while it remains.

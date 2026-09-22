@@ -37,6 +37,11 @@ One line per agent this session dispatched that is not finished; `None` when dra
 ## Read in full
 ≤5 paths, one per line with WHY each cannot be skipped. This is raw rehydration:
 the next session reads these before doing anything else.
+One path per line, first on the line (backticked or bare; absolute, or relative to the
+repo root). When the hook injects the manifest in full into its own session, it records
+these paths; a Read with no offset or limit (the Read tool) marks each one read, and
+the next prompt's context names any still unread, once — `cat`, `grep` or a partial Read
+does not count. It never blocks and costs no turn.
 
 ## Copy forward
 Files a successor needs that still sit only in a session scratchpad; omit when none.

@@ -22,8 +22,11 @@ Pointed at from SKILL.md § Troubleshooting and from `fix-loop.md` for the permi
   the item (its body names the series when there is one) and say so in the Step 0
   summary.
 - **The user rejects the cycle brief.** Nothing was written or filed; stop.
-- **`review <branch>` asked for.** Not available yet: say it is coming and stop; do not
-  run a full cycle in its place.
+- **`review <branch>` finds no such branch, or no such worktree can be added.** A setup
+  error like a missing binding: stop and name it; never fall back to a full cycle.
+- **`review <branch>` comes back `NEEDS_CHANGES` or `SHOW_STOPPER` and the operator
+  declines to dispatch an implementer.** Report the findings and stop; nothing lands and
+  nothing is fixed here — they go back to the branch's author.
 
 ## Dispatch and review
 

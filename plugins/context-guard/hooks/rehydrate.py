@@ -60,6 +60,10 @@ Budget: total additionalContext <= 9,000 chars, under the harness's single
 the mandatory tiers). Trim order: the frontmatter `items:` list, Scrolls, then
 Aware-of, never Doing/Goal/Read-in-full.
 
+A full injection of our own manifest also records its Read-in-full paths
+(read_list.py): a whole-file Read marks each one, and the next prompt names
+the unread ones once (context_warn.py).
+
 SessionStart is also where the gauge policy is published, first thing
 (L.publish_gauge: gauge.json, the threshold anchors and labels for the
 statusline plugin; rewritten only when missing or different), and where
@@ -79,6 +83,7 @@ import glob, json, os, re, subprocess, sys, time
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import lib_context as L
 import ledger
+import read_list as RL
 
 CAP = 9000
 LEDGER_BUDGET = 2500
@@ -769,6 +774,7 @@ def main():
     clear_digest = ledger.digest(clear_pred, budget=LEDGER_BUDGET) \
         if clear_pred else ""
     summary_used = False
+    reads_new = None     # this injection's Read-in-full list (read_list.py)
 
     if path:
         sha = version["sha"]
@@ -834,6 +840,7 @@ def main():
             parts += [header, preamble] + ([checks] if checks else []) + \
                 [trim(text, CAP - len(header) - len(preamble) - len(checks)
                       - LEDGER_BUDGET - 400)]
+            reads_new = RL.paths_from_manifest(text, top, cwd)
             sysmsg = (f"Rehydrated from {live}{f' ({why})' if why else ''} manifest "
                       f"({fm.get('written', '?')})"
                       + (f" and the ledger digest of predecessor {clear_pred}"
@@ -868,6 +875,11 @@ def main():
     def write_back(cur):
         if seen_new is not None:
             cur["manifest"] = seen_new
+        if reads_new is not None:
+            try:
+                RL.record(cur, reads_new)
+            except Exception:
+                pass
         if source == "compact" and "custom_instructions" in st \
                 and cur.get("custom_instructions") == st.get("custom_instructions"):
             # Consumed once; a newer /compact guidance written meanwhile stays.
