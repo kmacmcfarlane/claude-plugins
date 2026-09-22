@@ -29,3 +29,8 @@ Plan of record .claude-sandbox/investigations/8cc2-turn-gate-port, 08_f3b3-warn-
 target: full context-guard-f3b-3-the-owner-sid-legacy-c3e1 /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude/worktrees/context-guard-f3b-3-the-owner-sid-legacy-c3e1
 dispatch: implementer opus — hook logic deciding what memory a session is given; plan routes opus
 agent: implementer a3dabe735be8fe6d2 round 1
+return: implementer DONE_WITH_CONCERNS 1e37c0b
+changed: hooks/rehydrate.py, hooks/mark_checkpoint.py, tests/{test_rehydrate,test_lineage,test_rehydrate_stale}.py, checkpoint references/{handoff-format,operator-playbook}.md
+librarian: test_rehydrate_stale.py accepted into Files in scope (a fixture the copy freezes by design, same change as the in-scope tests).
+dispatch: reviewer opus — rule 4, implementer tier
+agent: reviewer a05d99543406d4ed4 round 1

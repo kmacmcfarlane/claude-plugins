@@ -2,11 +2,13 @@
 id: dev-cycle-e770-f4-the-caller-boundary-li-d81c
 title: "dev-cycle e770 F4: the caller boundary, librarian-mode points at dev-cycle's resume"
 type: feature
-status: todo
+status: doing
 priority: 3
 deps:
   - dev-cycle-e770-f3-resume-whole-plus-the-acdd
 parent: dev-flow-new-dev-cycle-skill-investigate-07c3
+owner: Kyle-McFarlane@bf9f9839222c
+claimed: 2026-09-22T23:10Z
 created: 2026-09-22
 updated: 2026-09-22
 refs:
@@ -21,3 +23,9 @@ Plan of record .claude-sandbox/investigations/e770-dev-cycle-resume (00 § F4; s
 - blocked: —
 - learned: —
 - rider from F3 (2026-09-22): model-routing.md § Fallback now asks a caller to append the one group fable decision N:/answer N: to EVERY item it covers; librarian-mode must say it does.
+
+## Notes
+- 2026-09-22 claimed by Kyle-McFarlane@bf9f9839222c
+
+target: full dev-cycle-e770-f4-the-caller-boundary-li-d81c /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude/worktrees/dev-cycle-e770-f4-the-caller-boundary-li-d81c
+dispatch: implementer sonnet — two files, one plugin, mechanical once F3 exists; plan routes sonnet impl, opus review
