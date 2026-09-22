@@ -36,3 +36,12 @@ Operator 2026-09-22: an idle librarian should work new items as they arrive when
 ## Notes
 - 2026-09-22 claimed by unknown@360f41058e92
 decision 52: push of main rejected — origin/main has eda3422 (operator, GitHub web: 'Update README.md', removes the 5-line claude-kit refactor paragraph) that local main lacks; local main has one store commit past it. Rules forbid pull/rebase/force — (a) allow a one-time `git merge origin/main` on main (a merge commit, no history rewrite; the two change disjoint files), then push [recommended]; (b) you rebase/push locally yourself; (c) hold pushes until told.
+
+## Operator answers 2026-09-22 (requirements gate)
+- Several semi-autonomous "librarian" agents share one subscription: the design needs shared state (budget samples, schedule, intent) and coordination; the agents repo owns the big-picture workflow; involve the agents and operator-attention librarians (messaged the agents librarian).
+- G3: interactive for the strong model in almost all cases; ask when the problem warrants it — define "warrants".
+- G4: a per-subscription state store, location codified in the skill.
+- G5: name the decide-alone class; refine from conversations on disk (item b8d6).
+- G6: phase 1 simple with expectations of the operator's own quota need; later phases e.g. vacation mode at the top end.
+- G1, G2, decision 52: deferred — operator wants more thinking from me first. Context at ~50%: no deep research.
+- New standard: every message ends with a two-line recap (recap; operator's next steps). Lettered+numbered lists stay.
