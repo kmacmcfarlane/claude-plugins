@@ -967,7 +967,7 @@ def read_raw(path):
     place an item file is decoded: a file that does not decode is a WiError
     naming it (the parse-error code), never a traceback, for every caller."""
     try:
-        with open(path, newline="") as fh:
+        with open(path, encoding="utf-8", newline="") as fh:
             return fh.read()
     except UnicodeDecodeError as e:
         raise WiError(3, f"{path}: undecodable ({e.encoding}: {e.reason} "
@@ -980,7 +980,7 @@ def atomic_write(path, text, create=False):
     file that appeared since the caller looked (O_EXCL semantics, and the
     content still lands in one step)."""
     tmp = path.with_name(path.name + ".tmp" + str(os.getpid()))
-    with open(tmp, "w", newline="") as fh:
+    with open(tmp, "w", encoding="utf-8", newline="") as fh:
         fh.write(text)
     if not create:
         os.replace(tmp, path)
@@ -1844,7 +1844,9 @@ def cmd_ls(args):
             dep = resolve_id(load_all(root, archived=True), args.dep).id
         except AmbiguousId:
             raise
-        except WiError:
+        except WiError as e:
+            if e.code != 2:  # only "no item matching" falls back
+                raise
             dep = args.dep
         rows = [it for it in rows if dep in it.get("deps", [])]
     if args.type:

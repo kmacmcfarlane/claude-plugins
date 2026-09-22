@@ -2789,6 +2789,29 @@ class TestUndecodableFile(WiTestCase):
                 self.assertIn("doing-2222", r.stdout)  # the rest still linted
                 path.unlink()
 
+    def test_ls_dep_prefix_names_the_file(self):
+        self.write_item("kid-3333", deps=["good-1111"])
+        path = self.place("archive")
+        r = run(["ls", "--dep", "good-11"], self.root)
+        self.assert_clean(r, path)
+
+    def test_valid_utf8_item_reads_and_writes_under_a_c_locale(self):
+        # item files are UTF-8 whatever the locale: a non-UTF-8 locale
+        # without UTF-8 mode must not misread (or fail to write) one
+        self.write_item("uni-4444", title="caf\u00e9 \u2014 na\u00efve")
+        env = {"PYTHONUTF8": "0", "PYTHONCOERCECLOCALE": "0", "LC_ALL": "C",
+               "LANG": "C", "PYTHONIOENCODING": "utf-8"}
+        r = run(["lint"], self.root, env=env)  # before claim: no findings
+        self.assertNotIn("uni-4444", r.stdout + r.stderr)
+        for cmd in (["show", "uni-4444"], ["claim", "uni-4444"],
+                    ["show", "uni-4444"]):
+            r = run(cmd, self.root, env=env)
+            self.assertEqual(r.returncode, 0, r.stderr)
+            self.assertNotIn("undecodable", r.stderr)
+        self.assertIn("caf\u00e9 \u2014 na\u00efve", r.stdout)
+        text = (self.root / "items" / "uni-4444.md").read_bytes()
+        self.assertIn("caf\u00e9 \u2014".encode("utf-8"), text)
+
     def test_lenient_archive_read_unchanged(self):
         self.place("archive")
         self.write_item("kid-3333", deps=["ghost-9999"])  # forces the read
