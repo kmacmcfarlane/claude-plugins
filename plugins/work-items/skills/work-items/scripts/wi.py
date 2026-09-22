@@ -17,6 +17,7 @@ Constraints this file lives under:
 import argparse
 import fcntl
 import fnmatch
+import getpass
 import glob
 import hashlib
 import json
@@ -1324,9 +1325,50 @@ def cmd_add(args):
     return 0
 
 
-def default_owner():
-    return os.environ.get("WI_OWNER") or \
-        f"{os.environ.get('USER', 'unknown')}@{os.uname().nodename.split('.')[0]}"
+# A derived claimant name is one owner token: letters, digits, `.`, `_`, `-`.
+# A space would split `wi status`'s columns, an `@` the `user@host` split, a
+# leading `-` would read as a flag to `wi ls --owner`; each run of anything
+# else becomes one `-`, and edge punctuation is trimmed.
+_OWNER_UNSAFE_RE = re.compile(r"[^A-Za-z0-9._-]+")
+
+
+def _owner_token(name):
+    """`name` as an owner token, or None when nothing usable is left."""
+    tok = _OWNER_UNSAFE_RE.sub("-", str(name or "")).strip("-._")
+    return tok or None
+
+
+def _git_user_name(root):
+    """`git config user.name` as judged from the store's repo; None on any
+    failure (no git, not a repo, unset, timeout)."""
+    cwd = root if root is not None and Path(root).is_dir() else None
+    r = _git(cwd, "config", "user.name")
+    if r is None or r.returncode != 0:
+        return None
+    return _owner_token(r.stdout.strip())
+
+
+def _getpass_user():
+    """getpass.getuser(), which raises when neither the login env vars nor
+    the password database name the uid (a container's remapped uid)."""
+    try:
+        return _owner_token(getpass.getuser())
+    except Exception:
+        return None
+
+
+def default_owner(root=None):
+    """The claimant: WI_OWNER verbatim (the explicit override, host
+    included), else `<user>@<host>` with the user from the first of $USER
+    (verbatim, as before), `git config user.name` run from the store's repo,
+    getpass.getuser(), and `unknown`. The last two are sanitized to an owner
+    token; an empty value counts as unset."""
+    explicit = os.environ.get("WI_OWNER")
+    if explicit:
+        return explicit
+    user = os.environ.get("USER") or _git_user_name(root) \
+        or _getpass_user() or "unknown"
+    return f"{user}@{os.uname().nodename.split('.')[0]}"
 
 
 def _claim(item, owner, steal=False):
@@ -1353,7 +1395,7 @@ def _claim(item, owner, steal=False):
 
 def cmd_claim(args):
     root = resolve_root(args.root)
-    owner = args.as_owner or default_owner()
+    owner = args.as_owner or default_owner(root)
     with Lock(root):
         item = load_item_anywhere(root, args.id)
         if item.get("status") == "todo":
@@ -1906,8 +1948,9 @@ def cmd_prime(args):
     items = load_all(root)
     by_id = {it.id: it for it in items}
     grouped, closed = split_by_status(items)
+    me = default_owner(root)
     doing = sorted(grouped["doing"], key=lambda it: (
-        it.get("owner") != default_owner(), it.get("priority", 2)))
+        it.get("owner") != me, it.get("priority", 2)))
     ready = rank_ready([it for it in grouped["todo"] if is_ready(it, by_id)])
     n_open = sum(len(v) for v in grouped.values())
     budget = args.budget
@@ -1938,7 +1981,7 @@ def cmd_prime(args):
         take(f"HOLD {len(holds)}: " + " ".join(
             f"{it.id} ({it.get('title')})" for it in holds[:3]))
     for it in doing:
-        who = "you" if it.get("owner") == default_owner() else it.get("owner", "-")
+        who = "you" if it.get("owner") == me else it.get("owner", "-")
         take(f"DOING  P{it.get('priority', 2)} {it.id}  {it.get('title')}  "
              f"({who}, {age_str(it.get('claimed'))})")
         h = it.handoff()
