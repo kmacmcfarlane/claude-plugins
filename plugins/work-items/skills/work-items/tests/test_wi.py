@@ -624,7 +624,8 @@ class TestImportTodo(WiTestCase):
                      "- [ ] ~~Migrate to PG15~~ — DONE 2026-09-01",
                      "- [ ] ~~Migrate to PG15~~ — fixed",
                      "- [ ] ~~Migrate to PG15~~ - 2026-09-01",
-                     "- [ ] ~~Migrate to PG15~~ (2026-09-01)"):
+                     "- [ ] ~~Migrate to PG15~~ (2026-09-01)",
+                     "- [ ] ~~Migrate to PG15~~ (done)"):
             with self.subTest(line=line):
                 it = self.import_one(line)
                 self.assertEqual((it["title"], it["status"]),
@@ -635,6 +636,21 @@ class TestImportTodo(WiTestCase):
         over part of the title: both stay open with their markers."""
         for line in ("- [ ] ~~Migrate to PG15~~ — PG16 instead",
                      "- [ ] ~~Migrate~~ to PG15"):
+            with self.subTest(line=line):
+                it = self.import_one(line)
+                self.assertEqual((it["title"], it["status"]),
+                                 (line[6:], "todo"))
+
+    def test_plain_struck_first_line_with_a_caveat_stays_open(self):
+        """A parenthesis closes only when it opens on a closure word or a
+        date, and a closure word must be a whole word: `fixed-width`,
+        `closed-source`, `done-ish` and `done?` are not closures."""
+        for line in ("- [ ] ~~Use Redis~~ (use Memcached instead)",
+                     "- [ ] ~~Use Redis~~ (not yet)",
+                     "- [ ] ~~Use Redis~~ — fixed-width font",
+                     "- [ ] ~~Use Redis~~ — closed-source alternative",
+                     "- [ ] ~~Use Redis~~ — done-ish, reopen",
+                     "- [ ] ~~Use Redis~~ — done? not yet"):
             with self.subTest(line=line):
                 it = self.import_one(line)
                 self.assertEqual((it["title"], it["status"]),

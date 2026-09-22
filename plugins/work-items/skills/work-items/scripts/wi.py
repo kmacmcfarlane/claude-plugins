@@ -2174,24 +2174,26 @@ def _section_item(heading, body):
 # the bold title alone (`~~**T**~~ rest`, `**~~T~~** rest`); a strike opening
 # on the bold title and closing later on the same line (`~~**T** rest~~`,
 # anything after it on that line or below is description); and, with no bold,
-# a struck first line with nothing after it, a parenthesis after it, or a
-# dash then a closure word or a date (`~~T~~`, `~~T~~ (2026-09-01)`,
-# `~~T~~ — DONE 2026-09-01`, `~~T~~ — fixed`). Any other text after the dash
-# (`~~Migrate to PG15~~ — PG16 instead`) is a replacement, not a closure. A
-# strike over part of the title or only the trailing text is an edit, not a
-# closure either: the entry stays open and keeps its markers. ~~ and ** are
-# stripped from a closed entry's title; an empty strike never closes.
+# a struck first line with nothing after it, or a closure word or a date
+# after a dash or opening a parenthesis (`~~T~~`, `~~T~~ (2026-09-01)`,
+# `~~T~~ (done)`, `~~T~~ — DONE 2026-09-01`, `~~T~~ — fixed`). Any other text
+# after it (`~~Migrate to PG15~~ — PG16 instead`, `~~X~~ (not yet)`) is a
+# replacement or a caveat, not a closure. A strike over part of the title or
+# only the trailing text is an edit, not a closure either: the entry stays
+# open and keeps its markers. ~~ and ** are stripped from a closed entry's
+# title; an empty strike never closes.
 _NO_TILDES = r"(?:(?!~~).)"
 STRUCK_TITLE_RE = re.compile(
     rf"^(?:~~\*\*({_NO_TILDES}+?)\*\*~~|\*\*~~({_NO_TILDES}+?)~~\*\*)"
     r"[.:]?\s*[—-]*\s*(.*)$", re.S)
 STRUCK_BOLD_ENTRY_RE = re.compile(
     rf"^~~\*\*({_NO_TILDES}+?)\*\*((?:(?!~~)[^\n])*)~~(.*)$", re.S)
-_CLOSURE_WORD = r"(?:done|fixed|landed|closed|resolved|dropped|merged|wontfix)\b"
+# a whole word: not `fixed-width`, `closed-source`, `done-ish` or `done?`
+_CLOSURE_WORD = r"(?:done|fixed|landed|closed|resolved|dropped|merged|wontfix)(?![\w?-])"
 _DATE = r"\d{4}-\d{2}-\d{2}"
 STRUCK_PLAIN_LINE_RE = re.compile(
     r"^~~((?:(?!~~)[^\n])*\S(?:(?!~~)[^\n])*)~~\s*"
-    rf"(?:(?=\()(.*)|[—-]+\s*({_CLOSURE_WORD}.*|{_DATE}[.:]?\s*(?:\(.*\))?))?$",
+    rf"(?:(?=\(\s*(?:{_CLOSURE_WORD}|{_DATE}))(.*)|[—-]+\s*({_CLOSURE_WORD}.*|{_DATE}[.:]?\s*(?:\(.*\))?))?$",
     re.I)
 BOLD_TITLE_RE = re.compile(r"^\*\*(.+?)\*\*[.:]?\s*[—-]*\s*(.*)$", re.S)
 
