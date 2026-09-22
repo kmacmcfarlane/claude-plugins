@@ -41,8 +41,12 @@ approximate figure this tick and continues from where it stopped on the
 next. A line longer than LINE_MAX (a huge tool result) is streamed in
 chunks and never parsed whole: a string-aware scanner follows its structure
 only as far as message.usage, skips every other value without keeping it,
-and counts the same fields the whole-line parse would. The cache keeps up to
-CACHE_MAX agents, the rows visible this tick first.
+and counts the same fields the whole-line parse would. Dense structure
+scans at a few MB/s, so the 5 s kill is kept well away: a long line still
+unscanned after LINE_SECS is passed over (the depth stays at the previous
+line's until the next usage line sets it), and no long line
+is begun once TICK_SECS of the tick have gone, except the tick's first.
+The cache keeps up to CACHE_MAX agents, the rows visible this tick first.
 
 Approximate, marked `~`: when there is no readable sidechain yet, no usage
 line in it yet (a new agent, or one just compacted), or the budget ran out
@@ -81,6 +85,8 @@ CACHE_V = 1
 CACHE_MAX = 64            # agents kept in one session's cache
 TASKS_MAX = 64            # rows drawn per tick at most
 LINE_MAX = 1 << 20        # a longer line is streamed in chunks of this size, never parsed whole
+TICK_SECS = 1.5           # no long line begun after this much of a tick, but the first
+LINE_SECS = 1.0           # a long line still unscanned after this is passed over
 TOKEN_MAX = 4096          # a longer key or scalar on a long line: not worth parsing
 DEPTH_MAX = 512           # deeper nesting on a long line: treated as unparseable
 _SAFE_ID = re.compile(r"[A-Za-z0-9][A-Za-z0-9_-]{0,127}")
@@ -183,12 +189,12 @@ def _usage_total(line):
 
 
 _WS = re.compile(rb"[ \t\r\n]*")
-# The rest of a string, up to its closing quote, an escape cut by the chunk
-# end, or a raw control character (which makes the line invalid JSON).
-_STR = re.compile(rb'[^"\\\x00-\x1f]*(?:\\[\s\S][^"\\\x00-\x1f]*)*')
-# Inside a value nothing is counted from: everything but brackets and
-# whole strings, in one C-speed match.
-_SKIP = re.compile(rb'(?:[^"{}\[\]]+|"[^"\\\x00-\x1f]*(?:\\[\s\S][^"\\\x00-\x1f]*)*")*')
+# Every pattern run over a chunk is one character class under one star, so
+# the regex engine keeps no backtracking state however long the match.
+_CTRL = re.compile(rb"[\x00-\x1f]")      # raw in a string: the line is invalid JSON
+# Inside a value nothing is counted from: everything up to a bracket or a
+# string's opening quote, in one C-speed match.
+_SKIP = re.compile(rb'[^"{}\[\]]*')
 _SCALAR = re.compile(rb"-?(?:0|[1-9][0-9]*)(?:\.[0-9]+)?(?:[eE][+-]?[0-9]+)?"
                      rb"|true|false|null|NaN|-?Infinity")
 _SCALAR_PART = re.compile(rb"[-+.0-9A-Za-z]+")
@@ -211,8 +217,9 @@ class _UsageScan:
         # key, ":" the colon, "v" a value, "," a comma or "}".
         self.stack = []
         self.fields = None      # message.usage's fields so far, or None: not an object
-        self.pend = b""         # a key or scalar cut by the chunk end
+        self.pend = b""         # a scalar cut by the chunk end
         self.in_str = False
+        self.esc = False        # the string so far ends in an unpaired backslash
         self.key = None         # the key string being read, or None: not a key
         self.closed = self.bad = False
 
@@ -266,18 +273,35 @@ class _UsageScan:
         i, n = 0, len(buf)
         while i < n and not self.bad:
             if self.in_str:
-                j = _STR.match(buf, i).end()
+                # The closing quote is the first with an even run of
+                # backslashes before it: found with bytes.find, so a long
+                # string costs a step per escaped quote, not per byte.
+                lo = i
+                if self.esc:        # this byte is the one the last chunk escaped
+                    lo, self.esc = i + 1, False
+                while True:
+                    q = buf.find(b'"', lo)
+                    if _CTRL.search(buf, lo, n if q < 0 else q):
+                        self.bad = True
+                        return
+                    if q < 0:
+                        break
+                    r = q
+                    while r > lo and buf[r - 1] == 0x5C:
+                        r -= 1
+                    if (q - r) % 2 == 0:
+                        break
+                    lo = q + 1
+                stop = n if q < 0 else q
                 if self.key is not None and len(self.key) <= TOKEN_MAX:
-                    self.key += buf[i:min(j, i + TOKEN_MAX + 1 - len(self.key))]
-                if j >= n:
+                    self.key += buf[i:min(stop, i + TOKEN_MAX + 1 - len(self.key))]
+                if q < 0:           # the string goes on in the next chunk
+                    r = n
+                    while r > lo and buf[r - 1] == 0x5C:
+                        r -= 1
+                    self.esc = (n - r) % 2 == 1
                     return
-                if buf[j] == 0x5C:           # an escape cut by the chunk end
-                    self.pend = buf[j:]
-                    return
-                if buf[j] != 0x22:           # a raw control character
-                    self.bad = True
-                    return
-                self.in_str, i = False, j + 1
+                self.in_str, i = False, q + 1
                 if self.key is not None:
                     try:           # too long to be a name that counts
                         k = None if len(self.key) > TOKEN_MAX else \
@@ -343,24 +367,32 @@ class _UsageScan:
 def _long_line(fh, first):
     """(length, depth or 0, boundary) of a line longer than LINE_MAX whose
     first LINE_MAX bytes are `first`, read on in chunks so memory stays
-    bounded; None for the length when the file ends before its newline."""
+    bounded; None for the length when the file ends before its newline.
+    A line whose scan outlasts LINE_SECS is passed over: read to its end
+    unscanned, depth 0, so the offset still advances past it."""
     n, u = len(first), _UsageScan()
+    end = time.monotonic() + LINE_SECS
     u.feed(first)
     boundary = b'"compact_boundary"' in first[:4096]
     while True:
+        if not u.bad and time.monotonic() >= end:
+            u.bad = True        # too dense to scan in time: pass it over
         chunk = fh.readline(LINE_MAX)
         if not chunk:
             return None, None, False
         n += len(chunk)
-        u.feed(chunk)
+        if not u.bad:
+            u.feed(chunk)
         if chunk.endswith(b"\n"):
             return n, u.total(), boundary
 
 
-def scan(path, ent, budget):
+def scan(path, ent, budget, clock=None):
     """(entry, done, bytes read): `ent` (a cache entry, or None) advanced
     over `path`. `done` is True when every complete line was read within
-    `budget` bytes. An entry is {dev, ino, off, cur, tail}: `cur` the depth
+    `budget` bytes. `clock`, shared by a tick's scans, is {"end": monotonic
+    deadline, "long": whether a long line was begun}: once one was and the
+    deadline has passed, a long line is left for the next tick. An entry is {dev, ino, off, cur, tail}: `cur` the depth
     as of `off`, 0 when no usage line has been read since the start or the
     last compact_boundary."""
     with open(path, "rb") as fh:
@@ -387,6 +419,11 @@ def scan(path, ent, budget):
                     break                   # incomplete: read again next tick
                 # One line is always read, however long, so every tick
                 # advances; past LINE_MAX it is streamed, not parsed.
+                if clock is not None:
+                    if clock["long"] and time.monotonic() >= clock["end"]:
+                        done = False
+                        break
+                    clock["long"] = True
                 n, t, boundary = _long_line(fh, line)
                 if n is None:
                     break
@@ -482,11 +519,12 @@ def depths(payload):
     # and one agent catching up on a long transcript cannot starve the rest.
     rows.sort(key=lambda r: r[0])
     new, out, left = {}, {}, BUDGET
+    clock = {"end": time.monotonic() + TICK_SECS, "long": False}
     for _todo, tid, path in rows:
         ent, done = old.get(tid), False
         if left > 0:
             try:
-                ent, done, n = scan(path, ent, left)
+                ent, done, n = scan(path, ent, left, clock)
                 left -= n
             except Exception:
                 ent = None

@@ -240,6 +240,45 @@ class Rows(Hermetic):
                            "cache_creation_input_tokens": 500_000}).encode()
         self.assertEqual(self.long_line_depth(line), 70_005)
 
+    def test_a_line_too_slow_to_scan_is_passed_over(self):
+        sys.path.insert(0, HOOKS)
+        import subagent_statusline as R
+        big = usage(0, 90_000)
+        big["message"]["content"] = [{}] * 5000
+        old = R.LINE_MAX, R.LINE_SECS
+        try:
+            R.LINE_MAX, R.LINE_SECS = 4096, 0
+            # Passed over, the offset still advances and the depth keeps
+            # its value; the next usage line counts.
+            p = self.side("a1", [usage(0, 10_000), big])
+            ent, done, n = R.scan(p, None, 1 << 20)
+            self.assertEqual((done, ent["cur"], ent["off"]), (True, 10_000, os.path.getsize(p)))
+            p = self.side("a2", [usage(0, 10_000), big, usage(0, 30_000)])
+            ent, done, n = R.scan(p, None, 1 << 20)
+            self.assertEqual((done, ent["cur"], ent["off"]), (True, 30_000, os.path.getsize(p)))
+        finally:
+            R.LINE_MAX, R.LINE_SECS = old
+
+    def test_no_long_line_is_begun_once_the_tick_is_spent_but_the_first(self):
+        sys.path.insert(0, HOOKS)
+        import subagent_statusline as R
+        big = usage(0, 90_000)
+        big["message"]["content"] = "y" * 6000
+        old = R.LINE_MAX
+        try:
+            R.LINE_MAX = 4096
+            p = self.side("a1", [usage(0, 10_000), big, usage(0, 20_000), big])
+            first = len(json.dumps(usage(0, 10_000))) + len(json.dumps(big)) + 2
+            spent = {"end": 0, "long": False}
+            ent, done, n = R.scan(p, None, 1 << 20, spent)
+            # The first long line is read, the second waits for a new tick.
+            self.assertEqual((done, ent["cur"]), (False, 20_000))
+            self.assertEqual(ent["off"], first + len(json.dumps(usage(0, 20_000))) + 1)
+            ent, done, n = R.scan(p, ent, 1 << 20, {"end": 0, "long": False})
+            self.assertEqual((done, ent["cur"], ent["off"]), (True, 90_000, os.path.getsize(p)))
+        finally:
+            R.LINE_MAX = old
+
     def test_the_streamed_count_matches_the_whole_line_parse(self):
         sys.path.insert(0, HOOKS)
         import random
@@ -252,7 +291,8 @@ class Rows(Hermetic):
             r = rnd.random()
             if d > 3 or r < 0.3:
                 return rnd.choice(["12", "0", "-4", "3.9", "1e3", "true", "null", '"7"',
-                                   '"a\\"b\\\\"', "NaN", "123456789"])
+                                   '"a\\"b\\\\"', '"\\\\\\""', '"\\u0022\\\\\\\\"',
+                                   "NaN", "123456789"])
             if r < 0.5:
                 return "[" + ",".join(val(d + 1) for _ in range(rnd.randint(0, 3))) + "]"
             return obj(d + 1)
