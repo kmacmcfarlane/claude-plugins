@@ -28,18 +28,20 @@ Plain text, in this order:
    needed). In a plugin marketplace, a change under `plugins/` reaches a user only after
    `/plugin marketplace update <marketplace name>` (the `name` in
    `.claude-plugin/marketplace.json`) and then `/reload-plugins`. `old` is `origin/main`
-   before the push and `new` is `main` after it:
+   before the push and `new` is `origin/main` after it:
 
    ```bash
    OLD=$(git -C "$MAIN" rev-parse --short 'origin/main@{1}')
-   NEW=$(git -C "$MAIN" rev-parse --short main)
+   NEW=$(git -C "$MAIN" rev-parse --short origin/main)
    git -C "$MAIN" log --oneline "$OLD..$NEW"   # must list exactly this push's commits
    ```
 
    When the reflog is unavailable (`core.logAllRefUpdates` off, or a fetch updated the
    ref since), or that log does not show this push's commits, read the range from the
    push's own output (the `<old>..<new>  main -> main` line), and from then on note
-   `git -C "$MAIN" rev-parse --short origin/main` before each push (SKILL.md § Report).
+   `git -C "$MAIN" rev-parse --short origin/main` right before each push, again after
+   any fetch and merge; the value noted before the push that succeeds is `old` (SKILL.md
+   § Report).
    With `Push: none` or no `origin`, `old` is `main` before the batch's first merge (that
    merge's first parent), the header says `local only, not pushed`, and it carries no
    pickup step.
@@ -55,8 +57,8 @@ Plain text, in this order:
    what a user or agent can now do, or notices behaving differently — never why it was
    needed, how it works internally, its mechanism, its rationale, or the evidence behind
    it. At most two short fragments per line, semicolon-separated, not full sentences, and
-   each fragment observable on its own — if it names a check, a stamp, a counter or
-   anything else the code does, it is HOW, not WHAT.
+   each fragment observable on its own — if it names anything the code does internally
+   that the reader never sees (a check, a stamp, a counter), it is HOW, not WHAT.
 
 4. **Maintenance and plumbing collapsed into ONE bullet**, marked `(maintenance)` —
    tests, refactors, dependency bumps, store bookkeeping. No sub-bullet needed; if one is
@@ -90,11 +92,11 @@ A push that landed three visible changes and a round of maintenance:
 ```text
 claude-plugins updates, pushed to main (eda3422..71345aa) — run `/plugin marketplace update kmacmcfarlane`, then `/reload-plugins`.
 - **Plan-usage pacing**: the librarian slows down near a plan limit instead of stalling.
-  - A wave with plenty of quota left runs full speed; a wave running low moves slower instead of stopping.
+  - Speed tracks quota left; picks back up at full pace once quota recovers.
 - **Stable checkpoints**: a resumed session no longer treats a fresh handoff as stale.
-  - Resuming right after a checkpoint picks up right where it left off; no stale-handoff false alarm.
+  - Resuming immediately after a checkpoint picks up right where it left off; a manifest more than a day old still gets flagged.
 - **Agent panel context**: each sub-agent's status line now shows how much context it has left.
-  - Shows per agent in the agent panel; updates as the agent works.
+  - Percent and tokens remaining, per agent; refreshes as the agent works.
 - **Housekeeping** (maintenance): dependency bumps and test cleanup across three plugins.
 Nothing on existing work needs action.
 ```
