@@ -41,3 +41,5 @@ review r2 (opus) at 3e31799: NEEDS_CHANGES. Round-1 high and lows fixed (repro k
 - [medium] rehydrate.py:463,475 — regression: _HEAD_TAIL.sub replaced .strip(), so CRLF headings keep '\r' → hold_lines [] (header tiers lose every hold) and no section is recognised as protected (Read in full trimmed, CORRECTION lost at budget 2000). Pass: strip the name; a CRLF test pinning protection and hold_lines.
 - lows: 'until:' no longer parsed (a past date not flagged); _HOLD_RE case-sensitive / '**HOLD**' dropped silently.
 dispatch: implementer opus — fix round 2 (resume)
+fix r2 DONE 841a581 (opus): section names strip CRLF (before and after _HEAD_TAIL); annotate keeps \r; until: accepted; HOLD any case / bold; CRLF test pins recognition, hold_lines and stepped keeps; 3 tests fail on 3e31799 (committed first). OQ: a prose line starting 'hold' now reads as a hold — accepted (holds is its own section).
+dispatch: reviewer opus — review r3 (resume)
