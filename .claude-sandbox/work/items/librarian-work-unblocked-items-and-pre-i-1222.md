@@ -35,3 +35,4 @@ Operator 2026-09-22: an idle librarian should work new items as they arrive when
 
 ## Notes
 - 2026-09-22 claimed by unknown@360f41058e92
+decision 52: push of main rejected — origin/main has eda3422 (operator, GitHub web: 'Update README.md', removes the 5-line claude-kit refactor paragraph) that local main lacks; local main has one store commit past it. Rules forbid pull/rebase/force — (a) allow a one-time `git merge origin/main` on main (a merge commit, no history rewrite; the two change disjoint files), then push [recommended]; (b) you rebase/push locally yourself; (c) hold pushes until told.
