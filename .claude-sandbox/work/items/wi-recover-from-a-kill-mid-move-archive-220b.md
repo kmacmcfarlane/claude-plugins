@@ -33,3 +33,5 @@ From 5408 review r2 (lows): (1) archive hard-link path — a kill between link a
   - [low] unlocked ls/show/lint can report a live reservation as killed (microsecond window, message only).
   - note: implementer's OQ "add writes outside the lock" is mistaken — cmd_add holds Lock.
 - dispatch: implementer opus — fix round 1 (resume, tier kept)
+- fix r1 DONE b157e01 (opus): _half_moved (same dev/inode, nlink >= 2, parents realpath-distinct); 3 new tests (symlinked dir refuses, item survives; fail on a70f389); lows a/b/c fixed (b as a format.md line: items/ copy is current).
+- dispatch: reviewer opus — review r2 (resume)
