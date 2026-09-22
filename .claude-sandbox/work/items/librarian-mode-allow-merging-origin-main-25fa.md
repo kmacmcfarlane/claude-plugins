@@ -35,3 +35,5 @@ fix r1 DONE 2dbf401 (opus): one incoming: rule in four places (with the push out
 dispatch: reviewer opus — review r2 (resume)
 review r2 (opus) at 2dbf401: CLEAR — the four incoming: statements identical; scratch clone: interrupted merge recovered via MERGE_HEAD (-C "$MAIN" form needed from a worktree), control run shows a store commit would otherwise complete the merge; strictly-behind → ff-only; both trigger wordings. Lows: "staged changes anywhere"; a leftover MERGE_HEAD from a worktree-branch merge should compare MERGE_HEAD with origin/main before choosing the redo.
 Review result: 2 rounds, 1 fix round; impl opus, review opus.
+land (librarian): merge into main conflicted in librarian-mode SKILL.md (a934 landed c465325 in § Report; 25fa edits § Report's push line). The librarian's script ran on past the conflict; the half-done merge on main was aborted with git merge --abort before any commit (main at 1359bde, clean). Conflict round → implementer merges main into the branch.
+dispatch: implementer opus — conflict round (resume)
