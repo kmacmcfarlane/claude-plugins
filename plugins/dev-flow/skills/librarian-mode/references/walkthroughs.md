@@ -12,7 +12,7 @@ recorded as a `dispatch:` line in the item. Delegate: one agent in
 `.claude/worktrees/<id>`. Review: a medium finding goes back to the implementer as a fix
 commit, same tier; re-review says `CLEAR` — one fix round, recorded in the item. Land:
 checklist, diff read, `git merge --no-ff` into local `main`, clean up. Report four lines;
-`decisions needed: none`; then push `main`.
+`decisions needed: none`; then push `main`, and write the push's team summary.
 
 **Operator: "split ralph's backlog skills into their own plugin."** Real trade-offs (name,
 dependency direction, catalog wording): three decisions, so a numbered prose list —

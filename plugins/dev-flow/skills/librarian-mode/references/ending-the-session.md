@@ -32,7 +32,8 @@ here and below; the final Report says what stays on local `main`. A rejected
 non-fast-forward push is not fixed by pulling, fetching, rebasing or merging: stop, and
 carry it under `decisions needed` in the final Report. Send that final Report last, so
 it reports the push as well as the landings — here and at 75%/DUE below, the push precedes
-its Report; everywhere else the Report comes first. The context-gate ledger
+its Report; everywhere else the Report comes first. The push's team summary
+(`team-summary.md`) follows that Report in the same message. The context-gate ledger
 (session-addressed, one per session) and HANDOFF (work-addressed, class b1, one per
 repo) do not replace this; the librarian rehydrates from `wi prime` and git.
 
@@ -69,7 +70,7 @@ the step in hand, then:
    rejection stops the same way and goes under `decisions needed` in the closing message.
 4. **Prompt the operator to compact, and stop.** The closing message is the final Report
    of the sequence above: the four-line Report for anything landed since the last one,
-   the push outcome, then the checkpoint's own close — its `/compact <guidance>`
+   the push outcome and its team summary, then the checkpoint's own close — its `/compact <guidance>`
    recommendation, to run at the operator's convenience (the next morning is fine), and
    last its Step 7 opener, led by `/dev-flow:librarian-mode start`, then `read
    <manifest path> in full first`, then — when the roster is not `None` — `resume <ids>
