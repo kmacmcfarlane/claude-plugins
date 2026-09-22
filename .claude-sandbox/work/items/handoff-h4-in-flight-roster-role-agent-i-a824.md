@@ -24,3 +24,10 @@ Checkpoint handoff format gains an in-flight list per role with agent ids and ro
 dispatch: implementer opus — per plan routing (executable hook logic or two-plugin doctrine)
 impl r0 DONE 83b9a0d (opus): handoff-format ## In flight (role — item — agent id — round — waiting on) + ## Copy forward; resume-by-id rule (same process; fresh process re-dispatches from the roster's round); scratchpad sweep in Step 4a; never checkpoint inside a sub-agent (FM13); librarian ending-the-session names agent ids per role and where brief templates live. Docs only, 3 files.
 dispatch: reviewer opus — rule 4
+review r1 (opus) at 83b9a0d: NEEDS_CHANGES. Seven Checks OK.
+- [medium] ending-the-session.md:26, checkpoint SKILL.md:120 — "beside the item" = .claude-sandbox/work/items/; a non-item .md there makes wi ls/next/lint exit 3 (reproduced). Pass: name the investigation series or a path outside items/; say never into items/.
+- [medium] checkpoint Step 7 / librarian Rehydrate — resume-by-id written only where the predecessor reads it; successor's opener and Rehydrate don't say it. Pass: Step 7's opener carries "resume <ids> with SendMessage, do not re-dispatch" when In flight is not None, and/or librarian Rehydrate step 3 resumes ids from doing:/dispatch: lines.
+- [medium] resume rule restated 3×, drifted (fresh-process caveat only in handoff-format). Pass: librarian doc points at the checkpoint skill's In flight rule by name; 4b keeps a one-clause pointer.
+- [medium] plan's rehearsal acceptance not run. librarian decision: WAIVED — a rehearsal checkpoint in the live librarian session writes the shared repo HANDOFF.md and stands the gate down; H1 is changing the same write path; re-check at H1/F3b landing instead.
+- lows: fresh-process "cannot resume" unverified → "try SendMessage first"; "drained" should count a returned-but-unfinished role; "never trims" only true by placement (+ H3 note); "common briefs" names a local habit; nit: sub-agent rule should say what to do instead.
+dispatch: implementer opus — fix round 1 (resume)
