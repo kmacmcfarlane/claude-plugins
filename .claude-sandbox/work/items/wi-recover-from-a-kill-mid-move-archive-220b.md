@@ -35,3 +35,6 @@ From 5408 review r2 (lows): (1) archive hard-link path — a kill between link a
 - dispatch: implementer opus — fix round 1 (resume, tier kept)
 - fix r1 DONE b157e01 (opus): _half_moved (same dev/inode, nlink >= 2, parents realpath-distinct); 3 new tests (symlinked dir refuses, item survives; fail on a70f389); lows a/b/c fixed (b as a format.md line: items/ copy is current).
 - dispatch: reviewer opus — review r2 (resume)
+- review r2 (opus) at b157e01: CLEAR. Probes: symlinked archive/<year> and items/ refuse and keep the item; a real half-done move with nlink 3 through a symlinked root finishes; a hard-linked dir is impossible on Linux. Low: realpath cannot see a bind mount → items/ bind-mounted at archive/<year> plus an outside hard link passes _half_moved (the backup holds the content); compare parents by (st_dev, st_ino).
+- Review result: 2 review rounds, 1 fix round; round-1 medium (symlinked-dir data loss) fixed; round-1 lows fixed; r2 low filed as a follow-up; impl opus, review opus.
+- land checks (librarian, worktree b157e01): seven suites OK; diff read — 3 files in scope.
