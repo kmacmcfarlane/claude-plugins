@@ -23,6 +23,11 @@ argument-hint: "[--user | --local | --project] [--remove | --wrap | --unwrap] [-
   runs their existing status line command unchanged and shows its output, followed by any
   hub display hooks, after writing the sensor record. The old entry is kept in the hub's
   private wrap record and never printed. `--unwrap` puts it back exactly.
+- Wrap mode is user scope only: `--wrap` works on the user settings file and refuses a
+  project's, whose command would run in every other project's sessions (and could come
+  from a repository). Never offer `--local --wrap` or `--project --wrap`.
+- Tell a user who wraps to run `--unwrap` **before** uninstalling the plugin. Until then
+  their settings run the hub, and their own entry is kept only in the wrap record.
 - Before the `statusline` plugin draws as a hub display hook (it registers itself at each
   session start, so this is only before its first session), replacing its footer with the
   hub drops the footer until it does. The script refuses without `--replace` and says so;
@@ -53,8 +58,8 @@ start; `--status` gives the detail.
 - one of `--remove`, `--wrap` or `--unwrap`;
 - `--status`, alone.
 
-`--unwrap` without a scope acts on the file the hub wrapped; `--remove` on that file also
-unwraps it.
+`--wrap` takes no scope other than `--user`. `--unwrap` without a scope acts on the file
+the hub wrapped; `--remove` on that file also unwraps it.
 
 Anything else: say which words are allowed and stop. `--project` writes the team-shared
 `.claude/settings.json` with an absolute path from this machine; confirm the user wants
@@ -124,6 +129,14 @@ Actions: run `--status`. Name the hook whose health is `warn`, and point at its 
 or its log.
 
 ## Troubleshooting
+
+The status line went blank after statusline-hub was uninstalled while it wrapped one.
+Cause: the settings still run the hub's removed script; the user's own entry is still in
+`${CLAUDE_CONFIG_DIR:-~/.claude}/statusline-hub/wrap.json`, which an uninstall leaves.
+Solution: reinstall statusline-hub, then run the script with `--unwrap`: it puts the
+entry back exactly, then the plugin can be uninstalled. Without reinstalling, the user can
+copy the `entry` object from that file into their `statusLine` by hand (you do not read
+or print it).
 
 The wrapped status line shows nothing, or old text.
 Cause: the old command failed, or took longer than the render's 250 ms budget (its output

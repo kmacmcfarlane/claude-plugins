@@ -55,7 +55,11 @@ same (see owner.py):
      none of the competing files sets a statusLine. One set by another tool
      makes the state `deferred`, said once, never overwritten: the one line
      asks whether the user wants it wrapped (what --wrap would do, and how
-     to accept), and points at embed mode and at replacing it. The hub
+     to accept; only for the user settings file - a project's command is
+     never offered, since the hub would run a repository's command), and
+     points at embed mode and at replacing it. A lost marker with the hub's
+     entry and a wrap record is adopted as `wrapping` only when the record
+     is running; one the user had unwrapped gets their entry put back. The hub
      never wraps on its own (operator decision 40: ask once). The statusline footer's entry there (the statusline
      plugin's, or an older copy's) is handled as in (a). An empty slot the
      user emptied by removing the statusline footer (its marker says
@@ -185,7 +189,16 @@ def _write(owner, path, entry, **kw):
 
 def _wrap_offer(owner, p):
     """Decision 40: the one-line question a first run asks when the slot
-    holds another tool's statusLine."""
+    holds another tool's statusLine. Wrap mode is user scope only
+    (registry.wrap_applies): a project file's command is never offered,
+    since the hub would run a repository's command."""
+    import registry
+    if not owner._same_path(p, registry.user_settings()):
+        return (f"your settings already define a statusLine ({p}); left alone. It is a "
+                f"project's, so the hub does not offer to wrap it (it would run that "
+                f"repository's command). To feed the sensor record from it, see "
+                f"/statusline-hub; to have the hub own the slot instead, "
+                f"{_replace_hint(owner, p)}")
     flag = _flag(owner, p)
     return (f"your settings already define a statusLine ({p}); left alone. The hub can "
             f"wrap it if you want: it keeps drawing as now, run by the hub on each "
@@ -433,10 +446,16 @@ def first_run(owner, data, proj):
         if kind == "own":  # installed before, its owner.json lost: adopt it
             import registry
             rec, _ = registry.read_wrap()
-            if rec and owner._same_path(rec["settings"], p):  # wrapped, as well
+            if rec and owner._same_path(rec["settings"], p) and rec["running"]:
                 owner.write_marker(data, "wrapping", p, owner.command_for(data))
-                if not rec["running"]:
-                    owner.set_running(rec, True)
+            elif rec and owner._same_path(rec["settings"], p):
+                # the user had unwrapped (or it yielded); ours is back only by a
+                # stale session's write: undo that, never re-run the wrap
+                _write(owner, p, rec["entry"], expect_entry=_read(owner, p).get("statusLine"),
+                       raw=rec["raw"])
+                owner.write_marker(data, "unwrapped", p, owner.command_for(data))
+                return (f"put your own status line back in {p} (an older session's "
+                        f"settings write had restored the hub's entry after --unwrap).")
             else:
                 owner.write_marker(data, "installed", p, owner.command_for(data))
             return None

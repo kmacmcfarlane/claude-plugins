@@ -234,14 +234,18 @@ shows no health glyph.
   user wants it wrapped; it never wraps on its own. That renderer can still feed the
   sensor record through `hub tee` (the `statusline-hub` skill's recipes).
 - **Wrap mode** is owner mode plus the user's previous `statusLine` command, and only on
-  their consent (`/install-statusline-hub --wrap`). The previous entry is kept in
+  their consent (`/install-statusline-hub --wrap`). It is user scope only: the command
+  must come from the user settings file, which applies to every session. The installer
+  refuses a project's file, the first-run message never offers one, and the render never
+  runs a record that names one. The previous entry is kept in
   `CFG/statusline-hub/wrap.json` (0600, under the same trust rules as a manifest, § 4:
   the hub runs it) and never printed. The hub's entry keeps its other keys (`padding`)
   and swaps only the command. Each render, after the sensor record, one detached runner
   runs the command exactly as written, through `/bin/sh -c` as Claude Code runs a
   status line, in the render's working directory and environment, with the payload byte
-  for byte on stdin. Its stdout (every line, verbatim, at most 16 KiB) comes first on the
-  line; display hooks follow on its last line. Record hooks run as always.
+  for byte on stdin. `CLAUDE_CODE_SHELL_PREFIX` is not applied. Its stdout (every line, verbatim, at most 16 KiB) comes first on the
+  line; display hooks follow on its last line, after a colour reset when it used
+  escapes. Record hooks run as always.
   - The render waits for it within the same 250 ms budget as the display hooks. A slower
     command's output shows from the next render: the last output stays up to 10 minutes.
     It is killed at 5 s, and only one instance runs at a time. A failing or hung command
@@ -249,7 +253,9 @@ shows no health glyph.
     `log/_wrapped.log`.
   - `--unwrap` puts the previous entry back as it was written, so the file is byte for
     byte as before when nothing else changed it; at the least the entry, command and all,
-    is identical. `--remove` on the wrapped file unwraps too.
+    is identical. `--remove` on the wrapped file unwraps too. Run `--unwrap` before
+    uninstalling the plugin; after an uninstall, `wrap.json` is still there, and a
+    reinstall followed by `--unwrap` puts the entry back.
   - The hub's SessionStart keeps a wrap in place. It re-wraps when an older session's
     settings write drops the entry or writes the pre-wrap entry back, and yields, once,
     to anything else, keeping the entry for `--unwrap --replace`. After `--unwrap`, it

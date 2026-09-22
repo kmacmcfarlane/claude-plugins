@@ -17,8 +17,9 @@ remove, replace). Both write settings only through write_settings().
 - Anything else is foreign: never modified without the user's explicit consent
   (the installer's --replace, or its --wrap).
 
-Wrap mode (the installer's --wrap, only ever on the user's word): the hub's
-entry replaces a foreign one, and the foreign entry is kept in the hub's
+Wrap mode (the installer's --wrap, only ever on the user's word, and only
+for the user settings file - registry.wrap_applies): the hub's entry
+replaces a foreign one, and the foreign entry is kept in the hub's
 wrap record, <config>/statusline-hub/wrap.json (registry.read_wrap: private,
 0600, the trust rules of a hook manifest, since the hub runs it). The hub's
 entry keeps the foreign entry's other keys (padding, say) and swaps only the

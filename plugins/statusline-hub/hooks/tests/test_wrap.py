@@ -42,8 +42,8 @@ class Base(helpers.Hermetic):
             self.assertNotIn(TOKEN, out)  # paths and keys only, never values
         super().tearDown()
 
-    def run_it(self, *args):
-        p = subprocess.run([sys.executable, SCRIPT, *args], env=self.env, cwd=self.proj,
+    def run_it(self, *args, cwd=None):
+        p = subprocess.run([sys.executable, SCRIPT, *args], env=self.env, cwd=cwd or self.proj,
                            capture_output=True, text=True, timeout=30)
         self.outputs.append(p.stdout + p.stderr)
         return p.returncode, p.stdout + p.stderr
@@ -149,13 +149,35 @@ class WrapUnwrap(Base):
         self.assertEqual(self.marker()["state"], "unwrapped")
         self.assertFalse(self.wrap_rec()["running"])
 
-    def test_unwrap_is_byte_exact_with_crlf_elsewhere(self):
-        other = os.path.join(self.cfg, "other.json")
+    def test_unwrap_is_byte_exact_with_crlf(self):
         text = ODD.replace("\n", "\r\n")
-        before = self.wrapped(text, path=other)
-        self.assertIn(b"\r\n", self.raw(other))
-        self.assertEqual(self.run_it("--unwrap")[0], 0)  # no scope: the wrapped file
-        self.assertEqual(self.raw(other), before)
+        before = self.wrapped(text)
+        self.assertIn(b"\r\n", self.raw())
+        self.assertEqual(self.run_it("--unwrap")[0], 0)
+        self.assertEqual(self.raw(), before)
+
+    def test_uninstall_then_reinstall_and_unwrap_recovers(self):
+        before = self.wrapped()
+        import shutil
+        shutil.rmtree(self.data)          # the uninstall takes the plugin data dir
+        self.assertTrue(os.path.exists(registry.wrap_path()))
+        self.assertIsNone(self.hook())    # reinstalled: its first session adopts the wrap
+        self.assertEqual(self.marker()["state"], "wrapping")
+        self.assertEqual(self.run_it("--unwrap")[0], 0)
+        self.assertEqual(self.raw(), before)
+
+    def test_unwrap_works_with_no_plugin_data_at_all(self):
+        before = self.wrapped()
+        import shutil
+        shutil.rmtree(self.data)
+        self.assertEqual(self.run_it("--unwrap")[0], 0)
+        self.assertEqual(self.raw(), before)
+
+    def test_success_message_says_unwrap_before_uninstalling(self):
+        self.write_json(self.user, raw=ODD)
+        rc, out = self.run_it("--wrap")
+        self.assertEqual(rc, 0)
+        self.assertIn("--unwrap before uninstalling", out)
 
     def test_unwrap_keeps_the_command_exact_when_the_file_changed(self):
         self.wrapped()
@@ -200,6 +222,66 @@ class WrapUnwrap(Base):
         self.assertIn(self.user, out)
 
 
+class Scope(Base):
+    """Wrap mode is user scope only: a project's command would otherwise run
+    in every other project's sessions."""
+
+    def local(self, proj):
+        p = os.path.join(proj, ".claude", "settings.local.json")
+        self.write_json(p, {"statusLine": {"type": "command", "command": "sh ./%s.sh" % TOKEN}})
+        return p
+
+    def test_project_scopes_are_refused(self):
+        a = os.path.join(self.cfg, "a")
+        p = self.local(a)
+        before = self.raw(p)
+        for args in (("--local", "--wrap"), ("--settings", p, "--wrap")):
+            rc, out = self.run_it(*args, cwd=a)
+            self.assertEqual(rc, 1, out)
+            self.assertIn("user settings", out)
+        self.assertEqual(self.raw(p), before)
+        self.assertIsNone(self.wrap_rec())
+
+    def test_a_project_record_never_runs_in_another_project(self):
+        a, b = os.path.join(self.cfg, "a"), os.path.join(self.cfg, "b")
+        ran = os.path.join(self.cfg, "ran")
+        for proj in (a, b):
+            os.makedirs(proj, exist_ok=True)
+            with open(os.path.join(proj, "sl.sh"), "w") as f:
+                f.write('echo %s >> "%s"; echo X\n' % (os.path.basename(proj), ran))
+        owner.write_wrap(os.path.join(a, ".claude", "settings.local.json"),
+                         {"type": "command", "command": "sh ./sl.sh"}, None, True)
+        self.manifest("foot", ["/bin/echo", "FOOT"])
+        for proj in (a, b):
+            p = subprocess.run([sys.executable, helpers.HUB], cwd=proj, env=self.env,
+                               input=json.dumps(helpers.with_defaults(
+                                   {"workspace": {"project_dir": proj}})).encode(),
+                               capture_output=True, timeout=30)
+            self.assertEqual(p.stdout, b"FOOT\n")
+        time.sleep(0.3)
+        self.assertFalse(os.path.exists(ran))
+
+    def test_first_run_never_offers_to_wrap_a_project_file(self):
+        self.write_json(self.user, {"model": "opus"})
+        shared = os.path.join(self.proj, ".claude", "settings.json")
+        self.write_json(shared, {"enabledPlugins": {"statusline-hub@kmacmcfarlane": True},
+                                 "statusLine": {"type": "command", "command": TOKEN}})
+        msg = self.hook()
+        self.assertNotIn("--wrap", msg)
+        self.assertIn("repository's command", msg)
+        self.assertIsNone(self.wrap_rec())
+
+    def test_wrap_refused_while_the_hub_entry_lives_elsewhere(self):
+        local = os.path.join(self.proj, ".claude", "settings.local.json")
+        self.write_json(local, {})
+        self.assertEqual(self.run_it("--local")[0], 0)
+        self.write_json(self.user, raw=ODD)
+        rc, out = self.run_it("--wrap")
+        self.assertEqual(rc, 1, out)
+        self.assertEqual(self.raw(), ODD.encode())
+        self.assertEqual(self.marker()["state"], "installed")
+
+
 class Heal(Base):
     def test_stale_write_back_of_the_wrapped_entry_is_rewrapped(self):
         before = self.wrapped()
@@ -237,6 +319,17 @@ class Heal(Base):
         self.assertIn("put your own status line back", self.hook())
         self.assertEqual(self.raw(), before)
         self.assertIsNone(self.hook())
+
+    def test_lost_marker_after_unwrap_never_rewraps(self):
+        before = self.wrapped()
+        wrapped_text = self.raw()
+        self.assertEqual(self.run_it("--unwrap")[0], 0)
+        self.write_json(self.user, raw=wrapped_text.decode())  # stale write-back
+        os.unlink(os.path.join(self.data, "owner.json"))
+        self.assertIn("put your own status line back", self.hook())
+        self.assertEqual(self.raw(), before)
+        self.assertEqual(self.marker()["state"], "unwrapped")
+        self.assertFalse(self.wrap_rec()["running"])
 
     def test_lost_marker_is_adopted_as_wrapping(self):
         self.wrapped()
@@ -284,6 +377,17 @@ class Render(Base):
         self.assertIsNotNone(self.read_sensor("s"))
         with open(got, "rb") as f:
             self.assertEqual(f.read(), payload + self.cfg.encode() + b"\n")
+
+    def test_colour_is_reset_before_the_segments(self):
+        self.inner(r"printf '\033[31mRED'")
+        self.render()
+        deadline = time.time() + 5
+        while time.time() < deadline:
+            line, _ = self.render()
+            if "RED" in line:
+                break
+            time.sleep(0.2)
+        self.assertEqual(line, "\x1b[31mRED" + registry.RESET + "  FOOT")
 
     def test_failing_command_costs_only_its_output(self):
         ran = os.path.join(self.cfg, "ran")

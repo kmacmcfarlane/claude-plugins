@@ -373,6 +373,22 @@ def hub_problem(project_dirs=()):
         return "unreadable"
 
 
+def user_settings():
+    return os.path.join(tee.base_dir(), "settings.json")
+
+
+def wrap_applies(rec):
+    """Whether the wrap record `rec` may run: the entry it keeps came from
+    the user settings file, which applies to every session. A command from
+    a project's settings would run in every other project's sessions (and
+    a repository could supply it), so wrap mode is user scope only.
+    Never raises."""
+    try:
+        return os.path.realpath(rec["settings"]) == os.path.realpath(user_settings())
+    except Exception:
+        return False
+
+
 def read_wrap(project_dirs=()):
     """(record, None) for the wrap record, or (None, reason) - "missing" when
     there is none.

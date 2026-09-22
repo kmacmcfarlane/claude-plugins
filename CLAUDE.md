@@ -39,11 +39,11 @@ plugins/
     hooks/             # statusline (renderer), subagent_statusline (agent-panel renderer), sensor, session_start (registers the hub hook, prune) + hooks.json + unit tests
     skills/
       install-statusline/  # coworker install, hands the slot to install-statusline-hub; references/sensor-contract.md
-  statusline-hub/      # The status-line slot, shared: owner-mode dispatcher + embed-mode tee (hook-owning; owns the statusLine entry)
+  statusline-hub/      # The status-line slot, shared: owner-mode dispatcher + embed-mode tee + consent-only wrap mode (hook-owning; owns the statusLine entry)
     hooks/             # hub (render), registry (hooks.d), tee, owner, session_start (install, takeover, heal, refusal notice), housekeeping (prune) + hooks.json + unit tests
     skills/
       statusline-hub/  # embed recipes (ccstatusline, Starship, shell wrapper), references/hook-contract.md
-      install-statusline-hub/  # installer script (install, remove, replace, --status)
+      install-statusline-hub/  # installer script (install, remove, replace, wrap, unwrap, --status)
   work-items/          # Repo-durable work items + the work-source provider interface
     skills/
       work-items/      # wi CLI, references/{format,provider-interface}.md, tests/

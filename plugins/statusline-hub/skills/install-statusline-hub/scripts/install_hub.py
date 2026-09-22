@@ -25,9 +25,13 @@ tool installed.
 --remove   delete the hub's entry from the chosen scope (where the hub wraps
            a status line, that is --unwrap: the wrapped entry goes back)
 --wrap     the user's consent to wrap the statusLine another tool set in the
-           chosen scope: the hub takes the slot and runs that command on every
-           render, showing its output, after writing the sensor record. The
-           entry is kept in the hub's private wrap record, never printed.
+           user settings file (user scope only: a project's command would run
+           in every other project's sessions, and a repository could supply
+           it): the hub takes the slot and runs that command on every render,
+           showing its output, after writing the sensor record. The entry is
+           kept in the hub's private wrap record, never printed. Run --unwrap
+           before uninstalling the plugin; after an uninstall, reinstall it
+           and run --unwrap, which reads the record the uninstall left.
 --unwrap   put the wrapped entry back exactly as it was (the scope defaults
            to the file it was wrapped in); with --replace, even over a
            statusLine something else set since
@@ -99,7 +103,7 @@ def forget_kept(path):
                   f"longer kept)")
 
 
-def wrap(path, read_only, project):
+def wrap(path, read_only):
     data = owner.data_dir(__file__)
     if not data:
         print("the plugin's data dir was not found and could not be derived from "
@@ -112,6 +116,18 @@ def wrap(path, read_only, project):
         print(f"{script} is missing - the current-hooks link could not be created; "
               f"start one session with the plugin enabled, then run this again",
               file=sys.stderr)
+        return 1
+    if not owner._same_path(path, registry.user_settings()):
+        print(f"the hub wraps only the statusLine in your user settings "
+              f"({registry.user_settings()}), never a project's: a project's command would "
+              f"run in every other project's sessions too. {path} left unchanged.")
+        return 1
+    m = owner.read_marker(data)
+    if m and m.get("state") in ("installed", "blocked", "wrapping") and \
+            isinstance(m.get("settings"), str) and not owner._same_path(m["settings"], path):
+        print(f"the hub's own entry is in {m['settings']}, and it keeps one entry; wrapping "
+              f"here would stop it restoring that one. Run --remove with that scope first. "
+              f"{path} left unchanged.")
         return 1
     rec = active_wrap()
     entry, raw = owner.statusline_raw(path)
@@ -177,10 +193,10 @@ def wrap(path, read_only, project):
     print("It shows from the next session. --unwrap puts your entry back exactly as it "
           "was. A hub display hook you do not want beside it goes under `disabled` in "
           f"{registry.config_path()}.")
-    if project:
-        print("WARNING: .claude/settings.json is shared with everyone who uses this "
-              "repo, and the command above is an absolute path on this machine; do "
-              "not commit it.")
+    print("Run --unwrap before uninstalling statusline-hub: until then your settings run "
+          "the hub, and your own entry is kept only in "
+          f"{registry.wrap_path()}. If it was uninstalled first, reinstall it and run "
+          "--unwrap.")
     print(STALE_WARNING)
     return 0
 
@@ -325,7 +341,7 @@ def main():
             scoped = a.user or a.project or a.local or a.settings
             return unwrap(path if scoped else None, a.replace, a.write_read_only)
         if a.wrap:
-            return wrap(path, a.write_read_only, a.project)
+            return wrap(path, a.write_read_only)
         if a.remove:
             return remove(path, a.replace, a.write_read_only)
         return install(path, a.replace, a.write_read_only, a.project)

@@ -398,12 +398,14 @@ makes that slot shareable, two ways:
 - **Embed mode.** Another renderer keeps the slot and runs `hooks/tee.py`, which writes the
   same record and prints nothing. The tools that read the record (`context-guard`'s exact
   depth, `dev-flow`'s rate-limit reset times) work there too.
-- **Wrap mode**, only on the user's consent (`/install-statusline-hub --wrap`). The hub
-  owns the slot and runs the user's previous `statusLine` command on every render. Its
+- **Wrap mode**, only on the user's consent (`/install-statusline-hub --wrap`), and only
+  for a status line in the user settings, never a project's. The hub owns the slot and
+  runs the user's previous `statusLine` command on every render. Its
   output shows first, then the display hooks, and the record is written as in owner mode.
   A slow command is shown from the render after (a last-good cache) and killed at 5 s, and
   a failing or hung one costs only its own output. The previous entry is kept in the hub's
-  private `wrap.json`, never printed, and `--unwrap` puts it back byte for byte.
+  private `wrap.json`, never printed, and `--unwrap` puts it back byte for byte. Unwrap
+  before uninstalling; after an uninstall, reinstall and unwrap.
 
 | Skill | Description |
 |---|---|

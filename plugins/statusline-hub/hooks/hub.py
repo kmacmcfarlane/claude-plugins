@@ -32,8 +32,9 @@ Each render, in this order:
 6. Print the segments joined by the configured separator, in order.
 
 Wrap mode (the user consented, with install-statusline-hub --wrap, to the hub
-running the statusLine command they had before it): when the wrap record
-(registry.read_wrap) is trusted and running, step 3 also hands the payload to
+running the statusLine command their user settings held before it): when the
+wrap record (registry.read_wrap) is trusted, running and from the user
+settings file (registry.wrap_applies - never a project's), step 3 also hands the payload to
 one detached inner runner (`hub.py --run-inner <sid>`), started before the
 display hooks so it runs beside them. The runner runs the kept command
 exactly as written, through `/bin/sh -c` as Claude Code runs a statusLine
@@ -41,13 +42,15 @@ command, in the render's own working directory and environment, with the
 payload byte for byte on stdin; it kills the command's process group at
 INNER_MAX_MS, and on exit 0 stores its stdout (at most INNER_OUT_MAX bytes,
 every line, verbatim: it is the user's own renderer, which drew straight to
-the slot before the wrap) as this session's last-good output. At most one
+the slot before the wrap) as this session's last-good output.
+CLAUDE_CODE_SHELL_PREFIX, which Claude Code puts in front of the commands it
+runs, is not applied: the command runs as written. At most one
 runner lives at a time (a lock), so a hung command costs one process. The
 render waits for the runner only until DISPLAY_BUDGET_MS, then shows the
 last-good output if it is younger than INNER_LAST_GOOD_S - fresh when the
 command finished in time; for a command slower than the budget, the output
 of the one before. The command's output comes first; the display segments
-follow on its last line. A command that fails or hangs costs only its own
+follow on its last line, after a colour reset when it used escapes. A command that fails or hangs costs only its own
 output: the sensor record, the record hooks and the display hooks are not
 touched.
 
@@ -445,7 +448,7 @@ def run_inner(sid):
         return
     try:
         rec, _ = R.read_wrap([os.getcwd(), os.environ.get("CLAUDE_PROJECT_DIR")])
-        if not rec or not rec["running"]:
+        if not rec or not rec["running"] or not R.wrap_applies(rec):
             return
         now = time.time()
         err = log_fd(INNER)
@@ -511,7 +514,7 @@ def render(data, now=None):
         displays = [h for h in hooks if h["kind"] == "display"]
         t0 = time.monotonic()
         wrap, _ = R.read_wrap(project_dirs(d))
-        wrapped = bool(wrap and wrap["running"])
+        wrapped = bool(wrap and wrap["running"] and R.wrap_applies(wrap))
         runner = dispatch_inner(data, sid) if wrapped else None
         if records:
             dispatch_records(records, data)
@@ -526,6 +529,8 @@ def render(data, now=None):
                     pass
             inner = inner_get(sid, time.time())  # the runner stamps it after `now`
             if inner:
+                if line and "\x1b" in inner:
+                    inner += R.RESET  # its colour must not bleed into the segments
                 line = f"{inner}{cfg['separator']}{line}" if line else inner
         if any(R.health(h["health_path"], now, cfg["health_stale_min"])
                for h in hooks if h.get("health_path")):
