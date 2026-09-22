@@ -131,3 +131,6 @@ F3b-1 review r2 (opus) at 2568e95: CLEAR. Both round-1 survivors killed, with a 
 Review result: F3b-1 2 rounds/1 fix round; F3b-2 2 rounds/1 fix round; impl opus, review opus both.
 land: F3b-1 merged 92c9738 (seven Checks green on main). F3b-2 conflicts with it — its implementer merges main and resolves, deleting the getattr bridge's pre-merge arm now that L.manifest_path and L.manifest_sid exist.
 dispatch: implementer opus — F3b-2 conflict round (resume)
+F3b-2 conflict round DONE f73f951 (merge) + 4572e17 (opus): one conflict, test_lineage.py, both sides appended, kept in plan order with no name defined twice; both getattr bridges deleted now that L.manifest_path and L.manifest_sid exist, with the try/except kept deliberately as a write-path guard; the legacy arm is unchanged by F3b-1 (read_manifest still returns (path, top, text)). 716 context-guard tests.
+NEW finding from the implementer, filed as context-guard-the-manifest-read-path-tak-0836 (P1): F3b-1's READ path (read_store_manifest/own_manifest) takes the store file on os.path.exists alone with no identity test, so a symlink planted at <store>/<sid>/HANDOFF.md would be injected as that session's memory — the write-path equivalent was F3b-2's r1 medium and is guarded. F3b-1 is already on main.
+dispatch: reviewer opus — F3b-2 resolution verify (resume)
