@@ -2,13 +2,12 @@
 id: handoff-h2-ledger-digest-keeps-reasoning-d0eb
 title: "handoff H2: ledger digest keeps reasoning lines ahead of commit pointers"
 type: feature
-status: doing
+status: done
 priority: 1
 parent: context-guard-compact-and-clear-handoffs-5039
-owner: unknown@360f41058e92
-claimed: 2026-09-22T16:00Z
 created: 2026-09-22
 updated: 2026-09-22
+closed: 2026-09-22
 ---
 
 Compaction-time ledger injection keeps D/X/C/U/R/Q lines from every epoch before free commit pointers; budget unchanged; tests. Opus/opus. Plan: .claude-sandbox/investigations/5039-handoff-failures/00_findings.md § fix plan.
@@ -38,3 +37,4 @@ fix r2 DONE 3dd30ee (opus): closing line reports left-out and/or cut counts, non
 dispatch: reviewer opus — review r3 (resume)
 review r3 (opus) at 3dd30ee: CLEAR. Budget sweep 0–2500 × 4 ledgers: 0 violations; committed == tested. Nit: the no-left/no-cut guard is unreachable (harmless). Declined (f) accepted.
 Review result: 3 rounds, 2 fix rounds; impl opus, review opus.
+- 2026-09-22 done: 7ba737c
