@@ -36,3 +36,6 @@ findings:
 - [low] :43 "Scope, Checks, Push" — the Scope-alone path asks only Scope; [low] review-checklist.md:86 106 chars; [low] ending-the-session.md:124 114 chars; [nit] SKILL.md:273 red flag omits "never with agents in flight".
 dispatch: implementer opus — fix round 1 (resume)
 agent: implementer a812050d4754bed89 round 2
+return: implementer DONE 6ce0b00
+dispatch: reviewer opus — review r2 (resume)
+agent: reviewer a5190c17bfd9cc6ac round 2

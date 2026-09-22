@@ -2,15 +2,14 @@
 id: context-guard-8cc2-f3b-where-handoff-md-a49b
 title: "context-guard 8cc2-F3b: where HANDOFF.md lives (per-session memory + repo handoff file)"
 type: feature
-status: doing
+status: done
 priority: 2
 deps:
   - context-guard-8cc2-f3a-re-inject-handoff-5126
 parent: context-guard-turn-gate-8cc2
-owner: unknown@360f41058e92
-claimed: 2026-09-22T17:54Z
 created: 2026-09-21
 updated: 2026-09-22
+closed: 2026-09-22
 ---
 
 Port plan .claude-sandbox/investigations/8cc2-turn-gate-port OQ1 — blocked on operator decision 47.
@@ -28,6 +27,7 @@ dispatch: planner opus — serial 04 of 8cc2-turn-gate-port (plan mode, no workt
 
 ## Notes
 - 2026-09-22 claimed by unknown@360f41058e92
+- 2026-09-22 done: F3b-1 92c9738, F3b-2 199ea32, 0836 eb4dc49, F3b-4 48a4bae, F3b-3 74a431e, F3b-5 de0484c — all landed
 
 ## Plan result (opus, 2026-09-22) — serial 04_per-session-manifest.md in .claude-sandbox/investigations/8cc2-turn-gate-port/ (INDEX regenerated)
 One manifest per session at ${CLAUDE_CONFIG_DIR:-~/.claude}/claude-kit/handoff/<safe_sid>/HANDOFF.md — a directory per session so the basename stays HANDOFF.md (keeps lineage's pre-filter and the operator's "full HANDOFF.md path" literal). A successor reaches it by the /clear link (H5, by lineage id), by a whole-file Read of the printed absolute path, or through wi handoff / the series for anything repo-durable; nothing is written into a repo. rehydrate gains resolve_manifest: own → inherited (newest lineage pin whose {owner, sha} still matches) → adopted → legacy → none. A new `top:` field records the manifest's repo. Re-pointed: rehydrate manifest_path/read_manifest, lineage's pin and Read-identity test, mark_checkpoint.stamp_manifest, read_list's top, H5's linked_clear_pred, the docs. Input (i): the lineage timestamp is no longer needed — per-session paths close H1's fork-parent/handoff-author residual by construction, and handoff-format's F3b caveat is deleted. Input (ii): owner == sid is subsumed by the path; the ownerless clause survives only on the legacy path. Also lands next_skill:, the one-line opener naming the Read tool, the always-printed absolute path with continuation commands, and goal options continue|handoff. Migration: a legacy repo manifest that is ours is copied into the store once, byte-identical; a foreign one gives one notice; nothing ever rewrites or deletes a repo HANDOFF.md. Features F3b-1 store+resolve (opus), F3b-2 mark on the own path (opus), F3b-3 migration (opus), F3b-4 checkpoint contract incl. two plugins (opus), F3b-5 the repo-visible channel (blocked on the decision below). Any build touching L.mark_checkpoint, context_warn.decide or hard_applies sends its reviewer to fable.

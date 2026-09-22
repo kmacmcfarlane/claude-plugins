@@ -2,15 +2,14 @@
 id: context-guard-f3b-5-the-repo-visible-han-b495
 title: "context-guard F3b-5: the repo-visible handoff channel, documented as nothing in the repo (answer 65 a)"
 type: feature
-status: doing
+status: done
 priority: 2
 deps:
   - context-guard-f3b-3-the-owner-sid-legacy-c3e1
 parent: context-guard-8cc2-f3b-where-handoff-md-a49b
-owner: Kyle-McFarlane@bf9f9839222c
-claimed: 2026-09-22T23:38Z
 created: 2026-09-22
 updated: 2026-09-22
+closed: 2026-09-22
 refs:
   - a49b; answer 65
 ---
@@ -44,3 +43,7 @@ agent: implementer aefc6634251c2dd06 round 2
 return: implementer DONE b7fa1d4
 dispatch: reviewer opus — review r2 (resume)
 agent: reviewer a9f57490722831112 round 2
+verdict: CLEAR round 2 at b7fa1d4
+lows carried to 93a2: the env -u form is not covered by the allow rule (say it prompts); drop internal decision ids from shipped prose.
+landed: de0484c
+- 2026-09-22 done: de0484c
