@@ -14,7 +14,7 @@ injection cap.
 ---
 handoff: 1
 repo: <name>
-session: <session-id>
+session: <session-id>   # $CLAUDE_CODE_SESSION_ID: this session, never the replaced manifest's
 written: 2026-08-30T21:40:00Z
 head: <short-sha>
 branch: <branch>
@@ -130,5 +130,35 @@ TOC, read on demand: `path — one line on what it holds`.
   Either check degrades to the plain manifest if git or the store fails.
 - Injection tiers: `compact` → full + ledger tail; `resume`/`fork` → full only when the file
   or repo changed since last injection, else one header line; `startup`/`clear` → header only.
+- **`session:` is the author's own id**, read from `$CLAUDE_CODE_SESSION_ID` when the
+  manifest is written (Claude Code sets it for every Bash call, and it follows `/clear`).
+  Never copy it from the manifest being replaced: after `/clear` or a handoff that id is the
+  predecessor's, and since the field is the ownership key below, the new manifest would be
+  foreign to its author and re-injected in full into the predecessor. `mark_checkpoint.py`
+  warns when the manifest's `session:` is not the id it is given.
+- **Whose memory it is.** Those tiers apply only to a manifest this session owns. Ownership
+  names a *version* — the `session:` field plus the hash of the file's raw text — so a
+  rewrite is a new version. A version is this session's when:
+  - it has no `session:` (a hand-written manifest is everyone's);
+  - this session wrote it (`session:` is its id), any version;
+  - a link pinned exactly that version: a `/clear` successor is linked to the session that
+    ran `/clear` (same Claude Code process), a fork to its parent, and both inherit the
+    linking session's own links, up to 8 deep. A link pins the version on disk only if it
+    was the linking session's own at that moment — a manifest a third session overwrote is
+    never passed on;
+  - this session **read exactly that version in full** and its `mode:` is `handoff`.
+
+  Anything else — another session's manifest, or a later rewrite by a parent, a resumed
+  predecessor or an adopted author — gets one header line on every source, naming the path
+  and the author session, with no body, no precedence line and no standing mode: "If the
+  operator's opener names this manifest, read it in full; otherwise it is another session's
+  and not your memory." The derived check lines still follow it — dead claims, unparseable
+  `items:`, and the Next-withheld line — since they describe the file, not anyone's memory.
+  The ledger tail and `/compact` guidance still inject on `compact`.
+- **Reading adopts; `cat` looks.** A whole-file Read (no offset, no limit) of a `mode:
+  handoff` manifest adopts that version: it is re-injected into this session after a
+  compaction. To look without adopting, use `cat` (a Bash read) or a Read with an offset or
+  limit. A `continue` or `landed` manifest is never adopted by reading it; a subagent's Read
+  adopts nothing.
 - Updating: every checkpoint rewrites it wholesale (it is a current view, like an INDEX, not a
   log — history lives in git).

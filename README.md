@@ -299,7 +299,9 @@ are `statusline`, for the status line, `sandbox`, for the checkout guard, and
 | `checkpoint` | Land a long session's state before compaction; rehydration manifest + ledger |
 | `usage-report` | Token spend per session, model and sub-agent dispatch from the local transcripts (stub: parser, price table and tests; report tables follow) |
 
-It also carries `hooks/` — the depth gate, the ledger, the SessionStart rehydration, and
+It also carries `hooks/` — the depth gate, the ledger, the SessionStart rehydration (a
+manifest is re-injected in full only into a session that owns that version: its author, a
+fork or `/clear` successor it links, or a session that read a handoff manifest in full), and
 `gauge.json`, the thresholds and labels it publishes for the status line — with its unit tests
 (`cd plugins/context-guard/hooks && python3 -m unittest discover -s tests -q`). The
 `usage-report` skill has its own suite:

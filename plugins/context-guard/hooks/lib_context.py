@@ -527,6 +527,78 @@ def checkpointed_this_epoch(state):
     return state.get("checkpoint_epoch") == epoch(state)
 
 
+# ── Manifest ownership (rehydrate.py, lineage.py) ──────────────────────────
+# A rehydration manifest (HANDOFF.md) is re-injected in full only into a
+# session it belongs to. Ownership names a manifest VERSION, {owner, sha}:
+# `owner` is the manifest's `session:`, `sha` is manifest_sha of its raw text.
+# Per-session state keys:
+#   lineage           [{sid, manifest: {owner, sha} | None}], newest first,
+#                     at most LINEAGE_MAX: the /clear predecessors and fork
+#                     parents, each with the version it pinned at link time
+#   manifest_adopted  {owner, sha, at}: the `mode: handoff` version this
+#                     session read in full (lineage.py, PostToolUse Read)
+# and on the process record _proc-<key>, `cleared` = {sid, lineage, manifest,
+# at}: written at SessionEnd(clear) by lineage.py, popped by the next
+# SessionStart(clear) in rehydrate.py.
+LINEAGE_MAX = 8
+CLEAR_LINK_MAX_AGE_S = 120
+
+
+def manifest_sha(text):
+    """The version id of a manifest: sha1 of its RAW text (read with
+    errors="replace"), first 12 hex digits - never of the text after the
+    hook's Next withhold or trim. Both hooks call this one function."""
+    import hashlib
+    return hashlib.sha1(text.encode("utf-8", "replace")).hexdigest()[:12]
+
+
+def _version(v):
+    """{owner, sha} with both non-empty strings, or None."""
+    if not isinstance(v, dict):
+        return None
+    o, s = v.get("owner"), v.get("sha")
+    if isinstance(o, str) and o and isinstance(s, str) and s:
+        return {"owner": o, "sha": s}
+    return None
+
+
+def lineage_of(state):
+    """The state's `lineage`, cleaned: well-formed entries only, at most
+    LINEAGE_MAX."""
+    out = []
+    lin = state.get("lineage") if isinstance(state, dict) else None
+    for e in lin if isinstance(lin, list) else []:
+        if isinstance(e, dict) and isinstance(e.get("sid"), str) and e["sid"]:
+            out.append({"sid": e["sid"], "manifest": _version(e.get("manifest"))})
+        if len(out) >= LINEAGE_MAX:
+            break
+    return out
+
+
+def owned_version(state, sid, v):
+    """Whether manifest version `v` ({owner, sha}) is ours for session `sid`
+    with state `state`: `sid` wrote it (every version), or it is the exact
+    version a lineage link pinned, or the exact version `sid` adopted by a
+    full Read. A version with no owner is never owned (the injection rule
+    treats an ownerless manifest as everyone's; a link never pins one). The
+    one test for the injection rule and for what a link may pin."""
+    v = _version(v)
+    if v is None:
+        return False
+    if v["owner"] == sid:
+        return True
+    if any(e["manifest"] == v for e in lineage_of(state)):
+        return True
+    return _version((state or {}).get("manifest_adopted")) == v
+
+
+def linked_lineage(sid, manifest, lineage):
+    """The lineage a new session inherits from linking session `sid`: that
+    session first, with the version it pinned, then its own lineage, capped."""
+    return ([{"sid": sid, "manifest": _version(manifest)}]
+            + lineage_of({"lineage": lineage}))[:LINEAGE_MAX]
+
+
 def thresholds(window):
     """Action thresholds in REMAINING tokens, per threads/A-checkpoint-timing.md.
 

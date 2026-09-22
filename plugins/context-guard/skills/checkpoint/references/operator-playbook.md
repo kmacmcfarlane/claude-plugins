@@ -67,6 +67,7 @@ auto-compact window: it defers only on the depth it used before the window mirro
 | "use a subagent to …" | read-heavy research, log digging, doc reading | returns 1–2K tokens; the reads never enter your window |
 | `Explore` / `Plan` agents | codebase survey before implementation | skip CLAUDE.md, cheap, read-only |
 | `/context` | any time you want the truth | free |
+| Read `HANDOFF.md` in full vs `cat` | taking over a `mode: handoff` manifest vs only looking at another session's | a whole-file Read adopts that version (re-injected after your next compaction); `cat` or a Read with offset/limit adopts nothing |
 | status line | always | shows `used_percentage`; when the `statusline-hub` plugin records it (installing `statusline` brings it) its reading wins over the gate's derived window and cross-checks it |
 
 Environment & knobs: `/autocompact 900k` lowers the auto-compact trigger so the gate's deferral
@@ -109,7 +110,8 @@ When the depth warning fires, answer these before touching anything:
 
 Then `/checkpoint <mode>`. The ledger (`~/.claude/claude-kit/ledger/<session>.md` — a
 historical directory name, kept across the move into `context-guard`) has been collecting decisions as you worked — the checkpoint is a delta, and after compaction the
-manifest + ledger are re-injected and outrank the machine summary (current repo state — git
+ledger, and the manifest when this session owns it (the format spec's "Whose memory it is"
+in `references/handoff-format.md`), are re-injected and outrank the machine summary (current repo state — git
 log, the work-item store — outranks the manifest).
 
 ## If the gate blocks wrongly

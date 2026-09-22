@@ -8,7 +8,7 @@ HOOKS = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 MANIFEST = """---
 handoff: 1
 repo: demo
-session: old
+session: s
 written: {written}
 head: {head}
 mode: {mode}
