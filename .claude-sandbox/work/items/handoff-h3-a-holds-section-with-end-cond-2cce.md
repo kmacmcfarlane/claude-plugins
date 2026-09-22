@@ -2,15 +2,14 @@
 id: handoff-h3-a-holds-section-with-end-cond-2cce
 title: "handoff H3: a ## Holds section with end conditions, in every injection tier, never trimmed"
 type: feature
-status: doing
+status: done
 priority: 1
 deps:
   - handoff-h1-mark-checkpoint-stamps-writte-9852
 parent: context-guard-compact-and-clear-handoffs-5039
-owner: unknown@360f41058e92
-claimed: 2026-09-22T16:47Z
 created: 2026-09-22
 updated: 2026-09-22
+closed: 2026-09-22
 ---
 
 Holds (e.g. no push until X, keep dispatch small until Y) get their own section with an end condition; shown in full, header-only and foreign-header tiers; librarian ending names holds. Opus/opus. Plan: .claude-sandbox/investigations/5039-handoff-failures/00_findings.md § fix plan.
@@ -56,3 +55,4 @@ dispatch: implementer opus — conflict round (resume)
 conflict round 2 DONE 1fdf274 (merge of H5): tier docstring carries both; no code change needed for annotate_holds (H5's linked clear sets full, which already wraps) — pinned by a new test test_linked_clear_carries_holds_with_the_expiry_mark; SKILL.md Step 7 and the tiers bullet keep both with no duplication; 615 context-guard tests OK.
 dispatch: reviewer opus — resolution verify (resume)
 resolution verify (opus) at 1fdf274: CLEAR, no findings — three resolutions keep both sides; annotate_holds verified by mutation (removing it fails exactly the new test; two more mutations pin the branch and the header join); 7 files; 615 tests OK.
+- 2026-09-22 done: 66f043e
