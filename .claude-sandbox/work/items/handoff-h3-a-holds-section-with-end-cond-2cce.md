@@ -49,3 +49,5 @@ land (librarian): merge-tree conflicts with main in librarian-mode references/en
 dispatch: implementer opus — conflict round (resume)
 conflict round DONE 3af254f (merge of main) + 2a3619a: 75%/DUE step 4 keeps all three — Report → push outcome + incoming: → team summary → checkpoint close → Step 7 opener last (roster ids, Copy forward, facts changed, Holds first); Holds paragraph and 25fa merge-through both stand; r3 low fixed. Librarian: the opener staying last is correct (checkpoint Step 7).
 dispatch: reviewer opus — resolution verify (resume)
+resolution verify (opus) at 2a3619a: CLEAR, no findings — all three changes kept in step 4, opener last; only H3's 6 files; 593 context-guard tests pass on the merged tree. Note for H6's owner: read_list._SECTION matches '## Read in full' exactly while _sections now accepts a suffixed heading.
+Review result: 3 review rounds + resolution verify, 2 fix rounds + 1 conflict round; impl opus, review opus.
