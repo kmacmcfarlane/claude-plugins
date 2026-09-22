@@ -25,3 +25,5 @@ answer 61: (a) confirmed (operator 2026-09-22)
 ## Notes
 - 2026-09-22 claimed by unknown@360f41058e92
 dispatch: implementer opus — librarian-mode custody doctrine (Report / push rule)
+impl r0 DONE 32c91eb (opus): references/team-summary.md (when, shape, pasteability — no table/headings/bold, fenced text block, do-line, Commits: old..new last, two examples); § Report 2-line pointer (+26 words); ending-the-session + walkthroughs place it after the final Report. Deviation: no summary for a rejected or store-only push. OQ: dev-cycle land report on a chosen push.
+dispatch: reviewer opus — rule 4
