@@ -96,6 +96,35 @@ def grooming_questions(blocked):
     return blocked[m.end():].strip() or blocked.strip()
 
 
+# The lenient readings above eat any punctuation after the prefix, so a park
+# or grooming whose own text starts with it ("-", "— reason", "- [ ] x")
+# would drift on the first export -> import. Export writes such a text
+# quoted — `PARKED: "- x"` — and import unwraps the quotes only where export
+# itself would have written them: when the inner text's plain form would not
+# read back as that text. Anything else (`PARKED: "x"`, `PARKED: ""`,
+# `PARKED: "a" and "b"`) gets the lenient reading, as before. migrate-parked
+# reads hand-written text, so it keeps the lenient reading alone.
+def _bridge_decode(tag, lenient, blocked):
+    """Import's reading of a `PARKED`/`GROOMING` blocked reason: export's
+    quoted form unwrapped, else `lenient` (parked_reason/grooming_questions)."""
+    head = tag + ': "'
+    if (blocked and blocked.startswith(head) and blocked.endswith('"')
+            and len(blocked) > len(head) + 1):
+        inner = blocked[len(head):-1]
+        if _bridge_decode(tag, lenient, f"{tag}: {inner}") != inner:
+            return inner
+    return lenient(blocked)
+
+
+def _bridge_encode(tag, lenient, text):
+    """Export's `PARKED: <text>` (or GROOMING), quoted exactly when import's
+    reading of the plain form would not give `text` back."""
+    plain = f"{tag}: {text}"
+    if not text or _bridge_decode(tag, lenient, plain) == text:
+        return plain
+    return f'{tag}: "{text}"'
+
+
 # The librarian-mode Report convention: an operator question is a body line
 # `decision N: <text>`, its reply a body line `answer N: <reply>`.
 DECISION_RE = re.compile(r"^decision (\d+):\s*(.*)$")
@@ -2124,9 +2153,11 @@ def emit_backlog(project, stories_items, by_id):
         _yaml_list(w, "testing", testing or ["<unspecified>"], "    ")
         blocked = it.get("blocked") or ""
         if m.get("status") == "parked":
-            blocked = "PARKED: " + (it.get("parked") or "")
+            blocked = _bridge_encode("PARKED", parked_reason,
+                                     it.get("parked") or "")
         elif m.get("status") == "grooming":
-            blocked = "GROOMING: " + (it.get("grooming") or "")
+            blocked = _bridge_encode("GROOMING", grooming_questions,
+                                     it.get("grooming") or "")
         if ext:
             blocked = (blocked + "; " if blocked else "") + "requires " + ", ".join(ext)
         for key, val in (("blocked_reason", blocked),
@@ -2218,18 +2249,39 @@ def _fold(v):
     return re.sub(r"\s+", " ", _FRONT_REFUSE_RE.sub(" ", v)).strip()
 
 
+# story fields that are free text: kept as read when one line (_fold_story);
+# every other known field — an id, an enum, an owner — is always folded, so
+# a padded `ticket_mode: " x "` lands trimmed. Extra (x_backlog) fields are
+# text too.
+STORY_TEXT_FIELDS = {"title", "blocked_reason", "review_feedback",
+                     "acceptance", "testing"}
+
+
+def _fold_story(v):
+    """A backlog story value as import stores it: folded (_fold) only when it
+    holds a line break or a character the writer refuses. A one-line value
+    is kept as the YAML loader read it — surrounding spaces, runs of spaces
+    and NBSP included — so an exported title imports back unchanged."""
+    if isinstance(v, str) and ("\n" in v or _FRONT_REFUSE_RE.search(v)):
+        return _fold(v)
+    return v
+
+
 def _story_value(story, key):
     """A backlog field as a front-matter value: empty, or the `—` placeholder
     wi itself reads as "no value", is None — so a `blocked_reason: "—"` never
     lands as a literal dash now that a quoted `—` reads back as one."""
     v = story.get(key) or None
-    return None if v == "—" else v
+    return None if isinstance(v, str) and v.strip() == "—" else v
 
 
 def _import_story(story, alias_map, existing_by_alias, update):
-    story = {k: ([_fold(x) for x in v] if isinstance(v, list) and
+    story = {k: ([_fold_story(x) if k in STORY_TEXT_FIELDS else _fold(x)
+                  for x in v] if isinstance(v, list) and
                  k in ("requires", "acceptance", "testing") else
-                 v if k == "notes" else _fold(v))
+                 v if k == "notes" else
+                 _fold_story(v) if k in STORY_TEXT_FIELDS or
+                 k not in KNOWN_STORY_FIELDS else _fold(v))
              for k, v in story.items()}
     alias = str(story["id"])
     status, stage = BACKLOG_TO_STATE[story.get("status", "todo")]
@@ -2245,8 +2297,10 @@ def _import_story(story, alias_map, existing_by_alias, update):
         _story_value(story, "blocked_reason"),
         ext=_ext_deps(existing) if existing else None,
         whole=story.get("status") != "blocked")
-    parked = parked_reason(blocked) if status == "blocked" else None
-    grooming = grooming_questions(blocked) if status == "blocked" else None
+    parked = _bridge_decode("PARKED", parked_reason, blocked) \
+        if status == "blocked" else None
+    grooming = _bridge_decode("GROOMING", grooming_questions, blocked) \
+        if status == "blocked" else None
     if parked is not None:
         status, blocked = "parked", None
     elif grooming is not None:
@@ -2299,7 +2353,7 @@ def _story_deps(story, alias_map):
     then the `ext:` deps export carried in blocked_reason."""
     deps = [alias_map.get(str(r), f"ext: {r}")
             for r in (story.get("requires") or [])]
-    _, ext = split_ext_requires(_fold(_story_value(story, "blocked_reason")),
+    _, ext = split_ext_requires(_fold_story(_story_value(story, "blocked_reason")),
                                 whole=story.get("status") != "blocked")
     return deps + [d for d in ext if d not in deps]
 

@@ -2862,5 +2862,187 @@ class TestB020Lows(WiTestCase):
                           for p in (self.root / "items").glob("*.md")}, before)
 
 
+class TestLeadingPunctuationRoundTrip(WiTestCase):
+    """370b: a park reason, grooming question or blocked reason that starts
+    with punctuation, and a title with surrounding or non-breaking spaces,
+    survive export -> import (fresh and --update) byte-identical on the
+    first cycle; migrate-parked reads hand-written text as it always has."""
+
+    # hand-written blocked reason -> (parked reason, Notes original); pinned
+    # before 370b changed the bridge, and must never move
+    MIGRATE = {
+        "PARKED: \u2014 Paseo undecided": "Paseo undecided",
+        "PARKED (operator 2026-09-19): Paseo undecided": "Paseo undecided",
+        "PARKED (operator \u2026): later": "later",
+        "PARKED \u2014 later": "later",
+        "PARKED - later": "later",
+        "PARKED:later": "later",
+        "PARKED: - x": "x",
+        "PARKED: ...": "PARKED: ...",
+        "PARKED: -": "PARKED: -",
+        "PARKED: \u2014": "PARKED: \u2014",
+        'PARKED: "-"': '"-"',
+        'PARKED: "quoted reason"': '"quoted reason"',
+        "PARKED": "PARKED",
+    }
+
+    def show(self, iid, root=None):
+        r = run(["show", iid, "--json"], root or self.root)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        return json.loads(r.stdout)
+
+    def test_migrate_parked_reads_hand_written_text_as_before(self):
+        for text, want in self.MIGRATE.items():
+            self.assertEqual(wi.parked_reason(text), want, text)
+        ids = {}
+        for n, text in enumerate(self.MIGRATE):
+            ids[text] = self.write_item(f"mp-{n:04d}", status="blocked",
+                                        blocked=text)
+        out = self.wi_ok(["migrate-parked"])
+        for text, want in self.MIGRATE.items():
+            self.assertIn(f"would park\t{ids[text]}\t{want}\n", out, text)
+        self.wi_ok(["migrate-parked", "--apply"])
+        for text, want in self.MIGRATE.items():
+            rec = self.show(ids[text])
+            self.assertEqual((rec["status"], rec["parked"], rec["blocked"]),
+                             ("parked", want, None), text)
+            self.assertIn(f"parked (migrated from blocked: {text})",
+                          rec["sections"]["Notes"])
+        self.wi_ok(["lint"])
+
+    def export(self, root, name):
+        out = self.tmp / name
+        r = run(["export", "--format", "backlog-yaml", str(out),
+                 "--project", "test"], root)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        return out
+
+    def states(self, root):
+        """(title, status, blocked, parked, grooming) per alias."""
+        recs = json.loads(run(["ls", "--status", "all", "--json"], root).stdout)
+        out = {}
+        for r in recs:
+            full = self.show(r["id"], root)
+            out[r["alias"]] = (full["title"], full["status"], full["blocked"],
+                               full["parked"], full["grooming"])
+        return out
+
+    def assert_cycle_zero_stable(self):
+        """export -> fresh import -> export, and export -> import --update ->
+        export: both byte-identical to the first export, every state kept."""
+        out = self.export(self.root, "b0.yaml")
+        text = out.read_text()
+        want = self.states(self.root)
+        fresh = self.tmp / ".fresh"
+        shutil.rmtree(fresh, ignore_errors=True)
+        self.assertEqual(run(["init"], fresh).returncode, 0)
+        r = run(["import", "--format", "backlog-yaml", str(out)], fresh)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertEqual(self.export(fresh, "b1.yaml").read_text(), text)
+        self.assertEqual(self.states(fresh), want)
+        self.wi_ok(["import", "--format", "backlog-yaml", "--update",
+                    str(out)])
+        self.assertEqual(self.export(self.root, "b2.yaml").read_text(), text)
+        self.assertEqual(self.states(self.root), want)
+        self.assertEqual(run(["lint"], fresh).returncode, 0)
+        self.wi_ok(["lint"])
+        return text
+
+    def test_named_shapes_round_trip_on_cycle_zero(self):
+        for n, reason in enumerate(("-", "\u2014", "...", "- x",
+                                    "\u2014 reason", ": later", '"-"',
+                                    '"quoted"', "later")):
+            self.write_item(f"park-{n:04d}", status="parked", parked=reason)
+        for n, q in enumerate(("- [ ] x", "- which?", "\u2014", "...")):
+            self.write_item(f"groom-{n:04d}", status="grooming", grooming=q)
+        self.write_item("blk-0000", status="blocked", blocked="- vendor")
+        self.write_item("sp-0000", "  spaced  title  ")
+        self.write_item("nb-0000", "x\u00a0y")
+        text = self.assert_cycle_zero_stable()
+        # the plain form is kept wherever it already round-tripped
+        self.assertIn('blocked_reason: "PARKED: later"', text)
+        self.assertIn('blocked_reason: "PARKED: \\"-\\""', text)
+        self.assertIn('blocked_reason: "GROOMING: \\"- [ ] x\\""', text)
+        self.assertIn('blocked_reason: "- vendor"', text)
+
+    def test_fuzz_punctuation_leading_reasons_round_trip(self):
+        import random
+        rng = random.Random(370)
+        punct = list("-\u2014\u2013.\u2026:;,*#>[](){}\"'`!?/|~_=+") + [
+            "- [ ] ", "- ", "\u2014 ", ": ", "...", "PARKED", "GROOMING",
+            "\u00a0", "  "]
+        words = ["x", "later", "which?", "vendor", "a  b", "c\u00a0d", ""]
+        for n in range(90):
+            text = "".join(rng.choice(punct)
+                           for _ in range(rng.randint(1, 3)))
+            text = (text + rng.choice(words)).strip()
+            kind = n % 3
+            if kind == 0:
+                if not text:
+                    continue
+                self.write_item(f"fz-{n:04d}", status="parked", parked=text)
+            elif kind == 1:
+                if not text:
+                    continue
+                self.write_item(f"fz-{n:04d}", status="grooming",
+                                grooming=text)
+            else:
+                # a plain block: `\u2014` alone reads as no value, and a
+                # reason starting PARKED/GROOMING is a park/grooming (both
+                # the documented bridge rule, not drift)
+                if (not text or text == "\u2014"
+                        or text.startswith(("PARKED", "GROOMING"))):
+                    continue
+                self.write_item(f"fz-{n:04d}", status="blocked", blocked=text)
+        self.assert_cycle_zero_stable()
+
+    # fix round 1: hand-written blocked_reason -> (status, parked, grooming,
+    # blocked). Main's reading, except the forms export itself writes.
+    HAND = [
+        ('PARKED: "x"', ("parked", '"x"', None, None)),
+        ('PARKED: ""', ("parked", '""', None, None)),
+        ('PARKED: "a" and "b"', ("parked", '"a" and "b"', None, None)),
+        ('PARKED: "foo" said the vendor, then "bar"',
+         ("parked", '"foo" said the vendor, then "bar"', None, None)),
+        ('GROOMING: "q?"', ("grooming", None, '"q?"', None)),
+        ('GROOMING: ""', ("grooming", None, '""', None)),
+        ("PARKED: \u2014 later", ("parked", "later", None, None)),
+        # export's own quoted form: the text inside, verbatim
+        ('PARKED: "-"', ("parked", "-", None, None)),
+        ('PARKED: "\u2014 later"', ("parked", "\u2014 later", None, None)),
+        ('GROOMING: "- [ ] x"', ("grooming", None, "- [ ] x", None)),
+    ]
+
+    def test_hand_written_quoted_reasons_import_as_on_main(self):
+        src = self.tmp / "hand.yaml"
+        lines = ["schema_version: 2", "stories:"]
+        for n, (reason, _) in enumerate(self.HAND):
+            lines += [f"  - id: S-{n + 1:03d}", f"    title: t{n}",
+                      "    status: blocked", "    priority: 50",
+                      f"    blocked_reason: \"{wi._dq_escape(reason)}\""]
+        lines += ["  - id: S-900", "    title: padded", "    status: todo",
+                  "    priority: 50", '    ticket_mode: " interactive "',
+                  '    complexity: " low "', '    claimed_by: " a@b "',
+                  # the placeholder, padded, is still no value
+                  "  - id: S-901", "    title: placeholder",
+                  "    status: todo", "    priority: 50",
+                  '    blocked_reason: " \u2014 "']
+        src.write_text("\n".join(lines) + "\n")
+        self.wi_ok(["import", "--format", "backlog-yaml", str(src)])
+        recs = {r["alias"]: r for r in json.loads(
+            self.wi_ok(["ls", "--status", "all", "--json"]))}
+        for n, (reason, want) in enumerate(self.HAND):
+            rec = self.show(recs[f"S-{n + 1:03d}"]["id"])
+            self.assertEqual((rec["status"], rec["parked"], rec["grooming"],
+                              rec["blocked"]), want, reason)
+        # enum-like fields are still folded: trimmed, not kept padded
+        text = (self.root / "items" / (recs["S-900"]["id"] + ".md")).read_text()
+        self.assertIn("mode: interactive\n", text)
+        self.assertIn("complexity: low\n", text)
+        self.assertIn("owner: a@b\n", text)
+        self.assertIsNone(self.show(recs["S-901"]["id"])["blocked"])
+        self.wi_ok(["lint"])
+
+
 if __name__ == "__main__":
     unittest.main()
