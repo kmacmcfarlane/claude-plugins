@@ -22,3 +22,5 @@ Checkpoint handoff format gains an in-flight list per role with agent ids and ro
 ## Notes
 - 2026-09-22 claimed by unknown@360f41058e92
 dispatch: implementer opus — per plan routing (executable hook logic or two-plugin doctrine)
+impl r0 DONE 83b9a0d (opus): handoff-format ## In flight (role — item — agent id — round — waiting on) + ## Copy forward; resume-by-id rule (same process; fresh process re-dispatches from the roster's round); scratchpad sweep in Step 4a; never checkpoint inside a sub-agent (FM13); librarian ending-the-session names agent ids per role and where brief templates live. Docs only, 3 files.
+dispatch: reviewer opus — rule 4
