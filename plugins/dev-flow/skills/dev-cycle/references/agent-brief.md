@@ -59,16 +59,17 @@ Rules that reviewers reject on sight:
 - Skill reference paths are bare relative paths (`references/x.md`) — no dot-slash prefix,
   no skill-dir variable. A pointer into a sibling skill of the same plugin puts the
   sibling's backticked name right before the bare path.
-- Frontmatter keys follow the house rule: every skill declares name, description,
-  disable-model-invocation, allowed-tools, argument-hint; any other key must be a field the
-  Claude Code skills docs define (the list is in the create-skill skill's frontmatter
+- Frontmatter keys follow the house rule: every skill declares name and description; any
+  other key is optional (leaving out disable-model-invocation, allowed-tools and
+  argument-hint is the desired default) but must be a field the Claude Code skills docs
+  define (the list is in the create-skill skill's frontmatter
   reference, kit-dev plugin); no key twice. The set is closed because undocumented keys
   are usually typos, and claude.ai / Skills API uploads hard-fail on unknown keys.
   allowed-tools only pre-approves tools; it never restricts them. Folder name equals
   `name`. No README.md inside a skill folder.
 - No angle brackets in `name` or `description` (fine in `argument-hint`); description under
   1024 characters, what + when + triggers.
-- `argument-hint` is always a double-quoted string, since unquoted a value starting with `[`
+- `argument-hint`, when present, is always a double-quoted string, since unquoted a value starting with `[`
   is a YAML flow sequence: a list, or with a second `[...]` group a parse error that drops
   the skill in strict loaders.
 - A change to the marketplace's shape (plugin added/moved/retired, skill added to a plugin)
