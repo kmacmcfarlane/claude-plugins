@@ -88,7 +88,7 @@ except `claimed` (ISO-8601 UTC to the minute).
 | `tags` | flow list `[a, b]` | |
 | `deps` | block list of ids or `ext: <text>` | structural "cannot start until"; `ext:` never resolves, nor does an id absent from `items/`; `claim` refuses a `todo` item whose deps do not all resolve, by the same rule as `next` |
 | `parent` | id | grouping only, no blocking |
-| `owner` | free string, e.g. `user@host` | set by `claim`, cleared by `release`/`done` |
+| `owner` | free string, e.g. `user@host` | set by `claim` (`--as`, else the claimant below), cleared by `release`/`done` |
 | `claimed` | UTC minute | stale test in `next --stale` |
 | `blocked` | string | required iff `status: blocked`; kept while parked or grooming, so `unpark` / `ungroom` returns to `blocked` |
 | `parked` | one line | required iff `status: parked`; the deferral reason (set by `park`, cleared by `unpark`, `block` and `groom`); `lint` flags it on a todo/doing/blocked/grooming item (clear it with `wi set <id> parked ""`), and it stays on a dropped/done item as history |
@@ -136,6 +136,29 @@ may have rewritten one bare) whose backslashes all pair as `\\` or `\"`,
 with all such layers peeled — so it also lists a value meant that way: review
 the dry run, narrow with `--id` / `--key`, then `--apply` (or fix one value
 with `wi set`).
+
+## Claimant
+
+`claim` (and `prime`'s "you") names the caller as the first of:
+
+1. `WI_OWNER` — the explicit override, used verbatim (host included). Set it
+   to pin one spelling across machines, containers or sessions.
+2. `$USER`, verbatim, as `<user>@<host>`.
+3. `git config user.name`, read from the store's repo (2 s timeout; any
+   failure skips it).
+4. `getpass.getuser()` (skipped when it raises: no login variable and no
+   password-database entry for the uid).
+5. `unknown`.
+
+`<host>` is the short hostname. An empty variable counts as unset. Steps 3
+and 4 are sanitized to one owner token — each run of characters outside
+`A-Z a-z 0-9 . _ -` becomes `-`, edge punctuation is trimmed (`Kyle
+McFarlane` → `Kyle-McFarlane`) — so the name never splits `status` columns
+or the `@host` suffix; a name with nothing left falls through to the next
+step. `owner` is compared as an exact string: a claim recorded under an older
+spelling (say `unknown@<host>` from before step 3 existed) reads as someone
+else's — `release` still clears it, a re-claim needs `--steal`, or pin
+`WI_OWNER` to the old spelling.
 
 ## Editing fields: `wi set <id> <field> <value>`
 

@@ -1148,6 +1148,183 @@ class TestClaim(WiTestCase):
         self.assertIn(item.get("owner"), [f"worker-{n}@host" for n in range(8)])
 
 
+HOST = os.uname().nodename.split(".")[0]
+
+
+class TestDefaultOwner(WiTestCase):
+    """The claimant order: WI_OWNER, $USER, `git config user.name` (from the
+    store's repo), getpass.getuser(), `unknown`. Git is isolated from the
+    machine's own config (no global/system file, HOME in the temp dir) and
+    getpass is mocked, so nothing here reads the real user or git identity."""
+
+    def setUp(self):
+        super().setUp()
+        self.home = self.tmp / "home"
+        self.home.mkdir()
+        self.iso = {"HOME": str(self.home), "XDG_CONFIG_HOME": str(self.home),
+                    "GIT_CONFIG_GLOBAL": os.devnull,
+                    "GIT_CONFIG_SYSTEM": os.devnull, "GIT_CONFIG_NOSYSTEM": "1"}
+        for k in ("GIT_DIR", "GIT_WORK_TREE", "GIT_CONFIG_COUNT",
+                  "GIT_AUTHOR_NAME", "GIT_COMMITTER_NAME"):
+            self.iso[k] = None
+        self.no_repo = self.tmp / "no-repo"
+        self.no_repo.mkdir()
+
+    def repo_with_name(self, name):
+        repo = self.tmp / "repo"
+        store = repo / ".work"
+        store.mkdir(parents=True, exist_ok=True)
+        with self.env():
+            subprocess.run(["git", "init", "-q", str(repo)], check=True)
+            if name is not None:
+                subprocess.run(["git", "-C", str(repo), "config", "user.name",
+                                name], check=True)
+        return store
+
+    @contextlib.contextmanager
+    def env(self, **over):
+        want = dict(self.iso, WI_OWNER=None, USER=None, LOGNAME=None,
+                    LNAME=None, USERNAME=None)
+        want.update(over)
+        with mock.patch.dict(os.environ):
+            for k, v in want.items():
+                if v is None:
+                    os.environ.pop(k, None)
+                else:
+                    os.environ[k] = v
+            yield
+
+    def owner(self, root, getuser="pwuser", **env):
+        def fake():
+            if isinstance(getuser, Exception):
+                raise getuser
+            return getuser
+        with self.env(**env), mock.patch.object(wi.getpass, "getuser", fake):
+            return wi.default_owner(root)
+
+    def test_wi_owner_wins_verbatim(self):
+        store = self.repo_with_name("Git Name")
+        self.assertEqual(self.owner(store, WI_OWNER="me@box", USER="u"),
+                         "me@box")
+
+    def test_user_beats_git(self):
+        store = self.repo_with_name("Git Name")
+        self.assertEqual(self.owner(store, USER="kyle"), f"kyle@{HOST}")
+
+    def test_git_user_name_when_user_unset(self):
+        store = self.repo_with_name("Kyle McFarlane")
+        self.assertEqual(self.owner(store), f"Kyle-McFarlane@{HOST}")
+
+    def test_empty_user_counts_as_unset(self):
+        store = self.repo_with_name("gitname")
+        self.assertEqual(self.owner(store, USER="", WI_OWNER=""),
+                         f"gitname@{HOST}")
+
+    def test_git_name_sanitized_to_one_token(self):
+        # a space splits `wi status` columns, an @ the user@host split, a
+        # leading - reads as a flag; each run of unsafe chars is one -
+        store = self.repo_with_name("  -Jo  O'Brien @ Home: #1 ")
+        self.assertEqual(self.owner(store), f"Jo-O-Brien-Home-1@{HOST}")
+
+    def test_git_read_from_store_repo_not_cwd(self):
+        store = self.repo_with_name("store-user")
+        with contextlib.chdir(self.no_repo) if hasattr(contextlib, "chdir") \
+                else contextlib.nullcontext():
+            self.assertEqual(self.owner(store), f"store-user@{HOST}")
+
+    def test_getpass_when_git_has_no_name(self):
+        store = self.repo_with_name(None)
+        self.assertEqual(self.owner(store), f"pwuser@{HOST}")
+
+    def test_getpass_when_not_a_repo(self):
+        self.assertEqual(self.owner(self.no_repo), f"pwuser@{HOST}")
+
+    def test_git_unusable_name_falls_through(self):
+        store = self.repo_with_name("@@@")
+        self.assertEqual(self.owner(store), f"pwuser@{HOST}")
+
+    def test_git_failure_skipped(self):
+        store = self.repo_with_name("Git Name")
+        for failure in (None, subprocess.CompletedProcess([], 1, "", "err")):
+            with mock.patch.object(wi, "_git", return_value=failure):
+                self.assertEqual(self.owner(store), f"pwuser@{HOST}")
+
+    def test_git_timeout_is_short_and_skipped(self):
+        store = self.repo_with_name("Git Name")
+        seen = {}
+
+        def slow(*a, **kw):
+            seen["timeout"] = kw.get("timeout")
+            raise subprocess.TimeoutExpired(a[0], kw.get("timeout"))
+        with mock.patch.object(wi.subprocess, "run", slow):
+            self.assertEqual(self.owner(store), f"pwuser@{HOST}")
+        self.assertLessEqual(seen["timeout"], 5)
+
+    def test_unknown_when_getpass_raises(self):
+        self.assertEqual(self.owner(self.no_repo, getuser=KeyError("uid")),
+                         f"unknown@{HOST}")
+        self.assertEqual(self.owner(self.no_repo, getuser=OSError("none")),
+                         f"unknown@{HOST}")
+
+    def test_claim_end_to_end_uses_git_name(self):
+        store = self.repo_with_name("Kyle McFarlane")
+        self.assertEqual(run(["init"], store).returncode, 0)
+        self.root = store
+        self.write_item("mine-1111")
+        env = dict((k, v) for k, v in self.iso.items() if v is not None)
+        full = dict(os.environ, WI_ROOT=str(store), **env)
+        for k in ("WI_OWNER", "USER", "GIT_DIR", "GIT_WORK_TREE"):
+            full.pop(k, None)
+        r = subprocess.run([sys.executable, str(WI), "claim", "mine-1111"],
+                           env=full, capture_output=True, text=True,
+                           cwd=str(self.no_repo))
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertIn(f"as Kyle-McFarlane@{HOST}", r.stdout)
+        rec = json.loads(self.wi_ok(["show", "mine-1111", "--json"]))
+        self.assertEqual(rec["owner"], f"Kyle-McFarlane@{HOST}")
+
+    def test_existing_user_claim_still_matches(self):
+        # $USER still comes before git: a kyle@host claim made before this
+        # change is re-claimed (a no-op) by the same user, not refused
+        store = self.repo_with_name("Kyle McFarlane")
+        self.assertEqual(run(["init"], store).returncode, 0)
+        self.root = store
+        self.write_item("held-1111", status="doing", owner=f"kyle@{HOST}",
+                        claimed="2026-09-01T10:00Z")
+        before = (store / "items" / "held-1111.md").read_text()
+        with self.env(USER="kyle"), mock.patch.object(
+                wi.getpass, "getuser", lambda: "pwuser"):
+            self.assertFalse(wi._claim(wi.load_item_anywhere(store, "held-1111"),
+                                       wi.default_owner(store)))
+        self.assertEqual((store / "items" / "held-1111.md").read_text(), before)
+
+    def test_old_unknown_claim_needs_pin_or_steal(self):
+        # USER was unset before and git now names the user: an item claimed
+        # as unknown@host reads as someone else's. release still works (it
+        # checks no owner); a re-claim needs --steal, or WI_OWNER pinned to
+        # the old spelling, which keeps matching
+        store = self.repo_with_name("Kyle McFarlane")
+        self.assertEqual(run(["init"], store).returncode, 0)
+        self.root = store
+        old = f"unknown@{HOST}"
+        self.write_item("old-1111", status="doing", owner=old,
+                        claimed="2026-09-01T10:00Z")
+        with self.env(), mock.patch.object(wi.getpass, "getuser",
+                                           lambda: "pwuser"):
+            me = wi.default_owner(store)
+            self.assertNotEqual(me, old)
+            with self.assertRaises(wi.WiError) as cm:
+                wi._claim(wi.load_item_anywhere(store, "old-1111"), me)
+            self.assertEqual(cm.exception.code, 4)
+            stolen = wi.load_item_anywhere(store, "old-1111")
+            self.assertTrue(wi._claim(stolen, me, steal=True))
+            self.assertEqual(stolen.get("owner"), me)
+        with self.env(WI_OWNER=old):
+            self.assertEqual(wi.default_owner(store), old)
+            self.assertFalse(wi._claim(wi.load_item_anywhere(store, "old-1111"),
+                                       wi.default_owner(store)))
+
+
 class TestHandoffDoneArchive(WiTestCase):
     def test_handoff_idempotent_and_learned_once(self):
         self.write_item("ho-1111", status="doing", owner="tester@local",
