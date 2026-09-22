@@ -45,3 +45,4 @@ decision 50: the drafted upstream issue (tell the statusLine which sub-agent is 
 - 174-case chunk-boundary fuzz exact; 768 real sidechains 0 mismatches; 300 MB line at 16 MB RSS.
 - lows carried to follow-up: long-line path accepts any "usage" key; missing usage field borrowed within 2048 bytes; no chunk-straddle test; README catalog row + decision tree (line 110) wording.
 - landed e1b43b3
+answer 50: operator needs more info before weighing in — librarian relays the draft's ask and the closed upstream issues; decision stays open (operator 2026-09-22)

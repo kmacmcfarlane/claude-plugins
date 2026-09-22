@@ -29,3 +29,4 @@ Operator request 2026-09-21 via the hooper librarian (their item route-to-claude
 ## Librarian notes
 - Relates: dev-cycle Step 1 plan mode (spikes already get a plan agent); 693a idle turn (auto-investigation is dispatch — holds apply); b020 grooming status (an item awaiting the operator's pick is "grooming"); decision/answer N convention (693a).
 decision 49: which new items get an automatic investigation — (a) features and spikes only, and any item the librarian can't decide in one line (Intake step 3), with "no investigation: <reason>" recorded otherwise [recommended: bounds cost; bugs/chores with a clear fix skip it]; (b) every new item except typo/path bypasses; (c) only on request (operator says "investigate").
+answer 49: operator likes the per-mode breakdown; wants a brief explanation per mode of how the mode is determined and what the transition events are — owed by 1222 F2 (serial 01) and summarized to the operator (operator 2026-09-22)

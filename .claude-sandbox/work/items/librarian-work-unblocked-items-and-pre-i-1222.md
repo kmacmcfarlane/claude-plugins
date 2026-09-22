@@ -53,3 +53,7 @@ decision 53: interim cap until F2 lands — (a) open a hold `limit: 4 agents in 
 - 2026-09-22: agents librarian's view on the active-librarian divisor recorded on F2 (c79e); a 01 serial follows their librarian-budget-policy series.
 - agents 8ad9 policy answer recorded on F2 (c79e); 01 serial pending (supersedes 00 § F2 N formula/divisor; F1 claims → claims/<repo>.json).
 - CORRECTION 00 contradicts itself on the away 5-hour reserve (F1: 5%, F5: 10%); the agents policy picks 10% — 01 will say so.
+answer 53: (b) no interim limit — the real feature (F2) is being delivered (operator 2026-09-22)
+answer 52: (a) — operator: 'Why would we forbid doing a pull? That seems like a weird policy'; librarian merges origin/main (merge, never rebase/force), runs Checks, pushes; rule revision filed (operator 2026-09-22)
+answer G1: the quota reserve plan as written (F1 constants: 5h 25/10/0/5 present/away/done/vacation, weekly 15/15/15/10 — away 10 per the agents-policy correction) (operator 2026-09-22)
+answer G2: operator asks whether P0 should mean parked/don't-schedule, with a separate blocked+reason. Librarian: wi already has both — `wi park <id> <reason>` (status parked, never scheduled) and `wi block <id> <reason|item>` (schedulable at its priority once unblocked); P0 is the highest priority and priorities gate scheduling only through F2's mode table. No change needed; confirm in F2 serial 01 (operator 2026-09-22)
