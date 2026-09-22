@@ -19,7 +19,7 @@ skill's decision channel, `decision N:` under `decisions needed` (SKILL.md § Th
   2), and leave the rule change to the operator.
 - **Orphan worktree from a crashed session** — one with no running agent and no `doing`
   item (Rehydrate step 4). Dirty: surface it, do not remove. Clean and merged: remove it;
-  clean and unmerged: ask.
+  clean and unmerged: raise it as a numbered decision.
 - **Push rejected (non-fast-forward).** Someone pushed to origin/main since the last
   sync. Do not pull, fetch, rebase or merge around it, and never `--force`: stop and put
   it under `decisions needed` — the next Report mid-session, the final Report at session
@@ -40,8 +40,9 @@ states it; the one line here is what the librarian binds:
   merge `main` into its branch, counting toward the cap — the `dev-cycle` skill's
   `references/fix-loop.md` § A merge conflict.
 - **A fable dispatch returns HTTP 429 or a usage-credits error.** Not a `BLOCKED`: the
-  reset time decides between opus and asking the operator — a `model: fable` pin always
-  asks — the `dev-cycle` skill's `references/model-routing.md` § Fallback.
+  reset time decides between opus and a numbered decision for the operator — a
+  `model: fable` pin always raises one — the `dev-cycle` skill's
+  `references/model-routing.md` § Fallback.
 - **Implementer disputes a medium-or-above finding**, **a reviewer returns
   `SHOW_STOPPER` for something a fix would close** (mis-routed: re-route it as
   `NEEDS_CHANGES`, noted in the item, severity kept), **a dirty main checkout or worktree

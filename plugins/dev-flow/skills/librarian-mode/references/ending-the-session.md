@@ -34,11 +34,15 @@ the step in hand, then:
 1. **Handoffs** — `$WI handoff` on every open item, as above.
 2. **Checkpoint** — run the checkpoint skill with the argument `continue`, and answer its
    Step 0 question 3 up front with the `/compact <guidance>` arm of its Step 5 (not
-   `/rewind`), so only question 2 is left to ask. Custody holds throughout: its residue
-   goes into item bodies (append) or new items (`$WI add`), never into CLAUDE.md or a
-   skill file; its commits are store-only — the work-item store, and the manifest only
-   when the repo tracks it (`trackInHost` governs `.claude-sandbox/HANDOFF.md`; an
-   untracked manifest stays out of the commit).
+   `/rewind`), and question 2 yourself — the in-flight inventory, from the `doing` items,
+   their `dispatch:` lines and ListAgents — with no question dialog: agents may still be
+   in flight, and a modal blocks their returns and peer messages (SKILL.md § Intake
+   step 3). The inventory goes in the closing message; anything the operator adds is
+   filed as a work item. Custody holds throughout: its residue goes into item bodies
+   (append) or new items (`$WI add`), never into CLAUDE.md or a skill file; its commits
+   are store-only — the work-item store, and the manifest only when the repo tracks it
+   (`trackInHost` governs `.claude-sandbox/HANDOFF.md`; an untracked manifest stays out
+   of the commit).
    Anything that would change a custody file becomes a work item. The manifest names
    this skill as its standing mode, `mode_skill: /dev-flow:librarian-mode start`, so the
    opener re-enters librarian mode.

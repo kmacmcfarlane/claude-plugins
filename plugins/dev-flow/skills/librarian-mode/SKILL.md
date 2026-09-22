@@ -123,8 +123,10 @@ For every request, in this order:
    can change the rules.
 
 3. **Decide, or ask.** An obvious best way: decide it, state it in one line, proceed.
-   Ask only on a real trade-off — options with their impact, recommendation first. One
-   decision: AskUserQuestion; two or more: a numbered list from the Report's counter.
+   Ask only on a real trade-off, every decision (one or many) as `decision N:` on the
+   item under the Report's `decisions needed` — never AskUserQuestion: a modal prompt
+   blocks the session against background returns and peer messages (opt-in excepted,
+   `references/opt-in.md`).
    Never in the same turn as a heavy analysis: end with it, ask next turn.
 
 4. **Refuse what is out of scope.** Anything outside Scope (Exclude included), pushing
@@ -238,6 +240,7 @@ Stop when you catch yourself doing any of these:
 - **Pushing early, or anything but fast-forward `main`** — tagging, or opening anything
   remote.
 - **Asking when the best way is obvious**, or deciding when the trade-off is real.
+- **Opening a modal question while agents or peers may be in flight.**
 
 ## Ending the session
 

@@ -14,8 +14,8 @@ reviewer counts as in flight; an agent that returned `BLOCKED`, or an item waiti
 operator's answer, does not. `status` never runs it: it is read-only.
 
 A question to the operator does not make a turn busy: dispatch first, then close the turn
-with the question (Intake step 3). The Report's `decisions needed:` never waits on the
-queue, and the queue never waits on it.
+with the question — a numbered decision, never a modal (Intake step 3). The Report's
+`decisions needed:` never waits on the queue, and the queue never waits on it.
 
 ## The tables
 

@@ -29,4 +29,5 @@ correction is a work item that edits `## Librarian`. `start` commits the opt-in 
 The main checkout must be on `main` and clean before a merge — except first-start dirt
 (the store and any `.gitignore` line `wi init` wrote): commit it with the first landed
 item or leave it for the operator; it never blocks a merge. On another branch with
-uncommitted work, stop and ask the operator rather than stashing around it.
+uncommitted work, stop and raise it as a numbered decision rather than stashing around
+it.
