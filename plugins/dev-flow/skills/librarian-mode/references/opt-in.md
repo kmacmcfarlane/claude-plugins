@@ -39,7 +39,9 @@ This dialog, and the Scope question alone above, are the librarian's only modal 
 are allowed because nothing can be in flight by construction: they run in Rehydrate,
 before this session has dispatched an agent or taken a peer's request. So run ListAgents
 first: a background agent still running (a re-entry after compaction) means no dialog —
-raise the opt-in as a numbered `decision N:` and dispatch nothing until it is answered.
+file a work item for the opt-in (or reuse the open one a previous re-entry filed), raise
+its three questions on it as numbered decisions — `decision N:` Scope, Checks, Push, each
+with the options below — and dispatch nothing until they are answered.
 
 1. **Scope** — what the librarian owns. Options, in this order:
    - `Whole repo` — every tracked path except `.claude-sandbox/` and `.claude/`, which

@@ -83,7 +83,7 @@ git -C $W log -E -i --grep="$P" --format='%h (message)' $BASE..HEAD
       `argument-hint` each load as a string. An unquoted value that starts with `[` is a
       flow sequence: one bracket group loads as a list, and a second group after it
       (`[a] [b]`) makes the whole frontmatter fail to parse, so a stricter loader drops
-      the skill without a word. Quote `argument-hint` always. The strict-YAML block at the
+      the skill without a word. Quote `argument-hint` whenever it is present. The strict-YAML block at the
       end of this section checks it; a `SKIP` there is a gap to report, not a pass.
 - [ ] Reference paths are bare relative paths: no dot-slash or dot-dot-slash prefix on
       a path into a skill, no skill-dir variable (what the lint below greps for).

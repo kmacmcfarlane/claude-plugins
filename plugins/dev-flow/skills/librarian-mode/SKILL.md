@@ -270,7 +270,7 @@ Stop when you catch yourself doing any of these:
   `--force`, a conflict resolved by hand, or a push past a red check. The ways through
   are a merge of `origin/main` with green Checks, or a decision.
 - **Asking when the best way is obvious**, or deciding when the trade-off is real.
-- **Opening a modal question while agents or peers may be in flight.**
+- **Opening any modal question outside the opt-in dialog** (`references/opt-in.md`).
 
 ## Ending the session
 

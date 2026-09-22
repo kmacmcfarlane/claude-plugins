@@ -53,9 +53,11 @@ Before writing any skill, consult `references/best-practices.md` for Anthropic's
    ---
    name: <skill-name>
    description: <What it does. When to use it. Key trigger phrases.>
-   disable-model-invocation: true        # optional: only when the skill must be user-invoked
-   allowed-tools: <comma-separated tools> # optional: only the tools to run without prompting
-   argument-hint: "<hint>"                # optional: only when a hint helps
+   # The three keys below are optional: delete each line unless the skill needs it.
+   # Absent is the default: model-invocable, free-form arguments, no tools pre-approved.
+   disable-model-invocation: true        # only when the skill must be user-invoked (default false)
+   allowed-tools: <comma-separated tools> # only the tools to run without prompting
+   argument-hint: "<hint>"                # only when a hint helps
    ---
 
    # <Title>

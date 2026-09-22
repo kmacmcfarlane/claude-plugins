@@ -15,7 +15,7 @@ checklist, diff read, `git merge --no-ff` into local `main`, clean up. Report fo
 `decisions needed: none`; then push `main`, and write the push's team summary.
 
 **Operator: "split ralph's backlog skills into their own plugin."** Real trade-offs (name,
-dependency direction, catalog wording): three decisions, so a numbered prose list —
+dependency direction, catalog wording): three decisions, each numbered, in a prose list —
 `1. plugin name: (a) ralph-backlog, (b) backlog` and so on, one decision per number, each
 option's impact named, recommendation first — and the operator answers "1: a, 2: b". Had
 there been only the name to settle, it would be a numbered list of one, never a modal

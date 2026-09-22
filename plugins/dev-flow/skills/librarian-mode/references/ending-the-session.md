@@ -120,8 +120,8 @@ compacts when convenient, and it continues. Finish the step in hand, then:
    the closing message.
 4. **Prompt the operator to compact, and stop.** The closing message is the final Report
    of the sequence above: the four-line Report for anything landed since the last one,
-   the push outcome with its `incoming:` lines, then its team summary, then the
-   checkpoint's own close — its `/compact <guidance>` recommendation, to run at the
+   the push outcome with its `incoming:` lines, then its team summary, then the in-flight
+   inventory (step 2), then the checkpoint's own close — its `/compact <guidance>` recommendation, to run at the
    operator's convenience (the next morning is fine), the manifest's absolute path, and
    last its Step 7 opener, led by `/dev-flow:librarian-mode start`, then `Read (the Read
    tool) <absolute manifest path> in full first`, then — when the roster is not `None` —
