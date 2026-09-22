@@ -89,3 +89,5 @@ review r5 (opus, final waived round) on 76c3ffc: NEEDS_CHANGES. §1–§3, §5 c
 - low: 5aef0dd subject (carried). Notes: spec R9 lacks HELD (edit the spec next time).
 decision 56: 5ef7 final (waived) review is not CLEAR on one fail-safe medium — held runs are lost with the session in both standard sandbox modes because a .gitignore is written after the check it should satisfy; the fix is a one-sentence reorder the reviewer already tested. (a) one more micro-round: that reorder only, then a verify-only review [recommended: minutes of work, lands the skills as specified]; (b) land now at 76c3ffc and fix it as a follow-up item (safe: nothing leaks, held runs just are not durable yet); (c) hold.
 answer 56: (a) one more micro-round: the _held/.gitignore reorder only, then a verify-only review (operator 2026-09-22)
+fix r5 (peer, answer 56a): 985faec — _held/.gitignore written first, then the every-level check; .claude-sandbox/ absent = lost-with-session; 1 file +9/−7.
+dispatch: reviewer opus — verify-only review (resume)
