@@ -46,3 +46,13 @@ findings:
 - [low] wi.py:2211 `~~**T** x~~y` desc `xy` — join with a space.
 dispatch: implementer opus — fix round 2 (resume)
 agent: implementer ae88fb9e69adfe405 round 3
+return: implementer DONE 991acd4
+dispatch: reviewer opus — review r3 (resume)
+agent: reviewer a9569a76c211e6e99 round 3
+verdict: NEEDS_CHANGES round 3 at 991acd4 (round-2 medium, idempotence and lows confirmed closed)
+findings:
+- [medium] wi.py:2193 STRUCK_PLAIN_LINE_RE paren branch closes whatever the paren says: `~~Use Redis~~ (use Memcached instead)`, `~~X~~ (not yet)` import done. Pass: the paren branch takes the same closure-word-or-date test; test `~~X~~ (use Y instead)` stays open.
+- [low] :2189 _CLOSURE_WORD ends \b — `fixed-width`, `closed-source`, `done-ish`, `done?` close. Pass: (?![\w-]), optionally reject `?` after.
+- [low, record only] any text after a closure word accepted — deliberate, kept.
+dispatch: implementer opus — fix round 3 (resume); medium, not critical/high, so no rule-3 bump; the last round under the cap
+agent: implementer ae88fb9e69adfe405 round 4

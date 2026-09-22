@@ -29,3 +29,5 @@ Plan of record .claude-sandbox/investigations/e770-dev-cycle-resume (00 § F4; s
 
 target: full dev-cycle-e770-f4-the-caller-boundary-li-d81c /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude/worktrees/dev-cycle-e770-f4-the-caller-boundary-li-d81c
 dispatch: implementer sonnet — two files, one plugin, mechanical once F3 exists; plan routes sonnet impl, opus review
+agent: implementer a1cdaa872072a3b48 round 1
+- rider from c100 review (2026-09-22): SKILL.md:105-109 Rehydrate step 4 says "merge --abort, then redo the matching one" — with troubleshooting's new neither case there may be no match; say "the matching redo, or a decision when neither matches".
