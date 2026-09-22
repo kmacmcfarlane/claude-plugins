@@ -49,12 +49,14 @@ a typo, and writing one would stand a phantom session's gate down while the
 real session stayed armed.
 
 It lapses on either clock: CHECKPOINT_GRACE_S of wall time, or
-L.CHECKPOINT_MIN_TOKENS of growth past the depth it started at (callers that
-have measured one pass `tok`). The wall clock alone was not enough - a
+CHECKPOINT_BUDGET_TOKENS of growth past the depth it started at (callers
+that have measured one pass `tok`). The wall clock alone was not enough: a
 stand-down starts at the hard line, where 30 minutes of unconditional
-silence can spend what is left of the window, and past that much growth the
-checkpoint it was protecting no longer fits anyway. A stamp from the future
-(a clock change) does not count either.
+silence can spend what is left of the window. The token budget is twice
+CHECKPOINT_MIN_TOKENS rather than equal to it, because it has to cover the
+checkpoint actually running - Step 4a's flush, not the lean path - and past
+it no checkpoint fits anyway. A stamp from the future (a clock change) does
+not count either.
 
 Cost: with the mirror off (CONTEXT_GUARD_DERIVE=off or a window pin) and no
 fresh exact record, nothing could be said, so it returns before any
@@ -88,6 +90,14 @@ MARKER = "[context-guard context gate] HARD, mid-turn"
 # repos), short enough that an abandoned one does not silence the rest of
 # the epoch.
 CHECKPOINT_GRACE_S = 30 * 60
+# And how much window it may cost. Twice CHECKPOINT_MIN_TOKENS, because the
+# budget has to cover the checkpoint that is actually running, not the
+# cheapest one: CHECKPOINT_MIN_TOKENS is the LEAN path's cost, and Step 4a's
+# flush - commits across several repos, then the manifest - is exactly the
+# case that outgrows it. Being told to abandon one step from the mark is a
+# worse failure than the extra silence, and past this much growth no
+# checkpoint fits, so speaking again is right.
+CHECKPOINT_BUDGET_TOKENS = 2 * L.CHECKPOINT_MIN_TOKENS
 
 
 def checkpoint_in_flight(st, now=None, tok=None):
@@ -99,8 +109,8 @@ def checkpoint_in_flight(st, now=None, tok=None):
     (CHECKPOINT_GRACE_S), and `tok` - the depth now, when the caller has
     measured one - caps how much window it may cost: a stand-down starts at
     the hard line, so 30 minutes of unconditional silence there can spend the
-    last of the window. Past CHECKPOINT_MIN_TOKENS of growth the checkpoint
-    it was protecting no longer fits anyway, so the gate speaks again."""
+    last of the window. Past CHECKPOINT_BUDGET_TOKENS of growth no checkpoint
+    fits any more, so the gate speaks again."""
     cs = st.get("checkpoint_started")
     if not isinstance(cs, dict):
         return False
@@ -114,7 +124,7 @@ def checkpoint_in_flight(st, now=None, tok=None):
         return False
     try:
         if tok is not None and cs.get("tok") is not None:
-            return int(tok) - int(cs["tok"]) <= L.CHECKPOINT_MIN_TOKENS
+            return int(tok) - int(cs["tok"]) <= CHECKPOINT_BUDGET_TOKENS
     except (TypeError, ValueError):
         return True     # an unreadable depth is no reason to start speaking
     return True
@@ -239,7 +249,7 @@ def checkpointing(argv):
     if checkpoint_in_flight(L.load_state(sid)):
         print(f"mid-turn gate stood down for this checkpoint (until the mark, "
               f"or {CHECKPOINT_GRACE_S // 60} min, or "
-              f"{L.CHECKPOINT_MIN_TOKENS:,} more tokens)")
+              f"{CHECKPOINT_BUDGET_TOKENS:,} more tokens)")
     else:
         print(f"mid-turn gate not stood down: {why or 'the record did not land'}. "
               f"Carry on with the checkpoint; if a `HARD, mid-turn` marker "

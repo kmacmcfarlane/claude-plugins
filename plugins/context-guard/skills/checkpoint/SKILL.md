@@ -39,8 +39,11 @@ Step 4b's mark clears it. Without it the depth keeps growing while this checkpoi
 the gate — which only stands down at the mark — would speak again inside it, telling the
 session to abandon the very checkpoint it asked for. **A `HARD, mid-turn` marker that
 arrives while a checkpoint is underway neither restarts it nor abandons it: finish Step 4b
-and the mark.** It stands down until the mark, and at most 30 minutes or 20K more tokens,
-so a checkpoint that stalls does not leave the gate mute. If it refuses (`no context-gate
+and the mark.** It stands down until the mark, and at most 30 minutes or 40K more tokens,
+so a checkpoint that stalls does not leave the gate mute. That budget is twice the ~20K a
+lean checkpoint costs, deliberately: it has to cover the checkpoint actually running, and
+Step 4a's flush — commits across several repos, then the manifest — is the case that
+outgrows the lean figure. If it refuses (`no context-gate
 state for session …`), the id is wrong, not the session: re-run it with
 `$CLAUDE_CODE_SESSION_ID`. Otherwise carry on with the checkpoint whatever it printed.
 

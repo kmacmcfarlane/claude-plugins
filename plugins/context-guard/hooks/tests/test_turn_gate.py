@@ -237,10 +237,11 @@ class TestCheck(HookBase):
         self.assertEqual(rc, 0)
         self.assertIn("stood down", out)
         # Silent for as long as the checkpoint can still finish: up to
-        # CHECKPOINT_MIN_TOKENS of growth, the lean checkpoint's own cost.
-        # 30K left flips the tier to hard_nofit, and 25K crosses the DUE
-        # cadence; neither may speak.
-        for spent in (5_000, 15_000, L.CHECKPOINT_MIN_TOKENS):
+        # CHECKPOINT_BUDGET_TOKENS of growth, which covers Step 4a's flush and
+        # not just the lean path. 30K left flips the tier to hard_nofit, and
+        # 25K crosses the DUE cadence; neither may speak.
+        import turn_gate as TG
+        for spent in (5_000, 25_000, TG.CHECKPOINT_BUDGET_TOKENS):
             with self.subTest(spent=spent):
                 self.set_exact("s", 955_000 + spent, 1_000_000)
                 self.assertEqual(self.gate()[:2], (0, {}))
@@ -310,8 +311,14 @@ class TestCheck(HookBase):
         self.standdown()
         started = L.load_state("s")["checkpoint_started"]
         self.assertEqual(started["tok"], 955_000)
-        for spent, quiet in ((L.CHECKPOINT_MIN_TOKENS, True),
-                             (L.CHECKPOINT_MIN_TOKENS + 1, False)):
+        import turn_gate as TG
+        # The budget is the FULL path's cost, not the lean path's: a
+        # checkpoint whose Step 4a commits several repos must not outgrow its
+        # own stand-down and be told to abandon one step from the mark.
+        self.assertEqual(TG.CHECKPOINT_BUDGET_TOKENS, 2 * L.CHECKPOINT_MIN_TOKENS)
+        for spent, quiet in ((L.CHECKPOINT_MIN_TOKENS + 1, True),
+                             (TG.CHECKPOINT_BUDGET_TOKENS, True),
+                             (TG.CHECKPOINT_BUDGET_TOKENS + 1, False)):
             with self.subTest(spent=spent):
                 st = L.load_state("s")
                 st["checkpoint_started"] = dict(started)
