@@ -43,7 +43,8 @@ what you need is *something to anchor on* (a symptom, a component, a file, a goa
 ## Step 1a — Resolve or create the series
 
 Check `.claude-sandbox/investigations/` for a series that already covers this problem.
-**Extending one**: read the whole series first — every `NN_*.md` in serial order, applying each
+**Extending one**: read the whole series first, per
+`references/investigation-format.md` — every `NN_*.md` in serial order, applying each
 `Supersedes` block — since you extend a record, not start over; confirm a new pass with the
 user unless the invocation already states that intent. **New**: propose and state a slug
 (kebab-case, 2–5 words, what the work *is*); create nothing until Step 13. An absent
@@ -57,8 +58,9 @@ user unless the invocation already states that intent. **New**: propose and stat
 A blocking gate (Steps 2, 9, 11) blocks on the user's answer, not on a widget; either form
 carries your recommendation on each question. While scope is still open, **prefer a numbered
 list in your reply**, answered free-form: the honest answer is often "none of these, and here
-is why", which fixed options fight. Keep `AskUserQuestion` for a closed choice late in a task,
-never in the same turn as heavy analysis — the dialog hides that and the status line.
+is why", which fixed options fight, and an answer that redefines the problem is one to
+re-scope from. Keep `AskUserQuestion` for a closed choice late in a task, never in the same
+turn as heavy analysis.
 
 **End the turn on the list.** Your recommendation is not the answer, and a background agent's
 return is not either: fold it in and keep waiting.
@@ -68,9 +70,10 @@ return is not either: fold it in and keep waiting.
 ## Running non-interactively
 
 When told to run without stopping, the blocking gates (Steps 2, 9, 11, 12) change form, not
-vanish — full rules in `references/run-modes.md` § Running non-interactively. Decide each gate yourself and record it under **Confirmed Assumptions** as
-overturnable; a **relayed** decision (peer session, message, secondhand notes) that would
-change behaviour or a default for people not present is a **blocking Open Question**, never a
+vanish. **Read `references/run-modes.md` § Running non-interactively before Step 1**; in
+short: decide each gate yourself and record it under **Confirmed Assumptions** as
+overturnable; a **relayed** decision (peer session, message, secondhand notes) that would change
+behaviour or a default for people not present is a **blocking Open Question**, never a
 Confirmed Assumption; anything you would have asked is an Open Question with an owner and a
 blocks-or-not marking, and a genuine blocker stops the run; Step 12 is Save. Report every
 recorded decision together at the end.
@@ -95,7 +98,7 @@ DEVIATION. Return `STATUS`, `SERIES` (absolute path), `OPEN QUESTIONS` (each blo
 ## Step 2 — Scoping gate (blocking)
 
 **A short round to make the problem investigable** — not the requirements gate (Step 9, after
-the code is read), but enough that an exploration pass does not go to the wrong subsystem. Ask
+the code is read). Ask
 only what you cannot answer yourself and what would change *where you look*:
 
 - What is the observable symptom, or the goal? (What happens now vs what should happen.)
@@ -122,7 +125,7 @@ exclude it. Record each repo's resolved path and, where known, its remote.
 
 ## Step 3a — Survey open branches and choose the base
 
-Run this for every resolved repo — cheap now, expensive to discover at implement time. The
+Run this for every resolved repo. The
 commands, what makes a strong candidate and how to vet one are in `references/branch-survey.md`.
 
 **The default branch is the base unless proven otherwise.** With no overlap, say so in one line
@@ -141,13 +144,12 @@ Record the per-repo base in **Confirmed Assumptions** and **Deployment & Rollout
 Before searching, load the project's conventions: root and nested `CLAUDE.md` for the areas
 you will touch; `README.md` and `docs/`; `.claude-sandbox/CLAUDE.md` when present; the plugin
 skills matching the stack. State each and why, one line apiece. **Trim to what the problem can
-use, with a reason per omission** — an inapplicable skill is a real context cost.
+use, with a reason per omission**.
 
 **Before defining any new convention, look for an existing one.** If the work will introduce a
 path, a directory layout, a naming scheme, a branch pattern or a file format, grep the loaded
-skills, the project's scaffolding and sibling projects for one already in use — a parallel
-convention errors nowhere and fragments the project quietly. Adopt or extend the existing one;
-diverging is a decision to state and justify in the plan.
+skills, the project's scaffolding and sibling projects for one already in use. Adopt or extend
+the existing one; diverging is a decision to state and justify in the plan.
 
 ---
 
@@ -185,13 +187,13 @@ for each hit.
 
 **6c — Deep read.** Read in full any file with two or more hits, with its callers, imports and
 tests, following the call chain both ways; cap at roughly 20 files per repo. **Validate by
-building, not just reading**: run the repo's build, tests, codegen and lint — they catch a stale
-generated artifact, a missing test helper, an interface that does not compile on the base. A
+building, not just reading**: run the repo's build, tests, codegen and lint. A
 codegen step the change needs is called out in **Files to Modify**.
 
 Investigation stays in the checkout; a probe needing substantive repo edits gets its own
 worktree (a fresh checkout — untracked `.env`, `node_modules` absent unless `.worktreeinclude`
-or the worktree symlink setting covers them; the sandbox skill owns the details). Two rules for probes are in `references/probe-discipline.md`: **a probe that
+or the worktree symlink setting covers them; the sandbox skill's worktree-mode section owns
+the details). Two rules for probes are in `references/probe-discipline.md`: **a probe that
 reproduces a symptom has its own parameters as suspects** — vary the harness and re-run
 without anything present in every run before recording a root cause; and **when the plan turns
 on a low-level nuance of a tool's behaviour, read the tool's source** and cite it, or mark the
@@ -214,9 +216,9 @@ Identify what else the change can reach: callers of changed functions and types;
 (exports, routes, CLI flags, config keys, event payloads); persisted shapes (schemas,
 migrations, serialized formats, on-disk layouts); anything downstream of those.
 
-**For any contract change, verify both ends exist and are wired** — a producer with no consumer,
-or the reverse, silently never fires. Grep both sides. If the change is genuinely
-self-contained, **say so explicitly**: a missing Blast Radius reads as "not checked".
+**For any contract change, verify both ends exist and are wired** — grep both sides. If the
+change is genuinely self-contained, **say so explicitly**: a missing Blast Radius reads as "not
+checked".
 
 ---
 
@@ -249,7 +251,7 @@ Then **wait**. This is a loop, and one round is rarely enough. Each round:
    gate reads as progress.
 
 **Keep looping until the user confirms there is nothing left to clarify** — never on "probably
-enough". Stopping early is how an unconfirmed assumption becomes shipped behaviour. Apply the
+enough". Apply the
 triage rule for what may become an Open Question (in `references/investigation-format.md`)
 now, not after the plan is written.
 
@@ -279,8 +281,8 @@ code was found anywhere, say so in Existing Architecture and suggest where else 
 
 ## Step 11 — Open-question sweep (loop)
 
-The plan exists but **nothing is on disk** — the last point where a question is cheap to close,
-and the concrete plan surfaces sharper ones than Step 9 could. Follow
+The plan exists but **nothing is on disk** — the last point where a question is cheap to close.
+Follow
 `references/open-question-sweep.md`: **sweep your own draft** (hedges, claims with no
 `file:line` or command, implicit choices, thin sections); **classify each** — agent-verifiable,
 user decision, or external/blocked (straight to Open Questions with owner and blocks-or-not),
@@ -329,8 +331,9 @@ Loop until Save or Reject.
 
 `mkdir -p` the series directory and `ls` it: the serial is the highest existing `NN` plus
 one, `00` for a new series. **Never reuse a serial and never overwrite a file** — one at your
-intended serial means you misread the directory. Write `NN_<name>.md` with the Write tool, per
-`references/investigation-format.md`; on `01`+ the `Supersedes` block comes first, always.
+intended serial means you misread the directory; re-read it. Write `NN_<name>.md` with the
+Write tool, per `references/investigation-format.md`; on `01`+ the `Supersedes` block comes
+first, always.
 
 ---
 

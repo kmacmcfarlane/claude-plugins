@@ -69,7 +69,7 @@ Stop if the composed plan has **no Proposed Fix, Implementation Approach or Reco
 ## Running non-interactively
 
 When the invocation says to run without stopping, the gates change form rather than
-vanishing. The full rules are in `references/run-modes.md` § Running non-interactively; in
+vanishing. **Read `references/run-modes.md` § Running non-interactively before Step 2**; in
 short: gate 1 (Step 6) is decided by you, each decision recorded under **Confirmed
 Assumptions** as overturnable; gate 2 approves only on a passing verification at the planned
 tier — failing or incomplete is still a stop, the work left uncommitted; 10a does the least
@@ -102,8 +102,7 @@ DEVIATIONS, COULD NOT DO, OPEN QUESTIONS (a brief that adds fields wins).
 
 ## Step 3 — Triage open questions
 
-An investigation ships with open questions by design. **Implementing while they sit untouched
-is how a known unknown becomes a shipped assumption.**
+An investigation ships with open questions by design. Triage them before any code.
 
 **1. Re-check staleness first — implement's advantage over investigate.** Time has passed and
 some questions have answered themselves: a dependency merged, a resource now exists, a config
@@ -115,10 +114,10 @@ question you can close from evidence is not a question — close it and record w
 taxonomy as `investigate`.
 
 **3. Launch ONE background `general-purpose` agent for the verifiable batch — now**, before
-Steps 4–6, which are dead time for it, so its answers are usually back by the gate. Brief it
+Steps 4–6, so its answers are back by the gate. Brief it
 self-contained: the questions, repo paths, SHAs, what counts as verified. It reports **answer /
 evidence / confidence**, and says "could not determine" rather than guess. When `investigate`
-already closed everything — common, and the sign of a gate that held — skip it and say so.
+already closed everything, skip it and say so.
 
 **4. Blockers must be resolved or explicitly waived before Step 7.** Honour the investigation's
 per-question blocks-or-not marking; never write code with an unresolved blocker. A question
@@ -134,8 +133,7 @@ way you called it**.
 Resolve the plan's repos; ask for a path or clone URL for any unresolved — never clone
 silently.
 
-**Honour the base branch the investigation recorded — then re-verify it.** The picture moves
-between investigate and implement:
+**Honour the base branch the investigation recorded — then re-verify it:**
 
 ```bash
 git -C <repo> fetch --prune
@@ -157,8 +155,7 @@ against current `HEAD`, scoped by the provenance SHAs rather than re-reading eve
 Record any drift — a fix that already landed, a function that moved, a file that is gone — for
 gate 1, where the user decides whether the plan still holds.
 
-Then decompose the approach into tasks and identify which are genuinely independent — the
-dependency-aware plan the fan-out decision rests on. Read
+Then decompose the approach into tasks and identify which are genuinely independent. Read
 `references/worktree-orchestration.md` and decide **inline or fan-out**, stating which and why.
 
 Establish the verification commands now, not after writing code: the repo's test target,
@@ -184,7 +181,8 @@ yet** — a legitimate outcome, never a slip.
 **With none, go straight to the plan.** Once each decision question is answered or
 deferred, present:
 
-1. **The composed plan** — approach, files, patterns, risks — read from the full series.
+1. **The composed plan** — approach, files, patterns, risks — and that you read the full
+   series.
 2. **Drift findings** from Step 5, or "no drift".
 3. **Task breakdown**, inline or fan-out, with the reason.
 4. **Branch strategy per repo**, including whether the recorded base still holds.
@@ -231,8 +229,7 @@ the format, to write the next serial and rewrite the index. A minor correction c
 outcome file in Step 10.
 
 **Before writing code**, load the project's conventions — root and nested `CLAUDE.md`, and the
-plugin skills matching the stack. The investigation names the patterns; the project docs say
-how the code is actually written.
+plugin skills matching the stack.
 
 **Inline** (the default): create the integration branch off the verified base in the main
 checkout, then work the tasks in dependency order in the session's own worktree
@@ -259,9 +256,8 @@ In both modes:
   calls for.
 - **Delegate context-heavy work to subagents** — long logs, broad exploration, mechanical
   edits across many files. Keep your context for the plan and the diff.
-- **An in-scope issue the investigation missed** — another instance of the same bug class,
-  say — is neither silently fixed nor silently ignored: surface it via `AskUserQuestion` and let
-  the user decide whether it belongs in this run.
+- **An in-scope issue the investigation missed** is neither silently fixed nor silently
+  ignored: surface it via `AskUserQuestion` and let the user decide whether it belongs here.
 
 ---
 
@@ -270,8 +266,9 @@ In both modes:
 Run the verification established at Step 5 and record the results honestly.
 
 **State the tier you actually reached** — "tests pass" when only the build ran is the failure
-the tier table exists to prevent; with no tests the tier is build-only. Where the plan calls
-for it, exercise the change by running the app (the `run` skill knows how).
+the tier table exists to prevent; with no tests the tier is build-only — do not imply
+behavioural coverage you do not have. Where the plan calls for it and the project supports it,
+exercise the change by running the app (the `run` skill knows how).
 
 **Do not defer a verification step just because it needs a human action.** When a person must
 do something first — seed a record, flip a setting, provide a credential — surface the concrete
