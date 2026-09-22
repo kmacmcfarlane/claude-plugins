@@ -2,12 +2,11 @@
 id: dev-cycle-resume-md-s3b-point-at-fix-loo-6571
 title: "dev-cycle resume.md S3b: point at fix-loop's gone-agent rule instead of restating it"
 type: chore
-status: doing
+status: done
 priority: 4
-owner: Kyle-McFarlane@bf9f9839222c
-claimed: 2026-09-22T23:40Z
 created: 2026-09-22
 updated: 2026-09-22
+closed: 2026-09-22
 refs:
   - 3019 review r1
 ---
@@ -30,3 +29,7 @@ return: implementer DONE 6bcc052
 changed: dev-cycle references/resume.md (S3b), references/troubleshooting.md
 dispatch: reviewer opus — rule 4 floor (impl sonnet)
 agent: reviewer a48811efbdb75fb19 round 1
+verdict: CLEAR round 1 at 6bcc052
+lows: findings: source one hop away — declined (reachable via S9/record-lines); planner at a fix round has no S3b pointer — pre-existing, filed; troubleshooting:60 102 chars — declined polish.
+landed: 88e1061
+- 2026-09-22 done: 88e1061

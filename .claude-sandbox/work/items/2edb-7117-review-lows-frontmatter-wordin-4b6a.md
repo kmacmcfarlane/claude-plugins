@@ -30,3 +30,9 @@ return: implementer DONE 724c92b
 changed: dev-cycle references/{review-checklist,agent-brief}.md, kit-dev create-skill SKILL.md (template), librarian-mode SKILL.md (red flag), references/{opt-in,ending-the-session,walkthroughs}.md
 dispatch: reviewer opus — rule 4, implementer tier
 agent: reviewer a5190c17bfd9cc6ac round 1
+verdict: NEEDS_CHANGES round 1 at 724c92b
+findings:
+- [medium] opt-in.md:42-44 — the re-entry fallback files a work item, but opt-in runs before the store exists (first-start.md:14 inits only once a Scope is written). Librarian decision on the pass: carry the decisions in the Report with no item, and file them once the store exists (no store-creation exception).
+- [low] :43 "Scope, Checks, Push" — the Scope-alone path asks only Scope; [low] review-checklist.md:86 106 chars; [low] ending-the-session.md:124 114 chars; [nit] SKILL.md:273 red flag omits "never with agents in flight".
+dispatch: implementer opus — fix round 1 (resume)
+agent: implementer a812050d4754bed89 round 2

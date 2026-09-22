@@ -39,3 +39,6 @@ answer 55: (c) leave the mode logic to the F2 planner (the librarian's proposal 
 target: plan librarian-f2-idle-turn-modes-concurrency-c79e /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude-sandbox/investigations/1222-unattended-librarian
 dispatch: planner opus — plan mode; a plan is judgement (Step 1 minimum opus); doctrine
 agent: planner a284b6b14c97d6192 round 1
+return: planner DONE_WITH_CONCERNS /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude-sandbox/investigations/1222-unattended-librarian/01_f2-modes-pool-heartbeat.md (verification sub-agent skipped for quota; B1 gates F2d, B2 gates F2c)
+baseline: f1aa0b775916 .claude-sandbox/investigations/1222-unattended-librarian/00_initial.md;1687d7eb5206 .claude-sandbox/investigations/1222-unattended-librarian/01_f2-modes-pool-heartbeat.md;
+dispatch: reviewer opus — plan-review variant, plan mode floor
