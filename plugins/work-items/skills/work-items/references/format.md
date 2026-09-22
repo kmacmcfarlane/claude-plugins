@@ -28,7 +28,9 @@ dedicated commit.
 
 A write killed mid-way never blocks the store. An item in both `items/` and
 `archive/` as one file (a kill between hard link and unlink) is a move half
-done: the next `wi archive` finishes it, whatever the cutoff. An empty item
+done: the next `wi archive` finishes it, whatever the cutoff. If the item
+was written in between, the two are separate files and archive refuses: the
+`items/` copy is the current one, so `mv` it over the `archive/` copy. An empty item
 file is a name reserved by a write that never landed: every command skips it
 with a warning naming it, its name stays taken, and `wi lint` gives the fix
 (`mv` the `.tmp` file beside it holding the content, or `rm` it).

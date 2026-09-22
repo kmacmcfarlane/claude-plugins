@@ -905,6 +905,53 @@ class TestIdCollisions(WiTestCase):
                              self.root).returncode, 3)
         self.assertTrue((self.root / "items" / "old-2222.md").exists())
 
+    def test_archive_refuses_one_file_reached_by_two_paths(self):
+        """A destination that is the source's own directory entry, through a
+        symlinked directory, is not a half-done move: unlinking the source
+        would delete the only copy. Archive refuses and keeps the item."""
+        self.write_item("old-1111", status="done", closed="2026-01-02")
+        src = self.root / "items" / "old-1111.md"
+        before = src.read_text()
+        (self.root / "archive").mkdir(exist_ok=True)
+        (self.root / "archive" / "2026").symlink_to(Path("..") / "items")
+        r = run(["archive", "--older-than", "0d"], self.root)
+        self.assertEqual(r.returncode, 3, r.stdout + r.stderr)
+        self.assertIn("already exists", r.stderr)
+        self.assertEqual(src.read_text(), before)
+        self.assertFalse(wi._half_moved(src, self.root / "archive" / "2026"
+                                        / "old-1111.md"))
+        # the write layer refuses it too
+        with self.assertRaises(wi.WiError):
+            wi._move_no_clobber(src, self.root / "archive" / "2026" / "old-1111.md")
+        self.assertEqual(src.read_text(), before)
+
+    def test_half_moved_needs_two_links_in_two_directories(self):
+        items = self.root / "items"
+        a = items / "a-1111.md"
+        a.write_text("x\n")
+        # the same path twice, and one entry by two spellings of its directory
+        self.assertFalse(wi._half_moved(a, a))
+        self.assertFalse(wi._half_moved(a, items / ".." / "items" / "a-1111.md"))
+        # two links in one directory: identical parents, not an archive move
+        b = items / "b-2222.md"
+        os.link(a, b)
+        self.assertFalse(wi._half_moved(a, b))
+        # two links in two directories: the half-done move
+        other = self.root / "archive" / "2026"
+        other.mkdir(parents=True)
+        os.link(a, other / "a-1111.md")
+        self.assertTrue(wi._half_moved(a, other / "a-1111.md"))
+
+    def test_lint_fix_quotes_paths(self):
+        d = self.tmp / "odd dir"
+        d.mkdir()
+        (d / "x-1111.md").write_text("")
+        self.assertEqual(wi.stale_reservation_fix(d / "x-1111.md"),
+                         f"nothing was written to it: rm '{d}/x-1111.md'")
+        (d / "x-1111.md.tmp7").write_text("content")
+        self.assertIn(f"mv '{d}/x-1111.md.tmp7' '{d}/x-1111.md'",
+                      wi.stale_reservation_fix(d / "x-1111.md"))
+
     def test_empty_item_file_is_a_stale_reservation(self):
         """220b: a kill between the O_EXCL reservation and the rename leaves
         an empty item file. Commands skip it, naming it; lint names the fix;

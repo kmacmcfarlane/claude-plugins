@@ -22,6 +22,7 @@ import hashlib
 import json
 import os
 import re
+import shlex
 import subprocess
 import sys
 import time
@@ -988,14 +989,21 @@ def _refuse_existing(dst):
     return WiError(3, f"refusing to overwrite existing {dst}; nothing written for it")
 
 
-def _same_file(a, b):
-    """True when `a` and `b` are one file (same device and inode, symlinks
-    not followed): the state a kill between link and unlink leaves."""
+def _half_moved(a, b):
+    """True when `a` and `b` are two hard links to one file — the state a
+    kill between link and unlink leaves: same device and inode (the last
+    component not followed), at least two links, and parent directories
+    that resolve to different directories. One directory entry reached by
+    two paths (a symlinked or bind-mounted directory) fails the last two
+    tests: unlinking either path would delete the only copy."""
     try:
         sa, sb = os.lstat(a), os.lstat(b)
+        pa, pb = (os.path.realpath(os.path.dirname(os.path.abspath(x)))
+                  for x in (a, b))
     except OSError:
         return False
-    return (sa.st_dev, sa.st_ino) == (sb.st_dev, sb.st_ino)
+    return ((sa.st_dev, sa.st_ino) == (sb.st_dev, sb.st_ino)
+            and sa.st_nlink >= 2 and pa != pb)
 
 
 def _move_no_clobber(src, dst):
@@ -1013,7 +1021,7 @@ def _move_no_clobber(src, dst):
         os.link(src, dst)
         linked = True
     except FileExistsError:
-        if not _same_file(src, dst):
+        if not _half_moved(src, dst):
             raise _refuse_existing(dst) from None
         linked = True  # linked by an earlier, killed move
     except OSError:
@@ -1097,8 +1105,9 @@ def item_paths(root, archived=False):
     return paths
 
 
-STALE_RESERVATION = ("empty file: a name reserved by a write that was killed "
-                     "before its content landed")
+STALE_RESERVATION = ("empty file: a name reserved by a write whose content "
+                     "never landed (killed mid-write, unless one is in "
+                     "flight this instant)")
 _warned_stale = set()
 
 
@@ -1109,8 +1118,9 @@ def stale_reservation_fix(path):
     (an interrupted archive left its source in items/)."""
     tmps = sorted(path.parent.glob(glob.escape(path.name) + ".tmp*"))
     if tmps:
-        return f"its content is in {tmps[0]}: mv {tmps[0]} {path}"
-    return f"nothing was written to it: rm {path}"
+        return (f"its content is in {tmps[0]}: "
+                f"mv {shlex.quote(str(tmps[0]))} {shlex.quote(str(path))}")
+    return f"nothing was written to it: rm {shlex.quote(str(path))}"
 
 
 def load_all(root, archived=False):
@@ -2565,7 +2575,7 @@ def cmd_lint(args):
         items.append(item)
     by_id = {}
     for it in items:
-        if it.id in by_id and _same_file(by_id[it.id].path, it.path):
+        if it.id in by_id and _half_moved(by_id[it.id].path, it.path):
             problems.append(f"{it.path}: the same file as {by_id[it.id].path} "
                             "(an archive killed between link and unlink); "
                             "`wi archive` finishes the move")
@@ -2646,7 +2656,7 @@ def cmd_archive(args):
             if item.get("status") not in ("done", "dropped") or not item.get("closed"):
                 continue
             dest = root / "archive" / item.get("closed")[:4] / item.path.name
-            if _same_file(item.path, dest):
+            if _half_moved(item.path, dest):
                 # a move killed between link and unlink: finish it, whatever
                 # the cutoff (_move_no_clobber unlinks the source)
                 moves.append((item.path, dest))
