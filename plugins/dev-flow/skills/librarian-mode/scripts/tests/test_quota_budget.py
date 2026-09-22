@@ -1056,10 +1056,65 @@ class TestFifo(Base):
         self.assertIsNone(qb.read_json(path))
         self.assertEqual(qb.read_jsonl(path, lambda d: d), [])
         self.assertEqual(qb.claim_file_state(path), "unusable")
-        with mock.patch.object(qb.os, "lstat", lambda p: os.stat_result((stat.S_IFREG | 0o600,) + (0,) * 9)):
-            self.assertEqual(qb.claim_file_state(path), "unusable")  # past a raced lstat
         with self.assertRaises(OSError):
             qb.open_lock(path)
+
+    @unittest.skipUnless(hasattr(signal, "SIGALRM"), "needs SIGALRM for the timeout guard")
+    def test_claim_file_state_refuses_a_fifo_that_passed_a_raced_lstat(self):
+        # The fail-first case for the claim path: lstat reports a regular file
+        # (the FIFO was swapped in after it), so only the non-blocking open and
+        # its fstat stand between claim_file_state and a read that never returns.
+        # test_fifo_at_claim_path_is_an_unusable_conflict cannot show this: the
+        # lstat gate alone already refused an un-raced FIFO before 4e5d.
+        path = self.fifo(os.path.join(self.store, "claims", "myrepo.json"))
+
+        def blocked(signum, frame):
+            raise AssertionError("claim_file_state blocked on a FIFO past a raced lstat")
+
+        old = signal.signal(signal.SIGALRM, blocked)
+        self.addCleanup(signal.signal, signal.SIGALRM, old)
+        self.addCleanup(signal.alarm, 0)
+        signal.alarm(10)
+        raced = os.stat_result((stat.S_IFREG | 0o600,) + (0,) * 9)
+        with mock.patch.object(qb.os, "lstat", lambda p: raced):
+            self.assertEqual(qb.claim_file_state(path), "unusable")
+        self.assertTrue(stat.S_ISFIFO(os.lstat(path).st_mode))
+
+
+@unittest.skipUnless(hasattr(os, "openpty") and hasattr(os, "fork") and hasattr(os, "setsid"),
+                     "needs a pty, fork and setsid")
+class TestNoCtty(unittest.TestCase):
+    """f381: open_regular opens O_NOCTTY. A session leader with no controlling
+    terminal that opens a tty without it acquires that tty, even though
+    open_regular refuses the fd straight after."""
+
+    def test_open_regular_on_a_tty_does_not_acquire_a_controlling_terminal(self):
+        try:
+            master, slave = os.openpty()
+        except OSError as e:
+            self.skipTest(f"no pty available: {e}")
+        name = os.ttyname(slave)
+        os.close(slave)
+        self.addCleanup(os.close, master)
+        pid = os.fork()
+        if pid == 0:  # child: never return into the test runner
+            code = 3
+            try:
+                os.setsid()
+                try:
+                    os.close(qb.open_regular(name, os.O_RDONLY))
+                    code = 2  # a tty was accepted as a regular file
+                except OSError:
+                    try:
+                        os.close(os.open("/dev/tty", os.O_RDONLY))
+                        code = 1  # the refused open made it the controlling terminal
+                    except OSError:
+                        code = 0
+            finally:
+                os._exit(code)
+        _, status = os.waitpid(pid, 0)
+        self.assertEqual(os.waitstatus_to_exitcode(status), 0,
+                         "1: acquired a controlling terminal; 2: tty accepted; 3: child error")
 
 
 if __name__ == "__main__":

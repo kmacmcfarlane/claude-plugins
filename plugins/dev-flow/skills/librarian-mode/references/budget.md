@@ -62,7 +62,8 @@ an exclusive `flock` on `samples.lock`, so a prune never loses a concurrent appe
 either name fails the append as a store write error, and nothing outside the store is
 created or written. Every store, lock, claim and sink data file is opened non-blocking and
 used only if it is a regular file: a FIFO or other non-regular file never blocks the call,
-fails a write as a store write error, and reads as absent. The script creates each directory it is missing with mode 0700, from
+fails a write as a store write error, and reads as absent (a claim path: an unusable
+conflict, below). The script creates each directory it is missing with mode 0700, from
 `claude-kit/` down. It also sets the directory it writes into to 0700 on every write
 (`librarian/` and `claims/`), even when that directory already existed. Directories above
 those, including an existing `claude-kit/`, keep their modes. The store holds percentages,

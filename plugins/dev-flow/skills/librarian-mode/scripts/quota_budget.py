@@ -132,8 +132,10 @@ def open_regular(path, flags, mode=0o600):
     open is O_NONBLOCK (a FIFO with no peer would otherwise block it forever, and
     O_NOFOLLOW does not stop a FIFO), the fd is fstat'ed, anything but a regular
     file is closed and refused with OSError(EINVAL), and O_NONBLOCK is then
-    cleared. A write-only open of a FIFO with no reader fails with ENXIO."""
-    fd = os.open(path, flags | os.O_NONBLOCK, mode)
+    cleared. A write-only open of a FIFO with no reader fails with ENXIO. The
+    open is also O_NOCTTY, so a terminal reached through a followed symlink never
+    becomes the controlling terminal before it is refused."""
+    fd = os.open(path, flags | os.O_NONBLOCK | os.O_NOCTTY, mode)
     try:
         if not stat.S_ISREG(os.fstat(fd).st_mode):
             raise OSError(errno.EINVAL, "not a regular file", path)
