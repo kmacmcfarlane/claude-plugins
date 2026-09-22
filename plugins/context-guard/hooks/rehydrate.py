@@ -25,7 +25,7 @@ Tiers by source:
   resume           full only if the manifest changed or the repo moved since
                    the last injection (state manifest.sha); else header
   startup / clear  header only (one line, ~100-150 tokens with a
-                   mode_skill), labelled if stale
+                   mode_skill, plus the Holds lines), labelled if stale
 Every tier's header names the manifest's `mode_skill:` (the standing mode to
 re-enter first), unless the manifest is LANDED; a STALE manifest's mode is
 named for confirmation, not as an order. Only a strict slash-command shape is
@@ -49,10 +49,19 @@ adopted one - gets one foreign header line on every source (foreign_header):
 no body, no precedence preamble, no standing mode. The ledger digest and the
 /compact guidance still inject on compact: they are this session's own.
 
+Holds (`## Holds`, one line per hold with its end condition) ride on every
+tier of a manifest that is ours: the full tiers inject the section untrimmed,
+and the header-only tiers append its lines in compact form (holds_block,
+bounded, plain text). A hold whose end condition names a time already past is
+marked `expired? confirm`, never dropped. The foreign header carries none:
+another session's holds are not this session's.
+
 Budget: total additionalContext <= 9,000 chars, under the harness's single
 10,000-char cap (overflow would be replaced by a file stub, silently dropping
-the mandatory tiers). Trim order: the frontmatter `items:` list, Scrolls, then
-Aware-of, never Doing/Goal/Read-in-full.
+the mandatory tiers). Trim order (trim): the frontmatter `items:` list,
+Scrolls, Next, the Aware-of lines other than CORRECTION/REFUSED, then any
+other unprotected section; never Doing, Goal, Holds, In flight, Read in full
+or Copy forward.
 
 SessionStart is also where the gauge policy is published, first thing
 (L.publish_gauge: gauge.json, the threshold anchors and labels for the
@@ -441,18 +450,165 @@ def _trim_items(body):
         open_.group(1) + body[m.end():]
 
 
+TRIMMED = "(trimmed — read the manifest file)"
+# Sections the trim never touches: what the successor must know or do first.
+PROTECTED = ("doing", "goal", "holds", "in flight", "read in full", "copy forward")
+# Lines a collapsed section keeps: the Aware-of tags that outrank everything
+# else, and the hook's own Next-withheld line.
+_KEEP_AWARE = re.compile(r"[ \t]*(?:[-*][ \t]*)?(?:CORRECTION|REFUSED)\b")
+_KEEP_NEXT = re.compile(r"Next withheld:")
+
+
+def _sections(body):
+    """[[name, text]]: the text before the first `## ` line (name None: the
+    frontmatter and any preamble), then one entry per `## ` section, its
+    lower-cased name and its text heading included. Joined, the texts are the
+    body again."""
+    out = []
+    for chunk in re.split(r"(?m)^(?=## )", body):
+        if not chunk:
+            continue
+        name = chunk.split("\n", 1)[0][3:].strip().lower() \
+            if chunk.startswith("## ") else None
+        out.append([name, chunk])
+    return out
+
+
+def _collapse(sec, keep=None):
+    """Replace a section's body with the trimmed marker, keeping the lines
+    `keep` matches; unchanged when that would not make it shorter."""
+    head, _, rest = sec[1].partition("\n")
+    kept = "".join(ln + "\n" for ln in rest.split("\n") if keep and keep.match(ln))
+    new = f"{head}\n{kept}{TRIMMED}\n" + ("\n" if sec[1].endswith("\n\n") else "")
+    if len(new) < len(sec[1]):
+        sec[1] = new
+
+
 def trim(body, budget):
-    if len(body) > budget:
-        body = _trim_items(body)
-    for sec in ("## Scrolls", "## Aware of"):
-        if len(body) <= budget:
+    """Fit the body into `budget` chars. Order: the frontmatter `items:` list,
+    Scrolls, Next (its withheld line kept), the Aware-of lines other than
+    CORRECTION/REFUSED, then every other section not in PROTECTED, last
+    first. Doing, Goal, Holds, In flight, Read in full and Copy forward are
+    never trimmed: only a body whose protected part alone exceeds the budget
+    is cut at the end."""
+    if len(body) <= budget:
+        return body
+    body = _trim_items(body)
+    secs = _sections(body)
+
+    def over():
+        return sum(len(t) for _, t in secs) > budget
+
+    steps = [("scrolls", None), ("next", _KEEP_NEXT), ("aware of", _KEEP_AWARE)]
+    for name, keep in steps:
+        for sec in secs:
+            if not over():
+                break
+            if sec[0] == name:
+                _collapse(sec, keep)
+    for sec in reversed(secs):
+        if not over():
             break
-        i = body.find(sec)
-        if i >= 0:
-            j = body.find("\n## ", i + 1)
-            body = body[:i] + f"{sec}\n(trimmed — read the manifest file)\n" + \
-                (body[j:] if j >= 0 else "")
-    return body[:budget]
+        if sec[0] is not None and sec[0] not in PROTECTED:
+            _collapse(sec)
+    return "".join(t for _, t in secs)[:budget]
+
+
+# ── Holds: what the successor must not do, and until when ──────────────────
+HOLDS_MAX = 8            # lines the header tiers carry
+HOLD_LINE_MAX = 240      # chars per line
+HOLDS_BUDGET = 800       # chars for the whole header block
+EXPIRED = "expired? confirm"
+_CTRL = re.compile(r"[\x00-\x1f\x7f-\x9f\u2028\u2029\u200b-\u200f\u202a-\u202e\u2066-\u2069]")
+_WHEN_RE = re.compile(
+    r"(\d{4}-\d{2}-\d{2})(?:[T ](\d{2}:\d{2}(?::\d{2})?))?(?:[ \t]*(Z|[+-]\d{2}:?\d{2})\b)?",
+    re.ASCII | re.I)
+_NONE_RE = re.compile(r"(?:none|nothing|no holds?)\.?", re.I)
+
+
+def hold_lines(text):
+    """The `## Holds` section's entries, raw: one per non-blank line, a
+    leading `- ` or `* ` dropped; [] when the section is absent or `None`."""
+    for name, chunk in _sections(text or ""):
+        if name == "holds":
+            out = []
+            for ln in chunk.split("\n")[1:]:
+                s = re.sub(r"^[ \t]*[-*][ \t]+", "", ln).strip()
+                if s and not _NONE_RE.fullmatch(s):
+                    out.append(s)
+            return out
+    return []
+
+
+def hold_end(line):
+    """A hold's end-condition clause: the text after its last `until`, else
+    after its last ` — ` separator, else the whole line."""
+    low = line.lower()
+    i = low.rfind("until ")
+    if i >= 0 and (i == 0 or not low[i - 1].isalnum()):
+        return line[i + 6:]
+    j = line.rfind(" — ")
+    return line[j + 3:] if j >= 0 else line
+
+
+def hold_expired(line, now=None):
+    """True when the hold's end condition names a time already past: a UTC
+    stamp (`2026-09-22T18:00Z`, an explicit offset, or no zone), or a bare
+    date, which ends with that UTC day. A decision number or an event has
+    no time, so it never reads expired: it stays in force until confirmed."""
+    now = time.time() if now is None else now
+    m = _WHEN_RE.search(hold_end(line))
+    if not m:
+        return False
+    date, clock, zone = m.groups()
+    t = stamp_epoch(f"{date}T{clock or '23:59:59'}{zone or 'Z'}")
+    return t is not None and t < now
+
+
+def _mark(line, now):
+    return f"{line} [{EXPIRED}: its end time has passed]" \
+        if hold_expired(line, now) else line
+
+
+def annotate_holds(text, now=None):
+    """The manifest text with every expired hold in `## Holds` marked
+    `[expired? confirm: …]` in place (the full tiers inject it this way)."""
+    secs = _sections(text or "")
+    for sec in secs:
+        if sec[0] != "holds":
+            continue
+        lines = sec[1].split("\n")
+        for k in range(1, len(lines)):
+            s = re.sub(r"^[ \t]*[-*][ \t]+", "", lines[k]).strip()
+            if s and not _NONE_RE.fullmatch(s) and hold_expired(s, now):
+                lines[k] = lines[k].rstrip() + f" [{EXPIRED}: its end time has passed]"
+        sec[1] = "\n".join(lines)
+        return "".join(t for _, t in secs)
+    return text
+
+
+def holds_block(text, now=None):
+    """The compact Holds block the header tiers append, or "" when the
+    manifest records none. Plain text in the hook's voice: control and
+    bidi characters stripped, each line bounded, at most HOLDS_MAX lines and
+    HOLDS_BUDGET chars, the rest counted."""
+    lines = [_CTRL.sub(" ", ln)[:HOLD_LINE_MAX] for ln in hold_lines(text)]
+    if not lines:
+        return ""
+    out = ["Holds this manifest records (each stands until its end condition is "
+           f"met; one marked `{EXPIRED}` names a time already past: ask the "
+           "operator before acting against it or lifting it):"]
+    used = len(out[0])
+    for k, ln in enumerate(lines):
+        row = "- " + _mark(ln, now)
+        rest = len(lines) - k
+        if k >= HOLDS_MAX or used + len(row) + 1 > HOLDS_BUDGET - 60:
+            out.append(f"(+{rest} more hold{'' if rest == 1 else 's'} — read the "
+                       f"manifest file)")
+            break
+        out.append(row)
+        used += len(row) + 1
+    return "\n".join(out)
 
 
 def _parent_by_record_uuid(sid, transcript_path):
@@ -768,6 +924,7 @@ def main():
              + "\n".join(notes)) if notes else "") if b)
         if moved:
             text = withhold_next(text, moved)
+        holds = holds_block(text) if ours else ""
 
         seen = st.get("manifest") or {}
         full = ours and (source == "compact" or (
@@ -791,13 +948,13 @@ def main():
                            "session; where they disagree, the manifest wins."
                            if st.get("compact_summary") else ""))
             parts += [header, preamble] + ([checks] if checks else []) + \
-                [trim(text, CAP - len(header) - len(preamble) - len(checks)
+                [trim(annotate_holds(text), CAP - len(header) - len(preamble) - len(checks)
                       - LEDGER_BUDGET - 400)]
             sysmsg = (f"Rehydrated from {live}{f' ({why})' if why else ''} manifest "
                       f"({fm.get('written', '?')}).")
         else:
             parts.append(header + " Read it before resuming its thread."
-                         + "".join("\n" + c for c in (checks, moved) if c))
+                         + "".join("\n" + c for c in (holds, checks, moved) if c))
         if ours:
             # `manifest` = the version last shown to this session as its own.
             seen_new = {"sha": sha, "top": top}

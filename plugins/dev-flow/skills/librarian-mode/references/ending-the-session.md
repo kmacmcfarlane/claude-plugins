@@ -17,6 +17,15 @@ flight roster, following that skill's In flight rule (who counts, and resuming b
 rather than re-dispatching), with the entries built from the `dispatch:` lines on the
 `doing` items and ListAgents, never from memory.
 
+**Holds.** Every standing hold goes under the manifest's Holds section, one line each
+with its end condition, per the checkpoint skill's hold rule: `no push until decision N`,
+`dispatch small (one agent) until decision N` or `until <UTC time>`, `hold <item> until
+<event>`. A hold the operator gave without an end condition gets one asked for, or is filed
+as an open decision; "until bedtime" is written as the UTC time it means. Holds are never
+trimmed and ride on every rehydration tier, so after Rehydrate the first report restates
+each hold and whether its end condition has been met — one marked `expired? confirm` goes
+to the operator before anything acts against it or lifts it.
+
 **Brief templates.** The templates are the `dev-cycle` skill's `references/agent-brief.md`
 and `references/review-brief.md`; any filled brief the run keeps in the session
 scratchpad stays behind at `/clear`. Copy each one the successor will reuse into the
@@ -73,8 +82,9 @@ the step in hand, then:
    recommendation, to run at the operator's convenience (the next morning is fine), and
    last its Step 7 opener, led by `/dev-flow:librarian-mode start`, then `read
    <manifest path> in full first`, then — when the roster is not `None` — `resume <ids>
-   with SendMessage; do not re-dispatch` naming every id on it, and the facts changed
-   since the manifest. Never run
+   with SendMessage; do not re-dispatch` naming every id on it, then — when Copy forward is
+   not empty — `copy forward <paths> first` (the checkpoint's Step 7), and the facts
+   changed since the manifest, Holds first. Never run
    `/compact` yourself, and start no new work — no dispatch, no merge — in that turn.
 
 The checkpoint stands the gate down, so nothing warns again before the compaction.
