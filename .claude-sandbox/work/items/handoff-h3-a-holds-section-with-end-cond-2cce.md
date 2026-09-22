@@ -53,3 +53,5 @@ resolution verify (opus) at 2a3619a: CLEAR, no findings — all three changes ke
 Review result: 3 review rounds + resolution verify, 2 fix rounds + 1 conflict round; impl opus, review opus.
 land (librarian): conflicts with main in hooks/rehydrate.py, checkpoint SKILL.md and handoff-format.md (H5 019c landed c8396a2 there). Not merged. Conflict round → implementer; the linked-clear full branch must wrap the body in annotate_holds (both reviewers flagged it).
 dispatch: implementer opus — conflict round (resume)
+conflict round 2 DONE 1fdf274 (merge of H5): tier docstring carries both; no code change needed for annotate_holds (H5's linked clear sets full, which already wraps) — pinned by a new test test_linked_clear_carries_holds_with_the_expiry_mark; SKILL.md Step 7 and the tiers bullet keep both with no duplication; 615 context-guard tests OK.
+dispatch: reviewer opus — resolution verify (resume)
