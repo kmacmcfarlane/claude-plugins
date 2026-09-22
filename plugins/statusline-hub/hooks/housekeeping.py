@@ -202,8 +202,9 @@ def _ident(st):
 
 def _unlink_if_same(path, st):
     """Delete path only when it is still the file `st` describes, so a
-    producer's write that landed after the judgment survives. Raises
-    OSError."""
+    producer's write that landed after the judgment survives. POSIX cannot
+    unlink by inode: a write landing between the lstat and the unlink is
+    lost (hook-contract.md § 11). Raises OSError."""
     if _ident(os.lstat(path)) != _ident(st):
         return False
     os.unlink(path)
@@ -238,7 +239,8 @@ def prune_segments(now=None):
     in the drop dir and one level of provider dirs, removing a provider dir
     left empty, plus orphaned temp files (any dot-file over TMP_STALE_S old).
     A file is deleted only while it is still the one judged dead (same
-    inode and mtime), so a producer's rewrite racing the pass survives. A
+    inode and mtime), so a producer's rewrite that lands before the pass
+    reaches the file survives (all but the instant of the unlink). A
     dir that fails the trust check is left alone. Returns how many files
     went. Never raises."""
     n = 0

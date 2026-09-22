@@ -389,7 +389,11 @@ why any file is skipped.
   (`mkstemp(dir=d, prefix=".")`), which the hub never reads; the prune pass deletes a
   dot-file in the drop dir once it is an hour old (a writer killed mid-write).
 - The prune pass deletes a file only while it is still the one it judged dead (the same
-  inode and mtime), so a rewrite or `os.utime` that lands during the pass survives it.
+  inode and mtime): a rewrite or `os.utime` that lands before the pass reaches the file
+  survives it. One that lands in the instant between that check and the unlink is lost
+  until your next write, since POSIX cannot unlink by inode. Only a file already dead
+  (expired, or untouched 30 days) is at risk. If a keep-up `os.utime` raises
+  `FileNotFoundError`, the file is gone: write it again.
 - To remove a segment, delete the file, write empty `text`, or let `expires_at` pass.
 - Use a per-session file for anything about one session (a checkpoint label, the
   session's identity), and the every-session file for anything true of the whole machine
