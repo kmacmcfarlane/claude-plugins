@@ -17,7 +17,8 @@ and the Next withhold read the same ancestry check (head_state), so a manifest
 whose Next is withheld is never labelled FRESH.
 
 Tiers by source:
-  compact          full manifest + the ledger tail (reasoning survives)
+  compact          full manifest + the ledger digest (reasoning lines of
+                   every epoch ahead of commit pointers; ledger.digest)
   resume           full only if the manifest changed or the repo moved since
                    the last injection (state manifest.sha); else header
   startup / clear  header only (one line, ~100-150 tokens with a
@@ -42,7 +43,7 @@ manifest VERSION, {owner: its `session:`, sha: L.manifest_sha(raw text)}:
     (lineage.py, PostToolUse Read: state `manifest_adopted`).
 Anything else - another session's manifest, or a later rewrite of a linked or
 adopted one - gets one foreign header line on every source (foreign_header):
-no body, no precedence preamble, no standing mode. The ledger tail and the
+no body, no precedence preamble, no standing mode. The ledger digest and the
 /compact guidance still inject on compact: they are this session's own.
 
 Budget: total additionalContext <= 9,000 chars, under the harness's single
@@ -738,9 +739,13 @@ def main():
             seen_new = {"sha": sha, "top": top}
 
     if source == "compact":
-        lt = ledger.tail(sid, max_chars=LEDGER_BUDGET)
+        # Digest by kind, not a raw tail: commit pointers once crowded the
+        # reasoning out (13 of 17 injected lines), so R/C/D/X/U/Q from every
+        # epoch come first and the P pointers fill what is left.
+        lt = ledger.digest(sid, budget=LEDGER_BUDGET)
         if lt:
             parts.append("[context-guard ledger — this session's reasoning trail, "
+                         "reasoning kept ahead of commit pointers, file order, "
                          "newest last]\n" + lt)
         ci = st.get("custom_instructions")
         if ci:
