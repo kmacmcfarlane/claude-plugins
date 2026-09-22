@@ -2,8 +2,10 @@
 id: review-checklist-2-lint-a-sibling-skill-d95a
 title: "review-checklist §2 lint: a sibling skill name ending a line before an indented path is not recognised"
 type: bug
-status: todo
+status: doing
 priority: 3
+owner: Kyle-McFarlane@bf9f9839222c
+claimed: 2026-09-22T23:53Z
 created: 2026-09-22
 updated: 2026-09-22
 refs:
@@ -17,3 +19,9 @@ e770 F4 review r1 note, 2026-09-22: the §2 sibling-name regex (`name`(?: skill)
 - next: —
 - blocked: —
 - learned: —
+
+## Notes
+- 2026-09-22 claimed by Kyle-McFarlane@bf9f9839222c
+
+target: full review-checklist-2-lint-a-sibling-skill-d95a /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude/worktrees/review-checklist-2-lint-a-sibling-skill-d95a
+dispatch: implementer opus — the lint is executable logic (a shell/regex check every review runs), rule 2

@@ -2,12 +2,11 @@
 id: 2edb-7117-review-lows-frontmatter-wordin-4b6a
 title: 2edb + 7117 review lows (frontmatter wording, no-modal wording)
 type: chore
-status: doing
+status: done
 priority: 3
-owner: Kyle-McFarlane@bf9f9839222c
-claimed: 2026-09-22T23:40Z
 created: 2026-09-22
 updated: 2026-09-22
+closed: 2026-09-22
 refs:
   - 2edb/7117 reviews
 ---
@@ -39,3 +38,6 @@ agent: implementer a812050d4754bed89 round 2
 return: implementer DONE 6ce0b00
 dispatch: reviewer opus — review r2 (resume)
 agent: reviewer a5190c17bfd9cc6ac round 2
+verdict: CLEAR round 2 at 6ce0b00
+landed: e96a03c
+- 2026-09-22 done: e96a03c
