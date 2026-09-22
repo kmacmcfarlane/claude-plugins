@@ -10,14 +10,14 @@ deps:
 owner: unknown@360f41058e92
 claimed: 2026-09-21T18:18Z
 created: 2026-09-04
-updated: 2026-09-21
+updated: 2026-09-22
 ---
 
 Mid-turn PostToolUse depth gate; HARD gate stops recommending an unaffordable checkpoint; rehydration manifest made session-addressed (claude-kit/handoff/<sid>.md) because several sandbox sessions share one work dir; legacy repo HANDOFF.md adopted-if-owned else ignored. Worktree .claude/worktrees/context-guard-turn-gate, branch worktree-context-guard-turn-gate (off plugin-factoring; rebase onto main after plugin-factoring lands).
 
 ## Handoff
-- doing: plan 00-03 done; F2 landed; F1 built (held); F3a awaits decision 48, F3b decision 47
-- next: on 48(a): dispatch F3a from plan 00-03
+- doing: F1 (3adc) landed 15f271c; F2 and F3a landed earlier
+- next: F3b is the last child: its plan is final and F3b-1/F3b-2 are in review
 - blocked: land-plugin-factoring-fbe8
 - learned: Round-2 nits: inode+mtime cache key, update_state() merge instead of load-modify-save
 

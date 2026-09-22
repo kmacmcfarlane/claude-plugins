@@ -16,8 +16,8 @@ refs:
 Split from 426a by operator answer 59(a), 2026-09-22. 426a lands review <branch> mode without § Resume; this item designs the resume state machine as a whole in dev-cycle plan mode before any build. Prior work (kept in main's history once 426a merges — git show <sha>:plugins/dev-flow/skills/dev-cycle/references/bindings.md): fa4ef02 (first cut), d802a19, 58bece4, 0f0a254, 54f022c (last full version). Feedback: 426a's body holds six review rounds verbatim (sections 'Review round 1'…'Review round 6'); the open mediums at 54f022c are (1) standalone 'recorded but unanswered → wait' deadlocks a resume in a new session (re-ask via the standalone channel; only a caller's persistent channel waits), (2) review mode never re-reviews after a recorded 'no' once the author moves the branch (rules 5/6 need rule 4's stale-sha test); low: rule 7 reuses an answer recorded before the latest BLOCKED run. Acceptance: a plan series whose 00 consolidates the six rounds into requirements + a state table, reviewed CLEAR before any implementer dispatch.
 
 ## Handoff
-- doing: plan fix round 3 running (planner a27e7f6636698e4e5, opus, serial 03): the dispatch-permission tag settled by the librarian, the rest bookkeeping
-- next: serial 03 → a short delta check with reviewer acf4adcf179bf47b2, then F1
+- doing: plan of record 00-04. F1 fix r2 running (impl a58ed2ccb63bee360, reviewer ac36c5798576944f0, worktree e770-f1-record-line-shapes) — one medium left, a one-word fix to target:'s mode field
+- next: on CLEAR land F1, then F2 (the dispatch-permission identifier), then F3 (the state model + the bindings.md § Record line shapes move, with the reviewer's three riders), then F4
 - blocked: —
 - learned: —
 - from 426a final review (low): the shipped dev-cycle bindings.md '## Resume' heading points at this item's id, which marketplace installs cannot reach; the redesign replaces it (or, until then, 'not specified yet: an interrupted run restarts at Step 0').
