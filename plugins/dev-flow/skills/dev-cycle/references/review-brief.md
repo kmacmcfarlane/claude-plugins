@@ -214,6 +214,48 @@ A resolution that drops either side's intent is a finding.
 The round is `CLEAR` only when every prior medium-or-above is FIXED or WITHDRAWN and no
 new medium-or-above appeared.
 
+## Review-mode variant
+
+For `review <branch>` mode (SKILL.md § Usage): the same brief, severity scale, verdicts,
+prohibitions and report shape, with these changes.
+
+Replace the opening WORKTREE and verify lines:
+
+```
+WORKTREE=<the absolute worktree path `bindings.md` § Review target resolved — may be the
+          main checkout itself>
+
+First verify it exists and is on branch `<branch>` (`git -C $WORKTREE branch
+--show-current`). If not — or if any placeholder in this brief is unfilled — stop and
+report BLOCKED with the reason: that is the orchestrator's setup to fix, not a finding
+about the change.
+```
+
+Base branch, Commits and Full diff stay as written, against `<branch>` in place of
+`worktree-<name>`. Replace "The implementer claims" with:
+
+```
+Claims: none — this branch was not built by this cycle; you are reviewing it cold.
+```
+
+Replace "Files changed, with reasons" with the branch's own commit list and the recorded
+Intent (`bindings.md` §§ Intent, Record line shapes) in place of an implementer's
+`changed:` block:
+
+```
+Commits: <the same list as Under review's Commits line>
+Intent: <the recorded `intent:` line — either the user's one-line intent, or "commit
+        messages are the intent">
+```
+
+Grade each changed file against this Intent in place of the item's or plan's acceptance
+(What to do, item 5). `bindings.md` § Intent's exemption applies: a changed file is never
+itself a finding merely for lacking a one-line reason — there was no implementer to write
+one.
+
+Model: the tier Step 2 rule 4 gives by reading routing rules 2, 3 and 8 against the
+branch's own diff, since there is no implementer round to read a signal from.
+
 ## Plan-review variant
 
 For a plan-mode series (SKILL.md § Step 1): the same brief, severity scale, verdicts,

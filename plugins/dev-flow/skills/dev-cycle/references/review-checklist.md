@@ -20,17 +20,28 @@ where such a repo's own gates come in.
 
 ## 1. Scope
 
+`review <branch>` mode only: the changed-block comparison and the one-commit /
+commit-shape items below apply only to commits this cycle itself made — a fix-round
+commit on `<branch>`, from the review-mode fix variant. The branch's own pre-existing
+commits are the author's; grade them against the recorded Intent (`bindings.md`
+§ Intent), not against these two items.
+
 - [ ] `git -C $W diff --stat $BASE...HEAD` lists only the files in scope (plus the
       catalog and layout edits when the marketplace's shape changed). With Files in
       scope `undeclared` (`bindings.md` § Undeclared files), compare the stat against the
       record sink's cumulative `changed:` block instead (the union of every round's
       CHANGED): every file in one is in the other, each with its one-line reason.
+      `review <branch>` mode with no fix round yet: there is no `changed:` block to
+      compare against — skip this item, and grade the diff against the recorded Intent
+      instead.
 - [ ] Nothing under `.claude-sandbox/` or `.claude/`, nothing outside the Ground binding.
 - [ ] One commit on the branch, message `<verb>: <aspect> - <description>` — plus, per
       review fix round, one or more new commits on top of it. No amend, rebase or squash
       of a reviewed commit — except the secret rebuild (`fix-loop.md` § A leaked
       secret); a merge of the base only in a merge-conflict round (`fix-loop.md` § A
-      merge conflict); nothing outside the files in scope in any of them.
+      merge conflict); nothing outside the files in scope in any of them. `review
+      <branch>` mode: this shape applies from the first fix-round commit on, never to
+      the branch's earlier history, which was never this cycle's to shape.
 - [ ] No secret or credential anywhere in the branch history — every file in every
       commit's patch, a later removal notwithstanding, and every message; the final diff
       alone does not show it, and neither does a plain `git log` for what a merge's

@@ -26,7 +26,8 @@ order given, and asks the user only where the table says so.
 | **Series home** | Where the plan phase writes an investigation series | `$MAIN/.claude-sandbox/investigations/<slug>/`, the canonical path `/implement` reads |
 
 `<scratchpad>` is the session scratchpad the system prompt names; `<slug>` is the item id,
-the series slug, or a kebab-case name made from the cycle brief's goal.
+the series slug, a kebab-case name made from the cycle brief's goal, or — `review
+<branch>` mode with no other target — `<branch>` with every `/` written `-`.
 
 ## What a librarian binds
 
@@ -75,6 +76,85 @@ changed:
 A file changed again keeps one line, with its latest reason. The review brief pastes this
 block, and the checklist's scope check (section 1) compares the diff against it.
 
+## Review target
+
+`review <branch>` mode's Step 0 resolves the branch's own worktree in place of Step 3
+(no `worktree-<name>` branch is created), and records it as `target: <branch> <worktree
+path>` (§ Record line shapes) before any dispatch:
+
+1. The main checkout is already on `<branch>` (`git -C "$MAIN" branch --show-current`
+   equals it): the worktree path is `$MAIN` itself for reading and reviewing — there is
+   no separate worktree to add. Land is different: merging still needs the main checkout
+   on `<base>` (SKILL.md § Step 5.3), which case 1 does not satisfy, and the cycle never
+   checks `<base>` out over `<branch>` to get there. Land in this case stops and asks
+   instead of merging (§ Landing below, `troubleshooting.md` § Landing).
+2. Otherwise, an existing worktree already checked out on `<branch>`: `git -C "$MAIN"
+   worktree list --porcelain`, matched against `refs/heads/<branch>`. Use its listed path
+   as is.
+3. Otherwise add one, on the branch itself, at `.claude/worktrees/review-<slug>`, `<slug>`
+   being `<branch>` with every `/` written `-` (§ The ten, `<slug>`):
+
+   ```bash
+   git -C "$MAIN" worktree add .claude/worktrees/review-<slug> <branch>
+   ```
+
+   The same `.git/info/exclude` check as Step 3 applies before adding it.
+
+Every later step reads the worktree by this resolved absolute path, never reconstructed
+as `"$MAIN"/.claude/worktrees/<name>` — cases 1 and 2 do not live there.
+
+Base still resolves as usual (§ Base below) — it is what Land would merge into, not what
+the branch was built from. Files in scope, when a caller, item or plan names them, still
+bounds the reviewer's per-file grading, same as any other run; `undeclared` when nothing
+does, and the reviewer grades the whole diff against the recorded Intent (§ Intent)
+instead of an implementer's per-file reasons.
+
+## Intent
+
+`review <branch>` mode with no work item or plan (SKILL.md § Step 0.2) has no acceptance
+to grade against. Before dispatching the reviewer, collect one: ask the user for a
+one-line intent in the same question as any other Step 0 ask; if none is given, record
+`intent: commit messages are the intent` and use the branch's own commit subjects
+(`git -C <worktree path> log --oneline <base>..<branch>`) as what the reviewer grades
+against. Record it as `intent: <one line>` (§ Record line shapes) in the record sink.
+
+In this mode, "Files changed, with reasons" in the review brief holds the branch's own
+commit list, not the orchestrator's `changed:` block — there was no implementer round to
+build one from. The reviewer grades each changed file against the recorded Intent instead
+of a per-file reason; a file the Intent does not plausibly cover is still a finding at
+medium, but § Undeclared files' "no reason" rule does not apply here — a changed file is
+never itself a medium finding merely for lacking a one-line reason, since no implementer
+wrote one.
+
+## Record line shapes
+
+Fixed shapes for the lines the steps append to the record sink; every step that writes
+one uses this exact shape. The record is a log, read in the order it was written:
+
+- `dispatch: <role> <model> — <signal>` — SKILL.md § Step 2 rule 7, written before every
+  dispatch (implementer or reviewer)
+- `verdict: <V> round <n> at <sha>` — SKILL.md § Step 4.5, written as soon as a
+  **reviewer's** report comes back. `<n>` is the review round, counted only for
+  `CLEAR`, `NEEDS_CHANGES` and `SHOW_STOPPER` — a `BLOCKED` never reached a verdict on
+  the change, so it is never a round (`review-brief.md` § Verdict meanings). `<sha>` is
+  the HEAD reviewed for a change; for a **plan-mode** review, in its place:
+  `at <series path>` (the review covers the whole series, not one sha) — a finding's own
+  file:line still names the serial.
+- `findings: …` — SKILL.md § Step 4.5, written together with a `NEEDS_CHANGES` or
+  `SHOW_STOPPER` verdict: the reviewer's FINDINGS section, pasted verbatim, one line per
+  finding in the reviewer's own numbering — the source `fix-loop.md`'s NEEDS_CHANGES
+  round hands to the fix dispatch unchanged.
+- `target: <branch> <worktree path>` — § Review target, `review <branch>` mode only
+- `intent: <one line>` — § Intent, `review <branch>` mode with no item or plan
+- `decision: <one line>` — § Decisions, written before a decision is raised
+- `answer: <decision> — <reply>` — § Decisions and SKILL.md § Step 3.5 (a
+  `NEEDS_CONTEXT` answer), written as soon as the reply arrives; `<decision>` repeats the
+  `decision:` line's text (or, for a `NEEDS_CONTEXT`, the question). A caller's numbered
+  pair — librarian-mode's `decision N: …` and `answer N: <reply>`, matched by `N` — is
+  the same pair and is read the same way. A `decision:` with no matching `answer:` is
+  unanswered, and an answered one is never raised again.
+- `checks:`, the `changed:` block — §§ Checks, Undeclared files
+
 ## Checks
 
 Take the first source that answers:
@@ -121,18 +201,47 @@ through AskUserQuestion, whose options carry the choices, recommended first; two
 go as one numbered prose list — one decision per number, each with its options and their
 impact, recommendation first — so the user answers by number. Never in the same turn as a
 heavy analysis: end the turn with the analysis and ask in the next. Append each raised
-decision to the record sink as `decision: <one line>` before asking.
+decision to the record sink as `decision: <one line>` before asking, and the reply as
+`answer: <decision> — <reply>` (§ Record line shapes) as soon as it arrives.
+
+## Resume
+
+Resuming an interrupted run is not specified yet; see work item
+dev-cycle-design-resume-whole-split-from-e770.
 
 ## Landing
 
 Standalone, ask once at Land — AskUserQuestion, options in this order:
 
-1. `Merge to <base> locally, no push` — `git merge --no-ff` into the local base, worktree
-   removed, branch deleted. Nothing leaves the machine.
-2. `Leave the branch` — no merge; the worktree and `worktree-<name>` stay for the user;
-   the item, when there is one, gets a handoff instead of `wi done`.
+1. `Merge to <base> locally, no push` — `git merge --no-ff` into the local base, then the
+   cycle's own worktree removed and its own branch deleted (`full` mode:
+   `worktree-<name>`; `review <branch>` mode: only a worktree this cycle added itself at
+   `.claude/worktrees/review-<slug>` — never `<branch>`, which is the author's and is
+   never deleted). Nothing leaves the machine.
+2. `Leave the branch` — no merge; whatever the cycle itself added (the worktree, and in
+   `full` mode `worktree-<name>`) stays for the user; the item, when there is one, gets a
+   handoff instead of `wi done`. `review <branch>` mode never touches `<branch>` itself
+   either way — it was never the cycle's to remove.
 3. `Merge and push` — option 1, then `git -C "$MAIN" push origin <base>`, fast-forward
    only, never `--force`.
+
+`review <branch>` mode merges `<branch>` itself in place of `worktree-<name>`:
+
+```bash
+git -C "$MAIN" merge --no-ff -m "<message>" <branch>
+```
+
+from the worktree path § Review target resolved, once the main checkout is on `<base>`
+(SKILL.md § Step 5.3) — the same requirement `full` mode has. § Review target's case 1
+(the main checkout already on `<branch>` itself) never satisfies that on its own:
+checking `<base>` out over `<branch>` to get there would mean checking out over the
+user's own work, which the cycle never does. **Case 1 at Land stops and asks**
+(`troubleshooting.md` § Landing, "the main checkout is not on the base") instead of
+merging — the user switches the main checkout to `<base>` themselves and Land re-runs
+its checks and diff, or picks `Leave the branch`, which never needs the main checkout
+touched. Cases 2 and 3 (an existing or added worktree elsewhere) merge normally once the
+main checkout, separately, is on `<base>`; cleanup then removes only a worktree case 3
+added, never `<branch>` itself.
 
 Never push unless the user picked option 3 or the invocation asked for it in words. A
 rejected push stops: never pull, rebase or force around it — report it.

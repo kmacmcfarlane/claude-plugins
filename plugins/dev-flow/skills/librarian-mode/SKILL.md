@@ -240,6 +240,11 @@ go with the push outcome: a short follow-up message mid-session, since the Repor
 gone out; inside the final Report at session end and 75%/DUE
 (`references/troubleshooting.md` § Push rejected).
 
+After each push (with `Push: none`, each batch), one team summary for people who did not
+watch the run, prose or bullets, never a table, after the push outcome and its
+`incoming:` lines: `references/team-summary.md` (no reflog: note `origin/main` before
+pushing).
+
 ## Red flags
 
 Stop when you catch yourself doing any of these:

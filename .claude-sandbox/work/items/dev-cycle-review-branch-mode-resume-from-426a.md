@@ -2,16 +2,14 @@
 id: dev-cycle-review-branch-mode-resume-from-426a
 title: "dev-cycle: review <branch> mode + resume from item record (07c3 F4)"
 type: feature
-status: blocked
+status: done
 priority: 3
 deps:
   - dev-flow-add-the-dev-cycle-skill-07c3-f1-325d
 parent: dev-flow-new-dev-cycle-skill-investigate-07c3
-owner: unknown@360f41058e92
-claimed: 2026-09-21T23:07Z
-blocked: round 6 NEEDS_CHANGES; decision 59
 created: 2026-09-18
 updated: 2026-09-22
+closed: 2026-09-22
 ---
 
 07c3 plan §F4. Size S-M; sonnet/opus.
@@ -25,6 +23,7 @@ updated: 2026-09-22
 ## Notes
 - 2026-09-21 claimed by unknown@360f41058e92
 - dispatch: implementer sonnet — plan 07c3 routing table: one skill, 2 files, mechanical once §2 is fixed
+- 2026-09-22 done: 400154c
 
 ## Implementer result
 - round 1 DONE fa4ef02 (sonnet): review <branch> mode (was a stub) + Step 0.4 Resume; bindings.md Review target + Resume. Scope widening accepted (librarian): troubleshooting.md stale 'not available yet' stub replaced (contradicted the new mode).
@@ -86,3 +85,10 @@ answer 57: (b) one more fix round for the two mediums + lows and one review (ope
 - [medium] bindings.md:285-295 — review mode: a recorded "no", then the author pushes fixes, and the rerun re-reports the old findings forever; rules 5/6 lack rule 4's stale-sha test. Pass: a verdict whose <sha> ≠ HEAD is stale in rules 5/6 → fresh review under the cap test; the old "no" is not reused.
 - [low] rule 7 reuses an answer recorded before the latest BLOCKED run.
 decision 59: 426a — the approved round (57b) fixed its findings, but § Resume drew two new mediums for the sixth review running (a standalone resume waits forever on a question nobody still asks; review mode can never re-review a branch after a "no"). Review mode itself has been CLEAR since round 4. (a) land review mode without § Resume: the implementer reverts § Resume (and its Step 0 hooks) on this branch, a short review confirms, and § Resume becomes a new item planned first in dev-cycle plan mode so the state machine is designed whole, with these six rounds of findings as its input [recommended: every fix round has exposed a new edge; a design pass is cheaper than more rounds]; (b) another fix round for the two mediums + the low; (c) park 426a as is.
+answer 59: (a) land review mode without § Resume; record the work already done and the current feedback for the redesign (operator 2026-09-22)
+librarian (answer 59a): the § Resume work stays recoverable because 426a merges with its full history (fa4ef02…54f022c) plus a revert commit on top; the redesign is item dev-cycle-design-resume-whole-split-from-e770, whose body carries the shas and the open findings; this body keeps the six review rounds verbatim.
+dispatch: implementer opus — revert § Resume (and its Step 0/SKILL.md hooks) on this branch as a new commit (resume abb824e); then reviewer opus — confirm review mode stands alone (resume a393294)
+- revert DONE 3becdf5 (opus, answer 59a): § Resume body → pointer to e770 (heading kept); return:/landed: shapes and writes removed; Step 0.4 removed; troubleshooting resume row removed; review mode + decision:/answer: shapes kept; grep clean.
+- dispatch: reviewer opus — confirm review mode stands alone (resume a393294)
+- review (opus) at 3becdf5: CLEAR — review mode stands alone; no dangling pointers; every kept record shape written and read. Lows: the shipped `## Resume` heading points at a local work-item id (unreachable for marketplace installs) → moved to e770; fa4ef02 subject mentions resume → carried in the merge message.
+- Review result: 7 reviews over the item's life (cap waived by answers 51, 57; split by 59); review mode CLEAR since r4; impl sonnet r1–r2, opus r3–r5; review opus.
