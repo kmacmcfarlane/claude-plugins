@@ -60,7 +60,9 @@ way, keeping 8 days and dropping any line that does not parse. Append and prune 
 an exclusive `flock` on `samples.lock`, so a prune never loses a concurrent append.
 `samples.jsonl` and `samples.lock` are opened without following a symlink: one planted at
 either name fails the append as a store write error, and nothing outside the store is
-created or written. The script creates each directory it is missing with mode 0700, from
+created or written. Every store, lock, claim and sink data file is opened non-blocking and
+used only if it is a regular file: a FIFO or other non-regular file never blocks the call,
+fails a write as a store write error, and reads as absent. The script creates each directory it is missing with mode 0700, from
 `claude-kit/` down. It also sets the directory it writes into to 0700 on every write
 (`librarian/` and `claims/`), even when that directory already existed. Directories above
 those, including an existing `claude-kit/`, keep their modes. The store holds percentages,

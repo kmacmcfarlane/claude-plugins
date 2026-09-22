@@ -8,6 +8,7 @@ import importlib.util
 import io
 import json
 import os
+import signal
 import stat
 import subprocess
 import sys
@@ -970,6 +971,95 @@ class TestCli(Base):
         src = SCRIPT.read_text()
         self.assertNotIn("settings.json", src)
         self.assertNotIn(".claude.json", src)
+
+
+@unittest.skipUnless(hasattr(os, "mkfifo"), "needs os.mkfifo")
+class TestFifo(Base):
+    """4e5d: a FIFO with no peer planted at a store or sink data file must not
+    block the script. Each run is a subprocess with a timeout, so a regression
+    fails the test instead of hanging the suite."""
+
+    def run_cli(self, *argv):
+        env = dict(os.environ, **self.env)
+        try:
+            p = subprocess.run([sys.executable, str(SCRIPT), "--now", str(NOW), "--repo", "myrepo"]
+                               + list(argv), capture_output=True, text=True, env=env, timeout=10)
+        except subprocess.TimeoutExpired:
+            self.fail("quota_budget.py blocked on a FIFO")
+        return p.returncode, json.loads(p.stdout), p.stderr
+
+    def fifo(self, path):
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        os.mkfifo(path, 0o600)
+        return path
+
+    def test_fifo_at_samples_jsonl_fails_the_append_as_a_store_write_error(self):
+        path = self.fifo(os.path.join(self.store, "samples.jsonl"))
+        self.sensor(at=NOW)
+        rc, r, err = self.run_cli()
+        self.assertEqual(rc, 1)
+        self.assertIn("samples.jsonl append failed", err)
+        self.assertEqual(len(r["errors"]), 1)
+        self.assertEqual((r["signal"], r["claims"]["action"]), ("ok", "created"))
+        self.assertTrue(stat.S_ISFIFO(os.lstat(path).st_mode))
+
+    def test_fifo_at_samples_jsonl_reads_as_absent(self):
+        self.fifo(os.path.join(self.store, "samples.jsonl"))
+        self.sensor(at=NOW)
+        rc, r, err = self.run_cli("--read-only")
+        self.assertEqual(rc, 0, err)
+        self.assertEqual(r["signal"], "ok")
+        self.assertEqual(r["windows"]["five_hour"]["velocity_points"], 1)
+
+    def test_fifo_at_samples_lock_fails_the_append_as_a_store_write_error(self):
+        self.fifo(os.path.join(self.store, "samples.lock"))
+        self.sensor(at=NOW)
+        rc, r, err = self.run_cli()
+        self.assertEqual(rc, 1)
+        self.assertIn("samples.jsonl append failed", err)
+        self.assertEqual(r["signal"], "ok")
+        self.assertFalse(os.path.exists(os.path.join(self.store, "samples.jsonl")))
+
+    def test_fifo_sink_day_file_reads_as_absent(self):
+        d = os.path.join(self.cfg, "plugins", "data", "claude-analytics-kmacmcfarlane", "samples")
+        self.fifo(os.path.join(d, "2026-09-22.jsonl"))
+        with open(os.path.join(d, "2026-09-21.jsonl"), "w") as f:
+            f.write(json.dumps({"ts": NOW - 60, "session_id": "s", "rate_limits": {
+                "five_hour": {"used_percentage": 12.0, "resets_at": NOW + 3 * H},
+                "seven_day": {"used_percentage": 30.0, "resets_at": NOW + 100 * H}}}) + "\n")
+        rc, r, err = self.run_cli()
+        self.assertEqual(rc, 0, err)
+        self.assertEqual((r["source"]["reading"], r["windows"]["five_hour"]["used"]), ("sink", 12.0))
+
+    def test_fifo_at_claim_path_is_an_unusable_conflict(self):
+        path = self.fifo(os.path.join(self.store, "claims", "myrepo.json"))
+        for argv in ((), ("--takeover",)):
+            with self.subTest(argv=argv):
+                rc, r, err = self.run_cli(*argv)
+                self.assertEqual(rc, 0, err)
+                c = r["claims"]
+                self.assertEqual((c["action"], c["written"], c.get("unusable"), c["fresh"]),
+                                 ("conflict", False, True, 0))
+                self.assertTrue(stat.S_ISFIFO(os.lstat(path).st_mode))
+
+    @unittest.skipUnless(hasattr(signal, "SIGALRM"), "needs SIGALRM for the timeout guard")
+    def test_fifo_is_refused_by_every_opener_without_blocking(self):
+        path = self.fifo(os.path.join(self.cfg, "f.json"))
+
+        def blocked(signum, frame):
+            raise AssertionError("an opener blocked on a FIFO")
+
+        old = signal.signal(signal.SIGALRM, blocked)
+        self.addCleanup(signal.signal, signal.SIGALRM, old)
+        self.addCleanup(signal.alarm, 0)
+        signal.alarm(10)
+        self.assertIsNone(qb.read_json(path))
+        self.assertEqual(qb.read_jsonl(path, lambda d: d), [])
+        self.assertEqual(qb.claim_file_state(path), "unusable")
+        with mock.patch.object(qb.os, "lstat", lambda p: os.stat_result((stat.S_IFREG | 0o600,) + (0,) * 9)):
+            self.assertEqual(qb.claim_file_state(path), "unusable")  # past a raced lstat
+        with self.assertRaises(OSError):
+            qb.open_lock(path)
 
 
 if __name__ == "__main__":

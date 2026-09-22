@@ -28,6 +28,7 @@ Stdlib only; never raises out of main(): a real error (a store write that
 fails) exits 1 with a message on stderr, and still prints the JSON result.
 """
 import argparse
+import errno
 import fcntl
 import glob
 import hashlib
@@ -126,13 +127,34 @@ def epoch(x):
     return None
 
 
+def open_regular(path, flags, mode=0o600):
+    """os.open(path, flags) that never blocks and yields only a regular file: the
+    open is O_NONBLOCK (a FIFO with no peer would otherwise block it forever, and
+    O_NOFOLLOW does not stop a FIFO), the fd is fstat'ed, anything but a regular
+    file is closed and refused with OSError(EINVAL), and O_NONBLOCK is then
+    cleared. A write-only open of a FIFO with no reader fails with ENXIO."""
+    fd = os.open(path, flags | os.O_NONBLOCK, mode)
+    try:
+        if not stat.S_ISREG(os.fstat(fd).st_mode):
+            raise OSError(errno.EINVAL, "not a regular file", path)
+        fl = fcntl.fcntl(fd, fcntl.F_GETFL)
+        fcntl.fcntl(fd, fcntl.F_SETFL, fl & ~os.O_NONBLOCK)
+    except BaseException:
+        os.close(fd)
+        raise
+    return fd
+
+
 def read_json(path):
     """A parsed JSON object from a regular file under READ_MAX bytes, else None."""
     try:
-        if not os.path.isfile(path) or os.path.getsize(path) > READ_MAX:
+        with os.fdopen(open_regular(path, os.O_RDONLY), "rb") as f:
+            if os.fstat(f.fileno()).st_size > READ_MAX:
+                return None
+            data = f.read(READ_MAX + 1)
+        if len(data) > READ_MAX:
             return None
-        with open(path, "r", encoding="utf-8") as f:
-            d = json.load(f)
+        d = json.loads(data.decode("utf-8"))
         return d if isinstance(d, dict) else None
     except (OSError, ValueError, UnicodeDecodeError, RecursionError, MemoryError):
         # RecursionError: deeply nested JSON. A poisoned file reads as absent.
@@ -251,9 +273,12 @@ def parse_sink_sample(d):
 
 
 def read_jsonl(path, parse, tail=SAMPLES_TAIL):
+    """The parsed samples of a .jsonl file's last `tail` bytes. A file that is
+    missing, unreadable or not a regular file (a FIFO, a directory) reads as
+    empty."""
     out = []
     try:
-        with open(path, "rb") as f:
+        with os.fdopen(open_regular(path, os.O_RDONLY), "rb") as f:
             size = os.fstat(f.fileno()).st_size
             if size > tail:
                 f.seek(size - tail)
@@ -301,12 +326,13 @@ def read_sink(dirs, now):
 def open_lock(path):
     """An fd on the lock file for flock. O_NOFOLLOW: a symlink planted at path
     fails with ELOOP (an OSError, reported as a store write error) and never
-    creates or opens its target. A lock file this user may not write is opened
+    creates or opens its target; a FIFO or other non-regular file is refused
+    the same way (open_regular). A lock file this user may not write is opened
     read-only, which flock accepts."""
     try:
-        return os.open(path, os.O_RDWR | os.O_CREAT | os.O_NOFOLLOW, 0o600)
+        return open_regular(path, os.O_RDWR | os.O_CREAT | os.O_NOFOLLOW)
     except PermissionError:
-        return os.open(path, os.O_RDONLY | os.O_NOFOLLOW)
+        return open_regular(path, os.O_RDONLY | os.O_NOFOLLOW)
 
 
 def append_sample(path, s):
@@ -315,14 +341,15 @@ def append_sample(path, s):
     on samples.lock beside it, so a prune never drops a concurrent append.
     Unparseable lines are dropped by the prune. Both opens are O_NOFOLLOW: a
     symlink planted at samples.jsonl or samples.lock fails as a store write
-    error and never creates, opens or appends to its target."""
+    error and never creates, opens or appends to its target; so does a FIFO or
+    any other non-regular file there (open_regular), without blocking."""
     d = os.path.dirname(path)
     ensure_dir(d)
     line = (json.dumps(sample_line(s), sort_keys=True) + "\n").encode("utf-8")
     lk = open_lock(os.path.join(d, "samples.lock"))
     try:
         fcntl.flock(lk, fcntl.LOCK_EX)
-        fd = os.open(path, os.O_WRONLY | os.O_APPEND | os.O_CREAT | os.O_NOFOLLOW, 0o600)
+        fd = open_regular(path, os.O_WRONLY | os.O_APPEND | os.O_CREAT | os.O_NOFOLLOW)
         try:
             os.write(fd, line)
         finally:
@@ -506,7 +533,7 @@ def claim_file_state(path):
     if not stat.S_ISREG(st.st_mode) or st.st_size > READ_MAX:
         return "unusable"
     try:
-        fd = os.open(path, os.O_RDONLY | os.O_NOFOLLOW)
+        fd = open_regular(path, os.O_RDONLY | os.O_NOFOLLOW)
         with os.fdopen(fd, "rb") as f:
             data = f.read(READ_MAX + 1)
     except OSError:
