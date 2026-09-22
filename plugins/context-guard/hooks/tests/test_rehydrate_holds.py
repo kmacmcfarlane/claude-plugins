@@ -150,6 +150,8 @@ class TestHolds(unittest.TestCase):
             "HOLD x — why — until decision 52 (filed 2020-01-01)": False,
             "HOLD x — why — until the 2020-01-01 build ships": False,  # an event
             "HOLD x — why — until 2026-09-21 or decision 5": True,     # leads: a time
+            "HOLD x — why — until: 2026-09-21": True,                  # `until:`
+            "HOLD x — why — Until 2026-09-21": True,
         }
         for line, want in cases.items():
             self.assertEqual(rh.hold_expired(line, now), want, line)
@@ -231,6 +233,44 @@ class TestHolds(unittest.TestCase):
             self.assertNotIn("One line per standing hold", c, head)
             out = rh.trim(text.replace("- x.md — notes", "x" * 5000), 1500)
             self.assertIn(head + "\nOne line per standing hold", out, head)
+
+    def test_hold_line_shapes(self):
+        holds = ("\n## Holds\n- **HOLD** bold push — why — until decision 1\n"
+                 "- hold lower dispatch — why — until decision 2\n"
+                 "- a prose note, not a hold\n")
+        self.assertEqual(rh.hold_lines(self.write(holds=holds)),
+                         ["**HOLD** bold push — why — until decision 1",
+                          "hold lower dispatch — why — until decision 2"])
+        c = self.ctx("startup")
+        self.assertIn("- **HOLD** bold push", c)
+        self.assertNotIn("a prose note", c)
+
+    def test_crlf_manifest(self):
+        # review r2: CRLF headings end in \r; they must still name their sections.
+        aware = "".join(f"- DECIDED d{i} — {'d' * 80}\n" for i in range(20))
+        scrolls = "\n".join(f"- f{i}.md — {'z' * 100}" for i in range(20))
+        lf = self.write(aware=aware, scrolls=scrolls)
+        crlf = lf.replace("\n", "\r\n")
+        with open(os.path.join(self.repo, "HANDOFF.md"), "w", newline="") as fh:
+            fh.write(crlf)
+        names = [n for n, _ in rh._sections(crlf)]
+        for want in ("doing", "goal", "holds", "in flight", "read in full",
+                     "copy forward", "aware of", "next", "scrolls"):
+            self.assertIn(want, names)
+        self.assertEqual(len(rh.hold_lines(crlf)), 3)
+        out = rh.trim(crlf, 2000)
+        self.assertLessEqual(len(out), 2000)
+        for keep in ("a/plan.md — the plan", "- REFUSED sudo for dd",
+                     "- CORRECTION the cache is per session", "- HOLD no push to origin",
+                     "- implementer — thing-1a2b — agent a1b2c3"):
+            self.assertIn(keep, out)
+        self.assertNotIn("DECIDED d1", out)
+        self.assertIn(f"until {PAST} [expired? confirm: its end time has passed]\r\n",
+                      rh.annotate_holds(crlf))
+        c = self.ctx("startup")
+        self.assertIn("- HOLD no push to origin", c)
+        self.assertIn(f"until {PAST} [expired? confirm", c)
+        self.assertNotIn("\r", c)
 
     # ── bounded, plain text ────────────────────────────────────────────────
     def test_header_block_is_bounded_and_plain(self):

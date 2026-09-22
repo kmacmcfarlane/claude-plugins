@@ -459,8 +459,9 @@ _KEEP_AWARE = re.compile(r"[ \t]*(?:[-*][ \t]*)?(?:CORRECTION|REFUSED)\b")
 _KEEP_NEXT = re.compile(r"Next withheld:")
 
 
-# `## Holds:` and `## Holds (2)` name the section `holds`.
-_HEAD_TAIL = re.compile(r"[ \t]*(?:\(.*)?[ \t:]*$|^[ \t]+")
+# `## Holds:` and `## Holds (2)` name the section `holds`; applied to the
+# stripped heading (a CRLF manifest's headings end in `\r`).
+_HEAD_TAIL = re.compile(r"\s*(?:\(.*)?[\s:]*$")
 
 
 def _sections(body):
@@ -472,7 +473,7 @@ def _sections(body):
     for chunk in re.split(r"(?m)^(?=## )", body):
         if not chunk:
             continue
-        name = _HEAD_TAIL.sub("", chunk.split("\n", 1)[0][3:]).lower() \
+        name = _HEAD_TAIL.sub("", chunk.split("\n", 1)[0][3:].strip()).strip().lower() \
             if chunk.startswith("## ") else None
         out.append([name, chunk])
     return out
@@ -531,13 +532,13 @@ _CTRL = re.compile(r"[\x00-\x1f\x7f-\x9f\u061c\u2028\u2029\u200b-\u200f"
 _WHEN_RE = re.compile(
     r"(\d{4}-\d{2}-\d{2})(?:[T ](\d{2}:\d{2}(?::\d{2})?))?(?:[ \t]*(Z|[+-]\d{2}:?\d{2})\b)?",
     re.ASCII | re.I)
-_HOLD_RE = re.compile(r"HOLD\b")
+_HOLD_RE = re.compile(r"(?:\*\*)?HOLD\b", re.I)
 _BULLET = re.compile(r"^[ \t]*[-*][ \t]+")
 
 
 def _hold(ln):
-    """A Holds-section line's entry when it is a hold (`HOLD …`, bullet
-    optional), else None: prose such as the spec's template sentence is not
+    """A Holds-section line's entry when it is a hold (`HOLD …`, any case,
+    bold allowed, bullet optional), else None: prose such as the spec's template sentence is not
     a hold."""
     s = _BULLET.sub("", ln).strip()
     return s if _HOLD_RE.match(s) else None
@@ -553,13 +554,18 @@ def hold_lines(text):
     return []
 
 
+_UNTIL_RE = re.compile(r"(?<![^\W_])until(?::\s*|\s+)", re.I)
+
+
 def hold_end(line):
-    """A hold's end-condition clause: the text after its last `until`, else
-    after its last ` — ` separator, else the whole line."""
-    low = line.lower()
-    i = low.rfind("until ")
-    if i >= 0 and (i == 0 or not low[i - 1].isalnum()):
-        return line[i + 6:]
+    """A hold's end-condition clause: the text after its last `until` (then
+    a space or `:`), else after its last ` — ` separator, else the whole
+    line."""
+    m = None
+    for m in _UNTIL_RE.finditer(line):
+        pass
+    if m:
+        return line[m.end():]
     j = line.rfind(" — ")
     return line[j + 3:] if j >= 0 else line
 
@@ -595,7 +601,8 @@ def annotate_holds(text, now=None):
         for k in range(1, len(lines)):
             s = _hold(lines[k])
             if s and hold_expired(s, now):
-                lines[k] = lines[k].rstrip() + f" [{EXPIRED}: its end time has passed]"
+                cr = "\r" if lines[k].endswith("\r") else ""
+                lines[k] = lines[k].rstrip() + f" [{EXPIRED}: its end time has passed]" + cr
         sec[1] = "\n".join(lines)
         return "".join(t for _, t in secs)
     return text
