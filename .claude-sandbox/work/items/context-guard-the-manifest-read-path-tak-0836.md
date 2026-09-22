@@ -2,10 +2,11 @@
 id: context-guard-the-manifest-read-path-tak-0836
 title: "context-guard: the manifest READ path takes the store file on existence alone, with no identity test"
 type: bug
-status: todo
+status: done
 priority: 1
 created: 2026-09-22
 updated: 2026-09-22
+closed: 2026-09-22
 refs:
   - F3b-2 implementer, after the F3b-1 merge
 ---
@@ -19,3 +20,19 @@ Found by F3b-2's implementer after merging F3b-1 (landed 92c9738), 2026-09-22. r
 - learned: —
 
 CONFIRMED by the F3b-2 reviewer on the landed code, 2026-09-22, with a probe: with <store>/S/HANDOFF.md a symlink to a file carrying session: PEER, read_store_manifest("S") returns that path and resolve_manifest({}, "S", cwd) returns kind "own" with the peer's body — injected in full as this session's own memory, bypassing is_ours and the foreign header. The read path is the MORE exposed twin of the write-path hole F3b-2 closed: injection needs only the link, where the write path also needed the file to be stampable. _sealed uses the same reader but still requires the pinned sha, so the "own" arm is the exposure. mark_checkpoint's own_store_manifest is the ready-made test.
+
+## Notes
+- 2026-09-22 claimed by unknown@bf9f9839222c
+
+target: full context-guard-the-manifest-read-path-tak-0836 /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude/worktrees/context-guard-the-manifest-read-path-tak-0836
+dispatch: implementer fable — security surface: gates which memory a session is given (item route: fable signal)
+agent: implementer a611d834631d8c0ce round 1
+return: implementer DONE 7b45c4a
+changed: lib_context.py, mark_checkpoint.py, rehydrate.py, tests/test_lineage.py, tests/test_lib_context.py
+dispatch: reviewer fable — rule 4, implementer tier
+agent: reviewer a288b25fe0063afbf round 1
+verdict: CLEAR round 1 at 7b45c4a
+findings-low: rehydrate.py:46 module docstring still says the own arm is "ours by the path, no comparison" — carried as a follow-up, not fixed here
+notes: hard links and exists→open TOCTOU not caught by realpath; same-uid threat model, a peer that can link can write. Every manifest_path reader goes through read_store_manifest or manifest_sid.
+landed: eb4dc49
+- 2026-09-22 done: eb4dc49
