@@ -75,7 +75,7 @@ def main():
         print(json.dumps(ctx(
             f"[context-guard context gate] Before anything else: {why} and no "
             f"checkpoint has run this epoch. Run the checkpoint skill now — "
-            f"ask the operator the goal (land / continue / handoff), write the "
+            f"ask the operator the goal (continue / handoff), write the "
             f"reasoning residue, then mark_checkpoint.py. Do not start new work.")))
         return
     if act == "ledger":

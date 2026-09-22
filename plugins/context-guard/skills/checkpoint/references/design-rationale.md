@@ -136,10 +136,14 @@ Three layers, escalating; the first two are hooks, the third is a skill.
    context-limit error already returned makes the in-flight request fail, and the hook cannot
    tell the two apart. One decision point, no wedged session. Manual `/compact` is never
    touched.
-4. **Checkpoint skill** — Step 0 asks the operator the goal (*land / continue / handoff*)
+4. **Checkpoint skill** — Step 0 asks the operator the goal (*continue / handoff*)
    because that is the one input nobody else holds and it changes everything downstream:
-   *land* means compaction is the wrong tool; *continue* means residue then `/compact` with
-   drafted guidance; *handoff* means a brief in the owning repo. Step 2 writes reasoning residue
+   *continue* means residue then `/compact` with drafted guidance; *handoff* means a brief
+   for a fresh session or the owning repo. (A third mode, `land`, was dropped on
+   2026-09-22: a finished thread is a handoff whose goal says so.) The brief is one
+   manifest per session, in the config dir rather than the repo, so concurrent sessions in
+   one checkout cannot overwrite each other's; since its path can no longer be guessed,
+   every checkpoint prints it, and a handoff also prints the commands to continue. Step 2 writes reasoning residue
    from the live session (Finding 2). Step 3 routes twice — task knowledge to its owning repo,
    harness friction to the plugin repo — because a session has two outputs, and the second is
    the one that improves the next session. Step 4 delegates the mechanical flush to a **fork**

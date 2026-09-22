@@ -57,8 +57,8 @@ it reports the push as well as the landings — here and at 75%/DUE below, the p
 its Report; everywhere else the Report comes first. The push's team summary
 (`team-summary.md`) follows that Report in the same message, after the push outcome and
 its `incoming:` lines. The context-gate ledger
-(session-addressed, one per session) and HANDOFF (work-addressed, class b1, one per
-repo) do not replace this; the librarian rehydrates from `wi prime` and git.
+and the HANDOFF manifest (both session-addressed, one per session, in the config dir,
+never committed) do not replace this; the librarian rehydrates from `wi prime` and git.
 
 ## At 75% or DUE — checkpoint, then continue
 
@@ -107,9 +107,9 @@ compacts when convenient, and it continues. Finish the step in hand, then:
    and the `/clear` or `/compact <guidance>` the advisory names, for the operator to run.
    Custody holds throughout: its residue goes into item bodies
    (append) or new items (`$WI add`), never into CLAUDE.md or a skill file; its commits
-   are store-only — the work-item store, and the manifest only when the repo tracks it
-   (`trackInHost` governs `.claude-sandbox/HANDOFF.md`; an untracked manifest stays out
-   of the commit).
+   are store-only — the work-item store. The manifest is never committed: it lives in the
+   config dir, one per session, and the store and the investigation series carry the
+   durable record.
    Anything that would change a custody file becomes a work item. The manifest names
    this skill as its standing mode, `mode_skill: /dev-flow:librarian-mode start`, so the
    opener re-enters librarian mode.
@@ -120,8 +120,10 @@ compacts when convenient, and it continues. Finish the step in hand, then:
    of the sequence above: the four-line Report for anything landed since the last one,
    the push outcome with its `incoming:` lines, then its team summary, then the
    checkpoint's own close — its `/compact <guidance>` recommendation, to run at the
-   operator's convenience (the next morning is fine), and last its Step 7 opener, led by
-   `/dev-flow:librarian-mode start`, then `read <manifest path> in full first`, then —
+   operator's convenience (the next morning is fine), the manifest's absolute path, and
+   last its Step 7 opener, led by
+   `/dev-flow:librarian-mode start`, then `Read (the Read tool) <absolute manifest path>
+   in full first`, then —
    when the roster is not `None` — `resume <ids> with SendMessage; do not re-dispatch`
    naming every id on it, then — when Copy forward is not empty — `copy forward <paths>
    first` (the checkpoint's Step 7), and the facts changed since the manifest, Holds

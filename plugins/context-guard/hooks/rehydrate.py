@@ -34,10 +34,12 @@ Tiers by source:
                    unlinked /clear, a pin of None, or a version rewritten
                    since the pin
 Every tier's header names the manifest's `mode_skill:` (the standing mode to
-re-enter first), unless the manifest is LANDED; a STALE manifest's mode is
-named for confirmation, not as an order. Only a strict slash-command shape is
-shown (MODE_SKILL_RE): the header speaks in the hook's voice, and the manifest
-is repo-committed text.
+re-enter first) and then its `next_skill:` (the one-shot skill the checkpoint's
+`then <next-skill>` named, to run after it), unless the manifest is LANDED; on
+a STALE manifest both are named for confirmation, not as an order. Only a
+strict slash-command shape is shown (MODE_SKILL_RE, for both keys): the header
+speaks in the hook's voice, and the manifest is text any session can write.
+The foreign header names neither.
 No manifest and nothing to say -> {} (silent).
 
 WHICH manifest is this session's memory is resolve_manifest's question, and
@@ -393,6 +395,15 @@ def mode_skill(fm):
     if len(v) >= 2 and v[0] == v[-1] and v[0] in "'\"":
         v = v[1:-1]
     return v if len(v) <= 200 and MODE_SKILL_RE.fullmatch(v) else ""
+
+
+def next_skill(fm):
+    """The optional `next_skill:` key: the one-shot skill the checkpoint's
+    `then <next-skill>` argument named, for the next session to run after it
+    re-enters any standing mode. Same shape, validation and silence as
+    mode_skill (a slash command matching MODE_SKILL_RE, at most 200 chars,
+    dropped when landed or anything else)."""
+    return mode_skill({"mode": fm.get("mode"), "mode_skill": fm.get("next_skill")})
 
 
 STAMP_SKEW_S = 600
@@ -1061,11 +1072,11 @@ def legacy_notice(sid, path):
     session to whatever tier the legacy arm produced. A session that resolved a
     store manifest is never told about a repo file that is not its memory."""
     return (f"[context-guard rehydration] {path} is a repo manifest of the old "
-            f"layout: read here, never written. The manifest becomes one file "
-            f"per session - this session's own is {L.manifest_path(sid)} - once "
-            f"a later update points the checkpoint skill's Step 4b there; until "
-            f"then Step 4b still writes the repo file. Nothing rewrites or "
-            f"deletes it: remove it when you choose.")
+            f"layout: read here, never written. The checkpoint skill's Step 4b "
+            f"writes one manifest per session - this session's own is "
+            f"{L.manifest_path(sid)} - and once this session has one there, this "
+            f"repo file is no longer read. Nothing rewrites or deletes it: remove "
+            f"it when you choose.")
 
 
 def foreign_header(label, path, owner):
@@ -1156,6 +1167,13 @@ def main():
         elif ms:
             header += (f" The session was in a standing mode: re-enter it first "
                        f"with `{ms}`.")
+        ns = next_skill(fm)
+        if ns and live == "STALE":
+            header += (f" It names a next skill, `{ns}`; confirm with the "
+                       f"operator before running it.")
+        elif ns:
+            header += (f" {'Then' if ms else 'Next'}, run `{ns}`: the skill "
+                       f"the checkpoint named to follow.")
         moved, dead, notes = stale_checks(fm, top, live, hs)
         if len(dead) > 20:
             dead = dead[:20] + [f"(+{len(dead) - 20} more)"]

@@ -1,9 +1,9 @@
 ---
 name: checkpoint
-description: Land the state of a long session before context is compacted or cleared — ask the operator the goal from here (land / continue / handoff), write the reasoning that exists only in this conversation as a delta over the session ledger, route every finding to the repo that owns it, write the HANDOFF.md rehydration manifest, record the checkpoint so the context gate stands down, then hand the operator the decision. Use when the gate warns (DUE/HARD), when an auto-compaction is deferred, when the user says "checkpoint", "we're running out of context", "wrap this up", or before switching topics after a long thread. Also use at a stage boundary in a skill chain — the next skill reads its inputs from files this session already published — regardless of window health.
+description: Land the state of a long session before context is compacted or cleared — ask the operator the goal from here (continue / handoff), write the reasoning that exists only in this conversation as a delta over the session ledger, route every finding to the repo that owns it, write this session's own HANDOFF.md rehydration manifest (one per session, in the Claude config dir, never in a repo), record the checkpoint so the context gate stands down, then print the manifest's absolute path and hand the operator the decision. Use when the gate warns (DUE/HARD), when an auto-compaction is deferred, when the user says "checkpoint", "we're running out of context", "wrap this up", or before switching topics after a long thread. Also use at a stage boundary in a skill chain — the next skill reads its inputs from files this session already published — regardless of window health.
 disable-model-invocation: false
 allowed-tools: Read, Write, Edit, Glob, Grep, Bash, Agent, AskUserQuestion
-argument-hint: "[land | continue | handoff] [then <next-skill>] [optional focus]"
+argument-hint: "[continue | handoff] [then /next-skill] [optional focus]"
 ---
 
 # Checkpoint
@@ -18,9 +18,9 @@ Operator tool guide: `references/operator-playbook.md`. Manifest spec:
 `references/handoff-format.md`.
 
 **Lean path:** if the state file shows fewer than ~60K tokens left, skip every optional read,
-do Steps 0, 2, 4b only, then emit the Step 7 one-line opener (continue / handoff) — a lean
-checkpoint is when a handoff is likeliest and the next session has the least to go on. Keep
-the whole checkpoint under a screen.
+do Steps 0, 2, 4b only, then Step 7's close (the manifest path, the opener, and for a
+handoff the continuation commands) — a lean checkpoint is when a handoff is likeliest and
+the next session has the least to go on. Keep the whole checkpoint under a screen.
 
 **Once this checkpoint is going ahead** — after Step 0 has been asked, or, under the
 mid-turn marker, after the `--check` below has confirmed it — tell the mid-turn check that
@@ -86,10 +86,11 @@ with `--checkpointing`, then:
   anything this session merely assumes goes into the manifest's `Doing` and `Aware of` as
   `BELIEF` lines, each marked unconfirmed (`BELIEF (unconfirmed: no operator) …`). The
   `Goal` line quotes the operator's last stated goal, as ever.
-- **Lean path**: Steps 2 and 4b (with the mark), then Step 5's one sentence and the Step 7
-  opener as the turn's **final message**; end the turn there. A custody skill's own
-  remaining steps (librarian-mode: its push, then its closing Report) run before that final
-  message, which still ends with the opener. The operator decides the window on return.
+- **Lean path**: Steps 2 and 4b (with the mark), then Step 5's one sentence and Step 7's
+  close (the manifest path, then the commands and the opener) as the turn's **final
+  message**; end the turn there. A custody skill's own remaining steps (librarian-mode: its
+  push, then its closing Report) run before that final message, which still ends with
+  Step 7's close. The operator decides the window on return.
 - **When the marker says a checkpoint no longer fits** (under ~20K left), do not start one:
   end the turn with the three-line brief it asks for.
 
@@ -99,8 +100,10 @@ The operator holds the one input nobody else has. Ask exactly this (pre-drafted 
 the cheap path one click) — unless the argument already answers it: mode named → skip
 question 1; mode plus `then <next-skill>` → ask only question 2:
 
-1. **"What's the goal from here?"** — *land* (finish one bounded thing, stop) / *continue*
-   (keep pulling this thread) / *handoff* (park it, or move it to the owning repo).
+1. **"What's the goal from here?"** — *continue* / *handoff*: *continue* keeps pulling
+   this thread in this session (compact, then go on); *handoff* parks it, or moves it to a
+   fresh session or the owning repo. There is no third mode: a finished thread is a
+   *handoff* whose Goal line says so and whose Next is empty.
 2. **"Anything in flight I haven't listed?"** — with your ≤10-line inventory **inside the
    question text itself**, not in message prose before it: the question dialog is what the
    operator actually reads, and text streamed ahead of it goes unseen (observed on first
@@ -192,10 +195,27 @@ owning investigation series or another durable path — never into the work-item
 `items/` — or list it under the manifest's **Copy forward** by absolute path when it cannot
 move now (the format spec's scratchpad rule).
 
-**4b.** Rewrite the **rehydration manifest** per `references/handoff-format.md` — at
-`.claude-sandbox/HANDOFF.md` if that directory exists, else `HANDOFF.md` at the repo
-root — in **all three modes** (*land* writes `mode: landed` so the next session gets
-one header line, not a stale goal). At a stage boundary the published stage file is the
+**4b.** Rewrite the **rehydration manifest** per `references/handoff-format.md`, in **both
+modes**, at this session's own path — one file per session in the Claude config dir, never
+in a repo, so no other session can overwrite it and it is never committed. Ask the plugin
+for the path; never build it by hand:
+
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/hooks/handoff_path.py" --path "$CLAUDE_CODE_SESSION_ID"
+```
+
+It prints `${CLAUDE_CONFIG_DIR:-~/.claude}/claude-kit/handoff/<sid>/HANDOFF.md`, with the id
+made path-safe, and does nothing else: it writes nothing, creates no directory (the Write
+tool creates it) and reads no state. Its argv contract: `--path` is required; the id is
+optional, and `$CLAUDE_CODE_SESSION_ID` wins whenever it is set, so an id passed that
+differs from it names nothing; an argument starting with `-` is a mistyped flag, never an
+id; anything else prints a usage line and exits 1, and with no id at all (none passed,
+the variable unset) it exits 1 naming that — write nothing then, and re-run it with
+`$CLAUDE_CODE_SESSION_ID`. Keep the printed path: Step 7 prints it. Never write
+`.claude-sandbox/HANDOFF.md` or a `HANDOFF.md` at a repo root — that is the old layout,
+read (never written) only by a session with no manifest of its own.
+
+At a stage boundary the published stage file is the
 authoritative record: point **Read in full** at it and carry only what the files do not
 hold — environment state, corrections, refusals; the format spec's stage-boundary rule
 has the full list. Write **Holds** near the top, one line per standing hold the operator
@@ -209,28 +229,35 @@ against the store, not memory): the rehydration hook diffs that list against the
 and names every one since closed as a dead claim. If
 this session is running a standing mode (a skill that holds it in a role, entered by a
 command such as `/<plugin>:<mode> start`), set `mode_skill:` to that command exactly as the
-operator would type it; omit it otherwise and in a landed manifest. **Never type the
-machine fields** — `written:`, `head:`, `branch:`, `session:`: write each as the placeholder
+operator would type it; omit it otherwise. When the argument names `then <next-skill>`, set
+`next_skill:` to that skill's slash command, arguments included, exactly as the operator
+would type it (the same shape as `mode_skill:`); omit it otherwise. **Never type the
+machine fields** — all five: `written:`, `head:`, `branch:`, `top:`, `session:` (the
+format spec's machine-fields rule): write each as the placeholder
 `<stamped>`, and never copy them from the manifest being replaced (after a `/clear` or a
 handoff its `session:` is the predecessor's, and the rehydration hook re-injects a manifest
 by that field). The mark step stamps them — UTC now, `git rev-parse --short HEAD`, the
-branch, and this session's id from `$CLAUDE_CODE_SESSION_ID` — rewriting only those
-frontmatter lines. Then stand the gate down, **right after writing the manifest and as the
-last write to it**:
+branch, the repo's toplevel (the manifest no longer lives in the repo it describes, so it
+records it), and this session's id from `$CLAUDE_CODE_SESSION_ID` — rewriting only those
+frontmatter lines. Run it from the repo the manifest is about: its working directory
+supplies `head:`, `branch:` and `top:`; the manifest itself is found by the session id.
+Then stand the gate down, **right after writing the manifest and as the last write to it**:
 
 ```bash
 python3 "${CLAUDE_PLUGIN_ROOT}/hooks/mark_checkpoint.py" "$CLAUDE_CODE_SESSION_ID"
 ```
 
-It prints `stamped <path> (written …, head …, branch …, session …)`. It stamps only a
-manifest written in the last 30 minutes whose `session:` is a placeholder or this session
-(`$CLAUDE_CODE_SESSION_ID`; an id passed that differs from it counts for nothing) — or
-names the session whose manifest this one replaced (its `/clear` predecessor, fork parent,
-or the author of a handoff it read in full) *and* the file has been rewritten since that
-link or Read. Anything else is left untouched with a `not stamped` warning, and a
-`session:` warning names the id it found — fix the file, not the warning, and run it again.
-A manifest it already stamped and nobody rewrote is left as it is (`already stamped`).
-Stamping makes a new version of the manifest, so nothing may rewrite it after this step.
+It prints `stamped <path> (written …, head …, branch …, top …, session …)`. It stamps
+this session's own manifest — the path `handoff_path.py` printed — only when it was written
+in the last 30 minutes. That file is this session's by its path, so a `session:` copied
+from the manifest it replaced is simply corrected, and an id passed that differs from
+`$CLAUDE_CODE_SESSION_ID` names nothing. (Only while this session has no manifest of its
+own does it fall back to an old-layout repo manifest, which it stamps under the format
+spec's stricter claim rule.) Anything else is left untouched with a `not stamped` warning,
+and a `session:` warning names the id it found — fix the file, not the warning, and run it
+again. A manifest it already stamped and nobody rewrote is left as it is (`already
+stamped`). Stamping makes a new version of the manifest, so nothing may rewrite it after
+this step.
 
 Without this the gate keeps firing and a deferred auto-compaction stays deferred.
 
@@ -239,61 +266,79 @@ Without this the gate keeps firing and a deferred auto-compaction stays deferred
 Never compact, clear, or start a session on the operator's behalf. Recommend one, in a
 sentence:
 
-- **land** → finish the one thing, then `/clear`.
 - **continue** → `/rewind` → *Summarize up to here* at the **last ledger epoch header** (keeps
   the current thread verbatim, condenses only the old part) — or `/compact <guidance>` with
-  the guidance you drafted, naming the manifest path, the open item, and the refusals.
-- **handoff** → `/clear`, or a fresh session in the owning repo; the manifest is the brief.
-  After `/clear` the successor is linked to this session, and when the manifest on disk is
-  still the version this session owned at `/clear`, it gets what a compaction gets: the
+  the guidance you drafted, naming the manifest's absolute path, the open item, and the
+  refusals.
+- **handoff** → `/clear`, or a fresh session (here or in the owning repo); the manifest is
+  the brief. After `/clear` the successor is linked to this session, and when the manifest
+  is still the version this session owned at `/clear`, it gets what a compaction gets: the
   full manifest, plus this session's ledger digest (reasoning first) under a label naming
   this session's id. A `/clear` that is not linked (no verified process, over two minutes
-  old) or whose version changed since (a rewrite, a third session's overwrite) gets the
-  header, as before (so does a `landed` manifest, whose `/clear` is a fresh start); a fresh
-  session gets a header naming this session as the author.
-  The Step 7 opener still leads either way: its "read … in full" is what brings the whole
-  file into a new process, and that full Read of a `mode: handoff` manifest adopts it as
-  the successor's own.
+  old), or whose manifest was rewritten since, gets nothing from the hook, and neither does
+  a fresh session: the manifest is not in any repo for it to find. So the Step 7 opener
+  leads either way: its whole-file Read of the printed path is what brings the file into a
+  new process, and that Read of a `mode: handoff` manifest adopts it as the successor's
+  own.
 - **continue uncompacted** → when the number says there is more room than it felt like.
 
 After a compaction, the ledger is re-injected automatically, and so is the manifest — when
-this session wrote it, descends from the session that did (fork, `/clear`), or has read that
-version in full in `mode: handoff`; any other session gets a one-line header (the format
-spec's "Whose memory it is"). Re-injected, they **outrank the machine summary**; corrections
-outrank recollection; and current repo state (git log, the work-item store) outranks the
-manifest.
+it is this session's own, or descends from the session that wrote it (fork, `/clear`) and
+is still the version linked, or is the version this session read in full in `mode:
+handoff`; no other session is shown it (the format spec's "Whose memory it is").
+Re-injected, they **outrank the machine summary**; corrections outrank recollection; and
+current repo state (git log, the work-item store) outranks the manifest.
 
 ## Step 6 — Note the drift, once
 
 Two sentences: where the session started, where it ended, whether that was productive. No
 moralizing; the operator decides whether to keep pulling.
 
-## Step 7 — Hand the next session its first prompt (continue / handoff only)
+## Step 7 — Close: the manifest path, the commands, the opener
 
-The drift note is not the last word. In *continue* or *handoff* mode, close with a fenced,
-ready-to-paste opener for the next session (or the next `/compact`/`/clear` turn) —
-this is the **last thing on screen**, after Step 6. Land mode emits nothing here: `mode:
-landed` in the manifest is the whole story.
+The drift note is not the last word. **Every checkpoint's final message** — both modes, the
+lean and unattended paths included — ends with this close, the **last thing on screen**,
+after Step 6:
 
-Under ~5 lines. Contents: the skill or task to invoke, exactly as the operator would type
-it — when the manifest sets `mode_skill:`, that command leads the opener, so the next
-session re-enters the standing mode before anything else (with `then <next-skill>` as
-well, the mode still leads and the next skill goes in the facts); `read <manifest path>
-in full first` (the path Step 4b actually wrote — `.claude-sandbox/HANDOFF.md` or root
-`HANDOFF.md`; "in full" matters — a fresh session, or a `/clear` the hook could not link,
-gets only the manifest header and its Holds lines, so the opener is what tells the next
-session to read the whole file); and the one or two facts that changed since the manifest
-was written — pull these from the Holds lines first, then the drift note or the `Aware of`
-lines you just wrote (the lean path has no drift note; use Holds and `Aware of`), never
-restate the whole manifest.
+1. **The manifest's absolute path**, on its own line: `Manifest: <the path handoff_path.py
+   printed>`. It is the one fact the operator cannot reconstruct — the file sits outside
+   the repo, named by session id.
+2. **For a handoff only**, the continuation commands, one per line, each ready to paste:
+   - `/clear` — with one clause: the successor in this same Claude Code process gets the
+     manifest in full plus this session's ledger digest;
+   - `/compact <the guidance drafted in Step 0 question 3>` — to keep going here instead.
+3. **The opener**, in both modes: **one line**, fenced, with **no leading whitespace** (a
+   leading space once broke a `/compact`), for the next session's first prompt — or the
+   `/compact`/`/clear` turn's. In order:
+   - the command to run first, exactly as the operator would type it: `mode_skill:` when
+     set (the standing mode leads), else `next_skill:`, else the skill or task;
+   - `Read (the Read tool) <absolute manifest path> in full first` — name the tool: a
+     whole-file Read adopts a `mode: handoff` manifest as the reader's own, while `cat` or
+     a partial Read adopts nothing;
+   - `then run <next_skill>`, when `next_skill:` is set and `mode_skill:` led;
+   - the one or two facts that changed since the manifest was written — from the Holds
+     lines first, then the drift note or the `Aware of` lines you just wrote (the lean
+     path has no drift note); never restate the whole manifest.
+
 When **In flight** is not `None`, one fact is always `resume <ids> with SendMessage; do not
 re-dispatch` (after a fresh process: try SendMessage first, re-dispatch from the roster's
 round only if it fails); when **Copy forward** is not empty, another is `copy forward
 <paths> first`.
 
 ```text
-/<mode_skill or skill-or-task> <args> — read <manifest path> in full first; <fact that changed>; <fact that changed>
+/<mode_skill, else next_skill, else skill-or-task> <args> — Read (the Read tool) <absolute manifest path> in full first; then run <next_skill>; <fact that changed>; <fact that changed>
 ```
+
+A handoff's close, for example:
+
+````text
+Manifest: /home/me/.claude/claude-kit/handoff/1f0c…/HANDOFF.md
+/clear — the successor in this process gets the manifest in full plus this session's ledger digest
+/compact keep the F3b-4 thread; manifest /home/me/.claude/claude-kit/handoff/1f0c…/HANDOFF.md; no push until decision 52
+```text
+/dev-flow:librarian-mode start — Read (the Read tool) /home/me/.claude/claude-kit/handoff/1f0c…/HANDOFF.md in full first; then run /dev-flow:implement 8cc2-turn-gate-port; HOLD no push until decision 52
+```
+````
 
 At a stage boundary, one of those facts is always: **do not re-run the previous stage** — its
 outputs are published and complete, read them as inputs (if your chain records a per-stage
