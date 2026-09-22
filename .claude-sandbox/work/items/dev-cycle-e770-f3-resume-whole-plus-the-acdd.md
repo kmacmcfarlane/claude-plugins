@@ -2,11 +2,13 @@
 id: dev-cycle-e770-f3-resume-whole-plus-the-acdd
 title: "dev-cycle e770 F3: § Resume whole, plus the § Record line shapes move to references/record.md"
 type: feature
-status: todo
+status: doing
 priority: 2
 deps:
   - dev-cycle-e770-f2-decision-channel-durab-1709
 parent: dev-flow-new-dev-cycle-skill-investigate-07c3
+owner: unknown@bf9f9839222c
+claimed: 2026-09-22T22:33Z
 created: 2026-09-22
 updated: 2026-09-22
 refs:
@@ -21,3 +23,10 @@ Plan of record .claude-sandbox/investigations/e770-dev-cycle-resume (00 § F3 as
 - blocked: —
 - learned: —
 - riders from F2 review r1 (2026-09-22): re-point bindings.md § Decisions inline phase-line parenthesis at resume.md definition; make the spent: shape entry true once F3 writes it; check model-routing.md:146-151 (one caller-level fable answer for a group) against positional answer scoping.
+
+## Notes
+- 2026-09-22 claimed by unknown@bf9f9839222c
+
+target: full dev-cycle-e770-f3-resume-whole-plus-the-acdd /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude/worktrees/dev-cycle-e770-f3-resume-whole-plus-the-acdd
+dispatch: implementer opus — breadth (4+ files) and the design judgement itself; plan routes opus
+agent: implementer aac6b13990af22e83 round 1

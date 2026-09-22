@@ -26,3 +26,7 @@ Relayed 2026-09-22 from the agents store (wi-claim-allows-dependency-blocked-ite
 target: full wi-claim-allows-a-dependency-blocked-ite-1d1c /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude/worktrees/wi-claim-allows-a-dependency-blocked-ite-1d1c
 dispatch: implementer opus — executable logic (wi.py)
 agent: implementer adb7ce476b4fa37ed round 1
+return: implementer DONE 2c7e9bb
+changed: wi.py, tests/test_wi.py, SKILL.md (claim row), references/format.md (deps row)
+dispatch: reviewer opus — rule 4, implementer tier
+agent: reviewer a817cbd835b9bd49f round 1

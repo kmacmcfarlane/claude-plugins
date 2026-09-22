@@ -2,13 +2,12 @@
 id: dev-cycle-e770-f2-decision-channel-durab-1709
 title: "dev-cycle e770 F2: decision channel durability, re-ask, answer scoping"
 type: feature
-status: doing
+status: done
 priority: 2
 parent: dev-flow-new-dev-cycle-skill-investigate-07c3
-owner: unknown@bf9f9839222c
-claimed: 2026-09-22T22:11Z
 created: 2026-09-22
 updated: 2026-09-22
+closed: 2026-09-22
 refs:
   - e770
 ---
@@ -44,3 +43,9 @@ findings:
 - [low] a00b2b3 second commit before review — the librarian's scope rider; noted only.
 F3 rider added (acdd): re-point bindings.md's inline phase-line parenthesis at resume.md's definition; make spent: true once written; model-routing.md:146-151 group fable answer vs positional scoping.
 dispatch: implementer opus — fix round 1 (resume)
+return: implementer DONE c9a3ccf
+dispatch: reviewer opus — review r2 (resume)
+verdict: CLEAR round 2 at c9a3ccf
+low: c9a3ccf subject reads inverted — carried in the merge message (subject-fix)
+landed: 42126b9
+- 2026-09-22 done: 42126b9
