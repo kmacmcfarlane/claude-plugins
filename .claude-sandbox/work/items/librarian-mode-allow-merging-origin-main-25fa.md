@@ -2,8 +2,10 @@
 id: librarian-mode-allow-merging-origin-main-25fa
 title: "librarian-mode: allow merging origin/main on a rejected push (never rebase/force)"
 type: chore
-status: todo
+status: doing
 priority: 1
+owner: unknown@360f41058e92
+claimed: 2026-09-22T16:47Z
 created: 2026-09-22
 updated: 2026-09-22
 refs:
@@ -17,3 +19,7 @@ Operator 2026-09-22 (answer 52): 'Why would we forbid doing a pull? That seems l
 - next: —
 - blocked: —
 - learned: —
+
+## Notes
+- 2026-09-22 claimed by unknown@360f41058e92
+dispatch: implementer opus — librarian-mode custody doctrine (Report / push rule)

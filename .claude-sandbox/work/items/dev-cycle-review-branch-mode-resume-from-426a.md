@@ -2,14 +2,13 @@
 id: dev-cycle-review-branch-mode-resume-from-426a
 title: "dev-cycle: review <branch> mode + resume from item record (07c3 F4)"
 type: feature
-status: blocked
+status: doing
 priority: 3
 deps:
   - dev-flow-add-the-dev-cycle-skill-07c3-f1-325d
 parent: dev-flow-new-dev-cycle-skill-investigate-07c3
 owner: unknown@360f41058e92
 claimed: 2026-09-21T23:07Z
-blocked: round 6 NEEDS_CHANGES; decision 59
 created: 2026-09-18
 updated: 2026-09-22
 ---
@@ -86,3 +85,6 @@ answer 57: (b) one more fix round for the two mediums + lows and one review (ope
 - [medium] bindings.md:285-295 — review mode: a recorded "no", then the author pushes fixes, and the rerun re-reports the old findings forever; rules 5/6 lack rule 4's stale-sha test. Pass: a verdict whose <sha> ≠ HEAD is stale in rules 5/6 → fresh review under the cap test; the old "no" is not reused.
 - [low] rule 7 reuses an answer recorded before the latest BLOCKED run.
 decision 59: 426a — the approved round (57b) fixed its findings, but § Resume drew two new mediums for the sixth review running (a standalone resume waits forever on a question nobody still asks; review mode can never re-review a branch after a "no"). Review mode itself has been CLEAR since round 4. (a) land review mode without § Resume: the implementer reverts § Resume (and its Step 0 hooks) on this branch, a short review confirms, and § Resume becomes a new item planned first in dev-cycle plan mode so the state machine is designed whole, with these six rounds of findings as its input [recommended: every fix round has exposed a new edge; a design pass is cheaper than more rounds]; (b) another fix round for the two mediums + the low; (c) park 426a as is.
+answer 59: (a) land review mode without § Resume; record the work already done and the current feedback for the redesign (operator 2026-09-22)
+librarian (answer 59a): the § Resume work stays recoverable because 426a merges with its full history (fa4ef02…54f022c) plus a revert commit on top; the redesign is item dev-cycle-design-resume-whole-split-from-e770, whose body carries the shas and the open findings; this body keeps the six review rounds verbatim.
+dispatch: implementer opus — revert § Resume (and its Step 0/SKILL.md hooks) on this branch as a new commit (resume abb824e); then reviewer opus — confirm review mode stands alone (resume a393294)
