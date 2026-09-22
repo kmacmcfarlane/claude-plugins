@@ -45,3 +45,5 @@ fix r2 DONE 841a581 (opus): section names strip CRLF (before and after _HEAD_TAI
 dispatch: reviewer opus — review r3 (resume)
 review r3 (opus) at 841a581: CLEAR — LF, CRLF, mixed and tab/colon headings give identical sections and output; earlier repros hold; trim order unchanged. Low: handoff-format.md:95 "prose is never injected" slightly too strong + lines past the wrap.
 Review result: 3 rounds, 2 fix rounds; impl opus, review opus.
+land (librarian): merge-tree conflicts with main in librarian-mode references/ending-the-session.md (a934 c465325 + 25fa f4ee4ef rewrote the closing sequences). Not merged. Conflict round → implementer; fold in the r3 low.
+dispatch: implementer opus — conflict round (resume)
