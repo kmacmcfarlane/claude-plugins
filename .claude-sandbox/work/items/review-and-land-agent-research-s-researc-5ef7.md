@@ -2,12 +2,11 @@
 id: review-and-land-agent-research-s-researc-5ef7
 title: review and land agent-research's research skill family (branch worktree-research-skills)
 type: feature
-status: doing
+status: done
 priority: 1
-owner: unknown@360f41058e92
-claimed: 2026-09-22T08:33Z
 created: 2026-09-22
 updated: 2026-09-22
+closed: 2026-09-22
 refs:
   - peer agent-research; operator start args 2026-09-22
 ---
@@ -97,3 +96,4 @@ conflict round (peer): merge commit 8fecab6 — main merged into the branch; des
 dispatch: reviewer opus — resolution-only verify (resume)
 resolution verify (opus) on 8fecab6: CLEAR — both sides kept in all three files, descriptions byte-identical, diff vs main = the 14 research files; seven Checks OK.
 Review result: 5 review rounds + a verify-only round + a resolution round (cap waived twice by the operator: answers 54, 56); critical F1 and all high/medium fixed; F15 declined (8189 filed); commit-subject low carried; reviewer residuals: rule-zero work-item exception trusts a model-writable file; spec R9 lacks HELD.
+- 2026-09-22 done: 9edf5da

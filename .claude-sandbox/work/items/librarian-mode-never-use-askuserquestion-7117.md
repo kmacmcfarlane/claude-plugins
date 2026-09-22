@@ -2,12 +2,11 @@
 id: librarian-mode-never-use-askuserquestion-7117
 title: "librarian-mode: never use AskUserQuestion — every decision via the numbered Report channel"
 type: chore
-status: doing
+status: done
 priority: 1
-owner: unknown@360f41058e92
-claimed: 2026-09-22T15:43Z
 created: 2026-09-22
 updated: 2026-09-22
+closed: 2026-09-22
 refs:
   - peer marketplace - librarian (219.sock), operator words relayed
 ---
@@ -29,3 +28,4 @@ impl r0 DONE 6b536a1 (opus): Intake step 3 — every decision numbered, never As
 dispatch: reviewer opus — rule 4
 review r1 (opus) at 6b536a1: CLEAR. Sweep of SKILL.md + 13 references: no modal outside opt-in.md; checkpoint Step 0 self-answer consistent with the checkpoint skill (goal skipped by `continue`, Q3 pre-answered, 4b/mark untouched). Lows: red flag weaker than step 3 ("any modal outside the opt-in"); opt-in re-entry fallback names no carrying item; ending-the-session step 4 order omits the inventory; walkthroughs "so" nit. Memory-note clause: done by the librarian directly in auto-memory (2026-09-22). Filed lows as a follow-up.
 Review result: 1 round, 0 fix rounds; impl opus, review opus. Land checks (librarian): seven suites OK; diff read — 7 files in scope.
+- 2026-09-22 done: 0c86e3d

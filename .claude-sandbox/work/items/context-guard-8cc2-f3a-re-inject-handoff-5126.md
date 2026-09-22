@@ -2,15 +2,14 @@
 id: context-guard-8cc2-f3a-re-inject-handoff-5126
 title: "context-guard 8cc2-F3a: re-inject HANDOFF.md in full only to its lineage (authorship check)"
 type: feature
-status: doing
+status: done
 priority: 1
 deps:
   - context-guard-8cc2-f2-hard-advice-fits-t-1f9d
 parent: context-guard-turn-gate-8cc2
-owner: unknown@360f41058e92
-claimed: 2026-09-22T15:13Z
 created: 2026-09-21
 updated: 2026-09-22
+closed: 2026-09-22
 ---
 
 Port plan .claude-sandbox/investigations/8cc2-turn-gate-port — design awaits the 02 serial (plan review round 2: pin lineage/adoption to the manifest version seen; Read adopts only mode: handoff manifests; header wording for non-lineage authors).
@@ -36,3 +35,4 @@ Port plan .claude-sandbox/investigations/8cc2-turn-gate-port — design awaits t
 - review r2 (opus) at 69dd197: CLEAR. Binary 2.1.278: $CLAUDE_CODE_SESSION_ID follows /clear (confirmed); Read PostToolUse tool_response = {type:"text", file:{content,numLines,totalLines,truncatedByTokenCap?}} or {type:"file_unchanged"} (no content) → decline (a) stands as a low. Warn-not-refuse judged right. mark_checkpoint refactor: exit codes and argv unchanged. Nit: empty $CLAUDE_CODE_SESSION_ID maps to unknown.json.
 - Review result: 2 review rounds, 1 fix round; medium fixed; lows b/c/d fixed; (a) declined with reason (accepted); r2 low + nit filed as a follow-up; impl opus, review opus (fable signal, fallback recorded).
 - land checks (librarian, worktree 69dd197, temp CLAUDE_CONFIG_DIR): seven suites OK; diff read — 12 files, all in plan scope.
+- 2026-09-22 done: 4ca4646

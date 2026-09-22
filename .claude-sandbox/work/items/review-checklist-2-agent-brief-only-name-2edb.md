@@ -2,12 +2,11 @@
 id: review-checklist-2-agent-brief-only-name-2edb
 title: "review-checklist §2 + agent-brief: only name and description are required frontmatter keys"
 type: chore
-status: doing
+status: done
 priority: 2
-owner: unknown@360f41058e92
-claimed: 2026-09-22T15:43Z
 created: 2026-09-22
 updated: 2026-09-22
+closed: 2026-09-22
 refs:
   - peer marketplace - librarian (219.sock), operator words relayed
 ---
@@ -28,3 +27,4 @@ impl r0 DONE 246e529 (opus): review-checklist §2 requires name+description only
 dispatch: reviewer opus — rule 4
 review r1 (opus) at 246e529: CLEAR. Mutation tests: two-key skill passes; missing name/description, unknown key, "Model", duplicate, angle brackets, 1100-char description all FAIL; §2 over all 22 skills 0 FAIL. Lows: review-checklist.md:75 "Quote argument-hint always" → "whenever it is present"; create-skill template example `disable-model-invocation: true` could be copy-pasted; agent-brief.md:72 rewrap. Filed as a follow-up.
 Review result: 1 round, 0 fix rounds; impl opus, review opus. Land checks (librarian): seven suites OK; diff read — 4 files in scope.
+- 2026-09-22 done: 2675024
