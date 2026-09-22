@@ -2,15 +2,14 @@
 id: statusline-hub-f4-segment-drop-dir-file-d182
 title: "statusline-hub F4: segment drop dir (file-drop providers)"
 type: feature
-status: doing
+status: done
 priority: 3
 deps:
   - statusline-hub-f2-owner-mode-hooks-d-reg-b28f
 parent: spike-status-line-multiplexer-dependency-d193
-owner: unknown@360f41058e92
-claimed: 2026-09-22T00:50Z
 created: 2026-09-21
 updated: 2026-09-22
+closed: 2026-09-22
 ---
 
 d193 07 § F4 (03 F1's contract under CFG/statusline-hub/segments/). Optional; producers: context-guard labels, operator-attention identity chip, claude-sandbox chip.
@@ -31,3 +30,4 @@ d193 07 § F4 (03 F1's contract under CFG/statusline-hub/segments/). Optional; p
 - review r1 (opus) at fc76e6d: CLEAR. Byte-identical line without segments (COLUMNS unset/10/200/garbage); hostile files each cost only their own segment; sanitiser strips OSC-8/CSI/C1/bidi; 40 providers ≈0.35 ms. Lows: producer mkstemp temps not matched by the prune's _TMP shape; prune-vs-producer races (inode compare; retry on FileNotFoundError); fit_line ignores the health glyph width; README names-are-API + owner-mode bullets, CLAUDE.md "registry (hooks.d)" and install-statusline-hub --status wording omit segments/; nits: safe_sid wording, scan order. OQ: whether Claude Code sets COLUMNS for the status-line command (unverified).
 - Review result: 1 review round, 0 fix rounds; lows filed by the librarian as a follow-up (author's call deferred, none medium+); impl opus, review opus.
 - land checks (librarian, worktree fc76e6d): seven suites OK; diff read — 7 files, all in scope.
+- 2026-09-22 done: 6966be3
