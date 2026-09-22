@@ -47,3 +47,5 @@ review r3 (opus) at 841a581: CLEAR — LF, CRLF, mixed and tab/colon headings gi
 Review result: 3 rounds, 2 fix rounds; impl opus, review opus.
 land (librarian): merge-tree conflicts with main in librarian-mode references/ending-the-session.md (a934 c465325 + 25fa f4ee4ef rewrote the closing sequences). Not merged. Conflict round → implementer; fold in the r3 low.
 dispatch: implementer opus — conflict round (resume)
+conflict round DONE 3af254f (merge of main) + 2a3619a: 75%/DUE step 4 keeps all three — Report → push outcome + incoming: → team summary → checkpoint close → Step 7 opener last (roster ids, Copy forward, facts changed, Holds first); Holds paragraph and 25fa merge-through both stand; r3 low fixed. Librarian: the opener staying last is correct (checkpoint Step 7).
+dispatch: reviewer opus — resolution verify (resume)
