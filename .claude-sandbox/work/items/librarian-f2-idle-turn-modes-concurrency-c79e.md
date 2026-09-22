@@ -43,3 +43,6 @@ return: planner DONE_WITH_CONCERNS /home/rt/work/src/github.com/kmacmcfarlane/cl
 baseline: f1aa0b775916 .claude-sandbox/investigations/1222-unattended-librarian/00_initial.md;1687d7eb5206 .claude-sandbox/investigations/1222-unattended-librarian/01_f2-modes-pool-heartbeat.md;
 dispatch: reviewer opus — plan-review variant, plan mode floor
 agent: reviewer afb3f69db46fcf792 round 1
+verdict: NEEDS_CHANGES plan round 1 (1 high, 11 medium) — findings verbatim at /home/rt/.claude/tmp/claude-1000/-home-rt-work-src-github-com-kmacmcfarlane-claude-plugins/e9bb00fc-c89f-4c8e-a7ca-b4c1e9ccbc73/scratchpad/c79e/plan-review-r1.md (scratchpad; summary: re-arm unconditionally after Rehydrate; duplicate-loop dedupe; post-checkpoint gap; allowed-tools; one owner per admission rule; P0 floor stated once; floor vs U; sprint semantics; hysteresis on new readings; slot-leak reconcile; calibration under-count; two-writer hold keep-alive)
+dispatch: planner opus — plan fix round 1 (resume), revises by a new serial 02
+agent: planner a284b6b14c97d6192 round 2
