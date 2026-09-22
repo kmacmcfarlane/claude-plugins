@@ -221,6 +221,23 @@ class WrapUnwrap(Base):
         self.assertIn("wrap: running", out)
         self.assertIn(self.user, out)
 
+    def test_status_after_unwrap_says_kept_not_running(self):
+        self.wrapped()
+        self.assertEqual(self.run_it("--unwrap")[0], 0)
+        rc, out = self.run_it("--status")
+        self.assertEqual(rc, 0)
+        self.assertIn("wrap: kept, not running", out)
+        self.assertIn(self.user, out)
+
+    def test_status_says_a_project_record_is_not_run(self):
+        p = os.path.join(self.proj, ".claude", "settings.local.json")
+        owner.write_wrap(p, {"type": "command", "command": "sh ./%s.sh" % TOKEN}, None, True)
+        rc, out = self.run_it("--status")
+        self.assertEqual(rc, 0)
+        self.assertIn("wrap: kept, not run (not the user settings file)", out)
+        self.assertNotIn("wrap: running", out)
+        self.assertIn(p, out)
+
 
 class Scope(Base):
     """Wrap mode is user scope only: a project's command would otherwise run
