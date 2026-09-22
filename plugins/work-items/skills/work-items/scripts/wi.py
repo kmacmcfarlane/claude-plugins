@@ -181,9 +181,29 @@ def slugify(text):
     return s[:40].rstrip("-") or "item"
 
 
-def make_id(title, created):
-    suffix = hashlib.sha1((title + created).encode() + os.urandom(8)).hexdigest()[:4]
-    return f"{slugify(title)}-{suffix}"
+ID_TRIES = 1024
+
+
+def _id_suffix(title, created):
+    """One random 4-hex id suffix; make_id redraws it on a repeat."""
+    return hashlib.sha1((title + created).encode() + os.urandom(8)).hexdigest()[:4]
+
+
+def make_id(title, created, taken, slug=None):
+    """A new `<slug>-<4hex>` id that is not in `taken` — every id and file
+    stem already in the store plus every id handed out earlier in the same
+    batch (see taken_ids). The id is added to `taken` before it is returned,
+    so a batch caller cannot be handed it twice. A 4-hex suffix can repeat,
+    so a repeat is retried; when ID_TRIES draws all land on taken ids the
+    call fails loudly rather than widening the id format (ID_RE)."""
+    base = slugify(slug) if slug else slugify(title)
+    for _ in range(ID_TRIES):
+        iid = f"{base}-{_id_suffix(title, created)}"
+        if iid not in taken:
+            taken.add(iid)
+            return iid
+    raise WiError(3, f"no free id for '{base}-XXXX' after {ID_TRIES} tries; "
+                     "nothing written")
 
 
 def parse_duration(text):
@@ -945,11 +965,77 @@ def read_raw(path):
         return fh.read()
 
 
-def atomic_write(path, text):
+def atomic_write(path, text, create=False):
+    """tmp+rename. With create=True the file must not exist yet: the tmp is
+    moved into place by _move_no_clobber, which fails rather than replace a
+    file that appeared since the caller looked (O_EXCL semantics, and the
+    content still lands in one step)."""
     tmp = path.with_name(path.name + ".tmp" + str(os.getpid()))
     with open(tmp, "w", newline="") as fh:
         fh.write(text)
-    os.replace(tmp, path)
+    if not create:
+        os.replace(tmp, path)
+        return
+    try:
+        _move_no_clobber(tmp, path)
+    finally:
+        if tmp.exists():
+            tmp.unlink()
+
+
+def _refuse_existing(dst):
+    return WiError(3, f"refusing to overwrite existing {dst}; nothing written for it")
+
+
+def _move_no_clobber(src, dst):
+    """Move `src` to `dst`, never replacing an existing `dst` (WiError 3).
+
+    A hard link is the atomic no-clobber rename. Where the filesystem has
+    none, the name is reserved with O_EXCL and `src` is renamed over that
+    empty reservation, so the content still lands in one step; if the rename
+    fails, the reservation is removed while it is still ours (same inode,
+    size 0) and WiError is raised — never a half-written file under `dst`.
+    On any error `src` is left in place."""
+    try:
+        os.link(src, dst)
+    except FileExistsError:
+        raise _refuse_existing(dst) from None
+    except OSError:
+        pass  # no hard links on this filesystem: reserve the name instead
+    else:
+        try:
+            os.unlink(src)
+        except OSError as e:
+            raise WiError(3, f"{dst} written but {src} not removed: {e}") from None
+        return
+    try:
+        fd = os.open(dst, os.O_WRONLY | os.O_CREAT | os.O_EXCL)
+    except FileExistsError:
+        raise _refuse_existing(dst) from None
+    except OSError as e:
+        raise WiError(3, f"cannot create {dst}: {e}") from None
+    try:
+        reserved = os.fstat(fd)
+    finally:
+        os.close(fd)
+    try:
+        os.replace(src, dst)
+    except OSError as e:
+        try:
+            now = os.lstat(dst)
+            if (now.st_dev, now.st_ino) == (reserved.st_dev, reserved.st_ino) \
+                    and now.st_size == 0:
+                os.unlink(dst)
+        except OSError:
+            pass
+        raise WiError(3, f"cannot write {dst}: {e}; nothing written for it") from None
+
+
+def taken_ids(root, items):
+    """Every id a new item must not take: the loaded items' ids and the file
+    stems under items/ and archive/ (a stray file whose stem differs from its
+    id still owns its filename)."""
+    return {it.id for it in items} | {p.stem for p in item_paths(root, archived=True)}
 
 
 def save_item(root, item):
@@ -958,19 +1044,34 @@ def save_item(root, item):
 
 def save_items(root, items):
     """Render every item before writing any, so a value the writer rejects
-    (see _front_one_line) leaves the whole batch unwritten."""
-    staged = []
+    (see _front_one_line) leaves the whole batch unwritten.
+
+    An item without a path is new: it is written only to a file that does
+    not exist (anywhere in items/ or archive/) and that no other item in the
+    batch claims — a new item never replaces a file nobody read, whatever
+    id its caller generated. Any such conflict leaves the batch unwritten."""
+    staged, seen = [], set()
+    archived = {p.stem for p in (root / "archive").glob("*/*.md")} \
+        if (root / "archive").is_dir() else set()
     for item in items:
+        new = item.path is None
         path = item.path or root / "items" / (item.id + ".md")
+        if path in seen:
+            raise WiError(3, f"{item.id}: two items in one write target {path}; "
+                             "nothing written")
+        seen.add(path)
+        if new and (path.exists() or item.id in archived):
+            raise WiError(3, f"{item.id}: refusing to overwrite existing item "
+                             f"file for a new item; nothing written")
         try:
-            staged.append((item, path, item.render()))
+            staged.append((item, path, item.render(), new))
         except WiError as e:
             # name the item; its path only when it is already on disk
             where = f"{item.id} ({item.path})" if item.path else item.id
             raise WiError(e.code, f"{where}: {e}") from None
-    for item, path, text in staged:
+    for item, path, text, new in staged:
+        atomic_write(path, text, create=new)
         item.path = path
-        atomic_write(path, text)
 
 
 def item_paths(root, archived=False):
@@ -1149,12 +1250,7 @@ def cmd_add(args):
                 raise WiError(1, f"dep '{dep}' does not resolve (--force to add anyway)")
         if args.parent and args.parent not in by_id and not args.force:
             raise WiError(1, f"parent '{args.parent}' does not resolve")
-        while True:
-            iid = (slugify(args.slug) if args.slug else slugify(title))
-            iid += "-" + hashlib.sha1(
-                (title + created).encode() + os.urandom(8)).hexdigest()[:4]
-            if iid not in by_id:
-                break
+        iid = make_id(title, created, taken_ids(root, items), slug=args.slug)
         desc = sys.stdin.read().strip() if args.desc == "-" else (args.desc or "")
         meta = {"id": iid, "title": title, "type": args.type, "status": "todo",
                 "priority": args.priority, "tags": args.tag or [],
@@ -1978,7 +2074,7 @@ def cmd_import_todo(args):
     with Lock(root):
         items = load_all(root, archived=True)
         markers = {r for it in items for r in it.get("refs", [])}
-        ids = {it.id for it in items}
+        ids = taken_ids(root, items)
         for rec in parsed:
             marker = todo_marker(rec["title"])
             if marker in markers:
@@ -1986,11 +2082,7 @@ def cmd_import_todo(args):
                 continue
             markers.add(marker)
             date = rec["closed"] or today()
-            while True:
-                iid = make_id(rec["title"], date)
-                if iid not in ids:
-                    break
-            ids.add(iid)
+            iid = make_id(rec["title"], date, ids)
             meta = {"id": iid, "title": rec["title"], "type": "task",
                     "status": rec["status"], "priority": rec["priority"],
                     "tags": rec["tags"], "refs": rec["refs"] + [marker],
@@ -2268,14 +2360,15 @@ def _fold_story(v):
 
 
 def _story_value(story, key):
-    """A backlog field as a front-matter value: empty, or the `—` placeholder
-    wi itself reads as "no value", is None — so a `blocked_reason: "—"` never
-    lands as a literal dash now that a quoted `—` reads back as one."""
+    """A backlog field as a front-matter value: empty, blank after strip(),
+    or the `—` placeholder wi itself reads as "no value", is None — so a
+    `blocked_reason: "—"` never lands as a literal dash now that a quoted
+    `—` reads back as one."""
     v = story.get(key) or None
-    return None if isinstance(v, str) and v.strip() == "—" else v
+    return None if isinstance(v, str) and v.strip() in ("", "—") else v
 
 
-def _import_story(story, alias_map, existing_by_alias, update):
+def _import_story(story, alias_map, existing_by_alias, update, taken):
     story = {k: ([_fold_story(x) if k in STORY_TEXT_FIELDS else _fold(x)
                   for x in v] if isinstance(v, list) and
                  k in ("requires", "acceptance", "testing") else
@@ -2322,7 +2415,7 @@ def _import_story(story, alias_map, existing_by_alias, update):
         return it, False
     desc, handoff, notes = _split_backlog_notes(story.get("notes"))
     title = str(story["title"])[:120]
-    meta = {"id": make_id(title, today()), "title": title, "status": status,
+    meta = {"id": make_id(title, today(), taken), "title": title, "status": status,
             "stage": stage, "priority": priority, "alias": alias,
             "blocked": blocked, "parked": parked, "grooming": grooming,
             "feedback": _story_value(story, "review_feedback"),
@@ -2372,10 +2465,10 @@ def cmd_import(args):
         existing_by_alias = {it.get("alias"): it for it in items if it.get("alias")}
         alias_map = {a: it.id for a, it in existing_by_alias.items()}
         # two passes so requires can point at stories created in this run
-        pending = []
+        pending, taken = [], taken_ids(root, items)
         for story in stories:
             item, created = _import_story(story, alias_map, existing_by_alias,
-                                          args.update)
+                                          args.update, taken)
             if created:
                 alias_map[item.get("alias")] = item.id
             pending.append((story, item, created))
@@ -2496,7 +2589,7 @@ def cmd_archive(args):
     root = resolve_root(args.root)
     cutoff = parse_duration(args.older_than)
     now = datetime.now(timezone.utc)
-    moved = 0
+    moves = []
     with Lock(root):
         for item in load_all(root):
             if item.get("status") not in ("done", "dropped") or not item.get("closed"):
@@ -2505,10 +2598,15 @@ def cmd_archive(args):
                 tzinfo=timezone.utc)
             if (now - closed).total_seconds() < cutoff:
                 continue
-            year_dir = root / "archive" / item.get("closed")[:4]
-            year_dir.mkdir(parents=True, exist_ok=True)
-            os.replace(item.path, year_dir / item.path.name)
-            moved += 1
+            dest = root / "archive" / item.get("closed")[:4] / item.path.name
+            if dest.exists():
+                raise WiError(3, f"refusing to archive {item.path}: {dest} "
+                                 "already exists; nothing archived")
+            moves.append((item.path, dest))
+        for src, dest in moves:
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            _move_no_clobber(src, dest)
+        moved = len(moves)
     print(f"archived {moved}")
     return 0
 
