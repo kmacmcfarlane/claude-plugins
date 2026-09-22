@@ -140,7 +140,10 @@ escape hatches:
    there is the live session; `gauge.json`, `window-mismatch.jsonl` and the `_`-prefixed
    files are not sessions). It refuses, exiting non-zero and
    writing nothing, when no state file exists for that id — a mistyped id, since a live
-   session always has one. The gate stays down until the next compaction or `/clear`. The
+   session always has one. Run from the repo, it also stamps the manifest's machine fields,
+   but only a manifest written in the last 30 minutes (the format spec's "Machine fields"
+   rule); an older one is left as it is. The gate stays down until the next compaction or
+   `/clear`. The
    HARD STOP message itself prints this command with the script's absolute path filled in;
    to run it by hand, resolve the path as below, which works the same from a Bash tool call
    inside the session and from a plain terminal. `${CLAUDE_PLUGIN_ROOT}` does not work here:

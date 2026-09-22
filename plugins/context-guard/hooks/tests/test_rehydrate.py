@@ -59,7 +59,7 @@ class TestRehydrate(unittest.TestCase):
         os.environ.pop("CLAUDE_CONFIG_DIR", None)
 
     def write_manifest(self, mode="continue", written=None, head=None, scrolls="- x.md — notes"):
-        written = written or time.strftime("%Y-%m-%dT%H:%M:%SZ")
+        written = written or time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
         open(os.path.join(self.repo, "HANDOFF.md"), "w").write(
             MANIFEST.format(written=written, head=head or self.head,
                             mode=mode, scrolls=scrolls))
@@ -212,7 +212,7 @@ class TestRehydrate(unittest.TestCase):
     def test_sandbox_dir_preferred(self):
         os.makedirs(os.path.join(self.repo, ".claude-sandbox"))
         open(os.path.join(self.repo, ".claude-sandbox", "HANDOFF.md"), "w").write(
-            MANIFEST.format(written=time.strftime("%Y-%m-%dT%H:%M:%SZ"),
+            MANIFEST.format(written=time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
                             head=self.head, mode="continue", scrolls="- s.md — x"))
         self.write_manifest(scrolls="- root.md — should lose")
         rc, out = self.hook("compact")

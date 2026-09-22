@@ -14,10 +14,10 @@ injection cap.
 ---
 handoff: 1
 repo: <name>
-session: <session-id>   # $CLAUDE_CODE_SESSION_ID: this session, never the replaced manifest's
-written: 2026-08-30T21:40:00Z
-head: <short-sha>
-branch: <branch>
+session: <stamped>   # machine fields: the mark step stamps these four, never type them
+written: <stamped>
+head: <stamped>
+branch: <stamped>
 mode: land | continue | handoff | landed
 by: checkpoint
 mode_skill: /<plugin>:<mode> start   # optional: the standing mode to re-enter
@@ -130,12 +130,25 @@ TOC, read on demand: `path — one line on what it holds`.
   Either check degrades to the plain manifest if git or the store fails.
 - Injection tiers: `compact` → full + ledger tail; `resume`/`fork` → full only when the file
   or repo changed since last injection, else one header line; `startup`/`clear` → header only.
-- **`session:` is the author's own id**, read from `$CLAUDE_CODE_SESSION_ID` when the
-  manifest is written (Claude Code sets it for every Bash call, and it follows `/clear`).
-  Never copy it from the manifest being replaced: after `/clear` or a handoff that id is the
-  predecessor's, and since the field is the ownership key below, the new manifest would be
-  foreign to its author and re-injected in full into the predecessor. `mark_checkpoint.py`
-  warns when the manifest's `session:` is not the id it is given.
+- **Machine fields are stamped, never typed.** `written:` (UTC now, `%Y-%m-%dT%H:%M:%SZ`),
+  `head:` (`git rev-parse --short HEAD` of the manifest's repo), `branch:` and `session:`
+  (the author's own id, `$CLAUDE_CODE_SESSION_ID`, which follows `/clear`) are written by
+  `mark_checkpoint.py` at the end of Step 4b: write each as `<stamped>`. It rewrites those
+  frontmatter lines only (adding any that are missing before the closing `---`), leaves
+  every other byte as written, and replaces the file atomically. It stamps only a manifest
+  written in the last 30 minutes whose `session:` is a placeholder, the author, or the
+  session whose manifest the author replaced (its `/clear` predecessor or fork parent, or
+  the author of a `handoff` it read in full) — so an id copied from the replaced manifest
+  is corrected, and a concurrent peer's manifest is never claimed. It warns when the
+  manifest's `session:` is still not the id it is given. Hand-typed stamps were wrong in
+  13 of 15 sampled writes (some hours in the future, read as FRESH), and since `session:`
+  is the ownership key below, a copied id makes the new manifest foreign to its author and
+  re-injects it in full into the predecessor.
+- **Age** is read from `written:` as UTC (`Z`, an explicit offset, or no zone). A missing,
+  unreadable (`2026-08-31 21:00 CDT`, a placeholder) or future stamp — more than 10 minutes
+  ahead — is not trusted: the file's mtime ages the manifest instead, and the label names
+  why, `(no stamp)`, `(stamp unreadable)` or `(stamp in the future)` (joined to any head
+  reason with `; `). A future stamp is never FRESH: at least AGED.
 - **Whose memory it is.** Those tiers apply only to a manifest this session owns. Ownership
   names a *version* — the `session:` field plus the hash of the file's raw text — so a
   rewrite is a new version. A version is this session's when:

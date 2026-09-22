@@ -112,7 +112,10 @@ class ConcurrentWriters(Base):
             procs[-1].stdin.close()
             procs.append(subprocess.Popen(
                 [sys.executable, os.path.join(HOOKS, "mark_checkpoint.py"), "h"],
-                cwd=HOOKS, stdout=subprocess.DEVNULL, env=self.env))
+                # the temp config dir, not this checkout: the mark step stamps
+                # the manifest it finds from its cwd
+                cwd=self.tmp.name, stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL, env=self.env))
         for p in procs:
             self.assertEqual(p.wait(timeout=60), 0)
         st = L.load_state("h")
