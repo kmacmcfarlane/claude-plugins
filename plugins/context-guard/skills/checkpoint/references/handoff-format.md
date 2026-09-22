@@ -30,9 +30,17 @@ items:            # optional: wi ids you expect still open or in flight
 ## Goal
 mode: <land|continue|handoff> — operator: "<their last stated goal, verbatim>"
 
+## In flight
+One line per agent this session dispatched that is not finished; `None` when drained.
+- <role> — <work item> — agent <id> — round <n> — waiting on <what>
+
 ## Read in full
 ≤5 paths, one per line with WHY each cannot be skipped. This is raw rehydration:
 the next session reads these before doing anything else.
+
+## Copy forward
+Files a successor needs that still sit only in a session scratchpad; omit when none.
+- <absolute path> — <what it is, where to copy it>
 
 ## Aware of
 Tagged one-liners. A CORRECTION outranks the claim it corrects; REFUSED stays refused.
@@ -56,6 +64,33 @@ TOC, read on demand: `path — one line on what it holds`.
 
 - **Secrets: path and key, never value.** A manifest lands in git; sops and `kind: Secret`
   gates do not see prose. Name where a secret lives, never what it is.
+- **In flight is a roster, not a summary.** Every agent this session dispatched that is
+  not finished gets a line — implementer and reviewer alike, since a reviewer's rounds of
+  context are the costliest thing to lose — whether it is still running or has returned
+  and will be resumed (a reviewer awaiting a fix round, an implementer awaiting its
+  findings). `None` only when no such agent is left. `round` is the review or fix round the
+  agent is on (`1` for a first pass); `waiting on` is what the agent or its next step waits
+  for (its own return, a review, a fix round, an operator decision). Background agents
+  survive `/clear` in the same Claude Code process and resume by id (verified): the
+  successor resumes each one with `SendMessage` to its id and **does not re-dispatch it
+  fresh** — a fresh agent re-derives every round the old one holds. Their output files
+  stay under the predecessor's session dir (`…/<old session>/tasks/`); `/clear` does not
+  move them. After a fresh process (the session exited and relaunched) resuming is
+  unverified: try `SendMessage` first, and re-dispatch from the roster's round only if it
+  fails. When In flight is not `None`, the checkpoint's Step 7 opener names the ids to
+  resume, so the rule reaches the successor before it acts. In flight and Copy forward are
+  not in the hook's trim list (`items:`, Scrolls, Aware-of), so they survive trimming — by
+  omission, not by a rule in the hook; a change to the trim order (the 5039 H3 item) must
+  keep it so.
+- **Nothing a successor needs lives only in a session scratchpad.** The scratchpad is
+  session-scoped: `/clear` gives the successor a new, empty one while `tasks/` stays
+  behind, so a path into the old scratchpad works only by accident. Before writing the
+  manifest, copy every such file — a stage file, a brief template, a working note — to the
+  owning investigation series (or another durable path outside the work-item store) and
+  name the copy; or, when it cannot move now, list it under **Copy forward** by absolute
+  path. Never copy it into the store's `items/` directory: a file there that is not a work
+  item makes `wi ls`, `wi next` and `wi lint` fail. Never point Read in full or Scrolls
+  into a scratchpad.
 - **Stage boundary in a skill chain:** the published stage file is the authoritative record —
   **Read in full** points at it, and the manifest carries only what the files do not hold
   (deploy state, test fixtures/accounts, cross-ticket blocks, model/agent rules,
@@ -128,8 +163,16 @@ TOC, read on demand: `path — one line on what it holds`.
   count toward N or M. No time-based expiry — the head check covers it.
 - A LANDED manifest skips both checks (no dead claims, Next not withheld): the work is done.
   Either check degrades to the plain manifest if git or the store fails.
-- Injection tiers: `compact` → full + ledger tail; `resume`/`fork` → full only when the file
+- Injection tiers: `compact` → full + ledger digest; `resume`/`fork` → full only when the file
   or repo changed since last injection, else one header line; `startup`/`clear` → header only.
+- **The ledger digest** (2,500 chars, never exceeded) keeps reasoning ahead of pointers.
+  The *room* is the budget less a share held back for the closing line. `R`/`C` lines
+  from every epoch come first (newest first, up to half the room), then `D`/`X`/`U`/`Q`
+  ranked together newest first, then the remaining `R`/`C`, then the machine-written `P`
+  pointers in what is left. A line too long for half the room is cut with a ` [cut]`
+  marker, not dropped. Kept lines print in file order under their epoch headers. When
+  anything is left out or cut, a last line counts it and names the ledger file. A budget
+  too small for even that line gives an empty digest. The ledger file is never rewritten.
 - **Machine fields are stamped, never typed.** `written:` (UTC now, `%Y-%m-%dT%H:%M:%SZ`),
   `head:` (`git rev-parse --short HEAD` of the manifest's repo), `branch:` and `session:`
   (the author's own id, `$CLAUDE_CODE_SESSION_ID`, which follows `/clear`) are written by
@@ -142,9 +185,10 @@ TOC, read on demand: `path — one line on what it holds`.
   or the author of a `handoff` it read in full — when the file is no longer the version
   that link pinned or that Read adopted (it was rewritten, the id copied). So a copied id
   is corrected, while an untouched predecessor's or parent's manifest and a concurrent
-  peer's are never claimed; those get a `not stamped` warning. A manifest already stamped
-  and not rewritten since is left as it is, so a repeated mark does not re-date it. It
-  warns when the manifest's `session:` is still not the author's id. Hand-typed stamps were wrong in
+  peer's are never claimed (except a live fork parent's or handoff author's later rewrite;
+  F3b); those get a `not stamped` warning. A manifest already stamped and not rewritten
+  since is left as it is, so a repeated mark does not re-date it. It warns when the
+  manifest's `session:` is still not the author's id. Hand-typed stamps were wrong in
   13 of 15 sampled writes (some hours in the future, read as FRESH), and since `session:`
   is the ownership key below, a copied id makes the new manifest foreign to its author and
   re-injects it in full into the predecessor.
@@ -173,7 +217,7 @@ TOC, read on demand: `path — one line on what it holds`.
   operator's opener names this manifest, read it in full; otherwise it is another session's
   and not your memory." The derived check lines still follow it — dead claims, unparseable
   `items:`, and the Next-withheld line — since they describe the file, not anyone's memory.
-  The ledger tail and `/compact` guidance still inject on `compact`.
+  The ledger digest and `/compact` guidance still inject on `compact`.
 - **Reading adopts; `cat` looks.** A whole-file Read (no offset, no limit) of a `mode:
   handoff` manifest adopts that version: it is re-injected into this session after a
   compaction. To look without adopting, use `cat` (a Bash read) or a Read with an offset or

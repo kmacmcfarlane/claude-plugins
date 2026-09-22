@@ -39,9 +39,11 @@ def epoch_header(session_id, epoch_n, tokens):
 
 
 def tail(session_id, max_chars=4000):
-    """Newest-first bounded read for re-injection after compaction."""
+    """Newest-first bounded read (raw, every kind alike). Re-injection after
+    compaction uses digest(), which keeps reasoning ahead of pointers."""
     try:
-        lines = open(L.ledger_path(session_id), errors="replace").read().splitlines()
+        with open(L.ledger_path(session_id), errors="replace") as fh:
+            lines = fh.read().splitlines()
     except Exception:
         return ""
     out, size = [], 0
@@ -51,3 +53,114 @@ def tail(session_id, max_chars=4000):
         out.append(ln)
         size += len(ln) + 1
     return "\n".join(reversed(out))
+
+
+# Digest tiers: R/C first (a refusal or correction outranks everything), then
+# the rest of the reasoning (D/X/U/Q, and any hand-written line outside the
+# grammar), then the machine-written P pointers, which are already durable in
+# git or the repo and so are the first to go.
+_TIER = {"R": 0, "C": 0, "D": 1, "X": 1, "U": 1, "Q": 1, "P": 2}
+
+
+def _tier(line):
+    if len(line) > 3 and line.startswith("- ") and line[3:4] in (" ", ""):
+        return _TIER.get(line[2], 1)
+    return 1
+
+
+def digest(session_id, budget=2500):
+    """Bounded read for re-injection after compaction, by kind rather than by
+    recency: R and C lines from every epoch first (newest first, up to half
+    the room), then D/X/U/Q ranked together newest first, then the remaining
+    R/C, then P pointers newest first. A line too long for half the room is
+    cut with a marker rather than dropped. The kept lines print in file order
+    under their epoch headers (a header only when a kept line follows it), and
+    when anything is left out or cut a closing line counts it and names the
+    ledger file. The whole result never exceeds `budget` chars; a budget too
+    small for even the short closing line gives "". `# ` lines other than
+    the plain `# ledger <sid>` title count as reasoning. The ledger itself is
+    only read. Returns "" for a missing or empty ledger.
+    """
+    try:
+        path = L.ledger_path(session_id)
+        with open(path, errors="replace") as fh:
+            lines = fh.read().splitlines()
+    except Exception:
+        return ""
+    title = f"# ledger {session_id}"
+    head_of, entries, cur = {}, [], None
+    for i, ln in enumerate(lines):
+        if ln.startswith("## "):
+            cur = i
+        elif ln.strip() and ln.strip() != title:
+            head_of[i] = cur
+            entries.append(i)
+    if not entries:
+        return ""
+    disp = {i: lines[i] for i in entries}
+
+    def render(keep):
+        out, shown = [], set()
+        for i in sorted(keep):
+            h = head_of[i]
+            if h is not None and h not in shown:
+                shown.add(h)
+                out += ([""] if out else []) + [lines[h]]
+            out.append(disp[i])
+        return out
+
+    whole = "\n".join(render(entries))
+    if len(whole) <= budget:
+        return whole
+
+    room = max(0, budget - 200 - len(path))   # the closing line's share
+    cut = max(40, room // 2 - 80)             # fits the R/C pass with a header
+    for i in entries:
+        if len(disp[i]) > cut:
+            disp[i] = disp[i][:cut - 6] + " [cut]"
+    kept, heads, size = set(), set(), 0
+
+    def take(idxs, limit):
+        nonlocal size
+        for i in idxs:
+            if i in kept:
+                continue
+            h = head_of[i]
+            cost = len(disp[i]) + 1
+            if h is not None and h not in heads:
+                cost += len(lines[h]) + 2          # header plus its blank line
+            if size + cost > limit:
+                continue
+            kept.add(i)
+            if h is not None:
+                heads.add(h)
+            size += cost
+
+    newest = list(reversed(entries))
+    by = {t: [i for i in newest if _tier(lines[i]) == t] for t in (0, 1, 2)}
+    take(by[0], room // 2)
+    take(by[1], room)
+    take(by[0], room)
+    take(by[2], room)
+    left = [i for i in entries if i not in kept]
+    ncut = sum(1 for i in kept if disp[i] != lines[i])
+    body = "\n".join(render(kept))
+    if not left and not ncut:
+        return body
+    np = sum(1 for i in left if _tier(lines[i]) == 2)
+    nr = len(left) - np
+    said = []
+    if left:
+        bits = [f"{n} {w}" for n, w in ((nr, "reasoning"), (np, "pointer")) if n]
+        said.append(f"{' and '.join(bits)} line(s) left out, pointers first, "
+                    f"then older reasoning by kind")
+    if ncut:
+        said.append(f"{ncut} line(s) cut")
+    short = ", ".join(x for x in (f"{len(left)} left out" if left else "",
+                                  f"{ncut} cut" if ncut else "") if x)
+    for note in (f"[ledger digest: {'; '.join(said)}; the full ledger is {path}]",
+                 f"[ledger digest: {short}; {path}]"):
+        out = (body + "\n" + note) if body else note
+        if len(out) <= budget:
+            return out
+    return ""   # not even the short note fits: say nothing rather than a stub
