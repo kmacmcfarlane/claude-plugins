@@ -2,12 +2,11 @@
 id: statusline-sub-agent-rows-c0cc-review-lo-d64f
 title: "statusline sub-agent rows: c0cc review lows"
 type: bug
-status: doing
+status: done
 priority: 4
-owner: unknown@360f41058e92
-claimed: 2026-09-21T23:45Z
 created: 2026-09-21
-updated: 2026-09-21
+updated: 2026-09-22
+closed: 2026-09-22
 refs:
   - c0cc reviewer
 ---
@@ -23,6 +22,7 @@ From c0cc review r3 2026-09-21 (CLEAR with lows). (1) subagent_statusline._usage
 ## Notes
 - 2026-09-21 claimed by unknown@360f41058e92
 - dispatch: implementer opus — renderer logic
+- 2026-09-22 done: 455a96b
 
 ## Implementer result
 - round 1 DONE 9a5132e (opus): streamed structural scanner (root → message → usage only, strings skipped); chunk-straddle tests; no borrowing; README catalog row + decision tree. Open: invalid JSON inside skipped values not detected; compact_boundary checked only in first 4096 bytes on the long path.
@@ -35,3 +35,7 @@ From c0cc review r3 2026-09-21 (CLEAR with lows). (1) subagent_statusline._usage
 - dispatch: implementer opus — fix round 1 (same agent resumed)
 - fix round 1 DONE 964b9a5 (opus): LINE_SECS 1.0 per line + TICK_SECS 1.5 per tick (line passed over, offset advances, depth kept); stateless regexes (0 MiB growth vs 165); worst tick ~3 s; tests fail 2 without. Declined: commit wording (merge message).
 - dispatch: reviewer opus — review r2 (same reviewer resumed)
+
+## Review round 2 — CLEAR (opus) at 964b9a5
+- lows not taken: unscanned remainder of a passed-over line read without a time limit (GB-sized only); docstring line length; escape at chunk edge not checked for control char (invalid JSON only).
+- landed 455a96b
