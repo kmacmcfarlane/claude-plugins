@@ -1170,10 +1170,16 @@ def dep_resolved(dep, by_id):
                 and target.get("stage") in ("uat", "uat_feedback")))
 
 
+def unmet_deps(item, by_id):
+    """The item's deps that do not resolve (dep_resolved): the one rule both
+    the ready queue (is_ready) and `claim` apply."""
+    return [d for d in item.get("deps", []) if not dep_resolved(d, by_id)]
+
+
 def is_ready(item, by_id):
     if item.get("status") != "todo":
         return False
-    return all(dep_resolved(d, by_id) for d in item.get("deps", []))
+    return not unmet_deps(item, by_id)
 
 
 def rank_ready(items):
@@ -1350,6 +1356,22 @@ def cmd_claim(args):
     owner = args.as_owner or default_owner()
     with Lock(root):
         item = load_item_anywhere(root, args.id)
+        if item.get("status") == "todo":
+            # the ready queue's own rule over the ready queue's own universe
+            # (items/, as `next` loads it): claim takes nothing `next` hides
+            by_id = {it.id: it for it in load_all(root)}
+            unmet = unmet_deps(item, by_id)
+            if unmet:
+                def why(d):
+                    if d.startswith("ext:"):
+                        return f"{d} (external, never resolves)"
+                    dep = by_id.get(d)
+                    return f"{d} ({dep.get('status')})" if dep else \
+                        f"{d} (not in items/: unknown or archived)"
+                raise WiError(1, f"{item.id} waits on unmet deps: "
+                                 + ", ".join(why(d) for d in unmet)
+                                 + f"; finish or drop them, or `wi unblock "
+                                 f"{item.id} --dep <id>`")
         if _claim(item, owner, args.steal):
             save_item(root, item)
     print(f"claimed {item.id} as {owner}")
