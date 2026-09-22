@@ -51,3 +51,13 @@ review r1 (opus) on 5aef0dd: NEEDS_CHANGES. Checks: six suites OK; §2 research-
 dispatch: fix round 1 → implementer = peer agent-research (tier its own; librarian cannot route a peer's model)
 fix r1 (peer agent-research): fbdd08b — F1–F14, F16–F20 fixed; F15 declined (librarian filed 8189); F21 applied to fix commit subject only (no amend). Peer ran house lint + strict YAML on 4 skills + 2 agents.
 dispatch: reviewer opus — review r2 (resume r1 reviewer on fbdd08b)
+
+review r2 (opus) on fbdd08b: NEEDS_CHANGES. §1–§3, §5 clean; strict YAML now parses for 4 skills + 2 agents; six Checks OK. r1: F1–F8, F10–F14, F16–F20 fixed; F9 partial (→N2); F15 declined, accepted (8189); F21 low carried.
+- N1 [medium] research/SKILL.md:169-171 (+refine:51) — § Threads not pulled filled at Step 7 from lane TL;DRs before verification; breaks "brief carries no fetched text"; refine takes mission from it. Pass: entries carry lane id + sub-question no. + gap-condition no. only (or written after PASS); refine restates mission.
+- N2 [medium] intensity-and-routing.md:39-42 (+refine:56, research/SKILL.md:262, i&r:55) — rule zero test misclassifies /research-refine, unattended/chained operator-authored prompts, and follow-up turns. Pass: judge by the turn that started the run; list /research-refine; intensity in an operator-authored calling prompt counts, model-composed text does not.
+- N3 [medium] research/SKILL.md:228-231, 266 (+refine:110-113) — held run lives only in session-scoped scratchpad; brief's staging pointer dies; refine's clean-first path unreachable. Pass: move held staging to an ignored durable sidecar (check-ignore) and record it, or state plainly it is lost with the session.
+- N4 [low] SKILL.md:32-34, storage…:16-21 — synthesis/report/sheet claimed scanned; they are orchestrator-authored post-scan. Reword.
+- N5 [low] SKILL.md:104-107 — quick run verifier has no Criteria file.
+- N6 [low] storage…:43 — "create .claude-sandbox/research/" contradicts untracked-only rule.
+- N7 [low] 5aef0dd subject (F21 carried).
+dispatch: fix round 2 → implementer = peer agent-research
