@@ -2,10 +2,11 @@
 id: context-guard-rehydration-should-the-cle-44a4
 title: "context-guard rehydration: should the clear tier inject the ledger tail?"
 type: spike
-status: todo
+status: done
 priority: 3
 created: 2026-09-22
 updated: 2026-09-22
+closed: 2026-09-22
 refs:
   - "peer: agents - librarian (uds 122.sock); agents investigations/circadian-epochs"
 ---
@@ -17,3 +18,7 @@ Relayed 2026-09-22 by the agents librarian (design question, operator decides). 
 - next: —
 - blocked: —
 - learned: —
+closed by H5 (linked /clear now carries the predecessor ledger digest; unlinked stays a fresh start)
+
+## Notes
+- 2026-09-22 done: covered by H5 c8396a2

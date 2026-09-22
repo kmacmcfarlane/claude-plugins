@@ -24,8 +24,15 @@ Tiers by source:
                    every epoch ahead of commit pointers; ledger.digest)
   resume           full only if the manifest changed or the repo moved since
                    the last injection (state manifest.sha); else header
+  clear, linked    full manifest + the PREDECESSOR's ledger digest, when
+                   link_clear linked this session to a predecessor that
+                   pinned the version on disk now (linked_clear_pred): the
+                   /clear of a handoff is a continuation of the same work
+                   (not for a LANDED manifest: that /clear is a fresh start)
   startup / clear  header only (one line, ~100-150 tokens with a
-                   mode_skill, plus the Holds lines), labelled if stale
+                   mode_skill, plus the Holds lines), labelled if stale: an
+                   unlinked /clear, a pin of None, or a version rewritten
+                   since the pin
 Every tier's header names the manifest's `mode_skill:` (the standing mode to
 re-enter first), unless the manifest is LANDED; a STALE manifest's mode is
 named for confirmation, not as an order. Only a strict slash-command shape is
@@ -825,25 +832,43 @@ def link_clear(sid, now=None):
     then regenerated the session id. Pop that record and, when it is recent
     (CLEAR_LINK_MAX_AGE_S) and names another session, set this session's
     lineage: the predecessor with the version it pinned, then its lineage.
-    No verified process (proc_key None): no link."""
+    No verified process (proc_key None): no link. Returns the predecessor's
+    session id when it linked, else None."""
     key = L.proc_key()
     if not key:
-        return
+        return None
     rec_sid = L.PROC_PREFIX + key
     if not isinstance(L.load_state(rec_sid).get("cleared"), dict):
-        return
+        return None
     box = []
     L.update_state(rec_sid, lambda p: box.append(p.pop("cleared", None)))
     c = box[0] if box else None
     if not isinstance(c, dict):
-        return
+        return None
     old, at = c.get("sid"), L._finite(c.get("at"))
     now = time.time() if now is None else now
     if not isinstance(old, str) or not old or old == sid or at is None \
             or L._future_skewed(at) or now - at > L.CLEAR_LINK_MAX_AGE_S:
-        return
+        return None
     lin = L.linked_lineage(old, c.get("manifest"), c.get("lineage"))
     L.update_state(sid, lambda st: st.__setitem__("lineage", lin))
+    return old
+
+
+def linked_clear_pred(st, pred, v):
+    """The predecessor whose ledger a /clear successor inherits, or None: the
+    session link_clear just linked (`pred`), when it is the head of this
+    session's lineage and pinned exactly version `v` - the manifest on disk
+    now, with an owner (a link never pins an ownerless one). A pin of None (a
+    third session overwrote the manifest before the /clear) or a version
+    rewritten since the pin gives None, and so the header. Only a safe
+    session-id token is returned: it is echoed in the injected label."""
+    lin = L.lineage_of(st)
+    if not pred or not lin or lin[0]["sid"] != pred \
+            or not L._SAFE_SID.fullmatch(pred):
+        return None
+    want = L._version(v)
+    return pred if want is not None and lin[0]["manifest"] == want else None
 
 
 def manifest_version(text, fm=None):
@@ -901,19 +926,32 @@ def main():
     path, top, text = read_manifest(cwd)
     fm = front_matter(text) if path else {}
     version = manifest_version(text, fm) if path else None
+    pred = None
     if source == "fork":
         adopt_fork_state(sid, inp.get("transcript_path"), version)
     elif source == "clear":
         try:
-            link_clear(sid)
+            pred = link_clear(sid)
         except Exception:
-            pass
+            pred = None
+        if pred and L._SAFE_SID.fullmatch(pred):
+            # The new ledger names where it came from (ledger continuity).
+            ledger.successor_title(sid, pred)
 
     parts, sysmsg = [], None
     # Read-only snapshot: the git and store checks below are slow, so the
     # write-back at the end is a locked update of only the keys this hook owns.
     st = L.load_state(sid)
     seen_new = None
+    # A LANDED manifest says the thread is done: its /clear is the fresh start
+    # the land path asks for, so it keeps the header.
+    clear_pred = linked_clear_pred(st, pred, version) \
+        if source == "clear" and path and not is_landed(fm) else None
+    # Its reasoning trail, read up front so the systemMessage names it only
+    # when there is one to inject.
+    clear_digest = ledger.digest(clear_pred, budget=LEDGER_BUDGET) \
+        if clear_pred else ""
+    summary_used = False
     reads_new = None     # this injection's Read-in-full list (read_list.py)
 
     if path:
@@ -954,7 +992,7 @@ def main():
         holds = holds_block(text) if ours else ""
 
         seen = st.get("manifest") or {}
-        full = ours and (source == "compact" or (
+        full = ours and (source == "compact" or bool(clear_pred) or (
             source in ("resume", "fork") and (seen.get("sha") != sha or seen.get("top") != top)))
         if not ours:
             # Another session's manifest (or a version of it this session
@@ -974,12 +1012,18 @@ def main():
                         + (" A machine compaction summary also exists for this "
                            "session; where they disagree, the manifest wins."
                            if st.get("compact_summary") else ""))
+            # That sentence is for the injection right after the compaction
+            # that wrote the summary: write_back pops it, so a later resume
+            # or /clear-continued injection does not repeat it.
+            summary_used = bool(st.get("compact_summary"))
             parts += [header, preamble] + ([checks] if checks else []) + \
                 [trim(annotate_holds(text), CAP - len(header) - len(preamble) - len(checks)
                       - LEDGER_BUDGET - 400)]
             reads_new = RL.paths_from_manifest(text, top, cwd)
             sysmsg = (f"Rehydrated from {live}{f' ({why})' if why else ''} manifest "
-                      f"({fm.get('written', '?')}).")
+                      f"({fm.get('written', '?')})"
+                      + (f" and the ledger digest of predecessor {clear_pred}"
+                         if clear_digest else "") + ".")
         else:
             parts.append(header + " Read it before resuming its thread."
                          + "".join("\n" + c for c in (holds, checks, moved) if c))
@@ -999,6 +1043,13 @@ def main():
         ci = st.get("custom_instructions")
         if ci:
             parts.append(f"The operator's own /compact guidance was: {ci}")
+    elif clear_digest and parts:
+        # A linked /clear continues the predecessor's work: its reasoning
+        # trail comes along (this session's own ledger is new and empty). The
+        # full tier above reserved LEDGER_BUDGET + 400 for this block.
+        parts.append(f"[context-guard ledger — predecessor {clear_pred}, by "
+                     f"/clear: its reasoning trail, reasoning kept ahead of "
+                     f"commit pointers, file order, newest last]\n" + clear_digest)
 
     def write_back(cur):
         if seen_new is not None:
@@ -1012,6 +1063,9 @@ def main():
                 and cur.get("custom_instructions") == st.get("custom_instructions"):
             # Consumed once; a newer /compact guidance written meanwhile stays.
             cur.pop("custom_instructions", None)
+        if summary_used and cur.get("compact_summary") == st.get("compact_summary"):
+            # Used once, by the full injection above; a newer summary stays.
+            cur.pop("compact_summary", None)
 
     L.update_state(sid, write_back)
     L.sweep_stale(keep=sid)

@@ -47,3 +47,9 @@ review r3 (opus) at 841a581: CLEAR — LF, CRLF, mixed and tab/colon headings gi
 Review result: 3 rounds, 2 fix rounds; impl opus, review opus.
 land (librarian): merge-tree conflicts with main in librarian-mode references/ending-the-session.md (a934 c465325 + 25fa f4ee4ef rewrote the closing sequences). Not merged. Conflict round → implementer; fold in the r3 low.
 dispatch: implementer opus — conflict round (resume)
+conflict round DONE 3af254f (merge of main) + 2a3619a: 75%/DUE step 4 keeps all three — Report → push outcome + incoming: → team summary → checkpoint close → Step 7 opener last (roster ids, Copy forward, facts changed, Holds first); Holds paragraph and 25fa merge-through both stand; r3 low fixed. Librarian: the opener staying last is correct (checkpoint Step 7).
+dispatch: reviewer opus — resolution verify (resume)
+resolution verify (opus) at 2a3619a: CLEAR, no findings — all three changes kept in step 4, opener last; only H3's 6 files; 593 context-guard tests pass on the merged tree. Note for H6's owner: read_list._SECTION matches '## Read in full' exactly while _sections now accepts a suffixed heading.
+Review result: 3 review rounds + resolution verify, 2 fix rounds + 1 conflict round; impl opus, review opus.
+land (librarian): conflicts with main in hooks/rehydrate.py, checkpoint SKILL.md and handoff-format.md (H5 019c landed c8396a2 there). Not merged. Conflict round → implementer; the linked-clear full branch must wrap the body in annotate_holds (both reviewers flagged it).
+dispatch: implementer opus — conflict round (resume)

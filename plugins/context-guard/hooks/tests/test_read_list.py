@@ -52,6 +52,20 @@ class TestRecord(Base):
         self.assertEqual([p["path"] for p in rec["paths"]], [self.a, self.b])
         self.assertEqual(rec["read"], [])
 
+    def test_linked_clear_records_the_list(self):
+        # H5: a linked /clear takes the full tier, so it records the list too.
+        self.manifest()
+        self.clear("X", "S")
+        rec = self.pending("S")
+        self.assertEqual([p["path"] for p in rec["paths"]], [self.a, self.b])
+        self.assertIn(LINE, self.prompt("S"))
+
+    def test_unlinked_clear_records_nothing(self):
+        self.key = None
+        self.manifest()
+        self.clear("X", "S")
+        self.assertIsNone(self.pending("S"))
+
     def test_foreign_manifest_records_nothing(self):
         self.manifest(sid="Y")
         self.start("B", "compact")

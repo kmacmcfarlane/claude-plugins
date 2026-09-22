@@ -12,6 +12,33 @@ import lib_context as L
 KINDS = "DXCURQP"
 
 
+def _lock(fh):
+    """An exclusive advisory lock on the open ledger, released when it is
+    closed. SessionStart(clear) runs postcompact_epoch.py (the epoch header)
+    and rehydrate.py (successor_title) side by side on the same new ledger;
+    the lock keeps the title's rewrite from losing the header. The repo's
+    lock convention (lib_context._acquire): LOCK_NB retried until
+    L.LOCK_TIMEOUT_S, then - or with no fcntl, or on any error - the caller
+    proceeds unlocked, so a stuck holder never stalls a hook. True when
+    locked, False when the wait timed out (another writer holds it), None
+    when no lock could be tried (no fcntl, an error). Never raises."""
+    fcntl = getattr(L, "fcntl", None)
+    if fcntl is None:
+        return None
+    try:
+        deadline = time.monotonic() + L.LOCK_TIMEOUT_S
+        while True:
+            try:
+                fcntl.flock(fh.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+                return True
+            except (BlockingIOError, InterruptedError):
+                if time.monotonic() >= deadline:
+                    return False
+                time.sleep(0.002)
+    except Exception:
+        return None
+
+
 def append(session_id, kind, text, ref=None):
     if kind not in KINDS or not text:
         return False
@@ -20,9 +47,11 @@ def append(session_id, kind, text, ref=None):
         line += f" -> {ref}"
     try:
         p = L.ledger_path(session_id)
-        new = not os.path.exists(p) or os.path.getsize(p) == 0
         with open(p, "a") as fh:
-            if new:
+            _lock(fh)
+            # Sized under the lock: a title another writer put there first
+            # (successor_title) is not followed by a second one.
+            if os.fstat(fh.fileno()).st_size == 0:
                 fh.write(f"# ledger {session_id}\n")
             fh.write(line + "\n")
         return True
@@ -33,9 +62,43 @@ def append(session_id, kind, text, ref=None):
 def epoch_header(session_id, epoch_n, tokens):
     try:
         with open(L.ledger_path(session_id), "a") as fh:
+            _lock(fh)
             fh.write(f"\n## epoch {epoch_n} — {time.strftime('%F %T')} — {tokens:,} tok\n")
     except Exception:
         pass
+
+
+def successor_title(session_id, predecessor):
+    """A linked /clear successor's ledger starts `# ledger <sid> (successor
+    of <predecessor>)`, so the lineage is in the file, not only in state. It
+    is put first whether or not the epoch header got there before it. digest()
+    keeps this line (it is not the plain title), so it survives the
+    successor's own compactions. The plain title append() writes on a new
+    ledger is replaced; any other `# ledger` title (already a successor's, or
+    a fork's adopted one) is left alone. Skipped (False) when the lock wait
+    times out: the rewrite is the one write that could lose another's line.
+    True when it wrote. Never raises."""
+    try:
+        with open(L.ledger_path(session_id), "a+", errors="replace") as fh:
+            if _lock(fh) is False:
+                # Another writer holds the ledger past the bound: a rewrite
+                # now could lose its line, so the title is skipped (appends,
+                # which cannot clobber, still proceed unlocked).
+                return False
+            fh.seek(0)
+            body = fh.read()
+            plain = f"# ledger {session_id}\n"
+            if body.startswith(plain):
+                body = body[len(plain):]     # append() got there first
+            elif body.startswith("# ledger "):
+                return False
+            fh.seek(0)
+            fh.truncate()
+            fh.write(f"# ledger {session_id} (successor of {predecessor})\n"
+                     + body)
+        return True
+    except Exception:
+        return False
 
 
 def tail(session_id, max_chars=4000):

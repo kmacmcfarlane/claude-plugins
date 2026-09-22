@@ -2,15 +2,14 @@
 id: handoff-h5-a-linked-clear-successor-gets-019c
 title: "handoff H5: a linked /clear successor gets the manifest plus the predecessor's ledger digest"
 type: feature
-status: doing
+status: done
 priority: 1
 deps:
   - handoff-h2-ledger-digest-keeps-reasoning-d0eb
 parent: context-guard-compact-and-clear-handoffs-5039
-owner: unknown@360f41058e92
-claimed: 2026-09-22T16:47Z
 created: 2026-09-22
 updated: 2026-09-22
+closed: 2026-09-22
 ---
 
 Per decision 60. Builds on F3a's lineage link (landed 4ca4646); covers item 44a4 if still open. Opus/opus. Plan: .claude-sandbox/investigations/5039-handoff-failures/00_findings.md § fix plan.
@@ -39,3 +38,8 @@ dispatch: reviewer opus — review r2 (resume)
 review r2 (opus) at 9ded9c0: CLEAR — lock waits ≤0.2 s; honest message; CAP 8,775/9,000; stale/hostile/foreign cases get the header; compact_summary pop cannot lose a needed summary. Lows: unlocked after timeout → rare duplicate title (digest skips it) / microsecond lost-line window in successor_title (skip the rewrite when _lock returns False); no-fcntl systems race the epoch header.
 land (librarian): merge-tree conflicts with main in hooks/rehydrate.py (H6 b6de landed ae7ea81 — reads_new next to clear_pred, write_back). Not merged. Conflict round → implementer merges main; reviewer verifies the resolution. Also fold in the lows if cheap: successor_title skips its rewrite when _lock returns False.
 dispatch: implementer opus — conflict round (resume)
+conflict round DONE 8ca085d (merge of main) + e24ca1f: both sides kept in rehydrate.py; a linked /clear records the read list (tests); successor_title skips its rewrite only on a lock timeout (None when no lock is possible still writes).
+dispatch: reviewer opus — resolution + e24ca1f verify (resume)
+resolution verify (opus) at e24ca1f: CLEAR — both features kept; write_back keys disjoint; a linked /clear records the read list by construction; lock probe 40 trials lost_lines=0 torn=0; rewrite skip works. Low kept in the record: after a >200 ms lock hold, two appenders can each write a title (2/40); digest() skips exact plain titles, so nothing is lost. H3 will conflict here (tier docstring, Step 5, tiers bullet) and its linked-clear branch should wrap the body in annotate_holds.
+Review result: 2 review rounds + resolution verify, 1 fix round + 1 conflict round; impl opus, review opus.
+- 2026-09-22 done: c8396a2
