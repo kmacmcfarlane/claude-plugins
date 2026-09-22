@@ -18,13 +18,22 @@ rather than re-dispatching), with the entries built from the `dispatch:` lines o
 `doing` items and ListAgents, never from memory.
 
 **Holds.** Every standing hold goes under the manifest's Holds section, one line each
-with its end condition, per the checkpoint skill's hold rule: `no push until decision N`,
-`dispatch small (one agent) until decision N` or `until <UTC time>`, `hold <item> until
-<event>`. A hold the operator gave without an end condition gets one asked for, or is filed
-as an open decision; "until bedtime" is written as the UTC time it means. Holds are never
-trimmed and ride on every rehydration tier, so after Rehydrate the first report restates
-each hold and whether its end condition has been met — one marked `expired? confirm` goes
-to the operator before anything acts against it or lifts it.
+with its end condition, per the checkpoint skill's hold rule:
+
+```text
+- HOLD no push to origin — operator reviewing the log — until decision 52
+- HOLD dispatch small (one agent) — plan quota — until 2026-09-23T07:00Z
+- HOLD <item id> — waits on the F1 review — until the F1 review is CLEAR
+```
+
+The Holds lines mirror the store's active `hold` items (`$WI ls --tag hold`) and their end
+conditions, one line per item plus any operator hold that has no item; where the two
+disagree, the store wins — fix the manifest at the next checkpoint, not the item. A hold
+the operator gave without an end condition gets one asked for, or is filed as an open
+decision; "until bedtime" is written as the UTC time it means. Holds are never trimmed and
+ride on every rehydration tier, so after Rehydrate the first report restates each hold and
+whether its end condition has been met — one marked `expired? confirm` goes to the
+operator before anything acts against it or lifts it.
 
 **Brief templates.** The templates are the `dev-cycle` skill's `references/agent-brief.md`
 and `references/review-brief.md`; any filled brief the run keeps in the session

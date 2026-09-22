@@ -92,15 +92,18 @@ TOC, read on demand: `path — one line on what it holds`.
   (`until the F1 review is CLEAR`), or a time. Write a time as a UTC stamp
   (`until 2026-09-23T07:00Z`; a bare date ends with that UTC day), never "bedtime" or
   "tonight": the hook can only check a time it can read, and a "pause until bedtime" hold
-  once ran 37 hours. A hold with no end condition is an open question — ask the operator
+  once ran 37 hours. Each line starts with `HOLD` (after its `- `): the hook reads only
+  those lines, so prose in the section is never injected as a hold. A hold with no end
+  condition is an open question — ask the operator
   for one. Holds ride on every tier of a manifest this session owns: the full tiers inject
   the section untrimmed; the header-only tiers (`startup`, `clear`, an unchanged `resume`)
   append its lines after the header line in compact form (at most 8 lines, 800 chars,
-  control characters stripped, the rest counted). A hold whose end-clause time — the text
-  after its last `until`, else after its last ` — ` — is already past is marked
+  control characters stripped, the rest counted). A hold whose end clause — the text after
+  its last `until`, else after its last ` — ` — leads with a time already past is marked
   `[expired? confirm: its end time has passed]`, never dropped: the successor asks the
-  operator before acting against it or lifting it. A decision or an event is never marked:
-  it holds until confirmed. The foreign header carries no holds — another session's holds
+  operator before acting against it or lifting it. A decision or an event is never marked,
+  even one that mentions a date later in the clause (`until decision 52 (filed
+  2026-09-20)`): it holds until confirmed. The foreign header carries no holds — another session's holds
   are not this session's. Lift a hold by deleting its line at the next checkpoint.
 - **Nothing a successor needs lives only in a session scratchpad.** The scratchpad is
   session-scoped: `/clear` gives the successor a new, empty one while `tasks/` stays
@@ -188,7 +191,9 @@ TOC, read on demand: `path — one line on what it holds`.
   Every header-only tier of an owned manifest carries the Holds lines as well.
 - **Trim order**, when the full body is over its budget: the frontmatter `items:` list, then
   Scrolls, then Next (the hook's own `Next withheld` line kept), then the Aware-of lines other
-  than CORRECTION and REFUSED, then any other section not listed here, last first. Doing,
+  than CORRECTION and REFUSED, then any other section not listed here, last first (Scrolls,
+  Next and Aware of keep what their own step kept). Headings match by name, ignoring a
+  trailing `:` or `(…)` (`## Holds:` is Holds). Doing,
   Goal, Holds, In flight, Read in full and Copy forward are **never trimmed**; only a body
   whose protected sections alone exceed the budget is cut at its end. A trimmed section keeps
   its heading and reads `(trimmed — read the manifest file)`.

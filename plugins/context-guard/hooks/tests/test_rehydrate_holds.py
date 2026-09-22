@@ -147,6 +147,9 @@ class TestHolds(unittest.TestCase):
             "HOLD x — why — until bedtime": False,                    # an event
             "HOLD x — filed 2020-01-01 — until decision 52": False,   # why, not end
             "HOLD x — why — 2026-09-20T00:00Z": True,                 # no `until`
+            "HOLD x — why — until decision 52 (filed 2020-01-01)": False,
+            "HOLD x — why — until the 2020-01-01 build ships": False,  # an event
+            "HOLD x — why — until 2026-09-21 or decision 5": True,     # leads: a time
         }
         for line, want in cases.items():
             self.assertEqual(rh.hold_expired(line, now), want, line)
@@ -202,17 +205,45 @@ class TestHolds(unittest.TestCase):
             self.assertIn(keep, c)
         self.assertIn(f"until {PAST} [expired? confirm", c)
 
+    def test_final_pass_keeps_what_the_steps_kept(self):
+        # review r1: an early extra section must go before a stepped one loses
+        # its CORRECTION/REFUSED or Next-withheld line.
+        text = self.write(aware="".join(f"- DECIDED d{i} — {'d' * 80}\n" for i in range(10)))
+        text = text.replace("Building the thing.\n", "Building the thing.\n" + "b" * 3000 + "\n")
+        text = text.replace("\n## Holds\n", "\n## Context\n" + "c" * 1500 + "\n\n## Holds\n")
+        text = rh.withhold_next(text, "Next withheld: head moved 2 commits since this "
+                                      "manifest (a..b); run wi prime and git log.")
+        out = rh.trim(text, 4400)
+        self.assertLessEqual(len(out), 4400)
+        self.assertIn("## Context\n(trimmed — read the manifest file)", out)
+        for keep in ("- CORRECTION the cache is per session", "- REFUSED sudo for dd",
+                     "Next withheld: head moved 2 commits") + self.PROTECTED:
+            self.assertIn(keep, out)
+        self.assertNotIn("DECIDED d1", out)
+
+    def test_heading_variants_and_prose_lines(self):
+        for head in ("## Holds:", "## Holds (1)", "## Holds"):
+            holds = (f"\n{head}\nOne line per standing hold, ≤8; `None` when there are "
+                     f"none.\n- HOLD no push — why — until decision 52\n")
+            text = self.write(holds=holds)
+            c = self.ctx("startup")
+            self.assertIn("- HOLD no push — why — until decision 52", c, head)
+            self.assertNotIn("One line per standing hold", c, head)
+            out = rh.trim(text.replace("- x.md — notes", "x" * 5000), 1500)
+            self.assertIn(head + "\nOne line per standing hold", out, head)
+
     # ── bounded, plain text ────────────────────────────────────────────────
     def test_header_block_is_bounded_and_plain(self):
         many = "\n## Holds\n" + "".join(
-            f"- HOLD thing {i} \x1b[2J‮ — {'w' * 150} — until decision {i}\n"
+            f"- HOLD thing {i} \x1b[2J\u202e\u061c\ufeff\u2062 — {'w' * 150} — until decision {i}\n"
             for i in range(20))
         self.write(holds=many)
         c = self.ctx("startup")
         block = c[c.index("Holds this manifest records"):]
         self.assertLessEqual(len(block), rh.HOLDS_BUDGET)
         self.assertNotIn("\x1b", c)
-        self.assertNotIn("‮", c)
+        for ch in ("\u202e", "\u061c", "\ufeff", "\u2062"):
+            self.assertNotIn(ch, c)
         self.assertIn("more holds — read the manifest file)", c)
         self.assertLessEqual(block.count("\n- HOLD"), rh.HOLDS_MAX)
 

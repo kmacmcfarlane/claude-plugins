@@ -459,6 +459,10 @@ _KEEP_AWARE = re.compile(r"[ \t]*(?:[-*][ \t]*)?(?:CORRECTION|REFUSED)\b")
 _KEEP_NEXT = re.compile(r"Next withheld:")
 
 
+# `## Holds:` and `## Holds (2)` name the section `holds`.
+_HEAD_TAIL = re.compile(r"[ \t]*(?:\(.*)?[ \t:]*$|^[ \t]+")
+
+
 def _sections(body):
     """[[name, text]]: the text before the first `## ` line (name None: the
     frontmatter and any preamble), then one entry per `## ` section, its
@@ -468,7 +472,7 @@ def _sections(body):
     for chunk in re.split(r"(?m)^(?=## )", body):
         if not chunk:
             continue
-        name = chunk.split("\n", 1)[0][3:].strip().lower() \
+        name = _HEAD_TAIL.sub("", chunk.split("\n", 1)[0][3:]).lower() \
             if chunk.startswith("## ") else None
         out.append([name, chunk])
     return out
@@ -487,8 +491,9 @@ def _collapse(sec, keep=None):
 def trim(body, budget):
     """Fit the body into `budget` chars. Order: the frontmatter `items:` list,
     Scrolls, Next (its withheld line kept), the Aware-of lines other than
-    CORRECTION/REFUSED, then every other section not in PROTECTED, last
-    first. Doing, Goal, Holds, In flight, Read in full and Copy forward are
+    CORRECTION/REFUSED, then every other section not in PROTECTED and not
+    one of those steps, last first (a stepped section keeps what its step
+    kept). Doing, Goal, Holds, In flight, Read in full and Copy forward are
     never trimmed: only a body whose protected part alone exceeds the budget
     is cut at the end."""
     if len(body) <= budget:
@@ -500,6 +505,7 @@ def trim(body, budget):
         return sum(len(t) for _, t in secs) > budget
 
     steps = [("scrolls", None), ("next", _KEEP_NEXT), ("aware of", _KEEP_AWARE)]
+    stepped = {name for name, _ in steps}
     for name, keep in steps:
         for sec in secs:
             if not over():
@@ -509,7 +515,8 @@ def trim(body, budget):
     for sec in reversed(secs):
         if not over():
             break
-        if sec[0] is not None and sec[0] not in PROTECTED:
+        if sec[0] is not None and sec[0] not in PROTECTED \
+                and sec[0] not in stepped:
             _collapse(sec)
     return "".join(t for _, t in secs)[:budget]
 
@@ -519,24 +526,30 @@ HOLDS_MAX = 8            # lines the header tiers carry
 HOLD_LINE_MAX = 240      # chars per line
 HOLDS_BUDGET = 800       # chars for the whole header block
 EXPIRED = "expired? confirm"
-_CTRL = re.compile(r"[\x00-\x1f\x7f-\x9f\u2028\u2029\u200b-\u200f\u202a-\u202e\u2066-\u2069]")
+_CTRL = re.compile(r"[\x00-\x1f\x7f-\x9f\u061c\u2028\u2029\u200b-\u200f"
+                   r"\u202a-\u202e\u2060-\u2064\u2066-\u2069\ufeff]")
 _WHEN_RE = re.compile(
     r"(\d{4}-\d{2}-\d{2})(?:[T ](\d{2}:\d{2}(?::\d{2})?))?(?:[ \t]*(Z|[+-]\d{2}:?\d{2})\b)?",
     re.ASCII | re.I)
-_NONE_RE = re.compile(r"(?:none|nothing|no holds?)\.?", re.I)
+_HOLD_RE = re.compile(r"HOLD\b")
+_BULLET = re.compile(r"^[ \t]*[-*][ \t]+")
+
+
+def _hold(ln):
+    """A Holds-section line's entry when it is a hold (`HOLD …`, bullet
+    optional), else None: prose such as the spec's template sentence is not
+    a hold."""
+    s = _BULLET.sub("", ln).strip()
+    return s if _HOLD_RE.match(s) else None
 
 
 def hold_lines(text):
-    """The `## Holds` section's entries, raw: one per non-blank line, a
-    leading `- ` or `* ` dropped; [] when the section is absent or `None`."""
+    """The `## Holds` section's entries, raw: each line that starts with
+    `HOLD` (a leading `- ` or `* ` dropped); [] when the section is absent,
+    `None`, or holds only prose."""
     for name, chunk in _sections(text or ""):
         if name == "holds":
-            out = []
-            for ln in chunk.split("\n")[1:]:
-                s = re.sub(r"^[ \t]*[-*][ \t]+", "", ln).strip()
-                if s and not _NONE_RE.fullmatch(s):
-                    out.append(s)
-            return out
+            return [h for h in map(_hold, chunk.split("\n")[1:]) if h]
     return []
 
 
@@ -552,12 +565,13 @@ def hold_end(line):
 
 
 def hold_expired(line, now=None):
-    """True when the hold's end condition names a time already past: a UTC
-    stamp (`2026-09-22T18:00Z`, an explicit offset, or no zone), or a bare
-    date, which ends with that UTC day. A decision number or an event has
-    no time, so it never reads expired: it stays in force until confirmed."""
+    """True when the hold's end condition is a time already past: the end
+    clause LEADS with a UTC stamp (`2026-09-22T18:00Z`, an explicit offset,
+    or no zone) or a bare date, which ends with that UTC day. A decision
+    number or an event is no time, even one that mentions a date later in
+    the clause: it never reads expired and stays in force until confirmed."""
     now = time.time() if now is None else now
-    m = _WHEN_RE.search(hold_end(line))
+    m = _WHEN_RE.match(hold_end(line).strip())
     if not m:
         return False
     date, clock, zone = m.groups()
@@ -579,8 +593,8 @@ def annotate_holds(text, now=None):
             continue
         lines = sec[1].split("\n")
         for k in range(1, len(lines)):
-            s = re.sub(r"^[ \t]*[-*][ \t]+", "", lines[k]).strip()
-            if s and not _NONE_RE.fullmatch(s) and hold_expired(s, now):
+            s = _hold(lines[k])
+            if s and hold_expired(s, now):
                 lines[k] = lines[k].rstrip() + f" [{EXPIRED}: its end time has passed]"
         sec[1] = "\n".join(lines)
         return "".join(t for _, t in secs)
