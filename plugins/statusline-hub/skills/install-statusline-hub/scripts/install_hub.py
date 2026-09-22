@@ -40,8 +40,9 @@ tool installed.
            as a hub display hook: replacing it then would drop the footer)
 --write-read-only
            consent to write a settings file that is read-only (its mode is kept)
---status   print the hook registry (each hook, or why it is skipped) and the
-           wrap state, and exit
+--status   print the hook registry (each hook, or why it is skipped), the
+           segment drop dir (each every-session segment, or why a file is
+           skipped) and the wrap state, and exit
 
 Exit codes: 0 done (or nothing to do); 1 error (nothing written); 2 usage
 error (nothing written); 3 a different statusLine is present and --replace
@@ -328,7 +329,7 @@ def main():
                     help="consent to replace or remove a statusLine another tool installed")
     ap.add_argument("--write-read-only", action="store_true",
                     help="consent to write a read-only settings file")
-    ap.add_argument("--status", action="store_true", help="print the hook registry")
+    ap.add_argument("--status", action="store_true", help="print the hook registry, the segments and the wrap state")
     a = ap.parse_args()
     if a.status:
         return subprocess.call([sys.executable, os.path.join(HOOKS, "hub.py"), "--status"],

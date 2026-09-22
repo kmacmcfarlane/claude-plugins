@@ -33,7 +33,8 @@ Each render, in this order:
    write, no code runs), each file capped, stale or expired ones dropped.
 7. Print the display hooks' segments and the drop-dir segments joined by
    the configured separator, in order; when COLUMNS says the line is too
-   wide, drop-dir segments go first, lowest priority first.
+   wide (the health glyph's width counted), drop-dir segments go first,
+   lowest priority first. With COLUMNS unset nothing is dropped or cut.
 
 Wrap mode (the user consented, with install-statusline-hub --wrap, to the hub
 running the statusLine command their user settings held before it): when the
@@ -532,15 +533,17 @@ def join_line(parts, inner, sep):
     return line
 
 
-def fit_line(parts, inner, sep, cols):
+def fit_line(parts, inner, sep, cols, reserve=0):
     """The line: the wrapped command's output (when there is one) first, the
     parts after it on its last line. With `cols` known and the last line
-    wider, drop-dir segments go one at a time - the lowest priority first,
-    and of equal ones the last shown - until it fits or none is left. A
-    display hook's text and the wrapped output are never dropped."""
+    wider than `cols` less `reserve` (the columns something appended after
+    it will take: the health glyph), drop-dir segments go one at a time -
+    the lowest priority first, and of equal ones the last shown - until it
+    fits or none is left. A display hook's text and the wrapped output are
+    never dropped."""
     parts = list(parts)
     line = join_line(parts, inner, sep)
-    while cols and R.columns(line.rsplit("\n", 1)[-1]) > cols:
+    while cols and R.columns(line.rsplit("\n", 1)[-1]) + reserve > cols:
         drop = [i for i, (_, prio) in enumerate(parts) if prio is not None]
         if not drop:
             break
@@ -586,9 +589,11 @@ def render(data, now=None):
                 except subprocess.TimeoutExpired:
                     pass
             inner = inner_get(sid, time.time())  # the runner stamps it after `now`
-        line = fit_line(parts, inner, cfg["separator"], term_columns())
-        if any(R.health(h["health_path"], now, cfg["health_stale_min"])
-               for h in hooks if h.get("health_path")):
+        failing = any(R.health(h["health_path"], now, cfg["health_stale_min"])
+                      for h in hooks if h.get("health_path"))
+        line = fit_line(parts, inner, cfg["separator"], term_columns(),
+                        R.columns(" " + GLYPH) if failing else 0)
+        if failing:
             line = f"{line} {GLYPH}" if line else GLYPH
     except Exception:
         pass

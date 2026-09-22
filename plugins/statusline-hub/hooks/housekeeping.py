@@ -12,8 +12,9 @@
   uninstalled or disabled: its hook is dead; a manifest that says
   "pinned": true is kept), last-good cache entries older
   than CACHE_DAYS, logs older than LOG_DAYS, segment files no render will
-  show again (past expires_at, or untouched for registry.SEGMENT_AGE_MAX_S),
-  orphaned temp files. The wrap
+  show again (past expires_at, or untouched for registry.SEGMENT_AGE_MAX_S;
+  never one a producer replaced or touched mid-pass), orphaned temp files
+  (in the segment dirs, any dot-file an hour old). The wrap
   record (wrap.json) is never pruned: it holds the user's own entry.
 
 Nothing here raises.
@@ -172,28 +173,74 @@ def prune_manifests(now=None):
 
 
 def _dead_segment(path, now):
-    """Whether the segment file at path is one no render will show again:
-    untouched for registry.SEGMENT_AGE_MAX_S, or past its expires_at. A file
-    that cannot be read or parsed is judged by its age alone. Never raises."""
+    """The stat of the segment file at path when it is one no render will
+    show again - untouched for registry.SEGMENT_AGE_MAX_S, or past its
+    expires_at - else None. A file that cannot be read or parsed is judged by
+    its age alone; one replaced while it was being judged is not judged.
+    Never raises."""
     try:
         st = os.lstat(path)
         if not stat.S_ISREG(st.st_mode):
-            return False
+            return None
         if now - st.st_mtime > registry.SEGMENT_AGE_MAX_S:
-            return True
-        raw, _ = registry._read_capped(path, registry.SEGMENT_MAX)
+            return st
+        raw, rst = registry._read_capped(path, registry.SEGMENT_MAX)
+        if _ident(rst) != _ident(st):
+            return None
         d = json.loads(raw.decode("utf-8")) if raw is not None else None
         exp = registry._number(d.get("expires_at")) if isinstance(d, dict) else None
-        return exp is not None and now >= exp
+        return st if exp is not None and now >= exp else None
     except Exception:
+        return None
+
+
+def _ident(st):
+    """What says a file is still the one judged: the same inode (a producer's
+    os.replace makes a new one) with the same mtime (its os.utime keep-up)."""
+    return (st.st_dev, st.st_ino, st.st_mtime_ns)
+
+
+def _unlink_if_same(path, st):
+    """Delete path only when it is still the file `st` describes, so a
+    producer's write that landed after the judgment survives. Raises
+    OSError."""
+    if _ident(os.lstat(path)) != _ident(st):
         return False
+    os.unlink(path)
+    return True
+
+
+def _prune_dot_temps(d, now, max_age=TMP_STALE_S):
+    """Delete the regular dot-files in dir d older than max_age: the temp
+    files a producer's tempfile.mkstemp left when it was killed between
+    create and replace (hook-contract.md § 11 has producers name them with
+    a leading dot, in any shape - prune_tmp's _TMP shape is only the hub's
+    own). The age gate spares a live producer's temp, which is milliseconds
+    old. Returns how many went. Never raises."""
+    n = 0
+    try:
+        with os.scandir(d) as it:
+            for e in it:
+                try:
+                    if e.name.startswith(".") and e.is_file(follow_symlinks=False) and \
+                            now - e.stat(follow_symlinks=False).st_mtime > max_age:
+                        os.unlink(e.path)
+                        n += 1
+                except OSError:
+                    continue
+    except OSError:
+        pass
+    return n
 
 
 def prune_segments(now=None):
     """Delete segment files no render will show again (see _dead_segment),
     in the drop dir and one level of provider dirs, removing a provider dir
-    left empty, plus orphaned temp files. A dir that fails the trust check
-    is left alone. Returns how many files went. Never raises."""
+    left empty, plus orphaned temp files (any dot-file over TMP_STALE_S old).
+    A file is deleted only while it is still the one judged dead (same
+    inode and mtime), so a producer's rewrite racing the pass survives. A
+    dir that fails the trust check is left alone. Returns how many files
+    went. Never raises."""
     n = 0
     try:
         now = time.time() if now is None else now
@@ -206,19 +253,21 @@ def prune_segments(now=None):
         for sub in [d] + subs:
             if sub != d and registry.private_dir_problem(sub):
                 continue
-            n += prune_tmp(sub, now)
+            n += _prune_dot_temps(sub, now)
             with os.scandir(sub) as it:
                 for e in it:
                     try:
-                        if e.name.endswith(".json") and not e.name.startswith(".") and \
-                                _dead_segment(e.path, now):
-                            os.unlink(e.path)
-                            n += 1
+                        if e.name.endswith(".json") and not e.name.startswith("."):
+                            st = _dead_segment(e.path, now)
+                            if st is not None and _unlink_if_same(e.path, st):
+                                n += 1
                     except OSError:
                         continue
             if sub != d:
                 try:
-                    os.rmdir(sub)  # only succeeds when empty
+                    # only succeeds when empty; a producer that loses its dir
+                    # here retries (hook-contract.md § 11)
+                    os.rmdir(sub)
                 except OSError:
                     pass
     except Exception:

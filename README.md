@@ -181,8 +181,10 @@ proceed, and confirmable or changeable at operator review. Names that have shipp
 
 `statusline-hub` is **confirmed** by the operator, not provisional: the dispatcher puts it
 into a data dir and the `statusLine` command path, so it was chosen once, before it shipped.
-Since owner mode (F2) those are live state, as is its registry path
-(`~/.claude/statusline-hub/hooks.d/`), which other plugins write to.
+Since owner mode (F2) those are live state, as are its registry path
+(`~/.claude/statusline-hub/hooks.d/`) and its segment drop dir
+(`~/.claude/statusline-hub/segments/`, with each provider's file name), which other plugins
+write to.
 
 ## Plugins today
 
@@ -416,12 +418,15 @@ makes that slot shareable, two ways:
 - **Owner mode.** The hub is the `statusLine` command. Each render it writes the sensor
   record first (`~/.claude/statusline/sensor/<session>.json`, the same file, format and rules
   as the `statusline` plugin's writer), then runs the hooks other plugins register in
-  `~/.claude/statusline-hub/hooks.d/`:
+  `~/.claude/statusline-hub/hooks.d/` and reads the segments other tools drop:
   - **display** hooks run in parallel under hard timeouts, with a last-good cache, and
     their sanitised text is joined into the line;
   - **record** hooks get the raw payload byte for byte, detached, and never block the
     render;
-  - an optional health file per hook adds one warning glyph when that hook is failing.
+  - an optional health file per hook adds one warning glyph when that hook is failing;
+  - **segments** other tools drop as small JSON files in `~/.claude/statusline-hub/segments/`
+    (no registration, no code run) join the line, sanitised and capped; when `COLUMNS` says
+    the line is too wide they go first, the lowest priority first.
 - **Embed mode.** Another renderer keeps the slot and runs `hooks/tee.py`, which writes the
   same record and prints nothing. The tools that read the record (`context-guard`'s exact
   depth, `dev-flow`'s rate-limit reset times) work there too.
@@ -437,7 +442,7 @@ makes that slot shareable, two ways:
 | Skill | Description |
 |---|---|
 | `statusline-hub` | Wire the tee into a ccstatusline Custom Command widget, a Starship `custom` module, or a shell wrapper around an existing status line; the hook contract for plugin authors (`references/hook-contract.md`) |
-| `install-statusline-hub` | Optional: put the hub in another scope, remove it, replace a status line another tool set, or wrap one and unwrap it; list registered hooks, why any is skipped, and their health |
+| `install-statusline-hub` | Optional: put the hub in another scope, remove it, replace a status line another tool set, or wrap one and unwrap it; list registered hooks, why any is skipped, and their health, and the segments in the drop dir |
 
 It sets itself up. On the first session its SessionStart hook takes a free `statusLine` slot
 where the plugin is enabled (the same scope rules as `statusline`: user settings, or a
@@ -452,7 +457,7 @@ a hub display hook (its first session start), then takes the slot over once, wit
 drawing through it. When it refuses every registered hook for a reason that lies with its
 directories (a config dir inside a git repository, say), it says so once. The same hook
 prunes sensor records older than 30 days (the tee's included), dead hook manifests (not
-refreshed for 14 days), stale caches and logs.
+refreshed for 14 days), segment files no render will show again, stale caches and logs.
 
 Soft dependency on `statusline`: its footer is the hub's first display hook. The hub also
 reads the `owner.json` marker an earlier `statusline` version left, its `enabledPlugins`
@@ -464,7 +469,8 @@ for, and the hub takes a free slot straight away, drawing only the hooks others 
 It carries `hooks/`, with its unit tests
 (`cd plugins/statusline-hub/hooks && python3 -m unittest discover -s tests -q`):
 - `hub.py`, the owner-mode render;
-- `registry.py`, the manifests, their trust checks, config, health and output hygiene;
+- `registry.py`, the manifests, their trust checks, config, health, output hygiene and the
+  segment drop dir;
 - `tee.py`;
 - `owner.py` and `session_start.py`, the settings entry and the first-run, heal and takeover
   logic;

@@ -104,6 +104,14 @@ A skipped hook has its reason in brackets, for example: `group- or other-writabl
 `${CLAUDE_CONFIG_DIR:-~/.claude}/statusline-hub/log/<name>.log`. Read it when a hook shows
 nothing.
 
+When other tools drop segment files in `${CLAUDE_CONFIG_DIR:-~/.claude}/statusline-hub/segments/`
+(text for the line, no code run), `--status` lists them under `segments:` too: each
+every-session segment with whether it shows, is empty or is disabled in `config.json`, and
+its priority (the lowest goes first when the line is too wide), and any file skipped with
+its reason, for example `stale (no expires_at, untouched for a day)`, `expired` or
+`not JSON`. Per-session files are read on each render, not listed. The rules are in § 11 of
+the `statusline-hub` skill's `references/hook-contract.md`.
+
 ## Examples
 
 Example 1: take over from a hand-written status line

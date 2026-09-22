@@ -222,8 +222,8 @@ glyph. `/install-statusline-hub --status` shows each hook's health.
   SessionStart no longer refreshes the file.
 - The same pass deletes last-good cache entries older than a day, logs untouched for 14
   days, and orphaned temp files. It also deletes sensor records untouched for 30 days,
-  including records only the hub's tee ever wrote, and segment files no render will show
-  again (§ 11).
+  including records only the hub's tee ever wrote, segment files no render will show
+  again, and a segment producer's temp files an hour old (§ 11).
 
 ## 9. The user's config.json
 
@@ -310,8 +310,9 @@ CFG/statusline-hub/segments/<provider>/<session>.json   shown in that session on
   tool's name. One provider shows at most one segment: its session file when that is live,
   else its every-session file.
 - `<session>` is the session id in the sensor record's file-name form (`sensor-contract.md`
-  §1, `safe_sid`): a Claude Code UUID as is; anything else hashed to `sid-<32 hex>`. The
-  hub reads only the file for the session it is rendering.
+  §1, `safe_sid`): a safe token (`[A-Za-z0-9_-][A-Za-z0-9._-]{0,127}`, which the UUIDs
+  Claude Code issues are) as is; anything else hashed to `sid-<32 hex>`. The hub reads only
+  the file for the session it is rendering.
 
 ### The file
 
@@ -366,9 +367,11 @@ why any file is skipped.
   `order` first, then each one's `order` hint, then name. A display hook comes before a
   segment of the same name.
 - A provider named in `config.json` `disabled` is not shown.
-- When `COLUMNS` is set and the line's last line is wider, the hub drops segments one at a
-  time, the lowest `priority` first and, of equal ones, the last shown, until it fits. A
-  display hook's text and a wrapped command's output are never dropped for width.
+- When `COLUMNS` is set and the line's last line is wider (the health glyph, § 7, counted
+  when it shows), the hub drops segments one at a time, the lowest `priority` first and, of
+  equal ones, the last shown, until it fits. A display hook's text and a wrapped command's
+  output are never dropped for width. Claude Code sets `COLUMNS` for the status-line
+  command; with it unset, nothing is dropped.
 - A missing, unreadable, malformed, stale or oversized file costs only its own segment. No
   drop dir at all leaves the line exactly as it was.
 - Reading the drop dir is one directory listing and at most two small reads per provider:
@@ -377,11 +380,16 @@ why any file is skipped.
 ### Writing one
 
 - Create missing directories `0700` (`os.makedirs(d, mode=0o700, exist_ok=True)`) on every
-  write: the prune pass removes a provider's session dir once it is empty.
+  write: the prune pass removes a provider's session dir once it is empty. It can do so
+  between your `makedirs` and your write, so when `mkstemp` or `os.replace` raises
+  `FileNotFoundError`, run `makedirs` and the write again, once.
 - Write atomically, as a manifest (§ 3): `tempfile.mkstemp` in the same directory (it
   makes the file `0600`), then `os.replace` onto the name. Never truncate in place; a
-  render may read it at any moment. Name the temp file with a leading dot, which the hub
-  never reads.
+  render may read it at any moment. Name the temp file with a leading dot
+  (`mkstemp(dir=d, prefix=".")`), which the hub never reads; the prune pass deletes a
+  dot-file in the drop dir once it is an hour old (a writer killed mid-write).
+- The prune pass deletes a file only while it is still the one it judged dead (the same
+  inode and mtime), so a rewrite or `os.utime` that lands during the pass survives it.
 - To remove a segment, delete the file, write empty `text`, or let `expires_at` pass.
 - Use a per-session file for anything about one session (a checkpoint label, the
   session's identity), and the every-session file for anything true of the whole machine
