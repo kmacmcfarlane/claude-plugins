@@ -129,11 +129,25 @@ log, the work-item store — outranks the manifest).
 ## Where the manifest lives
 
 One file per session, in the Claude config dir:
-`${CLAUDE_CONFIG_DIR:-~/.claude}/claude-kit/handoff/<sid>/HANDOFF.md`. Nothing goes into the
-repo, so concurrent sessions in one checkout never overwrite each other's, and the manifest
-is never committed. Its path cannot be guessed, so **every checkpoint's last message prints
-it**; a handoff also prints `/clear`, `/compact <guidance>` and a one-line opener to paste,
-whose "Read (the Read tool) <path> in full" is what hands the file to a new session.
+`${CLAUDE_CONFIG_DIR:-~/.claude}/claude-kit/handoff/<sid>/HANDOFF.md`. **Nothing goes into the
+repo, deliberately, for two separate reasons.** Answer 47 ruled out `.claude-sandbox/` because
+not every consumer of a manifest runs inside `claude-sandbox` — a reason that says nothing
+about a repo-root path, which means the same with or without claude-sandbox. Decision 65 then
+ruled out a repo-root copy too, for a different reason: a repo-visible copy is exactly what
+let concurrent sessions in one checkout overwrite each other's memory (an old-layout repo
+`HANDOFF.md` is still read, read-only, during the transition — see "An old-layout
+`HANDOFF.md`" below; not restated here). The manifest is never committed. Its path cannot be
+guessed, so **every checkpoint's last message prints it**; a handoff also prints `/clear`,
+`/compact <guidance>` and a one-line opener to paste, whose "Read (the Read tool) <path> in
+full" is what hands the file to a new session. On the same host and config dir, an operator or
+a non-Claude-Code reader who missed that opener gets the same path without it:
+`handoff_path.py --path <sid>` — but the session id argument counts only outside a Claude Code
+session; run from inside one (as the commands in "Unattended checkpoints need three commands
+allowed" below are), `$CLAUDE_CODE_SESSION_ID` wins over a passed id and the command prints
+the running session's own path, never another session's (the format spec's "Where it lives"
+has the argv contract). Asking a session for a *different* session's path needs
+`env -u CLAUDE_CODE_SESSION_ID python3 "<root>/hooks/handoff_path.py" --path <sid>`, `<root>`
+resolved the same way as those commands.
 
 A handoff's close, for example (a session in librarian mode, handing on to an implement
 run):
