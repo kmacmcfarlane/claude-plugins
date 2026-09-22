@@ -136,10 +136,14 @@ Three layers, escalating; the first two are hooks, the third is a skill.
    context-limit error already returned makes the in-flight request fail, and the hook cannot
    tell the two apart. One decision point, no wedged session. Manual `/compact` is never
    touched.
-4. **Checkpoint skill** — Step 0 asks the operator the goal (*land / continue / handoff*)
+4. **Checkpoint skill** — Step 0 asks the operator the goal (*continue / handoff*)
    because that is the one input nobody else holds and it changes everything downstream:
-   *land* means compaction is the wrong tool; *continue* means residue then `/compact` with
-   drafted guidance; *handoff* means a brief in the owning repo. Step 2 writes reasoning residue
+   *continue* means residue then `/compact` with drafted guidance; *handoff* means a brief
+   for a fresh session or the owning repo. (A third mode, `land`, was dropped on
+   2026-09-22: a finished thread is a handoff whose goal says so.) The brief is one
+   manifest per session, in the config dir rather than the repo, so concurrent sessions in
+   one checkout cannot overwrite each other's; since its path can no longer be guessed,
+   every checkpoint prints it, and a handoff also prints the commands to continue. Step 2 writes reasoning residue
    from the live session (Finding 2). Step 3 routes twice — task knowledge to its owning repo,
    harness friction to the plugin repo — because a session has two outputs, and the second is
    the one that improves the next session. Step 4 delegates the mechanical flush to a **fork**
@@ -154,7 +158,14 @@ built on a guessed window could only end a working turn early. Under the DUE lin
 for a checkpoint at the turn's natural end; its HARD marker (`HARD, mid-turn`) is printed
 exactly when the prompt gate would block (`lib_context.hard_applies`, one rule for both),
 and it is the only message on which the checkpoint skill runs unattended — no questions,
-a custody skill's mode or else `handoff`.
+a custody skill's mode or else `handoff`. Once a checkpoint is underway
+(`turn_gate.py --checkpointing`) the check stands down until the mark, for at most 30
+minutes or 40K more tokens. That budget is twice the ~20K a lean checkpoint costs,
+deliberately: it has to cover the checkpoint actually running, and Step 4a's flush —
+commits across several repos, then the manifest — is the case that outgrows the lean
+figure. The token half only bites while more than 40K of window remains, so a stand-down
+begun deeper than that (at 1M the hard line is 60K left) has the 30 minutes as its only
+bound — by then the checkpoint is close to the last useful thing the turn can do anyway.
 
 ## 4. Context injection beyond CLAUDE.md
 

@@ -1601,6 +1601,170 @@ class TestMarkStampsTheOwnPath(Base):
                          self.git("rev-parse", "--show-toplevel"))
 
 
+class TestMarkInstallsTheDraft(Base):
+    """8cc2-F3b-4 r1: the Write tool never targets the store (outside the
+    project, inside a protected directory: it prompts, or is denied, and an
+    unattended checkpoint stalls). Step 4b drafts the manifest in the session
+    scratchpad; `mark_checkpoint.py --from <draft>` installs it at the
+    session's own store path and then stamps it exactly as before."""
+
+    def setUp(self):
+        super().setUp()
+        self.scratch = tempfile.TemporaryDirectory()
+        self.addCleanup(self.scratch.cleanup)
+        self.draft = os.path.join(self.scratch.name, "HANDOFF.draft.md")
+        self.text = MANIFEST.format(session="session: <stamped>\n",
+                                    written="<stamped>", head="<stamped>",
+                                    mode="handoff", doing="Building the thing.")
+        writef(self.draft, self.text)
+        L.save_state("S", {"epoch": 1})
+
+    def run_cli(self, *args, env_sid="S"):
+        env = dict(os.environ, CLAUDE_CONFIG_DIR=self.cfg.name)
+        env.pop("CLAUDE_CODE_SESSION_ID", None)
+        if env_sid:
+            env["CLAUDE_CODE_SESSION_ID"] = env_sid
+        return subprocess.run([sys.executable, os.path.join(HOOKS, "mark_checkpoint.py")]
+                              + list(args), capture_output=True, text=True,
+                              env=env, cwd=self.repo, timeout=30)
+
+    def snap(self, path):
+        with open(path, "rb") as fh:
+            return fh.read(), os.stat(path).st_mtime_ns
+
+    def assertNotInstalled(self, r, why):
+        self.assertEqual(r.returncode, 0)
+        self.assertIn("not installed, so not stamped", r.stderr)
+        self.assertIn(why, r.stderr)
+        self.assertNotIn("stamped /", r.stdout)
+        self.assertIn("checkpoint recorded for epoch 1", r.stdout)
+        self.assertEqual(L.load_state("S")["checkpoint_epoch"], 1)
+
+    def test_install_creates_the_store_file_and_stamps_it(self):
+        p = L.manifest_path("S")
+        self.assertFalse(os.path.lexists(os.path.dirname(p)))
+        draft_before = self.snap(self.draft)
+        r = self.run_cli("--from", self.draft, "S")
+        self.assertEqual((r.returncode, r.stderr), (0, ""))
+        self.assertIn(f"installed {self.draft} as {p}", r.stdout)
+        self.assertIn(f"stamped {p}", r.stdout)
+        fm = R.front_matter(readf(p))
+        self.assertEqual((fm["session"], fm["head"]), ("S", self.head))
+        self.assertEqual(fm["top"], self.git("rev-parse", "--show-toplevel"))
+        self.assertEqual(os.stat(os.path.dirname(p)).st_mode & 0o777, 0o700)
+        self.assertEqual(os.stat(p).st_mode & 0o777, 0o600)
+        self.assertEqual(self.snap(self.draft), draft_before)   # only read
+        self.assertEqual(os.listdir(os.path.dirname(p)), ["HANDOFF.md"])  # no temp left
+
+    def test_install_replaces_an_earlier_manifest_of_this_session(self):
+        self.run_cli("--from", self.draft, "S")
+        writef(self.draft, self.text.replace("Building the thing.", "Second pass."))
+        r = self.run_cli("--from", self.draft, "S")
+        self.assertEqual(r.stderr, "")
+        self.assertIn("Second pass.", readf(L.manifest_path("S")))
+
+    def test_install_then_stamp_is_todays_write_then_stamp(self):
+        import mark_checkpoint as M
+        env, now = {"CLAUDE_CODE_SESSION_ID": "S"}, time.time()
+        p = L.manifest_path("S")
+        os.makedirs(os.path.dirname(p))
+        writef(p, self.text)                       # before: the Write tool, here
+        self.assertEqual(M.stamp_manifest("S", self.repo, env, now)[1], [])
+        written = readf(p)
+        os.remove(p)
+        self.assertEqual(M.install_draft(self.draft, "S", env), p)
+        self.assertEqual(M.stamp_manifest("S", self.repo, env, now)[1], [])
+        self.assertEqual(readf(p), written)
+
+    def test_the_env_session_wins_over_the_id_given(self):
+        L.save_state("Y", {"epoch": 0})
+        r = self.run_cli("--from", self.draft, "Y", env_sid="S")
+        self.assertIn(f"as {L.manifest_path('S')}", r.stdout)
+        self.assertFalse(os.path.lexists(os.path.dirname(L.manifest_path("Y"))))
+
+    def test_a_link_planted_at_the_file_is_refused(self):
+        peer = os.path.join(self.repo, "peer.md")
+        writef(peer, self.text.replace("<stamped>", "PEER", 1))
+        p = L.manifest_path("S")
+        os.makedirs(os.path.dirname(p))
+        os.symlink(peer, p)
+        before, draft_before = self.snap(peer), self.snap(self.draft)
+        r = self.run_cli("--from", self.draft, "S")
+        self.assertNotInstalled(r, "is not this session's own manifest")
+        self.assertEqual(self.snap(peer), before)
+        self.assertEqual(self.snap(self.draft), draft_before)
+        self.assertTrue(os.path.islink(p))
+
+    def test_a_link_planted_at_the_session_directory_is_refused(self):
+        elsewhere = os.path.join(self.repo, "elsewhere")
+        os.makedirs(elsewhere)
+        writef(os.path.join(elsewhere, "HANDOFF.md"), "peer bytes")
+        p = L.manifest_path("S")
+        os.makedirs(L.handoff_root())
+        os.symlink(elsewhere, os.path.dirname(p))
+        r = self.run_cli("--from", self.draft, "S")
+        self.assertNotInstalled(r, "is not this session's own manifest")
+        self.assertEqual(readf(os.path.join(elsewhere, "HANDOFF.md")), "peer bytes")
+        self.assertEqual(sorted(os.listdir(elsewhere)), ["HANDOFF.md"])
+
+    def test_a_missing_draft_is_a_clear_error_and_writes_nothing(self):
+        gone = os.path.join(self.scratch.name, "nope.md")
+        r = self.run_cli("--from", gone, "S")
+        self.assertNotInstalled(r, f"no draft manifest at {gone}")
+        self.assertFalse(os.path.lexists(L.handoff_root()))
+
+    def test_a_failed_install_does_not_stamp_an_older_store_file(self):
+        # An earlier checkpoint's store file stays as it was: it is not what
+        # this checkpoint wrote, so it is not re-dated as if it were.
+        self.run_cli("--from", self.draft, "S")
+        before = self.snap(L.manifest_path("S"))
+        time.sleep(1.1)
+        r = self.run_cli("--from", os.path.join(self.scratch.name, "nope.md"), "S")
+        self.assertNotInstalled(r, "no draft manifest")
+        self.assertEqual(self.snap(L.manifest_path("S")), before)
+
+    def test_an_old_draft_is_refused_and_the_store_keeps_its_file(self):
+        # The installed copy is always new, so the stamp's 30-minute rule is
+        # judged by the draft: a previous checkpoint's draft (this Write
+        # failed or was skipped) is never sealed as this one's.
+        self.run_cli("--from", self.draft, "S")
+        before = self.snap(L.manifest_path("S"))
+        writef(self.draft, self.text.replace("Building the thing.", "Stale."))
+        old = time.time() - 3 * 3600
+        os.utime(self.draft, (old, old))
+        draft_before = self.snap(self.draft)
+        r = self.run_cli("--from", self.draft, "S")
+        self.assertNotInstalled(r, "was last written 180 min ago")
+        self.assertEqual(self.snap(L.manifest_path("S")), before)
+        self.assertEqual(self.snap(self.draft), draft_before)
+
+    def test_a_draft_just_inside_the_window_still_installs(self):
+        recent = time.time() - 25 * 60
+        os.utime(self.draft, (recent, recent))
+        r = self.run_cli("--from", self.draft, "S")
+        self.assertEqual(r.stderr, "")
+        self.assertIn(f"stamped {L.manifest_path('S')}", r.stdout)
+
+    def test_the_install_records_the_ledger_pointer(self):
+        self.run_cli("--from", self.draft, "S")
+        self.assertIn(f"- P installed HANDOFF.md -> {L.manifest_path('S')}",
+                      readf(L.ledger_path("S")))
+        # a refused install records nothing
+        os.remove(L.ledger_path("S"))
+        self.run_cli("--from", os.path.join(self.scratch.name, "nope.md"), "S")
+        self.assertFalse(os.path.exists(L.ledger_path("S")))
+
+    def test_usage(self):
+        for args in (("--from", self.draft), ("--from",), ("--from", self.draft, "-S"),
+                     ("S", "--from", self.draft), ("-S",), ("--from", self.draft, "S", "x")):
+            r = self.run_cli(*args)
+            self.assertNotEqual(r.returncode, 0, args)
+            self.assertIn("usage: mark_checkpoint.py [--from <draft>] <session_id>",
+                          r.stderr, args)
+        self.assertNotIn("checkpoint_epoch", L.load_state("S"))
+        self.assertFalse(os.path.lexists(L.handoff_root()))
+
+
 class TestHandoffPath(Base):
     """8cc2-F3b-2: handoff_path.py --path prints this session's own manifest
     path. It is a lookup: it writes nothing and records no checkpoint."""

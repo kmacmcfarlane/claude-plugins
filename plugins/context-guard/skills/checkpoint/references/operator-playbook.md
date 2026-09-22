@@ -68,7 +68,7 @@ or `/compact <guidance>` is yours to run. A checkpoint this epoch stands it down
 
 | Tool | Use it when | What it costs / keeps |
 | --- | --- | --- |
-| `/clear` | the task is done and its state is on disk | everything; cheapest reset there is — except after a `continue` or `handoff` checkpoint: when the `/clear` runs in the same Claude Code process within two minutes of that session's end and the manifest is still the version it wrote, the successor gets it in full plus the old session's ledger digest (otherwise, or for a `landed` one, a header) |
+| `/clear` | the task is done and its state is on disk | everything; cheapest reset there is — except after a `continue` or `handoff` checkpoint: when the `/clear` runs in the same Claude Code process within two minutes of that session's end and the manifest is still the version it wrote, the successor gets it in full plus the old session's ledger digest (otherwise nothing: paste the checkpoint's opener, whose Read of the printed path brings it) |
 | `/rename <name>` | at the start of any thread you may resume | nothing; makes `--resume` findable |
 | `/compact <guidance>` | the thread is open-ended and must continue *here* | keeps ~2%; guidance is a documented input, use it |
 | `/rewind` → *Summarize up to here* | old turns are noise, recent ones are load-bearing | condenses only the old part; recent turns verbatim |
@@ -78,7 +78,7 @@ or `/compact <guidance>` is yours to run. A checkpoint this epoch stands it down
 | "use a subagent to …" | read-heavy research, log digging, doc reading | returns 1–2K tokens; the reads never enter your window |
 | `Explore` / `Plan` agents | codebase survey before implementation | skip CLAUDE.md, cheap, read-only |
 | `/context` | any time you want the truth | free |
-| Read `HANDOFF.md` in full vs `cat` | taking over a `mode: handoff` manifest vs only looking at another session's | a whole-file Read adopts that version (re-injected after your next compaction); `cat` or a Read with offset/limit adopts nothing |
+| Read `HANDOFF.md` in full vs `cat` | taking over a `mode: handoff` manifest (at the absolute path its checkpoint printed) vs only looking at another session's | a whole-file Read adopts that version (re-injected after your next compaction); `cat` or a Read with offset/limit adopts nothing |
 | status line | always | shows `used_percentage`; when the `statusline-hub` plugin records it (installing `statusline` brings it) its reading wins over the gate's derived window and cross-checks it |
 
 Environment & knobs: `/autocompact 900k` lowers the auto-compact trigger so the gate's deferral
@@ -113,7 +113,8 @@ reads as 900, which Claude Code raises to its 100K floor, and the gate then scor
 
 When the depth warning fires, answer these before touching anything:
 
-1. **What is the goal from here** — land one thing, continue, or hand off? Only you know.
+1. **What is the goal from here** — continue here, or hand off? Only you know. (A finished
+   thread is a handoff whose goal says so.)
 2. **What did we decide, reject, or correct that isn't written down yet?** That is the only
    content that cannot be recovered later.
 3. **Which repo owns each of those?** Working in one repo on another repo's problem is fine;
@@ -124,6 +125,79 @@ historical directory name, kept across the move into `context-guard`) has been c
 ledger, and the manifest when this session owns it (the format spec's "Whose memory it is"
 in `references/handoff-format.md`), are re-injected and outrank the machine summary (current repo state — git
 log, the work-item store — outranks the manifest).
+
+## Where the manifest lives
+
+One file per session, in the Claude config dir:
+`${CLAUDE_CONFIG_DIR:-~/.claude}/claude-kit/handoff/<sid>/HANDOFF.md`. Nothing goes into the
+repo, so concurrent sessions in one checkout never overwrite each other's, and the manifest
+is never committed. Its path cannot be guessed, so **every checkpoint's last message prints
+it**; a handoff also prints `/clear`, `/compact <guidance>` and a one-line opener to paste,
+whose "Read (the Read tool) <path> in full" is what hands the file to a new session.
+
+A handoff's close, for example (a session in librarian mode, handing on to an implement
+run):
+
+````text
+Manifest: /home/me/.claude/claude-kit/handoff/1f0c…/HANDOFF.md
+/clear — the successor in this process gets the manifest in full plus this session's ledger digest
+/compact keep the F3b-4 thread; manifest /home/me/.claude/claude-kit/handoff/1f0c…/HANDOFF.md; no push until decision 52
+```text
+/dev-flow:librarian-mode start — Read (the Read tool) /home/me/.claude/claude-kit/handoff/1f0c…/HANDOFF.md in full first; then run /dev-flow:implement 8cc2-turn-gate-port; HOLD no push until decision 52
+```
+````
+
+**Unattended checkpoints need three commands allowed.** The checkpoint writes the manifest
+only through its draft in the session scratchpad (which needs no prompt) and a plugin
+command that installs it, so an unattended checkpoint runs without a prompt once these
+Bash commands are allowed (`permissions.allow` in a settings file, or "don't ask again"
+at the first prompt). `<root>` is the plugin's install path — the `installPath` the
+snippet under "If the gate blocks wrongly" finds; it carries the plugin version, so the
+rules need re-adding after an update. They are literal prefix matches on the command as the
+skill runs it, the script path in double quotes: run each command exactly as the skill
+prints it — the same argument order and quoting — or it falls outside the rule and
+prompts.
+
+```text
+Bash(python3 "<root>/hooks/turn_gate.py":*)
+Bash(python3 "<root>/hooks/mark_checkpoint.py":*)
+Bash(python3 "<root>/hooks/handoff_path.py":*)
+```
+
+- **A bystander sees nothing.** A session that starts in a repo where another session
+  checkpointed gets no manifest line at all (it used to get a one-line foreign header).
+  To pass work on, paste the opener; to look without taking it over, `cat` the path.
+- **An old-layout `HANDOFF.md`** (`.claude-sandbox/HANDOFF.md` or the repo root) is never
+  written again. A session with no manifest of its own still reads it, read-only, and is
+  told once where its own now lives. Delete the repo file when you no longer want it read.
+- **Across config dirs the path does not resolve.** Sibling sandboxes on one host share
+  the config dir (`~/.claude`, mounted at the same path), so a printed path works in all of
+  them. It does not work for a tree that exports its own `CLAUDE_CONFIG_DIR`, another
+  host, or a reader that is not a Claude Code session. There the work item is the only
+  channel, and it is lossy: its handoff block carries `doing`, `next`, `blocked` and
+  `learned`, so before handing off across that boundary, copy into the item's body the
+  manifest's Holds, In flight, Copy forward, Read in full and every CORRECTION/REFUSED
+  line. Goal, Doing, Scrolls and the other Aware-of lines do not cross.
+
+## Reading the gate state (checkpoint Step 1)
+
+The gate state gives the epoch and a depth, but **stores no source label** — the source is
+derived when the gate reads the file. The status line writes an `exact` block (`pct`,
+`tokens`, `window`, `at`) to its sensor file, `statusline/sensor/<session>.json` (written
+by the `statusline-hub` plugin, which installing `statusline` brings; absent when it is not
+installed). An older install whose status line
+still runs context-guard's deprecated copy writes the block into the gate state instead; the
+gate reads both and takes the one with the larger `at`. That block counts as *exact* only
+while `now - at` is under 600s, and once it goes stale the depth is re-derived from the
+transcript and is *inferred* (or
+`inferred, window from status line`, the literal the gate messages print when a stale block
+still supplied the window — the window is trustworthy there, the token count is not). Without a fresh
+`exact` block the gate first tries to *derive* the window (the gate state's `derived` block:
+`window`, `rule`, `resolved`), and a plain `tokens`/`pct` with neither is a guess. An exact
+depth, or a derived one with `resolved: true`, can hard-block; an inferred depth, or a derived
+one that is not resolved, only warns. `CONTEXT_GUARD_DERIVE=off` (or a
+`CONTEXT_GUARD_CONTEXT_WINDOW` pin; deprecated alias `CLAUDE_KIT_CONTEXT_WINDOW`) in Claude
+Code's launch environment turns derivation off.
 
 ## If the gate blocks wrongly
 
@@ -151,9 +225,12 @@ escape hatches:
    there is the live session; `gauge.json`, `window-mismatch.jsonl` and the `_`-prefixed
    files are not sessions). It refuses, exiting non-zero and
    writing nothing, when no state file exists for that id — a mistyped id, since a live
-   session always has one. Run from the repo, it also stamps the manifest's machine fields,
+   session always has one. It also stamps the machine fields of that session's own
+   manifest — found by the session id, in the config dir (above), wherever you run it —
    but only a manifest written in the last 30 minutes (the format spec's "Machine fields"
-   rule); an older one is left as it is. The gate stays down until the next compaction or
+   rule); an older one is left as it is. The working directory supplies only the `head:`,
+   `branch:` and `top:` it records, so run it from the repo the manifest is about; the
+   installed-path lookup below wants the project directory too. The gate stays down until the next compaction or
    `/clear`. The
    HARD STOP message itself prints this command with the script's absolute path filled in;
    to run it by hand, resolve the path as below, which works the same from a Bash tool call

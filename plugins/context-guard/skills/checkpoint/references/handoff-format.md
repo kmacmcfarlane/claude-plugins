@@ -1,12 +1,50 @@
 # HANDOFF.md — the rehydration manifest
 
-One per repo, **authored by the checkpoint skill** (never machine-synthesized: intent
+One per session, **authored by the checkpoint skill** (never machine-synthesized: intent
 is a snapshot only its author can write; the facts around it — age, drift, dirty count
-— are computed live by `hooks/rehydrate.py` at injection). Work-addressed (class b1):
-lives at `.claude-sandbox/HANDOFF.md` when `.claude-sandbox/` exists (so `trackInHost`
-governs it), else `HANDOFF.md` at the repo root. Write-side budget **≤6,000 chars**;
+— are computed live by `hooks/rehydrate.py` at injection). Session-addressed: it lives in
+the Claude config dir at `${CLAUDE_CONFIG_DIR:-~/.claude}/claude-kit/handoff/<sid>/HANDOFF.md`
+(`python3 hooks/handoff_path.py --path "$CLAUDE_CODE_SESSION_ID"` prints it; `<sid>` is
+the session id made path-safe), never in a repo — so no session overwrites another's,
+and it is never committed. The path cannot be guessed, so every checkpoint prints it. What
+must outlast the config dir goes where Step 3 routes it: the work item's handoff block
+(`wi handoff`), the investigation series, the commit. Write-side budget **≤6,000 chars**;
 the hook trims Scrolls → Next → Aware-of (keeping CORRECTION/REFUSED) and never the
 mandatory tiers, under its 9,000-char injection cap.
+
+**The old layout** — `.claude-sandbox/HANDOFF.md`, else `HANDOFF.md` at the repo root, one
+per repo — is never written again. The hook still reads such a file, live and read-only,
+for a session that has no manifest of its own (by the ownership rule below), and says once
+per session where that session's own manifest lives. Nothing rewrites or deletes it: the
+operator removes it when they choose.
+
+## Where it lives
+
+Two commands, both in the plugin's `hooks/`, both taking the session id the same way:
+`$CLAUDE_CODE_SESSION_ID` wins whenever it is set, so an id passed that differs from it
+names nothing, and the path is built from the id made path-safe, so no id can name a path
+outside the store.
+
+- **`mark_checkpoint.py --from <draft> <session_id>`** — Step 4b's write. The Write tool
+  drafts the manifest in the session scratchpad; this command copies the draft to the
+  session's store path and then stamps it (the machine-fields rule below). The Write tool
+  never targets the store itself: it is outside the project and inside a protected
+  directory, so that write prompts, or is denied, and an unattended checkpoint would stall.
+  The install creates the store directories `0700` and writes the file `0600` through a
+  temp file and an atomic replace; it only reads the draft. It refuses — `not installed,
+  so not stamped`, nothing written to the store, the gate still stood down — when the draft
+  is missing or unreadable (or over 256 KB), when the draft was last written more than 30
+  minutes ago (the stamp's own window, judged by the draft, since the installed copy is
+  always new: a previous checkpoint's draft is never sealed as this one's), when the id is not a plain one, or when the
+  store path, the file or its `<sid>/` directory, is a link that resolves anywhere but
+  itself. An installed manifest is recorded in the ledger as `P installed HANDOFF.md ->
+  <path>`. Without `--from` it only stamps (and stands the gate down), as before. Any other
+  argument shape, or an id starting with `-`, is a usage error.
+- **`handoff_path.py --path [<session_id>]`** — prints the store path and does nothing
+  else: it writes nothing, creates no directory and reads no state. `--path` is required;
+  the id is optional; an argument starting with `-` is a mistyped flag, never an id; any
+  other shape prints a usage line and exits 1, and with no id at all (none passed, the
+  variable unset) it exits 1 naming that.
 
 ## Format
 
@@ -19,9 +57,10 @@ written: <stamped>
 head: <stamped>
 branch: <stamped>
 top: <stamped>
-mode: land | continue | handoff | landed
+mode: continue | handoff
 by: checkpoint
 mode_skill: /<plugin>:<mode> start   # optional: the standing mode to re-enter
+next_skill: /<plugin>:<skill> <args>  # optional: the one-shot skill to run next
 items:            # optional: wi ids you expect still open or in flight
   - <work-item-id>
 ---
@@ -29,7 +68,7 @@ items:            # optional: wi ids you expect still open or in flight
 2–3 lines, present tense: what is in flight and where it stands.
 
 ## Goal
-mode: <land|continue|handoff> — operator: "<their last stated goal, verbatim>"
+mode: <continue|handoff> — operator: "<their last stated goal, verbatim>"
 
 ## Holds
 One line per standing hold, ≤8; `None` when there are none.
@@ -43,7 +82,7 @@ One line per agent this session dispatched that is not finished; `None` when dra
 ≤5 paths, one per line with WHY each cannot be skipped. This is raw rehydration:
 the next session reads these before doing anything else.
 One path per line, first on the line (backticked or bare; absolute, or relative to the
-repo root). When the hook injects the manifest in full into its own session, it records
+root of the repo the manifest records in `top:`). When the hook injects the manifest in full into its own session, it records
 these paths; a Read with no offset or limit (the Read tool) marks each one read, and
 the next prompt's context names any still unread, once — `cat`, `grep` or a partial Read
 does not count. It never blocks and costs no turn.
@@ -72,8 +111,9 @@ TOC, read on demand: `path — one line on what it holds`.
 
 ## Rules
 
-- **Secrets: path and key, never value.** A manifest lands in git; sops and `kind: Secret`
-  gates do not see prose. Name where a secret lives, never what it is.
+- **Secrets: path and key, never value.** Every session that can read the config dir can
+  read a manifest, and its lines get copied into commits and work items; sops and
+  `kind: Secret` gates do not see prose. Name where a secret lives, never what it is.
 - **In flight is a roster, not a summary.** Every agent this session dispatched that is
   not finished gets a line — implementer and reviewer alike, since a reviewer's rounds of
   context are the costliest thing to lose — whether it is still running or has returned
@@ -128,7 +168,8 @@ TOC, read on demand: `path — one line on what it holds`.
   `head` that no longer describes HEAD by ancestry), STALE (>7 days or >30 commits of drift,
   counting both sides — commits ahead plus commits behind, so a HEAD 50 behind is STALE — goal
   lines must be re-confirmed with the operator), LANDED (`mode: land*` — header-only, the work
-  is done). Drift never counts commits that touch only `.claude-sandbox/work` (store chores),
+  is done; the checkpoint skill no longer writes it, and the hook still reads it on a
+  manifest an older version wrote). Drift never counts commits that touch only `.claude-sandbox/work` (store chores),
   so a HEAD rewound over (or diverged by) store-only commits is no code drift: it reads FRESH
   with Next shown, not "not an ancestor"; and when the only commits HEAD lacks are store-only
   while HEAD gained code, it reads as plain forward movement (`AGED`, "N commits since"). The
@@ -162,7 +203,7 @@ TOC, read on demand: `path — one line on what it holds`.
   that holds the session in a role until told otherwise (a librarian, a watcher), not a
   one-shot skill it merely used — as the slash command the operator would type to enter it,
   arguments included (e.g. `/dev-flow:librarian-mode start`). One command, not a list. Set
-  it in every mode but *landed*; omit it when no standing mode is active. Its presence tells
+  it whenever a standing mode is active, in either mode; omit it otherwise. Its presence tells
   the next session to re-enter that mode first: the checkpoint's Step 7 opener leads with it,
   and the hook names it on the header line in every tier except LANDED. Any skill's command
   may go here; the format knows none by name. Accepted shape, whole value (quotes around
@@ -170,8 +211,16 @@ TOC, read on demand: `path — one line on what it holds`.
   `_`, `.`, `-` — followed by at most four arguments of letters, digits and `_ . : = / -`,
   single spaces between, ≤200 chars in all. Anything else (backticks, prose, punctuation,
   control characters) is dropped silently: the header speaks in the hook's voice, and a
-  committed manifest is text anyone can write. On a STALE manifest the header names the
+  manifest is text any session can write. On a STALE manifest the header names the
   mode for the operator to confirm instead of telling the session to re-enter it.
+- **`next_skill:`** (optional) names the one-shot skill the next session should run — the
+  checkpoint's `then <next-skill>` argument — as the slash command the operator would type,
+  arguments included (e.g. `/dev-flow:implement 8cc2-turn-gate-port`). Written only when
+  that argument names one; omitted otherwise. `mode_skill:` still leads: the standing mode
+  is re-entered first, then the next skill runs. Same accepted shape as `mode_skill:`, and
+  anything else is dropped silently. The hook names it on the header line of every tier of
+  a manifest this session owns, after the standing mode, except LANDED — for confirmation
+  on a STALE manifest — and never on the foreign header. The Step 7 opener carries it.
 - **Stale Next is withheld, not warned.** When the recorded `head` is not an ancestor of
   HEAD, or HEAD is ≥1 commit past it, the hook replaces the `## Next` body with one line.
   Its variants:
@@ -199,9 +248,10 @@ TOC, read on demand: `path — one line on what it holds`.
   `clear` → header only. A `/clear` is linked when the successor's SessionStart finds the
   record the predecessor's SessionEnd(clear) left in the same Claude Code process (at most
   two minutes old), and it takes the full tier only when that link pinned exactly the
-  version on disk now; no link, a pin of none (a third session overwrote the manifest) or a
-  version rewritten since gets today's header (a foreign one for another session's version),
-  and so does a `landed` manifest: its `/clear` is the fresh start the land path asks for.
+  version on disk now — the predecessor's own per-session manifest, found by the linked
+  session id. No link, a pin of none, or a version rewritten since gets nothing from that
+  file (the successor has no manifest of its own yet); a `landed` manifest an older version
+  wrote gets its header, as its `/clear` is a fresh start.
   The whole injection stays under the 9,000-char budget: the body is trimmed to leave room
   for the digest. The successor's own new ledger starts `# ledger <sid> (successor of
   <predecessor sid>)`, a line the digest keeps, so the link survives its later compactions.
@@ -230,14 +280,14 @@ TOC, read on demand: `path — one line on what it holds`.
   `$CLAUDE_CODE_SESSION_ID`, which follows `/clear`) are written by `mark_checkpoint.py` at
   the end of Step 4b: write each as `<stamped>`. What it stamps is the author's **own**
   per-session manifest, `${CLAUDE_CONFIG_DIR:-~/.claude}/claude-kit/handoff/<sid>/HANDOFF.md`
-  (`python3 hooks/handoff_path.py --path` prints it), when that file exists — and the repo
-  manifest above until it does. It rewrites those frontmatter lines only (adding any that
+  (`python3 hooks/handoff_path.py --path` prints it), when that file exists — and, only
+  while it does not, an old-layout repo manifest. It rewrites those frontmatter lines only (adding any that
   are missing before the closing `---`), leaves every other byte as written, and replaces
   the file atomically. It stamps only a manifest written in the last 30 minutes. A
   per-session manifest is the author's **by its path**, so a `session:` copied from the
   manifest it replaced is simply corrected there, and an id passed that differs from
-  `$CLAUDE_CODE_SESSION_ID` names no path and so grants nothing. The repo manifest is the
-  one file every session in a checkout shares, so there it also stamps only a `session:`
+  `$CLAUDE_CODE_SESSION_ID` names no path and so grants nothing. An old-layout repo
+  manifest is one file every session in a checkout shares, so there it also stamps only a `session:`
   that is a placeholder or the author, or names the session whose manifest the author
   replaced — its `/clear` predecessor or fork parent,
   or the author of a `handoff` it read in full — when the file is no longer the version
@@ -257,10 +307,15 @@ TOC, read on demand: `path — one line on what it holds`.
   reason with `; `). A future stamp is never FRESH: at least AGED. An mtime also more than
   10 minutes ahead dates nothing: the reason adds `, file time in the future`, and the
   label is at least AGED. An offset beyond ±14:59 is unreadable.
-- **Whose memory it is.** Those tiers apply only to a manifest this session owns. Ownership
-  names a *version* — the `session:` field plus the hash of the file's raw text — so a
-  rewrite is a new version. A version is this session's when:
-  - it has no `session:` (a hand-written manifest is everyone's);
+- **Whose memory it is.** Those tiers apply only to a manifest this session owns. A
+  session's **own** per-session manifest is always its own — by its path, whatever its
+  `session:` says. Another session's is reached only through a link or a Read, and only
+  while it is still the version promised; with none of these, the hook shows it nothing.
+  Ownership of
+  those — and of an old-layout repo manifest — names a *version*: the `session:` field plus
+  the hash of the file's raw text, so a rewrite is a new version. A version is this
+  session's when:
+  - it has no `session:` (a hand-written repo manifest is everyone's);
   - this session wrote it (`session:` is its id), any version;
   - a link pinned exactly that version: a `/clear` successor is linked to the session that
     ran `/clear` (same Claude Code process), a fork to its parent, and both inherit the
@@ -269,8 +324,10 @@ TOC, read on demand: `path — one line on what it holds`.
     never passed on;
   - this session **read exactly that version in full** and its `mode:` is `handoff`.
 
-  Anything else — another session's manifest, or a later rewrite by a parent, a resumed
-  predecessor or an adopted author — gets one header line on every source, naming the path
+  A link or Read of another session's per-session manifest that no longer matches is
+  skipped: the author moved on, and this session keeps its own file or none. An old-layout
+  repo manifest that is not this session's — another session's, or a later rewrite by a
+  parent, a resumed predecessor or an adopted author — gets one header line on every source, naming the path
   and the author session, with no body, no precedence line and no standing mode: "If the
   operator's opener names this manifest, read it in full; otherwise it is another session's
   and not your memory." The derived check lines still follow it — dead claims, unparseable
@@ -282,4 +339,4 @@ TOC, read on demand: `path — one line on what it holds`.
   limit. A `continue` or `landed` manifest is never adopted by reading it; a subagent's Read
   adopts nothing.
 - Updating: every checkpoint rewrites it wholesale (it is a current view, like an INDEX, not a
-  log — history lives in git).
+  log). It has no history: what must outlast it goes to git and the work-item store (Step 3).
