@@ -35,3 +35,5 @@ review r1 (opus) at 0124b9d: NEEDS_CHANGES. Seven Checks OK; header Holds ≤715
 - lows: a decision/event end clause mentioning a date reads as expired; _CTRL misses U+061C, U+FEFF, U+2060–2064; exact heading match misses '## Holds:'; the spec's template sentence injected as a hold; librarian examples not in HOLD shape; commit subject names only context-guard.
 - H6 overlap forecast: merges cleanly; read_list._SECTION is a second parser for ## Read in full — reuse _sections after merge.
 dispatch: implementer opus — fix round 1 (resume)
+fix r1 DONE 3e31799 (opus): last trim pass skips Scrolls/Next/Aware of; a time must lead the end clause; _CTRL widened; headings match ':'/'(…)'; only HOLD lines read; librarian Holds mirror store hold items (store wins); 13 tests (4 new fail on 0124b9d). Slip: fail-first checkout wiped edits once; re-applied. (f) carried in the merge message.
+dispatch: reviewer opus — review r2 (resume)
