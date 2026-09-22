@@ -75,8 +75,9 @@ def digest(session_id, budget=2500):
     R/C, then P pointers newest first. A line too long for half the room is
     cut with a marker rather than dropped. The kept lines print in file order
     under their epoch headers (a header only when a kept line follows it), and
-    when anything is left out a closing line counts it and names the ledger
-    file. The whole result never exceeds `budget` chars. `# ` lines other than
+    when anything is left out or cut a closing line counts it and names the
+    ledger file. The whole result never exceeds `budget` chars; a budget too
+    small for even the short closing line gives "". `# ` lines other than
     the plain `# ledger <sid>` title count as reasoning. The ledger itself is
     only read. Returns "" for a missing or empty ledger.
     """
@@ -142,14 +143,24 @@ def digest(session_id, budget=2500):
     take(by[0], room)
     take(by[2], room)
     left = [i for i in entries if i not in kept]
+    ncut = sum(1 for i in kept if disp[i] != lines[i])
+    body = "\n".join(render(kept))
+    if not left and not ncut:
+        return body
     np = sum(1 for i in left if _tier(lines[i]) == 2)
     nr = len(left) - np
-    bits = [f"{n} {w}" for n, w in ((nr, "reasoning"), (np, "pointer")) if n]
-    body = "\n".join(render(kept))
-    for note in (f"[ledger digest: {' and '.join(bits)} line(s) left out, pointers "
-                 f"first, then older reasoning by kind; the full ledger is {path}]",
-                 f"[ledger digest: {len(left)} line(s) left out; {path}]"):
+    said = []
+    if left:
+        bits = [f"{n} {w}" for n, w in ((nr, "reasoning"), (np, "pointer")) if n]
+        said.append(f"{' and '.join(bits)} line(s) left out, pointers first, "
+                    f"then older reasoning by kind")
+    if ncut:
+        said.append(f"{ncut} line(s) cut")
+    short = ", ".join(x for x in (f"{len(left)} left out" if left else "",
+                                  f"{ncut} cut" if ncut else "") if x)
+    for note in (f"[ledger digest: {'; '.join(said)}; the full ledger is {path}]",
+                 f"[ledger digest: {short}; {path}]"):
         out = (body + "\n" + note) if body else note
         if len(out) <= budget:
             return out
-    return out[:budget]
+    return ""   # not even the short note fits: say nothing rather than a stub

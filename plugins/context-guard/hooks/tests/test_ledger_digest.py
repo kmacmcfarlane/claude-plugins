@@ -168,8 +168,24 @@ class TestDigest(LedgerCase):
     def test_small_budget_is_never_exceeded(self):
         self.shaped()
         for budget in (0, 1, 50, 120, 200, 300, 600, 1000):
-            self.assertLessEqual(len(ledger.digest("s", budget=budget)), budget, budget)
+            d = ledger.digest("s", budget=budget)
+            self.assertLessEqual(len(d), budget, budget)
+            if d:
+                self.assertIn(L.ledger_path("s"), d.splitlines()[-1], budget)
         self.assertIn("left out", ledger.digest("s", budget=300))
+        # Too small for even the short note: nothing, not a stub.
+        self.assertEqual(ledger.digest("s", budget=20 + len(L.ledger_path("s"))), "")
+
+    def test_cut_without_omission_says_cut_not_left_out(self):
+        self.write("a", "# ledger a\n- R " + "x" * 3000 + "\n- D short\n")
+        d = ledger.digest("a", budget=2500)
+        self.assertLessEqual(len(d), 2500)
+        self.assertIn("- D short", d)
+        last = d.splitlines()[-1]
+        self.assertNotIn("left out", last)
+        self.assertNotIn(":  ", last)
+        self.assertIn("1 line(s) cut", last)
+        self.assertIn(L.ledger_path("a"), last)
 
     def test_hash_lines_other_than_the_title_are_kept(self):
         lines = ["# ledger k (successor of 0c7eafc7)"]
