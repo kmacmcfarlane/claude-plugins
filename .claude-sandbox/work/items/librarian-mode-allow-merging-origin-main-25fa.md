@@ -2,12 +2,11 @@
 id: librarian-mode-allow-merging-origin-main-25fa
 title: "librarian-mode: allow merging origin/main on a rejected push (never rebase/force)"
 type: chore
-status: doing
+status: done
 priority: 1
-owner: unknown@360f41058e92
-claimed: 2026-09-22T16:47Z
 created: 2026-09-22
 updated: 2026-09-22
+closed: 2026-09-22
 refs:
   - operator answer 52, 2026-09-22
 ---
@@ -41,3 +40,4 @@ conflict round DONE ec802dd (merge of main): § Report order push line → incom
 dispatch: reviewer opus — resolution verify (resume)
 resolution verify (opus) at ec802dd: CLEAR — both sides kept in the order push outcome → incoming: → team summary, same in all three files; origin/main@{1} after a merge-through covers this session's landings + the merge, not the incoming commits (scratch clone, one and two rejections). Lows → follow-up: the no-reflog fallback should note origin/main right before the push that succeeds (after any fetch/merge); a 143-char line; round-2 lows (staged changes anywhere; MERGE_HEAD from a worktree-branch merge).
 Review result: 2 review rounds + resolution verify, 1 fix round + 1 conflict round; impl opus, review opus. Land checks (librarian): seven suites OK; diff read.
+- 2026-09-22 done: f4ee4ef
