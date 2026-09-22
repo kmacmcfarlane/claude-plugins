@@ -148,7 +148,11 @@ agent's own `BLOCKED` or error, handled as such.
 cycles in parallel sees fable run out one notification at a time: it asks once, on the
 first 429, and lets that pending decision cover every later 429 in the same group ("fable
 out, resets in <X>; wait, or opus for items A, B, C") rather than raising one per cycle;
-the one answer settles them all. A standalone cycle has one change and asks once.
+the one answer settles them all. Answer scope (`bindings.md` § Decisions) is read per
+record, so the caller appends that one `decision N:` to each covered item's record and
+its one `answer N:` to each as well: every copy is then in force on its own item until
+that item's next phase line — the dispatch the answer chose — and a resume of any one of
+them finds it answered. A standalone cycle has one change and asks once.
 
 **A mid-run 429.** A background fable agent cut off mid-run may leave commits or edits in
 its worktree. The opus fallback continues from the worktree as it stands, never

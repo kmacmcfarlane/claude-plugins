@@ -23,7 +23,7 @@ binding. The Workflow binding goes in verbatim.
 You are building one change to this repository, in an isolated git worktree. Work ONLY
 inside this directory and nowhere else:
 
-  WORKTREE=<absolute path of the main checkout>/.claude/worktrees/<name>
+  WORKTREE=<the workspace the record's `target:` line carries (record.md), as written>
 
 First verify it exists and is on branch `worktree-<name>`
 (`git -C $WORKTREE branch --show-current`). If not, stop and report BLOCKED.
@@ -218,7 +218,7 @@ built from. This is always dispatched with the Fix round conditional block under
 even though no implementer round of this cycle produced the reviewed sha: `<n>` is the
 review round already spent (the review that returned `NEEDS_CHANGES` or `SHOW_STOPPER`),
 and `<reviewed sha>` is the branch's HEAD at that review, from the record sink's
-`verdict:` line (`bindings.md` § Record line shapes). Findings are the reviewer's report,
+`verdict:` line (`record.md`). Findings are the reviewer's report,
 verbatim, same as any fix round.
 
 One addition to Prohibitions: do not touch any ref but `<branch>` itself — no

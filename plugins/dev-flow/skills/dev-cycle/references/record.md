@@ -4,9 +4,10 @@ Fixed shapes for the lines the steps append to the record sink; every step that 
 one uses this exact shape, and each shape below names the step, or steps, that write it —
 **one writer per role**, so that no two steps can write the same line about the same
 thing. Two shapes have two writers, each for a different role: `return:` (SKILL.md
-§ Step 3.5 for an implementer, § Step 1 for a planner) and `answer:` (§ Decisions for a
-raised decision, SKILL.md § Step 3.5 for a `NEEDS_CONTEXT`). The
-record is a log, read in the order it was written:
+§ Step 3.5 for an implementer, § Step 1 for a planner) and `answer:` (`bindings.md`
+§ Decisions for a raised decision, SKILL.md § Step 3.5 for a `NEEDS_CONTEXT`). The
+record is a log, read in the order it was written, and what `resume.md` reads to take an
+interrupted run up again; a line that is missing reads there as not recorded:
 
 - `dispatch: <role> <model> — <signal>` — SKILL.md § Step 2 rule 7, written before every
   dispatch (implementer, planner or reviewer)
@@ -59,8 +60,9 @@ record is a log, read in the order it was written:
   **reads** the previous one where there is one — from the second plan review on — and
   diffs the fresh output against it: the serials that changed are the ones the planner
   added or rewrote since the review being re-run, and they go into the re-review brief's
-  "Files changed, with reasons" slot, which a plan re-review otherwise fills with `none`.
-  The `verdict:` line's `at <series path>` cannot say this, naming the series and not its
+  "Files changed, with reasons" slot (`fix-loop.md` § A NEEDS_CHANGES round). A plan
+  re-review pastes `none` there only when no earlier `baseline:` exists to diff against —
+  a record written before this line existed. The `verdict:` line's `at <series path>` cannot say this, naming the series and not its
   state. A list that has not moved means the planner wrote nothing; that is a finding for
   the re-review, not a new baseline.
 - `findings: …` — SKILL.md § Step 4.5, written together with a `NEEDS_CHANGES` or
@@ -83,16 +85,16 @@ record is a log, read in the order it was written:
     item id, series slug or plan path (`full`, `plan`). It says what was asked for; the
     workspace says where the work is.
   - `<workspace>` is the **absolute** path the run's work lives at, and it is written
-    absolute even when the command that made it took a relative one: the path § Review
-    target resolved (`review`), `"$MAIN"/.claude/worktrees/<name>` for the
+    absolute even when the command that made it took a relative one: the path `bindings.md`
+    § Review target resolved (`review`), `"$MAIN"/.claude/worktrees/<name>` for the
     worktree SKILL.md § Step 3.1 adds (`full`), or — a plan run having no worktree — the
     series path under the Series home. A later step, or a later session, runs
     `git -C <workspace>` from a working directory this one cannot predict, so a
     repo-relative path here resolves against the wrong tree.
 
   Every later step reads the workspace from this line instead of reconstructing it.
-- `intent: <one line>` — § Intent, `review <branch>` mode with no item or plan
-- `decision: <question> — options: <a> | <b> | <c>` — § Decisions, written before a
+- `intent: <one line>` — `bindings.md` § Intent, `review <branch>` mode with no item or plan
+- `decision: <question> — options: <a> | <b> | <c>` — `bindings.md` § Decisions, written before a
   decision is raised. **Self-contained**: the question in full and its options,
   recommendation first, so that a reader who was not in the session that raised it can put
   it to a human verbatim. Under a caller it composes as
@@ -102,20 +104,19 @@ record is a log, read in the order it was written:
   `decision: dispatch-permission — <question> — options: <a> | <b>`, and under a caller
   the same tag follows the number of `decision N:`. The tag is a fixed identifier, not a
   kind: every other decision is untagged. It lets a later reader find that one decision
-  by name; what its answer's scope is, § Decisions says.
-- `answer: <decision> — <reply>` — § Decisions and SKILL.md § Step 3.5 (a
+  by name; what its answer's scope is, `bindings.md` § Decisions says.
+- `answer: <decision> — <reply>` — `bindings.md` § Decisions and SKILL.md § Step 3.5 (a
   `NEEDS_CONTEXT` answer), written as soon as the reply arrives; `<decision>` repeats the
   `decision:` line's question (or, for a `NEEDS_CONTEXT`, the question) — for the one
   tagged decision, its tag instead: `answer: dispatch-permission — <reply>`. A caller's
   numbered pair — librarian-mode's `decision N: …` and `answer N: <reply>`, matched by
   `N` — is the same pair and is read the same way; its `answer N:` carries no tag, the
   number already pairing it. A `decision:` with no matching `answer:` is **pending**
-  (§ Decisions says what a run does with one), and an answered one is never raised again
-  while its answer is in force (§ Decisions).
-- `spent:` — § Resume's line, which writes and reads it. § Resume is not specified yet,
-  so nothing writes one until it is.
+  (`bindings.md` § Decisions says what a run does with one), and an answered one is never
+  raised again while its answer is in force (the same section).
+- `spent:` — written and read by `resume.md` (§ The GATE), and by nothing else.
 - `landed: <merge sha>` — SKILL.md § Step 5.5, written once Land's merge succeeds and
   before `$WI done` / `$WI handoff`. It is the record's only evidence that a target
   reached a merge, and SKILL.md § Step 6 reports it on the `verified:` line. `Leave the
   branch` lands nothing and writes no `landed:` line.
-- `checks:`, the `changed:` block — §§ Checks, Undeclared files
+- `checks:`, the `changed:` block — `bindings.md` §§ Checks, Undeclared files
