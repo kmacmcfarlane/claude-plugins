@@ -168,10 +168,16 @@ sentence:
   the current thread verbatim, condenses only the old part) — or `/compact <guidance>` with
   the guidance you drafted, naming the manifest path, the open item, and the refusals.
 - **handoff** → `/clear`, or a fresh session in the owning repo; the manifest is the brief.
-  After `/clear` the successor is linked to this session and gets the manifest header; a
-  fresh session gets a header naming this session as the author; either way the Step 7
-  opener's "read … in full" is what brings the whole file in, and that full Read of a
-  `mode: handoff` manifest adopts it as the successor's own.
+  After `/clear` the successor is linked to this session, and when the manifest on disk is
+  still the version this session owned at `/clear`, it gets what a compaction gets: the
+  full manifest, plus this session's ledger digest (reasoning first) under a label naming
+  this session's id. A `/clear` that is not linked (no verified process, over two minutes
+  old) or whose version changed since (a rewrite, a third session's overwrite) gets the
+  header, as before (so does a `landed` manifest, whose `/clear` is a fresh start); a fresh
+  session gets a header naming this session as the author.
+  The Step 7 opener still leads either way: its "read … in full" is what brings the whole
+  file into a new process, and that full Read of a `mode: handoff` manifest adopts it as
+  the successor's own.
 - **continue uncompacted** → when the number says there is more room than it felt like.
 
 After a compaction, the ledger is re-injected automatically, and so is the manifest — when
@@ -198,8 +204,9 @@ it — when the manifest sets `mode_skill:`, that command leads the opener, so t
 session re-enters the standing mode before anything else (with `then <next-skill>` as
 well, the mode still leads and the next skill goes in the facts); `read <manifest path>
 in full first` (the path Step 4b actually wrote — `.claude-sandbox/HANDOFF.md` or root
-`HANDOFF.md`; "in full" matters — after `/clear` the rehydration hook injects only the
-manifest header, so the opener is what tells the next session to read the whole file); and the one or two facts that changed since the manifest
+`HANDOFF.md`; "in full" matters — a fresh session, or a `/clear` the hook could not link,
+gets only the manifest header, so the opener is what tells the next session to read the
+whole file); and the one or two facts that changed since the manifest
 was written — pull these from the drift note or the `Aware of` lines you just wrote (the
 lean path has no drift note; use the `Aware of` lines), never restate the whole manifest.
 When **In flight** is not `None`, one fact is always `resume <ids> with SendMessage; do not

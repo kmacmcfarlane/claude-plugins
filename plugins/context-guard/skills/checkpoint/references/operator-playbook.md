@@ -57,7 +57,7 @@ auto-compact window: it defers only on the depth it used before the window mirro
 
 | Tool | Use it when | What it costs / keeps |
 | --- | --- | --- |
-| `/clear` | the task is done and its state is on disk | everything; cheapest reset there is |
+| `/clear` | the task is done and its state is on disk | everything; cheapest reset there is — except after a `continue` or `handoff` checkpoint, when the successor gets that manifest in full plus the old session's ledger digest (a `landed` one stays a header) |
 | `/rename <name>` | at the start of any thread you may resume | nothing; makes `--resume` findable |
 | `/compact <guidance>` | the thread is open-ended and must continue *here* | keeps ~2%; guidance is a documented input, use it |
 | `/rewind` → *Summarize up to here* | old turns are noise, recent ones are load-bearing | condenses only the old part; recent turns verbatim |

@@ -12,6 +12,18 @@ import lib_context as L
 KINDS = "DXCURQP"
 
 
+def _lock(fh):
+    """An exclusive advisory lock on the open ledger, released when it is
+    closed. SessionStart(clear) runs postcompact_epoch.py (the epoch header)
+    and rehydrate.py (successor_title) side by side on the same new ledger;
+    the lock keeps the title's rewrite from losing the header. Best effort."""
+    try:
+        import fcntl
+        fcntl.flock(fh.fileno(), fcntl.LOCK_EX)
+    except Exception:
+        pass
+
+
 def append(session_id, kind, text, ref=None):
     if kind not in KINDS or not text:
         return False
@@ -22,6 +34,7 @@ def append(session_id, kind, text, ref=None):
         p = L.ledger_path(session_id)
         new = not os.path.exists(p) or os.path.getsize(p) == 0
         with open(p, "a") as fh:
+            _lock(fh)
             if new:
                 fh.write(f"# ledger {session_id}\n")
             fh.write(line + "\n")
@@ -33,9 +46,33 @@ def append(session_id, kind, text, ref=None):
 def epoch_header(session_id, epoch_n, tokens):
     try:
         with open(L.ledger_path(session_id), "a") as fh:
+            _lock(fh)
             fh.write(f"\n## epoch {epoch_n} — {time.strftime('%F %T')} — {tokens:,} tok\n")
     except Exception:
         pass
+
+
+def successor_title(session_id, predecessor):
+    """A linked /clear successor's ledger starts `# ledger <sid> (successor
+    of <predecessor>)`, so the lineage is in the file, not only in state. It
+    is put first whether or not the epoch header got there before it; a
+    ledger that already starts with a `# ledger` title is left alone. digest()
+    keeps this line (it is not the plain title), so it survives the
+    successor's own compactions. True when it wrote. Never raises."""
+    try:
+        with open(L.ledger_path(session_id), "a+", errors="replace") as fh:
+            _lock(fh)
+            fh.seek(0)
+            body = fh.read()
+            if body.startswith("# ledger "):
+                return False
+            fh.seek(0)
+            fh.truncate()
+            fh.write(f"# ledger {session_id} (successor of {predecessor})\n"
+                     + body)
+        return True
+    except Exception:
+        return False
 
 
 def tail(session_id, max_chars=4000):

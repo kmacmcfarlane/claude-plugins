@@ -266,6 +266,160 @@ class TestClearLink(Base):
         self.assertNotIn("cleared", L.load_state(L.PROC_PREFIX + KEY))
 
 
+class TestLinkedClearTier(Base):
+    """H5 (answer 60a): a /clear linked to a predecessor that pinned the
+    version on disk is a continuation: the full manifest plus the
+    predecessor's ledger digest, not the header."""
+    LABEL = "[context-guard ledger — predecessor"
+
+    def predecessor_ledger(self, sid, pointers=3):
+        import ledger
+        ledger.append(sid, "R", "refused: no force-push to main")
+        for i in range(pointers):
+            ledger.append(sid, "P", f"commit {i:04d} landed", ref=f"sha{i}")
+        ledger.append(sid, "D", "decided: build H5 against the repo manifest")
+
+    def assertHeaderOnly(self, c):
+        self.assertIn("Read it before resuming", c)
+        self.assertNotIn(PREAMBLE, c)
+        self.assertNotIn("## Doing", c)
+
+    def test_linked_clear_gets_full_manifest_and_predecessor_digest(self):
+        self.checkpoint("X")
+        self.predecessor_ledger("X")
+        self.end_clear("X")
+        out = self._run(R, {"session_id": "S", "source": "clear", "cwd": self.repo,
+                            "hook_event_name": "SessionStart"})
+        c = out["hookSpecificOutput"]["additionalContext"]
+        self.assertFull(c)
+        self.assertIn(f"{self.LABEL} X, by /clear", c)
+        self.assertIn("refused: no force-push to main", c)
+        self.assertIn("decided: build H5", c)
+        self.assertNotIn("Read it before resuming", c)
+        self.assertIn("predecessor X", out.get("systemMessage", ""))
+
+    def test_successor_ledger_first_line_names_the_predecessor(self):
+        import ledger
+        self.checkpoint("X")
+        self.clear("X", "S")
+        ledger.epoch_header("S", 1, 0)          # postcompact_epoch after us
+        ledger.append("S", "D", "own line")
+        lines = readf(L.ledger_path("S")).splitlines()
+        self.assertEqual(lines[0], "# ledger S (successor of X)")
+        self.assertIn("own line", lines[-1])
+        # H2's digest keeps a non-title `# ` line: it survives compaction.
+        self.assertIn("# ledger S (successor of X)", ledger.digest("S"))
+
+    def test_successor_title_goes_first_when_the_epoch_header_won(self):
+        import ledger
+        self.checkpoint("X")
+        ledger.epoch_header("S", 1, 0)          # postcompact_epoch before us
+        self.clear("X", "S")
+        text = readf(L.ledger_path("S"))
+        self.assertTrue(text.startswith("# ledger S (successor of X)\n"), text)
+        self.assertIn("## epoch 1", text)
+        self.assertFalse(ledger.successor_title("S", "Y"))   # once only
+        self.assertEqual(readf(L.ledger_path("S")), text)
+
+    def test_unlinked_clear_gets_the_header(self):
+        self.key = None                        # no verified process: no link
+        self.checkpoint(None)                  # ownerless: everyone's
+        self.predecessor_ledger("X")
+        c = self.clear("X", "S")
+        self.assertHeaderOnly(c)
+        self.assertNotIn(self.LABEL, c)
+        self.assertFalse(os.path.exists(L.ledger_path("S")))
+
+    def test_unlinked_clear_of_an_owned_manifest_stays_foreign(self):
+        self.key = None
+        self.checkpoint("X")
+        self.predecessor_ledger("X")
+        c = self.clear("X", "S")
+        self.assertForeign(c)
+        self.assertNotIn(self.LABEL, c)
+
+    def test_ownerless_manifest_linked_clear_gets_the_header(self):
+        # A link never pins an ownerless manifest: nothing ties it to X.
+        self.checkpoint(None)
+        self.predecessor_ledger("X")
+        c = self.clear("X", "S")
+        self.assertHeaderOnly(c)
+        self.assertNotIn(self.LABEL, c)
+
+    def test_pin_of_none_gets_todays_foreign_header(self):
+        self.checkpoint("X")
+        self.checkpoint("Z", doing="Z's own goal.")
+        self.predecessor_ledger("X")
+        c = self.clear("X", "S")
+        self.assertForeign(c)
+        self.assertNotIn(self.LABEL, c)
+        self.assertNotIn("refused: no force-push", c)
+
+    def test_version_changed_since_the_pin_gets_the_header(self):
+        # X's version was pinned at SessionEnd(clear); a rewrite lands before
+        # the successor's SessionStart reads it (a stale pin).
+        self.checkpoint("X")
+        self.predecessor_ledger("X")
+        self.end_clear("X")
+        self.checkpoint("X", doing="X's newer goal.")
+        c = self.start("S", "clear")
+        self.assertForeign(c)
+        self.assertNotIn(self.LABEL, c)
+        self.assertEqual(R.linked_clear_pred(L.load_state("S"), "X",
+                                             R.manifest_version(readf(self.path))),
+                         None)
+
+    def test_two_hops_carry_the_intermediate_ledger(self):
+        import ledger
+        self.checkpoint("X")
+        self.predecessor_ledger("X")
+        self.clear("X", "S1")
+        ledger.append("S1", "C", "corrected: the pin is by version")
+        c = self.clear("S1", "S2")
+        self.assertFull(c)
+        self.assertIn(f"{self.LABEL} S1, by /clear", c)
+        self.assertIn("# ledger S1 (successor of X)", c)
+        self.assertIn("corrected: the pin is by version", c)
+
+    def test_landed_manifest_linked_clear_gets_the_header(self):
+        self.checkpoint("X", mode="landed")
+        self.predecessor_ledger("X")
+        c = self.clear("X", "S")
+        self.assertIn("LANDED", c)
+        self.assertHeaderOnly(c)
+        self.assertNotIn(self.LABEL, c)
+
+    def test_total_stays_within_cap(self):
+        import ledger
+        self.checkpoint("X", doing="Doing a lot. " * 900)
+        t = readf(self.path).replace("## Aware of\n",
+                                     "## Aware of\n" + "- DECIDED keep it\n" * 400, 1)
+        writef(self.path, t)
+        ledger.append("X", "R", "refused: " + "r" * 3000)
+        for i in range(300):
+            ledger.append("X", "P", f"commit {i:04d} " + "p" * 60)
+            ledger.append("X", "D", f"decision {i:04d} " + "d" * 60)
+        self.end_clear("X")
+        c = self.start("S", "clear")
+        self.assertLessEqual(len(c), R.CAP)
+        self.assertIn(PREAMBLE, c)
+        self.assertIn("## Doing", c)
+        self.assertIn(f"{self.LABEL} X, by /clear", c)
+        self.assertIn("refused: rrr", c)
+        self.assertIn("[ledger digest:", c)
+
+    def test_linked_clear_then_compact_uses_its_own_ledger(self):
+        import ledger
+        self.checkpoint("X")
+        self.predecessor_ledger("X")
+        self.clear("X", "S")
+        ledger.append("S", "D", "successor's own decision")
+        c = self.start("S", "compact")
+        self.assertFull(c)
+        self.assertIn("successor's own decision", c)
+        self.assertNotIn(self.LABEL, c)
+
+
 class TestForkLink(Base):
     def test_fork_then_compact_with_ledger_present_is_full(self):
         import ledger

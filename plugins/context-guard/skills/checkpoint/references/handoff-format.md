@@ -164,7 +164,18 @@ TOC, read on demand: `path — one line on what it holds`.
 - A LANDED manifest skips both checks (no dead claims, Next not withheld): the work is done.
   Either check degrades to the plain manifest if git or the store fails.
 - Injection tiers: `compact` → full + ledger digest; `resume`/`fork` → full only when the file
-  or repo changed since last injection, else one header line; `startup`/`clear` → header only.
+  or repo changed since last injection, else one header line; a **linked `/clear`** → full
+  (the compact tier, with its trim) + the **predecessor's** ledger digest, labelled
+  `[context-guard ledger — predecessor <sid>, by /clear: …]`; `startup` and any other
+  `clear` → header only. A `/clear` is linked when the successor's SessionStart finds the
+  record the predecessor's SessionEnd(clear) left in the same Claude Code process (at most
+  two minutes old), and it takes the full tier only when that link pinned exactly the
+  version on disk now; no link, a pin of none (a third session overwrote the manifest) or a
+  version rewritten since gets today's header (a foreign one for another session's version),
+  and so does a `landed` manifest: its `/clear` is the fresh start the land path asks for.
+  The whole injection stays under the 9,000-char budget: the body is trimmed to leave room
+  for the digest. The successor's own new ledger starts `# ledger <sid> (successor of
+  <predecessor sid>)`, a line the digest keeps, so the link survives its later compactions.
 - **The ledger digest** (2,500 chars, never exceeded) keeps reasoning ahead of pointers.
   The *room* is the budget less a share held back for the closing line. `R`/`C` lines
   from every epoch come first (newest first, up to half the room), then `D`/`X`/`U`/`Q`
