@@ -2,8 +2,10 @@
 id: librarian-work-unblocked-items-and-pre-i-1222
 title: "librarian: work unblocked items and pre-investigate the rest while idle, without burning quota"
 type: spike
-status: todo
+status: doing
 priority: 0
+owner: unknown@360f41058e92
+claimed: 2026-09-22T02:36Z
 created: 2026-09-22
 updated: 2026-09-22
 refs:
@@ -30,3 +32,6 @@ Operator 2026-09-22: an idle librarian should work new items as they arrive when
 4. Concurrency limit derived from quota velocity vs amount used vs time left; less conservative while the operator is asleep/away.
 5. Yes: establish guidelines for reversible, low-impact, high-probability decisions the librarian runs with (and makes sure the operator sees) without blocking.
 6. On a guard trip: finish in-flight, stop dispatching; a short turn to tell the operator is fine.
+
+## Notes
+- 2026-09-22 claimed by unknown@360f41058e92
