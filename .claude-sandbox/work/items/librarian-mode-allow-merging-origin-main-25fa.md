@@ -37,3 +37,5 @@ review r2 (opus) at 2dbf401: CLEAR — the four incoming: statements identical; 
 Review result: 2 rounds, 1 fix round; impl opus, review opus.
 land (librarian): merge into main conflicted in librarian-mode SKILL.md (a934 landed c465325 in § Report; 25fa edits § Report's push line). The librarian's script ran on past the conflict; the half-done merge on main was aborted with git merge --abort before any commit (main at 1359bde, clean). Conflict round → implementer merges main into the branch.
 dispatch: implementer opus — conflict round (resume)
+conflict round DONE ec802dd (merge of main): § Report order push line → incoming: rule → a934 team-summary pointer ("after the push outcome and its incoming: lines"); ending-the-session both sequences same order; team-summary § When: a merged-through rejection gets a summary of this session's landings (only a stopped rejection gets none). OQ: range via origin/main@{1} after a merge-through = the fetch's entry, so it covers this session's landings + the merge commit, not incoming commits.
+dispatch: reviewer opus — resolution verify (resume)

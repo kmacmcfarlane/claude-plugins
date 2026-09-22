@@ -37,3 +37,7 @@ review r1 (opus) at 0124b9d: NEEDS_CHANGES. Seven Checks OK; header Holds ≤715
 dispatch: implementer opus — fix round 1 (resume)
 fix r1 DONE 3e31799 (opus): last trim pass skips Scrolls/Next/Aware of; a time must lead the end clause; _CTRL widened; headings match ':'/'(…)'; only HOLD lines read; librarian Holds mirror store hold items (store wins); 13 tests (4 new fail on 0124b9d). Slip: fail-first checkout wiped edits once; re-applied. (f) carried in the merge message.
 dispatch: reviewer opus — review r2 (resume)
+review r2 (opus) at 3e31799: NEEDS_CHANGES. Round-1 high and lows fixed (repro keeps CORRECTION/REFUSED at 3496 chars); trim order otherwise unchanged; CAP holds.
+- [medium] rehydrate.py:463,475 — regression: _HEAD_TAIL.sub replaced .strip(), so CRLF headings keep '\r' → hold_lines [] (header tiers lose every hold) and no section is recognised as protected (Read in full trimmed, CORRECTION lost at budget 2000). Pass: strip the name; a CRLF test pinning protection and hold_lines.
+- lows: 'until:' no longer parsed (a past date not flagged); _HOLD_RE case-sensitive / '**HOLD**' dropped silently.
+dispatch: implementer opus — fix round 2 (resume)
