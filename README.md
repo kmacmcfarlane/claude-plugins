@@ -8,11 +8,6 @@ there is no single kitchen-sink plugin. Each plugin is named for an *aim*: the a
 problem a user would state out loud ("I keep losing context", "I want unattended runs", "I
 want a plan before I code"). Install the ones that match your problems; leave the rest.
 
-The marketplace was refactored out of one history-indexed plugin (`claude-kit`) into
-aim-named, standalone-installable plugins; that plugin no longer exists. **The catalog below
-is the current state** — every row in it exists on disk today. If you are upgrading from
-`claude-kit`, see [Migrating from `claude-kit`](#migrating-from-claude-kit).
-
 ## Families
 
 Three product families, named provisionally pending review:
