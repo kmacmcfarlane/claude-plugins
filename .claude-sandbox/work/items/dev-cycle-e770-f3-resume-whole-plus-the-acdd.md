@@ -46,3 +46,6 @@ findings:
 - [low] resume.md:16-17 vs :178-181 invariant exception for review S11; [low] SKILL.md:44 Usage row "Skips Step 1" vs the explicit-plan clause; [low] rename record.md (librarian decides: rename to record-lines.md now); [nit] lines >100 chars SKILL.md:154, record.md:65.
 notes: deviations 1-3 ruled correct (1 incomplete only for mid-run 429). Riders all present.
 dispatch: implementer opus — fix round 1 (resume)
+return: implementer DONE_WITH_CONCERNS ae8a4fe (concern: known ba8f false red only)
+dispatch: reviewer opus — review r2 (resume)
+agent: reviewer a36d24345154d3595 round 2

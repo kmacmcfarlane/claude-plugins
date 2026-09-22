@@ -30,3 +30,12 @@ return: implementer DONE 3b54e22
 changed: wi.py, tests/test_wi.py
 dispatch: reviewer opus — rule 4, implementer tier
 agent: reviewer a9569a76c211e6e99 round 1
+verdict: NEEDS_CHANGES round 1 at 3b54e22
+findings:
+- [medium] wi.py:2185-2195 + cmd_import_todo:2215 — re-import after this change duplicates items imported before it (dedupe marker norm_title changes from "t rest" to "t"); SKILL.md:48 promises idempotent migration. Pass: _bullet_item also yields the pre-fix title, cmd_import_todo skips when either marker exists; test importing under the legacy title then re-importing creates nothing.
+- [medium] wi.py:2177 WHOLE_STRIKE_RE anchored on $ over the joined entry — a struck first line with an unstruck indented continuation (or trailing note) stays open with markers. Pass: judge the whole-entry strike on the title line only, continuation to desc; multi-line test.
+- [low] test_wi.py:562-603 — add a regression test for a struck title followed by ~~ in the rest text.
+dispatch: implementer opus — fix round 1 (resume)
+return: implementer DONE 7dc3546
+dispatch: reviewer opus — review r2 (resume)
+agent: reviewer a9569a76c211e6e99 round 2

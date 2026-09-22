@@ -29,3 +29,15 @@ agent: implementer ae78a831c8f0131c6 round 1
 return: implementer DONE 87526b6
 changed: plugins/dev-flow/skills/investigate/SKILL.md (Step 2; 2891 -> 2905 words)
 dispatch: reviewer opus — rule 4 floor (impl sonnet)
+agent: reviewer a01a4385d96cd4e01 round 1
+verdict: NEEDS_CHANGES round 1 at 87526b6
+findings:
+- [high] SKILL.md:105-106 — the create-repo pointer is a soft cross-plugin dependency undeclared in dev-flow's plugin.json description and README catalog Depends-on cell (principle 4; precedent kit-dev's row). Pass: declare "create-repo (soft; investigate's scoping gate points the user at it when the target repo does not exist yet)" in both; optionally "when installed".
+- [low] :111 restore "all of it"; [low] :107 restore "roughly"; [low] +14 words accepted by the reviewer; [nit] :112 "that's" -> "that is".
+librarian: Files in scope widened to plugins/dev-flow/.claude-plugin/plugin.json (description) and the README.md dev-flow catalog row. Follow-up noted by the reviewer: Steps 3 and 13 still assume the target repo exists — filed.
+dispatch: implementer sonnet — fix round 1 (resume)
+agent: implementer ae78a831c8f0131c6 round 2
+return: implementer DONE 39f94d5
+changed: + plugins/dev-flow/.claude-plugin/plugin.json (description), README.md (dev-flow catalog row)
+dispatch: reviewer opus — review r2 (resume)
+agent: reviewer a01a4385d96cd4e01 round 2

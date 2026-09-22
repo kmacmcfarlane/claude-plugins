@@ -17,3 +17,4 @@ bf1b implementer OQs, 2026-09-22: '- [ ] ~~Title~~ — DONE <date>' stays open (
 - next: —
 - blocked: —
 - learned: —
+- 2026-09-22: bf1b r1 (7dc3546) now closes a plain struck first line with a dash/paren note; what remains here is the top-level struck bold bullet (dropped) — re-check scope when bf1b lands.

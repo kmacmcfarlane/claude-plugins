@@ -28,3 +28,16 @@ From a934 review r2 (CLEAR) 2026-09-22: SKILL.md fallback '(once origin/main@{1}
 target: full team-summary-nits-dev-cycle-land-report-d978 /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude/worktrees/team-summary-nits-dev-cycle-land-report-d978
 dispatch: implementer sonnet — wording lows across one plugin's docs, no signal
 agent: implementer a93454c614a233434 round 1
+return: implementer DONE 1b15454
+changed: librarian-mode SKILL.md, references/{team-summary,ending-the-session,troubleshooting}.md
+dev-cycle land-report part split to dev-cycle-the-land-report-gains-the-team-1763 (waits on F3)
+dispatch: reviewer opus — rule 4 floor (impl sonnet)
+agent: reviewer a4b5a5f9094e72a37 round 1
+verdict: NEEDS_CHANGES round 1 at 1b15454
+findings:
+- [medium] troubleshooting.md:72-75 — MERGE_HEAD is per-worktree, so a worktree-branch conflict round never shows in the main checkout; the real case is an interrupted landing merge in the main checkout (MERGE_HEAD = a worktree branch tip), which the entry still sends to "redo § Push rejected" — the landing is silently dropped. Pass: compare MERGE_HEAD in $MAIN with origin/main vs worktree-* tips; origin/main → abort + redo § Push rejected; a worktree tip → abort + re-land through The cycle; same check in SKILL.md:105-107 (Rehydrate step 4).
+- [low] team-summary.md:42-43 "right before the push that succeeds" not followable — "note it before each push, again after any fetch and merge; the value noted before the push that succeeds is old".
+- [low] team-summary.md:59-61 — "(a check, a stamp, a counter)" as examples of the internal catch-all.
+- [nit] :95 stalling vs erroring out; :97 restates parent.
+dispatch: implementer sonnet — fix round 1 (resume)
+agent: implementer a93454c614a233434 round 2
