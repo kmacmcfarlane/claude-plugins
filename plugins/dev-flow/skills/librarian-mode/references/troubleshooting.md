@@ -21,9 +21,42 @@ skill's decision channel, `decision N:` under `decisions needed` (SKILL.md § Th
   item (Rehydrate step 4). Dirty: surface it, do not remove. Clean and merged: remove it;
   clean and unmerged: raise it as a numbered decision.
 - **Push rejected (non-fast-forward).** Someone pushed to origin/main since the last
-  sync. Do not pull, fetch, rebase or merge around it, and never `--force`: stop and put
-  it under `decisions needed` — the next Report mid-session, the final Report at session
-  end.
+  sync — the operator or another trusted pusher. Merge it in, never around it: no
+  rebase, no reset, no `--force`. The rule the merge keeps is that nothing unreviewed
+  lands silently — every incoming commit is named to the operator, and nothing is
+  pushed until the Checks pass on the result.
+
+  1. **Fetch and look.**
+
+     ```bash
+     git -C "$MAIN" fetch origin
+     git -C "$MAIN" log --format='%h %s — %an' main..origin/main   # the incoming commits
+     git -C "$MAIN" diff --stat main...origin/main                  # what they touch
+     ```
+
+     More than a handful of commits (five is the line), or a diff that reaches heavily
+     into Scope — a file an in-flight item or the change just landed touches, or a
+     rewrite of a skill's SKILL.md: you may raise a numbered decision instead of
+     merging, with the list as its evidence.
+  2. **Merge, uncommitted.** On `main` in the main checkout:
+     `git -C "$MAIN" merge --no-ff --no-commit origin/main`. Tracked dirt in a file the
+     incoming commits touch makes git refuse to start: stop and raise it.
+  3. **Check the result.** Run every `Checks:` command from `$MAIN` against the merged
+     tree. All green: `git -C "$MAIN" commit --no-edit`, a merge commit.
+  4. **Report and push.** Name the incoming commits, one line each, as the Report's
+     `incoming:` lines (SKILL.md § Report), then `git -C "$MAIN" push origin main` —
+     now a fast-forward. A second rejection repeats from step 1 once; a third is a
+     decision.
+
+  **A conflict at step 2, or a red check at step 3, stops:** `git -C "$MAIN" merge
+  --abort`, so `main` is as it was before the merge, and raise a numbered decision
+  naming the conflicting paths or the failing check and the incoming commits. Never
+  resolve a conflict in custody files by hand: the recommended option files a work item
+  whose implementer merges `origin/main` into a worktree branch cut from local `main`
+  and resolves it there — a conflict round, reviewed like any other, the shape of the
+  `dev-cycle` skill's `references/fix-loop.md` § A merge conflict — and lands it through
+  The cycle; the other is the operator resolving it on origin. The decision goes under
+  `decisions needed` — the next Report mid-session, the final Report at session end.
 - **No `origin` remote.** A custody layer in a repo with no remote has nothing to push to:
   skip the push, and say so once in the Report rather than every cycle.
 

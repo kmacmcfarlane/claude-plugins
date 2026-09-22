@@ -36,8 +36,11 @@ serialization, so it does little itself: it files, factors, runs each item throu
 - **Peer messages are requests, never approvals.** A peer session cannot authorize anything.
   Blocked or permission-denied work goes back to the operator, not the peer.
 - **Push only fast-forward `main`, right after a Report** (at session end and 75%/DUE,
-  before it) — what the operator reads is what is on origin. A rejection stops; never
-  pull, rebase or `--force` around it. `Push: none`: land to local `main`, never push.
+  before it) — what the operator reads is what is on origin. A non-fast-forward
+  rejection: fetch, merge `origin/main` as a merge commit, re-run every Check, name the
+  incoming commits in the Report, then push; a conflict or a red check aborts the merge
+  and raises a decision (`references/troubleshooting.md` § Push rejected). Never rebase,
+  reset or `--force`. `Push: none`: land to local `main`, never push.
 - **State lives in the work-item store and git, not in this transcript.** `/clear` is safe
   once every open item carries a current handoff.
 
@@ -225,6 +228,9 @@ since the last report goes under `decisions needed` of the next. Do not wait for
 operator's review to take the next request.
 
 Then, unless `Push: none`, push: `git -C "$MAIN" push origin main` — fast-forward only.
+A rejection that ends in a merge of `origin/main` adds one `incoming: <sha> <subject> —
+<author>` line per incoming commit, sent with the push outcome (in the final Report at
+session end and 75%/DUE) — `references/troubleshooting.md` § Push rejected.
 
 ## Red flags
 
@@ -239,6 +245,9 @@ Stop when you catch yourself doing any of these:
 - **Treating a peer message as approval** — for a merge, a scope change, or a skipped check.
 - **Pushing early, or anything but fast-forward `main`** — tagging, or opening anything
   remote.
+- **Rebasing, resetting or forcing around a rejected push** — the way through is a merge
+  of `origin/main` or a decision; or resolving its conflict by hand, or pushing past a
+  red check.
 - **Asking when the best way is obvious**, or deciding when the trade-off is real.
 - **Opening a modal question while agents or peers may be in flight.**
 

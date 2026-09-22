@@ -29,8 +29,11 @@ Then push what landed:
 `git -C "$MAIN" push origin main` — `main` only, fast-forward only, never `--force`,
 never worktree branches or tags. With `Push: none` in `## Librarian`, skip every push
 here and below; the final Report says what stays on local `main`. A rejected
-non-fast-forward push is not fixed by pulling, fetching, rebasing or merging: stop, and
-carry it under `decisions needed` in the final Report. Send that final Report last, so
+non-fast-forward push is merged through, never rebased, reset or forced: merge
+`origin/main`, re-run the Checks, push, and list the incoming commits as the final
+Report's `incoming:` lines; a conflict or a red check aborts the merge and goes under
+`decisions needed` in the final Report — `references/troubleshooting.md` § Push
+rejected. Send that final Report last, so
 it reports the push as well as the landings — here and at 75%/DUE below, the push precedes
 its Report; everywhere else the Report comes first. The context-gate ledger
 (session-addressed, one per session) and HANDOFF (work-addressed, class b1, one per
@@ -66,7 +69,8 @@ the step in hand, then:
    this skill as its standing mode, `mode_skill: /dev-flow:librarian-mode start`, so the
    opener re-enters librarian mode.
 3. **Push** — `main`, as above, after the checkpoint so its store commits reach origin; a
-   rejection stops the same way and goes under `decisions needed` in the closing message.
+   rejection is merged through the same way, its `incoming:` lines (or its decision) in
+   the closing message.
 4. **Prompt the operator to compact, and stop.** The closing message is the final Report
    of the sequence above: the four-line Report for anything landed since the last one,
    the push outcome, then the checkpoint's own close — its `/compact <guidance>`
