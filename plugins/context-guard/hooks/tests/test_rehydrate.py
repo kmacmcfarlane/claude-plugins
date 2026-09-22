@@ -592,10 +592,21 @@ class TestLegacyCopy(unittest.TestCase):
             st = os.stat(p)
             return fh.read(), st.st_mtime_ns, st.st_ino, st.st_mode & 0o7777
 
+    def stamped(self, age=0, crlf=False):
+        """s's repo manifest as s's mark step left it `age` seconds ago: the
+        `written:` stamp, and an mtime a second after it."""
+        t = int(time.time() - age)
+        self.write_manifest(written=time.strftime("%Y-%m-%dT%H:%M:%SZ",
+                                                  time.gmtime(t)))
+        if crlf:
+            with open(self.repo_file(), "rb") as fh:
+                b = fh.read()
+            with open(self.repo_file(), "wb") as fh:
+                fh.write(b.replace(b"\n", b"\r\n"))
+        os.utime(self.repo_file(), (t + 1, t + 1))
+
     def test_an_owned_repo_manifest_is_copied_once_byte_for_byte(self):
-        self.write_manifest()
-        old = time.time() - 2 * 3600
-        os.utime(self.repo_file(), (old, old))
+        self.stamped(age=2 * 3600)
         before = self.snap(self.repo_file())
         rc, out = self.hook("compact")
         self.assertEqual(rc, 0)
@@ -618,6 +629,63 @@ class TestLegacyCopy(unittest.TestCase):
         self.assertNotIn("old layout", self.ctx(out))
         self.assertEqual(self.snap(store), got)
         self.assertEqual(L.load_state("s")["legacy_copy"], rec)
+
+    def test_a_peers_in_place_edit_under_this_sessions_id_is_not_copied(self):
+        # The reviewer's probe: s stamps its repo manifest; a peer edits the
+        # body in place and leaves `session: s` (its own mark refuses to
+        # claim it). The bytes are no longer s's stamp, so they stay a live
+        # read - and once the peer rewrites the file as its own, s drops to
+        # the foreign header instead of keeping the peer's body forever.
+        self.stamped(age=600)
+        p = self.repo_file()
+        with open(p) as fh:
+            t = fh.read()
+        with open(p, "w") as fh:
+            fh.write(t.replace("Building the thing.", "The peer's body."))
+        rc, out = self.hook("compact")
+        self.assertIn("The peer's body.", self.ctx(out))     # today's live read
+        self.assertFalse(os.path.exists(L.manifest_path("s")))
+        self.assertNotIn("legacy_copy", L.load_state("s"))
+        with open(p, "w") as fh:
+            fh.write(t.replace("Building the thing.", "The peer's body.")
+                     .replace("session: s\n", "session: peer\n"))
+        rc, out = self.hook("compact")
+        self.assertIn("(not this session)", self.ctx(out))
+        self.assertNotIn("The peer's body.", self.ctx(out))
+
+    def test_a_fresh_stamp_is_copied_and_a_hand_typed_one_is_not(self):
+        self.stamped()
+        self.hook("startup")
+        self.assertTrue(os.path.exists(L.manifest_path("s")))
+        os.remove(L.manifest_path("s"))
+        # the same bytes, but written a minute after their stamp: not the
+        # mark step's own write
+        t = time.time() + 60
+        os.utime(self.repo_file(), (t, t))
+        self.hook("startup")
+        self.assertFalse(os.path.exists(L.manifest_path("s")))
+
+    def test_a_crlf_manifest_is_copied_byte_for_byte(self):
+        self.stamped(crlf=True)
+        with open(self.repo_file(), "rb") as fh:
+            src = fh.read()
+        self.assertIn(b"\r\n", src)
+        self.hook("compact")
+        with open(L.manifest_path("s"), "rb") as fh:
+            self.assertEqual(fh.read(), src)
+        self.assertIn("legacy_copy", L.load_state("s"))
+
+    def test_a_link_at_the_session_directory_gets_no_copy(self):
+        self.stamped()
+        elsewhere = os.path.join(self.tmp.name, "elsewhere")
+        os.makedirs(elsewhere)
+        os.makedirs(L.handoff_root())
+        os.symlink(elsewhere, os.path.dirname(L.manifest_path("s")))
+        rc, out = self.hook("compact")
+        self.assertEqual(rc, 0)
+        self.assertIn("## Doing", self.ctx(out))           # the live read
+        self.assertEqual(os.listdir(elsewhere), [])         # nothing written there
+        self.assertNotIn("legacy_copy", L.load_state("s"))
 
     def test_an_ownerless_or_foreign_repo_manifest_is_never_copied(self):
         self.write_manifest()

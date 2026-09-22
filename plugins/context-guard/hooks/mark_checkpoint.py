@@ -65,7 +65,7 @@ symlink planted at that file, or at the <sid>/ directory above it, resolves
 out of the store, is not this session's manifest, and is left to the legacy
 arm's claim test rather than rewritten as ours.
 A manifest this session already stamped and nobody rewrote since (the same
-head, branch, top and session, and an mtime within STAMP_TOUCH_S of its
+head, branch, top and session, and an mtime within rehydrate.STAMP_TOUCH_S of its
 `written:`) is left as it is, so repeated marks do not re-date it.
 Stamping never fails the checkpoint: every problem is a warning, and the gate
 record (L.mark_checkpoint) is exactly what it would be without a manifest.
@@ -95,7 +95,6 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import lib_context as L
 
 STAMP_WINDOW_S = 30 * 60
-STAMP_TOUCH_S = 3
 WRITE_BUDGET = 6000
 STAMP_KEYS = ("written", "head", "branch", "top", "session")
 _KEY_LINE = re.compile(rb"(written|head|branch|top|session)[ \t]*:")
@@ -185,12 +184,11 @@ def _claimable(owner, sha, want, st):
 def _own_stamp(fm, fields, mtime):
     """Whether the file already carries this stamp, untouched since: `head`,
     `branch`, `top` and `session` are what it would write, and the mtime is
-    within STAMP_TOUCH_S after `written:` (the mark step writes both at once; a
+    within R.STAMP_TOUCH_S after `written:` (the mark step writes both at once; a
     rewrite moves the mtime, and a copied stamp is older). Then a repeated
     mark leaves it as it is instead of re-dating it."""
     import rehydrate as R
-    t = R.stamp_epoch(fm.get("written"))
-    return t is not None and 0 <= mtime - t < STAMP_TOUCH_S and all(
+    return R.stamp_untouched(fm, mtime) and all(
         fm.get(k) == fields[k]
         for k in ("head", "branch", "top", "session") if k in fields)
 
@@ -361,8 +359,10 @@ def legacy_copy_warning(want, store):
         if not isinstance(rec, dict):
             return None
         lpath, sha = rec.get("path"), rec.get("sha")
+        # A regular file only: a FIFO or device at the recorded path would
+        # hang the read, and with it the gate stand-down that follows.
         if not isinstance(lpath, str) or not isinstance(sha, str) \
-                or not os.path.exists(lpath):
+                or not os.path.isfile(lpath):
             return None
         text = R.read_text(lpath)
         if text is None or L.manifest_sha(text) == sha:

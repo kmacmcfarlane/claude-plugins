@@ -113,7 +113,7 @@ claude-kit's) deprecated copy and that plugin is not installed
 Never exits non-zero: the staleness checks degrade to the plain manifest on
 any internal error, and anything else degrades to {}.
 """
-import glob, json, os, re, subprocess, sys, tempfile, time
+import glob, io, json, os, re, subprocess, sys, tempfile, time
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import lib_context as L
 import ledger
@@ -415,6 +415,21 @@ STAMP_SKEW_S = 600
 _STAMP_RE = re.compile(
     r"(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})(?::(\d{2})(?:\.\d+)?)?"
     r"[ \t]*(Z|[+-]\d{2}:?\d{2})?", re.ASCII | re.I)
+
+
+STAMP_TOUCH_S = 3
+
+
+def stamp_untouched(fm, mtime):
+    """Whether a manifest's bytes are still exactly what the mark step left:
+    its mtime is within STAMP_TOUCH_S after its `written:` stamp (the mark
+    step writes both at once; any later rewrite moves the mtime, and a stamp
+    copied into other bytes is older than them). The one predicate for "not
+    touched since it was stamped", shared by the mark step's repeat-mark test
+    (mark_checkpoint._own_stamp) and the legacy copy (copy_legacy)."""
+    t = stamp_epoch(fm.get("written")) if isinstance(fm, dict) else None
+    return t is not None and isinstance(mtime, (int, float)) \
+        and 0 <= mtime - t < STAMP_TOUCH_S
 
 
 def stamp_epoch(value):
@@ -1092,9 +1107,18 @@ def copy_legacy(sid, path, sha):
     file this session wrote itself may still carry `<stamped>` until the mark
     step stamps it, as it always could.
 
+    `session:` is repo text, so it is not trusted alone: the file must also be
+    untouched since the mark step stamped it (stamp_untouched: mtime within
+    STAMP_TOUCH_S after `written:`). A peer that edits the body in place and
+    leaves `session: <sid>` moves the mtime, so its bytes stay a live read -
+    which drops to the foreign header once the peer rewrites the file - and
+    never become this session's frozen memory. A hand-typed `session:` with
+    no mark step behind it is not copied either.
+
     Byte for byte: the source is re-read as bytes and copied only when those
-    bytes are still the version resolved (`sha`), so a file rewritten between
-    the resolve and the copy is not copied under the wrong record. The copy's
+    bytes are still the version resolved (`sha`, hashed as read_text reads
+    them, so CRLF files match), so a file rewritten between the resolve and
+    the copy is not copied under the wrong record. The copy's
     mtime is set to the source's, so it is not re-dated into the mark step's
     30-minute window, where a mark would restamp a manifest nobody rewrote.
     The store directories are created 0700 and the file 0600 through a temp
@@ -1110,8 +1134,17 @@ def copy_legacy(sid, path, sha):
         with open(path, "rb") as fh:
             data = fh.read(LEGACY_COPY_MAX + 1)
             src = os.fstat(fh.fileno())
-        if len(data) > LEGACY_COPY_MAX or \
-                L.manifest_sha(data.decode("utf-8", "replace")) != sha:
+        # Hashed as read_text reads it (text mode: the locale encoding with
+        # errors="replace", universal newlines), so a CRLF manifest's sha is
+        # the one the resolve computed; the bytes themselves are copied.
+        text = io.TextIOWrapper(io.BytesIO(data), errors="replace").read()
+        if len(data) > LEGACY_COPY_MAX or L.manifest_sha(text) != sha:
+            return None
+        # `session:` alone is repo text any session can leave in place: a peer
+        # that edits the body and keeps `session: <sid>` must not become this
+        # session's permanent memory. Copy only bytes still exactly as this
+        # session's mark step stamped them; anything else stays a live read.
+        if not stamp_untouched(front_matter(text), src.st_mtime):
             return None
         target = L.manifest_path(sid)
         root = os.path.realpath(L.handoff_root())

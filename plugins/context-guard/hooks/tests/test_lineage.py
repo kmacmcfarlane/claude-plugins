@@ -1674,8 +1674,14 @@ class TestStampGuardWarnsOnly(StoreBase):
         `age` seconds old when given (the copy keeps the source's mtime)."""
         self.checkpoint(sid)
         if age:
-            t = time.time() - age
-            os.utime(self.path, (t, t))
+            # stamped `age` ago by the mark step: stamp and mtime together
+            t = int(time.time() - age)
+            text = readf(self.path)
+            import re
+            writef(self.path, re.sub(r"(?m)^written: .*$", "written: " +
+                                     time.strftime("%Y-%m-%dT%H:%M:%SZ",
+                                                   time.gmtime(t)), text))
+            os.utime(self.path, (t + 1, t + 1))
         self.start(sid, "startup")
         p = L.manifest_path(sid)
         self.assertTrue(os.path.exists(p))
@@ -1744,7 +1750,7 @@ class TestStampGuardWarnsOnly(StoreBase):
         before = self.snap(p)
         self.rewrite("<stamped>", "Stranded in the repo file.")
         r = self.run_cli("X", env_sid="X")
-        self.assertIn("was last written 120 min ago", r.stderr)   # the window
+        self.assertRegex(r.stderr, r"was last written 11[89] min ago")  # the window
         self.assertIn(self.WARN, r.stderr)                        # the guard
         self.assertEqual(self.snap(p), before)
         store = readf(p)
@@ -1768,6 +1774,15 @@ class TestStampGuardWarnsOnly(StoreBase):
             self.assertFalse([w for w in warn if self.WARN in w or
                               "not stamped" in w], rec)
         self.assertTrue(os.path.exists(p))
+
+    def test_a_fifo_at_the_recorded_path_does_not_hang_the_mark(self):
+        import mark_checkpoint as M
+        self.store_checkpoint("X")
+        fifo = os.path.join(self.repo, "fifo.md")
+        os.mkfifo(fifo)
+        L.save_state("X", {"epoch": 0, "legacy_copy":
+                           {"sha": "0" * 12, "path": fifo, "at": 1}})
+        self.assertIsNone(M.legacy_copy_warning("X", L.manifest_path("X")))
 
     def test_the_warning_stands_on_every_mark(self):
         self.copied()

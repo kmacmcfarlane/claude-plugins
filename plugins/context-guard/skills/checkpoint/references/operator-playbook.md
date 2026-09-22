@@ -169,7 +169,8 @@ Bash(python3 "<root>/hooks/handoff_path.py":*)
   To pass work on, paste the opener; to look without taking it over, `cat` the path.
 - **An old-layout `HANDOFF.md`** (`.claude-sandbox/HANDOFF.md` or the repo root) is never
   written again. A session with no manifest of its own still reads it, read-only, and is
-  told once where its own now lives. If its `session:` is that session, it is copied once
+  told once where its own now lives. If its `session:` is that session and it is untouched since that session's mark step
+  stamped it, it is copied once
   into the session's store and read from there after — so a session that checkpointed
   before the store layout keeps its memory when a peer later overwrites the shared file.
   Delete the repo file when no session without a manifest of its own still needs it:
