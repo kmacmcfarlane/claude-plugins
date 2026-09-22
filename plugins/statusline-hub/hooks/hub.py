@@ -31,6 +31,29 @@ Each render, in this order:
    appends GLYPH once.
 6. Print the segments joined by the configured separator, in order.
 
+Wrap mode (the user consented, with install-statusline-hub --wrap, to the hub
+running the statusLine command their user settings held before it): when the
+wrap record (registry.read_wrap) is trusted, running and from the user
+settings file (registry.wrap_applies - never a project's), step 3 also hands the payload to
+one detached inner runner (`hub.py --run-inner <sid>`), started before the
+display hooks so it runs beside them. The runner runs the kept command
+exactly as written, through `/bin/sh -c` as Claude Code runs a statusLine
+command, in the render's own working directory and environment, with the
+payload byte for byte on stdin; it kills the command's process group at
+INNER_MAX_MS, and on exit 0 stores its stdout (at most INNER_OUT_MAX bytes,
+every line, verbatim: it is the user's own renderer, which drew straight to
+the slot before the wrap) as this session's last-good output.
+CLAUDE_CODE_SHELL_PREFIX, which Claude Code puts in front of the commands it
+runs, is not applied: the command runs as written. At most one
+runner lives at a time (a lock), so a hung command costs one process. The
+render waits for the runner only until DISPLAY_BUDGET_MS, then shows the
+last-good output if it is younger than INNER_LAST_GOOD_S - fresh when the
+command finished in time; for a command slower than the budget, the output
+of the one before. The command's output comes first; the display segments
+follow on its last line, after a colour reset when it used escapes. A command that fails or hangs costs only its own
+output: the sensor record, the record hooks and the display hooks are not
+touched.
+
 The hub never raises: whatever fails, it prints the best line it has, or "".
 """
 import json, os, selectors, signal, subprocess, sys, time
@@ -48,6 +71,10 @@ OUT_MAX = 4096            # stdout bytes read from one display hook
 LAST_GOOD_S = 60
 LOG_MAX = 65536           # a hook's log is emptied once it grows past this
 GLYPH = "\u26a0"          # a record hook's health file says it is failing
+INNER = "_wrapped"        # cache/lock/log name of the wrapped command; never a hook name
+INNER_MAX_MS = 5000       # the wrapped command is killed after this
+INNER_OUT_MAX = 16384     # stdout bytes kept from the wrapped command
+INNER_LAST_GOOD_S = 600   # its last output shows this long when a render misses it
 
 
 def _obj(v):
@@ -354,6 +381,117 @@ def run_records():
             time.sleep(0.02)
 
 
+# -- wrap mode: the inner command ------------------------------------------
+
+def inner_put(sid, text, now):
+    """Store the wrapped command's output as this session's last good."""
+    tmp = None
+    try:
+        path = _cache_path(INNER, sid)
+        d = os.path.dirname(path)
+        if not R.mkdirs_private(d):
+            return
+        fd, tmp = T._mkstemp(d, "." + INNER + ".")
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            json.dump({"at": now, "text": text}, f, ensure_ascii=False)
+        os.replace(tmp, path)
+        tmp = None
+    except Exception:
+        pass
+    finally:
+        if tmp:
+            try:
+                os.unlink(tmp)
+            except Exception:
+                pass
+
+
+def inner_get(sid, now):
+    """The wrapped command's last output for this session when younger than
+    INNER_LAST_GOOD_S, else None."""
+    try:
+        raw, _ = R._read_capped(_cache_path(INNER, sid), INNER_OUT_MAX * 8)
+        d = json.loads(raw.decode("utf-8")) if raw is not None else None
+        if isinstance(d, dict) and isinstance(d.get("text"), str) and \
+                0 <= now - T._at(d) <= INNER_LAST_GOOD_S:
+            return d["text"]
+    except Exception:
+        pass
+    return None
+
+
+def dispatch_inner(data, sid):
+    """Start the inner runner with the payload on stdin, in this process's
+    working directory and environment; its Popen, or None when one is still
+    running from an earlier render or it cannot start. Never raises."""
+    try:
+        if not _free({"name": INNER}):
+            return None
+        fd = payload_fd(data)
+        try:
+            return subprocess.Popen([sys.executable, os.path.abspath(__file__), "--run-inner",
+                                     T.safe_sid(sid or "unknown")],
+                                    stdin=fd, stdout=subprocess.DEVNULL,
+                                    stderr=subprocess.DEVNULL, close_fds=True,
+                                    start_new_session=True)
+        finally:
+            os.close(fd)
+    except Exception:
+        return None
+
+
+def run_inner(sid):
+    """The inner runner: run the wrapped command once (see the module doc).
+    stdin is the payload, handed to the command untouched."""
+    lock = _lock(INNER)
+    if lock is None:
+        return
+    try:
+        rec, _ = R.read_wrap([os.getcwd(), os.environ.get("CLAUDE_PROJECT_DIR")])
+        if not rec or not rec["running"] or not R.wrap_applies(rec):
+            return
+        now = time.time()
+        err = log_fd(INNER)
+        try:
+            p = subprocess.Popen(["/bin/sh", "-c", rec["command"]], stdin=0,
+                                 stdout=subprocess.PIPE, stderr=err, close_fds=True,
+                                 start_new_session=True)
+        finally:
+            if isinstance(err, int) and err >= 0:
+                os.close(err)
+        deadline = time.monotonic() + INNER_MAX_MS / 1000.0
+        buf, ok = bytearray(), False
+        fd = p.stdout.fileno()
+        sel = selectors.DefaultSelector()
+        sel.register(fd, selectors.EVENT_READ)
+        try:
+            while True:
+                left = deadline - time.monotonic()
+                if left <= 0:
+                    break
+                if sel.select(min(left, 0.05)):
+                    chunk = os.read(fd, 65536)
+                    if not chunk:
+                        break           # EOF: every writer has closed stdout
+                    buf += chunk[:INNER_OUT_MAX - len(buf)]
+                elif p.poll() is not None:
+                    break               # exited; a grandchild may hold stdout open
+            if time.monotonic() < deadline:
+                try:
+                    ok = p.wait(timeout=max(deadline - time.monotonic(), 0)) == 0
+                except subprocess.TimeoutExpired:
+                    ok = False
+        finally:
+            sel.close()
+            if p.poll() is None:
+                kill(p)
+            p.stdout.close()
+        if ok:
+            inner_put(sid, bytes(buf).decode("utf-8", "replace").rstrip("\r\n"), now)
+    finally:
+        os.close(lock)
+
+
 # -- render ------------------------------------------------------------------
 
 def render(data, now=None):
@@ -374,10 +512,26 @@ def render(data, now=None):
         hooks = R.load(now, project_dirs(d), cfg)
         records = [h for h in hooks if h["kind"] == "record"]
         displays = [h for h in hooks if h["kind"] == "display"]
+        t0 = time.monotonic()
+        wrap, _ = R.read_wrap(project_dirs(d))
+        wrapped = bool(wrap and wrap["running"] and R.wrap_applies(wrap))
+        runner = dispatch_inner(data, sid) if wrapped else None
         if records:
             dispatch_records(records, data)
         segs = run_displays(displays, data, sid, now) if displays else {}
         line = cfg["separator"].join(segs[h["name"]] for h in displays if segs.get(h["name"]))
+        if wrapped:
+            if runner is not None:
+                try:
+                    runner.wait(timeout=max(t0 + DISPLAY_BUDGET_MS / 1000.0 -
+                                            time.monotonic(), 0))
+                except subprocess.TimeoutExpired:
+                    pass
+            inner = inner_get(sid, time.time())  # the runner stamps it after `now`
+            if inner:
+                if line and "\x1b" in inner:
+                    inner += R.RESET  # its colour must not bleed into the segments
+                line = f"{inner}{cfg['separator']}{line}" if line else inner
         if any(R.health(h["health_path"], now, cfg["health_stale_min"])
                for h in hooks if h.get("health_path")):
             line = f"{line} {GLYPH}" if line else GLYPH
@@ -404,6 +558,13 @@ def status():
               f"runs {os.path.basename(h['argv'][0])}{health}")
     for name, why in problems:
         print(f"  {name}: skipped ({why})")
+    rec, why = R.read_wrap([os.getcwd(), os.environ.get("CLAUDE_PROJECT_DIR")])
+    if rec:
+        print(f"wrap: {'running' if rec['running'] else 'kept, not running'} - the "
+              f"statusLine that was in {rec['settings']} (timeout {INNER_MAX_MS} ms, "
+              f"stderr in {os.path.join(R.log_dir(), INNER + '.log')})")
+    elif why != "missing":
+        print(f"wrap: {R.wrap_path()} skipped ({why})")
     return 0
 
 
@@ -411,6 +572,12 @@ def main(argv):
     if len(argv) >= 2 and argv[1] == "--run-records":
         try:
             run_records()
+        except BaseException:
+            pass
+        return 0
+    if len(argv) >= 3 and argv[1] == "--run-inner":
+        try:
+            run_inner(argv[2])
         except BaseException:
             pass
         return 0

@@ -11,7 +11,8 @@
   registry.STALE_DAYS (a plugin that stopped refreshing its manifest was
   uninstalled or disabled: its hook is dead; a manifest that says
   "pinned": true is kept), last-good cache entries older
-  than CACHE_DAYS, logs older than LOG_DAYS, orphaned temp files.
+  than CACHE_DAYS, logs older than LOG_DAYS, orphaned temp files. The wrap
+  record (wrap.json) is never pruned: it holds the user's own entry.
 
 Nothing here raises.
 """
@@ -178,6 +179,7 @@ def prune_hub(now=None):
         if registry.private_dir_problem(registry.hub_dir()):
             return 0
         n += prune_manifests(now)
+        n += prune_tmp(registry.hub_dir(), now)   # a killed wrap-record write
         n += _prune_files(registry.cache_dir(), CACHE_DAYS * 86400, now, (".json",),
                           recurse=True)
         n += _prune_files(registry.log_dir(), LOG_DAYS * 86400, now, (".log",))

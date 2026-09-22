@@ -15,7 +15,19 @@ remove, replace). Both write settings only through write_settings().
   hooks.d/statusline.json of kind display), so the footer keeps drawing - see
   session_start.py.
 - Anything else is foreign: never modified without the user's explicit consent
-  (the installer's --replace).
+  (the installer's --replace, or its --wrap).
+
+Wrap mode (the installer's --wrap, only ever on the user's word, and only
+for the user settings file - registry.wrap_applies): the hub's entry
+replaces a foreign one, and the foreign entry is kept in the hub's
+wrap record, <config>/statusline-hub/wrap.json (registry.read_wrap: private,
+0600, the trust rules of a hook manifest, since the hub runs it). The hub's
+entry keeps the foreign entry's other keys (padding, say) and swaps only the
+command. Each render runs the kept command, unparsed, through /bin/sh as
+Claude Code would, and shows its output (hub.py). --unwrap puts the kept
+entry back - its value's original text, spliced in place, so the file is
+byte-for-byte as it was when nothing else changed; at the least, the entry
+and its command string are exactly the same.
 
 The settings write started as the statusline plugin's own; since that plugin
 draws as a hub display hook it writes no settings, and this is the only copy.
@@ -34,7 +46,8 @@ sensor helpers (base_dir, _load, _is_v, _mkstemp).
 The marker, <plugin data>/owner.json (the statusline plugin's earlier
 versions kept one of the same shape in their own data dir, which the
 takeover reads):
-  {"v": 1, "state": "installed" | "removed" | "yielded" | "deferred" | "blocked",
+  {"v": 1, "state": "installed" | "removed" | "yielded" | "deferred" | "blocked"
+                    | "wrapping" | "unwrapped",
    "settings": "<abs path>", "command": "<our command>", "at": <epoch s>}
 - installed: the entry in `settings` is ours; SessionStart restores it when a
   stale session's settings write drops it.
@@ -46,11 +59,20 @@ takeover reads):
 - blocked: the settings file could not be used (not valid JSON, read-only,
   unwritable, or a project file git does not ignore); said once, retried
   quietly every session. Extra fields: "reason", and "resume" - the state
-  whose work is retried ("installed" for a heal, "new" for a first run).
-It stores only our own command and a path.
+  whose work is retried ("installed" or "wrapping" or "unwrapped" for a
+  heal, "new" for a first run).
+- wrapping: the entry in `settings` is ours, running the wrapped entry the
+  wrap record keeps; SessionStart restores it when a stale session's write
+  drops it or puts the wrapped entry back, and yields to anything else.
+- unwrapped: the user ran --unwrap; SessionStart puts the kept entry back
+  if a stale session's write restores ours, and otherwise does nothing.
+(An older hub version reads the last two as "hands off".)
+The marker stores only our own command and a path; the wrapped entry lives
+in the wrap record alone.
 """
 import json, os, re, stat, time
 
+import registry
 import tee as sensor
 
 PLUGIN = "statusline-hub"
@@ -207,15 +229,17 @@ def _default_mode():
     return 0o666 & ~mask
 
 
-def atomic_write_text(path, text, mode=None):
+def atomic_write_text(path, text, mode=None, force_mode=False):
     """Write text to path's real target via a same-dir temp file and
     os.replace. Keeps the existing file's mode (else `mode`, else the umask
-    default). On any failure the original is untouched and the temp removed;
-    the error propagates."""
+    default; with `force_mode`, always `mode`). On any failure the original
+    is untouched and the temp removed; the error propagates."""
     real = os.path.realpath(path)
     d = os.path.dirname(real)
     os.makedirs(d, exist_ok=True)
     try:
+        if force_mode:
+            raise FileNotFoundError
         mode = os.stat(real).st_mode & 0o7777
     except FileNotFoundError:
         mode = _default_mode() if mode is None else mode
@@ -234,8 +258,9 @@ def atomic_write_text(path, text, mode=None):
                 pass
 
 
-def atomic_write_json(path, data, mode=None):
-    atomic_write_text(path, json.dumps(data, indent=2, ensure_ascii=False) + "\n", mode)
+def atomic_write_json(path, data, mode=None, force_mode=False):
+    atomic_write_text(path, json.dumps(data, indent=2, ensure_ascii=False) + "\n", mode,
+                      force_mode)
 
 
 _INDENT = re.compile(r'\n([ \t]+)"')
@@ -434,6 +459,50 @@ def _splice_settings(original, data):
     return text
 
 
+def _splice_raw(original, data, raw):
+    """`original` with the statusLine member's value text replaced by `raw`
+    verbatim - how unwrap puts an entry back exactly as it was written -
+    when that member is there once and the result parses to `data` with
+    the key order kept. None otherwise."""
+    try:
+        if json.loads(raw) != data.get("statusLine", _MISSING):
+            return None
+        hits = [m for m in _members(original) if m[0] == "statusLine"]
+        if len(hits) != 1:
+            return None
+        _, _, _, vs, ve = hits[0]
+        text = original[:vs] + raw + original[ve:]
+        back = json.loads(text)
+        if back != data or list(back) != list(data):
+            return None
+        return text
+    except (ValueError, IndexError, TypeError):
+        return None
+
+
+def statusline_raw(path):
+    """(the statusLine value, its text as written in the file) for the
+    settings file at path - the text with CRLF read as LF, None when it
+    cannot be isolated. (None, None) when the file or the key is missing.
+    Raises SettingsError as read_settings does."""
+    text = _read_text(os.path.realpath(path))
+    if text is None:
+        return None, None
+    entry = _parse(text, path).get("statusLine")
+    if entry is None:
+        return None, None
+    base = text.replace("\r\n", "\n") if _crlf(text) else text
+    try:
+        hits = [m for m in _members(base) if m[0] == "statusLine"]
+        if len(hits) == 1:
+            raw = base[hits[0][3]:hits[0][4]]
+            if json.loads(raw) == entry:
+                return entry, raw
+    except (ValueError, IndexError, TypeError):
+        pass
+    return entry, None
+
+
 class ReadOnly(SettingsError):
     """A settings file the user cannot write (mode 0444, say)."""
     reason = "read-only"
@@ -444,7 +513,8 @@ def _crlf(text):
     return "\r\n" in text and text.count("\n") == text.count("\r\n")
 
 
-def write_settings(path, entry, allow_read_only=False, expect=None):
+def write_settings(path, entry, allow_read_only=False, expect=None, expect_entry=_MISSING,
+                   raw=None):
     """Set the statusLine key of the settings file at path (through a
     symlink) to `entry`, or delete it when `entry` is None. Returns whether
     it wrote.
@@ -455,11 +525,15 @@ def write_settings(path, entry, allow_read_only=False, expect=None):
     since the caller looked is kept. The window left is the few
     milliseconds between this read and the replace. `expect`, when given,
     is the set of classify() kinds the fresh statusLine may have; anything
-    else raises Changed, writing nothing.
+    else raises Changed, writing nothing. `expect_entry`, when given, is the
+    exact statusLine value (None: absent) the file must still hold, else
+    Changed.
 
     Text: when only statusLine changes, only that member's text changes
     (_splice_settings); else the whole file is re-serialised in its layout
-    (dumps_like). CRLF line endings are kept. An empty file counts as {}.
+    (dumps_like). `raw`, the entry's own text (statusline_raw), is spliced
+    in verbatim when the key is there to splice it into. CRLF line endings
+    are kept. An empty file counts as {}.
     Raises SettingsError, writing nothing, when the file is not a JSON
     object, and ReadOnly when the user may not write it - replacing it would
     still succeed in a writable dir, overriding a deliberate read-only -
@@ -468,6 +542,8 @@ def write_settings(path, entry, allow_read_only=False, expect=None):
     original = _read_text(real)
     current = {} if original is None else _parse(original, path)
     if expect is not None and classify(current.get("statusLine")) not in expect:
+        raise Changed(f"the statusLine in {path} changed meanwhile")
+    if expect_entry is not _MISSING and current.get("statusLine") != expect_entry:
         raise Changed(f"the statusLine in {path} changed meanwhile")
     data = dict(current)
     if entry is None:
@@ -480,7 +556,11 @@ def write_settings(path, entry, allow_read_only=False, expect=None):
         raise ReadOnly(f"{path} is read-only", path)
     crlf = original is not None and _crlf(original)
     base = original.replace("\r\n", "\n") if crlf else original
-    text = _splice_settings(base, data) if base and base.strip() else None
+    text = None
+    if raw is not None and entry is not None and base and base.strip():
+        text = _splice_raw(base, data, raw)
+    if text is None and base and base.strip():
+        text = _splice_settings(base, data)
     if text is None:
         text = dumps_like(data, base)
     atomic_write_text(path, text.replace("\n", "\r\n") if crlf else text)
@@ -508,6 +588,41 @@ def write_marker(data, state, settings, command, **extra):
                       dict({"v": MARKER_V, "state": state,
                             "settings": os.path.abspath(settings), "command": command,
                             "at": time.time()}, **extra), mode=0o600)
+
+
+def wrap_entry(inner, data):
+    """The hub's entry that wraps `inner`: inner's keys, in inner's order,
+    with only the command swapped for ours."""
+    e = dict(inner)
+    e["command"] = command_for(data)
+    return e
+
+
+def write_wrap(settings, entry, raw, running):
+    """Write the wrap record (registry.read_wrap) atomically, 0600, in the
+    private hub dir; raises SettingsError when that dir fails the trust
+    rules, so nothing is kept where the hub would refuse to run it."""
+    registry.mkdirs_private(registry.hub_dir())
+    why = registry.hub_problem()
+    if why:
+        raise SettingsError(f"{registry.hub_dir()} is {why}", registry.hub_dir())
+    atomic_write_json(registry.wrap_path(),
+                      {"v": registry.WRAP_V, "settings": os.path.abspath(settings),
+                       "entry": entry, "raw": raw, "running": running,
+                       "at": time.time()}, mode=0o600, force_mode=True)
+
+
+def set_running(rec, running):
+    """Rewrite the wrap record `rec` (read_wrap's) with `running`."""
+    write_wrap(rec["settings"], rec["entry"], rec["raw"], running)
+
+
+def drop_wrap():
+    """Delete the wrap record. Never raises."""
+    try:
+        os.unlink(registry.wrap_path())
+    except OSError:
+        pass
 
 
 def _same_path(a, b):
