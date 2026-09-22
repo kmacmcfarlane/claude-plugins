@@ -23,3 +23,8 @@ Surfaced by 0f3f 2026-09-21: investigate Step 16 (now references/retrospective.m
 ## Notes
 - 2026-09-22 claimed by unknown@360f41058e92
 - dispatch: implementer opus — reconcile two skills (judgement word) + principle 4
+
+## Implementer result
+- round 1 DONE_WITH_CONCERNS 934ec1c (opus): one rule — update-kit is user-invoked only (disable-model-invocation), so ask the user to run /kit-dev:update-kit; never read and replicate; without kit-dev the shown findings are the record.
+- scope widened (librarian): declare dev-flow's soft dependency on kit-dev (plugin.json, marketplace.json identical, README catalog row) — principle 4; pre-existing gap the change makes explicit.
+- dispatch: implementer opus — widening (same agent resumed), then reviewer opus

@@ -2,12 +2,11 @@
 id: statusline-hub-status-says-a-wrap-is-run-90ee
 title: statusline-hub --status says a wrap is running when wrap_applies refuses it
 type: bug
-status: doing
+status: done
 priority: 4
-owner: unknown@360f41058e92
-claimed: 2026-09-22T00:26Z
 created: 2026-09-22
 updated: 2026-09-22
+closed: 2026-09-22
 refs:
   - 7e71 reviewer
 ---
@@ -23,3 +22,12 @@ From 7e71 review r2 (low): hub.py status() ignores registry.wrap_applies; a hand
 ## Notes
 - 2026-09-22 claimed by unknown@360f41058e92
 - dispatch: implementer opus — hub code
+- 2026-09-22 done: 364b63e
+
+## Implementer result
+- round 1 DONE 51a91c5 (opus): status() checks wrap_applies first → 'kept, not run (not the user settings file)'; 2 tests (fail 1 without).
+- dispatch: reviewer opus — rule 4
+
+## Review round 1 — CLEAR (opus) at 51a91c5
+- status agrees with run_inner in every probe.
+- landed 364b63e

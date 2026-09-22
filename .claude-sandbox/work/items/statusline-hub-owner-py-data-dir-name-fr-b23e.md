@@ -23,3 +23,7 @@ Surfaced by d8f6's implementer 2026-09-21 (the moved form of 8588's first low): 
 ## Notes
 - 2026-09-22 claimed by unknown@360f41058e92
 - dispatch: implementer opus — hub owner code (settings ownership path)
+
+## Implementer result
+- round 1 DONE 37fa55c (opus): owner.data_name(plugin_id) shared by the cache-path fallback and installed_by_record; 3 tests (fail 16 without); no other hub/statusline copy of the flaw.
+- dispatch: reviewer opus — rule 4
