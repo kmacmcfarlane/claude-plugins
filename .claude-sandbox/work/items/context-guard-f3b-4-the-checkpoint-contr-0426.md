@@ -27,3 +27,8 @@ Plan of record .claude-sandbox/investigations/8cc2-turn-gate-port (04 § Feature
 target: full context-guard-f3b-4-the-checkpoint-contr-0426 /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude/worktrees/context-guard-f3b-4-the-checkpoint-contr-0426
 dispatch: implementer opus — executable logic (rehydrate.py, stop_relay.py) + 8 files across two plugins; plan routes opus
 agent: implementer aa20b5c90a21fc74c round 1
+return: implementer DONE_WITH_CONCERNS 5c1f57a
+changed: checkpoint SKILL.md, references/{handoff-format,operator-playbook,design-rationale}.md, hooks/rehydrate.py, hooks/stop_relay.py, hooks/tests/test_rehydrate.py, librarian-mode/references/ending-the-session.md, README.md
+librarian on OQs: trim-budget low stays with F3b-3 (c3e1 carries it); size and the config-dir Write-permission question go to the reviewer.
+dispatch: reviewer opus — rule 4, implementer tier
+agent: reviewer a965bfca3fa096feb round 1

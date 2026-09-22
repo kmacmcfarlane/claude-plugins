@@ -2,8 +2,10 @@
 id: wi-claim-allows-a-dependency-blocked-ite-1d1c
 title: wi claim allows a dependency-blocked item
 type: bug
-status: todo
+status: doing
 priority: 3
+owner: unknown@bf9f9839222c
+claimed: 2026-09-22T22:26Z
 created: 2026-09-22
 updated: 2026-09-22
 refs:
@@ -17,3 +19,10 @@ Relayed 2026-09-22 from the agents store (wi-claim-allows-dependency-blocked-ite
 - next: —
 - blocked: —
 - learned: —
+
+## Notes
+- 2026-09-22 claimed by unknown@bf9f9839222c
+
+target: full wi-claim-allows-a-dependency-blocked-ite-1d1c /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude/worktrees/wi-claim-allows-a-dependency-blocked-ite-1d1c
+dispatch: implementer opus — executable logic (wi.py)
+agent: implementer adb7ce476b4fa37ed round 1

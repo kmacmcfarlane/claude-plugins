@@ -2,12 +2,11 @@
 id: librarian-mode-codify-the-accepted-team-1f7f
 title: "librarian-mode: codify the accepted team-summary format in references/team-summary.md"
 type: chore
-status: doing
+status: done
 priority: 1
-owner: unknown@bf9f9839222c
-claimed: 2026-09-22T22:11Z
 created: 2026-09-22
 updated: 2026-09-22
+closed: 2026-09-22
 refs:
   - peer marketplace - librarian (219.sock), operator words relayed; their item 1a39
 ---
@@ -28,3 +27,23 @@ answer 67: a (operator 2026-09-22)
 target: full librarian-mode-codify-the-accepted-team-1f7f /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude/worktrees/librarian-mode-codify-the-accepted-team-1f7f
 dispatch: implementer sonnet — one reference doc, one plugin, spec given verbatim
 agent: implementer a6c2f3c5d074cbe49 round 1
+return: implementer DONE ddce83f
+changed: plugins/dev-flow/skills/librarian-mode/references/team-summary.md
+dispatch: reviewer opus — rule 4 floor (impl sonnet)
+agent: reviewer abd61e66838a279f4 round 1
+verdict: NEEDS_CHANGES round 1 at ddce83f
+findings:
+- [high] team-summary.md:91 — sub-bullet "Checkpoints stamp their own time; resume reads that instead of the session clock." is HOW, not WHAT — pass: observable effect only
+- [high] team-summary.md:94 — "Reads the same depth counter the main status line already shows." is purely HOW — pass: a WHAT
+- [high] team-summary.md:89 — "Checks quota before each dispatch; ..." first fragment is HOW — pass: two observable fragments
+- [medium] team-summary.md:92-93 — example bullet hard-wrapped inside the copy-exactly fence — pass: one line per bullet
+- [medium] team-summary.md:47-49 — dropped "leave out how the change was made or reviewed: no tiers, models, review rounds, fix rounds or verdicts" (not contradicted by the spec) — pass: keep it
+- [low] :69-71 dropped "no headings"; [low] :62-65 no home for "a rule people now follow"; [low] :75 backticked commit range vs the plain-text warning
+notes: peer's original example (their 1a39) not reachable locally; example adapted from the old file.
+dispatch: implementer sonnet — fix round 1 (resume)
+return: implementer DONE c2a8885
+dispatch: reviewer opus — review r2 (resume)
+verdict: CLEAR round 2 at c2a8885
+lows carried to team-summary-nits-dev-cycle-land-report-d978: :58-59 HOW test reads too broadly ("anything the code does internally that the reader never sees"); :93/:97 sub-bullets restate their parent; :95 "right" twice
+landed: 0a3b08d
+- 2026-09-22 done: 0a3b08d

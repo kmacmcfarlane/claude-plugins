@@ -20,3 +20,4 @@ Plan of record .claude-sandbox/investigations/e770-dev-cycle-resume (00 § F3 as
 - next: —
 - blocked: —
 - learned: —
+- riders from F2 review r1 (2026-09-22): re-point bindings.md § Decisions inline phase-line parenthesis at resume.md definition; make the spent: shape entry true once F3 writes it; check model-routing.md:146-151 (one caller-level fable answer for a group) against positional answer scoping.
