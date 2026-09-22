@@ -82,7 +82,7 @@ class TestRehydrateStale(unittest.TestCase):
     def manifest(self, items="", head=None, mode="continue", written=None):
         os.makedirs(os.path.join(self.repo, ".claude-sandbox"), exist_ok=True)
         put(os.path.join(self.repo, ".claude-sandbox", "HANDOFF.md"),
-            MANIFEST.format(written=written or time.strftime("%Y-%m-%dT%H:%M:%SZ"),
+            MANIFEST.format(written=written or time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
                             head=head or self.head, items=items, mode=mode))
 
     def hook(self, source="compact", env=None, timeout=30):
@@ -376,7 +376,7 @@ class TestRehydrateStale(unittest.TestCase):
 
     def test_liveness_unverified_only_with_recorded_head(self):
         rh = self.rh()
-        now = time.strftime("%Y-%m-%dT%H:%M:%S")
+        now = time.strftime("%Y-%m-%dT%H:%M:%S", time.gmtime())
         self.assertEqual(rh.liveness({"written": now, "head": "abc"}, None),
                          ("FRESH", "git unavailable"))
         self.assertEqual(rh.liveness({"written": now}, None), ("FRESH", None))
@@ -411,6 +411,83 @@ class TestRehydrateStale(unittest.TestCase):
         self.assertNotIn("unparseable", block)
         j = c.index("not checked against the store:")
         self.assertIn("items: 1 unparseable entry skipped", c[j:].split("\n\n")[0])
+
+    # ── the `written:` stamp (H1) ──────────────────────────────────────────
+    def test_stamp_epoch_is_utc(self):
+        import calendar
+        rh = self.rh()
+        t = calendar.timegm((2026, 9, 22, 6, 0, 0, 0, 0, 0))
+        for v in ("2026-09-22T06:00:00Z", "2026-09-22T06:00:00", "2026-09-22 06:00Z",
+                  "2026-09-22T08:00:00+02:00", "2026-09-22T01:00:00-0500",
+                  "'2026-09-22T06:00:00Z'", "2026-09-22T06:00:00.123Z"):
+            with self.subTest(v=v):
+                self.assertEqual(rh.stamp_epoch(v), t)
+        for v in ("", None, "2026-08-31 21:00 CDT", "WRITTEN_TS", "<stamped>",
+                  "2026-13-01T00:00:00Z", "2026-09-22T06:00:00Z trailing",
+                  "2026-09-22T06:00:00+99:99", "2026-09-22T06:00:00+15:00",
+                  "2026-09-22T06:00:00-05:60"):
+            with self.subTest(v=v):
+                self.assertIsNone(rh.stamp_epoch(v))
+
+    def test_age_is_not_shifted_by_the_local_zone(self):
+        import calendar
+        rh = self.rh()
+        now = calendar.timegm((2026, 9, 22, 8, 0, 0, 0, 0, 0))
+        age, why = rh.manifest_age({"written": "2026-09-22T06:00:00Z"}, None, now)
+        self.assertEqual((age, why), (2.0, None))
+        env = dict(self.env, TZ="Asia/Tokyo")   # UTC+9: mktime would say 11 h
+        self.manifest(written=time.strftime("%Y-%m-%dT%H:%M:%SZ",
+                                            time.gmtime(time.time() - 3600)))
+        self.assertIn("FRESH manifest", self.header(self.hook(env=env)))
+
+    def test_future_stamp_is_never_fresh(self):
+        rh = self.rh()
+        now = time.time()
+        future = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(now + 11 * 3600))
+        self.assertEqual(rh.liveness({"written": future}, None, mtime=now, now=now),
+                         ("AGED", "stamp in the future"))
+        # Aged by the file's mtime instead: an old file goes STALE.
+        self.assertEqual(rh.liveness({"written": future}, None,
+                                     mtime=now - 8 * 86400, now=now)[0], "STALE")
+        # Within the skew allowance the stamp is trusted.
+        near = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(now + 300))
+        self.assertEqual(rh.liveness({"written": near}, None, mtime=now, now=now),
+                         ("FRESH", None))
+        self.manifest(written=future)
+        c = self.hook()
+        self.assertIn("AGED (stamp in the future) manifest", self.header(c))
+        self.assertNotIn("FRESH", self.header(c))
+
+    def test_missing_or_garbled_stamp_ages_by_mtime(self):
+        rh = self.rh()
+        now = time.time()
+        for fm, why in (({}, "no stamp"), ({"written": "2026-08-31 21:00 CDT"},
+                                           "stamp unreadable")):
+            with self.subTest(why=why):
+                self.assertEqual(rh.liveness(fm, None, mtime=now, now=now),
+                                 ("FRESH", why))
+                self.assertEqual(rh.liveness(fm, None, mtime=now - 2 * 86400,
+                                             now=now), ("AGED", why))
+                self.assertEqual(rh.liveness(fm, None, mtime=now - 8 * 86400,
+                                             now=now), ("STALE", why))
+        self.manifest(written="WRITTEN_TS")
+        p = os.path.join(self.repo, ".claude-sandbox", "HANDOFF.md")
+        old = time.time() - 2 * 86400
+        os.utime(p, (old, old))
+        self.assertIn("AGED (stamp unreadable) manifest", self.header(self.hook()))
+
+    def test_future_mtime_is_not_trusted_either(self):
+        rh = self.rh()
+        now = time.time()
+        self.assertEqual(rh.liveness({}, None, mtime=now + 30 * 86400, now=now),
+                         ("AGED", "no stamp, file time in the future"))
+        self.assertEqual(rh.liveness({}, None, mtime=now + 60, now=now),
+                         ("FRESH", "no stamp"))
+
+    def test_stamp_reason_joins_the_head_reason(self):
+        self.manifest(head="deadbee", written="garbled")
+        self.assertIn("AGED (recorded head not found locally; stamp unreadable) manifest",
+                      self.header(self.hook("startup")))
 
     def rh(self):
         sys.path.insert(0, HOOKS)
@@ -514,7 +591,7 @@ class TestRehydrateStale(unittest.TestCase):
         plain = tempfile.TemporaryDirectory()
         self.addCleanup(plain.cleanup)
         put(os.path.join(plain.name, "HANDOFF.md"),
-            MANIFEST.format(written=time.strftime("%Y-%m-%dT%H:%M:%SZ"),
+            MANIFEST.format(written=time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
                             head="abc1234", items="", mode="continue"))
         out = self.hook_out(cwd=plain.name)
         c = out["hookSpecificOutput"]["additionalContext"]
@@ -528,7 +605,7 @@ class TestRehydrateStale(unittest.TestCase):
         self.addCleanup(empty.cleanup)
         subprocess.run(["git", "-C", empty.name, "init", "-q"], check=True)
         put(os.path.join(empty.name, "HANDOFF.md"),
-            MANIFEST.format(written=time.strftime("%Y-%m-%dT%H:%M:%SZ"),
+            MANIFEST.format(written=time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
                             head="abc1234", items="", mode="continue"))
         c = self.hook_out(cwd=empty.name)["hookSpecificOutput"]["additionalContext"]
         self.assertIn("FRESH (head unverified) manifest", self.header(c))
@@ -545,7 +622,7 @@ class TestRehydrateStale(unittest.TestCase):
 
     def test_drift_threshold_sums_both_sides(self):
         rh = self.rh()
-        now = time.strftime("%Y-%m-%dT%H:%M:%S")
+        now = time.strftime("%Y-%m-%dT%H:%M:%S", time.gmtime())
         hs = {"rec": "a", "cur": "b", "known": True, "ancestor": False,
               "n": 16, "behind": 15}
         self.assertEqual(rh.liveness({"written": now, "head": "a"}, hs)[0], "STALE")

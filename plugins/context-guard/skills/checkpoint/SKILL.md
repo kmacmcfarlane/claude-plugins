@@ -133,18 +133,28 @@ items the manifest mentions (check them against the store, not memory): the rehy
 diffs that list against the store and names every one since closed as a dead claim. If
 this session is running a standing mode (a skill that holds it in a role, entered by a
 command such as `/<plugin>:<mode> start`), set `mode_skill:` to that command exactly as the
-operator would type it; omit it otherwise and in a landed manifest. Set `session:` to **this
-session's id, read from `$CLAUDE_CODE_SESSION_ID`** (`echo "$CLAUDE_CODE_SESSION_ID"` in a
-Bash call; it follows `/clear`) — never the id in the manifest being replaced, which after a
-`/clear` or a handoff is the predecessor's. The rehydration hook re-injects a manifest by that
-field, so a copied id makes this session's own manifest foreign to it and hands its goal to
-the other session. Then stand the gate down:
+operator would type it; omit it otherwise and in a landed manifest. **Never type the
+machine fields** — `written:`, `head:`, `branch:`, `session:`: write each as the placeholder
+`<stamped>`, and never copy them from the manifest being replaced (after a `/clear` or a
+handoff its `session:` is the predecessor's, and the rehydration hook re-injects a manifest
+by that field). The mark step stamps them — UTC now, `git rev-parse --short HEAD`, the
+branch, and this session's id from `$CLAUDE_CODE_SESSION_ID` — rewriting only those
+frontmatter lines. Then stand the gate down, **right after writing the manifest and as the
+last write to it**:
 
 ```bash
 python3 "${CLAUDE_PLUGIN_ROOT}/hooks/mark_checkpoint.py" "$CLAUDE_CODE_SESSION_ID"
 ```
 
-It warns when the repo manifest's `session:` is not that id; fix the field, not the warning.
+It prints `stamped <path> (written …, head …, branch …, session …)`. It stamps only a
+manifest written in the last 30 minutes whose `session:` is a placeholder or this session
+(`$CLAUDE_CODE_SESSION_ID`; an id passed that differs from it counts for nothing) — or
+names the session whose manifest this one replaced (its `/clear` predecessor, fork parent,
+or the author of a handoff it read in full) *and* the file has been rewritten since that
+link or Read. Anything else is left untouched with a `not stamped` warning, and a
+`session:` warning names the id it found — fix the file, not the warning, and run it again.
+A manifest it already stamped and nobody rewrote is left as it is (`already stamped`).
+Stamping makes a new version of the manifest, so nothing may rewrite it after this step.
 
 Without this the gate keeps firing and a deferred auto-compaction stays deferred.
 

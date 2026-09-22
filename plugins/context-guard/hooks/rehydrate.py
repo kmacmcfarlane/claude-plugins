@@ -12,7 +12,10 @@ the manifest still describes the code, so it reads FRESH with Next shown.
 The manifest (HANDOFF.md, spec: skills/checkpoint/references/handoff-format.md)
 is AUTHORED by the checkpoint skill, never synthesized here: intent is a
 snapshot only its author can write. This hook adds the live part — age, commit
-drift, dirty count — and labels it FRESH / AGED / STALE / LANDED. The label
+drift, dirty count — and labels it FRESH / AGED / STALE / LANDED. Age is the
+`written:` stamp read as UTC (mark_checkpoint.py stamps it); a missing, garbled
+or future one ages by the file's mtime and says why, and a future stamp is
+never FRESH (manifest_age). The label
 and the Next withhold read the same ancestry check (head_state), so a manifest
 whose Next is withheld is never labelled FRESH.
 
@@ -337,32 +340,89 @@ def mode_skill(fm):
     return v if len(v) <= 200 and MODE_SKILL_RE.fullmatch(v) else ""
 
 
-def liveness(fm, hs, unverified_why="git unavailable"):
+STAMP_SKEW_S = 600
+_STAMP_RE = re.compile(
+    r"(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})(?::(\d{2})(?:\.\d+)?)?"
+    r"[ \t]*(Z|[+-]\d{2}:?\d{2})?", re.ASCII | re.I)
+
+
+def stamp_epoch(value):
+    """A `written:` stamp as epoch seconds, or None when absent or garbled.
+    UTC: `Z`, an explicit offset, or no zone at all (the format's stamps are
+    UTC; the mark step writes `%Y-%m-%dT%H:%M:%SZ`). A named zone (`CDT`) or
+    any other text is garbled."""
+    import calendar, datetime
+    if not isinstance(value, str):
+        return None
+    v = value.strip()
+    if len(v) >= 2 and v[0] == v[-1] and v[0] in "\"'":
+        v = v[1:-1].strip()
+    m = _STAMP_RE.fullmatch(v)
+    if not m:
+        return None
+    try:
+        y, mo, d, h, mi = (int(x) for x in m.groups()[:5])
+        t = calendar.timegm(datetime.datetime(y, mo, d, h, mi,
+                                              int(m.group(6) or 0)).timetuple())
+    except (ValueError, OverflowError):
+        return None
+    z = (m.group(7) or "Z").upper()
+    if z != "Z":
+        hh, mm = int(z[1:3]), int(z[-2:])
+        if hh > 14 or mm > 59:
+            return None
+        t -= (1 if z[0] == "+" else -1) * (hh * 3600 + mm * 60)
+    return t
+
+
+def manifest_age(fm, mtime=None, now=None):
+    """(age in hours or None, reason or None). The `written:` stamp when it is
+    readable and not ahead of now by more than STAMP_SKEW_S; else the file's
+    mtime, with the reason the stamp was not trusted: `no stamp`, `stamp
+    unreadable`, `stamp in the future`. An mtime also ahead of now by more
+    than STAMP_SKEW_S gives no age, and `, file time in the future` is added
+    (liveness then reads it AGED: nothing trustworthy dates the file)."""
+    now = time.time() if now is None else now
+    raw = fm.get("written")
+    t = stamp_epoch(raw)
+    if t is not None and t - now <= STAMP_SKEW_S:
+        return max(now - t, 0) / 3600, None
+    why = ("stamp in the future" if t is not None
+           else "stamp unreadable" if isinstance(raw, str) and raw.strip()
+           else "no stamp")
+    if not isinstance(mtime, (int, float)):
+        return None, why
+    if mtime - now > STAMP_SKEW_S:
+        return None, why + ", file time in the future"
+    return max(now - mtime, 0) / 3600, why
+
+
+def liveness(fm, hs, unverified_why="git unavailable", mtime=None, now=None):
     """(label, reason or None). Reads the same head_state as the Next withhold:
     a recorded head missing locally or not an ancestor of HEAD (rewound,
     diverged) is AGED with that reason, never FRESH. A recorded head that could
     not be checked carries `unverified_why` (main passes unverified_reason():
     `git unavailable` or `head unverified`), so an unverified manifest never
     reads as plain FRESH. Drift counts code commits on both sides (ahead +
-    behind): a HEAD 50 commits behind is as STALE as one 50 ahead."""
+    behind): a HEAD 50 commits behind is as STALE as one 50 ahead.
+    Age is manifest_age: a missing, garbled or future `written:` is aged by
+    the file's `mtime` instead and names why in the reason, and a future
+    stamp is never FRESH (a hand-typed stamp hours ahead once read FRESH)."""
     if is_landed(fm):
         return "LANDED", None
-    age_h = None
-    try:
-        t = time.strptime(fm.get("written", "")[:19], "%Y-%m-%dT%H:%M:%S")
-        age_h = (time.time() - time.mktime(t)) / 3600
-    except Exception:
-        pass
+    age_h, stamp_why = manifest_age(fm, mtime, now)
     drift = code_drift(hs)
     why = divergence(hs)
     rec = fm.get("head")
     unverified = unverified_why if hs is None and isinstance(rec, str) and rec \
         else None
+    reason = "; ".join(r for r in (why or unverified, stamp_why) if r) or None
     if (age_h is not None and age_h > 7 * 24) or (drift is not None and drift > 30):
-        return "STALE", why or unverified
-    if (age_h is not None and age_h > 24) or drift or why:
-        return "AGED", why or unverified
-    return "FRESH", unverified
+        return "STALE", reason
+    if (age_h is not None and age_h > 24) or drift or why \
+            or (stamp_why and "in the future" in stamp_why):
+        return "AGED", reason
+    return "FRESH", reason
 
 
 def _trim_items(body):
@@ -678,9 +738,13 @@ def main():
         ours = is_ours(st, sid, version)
         hs = None if is_landed(fm) else head_state(fm, top)
         rec = fm.get("head")
+        try:
+            mtime = os.path.getmtime(path)
+        except OSError:
+            mtime = None
         live, why = liveness(fm, hs, unverified_reason(top) if hs is None
                              and not is_landed(fm) and isinstance(rec, str) and rec
-                             else "git unavailable")
+                             else "git unavailable", mtime)
         dirty = git(top, "status", "--porcelain") or ""
         label = f"{live}{f' ({why})' if why else ''}"
         header = (f"[context-guard rehydration] {label} "

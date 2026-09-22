@@ -81,7 +81,7 @@ class Base(unittest.TestCase):
         with open(self.path, "w") as fh:
             fh.write(MANIFEST.format(
                 session=f"session: {sid}\n" if sid else "",
-                written=time.strftime("%Y-%m-%dT%H:%M:%SZ"),
+                written=time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
                 head=head or self.head, mode=mode, doing=doing))
 
     def _run(self, mod, payload):
@@ -510,6 +510,269 @@ class TestMarkCheckpointAuthor(Base):
         w = M.session_warnings("S", cwd=self.repo, environ={})
         self.assertEqual(len(w), 1)
         self.assertNotIn("SYSTEM", w[0])
+
+
+SPEC_EXAMPLE = """---
+handoff: 1
+repo: demo
+session: <session-id>   # $CLAUDE_CODE_SESSION_ID
+written: 2026-08-30T21:40:00Z
+head: <short-sha>
+mode: handoff
+by: checkpoint
+---
+## Doing
+Building the thing. written: 1999-01-01T00:00:00Z
+head: not-a-frontmatter-line
+
+## Aware of
+- REFUSED sudo for dd
+"""
+
+
+class TestMarkStamps(Base):
+    """H1: mark_checkpoint.py stamps the machine fields (written, head,
+    branch, session) of the manifest it finds, and nothing else."""
+    def run_cli(self, sid, env_sid=None, **env_extra):
+        env = dict(os.environ, CLAUDE_CONFIG_DIR=self.cfg.name, **env_extra)
+        env.pop("CLAUDE_CODE_SESSION_ID", None)
+        if env_sid:
+            env["CLAUDE_CODE_SESSION_ID"] = env_sid
+        return subprocess.run([sys.executable, os.path.join(HOOKS, "mark_checkpoint.py"),
+                               sid], capture_output=True, text=True, env=env,
+                              cwd=self.repo, timeout=30)
+
+    def raw(self):
+        with open(self.path, "rb") as fh:
+            return fh.read()
+
+    def body(self, b):
+        return b.split(b"\n---", 1)[1]
+
+    def test_spec_example_values_are_stamped(self):
+        L.save_state("S", {"epoch": 1})
+        writef(self.path, SPEC_EXAMPLE)
+        before = self.raw()
+        t0 = time.time()
+        p = self.run_cli("S", env_sid="S")
+        self.assertEqual((p.returncode, p.stderr), (0, ""))
+        self.assertIn("checkpoint recorded", p.stdout)
+        self.assertIn(f"stamped {self.path}", p.stdout)
+        fm = R.front_matter(readf(self.path))
+        self.assertEqual(fm["session"], "S")
+        self.assertEqual(fm["head"], self.head)
+        self.assertEqual(fm["branch"], self.git("rev-parse", "--abbrev-ref", "HEAD"))
+        self.assertTrue(fm["written"].endswith("Z"))
+        self.assertLessEqual(abs(R.stamp_epoch(fm["written"]) - t0), 5)
+        # The body - including lines that look like machine fields - is
+        # byte-identical; the other frontmatter lines too.
+        after = self.raw()
+        self.assertEqual(self.body(after), self.body(before))
+        self.assertIn(b"by: checkpoint\n", after)
+        self.assertIn(b"head: not-a-frontmatter-line\n", after)
+        self.assertEqual(L.load_state("S")["checkpoint_epoch"], 1)
+
+    def test_only_frontmatter_lines_change_crlf_kept(self):
+        L.save_state("S", {"epoch": 0})
+        writef(self.path, "")
+        with open(self.path, "wb") as fh:
+            fh.write(SPEC_EXAMPLE.replace("\n", "\r\n").encode())
+        before = self.raw()
+        self.assertEqual(self.run_cli("S", env_sid="S").returncode, 0)
+        after = self.raw()
+        self.assertEqual(self.body(after), self.body(before))
+        self.assertNotIn(b"\n", after.replace(b"\r\n", b""))  # every EOL still CRLF
+        self.assertIn(b"session: S\r\n", after)
+        self.assertIn(b"branch: ", after)                     # added: was absent
+
+    def test_author_owns_the_stamped_version_and_a_successor_pins_it(self):
+        # S, the /clear successor of X, rewrote the manifest but copied X's id.
+        self.checkpoint("X")
+        self.clear("X", "S")
+        self.assertEqual(L.lineage_of(L.load_state("S"))[0]["sid"], "X")
+        self.checkpoint("X", doing="S's own work.")
+        old = R.manifest_version(readf(self.path))
+        self.assertFalse(L.owned_version(L.load_state("S"), "S", old))
+        p = self.run_cli("S", env_sid="S")
+        self.assertEqual((p.returncode, p.stderr), (0, ""))
+        new = R.manifest_version(readf(self.path))
+        self.assertNotEqual(new["sha"], old["sha"])           # a new version
+        self.assertEqual(new["owner"], "S")
+        self.assertTrue(L.owned_version(L.load_state("S"), "S", new))
+        self.assertFull(self.start("S", "compact"))
+        # X (were it still running) no longer owns it: it is S's now.
+        self.assertForeign(self.start("X", "compact"))
+        # The mark step precedes SessionEnd(clear): the link pins the stamped
+        # version, and S's own successor gets it as its own.
+        self.end_clear("S")
+        self.start("T", "clear")
+        self.assertEqual(L.lineage_of(L.load_state("T"))[0],
+                         {"sid": "S", "manifest": new})
+        self.assertFull(self.start("T", "compact"))
+
+    def test_adopted_author_id_is_replaced(self):
+        # B read X's handoff in full (adopting it), then wrote its own manifest
+        # with X's id copied: the stamp makes it B's.
+        self.checkpoint("X")
+        L.save_state("B", {"epoch": 0})
+        self.read("B")
+        self.checkpoint("X", doing="B's work.")
+        self.assertEqual(self.run_cli("B", env_sid="B").stderr, "")
+        self.assertEqual(R.front_matter(readf(self.path))["session"], "B")
+
+    def test_a_peer_manifest_is_left_alone(self):
+        # P is no link of S's: the file may be a concurrent peer's own.
+        L.save_state("S", {"epoch": 0})
+        self.checkpoint("P")
+        before = self.raw()
+        p = self.run_cli("S", env_sid="S")
+        self.assertEqual(p.returncode, 0)
+        self.assertEqual(self.raw(), before)
+        self.assertIn("not stamped", p.stderr)
+        self.assertIn("`session: P`", p.stderr)
+        self.assertIn("checkpoint recorded", p.stdout)
+        self.assertEqual(L.load_state("S")["checkpoint_epoch"], 0)
+
+    def test_an_old_manifest_is_not_stamped(self):
+        # Not written by this checkpoint: stamping it would make stale memory
+        # look fresh.
+        L.save_state("S", {"epoch": 0})
+        self.checkpoint("S")
+        old = time.time() - 2 * 3600
+        os.utime(self.path, (old, old))
+        before = self.raw()
+        p = self.run_cli("S", env_sid="S")
+        self.assertEqual(self.raw(), before)
+        self.assertIn("was last written 120 min ago", p.stderr)
+        self.assertIn("checkpoint recorded", p.stdout)
+
+    def test_no_frontmatter_is_not_stamped(self):
+        L.save_state("S", {"epoch": 0})
+        writef(self.path, "## Doing\nx\n")
+        p = self.run_cli("S", env_sid="S")
+        self.assertEqual(readf(self.path), "## Doing\nx\n")
+        self.assertIn("has no frontmatter", p.stderr)
+
+    def test_no_manifest_says_so_and_records(self):
+        L.save_state("S", {"epoch": 0})
+        p = self.run_cli("S", env_sid="S")
+        self.assertEqual((p.returncode, p.stderr), (0, ""))
+        self.assertIn("no rehydration manifest to stamp", p.stdout)
+        self.assertEqual(L.load_state("S")["checkpoint_epoch"], 0)
+
+    def test_scratchpad_manifest_warned(self):
+        L.save_state("S", {"epoch": 0})
+        pad = os.path.join(self.cfg.name, "tmp", "claude-1", "proj", "S", "scratchpad")
+        os.makedirs(pad)
+        writef(os.path.join(pad, "HANDOFF.md"), SPEC_EXAMPLE)
+        p = self.run_cli("S", env_sid="S",
+                         CLAUDE_CODE_TMPDIR=os.path.join(self.cfg.name, "tmp"))
+        self.assertIn("is in the session scratchpad", p.stderr)
+
+    def test_over_budget_body_warned(self):
+        L.save_state("S", {"epoch": 0})
+        self.checkpoint("S", doing="x" * 7000)
+        self.assertIn("over the 6,000-char write budget",
+                      self.run_cli("S", env_sid="S").stderr)
+
+    def test_no_env_stamps_the_id_given(self):
+        L.save_state("S", {"epoch": 0})
+        writef(self.path, SPEC_EXAMPLE)
+        self.assertEqual(self.run_cli("S").returncode, 0)
+        self.assertEqual(R.front_matter(readf(self.path))["session"], "S")
+
+    def test_gate_record_is_unchanged_by_stamping(self):
+        for sid in ("A", "B"):
+            L.save_state(sid, {"epoch": 3, "tokens": 5})
+        writef(self.path, SPEC_EXAMPLE)
+        self.run_cli("A", env_sid="A")
+        os.remove(self.path)
+        self.run_cli("B", env_sid="B")
+        a, b = L.load_state("A"), L.load_state("B")
+        for st in (a, b):
+            st.pop("checkpoint_at")
+        self.assertEqual(a, b)
+
+    def test_a_concurrent_rewrite_wins(self):
+        import mark_checkpoint as M
+        writef(self.path, SPEC_EXAMPLE)
+        raw = self.raw()
+        writef(self.path, "someone else's\n")
+        self.assertFalse(M._write_atomic(os.path.realpath(self.path), raw,
+                                         b"stamped\n", 0o644))
+        self.assertEqual(readf(self.path), "someone else's\n")
+        self.assertEqual([n for n in os.listdir(self.repo) if n.endswith(".tmp")], [])
+
+    # ── fix round 1: who may claim, and when ───────────────────────────────
+    def live(self, sid):
+        L.update_state(sid, lambda st: st.setdefault("epoch", 0))
+
+    def test_an_argv_id_that_is_not_the_env_grants_nothing(self):
+        # env X, argv Y, a fresh manifest of Y's: X does not take it.
+        self.live("Y")
+        self.checkpoint("Y")
+        before = self.raw()
+        p = self.run_cli("Y", env_sid="X")
+        self.assertEqual(p.returncode, 0)
+        self.assertEqual(self.raw(), before)
+        self.assertIn("not stamped", p.stderr)
+        self.assertIn("is not $CLAUDE_CODE_SESSION_ID (X)", p.stderr)
+
+    def test_untouched_fork_parent_manifest_is_left_alone(self):
+        self.checkpoint("P")
+        self.fork("P", "C")
+        self.assertTrue(L.lineage_of(L.load_state("C"))[0]["manifest"])
+        self.live("C")
+        before = self.raw()
+        p = self.run_cli("C", env_sid="C")      # C marks without writing
+        self.assertEqual(self.raw(), before)
+        self.assertIn("not stamped", p.stderr)
+        self.assertFull(self.start("P", "compact"))   # still the parent's
+
+    def test_untouched_clear_predecessor_manifest_is_not_redated(self):
+        self.checkpoint("X")
+        self.clear("X", "S")
+        self.live("S")
+        before = self.raw()
+        self.run_cli("S", env_sid="S")
+        self.assertEqual(self.raw(), before)
+        self.assertFull(self.start("S", "compact"))   # owned through the pin
+
+    def test_untouched_adopted_manifest_is_left_alone(self):
+        self.checkpoint("X")
+        self.live("B")
+        self.read("B")
+        before = self.raw()
+        p = self.run_cli("B", env_sid="B")
+        self.assertEqual(self.raw(), before)
+        self.assertIn("not stamped", p.stderr)
+
+    def test_a_repeated_mark_does_not_redate(self):
+        self.live("S")
+        writef(self.path, SPEC_EXAMPLE)
+        self.assertIn("stamped", self.run_cli("S", env_sid="S").stdout)
+        once = self.raw()
+        time.sleep(1.1)
+        p = self.run_cli("S", env_sid="S")
+        self.assertEqual(self.raw(), once)
+        self.assertIn("already stamped", p.stdout)
+        self.assertEqual(p.stderr, "")
+        # A rewrite since (the model's next Step 4b) is stamped again.
+        writef(self.path, readf(self.path).replace("Building", "Built"))
+        os.utime(self.path, (time.time() + 5, time.time() + 5))
+        self.assertIn(f"stamped {self.path}", self.run_cli("S", env_sid="S").stdout)
+        self.assertNotEqual(self.raw(), once)
+
+    def test_restamp_shapes(self):
+        import mark_checkpoint as M
+        f = {"written": "W", "session": "S"}
+        self.assertIsNone(M.restamp(b"no frontmatter\n", f))
+        self.assertIsNone(M.restamp(b"---\nunclosed: 1\n", f))
+        self.assertEqual(M.restamp(b"---\nwritten: x # c\nk: v\n---\nb\n", f),
+                         b"---\nwritten: W\nk: v\nsession: S\n---\nb\n")
+        # Only column-0 keys are machine fields; an `items:` entry is not.
+        self.assertEqual(M.restamp(b"---\nitems:\n  - session: x\n---\n", f),
+                         b"---\nitems:\n  - session: x\nwritten: W\nsession: S\n---\n")
 
 
 if __name__ == "__main__":
