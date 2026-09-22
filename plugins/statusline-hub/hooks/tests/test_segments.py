@@ -151,6 +151,17 @@ class Render(Base):
         # a display hook's text is never dropped for width
         self.assertEqual(self.line(columns=2), "gauge")
 
+    def test_width_counts_the_health_glyph(self):
+        health = os.path.join(self.cfg, "analytics", "health.json")
+        self.manifest("a", ["echo", "gauge"])
+        self.manifest("r", ["true"], kind="record", health_path=health)
+        self.segment("s1", text="chip")
+        # "gauge  chip" is 11 columns: it fits in 11 until the glyph needs 2 more
+        self.assertEqual(self.line(columns=11), "gauge  chip")
+        self.write_json(health, {"last_error": time.time()})
+        self.assertEqual(self.line(columns=13), "gauge  chip \u26a0")
+        self.assertEqual(self.line(columns=12), "gauge \u26a0")
+
     def test_never_runs_anything(self):
         marker = os.path.join(self.cfg, "ran")
         self.segment("a", text="$(touch ran)", command=["touch", marker])
@@ -210,6 +221,15 @@ class Compose(unittest.TestCase):
         self.assertEqual(hub.fit_line(parts[1:], "\x1b[31mred", "  ", None),
                          "\x1b[31mred" + R.RESET + "  chip")
 
+    def test_reserve_counts_what_follows_the_last_line(self):
+        parts = [("gauge", None), ("chip", 0)]
+        self.assertEqual(hub.fit_line(parts, None, "  ", 11), "gauge  chip")
+        self.assertEqual(hub.fit_line(parts, None, "  ", 11, reserve=2), "gauge")
+        self.assertEqual(hub.fit_line(parts, "top\nbottom", "  ", 21, reserve=2),
+                         "top\nbottom  gauge  chip")  # 19 columns + 2
+        self.assertEqual(hub.fit_line(parts, "top\nbottom", "  ", 21, reserve=3),
+                         "top\nbottom  gauge")
+
     def test_columns(self):
         self.assertEqual(R.columns("\x1b[32mab\x1b[0m"), 2)
         self.assertEqual(R.columns("é"), 1)
@@ -230,6 +250,56 @@ class Prune(Base):
         for p in (expired, ancient, sess):
             self.assertFalse(os.path.exists(p), p)
         self.assertFalse(os.path.exists(os.path.join(self.seg_dir(), "chip")))
+
+    def test_producer_temp_files_are_pruned_once_an_hour_old(self):
+        # tempfile.mkstemp's default names, dot-prefixed as § 11 asks: not
+        # prune_tmp's _TMP shape
+        now = time.time()
+        self.segment("chip", sid="s1", text="x", expires_at=now - 1)
+        sub = os.path.join(self.seg_dir(), "chip")
+        old_tmp = os.path.join(sub, ".tmpab12_cd")
+        live_tmp = os.path.join(self.seg_dir(), ".chip.json.x7y8z9")
+        for p, age in ((old_tmp, H.TMP_STALE_S + 60), (live_tmp, 5)):
+            with open(p, "w") as f:
+                f.write("{")
+            os.utime(p, (now - age, now - age))
+        self.assertEqual(H.prune_segments(now), 2)
+        self.assertFalse(os.path.exists(old_tmp))
+        self.assertFalse(os.path.exists(sub))  # the temp no longer blocks rmdir
+        self.assertTrue(os.path.exists(live_tmp))  # a live producer's write
+
+    def test_a_segment_rewritten_mid_pass_survives(self):
+        now = time.time()
+        for how in ("replace", "utime"):
+            path = self.segment("chip", text="x", expires_at=now - 1)
+            st = H._dead_segment(path, now)
+            self.assertIsNotNone(st)
+            if how == "replace":  # the producer's atomic write: a new inode
+                tmp = self.segment("tmp", text="fresh", expires_at=now + 3600)
+                os.replace(tmp, path)
+            else:  # the producer keeps its file up with os.utime
+                os.utime(path, ns=(st.st_mtime_ns + 10**9,) * 2)
+            self.assertFalse(H._unlink_if_same(path, st), how)
+            self.assertTrue(os.path.exists(path), how)
+
+        # the same race through the whole pass: the rewrite lands between the
+        # judgment and the unlink
+        path = self.segment("chip", text="x", expires_at=now - 1)
+        judge = H._dead_segment
+
+        def judge_then_rewrite(p, t):
+            st = judge(p, t)
+            fresh = self.segment("tmp", text="fresh", expires_at=now + 3600)
+            os.replace(fresh, p)
+            return st
+
+        H._dead_segment = judge_then_rewrite
+        try:
+            self.assertEqual(H.prune_segments(now), 0)
+        finally:
+            H._dead_segment = judge
+        with open(path) as f:
+            self.assertEqual(json.load(f)["text"], "fresh")
 
     def test_prune_hub_includes_segments_and_skips_untrusted_dirs(self):
         os.makedirs(os.path.join(self.cfg, "statusline-hub"), mode=0o700)
