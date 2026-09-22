@@ -2,8 +2,10 @@
 id: context-guard-tests-testlegacyarmmatches-ba8f
 title: "context-guard tests: TestLegacyArmMatchesMain compares against the moving main ref, false red in any older worktree"
 type: bug
-status: todo
+status: doing
 priority: 2
+owner: Kyle-McFarlane@bf9f9839222c
+claimed: 2026-09-22T23:40Z
 created: 2026-09-22
 updated: 2026-09-22
 refs:
@@ -17,3 +19,9 @@ refs:
 - next: —
 - blocked: —
 - learned: —
+
+## Notes
+- 2026-09-22 claimed by Kyle-McFarlane@bf9f9839222c
+
+target: full context-guard-tests-testlegacyarmmatches-ba8f /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude/worktrees/context-guard-tests-testlegacyarmmatches-ba8f
+dispatch: implementer opus — executable logic (context-guard tests)

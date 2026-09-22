@@ -2,8 +2,10 @@
 id: quota-budget-py-4e5d-review-lows-claim-p-f381
 title: "quota_budget.py 4e5d review lows: claim-path FIFO test, budget.md wording, O_NOCTTY"
 type: chore
-status: todo
+status: doing
 priority: 4
+owner: Kyle-McFarlane@bf9f9839222c
+claimed: 2026-09-22T23:40Z
 created: 2026-09-22
 updated: 2026-09-22
 refs:
@@ -17,3 +19,9 @@ refs:
 - next: —
 - blocked: —
 - learned: —
+
+## Notes
+- 2026-09-22 claimed by Kyle-McFarlane@bf9f9839222c
+
+target: full quota-budget-py-4e5d-review-lows-claim-p-f381 /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude/worktrees/quota-budget-py-4e5d-review-lows-claim-p-f381
+dispatch: implementer opus — executable logic (quota_budget.py, tests)

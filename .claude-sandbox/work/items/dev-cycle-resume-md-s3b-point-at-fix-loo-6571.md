@@ -2,8 +2,10 @@
 id: dev-cycle-resume-md-s3b-point-at-fix-loo-6571
 title: "dev-cycle resume.md S3b: point at fix-loop's gone-agent rule instead of restating it"
 type: chore
-status: todo
+status: doing
 priority: 4
+owner: Kyle-McFarlane@bf9f9839222c
+claimed: 2026-09-22T23:40Z
 created: 2026-09-22
 updated: 2026-09-22
 refs:
@@ -17,3 +19,9 @@ refs:
 - next: —
 - blocked: —
 - learned: —
+
+## Notes
+- 2026-09-22 claimed by Kyle-McFarlane@bf9f9839222c
+
+target: full dev-cycle-resume-md-s3b-point-at-fix-loo-6571 /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude/worktrees/dev-cycle-resume-md-s3b-point-at-fix-loo-6571
+dispatch: implementer sonnet — one-sentence wording, one skill

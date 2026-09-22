@@ -2,8 +2,10 @@
 id: 2edb-7117-review-lows-frontmatter-wordin-4b6a
 title: 2edb + 7117 review lows (frontmatter wording, no-modal wording)
 type: chore
-status: todo
+status: doing
 priority: 3
+owner: Kyle-McFarlane@bf9f9839222c
+claimed: 2026-09-22T23:40Z
 created: 2026-09-22
 updated: 2026-09-22
 refs:
@@ -17,3 +19,9 @@ From 2edb and 7117 reviews (both CLEAR) 2026-09-22. 2edb: review-checklist.md:75
 - next: —
 - blocked: —
 - learned: —
+
+## Notes
+- 2026-09-22 claimed by Kyle-McFarlane@bf9f9839222c
+
+target: full 2edb-7117-review-lows-frontmatter-wordin-4b6a /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude/worktrees/2edb-7117-review-lows-frontmatter-wordin-4b6a
+dispatch: implementer opus — more than one plugin (kit-dev create-skill + dev-flow), rule 2
