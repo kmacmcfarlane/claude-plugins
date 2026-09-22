@@ -2,8 +2,12 @@
 
 Every librarian on one subscription spends from the same five-hour and weekly windows.
 `scripts/quota_budget.py` measures them and prints the inputs a budgeted idle turn needs.
-It decides nothing. Turning its numbers into a mode and a concurrency cap is the idle turn's
-job, and that integration has not landed yet.
+It decides nothing. It prints the numbers (used, velocity, allowed rate and reserve per
+window, the binding window, the fresh-claim count) and `next_check`, and nothing else. The
+mode and the concurrency cap N are chosen in F2's idle turn from those numbers, and that
+integration has not landed yet. The reason is 1222 F1 review r1 decision: F2 owns the mode
+table and the N formula, and the agents policy is about to change the librarian count that
+formula divides by. Computing N here would bake in a formula that is about to change.
 
 **Who owns what.** This file owns the mechanics: where the store lives, its schema, and how
 the numbers are computed. The **values** belong to the `agents` repo's
@@ -28,8 +32,11 @@ python3 scripts/quota_budget.py            # from the skill dir; one JSON object
 | `--sink-dir DIR` | the claude-analytics samples dir (default: discovered, § Sources) |
 
 Exit 0 with the result. Exit 1 when a store write failed: the result is still printed,
-with an `errors` list, and a message goes to stderr. Exit 2 on a bad argument. It never
-raises.
+with an `errors` list, and a message goes to stderr. Exit 1 also on an internal error: a
+minimal `{"v": 1, "signal": "none", "reason": "internal error", "next_check": 900}` is
+printed, and the exception goes to stderr. Exit 2 on a bad argument. It never raises. A
+poisoned input never reaches an error, though: an unreadable, oversized or deeply nested
+JSON file reads as absent, and a bad line in a `.jsonl` file is skipped.
 
 ## The store
 
@@ -39,6 +46,7 @@ raises.
 ```
 CFG/claude-kit/librarian/          0700
   samples.jsonl                    0600  fallback history, appended one line per call
+  samples.lock                     0600  flock held across each append and prune
   intent.json                      0600  operator intent (written by the intent feature; read here)
   claims/<repo>.json               0600  one claim per repo; each librarian writes only its own
   claims/stale/                          tombstones (not read by the count)
@@ -47,8 +55,12 @@ CFG/claude-kit/librarian/          0700
 Every JSON file is written to a unique temp file in the same directory and then
 `os.replace`d, so a reader never sees a torn file. `samples.jsonl` takes one small
 `O_APPEND` write per line. Once it passes 1 MiB it is rewritten, the same temp-and-rename
-way, keeping 8 days. The script creates any directory it is missing with mode 0700, and
-leaves the modes of directories that already exist alone. The store holds percentages,
+way, keeping 8 days and dropping any line that does not parse. Append and prune both hold
+an exclusive `flock` on `samples.lock`, so a prune never loses a concurrent append. The
+script creates each directory it is missing with mode 0700, from `claude-kit/` down. It
+also sets the directory it writes into to 0700 on every write (`librarian/` and
+`claims/`), even when that directory already existed. Directories above those, including
+an existing `claude-kit/`, keep their modes. The store holds percentages,
 session ids and intent, never a settings value. The script never reads a settings file or
 Claude Code's user-level state file.
 
@@ -101,11 +113,14 @@ idle-turn integration writes.
   `rate_limits.five_hour` and `seven_day` are read (`used_percentage`, `resets_at`), along
   with `rate_limits.at`.
 - **The history** comes from the claude-analytics sampler's sink when it is live. That is
-  a `samples/` directory under `CFG/plugins/data/claude-analytics*/` (or `--sink-dir`)
+  a `samples/` directory under `CFG/plugins/data/claude-analytics-*/` (or `--sink-dir`)
   holding a line dated within `--stale-after`. The reader follows the sampler's *designed*
   schema, one line per render in `samples/YYYY-MM-DD.jsonl` carrying `ts` (epoch seconds
   or ISO 8601), `session_id` and the payload's `rate_limits`. The sampler is not built yet,
-  so this path is tested only against synthetic lines. A live sink also supplies the
+  so this path is tested only against synthetic lines. Only `YYYY-MM-DD.jsonl` files are
+  read (never, say, `usage-cache-*.jsonl`). A line stamped more than 5 min in the future is
+  dropped before anything else, so a skewed clock can neither keep the sink live nor win
+  the reading. A live sink also supplies the
   reading when the session's own record is missing or stale, and then no sample is
   appended (the design's rule against sampling twice). With no live sink, the history is
   `samples.jsonl`, and this call's reading is appended to it.
@@ -150,8 +165,9 @@ then counts fresh claims.
 
 | Claim on disk | Action | `in_flight` |
 |---|---|---|
-| none | `created` | `[]` |
-| this session's | `refreshed` | kept |
+| none | `created`, by an exclusive create | `[]` |
+| a file that does not parse | `replaced-unreadable` | `[]` |
+| this session's | `refreshed`, other fields kept (an identity field this call cannot read keeps its stored value) | kept |
 | another session's, expired | `replaced-expired` | `[]` |
 | another session's, fresh, same process (`pid`, `pidDomain`, `procStart` all equal and present: a `/clear`) | `takeover-same-process` | `[]` |
 | another session's, fresh, with `--takeover` | `takeover` | `[]` |
@@ -161,6 +177,19 @@ A takeover resets `in_flight`, per the policy's takeover rule: a new session's a
 the only ones it can vouch for. A `conflict` is for the idle turn to judge: a restart it
 may take over, or two live writers. It uses ListAgents to tell them apart, which a script
 cannot call.
+
+**Races.** A new claim is written in full to a temp file and then hard-linked into place.
+`link` fails on an existing name, so when several sessions start at once exactly one
+creates the claim. The others re-read it and report `conflict`. Every replace (refresh,
+expiry, takeover) re-reads the file afterwards. If another session's claim is there, the
+report is `conflict` with `lost_race: true` and `written: false`.
+
+One window remains. A refresh reads its own claim and then replaces it. If a takeover lands
+between that read and that replace, the refresh overwrites it. Its re-read then sees its own
+claim, and the taker's post-replace re-read may already have passed. The taker's next call
+sees a fresh foreign claim and reports `conflict`, so the clash surfaces within one call.
+It is not prevented: closing the window needs a lock that every writer holds across its
+read and its replace, and F2's two-writer hold is where that judgement lives.
 
 **Freshness.** A claim is fresh while its `at` is within 2 h, or within 4 h when
 `in_flight` is a non-empty list, because the librarian gets no turn while a long agent

@@ -21,13 +21,14 @@ Reads: this session's sensor record CFG/statusline/sensor/<sid>.json (the
 statusline-hub / statusline contract), this session's own registry file
 CFG/sessions/<CLAUDE_PID>.json (identity fields only, and only when its
 sessionId is ours), the store, and - when the claude-analytics sampler is
-installed and live - its sink CFG/plugins/data/claude-analytics*/samples/.
+installed and live - its sink CFG/plugins/data/claude-analytics-*/samples/.
 Never reads a settings file or the user-level Claude state file.
 
 Stdlib only; never raises out of main(): a real error (a store write that
 fails) exits 1 with a message on stderr, and still prints the JSON result.
 """
 import argparse
+import fcntl
 import glob
 import hashlib
 import json
@@ -97,7 +98,10 @@ def safe_name(value, prefix="sid-"):
 def finite(x):
     if isinstance(x, bool) or not isinstance(x, (int, float)):
         return None
-    x = float(x)
+    try:
+        x = float(x)
+    except OverflowError:
+        return None
     return x if math.isfinite(x) else None
 
 
@@ -113,11 +117,11 @@ def epoch(x):
             s = s[:-1] + "+00:00"
         try:
             d = datetime.fromisoformat(s)
-        except ValueError:
+            if d.tzinfo is None:
+                d = d.replace(tzinfo=timezone.utc)
+            return d.timestamp()
+        except (ValueError, OverflowError, OSError):
             return None
-        if d.tzinfo is None:
-            d = d.replace(tzinfo=timezone.utc)
-        return d.timestamp()
     return None
 
 
@@ -129,7 +133,8 @@ def read_json(path):
         with open(path, "r", encoding="utf-8") as f:
             d = json.load(f)
         return d if isinstance(d, dict) else None
-    except (OSError, ValueError, UnicodeDecodeError):
+    except (OSError, ValueError, UnicodeDecodeError, RecursionError, MemoryError):
+        # RecursionError: deeply nested JSON. A poisoned file reads as absent.
         return None
 
 
@@ -258,7 +263,7 @@ def read_jsonl(path, parse, tail=SAMPLES_TAIL):
     for raw in data.splitlines():
         try:
             s = parse(json.loads(raw.decode("utf-8")))
-        except (ValueError, UnicodeDecodeError):
+        except Exception:  # a poisoned line (bad JSON, RecursionError, ...) is skipped
             continue
         if s is not None:
             out.append(s)
@@ -268,7 +273,7 @@ def read_jsonl(path, parse, tail=SAMPLES_TAIL):
 def sink_dirs(cfg, override=None):
     if override:
         return [override] if os.path.isdir(override) else []
-    return sorted(p for p in glob.glob(os.path.join(cfg, "plugins", "data", "claude-analytics*", "samples"))
+    return sorted(p for p in glob.glob(os.path.join(cfg, "plugins", "data", "claude-analytics-*", "samples"))
                   if os.path.isdir(p))
 
 
@@ -289,31 +294,41 @@ def read_sink(dirs, now):
 
 
 def append_sample(path, s):
-    """One O_APPEND write of one line (small, so it lands whole); prune by a
-    temp-and-rename rewrite once the file passes SAMPLES_PRUNE_AT."""
-    ensure_dir(os.path.dirname(path))
+    """One O_APPEND write of one line; prune by a temp-and-rename rewrite once the
+    file passes SAMPLES_PRUNE_AT. Append and prune both hold an exclusive flock
+    on samples.lock beside it, so a prune never drops a concurrent append.
+    Unparseable lines are dropped by the prune."""
+    d = os.path.dirname(path)
+    ensure_dir(d)
     line = (json.dumps(sample_line(s), sort_keys=True) + "\n").encode("utf-8")
-    fd = os.open(path, os.O_WRONLY | os.O_APPEND | os.O_CREAT, 0o600)
+    lk = os.open(os.path.join(d, "samples.lock"), os.O_WRONLY | os.O_CREAT, 0o600)
     try:
-        os.write(fd, line)
-    finally:
-        os.close(fd)
-    if os.path.getsize(path) > SAMPLES_PRUNE_AT:
-        keep = [sample_line(x) for x in read_jsonl(path, parse_sample)
-                if x["at"] >= s["at"] - SAMPLES_KEEP_S]
-        d = os.path.dirname(path)
-        fd, tmp = tempfile.mkstemp(prefix=".samples.", suffix=".tmp", dir=d)
+        fcntl.flock(lk, fcntl.LOCK_EX)
+        fd = os.open(path, os.O_WRONLY | os.O_APPEND | os.O_CREAT, 0o600)
         try:
-            with os.fdopen(fd, "w", encoding="utf-8") as f:
-                for x in keep:
-                    f.write(json.dumps(x, sort_keys=True) + "\n")
-            os.replace(tmp, path)
-        except BaseException:
+            os.write(fd, line)
+        finally:
+            os.close(fd)
+        if os.path.getsize(path) > SAMPLES_PRUNE_AT:
+            keep = [sample_line(x) for x in read_jsonl(path, parse_sample)
+                    if x["at"] >= s["at"] - SAMPLES_KEEP_S]
+            fd, tmp = tempfile.mkstemp(prefix=".samples.", suffix=".tmp", dir=d)
             try:
-                os.unlink(tmp)
-            except OSError:
-                pass
-            raise
+                with os.fdopen(fd, "w", encoding="utf-8") as f:
+                    for x in keep:
+                        f.write(json.dumps(x, sort_keys=True) + "\n")
+                    f.flush()
+                    os.fsync(f.fileno())
+                os.chmod(tmp, 0o600)
+                os.replace(tmp, path)
+            except BaseException:
+                try:
+                    os.unlink(tmp)
+                except OSError:
+                    pass
+                raise
+    finally:
+        os.close(lk)
 
 
 # ---------------------------------------------------------------- arithmetic
@@ -431,43 +446,98 @@ def same_process(a, b):
     return all(a.get(k) is not None for k in keys) and all(a.get(k) == b.get(k) for k in keys)
 
 
-def write_claim(store, repo, session, ident, now, takeover=False):
+def create_exclusive_json(path, obj):
+    """Create path holding obj only if it does not exist: the temp file is
+    written in full, then hard-linked into place (link fails on an existing
+    name, so exactly one creator wins). True when this call created it."""
+    d = os.path.dirname(path)
+    ensure_dir(d)
+    fd, tmp = tempfile.mkstemp(prefix="." + os.path.basename(path) + ".", suffix=".tmp", dir=d)
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            json.dump(obj, f, sort_keys=True)
+            f.write("\n")
+            f.flush()
+            os.fsync(f.fileno())
+        os.chmod(tmp, 0o600)
+        try:
+            os.link(tmp, path)
+            return True
+        except FileExistsError:
+            return False
+    finally:
+        try:
+            os.unlink(tmp)
+        except OSError:
+            pass
+
+
+IDENTITY_KEYS = ("session_name", "pid", "pidDomain", "procStart")
+
+
+def _previous(old, now):
+    return {"session_id": old.get("session_id"), "session_name": old.get("session_name"),
+            "at": epoch(old.get("at")), "fresh": claim_fresh(old, now)}
+
+
+def write_claim(store, repo, session, ident, now, takeover=False, attempts=3):
     """Write or refresh this repo's claim. Returns the claim report.
 
-    - no claim, or an expired one: a new claim, `in_flight: []`;
-    - our own session's claim: refreshed, its other fields kept;
+    - no claim: created by an exclusive create (one creator wins a race; the
+      losers re-read and see a fresh foreign claim);
+    - an unreadable claim file, or an expired claim: replaced, `in_flight: []`;
+    - our own session's claim: refreshed, its other fields kept (an identity
+      field this call could not read keeps its stored value);
     - a fresh claim of another session: taken over (`in_flight` reset, per the
       policy's takeover rule) only when it is this same process (pid, pidDomain
       and procStart all equal: a `/clear`) or `takeover` is set; otherwise left
-      alone and reported as a conflict for the idle turn to judge."""
+      alone and reported as a conflict for the idle turn to judge.
+
+    After every replace the file is re-read: if another session's claim is
+    there, the report is a conflict (`lost_race: true`), not a write."""
     path = os.path.join(store, "claims", safe_name(repo, "repo-") + ".json")
-    old = read_json(path)
     rep = {"repo": repo, "path": path, "written": False, "action": None, "previous": None}
-    claim = {"v": V, "repo": repo, "session_id": session, "at": now, "in_flight": []}
-    claim.update(ident)
-    if old is not None and old.get("session_id") == session:
-        kept = dict(old)
-        kept.update({k: v for k, v in claim.items() if k != "in_flight"})
-        if not isinstance(kept.get("in_flight"), list):
-            kept["in_flight"] = []
-        claim, rep["action"] = kept, "refreshed"
-    elif old is None:
-        rep["action"] = "created"
-    else:
-        rep["previous"] = {"session_id": old.get("session_id"),
-                           "session_name": old.get("session_name"),
-                           "at": epoch(old.get("at")), "fresh": claim_fresh(old, now)}
-        if not rep["previous"]["fresh"]:
-            rep["action"] = "replaced-expired"
-        elif same_process(ident, old):
-            rep["action"] = "takeover-same-process"
-        elif takeover:
-            rep["action"] = "takeover"
+    for _ in range(attempts):
+        old = read_json(path)
+        exists = os.path.lexists(path)
+        claim = {"v": V, "repo": repo, "session_id": session, "at": now, "in_flight": []}
+        claim.update(ident)
+        rep["previous"] = None
+        if old is None and not exists:
+            if create_exclusive_json(path, claim):
+                rep.update(action="created", written=True)
+                return rep
+            continue  # someone else created it first: judge their claim
+        if old is None:
+            rep["action"] = "replaced-unreadable"
+        elif old.get("session_id") == session:
+            kept = dict(old)
+            kept.update({k: v for k, v in claim.items()
+                         if k != "in_flight" and not (k in IDENTITY_KEYS and v is None)})
+            if not isinstance(kept.get("in_flight"), list):
+                kept["in_flight"] = []
+            claim, rep["action"] = kept, "refreshed"
         else:
-            rep["action"] = "conflict"
+            rep["previous"] = _previous(old, now)
+            if not rep["previous"]["fresh"]:
+                rep["action"] = "replaced-expired"
+            elif same_process(ident, old):
+                rep["action"] = "takeover-same-process"
+            elif takeover:
+                rep["action"] = "takeover"
+            else:
+                rep["action"] = "conflict"
+                return rep
+        atomic_write_json(path, claim)
+        cur = read_json(path)
+        if cur is not None and cur.get("session_id") != session:
+            rep.update(action="conflict", written=False, lost_race=True,
+                       previous=_previous(cur, now))
             return rep
-    atomic_write_json(path, claim)
-    rep["written"] = True
+        rep["written"] = True
+        return rep
+    cur = read_json(path) or {}
+    rep.update(action="conflict", written=False, lost_race=True, previous=_previous(cur, now))
     return rep
 
 
@@ -535,7 +605,8 @@ def compute(args, env, now):
     # Current reading: this session's sensor record; the live sink when the
     # record is missing or stale. History: the live sink, else samples.jsonl.
     sdirs = sink_dirs(cfg, args.sink_dir)
-    sink = read_sink(sdirs, now) if sdirs else []
+    sink = [x for x in (read_sink(sdirs, now) if sdirs else [])
+            if x["at"] <= now + FUTURE_SKEW_S]  # a future-stamped line is no evidence
     sink_live = any(now - s["at"] <= args.stale_after for s in sink)
     reading, reason = sensor_reading(cfg, session)
     if reading is not None and now - reading["at"] > args.stale_after:

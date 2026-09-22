@@ -529,6 +529,223 @@ class TestAtomicityAndPerms(Base):
         self.assertIn("internal error", err)
 
 
+DEEP = "[" * 200000 + "]" * 200000  # json.loads raises RecursionError on this
+
+
+class TestPoisonedInput(Base):
+    """R2: a deeply nested or otherwise poisoned file or line never escapes a reader."""
+
+    def poison(self, path):
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "w") as f:
+            f.write('{"a": ' + DEEP + "}")
+
+    def assertCleanRun(self, **kw):
+        rc, r, err = self.run_qb(**kw)
+        self.assertEqual(rc, 0, err)
+        self.assertNotIn("internal error", err)
+        return r
+
+    def test_deep_json_raises_recursion_error_in_the_parser(self):
+        with self.assertRaises(RecursionError):
+            json.loads(DEEP)
+
+    def test_sensor_record(self):
+        self.poison(os.path.join(self.cfg, "statusline", "sensor", SID + ".json"))
+        r = self.assertCleanRun()
+        self.assertEqual(r["signal"], "none")
+
+    def test_intent(self):
+        self.sensor(at=NOW)
+        self.poison(os.path.join(self.store, "intent.json"))
+        r = self.assertCleanRun()
+        self.assertEqual((r["signal"], r["intent"]["mode"]), ("ok", "present"))
+
+    def test_own_claim_file_is_replaced(self):
+        self.poison(os.path.join(self.store, "claims", "myrepo.json"))
+        r = self.assertCleanRun()
+        self.assertEqual(r["claims"]["action"], "replaced-unreadable")
+        self.assertEqual(self.read_claim("myrepo")["session_id"], SID)
+
+    def test_other_claim_file_is_not_counted(self):
+        self.poison(os.path.join(self.store, "claims", "other.json"))
+        r = self.assertCleanRun()
+        self.assertEqual(r["claims"]["fresh"], 1)
+
+    def test_registry_file(self):
+        self.poison(os.path.join(self.cfg, "sessions", "42.json"))
+        self.assertCleanRun(env=dict(self.env, CLAUDE_PID="42"))
+        self.assertIsNone(self.read_claim("myrepo")["session_name"])
+
+    def test_samples_line_is_skipped_and_pruned(self):
+        os.makedirs(self.store)
+        with open(os.path.join(self.store, "samples.jsonl"), "w") as f:
+            f.write(DEEP + "\n")
+            f.write('{"at": ' + "9" * 5000 + ', "five_hour": {"used_percentage": 1, "resets_at": 1}}\n')
+        self.samples([(NOW - H, (8.0, NOW + 2 * H), (29.0, NOW + 100 * H))])
+        self.sensor(at=NOW)
+        with mock.patch.object(qb, "SAMPLES_PRUNE_AT", 10):
+            r = self.assertCleanRun()
+        self.assertAlmostEqual(r["windows"]["five_hour"]["velocity"], 2.0, places=3)
+        with open(os.path.join(self.store, "samples.jsonl")) as f:
+            rows = [json.loads(x) for x in f]
+        self.assertEqual([x["at"] for x in rows], [NOW - H, NOW])
+
+    def test_sink_line_is_skipped(self):
+        d = os.path.join(self.cfg, "plugins", "data", "claude-analytics-kmacmcfarlane", "samples")
+        os.makedirs(d)
+        with open(os.path.join(d, "2026-09-22.jsonl"), "w") as f:
+            f.write(DEEP + "\n")
+        self.sensor(at=NOW)
+        r = self.assertCleanRun()
+        self.assertEqual(r["source"]["history"], "samples")
+
+    def test_huge_numbers_are_not_times(self):
+        self.assertIsNone(qb.epoch(10 ** 400))
+        self.assertIsNone(qb.finite(10 ** 400))
+        self.assertIsNone(qb.epoch("99999-01-01T00:00:00"))
+
+
+class TestEpoch(Base):
+    def test_milliseconds_heuristic(self):
+        self.assertEqual(qb.epoch(1_790_000_000_123), 1_790_000_000.123)
+        self.assertEqual(qb.epoch(1_790_000_000), 1_790_000_000.0)
+        self.assertEqual(qb.epoch(99_999_999_999), 99_999_999_999.0)   # at the threshold: seconds
+        self.assertEqual(qb.epoch(100_000_000_001), 100_000_000.001)   # above it: ms
+        self.assertIsNone(qb.epoch(True))
+        self.assertIsNone(qb.epoch(float("nan")))
+
+    def test_ms_stamps_work_end_to_end(self):
+        self.sensor(five=(10.0, (NOW + 2 * H) * 1000), week=(30.0, (NOW + 100 * H) * 1000),
+                    at=NOW * 1000)
+        _, r, _ = self.run_qb()
+        self.assertEqual(r["signal"], "ok")
+        self.assertAlmostEqual(r["windows"]["five_hour"]["hours_to_reset"], 2.0, places=3)
+
+
+class TestSinkEdges(Base):
+    def sinkdir(self):
+        d = os.path.join(self.cfg, "plugins", "data", "claude-analytics-kmacmcfarlane", "samples")
+        os.makedirs(d, exist_ok=True)
+        return d
+
+    def line(self, ts, five, week=30.0):
+        return json.dumps({"ts": ts, "session_id": "s", "rate_limits": {
+            "five_hour": {"used_percentage": five, "resets_at": NOW + 3 * H},
+            "seven_day": {"used_percentage": week, "resets_at": NOW + 100 * H}}}) + "\n"
+
+    def test_future_line_neither_makes_sink_live_nor_wins_the_reading(self):
+        d = self.sinkdir()
+        with open(os.path.join(d, "2026-09-22.jsonl"), "w") as f:
+            f.write(self.line(NOW + 10 * H, 99.0))           # clock-skewed writer
+            f.write(self.line(NOW - 5 * H, 10.0))            # old, so not live
+        _, r, _ = self.run_qb()
+        self.assertEqual(r["signal"], "none")                # no sensor record, sink not live
+        self.sensor(five=(20.0, NOW + 3 * H), at=NOW)
+        _, r, _ = self.run_qb()
+        self.assertEqual(r["source"]["history"], "samples")
+
+    def test_future_line_ignored_when_sink_is_live(self):
+        d = self.sinkdir()
+        with open(os.path.join(d, "2026-09-22.jsonl"), "w") as f:
+            f.write(self.line(NOW + 10 * H, 99.0))
+            f.write(self.line(NOW - 60, 12.0))
+        _, r, _ = self.run_qb()
+        self.assertEqual((r["source"]["reading"], r["windows"]["five_hour"]["used"]), ("sink", 12.0))
+
+    def test_only_day_files_are_read(self):
+        d = self.sinkdir()
+        for n in ("usage-cache-2026-09-22.jsonl", "2026-09-22.jsonl.tmp", "latest.jsonl"):
+            with open(os.path.join(d, n), "w") as f:
+                f.write(self.line(NOW - 60, 50.0))
+        _, r, _ = self.run_qb()
+        self.assertEqual(r["signal"], "none")
+        self.assertEqual(r["source"]["history"], "samples")
+
+    def test_dir_glob_needs_the_marketplace_suffix(self):
+        os.makedirs(os.path.join(self.cfg, "plugins", "data", "claude-analyticsX", "samples"))
+        self.assertEqual(qb.sink_dirs(self.cfg), [])
+        self.assertEqual(qb.sink_dirs(self.cfg), qb.sink_dirs(self.cfg))
+        self.sinkdir()
+        self.assertEqual(len(qb.sink_dirs(self.cfg)), 1)
+
+
+class TestClaimRaces(Base):
+    def test_concurrent_creators_on_empty_claims_one_wins(self):
+        env = dict(os.environ, CLAUDE_CONFIG_DIR=self.cfg)
+        env.pop("CLAUDE_PID", None)
+        n = 12
+        procs = [subprocess.Popen([sys.executable, str(SCRIPT), "--now", str(NOW), "--repo", "r",
+                                   "--session", "s%02d" % i], stdout=subprocess.PIPE,
+                                  stderr=subprocess.PIPE, text=True, env=env) for i in range(n)]
+        results = []
+        for p in procs:
+            out, err = p.communicate(timeout=60)
+            self.assertEqual(p.returncode, 0, err)
+            results.append(json.loads(out)["claims"])
+        winners = [c for c in results if c["written"]]
+        self.assertEqual(len(winners), 1, [c["action"] for c in results])
+        self.assertEqual(winners[0]["action"], "created")
+        self.assertTrue(all(c["action"] == "conflict" for c in results if not c["written"]))
+        with open(os.path.join(self.store, "claims", "r.json")) as f:
+            on_disk = json.load(f)["session_id"]
+        self.assertEqual(on_disk, "s%02d" % results.index(winners[0]))
+        self.assertEqual([n for n in os.listdir(os.path.join(self.store, "claims"))], ["r.json"])
+
+    def test_create_race_loser_rejudges(self):
+        real = qb.create_exclusive_json
+
+        def someone_first(path, obj):
+            real(path, {"v": 1, "session_id": "other", "at": NOW, "in_flight": []})
+            return real(path, obj)
+
+        with mock.patch.object(qb, "create_exclusive_json", side_effect=someone_first):
+            _, r, _ = self.run_qb()
+        self.assertEqual((r["claims"]["action"], r["claims"]["written"]), ("conflict", False))
+        self.assertEqual(self.read_claim("myrepo")["session_id"], "other")
+
+    def test_replace_then_reread_detects_a_lost_race(self):
+        self.claim("myrepo", {"v": 1, "session_id": SID, "at": NOW - 60, "in_flight": []})
+        real = qb.atomic_write_json
+
+        def then_takeover(path, obj):
+            real(path, obj)
+            real(path, {"v": 1, "session_id": "taker", "at": NOW, "in_flight": []})
+
+        with mock.patch.object(qb, "atomic_write_json", side_effect=then_takeover):
+            _, r, _ = self.run_qb()
+        c = r["claims"]
+        self.assertEqual((c["action"], c["written"], c["lost_race"]), ("conflict", False, True))
+        self.assertEqual(c["previous"]["session_id"], "taker")
+
+    def test_refresh_keeps_identity_it_cannot_read(self):
+        self.claim("myrepo", {"v": 1, "session_id": SID, "at": NOW - 60, "in_flight": [],
+                              "session_name": "lib", "pid": 7, "pidDomain": "d", "procStart": "p"})
+        self.run_qb()  # no CLAUDE_PID: identity unreadable this call
+        c = self.read_claim("myrepo")
+        self.assertEqual((c["session_name"], c["pid"], c["pidDomain"], c["procStart"], c["at"]),
+                         ("lib", 7, "d", "p", NOW))
+
+
+class TestRepoName(Base):
+    def test_worktree_resolves_to_main_repo(self):
+        main = os.path.join(self.cfg, "src", "mainrepo")
+        wt = os.path.join(self.cfg, "elsewhere", "wt-name")
+        git = ["git", "-c", "user.name=t", "-c", "user.email=t@t", "-c", "init.defaultBranch=main"]
+        subprocess.run(git + ["init", "-q", main], check=True)
+        subprocess.run(git + ["-C", main, "commit", "-q", "--allow-empty", "-m", "x"], check=True)
+        subprocess.run(git + ["-C", main, "worktree", "add", "-q", "-b", "b", wt], check=True)
+        self.assertEqual(qb.repo_name(wt), "mainrepo")
+        sub = os.path.join(wt, "deep")
+        os.makedirs(sub)
+        self.assertEqual(qb.repo_name(sub), "mainrepo")
+
+    def test_bare_repo_strips_dot_git(self):
+        bare = os.path.join(self.cfg, "proj.git")
+        subprocess.run(["git", "init", "-q", "--bare", bare], check=True)
+        self.assertEqual(qb.repo_name(bare), "proj")
+
+
 class TestCli(Base):
     def test_subprocess_prints_json(self):
         self.sensor(at=NOW)
