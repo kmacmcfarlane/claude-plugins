@@ -33,3 +33,5 @@ review r1 (opus) at 32c91eb: NEEDS_CHANGES. Seven Checks OK; four Report lines b
 dispatch: implementer opus — fix round 1 (resume)
 fix r1 DONE c7da3c6 (opus): OLD from origin/main@{1} after the push + a log check; fallback: the push's own old..new output line, then note origin/main before each push; lows a/b/c fixed; (d) declined — the description stays short. OQs → follow-up: dev-cycle land report on a chosen push.
 dispatch: reviewer opus — review r2 (resume)
+review r2 (opus) at c7da3c6: CLEAR — origin/main@{1} correct on a fresh clone's first push, a normal push, a second push, after a no-op fetch; fails loudly with no reflog. Nits: SKILL.md fallback wording, NEW from origin/main, pointer omits no-origin — follow-up.
+Review result: 2 rounds, 1 fix round; impl opus, review opus. Land checks (librarian): seven suites OK; diff read.
