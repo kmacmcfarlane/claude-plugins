@@ -34,3 +34,5 @@ review r1 (opus) at 7191232: NEEDS_CHANGES. No path gives a successor a manifest
 - lows: successor title should add "by /clear; its ledger: <path>" (two-hop chains); playbook line omits the link conditions; no flock tests (concurrent writer, no-fcntl fallback).
 - forecast: textual conflicts with H3 (tier docstring, SKILL.md Step 5, handoff-format tiers) and H6 (next to clear_pred/reads_new); the linked tier should wrap the trimmed body in annotate_holds once H3 lands.
 dispatch: implementer opus — fix round 1 (resume)
+fix r1 DONE 9ded9c0 (opus): bounded ledger lock (LOCK_NB until L.LOCK_TIMEOUT_S, then unlocked); append checks size under the lock (no double title) and successor_title replaces a plain title; digest computed first, message names the predecessor only when injected; compact_summary popped after its one use (a newer one kept); playbook link conditions; new tests fail/hang on 7191232. (a) declined — the acceptance fixes the title text and the path follows from the sid (accepted).
+dispatch: reviewer opus — review r2 (resume)
