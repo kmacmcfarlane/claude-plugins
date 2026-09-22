@@ -55,3 +55,4 @@ land (librarian): conflicts with main in hooks/rehydrate.py, checkpoint SKILL.md
 dispatch: implementer opus — conflict round (resume)
 conflict round 2 DONE 1fdf274 (merge of H5): tier docstring carries both; no code change needed for annotate_holds (H5's linked clear sets full, which already wraps) — pinned by a new test test_linked_clear_carries_holds_with_the_expiry_mark; SKILL.md Step 7 and the tiers bullet keep both with no duplication; 615 context-guard tests OK.
 dispatch: reviewer opus — resolution verify (resume)
+resolution verify (opus) at 1fdf274: CLEAR, no findings — three resolutions keep both sides; annotate_holds verified by mutation (removing it fails exactly the new test; two more mutations pin the branch and the header join); 7 files; 615 tests OK.
