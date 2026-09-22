@@ -313,14 +313,16 @@ def append_sample(path, s):
     """One O_APPEND write of one line; prune by a temp-and-rename rewrite once the
     file passes SAMPLES_PRUNE_AT. Append and prune both hold an exclusive flock
     on samples.lock beside it, so a prune never drops a concurrent append.
-    Unparseable lines are dropped by the prune."""
+    Unparseable lines are dropped by the prune. Both opens are O_NOFOLLOW: a
+    symlink planted at samples.jsonl or samples.lock fails as a store write
+    error and never creates, opens or appends to its target."""
     d = os.path.dirname(path)
     ensure_dir(d)
     line = (json.dumps(sample_line(s), sort_keys=True) + "\n").encode("utf-8")
     lk = open_lock(os.path.join(d, "samples.lock"))
     try:
         fcntl.flock(lk, fcntl.LOCK_EX)
-        fd = os.open(path, os.O_WRONLY | os.O_APPEND | os.O_CREAT, 0o600)
+        fd = os.open(path, os.O_WRONLY | os.O_APPEND | os.O_CREAT | os.O_NOFOLLOW, 0o600)
         try:
             os.write(fd, line)
         finally:

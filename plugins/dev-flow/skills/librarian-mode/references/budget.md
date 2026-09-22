@@ -5,9 +5,10 @@ Every librarian on one subscription spends from the same five-hour and weekly wi
 It decides nothing. It prints the numbers (used, velocity, allowed rate and reserve per
 window, the binding window, the fresh-claim count) and `next_check`, and nothing else. The
 mode and the concurrency cap N are chosen in F2's idle turn from those numbers, and that
-integration has not landed yet. The reason is the librarian's decision on R1, recorded on work item 9882: F2 owns the mode
-table and the N formula, and the agents policy is about to change the librarian count that
-formula divides by. Computing N here would bake in a formula that is about to change.
+integration has not landed yet. The reason is the librarian's decision on R1, recorded on
+work item 9882: F2 owns the mode table and the N formula, and the agents policy is about to
+change the librarian count that formula divides by. Computing N here would bake in a
+formula that is about to change.
 
 **Who owns what.** This file owns the mechanics: where the store lives, its schema, and how
 the numbers are computed. The **values** belong to the `agents` repo's
@@ -56,8 +57,10 @@ Every JSON file is written to a unique temp file in the same directory and then
 `os.replace`d, so a reader never sees a torn file. `samples.jsonl` takes one small
 `O_APPEND` write per line. Once it passes 1 MiB it is rewritten, the same temp-and-rename
 way, keeping 8 days and dropping any line that does not parse. Append and prune both hold
-an exclusive `flock` on `samples.lock`, so a prune never loses a concurrent append. The
-script creates each directory it is missing with mode 0700, from `claude-kit/` down. It
+an exclusive `flock` on `samples.lock`, so a prune never loses a concurrent append.
+`samples.jsonl` and `samples.lock` are opened without following a symlink: one planted at
+either name fails the append as a store write error, and nothing outside the store is
+created or written. The script creates each directory it is missing with mode 0700, from `claude-kit/` down. It
 also sets the directory it writes into to 0700 on every write (`librarian/` and
 `claims/`), even when that directory already existed. Directories above those, including
 an existing `claude-kit/`, keep their modes. The store holds percentages,
@@ -167,12 +170,16 @@ then counts fresh claims.
 |---|---|---|
 | none | `created`, by an exclusive create | `[]` |
 | a regular file of at most 1 MiB that does not parse as a JSON object | `replaced-unreadable` | `[]` |
-| anything else it cannot read as a claim: not a regular file (a symlink, a directory), over 1 MiB, or unreadable | `conflict` with `unusable: true`: not written, `--takeover` or no | — |
+| anything else it cannot read as a claim: not a regular file (a directory, a symlink it cannot read as a claim), over 1 MiB, or unreadable | `conflict` with `unusable: true`: not written, `--takeover` or no | — |
 | this session's | `refreshed`, other fields kept (an identity field this call cannot read keeps its stored value) | kept |
 | another session's, expired | `replaced-expired` | `[]` |
 | another session's, fresh, same process (`pid`, `pidDomain`, `procStart` all equal and present: a `/clear`) | `takeover-same-process` | `[]` |
 | another session's, fresh, with `--takeover` | `takeover` | `[]` |
 | another session's, fresh, otherwise | `conflict`: not written | — |
+
+A symlink at the claim path that reads as a claim is judged by its content like any other
+claim; a write then replaces the link itself with a regular file and leaves its target
+alone.
 
 A takeover resets `in_flight`, per the policy's takeover rule: a new session's agents are
 the only ones it can vouch for. A `conflict` is for the idle turn to judge: a restart it

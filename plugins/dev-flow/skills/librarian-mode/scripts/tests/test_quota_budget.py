@@ -711,6 +711,30 @@ class TestHardening(Base):
         self.assertIn("samples.jsonl append failed", err)
         self.assertEqual(r["signal"], "ok")
 
+    def test_symlink_at_samples_jsonl_writes_nothing_outside_the_store(self):
+        outside = tempfile.TemporaryDirectory()
+        self.addCleanup(outside.cleanup)
+        missing = os.path.join(outside.name, "planted")
+        existing = os.path.join(outside.name, "existing")
+        with open(existing, "w") as f:
+            f.write("keep")
+        for target in (missing, existing):
+            with self.subTest(target=os.path.basename(target)):
+                link = os.path.join(self.store, "samples.jsonl")
+                os.makedirs(self.store, exist_ok=True)
+                if os.path.lexists(link):
+                    os.unlink(link)
+                os.symlink(target, link)
+                self.sensor(at=NOW)
+                rc, r, err = self.run_qb()
+                self.assertEqual(rc, 1)
+                self.assertIn("samples.jsonl append failed", err)
+                self.assertEqual(r["signal"], "ok")
+                self.assertTrue(os.path.islink(link))
+        self.assertFalse(os.path.lexists(missing))
+        with open(existing) as f:
+            self.assertEqual(f.read(), "keep")
+
     def test_symlink_at_samples_lock_leaves_an_existing_target_alone(self):
         outside = tempfile.TemporaryDirectory()
         self.addCleanup(outside.cleanup)
@@ -755,6 +779,34 @@ class TestHardening(Base):
 
         with self.assertRaises(KeyError):
             qb.read_jsonl(p, broken)
+
+    def test_parse_callback_error_reaches_main_as_an_internal_error(self):
+        self.samples([(NOW - H, (8.0, NOW + 2 * H), (29.0, NOW + 100 * H))])
+        self.sensor(at=NOW)
+
+        def broken(d):
+            raise KeyError("a bug in parse")
+
+        with mock.patch.object(qb, "parse_sample", broken):
+            rc, r, err = self.run_qb()
+        self.assertEqual((rc, r["signal"], r["reason"]), (1, "none", "internal error"))
+        self.assertIn("KeyError", err)
+
+    def test_symlink_to_a_readable_claim_is_judged_by_content(self):
+        outside = tempfile.TemporaryDirectory()
+        self.addCleanup(outside.cleanup)
+        target = os.path.join(outside.name, "claim.json")
+        body = json.dumps({"v": 1, "repo": "myrepo", "session_id": SID, "at": NOW - 60,
+                           "in_flight": []})
+        with open(target, "w") as f:
+            f.write(body)
+        os.makedirs(os.path.dirname(self.claim_path()))
+        os.symlink(target, self.claim_path())
+        _, r, _ = self.run_qb()
+        self.assertEqual(r["claims"]["action"], "refreshed")
+        self.assertFalse(os.path.islink(self.claim_path()))
+        with open(target) as f:
+            self.assertEqual(f.read(), body)
 
     def test_missing_file_reads_as_empty(self):
         self.assertEqual(qb.read_jsonl(os.path.join(self.cfg, "nope.jsonl"), qb.parse_sample), [])
