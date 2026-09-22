@@ -201,6 +201,62 @@ def ledger_path(session_id):
     return os.path.join(d, safe_sid(session_id) + ".md")
 
 
+# ── The per-session rehydration-manifest store (8cc2-F3b) ──────────────────
+# One manifest per session, at <base>/claude-kit/handoff/<safe_sid>/HANDOFF.md
+# - a DIRECTORY per session, so the basename stays HANDOFF.md (lineage.py's
+# cheap pre-filter and ledger_pointer.py's pointer line keep working, and the
+# path the checkpoint skill prints is literally "the full HANDOFF.md path").
+# Nothing is written into a repo, so no session can overwrite another's.
+MANIFEST_NAME = "HANDOFF.md"
+
+
+def handoff_root():
+    """The manifest store, <${CLAUDE_CONFIG_DIR:-~/.claude}>/claude-kit/handoff.
+    `claude-kit/` is the historical prefix the state dir and the ledger already
+    use. The directory is not created here."""
+    return os.path.join(_base_dir(), "claude-kit", "handoff")
+
+
+def manifest_path(session_id):
+    """`session_id`'s own rehydration manifest. Named through safe_sid, so
+    neither a hostile nor a garbled session id can name a path outside the
+    store. The directory is created by the WRITER (the checkpoint skill's Step
+    4b, the mark step), never by this lookup: a lookup that created directories
+    would leave one empty directory per session that ever started
+    (sensor_path's precedent)."""
+    return os.path.join(handoff_root(), safe_sid(session_id), MANIFEST_NAME)
+
+
+def manifest_sid(path):
+    """The session whose store manifest `path` is, or None when `path` is not
+    one: the identity test for "is this a per-session manifest, and whose?".
+
+    Containment is decided on realpath, with an os.sep guard so a sibling
+    `handoff-old` cannot pass a bare prefix test, and so a symlink planted
+    inside the store that points outside resolves outside and fails. The store
+    directory itself is not a manifest; the relative path must be exactly
+    <sid>/HANDOFF.md, and a first component of `.` or `..` is rejected (neither
+    survives realpath today - the clause is there so the helper stays correct
+    if a caller ever passes an unresolved path). Realpathing the root is what
+    makes /home/claude/.claude/... and /home/rt/.claude/... the same store.
+
+    The component returned is already in safe_sid form, and safe_sid is
+    idempotent, so manifest_path(manifest_sid(p)) is p again: never strip,
+    re-hash or compare it to a raw session id."""
+    try:
+        root = os.path.realpath(handoff_root())
+        rp = os.path.realpath(path)
+    except Exception:
+        return None
+    if rp == root or not rp.startswith(root + os.sep):
+        return None
+    rel = os.path.relpath(rp, root).split(os.sep)
+    if len(rel) != 2 or rel[1] != MANIFEST_NAME:
+        return None
+    sid = rel[0]
+    return sid if sid not in (".", "..") and _SAFE_SID.fullmatch(sid) else None
+
+
 def load_state(session_id):
     try:
         with open(state_path(session_id)) as f:
@@ -532,11 +588,17 @@ def checkpointed_this_epoch(state):
 # session it belongs to. Ownership names a manifest VERSION, {owner, sha}:
 # `owner` is the manifest's `session:`, `sha` is manifest_sha of its raw text.
 # Per-session state keys:
-#   lineage           [{sid, manifest: {owner, sha} | None}], newest first,
-#                     at most LINEAGE_MAX: the /clear predecessors and fork
-#                     parents, each with the version it pinned at link time
-#   manifest_adopted  {owner, sha, at}: the `mode: handoff` version this
-#                     session read in full (lineage.py, PostToolUse Read)
+#   lineage           [{sid, manifest: {owner, sha} | None, at}], newest
+#                     first, at most LINEAGE_MAX: the /clear predecessors and
+#                     fork parents, each with the version it pinned at link
+#                     time and when the link was made (`at` is optional, read
+#                     by nothing in the decision path: it is there for
+#                     diagnosis, and entries written before it are accepted)
+#   manifest_adopted  {owner, sha, at, sid?}: the `mode: handoff` version this
+#                     session read in full (lineage.py, PostToolUse Read).
+#                     `sid` is the store session whose manifest was read; it is
+#                     absent for a Read of a legacy repo manifest, which seals
+#                     that file and addresses no store directory
 # and on the process record _proc-<key>, `cleared` = {sid, lineage, manifest,
 # at}: written at SessionEnd(clear) by lineage.py, popped by the next
 # SessionStart(clear) in rehydrate.py.
@@ -564,12 +626,18 @@ def _version(v):
 
 def lineage_of(state):
     """The state's `lineage`, cleaned: well-formed entries only, at most
-    LINEAGE_MAX."""
+    LINEAGE_MAX. `at` (the link time) rides along when it is a finite number
+    and is dropped when it is absent or garbled - an entry written before the
+    field existed is still a good entry."""
     out = []
     lin = state.get("lineage") if isinstance(state, dict) else None
     for e in lin if isinstance(lin, list) else []:
         if isinstance(e, dict) and isinstance(e.get("sid"), str) and e["sid"]:
-            out.append({"sid": e["sid"], "manifest": _version(e.get("manifest"))})
+            ent = {"sid": e["sid"], "manifest": _version(e.get("manifest"))}
+            at = _finite(e.get("at"))
+            if at is not None:
+                ent["at"] = at
+            out.append(ent)
         if len(out) >= LINEAGE_MAX:
             break
     return out
@@ -592,10 +660,12 @@ def owned_version(state, sid, v):
     return _version((state or {}).get("manifest_adopted")) == v
 
 
-def linked_lineage(sid, manifest, lineage):
+def linked_lineage(sid, manifest, lineage, at=None):
     """The lineage a new session inherits from linking session `sid`: that
-    session first, with the version it pinned, then its own lineage, capped."""
-    return ([{"sid": sid, "manifest": _version(manifest)}]
+    session first, with the version it pinned and the time of the link (`at`,
+    now when not given), then its own lineage, capped."""
+    at = time.time() if _finite(at) is None else float(at)
+    return ([{"sid": sid, "manifest": _version(manifest), "at": at}]
             + lineage_of({"lineage": lineage}))[:LINEAGE_MAX]
 
 
