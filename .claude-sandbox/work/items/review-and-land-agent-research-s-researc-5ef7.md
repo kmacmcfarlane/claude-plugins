@@ -82,3 +82,5 @@ review r4 (opus, cap round) on 1c89cde: NEEDS_CHANGES. §1–§3, §5 clean; six
 Security path: reviewer found no remaining route for fetched text into a tracked file, another agent or an acted-on file.
 decision 54: 5ef7 (research skills) hit the 4-round review cap — round 4 found a regression in the round-3 fix: rule zero now counts "research X" in the operator's own words as operator-invoked, bypassing your quick-only cost gate (high; one-clause removal), plus a medium making clean runs fall to the scratchpad instead of .claude-sandbox/research/. Security path is clean. — (a) waive the cap for one more fix round limited to P1+P2 (+ the P3/P4 one-liners) and one review [recommended: both fixes are specified, security is clear]; (b) land as is and fix P1/P2 in a follow-up item (ships the cost-gate bypass meanwhile); (c) park 5ef7 until you review the branch yourself.
 answer 54: (a) do another round (operator 2026-09-22)
+fix r4 (peer agent-research, cap waived by answer 54): 76c3ffc — P1–P5 fixed, 4 files +31/−23.
+dispatch: reviewer opus — review r5 (final, per answer 54; resume reviewer on 76c3ffc)
