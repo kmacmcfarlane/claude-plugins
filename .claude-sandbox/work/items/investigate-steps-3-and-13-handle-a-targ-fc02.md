@@ -31,3 +31,12 @@ return: implementer DONE 095bc57
 changed: investigate SKILL.md (Steps 3, 13, 14 trims; 2909->2908), references/investigation-format.md (§ A repo not yet created), README.md (### dev-flow prose), dev-flow plugin.json (description 1072->1018)
 dispatch: reviewer opus — rule 4, implementer tier
 agent: reviewer a8b6adb9fe5179633 round 1
+verdict: NEEDS_CHANGES round 1 at 095bc57
+findings:
+- [high] investigation-format.md:52 — the move is given to "the next session working in the new repo", which on the realistic path is create-repo's launched session: it has no pointer to the old series (starts a fresh 00) and usually cannot reach the old repo from its sandbox. Pass: the session holding the series moves it as soon as the repo exists (right after create-repo returns, before the launch command); under an orchestrator the orchestrator's; a later session in the new repo only as a fallback when told where the series is.
+- [low] :54 "commit it there" — which git (host or sidecar per tracking mode; point at l.308-311).
+- [low] :55 Moved-from SHA — of whichever history holds the series.
+- [nit] SKILL.md:336 name the file in "(§ A repo not yet created)".
+filed separately: create-repo bootstrap prompt names an existing series path.
+dispatch: implementer opus — fix round 1 (resume)
+agent: implementer ab3c9d45a0eab13c3 round 2

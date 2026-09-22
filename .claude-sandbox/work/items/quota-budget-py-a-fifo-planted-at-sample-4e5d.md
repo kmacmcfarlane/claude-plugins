@@ -2,12 +2,11 @@
 id: quota-budget-py-a-fifo-planted-at-sample-4e5d
 title: "quota_budget.py: a FIFO planted at samples.jsonl or a sink day-file blocks open indefinitely"
 type: bug
-status: doing
+status: done
 priority: 4
-owner: Kyle-McFarlane@bf9f9839222c
-claimed: 2026-09-22T23:24Z
 created: 2026-09-22
 updated: 2026-09-22
+closed: 2026-09-22
 refs:
   - 99b4 review r2
 ---
@@ -30,3 +29,6 @@ return: implementer DONE 68bbf4d
 changed: quota_budget.py (open_regular), scripts/tests/test_quota_budget.py (TestFifo), references/budget.md
 dispatch: reviewer opus — rule 4, implementer tier
 agent: reviewer a9f263fa50130eb00 round 1
+verdict: CLEAR round 1 at 68bbf4d
+landed: 348b814
+- 2026-09-22 done: 348b814

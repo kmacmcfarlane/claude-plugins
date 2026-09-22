@@ -44,3 +44,6 @@ findings:
 - [low] ending-the-session.md:13 repeats record-lines rationale; [low] SKILL.md:205 "its pair" ambiguous.
 dispatch: implementer sonnet — fix round 1 (resume)
 agent: implementer a1cdaa872072a3b48 round 2
+return: implementer DONE fb386a8
+dispatch: reviewer opus — review r2 (resume)
+agent: reviewer aae2e168adc2b1526 round 2
