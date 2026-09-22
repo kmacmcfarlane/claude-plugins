@@ -36,3 +36,5 @@ review r2 (opus) at c21f67c: NEEDS_CHANGES. Committed == tested (git archive ide
 dispatch: implementer opus — fix round 2 (resume)
 fix r2 DONE 3dd30ee (opus): closing line reports left-out and/or cut counts, none when neither; "" below the minimum budget; doc defines the room; 2 checks fail on c21f67c.
 dispatch: reviewer opus — review r3 (resume)
+review r3 (opus) at 3dd30ee: CLEAR. Budget sweep 0–2500 × 4 ledgers: 0 violations; committed == tested. Nit: the no-left/no-cut guard is unreachable (harmless). Declined (f) accepted.
+Review result: 3 rounds, 2 fix rounds; impl opus, review opus.
