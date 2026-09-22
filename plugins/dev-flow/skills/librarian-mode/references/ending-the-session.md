@@ -8,7 +8,26 @@ Before the session ends, compacts, or is cleared:
 $WI handoff <id> --doing "<state>" --next "<step>" [--blocked "<why>"] [--learned "<what>"]
 ```
 
-on **every** open item — yours and the ones dispatched. Then push what landed:
+on **every** open item — yours and the ones dispatched. For a dispatched item, `--doing`
+names each live role's agent id and round (`implementer <id> round 2, reviewer <id> round
+3`), so the id survives in the store even where the manifest does not reach.
+
+**In-flight roster.** Every checkpoint this session runs gets the checkpoint skill's In
+flight roster, built from the `dispatch:` lines on the `doing` items and ListAgents, never
+from memory: one line per live or resumable agent — role, work item, agent id, round,
+what it is waiting on — reviewers included, since a reviewer's rounds are what a fresh
+dispatch re-derives at full cost. Background agents survive `/clear` and resume by id
+(verified): after Rehydrate, resume each with `SendMessage` to its id; never re-dispatch a
+role the roster lists as resumable.
+
+**Brief templates.** The templates are the `dev-cycle` skill's `references/agent-brief.md`
+and `references/review-brief.md`; the filled common briefs a run writes (the common brief,
+the common review brief) sit in the session scratchpad, which `/clear` leaves behind. Copy
+each one the successor will reuse to a durable path beside the item or its investigation
+series and name that path in the item's handoff, or list it under the manifest's Copy
+forward line by absolute path.
+
+Then push what landed:
 `git -C "$MAIN" push origin main` — `main` only, fast-forward only, never `--force`,
 never worktree branches or tags. With `Push: none` in `## Librarian`, skip every push
 here and below; the final Report says what stays on local `main`. A rejected
@@ -37,7 +56,9 @@ the step in hand, then:
    `/rewind`), and question 2 yourself — the in-flight inventory, from the `doing` items,
    their `dispatch:` lines and ListAgents — with no question dialog: agents may still be
    in flight, and a modal blocks their returns and peer messages (SKILL.md § Intake
-   step 3). The inventory goes in the closing message; anything the operator adds is
+   step 3). The same inventory is the manifest's In flight roster, and every scratchpad
+   file it depends on is copied out or listed under Copy forward (both above). The
+   inventory goes in the closing message; anything the operator adds is
    filed as a work item. Custody holds throughout: its residue goes into item bodies
    (append) or new items (`$WI add`), never into CLAUDE.md or a skill file; its commits
    are store-only — the work-item store, and the manifest only when the repo tracks it

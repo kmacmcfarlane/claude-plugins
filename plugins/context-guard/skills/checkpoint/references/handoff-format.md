@@ -5,8 +5,8 @@ is a snapshot only its author can write; the facts around it — age, drift, dir
 — are computed live by `hooks/rehydrate.py` at injection). Work-addressed (class b1):
 lives at `.claude-sandbox/HANDOFF.md` when `.claude-sandbox/` exists (so `trackInHost`
 governs it), else `HANDOFF.md` at the repo root. Write-side budget **≤6,000 chars**;
-the hook trims Scrolls → Aware-of and never the mandatory tiers, under its 9,000-char
-injection cap.
+the hook trims Scrolls → Aware-of and never the mandatory tiers (nor In flight or Copy
+forward), under its 9,000-char injection cap.
 
 ## Format
 
@@ -30,9 +30,17 @@ items:            # optional: wi ids you expect still open or in flight
 ## Goal
 mode: <land|continue|handoff> — operator: "<their last stated goal, verbatim>"
 
+## In flight
+One line per live or resumable agent this session dispatched; `None` when drained.
+- <role> — <work item> — agent <id> — round <n> — waiting on <what>
+
 ## Read in full
 ≤5 paths, one per line with WHY each cannot be skipped. This is raw rehydration:
 the next session reads these before doing anything else.
+
+## Copy forward
+Files a successor needs that still sit only in a session scratchpad; omit when none.
+- <absolute path> — <what it is, where to copy it>
 
 ## Aware of
 Tagged one-liners. A CORRECTION outranks the claim it corrects; REFUSED stays refused.
@@ -56,6 +64,25 @@ TOC, read on demand: `path — one line on what it holds`.
 
 - **Secrets: path and key, never value.** A manifest lands in git; sops and `kind: Secret`
   gates do not see prose. Name where a secret lives, never what it is.
+- **In flight is a roster, not a summary.** Every agent this session dispatched that is
+  running or resumable gets a line — implementer and reviewer alike, since a reviewer's
+  rounds of context are the costliest thing to lose. `round` is the review or fix round the
+  agent is on (`1` for a first pass); `waiting on` is what the agent or its next step waits
+  for (its own return, a review, a fix round, an operator decision). Background agents
+  survive `/clear` in the same Claude Code process and resume by id (verified): the
+  successor resumes each one with `SendMessage` to its id and **does not re-dispatch it
+  fresh** — a fresh agent re-derives every round the old one holds. Their output files
+  stay under the predecessor's session dir (`…/<old session>/tasks/`); `/clear` does not
+  move them. A fresh process (the session exited and relaunched) cannot resume them; there
+  the roster tells the successor what to re-dispatch and from which round. The hook never
+  trims this section.
+- **Nothing a successor needs lives only in a session scratchpad.** The scratchpad is
+  session-scoped: `/clear` gives the successor a new, empty one while `tasks/` stays
+  behind, so a path into the old scratchpad works only by accident. Before writing the
+  manifest, copy every such file — a stage file, a brief template, a working note — to the
+  work item or its investigation series and name the copy; or, when it cannot move now,
+  list it under **Copy forward** by absolute path. Never point Read in full or Scrolls
+  into a scratchpad.
 - **Stage boundary in a skill chain:** the published stage file is the authoritative record —
   **Read in full** points at it, and the manifest carries only what the files do not hold
   (deploy state, test fixtures/accounts, cross-ticket blocks, model/agent rules,
