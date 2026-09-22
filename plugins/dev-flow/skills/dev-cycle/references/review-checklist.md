@@ -56,14 +56,15 @@ git -C $W log -E -i --grep="$P" --format='%h (message)' $BASE..HEAD
 - [ ] Folder name equals the frontmatter `name`; the file is exactly `SKILL.md`.
 - [ ] Frontmatter keys follow the house rule, whose allowed list lives in the create-skill
       skill's frontmatter reference, in the kit-dev plugin. The code below copies that
-      list — 20 keys, the 5 required plus the 15 other documented fields — and must be
-      kept in step with it: count both when either changes. The five required keys
-      `name, description, disable-model-invocation, allowed-tools, argument-hint` are all
-      present; every other key is a field the Claude Code skills docs define; no key
-      appears twice; keys match exactly (`Model` fails). The set is closed because
-      undocumented keys are usually typos, and claude.ai / Skills API uploads hard-fail
-      on unknown keys. (`allowed-tools` pre-approves the listed tools; it never restricts
-      the others.)
+      list — 20 keys, the 2 required plus the 18 other documented fields — and must be
+      kept in step with it: count both when either changes. The two required keys
+      `name` and `description` are present; every other key is optional but must be a
+      field the Claude Code skills docs define; no key appears twice; keys match exactly
+      (`Model` fails). Leaving out `disable-model-invocation`, `allowed-tools` and
+      `argument-hint` is the default and the desired state: model-invocable, free-form
+      arguments, no tools pre-approved. The set is closed because undocumented keys are
+      usually typos, and claude.ai / Skills API uploads hard-fail on unknown keys.
+      (`allowed-tools` pre-approves the listed tools; it never restricts the others.)
 - [ ] No angle brackets in `name` or `description` (they are allowed in `argument-hint`,
       where about half the skills here use them); description under 1024 characters and
       states what + when + trigger phrases.
@@ -95,10 +96,10 @@ for s in $(git -C $W diff --name-only $BASE...HEAD | grep -o 'plugins/[^/]*/skil
   keys=$(awk 'NR>1 && /^---$/ {exit} NR>1 && /^[^ \t#-][^:]*:/ {sub(/:.*/, ""); gsub(/^[ \t"\047]+|[ \t"\047]+$/, ""); print}' $d/SKILL.md)
   dups=$(printf '%s\n' "$keys" | sort | uniq -d | tr '\n' ' ')
   test -z "$dups" || echo "FAIL: duplicate keys: $dups"
-  for k in name description disable-model-invocation allowed-tools argument-hint; do
+  for k in name description; do
     printf '%s\n' "$keys" | grep -qxF -e "$k" || echo "FAIL: missing key $k"
   done
-  # the 20 allowed keys: 5 required + 15 documented (create-skill frontmatter reference)
+  # the 20 allowed keys: 2 required + 18 optional documented (create-skill frontmatter reference)
   printf '%s\n' "$keys" | grep -v '^$' | grep -vxF -e name -e description \
     -e disable-model-invocation -e allowed-tools -e argument-hint -e when_to_use \
     -e arguments -e user-invocable -e disallowed-tools -e model -e effort -e context \
