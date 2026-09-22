@@ -3,11 +3,10 @@
 How a run takes an interrupted cycle up again, from its record alone: one state, one next
 action. SKILL.md § Step 0.4 runs it on every invocation, on the record and the repository
 as Step 0 found them — before this run writes a line or adds a worktree, so nothing this
-run does reads as an interrupted one. A record with nothing in it is S0 and the run
-simply starts. A caller resuming several
-targets runs it once per target, in whatever order its own queue says. `full`, `plan` and
-`review` read the same facts and the same table; the mode changes only what a fact is
-computed from.
+run does reads as an interrupted one. A record with nothing in it is S0 and the run simply
+starts. A caller resuming several targets runs it once per target, in whatever order its
+own queue says. `full`, `plan` and `review` read the same facts and the same table; the
+mode changes only what a fact is computed from.
 
 It reads the lines `record-lines.md` fixes, git, and the agents. It writes one line of its own,
 `spent:` (§ The GATE); every other line is written by the step that owns it, never by a
@@ -153,7 +152,7 @@ is a dispatch, and the next verdict tests the cap again.
 | LIVE | State | The single next action |
 |---|---|---|
 | `one` | **S3a** attach | Never dispatch beside it. Still running: leave it to finish. Finished with a report never recorded: collect the report and hand it to the step that writes its phase line — SKILL.md § Step 1 (planner), § Step 3.5 (implementer) or § Step 4.5 (reviewer). |
-| `none` | **S3b** salvage | GATE first on a decision recorded after the dispatch — the fable fallback's ask when the call failed (`model-routing.md` § Fallback): `PENDING` → § The GATE. `ANSWERED` → § Salvage, then re-dispatch as the answer says. `NONE` → § Salvage, then re-dispatch at the same role, tier and round. |
+| `none` | **S3b** salvage | GATE first on a decision recorded after the dispatch — the fable fallback's ask when the call failed (`model-routing.md` § Fallback): `PENDING` → § The GATE. `ANSWERED` → § Salvage, then re-dispatch as the answer says. `NONE` → § Salvage, then re-dispatch at the same role, tier and round — a reviewer briefed by VARIANT; a gone `— resume` implementer's re-dispatch carries the recorded `findings:` into the fix-round clause. |
 | `many` | **S13** two live agents | Stop. Dispatch nothing and stop no agent. GATE, the question naming every live id: which one to keep is always a human's decision, never the cycle's. |
 
 **Group C — PHASE `RETURN`.** The producer is the `implementer`, or the `planner` in
