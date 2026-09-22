@@ -7,13 +7,16 @@ read it in Slack, Teams, an email or on a phone. Pointed at from SKILL.md § Rep
 ## When
 
 - **After each push**, one summary covering everything that push carried, not one per
-  item. Normally: the Report, the push, then the summary. At session end and at 75%/DUE
-  the push comes before the final Report (`ending-the-session.md`); the summary follows
-  that Report in the same closing message.
+  item. Normally: the Report, the push outcome with its `incoming:` lines (SKILL.md
+  § Report), then the summary. At session end and at 75%/DUE the push comes before the
+  final Report (`ending-the-session.md`); the summary follows that Report, after the
+  push outcome and its `incoming:` lines, in the same closing message.
 - **`Push: none`, or no `origin` remote**: one summary per landing batch, right after its
   Report, and its first line says the changes are local only (not pushed).
-- **No summary** for a rejected push (nothing reached origin; the rejection goes under
-  `decisions needed`), or for a push that carries no landed change, only work-item store
+- **No summary** for a rejected push that stops on a conflict, a red check or a
+  decision (nothing reached origin; it goes under `decisions needed`) — a rejection
+  merged through and pushed gets its summary, of this session's landings, not the
+  incoming commits — or for a push that carries no landed change, only work-item store
   or checkpoint commits.
 
 ## Shape
