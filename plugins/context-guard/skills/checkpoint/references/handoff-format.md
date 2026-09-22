@@ -14,10 +14,11 @@ mandatory tiers, under its 9,000-char injection cap.
 ---
 handoff: 1
 repo: <name>
-session: <stamped>   # machine fields: the mark step stamps these four, never type them
+session: <stamped>   # machine fields: the mark step stamps these five, never type them
 written: <stamped>
 head: <stamped>
 branch: <stamped>
+top: <stamped>
 mode: land | continue | handoff | landed
 by: checkpoint
 mode_skill: /<plugin>:<mode> start   # optional: the standing mode to re-enter
@@ -223,21 +224,29 @@ TOC, read on demand: `path — one line on what it holds`.
   anything is left out or cut, a last line counts it and names the ledger file. A budget
   too small for even that line gives an empty digest. The ledger file is never rewritten.
 - **Machine fields are stamped, never typed.** `written:` (UTC now, `%Y-%m-%dT%H:%M:%SZ`),
-  `head:` (`git rev-parse --short HEAD` of the manifest's repo), `branch:` and `session:`
-  (the author's own id, `$CLAUDE_CODE_SESSION_ID`, which follows `/clear`) are written by
-  `mark_checkpoint.py` at the end of Step 4b: write each as `<stamped>`. It rewrites those
-  frontmatter lines only (adding any that are missing before the closing `---`), leaves
-  every other byte as written, and replaces the file atomically. It stamps only a manifest
-  written in the last 30 minutes whose `session:` is a placeholder or the author
-  (`$CLAUDE_CODE_SESSION_ID`; an id passed that differs from it grants nothing), or names
-  the session whose manifest the author replaced — its `/clear` predecessor or fork parent,
+  `head:` (`git rev-parse --short HEAD` of the manifest's repo), `branch:`, `top:` (that
+  repo's toplevel, else the working directory — the manifest records the repo it is about,
+  because it need not live inside it) and `session:` (the author's own id,
+  `$CLAUDE_CODE_SESSION_ID`, which follows `/clear`) are written by `mark_checkpoint.py` at
+  the end of Step 4b: write each as `<stamped>`. What it stamps is the author's **own**
+  per-session manifest, `${CLAUDE_CONFIG_DIR:-~/.claude}/claude-kit/handoff/<sid>/HANDOFF.md`
+  (`python3 hooks/handoff_path.py --path` prints it), when that file exists — and the repo
+  manifest above until it does. It rewrites those frontmatter lines only (adding any that
+  are missing before the closing `---`), leaves every other byte as written, and replaces
+  the file atomically. It stamps only a manifest written in the last 30 minutes. A
+  per-session manifest is the author's **by its path**, so a `session:` copied from the
+  manifest it replaced is simply corrected there, and an id passed that differs from
+  `$CLAUDE_CODE_SESSION_ID` names no path and so grants nothing. The repo manifest is the
+  one file every session in a checkout shares, so there it also stamps only a `session:`
+  that is a placeholder or the author, or names the session whose manifest the author
+  replaced — its `/clear` predecessor or fork parent,
   or the author of a `handoff` it read in full — when the file is no longer the version
   that link pinned or that Read adopted (it was rewritten, the id copied). So a copied id
   is corrected, while an untouched predecessor's or parent's manifest and a concurrent
-  peer's are never claimed (except a live fork parent's or handoff author's later rewrite;
-  F3b); those get a `not stamped` warning. A manifest already stamped and not rewritten
-  since is left as it is, so a repeated mark does not re-date it. It warns when the
-  manifest's `session:` is still not the author's id. Hand-typed stamps were wrong in
+  peer's are never claimed; those get a `not stamped` warning. A manifest already stamped
+  and not rewritten since is left as it is, so a repeated mark does not re-date it. It
+  warns when the manifest's `session:` is still not the author's id. Hand-typed stamps
+  were wrong in
   13 of 15 sampled writes (some hours in the future, read as FRESH), and since `session:`
   is the ownership key below, a copied id makes the new manifest foreign to its author and
   re-injects it in full into the predecessor.
