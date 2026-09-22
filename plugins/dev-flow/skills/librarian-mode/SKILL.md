@@ -226,7 +226,8 @@ operator's review to take the next request.
 
 Then, unless `Push: none`, push: `git -C "$MAIN" push origin main` — fast-forward only.
 After each push (with `Push: none`, each batch), one team summary for people who did not
-watch the run, prose or bullets, never a table: `references/team-summary.md`.
+watch the run, prose or bullets, never a table: `references/team-summary.md` (no reflog:
+note `origin/main` before pushing).
 
 ## Red flags
 
