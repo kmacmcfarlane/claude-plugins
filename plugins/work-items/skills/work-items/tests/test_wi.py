@@ -548,6 +548,61 @@ class TestImportTodo(WiTestCase):
         self.assertEqual(titles, ["Second one", "Wrapped title: here"])
         self.wi_ok(["lint"])
 
+    def import_one(self, line):
+        """Import a one-entry TODO.md into a fresh store; return its item."""
+        self.root = Path(tempfile.mkdtemp(dir=self.tmp)) / ".work"
+        self.assertEqual(run(["init"], self.root).returncode, 0)
+        todo = self.tmp / "TODO.md"
+        todo.write_text("# TODO\n\n" + line + "\n")
+        self.wi_ok(["import-todo", str(todo)])
+        items = self.items()
+        self.assertEqual(len(items), 1, items)
+        return items[0]
+
+    def test_strike_over_only_the_bold_title_is_closed(self):
+        """bf1b: `~~**Title**~~ rest` imported open with the markers in the
+        title. A strike covering the whole title closes the entry, whichever
+        side of the bold it sits on; ~~ and ** are stripped."""
+        for line in ("- [ ] ~~**Retire the old runner**~~ rest of it",
+                     "- [ ] **~~Retire the old runner~~** — rest of it",
+                     "- [ ] ~~**Retire the old runner.**~~ rest of it"):
+            with self.subTest(line=line):
+                it = self.import_one(line)
+                self.assertEqual((it["title"], it["status"]),
+                                 ("Retire the old runner", "done"))
+                self.assertTrue(it["closed"])
+
+    def test_strike_over_the_whole_entry_is_closed(self):
+        for line, title in (("- [ ] ~~**Retire the old runner** rest~~",
+                             "Retire the old runner"),
+                            ("- [ ] ~~plain struck entry~~", "plain struck entry")):
+            with self.subTest(line=line):
+                it = self.import_one(line)
+                self.assertEqual((it["title"], it["status"]), (title, "done"))
+
+    def test_checked_box_with_title_strike_is_done_and_stripped(self):
+        it = self.import_one("- [x] ~~**Retire the old runner**~~ rest")
+        self.assertEqual((it["title"], it["status"]),
+                         ("Retire the old runner", "done"))
+
+    def test_partial_strikes_stay_open(self):
+        """A strike over part of the title, or over only the trailing text,
+        is an edit, not a closure — the rule closes an entry only when the
+        strike covers its whole title — so the entry stays open and the
+        struck text is kept as written."""
+        for line, title in (("- [ ] **Retire ~~the old~~ runner** rest",
+                             "Retire ~~the old~~ runner"),
+                            ("- [ ] **Retire the old runner** ~~was 5 hosts~~ 3",
+                             "Retire the old runner")):
+            with self.subTest(line=line):
+                it = self.import_one(line)
+                self.assertEqual((it["title"], it["status"]), (title, "todo"))
+
+    def test_literal_tilde_in_title_is_not_a_strike(self):
+        it = self.import_one("- [ ] **Move ~/bin to ~5 GiB disk** rest")
+        self.assertEqual((it["title"], it["status"]),
+                         ("Move ~/bin to ~5 GiB disk", "todo"))
+
     def test_dry_run_writes_nothing(self):
         out = self.wi_ok(["import-todo", "--dry-run",
                           str(FIXTURES / "ptp_todo.md")])

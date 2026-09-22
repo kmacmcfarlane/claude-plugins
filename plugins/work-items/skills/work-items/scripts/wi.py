@@ -2170,11 +2170,29 @@ def _section_item(heading, body):
     return item
 
 
+# A struck entry is closed when the strike covers its whole title: either the
+# whole entry (`~~**T** rest~~`) or exactly the bold title (`~~**T**~~ rest`,
+# `**~~T~~** rest`). A strike over part of the title or only the trailing text
+# is an edit, not a closure: the entry stays open and keeps its markers.
+WHOLE_STRIKE_RE = re.compile(r"^~~((?:(?!~~).)+)~~$", re.S)
+STRUCK_TITLE_RE = re.compile(
+    r"^(?:~~\*\*((?:(?!~~).)+?)\*\*~~|\*\*~~((?:(?!~~).)+?)~~\*\*)"
+    r"[.:]?\s*[—-]*\s*(.*)$", re.S)
+
+
 def _bullet_item(text):
     item = {"status": "todo", "closed": None, "priority": None, "tags": [],
             "refs": [], "notes": ""}
+    whole = WHOLE_STRIKE_RE.match(text)
+    if whole:
+        item["status"] = "done"
+        text = whole.group(1).strip()
+    struck = STRUCK_TITLE_RE.match(text)
     m = re.match(r"^\*\*(.+?)\*\*[.:]?\s*[—-]*\s*(.*)$", text, re.S)
-    if m:
+    if struck:
+        item["status"] = "done"
+        title, rest = (struck.group(1) or struck.group(2)).rstrip("."), struck.group(3)
+    elif m:
         title, rest = m.group(1).rstrip("."), m.group(2)
     else:
         first, _, rest = text.partition("\n")
