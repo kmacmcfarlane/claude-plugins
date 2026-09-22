@@ -26,3 +26,5 @@ idle-turn.md mode table (full/normal/conservative/stop), N from allowed rate ÷ 
   - OQ14: do background agents survive /clear? If so a same-process /clear keeps in_flight.
   - At today's pace the pool is 0 while the operator is present, 1 away; estate burning ~2× the sustainable weekly pace.
 - Before dispatch: write 1222 serial 01 folding this in (supersedes 00 § F2 N formula and divisor).
+
+from 9882 (F1) review, 2026-09-22 — F2 inputs: (1) mode and N are chosen here, not in quota_budget.py (librarian decision on 9882 R1); (2) allowed rate is unbounded just before a reset — cap or ignore a window about to reset; (3) claims refresh-vs-takeover window left open in F1 (budget.md § Claims) — close with the two-writer hold / a lock all writers hold.

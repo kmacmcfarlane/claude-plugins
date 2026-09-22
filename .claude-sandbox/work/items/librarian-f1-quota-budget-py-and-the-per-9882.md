@@ -40,3 +40,5 @@ review r1 (opus) on a9e4edb: NEEDS_CHANGES. Seven Checks OK; §1–§5 clean. Fi
 - reviewer note: allowed rate unbounded just before a reset — F2 should cap/ignore a window about to reset.
 decision (librarian, 2026-09-22) on R1: mode and N move to F2. F2 owns the mode table and the N formula (per-agent rates, active-librarian count), and the agents policy (c79e) changes that count to claims heartbeats via serial 01 before F2; computing N in F1 would bake in a formula about to change. F1 prints the numbers behind them + next_check; budget.md cites this decision. Not an operator decision reversed (plan text, not operator).
 dispatch: fix round 1 implementer opus — resume a363290 (tier kept, rule 6)
+fix r1 (opus, a363290): 12ac598 — R1 per decision (budget.md cites it); R2–R12 fixed (72 tests; race test fails 3/3 on a9e4edb); R13 declined (needs amend — accepted). New store file samples.lock (flock). OQs → F2 (c79e).
+dispatch: reviewer opus — review r2 (resume r1 reviewer on 12ac598)
