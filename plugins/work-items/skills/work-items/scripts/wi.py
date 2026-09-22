@@ -99,16 +99,20 @@ def grooming_questions(blocked):
 # The lenient readings above eat any punctuation after the prefix, so a park
 # or grooming whose own text starts with it ("-", "— reason", "- [ ] x")
 # would drift on the first export -> import. Export writes such a text
-# quoted — `PARKED: "- x"` — and import reads that exact form verbatim before
-# falling back to the lenient reading. migrate-parked reads hand-written
-# text, so it keeps the lenient reading alone.
+# quoted — `PARKED: "- x"` — and import unwraps the quotes only where export
+# itself would have written them: when the inner text's plain form would not
+# read back as that text. Anything else (`PARKED: "x"`, `PARKED: ""`,
+# `PARKED: "a" and "b"`) gets the lenient reading, as before. migrate-parked
+# reads hand-written text, so it keeps the lenient reading alone.
 def _bridge_decode(tag, lenient, blocked):
     """Import's reading of a `PARKED`/`GROOMING` blocked reason: export's
-    quoted form verbatim, else `lenient` (parked_reason/grooming_questions)."""
+    quoted form unwrapped, else `lenient` (parked_reason/grooming_questions)."""
     head = tag + ': "'
     if (blocked and blocked.startswith(head) and blocked.endswith('"')
-            and len(blocked) > len(head)):
-        return blocked[len(head):-1]
+            and len(blocked) > len(head) + 1):
+        inner = blocked[len(head):-1]
+        if _bridge_decode(tag, lenient, f"{tag}: {inner}") != inner:
+            return inner
     return lenient(blocked)
 
 
@@ -2245,6 +2249,14 @@ def _fold(v):
     return re.sub(r"\s+", " ", _FRONT_REFUSE_RE.sub(" ", v)).strip()
 
 
+# story fields that are free text: kept as read when one line (_fold_story);
+# every other known field — an id, an enum, an owner — is always folded, so
+# a padded `ticket_mode: " x "` lands trimmed. Extra (x_backlog) fields are
+# text too.
+STORY_TEXT_FIELDS = {"title", "blocked_reason", "review_feedback",
+                     "acceptance", "testing"}
+
+
 def _fold_story(v):
     """A backlog story value as import stores it: folded (_fold) only when it
     holds a line break or a character the writer refuses. A one-line value
@@ -2260,13 +2272,16 @@ def _story_value(story, key):
     wi itself reads as "no value", is None — so a `blocked_reason: "—"` never
     lands as a literal dash now that a quoted `—` reads back as one."""
     v = story.get(key) or None
-    return None if v == "—" else v
+    return None if isinstance(v, str) and v.strip() == "—" else v
 
 
 def _import_story(story, alias_map, existing_by_alias, update):
-    story = {k: ([_fold_story(x) for x in v] if isinstance(v, list) and
+    story = {k: ([_fold_story(x) if k in STORY_TEXT_FIELDS else _fold(x)
+                  for x in v] if isinstance(v, list) and
                  k in ("requires", "acceptance", "testing") else
-                 v if k == "notes" else _fold_story(v))
+                 v if k == "notes" else
+                 _fold_story(v) if k in STORY_TEXT_FIELDS or
+                 k not in KNOWN_STORY_FIELDS else _fold(v))
              for k, v in story.items()}
     alias = str(story["id"])
     status, stage = BACKLOG_TO_STATE[story.get("status", "todo")]

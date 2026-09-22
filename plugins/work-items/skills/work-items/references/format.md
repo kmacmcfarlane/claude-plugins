@@ -194,12 +194,16 @@ that item's `unpark` goes to `todo`. A provenance group, if any, is dropped
 from the imported reason. A ralph run over the exported backlog sees the
 item as blocked, never as work. That prefix rule eats any punctuation after
 `PARKED`, so a reason that itself starts with punctuation (`-`, `— later`,
-`...`) — or one that starts and ends with `"` — exports quoted:
-`blocked_reason: "PARKED: \"- later\""`. Import reads `PARKED: "…"` (the
-prefix, one space, then text wrapped in double quotes) verbatim, before the
-prefix rule, so every reason round-trips byte-identical from the first
-cycle; `migrate-parked` reads only hand-written text and never unwraps the
-quotes.
+`...`) — or one that would read back unwrapped, like `"-"` — exports quoted:
+`blocked_reason: "PARKED: \"- later\""`. Import unwraps `PARKED: "…"` (the
+prefix, one space, then text in double quotes) only where export would have
+written it — when the text inside, written plain, would not read back as
+itself; any other quoted reason (`PARKED: "x"`, `PARKED: ""`, `PARKED: "a"
+and "b"`) gets the prefix rule, quotes kept. So a reason round-trips
+byte-identical from the first cycle — except, on a fresh import, one that
+itself ends `; requires ext: …`, whose tail is taken for the `ext:` suffix
+(below). `migrate-parked` reads only hand-written text and never unwraps
+the quotes.
 
 backlog.yaml `requires` holds story ids only, so an item's `ext:` deps
 travel in its `blocked_reason`, after any reason: `vendor; requires ext: a,
@@ -302,8 +306,11 @@ imports fold instead: `import-todo` folds a title wrapped across lines, and
 `import --format backlog-yaml` folds every story value except `notes` that
 holds a line break or a refused character — whitespace collapsed, ends
 trimmed (a `review_feedback: |` block scalar becomes one line). A one-line
-value is kept as the YAML loader read it, surrounding spaces, runs of
-spaces and NBSP included, so an exported title imports back unchanged.
+free-text value (`title`, `blocked_reason`, `review_feedback`, each
+`acceptance`/`testing` entry, an extra story field) is kept as the YAML
+loader read it, surrounding spaces, runs of spaces and NBSP included, so an
+exported title imports back unchanged; every other field (`id`, `requires`,
+`claimed_by`, `ticket_mode`, `complexity`) is always folded.
 Imported `notes` are markdown and land in the body as is: a `## Handoff`
 line inside them becomes a real section, and one above the imported
 `doing:`/`next:` lines shadows the imported Handoff.

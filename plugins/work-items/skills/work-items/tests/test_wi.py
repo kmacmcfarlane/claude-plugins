@@ -2996,6 +2996,53 @@ class TestLeadingPunctuationRoundTrip(WiTestCase):
                 self.write_item(f"fz-{n:04d}", status="blocked", blocked=text)
         self.assert_cycle_zero_stable()
 
+    # fix round 1: hand-written blocked_reason -> (status, parked, grooming,
+    # blocked). Main's reading, except the forms export itself writes.
+    HAND = [
+        ('PARKED: "x"', ("parked", '"x"', None, None)),
+        ('PARKED: ""', ("parked", '""', None, None)),
+        ('PARKED: "a" and "b"', ("parked", '"a" and "b"', None, None)),
+        ('PARKED: "foo" said the vendor, then "bar"',
+         ("parked", '"foo" said the vendor, then "bar"', None, None)),
+        ('GROOMING: "q?"', ("grooming", None, '"q?"', None)),
+        ('GROOMING: ""', ("grooming", None, '""', None)),
+        ("PARKED: \u2014 later", ("parked", "later", None, None)),
+        # export's own quoted form: the text inside, verbatim
+        ('PARKED: "-"', ("parked", "-", None, None)),
+        ('PARKED: "\u2014 later"', ("parked", "\u2014 later", None, None)),
+        ('GROOMING: "- [ ] x"', ("grooming", None, "- [ ] x", None)),
+    ]
+
+    def test_hand_written_quoted_reasons_import_as_on_main(self):
+        src = self.tmp / "hand.yaml"
+        lines = ["schema_version: 2", "stories:"]
+        for n, (reason, _) in enumerate(self.HAND):
+            lines += [f"  - id: S-{n + 1:03d}", f"    title: t{n}",
+                      "    status: blocked", "    priority: 50",
+                      f"    blocked_reason: \"{wi._dq_escape(reason)}\""]
+        lines += ["  - id: S-900", "    title: padded", "    status: todo",
+                  "    priority: 50", '    ticket_mode: " interactive "',
+                  '    complexity: " low "', '    claimed_by: " a@b "',
+                  # the placeholder, padded, is still no value
+                  "  - id: S-901", "    title: placeholder",
+                  "    status: todo", "    priority: 50",
+                  '    blocked_reason: " \u2014 "']
+        src.write_text("\n".join(lines) + "\n")
+        self.wi_ok(["import", "--format", "backlog-yaml", str(src)])
+        recs = {r["alias"]: r for r in json.loads(
+            self.wi_ok(["ls", "--status", "all", "--json"]))}
+        for n, (reason, want) in enumerate(self.HAND):
+            rec = self.show(recs[f"S-{n + 1:03d}"]["id"])
+            self.assertEqual((rec["status"], rec["parked"], rec["grooming"],
+                              rec["blocked"]), want, reason)
+        # enum-like fields are still folded: trimmed, not kept padded
+        text = (self.root / "items" / (recs["S-900"]["id"] + ".md")).read_text()
+        self.assertIn("mode: interactive\n", text)
+        self.assertIn("complexity: low\n", text)
+        self.assertIn("owner: a@b\n", text)
+        self.assertIsNone(self.show(recs["S-901"]["id"])["blocked"])
+        self.wi_ok(["lint"])
+
 
 if __name__ == "__main__":
     unittest.main()
