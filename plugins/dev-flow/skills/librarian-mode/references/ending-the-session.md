@@ -10,9 +10,8 @@ $WI handoff <id> --doing "<state>" --next "<step>" [--blocked "<why>"] [--learne
 
 on **every** open item — yours and the ones dispatched. For a dispatched item, `--doing`
 names each live role's agent id and round, read off the record's `agent:` lines (the
-`dev-cycle` skill's `references/record-lines.md` — an id that lives only in `ListAgents`
-is gone with the process): `implementer <id> round 2, reviewer <id> round 3`, so the id
-survives in the store even where the manifest does not reach.
+`dev-cycle` skill's `references/record-lines.md`): `implementer <id> round 2, reviewer
+<id> round 3`, so the id survives in the store even where the manifest does not reach.
 
 **In-flight roster.** Every checkpoint this session runs fills the checkpoint skill's In
 flight roster, following that skill's In flight rule (who counts, and resuming by id
