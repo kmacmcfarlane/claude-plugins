@@ -2,14 +2,13 @@
 id: dev-cycle-the-land-report-gains-the-team-1763
 title: "dev-cycle: the land report gains the team summary when the user chose a push"
 type: chore
-status: doing
+status: done
 priority: 3
 deps:
   - dev-cycle-e770-f3-resume-whole-plus-the-acdd
-owner: Kyle-McFarlane@bf9f9839222c
-claimed: 2026-09-22T23:07Z
 created: 2026-09-22
 updated: 2026-09-22
+closed: 2026-09-22
 refs:
   - d978; a934 OQ
 ---
@@ -43,3 +42,6 @@ agent: implementer a4b35dfaf6ec2242c round 2
 return: implementer DONE 1a17861
 dispatch: reviewer opus — review r2 (resume)
 agent: reviewer aefa2127d8a00214b round 2
+verdict: CLEAR round 2 at 1a17861
+landed: a7932ed
+- 2026-09-22 done: a7932ed
