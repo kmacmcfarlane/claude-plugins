@@ -82,7 +82,7 @@ dependency is marked (hard) here.
 | …project context for the `ai-scripts` Python CLI utilities | `ai-scripts` | **moved** to the expertise marketplace (local scaffold, remote pending) | — |
 | …structured product research in a web chat session | `chat` | current; *family home under review* | — |
 | …to survive the finite context window (gate, checkpoint, rehydration, token-spend report) | `context-guard` | **current** | `statusline-hub` (soft; exact depth from the sensor record it writes, when it owns the status-line slot or tees from another renderer; installing `statusline` brings it) |
-| …an always-on status line (context left, plan usage, model, session name) | `statusline` | **current** | `statusline-hub` (hard; the hub owns the status-line slot, and the footer draws as one of its display hooks), `context-guard` (soft; epoch and checkpoint thresholds in the gauge when installed) |
+| …an always-on status line (context left — the session's and each sub-agent's, in the agent panel — plan usage, model, session name) | `statusline` | **current** | `statusline-hub` (hard; the hub owns the status-line slot, and the footer draws as one of its display hooks), `context-guard` (soft; epoch and checkpoint thresholds in the gauge when installed) |
 | …to share the status-line slot, so the data Claude Code hands the status line reaches the tools that read it whatever renders the line (the hub owns the slot and runs the hooks other plugins register, or its `tee` feeds the record from another renderer) | `statusline-hub` | **current** | `statusline` (soft; its footer is the hub's first display hook, and the hub takes over a slot an earlier `statusline` version installed once that footer has registered) |
 | …a plan before you code: investigate → reviewed plan → verified implementation, and a standing librarian that takes custody of a repo's work (files, dispatches, reviews, lands) | `dev-flow` | **current** | `work-items` (soft; `librarian-mode` and `dev-cycle` find `wi` via the repo tree, or the installed plugin's copy; `dev-cycle` runs without it on a scratchpad record), `statusline-hub` (soft; the fable fallback in `librarian-mode` and `dev-cycle` reads rate-limit reset times from the sensor record it writes; installing `statusline` brings it), `context-guard` (soft; `investigate` offers a checkpoint-then-implement path when its checkpoint skill is present; `librarian-mode` answers its gate advisories with a checkpoint and weighs its manifest and ledger when it rehydrates; the fable fallback reads reset times from its older state record) |
 | …repo-durable work items and a pluggable work source | `work-items` | **current** | — |
@@ -108,9 +108,9 @@ The contributor decision tree. Answer in order; the first match wins.
 1. **Does it alter harness behavior?** Hooks, a status line, `settings.json` writes,
    background state. → It belongs *only* in a plugin whose stated aim is that behavior
    (today `context-guard` for the context system, `statusline` for the status line's
-   footer, `statusline-hub` for the status-line slot and its setting, `sandbox` for the
-   checkout/worktree guard). Never bolt it onto a knowledge skill
-   (principle 3).
+   footer and the agent panel's sub-agent rows (`subagentStatusLine`), `statusline-hub`
+   for the status-line slot and its setting, `sandbox` for the checkout/worktree guard).
+   Never bolt it onto a knowledge skill (principle 3).
 2. **Is it pure stack/tool knowledge** — "make Claude good at X"? → Expertise family, which
    now lives in its own marketplace (`expertise`, repo `claude-expertise`) — not this repo.
    No hooks, no settings.

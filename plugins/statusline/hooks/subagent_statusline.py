@@ -39,9 +39,14 @@ bounded whatever the transcripts weigh; the rows with the least left to read
 go first, and a file not read to its end within the budget shows the
 approximate figure this tick and continues from where it stopped on the
 next. A line longer than LINE_MAX (a huge tool result) is streamed in
-chunks and never parsed whole: only the token fields after its last
-`"usage"` key are picked out. The cache keeps up to CACHE_MAX agents, the
-rows visible this tick first.
+chunks and never parsed whole: a string-aware scanner follows its structure
+only as far as message.usage, skips every other value without keeping it,
+and counts the same fields the whole-line parse would. Dense structure
+scans at a few MB/s, so the 5 s kill is kept well away: a long line still
+unscanned after LINE_SECS is passed over (the depth stays at the previous
+line's until the next usage line sets it), and no long line
+is begun once TICK_SECS of the tick have gone, except the tick's first.
+The cache keeps up to CACHE_MAX agents, the rows visible this tick first.
 
 Approximate, marked `~`: when there is no readable sidechain yet, no usage
 line in it yet (a new agent, or one just compacted), or the budget ran out
@@ -80,10 +85,10 @@ CACHE_V = 1
 CACHE_MAX = 64            # agents kept in one session's cache
 TASKS_MAX = 64            # rows drawn per tick at most
 LINE_MAX = 1 << 20        # a longer line is streamed in chunks of this size, never parsed whole
-CARRY = 8192              # bytes of the previous chunk searched again with the next
-USAGE_WIN = 2048          # bytes after "usage" that hold its token fields
-_UFIELD = re.compile(rb'"(input_tokens|cache_read_input_tokens|cache_creation_input_tokens)"'
-                     rb'\s*:\s*(\d{1,15})')
+TICK_SECS = 1.5           # no long line begun after this much of a tick, but the first
+LINE_SECS = 1.0           # a long line still unscanned after this is passed over
+TOKEN_MAX = 4096          # a longer key or scalar on a long line: not worth parsing
+DEPTH_MAX = 512           # deeper nesting on a long line: treated as unparseable
 _SAFE_ID = re.compile(r"[A-Za-z0-9][A-Za-z0-9_-]{0,127}")
 _UNSAFE = re.compile(r"[\s\x00-\x1f\x7f-\x9f]+")
 SEP = " · "
@@ -183,43 +188,211 @@ def _usage_total(line):
     return t
 
 
-def _usage_in(buf):
-    """The input-side token sum of the last `"usage"` object in `buf` (a
-    chunk of a line too long to parse whole), or None. Only the top-level
-    fields count: the first match of each name after the key."""
-    i = buf.rfind(b'"usage"')
-    if i < 0:
+_WS = re.compile(rb"[ \t\r\n]*")
+# Every pattern run over a chunk is one character class under one star, so
+# the regex engine keeps no backtracking state however long the match.
+_CTRL = re.compile(rb"[\x00-\x1f]")      # raw in a string: the line is invalid JSON
+# Inside a value nothing is counted from: everything up to a bracket or a
+# string's opening quote, in one C-speed match.
+_SKIP = re.compile(rb'[^"{}\[\]]*')
+_SCALAR = re.compile(rb"-?(?:0|[1-9][0-9]*)(?:\.[0-9]+)?(?:[eE][+-]?[0-9]+)?"
+                     rb"|true|false|null|NaN|-?Infinity")
+_SCALAR_PART = re.compile(rb"[-+.0-9A-Za-z]+")
+_UKEYS = frozenset(USAGE_KEYS)
+
+
+class _UsageScan:
+    """The input-side token sum of a line's message.usage, fed in chunks:
+    the result _usage_total would give the whole line, without holding it.
+    Only the root object, its "message" object and that object's "usage"
+    object are followed key by key; every other value is skipped as a run
+    of strings and brackets. Duplicate keys keep the last value, as
+    json.loads does; a line that is not one JSON object gives 0, except
+    that bad grammar inside a skipped value (a missing comma or colon
+    there) goes unnoticed."""
+
+    def __init__(self):
+        # Per open container: [tag, key, what comes next]. Only a followed
+        # object (tag set) checks its grammar: "k0" a key or "}", "k" a
+        # key, ":" the colon, "v" a value, "," a comma or "}".
+        self.stack = []
+        self.fields = None      # message.usage's fields so far, or None: not an object
+        self.pend = b""         # a scalar cut by the chunk end
+        self.in_str = False
+        self.esc = False        # the string so far ends in an unpaired backslash
+        self.key = None         # the key string being read, or None: not a key
+        self.closed = self.bad = False
+
+    def total(self):
+        if self.bad or not self.closed or self.in_str or self.pend or \
+                not isinstance(self.fields, dict):
+            return 0
+        t = 0
+        for v in self.fields.values():
+            t += num(v) or 0
+        return t
+
+    def _value(self, kind, tok=None):
+        """A value starts in the current container ("{", "[", "s", or a
+        scalar with its token); returns the tag for a container it opens."""
+        if not self.stack:
+            return "root" if kind == "{" else None
+        tag, key = self.stack[-1][0], self.stack[-1][1]
+        if tag == "root" and key == "message":
+            self.fields = None
+            return "msg" if kind == "{" else None
+        if tag == "msg" and key == "usage":
+            self.fields = {} if kind == "{" else None
+            return "usage" if kind == "{" else None
+        if tag == "usage" and key in _UKEYS:
+            v = None
+            if tok is not None:
+                try:
+                    v = json.loads(tok)
+                except Exception:
+                    self.bad = True
+            self.fields[key] = v
         return None
-    got = {}
-    for m in _UFIELD.finditer(buf, i, i + USAGE_WIN):
-        got.setdefault(m.group(1), int(m.group(2)))
-    return sum(got.values()) if got else None
+
+    def _expect(self, top):
+        """True when a value may start here in a followed container (or at
+        the root), and marks it taken; False in a skipped container."""
+        if top is None:
+            return True
+        if top[0] is None:
+            return False
+        if top[2] != "v":
+            self.bad = True
+            return False
+        top[2] = ","
+        return True
+
+    def feed(self, data):
+        buf = self.pend + data if self.pend else data
+        self.pend = b""
+        i, n = 0, len(buf)
+        while i < n and not self.bad:
+            if self.in_str:
+                # The closing quote is the first with an even run of
+                # backslashes before it: found with bytes.find, so a long
+                # string costs a step per escaped quote, not per byte.
+                lo = i
+                if self.esc:        # this byte is the one the last chunk escaped
+                    lo, self.esc = i + 1, False
+                while True:
+                    q = buf.find(b'"', lo)
+                    if _CTRL.search(buf, lo, n if q < 0 else q):
+                        self.bad = True
+                        return
+                    if q < 0:
+                        break
+                    r = q
+                    while r > lo and buf[r - 1] == 0x5C:
+                        r -= 1
+                    if (q - r) % 2 == 0:
+                        break
+                    lo = q + 1
+                stop = n if q < 0 else q
+                if self.key is not None and len(self.key) <= TOKEN_MAX:
+                    self.key += buf[i:min(stop, i + TOKEN_MAX + 1 - len(self.key))]
+                if q < 0:           # the string goes on in the next chunk
+                    r = n
+                    while r > lo and buf[r - 1] == 0x5C:
+                        r -= 1
+                    self.esc = (n - r) % 2 == 1
+                    return
+                self.in_str, i = False, q + 1
+                if self.key is not None:
+                    try:           # too long to be a name that counts
+                        k = None if len(self.key) > TOKEN_MAX else \
+                            json.loads(b'"' + self.key + b'"')
+                    except Exception:
+                        k = None
+                    self.stack[-1][1], self.stack[-1][2], self.key = k, ":", None
+                continue
+            top = self.stack[-1] if self.stack else None
+            if top is not None and top[0] is None:
+                i = _SKIP.match(buf, i).end()
+            else:
+                i = _WS.match(buf, i).end()
+            if i >= n:
+                return
+            c = buf[i:i + 1]
+            if self.closed:
+                self.bad = True
+            elif c == b'"':
+                self.in_str = True
+                if top is not None and top[0] is not None and top[2] in ("k0", "k"):
+                    self.key = b""
+                elif self._expect(top):
+                    self._value("s")
+                i += 1
+            elif c in (b"{", b"["):
+                tag = self._value(c.decode()) if self._expect(top) else None
+                if len(self.stack) >= DEPTH_MAX:
+                    self.bad = True
+                self.stack.append([tag, None, "k0"])
+                i += 1
+            elif c in (b"}", b"]"):
+                if top is None or top[0] is not None and (c == b"]" or top[2] not in ("k0", ",")):
+                    self.bad = True
+                else:
+                    self.stack.pop()
+                    self.closed = not self.stack
+                i += 1
+            elif c in (b",", b":"):   # (an untracked container's are skipped)
+                if top is None or top[2] != c.decode():
+                    self.bad = True
+                else:
+                    top[2] = "k" if c == b"," else "v"
+                i += 1
+            else:
+                if _SCALAR_PART.fullmatch(buf, i):
+                    # the chunk may end inside it: finish it with the next
+                    if n - i > TOKEN_MAX:
+                        self.bad = True
+                    self.pend = buf[i:]
+                    return
+                m = _SCALAR.match(buf, i)
+                if not m:
+                    self.bad = True
+                    return
+                if self._expect(top):
+                    self._value("v", m.group())
+                i = m.end()
+                if top is None:
+                    self.closed = True
 
 
 def _long_line(fh, first):
-    """(length, depth or None, boundary) of a line longer than LINE_MAX whose
+    """(length, depth or 0, boundary) of a line longer than LINE_MAX whose
     first LINE_MAX bytes are `first`, read on in chunks so memory stays
-    bounded; None for the length when the file ends before its newline."""
-    n, found, carry = len(first), _usage_in(first), first[-CARRY:]
+    bounded; None for the length when the file ends before its newline.
+    A line whose scan outlasts LINE_SECS is passed over: read to its end
+    unscanned, depth 0, so the offset still advances past it."""
+    n, u = len(first), _UsageScan()
+    end = time.monotonic() + LINE_SECS
+    u.feed(first)
     boundary = b'"compact_boundary"' in first[:4096]
     while True:
+        if not u.bad and time.monotonic() >= end:
+            u.bad = True        # too dense to scan in time: pass it over
         chunk = fh.readline(LINE_MAX)
         if not chunk:
             return None, None, False
         n += len(chunk)
-        win = carry + chunk
-        t = _usage_in(win)
-        if t is not None:
-            found = t
+        if not u.bad:
+            u.feed(chunk)
         if chunk.endswith(b"\n"):
-            return n, found, boundary
-        carry = win[-CARRY:]
+            return n, u.total(), boundary
 
 
-def scan(path, ent, budget):
+def scan(path, ent, budget, clock=None):
     """(entry, done, bytes read): `ent` (a cache entry, or None) advanced
     over `path`. `done` is True when every complete line was read within
-    `budget` bytes. An entry is {dev, ino, off, cur, tail}: `cur` the depth
+    `budget` bytes. `clock`, shared by a tick's scans, is {"end": monotonic
+    deadline, "long": whether a long line was begun}: once one was and the
+    deadline has passed, a long line is left for the next tick. An entry is {dev, ino, off, cur, tail}: `cur` the depth
     as of `off`, 0 when no usage line has been read since the start or the
     last compact_boundary."""
     with open(path, "rb") as fh:
@@ -246,6 +419,11 @@ def scan(path, ent, budget):
                     break                   # incomplete: read again next tick
                 # One line is always read, however long, so every tick
                 # advances; past LINE_MAX it is streamed, not parsed.
+                if clock is not None:
+                    if clock["long"] and time.monotonic() >= clock["end"]:
+                        done = False
+                        break
+                    clock["long"] = True
                 n, t, boundary = _long_line(fh, line)
                 if n is None:
                     break
@@ -341,11 +519,12 @@ def depths(payload):
     # and one agent catching up on a long transcript cannot starve the rest.
     rows.sort(key=lambda r: r[0])
     new, out, left = {}, {}, BUDGET
+    clock = {"end": time.monotonic() + TICK_SECS, "long": False}
     for _todo, tid, path in rows:
         ent, done = old.get(tid), False
         if left > 0:
             try:
-                ent, done, n = scan(path, ent, left)
+                ent, done, n = scan(path, ent, left, clock)
                 left -= n
             except Exception:
                 ent = None

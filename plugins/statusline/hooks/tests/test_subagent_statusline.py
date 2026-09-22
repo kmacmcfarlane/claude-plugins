@@ -170,6 +170,157 @@ class Rows(Hermetic):
         finally:
             R.LINE_MAX = old
 
+    def long_line_depth(self, line, line_max=4096, before=10_000):
+        """The depth scan reads with `line` (bytes, no newline) after one
+        ordinary usage line of `before`, LINE_MAX patched to `line_max`."""
+        sys.path.insert(0, HOOKS)
+        import subagent_statusline as R
+        old = R.LINE_MAX
+        try:
+            R.LINE_MAX = line_max
+            p = self.side("a1", [usage(0, before)], raw_tail=line + b"\n")
+            ent, done, n = R.scan(p, None, 1 << 20)
+        finally:
+            R.LINE_MAX = old
+        self.assertTrue(done)
+        self.assertEqual(ent["off"], os.path.getsize(p))
+        return ent["cur"]
+
+    @staticmethod
+    def padded(marker, at, tail):
+        """A line whose filler string puts `marker` (the first bytes of
+        `tail`) at byte offset `at`."""
+        head = b'{"type":"assistant","message":{"content":"'
+        pad = at - len(head) - len(b'",')
+        assert pad >= 0 and tail.startswith(marker)
+        return head + b"y" * pad + b'",' + tail
+
+    def test_a_usage_key_straddling_a_chunk_edge_is_found(self):
+        tail = (b'"usage":{"input_tokens":3,"cache_read_input_tokens":40000,'
+                b'"cache_creation_input_tokens":2000,"output_tokens":9}},'
+                b'"toolUseResult":{"x":"' + b"z" * 5000 + b'"}}')
+        for at in range(4096 - 12, 4096 + 4):     # LINE_MAX-3 and +1 among them
+            line = self.padded(b'"usage"', at, tail)
+            self.assertEqual(line.index(b'"usage"'), at)
+            self.assertEqual(self.long_line_depth(line), 42_003, at)
+
+    def test_usage_fields_straddling_a_chunk_edge_are_read_whole(self):
+        # Pad the key so that each of the key, the colon and the digits
+        # meets the edge at LINE_MAX (4096) somewhere in the sweep.
+        for at in range(4096 - 40, 4096 + 4):
+            tail = (b'"usage":{"input_tokens":3,"cache_read_input_tokens":123456789,'
+                    b'"cache_creation_input_tokens":2}}}')
+            head = b'{"type":"assistant","message":{"content":"'
+            key_at = len(b'"usage":{"input_tokens":3,')
+            line = head + b"y" * (at - len(head) - len(b'",') - key_at) + b'",' + tail
+            self.assertEqual(line.index(b'"cache_read_input_tokens"'), at)
+            self.assertEqual(self.long_line_depth(line), 123_456_794, at)
+
+    def test_a_long_line_counts_only_message_usage(self):
+        big = "z" * 6000
+        # A usage elsewhere on the line - in the content, after the message,
+        # at the top level - is not the message's; a line with none keeps
+        # the depth before it.
+        line = json.dumps({"type": "assistant",
+                           "message": {"content": [{"usage": {"input_tokens": 1}}, big],
+                                       "usage": {"input_tokens": 5, "cache_read_input_tokens": 70_000}},
+                           "toolUseResult": {"usage": {"input_tokens": 999_999}},
+                           "usage": {"input_tokens": 888_888}}).encode()
+        self.assertEqual(self.long_line_depth(line), 70_005)
+        line = json.dumps({"type": "user", "message": {"content": big},
+                           "toolUseResult": {"usage": {"input_tokens": 999_999, "t": big}}}).encode()
+        self.assertEqual(self.long_line_depth(line), 10_000)
+
+    def test_a_usage_field_missing_is_not_borrowed_from_a_neighbour(self):
+        line = json.dumps({"type": "assistant",
+                           "message": {"content": "z" * 6000,
+                                       "usage": {"input_tokens": 5, "cache_read_input_tokens": 70_000,
+                                                 "server_tool_use": {"input_tokens": 400}},
+                                       "next": {"cache_creation_input_tokens": 300_000}},
+                           "cache_creation_input_tokens": 500_000}).encode()
+        self.assertEqual(self.long_line_depth(line), 70_005)
+
+    def test_a_line_too_slow_to_scan_is_passed_over(self):
+        sys.path.insert(0, HOOKS)
+        import subagent_statusline as R
+        big = usage(0, 90_000)
+        big["message"]["content"] = [{}] * 5000
+        old = R.LINE_MAX, R.LINE_SECS
+        try:
+            R.LINE_MAX, R.LINE_SECS = 4096, 0
+            # Passed over, the offset still advances and the depth keeps
+            # its value; the next usage line counts.
+            p = self.side("a1", [usage(0, 10_000), big])
+            ent, done, n = R.scan(p, None, 1 << 20)
+            self.assertEqual((done, ent["cur"], ent["off"]), (True, 10_000, os.path.getsize(p)))
+            p = self.side("a2", [usage(0, 10_000), big, usage(0, 30_000)])
+            ent, done, n = R.scan(p, None, 1 << 20)
+            self.assertEqual((done, ent["cur"], ent["off"]), (True, 30_000, os.path.getsize(p)))
+        finally:
+            R.LINE_MAX, R.LINE_SECS = old
+
+    def test_no_long_line_is_begun_once_the_tick_is_spent_but_the_first(self):
+        sys.path.insert(0, HOOKS)
+        import subagent_statusline as R
+        big = usage(0, 90_000)
+        big["message"]["content"] = "y" * 6000
+        old = R.LINE_MAX
+        try:
+            R.LINE_MAX = 4096
+            p = self.side("a1", [usage(0, 10_000), big, usage(0, 20_000), big])
+            first = len(json.dumps(usage(0, 10_000))) + len(json.dumps(big)) + 2
+            spent = {"end": 0, "long": False}
+            ent, done, n = R.scan(p, None, 1 << 20, spent)
+            # The first long line is read, the second waits for a new tick.
+            self.assertEqual((done, ent["cur"]), (False, 20_000))
+            self.assertEqual(ent["off"], first + len(json.dumps(usage(0, 20_000))) + 1)
+            ent, done, n = R.scan(p, ent, 1 << 20, {"end": 0, "long": False})
+            self.assertEqual((done, ent["cur"], ent["off"]), (True, 90_000, os.path.getsize(p)))
+        finally:
+            R.LINE_MAX = old
+
+    def test_the_streamed_count_matches_the_whole_line_parse(self):
+        sys.path.insert(0, HOOKS)
+        import random
+        import subagent_statusline as R
+        rnd = random.Random(7)
+        keys = ["input_tokens", "cache_read_input_tokens", "cache_creation_input_tokens",
+                "output_tokens", "usage", "message"]
+
+        def val(d):
+            r = rnd.random()
+            if d > 3 or r < 0.3:
+                return rnd.choice(["12", "0", "-4", "3.9", "1e3", "true", "null", '"7"',
+                                   '"a\\"b\\\\"', '"\\\\\\""', '"\\u0022\\\\\\\\"',
+                                   "NaN", "123456789"])
+            if r < 0.5:
+                return "[" + ",".join(val(d + 1) for _ in range(rnd.randint(0, 3))) + "]"
+            return obj(d + 1)
+
+        def key(k):     # sometimes escaped, which json.loads decodes
+            return '"' + (k.replace("u", "\\u0075", 1) if rnd.random() < 0.2 else k) + '"'
+
+        def obj(d):
+            items = [key(rnd.choice(keys)) + ":" + val(d) for _ in range(rnd.randint(0, 5))]
+            return "{" + " , ".join(items) + "}"
+
+        cases = []
+        for _ in range(400):
+            cases.append(obj(0))
+        cases += ['{"message":{"usage":{"input_tokens":5}}} x', '[{"message":1}]',
+                  '{"message":{"usage":{"input_tokens":5,}}}', '"usage"', "7",
+                  '{"message":{"usage":{"input_tokens":5},"usage":{"cache_read_input_tokens":8}}}',
+                  '{"message":{"usage":{"input_tokens":5}},"message":{}}',
+                  '{"message":{"content":"a\u0001b","usage":{"input_tokens":5}}}']
+        for text in cases:
+            line = text.encode() + b"\n"
+            want = R._usage_total(line)
+            for step in (1, 2, 3, 7, 64):
+                u = R._UsageScan()
+                for i in range(0, len(line), step):
+                    u.feed(line[i:i + step])
+                self.assertEqual(u.total(), want, (text, step))
+
     def test_least_left_to_read_goes_first(self):
         sys.path.insert(0, HOOKS)
         import subagent_statusline as R
