@@ -2170,33 +2170,63 @@ def _section_item(heading, body):
     return item
 
 
-# A struck entry is closed when the strike covers its whole title: either the
-# whole entry (`~~**T** rest~~`) or exactly the bold title (`~~**T**~~ rest`,
-# `**~~T~~** rest`). A strike over part of the title or only the trailing text
-# is an edit, not a closure: the entry stays open and keeps its markers.
-WHOLE_STRIKE_RE = re.compile(r"^~~((?:(?!~~).)+)~~$", re.S)
+# A struck entry is closed when the strike covers its whole title. The shapes:
+# the bold title alone (`~~**T**~~ rest`, `**~~T~~** rest`); a strike opening
+# on the bold title and closing later on the same line (`~~**T** rest~~`,
+# anything after it on that line or below is description); and, with no bold,
+# a struck first line, optionally followed by a note after a dash or in
+# parentheses (`~~T~~`, `~~T~~ — done`, `~~T~~ (2026-09-01)`), as the heading
+# rule reads `## ~~T~~ — DONE date`. A strike over part of the title or only
+# the trailing text is an edit, not a closure: the entry stays open and keeps
+# its markers. ~~ and ** are stripped from a closed entry's title.
+_NO_TILDES = r"(?:(?!~~).)"
 STRUCK_TITLE_RE = re.compile(
-    r"^(?:~~\*\*((?:(?!~~).)+?)\*\*~~|\*\*~~((?:(?!~~).)+?)~~\*\*)"
+    rf"^(?:~~\*\*({_NO_TILDES}+?)\*\*~~|\*\*~~({_NO_TILDES}+?)~~\*\*)"
     r"[.:]?\s*[—-]*\s*(.*)$", re.S)
+STRUCK_BOLD_ENTRY_RE = re.compile(
+    rf"^~~\*\*({_NO_TILDES}+?)\*\*((?:(?!~~)[^\n])*)~~(.*)$", re.S)
+STRUCK_PLAIN_LINE_RE = re.compile(
+    r"^~~((?:(?!~~)[^\n])+)~~\s*(?:(?:[—-]+\s*|(?=\())(.*))?$")
+BOLD_TITLE_RE = re.compile(r"^\*\*(.+?)\*\*[.:]?\s*[—-]*\s*(.*)$", re.S)
+
+
+def _open_bullet_title(text):
+    """(title, rest) by the open-entry rule: the bold title, else the first
+    line. It is also every entry's title before bf1b, kept so a re-import
+    recognises items imported under it."""
+    m = BOLD_TITLE_RE.match(text)
+    if m:
+        return m.group(1).rstrip("."), m.group(2)
+    first, _, rest = text.partition("\n")
+    return first, rest
+
+
+def _struck_bullet_title(text):
+    """(title, rest) when a strike covers the entry's whole title, else None."""
+    m = STRUCK_TITLE_RE.match(text)
+    if m:
+        return (m.group(1) or m.group(2)).rstrip("."), m.group(3)
+    m = STRUCK_BOLD_ENTRY_RE.match(text)
+    if m:
+        inner = re.sub(r"^[.:]?\s*[—-]*\s*", "", m.group(2).strip())
+        return m.group(1).rstrip("."), (inner + m.group(3)).strip()
+    first, _, cont = text.partition("\n")
+    m = STRUCK_PLAIN_LINE_RE.match(first.rstrip())
+    if m:
+        note = (m.group(2) or "").strip()
+        return m.group(1).strip().rstrip("."), (note + "\n" + cont).strip()
+    return None
 
 
 def _bullet_item(text):
     item = {"status": "todo", "closed": None, "priority": None, "tags": [],
             "refs": [], "notes": ""}
-    whole = WHOLE_STRIKE_RE.match(text)
-    if whole:
-        item["status"] = "done"
-        text = whole.group(1).strip()
-    struck = STRUCK_TITLE_RE.match(text)
-    m = re.match(r"^\*\*(.+?)\*\*[.:]?\s*[—-]*\s*(.*)$", text, re.S)
+    title, rest = _open_bullet_title(text)
+    struck = _struck_bullet_title(text)
     if struck:
         item["status"] = "done"
-        title, rest = (struck.group(1) or struck.group(2)).rstrip("."), struck.group(3)
-    elif m:
-        title, rest = m.group(1).rstrip("."), m.group(2)
-    else:
-        first, _, rest = text.partition("\n")
-        title, rest = first, rest
+        item["legacy_title"] = _fold(title)[:120]
+        title, rest = struck
     item["title"] = _fold(title)[:120]
     item["desc"] = rest.strip()
     return item
@@ -2213,6 +2243,11 @@ def cmd_import_todo(args):
         ids = taken_ids(root, items)
         for rec in parsed:
             marker = todo_marker(rec["title"])
+            # an entry imported before bf1b carries its old title's marker
+            legacy = rec.get("legacy_title")
+            if legacy and todo_marker(legacy) in markers:
+                skipped_rows.append((todo_marker(legacy), rec["title"]))
+                continue
             if marker in markers:
                 skipped_rows.append((marker, rec["title"]))
                 continue
