@@ -34,3 +34,5 @@ fix r1 DONE_WITH_CONCERNS 8883a9a (opus): argv ≠ env grants nothing; lineage/a
 dispatch: reviewer opus — review r2 (resume)
 review r2 (opus) at 8883a9a: CLEAR. Both mediums fixed (probe + probe2); "already stamped" fooled only harmlessly; future mtime → AGED; offsets range-checked; 542 tests OK (+ TZ=Asia/Tokyo). Lows: the fork-parent residual also applies to adoption (a live handoff author's later rewrite) — F3b; handoff-format:144 "never claimed" too absolute → add "(except a live fork parent's or handoff author's later rewrite; F3b)".
 land (librarian): test merge conflicts with main in skills/checkpoint/references/handoff-format.md (H4 a824 + H2 d0eb landed there). Conflict round → implementer merges main into the branch; reviewer verifies the resolution.
+conflict round DONE eb83d76 (merge of main): handoff-format keeps H4 roster/Copy forward, H2 digest rule, H1 machine-fields/Age; old session: bullet replaced by Machine fields; reviewer low applied; 556 tests OK (+ TZ=Asia/Tokyo).
+dispatch: reviewer opus — resolution-only verify (resume)
