@@ -1321,6 +1321,9 @@ class TestClaim(WiTestCase):
         check(iid, run(["next", "--plain"], self.root).stdout)
         check(iid, run(["next", "--pipeline"], self.root).stdout)
         check(iid, run(["ls", "--ready", "--plain"], self.root).stdout)
+        prime = run(["prime"], self.root).stdout
+        ready_lines = prime[prime.index("READY"):] if "READY" in prime else ""
+        check(iid, ready_lines)
         rec = json.loads(self.wi_ok(["show", iid, "--json"]))
         self.assertEqual(rec["ready"], ready)
         self.assertEqual(rec["blocked_by_unresolved"] == [], ready)
@@ -1350,6 +1353,37 @@ class TestClaim(WiTestCase):
         self.write_item("kid-4444", deps=["uat-3333"])
         self.archive_by_hand("uat-3333")
         self.assert_ready_everywhere("kid-4444", True)
+
+    def test_id_in_items_and_archive_items_copy_wins_everywhere(self):
+        # a half-finished hand move: the items/ copy (todo) is current, the
+        # archive/ copy (done) is stale; every command must judge by items/
+        self.write_item("dup-1111", status="done")
+        self.archive_by_hand("dup-1111")
+        text = (self.root / "archive" / "2026" / "dup-1111.md").read_text()
+        text = text.replace("status: done", "status: todo")
+        text = re.sub(r"(?m)^closed:.*\n", "", text)
+        (self.root / "items" / "dup-1111.md").write_text(text)
+        self.write_item("kid-2222", deps=["dup-1111"])
+        self.assert_ready_everywhere("kid-2222", False)
+        self.assertNotIn("kid-2222", run(["ls", "--status", "all", "--ready",
+                                          "--plain"], self.root).stdout)
+        self.assert_claim_refused("kid-2222", "dup-1111 (todo)")
+
+    def test_unparseable_archive_file_is_skipped_not_fatal(self):
+        self.write_item("fin-1111", status="done")
+        self.write_item("kid-2222", deps=["fin-1111"])
+        self.write_item("wait-3333", deps=["ghost-9999"])  # forces the read
+        self.wi_ok(["archive", "--older-than", "0s"])
+        arch = self.root / "archive" / "2026"
+        (arch / "junk-aaaa.md").write_text("no front matter here\n")
+        (arch / "bin-bbbb.md").write_bytes(b"\xff\xfe\x00garbage\x80")
+        for cmd in (["next", "--plain"], ["prime"], ["ls", "--ready", "--plain"]):
+            r = run(cmd, self.root)
+            self.assertEqual(r.returncode, 0, r.stderr)
+            self.assertIn("kid-2222", r.stdout)
+            self.assertNotIn("Traceback", r.stderr)
+            self.assertIn("junk-aaaa.md", r.stderr)
+            self.assertIn("bin-bbbb.md", r.stderr)
 
     def test_dep_index_reads_the_archive_once_and_only_on_a_miss(self):
         self.write_item("live-1111", status="done")

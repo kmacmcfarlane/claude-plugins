@@ -1132,17 +1132,30 @@ def load_all(root, archived=False):
     return load_paths(item_paths(root, archived))
 
 
-def load_paths(paths):
+def load_paths(paths, lenient=False):
+    """Parse each path. `lenient`: a file that does not read or parse is
+    skipped with a one-time warning, as if absent (DepIndex's archive read,
+    so one bad archived file cannot stop commands that never needed it)."""
     items = []
     for path in paths:
-        text = read_raw(path)
+        try:
+            text = read_raw(path)
+            item = Item.parse(text, path) if text else None
+        except (WiError, UnicodeDecodeError, OSError) as e:
+            if not lenient:
+                raise
+            if path not in _warned_stale:
+                _warned_stale.add(path)
+                print(f"wi: skipping {path}: unreadable ({e}); "
+                      "treated as absent", file=sys.stderr)
+            continue
         if not text:
             if path not in _warned_stale:
                 _warned_stale.add(path)
                 print(f"wi: skipping {path}: {STALE_RESERVATION}; "
                       "`wi lint` names the fix", file=sys.stderr)
             continue
-        items.append(Item.parse(text, path))
+        items.append(item)
     return items
 
 
@@ -1173,8 +1186,12 @@ class DepIndex:
     never reads it). `in`/`[]` see only the loaded items; `get` sees both."""
 
     def __init__(self, root, items, archived=False):
-        """`archived`: `items` already holds archive/ (nothing more to read)."""
-        self.items = {it.id: it for it in items}
+        """`archived`: `items` already holds archive/ (nothing more to read).
+        The first entry for an id wins — load_all lists items/ before
+        archive/, and the items/ copy is the current one."""
+        self.items = {}
+        for it in items:
+            self.items.setdefault(it.id, it)
         self.root, self._archive = root, ({} if archived else None)
 
     def __contains__(self, key):
@@ -1191,7 +1208,8 @@ class DepIndex:
             self._archive = {}
             arch = self.root / "archive" if self.root is not None else None
             if arch is not None and arch.is_dir():
-                for it in load_paths(sorted(arch.glob("*/*.md"))):
+                for it in load_paths(sorted(arch.glob("*/*.md")),
+                                     lenient=True):
                     if it.id not in loaded:
                         self._archive.setdefault(it.id, it)
         return self._archive.get(key, default)
