@@ -301,6 +301,26 @@ class Prune(Base):
         with open(path) as f:
             self.assertEqual(json.load(f)["text"], "fresh")
 
+    def test_a_segment_swapped_while_judged_is_not_judged(self):
+        # a live file is replaced by an expired one between _dead_segment's
+        # lstat and its read: the content read is not the file stat'd, so no
+        # verdict - else it would return the live file's stat as dead
+        now = time.time()
+        path = self.segment("chip", text="x", expires_at=now + 3600)
+        read = R._read_capped
+
+        def swap_then_read(p, cap, follow=False):
+            if p == path:
+                old = self.segment("tmp", text="old", expires_at=now - 1)
+                os.replace(old, p)
+            return read(p, cap, follow)
+
+        R._read_capped = swap_then_read
+        try:
+            self.assertIsNone(H._dead_segment(path, now))
+        finally:
+            R._read_capped = read
+
     def test_prune_hub_includes_segments_and_skips_untrusted_dirs(self):
         os.makedirs(os.path.join(self.cfg, "statusline-hub"), mode=0o700)
         gone = self.segment("gone", text="x", expires_at=time.time() - 1)
