@@ -2,13 +2,12 @@
 id: librarian-f1-quota-budget-py-and-the-per-9882
 title: "librarian F1: quota_budget.py and the per-subscription librarian store"
 type: feature
-status: doing
+status: done
 priority: 1
 parent: librarian-work-unblocked-items-and-pre-i-1222
-owner: unknown@360f41058e92
-claimed: 2026-09-22T08:20Z
 created: 2026-09-22
 updated: 2026-09-22
+closed: 2026-09-22
 ---
 
 Reads the claude-analytics sink when installed, else samples the sensor record; velocity per resets_at window; allowed rate; prints mode/N/next_check; store under ${CLAUDE_CONFIG_DIR}/claude-kit/librarian/ (samples.jsonl, intent.json, claims/); references/budget.md codifies the location; tests. Opus (executable logic). Plan: .claude-sandbox/investigations/1222-unattended-librarian/00_initial.md § F1.
@@ -46,3 +45,4 @@ dispatch: reviewer opus — review r2 (resume r1 reviewer on 12ac598)
 review r2 (opus) on 12ac598: CLEAR. R2–R12 fixed (16-way create race → 1 created/15 conflict ×3; 8×50 concurrent appends under prune → 400/400). Lows L1–L4 (replaced-unreadable too wide: oversized/mode-000 foreign claim replaced; samples.lock opened O_WRONLY without O_NOFOLLOW — read-only lock exits 1, planted symlink creates target outside store; read_jsonl `except Exception` hides parser bugs; budget.md:8 decision citation ungrammatical) — author's call; librarian filed them as a follow-up item rather than a third round (quota; none medium+).
 Review result: 2 review rounds, 1 fix round (+ one pre-review scope addition); findings fixed R2–R12; declined R13 (needs amend); final verdict CLEAR; impl opus, review opus.
 land checks (librarian, worktree 12ac598): all seven suites OK; diff read against doctrine — 9 files, all in item scope.
+- 2026-09-22 done: 0f8d803

@@ -2,10 +2,11 @@
 id: review-and-land-agent-research-s-researc-5ef7
 title: review and land agent-research's research skill family (branch worktree-research-skills)
 type: feature
-status: doing
+status: blocked
 priority: 1
 owner: unknown@360f41058e92
 claimed: 2026-09-22T08:33Z
+blocked: review cap hit at r4; decision 54
 created: 2026-09-22
 updated: 2026-09-22
 refs:
@@ -73,3 +74,10 @@ review r3 (opus) on b4e0fb4: NEEDS_CHANGES. §1–§3, §5 clean; strict YAML ok
 dispatch: fix round 3 → peer agent-research; review r4 is the last before the cap
 fix r3 (peer agent-research): 1c89cde — M1–M4 fixed, 4 files +46/−30; M5 carried.
 dispatch: reviewer opus — review r4 (cap round; resume reviewer on 1c89cde)
+
+review r4 (opus, cap round) on 1c89cde: NEEDS_CHANGES. §1–§3, §5 clean; six Checks OK. M1 fixed for held runs (every-level ignore check tested: sidecar mode, tracked, nested, non-repo, missing parent — all safe); M2 Agent-prompt case fixed; M3, M4 fixed; M5 carried.
+- P1 [high] intensity-and-routing.md:42-43 vs research/SKILL.md:29-30, :3 — rule zero's operator-invoked list now includes "a request for research in their own words" = the model-invoked case; bypasses operator decision 3 quick-only cost gate; skill contradicts itself. Pass: drop that clause.
+- P2 [medium] storage…:47-51, 55-57 — every-level ignore check now also gates rules 4/5 (clean runs); in both standard sandbox modes the sidecar tracks .claude-sandbox/research/, so clean runs fall to the scratchpad; acceptance bullet 1 unmet; refine lookup finds nothing later. Pass: every-level check for _held/ only, host answer for rules 4/5; or write _held/.gitignore '*'.
+- P3 [low] SKILL.md:245 vs run-record.md:160 — STATUS HELD not in report format. P4 [low] i&r:47-49 — "a brief" is model-written; limit to a work item whose refs name the operator. P5 [low] § name cited two ways. P6 [low] 5aef0dd subject.
+Security path: reviewer found no remaining route for fetched text into a tracked file, another agent or an acted-on file.
+decision 54: 5ef7 (research skills) hit the 4-round review cap — round 4 found a regression in the round-3 fix: rule zero now counts "research X" in the operator's own words as operator-invoked, bypassing your quick-only cost gate (high; one-clause removal), plus a medium making clean runs fall to the scratchpad instead of .claude-sandbox/research/. Security path is clean. — (a) waive the cap for one more fix round limited to P1+P2 (+ the P3/P4 one-liners) and one review [recommended: both fixes are specified, security is clear]; (b) land as is and fix P1/P2 in a follow-up item (ships the cost-gate bypass meanwhile); (c) park 5ef7 until you review the branch yourself.
