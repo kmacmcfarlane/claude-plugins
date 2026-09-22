@@ -48,6 +48,14 @@ If there is no purpose, ask for it in one question: "What is this repo's thread 
 question or work it will carry?" The purpose seeds the README and the bootstrap prompt, so
 it cannot be skipped.
 
+**An existing investigation series.** When the argument or this conversation names one
+for this thread — a `.claude-sandbox/investigations/SLUG/` path, or the user says one
+exists (then ask for its path) — note its slug and its current repo and path, and keep the
+path out of the purpose. There is no flag for it. The session holding the series moves it
+into the new repo once this skill returns (the investigate skill, dev-flow plugin,
+describes the move), so the bootstrap prompt names it for the launched session to extend
+(`references/launch-command.md`).
+
 ### Step 2: Resolve the name and path
 
 1. **Name**: with `--path`, its last component. Otherwise derive kebab-case, 1–4 words,
@@ -177,6 +185,10 @@ Lost the terminal later? cd '/host/path/NAME' && claude-sandbox --attach   (sand
 
 Quote the path in the attach hint the same way as in the command (`sq` in
 `references/launch-command.md`).
+
+With a series (Step 1), add one line after the report: move the series into the new repo
+before running the command, since the launched session expects it at
+`.claude-sandbox/investigations/SLUG/`.
 
 The session starts in the shared checkout, not a worktree — the interactive default. If
 the workspace config sets `worktree: true`, the session works on a `worktree-*` branch
