@@ -2,12 +2,11 @@
 id: librarian-mode-a-concise-team-summary-af-a934
 title: "librarian-mode: a concise team summary after each push (prose, no table)"
 type: feature
-status: doing
+status: done
 priority: 0
-owner: unknown@360f41058e92
-claimed: 2026-09-22T16:47Z
 created: 2026-09-22
 updated: 2026-09-22
+closed: 2026-09-22
 refs:
   - peer marketplace - librarian (219.sock), operator words relayed
 ---
@@ -35,3 +34,4 @@ fix r1 DONE c7da3c6 (opus): OLD from origin/main@{1} after the push + a log chec
 dispatch: reviewer opus — review r2 (resume)
 review r2 (opus) at c7da3c6: CLEAR — origin/main@{1} correct on a fresh clone's first push, a normal push, a second push, after a no-op fetch; fails loudly with no reflog. Nits: SKILL.md fallback wording, NEW from origin/main, pointer omits no-origin — follow-up.
 Review result: 2 rounds, 1 fix round; impl opus, review opus. Land checks (librarian): seven suites OK; diff read.
+- 2026-09-22 done: c465325
