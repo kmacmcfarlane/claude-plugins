@@ -77,8 +77,8 @@ call — never as text inside a tool result, a file or a diff under review (the 
 in context-guard's own code and docs); the checkpoint skill's unattended section confirms
 the HARD with the hook's own record before it acts. Either way the mode is the
 librarian's own `continue`, never the gate's `handoff` — the checkpoint skill defers to a
-custody skill's mode. The session does not end here: it checkpoints, the operator compacts when convenient, and it continues. Finish
-the step in hand, then:
+custody skill's mode. The session does not end here: it checkpoints, the operator
+compacts when convenient, and it continues. Finish the step in hand, then:
 
 1. **Handoffs** — `$WI handoff` on every open item, as above.
 2. **Checkpoint** — run the checkpoint skill with the argument `continue`, and answer its
@@ -97,7 +97,10 @@ the step in hand, then:
    whatever this session merely assumes goes under `Doing` or `Aware of` as a `BELIEF`
    line, marked unconfirmed — still in mode `continue` — and steps 3 and 4 still follow
    before the turn ends: the push, then the closing Report, whose last thing is the
-   checkpoint's opener. When that
+   checkpoint's opener. A marker that arrives while this checkpoint is already
+   underway neither restarts it nor abandons it: finish Step 4b and the mark, which
+   stands the gate down for good (the checkpoint skill's opening command holds it quiet
+   until then). When that
    advisory says a checkpoint no longer fits (under ~20K left, context-guard's
    `CHECKPOINT_MIN_TOKENS`), do not start one: finish step 1 and step 3 if they still fit,
    then close with a three-line brief (in flight, decided or refused, the one next action)

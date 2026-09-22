@@ -216,6 +216,59 @@ class TestCheck(HookBase):
                            timeout=30)
         self.assertEqual(p.returncode, 2)
 
+    def standdown(self, sid="s"):
+        import subprocess
+        p = subprocess.run([sys.executable, os.path.join(HOOKS, "turn_gate.py"),
+                            "--checkpointing", sid], capture_output=True, text=True,
+                           stdin=subprocess.DEVNULL,
+                           env=dict(os.environ, **self.env), timeout=30)
+        return p.returncode, p.stdout.strip()
+
+    def test_a_marker_mid_checkpoint_neither_restarts_nor_abandons(self):
+        # 45K left is HARD, so the gate asks for a checkpoint. The checkpoint
+        # itself spends tokens, and 27K in the tier would flip to hard_nofit -
+        # whose text tells the session to abandon the very checkpoint it is
+        # one step from finishing, in the gate's `handoff` rather than the
+        # operator's mode. It must say nothing until the mark.
+        self.set_exact("s", 955_000, 1_000_000)
+        self.assertIn(MARKER, ctx(self.gate()[1]))
+        self.assertTrue(self.check()[1].startswith("armed: hard"), self.check()[1])
+        rc, out = self.standdown()
+        self.assertEqual(rc, 0)
+        self.assertIn("stood down", out)
+        for tokens in (970_000, 982_000, 999_000):   # 30K, 18K, 1K left
+            with self.subTest(left=1_000_000 - tokens):
+                self.set_exact("s", tokens, 1_000_000)
+                self.assertEqual(self.gate()[:2], (0, {}))
+        rc, out = self.check()
+        self.assertEqual(rc, 1)
+        self.assertIn("already underway", out)
+        # and the record the marker was built on is untouched: the stand-down
+        # suppresses, it does not rewrite history.
+        self.assertEqual(L.load_state("s")["turn_gate"]["tier"], "hard")
+
+    def test_the_mark_clears_the_stand_down(self):
+        self.set_exact("s", 955_000, 1_000_000)
+        self.assertIn(MARKER, ctx(self.gate()[1]))
+        self.standdown()
+        self.assertIn("checkpoint_started", L.load_state("s"))
+        L.mark_checkpoint("s")
+        self.assertNotIn("checkpoint_started", L.load_state("s"))
+        self.assertEqual(self.gate()[:2], (0, {}))   # checkpoint_epoch holds it now
+        self.assertEqual(self.check(),
+                         (1, "not armed: a checkpoint already ran this epoch"))
+        # A new epoch re-arms the gate with nothing left over from either flag.
+        L.reset_epoch("s")
+        self.set_exact("s", 955_000, 1_000_000)
+        self.assertIn(MARKER, ctx(self.gate()[1]))
+
+    def test_checkpointing_usage(self):
+        import subprocess
+        p = subprocess.run([sys.executable, os.path.join(HOOKS, "turn_gate.py"),
+                            "--checkpointing"], capture_output=True, text=True,
+                           stdin=subprocess.DEVNULL, timeout=30)
+        self.assertEqual(p.returncode, 2)
+
     def test_a_refused_stamp_still_disarms_the_gate(self):
         # mark_checkpoint.py stamps only a manifest written recently and owned
         # here; anything else is left alone with a warning. The gate must stand
@@ -445,6 +498,86 @@ class TestRegisteredInHooksJson(unittest.TestCase):
         # must keep their own narrower groups rather than ride along here.
         self.assertEqual(self.cmds(""),
                          ['python3 "${CLAUDE_PLUGIN_ROOT}/hooks/turn_gate.py"'])
+
+
+class TestCheckpointInFlight(unittest.TestCase):
+    """The stand-down record is read defensively: every shape but a live one
+    for this epoch leaves the gate speaking."""
+
+    def rec(self, **kw):
+        d = {"epoch": 1, "at": time.time()}
+        d.update(kw)
+        return {"epoch": 1, "checkpoint_started": d}
+
+    def test_a_live_record_stands_the_gate_down(self):
+        import turn_gate as TG
+        self.assertTrue(TG.checkpoint_in_flight(self.rec()))
+
+    def test_it_lapses_so_an_abandoned_checkpoint_cannot_silence_the_epoch(self):
+        import turn_gate as TG
+        now = time.time()
+        self.assertTrue(TG.checkpoint_in_flight(
+            self.rec(at=now - TG.CHECKPOINT_GRACE_S + 1), now=now))
+        self.assertFalse(TG.checkpoint_in_flight(
+            self.rec(at=now - TG.CHECKPOINT_GRACE_S - 1), now=now))
+
+    def test_another_epoch_does_not_count(self):
+        import turn_gate as TG
+        self.assertFalse(TG.checkpoint_in_flight(
+            {"epoch": 2, "checkpoint_started": {"epoch": 1, "at": time.time()}}))
+
+    def test_a_future_stamp_does_not_count(self):
+        import turn_gate as TG
+        now = time.time()
+        self.assertFalse(TG.checkpoint_in_flight(self.rec(at=now + 3600), now=now))
+
+    def test_malformed_records_do_not_raise(self):
+        import turn_gate as TG
+        for cs in ("started", [], {}, {"epoch": 1}, {"epoch": 1, "at": None},
+                   {"epoch": 1, "at": "soon"}, {"at": time.time()}):
+            with self.subTest(cs=cs):
+                self.assertFalse(TG.checkpoint_in_flight(
+                    {"epoch": 1, "checkpoint_started": cs}))
+        self.assertFalse(TG.checkpoint_in_flight({}))
+
+
+class TestStateReadsFailSafe(unittest.TestCase):
+    """The helpers the hook leans on before it reads anything: a malformed
+    state must not traceback out of a hook, and the mirror-off early return
+    must be right, since it decides whether the transcript is read at all."""
+
+    def test_a_malformed_epoch_answers_not_armed_rather_than_crashing(self):
+        # L.epoch raises on it by design (the status line degrades to `ctx --`
+        # on that, rather than print a wrong epoch), so the gate catches it:
+        # `--check` must answer, not hand its caller a traceback to read.
+        import turn_gate as TG
+        for bad in ("later", None, {}, []):
+            with self.subTest(epoch=bad):
+                st = {"epoch": bad,
+                      "turn_gate": {"epoch": 1, "tier": "hard", "tok": 1}}
+                ok, why = TG.armed(st)
+                self.assertFalse(ok)
+                self.assertIn("unreadable", why)
+                self.assertFalse(TG.checkpoint_in_flight(
+                    dict(st, checkpoint_started={"epoch": bad, "at": time.time()})))
+
+    def test_mirror_off(self):
+        self.assertFalse(L.mirror_off({}))
+        self.assertTrue(L.mirror_off({"CONTEXT_GUARD_DERIVE": "off"}))
+        self.assertFalse(L.mirror_off({"CONTEXT_GUARD_DERIVE": "on"}))
+        self.assertTrue(L.mirror_off({"CONTEXT_GUARD_CONTEXT_WINDOW": "200000"}))
+        self.assertFalse(L.mirror_off({"CONTEXT_GUARD_CONTEXT_WINDOW": "big"}))
+
+    def test_exact_fresh(self):
+        now = time.time()
+        self.assertFalse(L.exact_fresh({}))
+        self.assertFalse(L.exact_fresh({"at": now}))                  # no window
+        self.assertTrue(L.exact_fresh({"window": 1_000_000, "at": now}))
+        self.assertFalse(L.exact_fresh({"window": 1_000_000}))        # no timestamp
+        self.assertTrue(L.exact_fresh({"window": 1_000_000,
+                                       "at": now - L.EXACT_MAX_AGE_S + 5}))
+        self.assertFalse(L.exact_fresh({"window": 1_000_000,
+                                        "at": now - L.EXACT_MAX_AGE_S - 5}))
 
 
 class TestHardApplies(unittest.TestCase):

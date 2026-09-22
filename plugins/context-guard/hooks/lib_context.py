@@ -451,6 +451,9 @@ def _unlink_unheld_lock(p):
 
 
 def epoch(state):
+    # Raises on a malformed epoch, by design: callers that must degrade catch
+    # it themselves, and the status line renders `ctx --` on it rather than a
+    # confident but wrong epoch number (tests/test_statusline_state.py).
     return int(state.get("epoch", 0))
 
 
@@ -520,6 +523,10 @@ def mark_checkpoint(session_id):
     def mark(st):
         st["checkpoint_epoch"] = epoch(st)
         st["checkpoint_at"] = time.strftime("%F %T")
+        # The checkpoint reached its mark, so the in-flight stand-down
+        # (turn_gate.py --checkpointing) has done its job; checkpoint_epoch
+        # takes over from here.
+        st.pop("checkpoint_started", None)
     return update_state(session_id, mark)
 
 

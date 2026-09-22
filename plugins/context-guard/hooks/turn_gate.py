@@ -34,6 +34,18 @@ again after DUE_EVERY_TOKENS of growth; a checkpoint this epoch stands it
 down. Skipped on `agent_id` only (a subagent's tool call: its depth is not
 this window's); `agent_type` alone is the main thread of an --agent session.
 
+A checkpoint UNDERWAY stands it down too. `checkpointed_this_epoch` only
+turns true at the mark (Step 4b), and a checkpoint spends tokens before it
+gets there - enough to flip hard to hard_nofit, whose text says to abandon
+the checkpoint and end the turn. So the skill opens by writing
+`checkpoint_started` = {epoch, at}:
+    python3 turn_gate.py --checkpointing <session_id>
+and the mark clears it (L.mark_checkpoint). While it stands, this hook says
+nothing and `--check` answers "not armed", so a marker can neither restart
+nor abandon a checkpoint in flight. It lapses after CHECKPOINT_GRACE_S, so
+an abandoned checkpoint cannot silence the gate for the rest of the epoch,
+and a stamp from the future (a clock change) does not count.
+
 Cost: with the mirror off (CONTEXT_GUARD_DERIVE=off or a window pin) and no
 fresh exact record, nothing could be said, so it returns before any
 transcript read. Otherwise measure() resumes the transcript scan from the
@@ -54,13 +66,34 @@ exits 0 and prints "armed: ..." only when the state's `turn_gate` record is
 this epoch's (`epoch`), its `tier` is hard or hard_nofit, and no checkpoint
 has run this epoch (`checkpoint_epoch`); otherwise exit 1, "not armed: ...".
 """
-import json, os, sys
+import json, os, sys, time
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import lib_context as L
 import context_warn as CW
 
 DUE_EVERY_TOKENS = CW.DUE_EVERY_TOKENS
 MARKER = "[context-guard context gate] HARD, mid-turn"
+# How long a `--checkpointing` stand-down holds without reaching its mark.
+# Long enough for the slowest checkpoint (Step 4's flush can commit several
+# repos), short enough that an abandoned one does not silence the rest of
+# the epoch.
+CHECKPOINT_GRACE_S = 30 * 60
+
+
+def checkpoint_in_flight(st, now=None):
+    """True while a checkpoint started this epoch has not reached its mark.
+    A record from another epoch, a malformed one, one already lapsed, and one
+    stamped in the future all read as False: the gate speaks by default."""
+    cs = st.get("checkpoint_started")
+    if not isinstance(cs, dict):
+        return False
+    try:
+        if cs.get("epoch") != L.epoch(st):
+            return False
+        since = (time.time() if now is None else now) - float(cs.get("at"))
+    except (TypeError, ValueError):
+        return False
+    return 0 <= since <= CHECKPOINT_GRACE_S
 
 
 def tier_of(m):
@@ -103,14 +136,24 @@ HARD_TIERS = ("hard", "hard_nofit")
 
 
 def armed(st):
-    """(True, why) when state `st` shows this epoch's mid-turn HARD fired
-    and no checkpoint has run since; else (False, why)."""
+    """(True, why) when state `st` shows this epoch's mid-turn HARD fired,
+    no checkpoint has run since and none is underway; else (False, why).
+    An unreadable state is never armed: it answers, it does not raise, so a
+    hand-edited or half-written file cannot turn `--check` into a traceback
+    the caller has to interpret."""
     tg = st.get("turn_gate")
     if not isinstance(tg, dict):
         return False, "no mid-turn gate record in the state"
+    try:
+        ep = L.epoch(st)
+    except (TypeError, ValueError):
+        return False, "the gate state is unreadable: its epoch is not a number"
     if L.checkpointed_this_epoch(st):
         return False, "a checkpoint already ran this epoch"
-    if tg.get("epoch") != L.epoch(st):
+    if checkpoint_in_flight(st):
+        return False, ("a checkpoint is already underway; finish it through "
+                       "Step 4b and the mark")
+    if tg.get("epoch") != ep:
         return False, "the mid-turn gate record is from an earlier epoch"
     if tg.get("tier") not in HARD_TIERS:
         return False, f"the mid-turn gate last fired at tier {tg.get('tier')!r}, not HARD"
@@ -125,6 +168,27 @@ def check(argv):
     return 0 if ok else 1
 
 
+def checkpointing(argv):
+    """Stand the gate down for the checkpoint about to run. Never fails the
+    checkpoint: an unwritable state dir makes the hook silent anyway."""
+    if len(argv) != 1:
+        print("usage: turn_gate.py --checkpointing <session_id>"); return 2
+    sid = argv[0]
+    try:
+        L.update_state(sid, lambda s: s.__setitem__(
+            "checkpoint_started", {"epoch": L.epoch(s), "at": time.time()}))
+    except Exception:
+        pass
+    if checkpoint_in_flight(L.load_state(sid)):
+        print(f"mid-turn gate stood down for this checkpoint "
+              f"(up to {CHECKPOINT_GRACE_S // 60} min, or until the mark)")
+    else:
+        print("mid-turn gate not stood down: the state could not be written. "
+              "It is silent without a state record, so carry on; if a "
+              "`HARD, mid-turn` marker arrives, it is not a second checkpoint.")
+    return 0
+
+
 def main():
     try:
         inp = json.load(sys.stdin)
@@ -134,7 +198,7 @@ def main():
         print(json.dumps({})); return
     sid = inp.get("session_id") or "unknown"
     st = L.load_state(sid)
-    if L.checkpointed_this_epoch(st):
+    if L.checkpointed_this_epoch(st) or checkpoint_in_flight(st):
         print(json.dumps({})); return
     if L.mirror_off() and not L.exact_fresh(L.sensor(sid, st)):
         # The depth would be inferred: nothing to say, so read nothing.
@@ -152,7 +216,9 @@ def main():
             s["scan"] = m["scan_cache"]
         if m.get("side_cache"):
             s["sidechains"] = m["side_cache"]
-        if tier is None or L.checkpointed_this_epoch(s):
+        if tier is None or L.checkpointed_this_epoch(s) or checkpoint_in_flight(s):
+            # Re-read under the lock: a checkpoint may have started, or
+            # reached its mark, since the measurement above.
             return
         ep = L.epoch(s)
         last = s.get("turn_gate") if isinstance(s.get("turn_gate"), dict) else {}
@@ -178,6 +244,8 @@ def main():
 if __name__ == "__main__":
     if sys.argv[1:2] == ["--check"]:
         sys.exit(check(sys.argv[2:]))
+    if sys.argv[1:2] == ["--checkpointing"]:
+        sys.exit(checkpointing(sys.argv[2:]))
     try:
         main()
     except Exception:
