@@ -163,8 +163,16 @@ TOC, read on demand: `path — one line on what it holds`.
   count toward N or M. No time-based expiry — the head check covers it.
 - A LANDED manifest skips both checks (no dead claims, Next not withheld): the work is done.
   Either check degrades to the plain manifest if git or the store fails.
-- Injection tiers: `compact` → full + ledger tail; `resume`/`fork` → full only when the file
+- Injection tiers: `compact` → full + ledger digest; `resume`/`fork` → full only when the file
   or repo changed since last injection, else one header line; `startup`/`clear` → header only.
+- **The ledger digest** (2,500 chars, never exceeded) keeps reasoning ahead of pointers.
+  The *room* is the budget less a share held back for the closing line. `R`/`C` lines
+  from every epoch come first (newest first, up to half the room), then `D`/`X`/`U`/`Q`
+  ranked together newest first, then the remaining `R`/`C`, then the machine-written `P`
+  pointers in what is left. A line too long for half the room is cut with a ` [cut]`
+  marker, not dropped. Kept lines print in file order under their epoch headers. When
+  anything is left out or cut, a last line counts it and names the ledger file. A budget
+  too small for even that line gives an empty digest. The ledger file is never rewritten.
 - **`session:` is the author's own id**, read from `$CLAUDE_CODE_SESSION_ID` when the
   manifest is written (Claude Code sets it for every Bash call, and it follows `/clear`).
   Never copy it from the manifest being replaced: after `/clear` or a handoff that id is the
@@ -189,7 +197,7 @@ TOC, read on demand: `path — one line on what it holds`.
   operator's opener names this manifest, read it in full; otherwise it is another session's
   and not your memory." The derived check lines still follow it — dead claims, unparseable
   `items:`, and the Next-withheld line — since they describe the file, not anyone's memory.
-  The ledger tail and `/compact` guidance still inject on `compact`.
+  The ledger digest and `/compact` guidance still inject on `compact`.
 - **Reading adopts; `cat` looks.** A whole-file Read (no offset, no limit) of a `mode:
   handoff` manifest adopts that version: it is re-injected into this session after a
   compaction. To look without adopting, use `cat` (a Bash read) or a Read with an offset or
