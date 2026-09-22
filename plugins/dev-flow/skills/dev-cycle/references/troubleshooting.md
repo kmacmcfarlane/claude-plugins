@@ -56,10 +56,9 @@ names the symptom.
 
 - **The run was interrupted.** Re-invoke `/dev-cycle` on the same target: SKILL.md
   § Step 0.4 reduces the record and takes the one action its state names.
-- **A store-less run, re-invoked in a new session, finds what the old one left** — its
-  `worktree-<slug>` branch or worktree, or a live agent (`resume.md`, REMNANT; a review
-  worktree is reused, not a remnant). S0b: not resumable from this session — report it and stop; the orphan-worktree
-  rule below decides the remnant. Nothing is re-dispatched over it.
+- **A store-less run, re-invoked in a new session, finds what the old one left.** S0b: not
+  resumable from this session — report it and stop; `resume.md` § REMNANT names what
+  counts, and the orphan-worktree rule below decides it. Nothing is re-dispatched over it.
 - **A recorded dispatch's agent does not answer.** S3b: it counts as gone only after a
   SendMessage to its recorded id fails; then salvage what it left and re-dispatch on top of
   it, never over it.
