@@ -119,6 +119,14 @@ def data_root():
     return os.path.join(sensor.base_dir(), "plugins", "data")
 
 
+def data_name(plugin_id):
+    """The data-dir name Claude Code gives a plugin id (`<name>@<marketplace>`):
+    every character outside [A-Za-z0-9_-] replaced by "-", so
+    statusline-hub@my.mkt -> statusline-hub-my-mkt. The one rule every data-dir
+    name here comes from."""
+    return re.sub(r"[^A-Za-z0-9_-]", "-", plugin_id)
+
+
 def data_dir(script_path=None, scan=True):
     """This plugin's persistent data dir, first match of:
     1. $CLAUDE_PLUGIN_DATA (set for hooks; not in the Bash tool's environment);
@@ -127,7 +135,8 @@ def data_dir(script_path=None, scan=True):
        code running now (script_path) names it, <data>/<id> with Claude
        Code's id rule (installed_by_record);
     3. the name derived from the plugin cache path this code runs from
-       (plugins/cache/<mkt>/statusline-hub/);
+       (plugins/cache/<mkt>/statusline-hub/ -> the id statusline-hub@<mkt>,
+       named by data_name);
     4. with `scan`, the first <config>/plugins/data/statusline-hub-* dir -
        a guess when the plugin came from several marketplaces, so last. A
        dir whose current-hooks link leads somewhere without SCRIPT is not
@@ -143,7 +152,7 @@ def data_dir(script_path=None, scan=True):
         return d
     m = re.search(r"/plugins/cache/([^/]+)/" + re.escape(PLUGIN) + "/", here)
     if m:
-        return os.path.join(base, f"{PLUGIN}-{m.group(1)}")
+        return os.path.join(base, data_name(f"{PLUGIN}@{m.group(1)}"))
     try:
         for name in (sorted(os.listdir(base)) if scan else ()):
             d = os.path.join(base, name)
@@ -160,9 +169,8 @@ def data_dir(script_path=None, scan=True):
 def installed_by_record(path):
     """The data dir of the `statusline-hub@<mkt>` install whose installPath
     (in <config>/plugins/installed_plugins.json, `plugins` -> key -> list of
-    records) contains `path`, or None. The dir is <config>/plugins/data/<id>,
-    <id> being the key with every character outside [A-Za-z0-9_-] replaced
-    by "-" (Claude Code's own rule, so statusline-hub@mkt ->
+    records) contains `path`, or None. The dir is <config>/plugins/data/ and
+    the key's data_name (Claude Code's own rule, so statusline-hub@mkt ->
     statusline-hub-mkt).
     Reads key names and install paths only. Never raises."""
     try:
@@ -181,8 +189,7 @@ def installed_by_record(path):
                     continue
                 root = os.path.realpath(ip)
                 if here == root or here.startswith(root.rstrip(os.sep) + os.sep):
-                    return os.path.join(data_root(),
-                                        re.sub(r"[^A-Za-z0-9_-]", "-", key))
+                    return os.path.join(data_root(), data_name(key))
     except Exception:
         pass
     return None
