@@ -27,3 +27,5 @@ from H4 (a824) review, 2026-09-22 — H3 inputs: keep ## In flight and ## Copy f
 ## Notes
 - 2026-09-22 claimed by unknown@360f41058e92
 dispatch: implementer opus — context-guard hook logic
+impl r0 DONE 0124b9d (opus): ## Holds (HOLD what — why — until <decision N | event | UTC>) in handoff-format + Step 4b; holds on every owned header tier (≤8 lines/800 chars, sanitised), in place on full tiers, never on the foreign header; past UTC end → '[expired? confirm]'; trim rewritten to protect sections by name (Doing, Goal, Holds, In flight, Read in full, Copy forward never trimmed; order items: → Scrolls → Next (withheld line kept) → non-CORRECTION/REFUSED Aware-of → other); librarian ending-the-session Holds paragraph + Copy forward fact; SKILL.md § Rehydrate step 3 resume line; 11 tests (fail on main). Deviations: no owner field; REFUSED stays in Aware-of.
+dispatch: reviewer opus — hook trim/injection logic
