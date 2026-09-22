@@ -221,13 +221,18 @@ class TestRehydrate(unittest.TestCase):
 
 class TestLegacyArmMatchesMain(unittest.TestCase):
     """8cc2-F3b-1's regression guard (06 § Acceptance scoping): for an
-    UNMIGRATED repo — an owned repo HANDOFF.md and no store manifest anywhere —
-    the injected block is byte-for-byte what `main` produces, for every source,
-    after removing the single legacy_notice line. The notice is asserted on its
-    own, below. Skipped where the `main` ref or git is unavailable."""
+    UNMIGRATED repo — a repo HANDOFF.md and no store manifest anywhere — the
+    injected block is byte-for-byte what `main` produces, for every source and
+    every ownership arm, after removing the single legacy_notice line. The
+    notice is asserted on its own, below. Skipped where the `main` ref or git
+    is unavailable."""
 
     REL = "plugins/context-guard/hooks"
     SOURCES = ("startup", "resume", "compact", "clear", "fork")
+    # the three ownership arms the legacy path still decides, and the two
+    # modes that take different tiers
+    OWNERS = ("own", "none", "peer")
+    MODES = ("continue", "landed")
 
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
@@ -237,9 +242,7 @@ class TestLegacyArmMatchesMain(unittest.TestCase):
                             "-c", "user.name=t"] + c, check=True, capture_output=True)
         self.head = subprocess.run(["git", "-C", self.repo, "rev-parse", "--short", "HEAD"],
                                    capture_output=True, text=True).stdout.strip()
-        open(os.path.join(self.repo, "HANDOFF.md"), "w").write(MANIFEST.format(
-            written=time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-            head=self.head, mode="continue", scrolls="- x.md — notes"))
+        self.manifest()
         self.tp = os.path.join(self.repo, "child.jsonl")
         with open(self.tp, "w") as fh:
             fh.write(json.dumps({"type": "user", "sessionId": "parent-sid"}) + "\n")
@@ -252,6 +255,20 @@ class TestLegacyArmMatchesMain(unittest.TestCase):
             os.environ.pop("CLAUDE_CONFIG_DIR", None)
         else:
             os.environ["CLAUDE_CONFIG_DIR"] = self.old_env
+
+    def manifest(self, owner="own", mode="continue"):
+        """The repo manifest of the old layout. `owner`: this session's id
+        (own), no `session:` line at all (none — a hand-written manifest is
+        everyone's), or another session's (peer — the foreign header)."""
+        text = MANIFEST.format(
+            written=time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+            head=self.head, mode=mode, scrolls="- x.md — notes")
+        if owner == "none":
+            text = text.replace("session: s\n", "")
+        elif owner == "peer":
+            text = text.replace("session: s\n", "session: other-session\n")
+        with open(os.path.join(self.repo, "HANDOFF.md"), "w") as fh:
+            fh.write(text)
 
     def git(self, *args):
         # From the repo TOP: `<rev>:<path>` is read relative to the current
@@ -296,38 +313,45 @@ class TestLegacyArmMatchesMain(unittest.TestCase):
         return ((out.get("hookSpecificOutput") or {}).get("additionalContext", ""),
                 out.get("systemMessage"))
 
-    def both(self, source):
-        with tempfile.TemporaryDirectory() as a, tempfile.TemporaryDirectory() as b:
-            was = self.inject(self.base, source, a)
-            now = self.inject(HOOKS, source, b)
-        return was, now
-
     def notice(self, cfg):
         os.environ["CLAUDE_CONFIG_DIR"] = cfg
         sys.path.insert(0, HOOKS)
         import rehydrate as R
         return R.legacy_notice("s", os.path.join(self.repo, "HANDOFF.md"))
 
-    def test_every_source_matches_main_once_the_notice_is_removed(self):
-        for source in self.SOURCES:
-            with self.subTest(source=source), \
-                    tempfile.TemporaryDirectory() as a, \
-                    tempfile.TemporaryDirectory() as b:
-                was, _ = self.inject(self.base, source, a)
-                now, _ = self.inject(HOOKS, source, b)
-                self.assertIn("\n\n" + self.notice(b), now, source)
-                # Stripped from both sides, so the guard still reads "the
-                # legacy arm behaves as main's" once this change IS main.
-                self.assertEqual(now.replace("\n\n" + self.notice(b), "", 1),
-                                 was.replace("\n\n" + self.notice(a), "", 1),
-                                 source)
-                self.assertTrue(was)
+    def test_every_source_and_arm_matches_main_once_the_notice_is_removed(self):
+        for owner in self.OWNERS:
+            for mode in self.MODES:
+                self.manifest(owner, mode)
+                for source in self.SOURCES:
+                    with self.subTest(owner=owner, mode=mode, source=source), \
+                            tempfile.TemporaryDirectory() as a, \
+                            tempfile.TemporaryDirectory() as b:
+                        was, wmsg = self.inject(self.base, source, a)
+                        now, nmsg = self.inject(HOOKS, source, b)
+                        self.assertIn("\n\n" + self.notice(b), now)
+                        # Stripped from both sides, so the guard still reads
+                        # "the legacy arm behaves as main's" once this change
+                        # IS main.
+                        self.assertEqual(now.replace("\n\n" + self.notice(b), "", 1),
+                                         was.replace("\n\n" + self.notice(a), "", 1))
+                        self.assertEqual(nmsg, wmsg)
+                        self.assertTrue(was)
 
-    def test_the_system_message_matches_main(self):
-        for source in self.SOURCES:
-            with self.subTest(source=source):
-                (was, wmsg), (now, nmsg) = self.both(source)
-                self.assertEqual(nmsg, wmsg, source)
+    def test_the_arms_really_are_different_injections(self):
+        """The parameters above discriminate: without this the cross product
+        could be six copies of one tier."""
+        seen = {}
+        for owner in self.OWNERS:
+            for mode in self.MODES:
+                self.manifest(owner, mode)
+                with tempfile.TemporaryDirectory() as cfg:
+                    seen[(owner, mode)] = self.inject(HOOKS, "compact", cfg)[0]
+        self.assertIn("Precedence:", seen[("own", "continue")])
+        self.assertIn("(not this session)", seen[("peer", "continue")])
+        self.assertIn("Precedence:", seen[("none", "continue")])   # everyone's
+        self.assertIn("LANDED", seen[("own", "landed")])
+        self.assertEqual(len(set(seen.values())), len(seen))
 
     def test_the_notice_names_both_paths_and_fires_once(self):
         with tempfile.TemporaryDirectory() as cfg:

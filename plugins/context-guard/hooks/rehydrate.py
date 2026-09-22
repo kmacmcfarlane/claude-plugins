@@ -146,13 +146,25 @@ def git(cwd, *args, ok=False):
         return None
 
 
+_top_cache = {}
+
+
+def git_top(cwd):
+    """The cwd's git toplevel, else the cwd. Cached for this process (one
+    SessionStart), because the legacy arm and resolve_top would otherwise pay
+    for the same `rev-parse --show-toplevel` twice."""
+    if cwd not in _top_cache:
+        _top_cache[cwd] = git(cwd, "rev-parse", "--show-toplevel") or cwd
+    return _top_cache[cwd]
+
+
 def legacy_manifest_path(cwd):
     """The repo manifest of the OLD layout: <top>/.claude-sandbox/HANDOFF.md,
     else <top>/HANDOFF.md, plus the git toplevel. Read live and read-only:
     nothing here ever writes, rewrites or deletes it (8cc2-F3b). Named
     `legacy_` so no caller confuses it with L.manifest_path(sid), the store
     path of a session's own manifest."""
-    top = git(cwd, "rev-parse", "--show-toplevel") or cwd
+    top = git_top(cwd)
     for base in (os.path.join(top, ".claude-sandbox"), top):
         if base.endswith(".claude-sandbox") and not os.path.isdir(base):
             continue
@@ -1014,19 +1026,23 @@ def resolve_top(fm, cwd):
     `top:` when it is a string naming an existing directory, resolved with
     realpath; else the cwd's git toplevel; else the cwd. `(head unverified)` is
     not an alternative to that fallback - it is the existing liveness reason
-    for a resolved directory that is not a repo."""
+    for a resolved directory that is not a repo.
+
+    `top:` is repo text, used verbatim: no `~` expansion and no shell, so a
+    `top:` of `~` names nothing and falls back rather than pointing every
+    derived check at the reader's home. The mark step writes an absolute
+    path."""
     v = fm.get("top") if isinstance(fm, dict) else None
     if isinstance(v, str) and v.strip():
         v = v.strip()
         if len(v) >= 2 and v[0] == v[-1] and v[0] in "'\"":
             v = v[1:-1].strip()
         try:
-            v = os.path.expanduser(v)
-            if v and os.path.isdir(v):
+            if v and os.path.isabs(v) and os.path.isdir(v):
                 return os.path.realpath(v)
         except Exception:
             pass
-    return git(cwd, "rev-parse", "--show-toplevel") or cwd
+    return git_top(cwd)
 
 
 def legacy_notice(sid, path):
@@ -1034,9 +1050,11 @@ def legacy_notice(sid, path):
     session to whatever tier the legacy arm produced. A session that resolved a
     store manifest is never told about a repo file that is not its memory."""
     return (f"[context-guard rehydration] {path} is a repo manifest of the old "
-            f"layout: the checkpoint skill no longer writes one there, and "
-            f"nothing rewrites or deletes it - remove it when you choose. This "
-            f"session's own manifest is {L.manifest_path(sid)}.")
+            f"layout: read here, never written. The manifest becomes one file "
+            f"per session - this session's own is {L.manifest_path(sid)} - once "
+            f"a later update points the checkpoint skill's Step 4b there; until "
+            f"then Step 4b still writes the repo file. Nothing rewrites or "
+            f"deletes it: remove it when you choose.")
 
 
 def foreign_header(label, path, owner):
@@ -1139,6 +1157,10 @@ def main():
             text = withhold_next(text, moved)
         holds = holds_block(text) if ours else ""
 
+        if kind == "legacy" and not st.get("legacy_notice"):
+            # Computed before the tiers so the trim pays for it: the budget
+            # below is the whole injection's, and the notice is part of it.
+            notice = legacy_notice(sid, path)
         seen = st.get("manifest") or {}
         full = ours and (source == "compact" or bool(clear_pred) or (
             source in ("resume", "fork") and (seen.get("sha") != sha or seen.get("top") != top)))
@@ -1166,7 +1188,7 @@ def main():
             summary_used = bool(st.get("compact_summary"))
             parts += [header, preamble] + ([checks] if checks else []) + \
                 [trim(annotate_holds(text), CAP - len(header) - len(preamble) - len(checks)
-                      - LEDGER_BUDGET - 400)]
+                      - len(notice or "") - LEDGER_BUDGET - 400)]
             reads_new = RL.paths_from_manifest(text, top, cwd)
             sysmsg = (f"Rehydrated from {live}{f' ({why})' if why else ''} manifest "
                       f"({fm.get('written', '?')})"
@@ -1175,8 +1197,7 @@ def main():
         else:
             parts.append(header + " Read it before resuming its thread."
                          + "".join("\n" + c for c in (holds, checks, moved) if c))
-        if kind == "legacy" and not st.get("legacy_notice"):
-            notice = legacy_notice(sid, path)
+        if notice:
             parts.append(notice)
         if ours:
             # `manifest` = the version last shown to this session as its own.

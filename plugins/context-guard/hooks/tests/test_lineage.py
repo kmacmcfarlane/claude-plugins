@@ -1122,6 +1122,43 @@ class TestResolveOrder(StoreBase):
             {"sid": "X", "manifest": v}]})
         self.assertFull(self.start("B", "compact"))
 
+    def test_the_lookup_is_the_linked_sid_not_the_pins_owner(self):
+        # 05's rule, both arms. B owns a store manifest and the pin S carries
+        # names B as that VERSION's owner — but the link names A, which has no
+        # store file. Keying the lookup on the pin's `owner` (frontmatter
+        # content) would hand S the whole of B's private manifest; keying it on
+        # the linked session id finds nothing, which is the point of the rule.
+        self.store_checkpoint("B", doing="B's private memory.")
+        v = R.manifest_version(readf(L.manifest_path("B")))
+        for st in ({"lineage": [{"sid": "A", "manifest": v}]},
+                   {"manifest_adopted": dict(v, at=time.time(), sid="A")}):
+            with self.subTest(arm=sorted(st)[0]):
+                L.save_state("S", dict(st))
+                c = self.start("S", "compact")
+                self.assertNotIn("B's private memory.", c)
+                self.assertEqual(c, "")
+        # The control: the same pin, addressed to B, does resolve.
+        for st in ({"lineage": [{"sid": "B", "manifest": v}]},
+                   {"manifest_adopted": dict(v, at=time.time(), sid="B")}):
+            with self.subTest(arm=sorted(st)[0], addressed="B"):
+                L.save_state("S", dict(st))
+                self.assertFull(self.start("S", "compact"))
+
+    def test_own_store_manifest_is_ours_by_the_path_whatever_session_says(self):
+        # Between Step 4b's write and the mark step the file carries
+        # `session: <stamped>`, and an author can copy a predecessor's id into
+        # it. The file at manifest_path(sid) is this session's by its PATH: an
+        # ownership test here would answer "another session's" and hand the
+        # session a foreign header instead of its own memory.
+        for owner in ("<stamped>", "PREDECESSOR"):
+            with self.subTest(owner=owner):
+                self.store_checkpoint("X", owner=owner)
+                self.assertFull(self.start("X", "compact"))
+        # ... and an ownerless one (no `session:` line at all) too.
+        p = self.store_checkpoint("X")
+        writef(p, readf(p).replace("session: X\n", ""))
+        self.assertFull(self.start("X", "compact"))
+
     def test_a_pin_that_seals_nothing_falls_through_to_legacy(self):
         self.checkpoint("X")
         v = R.manifest_version(readf(self.path))
@@ -1234,6 +1271,26 @@ class TestResolvedTop(StoreBase):
             with self.subTest(top=top):
                 self.store_checkpoint("X", top=top or None)
                 self.assertIn("FRESH", self.start("X", "startup"))
+
+    def test_top_is_repo_text_taken_verbatim(self):
+        # No `~` expansion and no relative resolution: `top:` is repo text, and
+        # either would point every derived check — git -C among them — somewhere
+        # the manifest never named: the reader's home, or whatever directory the
+        # hook happens to have been started in.
+        d, head = self.repo2()
+        fallback = R.resolve_top({}, self.repo)
+        self.assertEqual(R.resolve_top({"top": "~"}, self.repo), fallback)
+        self.assertNotEqual(fallback, os.path.realpath(os.path.expanduser("~")))
+        old = os.getcwd()
+        os.chdir(os.path.dirname(d))         # where the bare name IS a directory
+        try:
+            self.assertEqual(R.resolve_top({"top": os.path.basename(d)}, self.repo),
+                             fallback)
+        finally:
+            os.chdir(old)
+        # An absolute one is still used, end to end.
+        self.store_checkpoint("X", head=head, top=d)
+        self.assertIn("FRESH", self.start("X", "startup"))
 
     def test_read_in_full_resolves_against_the_repo_not_the_store_dir(self):
         os.makedirs(os.path.join(self.repo, "a"))
