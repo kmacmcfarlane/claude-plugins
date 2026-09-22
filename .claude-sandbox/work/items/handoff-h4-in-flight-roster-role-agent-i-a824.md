@@ -33,3 +33,5 @@ review r1 (opus) at 83b9a0d: NEEDS_CHANGES. Seven Checks OK.
 dispatch: implementer opus — fix round 1 (resume)
 fix r1 DONE 0e707ca (opus): one full In flight rule in handoff-format (returned-but-unfinished counts; fresh process: try SendMessage first); 4b a pointer; Step 7 opener names ids to resume (+ copy-forward paths); copies go to the series, never items/; librarian doc points by name; all lows fixed. OQs → H3: librarian Rehydrate step 3 resumes roster ids; a test pinning In flight/Copy forward out of the trim list.
 dispatch: reviewer opus — review r2 (resume)
+review r2 (opus) at 0e707ca: CLEAR. One full rule, pointers resolve; Step 7 and the librarian closing line agree on resume. Low: librarian closing line omits the Copy forward fact; nits: "survive the section trim"; SKILL.md:131 reflow — moved to H3 (same docs).
+Review result: 2 rounds, 1 fix round; 3 mediums fixed, rehearsal waived (librarian, reason recorded); impl opus, review opus. Land checks (librarian): seven suites OK in the worktree; diff read — 3 files in scope.

@@ -20,3 +20,4 @@ Holds (e.g. no push until X, keep dispatch small until Y) get their own section 
 - learned: —
 
 from H4 (a824) review, 2026-09-22 — H3 inputs: keep ## In flight and ## Copy forward out of the trim order (handoff-format note) and add a test pinning it; librarian-mode SKILL.md § Rehydrate step 3 resumes roster agent ids (from doing:/dispatch: lines) with SendMessage before any re-dispatch.
+- from H4 r2 (low/nits): ending-the-session.md closing line should carry Step 7's Copy forward fact too (or point to Step 7); handoff-format 'survive the section trim'; checkpoint SKILL.md:131 reflow.

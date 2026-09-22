@@ -30,3 +30,7 @@ review r1 (opus) at daf57d2: NEEDS_CHANGES. Seven Checks OK; probes: multibyte c
 dispatch: implementer opus — fix round 1 (resume)
 fix r1 DONE c21f67c (opus): half-cap test fails under the room//2 → room mutation; long lines cut with [cut]; output clamped to budget (0–1000 tested); closing wording; non-title `# ` lines counted as reasoning; doc gives the real order; (f) declined — tail() is the test's baseline. Note: implementer's first mutation undo (git checkout) wiped uncommitted edits; re-applied and re-tested before commit.
 dispatch: reviewer opus — review r2 (resume)
+review r2 (opus) at c21f67c: NEEDS_CHANGES. Committed == tested (git archive identical); all mutations now killed; budgets 0–2500 respected.
+- [medium] ledger.py:144-155 — a cut but nothing left out → closing note with an empty count ("[ledger digest:  line(s) left out…]"), realistic for any small ledger with one long line. Pass: no note when nothing is left out, or "N line(s) cut; full ledger <path>"; test.
+- [low] below ~40+len(path) the clamp returns a stub ("[ledger di") → return "". nit: doc "half the budget" vs code half the room.
+dispatch: implementer opus — fix round 2 (resume)
