@@ -5,8 +5,8 @@ is a snapshot only its author can write; the facts around it — age, drift, dir
 — are computed live by `hooks/rehydrate.py` at injection). Work-addressed (class b1):
 lives at `.claude-sandbox/HANDOFF.md` when `.claude-sandbox/` exists (so `trackInHost`
 governs it), else `HANDOFF.md` at the repo root. Write-side budget **≤6,000 chars**;
-the hook trims Scrolls → Aware-of and never the mandatory tiers, under its 9,000-char
-injection cap.
+the hook trims Scrolls → Next → Aware-of (keeping CORRECTION/REFUSED) and never the
+mandatory tiers, under its 9,000-char injection cap.
 
 ## Format
 
@@ -29,6 +29,10 @@ items:            # optional: wi ids you expect still open or in flight
 
 ## Goal
 mode: <land|continue|handoff> — operator: "<their last stated goal, verbatim>"
+
+## Holds
+One line per standing hold, ≤8; `None` when there are none.
+- HOLD <what is held> — <why> — until <end condition: decision N | an event | a UTC time>
 
 ## In flight
 One line per agent this session dispatched that is not finished; `None` when drained.
@@ -84,9 +88,28 @@ TOC, read on demand: `path — one line on what it holds`.
   unverified: try `SendMessage` first, and re-dispatch from the roster's round only if it
   fails. When In flight is not `None`, the checkpoint's Step 7 opener names the ids to
   resume, so the rule reaches the successor before it acts. In flight and Copy forward are
-  not in the hook's trim list (`items:`, Scrolls, Aware-of), so they survive trimming — by
-  omission, not by a rule in the hook; a change to the trim order (the 5039 H3 item) must
-  keep it so.
+  never trimmed: the hook's trim protects them by name, with Doing, Goal, Holds and Read in
+  full (the trim rule below).
+- **A hold is a line with an end condition.** Every standing restriction the operator set —
+  "no push until decision 52", "dispatch small until the quota resets", "pause the loop
+  until 07:00" — goes under **Holds**, not Aware of, one line each: what is held, why, and
+  the END CONDITION that lifts it — a decision number (`until decision 52`), an event
+  (`until the F1 review is CLEAR`), or a time. Write a time as a UTC stamp (`until
+  2026-09-23T07:00Z`; a bare date ends with that UTC day), never "bedtime" or "tonight":
+  the hook can only check a time it can read, and a "pause until bedtime" hold once ran 37
+  hours. Each line starts with `HOLD` (after its `- `; any case, bold allowed): the hook
+  reads only those lines, so prose not led by HOLD is never injected. A hold with no end
+  condition is an open question — ask the operator for one. Holds ride on every tier of a
+  manifest this session owns: the full tiers inject the section untrimmed; the header-only
+  tiers (`startup`, `clear`, an unchanged `resume`) append its lines after the header line
+  in compact form (at most 8 lines, 800 chars, control characters stripped, the rest
+  counted). A hold whose end clause — the text after its last `until` (or `until:`), else
+  after its last ` — ` — leads with a time already past is marked `[expired? confirm: its
+  end time has passed]`, never dropped: the successor asks the operator before acting
+  against it or lifting it. A decision or an event is never marked, even one that mentions
+  a date later in the clause (`until decision 52 (filed 2026-09-20)`): it holds until
+  confirmed. The foreign header carries no holds — another session's holds are not this
+  session's. Lift a hold by deleting its line at the next checkpoint.
 - **Nothing a successor needs lives only in a session scratchpad.** The scratchpad is
   session-scoped: `/clear` gives the successor a new, empty one while `tasks/` stays
   behind, so a path into the old scratchpad works only by accident. Before writing the
@@ -181,6 +204,16 @@ TOC, read on demand: `path — one line on what it holds`.
   The whole injection stays under the 9,000-char budget: the body is trimmed to leave room
   for the digest. The successor's own new ledger starts `# ledger <sid> (successor of
   <predecessor sid>)`, a line the digest keeps, so the link survives its later compactions.
+  Every header-only tier of an owned manifest carries the Holds lines as well; every full
+  tier, the linked `/clear` included, injects the Holds section with its expiry marks.
+- **Trim order**, when the full body is over its budget: the frontmatter `items:` list, then
+  Scrolls, then Next (the hook's own `Next withheld` line kept), then the Aware-of lines other
+  than CORRECTION and REFUSED, then any other section not listed here, last first (Scrolls,
+  Next and Aware of keep what their own step kept). Headings match by name, ignoring a
+  trailing `:` or `(…)` (`## Holds:` is Holds). Doing,
+  Goal, Holds, In flight, Read in full and Copy forward are **never trimmed**; only a body
+  whose protected sections alone exceed the budget is cut at its end. A trimmed section keeps
+  its heading and reads `(trimmed — read the manifest file)`.
 - **The ledger digest** (2,500 chars, never exceeded) keeps reasoning ahead of pointers.
   The *room* is the budget less a share held back for the closing line. `R`/`C` lines
   from every epoch come first (newest first, up to half the room), then `D`/`X`/`U`/`Q`

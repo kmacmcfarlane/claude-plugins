@@ -92,6 +92,8 @@ Do this at session start and after any `/clear` or compaction. Never `ls` the wh
    grep -rh '^decision [0-9]' "$WI_ROOT" | sort -k2 -n | tail -1  # last decision N
    ```
 
+   Resume each agent id In flight or a `doing:`/`dispatch:` line names with SendMessage before any re-dispatch.
+
 4. **Inventory the tree.**
 
    ```bash

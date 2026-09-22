@@ -127,10 +127,15 @@ root — in **all three modes** (*land* writes `mode: landed` so the next sessio
 one header line, not a stale goal). At a stage boundary the published stage file is the
 authoritative record: point **Read in full** at it and carry only what the files do not
 hold — environment state, corrections, refusals; the format spec's stage-boundary rule
-has the full list. Write **In flight** from the dispatch notices or ListAgents, not
-memory, per the format spec's In flight rule. Fill the frontmatter `items:` with the `wi` ids of the open or doing
-items the manifest mentions (check them against the store, not memory): the rehydration hook
-diffs that list against the store and names every one since closed as a dead claim. If
+has the full list. Write **Holds** near the top, one line per standing hold the operator
+set (no push, keep dispatch small, pause a loop): what is held, why, and its end condition
+— a decision number, an event, or a UTC time — per the format spec's hold rule; `None`
+when there are none. Holds reach the successor in every tier, the header-only ones
+included, and are never trimmed. Write **In flight** from the dispatch notices or
+ListAgents, not memory, per the format spec's In flight rule. Fill the frontmatter
+`items:` with the `wi` ids of the open or doing items the manifest mentions (check them
+against the store, not memory): the rehydration hook diffs that list against the store
+and names every one since closed as a dead claim. If
 this session is running a standing mode (a skill that holds it in a role, entered by a
 command such as `/<plugin>:<mode> start`), set `mode_skill:` to that command exactly as the
 operator would type it; omit it otherwise and in a landed manifest. **Never type the
@@ -205,10 +210,11 @@ session re-enters the standing mode before anything else (with `then <next-skill
 well, the mode still leads and the next skill goes in the facts); `read <manifest path>
 in full first` (the path Step 4b actually wrote — `.claude-sandbox/HANDOFF.md` or root
 `HANDOFF.md`; "in full" matters — a fresh session, or a `/clear` the hook could not link,
-gets only the manifest header, so the opener is what tells the next session to read the
-whole file); and the one or two facts that changed since the manifest
-was written — pull these from the drift note or the `Aware of` lines you just wrote (the
-lean path has no drift note; use the `Aware of` lines), never restate the whole manifest.
+gets only the manifest header and its Holds lines, so the opener is what tells the next
+session to read the whole file); and the one or two facts that changed since the manifest
+was written — pull these from the Holds lines first, then the drift note or the `Aware of`
+lines you just wrote (the lean path has no drift note; use Holds and `Aware of`), never
+restate the whole manifest.
 When **In flight** is not `None`, one fact is always `resume <ids> with SendMessage; do not
 re-dispatch` (after a fresh process: try SendMessage first, re-dispatch from the roster's
 round only if it fails); when **Copy forward** is not empty, another is `copy forward

@@ -298,6 +298,24 @@ class TestLinkedClearTier(Base):
         self.assertNotIn("Read it before resuming", c)
         self.assertIn("predecessor X", out.get("systemMessage", ""))
 
+    def test_linked_clear_carries_holds_with_the_expiry_mark(self):
+        # 5039 H3: every full tier injects the Holds section with its expiry
+        # marks, and a linked /clear is a full tier.
+        self.checkpoint("X")
+        writef(self.path, readf(self.path).replace("\n## Aware of\n", (
+            "\n## Holds\n"
+            "- HOLD no push to origin — operator reviewing the log — until decision 52\n"
+            "- HOLD pause the loop — operator asleep — until 2020-01-02T03:04Z\n"
+            "\n## Aware of\n")))
+        self.predecessor_ledger("X")
+        self.end_clear("X")
+        c = self.start("S", "clear")
+        self.assertFull(c)
+        self.assertIn("## Holds\n- HOLD no push to origin", c)
+        self.assertIn("until 2020-01-02T03:04Z [expired? confirm: its end time "
+                      "has passed]", c)
+        self.assertNotIn("decision 52 [expired", c)
+
     def test_successor_ledger_first_line_names_the_predecessor(self):
         import ledger
         self.checkpoint("X")
