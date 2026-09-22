@@ -214,8 +214,9 @@ python3 "${CLAUDE_PLUGIN_ROOT}/hooks/mark_checkpoint.py" --from "<scratchpad>/HA
 It prints `installed <draft> as <path>`, then `stamped <path> (written …, head …, branch
 …, top …, session …)`. **Keep that path**: Step 7 prints it. (`handoff_path.py --path`
 prints the same path and writes nothing — the format spec's "Where it lives" has both
-commands' argv contracts.) A draft that is missing, or a store path that is not really
-this session's (a link planted there), is refused with `not installed, so not stamped`:
+commands' argv contracts.) A draft that is missing or over 30 minutes old (this
+checkpoint did not write it — rewrite it), or a store path that is not really this
+session's (a link planted there), is refused with `not installed, so not stamped`:
 nothing is written to the store, and the gate still stands down — fix it and run the
 command again. It stamps only a manifest written in the last 30 minutes, corrects a
 `session:` copied from the manifest it replaced, and leaves one it already stamped as it is

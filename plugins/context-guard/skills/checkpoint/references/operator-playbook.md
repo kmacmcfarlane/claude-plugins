@@ -153,8 +153,10 @@ command that installs it, so an unattended checkpoint runs without a prompt once
 Bash commands are allowed (`permissions.allow` in a settings file, or "don't ask again"
 at the first prompt). `<root>` is the plugin's install path — the `installPath` the
 snippet under "If the gate blocks wrongly" finds; it carries the plugin version, so the
-rules need re-adding after an update. They match the command as the skill runs it, the
-script path in double quotes:
+rules need re-adding after an update. They are literal prefix matches on the command as the
+skill runs it, the script path in double quotes: run each command exactly as the skill
+prints it — the same argument order and quoting — or it falls outside the rule and
+prompts.
 
 ```text
 Bash(python3 "<root>/hooks/turn_gate.py":*)

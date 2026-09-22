@@ -1723,17 +1723,44 @@ class TestMarkInstallsTheDraft(Base):
         self.assertNotInstalled(r, "no draft manifest")
         self.assertEqual(self.snap(L.manifest_path("S")), before)
 
+    def test_an_old_draft_is_refused_and_the_store_keeps_its_file(self):
+        # The installed copy is always new, so the stamp's 30-minute rule is
+        # judged by the draft: a previous checkpoint's draft (this Write
+        # failed or was skipped) is never sealed as this one's.
+        self.run_cli("--from", self.draft, "S")
+        before = self.snap(L.manifest_path("S"))
+        writef(self.draft, self.text.replace("Building the thing.", "Stale."))
+        old = time.time() - 3 * 3600
+        os.utime(self.draft, (old, old))
+        draft_before = self.snap(self.draft)
+        r = self.run_cli("--from", self.draft, "S")
+        self.assertNotInstalled(r, "was last written 180 min ago")
+        self.assertEqual(self.snap(L.manifest_path("S")), before)
+        self.assertEqual(self.snap(self.draft), draft_before)
+
+    def test_a_draft_just_inside_the_window_still_installs(self):
+        recent = time.time() - 25 * 60
+        os.utime(self.draft, (recent, recent))
+        r = self.run_cli("--from", self.draft, "S")
+        self.assertEqual(r.stderr, "")
+        self.assertIn(f"stamped {L.manifest_path('S')}", r.stdout)
+
+    def test_the_install_records_the_ledger_pointer(self):
+        self.run_cli("--from", self.draft, "S")
+        self.assertIn(f"- P installed HANDOFF.md -> {L.manifest_path('S')}",
+                      readf(L.ledger_path("S")))
+        # a refused install records nothing
+        os.remove(L.ledger_path("S"))
+        self.run_cli("--from", os.path.join(self.scratch.name, "nope.md"), "S")
+        self.assertFalse(os.path.exists(L.ledger_path("S")))
+
     def test_usage(self):
-        for args in (("--from", self.draft), ("--from", self.draft, "-S"),
-                     ("S", "--from", self.draft)):
+        for args in (("--from", self.draft), ("--from",), ("--from", self.draft, "-S"),
+                     ("S", "--from", self.draft), ("-S",), ("--from", self.draft, "S", "x")):
             r = self.run_cli(*args)
             self.assertNotEqual(r.returncode, 0, args)
             self.assertIn("usage: mark_checkpoint.py [--from <draft>] <session_id>",
                           r.stderr, args)
-        # a lone `--from` keeps the one-argument contract: an id with no state
-        r = self.run_cli("--from")
-        self.assertNotEqual(r.returncode, 0)
-        self.assertIn("nothing recorded", r.stderr)
         self.assertNotIn("checkpoint_epoch", L.load_state("S"))
         self.assertFalse(os.path.lexists(L.handoff_root()))
 

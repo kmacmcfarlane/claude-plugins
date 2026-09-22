@@ -33,9 +33,13 @@ outside the store.
   The install creates the store directories `0700` and writes the file `0600` through a
   temp file and an atomic replace; it only reads the draft. It refuses — `not installed,
   so not stamped`, nothing written to the store, the gate still stood down — when the draft
-  is missing or unreadable (or over 256 KB), when the id is not a plain one, or when the
+  is missing or unreadable (or over 256 KB), when the draft was last written more than 30
+  minutes ago (the stamp's own window, judged by the draft, since the installed copy is
+  always new: a previous checkpoint's draft is never sealed as this one's), when the id is not a plain one, or when the
   store path, the file or its `<sid>/` directory, is a link that resolves anywhere but
-  itself. Without `--from` it only stamps (and stands the gate down), as before.
+  itself. An installed manifest is recorded in the ledger as `P installed HANDOFF.md ->
+  <path>`. Without `--from` it only stamps (and stands the gate down), as before. Any other
+  argument shape, or an id starting with `-`, is a usage error.
 - **`handoff_path.py --path [<session_id>]`** — prints the store path and does nothing
   else: it writes nothing, creates no directory and reads no state. `--path` is required;
   the id is optional; an argument starting with `-` is a mistyped flag, never an id; any

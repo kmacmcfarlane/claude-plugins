@@ -216,11 +216,15 @@ class InstallRefused(Exception):
     """A draft that was not installed; the message says why."""
 
 
-def install_draft(draft, sid, environ=None):
+def install_draft(draft, sid, environ=None, now=None):
     """Copy the manifest drafted at `draft` to this session's own store path,
     L.manifest_path(this_session(sid, environ)), and return that path. Raises
     InstallRefused, having written nothing to the store, when the draft is
-    missing or unreadable, the id is not a plain one, or the store path (the
+    missing or unreadable, older than STAMP_WINDOW_S (the stamp's own "this
+    checkpoint wrote it" rule, judged by the DRAFT: the installed copy is
+    always new, so without this a previous checkpoint's draft - a Write that
+    failed or was skipped - would be sealed as this one's), the id is not a
+    plain one, or the store path (the
     file, or the <sid>/ directory above it) is not really ours - a link
     planted there resolves out of place and is refused, never written
     through. The store directories are created 0700; the file is written to a
@@ -234,6 +238,11 @@ def install_draft(draft, sid, environ=None):
             raise InstallRefused(f"no draft manifest at {draft}")
         if os.path.getsize(draft) > DRAFT_MAX:
             raise InstallRefused(f"the draft {draft} is over {DRAFT_MAX:,} bytes")
+        age = (time.time() if now is None else now) - os.path.getmtime(draft)
+        if age > STAMP_WINDOW_S:
+            raise InstallRefused(f"the draft {draft} was last written "
+                                 f"{int(age // 60)} min ago, so this checkpoint "
+                                 f"did not write it; rewrite it (Step 4b)")
         with open(draft, "rb") as fh:
             data = fh.read(DRAFT_MAX + 1)
     except InstallRefused:
@@ -430,10 +439,14 @@ def session_warnings(sid, cwd=None, environ=None):
 
 def main(argv):
     draft = None
-    if len(argv) == 4 and argv[1] == "--from" and not argv[3].startswith("-"):
+    usage = "usage: mark_checkpoint.py [--from <draft>] <session_id>"
+    if len(argv) >= 2 and argv[1] == "--from":
+        if len(argv) != 4:
+            sys.exit(usage)
         draft, argv = argv[2], [argv[0], argv[3]]
-    if len(argv) != 2:
-        sys.exit("usage: mark_checkpoint.py [--from <draft>] <session_id>")
+    if len(argv) != 2 or argv[1].startswith("-"):
+        # an id never starts with "-": that is a mistyped flag
+        sys.exit(usage)
     sid = argv[1]
     if not os.path.exists(L.state_path(sid)):
         # A live session always has state (every prompt's gate hook writes it), so
@@ -446,7 +459,16 @@ def main(argv):
     installed, refused = [], []
     if draft is not None:
         try:
-            installed.append(f"installed {draft} as {install_draft(draft, sid)}")
+            target = install_draft(draft, sid)
+            installed.append(f"installed {draft} as {target}")
+            try:
+                # The ledger's pointer to the manifest: the Write that used to
+                # record it (ledger_pointer.py) now writes only the draft.
+                import ledger
+                ledger.append(this_session(sid), "P", "installed HANDOFF.md",
+                              ref=target)
+            except Exception:
+                pass
         except InstallRefused as e:
             refused.append(f"mark_checkpoint.py: not installed, so not stamped: "
                            f"{e}. Fix it and run this again.")
