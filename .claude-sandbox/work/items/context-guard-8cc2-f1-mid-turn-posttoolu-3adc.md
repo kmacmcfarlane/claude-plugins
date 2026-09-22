@@ -10,14 +10,14 @@ parent: context-guard-turn-gate-8cc2
 owner: unknown@360f41058e92
 claimed: 2026-09-21T19:08Z
 created: 2026-09-21
-updated: 2026-09-21
+updated: 2026-09-22
 ---
 
 Port plan .claude-sandbox/investigations/8cc2-turn-gate-port — design awaits the 02 serial (HARD mid-turn marker only when hard_applies(block_window, tok); unattended checkpoint path defers to a custody skill's own mode).
 
 ## Handoff
-- doing: CLEAR at c7d4757; merge held
-- next: land right after F3a (needs decision 48); resolve hooks.json/README/checkpoint Step 5 conflicts via a conflict round
+- doing: fix r1 fadd0ed (stand-down while a checkpoint is underway); review r2 running (agent af38b45d01f832696, opus)
+- next: on CLEAR: land (merge-tree first — it conflicts easily), then F3b-4 may start
 - blocked: —
 - learned: —
 

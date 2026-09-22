@@ -16,8 +16,8 @@ updated: 2026-09-22
 Port plan .claude-sandbox/investigations/8cc2-turn-gate-port OQ1 — blocked on operator decision 47.
 
 ## Handoff
-- doing: —
-- next: —
+- doing: plan of record = serials 04-07 + the pending 08 (planner af270a918b34187ff, opus, round 4: drop the refresh); F3b-1 building (agent a3f270c1ce4ff1026, opus, worktree f3b-1-per-session-manifest-store)
+- next: 08 → delta check (reviewer a646b4e73011ebb68) → F3b-1 review; then F3b-2, then F3b-4 after 3adc lands, then F3b-3, then F3b-5 on decision 65
 - blocked: —
 - learned: —
 
