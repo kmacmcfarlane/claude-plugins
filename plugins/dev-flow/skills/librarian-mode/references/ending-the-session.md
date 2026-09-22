@@ -9,13 +9,16 @@ $WI handoff <id> --doing "<state>" --next "<step>" [--blocked "<why>"] [--learne
 ```
 
 on **every** open item — yours and the ones dispatched. For a dispatched item, `--doing`
-names each live role's agent id and round (`implementer <id> round 2, reviewer <id> round
-3`), so the id survives in the store even where the manifest does not reach.
+names each live role's agent id and round, read off the record's `agent:` lines (the
+`dev-cycle` skill's `references/record-lines.md` — an id that lives only in `ListAgents`
+is gone with the process): `implementer <id> round 2, reviewer <id> round 3`, so the id
+survives in the store even where the manifest does not reach.
 
 **In-flight roster.** Every checkpoint this session runs fills the checkpoint skill's In
 flight roster, following that skill's In flight rule (who counts, and resuming by id
-rather than re-dispatching), with the entries built from the `dispatch:` lines on the
-`doing` items and ListAgents, never from memory.
+rather than re-dispatching), with the entries built from the same `agent:` lines and
+probed the same way — the `dev-cycle` skill's `references/resume.md` § LIVE — never from
+memory.
 
 **Holds.** Every standing hold goes under the manifest's Holds section, one line each
 with its end condition, per the checkpoint skill's hold rule:
@@ -83,19 +86,19 @@ compacts when convenient, and it continues. Finish the step in hand, then:
 1. **Handoffs** — `$WI handoff` on every open item, as above.
 2. **Checkpoint** — run the checkpoint skill with the argument `continue`, and answer its
    Step 0 question 3 up front with the `/compact <guidance>` arm of its Step 5 (not
-   `/rewind`), and question 2 yourself — the in-flight inventory, from the `doing` items,
-   their `dispatch:` lines and ListAgents — with no question dialog: agents may still be
-   in flight, and a modal blocks their returns and peer messages (SKILL.md § Intake
-   step 3). The same inventory is the manifest's In flight roster, and every scratchpad
-   file it depends on is copied out or listed under Copy forward (both above). The
-   inventory goes in the closing message; anything the operator adds is
-   filed as a work item. Under the "HARD, mid-turn" marker the checkpoint skill's
-   unattended section skips Step 0 entirely, question 2 included — but not the inventory:
-   it comes from the `doing` items, their `dispatch:` lines and ListAgents, not from the
-   operator, so the manifest's In flight roster and its Holds are written from that
-   evidence as always. Only what the operator would have added on top is missing, and
-   whatever this session merely assumes goes under `Doing` or `Aware of` as a `BELIEF`
-   line, marked unconfirmed — still in mode `continue` — and steps 3 and 4 still follow
+   `/rewind`), and question 2 yourself — the in-flight inventory, the In-flight roster
+   rule above — with no question dialog: agents may still be in flight, and a modal
+   blocks their returns and peer messages (SKILL.md § Intake step 3). The same
+   inventory is the manifest's In flight roster, and every scratchpad file it depends on
+   is copied out or listed under Copy forward (both above). The inventory goes in the
+   closing message; anything the operator adds is filed as a work item. Under the
+   "HARD, mid-turn" marker the checkpoint skill's unattended section skips Step 0
+   entirely, question 2 included — but not the inventory: it comes from the same
+   In-flight roster rule, not from the operator, so the manifest's In flight roster and
+   its Holds are written from that evidence as always. Only what the operator would
+   have added on top is missing, and whatever this session merely assumes goes under
+   `Doing` or `Aware of` as a `BELIEF` line, marked unconfirmed — still in mode
+   `continue` — and steps 3 and 4 still follow
    before the turn ends: the push, then the closing Report, whose last thing is the
    checkpoint's opener. A marker that arrives while this checkpoint is already
    underway neither restarts it nor abandons it: finish Step 4b and the mark, which
@@ -123,11 +126,11 @@ compacts when convenient, and it continues. Finish the step in hand, then:
    operator's convenience (the next morning is fine), the manifest's absolute path, and
    last its Step 7 opener, led by `/dev-flow:librarian-mode start`, then `Read (the Read
    tool) <absolute manifest path> in full first`, then — when the roster is not `None` —
-   `resume <ids> with SendMessage; do not re-dispatch` naming every id on it, then —
-   when Copy forward is not empty — `copy forward <paths> first` (the checkpoint's Step
-   7), and the facts changed since the manifest, Holds first. Never run `/compact`
-   yourself, and start no new work — no dispatch, no merge — in that turn (step 3's
-   merge of `origin/main` through a rejected push is not new work).
+   `resume <ids>` per the `dev-cycle` skill's `references/resume.md` § LIVE, naming
+   every id on it, then — when Copy forward is not empty — `copy forward <paths> first`
+   (the checkpoint's Step 7), and the facts changed since the manifest, Holds first.
+   Never run `/compact` yourself, and start no new work — no dispatch, no merge — in
+   that turn (step 3's merge of `origin/main` through a rejected push is not new work).
 
 The checkpoint stands the gate down, so nothing warns again before the compaction.
 Requests that arrive in that gap are filed through Intake as usual and held — no

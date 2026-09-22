@@ -92,7 +92,8 @@ Do this at session start and after any `/clear` or compaction. Never `ls` the wh
    grep -rh '^decision [0-9]' "$WI_ROOT" | sort -k2 -n | tail -1  # last decision N
    ```
 
-   Resume each agent id In flight or a `doing:`/`dispatch:` line names with SendMessage before any re-dispatch.
+   Resume each agent id In flight or a `doing:`/`dispatch:` line names — the `dev-cycle`
+   skill's `references/resume.md` § LIVE.
 
 4. **Inventory the tree.**
 
@@ -105,10 +106,9 @@ Do this at session start and after any `/clear` or compaction. Never `ls` the wh
    `git -C "$MAIN" rev-parse -q --verify MERGE_HEAD` succeeds here or before any store
    commit: a merge interrupted in the main checkout — a push-rejection merge or a
    landing merge, told apart by comparing `MERGE_HEAD` against `origin/main` and the
-   `worktree-*` branch tips — `merge --abort`, then redo the matching one
-   (`references/troubleshooting.md`).
-   Then ListAgents for background agents still running. A worktree with no running agent and
-   no `doing` item is an orphan — see Troubleshooting.
+   `worktree-*` branch tips — `merge --abort`, then the matching redo, or a decision
+   when neither matches (`references/troubleshooting.md`).
+   A worktree with no live agent and no `doing` item is an orphan — see Troubleshooting.
 
 Expected output: one short paragraph — items in flight, items ready, worktrees and agents
 alive, anything awaiting the operator, any active hold; after an init, one clause more
@@ -202,8 +202,9 @@ would ask the operator. Its Step 6 is the Report below. Your bindings:
 
 Dispatch a dependency group in one message, one cycle per item, so they run in parallel;
 a later group starts only after everything it depends on has landed. Fable running out
-mid-group is one pending decision for every item it hits; meanwhile hand each waiting
-item off and take other work.
+mid-group is one decision, its pair copied onto every item it hits
+(`references/model-routing.md` § Fallback); meanwhile hand each waiting item off and
+take other work.
 
 ## Idle turn
 
