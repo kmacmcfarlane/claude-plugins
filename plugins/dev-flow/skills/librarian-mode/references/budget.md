@@ -5,7 +5,7 @@ Every librarian on one subscription spends from the same five-hour and weekly wi
 It decides nothing. It prints the numbers (used, velocity, allowed rate and reserve per
 window, the binding window, the fresh-claim count) and `next_check`, and nothing else. The
 mode and the concurrency cap N are chosen in F2's idle turn from those numbers, and that
-integration has not landed yet. The reason is 1222 F1 review r1 decision: F2 owns the mode
+integration has not landed yet. The reason is the librarian's decision on R1, recorded on work item 9882: F2 owns the mode
 table and the N formula, and the agents policy is about to change the librarian count that
 formula divides by. Computing N here would bake in a formula that is about to change.
 
@@ -166,7 +166,8 @@ then counts fresh claims.
 | Claim on disk | Action | `in_flight` |
 |---|---|---|
 | none | `created`, by an exclusive create | `[]` |
-| a file that does not parse | `replaced-unreadable` | `[]` |
+| a regular file of at most 1 MiB that does not parse as a JSON object | `replaced-unreadable` | `[]` |
+| anything else it cannot read as a claim: not a regular file (a symlink, a directory), over 1 MiB, or unreadable | `conflict` with `unusable: true`: not written, `--takeover` or no | — |
 | this session's | `refreshed`, other fields kept (an identity field this call cannot read keeps its stored value) | kept |
 | another session's, expired | `replaced-expired` | `[]` |
 | another session's, fresh, same process (`pid`, `pidDomain`, `procStart` all equal and present: a `/clear`) | `takeover-same-process` | `[]` |

@@ -606,6 +606,160 @@ class TestPoisonedInput(Base):
         self.assertIsNone(qb.epoch("99999-01-01T00:00:00"))
 
 
+class TestHardening(Base):
+    """99b4: the F1 review r2 lows."""
+
+    def claim_path(self, repo="myrepo"):
+        return os.path.join(self.store, "claims", repo + ".json")
+
+    # L1: replaced-unreadable only on a parse failure of a regular file under READ_MAX
+    def test_non_object_json_claim_is_replaced(self):
+        os.makedirs(os.path.dirname(self.claim_path()))
+        with open(self.claim_path(), "w") as f:
+            f.write("[1, 2]")
+        _, r, _ = self.run_qb()
+        self.assertEqual(r["claims"]["action"], "replaced-unreadable")
+        self.assertEqual(self.read_claim("myrepo")["session_id"], SID)
+
+    def test_bad_utf8_claim_is_replaced(self):
+        os.makedirs(os.path.dirname(self.claim_path()))
+        with open(self.claim_path(), "wb") as f:
+            f.write(b"\xff\xfe{")
+        _, r, _ = self.run_qb()
+        self.assertEqual(r["claims"]["action"], "replaced-unreadable")
+
+    def assertUnusable(self, r):
+        c = r["claims"]
+        self.assertEqual((c["action"], c["written"], c.get("unusable")), ("conflict", False, True))
+
+    def test_oversized_claim_is_a_conflict_and_left_alone(self):
+        os.makedirs(os.path.dirname(self.claim_path()))
+        body = json.dumps({"v": 1, "session_id": "other", "at": NOW, "pad": "x" * 200})
+        with open(self.claim_path(), "w") as f:
+            f.write(body)
+        with mock.patch.object(qb, "READ_MAX", 64):
+            rc, r, _ = self.run_qb()
+        self.assertEqual(rc, 0)
+        self.assertUnusable(r)
+        with open(self.claim_path()) as f:
+            self.assertEqual(f.read(), body)
+
+    def test_oversized_claim_is_left_alone_even_with_takeover(self):
+        os.makedirs(os.path.dirname(self.claim_path()))
+        with open(self.claim_path(), "w") as f:
+            f.write("x" * 100)
+        with mock.patch.object(qb, "READ_MAX", 64):
+            _, r, _ = self.run_qb("--takeover")
+        self.assertUnusable(r)
+        with open(self.claim_path()) as f:
+            self.assertEqual(f.read(), "x" * 100)
+
+    def test_directory_at_claim_path_is_a_conflict(self):
+        os.makedirs(self.claim_path())
+        rc, r, _ = self.run_qb()
+        self.assertEqual(rc, 0)
+        self.assertUnusable(r)
+        self.assertTrue(os.path.isdir(self.claim_path()))
+
+    def test_symlink_at_claim_path_is_a_conflict_and_target_untouched(self):
+        outside = tempfile.TemporaryDirectory()
+        self.addCleanup(outside.cleanup)
+        target = os.path.join(outside.name, "target")
+        with open(target, "w") as f:
+            f.write("not json")
+        os.makedirs(os.path.dirname(self.claim_path()))
+        os.symlink(target, self.claim_path())
+        _, r, _ = self.run_qb()
+        self.assertUnusable(r)
+        self.assertTrue(os.path.islink(self.claim_path()))
+        with open(target) as f:
+            self.assertEqual(f.read(), "not json")
+
+    def test_dangling_symlink_at_claim_path_is_a_conflict(self):
+        outside = tempfile.TemporaryDirectory()
+        self.addCleanup(outside.cleanup)
+        target = os.path.join(outside.name, "target")
+        os.makedirs(os.path.dirname(self.claim_path()))
+        os.symlink(target, self.claim_path())
+        _, r, _ = self.run_qb()
+        self.assertUnusable(r)
+        self.assertFalse(os.path.lexists(target))
+
+    @unittest.skipIf(hasattr(os, "geteuid") and os.geteuid() == 0, "root reads mode-000 files")
+    def test_unreadable_claim_is_a_conflict(self):
+        os.makedirs(os.path.dirname(self.claim_path()))
+        with open(self.claim_path(), "w") as f:
+            f.write("{}")
+        os.chmod(self.claim_path(), 0)
+        _, r, _ = self.run_qb()
+        self.assertUnusable(r)
+        os.chmod(self.claim_path(), 0o600)
+        with open(self.claim_path()) as f:
+            self.assertEqual(f.read(), "{}")
+
+    # L2: a symlink planted at samples.lock never creates or touches its target
+    def test_symlink_at_samples_lock_creates_nothing_outside_the_store(self):
+        outside = tempfile.TemporaryDirectory()
+        self.addCleanup(outside.cleanup)
+        target = os.path.join(outside.name, "planted")
+        os.makedirs(self.store)
+        os.symlink(target, os.path.join(self.store, "samples.lock"))
+        self.sensor(at=NOW)
+        rc, r, err = self.run_qb()
+        self.assertFalse(os.path.lexists(target))
+        self.assertEqual(rc, 1)
+        self.assertIn("samples.jsonl append failed", err)
+        self.assertEqual(r["signal"], "ok")
+
+    def test_symlink_at_samples_lock_leaves_an_existing_target_alone(self):
+        outside = tempfile.TemporaryDirectory()
+        self.addCleanup(outside.cleanup)
+        target = os.path.join(outside.name, "planted")
+        with open(target, "w") as f:
+            f.write("keep")
+        os.chmod(target, 0o644)
+        os.makedirs(self.store)
+        os.symlink(target, os.path.join(self.store, "samples.lock"))
+        self.sensor(at=NOW)
+        self.run_qb()
+        with open(target) as f:
+            self.assertEqual(f.read(), "keep")
+        self.assertEqual(stat.S_IMODE(os.stat(target).st_mode), 0o644)
+
+    @unittest.skipIf(hasattr(os, "geteuid") and os.geteuid() == 0, "root writes mode-0400 files")
+    def test_read_only_lock_file_still_locks(self):
+        os.makedirs(self.store)
+        lock = os.path.join(self.store, "samples.lock")
+        with open(lock, "w"):
+            pass
+        os.chmod(lock, 0o400)
+        self.sensor(at=NOW)
+        rc, _, err = self.run_qb()
+        self.assertEqual(rc, 0, err)
+        self.assertTrue(os.path.exists(os.path.join(self.store, "samples.jsonl")))
+
+    # L3: only parse failures are skipped as bad lines
+    def test_parse_failures_are_skipped(self):
+        p = os.path.join(self.cfg, "x.jsonl")
+        with open(p, "wb") as f:
+            f.write(b"not json\n\xff\xfe\n" + DEEP.encode() + b"\n{\"ok\": 1}\n")
+        self.assertEqual(qb.read_jsonl(p, lambda d: d), [{"ok": 1}])
+
+    def test_error_other_than_a_parse_failure_is_not_a_bad_line(self):
+        p = os.path.join(self.cfg, "x.jsonl")
+        with open(p, "w") as f:
+            f.write('{"ok": 1}\n')
+
+        def broken(d):
+            raise KeyError("a bug in parse")
+
+        with self.assertRaises(KeyError):
+            qb.read_jsonl(p, broken)
+
+    def test_missing_file_reads_as_empty(self):
+        self.assertEqual(qb.read_jsonl(os.path.join(self.cfg, "nope.jsonl"), qb.parse_sample), [])
+
+
 class TestEpoch(Base):
     def test_milliseconds_heuristic(self):
         self.assertEqual(qb.epoch(1_790_000_000_123), 1_790_000_000.123)

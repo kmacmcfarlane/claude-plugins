@@ -35,6 +35,7 @@ import json
 import math
 import os
 import re
+import stat
 import subprocess
 import sys
 import tempfile
@@ -262,9 +263,13 @@ def read_jsonl(path, parse, tail=SAMPLES_TAIL):
         return out
     for raw in data.splitlines():
         try:
-            s = parse(json.loads(raw.decode("utf-8")))
-        except Exception:  # a poisoned line (bad JSON, RecursionError, ...) is skipped
+            d = json.loads(raw.decode("utf-8"))
+        except (ValueError, RecursionError, MemoryError):
+            # A poisoned line (bad UTF-8, bad JSON, an over-long integer, deep
+            # nesting) is skipped. Nothing else is caught: a bug in `parse` or
+            # anything but a parse failure is not a bad line.
             continue
+        s = parse(d)
         if s is not None:
             out.append(s)
     return out
@@ -293,6 +298,17 @@ def read_sink(dirs, now):
     return out
 
 
+def open_lock(path):
+    """An fd on the lock file for flock. O_NOFOLLOW: a symlink planted at path
+    fails with ELOOP (an OSError, reported as a store write error) and never
+    creates or opens its target. A lock file this user may not write is opened
+    read-only, which flock accepts."""
+    try:
+        return os.open(path, os.O_RDWR | os.O_CREAT | os.O_NOFOLLOW, 0o600)
+    except PermissionError:
+        return os.open(path, os.O_RDONLY | os.O_NOFOLLOW)
+
+
 def append_sample(path, s):
     """One O_APPEND write of one line; prune by a temp-and-rename rewrite once the
     file passes SAMPLES_PRUNE_AT. Append and prune both hold an exclusive flock
@@ -301,7 +317,7 @@ def append_sample(path, s):
     d = os.path.dirname(path)
     ensure_dir(d)
     line = (json.dumps(sample_line(s), sort_keys=True) + "\n").encode("utf-8")
-    lk = os.open(os.path.join(d, "samples.lock"), os.O_WRONLY | os.O_CREAT, 0o600)
+    lk = open_lock(os.path.join(d, "samples.lock"))
     try:
         fcntl.flock(lk, fcntl.LOCK_EX)
         fd = os.open(path, os.O_WRONLY | os.O_APPEND | os.O_CREAT, 0o600)
@@ -472,6 +488,38 @@ def create_exclusive_json(path, obj):
             pass
 
 
+def claim_file_state(path):
+    """How write_claim may treat a claim path read_json could not use: "absent";
+    "garbled" only for a regular file of at most READ_MAX bytes, read in full,
+    whose content does not parse as a JSON object (safe to replace); "ok" when
+    it parses after all (it changed under us); "unusable" for anything else - not
+    a regular file (a symlink, a directory, ...), oversized, or unreadable -
+    which is never overwritten."""
+    try:
+        st = os.lstat(path)
+    except FileNotFoundError:
+        return "absent"
+    except OSError:
+        return "unusable"
+    if not stat.S_ISREG(st.st_mode) or st.st_size > READ_MAX:
+        return "unusable"
+    try:
+        fd = os.open(path, os.O_RDONLY | os.O_NOFOLLOW)
+        with os.fdopen(fd, "rb") as f:
+            data = f.read(READ_MAX + 1)
+    except OSError:
+        return "unusable"
+    if len(data) > READ_MAX:
+        return "unusable"
+    try:
+        d = json.loads(data.decode("utf-8"))
+    except (ValueError, RecursionError):  # UnicodeDecodeError is a ValueError
+        return "garbled"
+    except MemoryError:
+        return "unusable"
+    return "ok" if isinstance(d, dict) else "garbled"
+
+
 IDENTITY_KEYS = ("session_name", "pid", "pidDomain", "procStart")
 
 
@@ -485,7 +533,11 @@ def write_claim(store, repo, session, ident, now, takeover=False, attempts=3):
 
     - no claim: created by an exclusive create (one creator wins a race; the
       losers re-read and see a fresh foreign claim);
-    - an unreadable claim file, or an expired claim: replaced, `in_flight: []`;
+    - a claim file that does not parse (a regular file of at most READ_MAX
+      bytes whose content is not a JSON object), or an expired claim: replaced,
+      `in_flight: []`;
+    - a claim path that is not a regular file, is oversized or cannot be read:
+      never overwritten, reported as a conflict with `unusable: true`;
     - our own session's claim: refreshed, its other fields kept (an identity
       field this call could not read keeps its stored value);
     - a fresh claim of another session: taken over (`in_flight` reset, per the
@@ -509,6 +561,12 @@ def write_claim(store, repo, session, ident, now, takeover=False, attempts=3):
                 return rep
             continue  # someone else created it first: judge their claim
         if old is None:
+            state = claim_file_state(path)
+            if state in ("absent", "ok"):
+                continue  # it changed between the two looks: judge it again
+            if state != "garbled":
+                rep.update(action="conflict", unusable=True)
+                return rep
             rep["action"] = "replaced-unreadable"
         elif old.get("session_id") == session:
             kept = dict(old)
