@@ -65,14 +65,20 @@ skill's decision channel, `decision N:` under `decisions needed` (SKILL.md § Th
   `dev-cycle` skill's `references/fix-loop.md` § A merge conflict — and lands it through
   The cycle; the other is the operator resolving it on origin. The decision goes under
   `decisions needed` — the next Report mid-session, the final Report at session end.
-- **A merge of `origin/main` left uncommitted.** `git -C "$MAIN" rev-parse -q --verify
-  MERGE_HEAD` succeeds at Rehydrate step 4, or before any store commit: a push-rejection
-  merge was interrupted between step 2 and its commit or abort (a crash, a `/clear`).
-  Never commit it as found — its Checks result is gone: `git -C "$MAIN" merge --abort`,
-  then redo § Push rejected from step 1. A leftover `MERGE_HEAD` in a worktree branch,
-  from a conflict round's own merge of `origin/main` there (not here), is not this case:
-  compare it against `origin/main` before choosing the redo — only the main checkout's
-  stalled push-rejection merge gets aborted and redone this way.
+- **A merge left uncommitted in the main checkout.** `git -C "$MAIN" rev-parse -q
+  --verify MERGE_HEAD` succeeds at Rehydrate step 4, or before any store commit: a merge
+  was interrupted between its `--no-commit` and its commit or abort (a crash, a
+  `/clear`). `MERGE_HEAD` is per-worktree — this can only be a merge the main checkout
+  itself ran, never a conflict round's merge inside a linked worktree, which is
+  invisible here. Never commit it as found — its Checks result is gone. Which merge it
+  was decides the redo, so compare `git -C "$MAIN" rev-parse MERGE_HEAD` against
+  `origin/main` and the `worktree-*` branch tips (`git -C "$MAIN" branch --list
+  'worktree-*' -v`) before aborting:
+  - **`origin/main`'s commit**: a push-rejection merge (§ Push rejected step 2) —
+    `git -C "$MAIN" merge --abort`, then redo § Push rejected from step 1.
+  - **A `worktree-*` branch's tip**: a landing merge (`git -C "$MAIN" merge --no-ff
+    worktree-<name>`, SKILL.md § The cycle's Terminal action) — `git -C "$MAIN" merge
+    --abort`, then re-land that branch through The cycle (Checks again).
 - **No `origin` remote.** A custody layer in a repo with no remote has nothing to push to:
   skip the push, and say so once in the Report rather than every cycle.
 

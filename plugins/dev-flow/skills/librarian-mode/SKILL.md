@@ -103,7 +103,9 @@ Do this at session start and after any `/clear` or compaction. Never `ls` the wh
    ```
 
    `git -C "$MAIN" rev-parse -q --verify MERGE_HEAD` succeeds here or before any store
-   commit: an interrupted push merge — `merge --abort`, then redo § Push rejected
+   commit: a merge interrupted in the main checkout — a push-rejection merge or a
+   landing merge, told apart by comparing `MERGE_HEAD` against `origin/main` and the
+   `worktree-*` branch tips — `merge --abort`, then redo the matching one
    (`references/troubleshooting.md`).
    Then ListAgents for background agents still running. A worktree with no running agent and
    no `doing` item is an orphan — see Troubleshooting.
