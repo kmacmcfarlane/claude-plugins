@@ -16,8 +16,8 @@ updated: 2026-09-22
 Port plan .claude-sandbox/investigations/8cc2-turn-gate-port OQ1 — blocked on operator decision 47.
 
 ## Handoff
-- doing: plan of record 04-08 (CLEAR). F3b-1 fix r1 at 2568e95 in review r2 (reviewer a10c65a451623a781, impl a3f270c1ce4ff1026, worktree f3b-1-per-session-manifest-store); F3b-2 fix r1 at 8092d28 in review r2 (reviewer ac5c07409a1d20e8d, impl af1bebc34259271b0, worktree f3b-2-stamp-on-the-own-path)
-- next: land F3b-1 and F3b-2 together (merge-tree first); then F3b-4 (3adc has landed, so it is unblocked), then F3b-3 with the four reviewer lows in its brief, then F3b-5 on decision 65
+- doing: F3b-1 and F3b-2 landed
+- next: 0836 FIRST (the read path, confirmed), then F3b-4, then F3b-3, then F3b-5 on decision 65
 - blocked: —
 - learned: —
 
