@@ -185,12 +185,14 @@ record is a log, read in the order it was written:
   the worktree, the environment — fixable and re-dispatchable within `fix-loop.md`'s
   limit, and not a round. **A `BLOCKED` line with no reason reads as `permission`**, the
   conservative value, so a line written before this shape existed still has one.
-- `baseline: <sha256 list>` — SKILL.md § Step 4.1, written before each plan-mode review:
-  the output of `sha256sum <series>/[0-9][0-9]_*.md` over the serials that review covers.
-  Step 4.1 also **reads** the last one, before a plan-mode re-review: re-running the same
-  command and diffing it against that line is what says which serials the planner added
-  or rewrote since the review being re-run, which is what the re-review is asked to check
-  — the `verdict:` line's `at <series path>` cannot say it, naming the series and not its
+- `baseline: <sha256 list>` — SKILL.md § Step 4.1, written before **every** plan review,
+  the first and each re-review alike, with no condition: the output of
+  `sha256sum <series>/[0-9][0-9]_*.md` over the serials that review covers. Step 4.1 also
+  **reads** the previous one where there is one — from the second plan review on — and
+  diffs the fresh output against it: the serials that changed are the ones the planner
+  added or rewrote since the review being re-run, and they go into the re-review brief's
+  "Files changed, with reasons" slot, which a plan re-review otherwise fills with `none`.
+  The `verdict:` line's `at <series path>` cannot say this, naming the series and not its
   state. A list that has not moved means the planner wrote nothing; that is a finding for
   the re-review, not a new baseline.
 - `findings: …` — SKILL.md § Step 4.5, written together with a `NEEDS_CHANGES` or
@@ -199,18 +201,22 @@ record is a log, read in the order it was written:
   round hands to the fix dispatch unchanged.
 - `target: <mode> <ref> <workspace>` — SKILL.md § Step 0.3, **every mode**, written before
   any dispatch.
-  - `<mode>` is `full`, `plan` or `review <branch>`: recorded, never inferred later, and
-    it names **the run the cycle actually takes, not the word the user typed**. A spike
-    records `plan` however it was invoked, because a spike takes Step 1's plan dispatch,
-    Step 4's plan-review variant and Step 6, and never reaches Step 3 or Land
-    (SKILL.md §§ Usage, Step 1) — so its record must reduce as a plan run's does.
-    Everything else that reaches Step 3 records `full`.
-  - `<ref>` is the target as the run was given it: the branch (`review <branch>`), or the
+  - `<mode>` is one bare word, `full` | `plan` | `review` — **one token wide in every
+    mode**, since `review <branch>`'s branch is already `<ref>` and the line would
+    otherwise carry it twice and shift the fields a reader counts. It is recorded, never
+    inferred later, and it names **the path the run takes, not the word the user typed**.
+    Decide it in this order: `review` when the invocation was `review <branch>`;
+    otherwise `plan` when the run takes SKILL.md § Step 1's plan-agent bullet, which
+    produces a series, reviews it with the plan-review variant and ends at Step 6 without
+    a worktree; otherwise `full`. Keying on the bullet rather than on the word "spike" is
+    what keeps a spike whose target already has a series — which skips Step 1 and goes on
+    to Step 3 and Land (SKILL.md § Step 1's preamble) — recorded as the `full` run it is.
+  - `<ref>` is the target as the run was given it: the branch (`review`), or the
     item id, series slug or plan path (`full`, `plan`). It says what was asked for; the
     workspace says where the work is.
   - `<workspace>` is the **absolute** path the run's work lives at, and it is written
     absolute even when the command that made it took a relative one: the path § Review
-    target resolved (`review <branch>`), `"$MAIN"/.claude/worktrees/<name>` for the
+    target resolved (`review`), `"$MAIN"/.claude/worktrees/<name>` for the
     worktree SKILL.md § Step 3.1 adds (`full`), or — a plan run having no worktree — the
     series path under the Series home. A later step, or a later session, runs
     `git -C <workspace>` from a working directory this one cannot predict, so a

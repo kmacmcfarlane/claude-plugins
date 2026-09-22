@@ -105,12 +105,13 @@ only on a `CLEAR` recorded against the current HEAD sha.
 
    Then record the run itself, before any dispatch, as one
    `target: <mode> <ref> <workspace>` line (`references/bindings.md` § Record line
-   shapes): the mode **the run will actually take** — `plan` for `plan` mode and for a
-   spike, whichever was typed, since a spike takes Step 1's plan dispatch and Step 4's
-   plan-review variant and never reaches Step 3 or Land; `review <branch>`; otherwise
-   `full` — then the target as given (the branch, item id, slug or plan path), then the
-   workspace as an **absolute** path: the path `references/bindings.md` § Review target
-   resolved in `review <branch>` mode, `"$MAIN"/.claude/worktrees/<name>` for the
+   shapes): the mode as **one bare word** naming the path this run will take, decided in
+   this order — `review` when the invocation was `review <branch>` (the branch is the
+   next field, never repeated here); otherwise `plan` when the run takes Step 1's
+   plan-agent bullet, which produces a series and ends at Step 6 with no worktree;
+   otherwise `full`. Then the target as given (the branch, item id, slug or plan path),
+   then the workspace as an **absolute** path: the path `references/bindings.md` § Review
+   target resolved in `review <branch>` mode, `"$MAIN"/.claude/worktrees/<name>` for the
    worktree Step 3.1 will add in a `full` run, or the series path for a plan run, which
    has no worktree. Every later step reads the workspace from that line rather than
    rebuilding it from the item id, and a relative path here would resolve against
@@ -126,8 +127,9 @@ outside this session**: a scratchpad sink is session-scoped by contract
 Runs for `plan` mode, a spike, and a feature with no plan. A bug, chore or refactor with
 clear acceptance skips it, and so does a target that already has a series or plan file.
 
-- **`plan` mode or a spike** — one run, recorded as mode `plan` either way (Step 0.3),
-  because what follows is the same and nothing here reaches Step 3 or Land: dispatch one
+- **`plan` mode or a spike** — a run that reaches this bullet records mode `plan`
+  (Step 0.3), whichever word was typed, because what follows is the same and nothing here
+  reaches Step 3 or Land: dispatch one
   plan agent, routed by Step 2 with opus as its
   minimum (a plan is judgement) and the Model floor respected, with the plan variant in
   `references/agent-brief.md`: /investigate in its orchestrated mode (the `investigate`
@@ -224,12 +226,13 @@ re-dispatch or resume with findings = review round n+1; cap 4 review rounds.
    the workspace the `target:` line records. Brief it with the commands from
    `references/review-checklist.md` plus the Checks binding — what you run at Land. A
    plan run's series gets the plan-review variant in `references/review-brief.md`
-   instead; before each such review, record the output of
-   `sha256sum <series>/[0-9][0-9]_*.md` as a `baseline: <sha256 list>` line. Before a
-   plan **re**-review, first re-run that command and diff it against the last `baseline:`
-   line: what changed is the serials the planner added or rewrote since the review being
-   re-run, which is what the re-review is asked to check, and an unmoved list means the
-   planner wrote nothing — a finding for the re-review, not a new baseline.
+   instead; before **every** such review, the first and each re-review alike, record the
+   output of `sha256sum <series>/[0-9][0-9]_*.md` as a `baseline: <sha256 list>` line.
+   From the second review on there is a previous one to read: diff the fresh output
+   against it and put the serials that changed into the re-review brief's "Files changed,
+   with reasons" slot, which a plan re-review otherwise fills with `none`. An unmoved
+   list means the planner wrote nothing — a finding for the re-review, not a new
+   baseline.
 2. **Severity scale** (defined in the review brief):
    - critical: data loss, security, breaks the harness or another plugin.
    - high: wrong on the main path; a failing or missing test for a claimed behaviour.
@@ -269,7 +272,7 @@ Only after a `CLEAR` recorded against the current HEAD — the last `verdict:` l
 (`references/bindings.md` § Record line shapes), whose `at <sha>` must still equal
 `git -C <workspace> rev-parse HEAD`.
 
-1. **Run the checks yourself** in the worktree: `references/review-checklist.md`, the
+1. **Run the checks yourself** in `<workspace>`: `references/review-checklist.md`, the
    Checks binding included. A verdict is not a check output.
 2. **Read the diff** in full — `git -C <workspace> diff <base>...HEAD`, `<workspace>`
    being the absolute path the `target:` line records (`references/bindings.md` § Record
