@@ -21,7 +21,7 @@ order given, and asks the user only where the table says so.
 | **Base** | The branch the worktree starts from and the merge lands on | Named by the item or plan (implement's recorded base, re-verified); otherwise the default branch, § Base |
 | **Model floor** | The lowest tier any role on this change may run | A `model: <tier>` line in the item body, or the invocation's own words ("at least opus"); otherwise none |
 | **Record sink** | Where the run's record lines are appended (§ Record line shapes) | The item body when a store holds the target; otherwise always the scratchpad run record, `<scratchpad>/dev-cycle/<slug>/record.md`. Never a file in an investigation series: series files belong to `/implement` and are append-only. An item body is durable across sessions; **a scratchpad sink is session-scoped by contract**, so a store-less run's record cannot be read outside the session that wrote it (or one that inherits the same scratchpad) — Step 0's summary says so |
-| **Decision channel** | How a decision reaches a human | § Decisions |
+| **Decision channel** | How a decision reaches a human, and the channel's **durability**: **durable** when the question outlives the session that raised it and a human answers it to whichever session reads it next (a caller's channel on a committed item), **ephemeral** when it exists only as a live prompt in this session. A caller states the durability with the channel; a channel supplied without it is a missing binding | AskUserQuestion, or § Decisions' numbered prose list for two or more — both **ephemeral** |
 | **Terminal action** | What Land does with a `CLEAR`, checked branch | Asked once at Land, § Landing |
 | **Series home** | Where the plan phase writes an investigation series | `$MAIN/.claude-sandbox/investigations/<slug>/`, the canonical path `/implement` reads |
 
@@ -42,7 +42,7 @@ For reference, the values `librarian-mode` supplies (its own SKILL.md is authori
 | Base | `main`, unless the item names another |
 | Model floor | A `model:` pin in the item body |
 | Record sink | The item body |
-| Decision channel | `decision N:` appended to the item, carried under `decisions needed` in its Report |
+| Decision channel | `decision N:` appended to the item, carried under `decisions needed` in its Report — **durable** |
 | Terminal action | `git merge --no-ff` into local `main`; the push is the librarian's, after its Report; an item naming another base merges into that base, never pushed |
 | Series home | `$MAIN/.claude-sandbox/investigations/<slug>/`, as standalone — tooling state like the store, written by the cycle, never a custody edit; agents write there only the series, and dispatched commits never include `.claude-sandbox/` |
 
@@ -229,12 +229,23 @@ record is a log, read in the order it was written:
   recommendation first, so that a reader who was not in the session that raised it can put
   it to a human verbatim. Under a caller it composes as
   `decision N: <question> — options: …`, so the caller's numbered channel is unchanged.
+  **Exactly one decision carries a tag**: SKILL.md § Usage's `review <branch>` ask,
+  whether to dispatch an implementer for the findings, is written
+  `decision: dispatch-permission — <question> — options: <a> | <b>`, and under a caller
+  the same tag follows the number of `decision N:`. The tag is a fixed identifier, not a
+  kind: every other decision is untagged. It lets a later reader find that one decision
+  by name; what its answer's scope is, § Decisions says.
 - `answer: <decision> — <reply>` — § Decisions and SKILL.md § Step 3.5 (a
   `NEEDS_CONTEXT` answer), written as soon as the reply arrives; `<decision>` repeats the
-  `decision:` line's question (or, for a `NEEDS_CONTEXT`, the question). A caller's
+  `decision:` line's question (or, for a `NEEDS_CONTEXT`, the question) — for the one
+  tagged decision, its tag instead: `answer: dispatch-permission — <reply>`. A caller's
   numbered pair — librarian-mode's `decision N: …` and `answer N: <reply>`, matched by
-  `N` — is the same pair and is read the same way. A `decision:` with no matching
-  `answer:` is unanswered, and an answered one is never raised again.
+  `N` — is the same pair and is read the same way; its `answer N:` carries no tag, the
+  number already pairing it. A `decision:` with no matching `answer:` is **pending**
+  (§ Decisions says what a run does with one), and an answered one is never raised again
+  while its answer is in force (§ Decisions).
+- `spent:` — § Resume's line, which writes and reads it. § Resume is not specified yet,
+  so nothing writes one until it is.
 - `landed: <merge sha>` — SKILL.md § Step 5.5, written once Land's merge succeeds and
   before `$WI done` / `$WI handoff`. It is the record's only evidence that a target
   reached a merge, and SKILL.md § Step 6 reports it on the `verified:` line. `Leave the
@@ -291,6 +302,33 @@ decision to the record sink as `decision: <question> — options: <a> | <b> | <c
 asking — the question in full and its options, recommendation first, so the line can be
 put to a human verbatim by a reader who was not there — and the reply as
 `answer: <decision> — <reply>` (§ Record line shapes) as soon as it arrives.
+
+A **pending** decision — a `decision:` with no `answer:` — never makes a run wait on a
+question this session is not asking: one whose prompt is gone, or one on a durable
+channel. A live prompt this session is asking is the ordinary case above, and the run
+takes its answer when it comes. For the other two, the channel's durability (§ The ten)
+says what the run does instead:
+
+- **Ephemeral (standalone, or a caller binding an ephemeral channel).** A pending
+  `decision:` whose prompt is gone — raised by a session that has ended, or in a prompt
+  that closed unanswered — is asked again in this session, verbatim from the recorded
+  line, its question and options as written. Write **no second `decision:` line**; the
+  `answer:`, when it arrives, answers the recorded one. The heavy-analysis rule above
+  still holds: a turn that finds it while doing heavy analysis (a resumed run's Step 0
+  is one) ends, and the next turn opens with the ask — the session asks on its own, with
+  no reply awaited first.
+- **Durable (a caller's durable channel).** Hand back: `$WI handoff <id> --blocked
+  "awaiting decision N"` (no item: a `blocked:` line in the record sink), report, and
+  stop. Waiting is the caller's — its own loop resumes the target once the answer lands
+  — and never the cycle's: a cycle that waited on a channel nobody was reading would
+  hang.
+
+An `answer:` is in force only while no phase line — a `dispatch:`, `return:`,
+`verdict:` or `landed:` line — has been recorded after it, with one exception, the
+answer to `review <branch>` mode's ask whether to dispatch an implementer for the
+findings, which stays in force wherever it sits in the record until a `spent:` line
+recorded after it names it. An answer out of force answers nothing: its question, when
+it comes up again, is raised as a new decision.
 
 ## Resume
 
