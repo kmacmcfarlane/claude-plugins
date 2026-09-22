@@ -49,3 +49,5 @@ review r1 (opus) on 5aef0dd: NEEDS_CHANGES. Checks: six suites OK; §2 research-
 - F20 [low] research/SKILL.md:44 — resume conflated with refine.
 - F21 [low] commit subject not `<verb>: <aspect> - <description>`.
 dispatch: fix round 1 → implementer = peer agent-research (tier its own; librarian cannot route a peer's model)
+fix r1 (peer agent-research): fbdd08b — F1–F14, F16–F20 fixed; F15 declined (librarian filed 8189); F21 applied to fix commit subject only (no amend). Peer ran house lint + strict YAML on 4 skills + 2 agents.
+dispatch: reviewer opus — review r2 (resume r1 reviewer on fbdd08b)
