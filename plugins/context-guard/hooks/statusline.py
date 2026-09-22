@@ -2,8 +2,8 @@
 """Status line: the always-on context gauge, and the sensor for the gate hooks.
 
 DEPRECATED: the status line moved to the `statusline` plugin
-(/plugin install statusline@kmacmcfarlane), which writes its own sensor record
-that lib_context reads first. This copy stays one release so existing
+(/plugin install statusline@kmacmcfarlane; it brings statusline-hub, which
+feeds lib_context the sensor record). This copy stays one release so existing
 statusLine entries that still point at it keep rendering and keep feeding the
 gate its legacy in-state `exact` block; context-guard no longer installs,
 restores or migrates any statusLine entry, and the SessionStart hook only
@@ -48,8 +48,10 @@ an arbitrary string set by another agent), invisible format characters (bidi
 overrides, zero-width spaces; Unicode category Cf) are dropped, and it is
 capped at NAME_MAX terminal columns.
 
-Install: not from here any more - install the `statusline` plugin, whose
-SessionStart hook and /install-statusline take over an entry that points here.
+Install: not from here any more - install the `statusline` plugin (it brings
+statusline-hub): statusline-hub's SessionStart takes over an entry that points
+here once the statusline footer has registered as its display hook, and
+/install-statusline-hub moves or replaces it.
 """
 import json, math, os, re, sys, time, unicodedata
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))

@@ -18,9 +18,13 @@ plugins/
     hooks/             # Gate, ledger, rehydrate, gauge.json publish (+ deprecated statusline copy) + unit tests
     skills/
       {checkpoint,usage-report}/
-  dev-flow/            # Plan before you code; the librarian that takes custody of a repo
+  create-repo/         # Start a new repo for a thread of work, with a session launched on it
     skills/
-      {investigate,implement,dev-cycle,deep-investigation,chain-of-verification,librarian-mode}/
+      create-repo/     # references/launch-command.md
+  dev-flow/            # Plan before you code; research into findings or a knowledge base; the librarian that takes custody of a repo
+    agents/            # research-lane, research-verifier (the research family's workers)
+    skills/
+      {investigate,implement,dev-cycle,deep-investigation,research,research-deep,research-refine,research-prune,chain-of-verification,librarian-mode}/
   kit-dev/             # Maintaining this kit itself
     skills/
       {create-skill,update-kit,new-project-from-template,factor-analysis}/
@@ -31,14 +35,16 @@ plugins/
     hooks/             # Checkout guard + hooks.json + unit tests
     skills/
       sandbox/
-  statusline/          # Always-on status line + its settings entry (hook-owning)
-    hooks/             # statusline, sensor, owner, session_start (first-run install, takeover, self-heal, prune) + hooks.json + unit tests
+  statusline/          # Always-on status line footer, a statusline-hub display hook (hook-owning; hard-depends on statusline-hub)
+    settings.json      # plugin settings default: subagentStatusLine (agent-panel rows)
+    hooks/             # statusline (renderer), subagent_statusline (agent-panel renderer), sensor, session_start (registers the hub hook, prune) + hooks.json + unit tests
     skills/
-      install-statusline/  # installer script, references/sensor-contract.md
-  statusline-hub/      # The status-line slot, shared (tee today; the dispatcher later)
-    hooks/             # tee.py (stdin -> sensor record; vendored writer) + unit tests (no hooks.json yet)
+      install-statusline/  # coworker install, hands the slot to install-statusline-hub; references/sensor-contract.md
+  statusline-hub/      # The status-line slot, shared: owner-mode dispatcher + embed-mode tee + consent-only wrap mode (hook-owning; owns the statusLine entry)
+    hooks/             # hub (render), registry (hooks.d), tee, owner, session_start (install, takeover, heal, refusal notice), housekeeping (prune) + hooks.json + unit tests
     skills/
-      statusline-hub/  # recipes: ccstatusline Custom Command, Starship custom, shell wrapper
+      statusline-hub/  # embed recipes (ccstatusline, Starship, shell wrapper), references/hook-contract.md
+      install-statusline-hub/  # installer script (install, remove, replace, wrap, unwrap, --status)
   work-items/          # Repo-durable work items + the work-source provider interface
     skills/
       work-items/      # wi CLI, references/{format,provider-interface}.md, tests/
@@ -52,8 +58,11 @@ optional `references/`, `scripts/`, `assets/`.
 - **Skill location**: `plugins/<plugin>/skills/<name>/SKILL.md` (never `.claude/skills/`).
 - **Agent location**: `plugins/<plugin>/agents/<name>.md` — auto-loaded by the plugin system.
   Agent `.md` files define role, tools, and model. Task-specific context is injected via the
-  Agent prompt, not baked into the definition. *No plugin here ships agents today* — the last
-  three were retired with the deprecated plan-execution skill they served (Phase 3).
+  Agent prompt, not baked into the definition. `dev-flow` ships two: `research-lane` and
+  `research-verifier`, the workers of the `research` skill family — their contract (file shape,
+  evidence and security rules, effort pin) lives in the agent body so every lane loads it by
+  construction. (The three agents that served the deprecated plan-execution skill were retired
+  at Phase 3.)
 - **Hook location**: `plugins/<plugin>/hooks/<name>.py` — registered in that plugin's
   `plugins/<plugin>/hooks/hooks.json`, which lists each hook under its event (`PreToolUse`,
   `UserPromptSubmit`, `SessionStart`, `Stop`, …) with a `matcher` and a `command` that names
@@ -81,8 +90,10 @@ Where a new or moved thing goes. The full decision tree is in
 
 1. Alters harness behavior (hooks, status line, `settings.json` writes)? → only a plugin
    whose stated aim *is* that behavior (`plugins/context-guard/` for the context system,
-   `plugins/statusline/` for the status line and its settings entry, `plugins/sandbox/` for
-   the checkout/worktree guard). Never attach it to a knowledge skill.
+   `plugins/statusline/` for the status line's footer and the agent-panel rows
+   (`subagentStatusLine`), `plugins/statusline-hub/` for the status-line slot and its
+   settings entry, `plugins/sandbox/` for the checkout/worktree guard).
+   Never attach it to a knowledge skill.
 2. Pure stack/tool knowledge? → the expertise family, in its own marketplace (`expertise`,
    repo `claude-expertise`) — not this repo.
 3. For web-UI chat sessions rather than a coding harness? → the `chat` family (home under
@@ -100,11 +111,12 @@ current home is the real home, and is where files go.
 |---|---|---|
 | Survive the finite context window (gate, checkpoint, rehydration, token-spend report) | `plugins/context-guard/` | `plugins/context-guard/` — **landed** (Phase 1) |
 | Always-on status line (context left, plan usage, model, session name) | `plugins/statusline/` | `plugins/statusline/` — **landed** (3c48) |
-| The status-line slot, shared (the sensor-record tee today; the dispatcher that owns the slot later) | `plugins/statusline-hub/` | `plugins/statusline-hub/` — **landed** (F1, bfe2) |
-| Plan-before-code development flow, and a standing librarian that takes custody of a repo's work | `plugins/dev-flow/` | `plugins/dev-flow/` — **landed** (Phase 3) |
+| The status-line slot, shared (the owner-mode dispatcher and its hook registry; the embed-mode tee) | `plugins/statusline-hub/` | `plugins/statusline-hub/` — **landed** (F1, bfe2; owner mode F2, b28f) |
+| Plan-before-code development flow, research that lands as sourced findings or a curated knowledge base, and a standing librarian that takes custody of a repo's work | `plugins/dev-flow/` | `plugins/dev-flow/` — **landed** (Phase 3) |
 | Repo-durable work items / work-source interface | `plugins/work-items/` | `plugins/work-items/` — **landed** (Phase 4) |
 | Isolated execution (containers; the checkout/worktree convention and its guard) | `plugins/sandbox/` | `plugins/sandbox/` — **landed** (Phase 5) |
 | Unattended agent loops over a backlog ("ralph") | `plugins/ralph/` | `plugins/ralph/` — **landed** (Phase 5) |
+| Start a new repo for a thread of work, with an agent session launched on it | `plugins/create-repo/` | `plugins/create-repo/` — **landed** (2c77) |
 | Maintaining this kit itself | `plugins/kit-dev/` | `plugins/kit-dev/` — **landed** (Phase 6) |
 | Stack expertise ("make Claude good at X") | the `expertise` marketplace (repo `claude-expertise`) — not this repo | moved to the expertise marketplace (local scaffold, remote pending) — **landed** (Phase 2) |
 | Web-UI chat-session skills | `plugins/chat/` | family home under review |
@@ -123,4 +135,5 @@ Checks:
 - (cd plugins/work-items/skills/work-items && python3 -m unittest discover -s tests -q)
 - (cd plugins/context-guard/skills/usage-report && python3 -m unittest discover -s tests -q)
 - (cd plugins/statusline-hub/hooks && python3 -m unittest discover -s tests -q)
+- (cd plugins/dev-flow/skills/librarian-mode/scripts && python3 -m unittest discover -s tests -q)
 Push: main

@@ -1,7 +1,8 @@
 """Nothing of the optional gauge publisher leaks into what a user of this
-plugin alone sees: no rendered line, installer message or SKILL.md names it or
-its vocabulary, and a standalone render never creates its directory. In code,
-the publisher's names appear exactly twice - the two constant blocks."""
+plugin alone sees: no rendered line, SessionStart output, hook manifest or
+SKILL.md names it or its vocabulary, and a standalone render never creates its
+directory. In code, the publisher's names appear exactly once - the constant
+block."""
 import glob, json, os, re, subprocess, sys, time, unittest
 
 import helpers
@@ -9,11 +10,26 @@ import helpers
 LEAKS = ("claude-kit", "context-guard", "librarian", "checkpoint", "HARD", "CLAUDE_KIT_")
 NAMES = re.compile(r"claude-kit|context-guard")
 
+# The repo/worktree root this checkout lives under - e.g. a worktree named
+# after a context-guard work item embeds "context-guard" in its own path.
+# That's a property of where this tree happens to be checked out, not a
+# leak the plugin wrote, so it's scrubbed out before the leak check runs.
+CHECKOUT_ROOT = os.path.dirname(os.path.dirname(helpers.PLUGIN))
+
 
 class Standalone(helpers.Hermetic):
     def assertClean(self, text, what):
         for w in LEAKS:
             self.assertNotIn(w, text, f"{what}: {w!r} in {text!r}")
+
+    def _scrub_checkout_path(self, text):
+        """Strip occurrences of the checkout root (and its realpath, in
+        case of a symlinked tmp/worktree) so an incidental 'context-guard'
+        in *where the repo lives* doesn't false-fail a check that's about
+        what the plugin *wrote*."""
+        for root in {CHECKOUT_ROOT, os.path.realpath(CHECKOUT_ROOT)}:
+            text = text.replace(root, "")
+        return text
 
     def test_renders_never_leak_or_touch_the_publisher_dir(self):
         now = time.time()
@@ -32,39 +48,14 @@ class Standalone(helpers.Hermetic):
         for f in self.all_files():
             self.assertTrue(os.path.relpath(f, self.cfg).startswith("statusline"), f)
 
-    def test_installer_messages_never_leak(self):
-        data = os.path.join(self.cfg, "plugins", "data", "statusline-kmacmcfarlane")
-        env = dict(self.env, CLAUDE_PLUGIN_DATA=data)
-        settings = os.path.join(self.cfg, "settings.json")
-        proj = os.path.join(self.cfg, "proj")
-        os.makedirs(proj)
-        pred = os.path.join(self.cfg, "plugins", "data", "context-guard-kmacmcfarlane")
-        self.write_json(os.path.join(pred, "statusline-installed.json"),
-                        {"settings": settings, "command": "x"})
-
-        def run(*args, e=env, script=helpers.INSTALLER):
-            p = subprocess.run([sys.executable, script, *args], cwd=proj,
-                               capture_output=True, text=True, env=e, timeout=30)
-            self.assertClean(p.stdout + p.stderr, args)
-            return p.returncode
-
-        run("--help")
-        self.write_json(settings, {"statusLine": {"type": "command", "command":
-                        f'python3 "{pred}/current-hooks/statusline.py"'}})
-        self.assertEqual(run(), 0)                       # predecessor takeover
-        self.assertEqual(run(), 0)                       # own, again
-        self.assertEqual(run("--project"), 0)
-        self.assertEqual(run("--remove"), 0)
-        self.assertEqual(run("--remove"), 0)             # nothing there
-        self.write_json(settings, {"statusLine": {"type": "command", "command": "x"}})
-        self.assertEqual(run(), 3)
-        self.assertEqual(run("--remove"), 3)
-        self.write_json(settings, raw="{bad")
-        self.assertEqual(run(), 1)
-        bare = {k: v for k, v in env.items() if k != "CLAUDE_PLUGIN_DATA"}
-        self.write_json(settings, {})
-        os.rename(os.path.join(self.cfg, "plugins"), os.path.join(self.cfg, "gone"))
-        self.assertEqual(run(e=bare, script=self.plain_copy()), 1)   # no data dir
+    def test_session_start_never_leaks(self):
+        env = dict(self.env, CLAUDE_PLUGIN_DATA=os.path.join(
+            self.cfg, "plugins", "data", "statusline-kmacmcfarlane"))
+        p = subprocess.run([sys.executable, os.path.join(helpers.HOOKS, "session_start.py")],
+                           input="{}", capture_output=True, text=True, env=env, timeout=30)
+        self.assertClean(self._scrub_checkout_path(p.stdout + p.stderr), "session_start")
+        with open(os.path.join(self.cfg, "statusline-hub", "hooks.d", "statusline.json")) as f:
+            self.assertClean(self._scrub_checkout_path(f.read()), "manifest")
 
     def test_skill_md_never_leaks(self):
         with open(os.path.join(helpers.SKILL, "SKILL.md"), encoding="utf-8") as f:
@@ -84,8 +75,6 @@ class Standalone(helpers.Hermetic):
                     if NAMES.search(ln):
                         hits.append((os.path.relpath(path, helpers.PLUGIN), ln.strip()))
         self.assertEqual(sorted(hits), [
-            (os.path.join("hooks", "owner.py"),
-             'PREDECESSORS = ("claude-kit", "context-guard")'),
             (os.path.join("hooks", "sensor.py"),
              'CG_DIR = ("claude-kit", "context-gate")')])
 

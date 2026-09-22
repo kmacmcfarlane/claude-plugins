@@ -79,10 +79,10 @@ claude-plugins/
     ├── chat/                  (web-UI chat-session skills)
     │   └── skills/product-research/
     ├── context-guard/         (surviving the context window — a hook-owning plugin)
-    │   ├── hooks/             (gate, ledger, rehydrate, gauge.json publish + tests)
+    │   ├── hooks/             (gate, ledger, rehydrate, gauge.json publish, deprecated statusline copy + tests)
     │   └── skills/{checkpoint,usage-report}/
     ├── dev-flow/              (plan before you code; the librarian that takes custody of a repo)
-    │   └── skills/{investigate,implement,deep-investigation,chain-of-verification,librarian-mode}/
+    │   └── skills/{investigate,implement,dev-cycle,deep-investigation,chain-of-verification,librarian-mode}/
     ├── kit-dev/               (maintaining this kit itself — where THIS skill lives)
     │   └── skills/{create-skill,update-kit,new-project-from-template,factor-analysis}/
     ├── ralph/                 (unattended agent loops over a backlog)
@@ -90,9 +90,12 @@ claude-plugins/
     ├── sandbox/               (isolated execution: claude-sandbox + checkout/worktree convention — a hook-owning plugin)
     │   ├── hooks/             (checkout guard + tests)
     │   └── skills/sandbox/
-    ├── statusline/            (always-on status line + its settings entry — a hook-owning plugin)
-    │   ├── hooks/             (statusline, sensor, owner + tests)
-    │   └── skills/install-statusline/ (installer script, references/sensor-contract.md)
+    ├── statusline/            (always-on status line footer, a statusline-hub display hook — hook-owning; hard-depends on statusline-hub)
+    │   ├── hooks/             (statusline renderer, sensor, session_start: registers the hub hook, prune + tests)
+    │   └── skills/install-statusline/ (coworker install, hands the slot to install-statusline-hub; references/sensor-contract.md)
+    ├── statusline-hub/        (the status-line slot, shared: owner-mode dispatcher + embed-mode tee — hook-owning; owns the statusLine entry)
+    │   ├── hooks/             (hub, registry, tee, owner, session_start, housekeeping + tests)
+    │   └── skills/{statusline-hub,install-statusline-hub}/ (embed recipes, references/hook-contract.md; installer script)
     └── work-items/            (repo-durable work items + work-source provider interface)
         └── skills/work-items/ (wi CLI, references/, tests/)
 ```

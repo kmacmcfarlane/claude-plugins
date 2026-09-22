@@ -59,16 +59,17 @@ Rules that reviewers reject on sight:
 - Skill reference paths are bare relative paths (`references/x.md`) — no dot-slash prefix,
   no skill-dir variable. A pointer into a sibling skill of the same plugin puts the
   sibling's backticked name right before the bare path.
-- Frontmatter keys follow the house rule: every skill declares name, description,
-  disable-model-invocation, allowed-tools, argument-hint; any other key must be a field the
-  Claude Code skills docs define (the list is in the create-skill skill's frontmatter
+- Frontmatter keys follow the house rule: every skill declares name and description; any
+  other key is optional (leaving out disable-model-invocation, allowed-tools and
+  argument-hint is the desired default) but must be a field the Claude Code skills docs
+  define (the list is in the create-skill skill's frontmatter
   reference, kit-dev plugin); no key twice. The set is closed because undocumented keys
   are usually typos, and claude.ai / Skills API uploads hard-fail on unknown keys.
   allowed-tools only pre-approves tools; it never restricts them. Folder name equals
   `name`. No README.md inside a skill folder.
 - No angle brackets in `name` or `description` (fine in `argument-hint`); description under
   1024 characters, what + when + triggers.
-- `argument-hint` is always a double-quoted string, since unquoted a value starting with `[`
+- `argument-hint`, when present, is always a double-quoted string, since unquoted a value starting with `[`
   is a YAML flow sequence: a list, or with a second `[...]` group a parse error that drops
   the skill in strict loaders.
 - A change to the marketplace's shape (plugin added/moved/retired, skill added to a plugin)
@@ -196,6 +197,33 @@ findings verbatim and the rules of the `investigate` skill's
 `references/investigation-format.md`: never edit a written serial; write the revision as a
 new serial at the next free number, opening with a `Supersedes` block that names what the
 findings overturned; regenerate `INDEX.md`.
+
+## Review-mode fix variant
+
+For `review <branch>` mode (SKILL.md § Usage), after the decision channel accepts
+dispatching an implementer for the reviewer's findings: the brief above, with these
+changes.
+
+Replace the opening WORKTREE and verify lines:
+
+```
+WORKTREE=<the absolute worktree path `bindings.md` § Review target resolved>
+
+First verify it exists and is on branch `<branch>` (`git -C $WORKTREE branch
+--show-current`). If not, stop and report BLOCKED.
+```
+
+Base branch stays the Base binding — what Land will merge into, not what the branch was
+built from. This is always dispatched with the Fix round conditional block under Commit,
+even though no implementer round of this cycle produced the reviewed sha: `<n>` is the
+review round already spent (the review that returned `NEEDS_CHANGES` or `SHOW_STOPPER`),
+and `<reviewed sha>` is the branch's HEAD at that review, from the record sink's
+`verdict:` line (`bindings.md` § Record line shapes). Findings are the reviewer's report,
+verbatim, same as any fix round.
+
+One addition to Prohibitions: do not touch any ref but `<branch>` itself — no
+`worktree-<name>` exists here to protect, but nothing else in the repository is this
+change's to move either.
 
 ## Status meanings
 

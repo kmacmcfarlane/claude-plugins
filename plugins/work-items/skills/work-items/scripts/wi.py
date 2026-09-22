@@ -17,10 +17,12 @@ Constraints this file lives under:
 import argparse
 import fcntl
 import fnmatch
+import glob
 import hashlib
 import json
 import os
 import re
+import shlex
 import subprocess
 import sys
 import time
@@ -29,7 +31,7 @@ from pathlib import Path
 
 FIELD_ORDER = ["id", "title", "type", "status", "stage", "priority", "tags",
                "deps", "parent", "owner", "claimed", "blocked", "parked",
-               "feedback",
+               "grooming", "feedback",
                "mode", "complexity", "alias", "created", "updated", "closed",
                "refs", "x_backlog"]
 FLOW_LIST_FIELDS = {"tags"}
@@ -38,7 +40,7 @@ LIST_FIELDS = FLOW_LIST_FIELDS | BLOCK_LIST_FIELDS
 MAP_FIELDS = {"x_backlog"}
 INT_FIELDS = {"priority"}
 TYPES = {"task", "bug", "feature", "refactor", "workflow", "chore", "epic", "spike"}
-STATUSES = {"todo", "doing", "blocked", "parked", "done", "dropped"}
+STATUSES = {"todo", "doing", "blocked", "parked", "grooming", "done", "dropped"}
 STAGES = {"implement", "review", "testing", "uat", "uat_feedback"}
 MODES = {"autonomous", "interactive", "mixed"}
 COMPLEXITIES = {"low", "medium", "high"}
@@ -53,6 +55,7 @@ STATE_TO_BACKLOG = {("todo", None): "todo", ("doing", None): "in_progress",
                     ("doing", "review"): "review", ("doing", "testing"): "testing",
                     ("doing", "uat"): "uat", ("doing", "uat_feedback"): "uat_feedback",
                     ("blocked", None): "blocked", ("parked", None): "blocked",
+                    ("grooming", None): "blocked",
                     ("done", None): "done", ("dropped", None): "closed"}
 BACKLOG_TO_STATE = {"todo": ("todo", None), "in_progress": ("doing", "implement"),
                     "review": ("doing", "review"), "testing": ("doing", "testing"),
@@ -79,10 +82,88 @@ def parked_reason(blocked):
     return blocked[m.end():].strip() or blocked.strip()
 
 
+# A grooming item has no backlog.yaml state either: it exports as `blocked`
+# with its questions prefixed `GROOMING: `, and imports back by that prefix.
+GROOMING_PREFIX_RE = re.compile(r"^\s*GROOMING\b[\s:;,.\u2014-]*")
+
+
+def grooming_questions(blocked):
+    """The grooming questions carried by a blocked reason that starts with
+    GROOMING, else None; a bare `GROOMING` keeps the whole text."""
+    if not blocked:
+        return None
+    m = GROOMING_PREFIX_RE.match(blocked)
+    if not m:
+        return None
+    return blocked[m.end():].strip() or blocked.strip()
+
+
+# The lenient readings above eat any punctuation after the prefix, so a park
+# or grooming whose own text starts with it ("-", "— reason", "- [ ] x")
+# would drift on the first export -> import. Export writes such a text
+# quoted — `PARKED: "- x"` — and import unwraps the quotes only where export
+# itself would have written them: when the inner text's plain form would not
+# read back as that text. Anything else (`PARKED: "x"`, `PARKED: ""`,
+# `PARKED: "a" and "b"`) gets the lenient reading, as before. migrate-parked
+# reads hand-written text, so it keeps the lenient reading alone.
+def _bridge_decode(tag, lenient, blocked):
+    """Import's reading of a `PARKED`/`GROOMING` blocked reason: export's
+    quoted form unwrapped, else `lenient` (parked_reason/grooming_questions)."""
+    head = tag + ': "'
+    if (blocked and blocked.startswith(head) and blocked.endswith('"')
+            and len(blocked) > len(head) + 1):
+        inner = blocked[len(head):-1]
+        if _bridge_decode(tag, lenient, f"{tag}: {inner}") != inner:
+            return inner
+    return lenient(blocked)
+
+
+def _bridge_encode(tag, lenient, text):
+    """Export's `PARKED: <text>` (or GROOMING), quoted exactly when import's
+    reading of the plain form would not give `text` back."""
+    plain = f"{tag}: {text}"
+    if not text or _bridge_decode(tag, lenient, plain) == text:
+        return plain
+    return f'{tag}: "{text}"'
+
+
+# The librarian-mode Report convention: an operator question is a body line
+# `decision N: <text>`, its reply a body line `answer N: <reply>`.
+DECISION_RE = re.compile(r"^decision (\d+):\s*(.*)$")
+ANSWER_RE = re.compile(r"^answer (\d+):")
+
+
+def unanswered_decisions(item):
+    """[(N, text)] for each `decision N:` body line with no `answer N:` line
+    anywhere in the same body, in order of each N's first line, one per N.
+    A repeated N is a revised question: its text is the last line's. Lines
+    inside a fenced code block are text, not markers."""
+    lines = item.body.replace("\r\n", "\n").split("\n")
+    fenced = set()
+    for i, j in _fence_spans(lines):
+        fenced.update(range(i, j + 1))
+    asked, answered = {}, set()
+    for i, line in enumerate(lines):
+        if i in fenced:
+            continue
+        m = DECISION_RE.match(line)
+        if m:
+            asked[int(m.group(1))] = m.group(2).strip()
+            continue
+        m = ANSWER_RE.match(line)
+        if m:
+            answered.add(int(m.group(1)))
+    return [(n, text) for n, text in asked.items() if n not in answered]
+
+
 class WiError(Exception):
     def __init__(self, code, msg):
         super().__init__(msg)
         self.code = code
+
+
+class AmbiguousId(WiError):
+    """A prefix matching more than one item: never read as "no match"."""
 
 
 def today():
@@ -102,9 +183,29 @@ def slugify(text):
     return s[:40].rstrip("-") or "item"
 
 
-def make_id(title, created):
-    suffix = hashlib.sha1((title + created).encode() + os.urandom(8)).hexdigest()[:4]
-    return f"{slugify(title)}-{suffix}"
+ID_TRIES = 1024
+
+
+def _id_suffix(title, created):
+    """One random 4-hex id suffix; make_id redraws it on a repeat."""
+    return hashlib.sha1((title + created).encode() + os.urandom(8)).hexdigest()[:4]
+
+
+def make_id(title, created, taken, slug=None):
+    """A new `<slug>-<4hex>` id that is not in `taken` — every id and file
+    stem already in the store plus every id handed out earlier in the same
+    batch (see taken_ids). The id is added to `taken` before it is returned,
+    so a batch caller cannot be handed it twice. A 4-hex suffix can repeat,
+    so a repeat is retried; when ID_TRIES draws all land on taken ids the
+    call fails loudly rather than widening the id format (ID_RE)."""
+    base = slugify(slug) if slug else slugify(title)
+    for _ in range(ID_TRIES):
+        iid = f"{base}-{_id_suffix(title, created)}"
+        if iid not in taken:
+            taken.add(iid)
+            return iid
+    raise WiError(3, f"no free id for '{base}-XXXX' after {ID_TRIES} tries; "
+                     "nothing written")
 
 
 def parse_duration(text):
@@ -128,16 +229,136 @@ def age_str(claimed):
 
 # ── Front matter (strict subset) ────────────────────────────────────────────
 
+# Scalars are emitted bare when that reads back unchanged, else as a YAML
+# double-quoted scalar. The escapes below are the whole contract, and
+# _dq_decode is the exact inverse of _dq_escape: parse(emit(v)) == v for
+# every one-line string, so a rewrite never changes a value's bytes.
+_DQ_SIMPLE = {"\\": "\\", '"': '"', "/": "/", "t": "\t", "0": "\0",
+              "a": "\a", "b": "\b", "e": "\x1b", "v": "\v", "f": "\f",
+              " ": " ", "_": "\xa0", "N": "\x85", "L": "\u2028",
+              "P": "\u2029"}
+_DQ_HEX = {"x": 2, "u": 4, "U": 8}
+# Tab, C0/C1 controls, DEL, the characters YAML or str.splitlines treat as
+# line or byte-order marks, U+FFFE/U+FFFF and lone surrogates (which a YAML
+# reader rejects raw) are written as escapes, never raw — and never bare
+_DQ_ESCAPE_RE = re.compile("[\x00-\x08\x09\x0b-\x1f\x7f-\x9f\u2028\u2029"
+                           "\ufeff\ufffe\uffff\ud800-\udfff]")
+# what `wi lint` flags in a decoded value: any control character, tab
+# included (wi never writes one raw), most often a hand-written backslash
+# path ("C:\\temp" holds a tab, "C:\\bin" a \b)
+_CONTROL_RE = re.compile("[\x00-\x08\x09\x0b-\x1f\x7f-\x9f]")
+# what the front-matter writer refuses (and lint flags, and import folds to
+# a space): a control character, or U+2028/U+2029, which a YAML 1.1 loader
+# and str.splitlines read as a line break
+_FRONT_REFUSE_RE = re.compile("[\x00-\x08\x09\x0b-\x1f\x7f-\x9f"
+                              "\u2028\u2029]")
+
+
+def _dq_escape_char(m):
+    c = ord(m.group())
+    if c == 0x09:
+        return "\\t"
+    return f"\\x{c:02x}" if c < 0x100 else f"\\u{c:04x}"
+
+
+def _dq_escape(v):
+    v = v.replace("\\", "\\\\").replace('"', '\\"')
+    return _DQ_ESCAPE_RE.sub(_dq_escape_char, v)
+
+
+def _dq_decode(v):
+    """Decode a whole double-quoted scalar `"..."`; None when `v` is not
+    exactly one well-formed one (legacy input is then read leniently). An
+    unknown escape, or one that would decode to a line break, is kept as
+    written: a hand-edited file loads, and stays one line."""
+    out, i, n = [], 1, len(v)
+    while i < n:
+        c = v[i]
+        if c == '"':
+            return "".join(out) if i == n - 1 else None
+        if c != "\\" or i + 1 >= n:
+            out.append(c)
+            i += 1
+            continue
+        e = v[i + 1]
+        if e in _DQ_SIMPLE:
+            out.append(_DQ_SIMPLE[e])
+            i += 2
+            continue
+        width = _DQ_HEX.get(e)
+        digits = v[i + 2:i + 2 + width] if width else ""
+        if (width and len(digits) == width
+                and re.fullmatch(r"[0-9A-Fa-f]+", digits)):
+            ch = int(digits, 16)
+            if ch <= 0x10FFFF and chr(ch) not in "\n\r":
+                out.append(chr(ch))
+                i += 2 + width
+                continue
+        out.append(c)  # unknown or unsafe escape: keep the backslash
+        i += 1
+    return None
+
+
+def _parse_scalar(text):
+    """(value, quoted) for one scalar token."""
+    v = text.strip()
+    if len(v) >= 2 and v[0] == v[-1] == '"':
+        dec = _dq_decode(v)
+        return (v[1:-1] if dec is None else dec), True
+    if len(v) >= 2 and v[0] == v[-1] == "'":
+        inner = v[1:-1]
+        if re.fullmatch(r"(?:[^']|'')*", inner):
+            inner = inner.replace("''", "'")
+        return inner, True
+    return v, False
+
+
 def _unquote(v):
-    v = v.strip()
-    if len(v) >= 2 and v[0] == v[-1] and v[0] in "'\"":
-        return v[1:-1]
+    return _parse_scalar(v)[0]
+
+
+def _split_flow(inner):
+    """Split a flow list's inside on the commas outside quoted scalars."""
+    parts, cur, quote, i = [], [], None, 0
+    while i < len(inner):
+        c = inner[i]
+        cur.append(c)
+        if quote == '"' and c == "\\" and i + 1 < len(inner):
+            cur.append(inner[i + 1])
+            i += 1
+        elif quote and c == quote:
+            quote = None
+        elif not quote and c in "\"'" and not "".join(cur[:-1]).strip():
+            quote = c
+        elif not quote and c == ",":
+            cur.pop()
+            parts.append("".join(cur))
+            cur = []
+        i += 1
+    if quote:  # an unterminated quote: read it the old way, comma by comma
+        return [x for x in inner.split(",") if x.strip()]
+    parts.append("".join(cur))
+    return [x for x in parts if x.strip()]
+
+
+def _looks_amplified(v):
+    """True when every backslash in `v` is half of a `\\\\` or `\\"` pair —
+    the trace an older wi left: its reader never unescaped, so each rewrite of
+    a quoted value doubled its backslashes and escaped its quotes again."""
+    return "\\" in v and re.fullmatch(r'(?:[^\\]|\\[\\"])*', v) is not None
+
+
+def _deamplify(v):
+    while _looks_amplified(v):
+        v = re.sub(r'\\([\\"])', r"\1", v)
     return v
 
 
 def parse_front(lines):
-    """Return (meta, extra_keys, errors). Scalars stay strings; `—`/'' → None."""
+    """Return (meta, extra_keys, errors). Scalars stay strings; a bare `—` or
+    an empty value → None."""
     meta, extra, errors = {}, [], []
+
     i = 0
     while i < len(lines):
         line = lines[i]
@@ -151,10 +372,11 @@ def parse_front(lines):
         key, rest = m.group(1), m.group(2).strip()
         if rest.startswith("[") and rest.endswith("]"):
             inner = rest[1:-1].strip()
-            val = [_unquote(x) for x in inner.split(",") if x.strip()] if inner else []
+            val = [_parse_scalar(x)[0] for x in _split_flow(inner)] \
+                if inner else []
         elif rest:
-            val = _unquote(rest)
-            if val in ("—", ""):
+            val, quoted = _parse_scalar(rest)
+            if val == "" or (val == "—" and not quoted):
                 val = None
         else:
             block, submap = [], {}
@@ -164,8 +386,8 @@ def parse_front(lines):
                 sub = lines[i].strip()
                 i += 1
                 if sub.startswith("- "):
-                    item = _unquote(sub[2:])
-                    if item.endswith(":"):
+                    item, quoted = _parse_scalar(sub[2:])
+                    if item.endswith(":") and not quoted:
                         errors.append(f"nested structure under {key}: {sub!r}")
                     block.append(item)
                 elif re.match(r"^[A-Za-z_][A-Za-z0-9_]*:", sub):
@@ -190,30 +412,51 @@ def parse_front(lines):
     return meta, extra, errors
 
 
-def _emit_scalar(v):
-    """Quote only when a bare scalar would mis-read: mapping/comment
-    indicators, structure chars, or surrounding whitespace."""
+_BARE_UNSAFE_START = tuple("-?:,[]{}#&*!|>'\"%@`")
+
+
+def _emit_scalar(v, flow=False):
+    """Bare when wi reads a bare scalar back unchanged and a YAML loader
+    parses it, else double-quoted with _dq_escape: mapping or comment
+    indicators, structure chars, surrounding whitespace, a leading YAML
+    indicator, the `—` that reads as empty, a lone `=` or `<<` (YAML's
+    value and merge keys), a tab or other control character, or (in a flow
+    list) a comma. YAML's implicit typing (numbers, booleans, null, dates)
+    is left alone: `priority: 2` and `created: 2026-09-21` stay bare, so a
+    YAML loader may type a bare value that wi reads as a string."""
     v = str(v)
-    if (v == "" or v != v.strip() or ": " in v or " #" in v or v.endswith(":")
-            or re.search(r"[\[\]{}]", v) or v.startswith(("-", "'", '"', "#"))):
-        return '"' + v.replace("\\", "\\\\").replace('"', '\\"') + '"'
+    if (v in ("", "—", "=", "<<") or v != v.strip() or v.endswith(":")
+            or re.search(r":[ \t]|[ \t]#|[\[\]{}]", v)
+            or v.startswith(_BARE_UNSAFE_START) or _DQ_ESCAPE_RE.search(v)
+            or (flow and "," in v)):
+        return '"' + _dq_escape(v) + '"'
     return v
 
 
-def _front_one_line(key, val):
+def _front_one_line(key, val, plain=True):
     """Every front-matter value is one line: a line break would forge keys
-    (`status: done`) or leave a file no later command can parse. This is the
-    backstop behind the per-command checks; render() runs before any write,
-    so a rejected value writes nothing."""
+    (`status: done`) or leave a file no later command can parse. A tab or
+    other control character (or U+2028/U+2029) is refused too, so nothing
+    wi writes is what `wi lint` reports (there, most often a hand-written
+    backslash path).
+    This is the backstop behind the per-command checks; render() runs before
+    any write, so a rejected value writes nothing. `plain=False` (display
+    only: `show`) lets a hand-written control character through."""
     vals = val.values() if isinstance(val, dict) else \
         val if isinstance(val, list) else [val]
     for v in vals:
         if isinstance(v, str) and ("\n" in v or "\r" in v):
             raise WiError(1, f"front-matter '{key}' must be one line; "
                              "it contains a line break")
+        if plain and isinstance(v, str) and _FRONT_REFUSE_RE.search(v):
+            c = ord(_FRONT_REFUSE_RE.search(v).group())
+            raise WiError(1, f"front-matter '{key}' holds a control character "
+                             f"(U+{c:04X}{', a tab' if c == 9 else ''}"
+                             f"{', a line separator' if c > 0xff else ''}); "
+                             "front-matter values are plain text")
 
 
-def emit_front(meta, extra=()):
+def emit_front(meta, extra=(), plain=True):
     out = []
     for key in list(FIELD_ORDER) + [k for k in extra if k not in FIELD_ORDER]:
         if key not in meta:
@@ -221,13 +464,14 @@ def emit_front(meta, extra=()):
         val = meta[key]
         if val is None or val == [] or val == {}:
             continue
-        _front_one_line(key, val)
+        _front_one_line(key, val, plain)
         if isinstance(val, dict):
             out.append(f"{key}:")
             out.extend(f"  {k}: {_emit_scalar(v)}" for k, v in val.items())
         elif isinstance(val, list):
             if key in FLOW_LIST_FIELDS:
-                out.append(f"{key}: [" + ", ".join(_emit_scalar(v) for v in val) + "]")
+                out.append(f"{key}: [" + ", ".join(_emit_scalar(v, flow=True)
+                                                   for v in val) + "]")
             else:
                 out.append(f"{key}:")
                 out.extend(f"  - {_emit_scalar(v)}" for v in val)
@@ -424,9 +668,9 @@ class Item:
             raise WiError(3, f"{path}: " + "; ".join(errors))
         return cls(meta, extra, None, None, path, body=body, eol=eol)
 
-    def render(self):
+    def render(self, plain=True):
         eol = self.eol
-        front = emit_front(self.meta, self.extra).replace("\n", eol)
+        front = emit_front(self.meta, self.extra, plain).replace("\n", eol)
         return "---" + eol + front + eol + "---" + eol + self.body
 
     def _parse(self):
@@ -552,9 +796,16 @@ class Item:
             errs.append("blocked without a reason")
         if m.get("status") == "parked" and not m.get("parked"):
             errs.append("parked without a reason")
-        if m.get("parked") and m.get("status") in ("todo", "doing", "blocked"):
-            errs.append(f"parked reason on a {m['status']} item (wi unpark "
-                        "clears it; or clear the field with wi set)")
+        if m.get("parked") and m.get("status") in ("todo", "doing", "blocked",
+                                                   "grooming"):
+            errs.append(f"parked reason on a {m['status']} item (clear it: "
+                        f"wi set {m.get('id')} parked \"\")")
+        if m.get("status") == "grooming" and not m.get("grooming"):
+            errs.append("grooming without questions")
+        if m.get("grooming") and m.get("status") in ("todo", "doing", "blocked",
+                                                     "parked"):
+            errs.append(f"grooming questions on a {m['status']} item (clear "
+                        f"them: wi set {m.get('id')} grooming \"\")")
         if m.get("status") in ("done", "dropped") and not m.get("closed"):
             errs.append(f"{m['status']} without closed date")
         return errs
@@ -716,11 +967,99 @@ def read_raw(path):
         return fh.read()
 
 
-def atomic_write(path, text):
+def atomic_write(path, text, create=False):
+    """tmp+rename. With create=True the file must not exist yet: the tmp is
+    moved into place by _move_no_clobber, which fails rather than replace a
+    file that appeared since the caller looked (O_EXCL semantics, and the
+    content still lands in one step)."""
     tmp = path.with_name(path.name + ".tmp" + str(os.getpid()))
     with open(tmp, "w", newline="") as fh:
         fh.write(text)
-    os.replace(tmp, path)
+    if not create:
+        os.replace(tmp, path)
+        return
+    try:
+        _move_no_clobber(tmp, path)
+    finally:
+        if tmp.exists():
+            tmp.unlink()
+
+
+def _refuse_existing(dst):
+    return WiError(3, f"refusing to overwrite existing {dst}; nothing written for it")
+
+
+def _half_moved(a, b):
+    """True when `a` and `b` are two hard links to one file — the state a
+    kill between link and unlink leaves: same device and inode (the last
+    component not followed), at least two links, and parent directories
+    that resolve to different directories. One directory entry reached by
+    two paths (a symlinked or bind-mounted directory) fails the last two
+    tests: unlinking either path would delete the only copy."""
+    try:
+        sa, sb = os.lstat(a), os.lstat(b)
+        pa, pb = (os.path.realpath(os.path.dirname(os.path.abspath(x)))
+                  for x in (a, b))
+    except OSError:
+        return False
+    return ((sa.st_dev, sa.st_ino) == (sb.st_dev, sb.st_ino)
+            and sa.st_nlink >= 2 and pa != pb)
+
+
+def _move_no_clobber(src, dst):
+    """Move `src` to `dst`, never replacing an existing `dst` (WiError 3).
+
+    A hard link is the atomic no-clobber rename. A `dst` that already is
+    `src` (a kill between link and unlink) is the move half done: it is
+    finished by unlinking `src`. Where the filesystem has no hard links,
+    the name is reserved with O_EXCL and `src` is renamed over that
+    empty reservation, so the content still lands in one step; if the rename
+    fails, the reservation is removed while it is still ours (same inode,
+    size 0) and WiError is raised — never a half-written file under `dst`.
+    On any error `src` is left in place."""
+    try:
+        os.link(src, dst)
+        linked = True
+    except FileExistsError:
+        if not _half_moved(src, dst):
+            raise _refuse_existing(dst) from None
+        linked = True  # linked by an earlier, killed move
+    except OSError:
+        linked = False  # no hard links on this filesystem: reserve the name
+    if linked:
+        try:
+            os.unlink(src)
+        except OSError as e:
+            raise WiError(3, f"{dst} written but {src} not removed: {e}") from None
+        return
+    try:
+        fd = os.open(dst, os.O_WRONLY | os.O_CREAT | os.O_EXCL)
+    except FileExistsError:
+        raise _refuse_existing(dst) from None
+    except OSError as e:
+        raise WiError(3, f"cannot create {dst}: {e}") from None
+    try:
+        reserved = os.fstat(fd)
+    finally:
+        os.close(fd)
+    try:
+        os.replace(src, dst)
+    except OSError as e:
+        try:
+            now = os.lstat(dst)
+            if (now.st_dev, now.st_ino) == (reserved.st_dev, reserved.st_ino) \
+                    and now.st_size == 0:
+                os.unlink(dst)
+        except OSError:
+            pass
+        raise WiError(3, f"cannot write {dst}: {e}; nothing written for it") from None
+
+
+def taken_ids(root, items):
+    """Every id a new item must not take: the loaded items' ids and the file
+    stems under items/ and archive/ (a stray file whose stem differs from its
+    id still owns its filename)."""
+    return {it.id for it in items} | {p.stem for p in item_paths(root, archived=True)}
 
 
 def save_item(root, item):
@@ -729,12 +1068,34 @@ def save_item(root, item):
 
 def save_items(root, items):
     """Render every item before writing any, so a value the writer rejects
-    (see _front_one_line) leaves the whole batch unwritten."""
-    staged = [(item, item.path or root / "items" / (item.id + ".md"),
-               item.render()) for item in items]
-    for item, path, text in staged:
+    (see _front_one_line) leaves the whole batch unwritten.
+
+    An item without a path is new: it is written only to a file that does
+    not exist (anywhere in items/ or archive/) and that no other item in the
+    batch claims — a new item never replaces a file nobody read, whatever
+    id its caller generated. Any such conflict leaves the batch unwritten."""
+    staged, seen = [], set()
+    archived = {p.stem for p in (root / "archive").glob("*/*.md")} \
+        if (root / "archive").is_dir() else set()
+    for item in items:
+        new = item.path is None
+        path = item.path or root / "items" / (item.id + ".md")
+        if path in seen:
+            raise WiError(3, f"{item.id}: two items in one write target {path}; "
+                             "nothing written")
+        seen.add(path)
+        if new and (path.exists() or item.id in archived):
+            raise WiError(3, f"{item.id}: refusing to overwrite existing item "
+                             f"file for a new item; nothing written")
+        try:
+            staged.append((item, path, item.render(), new))
+        except WiError as e:
+            # name the item; its path only when it is already on disk
+            where = f"{item.id} ({item.path})" if item.path else item.id
+            raise WiError(e.code, f"{where}: {e}") from None
+    for item, path, text, new in staged:
+        atomic_write(path, text, create=new)
         item.path = path
-        atomic_write(path, text)
 
 
 def item_paths(root, archived=False):
@@ -744,10 +1105,39 @@ def item_paths(root, archived=False):
     return paths
 
 
+STALE_RESERVATION = ("empty file: a name reserved by a write whose content "
+                     "never landed (killed mid-write, unless one is in "
+                     "flight this instant)")
+_warned_stale = set()
+
+
+def stale_reservation_fix(path):
+    """How to clear an empty item file (see STALE_RESERVATION). The
+    no-hard-link create writes its content to `<name>.tmp<pid>` first, so a
+    tmp beside the file still holds it; otherwise nothing was written there
+    (an interrupted archive left its source in items/)."""
+    tmps = sorted(path.parent.glob(glob.escape(path.name) + ".tmp*"))
+    if tmps:
+        return (f"its content is in {tmps[0]}: "
+                f"mv {shlex.quote(str(tmps[0]))} {shlex.quote(str(path))}")
+    return f"nothing was written to it: rm {shlex.quote(str(path))}"
+
+
 def load_all(root, archived=False):
+    """Every item under items/ (and archive/). An empty file is a stale
+    reservation, not an item: it is skipped with a warning naming it, so
+    one interrupted write does not stop every command; `wi lint` reports it
+    with the fix. Its name stays taken (taken_ids reads the file stems)."""
     items = []
     for path in item_paths(root, archived):
-        items.append(Item.parse(read_raw(path), path))
+        text = read_raw(path)
+        if not text:
+            if path not in _warned_stale:
+                _warned_stale.add(path)
+                print(f"wi: skipping {path}: {STALE_RESERVATION}; "
+                      "`wi lint` names the fix", file=sys.stderr)
+            continue
+        items.append(Item.parse(text, path))
     return items
 
 
@@ -759,7 +1149,7 @@ def resolve_id(items, ref):
     if len(matches) == 1:
         return matches[0]
     if len(matches) > 1:
-        raise WiError(2, f"ambiguous id '{ref}': " + ", ".join(it.id for it in matches))
+        raise AmbiguousId(2, f"ambiguous id '{ref}': " + ", ".join(it.id for it in matches))
     raise WiError(2, f"no item matching '{ref}'")
 
 
@@ -791,7 +1181,8 @@ def rank_ready(items):
 
 
 def split_by_status(items):
-    open_items = {"doing": [], "blocked": [], "todo": [], "parked": []}
+    open_items = {"doing": [], "blocked": [], "todo": [], "parked": [],
+                  "grooming": []}
     closed = []
     for it in items:
         st = it.get("status")
@@ -912,12 +1303,7 @@ def cmd_add(args):
                 raise WiError(1, f"dep '{dep}' does not resolve (--force to add anyway)")
         if args.parent and args.parent not in by_id and not args.force:
             raise WiError(1, f"parent '{args.parent}' does not resolve")
-        while True:
-            iid = (slugify(args.slug) if args.slug else slugify(title))
-            iid += "-" + hashlib.sha1(
-                (title + created).encode() + os.urandom(8)).hexdigest()[:4]
-            if iid not in by_id:
-                break
+        iid = make_id(title, created, taken_ids(root, items), slug=args.slug)
         desc = sys.stdin.read().strip() if args.desc == "-" else (args.desc or "")
         meta = {"id": iid, "title": title, "type": args.type, "status": "todo",
                 "priority": args.priority, "tags": args.tag or [],
@@ -942,6 +1328,9 @@ def _claim(item, owner, steal=False):
         raise WiError(1, f"{item.id} is blocked ({item.get('blocked')}); unblock first")
     if item.get("status") == "parked":
         raise WiError(1, f"{item.id} is parked ({item.get('parked')}); unpark first")
+    if item.get("status") == "grooming":
+        raise WiError(1, f"{item.id} is grooming ({item.get('grooming')}); "
+                         "ungroom first")
     held_by = item.get("owner")
     if held_by and held_by != owner:
         if not steal:
@@ -972,7 +1361,8 @@ def cmd_release(args):
     with Lock(root):
         item = load_item_anywhere(root, args.id)
         item.meta.update(owner=None, claimed=None, stage=None)
-        if item.get("status") != "parked":   # releasing a claim never unparks
+        # releasing a claim never unparks or ungrooms
+        if item.get("status") not in ("parked", "grooming"):
             item.meta["status"] = "todo"
         item.touch()
         save_item(root, item)
@@ -980,13 +1370,23 @@ def cmd_release(args):
     return 0
 
 
+# every character str.splitlines (or a YAML 1.1 loader: NEL, U+2028/U+2029)
+# reads as a line break
+_LINE_BREAK_RE = re.compile("[\n\r\x0b\x0c\x1c-\x1e\x85\u2028\u2029]")
+
+
 def _one_line(what, val):
     """Values written into front matter, a Handoff bullet or a Notes line are
     one line (format.md): a line break would add front-matter keys, leave
-    lines the next rewrite does not own, or inject a `## ` heading. Called
-    before anything is read or written, so a rejected value writes nothing."""
-    if val is not None and ("\n" in val or "\r" in val):
-        raise WiError(1, f"{what} must be one line; it contains a line break")
+    lines the next rewrite does not own, or inject a `## ` heading. Every
+    Unicode line separator counts (U+2028 in a Notes line splits the
+    exported `notes: |-` block). Called before anything is read or written,
+    so a rejected value writes nothing."""
+    m = val is not None and _LINE_BREAK_RE.search(val)
+    if m:
+        c = ord(m.group())
+        raise WiError(1, f"{what} must be one line; it contains a line break"
+                         + ("" if c in (10, 13) else f" (U+{c:04X})"))
 
 
 def cmd_handoff(args):
@@ -1041,8 +1441,10 @@ def cmd_block(args):
             if dep not in deps:
                 item.meta["deps"] = deps + [dep]
         else:
-            # a block supersedes a park: the item is no longer deferred
-            item.meta.update(status="blocked", blocked=args.reason, parked=None)
+            # a block supersedes a park or a grooming: the item is no longer
+            # deferred, nor waiting on the operator's answers
+            item.meta.update(status="blocked", blocked=args.reason, parked=None,
+                             grooming=None)
         item.touch()
         save_item(root, item)
     print(f"blocked {item.id}")
@@ -1075,8 +1477,8 @@ def _park(item, reason, note=None):
         raise WiError(1, f"{item.id} is {st}; a closed item cannot be parked")
     if st == "parked" and item.get("parked") == reason:
         return False
-    item.meta.update(status="parked", parked=reason, owner=None, claimed=None,
-                     stage=None)
+    item.meta.update(status="parked", parked=reason, grooming=None, owner=None,
+                     claimed=None, stage=None)
     item.append_note(f"- {today()} {note or 'parked: ' + reason}")
     item.touch()
     return True
@@ -1113,6 +1515,54 @@ def cmd_unpark(args):
     return 0
 
 
+def _groom(item, questions):
+    """Put `item` in grooming: it waits on the operator's answers to
+    `questions`, out of every ready queue. Mirrors _park: the claim and stage
+    are released, a `blocked:` reason is kept (ungroom returns to blocked), a
+    park is superseded. Refuses closed items. False when nothing changes."""
+    st = item.get("status")
+    if st in ("done", "dropped"):
+        raise WiError(1, f"{item.id} is {st}; a closed item cannot be groomed")
+    if st == "grooming" and item.get("grooming") == questions:
+        return False
+    item.meta.update(status="grooming", grooming=questions, parked=None,
+                     owner=None, claimed=None, stage=None)
+    item.append_note(f"- {today()} grooming: {questions}")
+    item.touch()
+    return True
+
+
+def cmd_groom(args):
+    _one_line("questions", args.questions)
+    questions = (args.questions or "").strip()
+    if not questions:
+        raise WiError(1, "groom takes the open questions")
+    root = resolve_root(args.root)
+    with Lock(root):
+        item = load_item_anywhere(root, args.id)
+        if _groom(item, questions):
+            save_item(root, item)
+    print(f"grooming {item.id}")
+    return 0
+
+
+def cmd_ungroom(args):
+    """Back to `todo`, or to `blocked` when the item still carries a blocked
+    reason; never to `doing` (the claim was released on groom)."""
+    root = resolve_root(args.root)
+    with Lock(root):
+        item = load_item_anywhere(root, args.id)
+        if item.get("status") != "grooming":
+            raise WiError(1, f"{item.id} is {item.get('status')}, not grooming")
+        status = "blocked" if item.get("blocked") else "todo"
+        item.meta.update(status=status, grooming=None)
+        item.append_note(f"- {today()} ungroomed")
+        item.touch()
+        save_item(root, item)
+    print(f"ungroomed {item.id} -> {status}")
+    return 0
+
+
 def cmd_migrate_parked(args):
     """Convert `status: blocked` items whose reason starts with PARKED (the
     convention before `parked` existed) to parked. Dry run unless --apply."""
@@ -1141,6 +1591,57 @@ def cmd_migrate_parked(args):
     return 0
 
 
+def cmd_repair_escapes(args):
+    """One-time repair of values an older wi escape-amplified: its reader did
+    not unescape what its writer escaped, so every rewrite of a quoted value
+    added a layer of backslashes (`"` -> `\\"` -> `\\\\\\"`). The file still
+    loads. The test is a heuristic: it lists every value (quoted or not — the
+    current writer may have rewritten an amplified value bare) whose every
+    backslash pairs as `\\\\` or `\\"`, with all such layers peeled — and a
+    value can be meant that way (a title about escapes), so review the list
+    first: a dry run until --apply; --id and --key narrow what it touches, and
+    `wi set` fixes one value by hand instead."""
+    root = resolve_root(args.root)
+    rows, changed = [], []
+    with Lock(root):
+        for item in load_all(root, archived=True):
+            if args.id and item.id != args.id:
+                continue
+            fixes = []
+            for key in [k for k in FIELD_ORDER if k in item.meta] + \
+                    [k for k in item.extra if k not in FIELD_ORDER]:
+                if args.key and key != args.key:
+                    continue
+                val = item.meta.get(key)
+                fix = (lambda v: _deamplify(v) if isinstance(v, str) else v)
+                if isinstance(val, dict):
+                    new = {k: fix(v) for k, v in val.items()}
+                    pairs = [(val[k], new[k]) for k in val]
+                elif isinstance(val, list):
+                    new = [fix(v) for v in val]
+                    pairs = list(zip(val, new))
+                else:
+                    new = fix(val) if isinstance(val, str) else val
+                    pairs = [(val, new)]
+                pairs = [(a, b) for a, b in pairs if a != b]
+                if pairs:
+                    fixes.append((key, new, pairs))
+            for key, new, pairs in fixes:
+                rows.extend((item.id, key, a, b) for a, b in pairs)
+                if args.apply:
+                    item.meta[key] = new
+            if args.apply and fixes:
+                changed.append(item)
+        save_items(root, changed)
+    verb = "repaired" if args.apply else "would repair"
+    for iid, key, old, new in rows:
+        print(f"{verb}\t{iid}\t{key}\t{json.dumps(old, ensure_ascii=False)}"
+              f" -> {json.dumps(new, ensure_ascii=False)}")
+    print(f"{len(rows)} " + ("repaired" if args.apply else
+                             "to repair (dry run; --apply to write)"))
+    return 0
+
+
 def cmd_set(args):
     root = resolve_root(args.root)
     field, value = args.field, args.value
@@ -1164,10 +1665,19 @@ def cmd_set(args):
             # the one path in, so set never leaves a half-parked item
             if item.get("status") != "parked":
                 raise WiError(1, f"use wi park {item.id} \"<reason>\" to park an item")
+        elif field == "status" and value == "grooming":
+            # like parked: `wi groom` is the one path in, with the questions
+            if item.get("status") != "grooming":
+                raise WiError(1, f"use wi groom {item.id} \"<questions>\" to "
+                                 "groom an item")
         elif field == "status" and item.get("status") == "parked":
             # leaving parked by set is an unpark: the reason goes with it
             item.meta.update(status=value, parked=None)
             item.append_note(f"- {today()} unparked (set status {value})")
+        elif field == "status" and item.get("status") == "grooming":
+            # leaving grooming by set is an ungroom: the questions go with it
+            item.meta.update(status=value, grooming=None)
+            item.append_note(f"- {today()} ungroomed (set status {value})")
         else:
             item.meta[field] = value
         # mirror cmd_add: deps/parent must resolve; ext: never does; --force
@@ -1197,8 +1707,20 @@ def cmd_ls(args):
     items = load_all(root, archived=args.status == "all")
     by_id = {it.id: it for it in items}
     statuses = (set(STATUSES) if args.status == "all"
-                else set((args.status or "todo,doing,blocked").split(",")))
+                else set((args.status or "todo,doing,blocked,grooming")
+                         .split(",")))
     rows = [it for it in items if it.get("status") in statuses]
+    if args.dep:
+        # items depending on an id: resolve it when it names an item (a
+        # prefix or alias works), else match the dep string as written; an
+        # ambiguous prefix is an error, not an empty list
+        try:
+            dep = resolve_id(load_all(root, archived=True), args.dep).id
+        except AmbiguousId:
+            raise
+        except WiError:
+            dep = args.dep
+        rows = [it for it in rows if dep in it.get("deps", [])]
     if args.type:
         rows = [it for it in rows if it.get("type", "task") == args.type]
     if args.tag:
@@ -1249,7 +1771,7 @@ def cmd_show(args):
             for ref in item.get("refs"):
                 print(f"- {ref}")
     else:
-        print(item.render(), end="")
+        print(item.render(plain=False), end="")
     return 0
 
 
@@ -1280,6 +1802,7 @@ def cmd_next(args):
                           "ready": [item_json(it) for it in ready[:args.limit]],
                           "counts": {"ready": len(ready), "waiting": waiting,
                                      "parked": len(grouped["parked"]),
+                                     "grooming": len(grouped["grooming"]),
                                      "done": len(closed)}}, indent=1))
         return 0
     out = []
@@ -1317,6 +1840,8 @@ def cmd_next(args):
             out.append(f"  P{it.get('priority', 2)} {it.id}  {it.get('title')}")
     parked = (f" · {len(grouped['parked'])} parked (wi ls --status parked)"
               if grouped["parked"] else "")
+    if grouped["grooming"]:
+        parked += f" · {len(grouped['grooming'])} grooming (wi needs-input)"
     out.append(f"{max(0, len(ready) - args.limit)} more ready · {waiting} waiting "
                f"on deps{parked} · {len(closed)} done (wi ls --status done)")
     print("\n".join(out))
@@ -1384,6 +1909,12 @@ def cmd_prime(args):
             return True
         return False
 
+    holds = [it for it in items if it.get("status") not in ("done", "dropped")
+             and "hold" in it.get("tags", [])]
+    if holds:
+        # an operator hold gates what may move: first, before any work line
+        take(f"HOLD {len(holds)}: " + " ".join(
+            f"{it.id} ({it.get('title')})" for it in holds[:3]))
     for it in doing:
         who = "you" if it.get("owner") == default_owner() else it.get("owner", "-")
         take(f"DOING  P{it.get('priority', 2)} {it.id}  {it.get('title')}  "
@@ -1396,6 +1927,9 @@ def cmd_prime(args):
     if grouped["blocked"]:
         take(f"BLOCKED {len(grouped['blocked'])}: " + " ".join(
             f"{it.id} ({it.get('blocked')})" for it in grouped["blocked"][:3]))
+    if grouped["grooming"]:
+        # waiting on the operator: a count; wi needs-input lists the questions
+        take(f"GROOMING {len(grouped['grooming'])} (wi needs-input)")
     if grouped["parked"]:
         # deliberately deferred: a count, never a list — see wi ls --status parked
         take(f"PARKED {len(grouped['parked'])} (wi ls --status parked)")
@@ -1418,6 +1952,46 @@ def cmd_prime(args):
         text = "\n".join(lines)
     print(text)
     return 0
+
+
+def needs_input(items):
+    """Every open item awaiting the operator, as (item, [(kind, n, text)]):
+    kind `grooming` (its questions) or `decision` (an unanswered
+    `decision N:` line). Parked items count; closed ones never do."""
+    out = []
+    for it in items:
+        if it.get("status") in ("done", "dropped"):
+            continue
+        asks = []
+        if it.get("status") == "grooming":
+            asks.append(("grooming", None, it.get("grooming") or ""))
+        asks += [("decision", n, text) for n, text in unanswered_decisions(it)]
+        if asks:
+            out.append((it, asks))
+    return out
+
+
+def cmd_needs_input(args):
+    root = resolve_root(args.root)
+    rows = needs_input(rank_ready(load_all(root)))
+    if args.json:
+        print(json.dumps([{"id": it.id, "title": it.get("title"),
+                           "status": it.get("status"),
+                           "grooming": it.get("grooming"),
+                           "decisions": [{"n": n, "text": text}
+                                         for kind, n, text in asks
+                                         if kind == "decision"]}
+                          for it, asks in rows], indent=1))
+        return 0 if rows else 2
+    for it, asks in rows:
+        for kind, n, text in asks:
+            if args.plain:
+                print("\t".join([it.id, kind, "-" if n is None else str(n),
+                                 text]))
+            else:
+                label = "grooming" if n is None else f"decision {n}"
+                print(f"{it.id}  {label}: {text}")
+    return 0 if rows else 2
 
 
 # ── import-todo ─────────────────────────────────────────────────────────────
@@ -1520,7 +2094,7 @@ def _section_item(heading, body):
             item["priority"] = prio
             title = title[len(prefix):].lstrip(" —-")
             break
-    item["title"] = re.sub(r"\s+", " ", title).strip()[:120]
+    item["title"] = _fold(title)[:120]
     paras = body.strip().split("\n\n")
     item["desc"] = paras[0].strip() if paras else ""
     item["notes"] = "\n\n".join(p for p in paras[1:]).strip()
@@ -1540,7 +2114,7 @@ def _bullet_item(text):
     else:
         first, _, rest = text.partition("\n")
         title, rest = first, rest
-    item["title"] = re.sub(r"\s+", " ", title).strip()[:120]
+    item["title"] = _fold(title)[:120]
     item["desc"] = rest.strip()
     return item
 
@@ -1553,7 +2127,7 @@ def cmd_import_todo(args):
     with Lock(root):
         items = load_all(root, archived=True)
         markers = {r for it in items for r in it.get("refs", [])}
-        ids = {it.id for it in items}
+        ids = taken_ids(root, items)
         for rec in parsed:
             marker = todo_marker(rec["title"])
             if marker in markers:
@@ -1561,11 +2135,7 @@ def cmd_import_todo(args):
                 continue
             markers.add(marker)
             date = rec["closed"] or today()
-            while True:
-                iid = make_id(rec["title"], date)
-                if iid not in ids:
-                    break
-            ids.add(iid)
+            iid = make_id(rec["title"], date, ids)
             meta = {"id": iid, "title": rec["title"], "type": "task",
                     "status": rec["status"], "priority": rec["priority"],
                     "tags": rec["tags"], "refs": rec["refs"] + [marker],
@@ -1596,13 +2166,67 @@ BACKLOG_DEFAULTS = [("priority_order", "higher_is_more_important"),
                     ("requires_field", "requires")]
 
 
-def _yaml_scalar(v):
+def _yaml_scalar(v, json_ok=False):
+    """A backlog.yaml value, double-quoted. `json_ok` (x_backlog values
+    only): a list or mapping import stored JSON-encoded passes through raw,
+    since JSON is YAML flow; any other value starting `[` or `{` — a title
+    `[wip] x` — is quoted like the rest."""
     if isinstance(v, int):
         return str(v)
     v = str(v)
-    if v.startswith(("[", "{")):  # JSON-encoded passthrough; JSON is YAML flow
-        return v
-    return '"' + v.replace("\\", "\\\\").replace('"', '\\"') + '"'
+    if json_ok and v.startswith(("[", "{")):
+        try:
+            if isinstance(json.loads(v), (list, dict)):
+                return v
+        except ValueError:
+            pass
+    return '"' + _dq_escape(v) + '"'
+
+
+def _yaml_notes(notes):
+    """`notes:` as a `|-` block, or — when it holds a character a YAML
+    loader reads as a line break or rejects raw (U+2028, NEL, a control
+    character) — as a double-quoted scalar with those escaped."""
+    if _DQ_ESCAPE_RE.search(notes.replace("\t", " ")):
+        return ['    notes: "' + _dq_escape(notes).replace("\n", "\\n") + '"']
+    return ["    notes: |-"] + ["      " + ln if ln.strip() else ""
+                                for ln in notes.split("\n")]
+
+
+# export appends an item's `ext:` deps to its blocked_reason (backlog.yaml
+# `requires` holds only story ids); import strips that suffix back off
+def split_ext_requires(reason, ext=None, whole=True):
+    """(reason without the `requires ext:…` suffix export appends, [ext deps]).
+
+    `ext` given (import --update: the store item's own `ext:` deps): strip
+    only the exact suffix export wrote for those deps, so a reason that
+    merely says "requires ext:" is kept whole. `ext` None (a new item): the
+    last `; requires ext:` group is the suffix; a reason that is nothing but
+    `requires ext:…` counts only when `whole` (the story is not blocked, so
+    its reason can be empty)."""
+    if not reason:
+        return reason, []
+    if ext is not None:
+        suffix = "requires " + ", ".join(ext)
+        if not ext:
+            return reason, []
+        if reason == suffix:
+            return None, list(ext)
+        if reason.endswith("; " + suffix):
+            return reason[:-len(suffix) - 2], list(ext)
+        return reason, []
+    i = reason.rfind("; requires ext:")
+    if i >= 0:
+        head, group = reason[:i], reason[i + len("; requires "):]
+    elif whole and reason.startswith("requires ext:"):
+        head, group = None, reason[len("requires "):]
+    else:
+        return reason, []
+    return head or None, [d.strip() for d in re.split(r", (?=ext:)", group)]
+
+
+def _ext_deps(item):
+    return [d for d in item.get("deps", []) if d.startswith("ext:")]
 
 
 def _yaml_list(w, key, values, indent):
@@ -1674,7 +2298,11 @@ def emit_backlog(project, stories_items, by_id):
         _yaml_list(w, "testing", testing or ["<unspecified>"], "    ")
         blocked = it.get("blocked") or ""
         if m.get("status") == "parked":
-            blocked = "PARKED: " + (it.get("parked") or "")
+            blocked = _bridge_encode("PARKED", parked_reason,
+                                     it.get("parked") or "")
+        elif m.get("status") == "grooming":
+            blocked = _bridge_encode("GROOMING", grooming_questions,
+                                     it.get("grooming") or "")
         if ext:
             blocked = (blocked + "; " if blocked else "") + "requires " + ", ".join(ext)
         for key, val in (("blocked_reason", blocked),
@@ -1686,10 +2314,9 @@ def emit_backlog(project, stories_items, by_id):
                 w.append(f"    {key}: {_yaml_scalar(val)}")
         notes = _notes_for_export(it)
         if notes:
-            w.append("    notes: |-")
-            w.extend("      " + ln if ln.strip() else "" for ln in notes.split("\n"))
+            w.extend(_yaml_notes(notes))
         for key, val in (it.get("x_backlog") or {}).items():
-            w.append(f"    {key}: {_yaml_scalar(val)}")
+            w.append(f"    {key}: {_yaml_scalar(val, json_ok=True)}")
     return "\n".join(w) + "\n"
 
 
@@ -1760,14 +2387,47 @@ def _fold(v):
     line (whitespace collapsed, as import-todo folds titles). YAML block
     scalars (`review_feedback: |`) are common in ralph backlogs; folding keeps
     every word and every story, where rejecting would drop the story and
-    break the requires links of the stories that name it."""
-    return v if not isinstance(v, str) else re.sub(r"\s+", " ", v).strip()
+    break the requires links of the stories that name it. Control characters
+    fold to a space as line breaks do: the writer refuses them."""
+    if not isinstance(v, str):
+        return v
+    return re.sub(r"\s+", " ", _FRONT_REFUSE_RE.sub(" ", v)).strip()
 
 
-def _import_story(story, alias_map, existing_by_alias, update):
-    story = {k: ([_fold(x) for x in v] if isinstance(v, list) and
+# story fields that are free text: kept as read when one line (_fold_story);
+# every other known field — an id, an enum, an owner — is always folded, so
+# a padded `ticket_mode: " x "` lands trimmed. Extra (x_backlog) fields are
+# text too.
+STORY_TEXT_FIELDS = {"title", "blocked_reason", "review_feedback",
+                     "acceptance", "testing"}
+
+
+def _fold_story(v):
+    """A backlog story value as import stores it: folded (_fold) only when it
+    holds a line break or a character the writer refuses. A one-line value
+    is kept as the YAML loader read it — surrounding spaces, runs of spaces
+    and NBSP included — so an exported title imports back unchanged."""
+    if isinstance(v, str) and ("\n" in v or _FRONT_REFUSE_RE.search(v)):
+        return _fold(v)
+    return v
+
+
+def _story_value(story, key):
+    """A backlog field as a front-matter value: empty, blank after strip(),
+    or the `—` placeholder wi itself reads as "no value", is None — so a
+    `blocked_reason: "—"` never lands as a literal dash now that a quoted
+    `—` reads back as one."""
+    v = story.get(key) or None
+    return None if isinstance(v, str) and v.strip() in ("", "—") else v
+
+
+def _import_story(story, alias_map, existing_by_alias, update, taken):
+    story = {k: ([_fold_story(x) if k in STORY_TEXT_FIELDS else _fold(x)
+                  for x in v] if isinstance(v, list) and
                  k in ("requires", "acceptance", "testing") else
-                 v if k == "notes" else _fold(v))
+                 v if k == "notes" else
+                 _fold_story(v) if k in STORY_TEXT_FIELDS or
+                 k not in KNOWN_STORY_FIELDS else _fold(v))
              for k, v in story.items()}
     alias = str(story["id"])
     status, stage = BACKLOG_TO_STATE[story.get("status", "todo")]
@@ -1778,19 +2438,29 @@ def _import_story(story, alias_map, existing_by_alias, update):
         if key not in KNOWN_STORY_FIELDS:
             x_backlog[key] = val if isinstance(val, (str, int)) else \
                 json.dumps(val, separators=(", ", ": "))
-    blocked = story.get("blocked_reason") or None
-    parked = parked_reason(blocked) if status == "blocked" else None
+    existing = existing_by_alias.get(alias) if update else None
+    blocked, _ = split_ext_requires(
+        _story_value(story, "blocked_reason"),
+        ext=_ext_deps(existing) if existing else None,
+        whole=story.get("status") != "blocked")
+    parked = _bridge_decode("PARKED", parked_reason, blocked) \
+        if status == "blocked" else None
+    grooming = _bridge_decode("GROOMING", grooming_questions, blocked) \
+        if status == "blocked" else None
     if parked is not None:
         status, blocked = "parked", None
+    elif grooming is not None:
+        status, blocked = "grooming", None
     if update and alias in existing_by_alias:
         it = existing_by_alias[alias]
-        if parked is not None:
-            # the export carries only the park; a blocked: reason kept under
-            # it (unpark returns to blocked) lives only in the store
+        if parked is not None or grooming is not None:
+            # the export carries only the park (or grooming); a blocked:
+            # reason kept under it lives only in the store
             blocked = it.get("blocked")
         it.meta.update(status=status, stage=stage, blocked=blocked, parked=parked,
-                       feedback=story.get("review_feedback") or None,
-                       owner=story.get("claimed_by") or None,
+                       grooming=grooming,
+                       feedback=_story_value(story, "review_feedback"),
+                       owner=_story_value(story, "claimed_by"),
                        x_backlog=x_backlog or None)
         if status in ("done", "dropped") and not it.get("closed"):
             it.meta["closed"] = today()
@@ -1798,13 +2468,13 @@ def _import_story(story, alias_map, existing_by_alias, update):
         return it, False
     desc, handoff, notes = _split_backlog_notes(story.get("notes"))
     title = str(story["title"])[:120]
-    meta = {"id": make_id(title, today()), "title": title, "status": status,
+    meta = {"id": make_id(title, today(), taken), "title": title, "status": status,
             "stage": stage, "priority": priority, "alias": alias,
-            "blocked": blocked, "parked": parked,
-            "feedback": story.get("review_feedback") or None,
-            "owner": story.get("claimed_by") or None,
-            "mode": story.get("ticket_mode") or None,
-            "complexity": story.get("complexity") or None,
+            "blocked": blocked, "parked": parked, "grooming": grooming,
+            "feedback": _story_value(story, "review_feedback"),
+            "owner": _story_value(story, "claimed_by"),
+            "mode": _story_value(story, "ticket_mode"),
+            "complexity": _story_value(story, "complexity"),
             "created": today(), "updated": today(),
             "x_backlog": x_backlog or None}
     if status in ("done", "dropped"):
@@ -1820,11 +2490,18 @@ def _import_story(story, alias_map, existing_by_alias, update):
     if notes:
         sections.append(("Notes", notes))
     item = Item(meta, [], desc, sections)
-    deps = []
-    for req in story.get("requires") or []:
-        deps.append(alias_map.get(str(req), f"ext: {req}"))
-    item.meta["deps"] = deps
+    item.meta["deps"] = _story_deps(story, alias_map)
     return item, True
+
+
+def _story_deps(story, alias_map):
+    """A new item's deps: each `requires` id (an unknown one as `ext: <id>`),
+    then the `ext:` deps export carried in blocked_reason."""
+    deps = [alias_map.get(str(r), f"ext: {r}")
+            for r in (story.get("requires") or [])]
+    _, ext = split_ext_requires(_fold_story(_story_value(story, "blocked_reason")),
+                                whole=story.get("status") != "blocked")
+    return deps + [d for d in ext if d not in deps]
 
 
 def cmd_import(args):
@@ -1841,17 +2518,16 @@ def cmd_import(args):
         existing_by_alias = {it.get("alias"): it for it in items if it.get("alias")}
         alias_map = {a: it.id for a, it in existing_by_alias.items()}
         # two passes so requires can point at stories created in this run
-        pending = []
+        pending, taken = [], taken_ids(root, items)
         for story in stories:
             item, created = _import_story(story, alias_map, existing_by_alias,
-                                          args.update)
+                                          args.update, taken)
             if created:
                 alias_map[item.get("alias")] = item.id
             pending.append((story, item, created))
         for story, item, created in pending:
             if created:
-                item.meta["deps"] = [alias_map.get(str(r), f"ext: {r}")
-                                     for r in (story.get("requires") or [])]
+                item.meta["deps"] = _story_deps(story, alias_map)
                 n_new += 1
             else:
                 n_upd += 1
@@ -1881,9 +2557,13 @@ def secret_findings(text):
 def cmd_lint(args):
     root = resolve_root(args.root)
     problems = []
-    items = []
+    items, texts = [], {}
     for path in item_paths(root, archived=True):
-        text = path.read_text()
+        text = texts[path] = path.read_text()
+        if not text:
+            problems.append(f"{path}: {STALE_RESERVATION}; "
+                            f"{stale_reservation_fix(path)}")
+            continue
         if re.search(r"^(<{7}|={7}|>{7})", text, re.M):
             problems.append(f"{path}: unresolved merge conflict markers")
             continue
@@ -1895,7 +2575,11 @@ def cmd_lint(args):
         items.append(item)
     by_id = {}
     for it in items:
-        if it.id in by_id:
+        if it.id in by_id and _half_moved(by_id[it.id].path, it.path):
+            problems.append(f"{it.path}: the same file as {by_id[it.id].path} "
+                            "(an archive killed between link and unlink); "
+                            "`wi archive` finishes the move")
+        elif it.id in by_id:
             problems.append(f"{it.path}: duplicate id {it.id}")
         by_id[it.id] = it
     aliases = {}
@@ -1918,7 +2602,20 @@ def cmd_lint(args):
                 problems.append(f"{it.path}: doing without a ## Handoff block")
             elif not h.get("next"):
                 problems.append(f"{it.path}: doing with empty handoff next:")
-        for n, why in secret_findings(it.render()):
+        for key in [k for k in FIELD_ORDER if k in it.meta] + \
+                [k for k in it.extra if k not in FIELD_ORDER]:
+            val = it.meta[key]
+            vals = val.values() if isinstance(val, dict) else \
+                val if isinstance(val, list) else [val]
+            if any(isinstance(v, str) and _FRONT_REFUSE_RE.search(v)
+                   for v in vals):
+                problems.append(
+                    f"{it.path}: front-matter '{key}' holds a control"
+                    " character — a quoted value decodes YAML escapes, so a"
+                    " hand-written backslash (\"C:\\temp\" holds a tab)"
+                    " must be written \\\\;"
+                    f" fix it with `wi set {it.id} {key} ...`")
+        for n, why in secret_findings(texts[it.path]):
             problems.append(f"{it.path}:{n}: {why}")
     # cycle detection over deps
     state = {}
@@ -1953,19 +2650,31 @@ def cmd_archive(args):
     root = resolve_root(args.root)
     cutoff = parse_duration(args.older_than)
     now = datetime.now(timezone.utc)
-    moved = 0
+    moves = []
     with Lock(root):
         for item in load_all(root):
             if item.get("status") not in ("done", "dropped") or not item.get("closed"):
+                continue
+            dest = root / "archive" / item.get("closed")[:4] / item.path.name
+            if _half_moved(item.path, dest):
+                # a move killed between link and unlink: finish it, whatever
+                # the cutoff (_move_no_clobber unlinks the source)
+                moves.append((item.path, dest))
                 continue
             closed = datetime.strptime(item.get("closed"), "%Y-%m-%d").replace(
                 tzinfo=timezone.utc)
             if (now - closed).total_seconds() < cutoff:
                 continue
-            year_dir = root / "archive" / item.get("closed")[:4]
-            year_dir.mkdir(parents=True, exist_ok=True)
-            os.replace(item.path, year_dir / item.path.name)
-            moved += 1
+            if dest.exists():
+                why = f"{STALE_RESERVATION}; `wi lint` names the fix" \
+                    if dest.stat().st_size == 0 else "already exists"
+                raise WiError(3, f"refusing to archive {item.path}: {dest}: "
+                                 f"{why}; nothing archived")
+            moves.append((item.path, dest))
+        for src, dest in moves:
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            _move_no_clobber(src, dest)
+        moved = len(moves)
     print(f"archived {moved}")
     return 0
 
@@ -2005,12 +2714,23 @@ def build_parser():
             ("id", {}), ("reason", {})],
         ("unpark", cmd_unpark, "return a parked item to todo (or blocked)"): [
             ("id", {})],
+        ("groom", cmd_groom, "hold an item for the operator's answers to its "
+         "open questions"): [("id", {}), ("questions", {})],
+        ("ungroom", cmd_ungroom, "return a grooming item to todo (or blocked)"): [
+            ("id", {})],
+        ("needs-input", cmd_needs_input, "list every item awaiting the "
+         "operator: grooming items and unanswered decision N: lines"): [
+            ("--json",), ("--plain",)],
         ("migrate-parked", cmd_migrate_parked,
          "convert blocked items whose reason starts PARKED to parked"): [
             ("--apply",)],
+        ("repair-escapes", cmd_repair_escapes,
+         "list (or --apply) a heuristic repair of backslash layers an older "
+         "wi added to quoted values"): [
+            ("--id", {}), ("--key", {}), ("--apply",)],
         ("ls", cmd_ls, "list items"): [
             ("--status", {}), ("--type", {}), ("--tag", {}), ("--owner", {}),
-            ("--ready",), ("--json",), ("--plain",)],
+            ("--dep", {}), ("--ready",), ("--json",), ("--plain",)],
         ("set", cmd_set, "set one front-matter field"): [
             ("id", {}), ("field", {}), ("value", {}), ("--force",)],
         ("import-todo", cmd_import_todo, "import a TODO.md"): [

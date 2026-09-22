@@ -6,8 +6,13 @@ read here. The backlog-yaml export is validated against the claude-sandbox
 scaffold's backlog.py `validate --strict` when that script is invocable, and
 falls back to a structural assertion otherwise.
 """
+import contextlib
 import difflib
+import errno
+import hashlib
 import importlib.util
+import io
+import itertools
 import json
 import multiprocessing
 import os
@@ -19,6 +24,7 @@ import tempfile
 import time
 import unittest
 from pathlib import Path
+from unittest import mock
 
 HERE = Path(__file__).resolve().parent
 WI = HERE.parent / "scripts" / "wi.py"
@@ -139,6 +145,339 @@ class TestFrontMatter(WiTestCase):
         self.assertEqual(rec["acceptance"],
                          [{"text": "two hourly runs later, brainboy shows pruning",
                            "done": False}])
+
+
+# Characters the escape bug fed on, plus the ones a bare scalar cannot hold.
+ESCAPE_ALPHABET = (':', '"', '\\', '#', ' ', "'", ',', '[', ']', '{', '}', '-',
+                   '—', 'é', '日', '🙂', '\t', '\x07', '\x1b', '\x85',
+                   '\u2028', '\ufeff', 'a', 'Z', '0', '&', '*', '!', '|', '>',
+                   '%', '@', '`', '?', '\ufffe', '\uffff')
+
+
+def escape_values(count=400, seed=0x0401):
+    import random
+    rng = random.Random(seed)
+    fixed = ['x: "y"', 'x: \\"y\\"', '\\', '"', '""', 'a\\', ' lead',
+             'trail ', ' both ', 'c:\\dir', 'x: c:\\dir', '#hash', 'a #b',
+             'end:', '—', '— x', "it's", "'q'", '"q"', 'a, b', '[x]',
+             '\\\\\\"', 'say "hi"', '日本: "語"', 'a\tb', 'ab\t c',
+             '\t', 'x\ufffey', '\uffff']
+    for v in fixed:
+        yield v
+    for _ in range(count):
+        yield "".join(rng.choice(ESCAPE_ALPHABET)
+                      for _ in range(rng.randint(1, 12)))
+    # a tab among characters that alone would stay bare: a bare tab is
+    # the one thing a YAML loader rejects that wi read back fine
+    for _ in range(count // 8):
+        yield "".join(rng.choice("ab c1\t") for _ in range(rng.randint(2, 8)))
+
+
+class TestScalarRoundTrip(WiTestCase):
+    """emit and parse are exact inverses (0401): no rewrite ever changes a
+    value, and a quoted value never gains a backslash."""
+
+    def meta_for(self, v):
+        return {"id": "rt-0001", "title": v, "tags": [v, "plain"],
+                "refs": [v], "x_backlog": {"k": v}}
+
+    def front_text(self, v):
+        """emit_front's layout for meta_for(v). The writer refuses a control
+        character in a value, so for those the same lines are built from
+        _emit_scalar directly: the scalar contract still round-trips."""
+        if not wi._FRONT_REFUSE_RE.search(v):
+            return wi.emit_front(self.meta_for(v))
+        with self.assertRaises(wi.WiError):
+            wi.emit_front(self.meta_for(v))
+        e = wi._emit_scalar
+        return (f"id: rt-0001\ntitle: {e(v)}\ntags: [{e(v, flow=True)}, plain]"
+                f"\nrefs:\n  - {e(v)}\nx_backlog:\n  k: {e(v)}")
+
+    def test_parse_emit_is_identity_in_every_context(self):
+        for v in escape_values():
+            with self.subTest(v=v):
+                text = self.front_text(v)
+                meta, _, errors = wi.parse_front(text.split("\n"))
+                self.assertEqual(errors, [])
+                self.assertEqual(meta["title"], v)
+                self.assertEqual(meta["tags"], [v, "plain"])
+                self.assertEqual(meta["refs"], [v])
+                self.assertEqual(meta["x_backlog"], {"k": v})
+                # emit -> parse -> emit is stable
+                self.assertEqual(wi.emit_front(meta, plain=False), text)
+
+    def test_emitted_front_matter_is_yaml_a_strict_loader_agrees_with(self):
+        try:
+            from ruamel.yaml import YAML
+        except ImportError:
+            self.skipTest("ruamel.yaml not installed")
+        import io
+        yaml = YAML(typ="safe")
+        for v in escape_values(count=150):
+            if v.strip() in ("", "—"):
+                continue  # wi reads these as "no value"; YAML has no such rule
+            with self.subTest(v=v):
+                text = self.front_text(v)
+                loaded = yaml.load(io.StringIO(text))
+                if not isinstance(loaded["title"], str):
+                    continue  # YAML types a bare 0 / true; wi keeps strings
+                self.assertEqual(loaded["title"], v)
+                self.assertEqual(loaded["tags"], [v, "plain"])
+                self.assertEqual(loaded["refs"], [v])
+                self.assertEqual(loaded["x_backlog"], {"k": v})
+
+    def test_item_render_is_byte_stable_across_rewrites(self):
+        for v in escape_values(count=100):
+            if v.strip() in ("", "—") or wi._FRONT_REFUSE_RE.search(v):
+                continue  # the writer refuses control characters
+            with self.subTest(v=v):
+                item = wi.Item(dict(self.meta_for(v), type="task",
+                                    status="todo", priority=2),
+                               [], "desc", [])
+                first = item.render()
+                again = wi.Item.parse(first)
+                self.assertEqual(again.get("title"), v)
+                again.meta["priority"] = 3
+                again.meta["priority"] = 2
+                self.assertEqual(wi.Item.parse(again.render()).render(), first)
+
+    def test_reported_case_survives_real_commands(self):
+        title = 'x: "y" \\z'
+        tag = 'k: "v", \\w'
+        reason = 'ext: waits on "a: b" \\ c'
+        iid = json.loads(self.wi_ok(["add", title, "--tag", tag,
+                                     "--dep", reason, "--json"]))["id"]
+        path = self.root / "items" / f"{iid}.md"
+        written = path.read_text()
+        self.assertIn('title: "x: \\"y\\" \\\\z"\n', written)
+        for args in (["set", iid, "priority", "1"],
+                     ["set", iid, "priority", "3"],
+                     ["handoff", iid, "--next", "go"],
+                     ["handoff", iid, "--doing", "more"],
+                     ["set", iid, "priority", "2"]):
+            self.wi_ok(args)
+        rec = json.loads(self.wi_ok(["show", iid, "--json"]))
+        self.assertEqual(rec["title"], title)
+        self.assertEqual(rec["tags"], [tag])
+        self.assertEqual(rec["deps"], [reason])
+        fm = lambda t: t.split("\n---\n", 1)[0]
+        self.assertEqual(fm(path.read_text()).replace("priority: 2", ""),
+                         fm(written).replace("priority: 2", ""))
+        self.wi_ok(["done", iid])
+        rec = json.loads(self.wi_ok(["show", iid, "--json"]))
+        self.assertEqual((rec["title"], rec["tags"], rec["deps"]),
+                         (title, [tag], [reason]))
+        self.assertEqual(path.read_text().count("\\"), written.count("\\"))
+
+    def test_hand_written_legacy_scalars_still_load(self):
+        text = CANONICAL.replace(
+            "title: Replication task 3 destination retention is a no-op",
+            "title: 'it''s \"fine\"'\nnote_a: \"bad \\q escape\"\n"
+            "note_b: \"unterminated \\\"\nnote_c: \"a\\nb\"")
+        item = wi.Item.parse(text, path="x.md")
+        self.assertEqual(item.get("title"), 'it\'s "fine"')
+        self.assertEqual(item.get("note_a"), "bad \\q escape")
+        self.assertEqual(item.get("note_b"), "unterminated \\")
+        self.assertEqual(item.get("note_c"), "a\\nb")  # never a line break
+        out = item.render()
+        self.assertEqual(wi.Item.parse(out).render(), out)
+
+
+    def test_tab_and_reader_hostile_characters_are_never_bare(self):
+        for v in ("a\tb", "ab\t c", "x\ufffey", "\ud800"):
+            with self.subTest(v=v):
+                out = wi._emit_scalar(v)
+                self.assertTrue(out.startswith('"'), out)
+                self.assertNotIn("\t", out)
+                self.assertEqual(wi._parse_scalar(out)[0], v)
+        self.assertEqual(wi._emit_scalar("a\tb"), '"a\\tb"')
+
+    def test_yaml_value_and_merge_keys_are_quoted(self):
+        try:
+            from ruamel.yaml import YAML
+        except ImportError:
+            self.skipTest("ruamel.yaml not installed")
+        for v in ("=", "<<"):
+            with self.subTest(v=v):
+                text = wi.emit_front({"title": v, "tags": [v]})
+                self.assertEqual(text, f'title: "{v}"\ntags: ["{v}"]')
+                self.assertEqual(YAML(typ="safe").load(text),
+                                 {"title": v, "tags": [v]})
+                self.assertEqual(wi.parse_front(text.split("\n"))[0],
+                                 {"title": v, "tags": [v]})
+
+    def test_writer_refuses_a_tab_or_control_character(self):
+        iid = json.loads(self.wi_ok(["add", "fine", "--json"]))["id"]
+        path = self.root / "items" / f"{iid}.md"
+        before = path.read_bytes()
+        items_before = sorted(p.name for p in (self.root / "items").iterdir())
+        for args in (["add", "tab\there"], ["add", "ok", "--tag", "t\tg"],
+                     ["add", "bell\x07"], ["set", iid, "title", "x\ty"],
+                     ["set", iid, "tags", "a\x1bb"], ["block", iid, "why\there"]):
+            with self.subTest(args=args):
+                r = run(args, self.root)
+                self.assertEqual(r.returncode, 1, r.stdout + r.stderr)
+                self.assertIn("control character", r.stderr)
+                self.assertEqual(path.read_bytes(), before)
+                self.assertEqual(sorted(p.name for p in
+                                        (self.root / "items").iterdir()),
+                                 items_before)
+
+    def test_import_folds_control_characters(self):
+        src = self.tmp / "in.yaml"
+        src.write_text("schema_version: 2\nstories:\n  - id: S-001\n"
+                       '    title: "tab\\there\\x07bell"\n    status: blocked\n'
+                       '    priority: 50\n    blocked_reason: "C:\\temp"\n')
+        self.wi_ok(["import", "--format", "backlog-yaml", str(src)])
+        rec = json.loads(self.wi_ok(["ls", "--status", "all", "--json"]))[0]
+        one = json.loads(self.wi_ok(["show", rec["id"], "--json"]))
+        self.assertEqual(one["title"], "tab here bell")
+        self.assertEqual(one["blocked"], "C: emp")
+        self.wi_ok(["lint"])
+
+    def test_lint_is_clean_on_everything_wi_writes(self):
+        odd = [v for v in escape_values(count=60)
+               if v.strip() and v.strip() == v and not wi._CONTROL_RE.search(v)
+               and v not in ("—",) and not wi._LINE_BREAK_RE.search(v)
+               and len(v) <= 120]
+        dep = json.loads(self.wi_ok(["add", "dep", "--json"]))["id"]
+        for v in odd[:40]:
+            iid = json.loads(self.wi_ok(["add", v, "--tag", v, "--json"]))["id"]
+            self.wi_ok(["set", iid, "parent", dep])
+            self.wi_ok(["block", iid, v])
+        self.assertIn("lint clean", self.wi_ok(["lint"]))
+
+    def test_unterminated_quote_in_flow_list_reads_the_old_way(self):
+        meta, _, errors = wi.parse_front(['tags: ["abc, d, e]'])
+        self.assertEqual(errors, [])
+        self.assertEqual(meta["tags"], ['"abc', "d", "e"])
+
+    def test_hand_written_backslash_path_is_a_lint_finding(self):
+        self.write_item("path-1111")
+        self.write_item("temp-2222")
+        self.write_item("clean-3333", title="C:\\temp")  # wi-written: fine
+        for iid, raw in (("path-1111", '"C:\\Users\\foo\\bar"'),
+                         ("temp-2222", '"C:\\temp\\tools"')):
+            p = self.root / "items" / f"{iid}.md"
+            p.write_text(p.read_text().replace(f"title: {iid}", f"title: {raw}"))
+        r = run(["lint"], self.root)
+        self.assertEqual(r.returncode, 3)
+        self.assertIn("path-1111.md: front-matter 'title' holds a control", r.stdout)
+        self.assertIn("wi set path-1111 title", r.stdout)
+        # \t is the likeliest escape in a Windows path: C:<TAB>emp<TAB>ools
+        self.assertIn("temp-2222.md: front-matter 'title' holds a control", r.stdout)
+        self.assertNotIn("clean-3333", r.stdout)
+
+    def test_import_reads_a_dash_placeholder_as_no_value(self):
+        src = self.tmp / "in.yaml"
+        src.write_text("schema_version: 2\nstories:\n  - id: S-001\n"
+                       "    title: t\n    status: todo\n    priority: 50\n"
+                       '    review_feedback: "—"\n    claimed_by: "—"\n')
+        self.wi_ok(["import", "--format", "backlog-yaml", str(src)])
+        rec = json.loads(self.wi_ok(["ls", "--status", "all", "--json"]))[0]
+        one = json.loads(self.wi_ok(["show", rec["id"], "--json"]))
+        self.assertIsNone(one.get("feedback"))
+        self.assertIsNone(one.get("owner"))
+        text = (self.root / "items" / (rec["id"] + ".md")).read_text()
+        self.assertNotIn("—\"", text)
+
+    def test_import_reads_a_blank_blocked_reason_as_no_value(self):
+        src = self.tmp / "in.yaml"
+        src.write_text("schema_version: 2\nstories:\n  - id: S-001\n"
+                       "    title: t\n    status: todo\n"
+                       '    blocked_reason: "   "\n')
+        self.wi_ok(["import", "--format", "backlog-yaml", str(src)])
+        rec = json.loads(self.wi_ok(["ls", "--status", "all", "--json"]))[0]
+        one = json.loads(self.wi_ok(["show", rec["id"], "--json"]))
+        self.assertIsNone(one.get("blocked"))
+        self.assertFalse(one.get("deps"))
+        text = (self.root / "items" / (rec["id"] + ".md")).read_text()
+        self.assertNotIn("\nblocked:", text)
+        self.wi_ok(["lint"])
+
+
+class TestRepairEscapes(WiTestCase):
+    AMPLIFIED = 'title: "x: \\\\\\\\\\\\\\"y\\\\\\\\\\\\\\""'  # "y" after 3 rewrites
+
+    def seed(self):
+        self.write_item("amp-1111")
+        self.write_item("legit-2222", title="x: c:\\dir \\n")
+        path = self.root / "items" / "amp-1111.md"
+        path.write_text(path.read_text().replace("title: amp-1111", self.AMPLIFIED))
+        return path
+
+    def test_amplified_item_loads_and_dry_run_names_it(self):
+        path = self.seed()
+        before = path.read_bytes()
+        self.assertEqual(run(["lint"], self.root).returncode, 0)
+        out = self.wi_ok(["repair-escapes"])
+        self.assertIn("would repair\tamp-1111\ttitle", out)
+        self.assertIn('-> "x: \\"y\\""', out)
+        self.assertNotIn("legit-2222", out)
+        self.assertIn("1 to repair (dry run", out)
+        self.assertEqual(path.read_bytes(), before)
+
+    def test_apply_repairs_and_is_then_clean(self):
+        path = self.seed()
+        self.wi_ok(["repair-escapes", "--apply"])
+        self.assertIn('title: "x: \\"y\\""\n', path.read_text())
+        rec = json.loads(self.wi_ok(["show", "amp-1111", "--json"]))
+        self.assertEqual(rec["title"], 'x: "y"')
+        self.assertIn("0 to repair", self.wi_ok(["repair-escapes"]))
+
+    def test_id_limits_the_repair(self):
+        path = self.seed()
+        before = path.read_bytes()
+        self.wi_ok(["repair-escapes", "--apply", "--id", "legit-2222"])
+        self.assertEqual(path.read_bytes(), before)
+
+    def amplify(self, iid, extra=""):
+        path = self.root / "items" / f"{iid}.md"
+        path.write_text(path.read_text().replace(
+            f"title: {iid}", self.AMPLIFIED + extra))
+        return path
+
+    def test_id_repairs_one_and_leaves_another_amplified_item_alone(self):
+        self.write_item("amp-1111")
+        self.write_item("amp-2222")
+        one, two = self.amplify("amp-1111"), self.amplify("amp-2222")
+        before = two.read_bytes()
+        out = self.wi_ok(["repair-escapes", "--apply", "--id", "amp-1111"])
+        self.assertIn("repaired\tamp-1111\ttitle", out)
+        self.assertNotIn("amp-2222", out)
+        self.assertIn('title: "x: \\"y\\""\n', one.read_text())
+        self.assertEqual(two.read_bytes(), before)
+        self.assertIn("amp-2222", self.wi_ok(["repair-escapes"]))
+
+    def test_lists_and_maps_and_key_filter(self):
+        self.write_item("amp-1111")
+        amp = '"a\\\\\\"b"'  # a"b after two rewrites
+        path = self.amplify("amp-1111", f"\ntags: [{amp}, plain]\n"
+                            f"refs:\n  - {amp}\n  - plain\n"
+                            f"x_backlog:\n  k: {amp}\n  j: plain")
+        dry = self.wi_ok(["repair-escapes"])
+        for key in ("title", "tags", "refs", "x_backlog"):
+            self.assertIn(f"would repair\tamp-1111\t{key}\t", dry)
+        self.assertIn("4 to repair", dry)
+        self.wi_ok(["repair-escapes", "--apply", "--key", "tags"])
+        rec = json.loads(self.wi_ok(["show", "amp-1111", "--json"]))
+        self.assertEqual(rec["tags"], ['a"b', "plain"])
+        self.assertIn("3 to repair", self.wi_ok(["repair-escapes"]))
+        self.wi_ok(["repair-escapes", "--apply"])
+        item = wi.Item.parse(path.read_text())
+        self.assertEqual(item.get("refs"), ['a"b', "plain"])
+        self.assertEqual(item.get("x_backlog"), {"k": 'a"b', "j": "plain"})
+        self.assertEqual(item.get("title"), 'x: "y"')
+
+    def test_heuristic_also_lists_a_value_meant_with_escapes(self):
+        """Documented limit: a value whose backslashes all pair is listed
+        whether or not an older wi amplified it — review the dry run."""
+        title = 'wi: document why \\" and \\\\ are escaped'
+        iid = json.loads(self.wi_ok(["add", title, "--json"]))["id"]
+        path = self.root / "items" / f"{iid}.md"
+        before = path.read_bytes()
+        self.assertIn(iid, self.wi_ok(["repair-escapes"]))
+        self.assertEqual(path.read_bytes(), before)  # dry run writes nothing
 
 
 class TestImportTodo(WiTestCase):
@@ -336,6 +675,324 @@ class TestBacklogYaml(WiTestCase):
         self.assertEqual(len(json.loads(self.wi_ok(
             ["ls", "--status", "all", "--json"]))), 4)
 
+
+class TestIdCollisions(WiTestCase):
+    """A 4-hex suffix repeats; a repeat must be retried, never written over
+    an item (5408: a fresh import of same-slug titles lost one)."""
+
+    @staticmethod
+    def repeating_urandom(n=3):
+        """os.urandom whose bytes change only every n calls, so the same
+        title draws the same suffix n times running."""
+        calls = itertools.count()
+        return lambda k: (next(calls) // n).to_bytes(k, "big")
+
+    def wi_main(self, argv, urandom):
+        err = io.StringIO()
+        with mock.patch.object(wi.os, "urandom", urandom), \
+                contextlib.redirect_stderr(err), \
+                contextlib.redirect_stdout(io.StringIO()):
+            rc = wi.main(["--root", str(self.root)] + argv)
+        return rc, err.getvalue()
+
+    def files(self):
+        return sorted(p.name for p in (self.root / "items").glob("*.md"))
+
+    def test_add_retries_a_repeated_suffix(self):
+        fake = self.repeating_urandom()
+        for _ in range(5):
+            rc, err = self.wi_main(["add", "dup"], fake)
+            self.assertEqual(rc, 0, err)
+        recs = json.loads(self.wi_ok(["ls", "--status", "all", "--json"]))
+        self.assertEqual(len(recs), 5)
+        self.assertEqual(len({r["id"] for r in recs}), 5)
+        self.assertEqual(len(self.files()), 5)
+        self.wi_ok(["lint"])
+
+    def test_fresh_import_of_same_slug_titles_keeps_every_item(self):
+        src = self.tmp / "in.yaml"
+        src.write_text("schema_version: 2\nstories:\n" + "".join(
+            f"  - id: S-{i:03d}\n    title: dup\n    status: todo\n"
+            for i in range(44)))
+        rc, err = self.wi_main(["import", "--format", "backlog-yaml", str(src)],
+                               self.repeating_urandom())
+        self.assertEqual(rc, 0, err)
+        recs = json.loads(self.wi_ok(["ls", "--status", "all", "--json"]))
+        self.assertEqual(sorted(r["alias"] for r in recs),
+                         [f"S-{i:03d}" for i in range(44)])
+        self.assertEqual(len({r["id"] for r in recs}), 44)
+        self.assertEqual(len(self.files()), 44)
+        self.wi_ok(["lint"])
+
+    @staticmethod
+    def zero_suffix(title):
+        """The suffix a draw makes when os.urandom returns zero bytes."""
+        return hashlib.sha1((title + wi.today()).encode() + bytes(8)).hexdigest()[:4]
+
+    def test_import_update_new_item_skips_an_id_in_the_store(self):
+        taken = "dup-" + self.zero_suffix("dup")
+        self.write_item(taken, "kept")
+        before = (self.root / "items" / f"{taken}.md").read_text()
+        # the store's id and then a free one
+        seq = iter([bytes(8), bytes(8), b"\x01" * 8])
+        src = self.tmp / "in.yaml"
+        src.write_text("schema_version: 2\nstories:\n"
+                       "  - id: S-001\n    title: dup\n    status: todo\n")
+        rc, err = self.wi_main(["import", "--format", "backlog-yaml", "--update",
+                                str(src)], lambda k: next(seq))
+        self.assertEqual(rc, 0, err)
+        self.assertEqual((self.root / "items" / f"{taken}.md").read_text(), before)
+        self.assertEqual(len(self.files()), 2)
+        self.wi_ok(["lint"])
+
+    def test_exhausted_retries_fail_loudly_and_write_nothing(self):
+        # the same bytes every draw, and a bound: a retry loop without its
+        # ID_TRIES cap fails here instead of hanging the suite
+        calls = itertools.count(1)
+
+        def const(k):
+            if next(calls) > wi.ID_TRIES + 8:
+                raise AssertionError("id retry drew past ID_TRIES: unbounded")
+            return bytes(k)
+        taken = "dup-" + self.zero_suffix("dup")
+        self.write_item(taken, "kept")
+        before = (self.root / "items" / f"{taken}.md").read_text()
+        rc, err = self.wi_main(["add", "dup"], const)
+        self.assertEqual(rc, 3)
+        self.assertIn("no free id", err)
+        self.assertEqual(self.files(), [f"{taken}.md"])
+        self.assertEqual((self.root / "items" / f"{taken}.md").read_text(), before)
+
+    def test_write_layer_refuses_to_overwrite_for_a_new_item(self):
+        self.write_item("kept-1111", "kept")
+        before = (self.root / "items" / "kept-1111.md").read_text()
+        fresh = lambda iid: wi.Item(
+            {"id": iid, "title": "new", "status": "todo", "created": "2026-09-01",
+             "updated": "2026-09-01"}, [], "", [("Handoff", wi.emit_handoff({}))])
+        # a batch whose second item collides: nothing is written
+        with self.assertRaises(wi.WiError) as ctx:
+            wi.save_items(self.root, [fresh("other-2222"), fresh("kept-1111")])
+        self.assertEqual(ctx.exception.code, 3)
+        self.assertEqual(self.files(), ["kept-1111.md"])
+        self.assertEqual((self.root / "items" / "kept-1111.md").read_text(), before)
+        # two new items with one id in one batch
+        with self.assertRaises(wi.WiError):
+            wi.save_items(self.root, [fresh("twin-3333"), fresh("twin-3333")])
+        self.assertEqual(self.files(), ["kept-1111.md"])
+        # an id that lives in archive/ is taken too
+        (self.root / "archive" / "2026").mkdir(parents=True)
+        (self.root / "archive" / "2026" / "gone-4444.md").write_text(before)
+        with self.assertRaises(wi.WiError):
+            wi.save_items(self.root, [fresh("gone-4444")])
+        self.assertEqual(self.files(), ["kept-1111.md"])
+        # the create itself is exclusive, even past the up-front check
+        path = self.root / "items" / "race-5555.md"
+        path.write_text("someone else's\n")
+        with self.assertRaises(wi.WiError):
+            wi.atomic_write(path, "mine\n", create=True)
+        self.assertEqual(path.read_text(), "someone else's\n")
+        self.assertEqual(list((self.root / "items").glob("*.tmp*")), [])
+
+    def test_add_skips_a_stray_file_whose_stem_is_not_its_id(self):
+        """Only the filename, not any loaded id, holds this id: the stray
+        file under the drawn name must survive and the add take another."""
+        stray = self.root / "items" / f"dup-{self.zero_suffix('dup')}.md"
+        self.write_item("other-9999", "stray")
+        (self.root / "items" / "other-9999.md").rename(stray)
+        before = stray.read_text()
+        seq = iter([bytes(8), b"\x01" * 8])
+        rc, err = self.wi_main(["add", "dup"], lambda k: next(seq))
+        self.assertEqual(rc, 0, err)
+        self.assertEqual(stray.read_text(), before)
+        self.assertEqual(len(self.files()), 2)
+
+    def no_links(self):
+        def link(src, dst):
+            raise OSError(errno.EPERM, "Operation not permitted")
+        return mock.patch.object(wi.os, "link", link)
+
+    def failing_replace(self):
+        real = os.replace
+
+        def replace(src, dst):
+            if Path(dst).suffix == ".md":
+                raise OSError(errno.EIO, "Input/output error")
+            return real(src, dst)
+        return mock.patch.object(wi.os, "replace", replace)
+
+    def test_create_without_hard_links_falls_back_whole(self):
+        with self.no_links():
+            rc, err = self.wi_main(["add", "fallback"], os.urandom)
+        self.assertEqual(rc, 0, err)
+        self.assertEqual(len(self.files()), 1)
+        self.assertEqual(list((self.root / "items").glob("*.tmp*")), [])
+        self.wi_ok(["lint"])
+        # the fallback still refuses an existing file
+        path = self.root / "items" / "race-5555.md"
+        path.write_text("someone else's\n")
+        with self.no_links(), self.assertRaises(wi.WiError):
+            wi.atomic_write(path, "mine\n", create=True)
+        self.assertEqual(path.read_text(), "someone else's\n")
+
+    def test_create_fallback_failure_leaves_no_file(self):
+        self.write_item("kept-1111", "kept")
+        with self.no_links(), self.failing_replace():
+            rc, err = self.wi_main(["add", "doomed"], os.urandom)
+        self.assertEqual(rc, 3)
+        self.assertIn("nothing written", err)
+        self.assertEqual(self.files(), ["kept-1111.md"])
+        self.assertEqual(list((self.root / "items").glob("*.tmp*")), [])
+        self.wi_ok(["ls", "--status", "all"])
+        self.wi_ok(["lint"])
+
+    def test_archive_without_hard_links_falls_back_whole(self):
+        self.write_item("old-1111", status="done", closed="2026-01-02")
+        before = (self.root / "items" / "old-1111.md").read_text()
+        with self.no_links():
+            rc, err = self.wi_main(["archive", "--older-than", "0d"], os.urandom)
+        self.assertEqual(rc, 0, err)
+        dest = self.root / "archive" / "2026" / "old-1111.md"
+        self.assertEqual(dest.read_text(), before)
+        self.assertEqual(self.files(), [])
+        self.wi_ok(["show", "old-1111", "--brief"])
+
+    def test_archive_fallback_failure_leaves_the_item_in_place(self):
+        self.write_item("old-1111", status="done", closed="2026-01-02")
+        before = (self.root / "items" / "old-1111.md").read_text()
+        with self.no_links(), self.failing_replace():
+            rc, err = self.wi_main(["archive", "--older-than", "0d"], os.urandom)
+        self.assertEqual(rc, 3)
+        self.assertIn("cannot write", err)
+        self.assertEqual((self.root / "items" / "old-1111.md").read_text(), before)
+        self.assertEqual(list((self.root / "archive").glob("*/*")), [])
+        self.wi_ok(["show", "old-1111", "--brief"])
+        self.wi_ok(["lint"])
+
+    def test_archive_refuses_to_overwrite_an_archived_file(self):
+        self.write_item("old-1111", status="done", closed="2026-01-02")
+        dest = self.root / "archive" / "2026" / "old-1111.md"
+        dest.parent.mkdir(parents=True)
+        dest.write_text("already archived\n")
+        r = run(["archive", "--older-than", "0d"], self.root)
+        self.assertEqual(r.returncode, 3, r.stderr)
+        self.assertEqual(dest.read_text(), "already archived\n")
+        self.assertTrue((self.root / "items" / "old-1111.md").exists())
+
+    def test_archive_finishes_a_move_killed_between_link_and_unlink(self):
+        """220b: the hard link landed, the unlink did not. Archive finishes
+        the move (whatever the cutoff) instead of refusing forever."""
+        self.write_item("old-1111", status="done", closed=wi.today())
+        src = self.root / "items" / "old-1111.md"
+        before = src.read_text()
+        dest = self.root / "archive" / wi.today()[:4] / "old-1111.md"
+        dest.parent.mkdir(parents=True)
+        os.link(src, dest)
+        r = run(["lint"], self.root)
+        self.assertEqual(r.returncode, 3)
+        self.assertIn("`wi archive` finishes the move", r.stdout)
+        r = run(["archive"], self.root)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertIn("archived 1", r.stdout)
+        self.assertFalse(src.exists())
+        self.assertEqual(dest.read_text(), before)
+        self.wi_ok(["show", "old-1111", "--brief"])
+        self.wi_ok(["lint"])
+        # an unrelated file at the destination is still refused
+        self.write_item("old-2222", status="done", closed="2026-01-02")
+        other = self.root / "archive" / "2026" / "old-2222.md"
+        other.write_text(before)
+        self.assertEqual(run(["archive", "--older-than", "0d"],
+                             self.root).returncode, 3)
+        self.assertTrue((self.root / "items" / "old-2222.md").exists())
+
+    def test_archive_refuses_one_file_reached_by_two_paths(self):
+        """A destination that is the source's own directory entry, through a
+        symlinked directory, is not a half-done move: unlinking the source
+        would delete the only copy. Archive refuses and keeps the item."""
+        self.write_item("old-1111", status="done", closed="2026-01-02")
+        src = self.root / "items" / "old-1111.md"
+        before = src.read_text()
+        (self.root / "archive").mkdir(exist_ok=True)
+        (self.root / "archive" / "2026").symlink_to(Path("..") / "items")
+        r = run(["archive", "--older-than", "0d"], self.root)
+        self.assertEqual(r.returncode, 3, r.stdout + r.stderr)
+        self.assertIn("already exists", r.stderr)
+        self.assertEqual(src.read_text(), before)
+        self.assertFalse(wi._half_moved(src, self.root / "archive" / "2026"
+                                        / "old-1111.md"))
+        # the write layer refuses it too
+        with self.assertRaises(wi.WiError):
+            wi._move_no_clobber(src, self.root / "archive" / "2026" / "old-1111.md")
+        self.assertEqual(src.read_text(), before)
+
+    def test_half_moved_needs_two_links_in_two_directories(self):
+        items = self.root / "items"
+        a = items / "a-1111.md"
+        a.write_text("x\n")
+        # the same path twice, and one entry by two spellings of its directory
+        self.assertFalse(wi._half_moved(a, a))
+        self.assertFalse(wi._half_moved(a, items / ".." / "items" / "a-1111.md"))
+        # two links in one directory: identical parents, not an archive move
+        b = items / "b-2222.md"
+        os.link(a, b)
+        self.assertFalse(wi._half_moved(a, b))
+        # two links in two directories: the half-done move
+        other = self.root / "archive" / "2026"
+        other.mkdir(parents=True)
+        os.link(a, other / "a-1111.md")
+        self.assertTrue(wi._half_moved(a, other / "a-1111.md"))
+
+    def test_lint_fix_quotes_paths(self):
+        d = self.tmp / "odd dir"
+        d.mkdir()
+        (d / "x-1111.md").write_text("")
+        self.assertEqual(wi.stale_reservation_fix(d / "x-1111.md"),
+                         f"nothing was written to it: rm '{d}/x-1111.md'")
+        (d / "x-1111.md.tmp7").write_text("content")
+        self.assertIn(f"mv '{d}/x-1111.md.tmp7' '{d}/x-1111.md'",
+                      wi.stale_reservation_fix(d / "x-1111.md"))
+
+    def test_empty_item_file_is_a_stale_reservation(self):
+        """220b: a kill between the O_EXCL reservation and the rename leaves
+        an empty item file. Commands skip it, naming it; lint names the fix;
+        its name stays taken."""
+        self.write_item("kept-1111", "kept")
+        self.write_item("lost-2222", "lost")
+        item = self.root / "items" / "lost-2222.md"
+        tmp = item.with_name(item.name + ".tmp4242")
+        item.rename(tmp)
+        item.write_text("")
+        r = run(["ls", "--status", "all"], self.root)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertIn("kept-1111", r.stdout)
+        self.assertIn(f"skipping {item}", r.stderr)
+        self.assertIn("wi lint", r.stderr)
+        self.wi_ok(["show", "kept-1111", "--brief"])
+        r = run(["lint"], self.root)
+        self.assertEqual(r.returncode, 3)
+        self.assertIn(f"{item}: empty file", r.stdout)
+        self.assertIn(f"mv {tmp} {item}", r.stdout)
+        # the reserved name is not handed out again
+        self.assertIn("lost-2222", wi.taken_ids(self.root, []))
+        # the lint fix restores the item
+        tmp.rename(item)
+        self.wi_ok(["show", "lost-2222", "--brief"])
+        self.wi_ok(["lint"])
+        # an archive killed after reserving its destination: source intact,
+        # nothing written to the reservation, archive refuses naming it
+        self.write_item("old-3333", status="done", closed="2026-01-02")
+        dest = self.root / "archive" / "2026" / "old-3333.md"
+        dest.parent.mkdir(parents=True)
+        dest.write_text("")
+        r = run(["archive", "--older-than", "0d"], self.root)
+        self.assertEqual(r.returncode, 3)
+        self.assertIn("empty file", r.stderr)
+        self.assertTrue((self.root / "items" / "old-3333.md").exists())
+        r = run(["lint"], self.root)
+        self.assertIn(f"rm {dest}", r.stdout)
+        dest.unlink()
+        self.wi_ok(["archive", "--older-than", "0d"])
+        self.wi_ok(["lint"])
 
 class TestNextRanking(WiTestCase):
     def seed(self):
@@ -1296,6 +1953,244 @@ class TestParked(WiTestCase):
                          ("blocked", "vendor", None))
 
 
+class TestGrooming(WiTestCase):
+    """b020: `grooming` holds an item for the operator's answers, and
+    `needs-input` lists everything awaiting the operator."""
+
+    def ids(self, args):
+        return [r["id"] for r in json.loads(self.wi_ok(args + ["--json"]))]
+
+    def show(self, iid):
+        return json.loads(self.wi_ok(["show", iid, "--json"]))
+
+    def test_groom_and_ungroom_round_trip(self):
+        self.write_item("g-1111", status="doing", owner="tester@local",
+                        claimed="2026-08-30T10:00Z", stage="review",
+                        handoff={"doing": "x", "next": "y"})
+        self.wi_ok(["groom", "g-1111", "a or b? which store?"])
+        rec = self.show("g-1111")
+        self.assertEqual((rec["status"], rec["grooming"], rec["owner"],
+                          rec["claimed"], rec["stage"]),
+                         ("grooming", "a or b? which store?", None, None, None))
+        self.assertIn("grooming: a or b? which store?", rec["sections"]["Notes"])
+        self.wi_ok(["lint"])
+        path = self.root / "items" / "g-1111.md"
+        before = path.read_bytes()
+        self.wi_ok(["groom", "g-1111", "a or b? which store?"])
+        self.assertEqual(path.read_bytes(), before)
+        self.assertIn("-> todo", self.wi_ok(["ungroom", "g-1111"]))
+        rec = self.show("g-1111")
+        self.assertEqual((rec["status"], rec["grooming"]), ("todo", None))
+        self.assertIn("ungroomed", rec["sections"]["Notes"])
+        self.wi_ok(["lint"])
+
+    def test_ungroom_returns_blocked_item_to_blocked(self):
+        self.write_item("b-1111", status="blocked", blocked="vendor")
+        self.wi_ok(["groom", "b-1111", "wait or switch vendor?"])
+        self.assertEqual(self.show("b-1111")["blocked"], "vendor")
+        self.assertIn("-> blocked", self.wi_ok(["ungroom", "b-1111"]))
+        rec = self.show("b-1111")
+        self.assertEqual((rec["status"], rec["blocked"], rec["grooming"]),
+                         ("blocked", "vendor", None))
+
+    def test_refusals(self):
+        self.write_item("t-1111")
+        self.write_item("closed-2222", status="done")
+        for argv, code in ((["groom", "t-1111", ""], 1),
+                           (["groom", "t-1111", "a\nstatus: done"], 1),
+                           (["groom", "closed-2222", "x"], 1),
+                           (["ungroom", "t-1111"], 1)):
+            with self.subTest(argv=argv):
+                path = self.root / "items" / (argv[1] + ".md")
+                before = path.read_bytes()
+                self.assertEqual(run(argv, self.root).returncode, code)
+                self.assertEqual(path.read_bytes(), before)
+        self.wi_ok(["groom", "t-1111", "which?"])
+        r = run(["claim", "t-1111"], self.root)
+        self.assertEqual(r.returncode, 1)
+        self.assertIn("ungroom first", r.stderr)
+
+    def test_lint_requires_questions_and_flags_leftovers(self):
+        self.write_item("bare-1111", status="grooming")
+        for st, extra in (("todo", {}), ("blocked", {"blocked": "v"}),
+                          ("parked", {"parked": "later"}),
+                          ("doing", {"handoff": {"next": "n"}})):
+            self.write_item(f"left-{st}-2222", status=st, grooming="stale",
+                            **extra)
+        self.write_item("dropped-3333", status="dropped", grooming="history")
+        r = run(["lint"], self.root)
+        self.assertEqual(r.returncode, 3)
+        self.assertIn("bare-1111.md: grooming without questions", r.stdout)
+        for st in ("todo", "doing", "blocked", "parked"):
+            self.assertIn(f"left-{st}-2222.md: grooming questions on a {st} "
+                          "item", r.stdout)
+        self.assertNotIn("dropped-3333", r.stdout)
+
+    def test_not_ready_but_in_default_ls(self):
+        self.write_item("ready-1111")
+        self.write_item("groom-2222", status="grooming", grooming="which?",
+                        priority=0)
+        self.write_item("child-3333", deps=["groom-2222"])
+        self.assertEqual(self.ids(["ls", "--ready"]), ["ready-1111"])
+        self.assertIn("groom-2222", self.ids(["ls"]))
+        self.assertEqual(self.ids(["ls", "--status", "grooming"]), ["groom-2222"])
+        data = json.loads(self.wi_ok(["next", "--json"]))
+        self.assertEqual([r["id"] for r in data["ready"]], ["ready-1111"])
+        self.assertEqual(data["counts"]["grooming"], 1)
+        out = self.wi_ok(["next"])
+        self.assertNotIn("groom-2222", out)
+        self.assertIn("1 grooming (wi needs-input)", out)
+        pipe = self.wi_ok(["next", "--pipeline"])
+        self.assertNotIn("groom-2222", pipe)
+        self.assertNotIn("child-3333", pipe)   # a grooming dep does not resolve
+
+    def test_release_never_ungrooms(self):
+        self.write_item("h-1111", status="doing", owner="agent@x",
+                        claimed="2026-08-30T10:00Z",
+                        handoff={"doing": "x", "next": "y"})
+        self.wi_ok(["groom", "h-1111", "which?"])
+        self.wi_ok(["release", "h-1111"])
+        self.assertEqual(self.show("h-1111")["status"], "grooming")
+        self.wi_ok(["lint"])
+
+    def test_park_block_and_groom_supersede_each_other(self):
+        self.write_item("s-1111", status="parked", parked="later")
+        self.wi_ok(["groom", "s-1111", "which?"])
+        rec = self.show("s-1111")
+        self.assertEqual((rec["status"], rec["parked"], rec["grooming"]),
+                         ("grooming", None, "which?"))
+        self.wi_ok(["park", "s-1111", "later"])
+        rec = self.show("s-1111")
+        self.assertEqual((rec["status"], rec["parked"], rec["grooming"]),
+                         ("parked", "later", None))
+        self.wi_ok(["groom", "s-1111", "which?"])
+        self.wi_ok(["block", "s-1111", "vendor"])
+        rec = self.show("s-1111")
+        self.assertEqual((rec["status"], rec["blocked"], rec["grooming"]),
+                         ("blocked", "vendor", None))
+        self.wi_ok(["lint"])
+
+    def test_set_status_goes_through_groom_and_ungroom(self):
+        self.write_item("s-1111")
+        path = self.root / "items" / "s-1111.md"
+        before = path.read_bytes()
+        r = run(["set", "s-1111", "status", "grooming"], self.root)
+        self.assertEqual(r.returncode, 1)
+        self.assertIn("wi groom s-1111", r.stderr)
+        self.assertEqual(run(["set", "s-1111", "grooming", "x"], self.root)
+                         .returncode, 3)
+        self.assertEqual(path.read_bytes(), before)
+        self.wi_ok(["groom", "s-1111", "which?"])
+        self.wi_ok(["set", "s-1111", "status", "todo"])
+        rec = self.show("s-1111")
+        self.assertEqual((rec["status"], rec["grooming"]), ("todo", None))
+        self.assertIn("ungroomed (set status todo)", rec["sections"]["Notes"])
+        self.wi_ok(["lint"])
+
+    def test_backlog_yaml_bridge_maps_grooming_to_blocked_and_back(self):
+        self.write_item("g-1111", "Needs answers", status="grooming",
+                        grooming="a or b?")
+        out = self.tmp / "backlog.yaml"
+        self.wi_ok(["export", "--format", "backlog-yaml", str(out),
+                    "--project", "t"])
+        text = out.read_text()
+        self.assertIn("status: blocked", text)
+        self.assertIn('blocked_reason: "GROOMING: a or b?"', text)
+        TestBacklogYaml._validate(self, out, self.tmp / "backlog_done.yaml")
+        fresh = self.tmp / ".fresh"
+        self.assertEqual(run(["init"], fresh).returncode, 0)
+        r = run(["import", "--format", "backlog-yaml", str(out)], fresh)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        rec = json.loads(run(["ls", "--status", "all", "--json"], fresh).stdout)[0]
+        self.assertEqual((rec["status"], rec["grooming"], rec["blocked"]),
+                         ("grooming", "a or b?", None))
+        self.wi_ok(["import", "--format", "backlog-yaml", "--update", str(out)])
+        self.assertEqual(self.show("g-1111")["grooming"], "a or b?")
+        self.wi_ok(["lint"])
+
+    def test_needs_input_lists_grooming_and_unanswered_decisions(self):
+        self.write_item("groom-1111", status="grooming", grooming="which store?",
+                        priority=1)
+        self.write_item("dec-2222", sections=(
+            "## Notes\n"
+            "decision 3: a or b\n"
+            "decision 4: keep the alias?\n"
+            "- 2026-09-20 operator said something\n"
+            "answer 3: a\n"
+            "decision 7: already answered further down\n"
+            "```\ndecision 9: an example in a fence\n```\n"
+            "answer 7: yes\n"))
+        self.write_item("parked-3333", status="parked", parked="later",
+                        sections="## Notes\ndecision 5: revisit when?\n")
+        self.write_item("answered-4444",
+                        sections="## Notes\ndecision 6: x\nanswer 6: y\n")
+        self.write_item("closed-5555", status="done",
+                        sections="## Notes\ndecision 8: never shown\n")
+        self.write_item("indented-6666",
+                        sections="## Notes\n- decision 10: not the marker\n")
+        out = self.wi_ok(["needs-input"])
+        self.assertEqual(out.splitlines(), [
+            "groom-1111  grooming: which store?",
+            "dec-2222  decision 4: keep the alias?",
+            "parked-3333  decision 5: revisit when?"])
+        plain = self.wi_ok(["needs-input", "--plain"]).splitlines()
+        self.assertIn("groom-1111\tgrooming\t-\twhich store?", plain)
+        self.assertIn("dec-2222\tdecision\t4\tkeep the alias?", plain)
+        data = json.loads(self.wi_ok(["needs-input", "--json"]))
+        self.assertEqual([r["id"] for r in data],
+                         ["groom-1111", "dec-2222", "parked-3333"])
+        self.assertEqual(data[1]["decisions"], [{"n": 4, "text": "keep the alias?"}])
+        self.assertEqual(data[0]["grooming"], "which store?")
+        self.wi_ok(["lint"])
+
+    def test_needs_input_empty_exits_2(self):
+        self.write_item("t-1111")
+        r = run(["needs-input"], self.root)
+        self.assertEqual((r.returncode, r.stdout), (2, ""))
+
+    def test_needs_input_reads_crlf_bodies(self):
+        path = self.root / "items" / "crlf-1111.md"
+        path.write_bytes(
+            b"---\r\nid: crlf-1111\r\ntitle: c\r\nstatus: todo\r\n"
+            b"created: 2026-08-01\r\nupdated: 2026-08-01\r\n---\r\n\r\n"
+            b"decision 2: crlf?\r\n")
+        self.assertIn("crlf-1111  decision 2: crlf?",
+                      self.wi_ok(["needs-input"]))
+
+    def test_prime_shows_grooming_count_and_hold_line(self):
+        self.write_item("blk-1111", status="blocked", blocked="vendor")
+        self.write_item("g-2222", status="grooming", grooming="which?")
+        self.write_item("g-3333", status="grooming", grooming="when?")
+        self.write_item("park-4444", status="parked", parked="later")
+        self.write_item("hold-5555", "Operator hold until review", tags=["hold"])
+        self.write_item("oldhold-6666", "Old hold", status="done", tags=["hold"])
+        lines = self.wi_ok(["prime"]).split("\n")
+        self.assertIn("GROOMING 2 (wi needs-input)", lines)
+        self.assertIn("PARKED 1 (wi ls --status parked)", lines)
+        # the HOLD line comes first, right under the header
+        self.assertEqual(lines[1], "HOLD 1: hold-5555 (Operator hold until review)")
+        self.assertFalse(any("oldhold" in ln for ln in lines))   # closed: no hold
+        self.assertFalse(any("g-2222" in ln for ln in lines))    # a count, not a list
+
+    def test_ls_dep_lists_dependents(self):
+        self.write_item("base-1111")
+        self.write_item("kid-2222", deps=["base-1111"])
+        self.write_item("kid-3333", deps=["base-1111", "ext: vendor"],
+                        status="blocked", blocked="v")
+        self.write_item("other-4444")
+        self.write_item("donekid-5555", deps=["base-1111"], status="done")
+        self.assertEqual(sorted(self.ids(["ls", "--dep", "base-1111"])),
+                         ["kid-2222", "kid-3333"])
+        self.assertEqual(sorted(self.ids(["ls", "--dep", "base"])),
+                         ["kid-2222", "kid-3333"])   # a prefix resolves
+        self.assertEqual(sorted(self.ids(["ls", "--dep", "base-1111",
+                                          "--status", "all"])),
+                         ["donekid-5555", "kid-2222", "kid-3333"])
+        self.assertEqual(self.ids(["ls", "--dep", "ext: vendor"]), ["kid-3333"])
+        self.assertEqual(run(["ls", "--dep", "other-4444"], self.root)
+                         .returncode, 2)
+
+
 class TestPrime(WiTestCase):
     def seed_many(self, n=40):
         for i in range(n):
@@ -1606,6 +2501,8 @@ class TestHostGitignoreUntouched(WiTestCase):
             ["set", iid, "priority", "1"], ["block", iid, "--on", dep],
             ["unblock", iid, "--dep", dep], ["release", iid],
             ["park", iid, "later"], ["unpark", iid], ["migrate-parked"],
+            ["groom", iid, "which?"], ["needs-input"], ["ungroom", iid],
+            ["repair-escapes"],
             ["import-todo", str(todo)],
             ["export", str(repo / "backlog.yaml"), "--format", "backlog-yaml"],
             ["import", str(repo / "backlog.yaml"), "--format", "backlog-yaml"],
@@ -1999,6 +2896,490 @@ class TestDetailsBlocks(unittest.TestCase):
         self.assertNotIn("old problem was 6-12x over target", titles)
         self.assertEqual(sum(1 for i in items if i["status"] == "done"), 1)
         self.assertIn("still open thing", titles)
+
+
+
+class TestB020Lows(WiTestCase):
+    """b020 review lows, folded with 0c59, b9e8 and 9d8c: lint hints that
+    work, decision text, ls --dep ambiguity, line separators, and an export
+    that loads and round-trips."""
+
+    def show(self, iid):
+        return json.loads(self.wi_ok(["show", iid, "--json"]))
+
+    def export(self, root=None, name="backlog.yaml"):
+        out = self.tmp / name
+        r = run(["export", "--format", "backlog-yaml", str(out),
+                 "--project", "test"], root or self.root)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        return out, out.with_name(out.stem + "_done" + out.suffix)
+
+    def load_yaml(self, path):
+        from ruamel.yaml import YAML
+        return YAML(typ="safe").load(path.read_text())
+
+    # (1)
+    def test_lint_hint_for_a_stray_field_names_a_command_that_clears_it(self):
+        self.write_item("gp-1111", status="grooming", grooming="which?",
+                        parked="stale")
+        self.write_item("pg-2222", status="parked", parked="later",
+                        grooming="stale")
+        self.write_item("tp-3333", parked="stale")
+        r = run(["lint"], self.root)
+        self.assertEqual(r.returncode, 3)
+        for iid, field in (("gp-1111", "parked"), ("pg-2222", "grooming"),
+                           ("tp-3333", "parked")):
+            line = [ln for ln in r.stdout.splitlines() if iid in ln][0]
+            self.assertNotIn("unpark", line)
+            self.assertNotIn("ungroom", line)
+            cmd = f'wi set {iid} {field} ""'
+            self.assertIn(cmd, line)
+            self.wi_ok(["set", iid, field, ""])
+        self.assertIn("lint clean", self.wi_ok(["lint"]))
+        self.assertEqual((self.show("gp-1111")["status"],
+                          self.show("pg-2222")["status"]), ("grooming", "parked"))
+
+    # (2)
+    def test_needs_input_keeps_the_last_text_of_a_repeated_decision(self):
+        self.write_item("rev-1111", sections=(
+            "## Notes\ndecision 4: first wording\ndecision 5: other\n"
+            "decision 4: revised wording\n"))
+        data = json.loads(self.wi_ok(["needs-input", "--json"]))
+        self.assertEqual(data[0]["decisions"],
+                         [{"n": 4, "text": "revised wording"},
+                          {"n": 5, "text": "other"}])
+
+    # (3)
+    def test_answer_40_does_not_answer_decision_4(self):
+        self.write_item("num-1111", sections=(
+            "## Notes\ndecision 4: open?\ndecision 40: answered\n"
+            "answer 40: yes\n"))
+        self.assertEqual(self.wi_ok(["needs-input"]).splitlines(),
+                         ["num-1111  decision 4: open?"])
+
+    # (4)
+    def test_ls_dep_refuses_an_ambiguous_prefix(self):
+        self.write_item("abc-1111")
+        self.write_item("abc-2222")
+        self.write_item("child-3333", deps=["abc-1111", "ext: vendor"])
+        r = run(["ls", "--dep", "abc"], self.root)
+        self.assertEqual(r.returncode, 2)
+        self.assertIn("ambiguous id 'abc'", r.stderr)
+        self.assertEqual([x["id"] for x in json.loads(self.wi_ok(
+            ["ls", "--dep", "abc-1", "--json"]))], ["child-3333"])
+        self.assertEqual([x["id"] for x in json.loads(self.wi_ok(
+            ["ls", "--dep", "ext: vendor", "--json"]))], ["child-3333"])
+
+    # (6)
+    def test_one_line_writer_refuses_every_line_separator(self):
+        self.write_item("t-1111", status="doing", owner="tester@local",
+                        claimed="2026-08-30T10:00Z",
+                        handoff={"doing": "x", "next": "y"})
+        path = self.root / "items" / "t-1111.md"
+        before = path.read_bytes()
+        for sep in ("\u2028", "\u2029", "\x85", "\x0b", "\x0c", "\x1c"):
+            for argv in (["handoff", "t-1111", "--next", f"a{sep}b"],
+                         ["done", "t-1111", "--note", f"a{sep}b"],
+                         ["block", "t-1111", f"a{sep}b"],
+                         ["park", "t-1111", f"a{sep}b"],
+                         ["groom", "t-1111", f"a{sep}b"],
+                         ["set", "t-1111", "title", f"a{sep}b"],
+                         ["add", f"a{sep}b"]):
+                with self.subTest(sep=hex(ord(sep)), argv=argv[0]):
+                    r = run(argv, self.root)
+                    self.assertEqual(r.returncode, 1, r.stderr)
+                    self.assertIn(f"U+{ord(sep):04X}", r.stderr)
+                    self.assertEqual(path.read_bytes(), before)
+        self.assertEqual(len(list((self.root / "items").glob("*.md"))), 1)
+
+    def test_export_of_a_hand_written_line_separator_stays_loadable(self):
+        self.write_item("sep-1111")
+        path = self.root / "items" / "sep-1111.md"
+        path.write_text(path.read_text().replace(
+            "Description of sep-1111.", "one\u2028two\x85three"))
+        out, done_out = self.export()
+        story = self.load_yaml(out)["stories"][0]
+        self.assertTrue(story["notes"].startswith("one\u2028two\x85three"))
+        self.assertIn('notes: "one\\u2028two\\x85three', out.read_text())
+        fresh = self.tmp / ".fresh"
+        self.assertEqual(run(["init"], fresh).returncode, 0)
+        self.assertEqual(run(["import", "--format", "backlog-yaml", str(out)],
+                             fresh).returncode, 0)
+        out2, _ = self.export(fresh, "backlog2.yaml")
+        self.assertEqual(out2.read_text(), out.read_text())
+
+    # 0c59
+    def test_export_quotes_values_starting_with_a_bracket_or_brace(self):
+        titles = ["[wip] x", "{curly} y", "[1, 2]", "{}", "[", "- dash",
+                  "? q", "& anchor", "* star", "! tag", "| pipe", "> fold",
+                  "% pct", "@ at", "` tick", "# hash"]
+        for t in titles:
+            self.wi_ok(["add", t])
+        self.write_item("acc-9999", sections="## Acceptance\n- [ ] [x] done\n")
+        out, done_out = self.export()
+        loaded = self.load_yaml(out)["stories"]
+        self.assertEqual(sorted(s["title"] for s in loaded),
+                         sorted(titles + ["acc-9999"]))
+        acc = [s for s in loaded if s["title"] == "acc-9999"][0]
+        self.assertEqual(acc["acceptance"], ["[x] done"])
+        TestBacklogYaml._validate(self, out, done_out)
+        fresh = self.tmp / ".fresh"
+        self.assertEqual(run(["init"], fresh).returncode, 0)
+        self.assertEqual(run(["import", "--format", "backlog-yaml", str(out)],
+                             fresh).returncode, 0)
+        out2, _ = self.export(fresh, "backlog2.yaml")
+        self.assertEqual(out2.read_text(), out.read_text())
+
+    def test_export_passes_a_json_encoded_extra_field_through(self):
+        src = self.tmp / "in.yaml"
+        src.write_text("schema_version: 2\nstories:\n  - id: S-001\n"
+                       "    title: t\n    status: todo\n    priority: 50\n"
+                       "    labels: [a, b]\n    meta: {k: v}\n"
+                       '    note_like: "[not json"\n')
+        self.wi_ok(["import", "--format", "backlog-yaml", str(src)])
+        out, _ = self.export()
+        story = self.load_yaml(out)["stories"][0]
+        self.assertEqual((story["labels"], story["meta"], story["note_like"]),
+                         (["a", "b"], {"k": "v"}, "[not json"))
+
+    # (7) = b9e8
+    def test_ext_deps_round_trip_idempotently(self):
+        self.write_item("blk-1111", status="blocked", blocked="vendor",
+                        deps=["ext: upstream fix", "ext:other"])
+        self.write_item("park-2222", status="parked", parked="later",
+                        deps=["ext: x"])
+        self.write_item("groom-3333", status="grooming", grooming="which?",
+                        deps=["ext: y"])
+        self.write_item("todo-4444", deps=["ext: z"])
+        items = sorted((self.root / "items").glob("*.md"))
+        snapshots = []
+        for _ in range(4):
+            out, _ = self.export()
+            text = out.read_text()
+            self.wi_ok(["import", "--format", "backlog-yaml", "--update",
+                        str(out)])
+            snapshots.append((text, [p.read_bytes() for p in items]))
+        self.assertEqual(snapshots[1], snapshots[2])
+        self.assertEqual(snapshots[2], snapshots[3])
+        self.assertEqual(text.count("requires ext:"), 4, text)
+        self.assertIn(
+            'blocked_reason: "vendor; requires ext: upstream fix, ext:other"',
+            text)
+        self.assertIn('blocked_reason: "requires ext: z"', text)
+        want = {"blk-1111": ("blocked", "vendor", None, None),
+                "park-2222": ("parked", None, "later", None),
+                "groom-3333": ("grooming", None, None, "which?"),
+                "todo-4444": ("todo", None, None, None)}
+        for iid, state in want.items():
+            rec = self.show(iid)
+            self.assertEqual((rec["status"], rec["blocked"], rec["parked"],
+                              rec["grooming"]), state, iid)
+        self.wi_ok(["lint"])
+        # a fresh import restores the ext: deps from the suffix
+        fresh = self.tmp / ".fresh"
+        self.assertEqual(run(["init"], fresh).returncode, 0)
+        self.assertEqual(run(["import", "--format", "backlog-yaml", str(out)],
+                             fresh).returncode, 0)
+        recs = {r["alias"]: r for r in json.loads(run(
+            ["ls", "--status", "all", "--json"], fresh).stdout)}
+        by_title = {r["title"]: r for r in recs.values()}
+        self.assertEqual(by_title["blk-1111"]["deps"],
+                         ["ext: upstream fix", "ext:other"])
+        self.assertEqual(by_title["park-2222"]["deps"], ["ext: x"])
+        self.assertEqual(by_title["groom-3333"]["deps"], ["ext: y"])
+        self.assertEqual(by_title["todo-4444"]["deps"], ["ext: z"])
+        blk = json.loads(run(["show", by_title["blk-1111"]["id"], "--json"],
+                             fresh).stdout)
+        self.assertEqual(blk["blocked"], "vendor")
+        self.assertEqual(by_title["todo-4444"]["status"], "todo")
+        out2, _ = self.export(fresh, "backlog2.yaml")
+        self.assertEqual(out2.read_text(), out.read_text())
+
+    def test_reasons_that_mention_requires_ext_survive_round_trips(self):
+        """Fix round 1: only the suffix export appended is stripped."""
+        self.write_item("wait-1111", status="blocked",
+                        blocked="waiting; requires ext: vendor sign-off")
+        self.write_item("legal-2222", status="blocked",
+                        blocked="requires ext: legal sign-off")
+        self.write_item("park-3333", status="parked",
+                        parked="later; requires ext: x")
+        self.write_item("mix-4444", status="blocked",
+                        blocked="a; requires ext: b; c", deps=["ext: e57"])
+        self.write_item("todo-5555", deps=["ext: z"])
+        want = {"wait-1111": ("blocked", "waiting; requires ext: vendor sign-off",
+                              None, []),
+                "legal-2222": ("blocked", "requires ext: legal sign-off",
+                               None, []),
+                "park-3333": ("parked", None, "later; requires ext: x", []),
+                "mix-4444": ("blocked", "a; requires ext: b; c", None,
+                             ["ext: e57"]),
+                "todo-5555": ("todo", None, None, ["ext: z"])}
+        items = sorted((self.root / "items").glob("*.md"))
+        snaps = []
+        for _ in range(4):
+            out, _ = self.export()
+            self.wi_ok(["import", "--format", "backlog-yaml", "--update",
+                        str(out)])
+            snaps.append((out.read_text(), [p.read_bytes() for p in items]))
+            for iid, state in want.items():
+                rec = self.show(iid)
+                self.assertEqual((rec["status"], rec["blocked"], rec["parked"],
+                                  rec["deps"] or []), state, iid)
+        self.assertEqual(snaps[1], snaps[3])
+        self.wi_ok(["lint"])
+        # a fresh import: the last `; requires ext:` group is the suffix, and
+        # a blocked story's whole reason is never taken for one
+        fresh = self.tmp / ".fresh"
+        self.assertEqual(run(["init"], fresh).returncode, 0)
+        self.assertEqual(run(["import", "--format", "backlog-yaml", str(out)],
+                             fresh).returncode, 0)
+        recs = {r["title"]: r for r in json.loads(run(
+            ["ls", "--status", "all", "--json"], fresh).stdout)}
+        for title in ("mix-4444", "legal-2222"):
+            rec = json.loads(run(["show", recs[title]["id"], "--json"],
+                                 fresh).stdout)
+            self.assertEqual((rec["blocked"], rec["deps"] or []),
+                             want[title][1:2] + want[title][3:], title)
+        self.assertEqual(run(["lint"], fresh).returncode, 0)
+
+    def test_a_new_items_refusal_names_no_file(self):
+        r = run(["add", "t", "--tag", "a\tb"], self.root)
+        self.assertEqual(r.returncode, 1, r.stderr)
+        self.assertIn("front-matter 'tags' holds a control character", r.stderr)
+        self.assertNotIn(".md", r.stderr)
+        self.assertEqual(list((self.root / "items").glob("*.md")), [])
+
+    def test_front_matter_refuses_a_line_separator_in_any_field(self):
+        for flag in ("--tag", "--ref"):
+            for sep in (" ", " "):
+                with self.subTest(flag=flag, sep=hex(ord(sep))):
+                    r = run(["add", "t", flag, f"a{sep}b"], self.root)
+                    self.assertEqual(r.returncode, 1, r.stderr)
+                    self.assertIn(f"U+{ord(sep):04X}, a line separator",
+                                  r.stderr)
+                    # a new item's refusal names no file: none was written
+                    self.assertNotIn(".md", r.stderr)
+        self.assertEqual(list((self.root / "items").glob("*.md")), [])
+        # a hand-written escaped one is a lint finding
+        self.write_item("hand-1111")
+        path = self.root / "items" / "hand-1111.md"
+        path.write_text(path.read_text().replace(
+            "title: hand-1111", 'title: "a\\u2028b"'))
+        r = run(["lint"], self.root)
+        self.assertEqual(r.returncode, 3)
+        self.assertIn("hand-1111.md: front-matter 'title' holds a control",
+                      r.stdout)
+        # import folds one to a space, as it folds a line break
+        src = self.tmp / "in.yaml"
+        src.write_text('schema_version: 2\nstories:\n  - id: S-001\n'
+                       '    title: "x\\u2028y"\n    status: todo\n')
+        fresh = self.tmp / ".fresh"
+        self.assertEqual(run(["init"], fresh).returncode, 0)
+        self.assertEqual(run(["import", "--format", "backlog-yaml", str(src)],
+                             fresh).returncode, 0)
+        self.assertEqual(json.loads(run(["ls", "--json"], fresh).stdout)[0]
+                         ["title"], "x y")
+
+    # 9d8c
+    def test_batch_write_refusal_names_the_item(self):
+        self.write_item("ok-1111")
+        self.write_item("bad-2222")
+        path = self.root / "items" / "bad-2222.md"
+        path.write_text(path.read_text().replace(
+            "title: bad-2222", 'title: "C:\\temp"'))
+        before = {p.name: p.read_bytes()
+                  for p in (self.root / "items").glob("*.md")}
+        out = self.tmp / "backlog.yaml"
+        r = run(["export", "--format", "backlog-yaml", str(out)], self.root)
+        self.assertEqual(r.returncode, 1)
+        self.assertIn("bad-2222", r.stderr)
+        self.assertIn(str(path), r.stderr)
+        self.assertIn("front-matter 'title' holds a control character", r.stderr)
+        self.assertFalse(out.exists())
+        self.assertEqual({p.name: p.read_bytes()
+                          for p in (self.root / "items").glob("*.md")}, before)
+
+
+class TestLeadingPunctuationRoundTrip(WiTestCase):
+    """370b: a park reason, grooming question or blocked reason that starts
+    with punctuation, and a title with surrounding or non-breaking spaces,
+    survive export -> import (fresh and --update) byte-identical on the
+    first cycle; migrate-parked reads hand-written text as it always has."""
+
+    # hand-written blocked reason -> (parked reason, Notes original); pinned
+    # before 370b changed the bridge, and must never move
+    MIGRATE = {
+        "PARKED: \u2014 Paseo undecided": "Paseo undecided",
+        "PARKED (operator 2026-09-19): Paseo undecided": "Paseo undecided",
+        "PARKED (operator \u2026): later": "later",
+        "PARKED \u2014 later": "later",
+        "PARKED - later": "later",
+        "PARKED:later": "later",
+        "PARKED: - x": "x",
+        "PARKED: ...": "PARKED: ...",
+        "PARKED: -": "PARKED: -",
+        "PARKED: \u2014": "PARKED: \u2014",
+        'PARKED: "-"': '"-"',
+        'PARKED: "quoted reason"': '"quoted reason"',
+        "PARKED": "PARKED",
+    }
+
+    def show(self, iid, root=None):
+        r = run(["show", iid, "--json"], root or self.root)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        return json.loads(r.stdout)
+
+    def test_migrate_parked_reads_hand_written_text_as_before(self):
+        for text, want in self.MIGRATE.items():
+            self.assertEqual(wi.parked_reason(text), want, text)
+        ids = {}
+        for n, text in enumerate(self.MIGRATE):
+            ids[text] = self.write_item(f"mp-{n:04d}", status="blocked",
+                                        blocked=text)
+        out = self.wi_ok(["migrate-parked"])
+        for text, want in self.MIGRATE.items():
+            self.assertIn(f"would park\t{ids[text]}\t{want}\n", out, text)
+        self.wi_ok(["migrate-parked", "--apply"])
+        for text, want in self.MIGRATE.items():
+            rec = self.show(ids[text])
+            self.assertEqual((rec["status"], rec["parked"], rec["blocked"]),
+                             ("parked", want, None), text)
+            self.assertIn(f"parked (migrated from blocked: {text})",
+                          rec["sections"]["Notes"])
+        self.wi_ok(["lint"])
+
+    def export(self, root, name):
+        out = self.tmp / name
+        r = run(["export", "--format", "backlog-yaml", str(out),
+                 "--project", "test"], root)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        return out
+
+    def states(self, root):
+        """(title, status, blocked, parked, grooming) per alias."""
+        recs = json.loads(run(["ls", "--status", "all", "--json"], root).stdout)
+        out = {}
+        for r in recs:
+            full = self.show(r["id"], root)
+            out[r["alias"]] = (full["title"], full["status"], full["blocked"],
+                               full["parked"], full["grooming"])
+        return out
+
+    def assert_cycle_zero_stable(self):
+        """export -> fresh import -> export, and export -> import --update ->
+        export: both byte-identical to the first export, every state kept."""
+        out = self.export(self.root, "b0.yaml")
+        text = out.read_text()
+        want = self.states(self.root)
+        fresh = self.tmp / ".fresh"
+        shutil.rmtree(fresh, ignore_errors=True)
+        self.assertEqual(run(["init"], fresh).returncode, 0)
+        r = run(["import", "--format", "backlog-yaml", str(out)], fresh)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertEqual(self.export(fresh, "b1.yaml").read_text(), text)
+        self.assertEqual(self.states(fresh), want)
+        self.wi_ok(["import", "--format", "backlog-yaml", "--update",
+                    str(out)])
+        self.assertEqual(self.export(self.root, "b2.yaml").read_text(), text)
+        self.assertEqual(self.states(self.root), want)
+        self.assertEqual(run(["lint"], fresh).returncode, 0)
+        self.wi_ok(["lint"])
+        return text
+
+    def test_named_shapes_round_trip_on_cycle_zero(self):
+        for n, reason in enumerate(("-", "\u2014", "...", "- x",
+                                    "\u2014 reason", ": later", '"-"',
+                                    '"quoted"', "later")):
+            self.write_item(f"park-{n:04d}", status="parked", parked=reason)
+        for n, q in enumerate(("- [ ] x", "- which?", "\u2014", "...")):
+            self.write_item(f"groom-{n:04d}", status="grooming", grooming=q)
+        self.write_item("blk-0000", status="blocked", blocked="- vendor")
+        self.write_item("sp-0000", "  spaced  title  ")
+        self.write_item("nb-0000", "x\u00a0y")
+        text = self.assert_cycle_zero_stable()
+        # the plain form is kept wherever it already round-tripped
+        self.assertIn('blocked_reason: "PARKED: later"', text)
+        self.assertIn('blocked_reason: "PARKED: \\"-\\""', text)
+        self.assertIn('blocked_reason: "GROOMING: \\"- [ ] x\\""', text)
+        self.assertIn('blocked_reason: "- vendor"', text)
+
+    def test_fuzz_punctuation_leading_reasons_round_trip(self):
+        import random
+        rng = random.Random(370)
+        punct = list("-\u2014\u2013.\u2026:;,*#>[](){}\"'`!?/|~_=+") + [
+            "- [ ] ", "- ", "\u2014 ", ": ", "...", "PARKED", "GROOMING",
+            "\u00a0", "  "]
+        words = ["x", "later", "which?", "vendor", "a  b", "c\u00a0d", ""]
+        for n in range(90):
+            text = "".join(rng.choice(punct)
+                           for _ in range(rng.randint(1, 3)))
+            text = (text + rng.choice(words)).strip()
+            kind = n % 3
+            if kind == 0:
+                if not text:
+                    continue
+                self.write_item(f"fz-{n:04d}", status="parked", parked=text)
+            elif kind == 1:
+                if not text:
+                    continue
+                self.write_item(f"fz-{n:04d}", status="grooming",
+                                grooming=text)
+            else:
+                # a plain block: `\u2014` alone reads as no value, and a
+                # reason starting PARKED/GROOMING is a park/grooming (both
+                # the documented bridge rule, not drift)
+                if (not text or text == "\u2014"
+                        or text.startswith(("PARKED", "GROOMING"))):
+                    continue
+                self.write_item(f"fz-{n:04d}", status="blocked", blocked=text)
+        self.assert_cycle_zero_stable()
+
+    # fix round 1: hand-written blocked_reason -> (status, parked, grooming,
+    # blocked). Main's reading, except the forms export itself writes.
+    HAND = [
+        ('PARKED: "x"', ("parked", '"x"', None, None)),
+        ('PARKED: ""', ("parked", '""', None, None)),
+        ('PARKED: "a" and "b"', ("parked", '"a" and "b"', None, None)),
+        ('PARKED: "foo" said the vendor, then "bar"',
+         ("parked", '"foo" said the vendor, then "bar"', None, None)),
+        ('GROOMING: "q?"', ("grooming", None, '"q?"', None)),
+        ('GROOMING: ""', ("grooming", None, '""', None)),
+        ("PARKED: \u2014 later", ("parked", "later", None, None)),
+        # export's own quoted form: the text inside, verbatim
+        ('PARKED: "-"', ("parked", "-", None, None)),
+        ('PARKED: "\u2014 later"', ("parked", "\u2014 later", None, None)),
+        ('GROOMING: "- [ ] x"', ("grooming", None, "- [ ] x", None)),
+    ]
+
+    def test_hand_written_quoted_reasons_import_as_on_main(self):
+        src = self.tmp / "hand.yaml"
+        lines = ["schema_version: 2", "stories:"]
+        for n, (reason, _) in enumerate(self.HAND):
+            lines += [f"  - id: S-{n + 1:03d}", f"    title: t{n}",
+                      "    status: blocked", "    priority: 50",
+                      f"    blocked_reason: \"{wi._dq_escape(reason)}\""]
+        lines += ["  - id: S-900", "    title: padded", "    status: todo",
+                  "    priority: 50", '    ticket_mode: " interactive "',
+                  '    complexity: " low "', '    claimed_by: " a@b "',
+                  # the placeholder, padded, is still no value
+                  "  - id: S-901", "    title: placeholder",
+                  "    status: todo", "    priority: 50",
+                  '    blocked_reason: " \u2014 "']
+        src.write_text("\n".join(lines) + "\n")
+        self.wi_ok(["import", "--format", "backlog-yaml", str(src)])
+        recs = {r["alias"]: r for r in json.loads(
+            self.wi_ok(["ls", "--status", "all", "--json"]))}
+        for n, (reason, want) in enumerate(self.HAND):
+            rec = self.show(recs[f"S-{n + 1:03d}"]["id"])
+            self.assertEqual((rec["status"], rec["parked"], rec["grooming"],
+                              rec["blocked"]), want, reason)
+        # enum-like fields are still folded: trimmed, not kept padded
+        text = (self.root / "items" / (recs["S-900"]["id"] + ".md")).read_text()
+        self.assertIn("mode: interactive\n", text)
+        self.assertIn("complexity: low\n", text)
+        self.assertIn("owner: a@b\n", text)
+        self.assertIsNone(self.show(recs["S-901"]["id"])["blocked"])
+        self.wi_ok(["lint"])
 
 
 if __name__ == "__main__":

@@ -16,8 +16,8 @@ updated: 2026-09-21
 Mid-turn PostToolUse depth gate; HARD gate stops recommending an unaffordable checkpoint; rehydration manifest made session-addressed (claude-kit/handoff/<sid>.md) because several sandbox sessions share one work dir; legacy repo HANDOFF.md adopted-if-owned else ignored. Worktree .claude/worktrees/context-guard-turn-gate, branch worktree-context-guard-turn-gate (off plugin-factoring; rebase onto main after plugin-factoring lands).
 
 ## Handoff
-- doing: port plan in fix round 1 (serial 01)
-- next: plan CLEAR → file F2/F3a/F1 features; decision on manifest location
+- doing: plan 00-03 done; F2 landed; F1 built (held); F3a awaits decision 48, F3b decision 47
+- next: on 48(a): dispatch F3a from plan 00-03
 - blocked: land-plugin-factoring-fbe8
 - learned: Round-2 nits: inode+mtime cache key, update_state() merge instead of load-modify-save
 
@@ -62,3 +62,5 @@ decision 47: where HANDOFF.md lives — (a) C: each session keeps its own manife
 ## Plan review round 4 — NEEDS_CHANGES (opus), format only — cap reached
 - design CLEAR in substance: the owned-version rule closes the round-3 high, two-hop chains verified, failures only degrade to a header. Only finding: [medium] 03 omits the never-omit Confirmed Assumptions section (it would read "none new beyond 02").
 decision 48: 8cc2 plan hit the 4-round cap on a format-only finding — (a) waive it and build F3a from 00–03 as written [recommended: the reviewer found the design sound; the missing section adds nothing]; (b) one more round: planner writes a 04 serial with the section, re-review.
+answer 48: (a) formatting is fine, build F3a from 00–03 as written; plus a new item for a skill-grooming skill (skill-tools create|groom|condense) (operator 2026-09-22)
+answer 47: (c) per-session manifests only — plus: checkpoint goal options become continue|handoff (drop land); a handoff manifest does not go in .claude-sandbox (not every consumer uses claude-sandbox); the final turn always prints the full HANDOFF.md path, and handoff prints its location with example continuation commands (`/compact ...`, and one for `then <next-skill>` when the args name one) (operator 2026-09-22)

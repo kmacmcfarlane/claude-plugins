@@ -27,8 +27,9 @@ blocks. tests/test_parity.py fails when a copied definition drifts from its
 source and runs statusline's record cases against both writers, whenever the
 two plugins sit side by side in the source repo.
 
-No pruning here: records are pruned by the statusline plugin's SessionStart
-hook today, and by this plugin's own SessionStart once it has one.
+No pruning here: records are pruned from SessionStart - this plugin's
+(housekeeping.py) and the statusline plugin's, whichever runs first that day.
+In owner mode hub.py calls tee() on every render, before any hook runs.
 """
 import json, math, os, re, sys, time
 

@@ -20,17 +20,28 @@ where such a repo's own gates come in.
 
 ## 1. Scope
 
+`review <branch>` mode only: the changed-block comparison and the one-commit /
+commit-shape items below apply only to commits this cycle itself made — a fix-round
+commit on `<branch>`, from the review-mode fix variant. The branch's own pre-existing
+commits are the author's; grade them against the recorded Intent (`bindings.md`
+§ Intent), not against these two items.
+
 - [ ] `git -C $W diff --stat $BASE...HEAD` lists only the files in scope (plus the
       catalog and layout edits when the marketplace's shape changed). With Files in
       scope `undeclared` (`bindings.md` § Undeclared files), compare the stat against the
       record sink's cumulative `changed:` block instead (the union of every round's
       CHANGED): every file in one is in the other, each with its one-line reason.
+      `review <branch>` mode with no fix round yet: there is no `changed:` block to
+      compare against — skip this item, and grade the diff against the recorded Intent
+      instead.
 - [ ] Nothing under `.claude-sandbox/` or `.claude/`, nothing outside the Ground binding.
 - [ ] One commit on the branch, message `<verb>: <aspect> - <description>` — plus, per
       review fix round, one or more new commits on top of it. No amend, rebase or squash
       of a reviewed commit — except the secret rebuild (`fix-loop.md` § A leaked
       secret); a merge of the base only in a merge-conflict round (`fix-loop.md` § A
-      merge conflict); nothing outside the files in scope in any of them.
+      merge conflict); nothing outside the files in scope in any of them. `review
+      <branch>` mode: this shape applies from the first fix-round commit on, never to
+      the branch's earlier history, which was never this cycle's to shape.
 - [ ] No secret or credential anywhere in the branch history — every file in every
       commit's patch, a later removal notwithstanding, and every message; the final diff
       alone does not show it, and neither does a plain `git log` for what a merge's
@@ -56,14 +67,15 @@ git -C $W log -E -i --grep="$P" --format='%h (message)' $BASE..HEAD
 - [ ] Folder name equals the frontmatter `name`; the file is exactly `SKILL.md`.
 - [ ] Frontmatter keys follow the house rule, whose allowed list lives in the create-skill
       skill's frontmatter reference, in the kit-dev plugin. The code below copies that
-      list — 20 keys, the 5 required plus the 15 other documented fields — and must be
-      kept in step with it: count both when either changes. The five required keys
-      `name, description, disable-model-invocation, allowed-tools, argument-hint` are all
-      present; every other key is a field the Claude Code skills docs define; no key
-      appears twice; keys match exactly (`Model` fails). The set is closed because
-      undocumented keys are usually typos, and claude.ai / Skills API uploads hard-fail
-      on unknown keys. (`allowed-tools` pre-approves the listed tools; it never restricts
-      the others.)
+      list — 20 keys, the 2 required plus the 18 other documented fields — and must be
+      kept in step with it: count both when either changes. The two required keys
+      `name` and `description` are present; every other key is optional but must be a
+      field the Claude Code skills docs define; no key appears twice; keys match exactly
+      (`Model` fails). Leaving out `disable-model-invocation`, `allowed-tools` and
+      `argument-hint` is the default and the desired state: model-invocable, free-form
+      arguments, no tools pre-approved. The set is closed because undocumented keys are
+      usually typos, and claude.ai / Skills API uploads hard-fail on unknown keys.
+      (`allowed-tools` pre-approves the listed tools; it never restricts the others.)
 - [ ] No angle brackets in `name` or `description` (they are allowed in `argument-hint`,
       where about half the skills here use them); description under 1024 characters and
       states what + when + trigger phrases.
@@ -95,10 +107,10 @@ for s in $(git -C $W diff --name-only $BASE...HEAD | grep -o 'plugins/[^/]*/skil
   keys=$(awk 'NR>1 && /^---$/ {exit} NR>1 && /^[^ \t#-][^:]*:/ {sub(/:.*/, ""); gsub(/^[ \t"\047]+|[ \t"\047]+$/, ""); print}' $d/SKILL.md)
   dups=$(printf '%s\n' "$keys" | sort | uniq -d | tr '\n' ' ')
   test -z "$dups" || echo "FAIL: duplicate keys: $dups"
-  for k in name description disable-model-invocation allowed-tools argument-hint; do
+  for k in name description; do
     printf '%s\n' "$keys" | grep -qxF -e "$k" || echo "FAIL: missing key $k"
   done
-  # the 20 allowed keys: 5 required + 15 documented (create-skill frontmatter reference)
+  # the 20 allowed keys: 2 required + 18 optional documented (create-skill frontmatter reference)
   printf '%s\n' "$keys" | grep -v '^$' | grep -vxF -e name -e description \
     -e disable-model-invocation -e allowed-tools -e argument-hint -e when_to_use \
     -e arguments -e user-invocable -e disallowed-tools -e model -e effort -e context \

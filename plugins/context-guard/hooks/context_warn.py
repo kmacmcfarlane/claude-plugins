@@ -29,12 +29,17 @@ turns the mirror off, as it pinned the window before it.
 The first time the mirror disagrees with the status line in a session (the
 Claude Code version is then distrusted: derived depth warns only), a one-line
 systemMessage says so.
+After a rehydration injected our manifest in full, the first prompt that is
+not whitelisted and not hard-stopped carries one more context line naming the
+manifest's Read-in-full paths not yet read in full (read_list.py), once per
+injection; it never blocks and costs no turn. Not inside a subagent.
 Set timeout: 10 in hooks.json: this event is fail-open on timeout, so a slow
 hook silently disables the gate.
 """
-import json, os, re, sys, time
+import json, os, re, shlex, sys, time
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import lib_context as L
+import read_list as RL
 
 DUE_EVERY_PROMPTS = 3
 DUE_EVERY_TOKENS = 25_000
@@ -120,17 +125,14 @@ def mirror_bound(m, src):
                                   and m.get("block_window") == acw.get("window"))
 
 
-_SH_SPECIAL = re.compile(r'([\\"$`])')
-
-
 def mark_checkpoint_command(sid):
-    """`python3 "<path>" <sid>` for the mark_checkpoint.py beside this hook -
+    """`python3 <path> <sid>` for the mark_checkpoint.py beside this hook -
     the installed copy that is running now, so no lookup (and no guess among
-    several data dirs) is needed. The path is in shell double quotes with
-    \\, ", $ and ` escaped."""
+    several data dirs) is needed. The path is shlex-quoted (single quotes
+    when it needs any), so nothing in it expands - not $, ` or \\, and not
+    the ! that bash history expansion would act on inside double quotes."""
     path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "mark_checkpoint.py")
-    quoted = _SH_SPECIAL.sub(r"\\\1", path)
-    return f'python3 "{quoted}" {L.safe_sid(sid)}'
+    return f"python3 {shlex.quote(path)} {L.safe_sid(sid)}"
 
 
 def derived_hatches(sid):
@@ -190,10 +192,18 @@ def main():
     whitelisted = bool(WHITELIST.match(prompt))
     dr = L.derived_record(m)
 
-    act, mismatch = [], []
+    act, mismatch, unread = [], [], []
+    subagent = bool(inp.get("agent_id"))
 
     def apply(st):
         act.append(decide(st, tok, win, pct, src, whitelisted, m["block_window"]))
+        if act[-1] != "hard" and not whitelisted and not subagent \
+                and RL.KEY in st:
+            # Taken (so once per injection) only by a prompt that goes through.
+            try:
+                unread.extend(RL.take(st))
+            except Exception:
+                del unread[:]      # never cost the gate its state write
         if dr:
             st["derived"] = dr
         if m.get("scan_cache"):
@@ -211,8 +221,14 @@ def main():
     th = L.thresholds(win)
     extra = f" [{note}]" if note else ""
     notice = mismatch_notice(mismatch[0]) if mismatch else ""
+    reads = RL.reminder(unread) if unread else ""
 
     def emit(out):
+        if reads:
+            hso = out.setdefault("hookSpecificOutput",
+                                 {"hookEventName": "UserPromptSubmit"})
+            hso["additionalContext"] = (hso.get("additionalContext", "")
+                                        + "\n\n" + reads).strip()
         if notice:
             out["systemMessage"] = (notice + " " + out.get("systemMessage", "")).strip()
         print(json.dumps(out))

@@ -12,21 +12,67 @@ the manifest still describes the code, so it reads FRESH with Next shown.
 The manifest (HANDOFF.md, spec: skills/checkpoint/references/handoff-format.md)
 is AUTHORED by the checkpoint skill, never synthesized here: intent is a
 snapshot only its author can write. This hook adds the live part — age, commit
-drift, dirty count — and labels it FRESH / AGED / STALE / LANDED. The label
+drift, dirty count — and labels it FRESH / AGED / STALE / LANDED. Age is the
+`written:` stamp read as UTC (mark_checkpoint.py stamps it); a missing, garbled
+or future one ages by the file's mtime and says why, and a future stamp is
+never FRESH (manifest_age). The label
 and the Next withhold read the same ancestry check (head_state), so a manifest
 whose Next is withheld is never labelled FRESH.
 
 Tiers by source:
-  compact          full manifest + the ledger tail (reasoning survives)
+  compact          full manifest + the ledger digest (reasoning lines of
+                   every epoch ahead of commit pointers; ledger.digest)
   resume           full only if the manifest changed or the repo moved since
                    the last injection (state manifest.sha); else header
-  startup / clear  header only (~120 tokens), labelled if stale
+  clear, linked    full manifest + the PREDECESSOR's ledger digest, when
+                   link_clear linked this session to a predecessor that
+                   pinned the version on disk now (linked_clear_pred): the
+                   /clear of a handoff is a continuation of the same work
+                   (not for a LANDED manifest: that /clear is a fresh start)
+  startup / clear  header only (one line, ~100-150 tokens with a
+                   mode_skill, plus the Holds lines), labelled if stale: an
+                   unlinked /clear, a pin of None, or a version rewritten
+                   since the pin
+Every tier's header names the manifest's `mode_skill:` (the standing mode to
+re-enter first), unless the manifest is LANDED; a STALE manifest's mode is
+named for confirmation, not as an order. Only a strict slash-command shape is
+shown (MODE_SKILL_RE): the header speaks in the hook's voice, and the manifest
+is repo-committed text.
 No manifest and nothing to say -> {} (silent).
+
+Those tiers apply only to a manifest that is OURS (is_ours). Ownership names a
+manifest VERSION, {owner: its `session:`, sha: L.manifest_sha(raw text)}:
+  - no `session:` (hand-written): everyone's, as before this rule;
+  - `session:` is this session: every version;
+  - the exact version a lineage link pinned: the /clear predecessor
+    (link_clear, from the `cleared` record lineage.py writes at
+    SessionEnd(clear)) or the fork parent (adopt_fork_state), and their own
+    lineage in turn - a link pins a version only if it was the linking
+    session's own (L.owned_version), else nothing;
+  - the exact `mode: handoff` version this session read in full
+    (lineage.py, PostToolUse Read: state `manifest_adopted`).
+Anything else - another session's manifest, or a later rewrite of a linked or
+adopted one - gets one foreign header line on every source (foreign_header):
+no body, no precedence preamble, no standing mode. The ledger digest and the
+/compact guidance still inject on compact: they are this session's own.
+
+Holds (`## Holds`, one line per hold with its end condition) ride on every
+tier of a manifest that is ours: the full tiers inject the section untrimmed,
+and the header-only tiers append its lines in compact form (holds_block,
+bounded, plain text). A hold whose end condition names a time already past is
+marked `expired? confirm`, never dropped. The foreign header carries none:
+another session's holds are not this session's.
 
 Budget: total additionalContext <= 9,000 chars, under the harness's single
 10,000-char cap (overflow would be replaced by a file stub, silently dropping
-the mandatory tiers). Trim order: the frontmatter `items:` list, Scrolls, then
-Aware-of, never Doing/Goal/Read-in-full.
+the mandatory tiers). Trim order (trim): the frontmatter `items:` list,
+Scrolls, Next, the Aware-of lines other than CORRECTION/REFUSED, then any
+other unprotected section; never Doing, Goal, Holds, In flight, Read in full
+or Copy forward.
+
+A full injection of our own manifest also records its Read-in-full paths
+(read_list.py): a whole-file Read marks each one, and the next prompt names
+the unread ones once (context_warn.py).
 
 SessionStart is also where the gauge policy is published, first thing
 (L.publish_gauge: gauge.json, the threshold anchors and labels for the
@@ -43,10 +89,11 @@ claude-kit's) deprecated copy and that plugin is not installed
 Never exits non-zero: the staleness checks degrade to the plain manifest on
 any internal error, and anything else degrades to {}.
 """
-import glob, hashlib, json, os, re, subprocess, sys, time
+import glob, json, os, re, subprocess, sys, time
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import lib_context as L
 import ledger
+import read_list as RL
 
 CAP = 9000
 LEDGER_BUDGET = 2500
@@ -57,6 +104,10 @@ _FM_OPEN = re.compile(r"[ \t]*---[ \t]*(\r?\n)")
 _FM_CLOSE = re.compile(r"^[ \t]*---[ \t]*\r?$", re.M)
 _ITEMS_RE = re.compile(r"^items:[^\n]*\n(?:[ \t]*-[^\n]*\n)*", re.M)
 _git_hung = []
+# `/name` or `/plugin:name`, then at most four short plain arguments; nothing
+# else (no backticks, quotes, prose punctuation or control characters) passes.
+MODE_SKILL_RE = re.compile(
+    r"/[A-Za-z0-9][\w.-]*(?::[\w.-]+)?(?: [\w.:=/-]+){0,4}", re.ASCII)
 
 
 def git(cwd, *args, ok=False):
@@ -297,32 +348,102 @@ def is_landed(fm):
     return (fm.get("mode") or "").startswith("land")
 
 
-def liveness(fm, hs, unverified_why="git unavailable"):
+def mode_skill(fm):
+    """The optional `mode_skill:` key: the slash command that re-enters the
+    standing mode the session was running, or "" when absent, landed, or not
+    exactly MODE_SKILL_RE (dropped silently: it rides on every tier's header)."""
+    v = fm.get("mode_skill")
+    if is_landed(fm) or not isinstance(v, str):
+        return ""
+    v = v.strip()
+    if len(v) >= 2 and v[0] == v[-1] and v[0] in "'\"":
+        v = v[1:-1]
+    return v if len(v) <= 200 and MODE_SKILL_RE.fullmatch(v) else ""
+
+
+STAMP_SKEW_S = 600
+_STAMP_RE = re.compile(
+    r"(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})(?::(\d{2})(?:\.\d+)?)?"
+    r"[ \t]*(Z|[+-]\d{2}:?\d{2})?", re.ASCII | re.I)
+
+
+def stamp_epoch(value):
+    """A `written:` stamp as epoch seconds, or None when absent or garbled.
+    UTC: `Z`, an explicit offset, or no zone at all (the format's stamps are
+    UTC; the mark step writes `%Y-%m-%dT%H:%M:%SZ`). A named zone (`CDT`) or
+    any other text is garbled."""
+    import calendar, datetime
+    if not isinstance(value, str):
+        return None
+    v = value.strip()
+    if len(v) >= 2 and v[0] == v[-1] and v[0] in "\"'":
+        v = v[1:-1].strip()
+    m = _STAMP_RE.fullmatch(v)
+    if not m:
+        return None
+    try:
+        y, mo, d, h, mi = (int(x) for x in m.groups()[:5])
+        t = calendar.timegm(datetime.datetime(y, mo, d, h, mi,
+                                              int(m.group(6) or 0)).timetuple())
+    except (ValueError, OverflowError):
+        return None
+    z = (m.group(7) or "Z").upper()
+    if z != "Z":
+        hh, mm = int(z[1:3]), int(z[-2:])
+        if hh > 14 or mm > 59:
+            return None
+        t -= (1 if z[0] == "+" else -1) * (hh * 3600 + mm * 60)
+    return t
+
+
+def manifest_age(fm, mtime=None, now=None):
+    """(age in hours or None, reason or None). The `written:` stamp when it is
+    readable and not ahead of now by more than STAMP_SKEW_S; else the file's
+    mtime, with the reason the stamp was not trusted: `no stamp`, `stamp
+    unreadable`, `stamp in the future`. An mtime also ahead of now by more
+    than STAMP_SKEW_S gives no age, and `, file time in the future` is added
+    (liveness then reads it AGED: nothing trustworthy dates the file)."""
+    now = time.time() if now is None else now
+    raw = fm.get("written")
+    t = stamp_epoch(raw)
+    if t is not None and t - now <= STAMP_SKEW_S:
+        return max(now - t, 0) / 3600, None
+    why = ("stamp in the future" if t is not None
+           else "stamp unreadable" if isinstance(raw, str) and raw.strip()
+           else "no stamp")
+    if not isinstance(mtime, (int, float)):
+        return None, why
+    if mtime - now > STAMP_SKEW_S:
+        return None, why + ", file time in the future"
+    return max(now - mtime, 0) / 3600, why
+
+
+def liveness(fm, hs, unverified_why="git unavailable", mtime=None, now=None):
     """(label, reason or None). Reads the same head_state as the Next withhold:
     a recorded head missing locally or not an ancestor of HEAD (rewound,
     diverged) is AGED with that reason, never FRESH. A recorded head that could
     not be checked carries `unverified_why` (main passes unverified_reason():
     `git unavailable` or `head unverified`), so an unverified manifest never
     reads as plain FRESH. Drift counts code commits on both sides (ahead +
-    behind): a HEAD 50 commits behind is as STALE as one 50 ahead."""
+    behind): a HEAD 50 commits behind is as STALE as one 50 ahead.
+    Age is manifest_age: a missing, garbled or future `written:` is aged by
+    the file's `mtime` instead and names why in the reason, and a future
+    stamp is never FRESH (a hand-typed stamp hours ahead once read FRESH)."""
     if is_landed(fm):
         return "LANDED", None
-    age_h = None
-    try:
-        t = time.strptime(fm.get("written", "")[:19], "%Y-%m-%dT%H:%M:%S")
-        age_h = (time.time() - time.mktime(t)) / 3600
-    except Exception:
-        pass
+    age_h, stamp_why = manifest_age(fm, mtime, now)
     drift = code_drift(hs)
     why = divergence(hs)
     rec = fm.get("head")
     unverified = unverified_why if hs is None and isinstance(rec, str) and rec \
         else None
+    reason = "; ".join(r for r in (why or unverified, stamp_why) if r) or None
     if (age_h is not None and age_h > 7 * 24) or (drift is not None and drift > 30):
-        return "STALE", why or unverified
-    if (age_h is not None and age_h > 24) or drift or why:
-        return "AGED", why or unverified
-    return "FRESH", unverified
+        return "STALE", reason
+    if (age_h is not None and age_h > 24) or drift or why \
+            or (stamp_why and "in the future" in stamp_why):
+        return "AGED", reason
+    return "FRESH", reason
 
 
 def _trim_items(body):
@@ -341,18 +462,186 @@ def _trim_items(body):
         open_.group(1) + body[m.end():]
 
 
+TRIMMED = "(trimmed — read the manifest file)"
+# Sections the trim never touches: what the successor must know or do first.
+PROTECTED = ("doing", "goal", "holds", "in flight", "read in full", "copy forward")
+# Lines a collapsed section keeps: the Aware-of tags that outrank everything
+# else, and the hook's own Next-withheld line.
+_KEEP_AWARE = re.compile(r"[ \t]*(?:[-*][ \t]*)?(?:CORRECTION|REFUSED)\b")
+_KEEP_NEXT = re.compile(r"Next withheld:")
+
+
+# `## Holds:` and `## Holds (2)` name the section `holds`; applied to the
+# stripped heading (a CRLF manifest's headings end in `\r`).
+_HEAD_TAIL = re.compile(r"\s*(?:\(.*)?[\s:]*$")
+
+
+def _sections(body):
+    """[[name, text]]: the text before the first `## ` line (name None: the
+    frontmatter and any preamble), then one entry per `## ` section, its
+    lower-cased name and its text heading included. Joined, the texts are the
+    body again."""
+    out = []
+    for chunk in re.split(r"(?m)^(?=## )", body):
+        if not chunk:
+            continue
+        name = _HEAD_TAIL.sub("", chunk.split("\n", 1)[0][3:].strip()).strip().lower() \
+            if chunk.startswith("## ") else None
+        out.append([name, chunk])
+    return out
+
+
+def _collapse(sec, keep=None):
+    """Replace a section's body with the trimmed marker, keeping the lines
+    `keep` matches; unchanged when that would not make it shorter."""
+    head, _, rest = sec[1].partition("\n")
+    kept = "".join(ln + "\n" for ln in rest.split("\n") if keep and keep.match(ln))
+    new = f"{head}\n{kept}{TRIMMED}\n" + ("\n" if sec[1].endswith("\n\n") else "")
+    if len(new) < len(sec[1]):
+        sec[1] = new
+
+
 def trim(body, budget):
-    if len(body) > budget:
-        body = _trim_items(body)
-    for sec in ("## Scrolls", "## Aware of"):
-        if len(body) <= budget:
+    """Fit the body into `budget` chars. Order: the frontmatter `items:` list,
+    Scrolls, Next (its withheld line kept), the Aware-of lines other than
+    CORRECTION/REFUSED, then every other section not in PROTECTED and not
+    one of those steps, last first (a stepped section keeps what its step
+    kept). Doing, Goal, Holds, In flight, Read in full and Copy forward are
+    never trimmed: only a body whose protected part alone exceeds the budget
+    is cut at the end."""
+    if len(body) <= budget:
+        return body
+    body = _trim_items(body)
+    secs = _sections(body)
+
+    def over():
+        return sum(len(t) for _, t in secs) > budget
+
+    steps = [("scrolls", None), ("next", _KEEP_NEXT), ("aware of", _KEEP_AWARE)]
+    stepped = {name for name, _ in steps}
+    for name, keep in steps:
+        for sec in secs:
+            if not over():
+                break
+            if sec[0] == name:
+                _collapse(sec, keep)
+    for sec in reversed(secs):
+        if not over():
             break
-        i = body.find(sec)
-        if i >= 0:
-            j = body.find("\n## ", i + 1)
-            body = body[:i] + f"{sec}\n(trimmed — read the manifest file)\n" + \
-                (body[j:] if j >= 0 else "")
-    return body[:budget]
+        if sec[0] is not None and sec[0] not in PROTECTED \
+                and sec[0] not in stepped:
+            _collapse(sec)
+    return "".join(t for _, t in secs)[:budget]
+
+
+# ── Holds: what the successor must not do, and until when ──────────────────
+HOLDS_MAX = 8            # lines the header tiers carry
+HOLD_LINE_MAX = 240      # chars per line
+HOLDS_BUDGET = 800       # chars for the whole header block
+EXPIRED = "expired? confirm"
+_CTRL = re.compile(r"[\x00-\x1f\x7f-\x9f\u061c\u2028\u2029\u200b-\u200f"
+                   r"\u202a-\u202e\u2060-\u2064\u2066-\u2069\ufeff]")
+_WHEN_RE = re.compile(
+    r"(\d{4}-\d{2}-\d{2})(?:[T ](\d{2}:\d{2}(?::\d{2})?))?(?:[ \t]*(Z|[+-]\d{2}:?\d{2})\b)?",
+    re.ASCII | re.I)
+_HOLD_RE = re.compile(r"(?:\*\*)?HOLD\b", re.I)
+_BULLET = re.compile(r"^[ \t]*[-*][ \t]+")
+
+
+def _hold(ln):
+    """A Holds-section line's entry when it is a hold (`HOLD …`, any case,
+    bold allowed, bullet optional), else None: prose such as the spec's template sentence is not
+    a hold."""
+    s = _BULLET.sub("", ln).strip()
+    return s if _HOLD_RE.match(s) else None
+
+
+def hold_lines(text):
+    """The `## Holds` section's entries, raw: each line that starts with
+    `HOLD` (a leading `- ` or `* ` dropped); [] when the section is absent,
+    `None`, or holds only prose."""
+    for name, chunk in _sections(text or ""):
+        if name == "holds":
+            return [h for h in map(_hold, chunk.split("\n")[1:]) if h]
+    return []
+
+
+_UNTIL_RE = re.compile(r"(?<![^\W_])until(?::\s*|\s+)", re.I)
+
+
+def hold_end(line):
+    """A hold's end-condition clause: the text after its last `until` (then
+    a space or `:`), else after its last ` — ` separator, else the whole
+    line."""
+    m = None
+    for m in _UNTIL_RE.finditer(line):
+        pass
+    if m:
+        return line[m.end():]
+    j = line.rfind(" — ")
+    return line[j + 3:] if j >= 0 else line
+
+
+def hold_expired(line, now=None):
+    """True when the hold's end condition is a time already past: the end
+    clause LEADS with a UTC stamp (`2026-09-22T18:00Z`, an explicit offset,
+    or no zone) or a bare date, which ends with that UTC day. A decision
+    number or an event is no time, even one that mentions a date later in
+    the clause: it never reads expired and stays in force until confirmed."""
+    now = time.time() if now is None else now
+    m = _WHEN_RE.match(hold_end(line).strip())
+    if not m:
+        return False
+    date, clock, zone = m.groups()
+    t = stamp_epoch(f"{date}T{clock or '23:59:59'}{zone or 'Z'}")
+    return t is not None and t < now
+
+
+def _mark(line, now):
+    return f"{line} [{EXPIRED}: its end time has passed]" \
+        if hold_expired(line, now) else line
+
+
+def annotate_holds(text, now=None):
+    """The manifest text with every expired hold in `## Holds` marked
+    `[expired? confirm: …]` in place (the full tiers inject it this way)."""
+    secs = _sections(text or "")
+    for sec in secs:
+        if sec[0] != "holds":
+            continue
+        lines = sec[1].split("\n")
+        for k in range(1, len(lines)):
+            s = _hold(lines[k])
+            if s and hold_expired(s, now):
+                cr = "\r" if lines[k].endswith("\r") else ""
+                lines[k] = lines[k].rstrip() + f" [{EXPIRED}: its end time has passed]" + cr
+        sec[1] = "\n".join(lines)
+        return "".join(t for _, t in secs)
+    return text
+
+
+def holds_block(text, now=None):
+    """The compact Holds block the header tiers append, or "" when the
+    manifest records none. Plain text in the hook's voice: control and
+    bidi characters stripped, each line bounded, at most HOLDS_MAX lines and
+    HOLDS_BUDGET chars, the rest counted."""
+    lines = [_CTRL.sub(" ", ln)[:HOLD_LINE_MAX] for ln in hold_lines(text)]
+    if not lines:
+        return ""
+    out = ["Holds this manifest records (each stands until its end condition is "
+           f"met; one marked `{EXPIRED}` names a time already past: ask the "
+           "operator before acting against it or lifting it):"]
+    used = len(out[0])
+    for k, ln in enumerate(lines):
+        row = "- " + _mark(ln, now)
+        rest = len(lines) - k
+        if k >= HOLDS_MAX or used + len(row) + 1 > HOLDS_BUDGET - 60:
+            out.append(f"(+{rest} more hold{'' if rest == 1 else 's'} — read the "
+                       f"manifest file)")
+            break
+        out.append(row)
+        used += len(row) + 1
+    return "\n".join(out)
 
 
 def _parent_by_record_uuid(sid, transcript_path):
@@ -401,15 +690,17 @@ def _parent_by_record_uuid(sid, transcript_path):
     return None
 
 
-# The status line moved to the statusline plugin. context-guard keeps its
-# deprecated copy (hooks/statusline.py) for one release and never writes
-# settings.json: it only notices, read-only, when a settings entry still runs
-# a predecessor copy and the statusline plugin is not there to take it over.
+# The status line moved to the statusline plugin, whose footer draws through
+# the statusline-hub plugin. context-guard keeps its deprecated copy
+# (hooks/statusline.py) for one release and never writes settings.json: it
+# only notices, read-only, when a settings entry still runs a predecessor
+# copy and the statusline plugin is not there - once it is, it registers the
+# footer with the hub, and the hub's SessionStart takes the entry over.
 NOTICE_EVERY_S = 7 * 24 * 3600
 NOTICE_STAMP = ".statusline-moved-notice"
-# The predecessor fingerprint (statusline plugin's owner.py, PREDECESSOR_RE):
-# a command running <cfg>/plugins/data/{claude-kit,context-guard}-<mkt>/
-# current-hooks/statusline.py.
+# The predecessor fingerprint: a command running
+# <cfg>/plugins/data/{claude-kit,context-guard}-<mkt>/current-hooks/statusline.py
+# (the older copies statusline-hub's classify() counts as the footer's own).
 PREDECESSOR_RE = re.compile(
     r'\s*python3\s+"?[^"]*/plugins/data/(?:claude-kit|context-guard)-[^/"]+'
     r'/current-hooks/statusline\.py"?\s*')
@@ -438,16 +729,20 @@ def statusline_notice(now=None):
     """The one-line "moved" notice, or None. Read-only on settings: it fires
     when a settings file (user settings, or one a predecessor install marker
     names) still runs context-guard's or claude-kit's copy of the status line
-    AND the statusline plugin is absent - any plugins/data/statusline-* dir
-    (its owner.json lives there) means that plugin owns the setting and takes
-    it over itself, so context-guard stays silent. At most once per
+    AND the statusline plugin is absent - any plugins/data/statusline-<mkt>
+    dir means it is installed, and with it statusline-hub, whose SessionStart
+    takes the entry over once the footer registers as its display hook, so
+    context-guard stays silent. A statusline-hub-<mkt> dir alone does not
+    count: the hub takes a predecessor entry over only once the statusline
+    footer has registered. At most once per
     NOTICE_EVERY_S across all sessions (a stamp in the state dir); when the
     stamp cannot be written the notice is withheld, so it can never repeat
     every session. Never raises."""
     try:
         now = time.time() if now is None else now
         cfg = L._base_dir()
-        if _data_dirs(cfg, "statusline-"):
+        if any(not os.path.basename(d).startswith("statusline-hub-")
+               for d in _data_dirs(cfg, "statusline-")):
             return None
         stamp = os.path.join(L._state_dir(), NOTICE_STAMP)
         try:
@@ -469,15 +764,11 @@ def statusline_notice(now=None):
         return None
 
 
-def adopt_fork_state(sid, transcript_path):
-    """A fork/branch gets a new session id, orphaning the parent's ledger and
-    staged /compact guidance (Bug B, live-fired 2026-08-31 via /branch). Two
-    recovery strategies: copied parent records that still carry the parent
-    sessionId (/branch), else matching a copied record uuid against sibling
-    transcripts (--fork-session, which rewrites sessionIds)."""
-    if os.path.exists(L.ledger_path(sid)) or not transcript_path \
-            or not os.path.exists(transcript_path):
-        return
+def fork_parent(sid, transcript_path):
+    """The session this fork/branch was copied from, or None. Two recovery
+    strategies: copied parent records that still carry the parent sessionId
+    (/branch), else matching a copied record uuid against sibling transcripts
+    (--fork-session, which rewrites sessionIds)."""
     parent = None
     try:
         with open(transcript_path, errors="replace") as fh:
@@ -494,21 +785,130 @@ def adopt_fork_state(sid, transcript_path):
         if not parent:
             parent = _parent_by_record_uuid(sid, transcript_path)
     except Exception:
-        return
+        return None
+    return parent if isinstance(parent, str) and parent else None
+
+
+def adopt_fork_state(sid, transcript_path, version=None):
+    """A fork/branch gets a new session id, orphaning the parent's ledger and
+    staged /compact guidance (Bug B, live-fired 2026-08-31 via /branch): copy
+    them over unless this session already has its own ledger. Also link the
+    child to its parent (state `lineage`), once, even when the ledger exists:
+    the parent first, pinning the manifest `version` on disk now only if it
+    was the parent's own (L.owned_version, with the parent's state), then the
+    parent's lineage. Returns the parent, or None."""
+    if not transcript_path or not os.path.exists(transcript_path):
+        return None
+    has_ledger = os.path.exists(L.ledger_path(sid))
+    has_lineage = "lineage" in L.load_state(sid)
+    if has_ledger and has_lineage:
+        return None
+    parent = fork_parent(sid, transcript_path)
     if not parent:
-        return
+        return None
     try:
-        pl = L.ledger_path(parent)
-        if os.path.exists(pl):
-            with open(L.ledger_path(sid), "w") as out:
-                out.write(f"# ledger {sid} (adopted from parent {parent})\n")
-                out.write(open(pl, errors="replace").read())
         pst = L.load_state(parent)
-        if pst.get("custom_instructions"):
-            L.update_state(sid, lambda st: st.setdefault(
-                "custom_instructions", pst["custom_instructions"]))
+        if not has_ledger:
+            pl = L.ledger_path(parent)
+            if os.path.exists(pl):
+                with open(L.ledger_path(sid), "w") as out:
+                    out.write(f"# ledger {sid} (adopted from parent {parent})\n")
+                    out.write(open(pl, errors="replace").read())
+            if pst.get("custom_instructions"):
+                L.update_state(sid, lambda st: st.setdefault(
+                    "custom_instructions", pst["custom_instructions"]))
+        if not has_lineage:
+            pin = version if L.owned_version(pst, parent, version) else None
+            lin = L.linked_lineage(parent, pin, pst.get("lineage"))
+            L.update_state(sid, lambda st: st.setdefault("lineage", lin))
     except Exception:
         pass
+    return parent
+
+
+def link_clear(sid, now=None):
+    """SessionStart(clear): /clear ran SessionEnd(clear) for the old session
+    in this same process (lineage.py wrote `cleared` on the process record),
+    then regenerated the session id. Pop that record and, when it is recent
+    (CLEAR_LINK_MAX_AGE_S) and names another session, set this session's
+    lineage: the predecessor with the version it pinned, then its lineage.
+    No verified process (proc_key None): no link. Returns the predecessor's
+    session id when it linked, else None."""
+    key = L.proc_key()
+    if not key:
+        return None
+    rec_sid = L.PROC_PREFIX + key
+    if not isinstance(L.load_state(rec_sid).get("cleared"), dict):
+        return None
+    box = []
+    L.update_state(rec_sid, lambda p: box.append(p.pop("cleared", None)))
+    c = box[0] if box else None
+    if not isinstance(c, dict):
+        return None
+    old, at = c.get("sid"), L._finite(c.get("at"))
+    now = time.time() if now is None else now
+    if not isinstance(old, str) or not old or old == sid or at is None \
+            or L._future_skewed(at) or now - at > L.CLEAR_LINK_MAX_AGE_S:
+        return None
+    lin = L.linked_lineage(old, c.get("manifest"), c.get("lineage"))
+    L.update_state(sid, lambda st: st.__setitem__("lineage", lin))
+    return old
+
+
+def linked_clear_pred(st, pred, v):
+    """The predecessor whose ledger a /clear successor inherits, or None: the
+    session link_clear just linked (`pred`), when it is the head of this
+    session's lineage and pinned exactly version `v` - the manifest on disk
+    now, with an owner (a link never pins an ownerless one). A pin of None (a
+    third session overwrote the manifest before the /clear) or a version
+    rewritten since the pin gives None, and so the header. Only a safe
+    session-id token is returned: it is echoed in the injected label."""
+    lin = L.lineage_of(st)
+    if not pred or not lin or lin[0]["sid"] != pred \
+            or not L._SAFE_SID.fullmatch(pred):
+        return None
+    want = L._version(v)
+    return pred if want is not None and lin[0]["manifest"] == want else None
+
+
+def manifest_version(text, fm=None):
+    """{owner, sha}: the manifest's `session:` (None when absent or not a
+    plain string) and L.manifest_sha of the raw text."""
+    fm = front_matter(text) if fm is None else fm
+    owner = fm.get("session")
+    return {"owner": owner if isinstance(owner, str) and owner else None,
+            "sha": L.manifest_sha(text)}
+
+
+def is_ours(st, sid, v):
+    """The injection rule: an ownerless (hand-written) manifest is everyone's;
+    otherwise only a version this session owns (L.owned_version)."""
+    return not v["owner"] or L.owned_version(st, sid, v)
+
+
+def read_manifest(cwd):
+    """(path, top, raw text or None). The raw text, read with
+    errors="replace", is what manifest_sha hashes."""
+    path, top = manifest_path(cwd)
+    if not path:
+        return None, top, None
+    try:
+        with open(path, errors="replace") as fh:
+            return path, top, fh.read()
+    except Exception:
+        return None, top, None
+
+
+def foreign_header(label, path, owner):
+    """The one line a session gets for a manifest that is not its own. The
+    author id comes from repo text, so only a safe session-id token is
+    echoed."""
+    who = f"session {owner}" if isinstance(owner, str) \
+        and L._SAFE_SID.fullmatch(owner) else "another session"
+    return (f"[context-guard rehydration] {label} manifest {path}, written by "
+            f"{who} (not this session). If the operator's opener names this "
+            f"manifest, read it in full; otherwise it is another session's and "
+            f"not your memory.")
 
 
 def main():
@@ -522,31 +922,63 @@ def main():
 
     sid = inp.get("session_id", "unknown")
     source = inp.get("source", "startup")
-    if source == "fork":
-        adopt_fork_state(sid, inp.get("transcript_path"))
     cwd = inp.get("cwd") or os.getcwd()
-    path, top = manifest_path(cwd)
+    path, top, text = read_manifest(cwd)
+    fm = front_matter(text) if path else {}
+    version = manifest_version(text, fm) if path else None
+    pred = None
+    if source == "fork":
+        adopt_fork_state(sid, inp.get("transcript_path"), version)
+    elif source == "clear":
+        try:
+            pred = link_clear(sid)
+        except Exception:
+            pred = None
+        if pred and L._SAFE_SID.fullmatch(pred):
+            # The new ledger names where it came from (ledger continuity).
+            ledger.successor_title(sid, pred)
 
     parts, sysmsg = [], None
     # Read-only snapshot: the git and store checks below are slow, so the
     # write-back at the end is a locked update of only the keys this hook owns.
     st = L.load_state(sid)
     seen_new = None
+    # A LANDED manifest says the thread is done: its /clear is the fresh start
+    # the land path asks for, so it keeps the header.
+    clear_pred = linked_clear_pred(st, pred, version) \
+        if source == "clear" and path and not is_landed(fm) else None
+    # Its reasoning trail, read up front so the systemMessage names it only
+    # when there is one to inject.
+    clear_digest = ledger.digest(clear_pred, budget=LEDGER_BUDGET) \
+        if clear_pred else ""
+    summary_used = False
+    reads_new = None     # this injection's Read-in-full list (read_list.py)
 
     if path:
-        text = open(path, errors="replace").read()
-        fm = front_matter(text)
-        sha = hashlib.sha1(text.encode()).hexdigest()[:12]
+        sha = version["sha"]
+        ours = is_ours(st, sid, version)
         hs = None if is_landed(fm) else head_state(fm, top)
         rec = fm.get("head")
+        try:
+            mtime = os.path.getmtime(path)
+        except OSError:
+            mtime = None
         live, why = liveness(fm, hs, unverified_reason(top) if hs is None
                              and not is_landed(fm) and isinstance(rec, str) and rec
-                             else "git unavailable")
+                             else "git unavailable", mtime)
         dirty = git(top, "status", "--porcelain") or ""
-        header = (f"[context-guard rehydration] {live}{f' ({why})' if why else ''} "
+        label = f"{live}{f' ({why})' if why else ''}"
+        header = (f"[context-guard rehydration] {label} "
                   f"manifest {path} "
                   f"(written {fm.get('written', '?')}, head {fm.get('head', '?')}, "
                   f"now {len(dirty.splitlines())} dirty file(s)).")
+        ms = mode_skill(fm)
+        if ms and live == "STALE":
+            header += (f" The manifest names a standing mode, `{ms}`; it is STALE, "
+                       f"so confirm with the operator before re-entering it.")
+        elif ms:
+            header += (f" The session was in a standing mode: re-enter it first "
+                       f"with `{ms}`.")
         moved, dead, notes = stale_checks(fm, top, live, hs)
         if len(dead) > 20:
             dead = dead[:20] + [f"(+{len(dead) - 20} more)"]
@@ -557,11 +989,19 @@ def main():
              + "\n".join(notes)) if notes else "") if b)
         if moved:
             text = withhold_next(text, moved)
+        holds = holds_block(text) if ours else ""
 
         seen = st.get("manifest") or {}
-        full = source == "compact" or (
-            source in ("resume", "fork") and (seen.get("sha") != sha or seen.get("top") != top))
-        if full:
+        full = ours and (source == "compact" or bool(clear_pred) or (
+            source in ("resume", "fork") and (seen.get("sha") != sha or seen.get("top") != top)))
+        if not ours:
+            # Another session's manifest (or a version of it this session
+            # never linked or adopted): never its memory. No body, no
+            # precedence preamble, no standing mode; nothing that invites an
+            # unrelated session to read, and so adopt, it.
+            parts.append(foreign_header(label, path, version["owner"])
+                         + "".join("\n" + c for c in (checks, moved) if c))
+        elif full:
             preamble = ("Precedence: current repo state (git log, the work-item "
                         "store) beats this manifest; this manifest and the ledger beat "
                         "any machine summary of the old conversation; CORRECTION/"
@@ -572,32 +1012,60 @@ def main():
                         + (" A machine compaction summary also exists for this "
                            "session; where they disagree, the manifest wins."
                            if st.get("compact_summary") else ""))
+            # That sentence is for the injection right after the compaction
+            # that wrote the summary: write_back pops it, so a later resume
+            # or /clear-continued injection does not repeat it.
+            summary_used = bool(st.get("compact_summary"))
             parts += [header, preamble] + ([checks] if checks else []) + \
-                [trim(text, CAP - len(header) - len(preamble) - len(checks)
+                [trim(annotate_holds(text), CAP - len(header) - len(preamble) - len(checks)
                       - LEDGER_BUDGET - 400)]
+            reads_new = RL.paths_from_manifest(text, top, cwd)
             sysmsg = (f"Rehydrated from {live}{f' ({why})' if why else ''} manifest "
-                      f"({fm.get('written', '?')}).")
+                      f"({fm.get('written', '?')})"
+                      + (f" and the ledger digest of predecessor {clear_pred}"
+                         if clear_digest else "") + ".")
         else:
             parts.append(header + " Read it before resuming its thread."
-                         + "".join("\n" + c for c in (checks, moved) if c))
-        seen_new = {"sha": sha, "top": top}
+                         + "".join("\n" + c for c in (holds, checks, moved) if c))
+        if ours:
+            # `manifest` = the version last shown to this session as its own.
+            seen_new = {"sha": sha, "top": top}
 
     if source == "compact":
-        lt = ledger.tail(sid, max_chars=LEDGER_BUDGET)
+        # Digest by kind, not a raw tail: commit pointers once crowded the
+        # reasoning out (13 of 17 injected lines), so R/C/D/X/U/Q from every
+        # epoch come first and the P pointers fill what is left.
+        lt = ledger.digest(sid, budget=LEDGER_BUDGET)
         if lt:
             parts.append("[context-guard ledger — this session's reasoning trail, "
+                         "reasoning kept ahead of commit pointers, file order, "
                          "newest last]\n" + lt)
         ci = st.get("custom_instructions")
         if ci:
             parts.append(f"The operator's own /compact guidance was: {ci}")
+    elif clear_digest and parts:
+        # A linked /clear continues the predecessor's work: its reasoning
+        # trail comes along (this session's own ledger is new and empty). The
+        # full tier above reserved LEDGER_BUDGET + 400 for this block.
+        parts.append(f"[context-guard ledger — predecessor {clear_pred}, by "
+                     f"/clear: its reasoning trail, reasoning kept ahead of "
+                     f"commit pointers, file order, newest last]\n" + clear_digest)
 
     def write_back(cur):
         if seen_new is not None:
             cur["manifest"] = seen_new
+        if reads_new is not None:
+            try:
+                RL.record(cur, reads_new)
+            except Exception:
+                pass
         if source == "compact" and "custom_instructions" in st \
                 and cur.get("custom_instructions") == st.get("custom_instructions"):
             # Consumed once; a newer /compact guidance written meanwhile stays.
             cur.pop("custom_instructions", None)
+        if summary_used and cur.get("compact_summary") == st.get("compact_summary"):
+            # Used once, by the full injection above; a newer summary stays.
+            cur.pop("compact_summary", None)
 
     L.update_state(sid, write_back)
     L.sweep_stale(keep=sid)

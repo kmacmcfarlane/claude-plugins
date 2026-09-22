@@ -49,11 +49,27 @@ Modes:
 - **full** (default): Steps 0–6.
 - **plan**: Steps 0, 1, 4 and 6 — for a spike. It produces a reviewed investigation
   series; no worktree, and nothing lands.
-- **review `<branch>`**: coming, not available yet (gate an existing branch). Say so and
-  stop.
+- **review `<branch>`**: Steps 0, 2 (reviewer only), 4, 5 (conditional) and 6, against an
+  existing branch — built by a human or an earlier run, and not necessarily the
+  orchestrator's to change. Skips Step 1 and Step 3: Step 0 resolves the branch's own
+  worktree and, with no item or plan, a one-line intent to grade against, instead
+  (`references/bindings.md` §§ Review target, Intent). Step 2 routes the reviewer alone
+  (rule 4). Step 4 dispatches the review-mode variant (`references/review-brief.md`
+  § Review-mode variant — claims: none, branch not built by this cycle). On `CLEAR`,
+  Step 5 runs the review-mode Land (`references/bindings.md` § Landing: merges
+  `<branch>` itself, never deletes it, cleans up only a worktree this cycle added). On
+  `NEEDS_CHANGES` or `SHOW_STOPPER`, before any fix loop, ask once through the decision
+  channel whether to dispatch an implementer for the findings — the fix loop needs one,
+  and this branch may not be the orchestrator's to change; the one exception to Step 4.4
+  and the Red flags' "escalating a finding the loop could resolve". Declined: report the
+  findings under `changed:` and `open questions:` in Step 6, `$WI handoff <id>` noting
+  findings were returned to the branch's author (no item: nothing further), and stop;
+  nothing lands. Accepted: dispatch one with the review-mode fix variant
+  (`references/agent-brief.md` § Review-mode fix variant), routed by Step 2, and continue
+  the fix loop as `full` does.
 
-There is no land-only mode. Land is the tail of full mode and runs only on a `CLEAR`
-recorded against the current HEAD sha.
+There is no land-only mode: Land is the tail of `full` and `review <branch>`, and runs
+only on a `CLEAR` recorded against the current HEAD sha.
 
 ## Step 0: Resolve the run
 
@@ -71,13 +87,21 @@ recorded against the current HEAD sha.
    type (feature, bug, chore, refactor or spike) — show it, and ask once with
    AskUserQuestion: Proceed / Discuss / Reject. Discuss: revise and ask again. Reject:
    stop, nothing written. Proceed: `$WI add` it when a store exists (that item is the
-   target), else write it to `<scratchpad>/dev-cycle/<slug>/record.md`.
+   target), else write it to `<scratchpad>/dev-cycle/<slug>/record.md`. **`review
+   <branch>` mode with no other target:** skip the cycle brief — there is nothing to
+   plan, the branch already exists; collect a one-line intent instead
+   (`references/bindings.md` § Intent), in the same question as any other Step 0 ask.
+   The record sink is `<scratchpad>/dev-cycle/<slug>/record.md`, `<slug>` being
+   `<branch>` with every `/` written `-`, unless a work item or plan is also named.
 
 3. **Resolve the ten bindings** from the caller, or standalone by
    `references/bindings.md`. Checks standalone: a recorded `checks:`
    line, else `## Librarian` `Checks:` read only, else detect and ask once; record the
    answer as a `checks:` line; **never write CLAUDE.md**. When the brief confirm and the
-   checks question are both due, ask them in one AskUserQuestion call.
+   checks question are both due, ask them in one AskUserQuestion call. `review <branch>`
+   mode also resolves the branch's own worktree here, instead of Step 3:
+   `references/bindings.md` § Review target, and claims a named item here too (Step 3 is
+   skipped): `$WI claim <id>` when it is not already yours.
 
 Expected output: one short paragraph — target, mode, base, checks, record sink.
 
@@ -118,7 +142,9 @@ re-dispatch or resume with findings = review round n+1; cap 4 review rounds.
    code that gates or blocks edits, commits or tool calls, or to a security surface
    (credentials, permission allowlists, sandbox config, mounts, host access, sockets);
    fix round 3 after a critical or high finding; a pin (rule 8). Rule 3 wins over rule 2.
-4. **Reviewer = implementer's tier, floor opus.**
+4. **Reviewer = implementer's tier, floor opus.** `review <branch>` mode has no
+   implementer: apply rules 2, 3 and 8 to the branch's diff itself, then this floor, and
+   record the `dispatch:` line the same way.
 5. **Haiku is out of scope.** Mechanical checks you run yourself.
 6. **A re-dispatch keeps the tier** and sharpens the brief; rule 3's round signal is the
    only bump; a tier never falls, except the fallback (`references/model-routing.md`
@@ -148,11 +174,12 @@ re-dispatch or resume with findings = review round n+1; cap 4 review rounds.
    background `general-purpose` agent with the routed `model`.
 4. **Return contract**: `STATUS` (`DONE` | `DONE_WITH_CONCERNS` | `NEEDS_CONTEXT` |
    `BLOCKED`) and the report shape in the brief.
-5. **On return**: merge its CHANGED into the record sink's cumulative `changed:` block
-   (`references/bindings.md` § Undeclared files). `DONE` and `DONE_WITH_CONCERNS` go to
-   Step 4. `NEEDS_CONTEXT`: answer in
-   the record sink, re-dispatch with the answer, at least opus. `BLOCKED`: `$WI block`
-   when there is an item, and raise it through the decision channel.
+5. **On return**: merge its CHANGED into the record sink's cumulative
+   `changed:` block (`references/bindings.md` § Undeclared files). `DONE` and
+   `DONE_WITH_CONCERNS` go to Step 4. `NEEDS_CONTEXT`: record the answer as an
+   `answer:` line (`references/bindings.md` § Record line shapes), re-dispatch with it,
+   at least opus. `BLOCKED`: `$WI block` when there is an
+   item, and raise it through the decision channel.
 
 ## Step 4: Review
 
@@ -179,11 +206,15 @@ re-dispatch or resume with findings = review round n+1; cap 4 review rounds.
 4. **What escalates** through the decision channel is only a show-stopper with real
    impact: a `SHOW_STOPPER` verdict, a finding that changes the scope or reverses a
    recorded human decision, or the cap. Everything else, critical included, is resolved
-   inside the loop.
-5. **Record the result** in the record sink: rounds, findings fixed, findings declined
-   with reasons, the final verdict and what it covers — the HEAD sha for a change, the
-   series' serial files by name for a plan — and the reviewer NOTES worth keeping.
-   Reviewer questions you cannot settle go on Step 6's `open questions:`.
+   inside the loop. The one exception: `review <branch>` mode's ask, before any fix loop,
+   whether to dispatch an implementer at all (Usage) — a mode-entry decision, not a
+   severity escalation.
+5. **Record the result** as `verdict: <V> round <n> at <sha>` plus, on a
+   `NEEDS_CHANGES` or `SHOW_STOPPER`, the reviewer's FINDINGS pasted verbatim as a
+   `findings:` block (`references/bindings.md` § Record line shapes) — what a fix
+   dispatch reads. Also record: findings fixed, findings declined with reasons, and the
+   reviewer NOTES worth keeping. Reviewer questions you cannot settle go on Step 6's
+   `open questions:`.
 
 ## Step 5: Land
 
@@ -191,11 +222,15 @@ Only after a `CLEAR` recorded against the current HEAD.
 
 1. **Run the checks yourself** in the worktree: `references/review-checklist.md`, the
    Checks binding included. A verdict is not a check output.
-2. **Read the diff** in full — `git -C "$MAIN"/.claude/worktrees/<name> diff
-   <base>...HEAD` — against the repo's doctrine and the Workflow binding. A file outside
+2. **Read the diff** in full — `git -C <worktree path> diff <base>...HEAD`, the
+   absolute path Step 0 resolved (`.claude/worktrees/<name>` in `full` mode, or the path
+   `references/bindings.md` § Review target resolved) — against the repo's doctrine and
+   the Workflow binding. A file outside
    the declared Files in scope is a rejection, however good. With Files in scope
    `undeclared`, every changed file must carry the implementer's one-line reason and
    have survived the reviewer's per-file grading; one that did not is a rejection.
+   `review <branch>` mode grades against the recorded Intent instead
+   (`references/bindings.md` § Intent) — no per-file reason is required there.
 3. **Take the terminal action.** A caller's binding as given. Standalone, ask once
    (`references/bindings.md` § Landing): `Merge to <base> locally, no push` first, then
    `Leave the branch`, then `Merge and push`. To merge, the main checkout must be on the
@@ -208,12 +243,16 @@ Only after a `CLEAR` recorded against the current HEAD.
    git -C "$MAIN" merge --no-ff -m "<message>" worktree-<name>
    ```
 
-   The message, with any `subject-fix:`: `references/fix-loop.md`. A conflict: never
-   resolve it yourself — `git -C "$MAIN" merge --abort`, record it as a finding, and
-   re-dispatch it into the fix loop (`references/fix-loop.md` § A merge conflict). Re-run
-   the checks on the base after the merge.
+   `review <branch>` mode merges `<branch>` itself in place of `worktree-<name>`
+   (`references/bindings.md` § Landing). The message, with any `subject-fix:`:
+   `references/fix-loop.md`. A conflict: never resolve it yourself — `git -C "$MAIN"
+   merge --abort`, record it as a finding, and re-dispatch it into the fix loop
+   (`references/fix-loop.md` § A merge conflict). Re-run the checks on the base after the
+   merge.
 4. **Clean up**, only when merged and the worktree is clean: `git worktree remove` it and
    `git branch -d` the branch. A dirty worktree is never removed: report it and ask.
+   `review <branch>` mode never deletes `<branch>` and removes only a worktree this cycle
+   added itself (`references/bindings.md` § Landing).
 5. **Close the item**: `$WI done <id> --note <merge-sha>`; for `Leave the branch`,
    `$WI handoff <id>` with `--next` naming the branch.
 
@@ -244,7 +283,8 @@ Stop when you catch yourself:
 - **Landing without a `CLEAR`**, or on a `CLEAR` for an older sha.
 - **Merging without running a check yourself.**
 - **Escalating a finding the loop could resolve** — a human hears show-stoppers, scope
-  changes and the cap, never a medium.
+  changes and the cap, never a medium. (`review <branch>` mode's before-any-fix-loop ask
+  is the one exception — Usage.)
 - **Dispatching unrouted** — an Agent call with no `model`, or no `dispatch:` line
   behind it.
 - **Pushing unasked**, writing CLAUDE.md to save the checks, or guessing a caller's

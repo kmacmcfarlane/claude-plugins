@@ -8,27 +8,27 @@
     {
       "name": "kit-dev",
       "source": "./plugins/kit-dev",
-      "description": "Maintainer tooling for this plugin ecosystem — skill creation, project scaffolding, upstream kit sync, and factoring analysis (external: the claude-templates repo, which scaffolding reads, and the claude-templates, claude-sandbox and claude-expertise repos, which upstream sync writes)."
+      "description": "Maintainer tooling for this plugin ecosystem — skill creation, project scaffolding, upstream kit sync, and factoring analysis (external: the claude-templates repo, which scaffolding reads, and the claude-templates, claude-sandbox and claude-expertise repos, which upstream sync writes; soft dependency: create-repo, which new-project-from-template points at for a bare repo with a session launched on it)."
     },
     {
       "name": "context-guard",
       "source": "./plugins/context-guard",
-      "description": "Context survival for long sessions — depth gate, checkpoint workflow, session rehydration, and token-spend reporting from the local transcripts (soft dependency: statusline, for exact depth)."
+      "description": "Context survival for long sessions — depth gate, checkpoint workflow, session rehydration, and token-spend reporting from the local transcripts (soft dependency: statusline-hub, for exact depth from the sensor record it writes; installing statusline brings it)."
     },
     {
       "name": "statusline",
       "source": "./plugins/statusline",
-      "description": "Always-on status line — context left, plan usage limits, model and session name at a glance (optional: works with context-guard, which adds its epoch and checkpoint thresholds to the gauge)."
+      "description": "Always-on status line — context left (the session's and each sub-agent's, in the agent panel), plan usage limits, model and session name at a glance (requires statusline-hub: the footer draws as one of its display hooks; optional: works with context-guard, which adds its epoch and checkpoint thresholds to the gauge)."
     },
     {
       "name": "statusline-hub",
       "source": "./plugins/statusline-hub",
-      "description": "The status-line slot, shared — a tee command that records the context depth and plan usage Claude Code hands the status line into the sensor record other tools read, whatever renders your line (a ccstatusline Custom Command, a Starship custom module, or a wrapper around your own command). First piece of the shared-slot dispatcher."
+      "description": "The status-line slot, shared — the hub owns the statusLine command (taking a free slot on the first session, never another tool's without consent), records the context depth and plan usage Claude Code hands the status line into the sensor record other tools read, then runs the display and record hooks other plugins register; where another renderer keeps the slot, its tee command feeds the same record from a ccstatusline Custom Command, a Starship custom module, or a wrapper around your own command. (Soft dependency: statusline — its footer is the hub's first display hook; the hub takes over a slot an earlier statusline version installed once that footer has registered.)"
     },
     {
       "name": "dev-flow",
       "source": "./plugins/dev-flow",
-      "description": "Plan-first development for agent sessions — investigation series, reviewed plans, verified implementation, a sub-agent dev cycle that carries one change from plan to merge, multi-agent research fan-outs, chain-of-verification fact-checking, and a standing librarian that takes custody of a repo's work: files, dispatches, reviews and lands (soft dependencies: work-items; statusline, for rate-limit reset times; context-guard, for checkpoint and rehydration)."
+      "description": "Plan-first development for agent sessions — investigation series, reviewed plans, verified implementation, a sub-agent dev cycle that carries one change from plan to merge, multi-agent research fan-outs, a research skill family that turns a question into sourced, verified findings and a curated knowledge base (with the research-lane and research-verifier agents), chain-of-verification fact-checking, and a standing librarian that takes custody of a repo's work: files, dispatches, reviews and lands (soft dependencies: work-items; statusline-hub, for rate-limit reset times, the quota sense's usage readings and the research skills' quota read from the sensor record it writes; claude-analytics (external, planned), whose sampler sink the quota sense reads as usage history, falling back to sampling itself into ${CLAUDE_CONFIG_DIR}/claude-kit/librarian/; context-guard, for checkpoint and rehydration; kit-dev, whose update-kit takes the retrospective findings)."
     },
     {
       "name": "work-items",
@@ -44,6 +44,11 @@
       "name": "sandbox",
       "source": "./plugins/sandbox",
       "description": "Isolated execution for Claude Code sessions — configure, bootstrap and troubleshoot claude-sandbox containers, with the checkout/worktree convention their launcher follows enforced by a PreToolUse guard."
+    },
+    {
+      "name": "create-repo",
+      "source": "./plugins/create-repo",
+      "description": "Start a new repo for a thread of work — the directory, git init, a README naming its purpose, claude-sandbox init and a first commit — then one copy-paste command that launches an agent session on it to write its CLAUDE.md and run the thread's first investigation (external: the claude-sandbox tool, degrading to a plain claude launch without it; soft dependencies: kit-dev, to scaffold a claude-templates template as the goal; sandbox, to troubleshoot a failed init or launch; dev-flow, whose investigate skill the launched session uses for the first investigation when installed, else it investigates directly)."
     },
     {
       "name": "ralph",

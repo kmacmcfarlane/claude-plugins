@@ -94,8 +94,9 @@ the state directories keep it so existing sessions and ledgers stay readable.)
 
 The gate state gives the epoch and a depth, but **stores no source label** — the source is
 derived when the gate reads the file. The status line writes an `exact` block (`pct`,
-`tokens`, `window`, `at`) to its sensor file, `statusline/sensor/<session>.json` (the
-`statusline` plugin; absent when it is not installed). An older install whose status line
+`tokens`, `window`, `at`) to its sensor file, `statusline/sensor/<session>.json` (written
+by the `statusline-hub` plugin, which installing `statusline` brings; absent when it is not
+installed). An older install whose status line
 still runs context-guard's deprecated copy writes the block into the gate state instead; the
 gate reads both and takes the one with the larger `at`. That block counts as *exact* only
 while `now - at` is under 600s, and once it goes stale the depth is re-derived from the
@@ -149,7 +150,12 @@ State the routing table before writing.
 **4a.** Commits first (the message is a compaction-proof summary you chose; include reasoning
 and retractions), then investigation/plan files, then work items. Respect each repo's rules:
 pre-commit hooks, secret encryption, never `git add -A` where the tree carries unencrypted
-secrets. A repo not yours to commit to stays dirty with a written note.
+secrets. A repo not yours to commit to stays dirty with a written note. Then sweep the
+session scratchpad: `/clear` gives the successor a new one and leaves this one behind, so
+copy every file a successor needs (a stage file, a brief template, a working note) to the
+owning investigation series or another durable path — never into the work-item store's
+`items/` — or list it under the manifest's **Copy forward** by absolute path when it cannot
+move now (the format spec's scratchpad rule).
 
 **4b.** Rewrite the **rehydration manifest** per `references/handoff-format.md` — at
 `.claude-sandbox/HANDOFF.md` if that directory exists, else `HANDOFF.md` at the repo
@@ -157,14 +163,39 @@ root — in **all three modes** (*land* writes `mode: landed` so the next sessio
 one header line, not a stale goal). At a stage boundary the published stage file is the
 authoritative record: point **Read in full** at it and carry only what the files do not
 hold — environment state, corrections, refusals; the format spec's stage-boundary rule
-has the full list. Fill the frontmatter `items:` with the `wi` ids of the open or doing
-items the manifest mentions (check them against the store, not memory): the rehydration hook
-diffs that list against the store and names every one since closed as a dead claim. Then
-stand the gate down:
+has the full list. Write **Holds** near the top, one line per standing hold the operator
+set (no push, keep dispatch small, pause a loop): what is held, why, and its end condition
+— a decision number, an event, or a UTC time — per the format spec's hold rule; `None`
+when there are none. Holds reach the successor in every tier, the header-only ones
+included, and are never trimmed. Write **In flight** from the dispatch notices or
+ListAgents, not memory, per the format spec's In flight rule. Fill the frontmatter
+`items:` with the `wi` ids of the open or doing items the manifest mentions (check them
+against the store, not memory): the rehydration hook diffs that list against the store
+and names every one since closed as a dead claim. If
+this session is running a standing mode (a skill that holds it in a role, entered by a
+command such as `/<plugin>:<mode> start`), set `mode_skill:` to that command exactly as the
+operator would type it; omit it otherwise and in a landed manifest. **Never type the
+machine fields** — `written:`, `head:`, `branch:`, `session:`: write each as the placeholder
+`<stamped>`, and never copy them from the manifest being replaced (after a `/clear` or a
+handoff its `session:` is the predecessor's, and the rehydration hook re-injects a manifest
+by that field). The mark step stamps them — UTC now, `git rev-parse --short HEAD`, the
+branch, and this session's id from `$CLAUDE_CODE_SESSION_ID` — rewriting only those
+frontmatter lines. Then stand the gate down, **right after writing the manifest and as the
+last write to it**:
 
 ```bash
-python3 "${CLAUDE_PLUGIN_ROOT}/hooks/mark_checkpoint.py" <session-id>
+python3 "${CLAUDE_PLUGIN_ROOT}/hooks/mark_checkpoint.py" "$CLAUDE_CODE_SESSION_ID"
 ```
+
+It prints `stamped <path> (written …, head …, branch …, session …)`. It stamps only a
+manifest written in the last 30 minutes whose `session:` is a placeholder or this session
+(`$CLAUDE_CODE_SESSION_ID`; an id passed that differs from it counts for nothing) — or
+names the session whose manifest this one replaced (its `/clear` predecessor, fork parent,
+or the author of a handoff it read in full) *and* the file has been rewritten since that
+link or Read. Anything else is left untouched with a `not stamped` warning, and a
+`session:` warning names the id it found — fix the file, not the warning, and run it again.
+A manifest it already stamped and nobody rewrote is left as it is (`already stamped`).
+Stamping makes a new version of the manifest, so nothing may rewrite it after this step.
 
 Without this the gate keeps firing and a deferred auto-compaction stays deferred.
 
@@ -177,13 +208,25 @@ sentence:
 - **continue** → `/rewind` → *Summarize up to here* at the **last ledger epoch header** (keeps
   the current thread verbatim, condenses only the old part) — or `/compact <guidance>` with
   the guidance you drafted, naming the manifest path, the open item, and the refusals.
-- **handoff** → `/clear`, or a fresh session in the owning repo; the manifest is the brief and
-  the rehydration hook will inject it there.
+- **handoff** → `/clear`, or a fresh session in the owning repo; the manifest is the brief.
+  After `/clear` the successor is linked to this session, and when the manifest on disk is
+  still the version this session owned at `/clear`, it gets what a compaction gets: the
+  full manifest, plus this session's ledger digest (reasoning first) under a label naming
+  this session's id. A `/clear` that is not linked (no verified process, over two minutes
+  old) or whose version changed since (a rewrite, a third session's overwrite) gets the
+  header, as before (so does a `landed` manifest, whose `/clear` is a fresh start); a fresh
+  session gets a header naming this session as the author.
+  The Step 7 opener still leads either way: its "read … in full" is what brings the whole
+  file into a new process, and that full Read of a `mode: handoff` manifest adopts it as
+  the successor's own.
 - **continue uncompacted** → when the number says there is more room than it felt like.
 
-After a compaction, the manifest + ledger are re-injected automatically and **outrank the
-machine summary**; corrections outrank recollection; and current repo state (git log, the
-work-item store) outranks the manifest.
+After a compaction, the ledger is re-injected automatically, and so is the manifest — when
+this session wrote it, descends from the session that did (fork, `/clear`), or has read that
+version in full in `mode: handoff`; any other session gets a one-line header (the format
+spec's "Whose memory it is"). Re-injected, they **outrank the machine summary**; corrections
+outrank recollection; and current repo state (git log, the work-item store) outranks the
+manifest.
 
 ## Step 6 — Note the drift, once
 
@@ -198,15 +241,23 @@ this is the **last thing on screen**, after Step 6. Land mode emits nothing here
 landed` in the manifest is the whole story.
 
 Under ~5 lines. Contents: the skill or task to invoke, exactly as the operator would type
-it; `read <manifest path> in full first` (the path Step 4b actually wrote —
-`.claude-sandbox/HANDOFF.md` or root `HANDOFF.md`; "in full" matters — after `/clear` the
-rehydration hook injects only the manifest header, so the opener is what tells the next
+it — when the manifest sets `mode_skill:`, that command leads the opener, so the next
+session re-enters the standing mode before anything else (with `then <next-skill>` as
+well, the mode still leads and the next skill goes in the facts); `read <manifest path>
+in full first` (the path Step 4b actually wrote — `.claude-sandbox/HANDOFF.md` or root
+`HANDOFF.md`; "in full" matters — a fresh session, or a `/clear` the hook could not link,
+gets only the manifest header and its Holds lines, so the opener is what tells the next
 session to read the whole file); and the one or two facts that changed since the manifest
-was written — pull these from the drift note or the `Aware of` lines you just wrote (the
-lean path has no drift note; use the `Aware of` lines), never restate the whole manifest.
+was written — pull these from the Holds lines first, then the drift note or the `Aware of`
+lines you just wrote (the lean path has no drift note; use Holds and `Aware of`), never
+restate the whole manifest.
+When **In flight** is not `None`, one fact is always `resume <ids> with SendMessage; do not
+re-dispatch` (after a fresh process: try SendMessage first, re-dispatch from the roster's
+round only if it fails); when **Copy forward** is not empty, another is `copy forward
+<paths> first`.
 
 ```text
-/<skill-or-task> <args> — read <manifest path> in full first; <fact that changed>; <fact that changed>
+/<mode_skill or skill-or-task> <args> — read <manifest path> in full first; <fact that changed>; <fact that changed>
 ```
 
 At a stage boundary, one of those facts is always: **do not re-run the previous stage** — its
@@ -219,4 +270,7 @@ gate or label, it is already set). Drop this line only when the mode isn't a sta
 - Never silently drop an inventory item — route it or say you are dropping it.
 - Step 2's recall is never delegated and never skipped; Step 4b is never skipped.
 - Path and key, never value.
+- Never run the checkpoint inside a sub-agent: it shares the parent's session id, so it
+  would write the parent's `session:` and stand the parent's gate down. A sub-agent
+  reports that a checkpoint is due; the parent runs it.
 - A checkpoint that itself burns the remaining window has failed; prefer the lean path late.

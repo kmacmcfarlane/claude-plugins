@@ -2,10 +2,11 @@
 id: create-repo-plugin-bootstrap-a-new-repo-2c77
 title: "create-repo plugin: bootstrap a new repo and launch an attachable agent session on it"
 type: feature
-status: todo
+status: done
 priority: 2
 created: 2026-09-19
-updated: 2026-09-19
+updated: 2026-09-21
+closed: 2026-09-21
 refs:
   - "peer: claude-sandbox-93 (uds 91.sock), operator relay"
 ---
@@ -13,8 +14,8 @@ refs:
 Operator request 2026-09-19, relayed by peer claude-sandbox-93. New plugin create-repo with a skill: mkdir + git init -b main + seed README naming the purpose; claude-sandbox init --yes (inherits workspace config); initial commit; launch a session with a bootstrap prompt (write CLAUDE.md /init-style, then the thread's first investigation); tell the user the copy-paste attach command (cd <repo> && claude-sandbox --attach). Ecosystem support where needed. Rough edges (claude-sandbox side, tracked in its store, e.g. detached launch f9dc): no detached mode yet, so a launch under the agent's pty dies with the launching session; until --detach, prefer one copy-paste command that launches AND attaches in the user's terminal; in-sandbox launch needs host-visible TMPDIR; launch lock is per-container. Principle notes: marketplace shape (catalog row, CLAUDE.md layout, marketplace.json in the same feature); overlaps kit-dev new-project-from-template; claude-sandbox is a soft dependency (degrade to plain claude).
 
 ## Handoff
-- doing: —
-- next: —
+- doing: fix round 1 dispatched (opus, agent a2a9ff11c97fde5d7)
+- next: on DONE: review r2 (opus)
 - blocked: —
 - learned: —
 
@@ -22,3 +23,42 @@ decision 43: placement — (a) new plugin create-repo as asked, with new-project
 
 ## Operator answer 2026-09-19
 - 43 → (a) new plugin create-repo; kit-dev new-project-from-template stays, cross-pointed. PLUS: an optional arg lets the user name a claude-templates template as the goal (via new-project-from-template), gated on a check that kit-dev is installed; if not, offer to install it with instructions (soft dependency, principle 4).
+
+## Notes
+- 2026-09-21 claimed by unknown@360f41058e92
+- 2026-09-21 done: 9923bb7
+
+## Dispatch
+- dispatch: implementer opus — new plugin (marketplace shape) + a launcher that runs claude-sandbox
+
+## Implementer result
+- round 1 DONE_WITH_CONCERNS 76400de (opus): plugins/create-repo (skill create-repo: path confirm, bind-mount check, git init -b main, README, claude-sandbox init --yes, first commit, ONE launch+attach command; --template via kit-dev new-project-from-template when installed, else install hint); catalog/layout/marketplace; kit-dev pointer. Launch command not run (by design); flags checked against claude-sandbox --help and its source.
+- scope widening before review: kit-dev plugin.json + marketplace description name the soft pointer to create-repo (principle 4).
+- widening 4c6a764: kit-dev descriptions declare the soft pointer.
+- dispatch: reviewer opus — rule 4
+answer 43: (a) new plugin create-repo; new-project-from-template stays, cross-pointed; plus optional template goal via kit-dev (operator 2026-09-19) (migrated)
+
+## Review round 1 — NEEDS_CHANGES (opus) at 4c6a764 (held: operator hold 810f)
+- steps verified in a scratch workspace; hostile quoting byte-exact through `sq`; flags real; safety checks hold; merge-tree clean.
+- [medium] default parent from --show-toplevel is the worktree in worktree sessions → use --git-common-dir's parent or $CLAUDE_SANDBOX_PROJECT_DIR.
+- [medium] no instruction on putting the user's purpose into $PROMPT/$NAME safely → quoted heredoc or Write-tool file, never interpolate in double quotes (else the purpose's $() runs in the agent shell).
+- [medium] bootstrap prompt names dev-flow's investigate — undeclared soft coupling → declare dev-flow (soft) in both descriptions + catalog row, or drop the name.
+- lows: kit-dev pointer should name /create-repo:create-repo (model can't invoke it); template branch re-reads REPO/NAME and trackInHost from what new-project-from-template created; "sparse (only trackInHost set)"; quote the attach hint path; worktree-mode caveat; catalog notation "repo" vs "tool"; commit layout.
+- next: fix round 1 (resume the implementer) once the hold lifts.
+- dispatch: implementer opus — fix round 1 (fresh agent: the round-1 implementer did not survive compaction; tier kept)
+- fix round 1 DONE_WITH_CONCERNS 1af679b (opus): worktree-safe parent (git-common-dir / $CLAUDE_SANDBOX_PROJECT_DIR); purpose + REPO via quoted heredoc or Write-tool file, NAME pattern-checked; dev-flow declared soft (plugin.json, marketplace, catalog). Lows fixed: kit-dev pointer names /create-repo:create-repo, template re-read, sparse wording, attach-hint quoting, worktree caveat, catalog "repo". Declined: commit layout (carried in the merge message).
+- scope widened (librarian): README `### create-repo` section gets the dev-flow soft-dep sentence (agreement with the row); same implementer resumed.
+- 1a8e49d README section sentence (DONE)
+- dispatch: reviewer opus — review r2 (rule 4)
+
+## Review round 2 — NEEDS_CHANGES (opus) at 1a8e49d
+- round-1 mediums 1 and 3 fixed (verified in 5 locations; dev-flow declared consistently); medium 2 fixed for the purpose only.
+- [medium] SKILL.md Steps 2-6 use "$REPO" but the heredoc rule lives only in launch-command.md (Step 7); fix: rule in Important + Step 2.4, and reject REPO with $, backtick, ", \ or newline after confirmation.
+- lows: newline in --path defeats the heredoc (reproduced); try --git-common-dir before $CLAUDE_SANDBOX_PROJECT_DIR (Paseo worktree); Edit missing from allowed-tools; NAME accepts . .. leading -; fish quoting nit.
+- dispatch: implementer opus — fix round 2 (same agent resumed)
+- fix round 2 DONE 6e79159 (opus): REPO/NAME character check before any shell (REPO absolute, safe set incl. no quote; NAME leading alnum); git-common-dir first; Edit in allowed-tools; fish note. All 5 lows fixed.
+- dispatch: reviewer opus — review r3 (same reviewer resumed)
+
+## Review round 3 — CLEAR (opus) at 6e79159
+- nits not taken (wording): fish note reason (\\ collapse, not '\''); Step 2.4 trailing-newline strip could be said. Hostile paths all refused; no bypass via template branch or --path.
+- landed 9923bb7

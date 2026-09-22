@@ -2,13 +2,14 @@
 id: context-guard-8cc2-f3a-re-inject-handoff-5126
 title: "context-guard 8cc2-F3a: re-inject HANDOFF.md in full only to its lineage (authorship check)"
 type: feature
-status: todo
+status: done
 priority: 1
 deps:
   - context-guard-8cc2-f2-hard-advice-fits-t-1f9d
 parent: context-guard-turn-gate-8cc2
 created: 2026-09-21
-updated: 2026-09-21
+updated: 2026-09-22
+closed: 2026-09-22
 ---
 
 Port plan .claude-sandbox/investigations/8cc2-turn-gate-port — design awaits the 02 serial (plan review round 2: pin lineage/adoption to the manifest version seen; Read adopts only mode: handoff manifests; header wording for non-lineage authors).
@@ -18,3 +19,20 @@ Port plan .claude-sandbox/investigations/8cc2-turn-gate-port — design awaits t
 - next: —
 - blocked: —
 - learned: —
+
+## Notes
+- 2026-09-22 claimed by unknown@360f41058e92
+
+- 2026-09-22: answer 48 (a) — build from plan 00–03 as written. dispatch: implementer opus — hook code in context-guard (gate re-injection); fable signal (code that gates) → fable unavailable in this session, fallback opus, recorded
+- impl r0 DONE_WITH_CONCERNS a69452d (opus): lib_context manifest_sha/owned_version/lineage_of/linked_lineage; new hooks/lineage.py (SessionEnd clear link pinning an owned version; PostToolUse Read adoption of mode: handoff); rehydrate injects in full only an owned version, else a foreign header; hooks.json; 38 tests (fail on main 12F/20E); checkpoint docs + README hooks sentence. Deviations: foreign header keeps dead-claim/unparseable/Next-withheld lines, drops mode_skill; author echoed only when a safe sid; fork lineage written once. OQ7 (teammate /clear) unverified. 47(c) makes the third-session guard + foreign header largely redundant; lineage link, Read adoption and version pin stay needed; F3b re-points paths. Fresh-process successor sees no mode_skill hint until it Reads the handoff.
+- dispatch: reviewer opus — gates re-injection (fable signal; fable unavailable → opus, recorded)
+- review r1 (opus) at a69452d: NEEDS_CHANGES. Seven Checks OK (context-guard 510); matchers verified against binary 2.1.278; probes: third-session overwrite, Read variants, stale links, garbage input all hold; cleared-record race safe (per-process key + update_state lock). Deviations judged sound.
+  - [medium] handoff-format.md:17, checkpoint SKILL.md:119-133 — no stated source for the `session:` id, now the ownership key; a /clear successor copying the predecessor's id loses its own memory and hands its goal to a resumed predecessor. Pass: name $CLAUDE_CODE_SESSION_ID (never the replaced manifest's id); ideally the mark step verifies it.
+  - [low] lineage.py:71-81 hash the Read's content, not the file now; [low] :65 basename before realpath (symlink target Read never adopts, fails safe); [low] handoff-format.md:145-149 foreign header carries check lines; [low] operator-playbook.md:112-113 unqualified "re-injected".
+- dispatch: implementer opus — fix round 1 (resume, tier kept)
+- fix r1 DONE_WITH_CONCERNS 69dd197 (opus): Step 4b + format spec name $CLAUDE_CODE_SESSION_ID; mark_checkpoint.py warns (exit 0, still records) when the id is not the env's or the manifest's session: is not this session; tests fail on a69452d. Lows b/c/d fixed; (a) declined — the Read PostToolUse response shape in 2.1.278 is unverified; a wrong guess silently disables handoff adoption; ms window. OQ: $CLAUDE_CODE_SESSION_ID following /clear taken from the reviewer, not re-verified.
+- dispatch: reviewer opus — review r2 (resume)
+- review r2 (opus) at 69dd197: CLEAR. Binary 2.1.278: $CLAUDE_CODE_SESSION_ID follows /clear (confirmed); Read PostToolUse tool_response = {type:"text", file:{content,numLines,totalLines,truncatedByTokenCap?}} or {type:"file_unchanged"} (no content) → decline (a) stands as a low. Warn-not-refuse judged right. mark_checkpoint refactor: exit codes and argv unchanged. Nit: empty $CLAUDE_CODE_SESSION_ID maps to unknown.json.
+- Review result: 2 review rounds, 1 fix round; medium fixed; lows b/c/d fixed; (a) declined with reason (accepted); r2 low + nit filed as a follow-up; impl opus, review opus (fable signal, fallback recorded).
+- land checks (librarian, worktree 69dd197, temp CLAUDE_CONFIG_DIR): seven suites OK; diff read — 12 files, all in plan scope.
+- 2026-09-22 done: 4ca4646

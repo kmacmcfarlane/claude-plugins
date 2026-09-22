@@ -395,7 +395,10 @@ class TestMarkCheckpointCli(Base):
         return subprocess.run([sys.executable, os.path.join(
             os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
             "mark_checkpoint.py"), sid], capture_output=True, text=True,
-            env=dict(os.environ, CLAUDE_CONFIG_DIR=self.tmp.name), timeout=30)
+            # cwd: the temp config dir, never this checkout, whose own
+            # HANDOFF.md the mark step would otherwise try to stamp.
+            env=dict(os.environ, CLAUDE_CONFIG_DIR=self.tmp.name), cwd=self.tmp.name,
+            timeout=30)
 
     def test_refuses_unknown_session(self):
         p = self.run_cli("typo-sid")

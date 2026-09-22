@@ -1,0 +1,389 @@
+# The hub's hook contract (v1)
+
+How another plugin, or a user, runs code on every status-line render through
+`statusline-hub`. When the hub owns the `statusLine` slot (owner mode), each render it
+writes the sensor record first, then runs the registered hooks. This file is the whole
+interface. The hub's `hooks/registry.py` and `hooks/hub.py` implement it, and their tests
+hold them to it. The sensor record itself (what a *reader* gets without registering
+anything) has its own contract, the `statusline` plugin's `sensor-contract.md`, which is
+unchanged.
+
+A tool that only has a few words to show, and no need to see the payload, need not run
+code at all: it drops a **segment** file the hub reads on each render (§ 11). No manifest,
+no process, and it works from any repo or plugin that can write a file under `CFG`.
+
+## The agreed consumer contract
+
+Agreed with the claude-analytics session (2026-09-19/20), carried verbatim:
+
+> Registry at `${CLAUDE_CONFIG_DIR}/statusline-hub/hooks.d/<name>.json` with `{name,
+> command, timeout_ms, kind: "display"|"record", health_path?}`. A `record` hook gets the
+> raw status-line payload BYTE-FOR-BYTE on every render, runs detached and never blocks
+> the render; a crashing or slow record hook leaves the gauge and the sensor record intact.
+> Optional health_path: the hub reads that small file at render (capped) and shows a
+> one-glyph warning when the last run errored or there is no last_ok within N minutes; a
+> missing/stale/oversized/malformed health file shows nothing; no glyph until the hook has
+> run once; never delays the render. A `display` hook gets a hard timeout and a last-good
+> cache; a failing hook never blanks the line. Dead entries pruned in the prune pass.
+
+The sections below spell out each clause. Where they add a rule (the trust checks, the
+exec form, the caps), the rule is additive: a manifest written to the agreed shape still
+works.
+
+## 1. Where
+
+`CFG` is `${CLAUDE_CONFIG_DIR:-~/.claude}` (an empty value counts as unset).
+
+```
+CFG/statusline-hub/
+  hooks.d/<name>.json        one manifest per hook (you write it)
+  config.json                the user's order / disabled / separator (the user writes it)
+  cache/<name>/<session>.json   a display hook's last good text (the hub writes it)
+  log/<name>.log             your hook's stderr (the hub writes it)
+  segments/<provider>.json   a segment for every session (a producer writes it, § 11)
+  segments/<provider>/<session>.json   a segment for one session (§ 11)
+```
+
+`<name>` is `[a-z0-9][a-z0-9-]{0,39}`: lowercase letters, digits and hyphens, starting with
+a letter or digit, at most 40 characters. It is the file name, and it must equal the
+manifest's `name` field.
+
+## 2. The manifest
+
+```json
+{"v": 1, "name": "analytics", "kind": "record",
+ "command": ["python3", "/abs/path/to/plugin/hooks/sample.py"],
+ "timeout_ms": 2000,
+ "health_path": "/home/me/.claude/analytics/health.json"}
+```
+
+| Field | Required | Meaning |
+|---|---|---|
+| `name` | yes | Equals the file name without `.json`. |
+| `kind` | yes | `"display"` (its first stdout line is shown) or `"record"` (gets the payload, shows nothing). |
+| `command` | yes | Preferred: a JSON array of strings, exec'd as is. A string is split into words by POSIX shell rules and exec'd, **with no shell**. See § 4. |
+| `shell` | no | `true` runs a string `command` as `/bin/sh -c <command>`. Default `false`. |
+| `timeout_ms` | no | Display: default 150, clamped to 10–250. Record: default 1000, clamped to 10–10000. |
+| `health_path` | no | An absolute path inside `CFG` to your health file (§ 7). Anything else is ignored, and the hook still runs. |
+| `order` | no | An integer hint for display position (lower first). The user's `config.json` wins. |
+| `pinned` | no | `true` exempts the manifest from the 14-day staleness rule (§ 8). For a manifest a person writes by hand; a plugin refreshes its own instead. |
+| `v` | no | `1`. Any other value makes the hub skip the manifest. |
+
+Other keys are ignored, so a newer manifest stays readable. The program (`command[0]`)
+must be a bare name found on `PATH` or an absolute path. A relative path with a slash in
+it is refused.
+
+## 3. Writing it
+
+- Write it from your plugin's **SessionStart** hook, every session. A plugin cannot run
+  anything at install time, and `${CLAUDE_PLUGIN_ROOT}` changes on every plugin update, so
+  write the absolute path it has *now*. Rewriting also refreshes the file's mtime, which is
+  how the hub knows the hook is alive (§ 8).
+- Create missing directories with mode `0700`, e.g. `os.makedirs(d, mode=0o700,
+  exist_ok=True)`. The hub's own SessionStart creates `hooks.d` too.
+- Write atomically: a temp file in `hooks.d` (made by `tempfile.mkstemp`, which creates it
+  `0600`), then `os.replace` onto `<name>.json`. Never truncate the file in place, since a
+  render may read it at any moment.
+- To unregister, delete your file. If you forget, it is pruned 14 days after your last
+  refresh.
+- **Writing one by hand?** Nothing refreshes it, so it would be ignored, then pruned,
+  after 14 days. Add `"pinned": true` to keep it; delete it yourself when you are done.
+
+## 4. Trust: which manifests run
+
+A manifest runs code as the user, so the hub counts one only when **all** of these hold.
+Otherwise it skips the manifest silently: nothing runs, and the line is unaffected.
+`/install-statusline-hub --status` says which rule a skipped manifest broke. When a rule
+about the directories refuses every manifest, the hub's SessionStart also says so, once
+(§ 10).
+
+- `CFG/statusline-hub` and `hooks.d` are real directories, not symlinks, owned by the user
+  running the hub, and **not writable by group or others**.
+- The manifest is a regular file, opened without following a symlink, owned by the user,
+  **not writable by group or others**, at most 16 KiB, and modified within the last 14
+  days.
+- `CFG` does not lie inside the session's project tree. A home directory, or a directory
+  above it, does not count as a project tree.
+- `CFG` does not lie inside a git work tree: no `.git` in `CFG` or in any directory above
+  it, up to but not including the home directory. The default `~/.claude` is exempt,
+  since a repository cannot relocate it, and a dotfiles repo there is the user's own.
+  Together with the rule above, this means a config dir relocated into a cloned repo never
+  supplies hooks. That holds even when Claude Code started in a subdirectory, or the
+  payload names no directory.
+- At most 32 manifests are read, in name order.
+
+**Why no shell by default.** The exec form never expands, globs, redirects or chains, so a
+path with spaces or `$` in it is just a path, and nothing in a string `command` can smuggle
+in a second command. It also costs no extra `sh` start-up on every render. A manifest can
+still ask for a shell with `"shell": true`. That departs from a strict "never a shell" rule
+on purpose, and grants nothing new: an argv array can already name `/bin/sh -c`, and
+whoever can write the manifest can already name any program. What the flag adds is that
+the shell has to be asked for explicitly, in the file, where a reader sees it.
+
+## 5. How every hook runs
+
+- **stdin**: the status-line payload, exactly the bytes Claude Code sent. Each hook gets
+  its own copy, file-backed rather than a pipe, so a hook that never reads cannot stall
+  anyone. The hub reads at most 1 MiB. A larger payload is not one Claude Code sends: the
+  hub runs no hooks for it and prints an empty line.
+- **Working directory**: `CFG/statusline-hub`, never the project.
+- **Environment**: the hub's own, plus `STATUSLINE_HUB=1`, `STATUSLINE_HUB_KIND`
+  (`display` or `record`) and `STATUSLINE_HUB_HOOK` (your name).
+- **stderr**: appended to `CFG/statusline-hub/log/<name>.log`, private. The log is emptied
+  once it passes 64 KiB, and pruned after 14 days untouched. It never reaches the
+  terminal.
+- **Process**: each hook leads its own session. At its timeout the hub kills its whole
+  process group. A display hook still running when Claude Code cancels a render is
+  killed only at the hub's own timeout: if the hub process itself is killed first, nothing
+  kills the hook and it runs until it exits, so keep hooks fast and safe to run twice.
+
+## 6. Kinds
+
+### display
+
+- The hub starts every display hook **at once** and waits for each until its `timeout_ms`,
+  all within a 250 ms budget per render. Display hooks share that budget rather than
+  adding to it.
+- **On time, exit 0**: the first line of stdout (at most 4 KiB read) is sanitised and
+  shown, and cached as this session's last-good text. The hub stops reading at the end of
+  the first line, so a background child that keeps stdout open does not make the hook
+  count as timed out, as long as the hook itself exits 0 in time. Empty output means "show nothing
+  this time".
+- **Timeout, non-zero exit, or a failed start**: the last-good text is shown if it is
+  under 60 s old, otherwise nothing. A failing hook costs only its own slot, never the
+  line, and never the sensor record, which was written before any hook started.
+- **Sanitising** (the same treatment as the session name, with one addition): only the
+  first line is kept. SGR colour sequences (`ESC [ … m`) are kept, and a reset is appended
+  so a colour cannot bleed into the next hook's text. Every other escape sequence is
+  dropped: cursor moves, clears, window titles, hyperlinks. Other control characters are
+  dropped too, with a tab becoming a space. Unicode format characters (bidi overrides,
+  zero-width padding) are dropped, except a joiner, and so are the Unicode line and
+  paragraph separators (U+2028, U+2029). At most 300 printable characters are
+  kept.
+- **Order**: the user's `config.json` `order` first, then `order` hints, then name.
+  Segments are joined with the configured separator (two spaces by default).
+
+### record
+
+- It gets the **raw payload, byte for byte, on every render**. There is no parsing,
+  re-encoding or filtering.
+- It runs **detached**. The render hands the payload to one background runner in its own
+  session and returns without waiting. Nothing the runner or your hook does can hold the
+  render, its stdout, the line or the sensor record.
+- **At most one live instance per hook.** A record hook still running from an earlier
+  render is skipped for this one: it gets no payload for that render. So "every render"
+  means every render the hook is free for. A hook that finishes within the gap between
+  renders sees them all, and a hung hook costs one process, not one per render. The runner
+  holds a per-hook lock (`run/<name>.lock`) while the hook runs, releases it when the hook
+  exits, and kills the hook at its `timeout_ms`.
+- Keep a record hook short. Write its outputs by atomic replace or append: even with one
+  instance, a render the hook skipped is not replayed.
+- stdout is discarded.
+
+## 7. Health (optional, any kind)
+
+Your hook owns its errors. If you set `health_path`, keep a small JSON file there, written
+by atomic replace after every run:
+
+```json
+{"last_ok": 1790000000.5, "last_error": null, "error": "short text", "runs": 42, "errors": 1}
+```
+
+- `last_ok` and `last_error` are epoch seconds (numbers), or ISO-8601 strings; missing or
+  `null` means never.
+- `error`, `runs` and `errors` are yours to use. The hub reads only `runs`: `0` means the
+  hook has not run yet.
+
+At each render the hub makes one read of at most 4 KiB, and shows **one glyph, `⚠`,
+once** at the end of the line when any hook's file says:
+
+- the last run errored: a `last_error` at or after `last_ok`; or
+- there has been no `last_ok` within N minutes of the file's own latest write. N comes
+  from `config.json` `health_stale_min`, default 15.
+
+It shows nothing when:
+
+- the file is missing, not a regular file, over 4 KiB, not a JSON object, or untouched for
+  24 h;
+- the hook has not run yet (`runs` is 0, or neither time is set).
+
+Measuring against the file's own mtime means an idle session does not raise a false alarm
+on its first render back. A hook that dies without writing its file at all shows nothing
+here, so catch that end to end (`ca doctor`, say).
+
+`health_path` must resolve inside `CFG`. The hub never shows the file's text, only the
+glyph. `/install-statusline-hub --status` shows each hook's health.
+
+## 8. Liveness and pruning
+
+- A manifest not modified for **14 days** is ignored at render, unless it says
+  `"pinned": true`. The hub's SessionStart prune pass deletes it, again unless pinned.
+  That is how a hook of an uninstalled or disabled plugin dies away, since its
+  SessionStart no longer refreshes the file.
+- The same pass deletes last-good cache entries older than a day, logs untouched for 14
+  days, and orphaned temp files. It also deletes sensor records untouched for 30 days,
+  including records only the hub's tee ever wrote, and segment files no render will show
+  again (§ 11).
+
+## 9. The user's config.json
+
+```json
+{"order": ["statusline", "analytics"], "disabled": ["noisy"], "separator": "  ", "health_stale_min": 15}
+```
+
+All keys are optional. A malformed file means defaults. A disabled hook does not run and
+shows no health glyph. `order` and `disabled` name segment providers (§ 11) the same way.
+
+## 10. Owner mode and the statusline plugin
+
+- The hub only runs hooks when it is the `statusLine` command: owner mode. With a foreign
+  status line the hub stays deferred. Its first session says so once and asks whether the
+  user wants it wrapped; it never wraps on its own. That renderer can still feed the
+  sensor record through `hub tee` (the `statusline-hub` skill's recipes).
+- **Wrap mode** is owner mode plus the user's previous `statusLine` command, and only on
+  their consent (`/install-statusline-hub --wrap`). It is user scope only: the command
+  must come from the user settings file, which applies to every session. The installer
+  refuses a project's file, the first-run message never offers one, and the render never
+  runs a record that names one. The previous entry is kept in
+  `CFG/statusline-hub/wrap.json` (0600, under the same trust rules as a manifest, § 4:
+  the hub runs it) and never printed. The hub's entry keeps its other keys (`padding`)
+  and swaps only the command. Each render, after the sensor record, one detached runner
+  runs the command exactly as written, through `/bin/sh -c` as Claude Code runs a
+  status line, in the render's working directory and environment, with the payload byte
+  for byte on stdin. `CLAUDE_CODE_SHELL_PREFIX` is not applied. Its stdout (every line, verbatim, at most 16 KiB) comes first on the
+  line; display hooks follow on its last line, after a colour reset when it used
+  escapes. Record hooks run as always.
+  - The render waits for it within the same 250 ms budget as the display hooks. A slower
+    command's output shows from the next render: the last output stays up to 10 minutes.
+    It is killed at 5 s, and only one instance runs at a time. A failing or hung command
+    costs only its own output, never the display hooks or the record. Its stderr is in
+    `log/_wrapped.log`.
+  - `--unwrap` puts the previous entry back as it was written, so the file is byte for
+    byte as before when nothing else changed it; at the least the entry, command and all,
+    is identical. `--remove` on the wrapped file unwraps too. Run `--unwrap` before
+    uninstalling the plugin; after an uninstall, `wrap.json` is still there, and a
+    reinstall followed by `--unwrap` puts the entry back.
+  - The hub's SessionStart keeps a wrap in place. It re-wraps when an older session's
+    settings write drops the entry or writes the pre-wrap entry back, and yields, once,
+    to anything else, keeping the entry for `--unwrap --replace`. After `--unwrap`, it
+    undoes an older session's write that puts the hub's entry back.
+- The `statusline` plugin's footer is a display hook, the first to follow this contract:
+  its SessionStart writes `hooks.d/statusline.json` (kind `display`, command
+  `["python3", "<its hooks dir>/statusline.py", "--segment"]`, `timeout_ms` 250) every
+  session, and it writes no settings. With `--segment` the footer writes no sensor record,
+  since the hub wrote it before the hook started.
+- Until that manifest exists and is trusted, the hub **never** takes the slot from the
+  footer and never races it for an empty slot. Doing either would drop the footer. (It
+  does take an empty slot at once when every statusline install Claude Code records is a
+  version without `hooks/owner.py`: such a version never installs an entry of its own, so
+  there is nothing to wait for.) Once the manifest exists, the hub's SessionStart repoints
+  a slot the statusline plugin (or an older copy of its footer) installed at the hub, and
+  the footer keeps drawing through it. The slot changes hands once: nothing moves it back.
+  If an older session writes its stale settings back over the hub's entry, putting the
+  footer's earlier entry there again, the next session repoints it at the hub too. Once
+  Claude Code's install records name the hub and no statusline install (it was
+  uninstalled), nothing will register, so the hub yields to that entry and says once whose
+  it is; while it cannot be sure, it waits.
+- A registry refused as a whole (§ 4: the config dir inside a git work tree, or the hub
+  dirs not private) runs no hooks, so it would draw no footer either; the hub's
+  SessionStart says so once, naming the directory and the reason.
+- A plugin disabled or uninstalled stops refreshing its manifest, so its hook keeps
+  running until the manifest is 14 days old (§ 8). To stop one at once, list it under
+  `disabled` in `config.json` (§ 9), or delete its manifest.
+
+## 11. Segments: a file drop, no code
+
+A **segment** is one short piece of text another tool wants on the line: a session-identity
+chip, a sandbox marker, a checkpoint label. The producer writes a small JSON file from its
+own hooks, whenever the text changes; the hub reads it on every render in owner mode (and
+in wrap mode, after the wrapped output). Nothing is registered and nothing runs: the hub
+never executes, opens or follows anything a segment names.
+
+### Where
+
+```
+CFG/statusline-hub/segments/<provider>.json             shown in every session
+CFG/statusline-hub/segments/<provider>/<session>.json   shown in that session only
+```
+
+- `<provider>` follows the hook-name rule (§ 1), `[a-z0-9][a-z0-9-]{0,39}`: your plugin or
+  tool's name. One provider shows at most one segment: its session file when that is live,
+  else its every-session file.
+- `<session>` is the session id in the sensor record's file-name form (`sensor-contract.md`
+  §1, `safe_sid`): a Claude Code UUID as is; anything else hashed to `sid-<32 hex>`. The
+  hub reads only the file for the session it is rendering.
+
+### The file
+
+```json
+{"v": 1, "text": "sandbox: web-3", "fg": "cyan", "order": 10, "priority": 2,
+ "expires_at": 1790003600}
+```
+
+| Field | Required | Meaning |
+|---|---|---|
+| `v` | yes | The integer `1`. Anything else, or none, and the file is skipped. |
+| `text` | yes | What shows. Plain text: see the caps below. An empty string (or only spaces) shows nothing, which is how to hide a segment without deleting it. |
+| `fg` | no | A colour name: `dim`, `bold`, `red`, `green`, `yellow`, `blue`, `magenta`, `cyan`, `white`, `grey` (`gray`). Any other string shows the text uncoloured; a non-string skips the file. |
+| `order` | no | An integer hint for position, sorted with the display hooks' `order` hints (lower first). The user's `config.json` `order` wins. Default 0. |
+| `priority` | no | An integer. When the line is too wide, the lowest priority goes first. Default 0. |
+| `expires_at` | no | Epoch seconds (a number). From then on the file is not shown, and the prune pass deletes it. |
+
+Other keys are ignored, so a newer file stays readable. A wrong type in a known field
+(`order: "1"`, `expires_at: "tomorrow"`) skips the file.
+
+### Staleness
+
+- With `expires_at`: shown until then.
+- Without it: shown while the file was modified within the last **24 hours**. Rewrite it
+  (or `os.utime` it) to keep it up, or set `expires_at`.
+- Either way, a file untouched for **30 days** is never shown, and the prune pass deletes
+  it (§ 8), as it does a file past its `expires_at` - so a producer that was uninstalled
+  fades out by itself.
+
+### Caps and sanitising
+
+- A file is at most **4 KiB**. A larger one is skipped.
+- At most **16 providers** are read, in name order; the rest are skipped.
+- The text goes through the display-hook sanitiser (§ 6), then loses its colour sequences
+  too: colour comes only from `fg`. Only the first line is kept.
+- The text is cut to **40 terminal columns** (a wide character takes two), ending in `…`
+  when cut.
+
+### Trust
+
+Segment text is display text from any local writer, so the drop dir counts under the same
+directory rules as `hooks.d` (§ 4): `CFG/statusline-hub` and `segments/` (and a provider's
+session dir) are real directories owned by the user and writable by nobody else, and `CFG`
+is not in the project tree or a git work tree. A segment file is regular (a symlink is
+never followed), the user's own, and not writable by group or others. Anything else is
+skipped silently; `/install-statusline-hub --status` lists the every-session segments and
+why any file is skipped.
+
+### On the line
+
+- Segments sit among the display hooks' output, in one order: the user's `config.json`
+  `order` first, then each one's `order` hint, then name. A display hook comes before a
+  segment of the same name.
+- A provider named in `config.json` `disabled` is not shown.
+- When `COLUMNS` is set and the line's last line is wider, the hub drops segments one at a
+  time, the lowest `priority` first and, of equal ones, the last shown, until it fits. A
+  display hook's text and a wrapped command's output are never dropped for width.
+- A missing, unreadable, malformed, stale or oversized file costs only its own segment. No
+  drop dir at all leaves the line exactly as it was.
+- Reading the drop dir is one directory listing and at most two small reads per provider:
+  well under a millisecond, inside the render budget (§ 6).
+
+### Writing one
+
+- Create missing directories `0700` (`os.makedirs(d, mode=0o700, exist_ok=True)`) on every
+  write: the prune pass removes a provider's session dir once it is empty.
+- Write atomically, as a manifest (§ 3): `tempfile.mkstemp` in the same directory (it
+  makes the file `0600`), then `os.replace` onto the name. Never truncate in place; a
+  render may read it at any moment. Name the temp file with a leading dot, which the hub
+  never reads.
+- To remove a segment, delete the file, write empty `text`, or let `expires_at` pass.
+- Use a per-session file for anything about one session (a checkpoint label, the
+  session's identity), and the every-session file for anything true of the whole machine
+  or container (a sandbox marker). Delete per-session files from a `SessionEnd` hook if
+  you have one; otherwise the prune pass gets them after 30 days.

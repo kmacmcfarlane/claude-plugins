@@ -15,8 +15,8 @@ Depth sources, in order of preference:
    one with the larger `exact.at` wins; ties go to the sensor file. The
    sensor file is read only when it is a regular file (opened O_NONBLOCK, so
    a FIFO planted at the path cannot hang a hook), and an `exact.at` more than
-   FUTURE_SKEW_S in the future is rejected: it would otherwise read as fresh,
-   and gate as exact, until the clock caught up.
+   FUTURE_SKEW_S in the future is rejected, in either record: it would
+   otherwise read as fresh, and gate as exact, until the clock caught up.
 2. DERIVED - the window mirrored from Claude Code's own selection logic
    (window_rules.py: the transcript's `attachment.type:"model"` line, the
    native-1M table, `[1m]`, the CLAUDE_CODE_* window env vars, the credits
@@ -137,9 +137,15 @@ CHECKPOINT_MIN_TOKENS = CHECKPOINT_LEAN_COST + CHECKPOINT_MARGIN
 GAUGE_LABELS = {"due": "checkpoint DUE", "hard": "HARD gate"}
 GAUGE_V = 1
 SENSOR_V = 1
-# A sensor `exact.at` further ahead of now than this is a bad clock or a bad
-# record, never a fresh reading.
+# A stamp (an exact block's `at`, from either writer, or a scored depth's
+# `tokens_at`) further ahead of now than this is a bad clock or a bad record,
+# never a fresh reading. _future_skewed() is the one check.
 FUTURE_SKEW_S = 60
+
+
+def _future_skewed(at):
+    """Whether the finite stamp `at` is more than FUTURE_SKEW_S ahead of now."""
+    return at > time.time() + FUTURE_SKEW_S
 
 
 def _base_dir():
@@ -503,7 +509,7 @@ def _epoch_end_tokens(end, st):
     top_at = _finite(st.get("tokens_at"))
     if top_at is not None:
         cut = _finite(st.get("epoch_at"))
-        if (cut is not None and top_at <= cut) or top_at > time.time() + FUTURE_SKEW_S:
+        if (cut is not None and top_at <= cut) or _future_skewed(top_at):
             top_tok = 0
         elif ex_tok and top_tok and top_at > (_finite(end.get("at")) or 0.0):
             return top_tok
@@ -519,6 +525,78 @@ def mark_checkpoint(session_id):
 
 def checkpointed_this_epoch(state):
     return state.get("checkpoint_epoch") == epoch(state)
+
+
+# ── Manifest ownership (rehydrate.py, lineage.py) ──────────────────────────
+# A rehydration manifest (HANDOFF.md) is re-injected in full only into a
+# session it belongs to. Ownership names a manifest VERSION, {owner, sha}:
+# `owner` is the manifest's `session:`, `sha` is manifest_sha of its raw text.
+# Per-session state keys:
+#   lineage           [{sid, manifest: {owner, sha} | None}], newest first,
+#                     at most LINEAGE_MAX: the /clear predecessors and fork
+#                     parents, each with the version it pinned at link time
+#   manifest_adopted  {owner, sha, at}: the `mode: handoff` version this
+#                     session read in full (lineage.py, PostToolUse Read)
+# and on the process record _proc-<key>, `cleared` = {sid, lineage, manifest,
+# at}: written at SessionEnd(clear) by lineage.py, popped by the next
+# SessionStart(clear) in rehydrate.py.
+LINEAGE_MAX = 8
+CLEAR_LINK_MAX_AGE_S = 120
+
+
+def manifest_sha(text):
+    """The version id of a manifest: sha1 of its RAW text (read with
+    errors="replace"), first 12 hex digits - never of the text after the
+    hook's Next withhold or trim. Both hooks call this one function."""
+    import hashlib
+    return hashlib.sha1(text.encode("utf-8", "replace")).hexdigest()[:12]
+
+
+def _version(v):
+    """{owner, sha} with both non-empty strings, or None."""
+    if not isinstance(v, dict):
+        return None
+    o, s = v.get("owner"), v.get("sha")
+    if isinstance(o, str) and o and isinstance(s, str) and s:
+        return {"owner": o, "sha": s}
+    return None
+
+
+def lineage_of(state):
+    """The state's `lineage`, cleaned: well-formed entries only, at most
+    LINEAGE_MAX."""
+    out = []
+    lin = state.get("lineage") if isinstance(state, dict) else None
+    for e in lin if isinstance(lin, list) else []:
+        if isinstance(e, dict) and isinstance(e.get("sid"), str) and e["sid"]:
+            out.append({"sid": e["sid"], "manifest": _version(e.get("manifest"))})
+        if len(out) >= LINEAGE_MAX:
+            break
+    return out
+
+
+def owned_version(state, sid, v):
+    """Whether manifest version `v` ({owner, sha}) is ours for session `sid`
+    with state `state`: `sid` wrote it (every version), or it is the exact
+    version a lineage link pinned, or the exact version `sid` adopted by a
+    full Read. A version with no owner is never owned (the injection rule
+    treats an ownerless manifest as everyone's; a link never pins one). The
+    one test for the injection rule and for what a link may pin."""
+    v = _version(v)
+    if v is None:
+        return False
+    if v["owner"] == sid:
+        return True
+    if any(e["manifest"] == v for e in lineage_of(state)):
+        return True
+    return _version((state or {}).get("manifest_adopted")) == v
+
+
+def linked_lineage(sid, manifest, lineage):
+    """The lineage a new session inherits from linking session `sid`: that
+    session first, with the version it pinned, then its own lineage, capped."""
+    return ([{"sid": sid, "manifest": _version(manifest)}]
+            + lineage_of({"lineage": lineage}))[:LINEAGE_MAX]
 
 
 def thresholds(window):
@@ -928,7 +1006,7 @@ def _sensor_exact(session_id):
     win, tok, pct, at = (_finite(ex.get(k)) for k in ("window", "tokens", "pct", "at"))
     if win is None or win < 1 or tok is None or pct is None or at is None:
         return {}
-    if at > time.time() + FUTURE_SKEW_S:
+    if _future_skewed(at):
         return {}
     return {"pct": min(max(pct, 0.0), 100.0), "tokens": max(int(tok), 0),
             "window": int(win), "at": at}
@@ -937,7 +1015,11 @@ def _sensor_exact(session_id):
 def sensor(session_id, state=None):
     """The exact block depth() uses: the fresher (larger `at`; a tie goes to the
     sensor file) of the statusline plugin's sensor record and the legacy
-    `exact` in this session's state (`state`, else loaded). A block stamped
+    `exact` in this session's state (`state`, else loaded). Either block is
+    rejected, as if absent, when its `at` is more than FUTURE_SKEW_S ahead of
+    now (for the legacy block, also when `at` is present but not a finite
+    number): the same rule for both writers, so a clock-skewed legacy block
+    can neither read as fresh nor out-date the sensor file. A block stamped
     at or before the state's `epoch_at` describes an earlier epoch and is
     demoted to window-only ({"window", "at": 0}). Returns {} when neither
     exists. Never raises."""
@@ -946,6 +1028,10 @@ def sensor(session_id, state=None):
         legacy = st.get("exact") or {}
         if not isinstance(legacy, dict):
             legacy = {}
+        if legacy.get("at") is not None:
+            lat = _finite(legacy["at"])
+            if lat is None or _future_skewed(lat):
+                legacy = {}
         new = _sensor_exact(session_id)
         if new and (not legacy or new["at"] >= (_finite(legacy.get("at")) or 0.0)):
             ex = new

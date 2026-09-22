@@ -44,3 +44,4 @@ Peer request 2026-09-19 (claude-sandbox librarian, relayed via session 'implemen
 - concurrent release, bridge round trips, migrate on the real claude-sandbox reasons all hold. lows: nested "(…)" provenance leaves a fragment (full text in Notes); idle-turn.md goes stale (filed).
 ## Landed
 - d6ba6da. 1 fix round. claude-sandbox librarian notified.
+- claude-sandbox librarian ack: filed its migration as claude-sandbox item migrate-the-parked-paseo-items-to-wi-s-f-51d0; runs after its plugins update.

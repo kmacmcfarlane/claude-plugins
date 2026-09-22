@@ -68,7 +68,7 @@ or `/compact <guidance>` is yours to run. A checkpoint this epoch stands it down
 
 | Tool | Use it when | What it costs / keeps |
 | --- | --- | --- |
-| `/clear` | the task is done and its state is on disk | everything; cheapest reset there is |
+| `/clear` | the task is done and its state is on disk | everything; cheapest reset there is — except after a `continue` or `handoff` checkpoint: when the `/clear` runs in the same Claude Code process within two minutes of that session's end and the manifest is still the version it wrote, the successor gets it in full plus the old session's ledger digest (otherwise, or for a `landed` one, a header) |
 | `/rename <name>` | at the start of any thread you may resume | nothing; makes `--resume` findable |
 | `/compact <guidance>` | the thread is open-ended and must continue *here* | keeps ~2%; guidance is a documented input, use it |
 | `/rewind` → *Summarize up to here* | old turns are noise, recent ones are load-bearing | condenses only the old part; recent turns verbatim |
@@ -78,7 +78,8 @@ or `/compact <guidance>` is yours to run. A checkpoint this epoch stands it down
 | "use a subagent to …" | read-heavy research, log digging, doc reading | returns 1–2K tokens; the reads never enter your window |
 | `Explore` / `Plan` agents | codebase survey before implementation | skip CLAUDE.md, cheap, read-only |
 | `/context` | any time you want the truth | free |
-| status line | always | shows `used_percentage`; when the `statusline` plugin is installed its reading wins over the gate's derived window and cross-checks it |
+| Read `HANDOFF.md` in full vs `cat` | taking over a `mode: handoff` manifest vs only looking at another session's | a whole-file Read adopts that version (re-injected after your next compaction); `cat` or a Read with offset/limit adopts nothing |
+| status line | always | shows `used_percentage`; when the `statusline-hub` plugin records it (installing `statusline` brings it) its reading wins over the gate's derived window and cross-checks it |
 
 Environment & knobs: `/autocompact 900k` lowers the auto-compact trigger so the gate's deferral
 is provably safe (`CLAUDE_CODE_AUTO_COMPACT_WINDOW=900000` per project — plain integer, `900k`
@@ -120,7 +121,8 @@ When the depth warning fires, answer these before touching anything:
 
 Then `/checkpoint <mode>`. The ledger (`~/.claude/claude-kit/ledger/<session>.md` — a
 historical directory name, kept across the move into `context-guard`) has been collecting decisions as you worked — the checkpoint is a delta, and after compaction the
-manifest + ledger are re-injected and outrank the machine summary (current repo state — git
+ledger, and the manifest when this session owns it (the format spec's "Whose memory it is"
+in `references/handoff-format.md`), are re-injected and outrank the machine summary (current repo state — git
 log, the work-item store — outranks the manifest).
 
 ## If the gate blocks wrongly
@@ -132,7 +134,7 @@ A hard block needs a fresh exact reading or a resolved derived window (the mirro
 Code's own window selection); an inferred depth or an unresolved derived one only warns. So a
 wrong block means a fresh-but-wrong record, e.g. one written just before a compaction, or a
 derived window that drifted from a newer Claude Code (the block message names the source:
-`derived`; with the `statusline` plugin installed a drift is caught, logged to
+`derived`; with a sensor record from `statusline-hub` a drift is caught, logged to
 `claude-kit/context-gate/window-mismatch.jsonl`, and that version drops to warn-only). Three
 escape hatches:
 1. Pin the window: `CONTEXT_GUARD_CONTEXT_WINDOW=1000000` (tokens) in the environment Claude
@@ -149,21 +151,42 @@ escape hatches:
    there is the live session; `gauge.json`, `window-mismatch.jsonl` and the `_`-prefixed
    files are not sessions). It refuses, exiting non-zero and
    writing nothing, when no state file exists for that id — a mistyped id, since a live
-   session always has one. The gate stays down until the next compaction or `/clear`. The
+   session always has one. Run from the repo, it also stamps the manifest's machine fields,
+   but only a manifest written in the last 30 minutes (the format spec's "Machine fields"
+   rule); an older one is left as it is. The gate stays down until the next compaction or
+   `/clear`. The
    HARD STOP message itself prints this command with the script's absolute path filled in;
    to run it by hand, resolve the path as below, which works the same from a Bash tool call
    inside the session and from a plain terminal. `${CLAUDE_PLUGIN_ROOT}` does not work here:
    Claude Code substitutes it into a plugin's `SKILL.md` text and exports it to hook
    processes, but it is not in the Bash tool's environment, and this reference file is read,
    not substituted. The path comes from the harness's own install record,
-   `installed_plugins.json` `plugins['context-guard@kmacmcfarlane'][0].installPath`; the
-   fallback, when that record is missing or unreadable, is the update-stable `current-hooks`
-   link in the newest `context-guard-*` data dir (one per marketplace the plugin was
-   installed from — list them with plain `ls -d` and pick yours if unsure):
+   `installed_plugins.json`, whose `plugins['context-guard@kmacmcfarlane']` holds one entry
+   per install scope. The snippet takes the `installPath` of the entry that applies where it
+   runs, not the first one listed: a `local` or `project` entry whose `projectPath` is the
+   current directory or one above it (the deepest such path, `local` before `project`),
+   else the `user` entry — so run it from the project directory. The fallback, when that
+   record is missing, unreadable or has no entry that applies, is the update-stable
+   `current-hooks` link in the newest `context-guard-*` data dir (one per marketplace the
+   plugin was installed from — list them with plain `ls -d` and pick yours if unsure):
 
 ```bash
 P="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/plugins"
-MC="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["plugins"]["context-guard@kmacmcfarlane"][0]["installPath"])' "$P/installed_plugins.json" 2>/dev/null)/hooks/mark_checkpoint.py"
+MC="$(python3 - "$P/installed_plugins.json" 2>/dev/null <<'PY'
+import json, os, sys
+es = json.load(open(sys.argv[1]))["plugins"]["context-guard@kmacmcfarlane"]
+cwd = os.path.realpath(os.getcwd())
+def rank(e):  # the scope that applies here: deepest project/local path, then user
+    pp = e.get("projectPath")
+    if e.get("scope") in ("local", "project") and pp:
+        pp = os.path.realpath(pp)
+        if cwd == pp or cwd.startswith(pp.rstrip("/") + "/"):
+            return (2, len(pp), e["scope"] == "local")
+    return (1, 0, False) if e.get("scope") == "user" else (0, 0, False)
+best = max(es, key=rank)
+print(best["installPath"] if rank(best)[0] else "")
+PY
+)/hooks/mark_checkpoint.py"
 test -f "$MC" || MC="$(ls -td "$P"/data/context-guard-*/ 2>/dev/null | head -1)current-hooks/mark_checkpoint.py"
 python3 "$MC" <session_id>
 ```

@@ -26,6 +26,15 @@ status-only close is a two-line front-matter change that merges cleanly
 against any body edit. `wi archive --older-than 90d` moves closed items in a
 dedicated commit.
 
+A write killed mid-way never blocks the store. An item in both `items/` and
+`archive/` as one file (a kill between hard link and unlink) is a move half
+done: the next `wi archive` finishes it, whatever the cutoff. If the item
+was written in between, the two are separate files and archive refuses: the
+`items/` copy is the current one, so `mv` it over the `archive/` copy. An empty item
+file is a name reserved by a write that never landed: every command skips it
+with a warning naming it, its name stays taken, and `wi lint` gives the fix
+(`mv` the `.tmp` file beside it holding the content, or `rm` it).
+
 ## Example item
 
 ```markdown
@@ -70,10 +79,10 @@ except `claimed` (ISO-8601 UTC to the minute).
 
 | Field | Type | Notes |
 |---|---|---|
-| `id` | `<slug>-<4hex>` | equals the filename stem; immutable; hash suffix from title+time+random so branches never collide |
+| `id` | `<slug>-<4hex>` | equals the filename stem; immutable; hash suffix from title+time+random so branches rarely collide; a new id is redrawn until it is in neither the store (items/, archive/) nor the same batch, and a new item is never written over an existing file (the write fails, nothing written) |
 | `title` | one line, ≤120 chars | |
 | `type` | `task bug feature refactor workflow chore epic spike` | default `task`; drives backlog-yaml prefix and bugs-first |
-| `status` | `todo doing blocked parked done dropped` | the only authority on state |
+| `status` | `todo doing blocked parked grooming done dropped` | the only authority on state |
 | `stage` | `implement review testing uat uat_feedback` | pipeline sub-state; meaningful only when `doing` |
 | `priority` | int 0–4, 0 highest | default 2; ↔ backlog.yaml 90/70/50/30/10 |
 | `tags` | flow list `[a, b]` | |
@@ -81,8 +90,9 @@ except `claimed` (ISO-8601 UTC to the minute).
 | `parent` | id | grouping only, no blocking |
 | `owner` | free string, e.g. `user@host` | set by `claim`, cleared by `release`/`done` |
 | `claimed` | UTC minute | stale test in `next --stale` |
-| `blocked` | string | required iff `status: blocked`; kept while parked, so `unpark` returns to `blocked` |
-| `parked` | one line | required iff `status: parked`; the deferral reason (set by `park`, cleared by `unpark` and `block`); `lint` flags it on a todo/doing/blocked item, and it stays on a dropped/done item as history |
+| `blocked` | string | required iff `status: blocked`; kept while parked or grooming, so `unpark` / `ungroom` returns to `blocked` |
+| `parked` | one line | required iff `status: parked`; the deferral reason (set by `park`, cleared by `unpark`, `block` and `groom`); `lint` flags it on a todo/doing/blocked/grooming item (clear it with `wi set <id> parked ""`), and it stays on a dropped/done item as history |
+| `grooming` | one line | required iff `status: grooming`; the open questions for the operator (set by `groom`, cleared by `ungroom`, `park` and `block`); `lint` flags it on a todo/doing/blocked/parked item (clear it with `wi set <id> grooming ""`), and it stays on a dropped/done item as history |
 | `feedback` | one line | pipeline review feedback |
 | `mode` | `autonomous interactive mixed` | backlog's `ticket_mode` |
 | `complexity` | `low medium high` | pass-through |
@@ -95,6 +105,37 @@ The grammar is a strict YAML subset: `key: value` scalars, one-line flow
 lists, block lists of scalars, one level of map for `x_backlog`. No multi-line
 scalars, anchors or nesting — prose goes in the body. `lint` reports any line
 that does not parse, and `wi` never rewrites a file it could not parse.
+
+**Quoting.** A value is written bare unless wi would read it back
+differently or a YAML loader would reject it — empty, leading/trailing
+whitespace, `: ` or ` #` inside, a trailing `:`, brackets or braces, a leading
+YAML indicator (`- ? : , # & * ! | > ' " % @` and backtick), a bare `—`, a
+lone `=` or `<<`, a tab or other control character, or a comma inside a flow
+list. YAML's implicit typing is left alone (`priority: 2` and dates stay
+bare), so a YAML loader may read a bare `true`, `null` or `0x10` as a
+non-string where wi reads a string.
+A quoted value is a YAML double-quoted scalar: `\` and `"` are written as
+`\\` and `\"`, tab as `\t`, and other control characters, DEL, C1,
+U+2028/U+2029, the BOM, U+FFFE/U+FFFF and lone surrogates as `\xNN` /
+`\uNNNN`. The reader decodes exactly those plus the other YAML escapes
+(`\0 \/ \U…` and the rest), so a value survives any number of rewrites
+byte-identical; an unknown escape, or one that would decode to a line break,
+is kept as written. So in a hand-written quoted value a backslash is an
+escape: write `"C:\\temp"`, not `"C:\temp"` (which holds a tab) — `lint`
+reports any front-matter value holding a tab or other control character,
+or U+2028/U+2029. `wi` itself never writes one: a command given one exits 1 and writes nothing,
+and `import` folds them to a space as it folds line breaks. A
+single-quoted value reads `''` as `'`. A bare `—` or an empty value reads as
+no value; a quoted `"—"` is the literal dash (`import` still reads a
+backlog field that is `—`, such as `blocked_reason`, as no value).
+
+Older `wi` versions escaped without unescaping, so every rewrite of a quoted
+value added a layer of backslashes. `wi repair-escapes` finds them by a
+heuristic — every front-matter value (quoted or not: the current writer
+may have rewritten one bare) whose backslashes all pair as `\\` or `\"`,
+with all such layers peeled — so it also lists a value meant that way: review
+the dry run, narrow with `--id` / `--key`, then `--apply` (or fix one value
+with `wi set`).
 
 ## Editing fields: `wi set <id> <field> <value>`
 
@@ -160,7 +201,80 @@ export carries only `PARKED: <reason>`. `import --update` keeps the store's
 own `blocked:` on a parked story, but a fresh import cannot restore it, so
 that item's `unpark` goes to `todo`. A provenance group, if any, is dropped
 from the imported reason. A ralph run over the exported backlog sees the
-item as blocked, never as work.
+item as blocked, never as work. That prefix rule eats any punctuation after
+`PARKED`, so a reason that itself starts with punctuation (`-`, `— later`,
+`...`) — or one that would read back unwrapped, like `"-"` — exports quoted:
+`blocked_reason: "PARKED: \"- later\""`. Import unwraps `PARKED: "…"` (the
+prefix, one space, then text in double quotes) only where export would have
+written it — when the text inside, written plain, would not read back as
+itself; any other quoted reason (`PARKED: "x"`, `PARKED: ""`, `PARKED: "a"
+and "b"`) gets the prefix rule, quotes kept. So a reason round-trips
+byte-identical from the first cycle — except, on a fresh import, one that
+itself ends `; requires ext: …`, whose tail is taken for the `ext:` suffix
+(below). `migrate-parked` reads only hand-written text and never unwraps
+the quotes.
+
+backlog.yaml `requires` holds story ids only, so an item's `ext:` deps
+travel in its `blocked_reason`, after any reason: `vendor; requires ext: a,
+ext: b` (on its own for an item with no reason). `import --update` strips
+exactly the suffix those deps produce — the store item's own `ext:` deps —
+so a reason that itself says `requires ext:` is kept, and export →
+`import --update` round-trips byte-identical. A new item has no deps to
+check against: import takes the last `; requires ext:` group as the suffix
+(and a whole reason `requires ext:…` only on a story that is not
+`blocked`), strips it and restores those deps — so on a fresh import a
+reason ending `; requires ext: …` of its own becomes a dep. Every exported string
+value is double-quoted, a title starting `[` or `{` included; only an extra
+story field import stored as JSON (a list or mapping) is written back raw,
+as YAML flow. A `notes` value holding a character a YAML loader breaks on or
+rejects raw (U+2028, NEL, a control character) is written as a double-quoted
+scalar instead of a `|-` block.
+
+## Grooming
+
+`grooming` means the item waits on the operator's answers — it has open
+questions, where `parked` is "not now" and `blocked` is "cannot proceed".
+`wi groom <id> "<questions>"` sets `status: grooming` and `grooming:
+<questions>` (one line), releases any claim (`owner`, `claimed`, `stage`),
+clears a `parked:` reason and appends a dated Notes line; it refuses a done
+or dropped item. `wi ungroom <id>` returns it to `todo` — or to `blocked`
+when it still carries a `blocked:` reason — never to `doing`. The rest
+mirrors Parked: `set status grooming` exits 1 and points at `groom`; `set
+status <other>` on a grooming item is an ungroom; `release` never ungrooms;
+`claim` refuses; `park` and `block` supersede it (and `groom` supersedes a
+park).
+
+A grooming item is never ready: `next` (every mode) leaves it out and
+counts it in its footer and `counts.grooming`; `prime` shows one
+`GROOMING <n>` line; a dep on it does not resolve. Unlike a parked item it
+needs attention, so `ls` lists it by default. The backlog-yaml bridge maps
+it as it maps a park: `status: blocked`, `blocked_reason: "GROOMING:
+<questions>"`, and a blocked story with that prefix imports as grooming —
+questions starting with punctuation (`- [ ] x`) export quoted, `GROOMING:
+"- [ ] x"`, and import back verbatim, as a park reason does.
+
+## Operator questions: `decision N:` / `answer N:`
+
+The canonical marker for a question to the operator is a body line that
+starts `decision N: <one line>`; the reply is a body line `answer N:
+<reply>`, anywhere in the same item's body (the librarian-mode Report
+convention). A decision is unanswered while its item has no `answer N:`
+line with the same N. Both must start the line — `- decision 4:` is not a
+marker — and a line inside a fenced code block is text, not a marker. N is
+never reused across the store; a revised question keeps its number: add a
+new `decision N:` line (or edit the old one in place) — when N repeats,
+`needs-input` shows the last line's text. `answer 40:` answers decision 40
+only, never decision 4.
+
+`wi needs-input` lists every open item awaiting the operator: each grooming
+item (with its questions) and each unanswered `decision N:` (with N and its
+text), on todo, doing, blocked, parked and grooming items alike; closed
+items never show. `--plain` prints `id<TAB>grooming|decision<TAB>N or
+-<TAB>text`; `--json` one record per item with `grooming` and `decisions`.
+It exits 2 when nothing awaits the operator.
+
+`wi prime` also shows a `HOLD <n>: <id> (<title>) …` line, first under the
+header, for open items tagged `hold` — an operator hold gates what may move.
 
 ## Body sections
 
@@ -191,11 +305,21 @@ owns — trailing unheaded text, spacing between sections, section order, CRLF
 line endings — are kept exactly. Front matter is re-emitted in canonical form.
 
 Every value a command writes into front matter, a Handoff bullet or a Notes
-line is one line. One containing a line break exits 1 and nothing is
-written — for a command that writes several items, none of them. The
+line is one line. One containing a line break — any character
+`str.splitlines` or a YAML 1.1 loader breaks on, U+2028/U+2029 and NEL
+included — exits 1 and nothing is written — for a command that writes
+several items, none of them. A batch write (`export`, `archive`,
+`import --update`) refused over a hand-written value names the item and its
+path. The
 imports fold instead: `import-todo` folds a title wrapped across lines, and
-`import --format backlog-yaml` collapses the whitespace of every story value
-except `notes` (a `review_feedback: |` block scalar becomes one line).
+`import --format backlog-yaml` folds every story value except `notes` that
+holds a line break or a refused character — whitespace collapsed, ends
+trimmed (a `review_feedback: |` block scalar becomes one line). A one-line
+free-text value (`title`, `blocked_reason`, `review_feedback`, each
+`acceptance`/`testing` entry, an extra story field) is kept as the YAML
+loader read it, surrounding spaces, runs of spaces and NBSP included, so an
+exported title imports back unchanged; every other field (`id`, `requires`,
+`claimed_by`, `ticket_mode`, `complexity`) is always folded.
 Imported `notes` are markdown and land in the body as is: a `## Handoff`
 line inside them becomes a real section, and one above the imported
 `doing:`/`next:` lines shadows the imported Handoff.

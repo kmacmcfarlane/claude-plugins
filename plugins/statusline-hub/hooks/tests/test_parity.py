@@ -101,14 +101,16 @@ class Drift(unittest.TestCase):
 
     def test_sensor_blocks_restates_main(self):
         """The statements of statusline.py's main() that build the two blocks
-        - from `cw = ...` to the session-id check, then the `exact` expression
-        and the write call's arguments - equal sensor_blocks()'s."""
+        - from `cw = ...` to the session-id check (which also skips the write
+        when statusline.py runs as a hub display hook, since the hub's tee
+        wrote the record already), then the `exact` expression and the write
+        call's arguments - equal sensor_blocks()'s."""
         main = function(STATUSLINE, "main")
         body = main.body
         start = next(i for i, s in enumerate(body)
                      if isinstance(s, ast.Assign) and ast.unparse(s.targets[0]) == "cw")
         guard = next(i for i, s in enumerate(body) if isinstance(s, ast.If) and
-                     ast.unparse(s.test) == "sid")
+                     ast.unparse(s.test) == "sid and (not SEGMENT)")
         theirs = [ast.unparse(s) for s in body[start:guard]]
         write_try = body[guard].body[0]
         theirs_exact = ast.unparse(write_try.body[0])

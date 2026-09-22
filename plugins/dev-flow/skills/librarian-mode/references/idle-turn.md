@@ -14,23 +14,31 @@ reviewer counts as in flight; an agent that returned `BLOCKED`, or an item waiti
 operator's answer, does not. `status` never runs it: it is read-only.
 
 A question to the operator does not make a turn busy: dispatch first, then close the turn
-with the question (Intake step 3). The Report's `decisions needed:` never waits on the
-queue, and the queue never waits on it.
+with the question — a numbered decision, never a modal (Intake step 3). The Report's
+`decisions needed:` never waits on the queue, and the queue never waits on it.
 
 ## The tables
 
-Gather from the store; never `ls` it by hand. Every command reads open items only
-(`todo`, `doing`, `blocked`), so closed items never reach a table.
+Gather from the store; never `ls` it by hand. `ls` reads open items only, and defaults to
+`todo`, `doing`, `blocked` and `grooming`, leaving `parked` out by default (the
+`work-items` skill's format reference, § Parked — its count shows on `wi prime`'s
+`PARKED <n>` line); "open" below covers `parked` too. `wi needs-input` reads grooming,
+parked and every other open status alike in one pass, so an unanswered `decision N:` on a
+parked item still shows in Groom without a separate pass. Every command below exits 2 on
+an empty result — read that as an empty table, not an error.
 
 ```bash
 $WI ls --tag hold                    # active holds (closed ones drop out)
-$WI ls --status blocked --plain      # blocked: operator, parked, peers, holds
+$WI ls --status blocked --plain      # blocked: operator, peers, holds — including a
+                                     # legacy `blocked` item whose reason starts `PARKED`,
+                                     # which predates the status (`wi migrate-parked
+                                     # --apply` converts it)
 $WI ls --status doing --plain        # the owner column marks your own
 $WI ls --ready --plain               # ready, ranked
-for id in $($WI ls --plain | cut -f1); do   # decision lines, open items only
-  grep -H '^\(decision\|answer\) [0-9]' "$WI_ROOT/items/$id.md"; done
-$WI ls --json | python3 -c 'import json,sys; h=sys.argv[1]; print(*[i["id"] for i in json.load(sys.stdin) if h in (i.get("deps") or [])])' <hold-id>
-                                     # the items a scoped hold holds
+$WI needs-input --plain              # grooming items + unanswered decision N: lines,
+                                     # open items and parked alike
+$WI ls --dep <hold-id> --status todo,doing,blocked,grooming,parked --plain
+                                     # the items a scoped hold holds, parked ones included
 ```
 
 Print a `hold:` line first for each active hold, then two short tables, at most seven
@@ -46,21 +54,20 @@ Groom                                        Work
 |      |                               |     | 1a2b | 1 | after reset 14:05           |
 ```
 
-- **Groom** — items that need the operator:
-  - `blocked` with a reason that names the operator — including a free-text deferral
-    such as "operator holding until spare time", which is not parked (below) and not a
-    `hold` item;
-  - an unanswered `decision N:` line — one with no `answer N:` line in the same item.
-    `answer N: <reply>` (SKILL.md § Report) is the only form the scan reads, so the
-    librarian writes one whenever the operator answers;
-  - once the `grooming` status exists (wi item b020), every `grooming` item.
+- **Groom** — items that need the operator: every row `wi needs-input` prints — a
+  `grooming` item (its questions) or an unanswered `decision N:` line (no `answer N:`
+  line with the same N in the same item; `answer N: <reply>`, SKILL.md § Report, is the
+  only form it reads, so the librarian writes one whenever the operator answers) —
+  plus `blocked` items with a reason that names the operator, which `needs-input`
+  does not cover: including a free-text deferral such as "operator holding until
+  spare time", which is not parked (below) and not a `hold` item.
 
   A `hold` item is on the `hold:` line, not here. Items blocked on a peer or an external
   dependency are counted in one line under the table, not listed.
 - **Work** — what can move without the operator:
-  - ready items (`wi ls --ready`), minus parked and held ones. Parked today is `blocked`
-    with a reason starting `PARKED` (the form wi item ca20 migrates), which `--ready`
-    already leaves out; once first-class `parked` lands it is that status;
+  - ready items (`wi ls --ready`), minus held ones. `status: parked` items already never
+    appear here — `--ready` leaves them out by itself (the `work-items` skill's format
+    reference, § Parked) — so nothing else has to filter for them;
   - your own `doing` items with no agent in flight and no unanswered decision — an item
     handed off after a rate limit, or one whose decision the operator has since
     answered. dev-cycle claims before its Agent call, so these never show as ready.
@@ -73,7 +80,7 @@ Nothing in either table: say so in one line and end the turn — that is a real 
 
 **One-time migration of older replies.** Replies recorded before `answer N:` existed
 take other forms — "decision 45 -> a", "OPERATOR <date>: decision 31 approved; 32 a",
-"decision 14 ANSWERED", "- 43 → (a) …" — which the scan cannot see, so their decisions
+"decision 14 ANSWERED", "- 43 → (a) …" — which `wi needs-input` cannot see, so their decisions
 show as unanswered. The first time the Groom table runs on a store, read each item it
 lists under `decision N:`; where the body already records the operator's reply, append
 `answer N: <that reply> (migrated)` to the item and drop the row. After that pass, every

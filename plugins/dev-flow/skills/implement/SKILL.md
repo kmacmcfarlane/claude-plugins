@@ -20,26 +20,17 @@ Worktree isolation, fan-out criteria, dispatch and consolidation are in
 
 ## Usage
 
-`/implement <investigation-slug>`
-
-Examples:
-
-- `/implement flaky-upload-retry`
-- `/implement` — no argument; resolve the series from the conversation, or list what is
-  available
+`/implement <investigation-slug>` — e.g. `/implement flaky-upload-retry`. With no argument,
+resolve the series from the conversation, or list what is available.
 
 ---
 
 ## Step 1 — Resolve the series
 
-The argument is a slug under `.claude-sandbox/investigations/`.
-
-```bash
-ls .claude-sandbox/investigations/
-```
+The argument is a slug under `.claude-sandbox/investigations/` (`ls` it).
 
 **No argument**: if the conversation just produced an investigation, use that slug. Otherwise
-list the available series with their INDEX.md status lines and ask which.
+list the available series with their INDEX.md status lines and ask which. Never guess.
 
 **No match**: stop.
 
@@ -55,23 +46,15 @@ list the available series with their INDEX.md status lines and ask which.
 
 **Read every `NN_*.md` in serial order, lowest to highest, applying each `Supersedes` block as
 you go.** The composition of all files, in order, is the plan. Read `INDEX.md` first for
-orientation, but it is a summary and **never a substitute for the files**.
+orientation, but it is a summary and **never a substitute for the files**. This is not a skim:
+a run that reads only the index, or only the newest serial, implements superseded decisions.
 
-This is not optional and it is not a skim. A run that reads only the index, or only the newest
-serial, will implement superseded decisions.
-
-Extract:
-
-- Root cause or analysis
-- **Proposed Fix / Implementation Approach** — required
-- Files to modify, with their `file:line` citations
-- Patterns to follow
-- Blast radius
-- Risk assessment
-- Base branch per repo, from Confirmed Assumptions / Deployment & Rollout Notes
-- Open questions, honouring every `Supersedes` — a question a later pass closed is not open,
-  and re-asking it signals you did not read the record
-- The **provenance SHAs** from the index, which say what each citation was true at
+Extract: the root cause or analysis; the **Proposed Fix / Implementation Approach**
+(required); files to modify with their `file:line` citations; patterns to follow; blast
+radius; risks; the base branch per repo (Confirmed Assumptions / Deployment & Rollout Notes);
+the open questions, honouring every `Supersedes` — a question a later pass closed is not open,
+and re-asking it shows you did not read the record; and the index's **provenance SHAs**, which
+say what each citation was true at.
 
 A series whose conclusion is a **Recommendation** not to write code is complete, not
 defective: land whatever it does call for — usually the documentation recording why — and set
@@ -85,17 +68,18 @@ Stop if the composed plan has **no Proposed Fix, Implementation Approach or Reco
 
 ## Running non-interactively
 
-When the invocation says to run without stopping, the gates change form rather than vanishing:
-
-- **Gate 1 (Step 6, the plan)** — decide yourself, and record each decision under
-  **Confirmed Assumptions** in the outcome file, framed as something a reviewer may overturn.
-- **Gate 2 (the diff)** — approve only on a passing verification at the planned tier. A failing
-  or incomplete verification is still a stop: report it and leave the work uncommitted.
-- **Step 10a (terminal action)** — do the least irreversible thing the invocation authorises.
-  Absent an explicit instruction, commit locally and leave the push to the user.
-- A **blocking** open question still blocks. Say so and stop rather than guessing past it.
-
-Report every recorded decision together at the end so the user reviews them in one pass.
+When the invocation says to run without stopping, the gates change form rather than
+vanishing. **Read `references/run-modes.md` § Running non-interactively before Step 2**; in
+short: gate 1 (Step 6) is decided by you, each decision recorded under **Confirmed
+Assumptions** as overturnable; gate 2 approves only on a passing verification at the planned
+tier — failing or incomplete is still a stop, the work left uncommitted; 10a does the least
+irreversible thing authorised (commit locally, leave the push); at Step 4 the recorded base
+holds, and leaving it, adopting an unrecorded non-default base or meeting an unresolved repo
+is a blocking stop, never a silent clone; at Step 7 a plan revision takes the least
+irreversible choice under Confirmed Assumptions and a missed in-scope issue becomes a
+non-blocking **Open Question**; at Step 8 a step needing human action is manual, deferred, so
+gate 2's stop applies. A **blocking** open question still blocks. Report every recorded
+decision together at the end.
 
 ---
 
@@ -104,92 +88,52 @@ Report every recorded decision together at the end so the user reviews them in o
 When another skill dispatches this one as a sub-agent (`dev-cycle`'s implementer, a
 `deep-investigation` POC break-out), the orchestrator owns git, landing, the work item and
 every dialog. It gives the **series** (a directory, anywhere, or a single plan file), the
-**worktree** to edit in and the **base** branch, and its brief sets the commit. Run as
-**Running non-interactively** above, with these changes. Steps are named as well as
-numbered; a renumber updates this list in the same commit.
-
-- **Step 1 (Resolve the series)** — skipped. Take the given series and start at Step 2
-  (Read the whole series); a single plan file is the whole plan.
-- **Step 4 (Resolve repos and re-verify the base branch)** — skipped: no fetch, no branch,
-  no worktree. The given base holds. Every edit goes in the given worktree; nothing is run
-  or written in the main checkout.
-- **Step 6 (gate 1) and Step 9 (gate 2)** — non-interactive. Gate 1's decisions go under
-  DEVIATIONS in the return, since there is no outcome file to hold them. Gate 2 passes on
-  verification at the planned tier; the orchestrator's review replaces its approval. A
-  failing verification is still a stop, reported, never committed around.
-- **Step 7 (Implement)** — inline only, in the given worktree: no fan-out, no
-  `EnterWorktree`, no integration branch, no merge. Before the first edit, regenerate
-  anything checked in that the base may carry stale (codegen, mocks, generated clients) in
-  the given worktree; a diff means the base shipped stale ones — reconcile it and say so
-  under DEVIATIONS. A plan revision or a missed in-scope issue is reported (DEVIATIONS,
-  OPEN QUESTIONS), never recorded on the series or silently built.
-- **Step 8 (Verify)** — a step that needs a human action is not a wait: commit once the
-  rest passes at the planned tier, and list the human-gated step under COULD NOT DO.
-- **Step 10 (Finalize)** — only **10d (Documentation follow-ups)** runs, inside the worktree
-  and inside the same change, without the propose step: a doc the change made wrong is part
-  of the change. It edits existing docs only, and a fix outside the orchestrator's declared
-  scope goes under OPEN QUESTIONS. No terminal action (10a), work-item update (10a½),
-  outcome (10b) or index write (10c). Commit once, as the brief says, with 10a's hygiene.
-- **Step 11 (Report), Step 12 (Retrospective)** — replaced by the return below; no retro.
-- **Questions** — never `AskUserQuestion`. Take the least irreversible choice and record it
-  under DEVIATIONS; one that blocks goes under OPEN QUESTIONS, with `NEEDS_CONTEXT` when you
-  cannot go on.
-
-Stop after verify and commit, and return this shape (a brief that adds fields, such as
-COMMIT, wins):
-
-```
-STATUS: DONE | DONE_WITH_CONCERNS | NEEDS_CONTEXT | BLOCKED
-CHANGED: files, absolute paths, a phrase each
-VERIFIED: each command, its outcome and the tier reached
-DEVIATIONS: from the plan or brief, with why
-COULD NOT DO: anything asked for that is not in the commit
-OPEN QUESTIONS: each marked blocking or not
-```
+**worktree** and the **base**, and its brief sets the commit. **Read
+`references/run-modes.md` § Running under an orchestrator before Step 2**: it lists the
+changes step by step, and the return shape. In short: run non-interactively; skip Step 1 and
+Step 4 (no fetch, branch or worktree — every edit in the given worktree); gate decisions go
+under DEVIATIONS; Step 7 is inline only — no fan-out, no merge — after regenerating stale
+checked-in artifacts; a verification step gated on a human is committed around and listed
+under COULD NOT DO, while a failing one is still a stop; of Step 10 only 10d runs, inside the
+change; no report, no retro; never `AskUserQuestion`. Return STATUS, CHANGED, VERIFIED,
+DEVIATIONS, COULD NOT DO, OPEN QUESTIONS (a brief that adds fields wins).
 
 ---
 
 ## Step 3 — Triage open questions
 
-An investigation ships with open questions by design. **Implementing while they sit untouched
-is how a known unknown becomes a shipped assumption.**
+An investigation ships with open questions by design. Triage them before any code.
 
-**1. Re-check staleness first — this is implement's advantage over investigate.** Time has
-passed; some questions have answered themselves. Before asking the user anything:
-
-- A dependency may have merged, a resource may now exist, a config may have changed. Re-verify
-  anything the plan recorded as pending.
-- The provenance SHAs settle code questions cheaply:
-  `git -C <repo> log --oneline <sha>..HEAD` scopes the check to what actually moved.
-
-A question you can close from evidence is not a question. Close it and record what closed it.
+**1. Re-check staleness first — implement's advantage over investigate.** Time has passed and
+some questions have answered themselves: a dependency merged, a resource now exists, a config
+changed. Before asking the user anything, re-verify whatever the plan recorded as pending; the
+provenance SHAs scope code questions cheaply (`git -C <repo> log --oneline <sha>..HEAD`). A
+question you can close from evidence is not a question — close it and record what closed it.
 
 **2. Classify what remains** — agent-verifiable / user decision / external-blocked, the same
 taxonomy as `investigate`.
 
-**3. If there is a verifiable batch, launch ONE background `general-purpose` agent for it —
-now**, before Steps 4–6. That work is genuine dead time for verification, so the answers are
-usually back by the review gate. Self-contained brief: the questions, repo paths, SHAs, and
-what counts as verified. It must report **answer / evidence / confidence**, and say "could not
-determine" rather than guess. When `investigate` already closed everything — common, and the
-sign of a gate that held — skip this and say so; an agent with nothing to verify is waste.
+**3. Launch ONE background `general-purpose` agent for the verifiable batch — now**, before
+Steps 4–6, so its answers are back by the gate. Brief it
+self-contained: the questions, repo paths, SHAs, what counts as verified. It reports **answer /
+evidence / confidence**, and says "could not determine" rather than guess. When `investigate`
+already closed everything, skip it and say so.
 
-**4. Blockers must be resolved or explicitly waived before Step 7.** The investigation states
-per question whether it blocks. Honour it: never start writing code with an unresolved
-blocker. If a question carries no blocks-or-not marking, decide yourself whether the
-implementation can be correct without it, and **say which way you called it**.
+**4. Blockers must be resolved or explicitly waived before Step 7.** Honour the investigation's
+per-question blocks-or-not marking; never write code with an unresolved blocker. A question
+with no marking: decide whether the implementation can be correct without it, and **say which
+way you called it**.
 
-**5. Decision-class questions go to the review gate** (Step 6), not a second gate of their own.
+**5. Decision-class questions go to the review gate** (Step 6), not a gate of their own.
 
 ---
 
 ## Step 4 — Resolve repos and re-verify the base branch
 
-Resolve the repos named in the plan. Ask for a path or a clone URL for anything unresolved;
-never clone silently.
+Resolve the plan's repos; ask for a path or clone URL for any unresolved — never clone
+silently.
 
-**Honour the base branch the investigation recorded — then re-verify it.** The picture moves
-between investigate and implement:
+**Honour the base branch the investigation recorded — then re-verify it:**
 
 ```bash
 git -C <repo> fetch --prune
@@ -197,53 +141,54 @@ git -C <repo> remote show origin | grep 'HEAD branch'          # detect, don't a
 git -C <repo> log --oneline <recorded-base>..origin/<default>  # has the dependency merged?
 ```
 
-If the recorded non-default base is no longer the right choice, say so and get agreement
-before deviating. Adopting a non-default base the investigation did *not* record needs the
-same explicit consent `investigate` requires.
-
-Branch naming and worktree layout are in `references/worktree-orchestration.md`. The
-integration branch is `worktree-<slug>`.
+If the recorded non-default base is no longer right, say so and get agreement before
+deviating. Adopting a non-default base the investigation did *not* record needs the same
+explicit consent `investigate` requires. Branch naming and worktree layout are in
+`references/worktree-orchestration.md`; the integration branch is `worktree-<slug>`.
 
 ---
 
 ## Step 5 — Plan the work and check for drift
 
-**Reconcile the plan against current code first.** The investigation may be days old. Re-verify
-every `file:line` citation against current `HEAD`. Use the provenance SHAs to scope it rather
-than re-reading everything. Record any drift: a fix that already landed, a function that moved,
-a file that no longer exists.
+**Reconcile the plan against current code first.** Re-verify every `file:line` citation
+against current `HEAD`, scoped by the provenance SHAs rather than re-reading everything.
+Record any drift — a fix that already landed, a function that moved, a file that is gone — for
+gate 1, where the user decides whether the plan still holds.
 
-Then decompose the approach into tasks and identify which are genuinely independent — the
-dependency-aware plan that the fan-out decision rests on. Read
+Then decompose the approach into tasks and identify which are genuinely independent. Read
 `references/worktree-orchestration.md` and decide **inline or fan-out**, stating which and why.
 
-Establish the verification commands now, not after writing code: the repo's test target, its
-build/typecheck, its lint. Record which **verification tier** they represent (the table is in
-`investigation-format.md`). If the best available tier is 3 or 4, say so here — it changes what
-"done" can mean and it rules out fan-out.
+Establish the verification commands now, not after writing code: the repo's test target,
+build/typecheck and lint. Record the **verification tier** they represent (the table is in
+`investigation-format.md`). If the best available tier is 3 or 4, say so here — it changes
+what "done" can mean, and it rules out fan-out.
 
 ---
 
 ## Step 6 — Review gate 1: the plan
 
-Present:
-
-1. **The composed plan** — approach, files to modify, patterns, risks — and that you read the
-   full series.
-2. **Drift findings** from Step 5, or "no drift".
-3. **Task breakdown**, and whether you will work inline or fan out, with the reason.
-4. **Branch strategy per repo**, including whether the recorded base still holds.
-5. **Verification plan** — the exact commands, and the tier they reach.
-6. **Open-question status** — what staleness closed, what the background agent verified with
-   evidence, what still **blocks**, and what you need decided now.
-
-**Ask the decision-class questions here**, via `AskUserQuestion`, each with the defer option:
+**If there are decision-class questions, ask them first**, per the `investigate` skill's §
+Asking at a gate — a numbered list answered free-form while scope is open, `AskUserQuestion`
+for a closed choice late in the task. Each carries the evidence and the recommendation it rests
+on. End the turn there. Keep the defer option either way:
 
 > **Leave open and record in the investigation** — defer this; it stays under Open Questions
 > with its owner and whether it blocks implementation.
 
 A blocking question's defer option must say plainly that deferring means **not implementing
-yet**. That is a legitimate outcome, never a slip.
+yet** — a legitimate outcome, never a slip.
+
+**With none, go straight to the plan.** Once each decision question is answered or
+deferred, present:
+
+1. **The composed plan** — approach, files, patterns, risks — and that you read the full
+   series.
+2. **Drift findings** from Step 5, or "no drift".
+3. **Task breakdown**, inline or fan-out, with the reason.
+4. **Branch strategy per repo**, including whether the recorded base still holds.
+5. **Verification plan** — the exact commands and the tier they reach.
+6. **Open-question status** — what staleness closed, what the background agent verified with
+   evidence, what still **blocks**, and how each decision question was resolved.
 
 Then output **verbatim**:
 
@@ -279,18 +224,17 @@ The plan changed at the review gate. Record the revision on the investigation?
 * No — carry it into the outcome file instead
 ```
 
-Material re-planning is a new investigation pass: invoke the `investigate` skill so it writes
-the next serial and rewrites the index. `investigate` owns that format. A minor correction can
-wait for the outcome file in Step 10.
+Material re-planning is a new investigation pass: invoke the `investigate` skill, which owns
+the format, to write the next serial and rewrite the index. A minor correction can wait for the
+outcome file in Step 10.
 
 **Before writing code**, load the project's conventions — root and nested `CLAUDE.md`, and the
-plugin skills matching the stack. The investigation names the patterns to follow; the project
-docs say how the code is actually written.
+plugin skills matching the stack.
 
 **Inline** (the default): create the integration branch off the verified base in the main
 checkout, then work the tasks in dependency order in the session's own worktree
-(`EnterWorktree`, no per-task fan-out), running the verification as you go; the worktree's
-branch merges into `worktree-<slug>` from the main checkout when done.
+(`EnterWorktree`, no per-task fan-out), verifying as you go; from the main checkout, merge the
+worktree's branch into `worktree-<slug>` when done.
 
 ```bash
 git -C <repo> fetch origin
@@ -298,8 +242,8 @@ git -C <repo> checkout -b worktree-<slug> origin/<base>
 ```
 
 Immediately after entering the worktree, regenerate anything checked in that the base may
-carry stale (codegen, mocks, generated clients). A no-op diff means the artifacts were correct; a diff
-means the base shipped stale ones — reconcile before proceeding.
+carry stale (codegen, mocks, generated clients). No diff means the artifacts were correct; a
+diff means the base shipped stale ones — reconcile before proceeding.
 
 **Fan-out**: follow `references/worktree-orchestration.md` — worktree per task, vanilla
 `general-purpose` subagents, dependency-ordered dispatch, test-gated merge, full verification
@@ -308,13 +252,12 @@ re-run after **every** merge.
 In both modes:
 
 - Read each file to modify **in full** before changing it.
-- Make only the changes the approach describes. Do not refactor unrelated code.
-- Add the tests the plan calls for.
+- Make only the changes the approach describes; no unrelated refactors. Add the tests the plan
+  calls for.
 - **Delegate context-heavy work to subagents** — long logs, broad exploration, mechanical
-  fan-out edits across many files. Keep your context for the plan and the diff.
-- **If you find an in-scope issue the investigation missed** — another instance of the same
-  bug class, say — do **not** silently expand scope and do **not** silently ignore it. Surface
-  it via `AskUserQuestion` and let the user decide whether it belongs in this run.
+  edits across many files. Keep your context for the plan and the diff.
+- **An in-scope issue the investigation missed** is neither silently fixed nor silently
+  ignored: surface it via `AskUserQuestion` and let the user decide whether it belongs here.
 
 ---
 
@@ -322,18 +265,15 @@ In both modes:
 
 Run the verification established at Step 5 and record the results honestly.
 
-**State the tier you actually reached.** Reporting "tests pass" when only the build ran is the
-specific failure the tier table exists to prevent. If the tests do not exist, say the tier is
-build-only — do not imply behavioural coverage you do not have.
+**State the tier you actually reached** — "tests pass" when only the build ran is the failure
+the tier table exists to prevent; with no tests the tier is build-only — do not imply
+behavioural coverage you do not have. Where the plan calls for it and the project supports it,
+exercise the change by running the app (the `run` skill knows how).
 
-Where the plan calls for it and the project supports it, exercise the change by running the
-app — the `run` skill knows how to launch this project.
-
-**Do not defer a verification step just because it needs a human action.** If a step is blocked
-because a person must do something first — seed a record, flip a setting, provide a
-credential — surface the concrete task, ask the user to do it, and finish the verification in
-this run. Reserve "manual, deferred" for steps genuinely undriveable from here, and record
-those explicitly rather than silently.
+**Do not defer a verification step just because it needs a human action.** When a person must
+do something first — seed a record, flip a setting, provide a credential — surface the concrete
+task, ask the user to do it, and finish the verification in this run. Reserve "manual,
+deferred" for steps genuinely undriveable from here, and record those explicitly.
 
 Record: command, outcome, and what it does **not** cover.
 
@@ -341,10 +281,8 @@ Record: command, outcome, and what it does **not** cover.
 
 ## Step 9 — Review gate 2: the diff
 
-Present:
-
-1. `git diff` per repo — all changes
-2. Verification results, with the tier reached and its gaps
+Present `git diff` per repo — all changes — and the verification results, with the tier
+reached and its gaps.
 
 **If verification passed at the planned tier**, output **verbatim**:
 
@@ -417,51 +355,28 @@ without a store: skip silently. This is the only step that closes an item — no
 ### 10b — Write the outcome
 
 Write `NN_implementation.md` at the next free serial, per the outcome outline in the
-`investigate` skill's `references/investigation-format.md`. Its `Supersedes` block names each
-plan statement the build overturned, or `Nothing — the plan held`.
-
-Capture: decisions locked at the gates, deviations from the plan (including files that turned
-out to be no-ops), the verification outcome **with its tier**, any new analysis the run
-produced, the branches delivered, and follow-ups spun out.
-
-Skip this file only when the run produced nothing worth recording — the plan held exactly and
-there were no gate decisions. **Say so in the report when you skip it.**
+`investigate` skill's `references/investigation-format.md`, with a `Supersedes` block naming
+each plan statement the build overturned, or `Nothing — the plan held`. What it captures is in
+`references/finalize.md` § 10b. Skip it only when the plan held exactly and there were no gate
+decisions — and **say so in the report**.
 
 ### 10c — Rewrite the index
 
-Regenerate `INDEX.md` wholesale:
-
-- Set each implemented row's Status to `implemented <YYYY-MM-DD>` and fill its Branches column.
-  Rows that needed no code get `no code`; rows a later serial invalidated get `superseded by NN`.
-- Add the TOC row for the outcome file.
-- Refresh the reconciled sections — Deployment & Rollout Notes especially, since deploy reality
-  is now known. Update the provenance line to the SHAs actually delivered against.
-- **Revisit every deferred question — this is where answers are most likely to exist.**
-  Building the change answers questions that reading the plan could not. For each: did the
-  implementation settle it? Has anything changed externally? Close what you can, recording the
-  evidence in the outcome file, and drop it from the index's Open Questions. Bring the still-open
-  ones back to the user once, briefly, with the same defer option. A question deferred twice
-  with no movement belongs on its own investigation — offer to spin it out.
-
-  Open Questions must end up listing **only** what is genuinely still unresolved.
+Regenerate `INDEX.md` wholesale — row statuses (`implemented <YYYY-MM-DD>` with Branches,
+`no code`, `superseded by NN`), the outcome's TOC row, the reconciled sections, the provenance
+SHAs delivered against — per `references/finalize.md` § 10c. **Revisit every deferred question
+there**: close what the build answered, with evidence in the outcome file; bring the
+still-open ones back to the user once, with the defer option; offer to spin out one deferred
+twice with no movement. Open Questions end up listing **only** what is genuinely unresolved.
 
 ### 10d — Documentation follow-ups
 
-Derive the documentation the change requires and apply it — this replaces the release/change-
-management step it was adapted from, and it is part of the work, not an afterthought:
-
-- **Any config or code sample you write into docs must be valid in its target format** — a
-  snippet is only correct if it parses or runs where it is meant to be pasted. A fenced block
-  labelled for readability (`jsonc`, `console`) is not evidence: strict JSON rejects comments
-  and trailing commas, and the reader finds out, not you. Parse it, or pin it with a test
-  where the project can.
-- `CHANGELOG.md` — an entry, if the project keeps one, in its existing style
-- `README.md` — when behaviour, flags, config, or setup changed
-- `docs/*` — when the change contradicts something written there
-- Inline docs — package docs, help text, comments that the change made wrong
-
-Present what you propose to update and what you are skipping, with reasons, then apply. A doc
-the change made **wrong** is a defect; do not leave it for later.
+Derive the documentation the change requires and apply it — part of the work, not an
+afterthought. The full list is in `references/finalize.md` § 10d; its rules: any config or code
+sample written into docs must be **valid in its target format** — parse it, or pin it with a
+test (a fence label is not evidence); update the CHANGELOG (if kept), README, `docs/*` and
+inline docs the change affects; present what you will update and skip, with reasons, then
+apply. A doc the change made **wrong** is a defect; do not leave it for later.
 
 ---
 
@@ -485,86 +400,27 @@ the change made **wrong** is a defect; do not leave it for later.
 
 ## Step 12 — Retrospective (optional, user-gated)
 
-```text
-Run a quick retrospective on this implement run and update the skill docs?
-* Yes — capture stumbles, gotchas, and undocumented steps, then update the skills
-* No — skip
-```
-
-If **Yes**: note where the run deviated from these steps or hit friction — an undocumented
-workflow, a wrong assumption, a gotcha that cost time. Derive those findings from the skill
-files in the **checkout**, not the copy you are running from: the plugin cache lags the repo,
-and a finding diffed against it may already be fixed upstream. Then present them and **ask
-the user to run `/kit-dev:update-kit`**. That skill is `disable-model-invocation: true`, so
-it is user-invoked only and cannot be launched from here; do not replicate its workflow by
-other means. It owns locating the real checkout rather than the plugin cache, settling the
-branch, the staleness check, and the bar for what earns a place in a skill. Do not re-derive
-any of that here.
-
-Likely targets: this skill, `worktree-orchestration.md`, `investigation-format.md`, and any
-project skill whose gap cost you time.
+Offer a quick retrospective, with the prompt in `references/retrospective.md`. On **Yes**,
+note the friction — deriving each finding from the skill files in the **checkout**, not the
+lagging plugin cache — present it, and **ask the user to run `/kit-dev:update-kit`**: it is
+user-invoked only, so it cannot be launched from here, and its workflow is not replicated by
+other means.
 
 ---
 
 ## Edge Cases
 
-- **No slug given** — use the series the conversation just produced, else list what exists and
-  ask. Never guess.
-- **Slug not found / no investigations at all** — stop with the error in Step 1.
-- **No Proposed Fix in the composed plan** — stop; point at `/investigate <slug>`.
-- **Only `INDEX.md` was read** — a bug in the run, not a shortcut. Read the serials.
-- **A `Supersedes` block names a file that does not exist** — the series is inconsistent.
-  Report it and ask before proceeding; do not silently pick an interpretation.
-- **An open question is marked blocking** — resolve or explicitly waive before Step 7. If the
-  user defers a blocker, implementation waits.
-- **A question carries no blocks-or-not marking** — decide yourself and state which way you
-  called it.
-- **A deferred question is answerable by the end of the build** — close it at Step 10c with its
-  evidence. A resolved question must not survive into the record.
-- **A question deferred twice with no movement** — offer to spin it onto its own investigation.
-- **The recorded base branch has merged** — say so and get agreement before switching to the
-  default.
-- **Code drifted since the investigation** — record the drift, present it at gate 1, let the
-  user decide whether the plan still holds.
-- **An in-scope issue the investigation missed** — surface via `AskUserQuestion`. Never
-  silently expand or silently ignore.
-- **The project has no tests** — verification is build-only or run-only. State the tier, and do
-  not fan out (the merge gate is missing).
-- **Fan-out merge goes red** — stop merging. Report which task broke it and what you tried.
-- **A worktree has uncommitted changes at cleanup** — never remove it automatically. Surface it
-  and ask.
-- **Two worktrees need docker compose and the project has no scoping variable** — serialize
-  those tasks; do not run compose concurrently.
-- **Verification blocked on a human action** — ask the user to do it and finish the check in
-  this run. Do not mark it deferred for convenience.
-- **User rejects at gate 1** — nothing changed, clean stop.
-- **User rejects at gate 2** — discard changes, remove worktrees, delete branches, clean stop.
+Read `references/edge-cases.md` when a run goes off the main path. Most entries restate a
+step's rule; a few live only there — a `Supersedes` block naming a file that does not exist
+(report it and ask; never pick an interpretation), a fan-out merge that goes red (stop merging;
+report which task broke it), a worktree with uncommitted changes at cleanup (never remove it
+automatically; ask), two worktrees needing docker compose with no scoping variable (serialize
+them).
 
 ---
 
 ## Quality Criteria
 
-- **The entire series was read in serial order with every `Supersedes` applied** before any
-  code was written, and again after any pause.
-- Open questions were triaged before code: staleness re-checked first, the verifiable batch in
-  **one** background agent launched before Steps 4–6, decisions asked at gate 1 with a defer
-  option, and **no blocking question left unresolved** at Step 7.
-- Deferred questions were revisited at Step 10c and closed where the build answered them.
-- The recorded base branch was re-verified, not trusted blindly; a non-default base was never
-  adopted without explicit consent.
-- `file:line` citations were re-verified against current `HEAD`, scoped by the provenance SHAs.
-- Fan-out happened only with three or more independent tasks **and** a working merge gate;
-  otherwise the work was inline, and the choice was stated.
-- Every worktree merge was gated on that task's verification, and the **full** verification was
-  re-run on the integration branch after each merge.
-- **The verification tier reached is stated explicitly**, with its command and its gaps. A lower
-  tier is never reported as a higher one.
-- Both review gates fired before any commit, push, or write to the investigation record.
-- Files were staged specifically; commit messages follow `<verb>: <aspect> - <description>`.
-- The terminal action is exactly what the user chose — nothing pushed, tagged, or opened beyond
-  it.
-- The outcome file was written at the next free serial with a `Supersedes` block, and existing
-  serials were neither edited nor deleted.
-- `INDEX.md` was rewritten wholesale, with no row left `pending` that was actually implemented.
-- Documentation the change made wrong was fixed, not deferred.
-- Worktrees were cleaned up, or their retention was reported with a reason.
+The checklist a finished run is held to is in `references/quality-criteria.md` — each step's
+rule restated as an outcome, plus one that lives only there: the series is re-read after any
+pause. Hold the run to it before the Step 11 report.

@@ -1,0 +1,37 @@
+---
+id: dev-flow-implement-and-investigate-retro-9691
+title: "dev-flow: implement and investigate retrospectives disagree on running update-kit"
+type: chore
+status: done
+priority: 4
+created: 2026-09-21
+updated: 2026-09-22
+closed: 2026-09-22
+refs:
+  - 0f3f implementer
+---
+
+Surfaced by 0f3f 2026-09-21: investigate Step 16 (now references/retrospective.md) says read and follow kit-dev's update-kit SKILL.md directly; implement Step 12 says ask the user to run /kit-dev:update-kit and never replicate it. Pick one rule for both (principle 4: a skill in another plugin is invoked by the user or via Skill, never read and replicated).
+
+## Handoff
+- doing: implementer dispatched (opus, agent a5b5686e17e6cfae0)
+- next: review r1 (opus)
+- blocked: —
+- learned: —
+
+## Notes
+- 2026-09-22 claimed by unknown@360f41058e92
+- dispatch: implementer opus — reconcile two skills (judgement word) + principle 4
+- 2026-09-22 done: e0310e1
+
+## Implementer result
+- round 1 DONE_WITH_CONCERNS 934ec1c (opus): one rule — update-kit is user-invoked only (disable-model-invocation), so ask the user to run /kit-dev:update-kit; never read and replicate; without kit-dev the shown findings are the record.
+- scope widened (librarian): declare dev-flow's soft dependency on kit-dev (plugin.json, marketplace.json identical, README catalog row) — principle 4; pre-existing gap the change makes explicit.
+- dispatch: implementer opus — widening (same agent resumed), then reviewer opus
+- widening DONE ecaae37 (description/marketplace/catalog) + c67e304 (README dev-flow section sentence); 10/10 descriptions match.
+- dispatch: reviewer opus — rule 4
+
+## Review round 1 — CLEAR (opus) at c67e304
+- premise verified (docs: disable-model-invocation → Claude cannot invoke via Skill).
+- lows not taken: "edit a skill file only if the user asks" should be tied to the kit-dev-absent case; prompt Yes option says "then update the skills"; line widths; uneven stubs.
+- landed e0310e1

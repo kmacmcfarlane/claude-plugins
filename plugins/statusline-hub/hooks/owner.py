@@ -1,59 +1,95 @@
-"""Ownership of the `statusLine` settings entry. Stdlib only.
+"""Ownership of the `statusLine` settings entry, for the hub. Stdlib only.
 
-Used by the install-statusline skill's script (explicit install and remove) and
-by the SessionStart hook, session_start.py (first-run install, takeover,
-self-heal). Both write settings only through write_settings().
+Used by the SessionStart hook (session_start.py: first-run install, takeover,
+self-heal) and by the install-statusline-hub skill's script (explicit install,
+remove, replace). Both write settings only through write_settings().
 
-- Own entry: a command running .../plugins/data/statusline-<marketplace>/
-  current-hooks/statusline.py - the update-stable path this plugin's
-  SessionStart symlink keeps current.
-- Predecessor entry: the same shape under an earlier plugin's data dir
-  (PREDECESSORS). It is replaced without asking - recognised by its command
-  path alone, marker or not; its install markers (`statusline-installed.json`
-  in those data dirs) are retired, so an older self-heal that acts on them
-  goes inert.
+- Own entry: a command running .../plugins/data/statusline-hub-<marketplace>/
+  current-hooks/hub.py - the update-stable path this plugin's SessionStart
+  symlink keeps current.
+- The statusline footer's own entry (.../plugins/data/statusline-<marketplace>/
+  current-hooks/statusline.py, as an earlier version of the statusline plugin
+  installed it; or the same under the claude-kit- or context-guard- data dir,
+  where older copies of that footer lived): taken over only once the
+  statusline plugin has registered itself as a hub display hook (a trusted
+  hooks.d/statusline.json of kind display), so the footer keeps drawing - see
+  session_start.py.
 - Anything else is foreign: never modified without the user's explicit consent
-  (the installer's --replace).
+  (the installer's --replace, or its --wrap).
 
-Settings writes change only the `statusLine` key: the file is resolved through
-symlinks (a dotfiles link stays a link), read afresh at write time, changed,
-and written to a temp
-file in the same dir with the original mode, then os.replace()d - never
-truncated in place. The new text splices just that key's member into the
-original text (splice_key), so a hand-formatted file keeps every other byte;
-when a splice is not provably right it falls back to re-serialising the whole
-file in its own layout (dumps_like). Nothing is written when nothing changes,
-and a read-only file is refused unless the caller has the user's consent to
-write it. Messages name paths only, never setting values.
+Wrap mode (the installer's --wrap, only ever on the user's word, and only
+for the user settings file - registry.wrap_applies): the hub's entry
+replaces a foreign one, and the foreign entry is kept in the hub's
+wrap record, <config>/statusline-hub/wrap.json (registry.read_wrap: private,
+0600, the trust rules of a hook manifest, since the hub runs it). The hub's
+entry keeps the foreign entry's other keys (padding, say) and swaps only the
+command. Each render runs the kept command, unparsed, through /bin/sh as
+Claude Code would, and shows its output (hub.py). --unwrap puts the kept
+entry back - its value's original text, spliced in place, so the file is
+byte-for-byte as it was when nothing else changed; at the least, the entry
+and its command string are exactly the same.
 
-The own marker, <plugin data>/owner.json:
-  {"v": 1, "state": "installed" | "removed" | "yielded" | "deferred" | "blocked",
+The settings write started as the statusline plugin's own; since that plugin
+draws as a hub display hook it writes no settings, and this is the only copy.
+It changes only the `statusLine` key: the file is resolved through symlinks
+(a dotfiles link stays a link), read afresh at write time, changed, and
+written to a temp file in the same dir with the original mode, then
+os.replace()d - never truncated in place. The new text splices just that
+key's member into the original text (splice_key), so a hand-formatted file
+keeps every other byte; when a splice is not provably right it falls back to
+re-serialising the whole file in its own layout (dumps_like). Nothing is
+written when nothing changes, and a read-only file is refused unless the
+caller has the user's consent to write it. Messages name paths only, never
+setting values. `sensor` is this plugin's tee module, which carries the
+sensor helpers (base_dir, _load, _is_v, _mkstemp).
+
+The marker, <plugin data>/owner.json (the statusline plugin's earlier
+versions kept one of the same shape in their own data dir, which the
+takeover reads):
+  {"v": 1, "state": "installed" | "removed" | "yielded" | "deferred" | "blocked"
+                    | "wrapping" | "unwrapped",
    "settings": "<abs path>", "command": "<our command>", "at": <epoch s>}
 - installed: the entry in `settings` is ours; SessionStart restores it when a
-  stale session's settings write drops it, and repoints a predecessor entry.
-- removed: the user ran --remove; nothing re-adds it until they install again.
+  stale session's settings write drops it.
+- removed: the user ran --remove (or had removed the statusline footer from
+  that file before the hub arrived); nothing re-adds it until they install
+  again.
 - yielded: something else replaced our entry; left alone for good.
 - deferred: a statusLine was already set on first run; never overwritten.
 - blocked: the settings file could not be used (not valid JSON, read-only,
   unwritable, or a project file git does not ignore); said once, retried
   quietly every session. Extra fields: "reason", and "resume" - the state
-  whose work is retried ("installed" for a heal, "new" for a first run).
-It stores only our own command and a path.
+  whose work is retried ("installed" or "wrapping" or "unwrapped" for a
+  heal, "new" for a first run).
+- wrapping: the entry in `settings` is ours, running the wrapped entry the
+  wrap record keeps; SessionStart restores it when a stale session's write
+  drops it or puts the wrapped entry back, and yields to anything else.
+- unwrapped: the user ran --unwrap; SessionStart puts the kept entry back
+  if a stale session's write restores ours, and otherwise does nothing.
+(An older hub version reads the last two as "hands off".)
+The marker stores only our own command and a path; the wrapped entry lives
+in the wrap record alone.
 """
 import json, os, re, stat, time
 
-import sensor
+import registry
+import tee as sensor
 
-PLUGIN = "statusline"
-# Plugins that shipped this status line before (takeover fingerprints).
-PREDECESSORS = ("claude-kit", "context-guard")
+PLUGIN = "statusline-hub"
+SCRIPT = "hub.py"
+STATUSLINE = "statusline"
+
+# Data dirs the statusline footer's own entry has run from: the statusline
+# plugin's, and those of the plugins that shipped the footer before it.
+FOOTER_HOMES = (STATUSLINE, "context-guard", "claude-kit")
+
+_SHAPE = r'\s*python3\s+"?(?:[^"\\]|\\.)*/plugins/data/{}-[^/"]+/current-hooks/{}"?\s*'
+OWN_RE = re.compile(_SHAPE.format(re.escape(PLUGIN), re.escape(SCRIPT)))
+STATUSLINE_RE = re.compile(_SHAPE.format(
+    "(?:" + "|".join(map(re.escape, FOOTER_HOMES)) + ")", re.escape("statusline.py")))
+
 MARKER = "owner.json"
-PREDECESSOR_MARKER = "statusline-installed.json"
 MARKER_V = 1
-
-_SHAPE = r'\s*python3\s+"?(?:[^"\\]|\\.)*/plugins/data/(?:{})-[^/"]+/current-hooks/statusline\.py"?\s*'
-OWN_RE = re.compile(_SHAPE.format(re.escape(PLUGIN)))
-PREDECESSOR_RE = re.compile(_SHAPE.format("|".join(map(re.escape, PREDECESSORS))))
 
 
 class SettingsError(Exception):
@@ -83,17 +119,28 @@ def data_root():
     return os.path.join(sensor.base_dir(), "plugins", "data")
 
 
+def data_name(plugin_id):
+    """The data-dir name Claude Code gives a plugin id (`<name>@<marketplace>`):
+    every character outside [A-Za-z0-9_-] replaced by "-", so
+    statusline-hub@my.mkt -> statusline-hub-my-mkt. The one rule every data-dir
+    name here comes from."""
+    return re.sub(r"[^A-Za-z0-9_-]", "-", plugin_id)
+
+
 def data_dir(script_path=None, scan=True):
     """This plugin's persistent data dir, first match of:
     1. $CLAUDE_PLUGIN_DATA (set for hooks; not in the Bash tool's environment);
-    2. the harness's install record: the `statusline@<mkt>` entry of
+    2. the harness's install record: the `statusline-hub@<mkt>` entry of
        <config>/plugins/installed_plugins.json whose installPath holds the
        code running now (script_path) names it, <data>/<id> with Claude
        Code's id rule (installed_by_record);
     3. the name derived from the plugin cache path this code runs from
-       (plugins/cache/<mkt>/statusline/);
-    4. with `scan`, the first <config>/plugins/data/statusline-* dir - a
-       guess when the plugin came from several marketplaces, so last.
+       (plugins/cache/<mkt>/statusline-hub/ -> the id statusline-hub@<mkt>,
+       named by data_name);
+    4. with `scan`, the first <config>/plugins/data/statusline-hub-* dir -
+       a guess when the plugin came from several marketplaces, so last. A
+       dir whose current-hooks link leads somewhere without SCRIPT is not
+       this plugin's and is never taken.
     None when none of those applies."""
     d = os.environ.get("CLAUDE_PLUGIN_DATA")
     if d:
@@ -105,22 +152,26 @@ def data_dir(script_path=None, scan=True):
         return d
     m = re.search(r"/plugins/cache/([^/]+)/" + re.escape(PLUGIN) + "/", here)
     if m:
-        return os.path.join(base, f"{PLUGIN}-{m.group(1)}")
+        return os.path.join(base, data_name(f"{PLUGIN}@{m.group(1)}"))
     try:
         for name in (sorted(os.listdir(base)) if scan else ()):
-            if name.startswith(PLUGIN + "-") and os.path.isdir(os.path.join(base, name)):
-                return os.path.join(base, name)
+            d = os.path.join(base, name)
+            hooks = os.path.join(d, "current-hooks")
+            if name.startswith(PLUGIN + "-") and os.path.isdir(d) and (
+                    not os.path.lexists(hooks) or
+                    os.path.isfile(os.path.join(hooks, SCRIPT))):
+                return d
     except OSError:
         pass
     return None
 
 
 def installed_by_record(path):
-    """The data dir of the `statusline@<mkt>` install whose installPath
+    """The data dir of the `statusline-hub@<mkt>` install whose installPath
     (in <config>/plugins/installed_plugins.json, `plugins` -> key -> list of
-    records) contains `path`, or None. The dir is <config>/plugins/data/<id>,
-    <id> being the key with every character outside [A-Za-z0-9_-] replaced
-    by "-" (Claude Code's own rule, so statusline@mkt -> statusline-mkt).
+    records) contains `path`, or None. The dir is <config>/plugins/data/ and
+    the key's data_name (Claude Code's own rule, so statusline-hub@mkt ->
+    statusline-hub-mkt).
     Reads key names and install paths only. Never raises."""
     try:
         rec = os.path.join(sensor.base_dir(), "plugins", "installed_plugins.json")
@@ -138,36 +189,13 @@ def installed_by_record(path):
                     continue
                 root = os.path.realpath(ip)
                 if here == root or here.startswith(root.rstrip(os.sep) + os.sep):
-                    return os.path.join(data_root(),
-                                        re.sub(r"[^A-Za-z0-9_-]", "-", key))
+                    return os.path.join(data_root(), data_name(key))
     except Exception:
         pass
     return None
 
 
 _SH_SPECIAL = re.compile(r'([\\"$`])')
-
-
-def command_for(data):
-    """`python3 "<data>/current-hooks/statusline.py"`: the path in shell
-    double quotes (\\, ", $ and ` escaped), kept as UTF-8 - never \\u escapes,
-    which a shell would pass through literally."""
-    path = os.path.join(data, "current-hooks", "statusline.py")
-    return 'python3 "' + _SH_SPECIAL.sub(r"\\\1", path) + '"'
-
-
-def classify(entry):
-    """'absent', 'own', 'predecessor' or 'foreign' for a statusLine value."""
-    if entry is None:
-        return "absent"
-    cmd = entry.get("command") if isinstance(entry, dict) else None
-    if not isinstance(cmd, str):
-        return "foreign"
-    if OWN_RE.fullmatch(cmd):
-        return "own"
-    if PREDECESSOR_RE.fullmatch(cmd):
-        return "predecessor"
-    return "foreign"
 
 
 def _parse(text, path):
@@ -208,15 +236,17 @@ def _default_mode():
     return 0o666 & ~mask
 
 
-def atomic_write_text(path, text, mode=None):
+def atomic_write_text(path, text, mode=None, force_mode=False):
     """Write text to path's real target via a same-dir temp file and
     os.replace. Keeps the existing file's mode (else `mode`, else the umask
-    default). On any failure the original is untouched and the temp removed;
-    the error propagates."""
+    default; with `force_mode`, always `mode`). On any failure the original
+    is untouched and the temp removed; the error propagates."""
     real = os.path.realpath(path)
     d = os.path.dirname(real)
     os.makedirs(d, exist_ok=True)
     try:
+        if force_mode:
+            raise FileNotFoundError
         mode = os.stat(real).st_mode & 0o7777
     except FileNotFoundError:
         mode = _default_mode() if mode is None else mode
@@ -235,8 +265,9 @@ def atomic_write_text(path, text, mode=None):
                 pass
 
 
-def atomic_write_json(path, data, mode=None):
-    atomic_write_text(path, json.dumps(data, indent=2, ensure_ascii=False) + "\n", mode)
+def atomic_write_json(path, data, mode=None, force_mode=False):
+    atomic_write_text(path, json.dumps(data, indent=2, ensure_ascii=False) + "\n", mode,
+                      force_mode)
 
 
 _INDENT = re.compile(r'\n([ \t]+)"')
@@ -435,6 +466,50 @@ def _splice_settings(original, data):
     return text
 
 
+def _splice_raw(original, data, raw):
+    """`original` with the statusLine member's value text replaced by `raw`
+    verbatim - how unwrap puts an entry back exactly as it was written -
+    when that member is there once and the result parses to `data` with
+    the key order kept. None otherwise."""
+    try:
+        if json.loads(raw) != data.get("statusLine", _MISSING):
+            return None
+        hits = [m for m in _members(original) if m[0] == "statusLine"]
+        if len(hits) != 1:
+            return None
+        _, _, _, vs, ve = hits[0]
+        text = original[:vs] + raw + original[ve:]
+        back = json.loads(text)
+        if back != data or list(back) != list(data):
+            return None
+        return text
+    except (ValueError, IndexError, TypeError):
+        return None
+
+
+def statusline_raw(path):
+    """(the statusLine value, its text as written in the file) for the
+    settings file at path - the text with CRLF read as LF, None when it
+    cannot be isolated. (None, None) when the file or the key is missing.
+    Raises SettingsError as read_settings does."""
+    text = _read_text(os.path.realpath(path))
+    if text is None:
+        return None, None
+    entry = _parse(text, path).get("statusLine")
+    if entry is None:
+        return None, None
+    base = text.replace("\r\n", "\n") if _crlf(text) else text
+    try:
+        hits = [m for m in _members(base) if m[0] == "statusLine"]
+        if len(hits) == 1:
+            raw = base[hits[0][3]:hits[0][4]]
+            if json.loads(raw) == entry:
+                return entry, raw
+    except (ValueError, IndexError, TypeError):
+        pass
+    return entry, None
+
+
 class ReadOnly(SettingsError):
     """A settings file the user cannot write (mode 0444, say)."""
     reason = "read-only"
@@ -445,7 +520,8 @@ def _crlf(text):
     return "\r\n" in text and text.count("\n") == text.count("\r\n")
 
 
-def write_settings(path, entry, allow_read_only=False, expect=None):
+def write_settings(path, entry, allow_read_only=False, expect=None, expect_entry=_MISSING,
+                   raw=None):
     """Set the statusLine key of the settings file at path (through a
     symlink) to `entry`, or delete it when `entry` is None. Returns whether
     it wrote.
@@ -456,11 +532,15 @@ def write_settings(path, entry, allow_read_only=False, expect=None):
     since the caller looked is kept. The window left is the few
     milliseconds between this read and the replace. `expect`, when given,
     is the set of classify() kinds the fresh statusLine may have; anything
-    else raises Changed, writing nothing.
+    else raises Changed, writing nothing. `expect_entry`, when given, is the
+    exact statusLine value (None: absent) the file must still hold, else
+    Changed.
 
     Text: when only statusLine changes, only that member's text changes
     (_splice_settings); else the whole file is re-serialised in its layout
-    (dumps_like). CRLF line endings are kept. An empty file counts as {}.
+    (dumps_like). `raw`, the entry's own text (statusline_raw), is spliced
+    in verbatim when the key is there to splice it into. CRLF line endings
+    are kept. An empty file counts as {}.
     Raises SettingsError, writing nothing, when the file is not a JSON
     object, and ReadOnly when the user may not write it - replacing it would
     still succeed in a writable dir, overriding a deliberate read-only -
@@ -469,6 +549,8 @@ def write_settings(path, entry, allow_read_only=False, expect=None):
     original = _read_text(real)
     current = {} if original is None else _parse(original, path)
     if expect is not None and classify(current.get("statusLine")) not in expect:
+        raise Changed(f"the statusLine in {path} changed meanwhile")
+    if expect_entry is not _MISSING and current.get("statusLine") != expect_entry:
         raise Changed(f"the statusLine in {path} changed meanwhile")
     data = dict(current)
     if entry is None:
@@ -481,7 +563,11 @@ def write_settings(path, entry, allow_read_only=False, expect=None):
         raise ReadOnly(f"{path} is read-only", path)
     crlf = original is not None and _crlf(original)
     base = original.replace("\r\n", "\n") if crlf else original
-    text = _splice_settings(base, data) if base and base.strip() else None
+    text = None
+    if raw is not None and entry is not None and base and base.strip():
+        text = _splice_raw(base, data, raw)
+    if text is None and base and base.strip():
+        text = _splice_settings(base, data)
     if text is None:
         text = dumps_like(data, base)
     atomic_write_text(path, text.replace("\n", "\r\n") if crlf else text)
@@ -490,7 +576,7 @@ def write_settings(path, entry, allow_read_only=False, expect=None):
 
 def enabled_in(settings):
     """Whether a settings object enables this plugin (an `enabledPlugins` key
-    `statusline@<marketplace>` set to true). Reads key names only."""
+    `statusline-hub@<marketplace>` set to true). Reads key names only."""
     ep = settings.get("enabledPlugins") if isinstance(settings, dict) else None
     return isinstance(ep, dict) and any(
         isinstance(k, str) and k.startswith(PLUGIN + "@") and v is True
@@ -511,20 +597,39 @@ def write_marker(data, state, settings, command, **extra):
                             "at": time.time()}, **extra), mode=0o600)
 
 
-def predecessor_markers():
-    """Install markers left in earlier plugins' data dirs."""
-    out = []
-    base = data_root()
+def wrap_entry(inner, data):
+    """The hub's entry that wraps `inner`: inner's keys, in inner's order,
+    with only the command swapped for ours."""
+    e = dict(inner)
+    e["command"] = command_for(data)
+    return e
+
+
+def write_wrap(settings, entry, raw, running):
+    """Write the wrap record (registry.read_wrap) atomically, 0600, in the
+    private hub dir; raises SettingsError when that dir fails the trust
+    rules, so nothing is kept where the hub would refuse to run it."""
+    registry.mkdirs_private(registry.hub_dir())
+    why = registry.hub_problem()
+    if why:
+        raise SettingsError(f"{registry.hub_dir()} is {why}", registry.hub_dir())
+    atomic_write_json(registry.wrap_path(),
+                      {"v": registry.WRAP_V, "settings": os.path.abspath(settings),
+                       "entry": entry, "raw": raw, "running": running,
+                       "at": time.time()}, mode=0o600, force_mode=True)
+
+
+def set_running(rec, running):
+    """Rewrite the wrap record `rec` (read_wrap's) with `running`."""
+    write_wrap(rec["settings"], rec["entry"], rec["raw"], running)
+
+
+def drop_wrap():
+    """Delete the wrap record. Never raises."""
     try:
-        names = sorted(os.listdir(base))
+        os.unlink(registry.wrap_path())
     except OSError:
-        return out
-    for name in names:
-        if any(name.startswith(p + "-") for p in PREDECESSORS):
-            m = os.path.join(base, name, PREDECESSOR_MARKER)
-            if os.path.isfile(m):
-                out.append(m)
-    return out
+        pass
 
 
 def _same_path(a, b):
@@ -532,24 +637,6 @@ def _same_path(a, b):
         return os.path.realpath(a) == os.path.realpath(b)
     except Exception:
         return False
-
-
-def retire_predecessor_markers(only_settings=None):
-    """Delete predecessor install markers (all, or only those naming
-    `only_settings`). Returns how many were removed. Never raises."""
-    n = 0
-    for m in predecessor_markers():
-        try:
-            if only_settings is not None:
-                rec = sensor._load(m) or {}
-                if not isinstance(rec.get("settings"), str) or \
-                        not _same_path(rec["settings"], only_settings):
-                    continue
-            os.remove(m)
-            n += 1
-        except Exception:
-            continue
-    return n
 
 
 def ensure_hooks_symlink(data):
@@ -568,3 +655,66 @@ def ensure_hooks_symlink(data):
         os.replace(tmp, link)  # atomic; also replaces a dangling link
     except OSError:
         pass
+
+
+
+def command_for(data):
+    """`python3 "<data>/current-hooks/hub.py"`: the path in shell double
+    quotes (\\, ", $ and ` escaped), kept as UTF-8."""
+    path = os.path.join(data, "current-hooks", SCRIPT)
+    return 'python3 "' + _SH_SPECIAL.sub(r"\\\1", path) + '"'
+
+
+def classify(entry):
+    """'absent', 'own', 'statusline' (the statusline footer's own entry,
+    from the statusline plugin or an older copy - FOOTER_HOMES) or 'foreign'
+    for a statusLine value."""
+    if entry is None:
+        return "absent"
+    cmd = entry.get("command") if isinstance(entry, dict) else None
+    if not isinstance(cmd, str):
+        return "foreign"
+    if OWN_RE.fullmatch(cmd):
+        return "own"
+    if STATUSLINE_RE.fullmatch(cmd):
+        return "statusline"
+    return "foreign"
+
+
+def enabled_for(settings, plugin):
+    """Whether a settings object enables `plugin` (an `enabledPlugins` key
+    `<plugin>@<marketplace>` set to true). Reads key names only."""
+    ep = settings.get("enabledPlugins") if isinstance(settings, dict) else None
+    return isinstance(ep, dict) and any(
+        isinstance(k, str) and k.startswith(plugin + "@") and v is True
+        for k, v in ep.items())
+
+
+def statusline_markers(own=None):
+    """The statusline plugin's owner.json markers, read-only: one entry per
+    statusline data dir under <config>/plugins/data/ - the marker dict, or
+    None when that dir has none (its first run has not happened, or it lost
+    it). A dir counts when it holds current-hooks/statusline.py or a marker
+    whose command is the statusline's; this plugin's own data dir (`own`)
+    never does. Never raises."""
+    out = []
+    base = data_root()
+    try:
+        names = sorted(os.listdir(base))
+    except OSError:
+        return out
+    for name in names:
+        if not name.startswith(STATUSLINE + "-"):
+            continue
+        d = os.path.join(base, name)
+        if own and _same_path(d, own):
+            continue
+        try:
+            m = read_marker(d)
+            cmd = m.get("command") if m else None
+            if (isinstance(cmd, str) and STATUSLINE_RE.fullmatch(cmd)) or \
+                    os.path.isfile(os.path.join(d, "current-hooks", "statusline.py")):
+                out.append(m)
+        except Exception:
+            continue
+    return out
