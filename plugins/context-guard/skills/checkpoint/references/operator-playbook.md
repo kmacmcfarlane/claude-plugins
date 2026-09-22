@@ -53,6 +53,17 @@ auto-compact window only warn. The hard stop
 near the model window is unaffected. The compaction gate never uses the derived or
 auto-compact window: it defers only on the depth it used before the window mirror.
 
+**Inside a turn** the prompt gate cannot speak, so a check runs after every tool call
+(main thread only; a subagent's calls are skipped). It never blocks, and it is **silent
+unless the depth could hard-block** — exact or resolved-derived; an inferred depth waits
+for the next prompt's advisory. Under the DUE line it says, once and then every 25K,
+finish the step in hand and checkpoint at the turn's natural end. Under the HARD line it
+opens `HARD, mid-turn` and says start nothing new and checkpoint now: the checkpoint
+skill then runs unattended (no questions, mode `handoff` unless a custody skill such as
+librarian-mode names its own), and its opener is the turn's last message. Under ~20K left
+it says a checkpoint no longer fits: the turn ends with a three-line brief, and `/clear`
+or `/compact <guidance>` is yours to run. A checkpoint this epoch stands it down too.
+
 ## Tools, and when
 
 | Tool | Use it when | What it costs / keeps |

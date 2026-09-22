@@ -451,6 +451,9 @@ def _unlink_unheld_lock(p):
 
 
 def epoch(state):
+    # Raises on a malformed epoch, by design: callers that must degrade catch
+    # it themselves, and the status line renders `ctx --` on it rather than a
+    # confident but wrong epoch number (tests/test_statusline_state.py).
     return int(state.get("epoch", 0))
 
 
@@ -520,6 +523,10 @@ def mark_checkpoint(session_id):
     def mark(st):
         st["checkpoint_epoch"] = epoch(st)
         st["checkpoint_at"] = time.strftime("%F %T")
+        # The checkpoint reached its mark, so the in-flight stand-down
+        # (turn_gate.py --checkpointing) has done its job; checkpoint_epoch
+        # takes over from here.
+        st.pop("checkpoint_started", None)
     return update_state(session_id, mark)
 
 
@@ -619,6 +626,16 @@ def thresholds(window):
                     "hard": int(lo_h + f * (hi_h - lo_h))}
         lo_w, lo_d, lo_h = hi_w, hi_d, hi_h
     return {"due": lo_d, "hard": lo_h}
+
+
+def hard_applies(block_window, tokens):
+    """Whether `tokens` of fill may hard-stop: `block_window` is set (the
+    depth's source is in BLOCKING_SOURCES; measure()'s `block_window`) and
+    what is left of it is at or under its hard line. The one blocking rule,
+    shared by the prompt gate (context_warn.decide) and the mid-turn check
+    (turn_gate.py), which prints its HARD marker only when this holds."""
+    return bool(block_window) and \
+        max(block_window - tokens, 0) <= thresholds(block_window)["hard"]
 
 
 def gauge_record():
@@ -1458,6 +1475,19 @@ def _pinned(environ):
     return bool(v and v.isdigit())
 
 
+def mirror_off(environ=None):
+    """The window mirror is off: CONTEXT_GUARD_DERIVE=off or the operator's
+    window pin. measure() then gives the pre-mirror depth, exact or
+    inferred - so with no fresh exact record the depth is a guess."""
+    environ = os.environ if environ is None else environ
+    return derive_off(environ) or _pinned(environ)
+
+
+def exact_fresh(ex):
+    """An exact block (sensor()'s) that is fresh enough to be the depth."""
+    return bool(ex.get("window")) and time.time() - (ex.get("at") or 0) < EXACT_MAX_AGE_S
+
+
 def _inferred(res, ex, cur, peak, boundary, environ=None):
     """The pre-mirror inferred depth (a stale exact record floors it)."""
     known = int(ex.get("window") or 0)
@@ -1500,10 +1530,10 @@ def measure(transcript_path, session_id=None, cwd=None, environ=None, mirror=Tru
     environ = os.environ if environ is None else environ
     st = load_state(session_id) if session_id else {}
     ex = sensor(session_id, st) if session_id else {}
-    fresh = bool(ex.get("window")) and time.time() - (ex.get("at") or 0) < EXACT_MAX_AGE_S
+    fresh = exact_fresh(ex)
     res = {"derived": None, "acw": {"window": None, "resolved": False, "source": "off"},
            "note": "", "scan_cache": None, "side_cache": None}
-    if not mirror or derive_off(environ) or _pinned(environ):
+    if not mirror or mirror_off(environ):
         if fresh:
             res.update(tokens=ex["tokens"], model_window=ex["window"], model_pct=ex["pct"],
                        source="exact")
