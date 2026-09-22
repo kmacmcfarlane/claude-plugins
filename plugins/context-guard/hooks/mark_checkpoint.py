@@ -87,16 +87,8 @@ def store_manifest_path(sid):
     """`sid`'s own rehydration manifest,
     ${CLAUDE_CONFIG_DIR:-~/.claude}/claude-kit/handoff/<safe_sid>/HANDOFF.md.
     Named through safe_sid, so a garbled or hostile id cannot name a path
-    outside the store; the directory is created by the writer, never here.
-
-    L.manifest_path once 8cc2-F3b-1 has landed, and the same path computed
-    from the same pieces until it does - this feature is built on a main that
-    does not yet carry the store helper. Delete the fallback with that merge."""
-    fn = getattr(L, "manifest_path", None)
-    if fn is not None:
-        return fn(sid)
-    return os.path.join(L._base_dir(), "claude-kit", "handoff",
-                        L.safe_sid(sid), "HANDOFF.md")
+    outside the store; the directory is created by the writer, never here."""
+    return L.manifest_path(sid)
 
 
 def own_store_manifest(path, sid):
@@ -110,16 +102,11 @@ def own_store_manifest(path, sid):
     out of the store and fails. A path that fails is not this session's
     manifest and falls through to the legacy arm and its claim test.
 
-    L.manifest_sid once 8cc2-F3b-1 has landed, and the same comparison until
-    it does; delete the fallback with that merge (store_manifest_path)."""
+    L.manifest_sid is the store's own identity test, and safe_sid is
+    idempotent, so the component it returns compares directly with
+    L.safe_sid(sid): never strip or re-hash it."""
     try:
-        fn = getattr(L, "manifest_sid", None)
-        if fn is not None:
-            return fn(path) == L.safe_sid(sid)
-        root = os.path.realpath(os.path.join(L._base_dir(), "claude-kit",
-                                             "handoff"))
-        return os.path.realpath(path) == os.path.join(root, L.safe_sid(sid),
-                                                      "HANDOFF.md")
+        return L.manifest_sid(path) == L.safe_sid(sid)
     except Exception:
         return False
 
