@@ -764,6 +764,11 @@ def main():
     # the land path asks for, so it keeps the header.
     clear_pred = linked_clear_pred(st, pred, version) \
         if source == "clear" and path and not is_landed(fm) else None
+    # Its reasoning trail, read up front so the systemMessage names it only
+    # when there is one to inject.
+    clear_digest = ledger.digest(clear_pred, budget=LEDGER_BUDGET) \
+        if clear_pred else ""
+    summary_used = False
 
     if path:
         sha = version["sha"]
@@ -822,13 +827,17 @@ def main():
                         + (" A machine compaction summary also exists for this "
                            "session; where they disagree, the manifest wins."
                            if st.get("compact_summary") else ""))
+            # That sentence is for the injection right after the compaction
+            # that wrote the summary: write_back pops it, so a later resume
+            # or /clear-continued injection does not repeat it.
+            summary_used = bool(st.get("compact_summary"))
             parts += [header, preamble] + ([checks] if checks else []) + \
                 [trim(text, CAP - len(header) - len(preamble) - len(checks)
                       - LEDGER_BUDGET - 400)]
             sysmsg = (f"Rehydrated from {live}{f' ({why})' if why else ''} manifest "
                       f"({fm.get('written', '?')})"
                       + (f" and the ledger digest of predecessor {clear_pred}"
-                         if clear_pred else "") + ".")
+                         if clear_digest else "") + ".")
         else:
             parts.append(header + " Read it before resuming its thread."
                          + "".join("\n" + c for c in (checks, moved) if c))
@@ -848,15 +857,13 @@ def main():
         ci = st.get("custom_instructions")
         if ci:
             parts.append(f"The operator's own /compact guidance was: {ci}")
-    elif clear_pred and parts:
+    elif clear_digest and parts:
         # A linked /clear continues the predecessor's work: its reasoning
         # trail comes along (this session's own ledger is new and empty). The
         # full tier above reserved LEDGER_BUDGET + 400 for this block.
-        lt = ledger.digest(clear_pred, budget=LEDGER_BUDGET)
-        if lt:
-            parts.append(f"[context-guard ledger — predecessor {clear_pred}, by "
-                         f"/clear: its reasoning trail, reasoning kept ahead of "
-                         f"commit pointers, file order, newest last]\n" + lt)
+        parts.append(f"[context-guard ledger — predecessor {clear_pred}, by "
+                     f"/clear: its reasoning trail, reasoning kept ahead of "
+                     f"commit pointers, file order, newest last]\n" + clear_digest)
 
     def write_back(cur):
         if seen_new is not None:
@@ -865,6 +872,9 @@ def main():
                 and cur.get("custom_instructions") == st.get("custom_instructions"):
             # Consumed once; a newer /compact guidance written meanwhile stays.
             cur.pop("custom_instructions", None)
+        if summary_used and cur.get("compact_summary") == st.get("compact_summary"):
+            # Used once, by the full injection above; a newer summary stays.
+            cur.pop("compact_summary", None)
 
     L.update_state(sid, write_back)
     L.sweep_stale(keep=sid)

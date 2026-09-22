@@ -381,6 +381,19 @@ class TestLinkedClearTier(Base):
         self.assertIn("# ledger S1 (successor of X)", c)
         self.assertIn("corrected: the pin is by version", c)
 
+    def test_empty_predecessor_ledger_is_not_claimed(self):
+        # No ledger for X: the full manifest still comes, but neither the
+        # label nor the systemMessage claims a digest that was not injected.
+        self.checkpoint("X")
+        self.end_clear("X")
+        out = self._run(R, {"session_id": "S", "source": "clear", "cwd": self.repo,
+                            "hook_event_name": "SessionStart"})
+        c = out["hookSpecificOutput"]["additionalContext"]
+        self.assertFull(c)
+        self.assertNotIn(self.LABEL, c)
+        self.assertIn("Rehydrated from", out["systemMessage"])
+        self.assertNotIn("predecessor", out["systemMessage"])
+
     def test_landed_manifest_linked_clear_gets_the_header(self):
         self.checkpoint("X", mode="landed")
         self.predecessor_ledger("X")
@@ -418,6 +431,41 @@ class TestLinkedClearTier(Base):
         self.assertFull(c)
         self.assertIn("successor's own decision", c)
         self.assertNotIn(self.LABEL, c)
+
+
+class TestCompactSummaryOnce(Base):
+    """H5 (FM12): the machine-summary sentence belongs to the one full
+    injection after the compaction that wrote it; then it is popped."""
+    SUMMARY = "A machine compaction summary also exists"
+
+    def test_popped_after_the_full_injection_that_used_it(self):
+        self.checkpoint("X")
+        L.reset_epoch("X", compact_summary="the summary")
+        self.assertIn(self.SUMMARY, self.start("X", "compact"))
+        self.assertNotIn("compact_summary", L.load_state("X"))
+        self.checkpoint("X", doing="Changed, so resume is full again.")
+        c = self.start("X", "resume")
+        self.assertFull(c)
+        self.assertNotIn(self.SUMMARY, c)
+
+    def test_kept_when_no_full_injection_used_it(self):
+        self.checkpoint("Y")
+        L.reset_epoch("B", compact_summary="the summary")
+        self.assertForeign(self.start("B", "compact"))
+        self.assertEqual(L.load_state("B").get("compact_summary"), "the summary")
+
+    def test_a_newer_summary_written_meanwhile_stays(self):
+        self.checkpoint("X")
+        L.reset_epoch("X", compact_summary="old")
+        real = L.update_state
+
+        def racing(sid, fn):
+            if sid == "X":
+                real(sid, lambda st: st.__setitem__("compact_summary", "new"))
+            return real(sid, fn)
+        with mock.patch.object(L, "update_state", racing):
+            self.start("X", "compact")
+        self.assertEqual(L.load_state("X").get("compact_summary"), "new")
 
 
 class TestForkLink(Base):
