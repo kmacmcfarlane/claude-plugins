@@ -31,3 +31,5 @@ review r1 (opus) at e461b9d: NEEDS_CHANGES. Seven Checks OK; decide() untouched;
 - [medium] context_warn.py:203 + read_list.py:94 — RL.take raises inside update_state on a malformed read_list record (list in real, int read) → hook exits non-zero before saving, every later prompt loses DUE/band/inferred-HARD advisories and decide() counters. Pass: try/except around take (drop the record), unread() tolerant, a malformed-record test.
 - lows: first `## Read in full` anywhere wins (a fenced decoy); reminder demands a whole-file Read the tool cannot give for large files.
 dispatch: implementer opus — fix round 1 (resume)
+fix r1 DONE_WITH_CONCERNS 994fa46 (opus): take/record never raise (try/except; tolerant unread/mark_read); fenced headings skipped; reminder says 'Read tool, no offset or limit'; 4 new tests (fail on e461b9d); (b) partly declined — the Read tool reports no line coverage. Note: implementer's git checkout wiped uncommitted edits once; re-applied before commit.
+dispatch: reviewer opus — review r2 (resume)

@@ -33,3 +33,5 @@ review r1 (opus) at 073bf9e: NEEDS_CHANGES. Every git command in the procedure w
 dispatch: implementer opus — fix round 1 (resume)
 fix r1 DONE 2dbf401 (opus): one incoming: rule in four places (with the push outcome: follow-up mid-session, final Report at session end/75%); no other commit to main until commit/abort + MERGE_HEAD recovery in Rehydrate step 4 and troubleshooting; all lows fixed; SKILL.md 2320 words.
 dispatch: reviewer opus — review r2 (resume)
+review r2 (opus) at 2dbf401: CLEAR — the four incoming: statements identical; scratch clone: interrupted merge recovered via MERGE_HEAD (-C "$MAIN" form needed from a worktree), control run shows a store commit would otherwise complete the merge; strictly-behind → ff-only; both trigger wordings. Lows: "staged changes anywhere"; a leftover MERGE_HEAD from a worktree-branch merge should compare MERGE_HEAD with origin/main before choosing the redo.
+Review result: 2 rounds, 1 fix round; impl opus, review opus.
