@@ -104,12 +104,12 @@ only what you cannot answer yourself and what changes *where you look*:
 - Where does it show up — which command, endpoint, screen, file?
 - Which repo owns this work? If the target may not exist yet — a new plugin, repo, or tool —
   say so and point to the create-repo skill.
-- What does "done" look like?
+- What does "done" look like, roughly?
 - Is anything explicitly out of scope?
 
 One round of 2–4 questions, per **Asking at a gate** — scope is open, so a numbered list. Then
-**wait**. **Skip it only when the description already answers it**, saying why. Never ask what
-the code will tell you — that's Step 6.
+**wait**. **Skip it only when the description already answers all of it**, saying why. Never
+ask what the code will tell you — that is Step 6.
 
 ---
 
