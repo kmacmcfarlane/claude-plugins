@@ -43,6 +43,8 @@ stop to ask; nobody is listening between dispatch and report.
 7. Tool budget: the number in your prompt is a prioritisation hint, not a cap. Depth over
    breadth. If the work genuinely needs more calls, spend them; if time runs out, write what
    you have rather than nothing.
+8. `Bash` is for local-corpus lanes — measuring, sampling, running a toolkit lane's scripts.
+   A web lane has no reason to run a shell; do not.
 
 ## Evidence rules — these are the contract
 
@@ -80,7 +82,9 @@ stop to ask; nobody is listening between dispatch and report.
 
 ## Your file
 
-Write exactly one file at the output path, at most 300 lines, in this shape and no other:
+Write exactly one file at the output path — the **staging** path your prompt names, in the
+orchestrator's scratchpad, never a path inside a repository's tracked tree; the orchestrator
+moves it after verification. At most 300 lines, in this shape and no other:
 
 ```
 ---

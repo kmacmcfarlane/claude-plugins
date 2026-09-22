@@ -1,9 +1,9 @@
 ---
 name: research-deep
-description: Run the research skill at deep or exhaustive intensity for a question too broad for one round — two or three rounds of research lanes on a cheaper model, a gap gate between rounds, an adversarial lane at exhaustive, a larger verifier sample, and a synthesis that may run in a fork. Use when the user says "deep research", "research this thoroughly", "map the landscape of", "exhaustive research", "research this overnight", or asks for a question to be researched from every angle; the research skill also proposes this one when a quick run finds its core claim contested or thin. Not for a fan-out that writes an investigation series' plan (deep-investigation), nor a scoped bug or feature (investigate).
+description: Run the research skill at deep or exhaustive intensity for a subject too broad for one round — two or three rounds of research lanes on a cheaper model, a gap gate between rounds, an adversarial lane at exhaustive, a larger verifier sample, and a synthesis that may run in a fork; lands as a run record or knowledge-base notes. Use when the user says "research this thoroughly", "exhaustive research on", "research this from every angle", "thorough sourced research", or when the research skill proposes it after a quick run finds its core claim contested or thin. Not for a fan-out that writes an investigation series' plan — "deep research", "map the landscape of", "research this overnight" for a build decision are deep-investigation — nor a bug or feature in this repo (investigate).
 disable-model-invocation: true
 allowed-tools: Read, Glob, Grep, Bash, WebSearch, WebFetch, Agent, AskUserQuestion, Write
-argument-hint: <broad question> [--intensity deep|exhaustive] [--shape run|kb] [--to <path>]
+argument-hint: "<broad question> [--intensity deep|exhaustive] [--shape run|kb] [--to <path>]"
 ---
 
 # Research — deep
@@ -72,7 +72,8 @@ unattended run the run continues and the report carries them.
 
 Waves *within* a round exist only for the pacing reason from Step 1, fired from a one-shot
 wakeup whose prompt is "read `<brief>` and launch round N wave M" and nothing more — never a
-prompt that restates the lanes. State the idempotence rule in the brief (a wave launches only
+prompt that restates the lanes. The wakeup acts on the brief's § Lanes and ledger status
+lines, which the orchestrator wrote; it never reads a findings file to decide what to launch. State the idempotence rule in the brief (a wave launches only
 if its findings files do not exist and the ledger does not mark them launched) and the
 overrun rule (synthesis starts by time T with whatever exists; hard stop T+1h). When the
 constraint evaporates mid-run — it usually does — drop the schedule, launch the rest, ledger

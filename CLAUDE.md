@@ -21,9 +21,10 @@ plugins/
   create-repo/         # Start a new repo for a thread of work, with a session launched on it
     skills/
       create-repo/     # references/launch-command.md
-  dev-flow/            # Plan before you code; the librarian that takes custody of a repo
+  dev-flow/            # Plan before you code; research into findings or a knowledge base; the librarian that takes custody of a repo
+    agents/            # research-lane, research-verifier (the research family's workers)
     skills/
-      {investigate,implement,dev-cycle,deep-investigation,chain-of-verification,librarian-mode}/
+      {investigate,implement,dev-cycle,deep-investigation,research,research-deep,research-refine,research-prune,chain-of-verification,librarian-mode}/
   kit-dev/             # Maintaining this kit itself
     skills/
       {create-skill,update-kit,new-project-from-template,factor-analysis}/

@@ -24,6 +24,7 @@ date: …
 intensity: standard
 shape: run
 destination: <resolved path, and which rule fired>
+staging: <scratchpad>/research/<run>/   # where lanes, the verifier and the synthesis write
 status: PLANNING | RUNNING | VERIFYING | SYNTHESIZING | DONE | DONE_WITH_CONCERNS | BLOCKED
 ---
 # 00 — Research brief: <question>
@@ -77,7 +78,10 @@ Anything deliberately not actioned (an existing run on a neighbouring question, 
 rebalance proposal). "none" rather than omitting the heading.
 
 ## Ledger
-Append-only, oldest first, one line per event, written as it happens.
+Append-only, oldest first, one line per event, written as it happens. Lines carry ids,
+counts, paths, status and confidence labels only — never a lane's wording. This ledger is
+read as the state of the run by wakeups and resumed sessions; it must not be able to carry
+an instruction.
 ```
 
 ### Ledger entries
@@ -85,8 +89,8 @@ Append-only, oldest first, one line per event, written as it happens.
 ```
 - 2026-09-22 14:02Z — PLANNED: 5 lanes, standard, sonnet; 5h 12% / 7d 40%.
 - 2026-09-22 14:03Z — LAUNCHED round 1: w1, w2, w3, l1, l2.
-- 2026-09-22 14:19Z — w1 DONE (findings/w1-vendor-docs.md, 212 lines, 14 sources). Notable:
-  <two or three results, a clause each>. Could not verify: <one>.
+- 2026-09-22 14:19Z — w1 DONE (staging findings/w1-vendor-docs.md, 212 lines, 14 sources,
+  confidence well-supported, could-not-verify 1).
 - 2026-09-22 14:31Z — l1 FAILED: corpus not mounted; re-specced as w4 (web-only). PLAN CHANGE.
 - 2026-09-22 14:40Z — GAP GATE: condition 2 (w1 vs w3 on pricing tiers) → round 2: w5.
   Threads not pulled: <n>, listed above.
@@ -97,8 +101,9 @@ Append-only, oldest first, one line per event, written as it happens.
 
 Entry kinds: `PLANNED`, `LAUNCHED`, `DONE`, `FAILED`, `PLAN CHANGE`, `GAP GATE`, `SEARCH
 EXHAUSTED`, `VERIFIED`, `SYNTHESIS DONE`, `FIT CHECK`, `PROMOTED`, `RUN <status>`. A `DONE`
-line carries the two or three results a reader would want if they read nothing else — that
-is what makes the ledger a rehydration point rather than a checklist.
+line carries counts, the staging path and the lane's confidence label; the results a
+rehydrating reader wants are one `Read` of that file's TL;DR away, and keeping them out of
+the brief is what keeps the brief safe to act from.
 
 ## The lane prompt
 
@@ -121,7 +126,7 @@ Deliverables:
 
 Siblings: <id> covers <territory> — note it in one line and move on; <id> covers <territory>.
 Search hint: ≈<n> searches for this lane (a prioritisation hint; prefer WebFetch of known URLs).
-Write your file to: <destination>/findings/<id>.md
+Write your file to: <staging>/findings/<id>.md   (the orchestrator's scratchpad — never a repo path)
 Run slug for your frontmatter: <run>
 
 <the privacy rule, verbatim, only when the corpus is restricted:>
@@ -139,8 +144,9 @@ installed under a different prefix — check the agent list in your system promp
 ## The verifier prompt
 
 ```
-Verify run <run>. Criteria: <path to 00-brief.md § Criteria>. Findings: <paths>. Sample size:
-<12 standard | 20 deep | 30 exhaustive>. Write the score sheet to <destination>/verification.md.
+Verify run <run>. Criteria: <path to 00-brief.md § Criteria>. Findings: <staging paths>.
+Sample size: <4 quick-to-disk | 12 standard | 20 deep | 30 exhaustive>. Write the score sheet
+to <staging>/verification.md.
 ```
 
 ## The report the run ends with

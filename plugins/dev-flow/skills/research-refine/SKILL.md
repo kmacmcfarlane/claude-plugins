@@ -1,9 +1,9 @@
 ---
 name: research-refine
 description: Extend or correct an existing research run — read its brief, synthesis and threads not pulled, take a new sub-question, a challenged claim, a pulled thread or a changed scope, run only the lanes that gap needs through the research skill, and land a new run that names what it supersedes, re-promoting the knowledge-base notes it changes. Use when the user says "refine the research on", "follow up on", "pull that thread", "the research on X is out of date", "re-check the claim that", or names an existing run or note to build on. Not for a fresh question with no prior run (research), nor restructuring a knowledge base (research-prune).
-disable-model-invocation: false
+disable-model-invocation: true
 allowed-tools: Read, Glob, Grep, Bash, WebSearch, WebFetch, Agent, AskUserQuestion, Write
-argument-hint: <run slug, note path, or question> [what to refine] [--intensity quick|standard|deep]
+argument-hint: "<run slug, note path, or question> [what to refine] [--intensity quick|standard|deep]"
 ---
 
 # Research — refine
@@ -12,6 +12,10 @@ A second pass over research that already exists. The `research` skill owns the m
 **read its SKILL.md first and follow it**. This file owns only what changes when there is a
 prior run: how to find it, what to reuse, how the new run supersedes the old, and how the
 knowledge base is updated rather than duplicated.
+
+`disable-model-invocation` is `true`: a refinement inherits a prior run's intensity and
+launches lanes, so it is the operator's call, like `research-deep`; the `research` skill's
+quick-only rule for model-invoked runs would otherwise be a door around.
 
 Refinement is a **new run**, never an edit to the old one. Runs are append-only; that is what
 makes them citable. The new run's frontmatter names the old in `supersedes:`, and the old
@@ -55,8 +59,9 @@ new question; say so and offer `research-deep`.
 
 ### Step 3 — Inherit, then brief
 
-The new brief (`research` Step 5) is written fresh at `runs/<today>-<slug>-r2/` (or `-r3`…),
-with:
+The new brief (`research` Step 5) is written fresh, in the prior run's destination and its
+layout — `runs/<today>-<slug>-r2/` (`-r3`…) in a knowledge base, `<today>-<slug>-r2/` beside
+the prior elsewhere — with:
 
 - `supersedes: [<prior run>]` in its frontmatter;
 - § Question and § Operator situation copied from the prior, edited only where the

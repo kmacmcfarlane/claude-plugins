@@ -3,7 +3,7 @@ name: research-prune
 description: Curate a research knowledge base — run the fit check against its charter, propose and on approval execute a rebalance (moves, merges, splits, a scheme change), archive notes whose every claim is superseded, mark runs superseded, and rewrite INDEX.md and directory indexes wholesale. Use when the user says "prune the knowledge base", "rebalance the KB", "the research KB is hard to navigate", "tidy up the research notes", "archive stale research", or when a research run's fit check returned STRAINED or REBALANCE FIRST. Not for gathering new research (research, research-refine).
 disable-model-invocation: true
 allowed-tools: Read, Glob, Grep, Bash, Write, Edit, AskUserQuestion
-argument-hint: [kb root] [--fit-check-only | --execute <proposal>]
+argument-hint: "[kb root] [--fit-check-only | --execute]"
 ---
 
 # Research — prune

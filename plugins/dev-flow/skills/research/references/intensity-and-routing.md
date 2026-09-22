@@ -36,7 +36,17 @@ interrupt it; the line is what makes the interruption informed.
 
 ## When to ask, and when it is obvious
 
-Do **not** ask when any of these holds; state the preset and its reason in one line instead:
+**Rule zero — model-invoked runs are `quick`, and this rule overrides every row below.** A
+run is model-invoked unless the operator's *current* turn carries `/research` (or
+`/research-deep`, which is operator-only by construction). Arguments the model wrote itself —
+an `--intensity` it added, a "go deep" it inferred — never count as the operator naming a
+preset; only the operator's own words in the invoking turn do. When the orchestrator judges
+that a deeper preset is warranted (the fan-out test passes, or the quick answer surfaces a
+contested or under-sourced core claim), it says so in one line — the preset, its cost line,
+what the deeper run would add — and asks. It never escalates on its own.
+
+For an operator-invoked run, do **not** ask when any of these holds; state the preset and its
+reason in one line instead:
 
 - the invocation names a preset (`--intensity deep`, "go deep", "just a quick look");
 - the invoking skill implies it (`research-deep` → `deep`; `research-refine` inherits the
@@ -54,16 +64,8 @@ first) when:
 - the destination is checked-in (`kb` shape): the cost of a thin run is higher, because it
   becomes a durable record.
 
-**Model-invoked runs** — the skill loaded on the words "research", "look into", "find out"
-without a slash — run **`quick` only**. When the orchestrator judges that a deeper preset is
-warranted (the question passes the fan-out test, or the quick answer surfaces a contested or
-under-sourced core claim), it says so in one line — the preset, its cost line, and what the
-deeper run would add — and asks. It never escalates on its own.
-
-**The fan-out test** (from `deep-investigation`): can you name, right now, three to five
-categories of evidence that would answer the question, and does no single one of them
-suffice? Yes → a fan-out preset is justified. No → `quick`; a fan-out on a narrow question
-buys N files that say the same thing.
+**The fan-out test** is the one in the `deep-investigation` skill's SKILL.md § When this is
+the wrong skill; apply it as written. Pass → a fan-out preset is justified. Fail → `quick`.
 
 ## The quota read
 
@@ -87,6 +89,7 @@ absent. Then:
 | 5h ≥ 75% | downgrade one preset, or offer to defer the fan-out until `resets_at` (print the local time) |
 | 7d ≥ 90% | `quick` only unless the operator overrides in so many words |
 | 5h ≥ 90% | `quick` only; say when the window resets |
+| `resets_at` in the past | the window has reset; read it as clear and say so |
 | record absent | interactive: mention it and ask the intensity question; unattended: assume the windows are clear, record the assumption |
 | any | write the reading into the cost line and the brief |
 

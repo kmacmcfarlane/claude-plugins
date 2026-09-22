@@ -13,6 +13,13 @@ to exactly one resolved destination; nothing else on disk changes. A run never c
 tracked file in a repo unless that repo has said, with a marker or a flag, that it wants
 research checked in.
 
+**Staging.** Everything a lane or the verifier writes — findings, `verification.md`, the
+synthesis and `sources.md` drafted from them, a report draft, a quick run's `--to` file —
+lands first in `<scratchpad>/research/<run>/`, the run's staging area, named in the brief's
+frontmatter. It is copied to the destination only after the verifier's whole-file security
+scan passes. The brief is the one file written at the destination before that, because the
+orchestrator authors it and it carries no fetched text.
+
 ## Destination resolution
 
 Resolve in this order and stop at the first hit. Say which rule fired, in one line.
@@ -23,15 +30,24 @@ Resolve in this order and stop at the first hit. Say which rule fired, in one li
 | 2 | The invocation says ephemeral ("scratch", "throwaway", "just tell me") | the session scratchpad; shape `answer` or `report` |
 | 3 | A **KB root** is in scope: a directory at or above the working directory containing `KB.md` whose frontmatter says `kind: research-kb`, or a path named under a `research:` key in the repo's `CLAUDE.md` | that KB; shape `kb` |
 | 4 | The session is inside an `investigate` series (the working thread has a `.claude-sandbox/investigations/<slug>/` it is writing to) | `<series>/research/<run>/`; shape `run`; the series' `INDEX.md` gets one line; `investigation-format.md` governs the series, this file governs the run dir |
-| 5 | Otherwise | the sidecar `.claude-sandbox/research/<run>/` (gitignored by the sandbox convention; survives the session, stays out of the tree); shape `run` |
+| 5 | Otherwise | the sidecar `.claude-sandbox/research/<run>/`; shape `run` |
+
+Rules 4 and 5 are **untracked-only**. Whether `.claude-sandbox/` is ignored is a per-repo
+choice (some repos commit their investigations), so before either fires run
+`git check-ignore -q <path>` on the candidate directory: ignored → use it; tracked, or not a
+git repo → the path counts as checked-in, and with no marker or flag the run goes to the
+scratchpad instead (shape `run`, in staging), with a line saying why. Never assume the
+sidecar is untracked.
 
 When two KB roots are in scope (a repo-level one and a subdirectory one), prefer the nearer.
 When rule 5 fires in a repo that has no `.claude-sandbox/`, create `.claude-sandbox/research/`
 and say so; do not fall back to a tracked path.
 
 **Promotion out of the sidecar** — "this was worth keeping, check it in" — is a separate,
-explicit step: copy the run to `docs/research/<run>/` (or the path the operator names), add
-frontmatter `promoted_from:`, and leave the sidecar copy in place. If the repo would benefit
+explicit step, and it is gated: it refuses unless the run's `verification.md` exists and its
+security section is clean (a run that was never verified is verified first). Then copy the
+run to `docs/research/<run>/` (or the path the operator names), add frontmatter
+`promoted_from:`, and leave the sidecar copy in place. If the repo would benefit
 from a KB, offer to establish one (below) rather than accumulating loose run dirs under
 `docs/`.
 
@@ -60,8 +76,9 @@ says so and names the path.
 ```
 
 Runs are **append-only**: once `01-synthesis.md` is written, nothing in the directory is
-edited. A refinement is a new run that names the old one in `supersedes:`; a correction is a
-new run. This is what makes a run citable.
+edited — with one permitted exception, `superseded_by:` added to the brief's frontmatter when
+a later run supersedes it. A refinement is a new run that names the old one in `supersedes:`;
+a correction is a new run. This is what makes a run citable.
 
 `findings/` is flat, always. Nesting under a run is the failure mode the ≤300-line contract
 exists to prevent — the synthesis has to read every file in one pass.
