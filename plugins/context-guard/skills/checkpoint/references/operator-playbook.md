@@ -129,11 +129,20 @@ log, the work-item store — outranks the manifest).
 ## Where the manifest lives
 
 One file per session, in the Claude config dir:
-`${CLAUDE_CONFIG_DIR:-~/.claude}/claude-kit/handoff/<sid>/HANDOFF.md`. Nothing goes into the
-repo, so concurrent sessions in one checkout never overwrite each other's, and the manifest
-is never committed. Its path cannot be guessed, so **every checkpoint's last message prints
-it**; a handoff also prints `/clear`, `/compact <guidance>` and a one-line opener to paste,
-whose "Read (the Read tool) <path> in full" is what hands the file to a new session.
+`${CLAUDE_CONFIG_DIR:-~/.claude}/claude-kit/handoff/<sid>/HANDOFF.md`. **Nothing goes into the
+repo, deliberately**: not every consumer of a manifest runs inside `claude-sandbox`, so a
+repo path can't be assumed to mean anything to whatever reads it next; and a repo-visible copy
+is exactly what let concurrent sessions in one checkout overwrite each other's memory before
+this store existed — the harm the per-session move was for. With nothing in the repo that
+overwrite can't happen, and the manifest is never committed. Its path cannot be guessed, so
+**every checkpoint's last message prints it**; a handoff also prints `/clear`,
+`/compact <guidance>` and a one-line opener to paste, whose "Read (the Read tool) <path> in
+full" is what hands the file to a new session. An operator, or any consumer that isn't a fresh
+Claude Code session reading that opener — a script, a human at a shell, a tool other than
+Claude Code — gets the same path without parsing session output: `handoff_path.py --path
+<sid>` (a lookup only; it writes nothing and records no checkpoint), run the same way as the
+commands in "Unattended checkpoints need three commands allowed" below, with `<root>` resolved
+the same way.
 
 A handoff's close, for example (a session in librarian mode, handing on to an implement
 run):
