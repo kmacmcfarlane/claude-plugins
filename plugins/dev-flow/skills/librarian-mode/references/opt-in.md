@@ -34,6 +34,13 @@ written:
 One AskUserQuestion call, three questions, the first option of each the default, so
 Enter three times accepts the defaults.
 
+This dialog, and the Scope question alone above, are the librarian's only modal prompts
+(SKILL.md § Intake step 3 sends every other decision through the numbered channel). They
+are allowed because nothing can be in flight by construction: they run in Rehydrate,
+before this session has dispatched an agent or taken a peer's request. So run ListAgents
+first: a background agent still running (a re-entry after compaction) means no dialog —
+raise the opt-in as a numbered `decision N:` and dispatch nothing until it is answered.
+
 1. **Scope** — what the librarian owns. Options, in this order:
    - `Whole repo` — every tracked path except `.claude-sandbox/` and `.claude/`, which
      are always outside Scope (the store, sandbox config and worktrees belong to the
