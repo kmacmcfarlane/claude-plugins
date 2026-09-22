@@ -18,3 +18,5 @@ Holds (e.g. no push until X, keep dispatch small until Y) get their own section 
 - next: —
 - blocked: —
 - learned: —
+
+from H4 (a824) review, 2026-09-22 — H3 inputs: keep ## In flight and ## Copy forward out of the trim order (handoff-format note) and add a test pinning it; librarian-mode SKILL.md § Rehydrate step 3 resumes roster agent ids (from doing:/dispatch: lines) with SendMessage before any re-dispatch.

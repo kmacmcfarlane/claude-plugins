@@ -31,3 +31,5 @@ review r1 (opus) at 83b9a0d: NEEDS_CHANGES. Seven Checks OK.
 - [medium] plan's rehearsal acceptance not run. librarian decision: WAIVED — a rehearsal checkpoint in the live librarian session writes the shared repo HANDOFF.md and stands the gate down; H1 is changing the same write path; re-check at H1/F3b landing instead.
 - lows: fresh-process "cannot resume" unverified → "try SendMessage first"; "drained" should count a returned-but-unfinished role; "never trims" only true by placement (+ H3 note); "common briefs" names a local habit; nit: sub-agent rule should say what to do instead.
 dispatch: implementer opus — fix round 1 (resume)
+fix r1 DONE 0e707ca (opus): one full In flight rule in handoff-format (returned-but-unfinished counts; fresh process: try SendMessage first); 4b a pointer; Step 7 opener names ids to resume (+ copy-forward paths); copies go to the series, never items/; librarian doc points by name; all lows fixed. OQs → H3: librarian Rehydrate step 3 resumes roster ids; a test pinning In flight/Copy forward out of the trim list.
+dispatch: reviewer opus — review r2 (resume)
