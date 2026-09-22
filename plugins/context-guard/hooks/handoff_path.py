@@ -14,7 +14,9 @@ state and never records a checkpoint - `mark_checkpoint.py` alone stands the
 gate down, and its argv contract is untouched. `--path` is required so the
 command says what it does at the call site. The session id is optional:
 $CLAUDE_CODE_SESSION_ID wins whenever it is set, exactly as the mark step
-resolves it, so an id passed that differs from the env's names nothing.
+resolves it, so an id passed that differs from the env's names nothing. An
+argument starting with `-` is a mistyped flag, never an id (`--path --path`
+would otherwise print the path of a session called `--path`).
 """
 import os, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -26,7 +28,8 @@ USAGE = "usage: handoff_path.py --path [<session_id>]"
 
 
 def main(argv):
-    if not 2 <= len(argv) <= 3 or argv[1] != "--path":
+    if not 2 <= len(argv) <= 3 or argv[1] != "--path" \
+            or (len(argv) == 3 and argv[2].startswith("-")):
         sys.exit(USAGE)
     want = this_session(argv[2] if len(argv) == 3 else "")
     if not want:

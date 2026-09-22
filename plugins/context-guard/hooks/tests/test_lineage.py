@@ -1114,6 +1114,53 @@ class TestMarkStampsTheOwnPath(Base):
         self.assertIn(f"{p} has `session: X`", w[0])
         self.assertNotIn(self.path, w[0])
 
+    def test_a_symlink_at_the_store_path_is_not_ours_by_path(self):
+        # The store directory is shared by every session reading this config
+        # dir, so a link planted there must not make a peer's file "ours".
+        L.save_state("S", {"epoch": 0})
+        self.checkpoint("PEER")
+        before = self.stat_of(self.path)
+        p = self.store_path("S")
+        os.makedirs(os.path.dirname(p))
+        os.symlink(self.path, p)
+        r = self.run_cli("S", env_sid="S")
+        self.assertEqual(r.returncode, 0)
+        self.assertEqual(self.stat_of(self.path), before)   # main's answer
+        self.assertIn("not stamped", r.stderr)
+        self.assertIn("`session: PEER`", r.stderr)
+
+    def test_a_symlink_at_the_session_directory_is_not_ours_by_path(self):
+        L.save_state("S", {"epoch": 0})
+        self.checkpoint("PEER")
+        before = self.stat_of(self.path)
+        p = self.store_path("S")
+        root = os.path.dirname(os.path.dirname(p))
+        os.makedirs(root)
+        os.symlink(self.repo, os.path.dirname(p))     # <sid>/ -> the repo
+        self.assertTrue(os.path.exists(p))            # and so does <sid>/HANDOFF.md
+        r = self.run_cli("S", env_sid="S")
+        self.assertEqual(self.stat_of(self.path), before)
+        self.assertIn("not stamped", r.stderr)
+        self.assertIn("`session: PEER`", r.stderr)
+
+    def test_an_unreadable_store_manifest_names_the_file(self):
+        L.save_state("S", {"epoch": 0})
+        self.checkpoint("S")                       # a stampable repo manifest
+        before = self.stat_of(self.path)
+        p = self.store_checkpoint("S")
+        os.chmod(p, 0)          # the parent dir stays writable, so it cleans up
+        if os.access(p, os.R_OK):
+            self.skipTest("running as a user that ignores file modes")
+        r = self.run_cli("S", env_sid="S")
+        self.assertEqual(r.returncode, 0)
+        self.assertIn("not stamped", r.stderr)
+        self.assertIn(p, r.stderr)                 # the file, by name
+        self.assertIn("PermissionError", r.stderr)
+        # It does not fall back: stamping the shared repo file would put a
+        # fresh stamp on a manifest this checkpoint did not write.
+        self.assertEqual(self.stat_of(self.path), before)
+        self.assertIn("checkpoint recorded", r.stdout)
+
     def test_top_is_stamped_on_the_legacy_manifest_too(self):
         L.save_state("S", {"epoch": 0})
         writef(self.path, SPEC_EXAMPLE)
@@ -1163,7 +1210,10 @@ class TestHandoffPath(Base):
         self.assertEqual(p.stdout, "")
 
     def test_usage(self):
-        for args in ([], ["S"], ["--path", "S", "extra"], ["--pathx", "S"]):
+        # A `-` argument is a mistyped flag, never a session id: without that
+        # rule `--path --path` prints the path of a session called `--path`.
+        for args in ([], ["S"], ["--path", "S", "extra"], ["--pathx", "S"],
+                     ["--path", "--path"], ["--path", "-S"]):
             p = self.run_path(*args)
             self.assertEqual(p.returncode, 1, args)
             self.assertIn("usage: handoff_path.py --path", p.stderr)

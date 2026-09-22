@@ -46,7 +46,11 @@ On the store path that claim test collapses: the file is this session's by
 path, so no other session can be writing it, and a `session:` copied from a
 predecessor's manifest is simply corrected. The path is built from
 this_session(sid, environ) - $CLAUDE_CODE_SESSION_ID first - so an argv id
-that differs from the env's still names nothing.
+that differs from the env's still names nothing. Ownership by path is only
+as good as the path, so it is checked by realpath (own_store_manifest): a
+symlink planted at that file, or at the <sid>/ directory above it, resolves
+out of the store, is not this session's manifest, and is left to the legacy
+arm's claim test rather than rewritten as ours.
 A manifest this session already stamped and nobody rewrote since (the same
 head, branch, top and session, and an mtime within STAMP_TOUCH_S of its
 `written:`) is left as it is, so repeated marks do not re-date it.
@@ -93,6 +97,40 @@ def store_manifest_path(sid):
         return fn(sid)
     return os.path.join(L._base_dir(), "claude-kit", "handoff",
                         L.safe_sid(sid), "HANDOFF.md")
+
+
+def own_store_manifest(path, sid):
+    """Whether `path` really IS `sid`'s own manifest in the store, and not a
+    symlink - at the file, or at the <sid>/ directory above it - pointing at
+    something else. The store directory is shared by every session that reads
+    this config dir, so the path existing is not the same as it being ours,
+    and it is ownership by path that collapses the claim test: without this,
+    a planted link would make an arbitrary file "ours" and have it rewritten
+    with no warning. Decided on realpath, so a link out of the store resolves
+    out of the store and fails. A path that fails is not this session's
+    manifest and falls through to the legacy arm and its claim test.
+
+    L.manifest_sid once 8cc2-F3b-1 has landed, and the same comparison until
+    it does; delete the fallback with that merge (store_manifest_path)."""
+    try:
+        fn = getattr(L, "manifest_sid", None)
+        if fn is not None:
+            return fn(path) == L.safe_sid(sid)
+        root = os.path.realpath(os.path.join(L._base_dir(), "claude-kit",
+                                             "handoff"))
+        return os.path.realpath(path) == os.path.join(root, L.safe_sid(sid),
+                                                      "HANDOFF.md")
+    except Exception:
+        return False
+
+
+class TargetUnreadable(Exception):
+    """A manifest that was found but could not be read, carrying its path so
+    the warning can name it: the target is not interchangeable, so a read
+    failure is reported against that file and nothing else is stamped."""
+    def __init__(self, path, exc):
+        super().__init__(path, exc)
+        self.path, self.exc = path, exc
 
 
 def restamp(raw, fields):
@@ -202,18 +240,24 @@ def stamp_target(want, cwd):
     is_store). `want` is this session (this_session), so the store file is the
     one no other session can name.
 
-    This session's own store manifest when that file exists, else the legacy
-    repo manifest, read exactly as it is today - the transitional fallback
-    that keeps checkpoints working end to end while the checkpoint skill still
-    writes the repo file (8cc2-F3b-2; it goes away with the legacy read).
-    `top` is the repo the stamp records: the cwd's git toplevel, else the cwd.
-    (None, top, None, False) when neither manifest exists."""
+    This session's own store manifest when that file exists AND is really
+    ours (own_store_manifest: a link planted at that path is not), else the
+    legacy repo manifest, read exactly as it is today - the transitional
+    fallback that keeps checkpoints working end to end while the checkpoint
+    skill still writes the repo file (8cc2-F3b-2; it goes away with the legacy
+    read). `top` is the repo the stamp records: the cwd's git toplevel, else
+    the cwd. (None, top, None, False) when neither manifest exists; raises
+    TargetUnreadable when this session's own manifest cannot be read - no
+    other file stands in for it."""
     import rehydrate as R
     p = store_manifest_path(want)
-    if os.path.exists(p):
-        with open(p, errors="replace") as fh:
-            return p, (R.git(cwd, "rev-parse", "--show-toplevel") or cwd), \
-                fh.read(), True
+    if os.path.exists(p) and own_store_manifest(p, want):
+        try:
+            with open(p, errors="replace") as fh:
+                text = fh.read()
+        except OSError as e:
+            raise TargetUnreadable(p, e)
+        return p, (R.git(cwd, "rev-parse", "--show-toplevel") or cwd), text, True
     path, top, text = R.read_manifest(cwd)
     return path, top, text, False
 
@@ -288,6 +332,11 @@ def stamp_manifest(sid, cwd=None, environ=None, now=None):
         out.append(f"stamped {path} (written {fields['written']}, head "
                    f"{fields.get('head', '?')}, branch {fields.get('branch', '?')}, "
                    f"top {top}, session {want})")
+    except TargetUnreadable as e:
+        warn.append(f"mark_checkpoint.py: not stamped: {e.path}, this session's "
+                    f"own manifest and the file Step 4b writes, could not be "
+                    f"read ({type(e.exc).__name__}); nothing else was stamped "
+                    f"in its place. Fix the file, then run this again.")
     except Exception as e:
         warn.append(f"mark_checkpoint.py: not stamped: {type(e).__name__}.")
     return out, warn
