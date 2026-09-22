@@ -37,14 +37,24 @@ this window's); `agent_type` alone is the main thread of an --agent session.
 A checkpoint UNDERWAY stands it down too. `checkpointed_this_epoch` only
 turns true at the mark (Step 4b), and a checkpoint spends tokens before it
 gets there - enough to flip hard to hard_nofit, whose text says to abandon
-the checkpoint and end the turn. So the skill opens by writing
-`checkpoint_started` = {epoch, at}:
+the checkpoint and end the turn. So the skill writes `checkpoint_started` =
+{epoch, at, tok}:
     python3 turn_gate.py --checkpointing <session_id>
 and the mark clears it (L.mark_checkpoint). While it stands, this hook says
-nothing and `--check` answers "not armed", so a marker can neither restart
-nor abandon a checkpoint in flight. It lapses after CHECKPOINT_GRACE_S, so
-an abandoned checkpoint cannot silence the gate for the rest of the epoch,
-and a stamp from the future (a clock change) does not count.
+nothing and `--check` reports it - LAST, after the record's own epoch and
+tier tests, so this one command cannot dress a forged or stale marker up as
+a checkpoint in progress. It refuses an id with no state file, as
+mark_checkpoint.py does: a live session always has one, so a missing file is
+a typo, and writing one would stand a phantom session's gate down while the
+real session stayed armed.
+
+It lapses on either clock: CHECKPOINT_GRACE_S of wall time, or
+L.CHECKPOINT_MIN_TOKENS of growth past the depth it started at (callers that
+have measured one pass `tok`). The wall clock alone was not enough - a
+stand-down starts at the hard line, where 30 minutes of unconditional
+silence can spend what is left of the window, and past that much growth the
+checkpoint it was protecting no longer fits anyway. A stamp from the future
+(a clock change) does not count either.
 
 Cost: with the mirror off (CONTEXT_GUARD_DERIVE=off or a window pin) and no
 fresh exact record, nothing could be said, so it returns before any
@@ -80,10 +90,17 @@ MARKER = "[context-guard context gate] HARD, mid-turn"
 CHECKPOINT_GRACE_S = 30 * 60
 
 
-def checkpoint_in_flight(st, now=None):
+def checkpoint_in_flight(st, now=None, tok=None):
     """True while a checkpoint started this epoch has not reached its mark.
-    A record from another epoch, a malformed one, one already lapsed, and one
-    stamped in the future all read as False: the gate speaks by default."""
+    A record from another epoch, a malformed one, one stamped in the future,
+    and one that has lapsed all read as False: the gate speaks by default.
+
+    It lapses two ways. The wall clock caps how long one stand-down can last
+    (CHECKPOINT_GRACE_S), and `tok` - the depth now, when the caller has
+    measured one - caps how much window it may cost: a stand-down starts at
+    the hard line, so 30 minutes of unconditional silence there can spend the
+    last of the window. Past CHECKPOINT_MIN_TOKENS of growth the checkpoint
+    it was protecting no longer fits anyway, so the gate speaks again."""
     cs = st.get("checkpoint_started")
     if not isinstance(cs, dict):
         return False
@@ -93,7 +110,27 @@ def checkpoint_in_flight(st, now=None):
         since = (time.time() if now is None else now) - float(cs.get("at"))
     except (TypeError, ValueError):
         return False
-    return 0 <= since <= CHECKPOINT_GRACE_S
+    if not 0 <= since <= CHECKPOINT_GRACE_S:
+        return False
+    try:
+        if tok is not None and cs.get("tok") is not None:
+            return int(tok) - int(cs["tok"]) <= L.CHECKPOINT_MIN_TOKENS
+    except (TypeError, ValueError):
+        return True     # an unreadable depth is no reason to start speaking
+    return True
+
+
+def depth_now(sid, st):
+    """The best depth available without reading the transcript: a fresh exact
+    record, else the last depth the prompt gate scored. None when neither is
+    there - the token lapse then simply does not apply."""
+    try:
+        ex = L.sensor(sid, st) or {}
+        if L.exact_fresh(ex) and ex.get("tokens"):
+            return int(ex["tokens"])
+        return int(st.get("tokens") or 0) or None
+    except (TypeError, ValueError, AttributeError):
+        return None
 
 
 def tier_of(m):
@@ -150,13 +187,19 @@ def armed(st):
         return False, "the gate state is unreadable: its epoch is not a number"
     if L.checkpointed_this_epoch(st):
         return False, "a checkpoint already ran this epoch"
-    if checkpoint_in_flight(st):
-        return False, ("a checkpoint is already underway; finish it through "
-                       "Step 4b and the mark")
+    # The record's own tests come FIRST. `checkpoint_started` is written by
+    # whoever runs --checkpointing, so testing it earlier would let that one
+    # command turn every real not-armed reason - a forged marker, an earlier
+    # epoch, a DUE tier - into "a checkpoint is already underway", whose
+    # documented answer is to carry on checkpointing. It is the last test, so
+    # it can only ever soften an otherwise ARMED answer.
     if tg.get("epoch") != ep:
         return False, "the mid-turn gate record is from an earlier epoch"
     if tg.get("tier") not in HARD_TIERS:
         return False, f"the mid-turn gate last fired at tier {tg.get('tier')!r}, not HARD"
+    if checkpoint_in_flight(st):
+        return False, ("a checkpoint is already underway; finish it through "
+                       "Step 4b and the mark")
     return True, f"{tg['tier']} at {tg.get('tok')} tokens, epoch {tg['epoch']}"
 
 
@@ -169,23 +212,38 @@ def check(argv):
 
 
 def checkpointing(argv):
-    """Stand the gate down for the checkpoint about to run. Never fails the
-    checkpoint: an unwritable state dir makes the hook silent anyway."""
+    """Stand the gate down for the checkpoint about to run."""
     if len(argv) != 1:
         print("usage: turn_gate.py --checkpointing <session_id>"); return 2
     sid = argv[0]
+    if not os.path.exists(L.state_path(sid)):
+        # A live session always has state (every prompt's gate hook writes
+        # it), so a missing file is a mistyped id. Writing one would create a
+        # phantom session - standing ITS gate down while the real session
+        # stays armed - and would also defeat mark_checkpoint.py's refusal on
+        # the same id, which exists for exactly that reason.
+        print(f"turn_gate.py: no context-gate state for session {sid!r} "
+              f"(expected {L.state_path(sid)}); check the session id - "
+              f"nothing written, the gate is NOT stood down.")
+        return 1
+    why = None
     try:
         L.update_state(sid, lambda s: s.__setitem__(
-            "checkpoint_started", {"epoch": L.epoch(s), "at": time.time()}))
+            "checkpoint_started", {"epoch": L.epoch(s), "at": time.time(),
+                                   "tok": depth_now(sid, s)}))
+    except (TypeError, ValueError):
+        why = ("the state's `epoch` is not a number, so the record has no "
+               "epoch to sit in")
     except Exception:
-        pass
+        why = "the state could not be written"
     if checkpoint_in_flight(L.load_state(sid)):
-        print(f"mid-turn gate stood down for this checkpoint "
-              f"(up to {CHECKPOINT_GRACE_S // 60} min, or until the mark)")
+        print(f"mid-turn gate stood down for this checkpoint (until the mark, "
+              f"or {CHECKPOINT_GRACE_S // 60} min, or "
+              f"{L.CHECKPOINT_MIN_TOKENS:,} more tokens)")
     else:
-        print("mid-turn gate not stood down: the state could not be written. "
-              "It is silent without a state record, so carry on; if a "
-              "`HARD, mid-turn` marker arrives, it is not a second checkpoint.")
+        print(f"mid-turn gate not stood down: {why or 'the record did not land'}. "
+              f"Carry on with the checkpoint; if a `HARD, mid-turn` marker "
+              f"arrives, it is not a second checkpoint to start.")
     return 0
 
 
@@ -198,7 +256,8 @@ def main():
         print(json.dumps({})); return
     sid = inp.get("session_id") or "unknown"
     st = L.load_state(sid)
-    if L.checkpointed_this_epoch(st) or checkpoint_in_flight(st):
+    if (L.checkpointed_this_epoch(st)
+            or checkpoint_in_flight(st, tok=depth_now(sid, st))):
         print(json.dumps({})); return
     if L.mirror_off() and not L.exact_fresh(L.sensor(sid, st)):
         # The depth would be inferred: nothing to say, so read nothing.
@@ -216,7 +275,8 @@ def main():
             s["scan"] = m["scan_cache"]
         if m.get("side_cache"):
             s["sidechains"] = m["side_cache"]
-        if tier is None or L.checkpointed_this_epoch(s) or checkpoint_in_flight(s):
+        if (tier is None or L.checkpointed_this_epoch(s)
+                or checkpoint_in_flight(s, tok=m["tokens"])):
             # Re-read under the lock: a checkpoint may have started, or
             # reached its mark, since the measurement above.
             return

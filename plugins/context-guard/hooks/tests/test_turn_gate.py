@@ -236,9 +236,13 @@ class TestCheck(HookBase):
         rc, out = self.standdown()
         self.assertEqual(rc, 0)
         self.assertIn("stood down", out)
-        for tokens in (970_000, 982_000, 999_000):   # 30K, 18K, 1K left
-            with self.subTest(left=1_000_000 - tokens):
-                self.set_exact("s", tokens, 1_000_000)
+        # Silent for as long as the checkpoint can still finish: up to
+        # CHECKPOINT_MIN_TOKENS of growth, the lean checkpoint's own cost.
+        # 30K left flips the tier to hard_nofit, and 25K crosses the DUE
+        # cadence; neither may speak.
+        for spent in (5_000, 15_000, L.CHECKPOINT_MIN_TOKENS):
+            with self.subTest(spent=spent):
+                self.set_exact("s", 955_000 + spent, 1_000_000)
                 self.assertEqual(self.gate()[:2], (0, {}))
         rc, out = self.check()
         self.assertEqual(rc, 1)
@@ -261,6 +265,61 @@ class TestCheck(HookBase):
         L.reset_epoch("s")
         self.set_exact("s", 955_000, 1_000_000)
         self.assertIn(MARKER, ctx(self.gate()[1]))
+
+    def test_a_stand_down_cannot_mask_a_real_not_armed_reason(self):
+        # --checkpointing is one command away for anyone, so if it were tested
+        # before the record's own epoch and tier, running it first would turn
+        # every real refusal into "a checkpoint is already underway" - which
+        # reads as "carry on checkpointing", the answer a forged marker wants.
+        self.set_exact("s", 860_000, 1_000_000)          # DUE, not HARD
+        self.assertIn("DUE:", ctx(self.gate()[1]))
+        self.standdown()
+        rc, out = self.check()
+        self.assertEqual(rc, 1)
+        self.assertIn("not HARD", out)
+        self.assertNotIn("underway", out)
+        # same for an earlier epoch, and for no record at all
+        L.reset_epoch("s")
+        self.standdown()
+        self.assertIn("earlier epoch", self.check()[1])
+        L.save_state("x", {"epoch": 0})
+        self.standdown("x")
+        self.assertIn("no mid-turn gate record", self.check("x")[1])
+
+    def test_an_id_with_no_state_is_refused_and_writes_nothing(self):
+        # mark_checkpoint.py refuses a mistyped id rather than stand down a
+        # session that does not exist; this must not create the file that
+        # would make that refusal succeed on the next try.
+        rc, out = self.standdown("typo-id")
+        self.assertEqual(rc, 1)
+        self.assertIn("no context-gate state", out)
+        self.assertIn("NOT stood down", out)
+        self.assertFalse(os.path.exists(L.state_path("typo-id")))
+        import subprocess
+        p = subprocess.run([sys.executable, os.path.join(HOOKS, "mark_checkpoint.py"),
+                            "typo-id"], capture_output=True, text=True,
+                           env=dict(os.environ, **self.env), timeout=30)
+        self.assertNotEqual(p.returncode, 0)
+        self.assertIn("no context-gate state", p.stderr)
+
+    def test_the_stand_down_lapses_on_token_growth(self):
+        # The wall clock alone is the wrong bound: a stand-down starts at the
+        # hard line, so 30 unconditional minutes there can spend the window.
+        self.set_exact("s", 955_000, 1_000_000)
+        self.assertIn(MARKER, ctx(self.gate()[1]))
+        self.standdown()
+        started = L.load_state("s")["checkpoint_started"]
+        self.assertEqual(started["tok"], 955_000)
+        for spent, quiet in ((L.CHECKPOINT_MIN_TOKENS, True),
+                             (L.CHECKPOINT_MIN_TOKENS + 1, False)):
+            with self.subTest(spent=spent):
+                st = L.load_state("s")
+                st["checkpoint_started"] = dict(started)
+                st.pop("turn_gate", None)
+                L.save_state("s", st)
+                self.set_exact("s", 955_000 + spent, 1_000_000)
+                out = ctx(self.gate()[1])
+                self.assertEqual(out == "", quiet, out)
 
     def test_checkpointing_usage(self):
         import subprocess
