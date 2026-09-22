@@ -21,7 +21,6 @@ import hashlib
 import json
 import os
 import re
-import shutil
 import subprocess
 import sys
 import time
@@ -968,9 +967,9 @@ def read_raw(path):
 
 def atomic_write(path, text, create=False):
     """tmp+rename. With create=True the file must not exist yet: the tmp is
-    hard-linked into place, which fails rather than replace a file that
-    appeared since the caller looked (O_EXCL semantics; atomic where the
-    filesystem has hard links, see _link_no_clobber)."""
+    moved into place by _move_no_clobber, which fails rather than replace a
+    file that appeared since the caller looked (O_EXCL semantics, and the
+    content still lands in one step)."""
     tmp = path.with_name(path.name + ".tmp" + str(os.getpid()))
     with open(tmp, "w", newline="") as fh:
         fh.write(text)
@@ -978,29 +977,58 @@ def atomic_write(path, text, create=False):
         os.replace(tmp, path)
         return
     try:
-        _link_no_clobber(tmp, path)
+        _move_no_clobber(tmp, path)
     finally:
         if tmp.exists():
             tmp.unlink()
 
 
-def _link_no_clobber(src, dst):
-    """Give `src`'s file the name `dst`, never replacing an existing `dst`;
-    raises WiError(3) when `dst` exists. Leaves `src` in place."""
+def _refuse_existing(dst):
+    return WiError(3, f"refusing to overwrite existing {dst}; nothing written for it")
+
+
+def _move_no_clobber(src, dst):
+    """Move `src` to `dst`, never replacing an existing `dst` (WiError 3).
+
+    A hard link is the atomic no-clobber rename. Where the filesystem has
+    none, the name is reserved with O_EXCL and `src` is renamed over that
+    empty reservation, so the content still lands in one step; if the rename
+    fails, the reservation is removed while it is still ours (same inode,
+    size 0) and WiError is raised — never a half-written file under `dst`.
+    On any error `src` is left in place."""
     try:
         os.link(src, dst)
-        return
     except FileExistsError:
-        raise WiError(3, f"refusing to overwrite existing {dst}; "
-                         "nothing written for it") from None
+        raise _refuse_existing(dst) from None
     except OSError:
         pass  # no hard links on this filesystem: reserve the name instead
+    else:
+        try:
+            os.unlink(src)
+        except OSError as e:
+            raise WiError(3, f"{dst} written but {src} not removed: {e}") from None
+        return
     try:
-        os.close(os.open(dst, os.O_WRONLY | os.O_CREAT | os.O_EXCL))
+        fd = os.open(dst, os.O_WRONLY | os.O_CREAT | os.O_EXCL)
     except FileExistsError:
-        raise WiError(3, f"refusing to overwrite existing {dst}; "
-                         "nothing written for it") from None
-    shutil.copyfile(src, dst)
+        raise _refuse_existing(dst) from None
+    except OSError as e:
+        raise WiError(3, f"cannot create {dst}: {e}") from None
+    try:
+        reserved = os.fstat(fd)
+    finally:
+        os.close(fd)
+    try:
+        os.replace(src, dst)
+    except OSError as e:
+        try:
+            now = os.lstat(dst)
+            if (now.st_dev, now.st_ino) == (reserved.st_dev, reserved.st_ino) \
+                    and now.st_size == 0:
+                os.unlink(dst)
+        except OSError:
+            pass
+        raise WiError(3, f"cannot write {dst}: {e}; nothing written for it") from None
 
 
 def taken_ids(root, items):
@@ -2332,9 +2360,10 @@ def _fold_story(v):
 
 
 def _story_value(story, key):
-    """A backlog field as a front-matter value: empty, or the `—` placeholder
-    wi itself reads as "no value", or blank after strip(), is None — so a `blocked_reason: "—"` never
-    lands as a literal dash now that a quoted `—` reads back as one."""
+    """A backlog field as a front-matter value: empty, blank after strip(),
+    or the `—` placeholder wi itself reads as "no value", is None — so a
+    `blocked_reason: "—"` never lands as a literal dash now that a quoted
+    `—` reads back as one."""
     v = story.get(key) or None
     return None if isinstance(v, str) and v.strip() in ("", "—") else v
 
@@ -2576,8 +2605,7 @@ def cmd_archive(args):
             moves.append((item.path, dest))
         for src, dest in moves:
             dest.parent.mkdir(parents=True, exist_ok=True)
-            _link_no_clobber(src, dest)
-            src.unlink()
+            _move_no_clobber(src, dest)
         moved = len(moves)
     print(f"archived {moved}")
     return 0

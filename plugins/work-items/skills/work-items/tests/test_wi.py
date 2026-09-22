@@ -8,6 +8,8 @@ falls back to a structural assertion otherwise.
 """
 import contextlib
 import difflib
+import errno
+import hashlib
 import importlib.util
 import io
 import itertools
@@ -722,10 +724,13 @@ class TestIdCollisions(WiTestCase):
         self.assertEqual(len(self.files()), 44)
         self.wi_ok(["lint"])
 
+    @staticmethod
+    def zero_suffix(title):
+        """The suffix a draw makes when os.urandom returns zero bytes."""
+        return hashlib.sha1((title + wi.today()).encode() + bytes(8)).hexdigest()[:4]
+
     def test_import_update_new_item_skips_an_id_in_the_store(self):
-        const = lambda k: bytes(k)
-        with mock.patch.object(wi.os, "urandom", const):
-            taken = "dup-" + wi._id_suffix("dup", wi.today())
+        taken = "dup-" + self.zero_suffix("dup")
         self.write_item(taken, "kept")
         before = (self.root / "items" / f"{taken}.md").read_text()
         # the store's id and then a free one
@@ -742,8 +747,7 @@ class TestIdCollisions(WiTestCase):
 
     def test_exhausted_retries_fail_loudly_and_write_nothing(self):
         const = lambda k: bytes(k)
-        with mock.patch.object(wi.os, "urandom", const):
-            taken = "dup-" + wi._id_suffix("dup", wi.today())
+        taken = "dup-" + self.zero_suffix("dup")
         self.write_item(taken, "kept")
         before = (self.root / "items" / f"{taken}.md").read_text()
         rc, err = self.wi_main(["add", "dup"], const)
@@ -781,6 +785,81 @@ class TestIdCollisions(WiTestCase):
             wi.atomic_write(path, "mine\n", create=True)
         self.assertEqual(path.read_text(), "someone else's\n")
         self.assertEqual(list((self.root / "items").glob("*.tmp*")), [])
+
+    def test_add_skips_a_stray_file_whose_stem_is_not_its_id(self):
+        """Only the filename, not any loaded id, holds this id: the stray
+        file under the drawn name must survive and the add take another."""
+        stray = self.root / "items" / f"dup-{self.zero_suffix('dup')}.md"
+        self.write_item("other-9999", "stray")
+        (self.root / "items" / "other-9999.md").rename(stray)
+        before = stray.read_text()
+        seq = iter([bytes(8), b"\x01" * 8])
+        rc, err = self.wi_main(["add", "dup"], lambda k: next(seq))
+        self.assertEqual(rc, 0, err)
+        self.assertEqual(stray.read_text(), before)
+        self.assertEqual(len(self.files()), 2)
+
+    def no_links(self):
+        def link(src, dst):
+            raise OSError(errno.EPERM, "Operation not permitted")
+        return mock.patch.object(wi.os, "link", link)
+
+    def failing_replace(self):
+        real = os.replace
+
+        def replace(src, dst):
+            if Path(dst).suffix == ".md":
+                raise OSError(errno.EIO, "Input/output error")
+            return real(src, dst)
+        return mock.patch.object(wi.os, "replace", replace)
+
+    def test_create_without_hard_links_falls_back_whole(self):
+        with self.no_links():
+            rc, err = self.wi_main(["add", "fallback"], os.urandom)
+        self.assertEqual(rc, 0, err)
+        self.assertEqual(len(self.files()), 1)
+        self.assertEqual(list((self.root / "items").glob("*.tmp*")), [])
+        self.wi_ok(["lint"])
+        # the fallback still refuses an existing file
+        path = self.root / "items" / "race-5555.md"
+        path.write_text("someone else's\n")
+        with self.no_links(), self.assertRaises(wi.WiError):
+            wi.atomic_write(path, "mine\n", create=True)
+        self.assertEqual(path.read_text(), "someone else's\n")
+
+    def test_create_fallback_failure_leaves_no_file(self):
+        self.write_item("kept-1111", "kept")
+        with self.no_links(), self.failing_replace():
+            rc, err = self.wi_main(["add", "doomed"], os.urandom)
+        self.assertEqual(rc, 3)
+        self.assertIn("nothing written", err)
+        self.assertEqual(self.files(), ["kept-1111.md"])
+        self.assertEqual(list((self.root / "items").glob("*.tmp*")), [])
+        self.wi_ok(["ls", "--status", "all"])
+        self.wi_ok(["lint"])
+
+    def test_archive_without_hard_links_falls_back_whole(self):
+        self.write_item("old-1111", status="done", closed="2026-01-02")
+        before = (self.root / "items" / "old-1111.md").read_text()
+        with self.no_links():
+            rc, err = self.wi_main(["archive", "--older-than", "0d"], os.urandom)
+        self.assertEqual(rc, 0, err)
+        dest = self.root / "archive" / "2026" / "old-1111.md"
+        self.assertEqual(dest.read_text(), before)
+        self.assertEqual(self.files(), [])
+        self.wi_ok(["show", "old-1111", "--brief"])
+
+    def test_archive_fallback_failure_leaves_the_item_in_place(self):
+        self.write_item("old-1111", status="done", closed="2026-01-02")
+        before = (self.root / "items" / "old-1111.md").read_text()
+        with self.no_links(), self.failing_replace():
+            rc, err = self.wi_main(["archive", "--older-than", "0d"], os.urandom)
+        self.assertEqual(rc, 3)
+        self.assertIn("cannot write", err)
+        self.assertEqual((self.root / "items" / "old-1111.md").read_text(), before)
+        self.assertEqual(list((self.root / "archive").glob("*/*")), [])
+        self.wi_ok(["show", "old-1111", "--brief"])
+        self.wi_ok(["lint"])
 
     def test_archive_refuses_to_overwrite_an_archived_file(self):
         self.write_item("old-1111", status="done", closed="2026-01-02")
