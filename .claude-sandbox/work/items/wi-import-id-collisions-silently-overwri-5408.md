@@ -2,12 +2,11 @@
 id: wi-import-id-collisions-silently-overwri-5408
 title: "wi import: id collisions silently overwrite an item (data loss)"
 type: bug
-status: doing
+status: done
 priority: 1
-owner: unknown@360f41058e92
-claimed: 2026-09-22T00:14Z
 created: 2026-09-21
 updated: 2026-09-22
+closed: 2026-09-22
 refs:
   - 370b reviewer
 ---
@@ -26,6 +25,7 @@ Found by the 370b reviewer 2026-09-21 (pre-existing): make_id uses a 4-hex rando
 
 ## Notes
 - 2026-09-22 claimed by unknown@360f41058e92
+- 2026-09-22 done: 3d2ff51
 
 ## Implementer result
 - round 1 DONE 764672e (opus): make_id retries against taken_ids (store + archive + batch), exits 3 after 1024 draws; save_items refuses a new item over an existing/archived/duplicate path; atomic_write create=True via hard link (O_EXCL fallback); archive checks destinations first; blank blocked_reason → no value. 6 tests (44 same-title import lost 29 on main).
@@ -40,3 +40,7 @@ Found by the 370b reviewer 2026-09-21 (pre-existing): make_id uses a 4-hex rando
 - dispatch: implementer opus — fix round 1 (same agent resumed)
 - fix round 1 DONE 22529af (opus): _move_no_clobber — hard link+unlink, else O_EXCL reserve + os.replace over own reservation, cleanup if ours, WiError 3; 4 fallback tests (EPERM) + stray-file test; tests independent of _id_suffix.
 - dispatch: reviewer opus — review r2 (same reviewer resumed)
+
+## Review round 2 — CLEAR (opus) at 22529af
+- race.py 120/120; fallback failure leaves nothing; racing writer keeps its file.
+- landed 3d2ff51
