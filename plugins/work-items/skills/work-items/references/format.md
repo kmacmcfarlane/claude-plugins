@@ -70,7 +70,7 @@ except `claimed` (ISO-8601 UTC to the minute).
 
 | Field | Type | Notes |
 |---|---|---|
-| `id` | `<slug>-<4hex>` | equals the filename stem; immutable; hash suffix from title+time+random so branches never collide |
+| `id` | `<slug>-<4hex>` | equals the filename stem; immutable; hash suffix from title+time+random so branches rarely collide; a new id is redrawn until it is in neither the store (items/, archive/) nor the same batch, and a new item is never written over an existing file (the write fails, nothing written) |
 | `title` | one line, ≤120 chars | |
 | `type` | `task bug feature refactor workflow chore epic spike` | default `task`; drives backlog-yaml prefix and bugs-first |
 | `status` | `todo doing blocked parked grooming done dropped` | the only authority on state |

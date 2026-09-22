@@ -6,8 +6,11 @@ read here. The backlog-yaml export is validated against the claude-sandbox
 scaffold's backlog.py `validate --strict` when that script is invocable, and
 falls back to a structural assertion otherwise.
 """
+import contextlib
 import difflib
 import importlib.util
+import io
+import itertools
 import json
 import multiprocessing
 import os
@@ -19,6 +22,7 @@ import tempfile
 import time
 import unittest
 from pathlib import Path
+from unittest import mock
 
 HERE = Path(__file__).resolve().parent
 WI = HERE.parent / "scripts" / "wi.py"
@@ -375,6 +379,20 @@ class TestScalarRoundTrip(WiTestCase):
         text = (self.root / "items" / (rec["id"] + ".md")).read_text()
         self.assertNotIn("—\"", text)
 
+    def test_import_reads_a_blank_blocked_reason_as_no_value(self):
+        src = self.tmp / "in.yaml"
+        src.write_text("schema_version: 2\nstories:\n  - id: S-001\n"
+                       "    title: t\n    status: todo\n"
+                       '    blocked_reason: "   "\n')
+        self.wi_ok(["import", "--format", "backlog-yaml", str(src)])
+        rec = json.loads(self.wi_ok(["ls", "--status", "all", "--json"]))[0]
+        one = json.loads(self.wi_ok(["show", rec["id"], "--json"]))
+        self.assertIsNone(one.get("blocked"))
+        self.assertFalse(one.get("deps"))
+        text = (self.root / "items" / (rec["id"] + ".md")).read_text()
+        self.assertNotIn("\nblocked:", text)
+        self.wi_ok(["lint"])
+
 
 class TestRepairEscapes(WiTestCase):
     AMPLIFIED = 'title: "x: \\\\\\\\\\\\\\"y\\\\\\\\\\\\\\""'  # "y" after 3 rewrites
@@ -655,6 +673,124 @@ class TestBacklogYaml(WiTestCase):
         self.assertEqual(len(json.loads(self.wi_ok(
             ["ls", "--status", "all", "--json"]))), 4)
 
+
+class TestIdCollisions(WiTestCase):
+    """A 4-hex suffix repeats; a repeat must be retried, never written over
+    an item (5408: a fresh import of same-slug titles lost one)."""
+
+    @staticmethod
+    def repeating_urandom(n=3):
+        """os.urandom whose bytes change only every n calls, so the same
+        title draws the same suffix n times running."""
+        calls = itertools.count()
+        return lambda k: (next(calls) // n).to_bytes(k, "big")
+
+    def wi_main(self, argv, urandom):
+        err = io.StringIO()
+        with mock.patch.object(wi.os, "urandom", urandom), \
+                contextlib.redirect_stderr(err), \
+                contextlib.redirect_stdout(io.StringIO()):
+            rc = wi.main(["--root", str(self.root)] + argv)
+        return rc, err.getvalue()
+
+    def files(self):
+        return sorted(p.name for p in (self.root / "items").glob("*.md"))
+
+    def test_add_retries_a_repeated_suffix(self):
+        fake = self.repeating_urandom()
+        for _ in range(5):
+            rc, err = self.wi_main(["add", "dup"], fake)
+            self.assertEqual(rc, 0, err)
+        recs = json.loads(self.wi_ok(["ls", "--status", "all", "--json"]))
+        self.assertEqual(len(recs), 5)
+        self.assertEqual(len({r["id"] for r in recs}), 5)
+        self.assertEqual(len(self.files()), 5)
+        self.wi_ok(["lint"])
+
+    def test_fresh_import_of_same_slug_titles_keeps_every_item(self):
+        src = self.tmp / "in.yaml"
+        src.write_text("schema_version: 2\nstories:\n" + "".join(
+            f"  - id: S-{i:03d}\n    title: dup\n    status: todo\n"
+            for i in range(44)))
+        rc, err = self.wi_main(["import", "--format", "backlog-yaml", str(src)],
+                               self.repeating_urandom())
+        self.assertEqual(rc, 0, err)
+        recs = json.loads(self.wi_ok(["ls", "--status", "all", "--json"]))
+        self.assertEqual(sorted(r["alias"] for r in recs),
+                         [f"S-{i:03d}" for i in range(44)])
+        self.assertEqual(len({r["id"] for r in recs}), 44)
+        self.assertEqual(len(self.files()), 44)
+        self.wi_ok(["lint"])
+
+    def test_import_update_new_item_skips_an_id_in_the_store(self):
+        const = lambda k: bytes(k)
+        with mock.patch.object(wi.os, "urandom", const):
+            taken = "dup-" + wi._id_suffix("dup", wi.today())
+        self.write_item(taken, "kept")
+        before = (self.root / "items" / f"{taken}.md").read_text()
+        # the store's id and then a free one
+        seq = iter([bytes(8), bytes(8), b"\x01" * 8])
+        src = self.tmp / "in.yaml"
+        src.write_text("schema_version: 2\nstories:\n"
+                       "  - id: S-001\n    title: dup\n    status: todo\n")
+        rc, err = self.wi_main(["import", "--format", "backlog-yaml", "--update",
+                                str(src)], lambda k: next(seq))
+        self.assertEqual(rc, 0, err)
+        self.assertEqual((self.root / "items" / f"{taken}.md").read_text(), before)
+        self.assertEqual(len(self.files()), 2)
+        self.wi_ok(["lint"])
+
+    def test_exhausted_retries_fail_loudly_and_write_nothing(self):
+        const = lambda k: bytes(k)
+        with mock.patch.object(wi.os, "urandom", const):
+            taken = "dup-" + wi._id_suffix("dup", wi.today())
+        self.write_item(taken, "kept")
+        before = (self.root / "items" / f"{taken}.md").read_text()
+        rc, err = self.wi_main(["add", "dup"], const)
+        self.assertEqual(rc, 3)
+        self.assertIn("no free id", err)
+        self.assertEqual(self.files(), [f"{taken}.md"])
+        self.assertEqual((self.root / "items" / f"{taken}.md").read_text(), before)
+
+    def test_write_layer_refuses_to_overwrite_for_a_new_item(self):
+        self.write_item("kept-1111", "kept")
+        before = (self.root / "items" / "kept-1111.md").read_text()
+        fresh = lambda iid: wi.Item(
+            {"id": iid, "title": "new", "status": "todo", "created": "2026-09-01",
+             "updated": "2026-09-01"}, [], "", [("Handoff", wi.emit_handoff({}))])
+        # a batch whose second item collides: nothing is written
+        with self.assertRaises(wi.WiError) as ctx:
+            wi.save_items(self.root, [fresh("other-2222"), fresh("kept-1111")])
+        self.assertEqual(ctx.exception.code, 3)
+        self.assertEqual(self.files(), ["kept-1111.md"])
+        self.assertEqual((self.root / "items" / "kept-1111.md").read_text(), before)
+        # two new items with one id in one batch
+        with self.assertRaises(wi.WiError):
+            wi.save_items(self.root, [fresh("twin-3333"), fresh("twin-3333")])
+        self.assertEqual(self.files(), ["kept-1111.md"])
+        # an id that lives in archive/ is taken too
+        (self.root / "archive" / "2026").mkdir(parents=True)
+        (self.root / "archive" / "2026" / "gone-4444.md").write_text(before)
+        with self.assertRaises(wi.WiError):
+            wi.save_items(self.root, [fresh("gone-4444")])
+        self.assertEqual(self.files(), ["kept-1111.md"])
+        # the create itself is exclusive, even past the up-front check
+        path = self.root / "items" / "race-5555.md"
+        path.write_text("someone else's\n")
+        with self.assertRaises(wi.WiError):
+            wi.atomic_write(path, "mine\n", create=True)
+        self.assertEqual(path.read_text(), "someone else's\n")
+        self.assertEqual(list((self.root / "items").glob("*.tmp*")), [])
+
+    def test_archive_refuses_to_overwrite_an_archived_file(self):
+        self.write_item("old-1111", status="done", closed="2026-01-02")
+        dest = self.root / "archive" / "2026" / "old-1111.md"
+        dest.parent.mkdir(parents=True)
+        dest.write_text("already archived\n")
+        r = run(["archive", "--older-than", "0d"], self.root)
+        self.assertEqual(r.returncode, 3, r.stderr)
+        self.assertEqual(dest.read_text(), "already archived\n")
+        self.assertTrue((self.root / "items" / "old-1111.md").exists())
 
 class TestNextRanking(WiTestCase):
     def seed(self):
