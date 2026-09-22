@@ -36,3 +36,5 @@ findings:
 - [low] :13 "an earlier round" overloaded — pass: "recorded earlier in this investigation (an earlier serial of the series, or an earlier step of this pass)".
 - [nit] :14 "current HEAD" — which repo/branch: "current HEAD of the repo that owns the neighbour (its base branch)".
 dispatch: implementer sonnet — fix round 1 (resume)
+return: implementer DONE 50dff87
+dispatch: reviewer opus — review r2 (resume)

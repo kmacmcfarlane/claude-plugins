@@ -26,3 +26,7 @@ Relayed 2026-09-22 from the agents store (wi-import-todo-misses-strikethrough-wr
 target: full wi-import-todo-misses-a-strikethrough-th-bf1b /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude/worktrees/wi-import-todo-misses-a-strikethrough-th-bf1b
 dispatch: implementer opus — executable logic (wi.py), rule 2
 agent: implementer ae88fb9e69adfe405 round 1
+return: implementer DONE 3b54e22
+changed: wi.py, tests/test_wi.py
+dispatch: reviewer opus — rule 4, implementer tier
+agent: reviewer a9569a76c211e6e99 round 1

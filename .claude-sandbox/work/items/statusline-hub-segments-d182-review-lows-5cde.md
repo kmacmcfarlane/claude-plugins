@@ -2,8 +2,10 @@
 id: statusline-hub-segments-d182-review-lows-5cde
 title: "statusline-hub segments: d182 review lows"
 type: chore
-status: todo
+status: doing
 priority: 3
+owner: Kyle-McFarlane@bf9f9839222c
+claimed: 2026-09-22T22:53Z
 created: 2026-09-22
 updated: 2026-09-22
 refs:
@@ -17,3 +19,10 @@ From d182 review r1 (CLEAR) 2026-09-22: producer temp files (mkstemp dot-files) 
 - next: —
 - blocked: —
 - learned: —
+
+## Notes
+- 2026-09-22 claimed by Kyle-McFarlane@bf9f9839222c
+
+target: full statusline-hub-segments-d182-review-lows-5cde /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude/worktrees/statusline-hub-segments-d182-review-lows-5cde
+dispatch: implementer opus — executable logic (statusline-hub hooks) + README/CLAUDE.md layout
+agent: implementer ad7d3f4f757fdc85e round 1

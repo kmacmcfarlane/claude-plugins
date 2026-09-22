@@ -17,3 +17,4 @@ refs:
 - next: —
 - blocked: —
 - learned: —
+- 3a8f rides in F3b-3 (c3e1) per the queue plan; closes when c3e1 lands
