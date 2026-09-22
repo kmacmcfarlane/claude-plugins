@@ -963,9 +963,15 @@ class Lock:
 
 
 def read_raw(path):
-    """Read without newline translation, so CRLF survives a rewrite."""
-    with open(path, newline="") as fh:
-        return fh.read()
+    """Read without newline translation, so CRLF survives a rewrite. The one
+    place an item file is decoded: a file that does not decode is a WiError
+    naming it (the parse-error code), never a traceback, for every caller."""
+    try:
+        with open(path, newline="") as fh:
+            return fh.read()
+    except UnicodeDecodeError as e:
+        raise WiError(3, f"{path}: undecodable ({e.encoding}: {e.reason} "
+                         f"at byte {e.start}); not an item file") from None
 
 
 def atomic_write(path, text, create=False):
@@ -1141,7 +1147,7 @@ def load_paths(paths, lenient=False):
         try:
             text = read_raw(path)
             item = Item.parse(text, path) if text else None
-        except (WiError, UnicodeDecodeError, OSError) as e:
+        except (WiError, OSError) as e:
             if not lenient:
                 raise
             if path not in _warned_stale:
@@ -2745,7 +2751,11 @@ def cmd_lint(args):
     problems = []
     items, texts = [], {}
     for path in item_paths(root, archived=True):
-        text = texts[path] = path.read_text()
+        try:
+            text = texts[path] = read_raw(path)
+        except WiError as e:
+            problems.append(str(e))
+            continue
         if not text:
             problems.append(f"{path}: {STALE_RESERVATION}; "
                             f"{stale_reservation_fix(path)}")
