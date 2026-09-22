@@ -2,13 +2,12 @@
 id: dev-cycle-design-resume-whole-split-from-e770
 title: "dev-cycle: design § Resume whole (split from 426a)"
 type: feature
-status: doing
+status: done
 priority: 3
 parent: dev-flow-new-dev-cycle-skill-investigate-07c3
-owner: unknown@360f41058e92
-claimed: 2026-09-22T17:54Z
 created: 2026-09-22
 updated: 2026-09-22
+closed: 2026-09-22
 refs:
   - 426a answer 59
 ---
@@ -25,6 +24,7 @@ dispatch: planner opus — plan mode, no worktree; series .claude-sandbox/invest
 
 ## Notes
 - 2026-09-22 claimed by unknown@360f41058e92
+- 2026-09-22 done: daf8758
 
 ## Plan result (opus, 2026-09-22) — series .claude-sandbox/investigations/e770-dev-cycle-resume/ (00_initial.md, INDEX.md)
 Diagnosis: the removed version was a rule list where each rule carried its own copy of the cross-cutting tests (cap, answered, staleness, channel), so every review found another rule with the wrong copy. Fix: compute those facts ONCE before the table is read. 19 requirements (R1–R19) each citing its round; phase lines (dispatch/return/verdict/landed) vs riders; reduction LANDED → PHASE → FRESH → ROUNDS → GATE with CHANNEL as a binding; one 12-row state table (S0–S12), a 4-row gate table, a 5-step liveness probe. r6 medium 1 settled by deleting "wait" entirely (ephemeral channel re-asks the same decision verbatim; durable hands back via wi handoff --blocked and the caller's idle turn resumes). r6 medium 2 settled by making a stale verdict its own state that spends findings AND answers — reviewing needs no permission, only dispatching onto the author's branch does. Line shapes: restore return:/landed:, add `agent: <role> <id> round <n>` and `baseline:`, widen target: and decision: (self-contained + options), generalise `at <sha>` → `at <token>`. Caller split: dev-cycle owns shapes/reduction/table/gate/probe; the caller owns queue, channel + durability, waiting, and carrying agent ids. Features F1→F4 strictly serial: F1 shapes (opus), F2 channel durability (opus), F3 § Resume whole (opus), F4 caller boundary (sonnet, opus review). No fable signal.
