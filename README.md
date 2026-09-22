@@ -283,7 +283,10 @@ is in the session; `librarian-mode` answers the context gate's advisories with a
 checkpoint and weighs its manifest and ledger when it rehydrates; the fable fallback also
 reads reset times from its older state record. Without it none of these fire. Soft
 dependency on `kit-dev`: the `investigate` and `implement` retrospectives hand their findings
-to its user-invoked `update-kit`; without it the findings stand as the record.
+to its user-invoked `update-kit`; without it the findings stand as the record. Soft
+dependency on `create-repo`: `investigate`'s scoping gate points the user at it when the
+target repo does not exist yet; without it the gate names the need and the user creates the
+repo.
 
 ### work-items
 

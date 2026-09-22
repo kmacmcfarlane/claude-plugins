@@ -39,6 +39,25 @@ adds**, not a restatement of the series slug:
 **The highest serial is the newest. Never sort by modification time** — a file can be
 rewritten in place by an editor or touched by a checkout without being newer in the record.
 
+### A repo not yet created
+
+When Step 2 finds the owning repo does not exist yet (the create-repo skill makes it), the
+series cannot start there:
+
+- **Meanwhile** — the series lives in the current repo's
+  `.claude-sandbox/investigations/<slug>/` (under an orchestrator, the Series home it gave).
+  Step 3 resolves no path for the future repo and asks nothing about it; it records a
+  **Confirmed Assumption** naming the future repo — its intended name and owner, and that it
+  does not exist at this pass. Provenance lists only repos actually read.
+- **Once it exists** — the next session working in the new repo moves the series: copy the
+  whole directory, serials byte-for-byte, to the new repo's
+  `.claude-sandbox/investigations/<slug>/` and commit it there; regenerate that `INDEX.md`
+  with a note under the provenance line — `Moved from <old-repo>@<short-sha>:<old-path> on
+  {YYYY-MM-DD}`. In the old home, rewrite only `INDEX.md`, with a `Moved to <new-repo>:<path>`
+  note at its top; its serials stay (append-only, never deleted). Never rewrite git history
+  to carry the files across. The next serial is written in the new home only. Under an
+  orchestrator the move is the orchestrator's, never asked.
+
 ## The two rules
 
 ### 1. `NN_*.md` files are append-only

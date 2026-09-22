@@ -115,12 +115,14 @@ ask what the code will tell you — that is Step 6.
 
 ## Step 3 — Resolve repositories
 
-Usually the working directory's git root: confirm it and move on. Resolve more when the
-problem spans repos (a library and its consumers, code and infrastructure), preferring local
-checkouts — glob for siblings before proposing a clone.
+Usually the working directory's git root: confirm it. Resolve more when the problem spans
+repos (a library and its consumers, code and infrastructure), preferring local checkouts —
+glob for siblings before proposing a clone.
 
-**Never clone silently.** A repo with no local checkout: ask — provide a path, clone it, or
-exclude it. Record each repo's resolved path and, where known, its remote.
+**Never clone silently.** A repo with no local checkout: ask — a path, a clone, or exclude
+it. Record each repo's path and, where known, its remote. An owning repo not yet created is
+a Confirmed Assumption, not a path (`references/investigation-format.md` § A repo not yet
+created).
 
 ---
 
@@ -330,21 +332,20 @@ Loop until Save or Reject.
 
 ## Step 13 — Write the investigation
 
-`mkdir -p` the series directory and `ls` it: the serial is the highest existing `NN` plus
-one, `00` for a new series. **Never reuse a serial and never overwrite a file** — one at your
-intended serial means you misread the directory; re-read it. Write `NN_<name>.md` with the
-Write tool, per `references/investigation-format.md`; on `01`+ the `Supersedes` block comes
-first, always.
+`mkdir -p` the series directory — the current repo's until the owning repo exists, then
+moved (§ A repo not yet created) — and `ls` it: the serial is the highest `NN` plus one, `00`
+for a new series. **Never reuse a serial or overwrite a file** — one at your serial means you
+misread the directory. Write `NN_<name>.md` with the Write tool, per
+`references/investigation-format.md`; on `01`+ the `Supersedes` block comes first, always.
 
 ---
 
 ## Step 14 — Rewrite the index
 
 Regenerate `INDEX.md` wholesale from all serials, per `references/investigation-format.md`.
-Capture the provenance SHAs now (`git -C <repo> rev-parse --short HEAD`). Add a TOC row for the
-new file with status `pending`; leave existing rows' Status and Branches untouched, except
-`superseded by NN` on any row this pass supersedes. The reconciled sections reflect **all**
-passes, not a copy of the new file's.
+Capture the provenance SHAs now. Add a TOC row for the new file with status `pending`; leave
+existing rows' Status and Branches untouched, except `superseded by NN` on any row this pass
+supersedes. The reconciled sections reflect **all** passes, not a copy of the new file's.
 
 ---
 
@@ -385,9 +386,8 @@ workflow is not replicated here.
 
 Read `references/edge-cases.md` when a run goes off the main path. Most entries restate a
 step's rule; a few live only there — a path the user names that is missing inside a container
-(check the `mounts:` cascade before calling it unreachable), a user who defers every question
-(legitimate; record each and do not re-ask), a sweep with no candidates (say so in one line), a
-problem that turns out to be several (propose one series each, cross-referenced).
+(check the `mounts:` cascade before calling it unreachable), a user who defers every question,
+a sweep with no candidates, a problem that is several.
 
 ---
 
