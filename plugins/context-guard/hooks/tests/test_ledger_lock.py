@@ -40,10 +40,15 @@ class LockCase(unittest.TestCase):
                     t0 = time.monotonic()
                     call()
                     self.assertLess(time.monotonic() - t0, L.LOCK_TIMEOUT_S + 0.5)
-        text = self.read()
-        self.assertTrue(text.startswith("# ledger s (successor of X)\n"), text)
-        self.assertIn("- D held line", text)
-        self.assertIn("## epoch 1", text)
+            # The appends went through unlocked; the rewrite was skipped.
+            before = self.read()
+            self.assertFalse(ledger.successor_title("s", "X"))
+            self.assertEqual(self.read(), before)
+        self.assertIn("- D held line", before)
+        self.assertIn("## epoch 1", before)
+        self.assertNotIn("successor of", before)
+        self.assertTrue(ledger.successor_title("s", "X"))      # released
+        self.assertTrue(self.read().startswith("# ledger s (successor of X)\n"))
 
     def test_no_fcntl_writes_unlocked(self):
         with mock.patch.object(L, "fcntl", None):

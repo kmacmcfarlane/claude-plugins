@@ -20,10 +20,11 @@ def _lock(fh):
     lock convention (lib_context._acquire): LOCK_NB retried until
     L.LOCK_TIMEOUT_S, then - or with no fcntl, or on any error - the caller
     proceeds unlocked, so a stuck holder never stalls a hook. True when
-    locked. Never raises."""
+    locked, False when the wait timed out (another writer holds it), None
+    when no lock could be tried (no fcntl, an error). Never raises."""
     fcntl = getattr(L, "fcntl", None)
     if fcntl is None:
-        return False
+        return None
     try:
         deadline = time.monotonic() + L.LOCK_TIMEOUT_S
         while True:
@@ -35,7 +36,7 @@ def _lock(fh):
                     return False
                 time.sleep(0.002)
     except Exception:
-        return False
+        return None
 
 
 def append(session_id, kind, text, ref=None):
@@ -74,10 +75,16 @@ def successor_title(session_id, predecessor):
     keeps this line (it is not the plain title), so it survives the
     successor's own compactions. The plain title append() writes on a new
     ledger is replaced; any other `# ledger` title (already a successor's, or
-    a fork's adopted one) is left alone. True when it wrote. Never raises."""
+    a fork's adopted one) is left alone. Skipped (False) when the lock wait
+    times out: the rewrite is the one write that could lose another's line.
+    True when it wrote. Never raises."""
     try:
         with open(L.ledger_path(session_id), "a+", errors="replace") as fh:
-            _lock(fh)
+            if _lock(fh) is False:
+                # Another writer holds the ledger past the bound: a rewrite
+                # now could lose its line, so the title is skipped (appends,
+                # which cannot clobber, still proceed unlocked).
+                return False
             fh.seek(0)
             body = fh.read()
             plain = f"# ledger {session_id}\n"
