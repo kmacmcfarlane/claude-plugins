@@ -130,13 +130,11 @@ log, the work-item store — outranks the manifest).
 
 One file per session, in the Claude config dir:
 `${CLAUDE_CONFIG_DIR:-~/.claude}/claude-kit/handoff/<sid>/HANDOFF.md`. **Nothing goes into the
-repo, deliberately, for two separate reasons.** Answer 47 ruled out `.claude-sandbox/` because
-not every consumer of a manifest runs inside `claude-sandbox` — a reason that says nothing
-about a repo-root path, which means the same with or without claude-sandbox. Decision 65 then
-ruled out a repo-root copy too, for a different reason: a repo-visible copy is exactly what
-let concurrent sessions in one checkout overwrite each other's memory (an old-layout repo
-`HANDOFF.md` is still read, read-only, during the transition — see "An old-layout
-`HANDOFF.md`" below; not restated here). The manifest is never committed. Its path cannot be
+repo, deliberately, for two separate reasons.** `.claude-sandbox/` is out because not every
+consumer of a manifest runs inside `claude-sandbox`. The repo root is out because a
+repo-visible copy is what let concurrent sessions in one checkout overwrite each other's
+memory (an old-layout repo `HANDOFF.md` is still read, read-only, during the transition —
+see "An old-layout `HANDOFF.md`" below). The manifest is never committed. Its path cannot be
 guessed, so **every checkpoint's last message prints it**; a handoff also prints `/clear`,
 `/compact <guidance>` and a one-line opener to paste, whose "Read (the Read tool) <path> in
 full" is what hands the file to a new session. On the same host and config dir, an operator or
@@ -147,7 +145,8 @@ allowed" below are), `$CLAUDE_CODE_SESSION_ID` wins over a passed id and the com
 the running session's own path, never another session's (the format spec's "Where it lives"
 has the argv contract). Asking a session for a *different* session's path needs
 `env -u CLAUDE_CODE_SESSION_ID python3 "<root>/hooks/handoff_path.py" --path <sid>`, `<root>`
-resolved the same way as those commands.
+resolved the same way as those commands; it starts with `env`, not `python3`, so the allow
+rule for `handoff_path.py` below does not cover it and it prompts.
 
 A handoff's close, for example (a session in librarian mode, handing on to an implement
 run):
@@ -183,10 +182,10 @@ Bash(python3 "<root>/hooks/handoff_path.py":*)
   To pass work on, paste the opener; to look without taking it over, `cat` the path.
 - **An old-layout `HANDOFF.md`** (`.claude-sandbox/HANDOFF.md` or the repo root) is never
   written again. A session with no manifest of its own still reads it, read-only, and is
-  told once where its own now lives. If its `session:` is that session and it is untouched since that session's mark step
-  stamped it, it is copied once
-  into the session's store and read from there after — so a session that checkpointed
-  before the store layout keeps its memory when a peer later overwrites the shared file.
+  told once where its own now lives. If its `session:` is that session and it is untouched
+  since that session's mark step stamped it, it is copied once into the session's store and
+  read from there after — so a session that checkpointed before the store layout keeps its
+  memory when a peer later overwrites the shared file.
   Delete the repo file when no session without a manifest of its own still needs it:
   once each session that wrote it has started again (and so has its copy), nothing reads
   it for them.

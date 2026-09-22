@@ -1782,7 +1782,25 @@ class TestStampGuardWarnsOnly(StoreBase):
         os.mkfifo(fifo)
         L.save_state("X", {"epoch": 0, "legacy_copy":
                            {"sha": "0" * 12, "path": fifo, "at": 1}})
-        self.assertIsNone(M.legacy_copy_warning("X", L.manifest_path("X")))
+        # Run the call in a thread joined with a timeout, so a regression that
+        # opens the FIFO fails this test instead of hanging the suite.
+        import threading
+        result = {}
+        def call():
+            result["warn"] = M.legacy_copy_warning("X", L.manifest_path("X"))
+        t = threading.Thread(target=call, daemon=True)
+        t.start()
+        t.join(5)
+        if t.is_alive():
+            # Unblock the reader stuck in open() so the thread can exit.
+            try:
+                os.close(os.open(fifo, os.O_WRONLY | os.O_NONBLOCK))
+            except OSError:
+                pass
+            t.join(5)
+            self.fail("legacy_copy_warning blocked on a FIFO at the recorded path")
+        self.assertIn("warn", result)
+        self.assertIsNone(result["warn"])
 
     def test_the_warning_stands_on_every_mark(self):
         self.copied()
