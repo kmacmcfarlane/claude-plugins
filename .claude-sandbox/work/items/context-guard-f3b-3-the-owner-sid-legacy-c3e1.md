@@ -2,15 +2,14 @@
 id: context-guard-f3b-3-the-owner-sid-legacy-c3e1
 title: "context-guard F3b-3: the owner==sid legacy copy and the stamp-step warning (warn only)"
 type: feature
-status: doing
+status: done
 priority: 2
 deps:
   - context-guard-f3b-4-the-checkpoint-contr-0426
 parent: context-guard-8cc2-f3b-where-handoff-md-a49b
-owner: Kyle-McFarlane@bf9f9839222c
-claimed: 2026-09-22T22:53Z
 created: 2026-09-22
 updated: 2026-09-22
+closed: 2026-09-22
 refs:
   - a49b
 ---
@@ -47,3 +46,6 @@ agent: implementer a3dabe735be8fe6d2 round 2
 return: implementer DONE 169dec5
 dispatch: reviewer opus — review r2 (resume)
 agent: reviewer a05d99543406d4ed4 round 2
+verdict: CLEAR round 2 at 169dec5
+landed: 74a431e
+- 2026-09-22 done: 74a431e

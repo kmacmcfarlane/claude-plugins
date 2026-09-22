@@ -2,10 +2,11 @@
 id: context-guard-rehydrate-py-module-docstr-3a8f
 title: "context-guard: rehydrate.py module docstring still calls the own arm 'ours by the path, no comparison'"
 type: chore
-status: todo
+status: done
 priority: 4
 created: 2026-09-22
 updated: 2026-09-22
+closed: 2026-09-22
 refs:
   - 0836 review round 1
 ---
@@ -18,3 +19,6 @@ refs:
 - blocked: —
 - learned: —
 - 3a8f rides in F3b-3 (c3e1) per the queue plan; closes when c3e1 lands
+
+## Notes
+- 2026-09-22 done: 74a431e (rode in F3b-3)

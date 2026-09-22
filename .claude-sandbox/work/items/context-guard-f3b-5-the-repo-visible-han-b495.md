@@ -2,11 +2,13 @@
 id: context-guard-f3b-5-the-repo-visible-han-b495
 title: "context-guard F3b-5: the repo-visible handoff channel, documented as nothing in the repo (answer 65 a)"
 type: feature
-status: todo
+status: doing
 priority: 2
 deps:
   - context-guard-f3b-3-the-owner-sid-legacy-c3e1
 parent: context-guard-8cc2-f3b-where-handoff-md-a49b
+owner: Kyle-McFarlane@bf9f9839222c
+claimed: 2026-09-22T23:38Z
 created: 2026-09-22
 updated: 2026-09-22
 refs:
@@ -20,3 +22,9 @@ Plan of record .claude-sandbox/investigations/8cc2-turn-gate-port 04 Open Questi
 - next: —
 - blocked: —
 - learned: —
+
+## Notes
+- 2026-09-22 claimed by Kyle-McFarlane@bf9f9839222c
+
+target: full context-guard-f3b-5-the-repo-visible-han-b495 /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude/worktrees/context-guard-f3b-5-the-repo-visible-han-b495
+dispatch: implementer sonnet — docs only under answer 65 (a); plan routes sonnet impl, opus review
