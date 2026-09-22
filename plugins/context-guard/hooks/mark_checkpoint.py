@@ -65,10 +65,20 @@ symlink planted at that file, or at the <sid>/ directory above it, resolves
 out of the store, is not this session's manifest, and is left to the legacy
 arm's claim test rather than rewritten as ours.
 A manifest this session already stamped and nobody rewrote since (the same
-head, branch, top and session, and an mtime within STAMP_TOUCH_S of its
+head, branch, top and session, and an mtime within rehydrate.STAMP_TOUCH_S of its
 `written:`) is left as it is, so repeated marks do not re-date it.
 Stamping never fails the checkpoint: every problem is a warning, and the gate
 record (L.mark_checkpoint) is exactly what it would be without a manifest.
+
+One transitional warning rides on the store path (legacy_copy_warning,
+8cc2-F3b-3): when this session's store manifest was copied from its own
+old-layout repo manifest (rehydrate.copy_legacy, state `legacy_copy`) and
+that repo file has changed since, it says so - and, reading the file's
+`session:` only to choose the words, what to do if this session wrote it.
+It never refuses, never copies and writes no state; the stamp that follows
+is the ordinary one. A copy keeps its source's mtime, so a copy of a manifest
+written over 30 minutes ago is refused by the window rule above, and both
+warnings print in the same run.
 
 Then checks the author id (session_warnings: stderr, exit still 0 - the
 checkpoint is recorded either way, and a HARD-blocked session must be able
@@ -85,7 +95,6 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import lib_context as L
 
 STAMP_WINDOW_S = 30 * 60
-STAMP_TOUCH_S = 3
 WRITE_BUDGET = 6000
 STAMP_KEYS = ("written", "head", "branch", "top", "session")
 _KEY_LINE = re.compile(rb"(written|head|branch|top|session)[ \t]*:")
@@ -175,12 +184,11 @@ def _claimable(owner, sha, want, st):
 def _own_stamp(fm, fields, mtime):
     """Whether the file already carries this stamp, untouched since: `head`,
     `branch`, `top` and `session` are what it would write, and the mtime is
-    within STAMP_TOUCH_S after `written:` (the mark step writes both at once; a
+    within R.STAMP_TOUCH_S after `written:` (the mark step writes both at once; a
     rewrite moves the mtime, and a copied stamp is older). Then a repeated
     mark leaves it as it is instead of re-dating it."""
     import rehydrate as R
-    t = R.stamp_epoch(fm.get("written"))
-    return t is not None and 0 <= mtime - t < STAMP_TOUCH_S and all(
+    return R.stamp_untouched(fm, mtime) and all(
         fm.get(k) == fields[k]
         for k in ("head", "branch", "top", "session") if k in fields)
 
@@ -327,6 +335,59 @@ def stamp_target(want, cwd):
     return path, top, text, False
 
 
+def legacy_copy_warning(want, store):
+    """The stamp step's one transitional guard (8cc2-F3b-3): a warning line,
+    or None. It READS and REPORTS; it never copies, refreshes, refuses or
+    writes state, so stamp_manifest stays a pure file operation.
+
+    rehydrate.copy_legacy records `legacy_copy` = {sha, path, at} when it
+    copies this session's own old-layout repo manifest into the store. When
+    that repo file's bytes now differ from the copied sha, someone rewrote it
+    after the copy - this session under skill text from before the store
+    layout (Step 4b then wrote the repo file with `session: <stamped>`), or a
+    peer - and the store copy, which is this session's memory, does not have
+    it. Keyed on the sha alone: a checkout that moves the mtime without
+    changing the bytes is silent. No `session:` test gates it - a warning
+    imports nothing, so it may fire whoever wrote the file - but `session:`
+    is READ to choose the wording, so a peer's rewrite is not answered with
+    an instruction to redo this session's checkpoint. It repeats on every mark
+    while the file differs (nothing updates the recorded sha): a standing
+    signal, not a one-shot."""
+    try:
+        import rehydrate as R
+        rec = L.load_state(want).get("legacy_copy")
+        if not isinstance(rec, dict):
+            return None
+        lpath, sha = rec.get("path"), rec.get("sha")
+        # A regular file only: a FIFO or device at the recorded path would
+        # hang the read, and with it the gate stand-down that follows.
+        if not isinstance(lpath, str) or not isinstance(sha, str) \
+                or not os.path.isfile(lpath):
+            return None
+        text = R.read_text(lpath)
+        if text is None or L.manifest_sha(text) == sha:
+            return None
+        owner = R.manifest_version(text)["owner"]
+        line = (f"mark_checkpoint.py: warning: {lpath}, the old-layout repo "
+                f"manifest this session's own was copied from, has changed "
+                f"since the copy; the rehydration hook does not read it for this "
+                f"session, which rehydrates from {store}.")
+        if owner and owner != want and L._SAFE_SID.fullmatch(owner):
+            return line + (f" It names session {owner}, so it is most likely "
+                           f"that session's and nothing here needs doing. Only "
+                           f"if this session wrote it: draft the manifest again "
+                           f"in the session scratchpad and install it with "
+                           f"`mark_checkpoint.py --from <draft> <session_id>` "
+                           f"(Step 4b).")
+        return line + (" If this session wrote it (an old Step 4b writes the "
+                       "repo file), that content is not this session's memory: "
+                       "draft the manifest again in the session scratchpad and "
+                       "install it with `mark_checkpoint.py --from <draft> "
+                       f"<session_id>` (Step 4b), which puts it at {store}.")
+    except Exception:
+        return None
+
+
 def stamp_manifest(sid, cwd=None, environ=None, now=None):
     """(stdout lines, warning lines). Never raises."""
     out, warn = [], []
@@ -344,6 +405,12 @@ def stamp_manifest(sid, cwd=None, environ=None, now=None):
                             f"install it with `mark_checkpoint.py --from {p} "
                             f"<session_id>` (Step 4b).")
             return out, warn
+        if is_store:
+            # Before every other check, so it prints beside whichever of them
+            # refuses; it never refuses itself.
+            w = legacy_copy_warning(want, path)
+            if w:
+                warn.append(w)
         body = text.split("\n---", 1)[-1] if text.startswith("---") else text
         if len(body) > WRITE_BUDGET:
             warn.append(f"mark_checkpoint.py: warning: {path} body is {len(body)} "

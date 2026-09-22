@@ -169,7 +169,24 @@ Bash(python3 "<root>/hooks/handoff_path.py":*)
   To pass work on, paste the opener; to look without taking it over, `cat` the path.
 - **An old-layout `HANDOFF.md`** (`.claude-sandbox/HANDOFF.md` or the repo root) is never
   written again. A session with no manifest of its own still reads it, read-only, and is
-  told once where its own now lives. Delete the repo file when you no longer want it read.
+  told once where its own now lives. If its `session:` is that session and it is untouched since that session's mark step
+  stamped it, it is copied once
+  into the session's store and read from there after — so a session that checkpointed
+  before the store layout keeps its memory when a peer later overwrites the shared file.
+  Delete the repo file when no session without a manifest of its own still needs it:
+  once each session that wrote it has started again (and so has its copy), nothing reads
+  it for them.
+- **`… has changed since the copy`** at the mark step: the repo file was rewritten after
+  its copy was taken. If it names another session, that session wrote it and there is
+  nothing to do. If this session wrote it — a long-running session still following the
+  pre-store Step 4b writes the repo file with `session: <stamped>` — its new content is
+  not in the session's memory: draft the manifest again and install it with
+  `mark_checkpoint.py --from <draft>`. The warning repeats on every mark until the repo
+  file matches the copy again or is deleted. The copy keeps the source's mtime, so a copy
+  taken of a manifest written over 30 minutes earlier is also `not stamped` (the window
+  rule) and keeps its old stamp; its label does not flag that — it reads FRESH until the
+  stamp is 24 hours old (or the code moves) — so this warning is the one signal that the
+  body is older than the latest write.
 - **Across config dirs the path does not resolve.** Sibling sandboxes on one host share
   the config dir (`~/.claude`, mounted at the same path), so a printed path works in all of
   them. It does not work for a tree that exports its own `CLAUDE_CONFIG_DIR`, another

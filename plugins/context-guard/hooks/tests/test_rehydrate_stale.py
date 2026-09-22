@@ -81,7 +81,11 @@ class TestRehydrateStale(unittest.TestCase):
 
     def manifest(self, items="", head=None, mode="continue", written=None):
         os.makedirs(os.path.join(self.repo, ".claude-sandbox"), exist_ok=True)
-        put(os.path.join(self.repo, ".claude-sandbox", "HANDOFF.md"),
+        # Session s's own repo manifest is copied into its store on the first
+        # SessionStart (8cc2-F3b-3); from then on s rewrites that copy.
+        own = os.path.join(self.cfg.name, "claude-kit", "handoff", "s", "HANDOFF.md")
+        put(own if os.path.exists(own) else
+            os.path.join(self.repo, ".claude-sandbox", "HANDOFF.md"),
             MANIFEST.format(written=written or time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
                             head=head or self.head, items=items, mode=mode))
 

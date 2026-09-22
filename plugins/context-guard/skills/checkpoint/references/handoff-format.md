@@ -15,8 +15,12 @@ mandatory tiers, under its 9,000-char injection cap.
 **The old layout** — `.claude-sandbox/HANDOFF.md`, else `HANDOFF.md` at the repo root, one
 per repo — is never written again. The hook still reads such a file, live and read-only,
 for a session that has no manifest of its own (by the ownership rule below), and says once
-per session where that session's own manifest lives. Nothing rewrites or deletes it: the
-operator removes it when they choose.
+per session where that session's own manifest lives. One that this session wrote itself
+(`session:` is its id, and its bytes untouched since this session's mark step stamped them)
+is also copied, once, byte for byte and keeping its mtime, into the
+session's store, which the session reads from then on; if the repo file changes after the
+copy, the mark step warns and changes nothing — it never re-copies, since a peer may be the
+writer. Nothing rewrites or deletes it: the operator removes it when they choose.
 
 ## Where it lives
 

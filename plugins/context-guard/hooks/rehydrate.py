@@ -45,11 +45,16 @@ No manifest and nothing to say -> {} (silent).
 WHICH manifest is this session's memory is resolve_manifest's question, and
 the answer is one file per session, at
 ${CLAUDE_CONFIG_DIR:-~/.claude}/claude-kit/handoff/<safe_sid>/HANDOFF.md
-(L.manifest_path). First hit wins: own (that path exists - ours by the path,
-no comparison), inherited (the newest lineage entry whose pin still seals its
-session's store manifest), adopted (the same for manifest_adopted), legacy
-(the repo file of the old layout, read LIVE and READ-ONLY - nothing here ever
-writes, rewrites or deletes it), else none. A pin is a seal, not an address:
+(L.manifest_path). First hit wins: own (that path exists and is really that
+path, not a planted link - ownership by realpath, read_store_manifest; then
+ours by the path, no owner or sha comparison), inherited (the newest lineage
+entry whose pin still seals its session's store manifest), adopted (the same
+for manifest_adopted), legacy (the repo file of the old layout, read LIVE and
+READ-ONLY - nothing here ever writes, rewrites or deletes it), else none. A
+legacy file whose `session:` IS this session is also copied, once, into this
+session's store (copy_legacy): that arm has no seal to lose, since every
+version this session wrote is its own, so the next SessionStart resolves the
+copy as own. No other legacy arm copies. A pin is a seal, not an address:
 the linked session id says which file to read, the pin says whether it is
 still the version promised, and a pin that no longer seals is skipped. Every
 derived check (head, dead claims, dirty count, Read-in-full paths) runs against
@@ -108,7 +113,7 @@ claude-kit's) deprecated copy and that plugin is not installed
 Never exits non-zero: the staleness checks degrade to the plain manifest on
 any internal error, and anything else degrades to {}.
 """
-import glob, json, os, re, subprocess, sys, time
+import glob, io, json, os, re, subprocess, sys, tempfile, time
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import lib_context as L
 import ledger
@@ -410,6 +415,21 @@ STAMP_SKEW_S = 600
 _STAMP_RE = re.compile(
     r"(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})(?::(\d{2})(?:\.\d+)?)?"
     r"[ \t]*(Z|[+-]\d{2}:?\d{2})?", re.ASCII | re.I)
+
+
+STAMP_TOUCH_S = 3
+
+
+def stamp_untouched(fm, mtime):
+    """Whether a manifest's bytes are still exactly what the mark step left:
+    its mtime is within STAMP_TOUCH_S after its `written:` stamp (the mark
+    step writes both at once; any later rewrite moves the mtime, and a stamp
+    copied into other bytes is older than them). The one predicate for "not
+    touched since it was stamped", shared by the mark step's repeat-mark test
+    (mark_checkpoint._own_stamp) and the legacy copy (copy_legacy)."""
+    t = stamp_epoch(fm.get("written")) if isinstance(fm, dict) else None
+    return t is not None and isinstance(mtime, (int, float)) \
+        and 0 <= mtime - t < STAMP_TOUCH_S
 
 
 def stamp_epoch(value):
@@ -1067,6 +1087,95 @@ def resolve_top(fm, cwd):
     return git_top(cwd)
 
 
+LEGACY_COPY_MAX = 256 * 1024
+
+
+def copy_legacy(sid, path, sha):
+    """Copy the legacy repo manifest at `path` into `sid`'s own store slot,
+    once, and return the state record {sha, path, at}; None when nothing was
+    copied. The caller has already decided the arm: the file's `session:` is
+    `sid` itself (owner == sid), the one legacy arm with no seal to lose -
+    every version a session wrote is its own (L.owned_version's first clause)
+    - so a private copy freezes nothing a later SessionStart would re-decide.
+    Ownerless, pinned, adopted and foreign files are never copied: their
+    ownership is a seal re-evaluated on each SessionStart against the shared
+    file's current bytes, and a copy would freeze it (8cc2-F3b, serial 05).
+
+    Because only that arm copies, a copied store file always carries a real
+    `session:` - this session's - so SessionEnd(clear) pins it and the /clear
+    successor keeps the full tier. That holds for COPIED store files; a store
+    file this session wrote itself may still carry `<stamped>` until the mark
+    step stamps it, as it always could.
+
+    `session:` is repo text, so it is not trusted alone: the file must also be
+    untouched since the mark step stamped it (stamp_untouched: mtime within
+    STAMP_TOUCH_S after `written:`). A peer that edits the body in place and
+    leaves `session: <sid>` moves the mtime, so its bytes stay a live read -
+    which drops to the foreign header once the peer rewrites the file - and
+    never become this session's frozen memory. A hand-typed `session:` with
+    no mark step behind it is not copied either.
+
+    Byte for byte: the source is re-read as bytes and copied only when those
+    bytes are still the version resolved (`sha`, hashed as read_text reads
+    them, so CRLF files match), so a file rewritten between the resolve and
+    the copy is not copied under the wrong record. The copy's
+    mtime is set to the source's, so it is not re-dated into the mark step's
+    30-minute window, where a mark would restamp a manifest nobody rewrote.
+    The store directories are created 0700 and the file 0600 through a temp
+    file and os.link, which never replaces an existing entry: anything already
+    at the slot - a file unreadable to the resolve, or a planted link - is left
+    alone and nothing is copied. The repo file is opened read-only and is
+    never modified, moved or deleted. Never raises: a failed copy leaves the
+    live read, which the caller runs regardless."""
+    tmp = None
+    try:
+        if not isinstance(sid, str) or not L._SAFE_SID.fullmatch(sid):
+            return None
+        with open(path, "rb") as fh:
+            data = fh.read(LEGACY_COPY_MAX + 1)
+            src = os.fstat(fh.fileno())
+        # Hashed as read_text reads it (text mode: the locale encoding with
+        # errors="replace", universal newlines), so a CRLF manifest's sha is
+        # the one the resolve computed; the bytes themselves are copied.
+        text = io.TextIOWrapper(io.BytesIO(data), errors="replace").read()
+        if len(data) > LEGACY_COPY_MAX or L.manifest_sha(text) != sha:
+            return None
+        # `session:` alone is repo text any session can leave in place: a peer
+        # that edits the body and keeps `session: <sid>` must not become this
+        # session's permanent memory. Copy only bytes still exactly as this
+        # session's mark step stamped them; anything else stays a live read.
+        if not stamp_untouched(front_matter(text), src.st_mtime):
+            return None
+        target = L.manifest_path(sid)
+        root = os.path.realpath(L.handoff_root())
+        home = os.path.join(root, L.safe_sid(sid))
+        os.makedirs(root, mode=0o700, exist_ok=True)
+        if not os.path.lexists(home):
+            os.mkdir(home, 0o700)
+        if os.path.realpath(os.path.dirname(target)) != home \
+                or os.path.lexists(target):
+            return None
+        fd, tmp = tempfile.mkstemp(dir=home, prefix=".HANDOFF.", suffix=".tmp")
+        with os.fdopen(fd, "wb") as fh:
+            fh.write(data)
+            fh.flush()
+            os.fsync(fh.fileno())
+        os.chmod(tmp, 0o600)
+        os.utime(tmp, ns=(src.st_atime_ns, src.st_mtime_ns))
+        os.link(tmp, os.path.join(home, L.MANIFEST_NAME))
+        if not L.own_store_manifest(target, sid):
+            return None
+        return {"sha": sha, "path": os.path.abspath(path), "at": time.time()}
+    except Exception:
+        return None
+    finally:
+        if tmp:
+            try:
+                os.unlink(tmp)
+            except OSError:
+                pass
+
+
 def legacy_notice(sid, path):
     """The one line that tells an operator the layout moved, appended once per
     session to whatever tier the legacy arm produced. A session that resolved a
@@ -1128,6 +1237,11 @@ def main():
     top = resolve_top(fm, cwd) if path else cwd
     seen_new = None
     notice = None
+    # The one legacy arm that copies: a repo file this session itself wrote
+    # (owner == sid). Recorded in the same state update as everything below,
+    # and only from inside this arm - the mark step's stamp guard reads it.
+    copied = copy_legacy(sid, path, version["sha"]) \
+        if kind == "legacy" and version["owner"] == sid else None
     # A LANDED manifest (one an older version wrote: the skill no longer
     # writes `mode: land*`) says the thread is done: its /clear is a fresh
     # start, so it keeps the header.
@@ -1258,6 +1372,8 @@ def main():
             cur["manifest"] = seen_new
         if notice is not None:
             cur["legacy_notice"] = True
+        if copied is not None:
+            cur["legacy_copy"] = copied
         if reads_new is not None:
             try:
                 RL.record(cur, reads_new)

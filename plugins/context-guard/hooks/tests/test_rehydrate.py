@@ -58,9 +58,17 @@ class TestRehydrate(unittest.TestCase):
         self.tmp.cleanup(); self.cfg.cleanup()
         os.environ.pop("CLAUDE_CONFIG_DIR", None)
 
+    def manifest_file(self):
+        """Where session s's checkpoint writes: the repo file of the old layout
+        until a SessionStart has copied it into s's store (8cc2-F3b-3: the
+        manifest was s's own), then that store copy - s's memory from then
+        on, and where the checkpoint skill writes since F3b-4."""
+        p = L.manifest_path("s")
+        return p if os.path.exists(p) else os.path.join(self.repo, "HANDOFF.md")
+
     def write_manifest(self, mode="continue", written=None, head=None, scrolls="- x.md — notes"):
         written = written or time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
-        open(os.path.join(self.repo, "HANDOFF.md"), "w").write(
+        open(self.manifest_file(), "w").write(
             MANIFEST.format(written=written, head=head or self.head,
                             mode=mode, scrolls=scrolls))
 
@@ -104,7 +112,7 @@ class TestRehydrate(unittest.TestCase):
 
     def write_mode_skill(self, value, mode="continue"):
         self.write_manifest(mode=mode)
-        p = os.path.join(self.repo, "HANDOFF.md")
+        p = self.manifest_file()
         t = open(p).read().replace("mode: " + mode + "\n",
                                    "mode: " + mode + "\n" + value + "\n", 1)
         open(p, "w").write(t)
@@ -226,6 +234,7 @@ class TestNextSkill(unittest.TestCase):
 
     setUp = TestRehydrate.setUp
     tearDown = TestRehydrate.tearDown
+    manifest_file = TestRehydrate.manifest_file
     write_manifest = TestRehydrate.write_manifest
     hook = TestRehydrate.hook
     ctx = TestRehydrate.ctx
@@ -237,7 +246,7 @@ class TestNextSkill(unittest.TestCase):
         in the repo (the legacy arm) or, with `store`, as that session's own
         per-session manifest (the own arm)."""
         self.write_manifest(mode=mode, written=written)
-        p = os.path.join(self.repo, "HANDOFF.md")
+        p = self.manifest_file()
         t = open(p).read().replace("mode: " + mode + "\n",
                                    "mode: " + mode + "\n" + extra, 1)
         if store:
@@ -355,7 +364,20 @@ class TestLegacyArmMatchesMain(unittest.TestCase):
     injected block is byte-for-byte what `main` produces, for every source and
     every ownership arm, after removing the single legacy_notice line. The
     notice is asserted on its own, below. Skipped where the `main` ref or git
-    is unavailable."""
+    is unavailable.
+
+    The notice is paid for out of the injection's own 9,000-char budget (it is
+    computed before the tiers and subtracted from the trim budget), so for a
+    manifest that TRIMS the acceptance is narrower than byte-for-byte against
+    the layout before the store: the body is trimmed by the notice's length
+    more on the one SessionStart that carries it. In trim's ordinary regime
+    that comes off Scrolls, Next and Aware-of; in its extreme regime - a body
+    whose protected sections alone exceed the budget, which trim already cuts
+    mid-section - it comes off the end of the protected text. Kept on purpose
+    (8cc2-F3b-3, F3b-1's r2 low): the budget is the whole injection's, the cost
+    lands once per session and only on the legacy arm, and the next injection
+    has the whole budget again. test_a_trimming_manifest_pays_for_the_notice
+    pins both regimes."""
 
     REL = "plugins/context-guard/hooks"
     SOURCES = ("startup", "resume", "compact", "clear", "fork")
@@ -500,6 +522,219 @@ class TestLegacyArmMatchesMain(unittest.TestCase):
         self.assertIn(os.path.join("claude-kit", "handoff", "s", "HANDOFF.md"), n)
         self.assertEqual(first.count(n), 1)
         self.assertNotIn(n, again)
+
+
+    def trimming(self, doing="Building the thing.", scrolls=None):
+        """An ownerless repo manifest too big for the budget (ownerless: no
+        session copies it, so every SessionStart takes the legacy arm)."""
+        text = MANIFEST.format(
+            written=time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+            head=self.head, mode="continue",
+            scrolls=scrolls or "\n".join(f"- f{i}.md — {'z' * 200}"
+                                         for i in range(60)))
+        text = text.replace("session: s\n", "").replace(
+            "Building the thing.", doing)
+        with open(os.path.join(self.repo, "HANDOFF.md"), "w") as fh:
+            fh.write(text)
+
+    def test_a_trimming_manifest_pays_for_the_notice(self):
+        # Ordinary regime: the notice's room comes off the unprotected
+        # sections; every protected one is whole, and main agrees.
+        self.trimming()
+        with tempfile.TemporaryDirectory() as cfg, \
+                tempfile.TemporaryDirectory() as ref:
+            first, _ = self.inject(HOOKS, "compact", cfg)
+            again, _ = self.inject(HOOKS, "compact", cfg)
+            was, _ = self.inject(self.base, "compact", ref)
+            n = self.notice(cfg)
+        self.assertIn(n, first)
+        self.assertNotIn(n, again)
+        self.assertEqual(self.strip_notice(first), self.strip_notice(was))
+        for c in (first, again):
+            self.assertLessEqual(len(c), 9000)
+            self.assertIn("(trimmed", c)
+            for sec in ("## Doing\nBuilding the thing.", "## Goal",
+                        "## Read in full\na/plan.md"):
+                self.assertIn(sec, c)
+        # Extreme regime: the protected part alone is over budget, so the
+        # notice's room comes off the end of ## Doing - on that SessionStart
+        # only, and by no more than the notice's own length.
+        self.trimming(doing="D" * 9000, scrolls="- x.md")
+        with tempfile.TemporaryDirectory() as cfg:
+            first, _ = self.inject(HOOKS, "compact", cfg)
+            again, _ = self.inject(HOOKS, "compact", cfg)
+            n = self.notice(cfg)
+        self.assertIn(n, first)
+        self.assertLessEqual(len(first), 9000)
+        cost = again.count("D") - first.count("D")
+        self.assertGreater(cost, 0)
+        self.assertLessEqual(cost, len(n) + 2)
+
+
+class TestLegacyCopy(unittest.TestCase):
+    """8cc2-F3b-3: a legacy repo manifest this session wrote itself
+    (`session:` is this session) is copied into its store once - byte for
+    byte, mtime preserved, the repo file untouched - and recorded as
+    `legacy_copy`. No other arm copies."""
+
+    setUp = TestRehydrate.setUp
+    tearDown = TestRehydrate.tearDown
+    write_manifest = TestRehydrate.write_manifest
+    manifest_file = TestRehydrate.manifest_file
+    hook = TestRehydrate.hook
+    ctx = TestRehydrate.ctx
+
+    def repo_file(self):
+        return os.path.join(self.repo, "HANDOFF.md")
+
+    def snap(self, p):
+        with open(p, "rb") as fh:
+            st = os.stat(p)
+            return fh.read(), st.st_mtime_ns, st.st_ino, st.st_mode & 0o7777
+
+    def stamped(self, age=0, crlf=False):
+        """s's repo manifest as s's mark step left it `age` seconds ago: the
+        `written:` stamp, and an mtime a second after it."""
+        t = int(time.time() - age)
+        self.write_manifest(written=time.strftime("%Y-%m-%dT%H:%M:%SZ",
+                                                  time.gmtime(t)))
+        if crlf:
+            with open(self.repo_file(), "rb") as fh:
+                b = fh.read()
+            with open(self.repo_file(), "wb") as fh:
+                fh.write(b.replace(b"\n", b"\r\n"))
+        os.utime(self.repo_file(), (t + 1, t + 1))
+
+    def test_an_owned_repo_manifest_is_copied_once_byte_for_byte(self):
+        self.stamped(age=2 * 3600)
+        before = self.snap(self.repo_file())
+        rc, out = self.hook("compact")
+        self.assertEqual(rc, 0)
+        self.assertIn("## Doing", self.ctx(out))          # the live read ran
+        store = L.manifest_path("s")
+        got = self.snap(store)
+        self.assertEqual(got[0], before[0])               # byte-identical
+        self.assertEqual(got[1], before[1])               # mtime preserved
+        self.assertEqual(got[3], 0o600)
+        self.assertEqual(os.stat(os.path.dirname(store)).st_mode & 0o777, 0o700)
+        self.assertEqual(self.snap(self.repo_file()), before)   # untouched
+        rec = L.load_state("s")["legacy_copy"]
+        self.assertEqual(rec["sha"], L.manifest_sha(before[0].decode()))
+        self.assertEqual(rec["path"], self.repo_file())
+        self.assertLessEqual(abs(rec["at"] - time.time()), 60)
+        # Once: the next SessionStart resolves the copy as its own, so
+        # neither the copy nor its record is written again.
+        rc, out = self.hook("compact")
+        self.assertIn(store, self.ctx(out))
+        self.assertNotIn("old layout", self.ctx(out))
+        self.assertEqual(self.snap(store), got)
+        self.assertEqual(L.load_state("s")["legacy_copy"], rec)
+
+    def test_a_peers_in_place_edit_under_this_sessions_id_is_not_copied(self):
+        # The reviewer's probe: s stamps its repo manifest; a peer edits the
+        # body in place and leaves `session: s` (its own mark refuses to
+        # claim it). The bytes are no longer s's stamp, so they stay a live
+        # read - and once the peer rewrites the file as its own, s drops to
+        # the foreign header instead of keeping the peer's body forever.
+        self.stamped(age=600)
+        p = self.repo_file()
+        with open(p) as fh:
+            t = fh.read()
+        with open(p, "w") as fh:
+            fh.write(t.replace("Building the thing.", "The peer's body."))
+        rc, out = self.hook("compact")
+        self.assertIn("The peer's body.", self.ctx(out))     # today's live read
+        self.assertFalse(os.path.exists(L.manifest_path("s")))
+        self.assertNotIn("legacy_copy", L.load_state("s"))
+        with open(p, "w") as fh:
+            fh.write(t.replace("Building the thing.", "The peer's body.")
+                     .replace("session: s\n", "session: peer\n"))
+        rc, out = self.hook("compact")
+        self.assertIn("(not this session)", self.ctx(out))
+        self.assertNotIn("The peer's body.", self.ctx(out))
+
+    def test_a_fresh_stamp_is_copied_and_a_hand_typed_one_is_not(self):
+        self.stamped()
+        self.hook("startup")
+        self.assertTrue(os.path.exists(L.manifest_path("s")))
+        os.remove(L.manifest_path("s"))
+        # the same bytes, but written a minute after their stamp: not the
+        # mark step's own write
+        t = time.time() + 60
+        os.utime(self.repo_file(), (t, t))
+        self.hook("startup")
+        self.assertFalse(os.path.exists(L.manifest_path("s")))
+
+    def test_a_crlf_manifest_is_copied_byte_for_byte(self):
+        self.stamped(crlf=True)
+        with open(self.repo_file(), "rb") as fh:
+            src = fh.read()
+        self.assertIn(b"\r\n", src)
+        self.hook("compact")
+        with open(L.manifest_path("s"), "rb") as fh:
+            self.assertEqual(fh.read(), src)
+        self.assertIn("legacy_copy", L.load_state("s"))
+
+    def test_a_link_at_the_session_directory_gets_no_copy(self):
+        self.stamped()
+        elsewhere = os.path.join(self.tmp.name, "elsewhere")
+        os.makedirs(elsewhere)
+        os.makedirs(L.handoff_root())
+        os.symlink(elsewhere, os.path.dirname(L.manifest_path("s")))
+        rc, out = self.hook("compact")
+        self.assertEqual(rc, 0)
+        self.assertIn("## Doing", self.ctx(out))           # the live read
+        self.assertEqual(os.listdir(elsewhere), [])         # nothing written there
+        self.assertNotIn("legacy_copy", L.load_state("s"))
+
+    def test_an_ownerless_or_foreign_repo_manifest_is_never_copied(self):
+        self.write_manifest()
+        for sid in ("other", "third"):                     # foreign to both
+            self.hook("compact", sid)
+        p = self.repo_file()
+        with open(p) as fh:
+            t = fh.read()
+        with open(p, "w") as fh:
+            fh.write(t.replace("session: s\n", ""))       # hand-written
+        for sid in ("s", "other"):
+            rc, out = self.hook("compact", sid)
+            self.assertIn("## Doing", self.ctx(out))       # everyone's
+        for sid in ("s", "other", "third"):
+            self.assertFalse(os.path.exists(L.manifest_path(sid)), sid)
+            self.assertNotIn("legacy_copy", L.load_state(sid))
+
+    def test_a_failed_copy_leaves_the_live_read(self):
+        self.write_manifest()
+        # Something already at the slot that the resolve cannot read (here a
+        # directory): the copy never replaces it, and the live read runs.
+        os.makedirs(L.manifest_path("s"))
+        rc, out = self.hook("compact")
+        self.assertEqual(rc, 0)
+        self.assertIn("## Doing", self.ctx(out))
+        self.assertIn(self.repo_file(), self.ctx(out))
+        self.assertTrue(os.path.isdir(L.manifest_path("s")))
+        self.assertNotIn("legacy_copy", L.load_state("s"))
+
+    def test_a_link_at_the_slot_is_neither_written_through_nor_replaced(self):
+        self.write_manifest()
+        elsewhere = os.path.join(self.tmp.name, "elsewhere.md")
+        with open(elsewhere, "w") as fh:
+            fh.write("not a manifest")
+        os.makedirs(os.path.dirname(L.manifest_path("s")))
+        os.symlink(elsewhere, L.manifest_path("s"))
+        rc, out = self.hook("compact")
+        self.assertIn("## Doing", self.ctx(out))
+        with open(elsewhere) as fh:
+            self.assertEqual(fh.read(), "not a manifest")
+        self.assertTrue(os.path.islink(L.manifest_path("s")))
+        self.assertNotIn("legacy_copy", L.load_state("s"))
+
+    def test_copy_legacy_refuses_a_file_rewritten_since_the_resolve(self):
+        import rehydrate as R
+        self.write_manifest()
+        self.assertIsNone(R.copy_legacy("s", self.repo_file(), "0" * 12))
+        self.assertFalse(os.path.exists(L.manifest_path("s")))
+        self.assertIsNone(R.copy_legacy("../x", self.repo_file(), "0" * 12))
 
 
 class TestForkAdoption(TestRehydrate):
