@@ -28,3 +28,5 @@ Surfaced by 0f3f 2026-09-21: investigate Step 16 (now references/retrospective.m
 - round 1 DONE_WITH_CONCERNS 934ec1c (opus): one rule — update-kit is user-invoked only (disable-model-invocation), so ask the user to run /kit-dev:update-kit; never read and replicate; without kit-dev the shown findings are the record.
 - scope widened (librarian): declare dev-flow's soft dependency on kit-dev (plugin.json, marketplace.json identical, README catalog row) — principle 4; pre-existing gap the change makes explicit.
 - dispatch: implementer opus — widening (same agent resumed), then reviewer opus
+- widening DONE ecaae37 (description/marketplace/catalog) + c67e304 (README dev-flow section sentence); 10/10 descriptions match.
+- dispatch: reviewer opus — rule 4

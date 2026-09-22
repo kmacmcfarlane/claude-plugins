@@ -38,3 +38,5 @@ Found by the 370b reviewer 2026-09-21 (pre-existing): make_id uses a 4-hex rando
 - lows: add-retry test passes on main (use a stray file whose name ≠ its id); update test errors on main only via _id_suffix; docstring width.
 - open questions: blank blocked_reason → lint catches (keep); non-atomic fallback → fix (high).
 - dispatch: implementer opus — fix round 1 (same agent resumed)
+- fix round 1 DONE 22529af (opus): _move_no_clobber — hard link+unlink, else O_EXCL reserve + os.replace over own reservation, cleanup if ours, WiError 3; 4 fallback tests (EPERM) + stray-file test; tests independent of _id_suffix.
+- dispatch: reviewer opus — review r2 (same reviewer resumed)
