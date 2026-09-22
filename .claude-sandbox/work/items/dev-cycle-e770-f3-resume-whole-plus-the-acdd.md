@@ -2,15 +2,14 @@
 id: dev-cycle-e770-f3-resume-whole-plus-the-acdd
 title: "dev-cycle e770 F3: § Resume whole, plus the § Record line shapes move to references/record.md"
 type: feature
-status: doing
+status: done
 priority: 2
 deps:
   - dev-cycle-e770-f2-decision-channel-durab-1709
 parent: dev-flow-new-dev-cycle-skill-investigate-07c3
-owner: unknown@bf9f9839222c
-claimed: 2026-09-22T22:33Z
 created: 2026-09-22
 updated: 2026-09-22
+closed: 2026-09-22
 refs:
   - e770
 ---
@@ -49,3 +48,6 @@ dispatch: implementer opus — fix round 1 (resume)
 return: implementer DONE_WITH_CONCERNS ae8a4fe (concern: known ba8f false red only)
 dispatch: reviewer opus — review r2 (resume)
 agent: reviewer a36d24345154d3595 round 2
+verdict: CLEAR round 2 at ae8a4fe
+landed: 3fda49d
+- 2026-09-22 done: 3fda49d
