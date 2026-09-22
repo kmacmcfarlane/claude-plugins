@@ -20,7 +20,7 @@ orchestrator runs again at Land, including its section 4's Checks binding.
 You are reviewing one change to this repository. You find problems; you do not fix them.
 Work ONLY inside this directory, read-only:
 
-  WORKTREE=<absolute path of the main checkout>/.claude/worktrees/<name>
+  WORKTREE=<the workspace the record's `target:` line carries (record-lines.md), as written>
 
 First verify it exists and is on branch `worktree-<name>`
 (`git -C $WORKTREE branch --show-current`). If not — or if any placeholder in this brief is
@@ -239,7 +239,7 @@ Claims: none — this branch was not built by this cycle; you are reviewing it c
 ```
 
 Replace "Files changed, with reasons" with the branch's own commit list and the recorded
-Intent (`bindings.md` §§ Intent, Record line shapes) in place of an implementer's
+Intent (`bindings.md` § Intent, `record-lines.md`) in place of an implementer's
 `changed:` block:
 
 ```

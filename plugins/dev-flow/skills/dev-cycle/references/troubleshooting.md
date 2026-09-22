@@ -44,7 +44,33 @@ Pointed at from SKILL.md § Troubleshooting and from `fix-loop.md` for the permi
   `NEEDS_CHANGES` and note the re-routing in the record sink — routing only; the finding
   keeps its severity.
 - **The implementer's worktree is on the wrong branch or missing.** Its `BLOCKED` is your
-  setup: recreate the worktree (SKILL.md § Step 3) and re-dispatch; not a round.
+  setup: recreate the worktree (SKILL.md § Step 3) and re-dispatch; not a round. When
+  `worktree-<name>` still exists, add the worktree on it (`git -C "$MAIN" worktree add
+  .claude/worktrees/<name> worktree-<name>`, no `-b`): a fresh branch off the base would
+  drop the commits already on it.
+
+## Resuming
+
+Every case here is a row of `resume.md`'s state table; the table decides, this list only
+names the symptom.
+
+- **The run was interrupted.** Re-invoke `/dev-cycle` on the same target: SKILL.md
+  § Step 0.4 reduces the record and takes the one action its state names.
+- **A store-less run, re-invoked in a new session, finds what the old one left** — its
+  `worktree-<slug>` branch or worktree, or a live agent (`resume.md`, REMNANT; a review
+  worktree is reused, not a remnant). S0b: not resumable from this session — report it and stop; the orphan-worktree
+  rule below decides the remnant. Nothing is re-dispatched over it.
+- **A recorded dispatch's agent does not answer.** S3b: it counts as gone only after a
+  SendMessage to its recorded id fails; then salvage what it left and re-dispatch on top of
+  it, never over it.
+- **Two recorded agents are both alive.** S13: stop, and let a human say which to keep;
+  never stop one on the cycle's own say-so.
+- **The worktree of a resumed run is gone.** Its verdict reads `STALE`, the fresh review
+  blocks on `setup`, and the case above ("the implementer's worktree … missing")
+  recreates it.
+- **A decision is recorded with no answer.** The GATE (`resume.md` § The GATE): re-asked at
+  the start of the next turn on an ephemeral channel, handed back on a durable one — never
+  waited on.
 
 ## Landing
 

@@ -21,19 +21,23 @@ SKILL.md § Step 4.
 ## A NEEDS_CHANGES round
 
 - `NEEDS_CHANGES`: hand the findings, verbatim, to the **implementer** — resume the same
-  agent (SendMessage; it has the context) only when its tier is unchanged (a resumed
+  agent (SendMessage, its `— resume` pair recorded first by SKILL.md § Step 2 rule 7;
+  it has the context) only when its tier is unchanged (a resumed
   agent keeps its model); on a tier change (a round's bump or the fable fallback), or if
   gone, re-dispatch with the full brief, the findings and the fix-round clause from
   `agent-brief.md`. Tell it explicitly: **fix as new commit(s) on top of the reviewed
   sha, never amend, report each new sha**, and for each low/nit it declines, the reason.
-  Then resume the **reviewer** — re-dispatched fresh only when its own tier changed
+  Then resume the **reviewer** (its `— resume` pair recorded the same way) —
+  re-dispatched fresh only when its own tier changed
   (rule 4), or if gone — with the re-review variant in `review-brief.md`, pasting the
   new shas, the declined list and, every round, the cumulative "Files changed, with
   reasons" — the record sink's `changed:` block after this round's CHANGED was merged
-  in, so a file a fix round added arrives with its reason; a plan-mode re-review pastes
-  "none" there, since a plan has no worktree diff. The reviewer verifies each prior
-  finding by file:line, re-runs the same checks, attacks the fix, and rules each
-  declined one DECLINED or OPEN.
+  in, so a file a fix round added arrives with its reason. A plan has no worktree diff
+  and no `changed:` block: a plan-mode re-review pastes there the serials the
+  `baseline:` diff names as added or rewritten (SKILL.md § Step 4.1, `record-lines.md`), and
+  "none" only when no earlier `baseline:` exists to diff against. The reviewer verifies
+  each prior finding by file:line, re-runs the same checks, attacks the fix, and rules
+  each declined one DECLINED or OPEN.
 
 Then repeat until `CLEAR`, inside the cap: a fourth review that is not `CLEAR` blocks the
 change and goes to the decision channel.
@@ -51,9 +55,10 @@ The orchestrator never resolves a conflict by hand. When Land's merge conflicts:
    resolving with the change's own approach as the tiebreaker. That is the brief's one
    exception to its no-merge rule; a rebase stays forbidden. Its CHANGED may list files
    the base brought in with the merge: before merging it into the `changed:` block, drop
-   every path that `git -C "$MAIN"/.claude/worktrees/<name> diff --stat <base>...HEAD`
-   does not show — the three-dot diff, taken after the merge, holds only the change's
-   own side.
+   every path that `git -C <workspace> diff --stat <base>...HEAD` does not show — the
+   three-dot diff, taken after the merge, holds only the change's own side.
+   `<workspace>` is the path the record's `target:` line carries (`record-lines.md`), never one
+   rebuilt from the item id.
 4. Re-review from the last reviewed sha, with the merge-conflict case of
    `review-brief.md` § Re-review variant, which judges the resolution with
    `git show --remerge-diff <merge sha>` (git 2.36+; its fallback for older git is
