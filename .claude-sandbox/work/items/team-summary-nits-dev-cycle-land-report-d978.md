@@ -17,3 +17,4 @@ From a934 review r2 (CLEAR) 2026-09-22: SKILL.md fallback '(once origin/main@{1}
 - next: —
 - blocked: —
 - learned: —
+- from 25fa verify (lows): no-reflog fallback 'note origin/main right before the push that succeeds, after any fetch and merge'; ending-the-session.md:82 rewrap; troubleshooting step 2 'staged changes anywhere'; a leftover MERGE_HEAD from a worktree-branch merge: compare with origin/main before choosing the redo.
