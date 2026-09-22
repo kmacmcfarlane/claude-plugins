@@ -164,6 +164,36 @@ class TestReminder(Base):
         self.assertIn(self.b, c)
         self.assertNotIn(LINE, self.prompt("X"))
 
+    def test_malformed_record_keeps_the_gate(self):
+        bad = [{"paths": [{"path": self.a, "real": [1]}], "read": 5},
+               {"paths": [{"path": self.a, "real": self.a}], "read": 5},
+               {"paths": "x"}, "garbage", {"paths": [{"path": self.a}], "read": [[1]]}]
+        band = {"tokens": 700_000, "window": 1_000_000, "pct": 70.0,
+                "source": "exact", "note": "", "block_window": 1_000_000}
+        for i, rec in enumerate(bad):
+            with self.subTest(rec=rec):
+                sid = f"M{i}"
+                L.update_state(sid, lambda st: st.__setitem__(RL.KEY, rec))
+                with mock.patch.object(self.W.L, "measure", lambda *a, **k: band):
+                    c = self.prompt(sid)
+                self.assertIn("70% of the window is used", c)
+                st = L.load_state(sid)
+                self.assertEqual(st.get("prompt_n"), 1)       # the write completed
+                self.assertNotIn(RL.KEY, st)
+
+    def test_take_never_raises(self):
+        class Boom(dict):
+            def pop(self, *a):
+                raise RuntimeError("x")
+        self.assertEqual(RL.take(Boom({RL.KEY: 1})), [])
+
+    def test_malformed_record_read_is_harmless(self):
+        L.update_state("X", lambda st: st.__setitem__(
+            RL.KEY, {"paths": [{"path": self.a, "real": os.path.realpath(self.a)},
+                               {"path": self.b, "real": [2]}], "read": 5}))
+        self.read("X", self.a)
+        self.assertIsNone(self.pending("X"))
+
     def test_no_injection_no_line(self):
         self.assertEqual(self.prompt("fresh"), "")
 
@@ -182,6 +212,13 @@ class TestParse(Base):
     def test_garbage_is_empty(self):
         self.assertEqual(RL.paths_from_manifest(None, self.repo), [])
         self.assertEqual(RL.paths_from_manifest("no section", self.repo), [])
+
+    def test_fenced_heading_is_not_the_section(self):
+        t = ("## Doing\n```markdown\n## Read in full\n- docs/b.md — example\n```\n"
+             "## Read in full\n- docs/a.md — real\n~~~\n- docs/b.md — fenced\n~~~\n"
+             "## Next\n")
+        got = RL.paths_from_manifest(t, self.repo)
+        self.assertEqual([p["path"] for p in got], [self.a])
 
     def test_directory_is_skipped(self):
         t = "## Read in full\n- docs — a directory\n"

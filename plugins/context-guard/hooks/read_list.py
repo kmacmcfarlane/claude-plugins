@@ -9,7 +9,8 @@ read: [real, ...], at}; the record exists only while a reminder is pending:
   lineage.py    PostToolUse(Read): a whole-file Read (no offset, no limit) of
                 a listed path, matched by realpath, marks it read (mark_read).
                 Not inside a subagent. A partial Read, `cat` or `grep` does
-                not count: the list asks for the whole file.
+                not count. (A file too long for one Read is marked by the
+                Read without offset or limit, as far as the tool reads.)
   context_warn  the next UserPromptSubmit that is not /checkpoint, /compact or
                 /clear and is not hard-stopped takes the record (take) and,
                 when any path is unread, adds ONE line to that prompt's
@@ -25,22 +26,39 @@ import os, re, time
 KEY = "read_list"
 MAX_PATHS = 10
 MAX_LEN = 300
-_SECTION = re.compile(r"^##[ \t]+Read in full[ \t]*$", re.M | re.I)
+_SECTION = re.compile(r"##[ \t]+Read in full[ \t]*", re.I)
+_FENCE = re.compile(r"[ \t]*(`{3,}|~{3,})(.*)")
 _BULLET = re.compile(r"^\s*(?:[-*+]|\d+[.)])\s+")
 _TICKED = re.compile(r"`([^`\n]+)`")
 _SUFFIX = re.compile(r"(?::\d+(?:-\d+)?|#L\d+(?:-L?\d+)?)$")
 
 
 def section_lines(text):
-    """The non-blank lines of the manifest body's `## Read in full` section."""
+    """The non-blank lines of the manifest body's first `## Read in full`
+    section outside a code fence, up to the next `## ` heading outside one.
+    Fenced lines inside the section are skipped too (an example, not a list)."""
     if not isinstance(text, str):
         return []
-    m = _SECTION.search(text)
-    if not m:
-        return []
-    j = text.find("\n## ", m.end())
-    body = text[m.end():j if j >= 0 else len(text)]
-    return [ln for ln in body.splitlines() if ln.strip()]
+    out, fence, inside = [], None, False
+    for ln in text.splitlines():
+        f = _FENCE.fullmatch(ln)
+        if f:
+            run, rest = f.groups()
+            if fence is None:
+                fence = (run[0], len(run))
+            elif run[0] == fence[0] and len(run) >= fence[1] and not rest.strip():
+                fence = None
+            continue
+        if fence is not None:
+            continue
+        if ln.startswith("## "):
+            if inside:
+                break
+            inside = bool(_SECTION.fullmatch(ln.rstrip()))
+            continue
+        if inside and ln.strip():
+            out.append(ln)
+    return out
 
 
 def _candidate(line):
@@ -87,14 +105,21 @@ def record(st, paths, now=None):
         st.pop(KEY, None)
 
 
+def _read_set(rec):
+    r = rec.get("read")
+    return {x for x in r if isinstance(x, str)} if isinstance(r, list) else set()
+
+
 def unread(rec):
-    """The display paths of `rec` not yet read, in manifest order."""
+    """The display paths of `rec` not yet read, in manifest order. A
+    malformed record (hand-edited state) yields what is well-formed in it,
+    never an exception."""
     if not isinstance(rec, dict) or not isinstance(rec.get("paths"), list):
         return []
-    done = set(x for x in rec.get("read") or [] if isinstance(x, str))
+    done = _read_set(rec)
     return [p["path"] for p in rec["paths"]
             if isinstance(p, dict) and isinstance(p.get("path"), str)
-            and p.get("real") not in done]
+            and isinstance(p.get("real"), str) and p["real"] not in done]
 
 
 def mark_read(L, inp):
@@ -124,7 +149,7 @@ def mark_read(L, inp):
             return
         if real not in [p.get("real") for p in rec["paths"] if isinstance(p, dict)]:
             return
-        read = [x for x in rec.get("read") or [] if isinstance(x, str)]
+        read = sorted(_read_set(rec))
         if real not in read:
             rec["read"] = read + [real]
         if not unread(rec):
@@ -135,13 +160,21 @@ def mark_read(L, inp):
 
 def take(st):
     """Pop the pending record from `st` (under the caller's lock) and return
-    its unread paths: the reminder fires at most once per injection."""
-    rec = st.pop(KEY, None)
-    return unread(rec)
+    its unread paths: the reminder fires at most once per injection. Never
+    raises: on any error the record is dropped and nothing is reminded, so
+    the caller's state write (the gate's counters) always completes."""
+    try:
+        return unread(st.pop(KEY, None))
+    except Exception:
+        try:
+            st.pop(KEY, None)
+        except Exception:
+            pass
+        return []
 
 
 def reminder(paths):
     return ("[context-guard rehydration] Read in full, not yet read this "
             "session: " + ", ".join(paths) + ". The manifest lists these to "
-            "be read before anything else - with the Read tool, the whole "
-            "file (a partial Read, cat or grep does not count).")
+            "be read before anything else - with the Read tool, no offset or "
+            "limit (a partial Read, cat or grep does not count).")

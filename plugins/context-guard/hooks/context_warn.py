@@ -200,7 +200,10 @@ def main():
         if act[-1] != "hard" and not whitelisted and not subagent \
                 and RL.KEY in st:
             # Taken (so once per injection) only by a prompt that goes through.
-            unread.extend(RL.take(st))
+            try:
+                unread.extend(RL.take(st))
+            except Exception:
+                del unread[:]      # never cost the gate its state write
         if dr:
             st["derived"] = dr
         if m.get("scan_cache"):

@@ -826,7 +826,10 @@ def main():
         if seen_new is not None:
             cur["manifest"] = seen_new
         if reads_new is not None:
-            RL.record(cur, reads_new)
+            try:
+                RL.record(cur, reads_new)
+            except Exception:
+                pass
         if source == "compact" and "custom_instructions" in st \
                 and cur.get("custom_instructions") == st.get("custom_instructions"):
             # Consumed once; a newer /compact guidance written meanwhile stays.
