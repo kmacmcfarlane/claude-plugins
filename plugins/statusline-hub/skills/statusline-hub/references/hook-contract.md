@@ -8,6 +8,10 @@ hold them to it. The sensor record itself (what a *reader* gets without register
 anything) has its own contract, the `statusline` plugin's `sensor-contract.md`, which is
 unchanged.
 
+A tool that only has a few words to show, and no need to see the payload, need not run
+code at all: it drops a **segment** file the hub reads on each render (§ 11). No manifest,
+no process, and it works from any repo or plugin that can write a file under `CFG`.
+
 ## The agreed consumer contract
 
 Agreed with the claude-analytics session (2026-09-19/20), carried verbatim:
@@ -36,6 +40,8 @@ CFG/statusline-hub/
   config.json                the user's order / disabled / separator (the user writes it)
   cache/<name>/<session>.json   a display hook's last good text (the hub writes it)
   log/<name>.log             your hook's stderr (the hub writes it)
+  segments/<provider>.json   a segment for every session (a producer writes it, § 11)
+  segments/<provider>/<session>.json   a segment for one session (§ 11)
 ```
 
 `<name>` is `[a-z0-9][a-z0-9-]{0,39}`: lowercase letters, digits and hyphens, starting with
@@ -216,7 +222,8 @@ glyph. `/install-statusline-hub --status` shows each hook's health.
   SessionStart no longer refreshes the file.
 - The same pass deletes last-good cache entries older than a day, logs untouched for 14
   days, and orphaned temp files. It also deletes sensor records untouched for 30 days,
-  including records only the hub's tee ever wrote.
+  including records only the hub's tee ever wrote, and segment files no render will show
+  again (§ 11).
 
 ## 9. The user's config.json
 
@@ -225,7 +232,7 @@ glyph. `/install-statusline-hub --status` shows each hook's health.
 ```
 
 All keys are optional. A malformed file means defaults. A disabled hook does not run and
-shows no health glyph.
+shows no health glyph. `order` and `disabled` name segment providers (§ 11) the same way.
 
 ## 10. Owner mode and the statusline plugin
 
@@ -283,3 +290,100 @@ shows no health glyph.
 - A plugin disabled or uninstalled stops refreshing its manifest, so its hook keeps
   running until the manifest is 14 days old (§ 8). To stop one at once, list it under
   `disabled` in `config.json` (§ 9), or delete its manifest.
+
+## 11. Segments: a file drop, no code
+
+A **segment** is one short piece of text another tool wants on the line: a session-identity
+chip, a sandbox marker, a checkpoint label. The producer writes a small JSON file from its
+own hooks, whenever the text changes; the hub reads it on every render in owner mode (and
+in wrap mode, after the wrapped output). Nothing is registered and nothing runs: the hub
+never executes, opens or follows anything a segment names.
+
+### Where
+
+```
+CFG/statusline-hub/segments/<provider>.json             shown in every session
+CFG/statusline-hub/segments/<provider>/<session>.json   shown in that session only
+```
+
+- `<provider>` follows the hook-name rule (§ 1), `[a-z0-9][a-z0-9-]{0,39}`: your plugin or
+  tool's name. One provider shows at most one segment: its session file when that is live,
+  else its every-session file.
+- `<session>` is the session id in the sensor record's file-name form (`sensor-contract.md`
+  §1, `safe_sid`): a Claude Code UUID as is; anything else hashed to `sid-<32 hex>`. The
+  hub reads only the file for the session it is rendering.
+
+### The file
+
+```json
+{"v": 1, "text": "sandbox: web-3", "fg": "cyan", "order": 10, "priority": 2,
+ "expires_at": 1790003600}
+```
+
+| Field | Required | Meaning |
+|---|---|---|
+| `v` | yes | The integer `1`. Anything else, or none, and the file is skipped. |
+| `text` | yes | What shows. Plain text: see the caps below. An empty string (or only spaces) shows nothing, which is how to hide a segment without deleting it. |
+| `fg` | no | A colour name: `dim`, `bold`, `red`, `green`, `yellow`, `blue`, `magenta`, `cyan`, `white`, `grey` (`gray`). Any other string shows the text uncoloured; a non-string skips the file. |
+| `order` | no | An integer hint for position, sorted with the display hooks' `order` hints (lower first). The user's `config.json` `order` wins. Default 0. |
+| `priority` | no | An integer. When the line is too wide, the lowest priority goes first. Default 0. |
+| `expires_at` | no | Epoch seconds (a number). From then on the file is not shown, and the prune pass deletes it. |
+
+Other keys are ignored, so a newer file stays readable. A wrong type in a known field
+(`order: "1"`, `expires_at: "tomorrow"`) skips the file.
+
+### Staleness
+
+- With `expires_at`: shown until then.
+- Without it: shown while the file was modified within the last **24 hours**. Rewrite it
+  (or `os.utime` it) to keep it up, or set `expires_at`.
+- Either way, a file untouched for **30 days** is never shown, and the prune pass deletes
+  it (§ 8), as it does a file past its `expires_at` - so a producer that was uninstalled
+  fades out by itself.
+
+### Caps and sanitising
+
+- A file is at most **4 KiB**. A larger one is skipped.
+- At most **16 providers** are read, in name order; the rest are skipped.
+- The text goes through the display-hook sanitiser (§ 6), then loses its colour sequences
+  too: colour comes only from `fg`. Only the first line is kept.
+- The text is cut to **40 terminal columns** (a wide character takes two), ending in `…`
+  when cut.
+
+### Trust
+
+Segment text is display text from any local writer, so the drop dir counts under the same
+directory rules as `hooks.d` (§ 4): `CFG/statusline-hub` and `segments/` (and a provider's
+session dir) are real directories owned by the user and writable by nobody else, and `CFG`
+is not in the project tree or a git work tree. A segment file is regular (a symlink is
+never followed), the user's own, and not writable by group or others. Anything else is
+skipped silently; `/install-statusline-hub --status` lists the every-session segments and
+why any file is skipped.
+
+### On the line
+
+- Segments sit among the display hooks' output, in one order: the user's `config.json`
+  `order` first, then each one's `order` hint, then name. A display hook comes before a
+  segment of the same name.
+- A provider named in `config.json` `disabled` is not shown.
+- When `COLUMNS` is set and the line's last line is wider, the hub drops segments one at a
+  time, the lowest `priority` first and, of equal ones, the last shown, until it fits. A
+  display hook's text and a wrapped command's output are never dropped for width.
+- A missing, unreadable, malformed, stale or oversized file costs only its own segment. No
+  drop dir at all leaves the line exactly as it was.
+- Reading the drop dir is one directory listing and at most two small reads per provider:
+  well under a millisecond, inside the render budget (§ 6).
+
+### Writing one
+
+- Create missing directories `0700` (`os.makedirs(d, mode=0o700, exist_ok=True)`) on every
+  write: the prune pass removes a provider's session dir once it is empty.
+- Write atomically, as a manifest (§ 3): `tempfile.mkstemp` in the same directory (it
+  makes the file `0600`), then `os.replace` onto the name. Never truncate in place; a
+  render may read it at any moment. Name the temp file with a leading dot, which the hub
+  never reads.
+- To remove a segment, delete the file, write empty `text`, or let `expires_at` pass.
+- Use a per-session file for anything about one session (a checkpoint label, the
+  session's identity), and the every-session file for anything true of the whole machine
+  or container (a sandbox marker). Delete per-session files from a `SessionEnd` hook if
+  you have one; otherwise the prune pass gets them after 30 days.

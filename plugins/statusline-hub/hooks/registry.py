@@ -1,4 +1,5 @@
-"""The hub's hook registry, its config, hook health and display-text hygiene.
+"""The hub's hook registry, its config, hook health, display-text hygiene and
+the segment drop dir.
 
 Stdlib only; nothing here raises to its caller. The contract these functions
 enforce is skills/statusline-hub/references/hook-contract.md; read that first.
@@ -12,6 +13,8 @@ Layout, all under ${CLAUDE_CONFIG_DIR:-~/.claude}/statusline-hub/ (the hub dir):
                           itself, with the user's consent (see read_wrap)
     cache/<name>/<sid>.json  a display hook's last good text, per session
     log/<name>.log        a hook's stderr, capped
+    segments/<provider>[/<sid>].json  text another tool drops for the line
+                          (no code runs; see scan_segments)
 
 Trust: a manifest executes code, so it counts only when every one of these
 holds, and is otherwise skipped (never run, never an error on the line):
@@ -594,3 +597,198 @@ def sanitise(text):
         return s + RESET if sgr else s
     except Exception:
         return ""
+
+
+# -- segments: text other tools drop as files (no code runs) -----------------
+#
+# segments/<provider>.json             one line for every session
+# segments/<provider>/<session>.json   one line for one session (wins over the
+#                                      provider's file for every session)
+#
+# A segment is display text, never a command: the hub reads it, it never runs
+# it. The contract is hook-contract.md § 11.
+
+SEGMENTS = "segments"
+SEGMENT_V = 1
+SEGMENT_MAX = 4096              # bytes in one segment file
+SEGMENTS_MAX = 16               # providers read at most, in name order
+SEGMENT_COLS = 40               # terminal columns one segment may take
+SEGMENT_STALE_S = 86400         # no expires_at: untouched this long, not shown
+SEGMENT_AGE_MAX_S = 30 * 86400  # untouched this long, never shown (then pruned)
+ELLIPSIS = "…"
+COLOURS = {"dim": "2", "bold": "1", "red": "31", "green": "32", "yellow": "33",
+           "blue": "34", "magenta": "35", "cyan": "36", "white": "37", "grey": "90",
+           "gray": "90"}
+
+
+def segments_dir():
+    return os.path.join(hub_dir(), SEGMENTS)
+
+
+def _col(ch):
+    """Terminal columns one printable character takes: 0 for a combining mark
+    or a joiner, 2 for a wide or full-width one, else 1."""
+    if ch == ZWJ or unicodedata.category(ch) in ("Mn", "Me") or unicodedata.combining(ch):
+        return 0
+    return 2 if unicodedata.east_asian_width(ch) in ("W", "F") else 1
+
+
+def columns(text):
+    """Terminal columns `text` takes, SGR colour sequences not counted (any
+    other escape is counted as text; sanitised text has none). Never raises."""
+    try:
+        return sum(_col(c) for c in _SGR.sub("", text))
+    except Exception:
+        return 0
+
+
+def fit(text, cols):
+    """Plain `text` cut to at most `cols` columns, ending in an ellipsis when
+    cut."""
+    if columns(text) <= cols:
+        return text
+    out, used = [], 0
+    for ch in text:
+        w = _col(ch)
+        if used + w > cols - 1:
+            break
+        out.append(ch)
+        used += w
+    return "".join(out).rstrip() + ELLIPSIS
+
+
+def _number(x):
+    """A finite number that is not a bool, else None."""
+    if isinstance(x, bool) or not isinstance(x, (int, float)):
+        return None
+    return float(x) if math.isfinite(x) else None
+
+
+def parse_segment(raw, mtime, now):
+    """(segment, None) from a segment file's bytes and mtime, or (None,
+    reason). A segment is {"text": what shows (plain text, cut to
+    SEGMENT_COLS, coloured by fg), "order": int, "priority": int}. Its
+    "text" is None when it is live but has nothing to show."""
+    try:
+        d = json.loads(raw.decode("utf-8"))
+    except Exception:
+        return None, "not JSON"
+    if not isinstance(d, dict):
+        return None, "not a JSON object"
+    if not tee._is_v(d, SEGMENT_V):
+        return None, "unknown version"
+    if not isinstance(d.get("text"), str):
+        return None, "text is not a string"
+    for key in ("order", "priority"):
+        if key in d and d[key] is not None and _int(d[key]) is None:
+            return None, f"{key} is not an integer"
+    fg = d.get("fg")
+    if fg is not None and not isinstance(fg, str):
+        return None, "fg is not a string"
+    if now - mtime > SEGMENT_AGE_MAX_S:
+        return None, f"not refreshed for {SEGMENT_AGE_MAX_S // 86400} days"
+    if d.get("expires_at") is not None:
+        exp = _number(d["expires_at"])
+        if exp is None:
+            return None, "expires_at is not a number"
+        if now >= exp:
+            return None, "expired"
+    elif now - mtime > SEGMENT_STALE_S:
+        return None, "stale (no expires_at, untouched for a day)"
+    text = fit(_SGR.sub("", sanitise(d["text"])).strip(), SEGMENT_COLS)
+    code = COLOURS.get(fg) if fg else None
+    if text and code:
+        text = f"\x1b[{code}m{text}{RESET}"
+    return {"text": text or None, "order": _int(d.get("order")) or 0,
+            "priority": _int(d.get("priority")) or 0}, None
+
+
+def _read_segment(path, now):
+    """(segment, None) or (None, reason) for one segment file; "missing" when
+    there is none. The file must be regular (never followed through a
+    symlink), the user's own, writable by nobody else and at most
+    SEGMENT_MAX bytes. Never raises."""
+    try:
+        try:
+            raw, st = _read_capped(path, SEGMENT_MAX)
+        except FileNotFoundError:
+            return None, "missing"
+        except OSError as e:
+            return None, "a symlink" if e.errno == errno.ELOOP else "unreadable"
+        if raw is None:
+            return None, "not a regular file, or too large"
+        if st.st_uid != os.geteuid():
+            return None, "not owned by you"
+        if st.st_mode & 0o022:
+            return None, "group- or other-writable"
+        return parse_segment(raw, st.st_mtime, now)
+    except Exception:
+        return None, "malformed"
+
+
+def scan_segments(sid=None, now=None, project_dirs=()):
+    """([segments], [(provider or file, reason)]) for the segment drop dir,
+    in provider-name order, before config is applied. Each segment is
+    parse_segment()'s dict plus "name" and "scope" ("session" or "all"); a
+    provider's session file, when live, stands in for its all-sessions file.
+    The drop dir counts only under the directory rules hooks.d has (a
+    private dir, the hub dir passing hub_problem()); a provider dir must be
+    private too. At most SEGMENTS_MAX providers are read, in name order.
+    Never raises."""
+    segs, problems = [], []
+    try:
+        now = time.time() if now is None else now
+        d = segments_dir()
+        why = hub_problem(project_dirs) or private_dir_problem(d)
+        if why:
+            if why != "missing":
+                problems.append((d, why))
+            return segs, problems
+        names = set()
+        for fn in os.listdir(d):
+            if fn.startswith("."):
+                continue
+            name = fn[:-5] if fn.endswith(".json") else fn
+            if NAME_RE.fullmatch(name):
+                names.add(name)
+            else:
+                problems.append((fn, "file name is not a provider name"))
+        names = sorted(names)
+        sfile = tee.safe_sid(sid) + ".json" if isinstance(sid, str) and sid else None
+        for name in names[:SEGMENTS_MAX]:
+            seg = None
+            sub = os.path.join(d, name)
+            if sfile:
+                sub_why = private_dir_problem(sub)
+                if sub_why is None:
+                    seg, why = _read_segment(os.path.join(sub, sfile), now)
+                    if seg is not None:
+                        seg.update(name=name, scope="session")
+                    elif why != "missing":
+                        problems.append((f"{name}/{sfile}", why))
+                elif sub_why not in ("missing", "not a directory"):
+                    problems.append((name + "/", sub_why))
+            if seg is None:
+                seg, why = _read_segment(sub + ".json", now)
+                if seg is not None:
+                    seg.update(name=name, scope="all")
+                elif why != "missing":
+                    problems.append((name + ".json", why))
+            if seg is not None:
+                segs.append(seg)
+        for name in names[SEGMENTS_MAX:]:
+            problems.append((name, f"over {SEGMENTS_MAX} providers"))
+    except Exception:
+        pass
+    return segs, problems
+
+
+def segments(sid=None, now=None, project_dirs=(), cfg=None):
+    """The live segments with something to show, for this session, that
+    config.json does not disable. Never raises."""
+    try:
+        cfg = config() if cfg is None else cfg
+        return [s for s in scan_segments(sid, now, project_dirs)[0]
+                if s["text"] and s["name"] not in cfg["disabled"]]
+    except Exception:
+        return []
