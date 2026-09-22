@@ -2,12 +2,11 @@
 id: wi-recover-from-a-kill-mid-move-archive-220b
 title: "wi: recover from a kill mid-move (archive duplicate, 0-byte reservation); bound the exhaustion test"
 type: bug
-status: doing
+status: done
 priority: 3
-owner: unknown@360f41058e92
-claimed: 2026-09-22T00:50Z
 created: 2026-09-22
 updated: 2026-09-22
+closed: 2026-09-22
 refs:
   - 5408 reviewer
 ---
@@ -38,3 +37,4 @@ From 5408 review r2 (lows): (1) archive hard-link path — a kill between link a
 - review r2 (opus) at b157e01: CLEAR. Probes: symlinked archive/<year> and items/ refuse and keep the item; a real half-done move with nlink 3 through a symlinked root finishes; a hard-linked dir is impossible on Linux. Low: realpath cannot see a bind mount → items/ bind-mounted at archive/<year> plus an outside hard link passes _half_moved (the backup holds the content); compare parents by (st_dev, st_ino).
 - Review result: 2 review rounds, 1 fix round; round-1 medium (symlinked-dir data loss) fixed; round-1 lows fixed; r2 low filed as a follow-up; impl opus, review opus.
 - land checks (librarian, worktree b157e01): seven suites OK; diff read — 3 files in scope.
+- 2026-09-22 done: 5487fb0
