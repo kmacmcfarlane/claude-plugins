@@ -41,3 +41,5 @@ land (librarian): merge-tree conflicts with main in hooks/rehydrate.py (H6 b6de 
 dispatch: implementer opus — conflict round (resume)
 conflict round DONE 8ca085d (merge of main) + e24ca1f: both sides kept in rehydrate.py; a linked /clear records the read list (tests); successor_title skips its rewrite only on a lock timeout (None when no lock is possible still writes).
 dispatch: reviewer opus — resolution + e24ca1f verify (resume)
+resolution verify (opus) at e24ca1f: CLEAR — both features kept; write_back keys disjoint; a linked /clear records the read list by construction; lock probe 40 trials lost_lines=0 torn=0; rewrite skip works. Low kept in the record: after a >200 ms lock hold, two appenders can each write a title (2/40); digest() skips exact plain titles, so nothing is lost. H3 will conflict here (tier docstring, Step 5, tiers bullet) and its linked-clear branch should wrap the body in annotate_holds.
+Review result: 2 review rounds + resolution verify, 1 fix round + 1 conflict round; impl opus, review opus.
