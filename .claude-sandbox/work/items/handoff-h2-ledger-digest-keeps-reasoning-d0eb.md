@@ -28,3 +28,5 @@ review r1 (opus) at daf57d2: NEEDS_CHANGES. Seven Checks OK; probes: multibyte c
 - [medium] no test pins the half-budget R/C cap (mutating room//2 → room passes all 9 tests). Pass: a test with R/C over half the budget plus D lines asserting D kept, R/C ≤ ~room/2, newest R/C kept.
 - lows: handoff-format.md:133-135 omits the half cap and "newest within a kind" is wrong (D/X/U/Q ranked together); an R/C line longer than the room dropped whole; closing line can exceed a small budget (H5 reuses digest); nits: closing wording, uncounted `# ` lines (H5's successor line), tail() uncalled.
 dispatch: implementer opus — fix round 1 (resume)
+fix r1 DONE c21f67c (opus): half-cap test fails under the room//2 → room mutation; long lines cut with [cut]; output clamped to budget (0–1000 tested); closing wording; non-title `# ` lines counted as reasoning; doc gives the real order; (f) declined — tail() is the test's baseline. Note: implementer's first mutation undo (git checkout) wiped uncommitted edits; re-applied and re-tested before commit.
+dispatch: reviewer opus — review r2 (resume)
