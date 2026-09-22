@@ -2,12 +2,11 @@
 id: investigate-step-11-re-verify-ownership-9ec9
 title: "investigate Step 11: re-verify ownership/contract facts about neighbouring components before the review gate"
 type: chore
-status: doing
+status: done
 priority: 3
-owner: unknown@bf9f9839222c
-claimed: 2026-09-22T22:42Z
 created: 2026-09-22
 updated: 2026-09-22
+closed: 2026-09-22
 refs:
   - "peer: agents - librarian (uds 122.sock); agents retro/2026-09-20-agent-telemetry-investigate-run.md @ agents 74b45f9 § candidate skill changes"
 ---
@@ -38,3 +37,8 @@ findings:
 dispatch: implementer sonnet — fix round 1 (resume)
 return: implementer DONE 50dff87
 dispatch: reviewer opus — review r2 (resume)
+verdict: CLEAR round 2 at 50dff87
+nit declined by the librarian: sentence length — optional polish
+note: context-guard TestLegacyArmMatchesMain red in the worktree only (compares against the moving main ref); filed separately
+landed: f81403b
+- 2026-09-22 done: f81403b
