@@ -2,12 +2,11 @@
 id: wi-an-archived-done-dep-counts-as-unmet-cc39
 title: "wi: an archived done dep counts as unmet in next and claim; show --json disagrees"
 type: bug
-status: doing
+status: done
 priority: 3
-owner: Kyle-McFarlane@bf9f9839222c
-claimed: 2026-09-22T23:24Z
 created: 2026-09-22
 updated: 2026-09-22
+closed: 2026-09-22
 refs:
   - 1d1c implementer
 ---
@@ -38,3 +37,9 @@ findings:
 - [medium] test_wi.py:1318 — prime untested for archived deps; add it to assert_ready_everywhere.
 dispatch: implementer opus — fix round 1 (resume)
 agent: implementer abb14e345a6345416 round 2
+return: implementer DONE 23482ec
+dispatch: reviewer opus — review r2 (resume)
+agent: reviewer a123dd58079c56144 round 2
+verdict: CLEAR round 2 at 23482ec
+landed: b4288a4
+- 2026-09-22 done: b4288a4

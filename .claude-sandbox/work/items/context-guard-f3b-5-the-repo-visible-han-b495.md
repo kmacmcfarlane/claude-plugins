@@ -29,3 +29,15 @@ Plan of record .claude-sandbox/investigations/8cc2-turn-gate-port 04 Open Questi
 target: full context-guard-f3b-5-the-repo-visible-han-b495 /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude/worktrees/context-guard-f3b-5-the-repo-visible-han-b495
 dispatch: implementer sonnet — docs only under answer 65 (a); plan routes sonnet impl, opus review
 agent: implementer aefc6634251c2dd06 round 1
+return: implementer DONE 6303e63
+changed: plugins/context-guard/skills/checkpoint/references/operator-playbook.md
+dispatch: reviewer opus — rule 4 floor (impl sonnet)
+agent: reviewer a9f57490722831112 round 1
+verdict: NEEDS_CHANGES round 1 at 6303e63
+findings:
+- [high] operator-playbook.md:140-145 — handoff_path.py --path <sid> run from a Claude Code session prints the CALLER's path (CLAUDE_CODE_SESSION_ID wins, verified). Pass: say the id counts only outside a session, or give `env -u CLAUDE_CODE_SESSION_ID … --path <sid>`; point at handoff-format.md "Where it lives".
+- [medium] :132-134 — rationale conflates answer 47's .claude-sandbox reason with the repo-root reason (overwriting between sessions, decision 65 option c). Pass: keep the two reasons apart.
+- [medium] :136-137 — no pointer to the legacy repo HANDOFF.md as read-only transitional; "that overwrite can't happen" contradicts :179-187. Pass: one clause pointing at "An old-layout HANDOFF.md".
+- [low] :143 restates handoff-format.md:47-48 — replace with the pointer; [low] :141-142 vs :199-202 — "on the same host and config dir".
+dispatch: implementer sonnet — fix round 1 (resume)
+agent: implementer aefc6634251c2dd06 round 2
