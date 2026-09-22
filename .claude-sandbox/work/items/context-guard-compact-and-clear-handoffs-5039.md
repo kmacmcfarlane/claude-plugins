@@ -2,8 +2,10 @@
 id: context-guard-compact-and-clear-handoffs-5039
 title: "context-guard: /compact and /clear handoffs lose state — investigate failure modes and fix"
 type: spike
-status: todo
+status: doing
 priority: 1
+owner: unknown@360f41058e92
+claimed: 2026-09-22T15:44Z
 created: 2026-09-22
 updated: 2026-09-22
 refs:
@@ -30,3 +32,7 @@ Written while the context is live; evidence paths are under ~/.claude/projects/-
 - O8 the repo HANDOFF.md at .claude-sandbox/ is shared by every session in the checkout (14 peer sessions were live); answer 47(c) moves to per-session manifests. Until F3a/F3b land, any session's rehydrate may inject this librarian's manifest (and vice versa).
 - O9 the manifest's "Next" was stale on arrival in small ways (F1 described as possibly dead; d182/220b "ready but not dispatched" — correct), but open decisions were listed well; decision numbering continued correctly from the store.
 - O10 operator standards carried as "DECIDED" lines (two-line recap) were honoured — the Aware-of section works for rules; it fails for things the successor must DO first (O5, O6).
+dispatch: investigator opus — spike through dev-flow investigate (orchestrated, read-only); series .claude-sandbox/investigations/5039-handoff-failures/; transcripts are private operator data: read locally, quote minimally, no values of secrets
+
+## Notes
+- 2026-09-22 claimed by unknown@360f41058e92
