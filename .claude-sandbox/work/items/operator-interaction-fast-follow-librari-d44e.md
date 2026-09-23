@@ -30,3 +30,5 @@ note: started in parallel with 9f98's review to meet the operator's morning dead
 target: full operator-interaction-fast-follow-librari-d44e /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude/worktrees/operator-interaction-fast-follow-librari-d44e
 dispatch: implementer opus (fork of the librarian, effort xhigh) — doctrine: dev-flow skill text + soft-dependency declaration (README row, plugin.json, marketplace.json); full mode (investigate then implement)
 agent: implementer adda2a62cd119c07a round 1
+return: implementer DONE 0891f07 (new references/decisions.md in librarian-mode; SKILL.md Rehydrate/Intake/Decision channel/Report; idle-turn.md; dev-cycle bindings § Decisions and Step 6; soft dependency declared in dev-flow plugin.json, marketplace.json and README; deviations: new `wake N:` store line, `answer N:` records the echo's reading; merge-tree clean against 9f98)
+dispatch: reviewer opus — implementer tier opus (doctrine: dev-flow skill text, soft-dependency declaration)
