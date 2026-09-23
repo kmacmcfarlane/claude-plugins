@@ -29,3 +29,6 @@ agent: implementer a9f1423ec295e9095 round 1
 return: implementer DONE da1b6d3 (team-summary.md shape and example rewritten; SKILL.md § Report pointer updated; the other five pointers were generic and needed no change; checks OK)
 dispatch: reviewer opus — floor opus (doc-only)
 agent: reviewer a53754f002de0a934 round 1
+verdict: NEEDS_CHANGES round 1 at da1b6d3 (4 medium, all one-clause edits in team-summary.md: the Push: none range; repo vs plugin header; the WHAT-only test restored; example mislabels a context-guard change as dev-flow; 3 low)
+dispatch: implementer sonnet — resume, fix round 1 (bindings.md:278 added to scope for the "maintenance bullet" low)
+agent: implementer a9f1423ec295e9095 round 2
