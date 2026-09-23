@@ -2,11 +2,13 @@
 id: operator-interaction-fable-review-of-the-4fb0
 title: "operator-interaction: fable review of the decisions skill after it lands, presented to the operator"
 type: spike
-status: todo
+status: doing
 priority: 1
 deps:
   - dev-flow-a-decision-presentation-skill-d-7113
 parent: checkpoint-around-continuation-how-agent-d3ee
+owner: Kyle-McFarlane@bf9f9839222c
+claimed: 2026-09-23T08:47Z
 created: 2026-09-23
 updated: 2026-09-23
 refs:
@@ -20,3 +22,9 @@ Operator 2026-09-23: 'Let's do a follow-up work-item review with a fable sub-age
 - next: —
 - blocked: —
 - learned: —
+
+## Notes
+- 2026-09-23 claimed by Kyle-McFarlane@bf9f9839222c
+
+target: review main at b005199 (operator-interaction v1 + d44e wiring)
+dispatch: reviewer fable — operator pin (model: fable); review-only; runs overnight so fable's view is ready for the morning
