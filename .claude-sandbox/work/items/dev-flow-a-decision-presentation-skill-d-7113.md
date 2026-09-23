@@ -144,3 +144,10 @@ agent: reviewer ab28a83ac97eeee18 round 1 (plan review)
 verdict: NEEDS_CHANGES plan round 1 (1 high, 10 medium, 10 low/nit) — /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude-sandbox/investigations/7113-decisions/reviews/plan-review-r1.md
 dispatch: planner opus — plan fix round 1 (resume the fork), new serial 01; librarian rulings on the findings in the brief
 agent: planner a3df2feba2917125b round 2
+- answer P1: (a), answer P2: (a), answer P3: (a) (operator 2026-09-23). So P3(1) is ON: "breaks before you're likely back" is listed above ⚠, overriding R14 (c) on that one point. P3(2) is ON: read-back before acting on a ⚠ answer.
+- Operator 2026-09-23 (going to bed), verbatim:
+  - "use /dev-flow:dev-cycle to drive the implementation with your recommended effort setting on the sub-agents";
+  - "Do the librarian wiring as a fast-follow and land it right after you finish this";
+  - "If you have left over work, add it into a work-item for me to groom later, but I want this tomorrow";
+  - "Once the new plugin lands and the librarian wire-up is commited and pushed too, broadcast instructions to the librarian agents to prompt me to do the marketplace update and/or /reload-plugins";
+  - "deferred items look good, make sure there's work items for them".
