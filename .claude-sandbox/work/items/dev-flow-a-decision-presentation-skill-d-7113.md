@@ -60,3 +60,5 @@ agent: research-lane w6 acead026ed497554b round 2
 dispatch: research-verifier haiku — verify run 2026-09-23-decision-attributes, sample 12
 agent: research-verifier a462f7eb0fb761e8a
 return: research run DONE /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude-sandbox/investigations/7113-decisions/research/2026-09-23-decision-attributes/01-synthesis.md (7 lanes, 2 rounds, verifier 9/12 supported, gate PASS); review with the operator next
+
+- 2026-09-23 agents - librarian: findings filed as agents knowledge-hold-the-decision-raising-find-2613, which is blocked on agents 39f1 (the operator's scope conversation). Their caution for the design: a raise-time check does not help if decisions are never read (they have four open decisions, nothing in flight, and the operator away). Make a decision's AGE and BLOCKING COST visible, not just its content. Carry this into the plan: age is a collector field, and blocking cost is the floor's "what it blocks" line.
