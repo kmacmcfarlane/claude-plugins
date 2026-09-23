@@ -48,6 +48,25 @@ If there is no purpose, ask for it in one question: "What is this repo's thread 
 question or work it will carry?" The purpose seeds the README and the bootstrap prompt, so
 it cannot be skipped.
 
+**An existing investigation series.** When the argument or this conversation names one
+for this thread — a `.claude-sandbox/investigations/SLUG/` path, or the user says one
+exists (then ask for its path) — note its slug and its current repo and path, and keep the
+path out of the purpose. There is no flag for it. The session holding the series moves it
+into the new repo once this skill returns (the investigate skill, dev-flow plugin,
+describes the move), so the bootstrap prompt names it for the launched session to extend
+(`references/launch-command.md`).
+
+Both values reach the prompt, so check them like `NAME` and `REPO` before any shell sees
+them. `SLUG` is one line of kebab-case, `^[a-z0-9][a-z0-9-]*$`. `OLD` is one line,
+`repo:path`: a repo name matching `NAME`'s pattern, a colon, then a path of only Step 2's
+characters (`A-Z a-z 0-9 . _ / @ + , : ~ -` and spaces). Write each with the Write tool to
+a scratch file and test it:
+```bash
+python3 -c 'import re,sys; p={"slug":r"[a-z0-9][a-z0-9-]*","old":r"[A-Za-z0-9][A-Za-z0-9._-]*:[A-Za-z0-9._/@+,:~ -]+"}[sys.argv[1]]; s=open(sys.argv[2]).read().rstrip("\n"); sys.exit(0 if re.fullmatch(p,s) else 1)' slug "$file" && echo safe
+```
+(`old` in place of `slug` for `OLD`.) Not safe, a newline inside included: say which
+character is refused and ask for the value again.
+
 ### Step 2: Resolve the name and path
 
 1. **Name**: with `--path`, its last component. Otherwise derive kebab-case, 1–4 words,
@@ -177,6 +196,10 @@ Lost the terminal later? cd '/host/path/NAME' && claude-sandbox --attach   (sand
 
 Quote the path in the attach hint the same way as in the command (`sq` in
 `references/launch-command.md`).
+
+With a series (Step 1), add one line after the report: move the series into the new repo
+before running the command, since the launched session expects it at
+`.claude-sandbox/investigations/SLUG/`.
 
 The session starts in the shared checkout, not a worktree — the interactive default. If
 the workspace config sets `worktree: true`, the session works on a `worktree-*` branch

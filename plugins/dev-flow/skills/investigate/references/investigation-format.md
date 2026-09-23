@@ -54,12 +54,19 @@ series cannot start there:
   session can reach both repos; the launched one usually cannot see the old home and starts
   its own first investigation. Copy the whole directory, serials byte-for-byte, to the new
   repo's `.claude-sandbox/investigations/<slug>/` and commit it there — in the host repo or
-  the sidecar, per the tracking mode (§ Interaction with `claude-sandbox init`). Regenerate
+  the sidecar, per the tracking mode (§ Interaction with `claude-sandbox init`). The sidecar
+  is `<new-repo>/.claude-sandbox/`'s own git (`git -C <new-repo>/.claude-sandbox`), which a
+  create-repo default init (`trackInHost: false`) makes. A commit there follows the same rule
+  as the `sandbox` skill's sidecar commit guidance: ask the user before committing, even
+  under an orchestrator — the orchestrator makes the move unasked, and asks only for the
+  sidecar commit. Regenerate
   that `INDEX.md` with a note under the provenance line — `Moved from
   <old-repo>:<old-path>@<short-sha> on {YYYY-MM-DD}`, the SHA of the commit that last touched
   the series in whichever history holds it, or `uncommitted` when none does. In the old home,
   rewrite only `INDEX.md`, with a `Moved to <new-repo>:<path>` note at its top; its serials
-  stay (append-only, never deleted). Never rewrite git history to carry the files across. The
+  stay (append-only, never deleted). That rewrite is not committed with the move — two repos
+  share no commit — and goes through the old repo's usual flow, like any other change there.
+  Never rewrite git history to carry the files across. The
   next serial is written in the new home only. A later session in the new repo makes the move
   only as a fallback, when told where the series is. Under an orchestrator the move is the
   orchestrator's, never asked.

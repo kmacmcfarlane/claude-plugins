@@ -29,6 +29,19 @@ With a template goal (Step 4 ran), replace "nothing else exists yet" with "it wa
 scaffolded from the TEMPLATE template, whose CLAUDE.md is already here", and "write this
 repo's CLAUDE.md" with "update CLAUDE.md for this thread's purpose".
 
+With an existing investigation series (Step 1 noted one; SLUG its slug, OLD its current
+`repo:path`), replace "nothing else exists yet" with "an investigation series for this
+thread is at .claude-sandbox/investigations/SLUG/, moved here from OLD" (with a template,
+append that clause after the template one), and replace the sentence beginning "Then run
+the thread's first investigation" with:
+
+```
+Then read that series and extend it rather than starting a new one: use the investigate skill (dev-flow plugin) if this session has it, writing the next serial after the highest one there, never a new 00; otherwise add your findings and the proposed next steps as a new file at that next serial. If that directory is not here yet, the series has not been moved: move it from OLD as the investigate skill describes if you can reach it, otherwise ask me where it is.
+```
+
+SLUG and OLD passed Step 1's check (SKILL.md), so each is one line with no newline to
+collapse, and the prompt stays one line; they are then handled as PURPOSE is below.
+
 ## Getting the prompt into the shell
 
 The prompt carries the user's purpose, which is untrusted text: a `$(...)` or backtick in
@@ -43,7 +56,8 @@ it runs in this agent's shell the moment it sits inside double quotes. So never 
   EOF
   )
   ```
-  The prompt is one line (newlines collapsed above), so no line of it can equal `EOF`.
+  The prompt is one line (PURPOSE's newlines collapsed above, SLUG and OLD checked to one
+  line), so no line of it can equal `EOF`.
 - **A file** — write the filled prompt with the Write tool to a scratch file (the session
   scratchpad when there is one), then `PROMPT=$(cat "$file")`.
 
