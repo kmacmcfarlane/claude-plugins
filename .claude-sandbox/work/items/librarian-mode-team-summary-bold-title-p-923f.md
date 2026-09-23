@@ -32,3 +32,6 @@ agent: reviewer a53754f002de0a934 round 1
 verdict: NEEDS_CHANGES round 1 at da1b6d3 (4 medium, all one-clause edits in team-summary.md: the Push: none range; repo vs plugin header; the WHAT-only test restored; example mislabels a context-guard change as dev-flow; 3 low)
 dispatch: implementer sonnet — resume, fix round 1 (bindings.md:278 added to scope for the "maintenance bullet" low)
 agent: implementer a9f1423ec295e9095 round 2
+return: implementer DONE df6b489 (4 medium + 3 low fixed; checks OK)
+dispatch: reviewer opus — re-review r2 (resume)
+agent: reviewer a53754f002de0a934 round 2
