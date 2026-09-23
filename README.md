@@ -84,6 +84,7 @@ dependency is marked (hard) here.
 | …isolated execution for agent sessions (containers, and the checkout/worktree convention) | `sandbox` | **current** | claude-sandbox repo (external) |
 | …unattended agent loops over a backlog ("ralph") | `ralph` | **current** | claude-sandbox repo (external; its `init-ralph` seeds `backlog.py`, and the loops run in its containers), `sandbox` (soft; its skill bootstraps and troubleshoots those containers), `work-items` (soft; the `wi` ↔ `backlog.yaml` bridge, when both stores are present) |
 | …to start a new repo for a thread of work, with an agent session launched on it | `create-repo` | **current** | claude-sandbox repo (external; `init` bootstraps the repo's `.claude-sandbox/` and the launch command runs the session in its container; without it the repo is created all the same and the command is plain `claude`), `kit-dev` (soft; `new-project-from-template` scaffolds a claude-templates template as the goal), `sandbox` (soft; its skill troubleshoots an `init` or launch that fails), `dev-flow` (soft; the launched session runs the first investigation with its `investigate` skill when installed, and investigates directly without it) |
+| …your agents to put what they need from you in a form you can act on where it appears | `operator-interaction` | **current** | — |
 | …to maintain this kit itself (skill authoring, upstream sync, templates) | `kit-dev` | **current** | claude-templates repo (external; `new-project-from-template` scaffolds from it, `update-kit` syncs to it), claude-sandbox repo (external; `new-project-from-template` bootstraps with its `init-ralph`, `update-kit` syncs to it), claude-expertise repo (external; `update-kit` syncs to it), `create-repo` (soft; `new-project-from-template` points at it for a bare repo with a session launched on it) |
 | …to make Claude good at a specific stack (Goa, Playwright, musubi-tuner, …) | one plugin per stack | **moved** to the expertise marketplace (local scaffold, remote pending) | — |
 
@@ -185,6 +186,10 @@ Since owner mode (F2) those are live state, as are its registry path
 (`~/.claude/statusline-hub/hooks.d/`) and its segment drop dir
 (`~/.claude/statusline-hub/segments/`, with each provider's file name), which other plugins
 write to.
+
+`operator-interaction` is **confirmed** by the operator (2026-09-23), chosen for its scope: the
+interface and flow between agent and human operator. It ships no state yet (no data dir, no
+settings path). Its first skill's name, `decisions`, is provisional.
 
 ## Plugins today
 
@@ -555,6 +560,22 @@ its skill troubleshoots an `init` or a launch that fails. Soft dependency on `de
 launched session uses its `investigate` skill for the first investigation when installed,
 and investigates directly without it.
 
+### operator-interaction
+
+The agent–operator interface: how your agents put what they need from you in front of you so
+you can act on it where it appears. It starts with decisions — the most consequential thing an
+agent asks of its operator.
+
+| Skill | Description |
+|---|---|
+| `decisions` | Put a decision to the operator so they can understand and answer it where it is shown — a content floor every decision carries, a list line / card / block that scales with the stakes and with how far the operator is from the work, a set order, natural-language replies with an echo, and "decide later" with a wake |
+
+The skill is knowledge only: no hooks, no settings, no state. It loads when an agent is about
+to ask you to decide, choose, approve or confirm something, or explicitly with
+`/operator-interaction:decisions`. Its `references/gallery.md` renders every case, and its
+`## Provisional rules` section lists the rules still awaiting your ruling. It names no other
+plugin and needs nothing else here; skills that raise decisions can adopt it.
+
 ### chat
 
 Skills for LLM chat sessions in web UIs. Family home under review.
@@ -660,6 +681,7 @@ claude-plugins/
 │   ├── create-repo/
 │   ├── dev-flow/
 │   ├── kit-dev/
+│   ├── operator-interaction/
 │   ├── ralph/
 │   ├── sandbox/
 │   ├── statusline/

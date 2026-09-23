@@ -1,0 +1,9 @@
+{
+  "name": "operator-interaction",
+  "description": "The agent–operator interface — how your agents put a decision to you so you can understand and answer it where it is shown: a content floor every decision carries, detail that scales with the stakes, a set order, natural-language replies with an echo, and \"decide later\" with a wake (the decisions skill).",
+  "author": {
+    "name": "Kyle McFarlane"
+  },
+  "homepage": "https://github.com/kmacmcfarlane/claude-plugins",
+  "repository": "https://github.com/kmacmcfarlane/claude-plugins"
+}
