@@ -2,12 +2,11 @@
 id: librarian-mode-team-summary-bold-title-p-923f
 title: "librarian-mode team summary: bold title plus one bullet per change area, no tables, sub-bullets or file lists"
 type: feature
-status: doing
+status: done
 priority: 0
-owner: Kyle-McFarlane@bf9f9839222c
-claimed: 2026-09-23T17:50Z
 created: 2026-09-23
 updated: 2026-09-23
+closed: 2026-09-23
 refs:
   - operator 2026-09-23 via marketplace - librarian (90c1)
 ---
@@ -35,3 +34,7 @@ agent: implementer a9f1423ec295e9095 round 2
 return: implementer DONE df6b489 (4 medium + 3 low fixed; checks OK)
 dispatch: reviewer opus — re-review r2 (resume)
 agent: reviewer a53754f002de0a934 round 2
+verdict: CLEAR round 2 at df6b489 (1 nit: purpose clause in the example bullet, left as is)
+note: at land, context-guard failed once with a timing flake in test_lineage (120 vs 11[89] min), unrelated to this docs-only change; reruns and the full suite passed; filed context-guard-test-flake-test-a-copy-old-d1e3
+landed: afc5936 (merge of librarian-mode-team-summary-bold-title-p-923f)
+- 2026-09-23 done: landed afc5936
