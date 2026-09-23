@@ -141,3 +141,6 @@ return: planner DONE_WITH_CONCERNS /home/rt/work/src/github.com/kmacmcfarlane/cl
 baseline: a0bdec066df2 /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude-sandbox/investigations/7113-decisions/00_plan.md;
 dispatch: reviewer opus — plan-review variant, plan mode floor; runs in parallel with the operator's own review of P1-P3
 agent: reviewer ab28a83ac97eeee18 round 1 (plan review)
+verdict: NEEDS_CHANGES plan round 1 (1 high, 10 medium, 10 low/nit) — /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude-sandbox/investigations/7113-decisions/reviews/plan-review-r1.md
+dispatch: planner opus — plan fix round 1 (resume the fork), new serial 01; librarian rulings on the findings in the brief
+agent: planner a3df2feba2917125b round 2
