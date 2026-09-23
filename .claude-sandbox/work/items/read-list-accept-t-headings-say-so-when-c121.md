@@ -2,12 +2,11 @@
 id: read-list-accept-t-headings-say-so-when-c121
 title: "read_list: accept '##\\t' headings; say so when an unclosed fence hides Read in full"
 type: chore
-status: doing
+status: done
 priority: 3
-owner: Kyle-McFarlane@bf9f9839222c
-claimed: 2026-09-23T00:02Z
 created: 2026-09-22
 updated: 2026-09-23
+closed: 2026-09-23
 refs:
   - H6 review r2
 ---
@@ -41,3 +40,5 @@ dispatch: reviewer opus — review r2 (resume)
 agent: reviewer a63655af1d1d84f24 round 2
 verdict: CLEAR round 2 at db28bed — land after Rehydrate (post-checkpoint gap: no merge)
 low carried to 3c4f: withhold_next is fence-blind; it can remove a closing fence inside ## Next, so the list is lost and the note is silent (pre-existing loss; contrived).
+landed: 0aa8fa6 (merge of read-list-accept-t-headings-say-so-when-c121)
+- 2026-09-23 done: landed 0aa8fa6
