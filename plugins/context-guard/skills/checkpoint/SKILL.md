@@ -9,9 +9,10 @@ argument-hint: "[continue | handoff] [then /next-skill] [optional focus]"
 # Checkpoint
 
 A session holds two kinds of state: what is **on disk** (survives anything) and what exists
-**only in this conversation** (dies at compaction with no diff — a compaction's summary stays
-~14–18K tokens regardless of depth, agents decision 0007, and none of the hidden reasoning).
-This skill moves the second kind into the first, then gives the operator a decision.
+**only in this conversation** (dies at compaction with no diff — a compaction keeps a
+~14–18K-token summary whatever the depth, agents decision 0007, and none of the hidden
+reasoning). This skill moves the second kind into the first, then gives the operator a
+decision.
 
 Rationale and numbers: `references/design-rationale.md` (and the fuller series it points at).
 Operator tool guide: `references/operator-playbook.md`. Manifest spec:
