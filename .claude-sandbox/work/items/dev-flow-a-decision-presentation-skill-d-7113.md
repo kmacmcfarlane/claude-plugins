@@ -20,3 +20,21 @@ Ideas 3+4 of the parent: research how best to communicate decisions to an operat
 - learned: —
 
 - 2026-09-23 agents - librarian proposes an ownership split, recorded on agents 374f (communication-standards-estate-wide-home-374f). agents would own the convention: detail levels and the rule for choosing one, the lettered+numbered labels, the two-line recap, and where it applies. claude-plugins would own the mechanics: ideas 1, 2, 4 and 5, plus the dev-flow skill that implements the format. This is a peer proposal: the operator settles it in the interactive session, and agents decision 2 (where estate-wide standards live) is still open. agents evidence for idea 5: they have four decisions open and nothing in flight, so compacting would only be "so the operator can answer", which none of the current modes names.
+
+- 2026-09-23 operator-attention requirements gathering and research: the decision-UI work is theirs (operator, 2026-09-22). This item builds on it and does not restart it. Everything below is read-only, at /home/rt/work/src/github.com/kmacmcfarlane/operator-attention (commits 7c96b2c, e9d8ad0, 9bdc35e):
+  - evidence base: research/findings/dc2-decision-brief-format.md (card fields, detail levels, ordering, batching)
+  - prior art: research/findings/dc1-decision-inbox-landscape.md (agent-brief-me is the only close precedent)
+  - research/findings/dc3-local-decision-sources.md: prose questions are rare next to structured ones
+  - research/findings/dc-verification.md: apply its two citation corrections
+  - plan: .claude-sandbox/investigations/decision-collector/00_initial.md (13 operator decisions, 4 of them blocking)
+  - older inputs that still apply: pocs/CONVENTIONS.md (decision_brief schema v1), research/findings/{c2-theory-of-mind,e2-priority-model,e3-blocker-protocol}.md
+  Their gist:
+  - Three detail levels. A two-way door gets one line (recommendation, confidence, reversibility) and a single keypress. A one-way door, low confidence or unfamiliar ground gets the full block.
+  - Add a reversibility field; it also gates whether an unanswered decision may fire its default.
+  - Don't argue for batching from decision fatigue, which doesn't replicate. Argue from the cost of re-grounding on each switch, plus e2's queueing model.
+  - Show the agent's confidence raw and calibrated side by side.
+  - OD-6 (handed to us): optional indented detail lines under `decision N:` (impact, one-/two-way, confidence, default, expires, raising session) that today's wi ignores.
+  - Keep the fast-pass grammar (`3: a`, `ok 1-4`).
+  - R44 (notices outlive the session that raised them) is the same principle as idea 4.
+  Proposed split: claude-plugins owns the format and the checkpoint/rehydration skills; operator-attention owns collection, ranking and routing answers back, and adopts our format (tell them if 7113 fixes the card schema).
+- CONFLICT for the operator: agents - librarian (374f) proposes that agents owns the format's convention (levels, when-to-use rule, labels, recap), while operator-attention proposes that claude-plugins owns the format. Both agree on the checkpoint and rehydration mechanics, and on operator-attention keeping collection.
