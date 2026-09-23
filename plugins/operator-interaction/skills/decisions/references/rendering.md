@@ -8,19 +8,22 @@ The examples below are **illustrative**: invented, generic, not about any real p
 
 ## Choosing the level
 
-Start at the list line and raise the level for any of:
+**The line-only rule.** A decision may stay a list line only when all of these hold:
 
-| Raise to a card when … | Raise to a block when … |
-|---|---|
-| the reader is cold (group A) | the decision is **⚠ one-way** (always) |
-| the stakes are above "two-way and narrow" | it is wide and the reader is cold |
-| the basis is partial, thin or none | it is wide and the basis is thin |
-| it is new (not a template the operator has seen) | the operator asked to `expand` a card |
-| the options diverge | |
-| the operator asked to `expand` a line | |
+- the reader is warm (group A);
+- the stakes are low: two-way and narrow (group B);
+- the basis is strong (group C);
+- a template the operator has already seen carries the floor, or the options converge — any
+  of them would do.
 
-Stay at the list line only when every one is false: warm, low stakes, strong basis, a
-template or options that converge. The higher the stakes, the more information and the slower
+Anything else is at least a card. Raise it to a **block** when:
+
+- it is **⚠ one-way** (always);
+- it is wide and the reader is cold;
+- it is wide and the basis is thin;
+- the operator asked to `expand` a card.
+
+`expand` on a line gives a card. The higher the stakes, the more information and the slower
 the decision: detail is bought by stakes, never spent by default.
 
 ## List line
@@ -29,16 +32,23 @@ the decision: detail is bought by stakes, never spent by default.
 - **N Title as a question?** — rec **(x) short label** · *stakes* · basis **word** · *age, what it blocks, deadline*
 ```
 
+For a decision with no recommendation, the label takes the rec slot; the stakes and basis
+slots stay, since the floor needs them:
+
+```
+- **N Title as a question?** — *your preference, no rec* · *stakes* · basis **word** · *age, what it blocks*
+```
+
 - The number and title are bold together.
 - Stakes slot: *reversible, narrow* · *one-way, narrow* · ⚠ one-way (for Type 1; the ⚠ is
   followed by a space) · *your preference, no rec* · *template*.
-- A deadline is written as a clock time: *lock expires 15:30*.
+- A deadline is written as a clock time: *storage lease lapses 17:45*.
 - In a message where other decisions are expanded below, a line with nothing below it ends
   *(line only)*, so the operator knows `expand` exists for it.
 
 Example:
 
-- **72 Re-run the flaky test suite?** — rec **(a) re-run** · *reversible, narrow* · basis **strong** · *40 min old, blocks merging a reviewed change* *(line only)*
+- **42 Clear the docs build cache?** — rec **(a) clear it** · *template: cache reset* · *reversible, narrow* · basis **strong** · *10 min old, blocks the docs build* *(line only)*
 
 ## Card
 
@@ -57,7 +67,7 @@ Rec **(a)** · basis **word** — *one-clause reason* · unknown: what isn't kno
 - When a status-quo default applies, add: **If unanswered:** *I leave X as it is and carry on
   with other work.*
 - When investigating could change the choice, add a priced option: **(c) Investigate first** —
-  *about 20 minutes: check who imports the package; could change the answer if …*
+  *about 15 minutes: read the access logs for other callers; could change the answer if …*
 - A small call gets a short card. Do not pad a two-way, narrow decision with sections it does
   not need.
 
@@ -109,7 +119,15 @@ hint: the card itself is enough.
 
 `expand` raises one decision one level in the next round (line → card → block). It keeps its
 number and its place in the order, and stays raised on later re-shows unless the operator says
-otherwise.
+otherwise. That next round shows:
+
+1. the list, every open decision a line;
+2. below it, the expanded decision at its new level;
+3. any decision a rule requires at card or block that the operator has not yet seen at that
+   level — a new one, one whose facts changed, or all of them if the reader went cold since.
+
+A card or block the operator already saw, with nothing changed, is not re-rendered; its line
+ends *(shown before)*.
 
 ## Order
 
@@ -125,10 +143,6 @@ inside each group:
 3. **Waiting cost:** what it blocks, and how many wait on it.
 4. **Oldest first.**
 
-Why not a free judgement of order: the operator trusts the top of the list only when it is
-predictable. You may move a decision out of this order only with a stated reason on its line
-(*moved up: the release waits on it*).
-
 ## Labels
 
 | Case | Label, in the stakes slot or under the title |
@@ -141,12 +155,12 @@ predictable. You may move a decision out of this order only with a stated reason
 | Time-critical, options not ready | **Alert:** in bold, bare; *options follow* |
 | Not defined yet | listed under **Open questions**, unnumbered |
 
-## Report after acting
+## FYI after acting
 
 Not a decision: no number, no options, no hint. One line, under a **Done** heading when there
 are several:
 
-- **Done: fixed a spelling slip in the setup guide, on my task branch** — *two-way (one revert), nobody else uses the branch; inside the task you gave me.*
+- **Done: fixed a broken link in the contributing guide, on my task branch** — *two-way (one revert), nobody else uses the branch; inside the task you gave me.*
 
 Only for actions that pass the guard in `references/worksheet.md` § E. An action that happens
 unless the operator stops it is an approve ask, rendered as a card, and it waits.
@@ -156,9 +170,15 @@ unless the operator stops it is an approve ask, rendered as a card, and it waits
 When a decision comes back (a wake fired, a context reset, `tell me`, `dig into`), open it
 with what changed since the operator last saw it, then the card or block as usual:
 
-**12 — back, as you asked ("when the CI fix lands"):** upgrade the runtime dependency?
-*While it waited (1 day): the CI fix landed; nothing else changed. Options and recommendation
-unchanged.*
+**62 — back, as you asked ("until the load test finishes"):** move the job queue to the new
+message broker?
+*While it waited (1 day): the load test finished with no lost messages; nothing else changed.
+Options and recommendation unchanged.*
 
 When the options or recommendation changed, say which and why: *Recommendation changed from
-(a) pin to (b) float, because upstream released the fix.*
+(a) vendor the font to (b) fetch it, because the CDN outage ended.*
+
+**A cold re-show** — after a context reset, a clear, or the operator's return — shows **every
+open decision at card level or above**, never as a line only: a cold reader needs the medium
+or high detail view to decide without scrolling back. The list still comes first, and each
+decision opens with what changed while it waited (*nothing changed* is worth saying).

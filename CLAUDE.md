@@ -120,7 +120,7 @@ current home is the real home, and is where files go.
 | Isolated execution (containers; the checkout/worktree convention and its guard) | `plugins/sandbox/` | `plugins/sandbox/` — **landed** (Phase 5) |
 | Unattended agent loops over a backlog ("ralph") | `plugins/ralph/` | `plugins/ralph/` — **landed** (Phase 5) |
 | Start a new repo for a thread of work, with an agent session launched on it | `plugins/create-repo/` | `plugins/create-repo/` — **landed** (2c77) |
-| The agent–operator interface: what agents need from the operator, in a form they can act on where it appears (first: how decisions are raised and shown) | `plugins/operator-interaction/` | `plugins/operator-interaction/` — **landed** (7113) |
+| The agent–operator interface: what agents need from the operator, in a form they can act on where it appears (first: how decisions are raised and shown) | `plugins/operator-interaction/` | `plugins/operator-interaction/` — **landed** (9f98) |
 | Maintaining this kit itself | `plugins/kit-dev/` | `plugins/kit-dev/` — **landed** (Phase 6) |
 | Stack expertise ("make Claude good at X") | the `expertise` marketplace (repo `claude-expertise`) — not this repo | moved to the expertise marketplace (local scaffold, remote pending) — **landed** (Phase 2) |
 | Web-UI chat-session skills | `plugins/chat/` | family home under review |

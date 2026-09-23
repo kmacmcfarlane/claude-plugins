@@ -14,8 +14,8 @@ card shape. Each group answers one question and sets one thing — merging them 
 | Age | time since the decision was raised | you, from the decision's record |
 | Operator's expected return | when they said they would be back, if they did | you, from what the operator said |
 
-Cold raises the level (list line → card → block) and adds a *context you may have lost* part
-to a block. Re-explaining is triggered by **events**, not by elapsed time alone: a compaction
+Cold raises the level: a cold reader never gets a line-only decision (the line-only rule in
+SKILL.md § Levels), and a block adds a *context you may have lost* part. Re-explaining is triggered by **events**, not by elapsed time alone: a compaction
 five minutes ago makes a reader colder than an idle hour with nothing in between.
 
 Whether *now* is a good moment to interrupt the operator is a real dimension too, but nothing
@@ -32,8 +32,8 @@ observable measures it today; leave it alone rather than guess.
 Judge **reversibility and blast radius together**; never add them up as two scores. A
 decision that is one-way *and* wide (or relied on) is **⚠ one-way**: a block, answered on its
 own, read back before acting, never batched, never handed back, never defaulted. One-way but
-narrow is a card marked *one-way, narrow*. Two-way and narrow is the fast tier: a card, often
-a line.
+narrow is a card marked *one-way, narrow*. Two-way and narrow is the fast tier: a card, or a
+line when the line-only rule holds.
 
 ## C — How well is it understood? → what evidence is shown, and "investigate first"
 
@@ -46,8 +46,10 @@ a line.
 
 A thin basis or a new decision raises the level. When the missing fact could change the choice
 and finding it costs less than choosing wrong, offer **investigate first** as a priced option
-(its time and cost stated). When the options converge, a short card is enough whatever the
-stakes of the topic.
+(its time and cost stated). Converging options are one of the conditions of the line-only
+rule: a decision may stay a list line only when the reader is warm, the stakes are low
+(two-way, narrow), the basis is strong, and a template carries the floor or the options
+converge.
 
 ## D — What does waiting cost? → the order
 
@@ -76,10 +78,10 @@ Three different clocks are in play, and each sets something different:
 | **Outside my authority** | options with impacts, labelled *no recommendation — outside my authority*, with why |
 | **Alert** — time-critical | the fact now, bare; the options next |
 | **Open question** — not defined yet | listed under *Open questions*, unnumbered, until it has options |
-| **Report after acting** — nothing to answer | one line: what was done, why it was safe to do, how to undo it |
+| **FYI after acting** — nothing to answer | one line: what was done, why it was safe to do, how to undo it |
 
-**Report after acting** is allowed only for an action that is two-way, narrow, relied on by
+**FYI after acting** is allowed only for an action that is two-way, narrow, relied on by
 nobody before the operator reviews it, and inside authority the operator already gave — an
 answered decision, or the task you were assigned. Never for ⚠, never when others rely on it.
-An action about to happen unless the operator stops it is **not** a report: it is an approve
+An action about to happen unless the operator stops it is **not** an FYI: it is an approve
 ask, and it waits. When in doubt, ask.
