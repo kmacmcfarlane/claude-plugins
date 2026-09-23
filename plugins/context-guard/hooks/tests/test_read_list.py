@@ -238,6 +238,54 @@ class TestParse(Base):
         t = "## Read in full\n- docs — a directory\n"
         self.assertEqual(RL.paths_from_manifest(t, self.repo), [])
 
+    def test_tab_headings_are_headings(self):
+        # "##" then a tab opens the section and ends it, as "## " does.
+        t = ("## Doing\n- docs/b.md — not the section\n"
+             "##\tRead in full\n- docs/a.md — listed\n"
+             "##\tNext\n- docs/b.md — another section\n")
+        self.assertEqual([p["path"] for p in RL.paths_from_manifest(t, self.repo)],
+                         [self.a])
+        self.assertEqual(RL.fence_note(t), "")
+
+    def test_normal_manifest_is_unchanged(self):
+        # Pinned: the list a normal manifest yields, and no note.
+        t = ("---\nmode: handoff\n---\n## Doing\nx\n```sh\nls\n```\n"
+             "## Read in full\n1. `docs/a.md` — plan\n\n- docs/b.md:3 — digest\n"
+             "## Next\n- docs/a.md\n")
+        self.assertEqual(RL.section_lines(t),
+                         ["1. `docs/a.md` — plan", "- docs/b.md:3 — digest"])
+        self.assertEqual(RL.paths_from_manifest(t, self.repo),
+                         [{"path": self.a, "real": os.path.realpath(self.a)},
+                          {"path": self.b, "real": os.path.realpath(self.b)}])
+        self.assertEqual(RL.fence_note(t), "")
+
+    def test_unclosed_fence_hiding_the_section_says_so(self):
+        t = ("## Doing\nx\n```sh\nls\n\n## Read in full\n- docs/a.md — hidden\n"
+             "## Next\n")
+        self.assertEqual(RL.paths_from_manifest(t, self.repo), [])
+        note = RL.fence_note(t)
+        self.assertIn("never closed", note)
+        self.assertIn("line 3", note)
+
+    def test_closed_fence_or_no_section_is_silent(self):
+        for t in ("## Doing\n```\n## Read in full\n- docs/a.md\n```\n",
+                  "## Doing\n```\nno heading here\n",
+                  "## Read in full\n- docs/a.md\n```\nunclosed after it\n",
+                  None, 7):
+            self.assertEqual(RL.fence_note(t), "", t)
+
+    def test_injection_carries_the_fence_note(self):
+        self.manifest()
+        TL.writef(self.path, TL.readf(self.path).replace(
+            "Building the thing.", "Building the thing.\n```text\nls", 1))
+        out = self.start("X", "compact")
+        self.assertIsNone(self.pending("X"))
+        self.assertIn("is never closed", out)
+
+    def test_normal_injection_has_no_fence_note(self):
+        self.manifest()
+        self.assertNotIn("is never closed", self.start("X", "compact"))
+
 
 if __name__ == "__main__":
     unittest.main()
