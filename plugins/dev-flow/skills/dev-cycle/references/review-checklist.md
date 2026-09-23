@@ -153,7 +153,10 @@ for n, line in enumerate(lines, 1):
             if not fence: print(f'FAIL: path by directory, use the sibling form: {pre}{r} (line {n})')
             continue
         if r == 'references/x.md': continue
-        named = re.search(r"`([\w-]+)`(?: skill)?'s\s+`?$", prev + ' ' + text[:m.start()])
+        # the name may end the line before: drop this line's list/blockquote continuation
+        # indent so any whitespace run may sit between the name, skill's and the path
+        before = prev + ' ' + re.sub(r'^[ \t]*(>[ \t]*)*', '', text[:m.start()])
+        named = re.search(r"`([\w-]+)`(?:\s+skill)?'s\s+`?$", before)
         if named:  # a named sibling is checked even when this skill has a file of that name
             sib = named.group(1)
             if sib == me or not os.path.isdir(f'{p}/{sib}'):
@@ -180,11 +183,12 @@ What the reference check reads, so a reviewer can tell a real miss from a lint g
 
 - **Named sibling first.** When the backticked name immediately precedes the path
   (`` `name` skill's `` or `` `name`'s ``, on the same line or wrapped from the one
-  before), the file must exist in that sibling — even when this skill has a file of the
-  same name, which would otherwise shadow a missing one. A named skill that is this skill
-  itself, or is not a folder beside it in the same plugin (another plugin included),
-  fails. With no name before it, the path must exist in this skill; a bare mention of a
-  sibling without backticks fails.
+  before — at any space in the pointer, the next line's list indent or `>` blockquote
+  marker included), the file must exist in that sibling — even when this skill has a
+  file of the same name, which would otherwise shadow a missing one. A named skill that
+  is this skill itself, or is not a folder beside it in the same plugin (another plugin
+  included), fails. With no name before it, the path must exist in this skill; a bare
+  mention of a sibling without backticks fails.
 - **Wrapped paths.** A path split at a line break inside the path (`references/` at the
   end of one line, `x.md` at the start of the next) is joined and checked. A break
   anywhere else — inside the sibling's name, say — is not; write the pointer so the name
