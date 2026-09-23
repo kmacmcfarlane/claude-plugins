@@ -2,13 +2,12 @@
 id: operator-interaction-v1-the-plugin-its-d-9f98
 title: "operator-interaction v1: the plugin, its decisions skill, the scenario gallery and a render pass"
 type: feature
-status: doing
+status: done
 priority: 0
 parent: checkpoint-around-continuation-how-agent-d3ee
-owner: Kyle-McFarlane@bf9f9839222c
-claimed: 2026-09-23T07:43Z
 created: 2026-09-23
 updated: 2026-09-23
+closed: 2026-09-23
 refs:
   - operator 2026-09-23 (R11 a, P1 a)
 ---
@@ -44,3 +43,6 @@ agent: render ada890e52fe9ae879 round 2
 return: render r2 DONE: 8 renders in test-round/renders-r2 (gaps 5,2,3,3,0,2,2,4)
 dispatch: reviewer opus — re-review r2 (resume), grading renders-r2
 agent: reviewer ab2eda48c4256a2c5 round 2
+verdict: CLEAR round 2 at 709c75b (5 low, 2 nit left, filed as follow-up; all 8 r2 renders pass their core rules)
+landed: a595e7a (merge of operator-interaction-v1-the-plugin-its-d-9f98)
+- 2026-09-23 done: landed a595e7a

@@ -2,15 +2,14 @@
 id: operator-interaction-fast-follow-librari-d44e
 title: "operator-interaction fast-follow: librarian-mode renders its decisions per the decisions skill"
 type: feature
-status: doing
+status: done
 priority: 0
 deps:
   - dev-flow-a-decision-presentation-skill-d-7113
 parent: checkpoint-around-continuation-how-agent-d3ee
-owner: Kyle-McFarlane@bf9f9839222c
-claimed: 2026-09-23T07:55Z
 created: 2026-09-23
 updated: 2026-09-23
+closed: 2026-09-23
 refs:
   - operator 2026-09-23
 ---
@@ -40,3 +39,5 @@ return: implementer DONE 329ff7d (all 3 medium, 5 low and the nit taken; record-
 dispatch: reviewer opus — re-review r2 (resume)
 agent: reviewer a6ae517fc4495dcda round 2
 verdict: CLEAR round 2 at 329ff7d (4 low, 1 nit left: a deferred ⚠ decision shown as a block vs the list-line-until-wake rule; a misplaced pending sentence in record-lines.md; the cross-skill pointer form; store-line letters must match the card; the "item" nit). Lands after 9f98; re-check decisions.md against the final skill first.
+landed: 9f9bfed (merge of operator-interaction-fast-follow-librari-d44e)
+- 2026-09-23 done: landed 9f9bfed
