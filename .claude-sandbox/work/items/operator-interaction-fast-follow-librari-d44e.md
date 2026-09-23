@@ -36,3 +36,6 @@ agent: reviewer a6ae517fc4495dcda round 1
 verdict: NEEDS_CHANGES round 1 at 0891f07 (3 medium: bindings.md conditional paragraph swallows always-rules; idle-turn re-shows deferred decisions before their wake; decisions.md carries ⚠ as a list line and conflicts with Report item 2; 5 low, 1 nit). Store tooling tested fine with `wake N:`.
 dispatch: implementer opus — resume (fork), fix round 1
 agent: implementer adda2a62cd119c07a round 2
+return: implementer DONE 329ff7d (all 3 medium, 5 low and the nit taken; record-lines.md registers wake N:; README fallback wording fixed)
+dispatch: reviewer opus — re-review r2 (resume)
+agent: reviewer a6ae517fc4495dcda round 2
