@@ -41,3 +41,6 @@ agent: implementer ab50b7220d7750d78 round 2
 return: implementer DONE 709c75b (5 medium + all lows taken; gallery refactored with new facts; no overlap with the test-round inputs; checks OK)
 dispatch: render sonnet — round 2 render pass over the NEW inputs (test-round/inputs-r2, facts not in the gallery)
 agent: render ada890e52fe9ae879 round 2
+return: render r2 DONE: 8 renders in test-round/renders-r2 (gaps 5,2,3,3,0,2,2,4)
+dispatch: reviewer opus — re-review r2 (resume), grading renders-r2
+agent: reviewer ab2eda48c4256a2c5 round 2
