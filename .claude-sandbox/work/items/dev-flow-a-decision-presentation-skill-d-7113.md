@@ -52,3 +52,6 @@ Ideas 3+4 of the parent: research how best to communicate decisions to an operat
 - RULING (operator): claude-plugins owns the rules and implements the decisions skill. The agents repo does NOT own them. It is the knowledge base, playground and planning area for the agentic-coding vertical, kept in the loop so it builds an understanding of LLM agents that becomes requirements for other repos. This supersedes the agents - librarian proposal above; the conflict is settled.
 - Keep operator-attention and agents - librarian in the loop as the research lands. Review the key findings interactively with the operator, and let them drive planning and grooming of the checkpoint work (2b15).
 - Research: dev-flow research, standard intensity, run under the series .claude-sandbox/investigations/7113-decisions/research/.
+
+dispatch: research-lane sonnet ×6 — research run 2026-09-23-decision-attributes (standard; lanes w1-w5, l1); brief .claude-sandbox/investigations/7113-decisions/research/2026-09-23-decision-attributes/00-brief.md
+agent: research-lane w1 af2676f324c760267, w2 afcc358d208451c60, w3 a2814d4cbc0f44413, w4 a1c7606f82052395c, w5 a84ee9f23cf7b043c, l1 a2ecacc4f1e75d1ec round 1
