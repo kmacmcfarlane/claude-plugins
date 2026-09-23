@@ -1,10 +1,12 @@
 ---
 id: dev-flow-a-decision-presentation-skill-d-7113
-title: "dev-flow: a decision-presentation skill - detail levels and when to use each (research)"
+title: "decisions: a standalone plugin for how agents present decisions - attributes, use cases, detail levels (research)"
 type: spike
-status: todo
+status: doing
 priority: 1
 parent: checkpoint-around-continuation-how-agent-d3ee
+owner: Kyle-McFarlane@bf9f9839222c
+claimed: 2026-09-23T04:45Z
 created: 2026-09-23
 updated: 2026-09-23
 refs:
@@ -38,3 +40,15 @@ Ideas 3+4 of the parent: research how best to communicate decisions to an operat
   - R44 (notices outlive the session that raised them) is the same principle as idea 4.
   Proposed split: claude-plugins owns the format and the checkpoint/rehydration skills; operator-attention owns collection, ranking and routing answers back, and adopts our format (tell them if 7113 fixes the card schema).
 - CONFLICT for the operator: agents - librarian (374f) proposes that agents owns the format's convention (levels, when-to-use rule, labels, recap), while operator-attention proposes that claude-plugins owns the format. Both agree on the checkpoint and rehydration mechanics, and on operator-attention keeping collection.
+
+## Notes
+- 2026-09-23 claimed by Kyle-McFarlane@bf9f9839222c
+
+## Operator 2026-09-23 (in this session), reframing the item
+- Reversibility is one factor, not the main driver of detail level. The operator's words: "If I don't have enough context in the place where you're showing me the decision to understand what decision I'm making and what the impact is, then I can't even figure out how to answer the question." High impact often comes from being hard to reverse, which argues for more detail. Find the other factors that affect impact, and the other reasons more or less detail helps in a given use case.
+- Organize the use cases first (their examples: one line / options with impact / a block per option; at a checkpoint; after rehydration; in a Report), then fill in what should happen in each.
+- Reversibility becomes a metadata field on a decision. Use web research to find the attributes and characteristics decisions have in general.
+- It should probably be its own plugin, not part of dev-flow: "a pretty core primitive agent guidance component that has very high importance to the work we do together". A new plugin writes its README catalog row first (placement rule 5).
+- RULING (operator): claude-plugins owns the rules and implements the decisions skill. The agents repo does NOT own them. It is the knowledge base, playground and planning area for the agentic-coding vertical, kept in the loop so it builds an understanding of LLM agents that becomes requirements for other repos. This supersedes the agents - librarian proposal above; the conflict is settled.
+- Keep operator-attention and agents - librarian in the loop as the research lands. Review the key findings interactively with the operator, and let them drive planning and grooming of the checkpoint work (2b15).
+- Research: dev-flow research, standard intensity, run under the series .claude-sandbox/investigations/7113-decisions/research/.
