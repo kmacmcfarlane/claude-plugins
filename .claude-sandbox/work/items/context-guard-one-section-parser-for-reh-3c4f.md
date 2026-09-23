@@ -17,3 +17,4 @@ c121 implementer OQ, 2026-09-23: rehydrate._sections splits on '^## ' and ignore
 - next: —
 - blocked: —
 - learned: —
+- rider from c121 review r2 (2026-09-23): make withhold_next fence-aware — it can remove a closing fence inside ## Next (list lost, note silent) or an opener (note suppressed); fixes both directions at the root.

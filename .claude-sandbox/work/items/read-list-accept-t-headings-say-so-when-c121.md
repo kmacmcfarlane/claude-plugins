@@ -15,8 +15,8 @@ refs:
 From H6 review r2 (CLEAR) low, 2026-09-22: section_lines requires '## ' (tab no longer matched); an unclosed earlier fence hides the section quietly. Also reuse rehydrate._sections once H3 lands (a second parser drifts).
 
 ## Handoff
-- doing: review r2 in flight at db28bed: reviewer a63655af1d1d84f24 round 2 (agent: line in the record)
-- next: on CLEAR: land (merge-tree first), context-guard check on main; on NEEDS_CHANGES: resume implementer a700b6bf753d6f0b8
+- doing: CLEAR round 2 at db28bed (reviewer done)
+- next: land: merge-tree, merge --no-ff worktree-read-list-accept-t-headings-say-so-when-c121, context-guard check on main, clean up, wi done, push
 - blocked: —
 - learned: —
 
@@ -39,3 +39,5 @@ agent: implementer a700b6bf753d6f0b8 round 2
 return: implementer DONE db28bed
 dispatch: reviewer opus — review r2 (resume)
 agent: reviewer a63655af1d1d84f24 round 2
+verdict: CLEAR round 2 at db28bed — land after Rehydrate (post-checkpoint gap: no merge)
+low carried to 3c4f: withhold_next is fence-blind; it can remove a closing fence inside ## Next, so the list is lost and the note is silent (pre-existing loss; contrived).
