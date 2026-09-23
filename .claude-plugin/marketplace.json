@@ -51,6 +51,11 @@
       "description": "Start a new repo for a thread of work — the directory, git init, a README naming its purpose, claude-sandbox init and a first commit — then one copy-paste command that launches an agent session on it to write its CLAUDE.md and run the thread's first investigation (external: the claude-sandbox tool, degrading to a plain claude launch without it; soft dependencies: kit-dev, to scaffold a claude-templates template as the goal; sandbox, to troubleshoot a failed init or launch; dev-flow, whose investigate skill the launched session uses for the first investigation when installed, else it investigates directly)."
     },
     {
+      "name": "operator-interaction",
+      "source": "./plugins/operator-interaction",
+      "description": "The agent–operator interface — how your agents put a decision to you so you can understand and answer it where it is shown: a content floor every decision carries, detail that scales with the stakes, a set order, natural-language replies with an echo, and \"decide later\" with a wake (the decisions skill)."
+    },
+    {
       "name": "ralph",
       "source": "./plugins/ralph",
       "description": "Unattended agent loops over a backlog — the backlog.yaml workflow for ralph runs. Requires the claude-sandbox tool (see the sandbox plugin); consumes a work source through the work-source interface, with backlog.yaml as the default provider (soft dependency: work-items, whose work-source provider interface it implements)."
