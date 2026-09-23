@@ -2,10 +2,12 @@
 id: dev-cycle-resume-md-s3b-a-gone-planner-a-26b0
 title: "dev-cycle resume.md S3b: a gone planner at a fix round gets no brief pointer"
 type: chore
-status: todo
+status: doing
 priority: 4
+owner: Kyle-McFarlane@bf9f9839222c
+claimed: 2026-09-23T00:02Z
 created: 2026-09-22
-updated: 2026-09-22
+updated: 2026-09-23
 refs:
   - 6571 review r1
 ---
@@ -17,3 +19,9 @@ refs:
 - next: —
 - blocked: —
 - learned: —
+
+## Notes
+- 2026-09-23 claimed by Kyle-McFarlane@bf9f9839222c
+
+target: full dev-cycle-resume-md-s3b-a-gone-planner-a-26b0 /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude/worktrees/dev-cycle-resume-md-s3b-a-gone-planner-a-26b0
+dispatch: implementer sonnet — one clause in one reference
