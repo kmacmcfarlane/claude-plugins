@@ -136,3 +136,4 @@ return: refine r2 DONE_WITH_CONCERNS /home/rt/work/src/github.com/kmacmcfarlane/
 - answer R14: (c) stakes first. "The human will give better decisions for grouped related items and it reduces context-switching in their mind" (so also group related items).
 - Operator: "Make the plan for me to review".
 dispatch: planner opus — plan mode (spike 7113); a fork of the librarian, because it must carry ~30 operator rulings from this conversation; writes 00_plan in the 7113-decisions series
+agent: planner a3df2feba2917125b round 1
