@@ -53,3 +53,7 @@ agent: reviewer afb3f69db46fcf792 round 2
 verdict: NEEDS_CHANGES plan round 2 (1 high, 3 medium, 4 low) — findings at /home/rt/.claude/tmp/claude-1000/-home-rt-work-src-github-com-kmacmcfarlane-claude-plugins/e9bb00fc-c89f-4c8e-a7ca-b4c1e9ccbc73/scratchpad/c79e/plan-review-r2.md (high: the dedupe kills a fresh arm after compaction; floor cap; tier-bump bypass; re-arm triggers in two places)
 dispatch: planner opus — plan fix round 2 (resume), new serial 03
 agent: planner a284b6b14c97d6192 round 3
+return: planner DONE_WITH_CONCERNS /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude-sandbox/investigations/1222-unattended-librarian/03_review-round-2.md (all 8 fixed, none declined)
+baseline: f1aa0b775916 .claude-sandbox/investigations/1222-unattended-librarian/00_initial.md;1687d7eb5206 .claude-sandbox/investigations/1222-unattended-librarian/01_f2-modes-pool-heartbeat.md;fe767a12a5d6 .claude-sandbox/investigations/1222-unattended-librarian/02_review-round-1.md;0eba08865ae3 .claude-sandbox/investigations/1222-unattended-librarian/03_review-round-2.md;
+dispatch: reviewer opus — plan re-review r3 (resume); round 3 of the cap of 4
+agent: reviewer afb3f69db46fcf792 round 3

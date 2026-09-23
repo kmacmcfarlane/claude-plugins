@@ -2,12 +2,11 @@
 id: wi-a-non-utf-8-item-or-archive-file-cras-c68b
 title: "wi: a non-UTF-8 item or archive file crashes strict readers with a traceback"
 type: bug
-status: doing
+status: done
 priority: 3
-owner: Kyle-McFarlane@bf9f9839222c
-claimed: 2026-09-22T23:47Z
 created: 2026-09-22
-updated: 2026-09-22
+updated: 2026-09-23
+closed: 2026-09-23
 refs:
   - cc39 implementer
 ---
@@ -39,3 +38,6 @@ agent: implementer acf6981e295ee076f round 2
 return: implementer DONE 1b5c7cd
 dispatch: reviewer opus — review r2 (resume)
 agent: reviewer ae37871f87893f897 round 2
+verdict: CLEAR round 2 at 1b5c7cd
+landed: 4dcaba3
+- 2026-09-23 done: 4dcaba3

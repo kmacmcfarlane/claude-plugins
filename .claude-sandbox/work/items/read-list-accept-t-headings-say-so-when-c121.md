@@ -25,3 +25,4 @@ From H6 review r2 (CLEAR) low, 2026-09-22: section_lines requires '## ' (tab no 
 
 target: full read-list-accept-t-headings-say-so-when-c121 /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude/worktrees/read-list-accept-t-headings-say-so-when-c121
 dispatch: implementer opus — executable logic (read_list hook)
+agent: implementer a700b6bf753d6f0b8 round 1
