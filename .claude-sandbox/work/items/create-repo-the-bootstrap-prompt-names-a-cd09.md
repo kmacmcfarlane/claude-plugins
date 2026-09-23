@@ -2,12 +2,11 @@
 id: create-repo-the-bootstrap-prompt-names-a-cd09
 title: "create-repo: the bootstrap prompt names an existing investigation series to extend"
 type: chore
-status: doing
+status: done
 priority: 3
-owner: Kyle-McFarlane@bf9f9839222c
-claimed: 2026-09-22T23:52Z
 created: 2026-09-22
-updated: 2026-09-22
+updated: 2026-09-23
+closed: 2026-09-23
 refs:
   - fc02 review r1
 ---
@@ -42,3 +41,7 @@ return: implementer DONE e430605
 changed: + plugins/dev-flow/.claude-plugin/plugin.json (sandbox soft, 1022 chars), README.md (dev-flow row + prose)
 dispatch: reviewer opus — review r2 (resume)
 agent: reviewer aab96e77dfa957a52 round 2
+verdict: CLEAR round 2 at e430605
+lows declined: no length cap on OLD/SLUG (PURPOSE has the same gap; not a security issue — a too-long command fails loudly); a redundant orchestrator sentence (agrees).
+landed: ea57243
+- 2026-09-23 done: ea57243
