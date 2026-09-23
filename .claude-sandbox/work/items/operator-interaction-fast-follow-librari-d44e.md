@@ -33,3 +33,6 @@ agent: implementer adda2a62cd119c07a round 1
 return: implementer DONE 0891f07 (new references/decisions.md in librarian-mode; SKILL.md Rehydrate/Intake/Decision channel/Report; idle-turn.md; dev-cycle bindings § Decisions and Step 6; soft dependency declared in dev-flow plugin.json, marketplace.json and README; deviations: new `wake N:` store line, `answer N:` records the echo's reading; merge-tree clean against 9f98)
 dispatch: reviewer opus — implementer tier opus (doctrine: dev-flow skill text, soft-dependency declaration)
 agent: reviewer a6ae517fc4495dcda round 1
+verdict: NEEDS_CHANGES round 1 at 0891f07 (3 medium: bindings.md conditional paragraph swallows always-rules; idle-turn re-shows deferred decisions before their wake; decisions.md carries ⚠ as a list line and conflicts with Report item 2; 5 low, 1 nit). Store tooling tested fine with `wake N:`.
+dispatch: implementer opus — resume (fork), fix round 1
+agent: implementer adda2a62cd119c07a round 2
