@@ -38,3 +38,6 @@ agent: reviewer ab2eda48c4256a2c5 round 1
 verdict: NEEDS_CHANGES round 1 at 3a36025 (5 medium, all gallery-vs-rules consistency or unruled text: cold re-show level; wide+cold block; the line-only condition stated three ways; an unruled "move out of order with reason" rule; a template example missing (z); 14 low, 2 nit). All 8 renders pass their core rules; renders mostly copied the gallery, which reused the input facts, so the next render round needs novel inputs.
 dispatch: implementer opus — resume (fork), fix round 1
 agent: implementer ab50b7220d7750d78 round 2
+return: implementer DONE 709c75b (5 medium + all lows taken; gallery refactored with new facts; no overlap with the test-round inputs; checks OK)
+dispatch: render sonnet — round 2 render pass over the NEW inputs (test-round/inputs-r2, facts not in the gallery)
+agent: render ada890e52fe9ae879 round 2
