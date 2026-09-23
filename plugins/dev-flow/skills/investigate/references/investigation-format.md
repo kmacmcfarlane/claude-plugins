@@ -56,8 +56,10 @@ series cannot start there:
   repo's `.claude-sandbox/investigations/<slug>/` and commit it there — in the host repo or
   the sidecar, per the tracking mode (§ Interaction with `claude-sandbox init`). The sidecar
   is `<new-repo>/.claude-sandbox/`'s own git (`git -C <new-repo>/.claude-sandbox`), which a
-  create-repo default init (`trackInHost: false`) makes; commit there only as the `sandbox`
-  skill's sidecar commit guidance says, which is to ask the user first. Regenerate
+  create-repo default init (`trackInHost: false`) makes. A commit there follows the same rule
+  as the `sandbox` skill's sidecar commit guidance: ask the user before committing, even
+  under an orchestrator — the orchestrator makes the move unasked, and asks only for the
+  sidecar commit. Regenerate
   that `INDEX.md` with a note under the provenance line — `Moved from
   <old-repo>:<old-path>@<short-sha> on {YYYY-MM-DD}`, the SHA of the commit that last touched
   the series in whichever history holds it, or `uncommitted` when none does. In the old home,

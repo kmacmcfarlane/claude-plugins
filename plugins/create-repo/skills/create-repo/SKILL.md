@@ -56,6 +56,17 @@ into the new repo once this skill returns (the investigate skill, dev-flow plugi
 describes the move), so the bootstrap prompt names it for the launched session to extend
 (`references/launch-command.md`).
 
+Both values reach the prompt, so check them like `NAME` and `REPO` before any shell sees
+them. `SLUG` is one line of kebab-case, `^[a-z0-9][a-z0-9-]*$`. `OLD` is one line,
+`repo:path`: a repo name matching `NAME`'s pattern, a colon, then a path of only Step 2's
+characters (`A-Z a-z 0-9 . _ / @ + , : ~ -` and spaces). Write each with the Write tool to
+a scratch file and test it:
+```bash
+python3 -c 'import re,sys; p={"slug":r"[a-z0-9][a-z0-9-]*","old":r"[A-Za-z0-9][A-Za-z0-9._-]*:[A-Za-z0-9._/@+,:~ -]+"}[sys.argv[1]]; s=open(sys.argv[2]).read().rstrip("\n"); sys.exit(0 if re.fullmatch(p,s) else 1)' slug "$file" && echo safe
+```
+(`old` in place of `slug` for `OLD`.) Not safe, a newline inside included: say which
+character is refused and ask for the value again.
+
 ### Step 2: Resolve the name and path
 
 1. **Name**: with `--path`, its last component. Otherwise derive kebab-case, 1–4 words,
