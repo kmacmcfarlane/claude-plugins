@@ -84,3 +84,14 @@ return: research run DONE /home/rt/work/src/github.com/kmacmcfarlane/claude-plug
   - a way to facilitate the common response that isn't a decision: a request for more context or an impact analysis.
 - answer R7: REJECTED AS POSED: what is the impact, based on the research? The operator questions how valuable an internal confidence number could be, and whether it would do more harm than good. Research more if needed. Impacts often need analysis and research, so some decisions should offer an option to pull known threads or gather background when the impact isn't fully understood.
 - Operator feedback: the restated card-form questions were "a better experience than your first try".
+
+dispatch: research-lane sonnet ×5 — refine run 2026-09-23-decision-attributes-r2 (extend; lanes w7-w11) from the operator review R1-R7
+agent: research-lane w7 ad9380480045bac87, w8 a97b7ee4c7fdaff97, w9 afe3daea085397cb2, w10 a165cba7bdc2b0cc7, w11 ab6eeeb8aeb9a0404 (r2 round 1)
+- 2026-09-23 operator-attention (commit 2f7cc3b; their decision-collector/03_operator-review-rulings.md):
+  - Recency is now their spec R47.
+  - They stamp last-touched-by-operator from each record's first version.
+  - The evidence basis replaces the confidence number; they rank on it ordinally.
+  - "Decide later" is a third disposition, and a deferral counts as an interaction.
+  - Their fast pass will refuse to batch Type 1 decisions, which matches the operator's "addressed individually".
+  - A floor-conforming card is assumed; a malformed card is reported back to the raising agent.
+  - Asks: (1) define what wakes a deferred decision — they suggest an event, not a clock; w9 researches time vs event; (2) their dc3 kinds (decision line, grooming, blocked naming the operator, registry waiting, parked AskUserQuestion or plan approval) are available as a second corpus for decomposing "kind"; use them in the r2 synthesis.
