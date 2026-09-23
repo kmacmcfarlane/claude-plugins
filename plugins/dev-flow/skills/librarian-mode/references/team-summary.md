@@ -12,7 +12,7 @@ read it in Slack, Teams, an email or on a phone. Pointed at from SKILL.md § Rep
   final Report (`ending-the-session.md`); the summary follows that Report, after the
   push outcome and its `incoming:` lines, in the same closing message.
 - **`Push: none`, or no `origin` remote**: one summary per landing batch, right after its
-  Report, and its header line says the changes are local only (not pushed).
+  Report, and its header line names the range alongside `local only, not pushed`.
 - **No summary** for a rejected push that stops on a conflict, a red check or a
   decision (nothing reached origin; it goes under `decisions needed`) — a rejection
   merged through and pushed gets its summary, of this session's landings, not the
@@ -23,9 +23,9 @@ read it in Slack, Teams, an email or on a phone. Pointed at from SKILL.md § Rep
 
 Plain text, in this order:
 
-1. **A two-line header.** The first line, bold, names the plugin or marketplace, what
-   kind of update this is, the date, and the commit range in parentheses. `old` is
-   `origin/main` before the push and `new` is `origin/main` after it:
+1. **A two-line header.** The first line, bold, names the plugin, the marketplace or the
+   repo, what kind of update this is, the date, and the commit range in parentheses.
+   `old` is `origin/main` before the push and `new` is `origin/main` after it:
 
    ```bash
    OLD=$(git -C "$MAIN" rev-parse --short 'origin/main@{1}')
@@ -44,15 +44,19 @@ Plain text, in this order:
    plugins to pick it up." — a change under `plugins/` reaches a user only after
    `/plugin marketplace update <marketplace name>` (the `name` in
    `.claude-plugin/marketplace.json`) and then `/reload-plugins`, which is what that
-   sentence stands for — followed by "Every change was reviewed before it merged."
+   sentence stands for — followed by "Every change was reviewed before it merged." With
+   no pickup step — a plain repo with nothing to install or reload — the second line
+   keeps only the review sentence.
    With `Push: none` or no `origin`, `old` is `main` before the batch's first merge (that
-   merge's first parent), the header's first line says `local only, not pushed` in place
-   of the commit range, and the second line drops the pickup sentence, keeping only the
-   review one.
+   merge's first parent), the header's first line names the range alongside `local only,
+   not pushed` (for example `local only, not pushed, a1b2c3d..e4f5a6b`), and the second
+   line drops the pickup sentence, keeping only the review one.
 
 2. **One change area per bold title, on its own line, with exactly one bullet under
    it.** The bullet is one sentence, two at most, stating WHAT changed for the people
-   and agents who use the repo — never a commit subject, an item id, a tier, a model, a
+   and agents who use the repo: an observable effect — what a user or agent can now do
+   or notices behaving differently — never why it was needed, how it works internally,
+   or the evidence behind it; and never a commit subject, an item id, a tier, a model, a
    review round, a fix round or a verdict. Several items that make one visible change
    share a title and its bullet; maintenance and plumbing (tests, refactors, dependency
    bumps, store bookkeeping) collapse the same way, under one title such as
@@ -82,7 +86,8 @@ Rules that keep it pasteable:
   range: in email or SMS the backticks appear as literal characters.
 - Keep it short. A bullet that needs a third sentence is carrying rationale or
   mechanism — cut it back to WHAT.
-- Paths are fine. Secret values never appear, just as in the Report.
+- A path the reader must open is fine; never a list of files. Secret values never
+  appear, just as in the Report.
 
 ## Example
 
@@ -94,9 +99,9 @@ A push that landed two visible changes and a round of maintenance, for a fictiti
 Update your plugins to pick it up. Every change was reviewed before it merged.
 **Faster investigate handoffs**
 - The investigate skill now hands a finished plan straight to implement, with no extra confirmation step in between.
-**Clearer checkpoint prompts**
-- A checkpoint now names the exact manifest file it wrote, so you know where to look after a compact.
+**Clearer dev-cycle land reports**
+- dev-cycle's land report now names the branch it merged, so you can find the work without hunting for the commit.
 **Housekeeping**
-- Dependency bumps and test cleanup across two plugins.
+- Dependency bumps and test cleanup landed across dev-flow's skills.
 Nothing on existing work needs action.
 ```

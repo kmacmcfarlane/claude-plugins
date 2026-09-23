@@ -275,7 +275,7 @@ librarian-only timing (the `incoming:` lines, its own SKILL.md § Report,
 `ending-the-session.md`, 75%/DUE, noting `origin/<base>` before each push) does not
 apply — the summary simply follows the four lines; and its bullets cover only this
 cycle's own landing — another commit the push carried is noted as not the cycle's, or
-folded into the maintenance bullet.
+folded into the housekeeping area.
 
 ## Store
 
