@@ -2,12 +2,11 @@
 id: context-guard-correct-the-1-4-compaction-8519
 title: "context-guard: correct the 1.4% compaction-survival claim and the one-shot PreCompact wording"
 type: chore
-status: doing
+status: done
 priority: 3
-owner: Kyle-McFarlane@bf9f9839222c
-claimed: 2026-09-23T00:02Z
 created: 2026-09-22
 updated: 2026-09-23
+closed: 2026-09-23
 refs:
   - "peer: agents - librarian (uds 122.sock); agents decisions/0007"
 ---
@@ -41,3 +40,5 @@ return: implementer DONE 95cba7f
 dispatch: reviewer opus — review r2 (resume)
 agent: reviewer a0a81a13103b14bc3 round 2
 verdict: CLEAR round 2 at 95cba7f — land after Rehydrate (post-checkpoint gap: no merge)
+landed: e835dab (merge of context-guard-correct-the-1-4-compaction-8519)
+- 2026-09-23 done: landed e835dab
