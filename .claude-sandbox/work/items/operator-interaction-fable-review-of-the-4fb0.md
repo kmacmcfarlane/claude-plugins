@@ -29,3 +29,4 @@ Operator 2026-09-23: 'Let's do a follow-up work-item review with a fable sub-age
 target: review main at b005199 (operator-interaction v1 + d44e wiring)
 dispatch: reviewer fable — operator pin (model: fable); review-only; runs overnight so fable's view is ready for the morning
 agent: reviewer ad472ecc166719899 round 1 (fable)
+return: reviewer (fable) DONE /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude-sandbox/investigations/7113-decisions/reviews/fable-review.md (15 findings: 3 high, 7 medium, 5 low; rulings to revisit). Presented to the operator as decisions 74-79.
