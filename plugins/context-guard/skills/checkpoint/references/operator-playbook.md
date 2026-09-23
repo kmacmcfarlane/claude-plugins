@@ -10,7 +10,7 @@ operator never sees.** Fixing that is mostly about session *shape*, not about re
 | Fact | Value | Consequence |
 | --- | --- | --- |
 | Cost of a turn, averaged | ~7K tokens | 1M ≈ 130 turns; 200K ≈ 25 turns |
-| What a compaction keeps | 14–18K of ~1M (1.4–1.8%) | everything not on disk is gone |
+| What a compaction keeps | ~14–18K tokens, roughly fixed regardless of depth (agents decision 0007) | everything not on disk is gone |
 | Compaction wall time | 140–150 s | plus a full prompt-cache rebuild after |
 | Base cost after compaction | 75–107K | summary + CLAUDE.md + hooks + tool/skill listings |
 | One SessionStart hook (context-mode) | ~15K tokens per start/resume/compact | 7.5% of a 200K window before you type |
