@@ -2,13 +2,12 @@
 id: dev-flow-a-decision-presentation-skill-d-7113
 title: "operator-interaction: a plugin for the agent-operator interface, starting with how decisions are raised and shown (research)"
 type: spike
-status: doing
+status: done
 priority: 1
 parent: checkpoint-around-continuation-how-agent-d3ee
-owner: Kyle-McFarlane@bf9f9839222c
-claimed: 2026-09-23T04:45Z
 created: 2026-09-23
 updated: 2026-09-23
+closed: 2026-09-23
 refs:
   - "peer: marketplace - librarian (operator relay 2026-09-23)"
 ---
@@ -43,6 +42,7 @@ Ideas 3+4 of the parent: research how best to communicate decisions to an operat
 
 ## Notes
 - 2026-09-23 claimed by Kyle-McFarlane@bf9f9839222c
+- 2026-09-23 done: /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude-sandbox/investigations/7113-decisions (plan 00-03 CLEAR r4; build is 9f98)
 
 ## Operator 2026-09-23 (in this session), reframing the item
 - Reversibility is one factor, not the main driver of detail level. The operator's words: "If I don't have enough context in the place where you're showing me the decision to understand what decision I'm making and what the impact is, then I can't even figure out how to answer the question." High impact often comes from being hard to reverse, which argues for more detail. Find the other factors that affect impact, and the other reasons more or less detail helps in a given use case.
@@ -166,3 +166,8 @@ note: render inputs 01-08 written by the librarian (orchestrator step per 02), /
 verdict: NEEDS_CHANGES plan round 3 (1 medium: 02 lacks Confirmed Assumptions; 1 low, 1 nit — nit fixed in input 02 by the librarian) — /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude-sandbox/investigations/7113-decisions/reviews/plan-review-r3.md
 dispatch: planner opus — plan fix round 3 (resume), serial 03; review round 4 is the last under the cap
 agent: planner a3df2feba2917125b round 4
+return: planner DONE /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude-sandbox/investigations/7113-decisions/03_review-round-3.md
+baseline: a0bdec066df2 /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude-sandbox/investigations/7113-decisions/00_plan.md;2a74318c871c /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude-sandbox/investigations/7113-decisions/01_review-round-1.md;b1bb6742be48 /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude-sandbox/investigations/7113-decisions/02_review-round-2.md;16f349f59874 /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude-sandbox/investigations/7113-decisions/03_review-round-3.md;
+dispatch: reviewer opus — plan re-review r4 (resume), the LAST under the cap
+agent: reviewer ab28a83ac97eeee18 round 4
+verdict: CLEAR plan round 4 at 03 (16f349f59874); 1 nit (review-base note) declined as immaterial
