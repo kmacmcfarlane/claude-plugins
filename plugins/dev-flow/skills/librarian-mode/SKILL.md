@@ -258,8 +258,9 @@ gone out; inside the final Report at session end and 75%/DUE
 (`references/troubleshooting.md` § Push rejected).
 
 After each push (with `Push: none`, each batch), one team summary for people who did not
-watch the run, prose or bullets, never a table, after the push outcome and its
-`incoming:` lines: `references/team-summary.md` (once `origin/main@{1}` has failed,
+watch the run, a bold title and one bullet per change area, never a table or
+sub-bullets, after the push outcome and its `incoming:` lines:
+`references/team-summary.md` (once `origin/main@{1}` has failed,
 note `origin/main` before pushing; no `origin` remote: local only, no pickup step).
 
 ## Red flags
