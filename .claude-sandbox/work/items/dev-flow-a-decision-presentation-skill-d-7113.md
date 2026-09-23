@@ -124,3 +124,9 @@ return: refine r2 DONE_WITH_CONCERNS /home/rt/work/src/github.com/kmacmcfarlane/
 - Timing (operator): "it's late, I want to use the skill tomorrow while I work". After it lands, a follow-up fable review (filed separately).
 - answer R9: (b). The skill carries clear guidance for parsing natural-language responses, and the agent echoes how it read each one. Add a hint that encourages an unambiguous dialect, "to control the decision behavior contract we are implementing". The hint is a subtle, colored text pattern that includes the meta placeholders (e.g. `later [when]`): "It doesn't make the hint much bigger, but it should help with adoption."
 - answer R11: (a) build tonight, BUT first show the operator example decision lists at each detail level, for quick prototype feedback before implementing. R1, R4, R6, R7, R8 and R10 remain unanswered; they ship as the librarian's recommendations, marked provisional.
+- Prototype feedback (operator, 2026-09-23):
+  1. Bold the decision's title in list lines; the information on the line is good.
+  2. Italic hint variant (A).
+  3. "the higher the stakes, the more info and the slower the decision should be made".
+  4. The ⚠ marker was confusing.
+  Asked: whether `more` raises the detail level, and alternative words for it; the recommended order of decisions (a field sort vs the agent's judgment); and research guidance on "decision fatigue" and tackling urgent and important decisions first.
