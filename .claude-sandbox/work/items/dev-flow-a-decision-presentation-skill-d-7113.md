@@ -1,6 +1,6 @@
 ---
 id: dev-flow-a-decision-presentation-skill-d-7113
-title: "decisions: a standalone plugin for how agents present decisions - attributes, use cases, detail levels (research)"
+title: "operator-interaction: a plugin for the agent-operator interface, starting with how decisions are raised and shown (research)"
 type: spike
 status: doing
 priority: 1
@@ -68,3 +68,19 @@ return: research run DONE /home/rt/work/src/github.com/kmacmcfarlane/claude-plug
   - Staleness stays "unknown" unless our format defines the condition as a checkable predicate, not prose.
   - Two conflicts for the operator review: (R6) defaults — their OD-13 never auto-applies, while our synthesis allows the fast tier (two-way and narrow); (R7) confidence — they keep calibrated confidence as an internal ranking input and never display a number. They ask whether our format forbids the number end to end.
   - Refinement: the fast pass selects, but the answer screen still shows the floor.
+
+## Operator answers 2026-09-23 (review R1-R7 of the synthesis)
+- answer R1: (a) the content floor is enforced when a decision is raised. The operator asks us to consider whether there are cases where the extra work isn't worth it, or other obvious exceptions from the research.
+- answer R2: the operator likes the grid. "The recency of interaction is a key component here" (relayed to operator-attention). But they feel there must be more than two dimensions: "type is vague, that's a smell of hidden variables". Find out which dimensions are relevant.
+- answer R3: (a) decisions that are hard or impossible to reverse and have high impact get more context when shown, and are answered one at a time (never inside a batch like `ok 1-4`).
+- answer R4: consider reporting the evidence basis instead of a confidence number: complete / incomplete / none; direct / indirect evidence; inference; "memory"/"vibes". The quality and source of the evidence are factors too. How do we project all that down into a simpler indicator for operators? "Agents can juggle all the dimensions easily, but humans need to interact using their attention."
+- answer R5:
+  - "Decide later" must always be one of the options presented. It is not the same as "do nothing".
+  - The question is also about scope: directories and names create scope boundaries.
+  - The plugin is **operator-interaction**, "a plugin that enhances the interface and flow between agent and human operator". It overlaps with operator-attention.
+  - Side request, filed separately: a dev-conventions skill.
+- answer R6: REJECTED AS POSED: "You have given me a decision without explaining the impact of it … The goal isn't to get the decision, the goal is for the operator to understand the decision (including its context and impact)." The operator asks for:
+  - reasonable scenarios where it is a good idea not to get a decision, purely because time has passed;
+  - a way to facilitate the common response that isn't a decision: a request for more context or an impact analysis.
+- answer R7: REJECTED AS POSED: what is the impact, based on the research? The operator questions how valuable an internal confidence number could be, and whether it would do more harm than good. Research more if needed. Impacts often need analysis and research, so some decisions should offer an option to pull known threads or gather background when the impact isn't fully understood.
+- Operator feedback: the restated card-form questions were "a better experience than your first try".
