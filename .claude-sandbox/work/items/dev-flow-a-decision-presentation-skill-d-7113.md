@@ -110,3 +110,9 @@ agent: research-lane w7 ad9380480045bac87, w8 a97b7ee4c7fdaff97, w9 afe3daea0853
 dispatch: research-verifier haiku — verify r2, sample 12
 agent: research-verifier a3447e88ef8532253 (r2)
 return: refine r2 DONE_WITH_CONCERNS /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude-sandbox/investigations/7113-decisions/research/2026-09-23-decision-attributes-r2/01-synthesis.md (5 lanes, verifier gate CONCERNS: grounding/S2 at 1 from PDF tooling); present cards to the operator next
+- 2026-09-23 operator-attention on r2 (commit bf40411; their decision-collector/04_dimension-groups.md):
+  - Adopted as proposals: group A (depth) is theirs, group D feeds ranking, and their R7 now carries the three clocks and the no-confidence-scalar rule.
+  - Offered proxies for interruption TIMING (not cost): operator availability (their R8, recommended), registry busy/idle (4 of 62 busy), and the statusline-hub sensor.
+  - Flag 1: "you" is ambiguous. They build it as "hand back to the raising agent". Assigning to a named person would need an assignee field and a second path back.
+  - Flag 2: standing approvals change the scheduler and the risk posture, not the presentation. They touch the sandbox permission model (their R37: nothing runs unsandboxed silently), and a wrong call there cannot be recovered by answering more slowly. Not in their v0; it needs its own requirement.
+  - They adopted status-quo defaults as distinct from action defaults, and both wake kinds for deferral, with the re-ask carrying a diff.
