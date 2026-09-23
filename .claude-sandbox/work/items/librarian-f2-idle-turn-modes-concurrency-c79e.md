@@ -46,3 +46,10 @@ agent: reviewer afb3f69db46fcf792 round 1
 verdict: NEEDS_CHANGES plan round 1 (1 high, 11 medium) — findings verbatim at /home/rt/.claude/tmp/claude-1000/-home-rt-work-src-github-com-kmacmcfarlane-claude-plugins/e9bb00fc-c89f-4c8e-a7ca-b4c1e9ccbc73/scratchpad/c79e/plan-review-r1.md (scratchpad; summary: re-arm unconditionally after Rehydrate; duplicate-loop dedupe; post-checkpoint gap; allowed-tools; one owner per admission rule; P0 floor stated once; floor vs U; sprint semantics; hysteresis on new readings; slot-leak reconcile; calibration under-count; two-writer hold keep-alive)
 dispatch: planner opus — plan fix round 1 (resume), revises by a new serial 02
 agent: planner a284b6b14c97d6192 round 2
+return: planner DONE_WITH_CONCERNS /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude-sandbox/investigations/1222-unattended-librarian/02_review-round-1.md (all 23 findings fixed, none declined)
+baseline: f1aa0b775916 .claude-sandbox/investigations/1222-unattended-librarian/00_initial.md;1687d7eb5206 .claude-sandbox/investigations/1222-unattended-librarian/01_f2-modes-pool-heartbeat.md;fe767a12a5d6 .claude-sandbox/investigations/1222-unattended-librarian/02_review-round-1.md;
+dispatch: reviewer opus — plan re-review r2 (resume)
+agent: reviewer afb3f69db46fcf792 round 2
+verdict: NEEDS_CHANGES plan round 2 (1 high, 3 medium, 4 low) — findings at /home/rt/.claude/tmp/claude-1000/-home-rt-work-src-github-com-kmacmcfarlane-claude-plugins/e9bb00fc-c89f-4c8e-a7ca-b4c1e9ccbc73/scratchpad/c79e/plan-review-r2.md (high: the dedupe kills a fresh arm after compaction; floor cap; tier-bump bypass; re-arm triggers in two places)
+dispatch: planner opus — plan fix round 2 (resume), new serial 03
+agent: planner a284b6b14c97d6192 round 3

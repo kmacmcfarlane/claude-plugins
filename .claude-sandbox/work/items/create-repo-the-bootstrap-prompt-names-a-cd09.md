@@ -31,3 +31,10 @@ return: implementer DONE 961d85d
 changed: create-repo SKILL.md (Steps 1, 7), references/launch-command.md (series variant), investigate references/investigation-format.md (§ A repo not yet created)
 dispatch: reviewer opus — rule 4, implementer tier
 agent: reviewer aab96e77dfa957a52 round 1
+verdict: NEEDS_CHANGES round 1 at 961d85d
+findings:
+- [medium] launch-command.md:42 — SLUG/OLD "get the same handling below" but the newline-collapse rule is above (:22); an OLD with a newline + an EOF line breaks out of the heredoc and runs a command (reproduced). Pass: validate like NAME/REPO — SLUG kebab-case ^[a-z0-9][a-z0-9-]*$, OLD through Step 2's path-character check; otherwise ask again.
+- [medium] investigation-format.md:59 — a dev-flow → sandbox skill reference undeclared in dev-flow's plugin.json and README catalog row (principle 4); two older undeclared pointers too (deep-investigation SKILL.md:242, investigate edge-cases.md:25). Librarian: scope widened to declare sandbox (soft) in dev-flow's plugin.json description and README row.
+- [low] :57-70 ask-before-commit vs "under an orchestrator never asked" — one clause on which wins; [low] :60 "the sandbox skill says" widens the SOP — say it follows the same rule.
+dispatch: implementer opus — fix round 1 (resume)
+agent: implementer a30cdb20435f3ddd1 round 2

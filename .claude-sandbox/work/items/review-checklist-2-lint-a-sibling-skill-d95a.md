@@ -2,12 +2,11 @@
 id: review-checklist-2-lint-a-sibling-skill-d95a
 title: "review-checklist §2 lint: a sibling skill name ending a line before an indented path is not recognised"
 type: bug
-status: doing
+status: done
 priority: 3
-owner: Kyle-McFarlane@bf9f9839222c
-claimed: 2026-09-22T23:53Z
 created: 2026-09-22
-updated: 2026-09-22
+updated: 2026-09-23
+closed: 2026-09-23
 refs:
   - F4 review r1
 ---
@@ -30,3 +29,6 @@ return: implementer DONE a0fedfc
 changed: plugins/dev-flow/skills/dev-cycle/references/review-checklist.md (§2 reference check + prose)
 dispatch: reviewer opus — rule 4, implementer tier
 agent: reviewer a3b8d796a3e754433 round 1
+verdict: CLEAR round 1 at a0fedfc
+landed: c673617
+- 2026-09-23 done: c673617

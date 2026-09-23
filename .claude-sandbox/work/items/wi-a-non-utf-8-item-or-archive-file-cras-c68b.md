@@ -36,3 +36,6 @@ findings:
 - [low] :2755 lint on a CR-only file now reports only missing front matter — accepted as an extreme edge (note only).
 dispatch: implementer opus — fix round 1 (resume)
 agent: implementer acf6981e295ee076f round 2
+return: implementer DONE 1b5c7cd
+dispatch: reviewer opus — review r2 (resume)
+agent: reviewer ae37871f87893f897 round 2
