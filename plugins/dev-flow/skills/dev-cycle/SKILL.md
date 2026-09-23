@@ -331,6 +331,10 @@ decisions needed: <numbered list, or none>
 `plan` mode reports the series path on `changed:`, its review on `verified:`, blocking
 questions under `decisions needed:`.
 
+With the `operator-interaction:decisions` skill in the session, `decisions needed:` names
+the numbers, and the decisions follow the four lines, written per that skill
+(`references/bindings.md` § Decisions).
+
 `Merge and push` (Step 5.3) adds a team summary after the four lines:
 `references/bindings.md` § Landing.
 

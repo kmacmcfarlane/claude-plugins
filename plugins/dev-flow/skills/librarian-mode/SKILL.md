@@ -81,7 +81,8 @@ Do this at session start and after any `/clear` or compaction. Never `ls` the wh
    catalog and placement sections when present, otherwise in full — the rest of
    `CLAUDE.md` (layout and conventions), and the `dev-cycle` skill's SKILL.md in full,
    the cycle every item runs. On re-entry, re-read only the section, the conventions and
-   dev-cycle's Steps 1–5.
+   dev-cycle's Steps 1–5. When the session lists `operator-interaction:decisions`, load it
+   too, every time: every decision you raise follows it (`references/decisions.md`).
 
 3. **Prime the queue, then read the one item you are working.**
 
@@ -141,7 +142,8 @@ For every request, in this order:
    Ask only on a real trade-off, every decision (one or many) as `decision N:` on the
    item under the Report's `decisions needed` — never AskUserQuestion: a modal prompt
    blocks the session against background returns and peer messages (opt-in excepted,
-   `references/opt-in.md`).
+   `references/opt-in.md`). With the `operator-interaction:decisions` skill loaded, put
+   each one to the operator per that skill (`references/decisions.md`).
    Never in the same turn as a heavy analysis: end with it, ask next turn.
 
 4. **Refuse what is out of scope.** Anything outside Scope (Exclude included), pushing
@@ -193,7 +195,8 @@ would ask the operator. Its Step 6 is the Report below. Your bindings:
   Report's `decisions needed` — only what dev-cycle raises there: a `SHOW_STOPPER`, a
   scope change or reversed operator decision, the cap, a blocked item, a fable wait, a
   spike's blocking open questions. **Durable**: the question lives in the committed item
-  body and is answered to whichever session is librarian next.
+  body and is answered to whichever session is librarian next. Shown per the
+  `operator-interaction:decisions` skill when it is loaded (`references/decisions.md`).
 - **Terminal action**: `git merge --no-ff` into local `main`; the push is yours, after
   the Report (Critical). An item naming another base merges into that base instead, with
   the main checkout on it, and is never pushed. First-start dirt never blocks a merge
@@ -236,6 +239,12 @@ numbered; a number is never reused, and an unanswered one keeps it. The counter 
 the store: raising a decision appends `decision N: <one line>` to its item's body, and
 the reply `answer N: <reply>`; on re-entry continue from the highest N (Rehydrate step
 3), else 1.
+
+With the `operator-interaction:decisions` skill loaded, the four lines stay, and each
+`decisions needed:` names only its decision numbers. One decisions block follows the last
+four-line block, written per that skill: its list, cards and blocks, and hint. The store
+lines per reply, the default wake (the next Report) and the re-show after Rehydrate are in
+`references/decisions.md`.
 
 Batch several landings in one message, four lines each; anything blocked or declined
 since the last report goes under `decisions needed` of the next. Do not wait for the

@@ -62,6 +62,11 @@ Groom                                        Work
   does not cover: including a free-text deferral such as "operator holding until
   spare time", which is not parked (below) and not a `hold` item.
 
+  A decision's Groom row stays one line, its number and title. A deferred one also shows
+  its `wake N:`. With the `operator-interaction:decisions` skill loaded, the decision
+  itself is put to the operator once, per that skill, below the tables
+  (`decisions.md`), never twice in one message.
+
   A `hold` item is on the `hold:` line, not here. Items blocked on a peer or an external
   dependency are counted in one line under the table, not listed.
 - **Work** — what can move without the operator:

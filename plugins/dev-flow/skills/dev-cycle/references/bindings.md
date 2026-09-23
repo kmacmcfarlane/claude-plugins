@@ -178,7 +178,15 @@ Step 0 summary so the user can correct it. A non-default base is never chosen si
 A caller's channel is used as bound. Standalone: exactly one pending decision goes
 through AskUserQuestion, whose options carry the choices, recommended first; two or more
 go as one numbered prose list — one decision per number, each with its options and their
-impact, recommendation first — so the user answers by number. Never in the same turn as a
+impact, recommendation first — so the user answers by number.
+
+When the session lists the `operator-interaction:decisions` skill (a soft dependency),
+load it and write every decision the cycle raises to it, whatever the channel. That covers
+its content floor, its list line / card / block, its order, the echo of a reply, and the
+read-back on a ⚠ one-way choice. A caller's channel still decides where the decision goes
+and what the store records. Standalone, the decisions go as text per the skill, not
+through AskUserQuestion: a dialog cannot carry the floor, the hint or the echo. The record
+lines below are unchanged. Never in the same turn as a
 heavy analysis: end the turn with the analysis and ask in the next. Append each raised
 decision to the record sink as `decision: <question> — options: <a> | <b> | <c>` before
 asking — the question in full and its options, recommendation first, so the line can be
