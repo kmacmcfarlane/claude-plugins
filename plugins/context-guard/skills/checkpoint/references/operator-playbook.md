@@ -10,7 +10,7 @@ operator never sees.** Fixing that is mostly about session *shape*, not about re
 | Fact | Value | Consequence |
 | --- | --- | --- |
 | Cost of a turn, averaged | ~7K tokens | 1M ≈ 130 turns; 200K ≈ 25 turns |
-| What a compaction keeps | 14–18K of ~1M (1.4–1.8%) | everything not on disk is gone |
+| What a compaction keeps | ~14–18K tokens, roughly fixed regardless of depth (agents decision 0007) | everything not on disk is gone |
 | Compaction wall time | 140–150 s | plus a full prompt-cache rebuild after |
 | Base cost after compaction | 75–107K | summary + CLAUDE.md + hooks + tool/skill listings |
 | One SessionStart hook (context-mode) | ~15K tokens per start/resume/compact | 7.5% of a 200K window before you type |
@@ -70,7 +70,7 @@ or `/compact <guidance>` is yours to run. A checkpoint this epoch stands it down
 | --- | --- | --- |
 | `/clear` | the task is done and its state is on disk | everything; cheapest reset there is — except after a `continue` or `handoff` checkpoint: when the `/clear` runs in the same Claude Code process within two minutes of that session's end and the manifest is still the version it wrote, the successor gets it in full plus the old session's ledger digest (otherwise nothing: paste the checkpoint's opener, whose Read of the printed path brings it) |
 | `/rename <name>` | at the start of any thread you may resume | nothing; makes `--resume` findable |
-| `/compact <guidance>` | the thread is open-ended and must continue *here* | keeps ~2%; guidance is a documented input, use it |
+| `/compact <guidance>` | the thread is open-ended and must continue *here* | keeps a ~14–18K-token summary, whatever the depth (agents decision 0007); guidance is a documented input, use it |
 | `/rewind` → *Summarize up to here* | old turns are noise, recent ones are load-bearing | condenses only the old part; recent turns verbatim |
 | `/btw <question>` | a side question that needn't enter history | answers from context; never stored |
 | `/subtask` (fork) | a side task that needs everything this session knows | inherits history + cache; tool calls stay out |

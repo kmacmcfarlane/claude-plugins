@@ -2,7 +2,8 @@
 
 > **Superseded in part (2026-08-30).** The v1 protocol described in §3 (percent bands, a
 > one-shot compact gate) is replaced by the epoch-aware, remaining-token design in the
-> `context-guardrails` series (`agents` meta-repo), serial `01`, threads A/B2/E/S. Notably:
+> `context-guardrails` series (`agents` meta-repo), serial `01`, threads A/B2/E/S (§3's gate
+> line now reflects the built design; agents decision 0007). Notably:
 > the "~15K tokens per SessionStart" figure in §1 measured emitted, not accepted, payload —
 > payloads over the output cap reached the model as a stub. The forensic findings otherwise
 > stand.
@@ -41,10 +42,15 @@ fill (context-mode again), file-change diffs re-injected in full (142KB over 18)
 listings (20KB × 6), queued-command echoes (69KB). Attachments totalled ~105–111K tokens per fill — as much as all tool output. Post-compaction
 base was 75–107K tokens, of which the summary itself was only 14–18K.
 
-**Finding 4 — a compaction keeps ~1.5%.** `postTokens/preTokens` = 1.4% and 1.8%. It took
-141 s and 153 s. The things that survived were the things already on disk: investigation
-serials, INDEX files, commits. The near-loss was *routing* knowledge — which repo each finding
-belonged to — because that is intent, not content, and no summarizer can reconstruct intent.
+**Finding 4 — corrected by agents decision 0007: both triggers here were manual, not auto.**
+`postTokens/preTokens` = 1.4% and 1.8%. It took 141 s and 153 s. Both summaries landed at
+13,709 and 18,027 tokens; summary size stayed in a 13.7–18.4K band across four compactions
+(three manual, one auto), so the percentage kept falls with depth by arithmetic alone and is
+not a measure of auto-compact's survival rate. Whether both triggers prompt the summarizer
+the same way is unverified. The things that survived were the things already on disk:
+investigation serials, INDEX files, commits. The near-loss was *routing* knowledge — which
+repo each finding belonged to — because that is intent, not content, and no summarizer can
+reconstruct intent.
 
 **Finding 5 — avoidable single costs.** `TODO.md` at 49KB read whole (~12K tokens) by the
 investigate skill on every run; a context-mode batch returning 44KB in one call (the
@@ -131,11 +137,13 @@ Three layers, escalating; the first two are hooks, the third is a skill.
 2. **Bands** (`UserPromptSubmit`, 60/75/88%, once each, latching) — to the operator via
    `systemMessage`, to the model via `additionalContext`. Only one can act; only the other can
    decide.
-3. **Gate** (`PreCompact`, matcher `auto`) — blocks the *first* auto-compact only. Per the hooks
-   reference, blocking a proactive compaction is free; blocking one that fired to recover from a
-   context-limit error already returned makes the in-flight request fail, and the hook cannot
-   tell the two apart. One decision point, no wedged session. Manual `/compact` is never
-   touched.
+3. **Gate** (`PreCompact`, hook itself ignores manual triggers) — corrected by agents decision 0007: re-defers on
+   every automatic attempt, not just the first, while no checkpoint has run this epoch and
+   depth is provably proactive (`precompact_gate.py:46-60`); it ends when a checkpoint records
+   or depth crosses HARD, whichever comes first. Per the hooks reference, blocking a proactive
+   compaction is free; blocking one that fired to recover from a context-limit error already
+   returned makes the in-flight request fail, and the hook cannot tell the two apart. No wedged
+   session, bounded by depth rather than by a count. Manual `/compact` is never touched.
 4. **Checkpoint skill** — Step 0 asks the operator the goal (*continue / handoff*)
    because that is the one input nobody else holds and it changes everything downstream:
    *continue* means residue then `/compact` with drafted guidance; *handoff* means a brief
