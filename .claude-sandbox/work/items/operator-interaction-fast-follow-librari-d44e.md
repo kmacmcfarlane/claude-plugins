@@ -2,11 +2,12 @@
 id: operator-interaction-fast-follow-librari-d44e
 title: "operator-interaction fast-follow: librarian-mode renders its decisions per the decisions skill"
 type: feature
-status: todo
+status: blocked
 priority: 0
 deps:
   - dev-flow-a-decision-presentation-skill-d-7113
 parent: checkpoint-around-continuation-how-agent-d3ee
+blocked: operator-interaction-v1-the-plugin-its-d-9f98
 created: 2026-09-23
 updated: 2026-09-23
 refs:
