@@ -20,3 +20,8 @@ Deferred from 7113. operator-attention's OD-6: optional indented detail lines un
 - next: —
 - blocked: —
 - learned: —
+- 2026-09-23 operator-attention (commit 0c096a4; their decision-collector/05_integration-with-operator-interaction-v1.md):
+  - The collector ships as a script with no skill of its own; `decisions` is the operator's single entry point.
+  - It supplies warmth and age per decision, and the skill decides line / card / block. Agreed shape: a word, warm | cold (the skill's two states), with the context-distance events underneath for the re-show diff.
+  - The card must carry raised-at explicitly (one of the three clocks; git history only gives commit granularity).
+  - Until this lands, the collector parses the human `decision N:` form and marks missing fields unknown.
