@@ -15,8 +15,8 @@ refs:
 From H6 review r2 (CLEAR) low, 2026-09-22: section_lines requires '## ' (tab no longer matched); an unclosed earlier fence hides the section quietly. Also reuse rehydrate._sections once H3 lands (a second parser drifts).
 
 ## Handoff
-- doing: —
-- next: —
+- doing: review r2 in flight at db28bed: reviewer a63655af1d1d84f24 round 2 (agent: line in the record)
+- next: on CLEAR: land (merge-tree first), context-guard check on main; on NEEDS_CHANGES: resume implementer a700b6bf753d6f0b8
 - blocked: —
 - learned: —
 
@@ -30,3 +30,12 @@ return: implementer DONE_WITH_CONCERNS 1e5ad64 (no shared parser: rehydrate._sec
 changed: hooks/read_list.py, hooks/rehydrate.py (fence_note in the full tier), hooks/tests/test_read_list.py
 dispatch: reviewer opus — rule 4, implementer tier
 agent: reviewer a63655af1d1d84f24 round 1
+verdict: NEEDS_CHANGES round 1 at 1e5ad64 (deviation claims verified; the note cannot carry manifest text; trim accounting correct)
+findings:
+- [medium] rehydrate.py:1300-1303 — rl_note is computed before withhold_next, the read list after it; withhold_next can remove a stale ## Next holding the fence opener, so the note says "not recorded" while the paths are recorded (reproduced). Pass: emit only when the post-withhold text still hides the section, keeping the original line number; test with a stale Next holding the fence.
+- [low] read_list.py:45 — line numbers via splitlines() split on \x0b,\x0c,\x1c-\x1e,\x85, ; use text.split("\n") for numbering.
+dispatch: implementer opus — fix round 1 (resume)
+agent: implementer a700b6bf753d6f0b8 round 2
+return: implementer DONE db28bed
+dispatch: reviewer opus — review r2 (resume)
+agent: reviewer a63655af1d1d84f24 round 2

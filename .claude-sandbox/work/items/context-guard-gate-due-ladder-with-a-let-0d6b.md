@@ -18,3 +18,4 @@ Relayed 2026-09-22 from the agents store (gate-due-ladder-offer-let-it-ride-re-a
 - blocked: —
 - learned: —
 - see also: agents decision 0007 corrects the compaction facts 0004 stated (item filed for the context-guard text).
+- from 8519 review (2026-09-23): precompact_gate re-defers until a checkpoint or HARD, and also stops at unknown depth and resets at a new epoch (PostCompact/clear) — design the DUE ladder against the code, not 0007 alone.
