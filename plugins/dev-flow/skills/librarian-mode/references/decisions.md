@@ -22,7 +22,7 @@ The skill is available when the session's skill listing carries `operator-intera
   It covers the content floor, the list line / card / block, the order, the hint, reading
   replies with an echo, the ⚠ read-back, and "decide later" with a wake.
 - **Never through AskUserQuestion.** That is the librarian's own rule (SKILL.md § Intake
-  step 3), and the skill agrees.
+  step 3), and the skill agrees. The opt-in dialog is the one exception (`opt-in.md`).
 
 Without the skill, nothing here applies. `decisions needed:` stays the numbered list SKILL.md
 § Report describes (one decision per number, its options and their impact, recommendation
@@ -40,10 +40,12 @@ first), and replies are recorded as `answer N:`.
 
 ## What the store records
 
-The store stays the source of truth. The card is how a decision is shown; the item keeps
-one line.
+The store stays the source of truth. The card is how a decision is shown; the decision
+keeps one line in the item.
 
-- **Raised:** `decision N: <question, one line> — options: (a) … | (b) … | (z) decide later; rec (a)`.
+- **Raised:** `decision N: <question, one line> — options: (a) … [recommended] | (b) … | (z) decide later`,
+  recommendation first, as the `dev-cycle` skill's `references/record-lines.md` gives the
+  `decision:` line.
   One line, as today, so `wi needs-input` and a later session can still read it. When the
   item is ⚠ one-way, write `⚠ one-way` after the question.
 - **Answered:** `answer N: <the reply> (read as: <the echo's reading>)`. The reading is
@@ -52,8 +54,9 @@ one line.
 - **⚠ one-way:** repeat the choice back first. Record `answer N:` only when the operator
   confirms. Nothing acts before that.
 - **`later [when]`:** `wake N: <time | event | next Report>`. There is no `answer N:`, so the
-  decision stays open and `wi needs-input` keeps listing it. At the wake, re-show it with what
-  changed.
+  decision stays open and `wi needs-input` keeps listing it. Deferred again, it gets another
+  `wake N:`; the last one wins (`grep -n '^wake N:'`, last hit). At the wake, re-show it
+  with what changed.
 - **`tell me` / `expand`:** nothing new in the store. Re-show the same number next round.
 - **`dig into [what]`:** a bounded investigation, dispatched like any other (a `dispatch:`
   line, routing and the quota sense apply); its result comes back on the same number.
@@ -71,12 +74,22 @@ The four lines per landed change stay exactly as SKILL.md § Report gives them. 
 skill:
 
 1. Each change's `decisions needed:` names that change's decision numbers, or `none`.
-2. After the last four-line block comes **one decisions block** for every open decision this
-   Report carries: those raised since the last Report, those whose wake has come, and after
-   Rehydrate every open one. It holds the skill's list lines in its order, then the cards
-   and blocks in list order, then the hint when it carries two or more.
-3. Then the push outcome, any `incoming:` lines, and the team summary, as today.
+2. After the last four-line block comes **one decisions block**. It carries every open
+   decision, each as a list line in the skill's order. A deferred one also shows its wake.
+3. Below the list, some decisions are shown in full, at the level the skill gives them, in
+   list order:
+   - those raised since the last Report;
+   - those whose wake has come;
+   - after Rehydrate, every open one (the cold re-show);
+   - every ⚠ one-way decision, always, as a block;
+   - any the operator raised with `expand`, which stays raised.
+
+   Every other open decision stays a list line. A deferred one stays a list line with its
+   wake until the wake comes.
+4. The hint closes the decisions block when it carries two or more decisions. It closes
+   the block, not the message.
+5. Then the push outcome, any `incoming:` lines, and the team summary, as today.
 
 A decision raised between Reports (an Intake ask, a blocked item) is put to the operator in
-the message that raises it, per the skill, and carried again only as a list line in the next
-Report until it is answered.
+the message that raises it, per the skill. It is carried in every later Report per items 2
+and 3 until it is answered.

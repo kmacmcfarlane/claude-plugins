@@ -21,7 +21,7 @@ order given, and asks the user only where the table says so.
 | **Base** | The branch the worktree starts from and the merge lands on | Named by the item or plan (implement's recorded base, re-verified); otherwise the default branch, § Base |
 | **Model floor** | The lowest tier any role on this change may run | A `model: <tier>` line in the item body, or the invocation's own words ("at least opus"); otherwise none |
 | **Record sink** | Where the run's record lines are appended (`record-lines.md`) | The item body when a store holds the target; otherwise always the scratchpad run record, `<scratchpad>/dev-cycle/<slug>/record.md`. Never a file in an investigation series: series files belong to `/implement` and are append-only. An item body is durable across sessions; **a scratchpad sink is session-scoped by contract**, so a store-less run's record cannot be read outside the session that wrote it (or one that inherits the same scratchpad) — Step 0's summary says so |
-| **Decision channel** | How a decision reaches a human, and the channel's **durability**: **durable** when the question outlives the session that raised it and a human answers it to whichever session reads it next (a caller's channel on a committed item), **ephemeral** when it exists only as a live prompt in this session. A caller states the durability with the channel; a channel supplied without it is a missing binding | AskUserQuestion, or § Decisions' numbered prose list for two or more — both **ephemeral** |
+| **Decision channel** | How a decision reaches a human, and the channel's **durability**: **durable** when the question outlives the session that raised it and a human answers it to whichever session reads it next (a caller's channel on a committed item), **ephemeral** when it exists only as a live prompt in this session. A caller states the durability with the channel; a channel supplied without it is a missing binding | AskUserQuestion, or § Decisions' numbered prose list for two or more — both **ephemeral**; written per the `operator-interaction:decisions` skill when the session lists it (§ Decisions) |
 | **Terminal action** | What Land does with a `CLEAR`, checked branch | Asked once at Land, § Landing |
 | **Series home** | Where the plan phase writes an investigation series | `$MAIN/.claude-sandbox/investigations/<slug>/`, the canonical path `/implement` reads |
 
@@ -181,13 +181,17 @@ go as one numbered prose list — one decision per number, each with its options
 impact, recommendation first — so the user answers by number.
 
 When the session lists the `operator-interaction:decisions` skill (a soft dependency),
-load it and write every decision the cycle raises to it, whatever the channel. That covers
+load it and write every decision-channel decision to it, whatever the channel. That covers
+the decisions this section and SKILL.md send "through the decision channel". It includes
 its content floor, its list line / card / block, its order, the echo of a reply, and the
 read-back on a ⚠ one-way choice. A caller's channel still decides where the decision goes
-and what the store records. Standalone, the decisions go as text per the skill, not
-through AskUserQuestion: a dialog cannot carry the floor, the hint or the echo. The record
-lines below are unchanged. Never in the same turn as a
-heavy analysis: end the turn with the analysis and ask in the next. Append each raised
+and what the store records. Standalone, those decisions go as text per the skill, not
+through AskUserQuestion: a dialog cannot carry the floor, the hint or the echo. Step 0.2's
+brief confirmation, the checks question and Land's terminal-action question are not
+decision-channel decisions; they stay dialogs, as the skill allows.
+
+With the skill or without it: never ask in the same turn as a heavy analysis; end the
+turn with the analysis and ask in the next. Append each raised
 decision to the record sink as `decision: <question> — options: <a> | <b> | <c>` before
 asking — the question in full and its options, recommendation first, so the line can be
 put to a human verbatim by a reader who was not there — and the reply as
