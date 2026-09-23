@@ -32,3 +32,4 @@ dispatch: implementer opus (fork of the librarian, effort xhigh) — doctrine: d
 agent: implementer adda2a62cd119c07a round 1
 return: implementer DONE 0891f07 (new references/decisions.md in librarian-mode; SKILL.md Rehydrate/Intake/Decision channel/Report; idle-turn.md; dev-cycle bindings § Decisions and Step 6; soft dependency declared in dev-flow plugin.json, marketplace.json and README; deviations: new `wake N:` store line, `answer N:` records the echo's reading; merge-tree clean against 9f98)
 dispatch: reviewer opus — implementer tier opus (doctrine: dev-flow skill text, soft-dependency declaration)
+agent: reviewer a6ae517fc4495dcda round 1
