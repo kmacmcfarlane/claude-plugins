@@ -55,3 +55,8 @@ Ideas 3+4 of the parent: research how best to communicate decisions to an operat
 
 dispatch: research-lane sonnet ×6 — research run 2026-09-23-decision-attributes (standard; lanes w1-w5, l1); brief .claude-sandbox/investigations/7113-decisions/research/2026-09-23-decision-attributes/00-brief.md
 agent: research-lane w1 af2676f324c760267, w2 afcc358d208451c60, w3 a2814d4cbc0f44413, w4 a1c7606f82052395c, w5 a84ee9f23cf7b043c, l1 a2ecacc4f1e75d1ec round 1
+dispatch: research-lane sonnet — round 2 w6-primary-recovery (gap conditions 1 and 4)
+agent: research-lane w6 acead026ed497554b round 2
+dispatch: research-verifier haiku — verify run 2026-09-23-decision-attributes, sample 12
+agent: research-verifier a462f7eb0fb761e8a
+return: research run DONE /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude-sandbox/investigations/7113-decisions/research/2026-09-23-decision-attributes/01-synthesis.md (7 lanes, 2 rounds, verifier 9/12 supported, gate PASS); review with the operator next
