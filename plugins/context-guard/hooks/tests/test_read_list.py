@@ -282,6 +282,41 @@ class TestParse(Base):
         self.assertIsNone(self.pending("X"))
         self.assertIn("is never closed", out)
 
+    def _stale_next(self, doing_fence):
+        # Next sits before Read in full and HEAD moves on, so rehydrate
+        # withholds (rewrites) the Next body before reading the list.
+        self.checkpoint("X", mode="handoff")
+        t = TL.readf(self.path)
+        head, _, _ = t.partition("## Aware of")
+        if doing_fence:
+            head = head.replace("Building the thing.", "Building the thing.\n```sh", 1)
+        TL.writef(self.path, head + "## Next\n" + ("" if doing_fence else "```sh\n")
+                  + f"wi show thing-1a2b\n## Read in full\n- {self.a} — plan\n\n"
+                  "## Aware of\n- x\n")
+        TL.writef(os.path.join(self.repo, "code.py"), "x = 1\n")
+        self.git("add", "code.py")
+        self.git("commit", "-q", "-m", "code")
+        return self.start("X", "compact")
+
+    def test_withheld_next_holding_the_fence_is_no_note(self):
+        # The fence opener lives in the withheld Next: the list the read-list
+        # hook reads is not hidden, so it is recorded and nothing says otherwise.
+        out = self._stale_next(doing_fence=False)
+        self.assertIn("Next withheld", out)
+        self.assertNotIn("is never closed", out)
+        self.assertEqual([p["path"] for p in self.pending("X")["paths"]], [self.a])
+
+    def test_withheld_next_keeps_the_files_line_number(self):
+        out = self._stale_next(doing_fence=True)
+        raw = TL.readf(self.path).split("\n")
+        self.assertIn("Next withheld", out)
+        self.assertIsNone(self.pending("X"))
+        self.assertIn(f"line {raw.index('```sh') + 1} ", out)
+
+    def test_line_numbers_count_newlines_only(self):
+        t = "## Doing\fx\u2028y\r\n```\n## Read in full\n- docs/a.md\n"
+        self.assertIn("line 2 ", RL.fence_note(t))
+
     def test_normal_injection_has_no_fence_note(self):
         self.manifest()
         self.assertNotIn("is never closed", self.start("X", "compact"))

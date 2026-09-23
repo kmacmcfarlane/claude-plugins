@@ -1297,10 +1297,12 @@ def main():
              "contradicts (the store wins):\n" + "\n".join(dead)) if dead else "",
             ("Manifest `items:` entries not checked against the store:\n"
              + "\n".join(notes)) if notes else "") if b)
-        # Before withhold_next, so its line number is the manifest file's.
+        # Numbered in the manifest file (before withhold_next), but only when
+        # the text the list is read from (after it) still hides the section.
         rl_note = RL.fence_note(text)
         if moved:
             text = withhold_next(text, moved)
+            rl_note = rl_note if RL.fence_note(text) else ""
         holds = holds_block(text) if ours else ""
 
         if kind == "legacy" and not st.get("legacy_notice"):

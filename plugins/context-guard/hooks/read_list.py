@@ -43,7 +43,11 @@ def _scan(text):
     Fenced lines inside the section are skipped too (an example, not a list)."""
     out, fence, inside, found = [], None, False, False
     opened = hidden = None
-    for n, ln in enumerate(text.splitlines(), 1):
+    # Numbered by "\n" (an editor's line), split within each as splitlines
+    # does, so the lines themselves are what splitlines gives.
+    lines = ((n, ln) for n, raw in enumerate(text.split("\n"), 1)
+             for ln in (raw.splitlines() or [raw]))
+    for n, ln in lines:
         f = _FENCE.fullmatch(ln)
         if f:
             run, rest = f.groups()
