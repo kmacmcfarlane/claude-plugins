@@ -32,3 +32,6 @@ agent: reviewer aa775351c71a2503c round 1
 verdict: NEEDS_CHANGES round 1 at 42ecd0d (1 medium: the documented re-pin remedy is unworkable and contradicts the meta-test, and inject() writes the ledger with the current module for both sides; 3 low, 1 nit). Pinned-baseline choice judged right; all 8 legacy-arm mutations fail the guard.
 dispatch: implementer opus — resume, fix round 1
 agent: implementer afaf2a529d1566917 round 2
+return: implementer DONE 98ccb79 (each side seeds its own ledger; frozen-baseline remedy text; skips made true; lazy baseline read; all checks OK; mutation and skip-path runs listed)
+dispatch: reviewer opus — re-review r2 (resume)
+agent: reviewer aa775351c71a2503c round 2
