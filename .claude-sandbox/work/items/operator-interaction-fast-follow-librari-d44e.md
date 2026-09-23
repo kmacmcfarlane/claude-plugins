@@ -2,12 +2,13 @@
 id: operator-interaction-fast-follow-librari-d44e
 title: "operator-interaction fast-follow: librarian-mode renders its decisions per the decisions skill"
 type: feature
-status: blocked
+status: doing
 priority: 0
 deps:
   - dev-flow-a-decision-presentation-skill-d-7113
 parent: checkpoint-around-continuation-how-agent-d3ee
-blocked: operator-interaction-v1-the-plugin-its-d-9f98
+owner: Kyle-McFarlane@bf9f9839222c
+claimed: 2026-09-23T07:55Z
 created: 2026-09-23
 updated: 2026-09-23
 refs:
@@ -21,3 +22,11 @@ Operator 2026-09-23: 'I'd like to see this wired into librarian-mode as a fast f
 - next: —
 - blocked: —
 - learned: —
+
+## Notes
+- 2026-09-23 claimed by Kyle-McFarlane@bf9f9839222c
+
+note: started in parallel with 9f98's review to meet the operator's morning deadline; merges after 9f98 lands (merge-tree checked at land)
+target: full operator-interaction-fast-follow-librari-d44e /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude/worktrees/operator-interaction-fast-follow-librari-d44e
+dispatch: implementer opus (fork of the librarian, effort xhigh) — doctrine: dev-flow skill text + soft-dependency declaration (README row, plugin.json, marketplace.json); full mode (investigate then implement)
+agent: implementer adda2a62cd119c07a round 1
