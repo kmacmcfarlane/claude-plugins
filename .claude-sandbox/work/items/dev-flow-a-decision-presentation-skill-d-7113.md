@@ -95,3 +95,15 @@ agent: research-lane w7 ad9380480045bac87, w8 a97b7ee4c7fdaff97, w9 afe3daea0853
   - Their fast pass will refuse to batch Type 1 decisions, which matches the operator's "addressed individually".
   - A floor-conforming card is assumed; a malformed card is reported back to the raising agent.
   - Asks: (1) define what wakes a deferred decision — they suggest an event, not a clock; w9 researches time vs event; (2) their dc3 kinds (decision line, grooming, blocked naming the operator, registry waiting, parked AskUserQuestion or plan approval) are available as a second corpus for decomposing "kind"; use them in the r2 synthesis.
+- 2026-09-23 operator-attention counts, both estates, measured 2026-09-23. Aggregates only. For the r2 synthesis.
+  - Pending decisions by channel, counting open items only:
+    - unanswered decision lines: personal 18 across 8 items, sussex 11 across 8 items (29 in all);
+    - blocked items: 8 personal, 2 sussex;
+    - sessions the registry marks waiting: 2 of 62;
+    - parked AskUserQuestion: 0 (last measured by dc3).
+  - Open items: 231 personal, 25 sussex.
+  - Cautions:
+    - Without the open-item filter, the unanswered count is 60, not 29. Closed items carry historical decision lines in an old answer format, so a count that skips the filter overstates the backlog about twofold.
+    - Sussex holds a third of the backlog from an eighth of the open items.
+  - The channel predicts volume and possibly urgency; the kind must come from the card, stated by the raising agent.
+  - They withdrew their push for event-only wake. If time-based wake is supported, it should still record the events since the deferral, so the re-ask can say what changed.
