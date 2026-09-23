@@ -15,8 +15,8 @@ refs:
 9ec9 reviewer, 2026-09-22: tests/test_rehydrate.py:286-293 builds its expected output from git show main:…, so any worktree cut before a context-guard change lands on main fails 30 tests though it touches no context-guard file; every parallel dev-cycle review hits it. Acceptance: compare against the merge-base of HEAD and main (or HEAD's own parent tree for the legacy hooks), so the test judges this branch's change only; test that it stays green in a worktree behind main.
 
 ## Handoff
-- doing: implementer afaf2a529d1566917 round 1 in flight (no return yet) in .claude/worktrees/context-guard-tests-testlegacyarmmatches-ba8f
-- next: on return: dispatch an opus reviewer (common-review brief; check the baseline choice merge-base vs pinned, and that a real legacy-arm regression still fails)
+- doing: implementer DONE at 42ecd0d, not yet reviewed
+- next: after Rehydrate: dispatch an opus reviewer (common-review brief): judge the pinned-baseline choice vs merge-base, that a real legacy-arm regression still fails, the shallow/tarball skips, and whether the notice tests should run without git
 - blocked: —
 - learned: —
 
@@ -26,3 +26,4 @@ refs:
 target: full context-guard-tests-testlegacyarmmatches-ba8f /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude/worktrees/context-guard-tests-testlegacyarmmatches-ba8f
 dispatch: implementer opus — executable logic (context-guard tests)
 agent: implementer afaf2a529d1566917 round 1
+return: implementer DONE 42ecd0d (pinned baseline e8ff7fd = 92c9738^1, the last pre-store tree; skips on no git / shallow; class renamed TestLegacyArmMatchesPreStore)
