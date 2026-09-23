@@ -62,3 +62,9 @@ agent: research-verifier a462f7eb0fb761e8a
 return: research run DONE /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude-sandbox/investigations/7113-decisions/research/2026-09-23-decision-attributes/01-synthesis.md (7 lanes, 2 rounds, verifier 9/12 supported, gate PASS); review with the operator next
 
 - 2026-09-23 agents - librarian: findings filed as agents knowledge-hold-the-decision-raising-find-2613, which is blocked on agents 39f1 (the operator's scope conversation). Their caution for the design: a raise-time check does not help if decisions are never read (they have four open decisions, nothing in flight, and the operator away). Make a decision's AGE and BLOCKING COST visible, not just its content. Carry this into the plan: age is a collector field, and blocking cost is the floor's "what it blocks" line.
+- 2026-09-23 operator-attention (commit 38c50d4; their decision-collector/02_format-research-inputs.md; R46 carries the floor and the event-flag rule):
+  - They will supply age, repo, session, the context-distance events and staleness.
+  - They are adding a per-decision last-touched record now, since it cannot be backfilled.
+  - Staleness stays "unknown" unless our format defines the condition as a checkable predicate, not prose.
+  - Two conflicts for the operator review: (R6) defaults — their OD-13 never auto-applies, while our synthesis allows the fast tier (two-way and narrow); (R7) confidence — they keep calibrated confidence as an internal ranking input and never display a number. They ask whether our format forbids the number end to end.
+  - Refinement: the fast pass selects, but the answer screen still shows the floor.
