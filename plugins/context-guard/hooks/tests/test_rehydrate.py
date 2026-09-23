@@ -1,4 +1,4 @@
-import json, os, subprocess, sys, tempfile, time, unittest
+import json, os, shutil, subprocess, sys, tempfile, time, unittest
 
 HOOKS = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, HOOKS)
@@ -358,13 +358,33 @@ class TestModeListAgrees(unittest.TestCase):
                       self.read("skills/checkpoint/references/handoff-format.md"))
 
 
-class TestLegacyArmMatchesMain(unittest.TestCase):
+class TestLegacyArmMatchesPreStore(unittest.TestCase):
     """8cc2-F3b-1's regression guard (06 § Acceptance scoping): for an
     UNMIGRATED repo — a repo HANDOFF.md and no store manifest anywhere — the
-    injected block is byte-for-byte what `main` produces, for every source and
-    every ownership arm, after removing the single legacy_notice line. The
-    notice is asserted on its own, below. Skipped where the `main` ref or git
-    is unavailable.
+    injected block is byte-for-byte what the hooks produced BEFORE the
+    per-session store (BASELINE), for every source and every ownership arm,
+    after removing the single legacy_notice line. The notice is asserted on
+    its own, below. The class skips with no git on PATH; the tests that
+    read BASELINE skip, with the reason, outside a git checkout (a tarball
+    install) or where the BASELINE commit is absent (a shallow clone).
+
+    The baseline is a pinned commit (ba8f), not `main` and not the
+    merge-base with main. `main` moves: every worktree cut before a
+    context-guard change lands on main went red here though it touched no
+    context-guard file. The merge-base would stop that but guards nothing
+    once it matters most: after the change lands on main, the merge-base IS
+    the change, so the post-merge re-run compares the tree with itself; and
+    it depends on a local `main` ref that a CI checkout or a tarball may not
+    have. The pinned tree is main's side of the F3b merge (92c9738^1), the
+    hooks as they were before the store.
+
+    The pre-store behaviour is frozen, and each side runs its own tree's code
+    - rehydrate.py and the ledger.py that seeds the ledger it reads - so a
+    change outside the legacy arm (the ledger's file layout, say) moves both
+    sides together. BASELINE is never re-pinned: a later commit's hooks are
+    not the pre-store behaviour, and test_the_baseline_tree_predates_the_store
+    refuses one. A change that must alter what an unmigrated repo is injected
+    replaces this guard under a recorded decision, in the same commit.
 
     The notice is paid for out of the injection's own 9,000-char budget (it is
     computed before the tiers and subtracted from the trim budget), so for a
@@ -380,6 +400,9 @@ class TestLegacyArmMatchesMain(unittest.TestCase):
     pins both regimes."""
 
     REL = "plugins/context-guard/hooks"
+    # e8ff7fd, "chore: work-item store - F3b-1 CLEAR": main just before the
+    # per-session manifest store merged (92c9738^1). A full sha, never a ref.
+    BASELINE = "e8ff7fde87a83e87a85e7507d2269c2f0b506585"
     SOURCES = ("startup", "resume", "compact", "clear", "fork")
     # the three ownership arms the legacy path still decides, and the two
     # modes that take different tiers
@@ -387,6 +410,8 @@ class TestLegacyArmMatchesMain(unittest.TestCase):
     MODES = ("continue", "landed")
 
     def setUp(self):
+        if shutil.which("git") is None:
+            raise unittest.SkipTest("no git on PATH: the fixture repo needs it")
         self.tmp = tempfile.TemporaryDirectory()
         self.repo = self.tmp.name
         for c in (["init", "-q"], ["commit", "-q", "--allow-empty", "-m", "x"]):
@@ -399,7 +424,6 @@ class TestLegacyArmMatchesMain(unittest.TestCase):
         with open(self.tp, "w") as fh:
             fh.write(json.dumps({"type": "user", "sessionId": "parent-sid"}) + "\n")
         self.old_env = os.environ.get("CLAUDE_CONFIG_DIR")
-        self.base = self.checkout_main()
 
     def tearDown(self):
         self.tmp.cleanup()
@@ -422,7 +446,9 @@ class TestLegacyArmMatchesMain(unittest.TestCase):
         with open(os.path.join(self.repo, "HANDOFF.md"), "w") as fh:
             fh.write(text)
 
-    def git(self, *args):
+    def git(self, *args, why=None):
+        """`git args` at the top of the checkout these hooks sit in; skips the
+        test, saying `why` (or git's own error), when it fails."""
         # From the repo TOP: `<rev>:<path>` is read relative to the current
         # prefix in a subdirectory, and would silently resolve to nothing.
         top = subprocess.run(["git", "-C", HOOKS, "rev-parse", "--show-toplevel"],
@@ -432,34 +458,50 @@ class TestLegacyArmMatchesMain(unittest.TestCase):
         p = subprocess.run(["git", "-C", top.stdout.strip()] + list(args),
                            capture_output=True, text=True)
         if p.returncode != 0:
-            raise unittest.SkipTest(f"git {args[0]} unavailable here: {p.stderr.strip()}")
+            raise unittest.SkipTest(why or f"git {args[0]} unavailable here: "
+                                           f"{p.stderr.strip()}")
         return p.stdout
 
-    def checkout_main(self):
-        """main's copy of the hooks, in a directory of its own."""
+    def baseline(self):
+        """BASELINE's copy of the hooks, in a directory of its own - taken
+        only by the tests that compare against it, so the rest run without."""
+        if getattr(self, "_base", None):
+            return self._base
+        self.git("cat-file", "-e", f"{self.BASELINE}^{{commit}}",
+                 why=f"baseline commit {self.BASELINE[:7]} is not in the repository "
+                     "around these hooks (a shallow clone, or unpacked inside "
+                     "another repository)")
         d = tempfile.TemporaryDirectory()
         self.addCleanup(d.cleanup)
-        for name in self.git("ls-tree", "--name-only", f"main:{self.REL}").split():
+        rev = f"{self.BASELINE}:{self.REL}"
+        for name in self.git("ls-tree", "--name-only", rev).split():
             if name.endswith(".py"):
                 with open(os.path.join(d.name, name), "w") as fh:
-                    fh.write(self.git("show", f"main:{self.REL}/{name}"))
+                    fh.write(self.git("show", f"{rev}/{name}"))
         if not os.path.exists(os.path.join(d.name, "rehydrate.py")):
-            raise unittest.SkipTest("no rehydrate.py on main")
+            raise unittest.SkipTest(f"no rehydrate.py at {self.BASELINE[:7]}")
+        self._base = d.name
         return d.name
 
     def inject(self, hooks, source, cfg):
         """(additionalContext, systemMessage) from `hooks`' rehydrate.py, with
-        its own fresh config dir so both sides see the same empty state."""
+        its own fresh config dir so both sides see the same empty state. The
+        ledger it reads is seeded by `hooks`' own ledger.py, so each side
+        reads a ledger its own code wrote."""
         os.environ["CLAUDE_CONFIG_DIR"] = cfg
-        import ledger
-        ledger.append("s", "R", "rejected the obvious fix")
+        env = dict(os.environ, CLAUDE_CONFIG_DIR=cfg)
+        seed = subprocess.run(
+            [sys.executable, "-c",
+             "import sys; sys.path.insert(0, sys.argv[1]); import ledger; "
+             "ledger.append('s', 'R', 'rejected the obvious fix')", hooks],
+            capture_output=True, text=True, env=env, timeout=30)
+        self.assertEqual((seed.returncode, seed.stderr), (0, ""), "ledger seed")
         payload = {"session_id": "s", "source": source, "cwd": self.repo}
         if source == "fork":
             payload["transcript_path"] = self.tp
         p = subprocess.run([sys.executable, os.path.join(hooks, "rehydrate.py")],
                            input=json.dumps(payload), capture_output=True,
-                           text=True, env=dict(os.environ, CLAUDE_CONFIG_DIR=cfg),
-                           timeout=30)
+                           text=True, env=env, timeout=30)
         self.assertEqual((p.returncode, p.stderr), (0, ""), source)
         out = json.loads(p.stdout) if p.stdout.strip() else {}
         return ((out.get("hookSpecificOutput") or {}).get("additionalContext", ""),
@@ -479,7 +521,21 @@ class TestLegacyArmMatchesMain(unittest.TestCase):
         """`text` without its one legacy_notice line, whatever its wording."""
         return self.NOTICE_LINE.sub("", text, count=1)
 
-    def test_every_source_and_arm_matches_main_once_the_notice_is_removed(self):
+    def test_the_baseline_is_an_immutable_sha(self):
+        """A full sha, never a ref that moves (main) or a short one that can
+        grow ambiguous."""
+        self.assertRegex(self.BASELINE, r"^[0-9a-f]{40}$")
+
+    def test_the_baseline_tree_predates_the_store(self):
+        """BASELINE's hooks are the pre-store ones: no legacy_notice, no store
+        path. A re-pin to any later commit fails here."""
+        base = self.baseline()
+        with open(os.path.join(base, "rehydrate.py")) as fh:
+            self.assertNotIn("def legacy_notice", fh.read())
+        self.assertFalse(os.path.exists(os.path.join(base, "handoff_path.py")))
+
+    def test_every_source_and_arm_matches_the_baseline_once_the_notice_is_removed(self):
+        base = self.baseline()
         for owner in self.OWNERS:
             for mode in self.MODES:
                 self.manifest(owner, mode)
@@ -487,13 +543,13 @@ class TestLegacyArmMatchesMain(unittest.TestCase):
                     with self.subTest(owner=owner, mode=mode, source=source), \
                             tempfile.TemporaryDirectory() as a, \
                             tempfile.TemporaryDirectory() as b:
-                        was, wmsg = self.inject(self.base, source, a)
+                        was, wmsg = self.inject(base, source, a)
                         now, nmsg = self.inject(HOOKS, source, b)
                         self.assertIn("\n\n" + self.notice(b), now)
-                        # Stripped from both sides, so the guard still reads
-                        # "the legacy arm behaves as main's" once this change
-                        # IS main - by its shape, not its text, so a notice
-                        # reworded on one side (F3b-4's) is still one line.
+                        # Stripped by its shape, not its text, so a
+                        # reworded notice (F3b-4's) is still one line. The
+                        # baseline predates the notice; stripping it there
+                        # is a no-op.
                         self.assertEqual(self.strip_notice(now), self.strip_notice(was))
                         self.assertEqual(nmsg, wmsg)
                         self.assertTrue(was)
@@ -537,19 +593,30 @@ class TestLegacyArmMatchesMain(unittest.TestCase):
         with open(os.path.join(self.repo, "HANDOFF.md"), "w") as fh:
             fh.write(text)
 
-    def test_a_trimming_manifest_pays_for_the_notice(self):
-        # Ordinary regime: the notice's room comes off the unprotected
-        # sections; every protected one is whole, and main agrees.
+    def test_a_trimming_manifest_matches_the_baseline_once_the_notice_is_removed(self):
+        # Ordinary regime, against the pre-store hooks: the notice's room
+        # comes off the unprotected sections, and the rest is the baseline's.
+        base = self.baseline()
         self.trimming()
         with tempfile.TemporaryDirectory() as cfg, \
                 tempfile.TemporaryDirectory() as ref:
             first, _ = self.inject(HOOKS, "compact", cfg)
+            was, _ = self.inject(base, "compact", ref)
+            n = self.notice(cfg)
+        self.assertIn(n, first)
+        self.assertIn("(trimmed", was)
+        self.assertEqual(self.strip_notice(first), self.strip_notice(was))
+
+    def test_a_trimming_manifest_pays_for_the_notice(self):
+        # Ordinary regime: the notice's room comes off the unprotected
+        # sections; every protected one is whole.
+        self.trimming()
+        with tempfile.TemporaryDirectory() as cfg:
+            first, _ = self.inject(HOOKS, "compact", cfg)
             again, _ = self.inject(HOOKS, "compact", cfg)
-            was, _ = self.inject(self.base, "compact", ref)
             n = self.notice(cfg)
         self.assertIn(n, first)
         self.assertNotIn(n, again)
-        self.assertEqual(self.strip_notice(first), self.strip_notice(was))
         for c in (first, again):
             self.assertLessEqual(len(c), 9000)
             self.assertIn("(trimmed", c)
