@@ -15,8 +15,8 @@ refs:
 Relayed 2026-09-22 (agents decision 0007, 62b8a9b, decisions/0007-correct-0004-compaction-facts.md): (1) the 1.4% figure came from a MANUAL /compact; across four compact_boundary records the summary stays in a ~14-18K band, so the percentage falls with depth by arithmetic — it is not auto-compact's survival rate; (2) PreCompact re-defers on every automatic attempt until a checkpoint or HARD (precompact_gate.py:46-60), not one-shot. Acceptance: checkpoint SKILL.md and references/design-rationale.md (and any other context-guard text) state the corrected facts with the 0007 pointer; 0d6b (DUE ladder) reads them first.
 
 ## Handoff
-- doing: review r2 in flight at 95cba7f: reviewer a0a81a13103b14bc3 round 2
-- next: on CLEAR: land; on NEEDS_CHANGES: resume implementer a94723f9f73124a7c
+- doing: CLEAR round 2 at 95cba7f (reviewer a0a81a13103b14bc3 done)
+- next: land: merge-tree, merge --no-ff worktree-context-guard-correct-the-1-4-compaction-8519, context-guard check on main, clean up, wi done, push
 - blocked: —
 - learned: —
 
@@ -40,3 +40,4 @@ agent: implementer a94723f9f73124a7c round 2
 return: implementer DONE 95cba7f
 dispatch: reviewer opus — review r2 (resume)
 agent: reviewer a0a81a13103b14bc3 round 2
+verdict: CLEAR round 2 at 95cba7f — land after Rehydrate (post-checkpoint gap: no merge)
