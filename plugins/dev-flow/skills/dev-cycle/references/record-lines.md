@@ -116,7 +116,16 @@ interrupted run up again; a line that is missing reads there as not recorded:
   tagged decision, its tag instead: `answer: dispatch-permission — <reply>`. A caller's
   numbered pair — librarian-mode's `decision N: …` and `answer N: <reply>`, matched by
   `N` — is the same pair and is read the same way; its `answer N:` carries no tag, the
-  number already pairing it. A `decision:` with no matching `answer:` is **pending**
+  number already pairing it. Under a caller whose session loads the
+  `operator-interaction:decisions` skill, a natural-language reply is recorded with the
+  echo's reading, `answer N: <reply> (read as: <reading>)`.
+- `wake N: <time | event | next Report>` — a caller's deferral ("decide later") of
+  `decision N:`, written when the operator defers it (librarian-mode's
+  `references/decisions.md`). It is not an answer: `decision N:` stays pending, and `wi
+  needs-input` still lists it. A decision deferred again gets another `wake N:`; **the last
+  `wake N:` in the item wins**, found by `grep -n '^wake N:' <item>` taking the last hit.
+  The Idle turn's Groom row shows it, and the decision is put to the operator again when
+  it fires. A `decision:` with no matching `answer:` is **pending**
   (`bindings.md` § Decisions says what a run does with one), and an answered one is never
   raised again while its answer is in force (the same section).
 - `spent:` — written and read by `resume.md` (§ The GATE), and by nothing else.
