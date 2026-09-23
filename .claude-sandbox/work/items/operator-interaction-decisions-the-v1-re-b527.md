@@ -18,3 +18,6 @@ refs:
 - next: —
 - blocked: —
 - learned: —
+decision 71: operator-interaction catalog aim — (a) keep "…your agents to put what they need from you in a form you can act on where it appears" [recommended: one clause, and it leaves room for more interaction skills than decisions]; (b) narrow it to decisions only; (z) decide later
+decision 72: skill name `decisions` (provisional in README name status) — (a) confirm `decisions` [recommended: plain, and cheap to rename while unshipped]; (b) rename (e.g. `decide`, `operator-decisions`); (z) decide later
+decision 73: the "(shown before)" marker narrows plan R-14 for the round after an expand (already-seen cards are not re-rendered) — (a) keep [recommended: less repetition in long lists]; (b) re-render every card each round; (z) decide later
