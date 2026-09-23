@@ -2,12 +2,11 @@
 id: context-guard-tests-testlegacyarmmatches-ba8f
 title: "context-guard tests: TestLegacyArmMatchesMain compares against the moving main ref, false red in any older worktree"
 type: bug
-status: doing
+status: done
 priority: 2
-owner: Kyle-McFarlane@bf9f9839222c
-claimed: 2026-09-22T23:40Z
 created: 2026-09-22
 updated: 2026-09-23
+closed: 2026-09-23
 refs:
   - 9ec9 review r2
 ---
@@ -35,3 +34,6 @@ agent: implementer afaf2a529d1566917 round 2
 return: implementer DONE 98ccb79 (each side seeds its own ledger; frozen-baseline remedy text; skips made true; lazy baseline read; all checks OK; mutation and skip-path runs listed)
 dispatch: reviewer opus — re-review r2 (resume)
 agent: reviewer aa775351c71a2503c round 2
+verdict: CLEAR round 2 at 98ccb79 (1 nit: docstring 380-382 "moves both sides together" wording, left as is)
+landed: 01d6b5a (merge of context-guard-tests-testlegacyarmmatches-ba8f)
+- 2026-09-23 done: landed 01d6b5a
