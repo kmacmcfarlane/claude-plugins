@@ -107,3 +107,6 @@ agent: research-lane w7 ad9380480045bac87, w8 a97b7ee4c7fdaff97, w9 afe3daea0853
     - Sussex holds a third of the backlog from an eighth of the open items.
   - The channel predicts volume and possibly urgency; the kind must come from the card, stated by the raising agent.
   - They withdrew their push for event-only wake. If time-based wake is supported, it should still record the events since the deferral, so the re-ask can say what changed.
+dispatch: research-verifier haiku — verify r2, sample 12
+agent: research-verifier a3447e88ef8532253 (r2)
+return: refine r2 DONE_WITH_CONCERNS /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude-sandbox/investigations/7113-decisions/research/2026-09-23-decision-attributes-r2/01-synthesis.md (5 lanes, verifier gate CONCERNS: grounding/S2 at 1 from PDF tooling); present cards to the operator next
