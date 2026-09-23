@@ -27,3 +27,5 @@ target: full context-guard-tests-testlegacyarmmatches-ba8f /home/rt/work/src/git
 dispatch: implementer opus — executable logic (context-guard tests)
 agent: implementer afaf2a529d1566917 round 1
 return: implementer DONE 42ecd0d (pinned baseline e8ff7fd = 92c9738^1, the last pre-store tree; skips on no git / shallow; class renamed TestLegacyArmMatchesPreStore)
+dispatch: reviewer opus — implementer tier opus (executable logic: context-guard tests)
+agent: reviewer aa775351c71a2503c round 1

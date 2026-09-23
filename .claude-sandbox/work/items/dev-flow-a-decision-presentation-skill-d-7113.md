@@ -151,3 +151,7 @@ agent: planner a3df2feba2917125b round 2
   - "If you have left over work, add it into a work-item for me to groom later, but I want this tomorrow";
   - "Once the new plugin lands and the librarian wire-up is commited and pushed too, broadcast instructions to the librarian agents to prompt me to do the marketplace update and/or /reload-plugins";
   - "deferred items look good, make sure there's work items for them".
+return: planner DONE_WITH_CONCERNS /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude-sandbox/investigations/7113-decisions/01_review-round-1.md (all 21 findings taken under the librarian's rulings; provisional thresholds: 4h deadline, later-without-when default; added: ok N-M skips no-recommendation items; catalog aim broadened; render pass adds a build step)
+baseline: a0bdec066df2 /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude-sandbox/investigations/7113-decisions/00_plan.md;2a74318c871c /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude-sandbox/investigations/7113-decisions/01_review-round-1.md;
+dispatch: reviewer opus — plan re-review r2 (resume)
+agent: reviewer ab28a83ac97eeee18 round 2
