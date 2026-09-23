@@ -34,3 +34,4 @@ agent: render a9f18c8cfe85cc4d5 round 1
 return: render DONE: 8 renders in test-round/renders/ (skill gaps 4,1,3,1,1,1,1,3). Recurring: "cold raises the level" vs gallery's re-show example; block template for wide+cold vs the gallery's abbreviated rendering.
 dispatch: reviewer opus — implementer tier opus (doctrine/marketplace shape), with render grading per plan 02
 agent: reviewer ab2eda48c4256a2c5 round 1
+- 2026-09-23T08:10Z push works again (the agent came back); main is pushed through ba8f.
