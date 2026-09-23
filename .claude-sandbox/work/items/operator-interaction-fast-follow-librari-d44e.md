@@ -39,3 +39,4 @@ agent: implementer adda2a62cd119c07a round 2
 return: implementer DONE 329ff7d (all 3 medium, 5 low and the nit taken; record-lines.md registers wake N:; README fallback wording fixed)
 dispatch: reviewer opus — re-review r2 (resume)
 agent: reviewer a6ae517fc4495dcda round 2
+verdict: CLEAR round 2 at 329ff7d (4 low, 1 nit left: a deferred ⚠ decision shown as a block vs the list-line-until-wake rule; a misplaced pending sentence in record-lines.md; the cross-skill pointer form; store-line letters must match the card; the "item" nit). Lands after 9f98; re-check decisions.md against the final skill first.
