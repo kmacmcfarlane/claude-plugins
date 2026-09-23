@@ -30,3 +30,4 @@ agent: implementer ab50b7220d7750d78 round 1
 return: implementer DONE 3a36025 (all checks OK; claude plugin validate passes with no-version warnings only; the lint is clean; SKILL.md is 1835 words; the skill names no other plugin; open questions: catalog aim wording, and "Report after acting" capitalization)
 dispatch: render sonnet — the orchestrator's render pass per plan 02: a fresh agent with only the skill directory renders inputs 01-08
 agent: render a9f18c8cfe85cc4d5 round 1
+- 2026-09-23T07:56Z PUSH BLOCKED: git@github.com refuses publickey; SSH_AUTH_SOCK is unset in this container (the forwarded agent went away, around when the operator went to bed). The marketplace source is git, so the operator cannot update until main is pushed. Landing continues on local main; push and broadcast wait for the operator to restore the agent. No other credential used.
