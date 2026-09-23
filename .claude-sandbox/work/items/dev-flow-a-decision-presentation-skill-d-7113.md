@@ -137,3 +137,7 @@ return: refine r2 DONE_WITH_CONCERNS /home/rt/work/src/github.com/kmacmcfarlane/
 - Operator: "Make the plan for me to review".
 dispatch: planner opus — plan mode (spike 7113); a fork of the librarian, because it must carry ~30 operator rulings from this conversation; writes 00_plan in the 7113-decisions series
 agent: planner a3df2feba2917125b round 1
+return: planner DONE_WITH_CONCERNS /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude-sandbox/investigations/7113-decisions/00_plan.md (247 lines; P1-P3 for the operator; deviations: hint on every decision message, P3 rules added provisional, gallery avoids the frozen-name example)
+baseline: a0bdec066df2 /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude-sandbox/investigations/7113-decisions/00_plan.md;
+dispatch: reviewer opus — plan-review variant, plan mode floor; runs in parallel with the operator's own review of P1-P3
+agent: reviewer ab28a83ac97eeee18 round 1 (plan review)
