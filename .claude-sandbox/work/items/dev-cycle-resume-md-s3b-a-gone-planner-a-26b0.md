@@ -2,12 +2,11 @@
 id: dev-cycle-resume-md-s3b-a-gone-planner-a-26b0
 title: "dev-cycle resume.md S3b: a gone planner at a fix round gets no brief pointer"
 type: chore
-status: doing
+status: done
 priority: 4
-owner: Kyle-McFarlane@bf9f9839222c
-claimed: 2026-09-23T00:02Z
 created: 2026-09-22
 updated: 2026-09-23
+closed: 2026-09-23
 refs:
   - 6571 review r1
 ---
@@ -30,3 +29,7 @@ return: implementer DONE 40ce97a
 changed: dev-cycle references/resume.md (S3b)
 dispatch: reviewer opus — rule 4 floor (impl sonnet)
 agent: reviewer a07089595833ebc51 round 1
+verdict: CLEAR round 1 at 40ce97a
+landed: 5b975e8
+- 2026-09-23 done: 5b975e8
+pointer low applied 06d548b (librarian bypass)
