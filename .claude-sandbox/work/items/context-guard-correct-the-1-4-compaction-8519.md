@@ -26,3 +26,7 @@ Relayed 2026-09-22 (agents decision 0007, 62b8a9b, decisions/0007-correct-0004-c
 target: full context-guard-correct-the-1-4-compaction-8519 /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude/worktrees/context-guard-correct-the-1-4-compaction-8519
 dispatch: implementer sonnet — factual doc corrections, one plugin
 agent: implementer a94723f9f73124a7c round 1
+return: implementer DONE d3cb48e
+changed: checkpoint SKILL.md, references/{operator-playbook,design-rationale}.md
+dispatch: reviewer opus — rule 4 floor (impl sonnet)
+agent: reviewer a0a81a13103b14bc3 round 1

@@ -10,15 +10,15 @@ parent: librarian-work-unblocked-items-and-pre-i-1222
 owner: Kyle-McFarlane@bf9f9839222c
 claimed: 2026-09-22T23:40Z
 created: 2026-09-22
-updated: 2026-09-22
+updated: 2026-09-23
 ---
 
 idle-turn.md mode table (full/normal/conservative/stop), N from allowed rate ÷ per-agent rate ÷ active librarians, cap 6, floor 1 for P0; claims on dispatch; quiet mode away; self-wake ≤1 h; walkthrough. Opus (doctrine). Plan: .claude-sandbox/investigations/1222-unattended-librarian/00_initial.md § F2.
 
 ## Handoff
 - doing: —
-- next: —
-- blocked: —
+- next: on 68(a): planner writes 1222 serial 05 with the two rulings + the Esc low; close the plan; file F2a-F2d as children
+- blocked: awaiting decisions 68 (plan cap ruling), 69 (B1), 70 (B2)
 - learned: —
 - agents librarian 2026-09-22: the registry name-pattern divisor clashes with librarian-mode session-name.md:24-25 (read only your own registry file; never list the directory); prefer a self-written claim/heartbeat file with an expiry in the per-subscription store. Their policy series: agents .claude-sandbox/investigations/librarian-budget-policy/ (in progress) — fold its answer into a 01 serial before dispatching F2.
 - agents 8ad9 policy answer 2026-09-22 (reviewed CLEAR; operator ratification pending as agents decision 4; values are defaults), series agents .claude-sandbox/investigations/librarian-budget-policy/ (00-02):
@@ -57,3 +57,17 @@ return: planner DONE_WITH_CONCERNS /home/rt/work/src/github.com/kmacmcfarlane/cl
 baseline: f1aa0b775916 .claude-sandbox/investigations/1222-unattended-librarian/00_initial.md;1687d7eb5206 .claude-sandbox/investigations/1222-unattended-librarian/01_f2-modes-pool-heartbeat.md;fe767a12a5d6 .claude-sandbox/investigations/1222-unattended-librarian/02_review-round-1.md;0eba08865ae3 .claude-sandbox/investigations/1222-unattended-librarian/03_review-round-2.md;
 dispatch: reviewer opus — plan re-review r3 (resume); round 3 of the cap of 4
 agent: reviewer afb3f69db46fcf792 round 3
+verdict: NEEDS_CHANGES plan round 3 (1H 3M MUST-CHANGE, all local textual; 3 low) — /home/rt/.claude/tmp/claude-1000/-home-rt-work-src-github-com-kmacmcfarlane-claude-plugins/e9bb00fc-c89f-4c8e-a7ca-b4c1e9ccbc73/scratchpad/c79e/plan-review-r3.md
+dispatch: planner opus — plan fix round 3 (resume), serial 04; review round 4 is the last under the cap
+agent: planner a284b6b14c97d6192 round 4
+return: planner DONE_WITH_CONCERNS /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude-sandbox/investigations/1222-unattended-librarian/04_review-round-3.md (4 must-change fixed per Pass, 2 declared extensions; 3 lows taken)
+baseline: f1aa0b775916 .claude-sandbox/investigations/1222-unattended-librarian/00_initial.md;1687d7eb5206 .claude-sandbox/investigations/1222-unattended-librarian/01_f2-modes-pool-heartbeat.md;fe767a12a5d6 .claude-sandbox/investigations/1222-unattended-librarian/02_review-round-1.md;0eba08865ae3 .claude-sandbox/investigations/1222-unattended-librarian/03_review-round-2.md;f80f8166014f .claude-sandbox/investigations/1222-unattended-librarian/04_review-round-3.md;
+dispatch: reviewer opus — plan re-review r4 (resume), the LAST under the cap
+agent: reviewer afb3f69db46fcf792 round 4
+verdict: NEEDS_CHANGES plan round 4 at 04 f80f8166014f — the CAP (4 plan-review rounds) reached. Round-3 fixes verified; two MUST-CHANGE left, each a one-sentence edit to 04 § A.1 and § B.1 (reviewer: adoptable verbatim as the operator's ruling, no re-plan):
+- [medium] 04:47-57 — a checkpoint crossing an all-dispatch hold deadlocks dispatch: Rehydrate skips trigger 1 under the hold, so checkpoint_pending stays; after the hold lifts, trigger 2 and every slot take refuse "checkpoint" until a later Rehydrate. Pass: every Rehydrate clears checkpoint_pending and the due time; only the ARM is skipped under the hold; test "checkpoint, compaction under an all-dispatch hold, then lift: re-arms and takes admit".
+- [medium] 04:117,122-128 — a planned item's implementer dispatch after its planner slot is a "tier change" and bypasses stop, the two-writer hold and the checkpoint (same/down tier: no checks; up: only 1, 2, 9). Pass: the implementer's first dispatch after a planner runs the full order 1-10 with r_old (floor rules per B.1); the reduced check only for fix-round rises; test "planner slot held, raw stop, implementer take refused stop".
+- [low] 04:87-89 — Esc is re-armed by trigger 2; say in heartbeat.md a durable stop is a hold, not Esc.
+decision 68: c79e plan hit the 4-round review cap with two one-sentence must-change fixes left (a checkpoint crossing a hold deadlocks dispatch; a planned item's implementer dispatch skips stop/hold/checkpoint) — (a) rule both fixes in as the reviewer's Pass text says, the planner writes serial 05 with only those two edits plus the low, and the plan closes with the fixes recorded as operator rulings (no fifth review) [recommended]; (b) allow one more review round after 05; (c) park F2 as is.
+decision 69: B1 (gates F2d only) — how to settle whether the librarian can arm /loop itself, whether a dynamic loop survives compaction, whether a second ScheduleWakeup replaces the pending one, whether arming prompts, and whether the arm runs at once — (a) run the five-step probe in the librarian's own session before F2d, the operator doing the /compact step [recommended]; (b) ship F2d with the operator-typed /loop line as primary; (c) defer F2d.
+decision 70: B2 (gates F2c's switch-on sentence) — when F2c lands, before the agents repo ratifies its budget policy, is the estate-wide pool enforced? — (a) enforce, with the sprint grant available for present bursts like today's [recommended]; (b) report-only until agents ratifies; (c) enforce only when away. Note: at today's burn the pool allows the P0 floor plus one sonnet agent while you are present; this session ran 3-7 under your "run to the reserve", which the plan records as a sprint grant.

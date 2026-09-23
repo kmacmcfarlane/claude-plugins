@@ -38,3 +38,7 @@ findings:
 - [low] :57-70 ask-before-commit vs "under an orchestrator never asked" — one clause on which wins; [low] :60 "the sandbox skill says" widens the SOP — say it follows the same rule.
 dispatch: implementer opus — fix round 1 (resume)
 agent: implementer a30cdb20435f3ddd1 round 2
+return: implementer DONE e430605
+changed: + plugins/dev-flow/.claude-plugin/plugin.json (sandbox soft, 1022 chars), README.md (dev-flow row + prose)
+dispatch: reviewer opus — review r2 (resume)
+agent: reviewer aab96e77dfa957a52 round 2
