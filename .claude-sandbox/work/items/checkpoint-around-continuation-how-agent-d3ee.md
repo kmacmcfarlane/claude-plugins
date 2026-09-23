@@ -17,3 +17,5 @@ Relayed 2026-09-23 by peer 'marketplace - librarian' at the operator's instructi
 - next: —
 - blocked: —
 - learned: —
+
+- 2026-09-23 relayed: replied ids to marketplace - librarian; summaries sent to agents - librarian and operator-attention requirements gathering and research (asked the latter to reconcile its decision-UI work). Held for the operator's interactive session before any dispatch.
