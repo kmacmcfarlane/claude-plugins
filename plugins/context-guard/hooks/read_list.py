@@ -27,38 +27,74 @@ KEY = "read_list"
 MAX_PATHS = 10
 MAX_LEN = 300
 _SECTION = re.compile(r"##[ \t]+Read in full[ \t]*", re.I)
+_HEADING = re.compile(r"##[ \t]")
 _FENCE = re.compile(r"[ \t]*(`{3,}|~{3,})(.*)")
 _BULLET = re.compile(r"^\s*(?:[-*+]|\d+[.)])\s+")
 _TICKED = re.compile(r"`([^`\n]+)`")
 _SUFFIX = re.compile(r"(?::\d+(?:-\d+)?|#L\d+(?:-L?\d+)?)$")
 
 
-def section_lines(text):
-    """The non-blank lines of the manifest body's first `## Read in full`
-    section outside a code fence, up to the next `## ` heading outside one.
+def _scan(text):
+    """(lines, hidden_at): the non-blank lines of the manifest body's first
+    `## Read in full` section outside a code fence, up to the next heading
+    outside one; and, when no such section was found because a Read-in-full
+    heading sits after a fence that never closes, the 1-based line number of
+    that fence's opener (else None). A heading is `##` then a space or tab.
     Fenced lines inside the section are skipped too (an example, not a list)."""
-    if not isinstance(text, str):
-        return []
-    out, fence, inside = [], None, False
-    for ln in text.splitlines():
+    out, fence, inside, found = [], None, False, False
+    opened = hidden = None
+    # Numbered by "\n" (an editor's line), split within each as splitlines
+    # does, so the lines themselves are what splitlines gives.
+    lines = ((n, ln) for n, raw in enumerate(text.split("\n"), 1)
+             for ln in (raw.splitlines() or [raw]))
+    for n, ln in lines:
         f = _FENCE.fullmatch(ln)
         if f:
             run, rest = f.groups()
             if fence is None:
-                fence = (run[0], len(run))
+                fence, opened, hidden = (run[0], len(run)), n, None
             elif run[0] == fence[0] and len(run) >= fence[1] and not rest.strip():
                 fence = None
             continue
         if fence is not None:
+            if not found and hidden is None and _SECTION.fullmatch(ln.rstrip()):
+                hidden = opened
             continue
-        if ln.startswith("## "):
+        if _HEADING.match(ln):
             if inside:
                 break
             inside = bool(_SECTION.fullmatch(ln.rstrip()))
+            found = found or inside
             continue
         if inside and ln.strip():
             out.append(ln)
-    return out
+    return out, (hidden if fence is not None and not found else None)
+
+
+def section_lines(text):
+    """The non-blank lines of the manifest body's first `## Read in full`
+    section outside a code fence, up to the next heading outside one (see
+    _scan)."""
+    if not isinstance(text, str):
+        return []
+    return _scan(text)[0]
+
+
+def fence_note(text):
+    """One line saying the Read-in-full section is hidden by an unclosed code
+    fence (so nothing was recorded and no reminder will follow), else "".
+    Never raises."""
+    try:
+        at = _scan(text)[1] if isinstance(text, str) else None
+    except Exception:
+        return ""
+    if at is None:
+        return ""
+    return ("[context-guard rehydration] This manifest's `## Read in full` "
+            f"section follows a code fence opened at line {at} that is never "
+            "closed, so its paths were not recorded and no reminder will "
+            "follow: read them yourself, and close the fence at the next "
+            "checkpoint.")
 
 
 def _candidate(line):

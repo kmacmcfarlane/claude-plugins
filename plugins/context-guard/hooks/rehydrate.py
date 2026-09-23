@@ -1297,8 +1297,12 @@ def main():
              "contradicts (the store wins):\n" + "\n".join(dead)) if dead else "",
             ("Manifest `items:` entries not checked against the store:\n"
              + "\n".join(notes)) if notes else "") if b)
+        # Numbered in the manifest file (before withhold_next), but only when
+        # the text the list is read from (after it) still hides the section.
+        rl_note = RL.fence_note(text)
         if moved:
             text = withhold_next(text, moved)
+            rl_note = rl_note if RL.fence_note(text) else ""
         holds = holds_block(text) if ours else ""
 
         if kind == "legacy" and not st.get("legacy_notice"):
@@ -1332,7 +1336,8 @@ def main():
             summary_used = bool(st.get("compact_summary"))
             parts += [header, preamble] + ([checks] if checks else []) + \
                 [trim(annotate_holds(text), CAP - len(header) - len(preamble) - len(checks)
-                      - len(notice or "") - LEDGER_BUDGET - 400)]
+                      - len(notice or "") - len(rl_note) - LEDGER_BUDGET - 400)] + \
+                ([rl_note] if rl_note else [])
             reads_new = RL.paths_from_manifest(text, top, cwd)
             sysmsg = (f"Rehydrated from {live}{f' ({why})' if why else ''} manifest "
                       f"({fm.get('written', '?')})"
