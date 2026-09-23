@@ -1,3 +1,23 @@
+---
+id: operator-interaction-decisions-v1-1-the-ed26
+title: "operator-interaction decisions v1.1: the fable review's findings (seen test, turn placement, stored card)"
+type: feature
+status: todo
+priority: 1
+parent: checkpoint-around-continuation-how-agent-d3ee
+created: 2026-09-23
+updated: 2026-09-23
+refs:
+  - fable review 4fb0
+---
+
+From the fable review (4fb0; .claude-sandbox/investigations/7113-decisions/reviews/fable-review.md). Three high findings: (1) 'shown before' is measured by rendering, not by the operator's presence, so the fix is 'seen' = the operator has taken a turn since; (2) in the terminal the turn ends with the team summary, not the decisions, and the most pressing decision sits furthest from the prompt; (3) the store line cannot rebuild the card, so the cold re-show is re-composed (pull 0134 forward: floor fields as indented lines plus raised-at). Mediums 4-10 and lows 11-15 are in the review. Scope waits on the operator's decisions 74-79.
+
+## Handoff
+- doing: —
+- next: —
+- blocked: —
+- learned: —
 decision 74: fable's three high findings — (a) fix now as v1.1: 'seen' = the operator took a turn since; the decisions block last in the turn; the store carries the card and a raised-at time (pulls 0134 forward) [recommended: these are the cold-operator case you complained about]; (b) fix only 1 and 2 now, 0134 later; (z) decide later
 decision 75: narrow the ⚠ read-back and the `you decide` refusal to answers that pick a one-way option (a reversible choice on a ⚠ decision, e.g. 'keep and alias', acts at once) — this narrows your P3 (2) ruling — (a) narrow [recommended: the friction lands only where it prevents harm]; (b) keep as ruled (every ⚠ choice is read back); (z) decide later
 decision 76: ⚠ decisions render as a full block on first show and on a cold re-show only, otherwise as a list line — (a) yes [recommended: stops every Report re-sending every ⚠ block]; (b) keep a block in every Report; (z) decide later
