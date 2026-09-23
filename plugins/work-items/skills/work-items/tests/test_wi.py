@@ -2745,6 +2745,84 @@ class TestLint(WiTestCase):
         self.assertIn("conflict markers", r.stdout)
 
 
+class TestUndecodableFile(WiTestCase):
+    """A non-UTF-8 file in items/ or archive/: strict readers exit with the
+    parse-error code naming the file, never a traceback; lint lists it and
+    keeps going; DepIndex's lenient archive read still skips it (cc39)."""
+    BAD = b"\xff\xfe\x00garbage\x80\n"
+
+    def setUp(self):
+        super().setUp()
+        self.write_item("good-1111")
+        self.write_item("doing-2222", status="doing")  # a lint finding
+
+    def place(self, where):
+        if where == "items":
+            path = self.root / "items" / "bin-bbbb.md"
+        else:
+            path = self.root / "archive" / "2026" / "bin-bbbb.md"
+            path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(self.BAD)
+        return path
+
+    def assert_clean(self, r, path):
+        self.assertNotIn("Traceback", r.stderr)
+        self.assertEqual(r.returncode, 3, r.stderr + r.stdout)
+        self.assertIn(str(path), r.stderr + r.stdout)
+
+    def test_strict_readers_name_the_file(self):
+        for where in ("items", "archive"):
+            with self.subTest(where=where):
+                path = self.place(where)
+                self.assert_clean(run(["claim", "good-1111"], self.root,
+                                      env={"WI_OWNER": "t@local"}), path)
+                self.assert_clean(run(["show", "good-1111"], self.root), path)
+                path.unlink()
+
+    def test_lint_lists_it_and_keeps_going(self):
+        for where in ("items", "archive"):
+            with self.subTest(where=where):
+                path = self.place(where)
+                r = run(["lint"], self.root)
+                self.assert_clean(r, path)
+                self.assertIn("undecodable", r.stdout)
+                self.assertIn("doing-2222", r.stdout)  # the rest still linted
+                path.unlink()
+
+    def test_ls_dep_prefix_names_the_file(self):
+        self.write_item("kid-3333", deps=["good-1111"])
+        path = self.place("archive")
+        r = run(["ls", "--dep", "good-11"], self.root)
+        self.assert_clean(r, path)
+
+    def test_valid_utf8_item_reads_and_writes_under_a_c_locale(self):
+        # item files are UTF-8 whatever the locale: a non-UTF-8 locale
+        # without UTF-8 mode must not misread (or fail to write) one
+        self.write_item("uni-4444", title="caf\u00e9 \u2014 na\u00efve")
+        env = {"PYTHONUTF8": "0", "PYTHONCOERCECLOCALE": "0", "LC_ALL": "C",
+               "LANG": "C", "PYTHONIOENCODING": "utf-8"}
+        r = run(["lint"], self.root, env=env)  # before claim: no findings
+        self.assertNotIn("uni-4444", r.stdout + r.stderr)
+        for cmd in (["show", "uni-4444"], ["claim", "uni-4444"],
+                    ["show", "uni-4444"]):
+            r = run(cmd, self.root, env=env)
+            self.assertEqual(r.returncode, 0, r.stderr)
+            self.assertNotIn("undecodable", r.stderr)
+        self.assertIn("caf\u00e9 \u2014 na\u00efve", r.stdout)
+        text = (self.root / "items" / "uni-4444.md").read_bytes()
+        self.assertIn("caf\u00e9 \u2014".encode("utf-8"), text)
+
+    def test_lenient_archive_read_unchanged(self):
+        self.place("archive")
+        self.write_item("kid-3333", deps=["ghost-9999"])  # forces the read
+        for cmd in (["next", "--plain"], ["ls", "--ready", "--plain"]):
+            r = run(cmd, self.root)
+            self.assertEqual(r.returncode, 0, r.stderr)
+            self.assertNotIn("Traceback", r.stderr)
+            self.assertIn("good-1111", r.stdout)
+            self.assertIn("bin-bbbb.md", r.stderr)
+
+
 class TestIds(WiTestCase):
     def test_same_title_twice_differs_and_slugs_are_clean(self):
         self.wi_ok(["add", "Fix the thing"])
