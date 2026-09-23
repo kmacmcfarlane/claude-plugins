@@ -17,3 +17,5 @@ Operator via agent-research peer, 2026-09-22: today each live session needs a ha
 - next: —
 - blocked: —
 - learned: —
+
+- 2026-09-23 agent-research - librarian relays the operator: "The bulk-reload plugins item doesn't belong to this repo probably? I think that might be better for claude-sandbox librarian? Coordinate that for me." Held unstarted; it will be closed as moved (--drop, naming the new id) when the claude-sandbox librarian replies with its id.
