@@ -130,3 +130,9 @@ return: refine r2 DONE_WITH_CONCERNS /home/rt/work/src/github.com/kmacmcfarlane/
   3. "the higher the stakes, the more info and the slower the decision should be made".
   4. The ⚠ marker was confusing.
   Asked: whether `more` raises the detail level, and alternative words for it; the recommended order of decisions (a field sort vs the agent's judgment); and research guidance on "decision fatigue" and tackling urgent and important decisions first.
+- Hint line (operator, verbatim): `Reply with a letter (72: a) or in your own words · later [when] · more [what] · dig into [what] · you decide · drop`. Reconciled with answer R12: `more [what]` becomes `tell me [what]`, and `expand` is added. The plan asks the operator to confirm.
+- answer R12: `tell me [what]` adds context or a specific fact to the decision (the semantic the operator liked for `more`). Add a separate `expand` response that raises that decision's detail level in the next round. The plan must give a strategy for showing decisions at different levels together.
+- answer R13: keep the ⚠ symbol, with a space after it; the label is "⚠ one-way". The operator found "one-way: answer alone" confusing compared with plain "one-way".
+- answer R14: (c) stakes first. "The human will give better decisions for grouped related items and it reduces context-switching in their mind" (so also group related items).
+- Operator: "Make the plan for me to review".
+dispatch: planner opus — plan mode (spike 7113); a fork of the librarian, because it must carry ~30 operator rulings from this conversation; writes 00_plan in the 7113-decisions series
