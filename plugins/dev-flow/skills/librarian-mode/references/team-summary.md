@@ -12,7 +12,7 @@ read it in Slack, Teams, an email or on a phone. Pointed at from SKILL.md § Rep
   final Report (`ending-the-session.md`); the summary follows that Report, after the
   push outcome and its `incoming:` lines, in the same closing message.
 - **`Push: none`, or no `origin` remote**: one summary per landing batch, right after its
-  Report, and its header line says the changes are local only (not pushed).
+  Report, and its header line names the range alongside `local only, not pushed`.
 - **No summary** for a rejected push that stops on a conflict, a red check or a
   decision (nothing reached origin; it goes under `decisions needed`) — a rejection
   merged through and pushed gets its summary, of this session's landings, not the
@@ -23,12 +23,9 @@ read it in Slack, Teams, an email or on a phone. Pointed at from SKILL.md § Rep
 
 Plain text, in this order:
 
-1. **A header line**: where it landed and the action needed to pick it up, in one line.
-   Name the repo, the push outcome, the commit range, and the pickup step (or say none is
-   needed). In a plugin marketplace, a change under `plugins/` reaches a user only after
-   `/plugin marketplace update <marketplace name>` (the `name` in
-   `.claude-plugin/marketplace.json`) and then `/reload-plugins`. `old` is `origin/main`
-   before the push and `new` is `origin/main` after it:
+1. **A two-line header.** The first line, bold, names the plugin, the marketplace or the
+   repo, what kind of update this is, the date, and the commit range in parentheses.
+   `old` is `origin/main` before the push and `new` is `origin/main` after it:
 
    ```bash
    OLD=$(git -C "$MAIN" rev-parse --short 'origin/main@{1}')
@@ -42,29 +39,34 @@ Plain text, in this order:
    `git -C "$MAIN" rev-parse --short origin/main` right before each push, again after
    any fetch and merge; the value noted before the push that succeeds is `old` (SKILL.md
    § Report).
+   The second line, plain text right under the first, is one short sentence naming the
+   pickup step, then one confirming review: in a plugin marketplace, "Update your
+   plugins to pick it up." — a change under `plugins/` reaches a user only after
+   `/plugin marketplace update <marketplace name>` (the `name` in
+   `.claude-plugin/marketplace.json`) and then `/reload-plugins`, which is what that
+   sentence stands for — followed by "Every change was reviewed before it merged." With
+   no pickup step — a plain repo with nothing to install or reload — the second line
+   keeps only the review sentence.
    With `Push: none` or no `origin`, `old` is `main` before the batch's first merge (that
-   merge's first parent), the header says `local only, not pushed`, and it carries no
-   pickup step.
+   merge's first parent), the header's first line names the range alongside `local only,
+   not pushed` (for example `local only, not pushed, a1b2c3d..e4f5a6b`), and the second
+   line drops the pickup sentence, keeping only the review one.
 
-2. **One bullet per landed change**, a bold short title, then a colon and a short
-   statement of WHAT changed for the people and agents who use the repo — never a commit
-   subject or an item id. Leave out how the change was made or reviewed: no tiers,
-   models, review rounds, fix rounds or verdicts. Several items that make one visible
-   change share a bullet. Order the bullets by what the reader feels: the change most
-   people will notice first, invisible plumbing last.
+2. **One change area per bold title, on its own line, with exactly one bullet under
+   it.** The bullet is one sentence, two at most, stating WHAT changed for the people
+   and agents who use the repo: an observable effect — what a user or agent can now do
+   or notices behaving differently — never why it was needed, how it works internally,
+   or the evidence behind it; and never a commit subject, an item id, a tier, a model, a
+   review round, a fix round or a verdict. Several items that make one visible change
+   share a title and its bullet; maintenance and plumbing (tests, refactors, dependency
+   bumps, store bookkeeping) collapse the same way, under one title such as
+   `**Housekeeping**`. Order the areas by what the reader feels: the change most people
+   will notice first, invisible plumbing last.
 
-3. **One sub-bullet under each of those, two at most.** WHAT ONLY: an observable effect —
-   what a user or agent can now do, or notices behaving differently — never why it was
-   needed, how it works internally, its mechanism, its rationale, or the evidence behind
-   it. At most two short fragments per line, semicolon-separated, not full sentences, and
-   each fragment observable on its own — if it names anything the code does internally
-   that the reader never sees (a check, a stamp, a counter), it is HOW, not WHAT.
+3. **No tables, no sub-bullets, no lists of files or commit shas under an item.** The
+   bullet is the whole change area's text — flat, one level, nothing nested under it.
 
-4. **Maintenance and plumbing collapsed into ONE bullet**, marked `(maintenance)` —
-   tests, refactors, dependency bumps, store bookkeeping. No sub-bullet needed; if one is
-   useful, the same WHAT-only, two-fragment rule applies.
-
-5. **A closing line**: whether anything requires action on existing work — a rule people
+4. **A closing line**: whether anything requires action on existing work — a rule people
    now follow, a migration, a re-run of a setup step, a config written before this that
    now needs an update — or `Nothing on existing work needs action.` This is distinct
    from the header's pickup step, which is about picking up the change itself, not
@@ -72,31 +74,34 @@ Plain text, in this order:
 
 Rules that keep it pasteable:
 
-- **Never a table.** Tables paste badly into chat, email and phones. No headings.
-- Bold appears only on a bullet's title. Nesting goes one level deep — the WHAT-only
-  sub-bullet — and no deeper.
+- **Never a table.** Tables paste badly into chat, email and phones. No markdown
+  headings.
+- Bold appears only on the header's first line and each change area's title — never
+  inside a bullet.
 - Put it in its own fenced `text` block, separate from the Report, so the operator can
   copy it exactly as written. The fence only marks what to copy; it is not part of the
   message.
 - Backticks only around a command a reader must type, where Slack and Teams, the main
   targets, show it as code. Everywhere else write names plainly, including a commit
   range: in email or SMS the backticks appear as literal characters.
-- Keep it short. A sub-bullet that needs a third fragment is carrying rationale or
+- Keep it short. A bullet that needs a third sentence is carrying rationale or
   mechanism — cut it back to WHAT.
-- Paths are fine. Secret values never appear, just as in the Report.
+- A path the reader must open is fine; never a list of files. Secret values never
+  appear, just as in the Report.
 
 ## Example
 
-A push that landed three visible changes and a round of maintenance:
+A push that landed two visible changes and a round of maintenance, for a fictitious
+`dev-flow` plugin update:
 
 ```text
-claude-plugins updates, pushed to main (eda3422..71345aa) — run `/plugin marketplace update kmacmcfarlane`, then `/reload-plugins`.
-- **Plan-usage pacing**: the librarian slows down near a plan limit instead of stalling.
-  - Speed tracks quota left; picks back up at full pace once quota recovers.
-- **Stable checkpoints**: a resumed session no longer treats a fresh handoff as stale.
-  - Resuming immediately after a checkpoint picks up right where it left off; a manifest more than a day old still gets flagged.
-- **Agent panel context**: each sub-agent's status line now shows how much context it has left.
-  - Percent and tokens remaining, per agent; refreshes as the agent works.
-- **Housekeeping** (maintenance): dependency bumps and test cleanup across three plugins.
+**dev-flow plugin update, 2026-09-23 (marketplace a1b2c3d..e4f5a6b)**
+Update your plugins to pick it up. Every change was reviewed before it merged.
+**Faster investigate handoffs**
+- The investigate skill now hands a finished plan straight to implement, with no extra confirmation step in between.
+**Clearer dev-cycle land reports**
+- dev-cycle's land report now names the branch it merged, so you can find the work without hunting for the commit.
+**Housekeeping**
+- Dependency bumps and test cleanup landed across dev-flow's skills.
 Nothing on existing work needs action.
 ```
