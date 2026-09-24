@@ -2,12 +2,11 @@
 id: quota-budget-done-for-the-day-reserve-0-b112
 title: "quota_budget: done-for-the-day reserve 0% vs agents decision 0008's 5% floor"
 type: chore
-status: doing
+status: done
 priority: 2
-owner: Kyle-McFarlane@bf9f9839222c
-claimed: 2026-09-24T19:45Z
 created: 2026-09-24
 updated: 2026-09-24
+closed: 2026-09-24
 refs:
   - "peer: agents - librarian; agents decisions/0008-librarian-budget-policy.md (222dc57)"
 ---
@@ -36,3 +35,6 @@ agent: implementer a08185adf1e1d578a fix round 1
 return: implementer fix round 1 DONE 877b5e0
 dispatch: reviewer opus — resume, round 2
 agent: reviewer a3032b20933798d7d round 2 at 877b5e0
+verdict: reviewer round 2 CLEAR at 877b5e0 (no findings)
+landed: ef357ad (merge --no-ff into main)
+- 2026-09-24 done
