@@ -27,3 +27,6 @@ target: branch worktree-quota-budget-done-for-the-day-reserve-0-b112 at .claude/
 dispatch: implementer opus — script (executable logic)
 agent: implementer a08185adf1e1d578a round 1
 - 2026-09-24 agents - librarian filed record-the-operator-s-ruling-on-budget-s-3cd2; its record lands once the operator confirms the 5% ruling in the agents session (a relayed ruling is evidence, not approval); does not block b112
+return: implementer round 1 DONE 0c98066 (fail-first: 2 failures on main)
+dispatch: reviewer opus — fresh
+agent: reviewer a3032b20933798d7d round 1 at 0c98066
