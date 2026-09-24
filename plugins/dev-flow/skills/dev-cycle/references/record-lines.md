@@ -127,6 +127,12 @@ interrupted run up again; a line that is missing reads there as not recorded:
   number already pairing it. Under a caller whose session loads the
   `operator-interaction:decisions` skill, a natural-language reply is recorded with the
   echo's reading, `answer N: <reply> (read as: <reading>)`.
+- A caller's stored card — under librarian-mode with the `operator-interaction:decisions`
+  skill, `decision N:` is followed by the card as indented lines (`raised:`, `what:`,
+  `why now:`, one line per option, `rec:`, `unknown:`; librarian-mode's
+  `references/decisions.md` § What the store records). Indented lines are not record
+  lines: nothing matches them as `decision`, `answer` or `wake`, and `wi needs-input` reads
+  only the headline.
 - `wake N: <time | event | next Report>` — a caller's deferral ("decide later") of
   `decision N:`, written when the operator defers it (librarian-mode's
   `references/decisions.md`). It is not an answer: `decision N:` stays pending, and `wi

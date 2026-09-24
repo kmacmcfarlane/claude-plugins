@@ -72,8 +72,10 @@ detail and the slower the answer.
   deal with it. Bounded deferral (Horvitz; *secondhand*) holds a notification back for a bounded
   time, never resolves it.
 
-Hence three clocks: events since the operator last touched it (depth), time since raised
-(batching), time until something breaks (urgency).
+Hence two clocks: events since the operator last touched it (depth), and time until something
+breaks (urgency). Age is shown and breaks ties; no rule batches by it. The event that matters
+most in a long session happens to the operator, not the agent: a card printed while they were
+away was rendered, not seen, so "no operator turn since it was shown" counts as an event.
 
 ## Presentation that can mislead
 
@@ -86,7 +88,9 @@ Hence three clocks: events since the operator last touched it (depth), time sinc
   checkable evidence and links over prose rationale.
 - Forcing the human to commit before seeing the AI's answer reduces overreliance but costs
   speed and satisfaction (Buçinca et al. 2021, N=199; *secondhand*). The only friction this
-  skill adds is where the harm is: the ⚠ read-back.
+  skill adds is where the harm is: the read-back before a one-way option acts. Clark and I-PASS
+  support a read-back before an irreversible *action*; a reversible choice on a ⚠ decision
+  costs a revert if misread, so it is echoed, not read back.
 - A one-keystroke answer is weak evidence of understanding: in the grounding literature an
   acknowledgement sits near the bottom of the evidence of understanding, below demonstration
   (Clark & Schaefer 1989, Clark & Brennan 1991; *secondhand*). Handover protocols require a
@@ -109,6 +113,10 @@ Hence three clocks: events since the operator last touched it (depth), time sinc
   primary). Readers misread verbal probability terms, and pairing a word with an anchor helps
   (Budescu et al.; *secondhand*). Evidentiality — observed, inferred, reported, assumed — is
   marked grammatically in about a quarter of the world's languages (Aikhenvald; *secondhand*).
+- The basis word keeps only the start and the named reason. A step-down arithmetic — one level
+  per partial completeness, weak source or conflict, never above the start — was specified in
+  v1 and no render ever applied it past the first step; the reason clause carries those
+  weaknesses in words the operator can check instead.
 - A confidence number used to **order** decisions answers the wrong question (how likely a
   claim is right, not when the operator should look) and invites inflation, the same failure
   as self-declared urgency.
@@ -125,7 +133,10 @@ Hence three clocks: events since the operator last touched it (depth), time sinc
   on; the harm in every failure case came from someone relying on the outcome before review.
 
 Hence no timed defaults on actions, status-quo defaults allowed, and every deferral with a
-wake — a deferral never woken is a default by omission.
+wake — a deferral never woken is a default by omission. The default wake is a natural break in
+the agent's own work (the next time it finishes something and reports) rather than a count of
+turns or hours: interruption research favours breakpoints (McFarlane 2002; bounded deferral,
+Horvitz, *secondhand*), and it is one rule every caller can explain.
 
 ## Order
 
@@ -134,6 +145,16 @@ the parole-judges study has a scheduling confound; *secondhand*). The reason to 
 pressing decisions first is different: if the operator stops partway, the answers that matter
 most are already in. Grouping related decisions spares the re-grounding cost of each context
 switch — the operator's own reason for grouping.
+
+The deadline rule is asymmetric on purpose: listing a deadline decision first when the
+operator was back in time costs nothing, while listing it low can lose the lease. So with the
+return unknown every stated deadline goes first, with no hour threshold to tune.
+
+**Where it sits.** The operator reads in a terminal, where the end of the message is what is on
+screen when the agent stops. So the decisions come last, after any report or summary, and the
+compact list with the hint is the very last thing — the operator's own ask (2026-09-24): "the
+compact, one-line decision list below the cards/blocks so you can answer some/all of them
+without scrolling up".
 
 ## Replies
 

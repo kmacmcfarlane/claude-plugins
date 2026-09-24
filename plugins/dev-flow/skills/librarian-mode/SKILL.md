@@ -249,10 +249,10 @@ the reply `answer N: <reply>`; on re-entry continue from the highest N (Rehydrat
 3), else 1.
 
 With the `operator-interaction:decisions` skill loaded, the four lines stay, and each
-`decisions needed:` names only its decision numbers. One decisions block follows the last
-four-line block, written per that skill: its list, cards and blocks, and hint. The store
-lines per reply, the default wake (the next Report) and the re-show after Rehydrate are in
-`references/decisions.md`.
+`decisions needed:` names only its decision numbers. One decisions block, written per that
+skill, is the **last thing in the turn** — after the push outcome, its `incoming:` lines and
+the team summary below. The stored card, the store lines per reply, the default wake (the next
+Report) and the re-show after Rehydrate are in `references/decisions.md`.
 
 Batch several landings in one message, four lines each; anything blocked or declined
 since the last report goes under `decisions needed` of the next. Do not wait for the

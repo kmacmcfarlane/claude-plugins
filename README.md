@@ -189,7 +189,7 @@ write to.
 
 `operator-interaction` is **confirmed** by the operator (2026-09-23), chosen for its scope: the
 interface and flow between agent and human operator. It ships no state yet (no data dir, no
-settings path). Its first skill's name, `decisions`, is provisional.
+settings path). Its first skill's name, `decisions`, is **confirmed** by the operator (2026-09-24).
 
 ## Plugins today
 
