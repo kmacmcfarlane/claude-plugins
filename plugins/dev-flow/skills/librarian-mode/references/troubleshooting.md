@@ -97,10 +97,10 @@ states it; the one line here is what the librarian binds:
   record it in the item as a finding, and a merge-conflict fix round has the implementer
   merge `main` into its branch, counting toward the cap — the `dev-cycle` skill's
   `references/fix-loop.md` § A merge conflict.
-- **A fable dispatch returns HTTP 429 or a usage-credits error.** Not a `BLOCKED`: the
-  reset time decides between opus and a numbered decision for the operator — a
-  `model: fable` pin always raises one — the `dev-cycle` skill's
-  `references/model-routing.md` § Fallback.
+- **A fable dispatch returns HTTP 429 or a usage-credits error.** Not a `BLOCKED`: under
+  a `model: fable` pin it is a numbered decision for the operator, never a fallback; a
+  second-opinion reviewer is dropped — the `dev-cycle` skill's
+  `references/model-routing.md` §§ Fallback, Second opinion.
 - **Implementer disputes a medium-or-above finding**, **a reviewer returns
   `SHOW_STOPPER` for something a fix would close** (mis-routed: re-route it as
   `NEEDS_CHANGES`, noted in the item, severity kept), **a dirty main checkout or worktree

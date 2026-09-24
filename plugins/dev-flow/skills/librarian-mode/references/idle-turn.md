@@ -151,8 +151,9 @@ It records three things:
 
 **A limit against a floor.** The operator's more recent instruction wins, but never
 silently: when a limit caps below a floor a dispatch must meet — an item's `model:` pin
-(a `model: fable` pin under "no fable"), or the reviewer's opus floor (dev-cycle's
-Step 2 rule 4, so a "sonnet only" limit clashes on every review) — that item is not
+(a `model: fable` pin under "no fable"), or the reviewer's opus (dev-cycle's Step 2
+rule 4, so a "sonnet only" limit clashes on every review that is not a `review: self`)
+— that item is not
 downgraded. It waits — `next: held (<hold-id>)` — and the clash goes through the
 decision channel as one `decision N:` on the item, carried under the next Report's
 `decisions needed`: keep it waiting, lift the pin or loosen the limit, or exempt it from
@@ -180,10 +181,9 @@ A rate limit or an exhausted usage allowance is the harness saying *not yet*, no
 operator saying *stop*. Never open a hold for one, and never leave the queue idle after
 it resets:
 
-- **Fable unavailable**: dev-cycle's Step 2 rule 6, detailed in the `dev-cycle` skill's
-  `references/model-routing.md` § Fallback — opus when the reset is over 2h away or
-  unknown, a pending decision within 2h or under a `model: fable` pin; meanwhile hand
-  each waiting item off and take other work (The cycle).
+- **Fable unavailable**: as the `dev-cycle` skill's `references/model-routing.md`
+  §§ Fallback, Second opinion say. Meanwhile hand each waiting item off and take other
+  work (The cycle).
 - **Every tier limited**: hand each affected item off naming the limit and the reset
   time (`$WI handoff <id> --blocked "rate limit, resets <time>"`), say so in one line
   with the reset time, and resume dispatch at the first turn after the reset. The items

@@ -33,9 +33,10 @@ Pointed at from SKILL.md § Troubleshooting and from `fix-loop.md` for the permi
 - **Agent (implementer or reviewer) returns `BLOCKED` on permissions.** A decision for a
   human, not a reason to do the work yourself: block the item when there is one, and
   raise it.
-- **A fable dispatch returns HTTP 429 or a usage-credits error.** Not a `BLOCKED`: the
-  reset time decides between opus and asking — a `model: fable` pin always asks —
-  `model-routing.md` § Fallback.
+- **A fable dispatch returns HTTP 429 or a usage-credits error.** Not a `BLOCKED`. Under
+  a `model: fable` pin, ask through the decision channel — wait for the reset, or opus
+  now — never falling back unasked; a second-opinion reviewer is dropped, and the opus
+  `CLEAR` before it stands. `model-routing.md` §§ Fallback, Second opinion.
 - **Implementer disputes a medium-or-above finding.** It cannot decline it: it fixes, or
   states the counter-case for the re-review. The reviewer withdraws on the merits (the
   failure cannot occur) or holds; if it holds, fix it — that round is spent.

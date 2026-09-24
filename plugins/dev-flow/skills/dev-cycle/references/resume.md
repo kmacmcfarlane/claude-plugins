@@ -22,7 +22,7 @@ choose that question (§ The state table, the dispatch permission).
 
 Four line kinds are **phase lines**: `dispatch:`, `return:`, `verdict:` and `landed:`.
 They move the run, and only a phase line can be its last state. Every other line —
-`target:`, `checks:`, `intent:`, `agent:`, `baseline:`, `findings:`, `changed:`,
+`target:`, `checks:`, `intent:`, `agent:`, `review:`, `baseline:`, `findings:`, `changed:`,
 `decision:`, `answer:`, `spent:`, `subject-fix:`, `conflict:`, `blocked:` — is a
 **rider**: it never displaces a phase line, and it is read only where a fact below names
 it.
@@ -106,7 +106,7 @@ words. `<workspace>` below is that line's third field.
    its status, because a fresh process may not list an agent that is alive. Running, or
    answering, counts as alive; so does a finished one whose report carries a `STATUS`
    (a reviewer's: a verdict), since it holds a report to collect. A finished one whose
-   report carries none — an error, a fable 429 that cut it off — counts as gone, and so
+   report carries none — an error, a 429 that cut it off — counts as gone, and so
    does an unlisted id whose SendMessage fails. The same id repeated under a `— resume`
    dispatch is probed once.
 9. **REMNANT** — `present` | `absent`, computed when SINK is `unreachable`. **An artefact
@@ -152,7 +152,7 @@ is a dispatch, and the next verdict tests the cap again.
 | LIVE | State | The single next action |
 |---|---|---|
 | `one` | **S3a** attach | Never dispatch beside it. Still running: leave it to finish. Finished with a report never recorded: collect the report and hand it to the step that writes its phase line — SKILL.md § Step 1 (planner), § Step 3.5 (implementer) or § Step 4.5 (reviewer). |
-| `none` | **S3b** salvage | GATE first on a decision recorded after the dispatch — the fable fallback's ask when the call failed (`model-routing.md` § Fallback): `PENDING` → § The GATE. `ANSWERED` → § Salvage, then re-dispatch as the answer says. `NONE` → § Salvage, then re-dispatch at the same role, tier and round — a reviewer briefed by VARIANT; a producer at a fix round re-dispatched as `fix-loop.md` § A NEEDS_CHANGES round says for a gone agent (an implementer), or as `agent-brief.md` § Plan variant says (a planner). |
+| `none` | **S3b** salvage | A `reviewer fable` dispatch in a run whose Model floor is not fable is a second opinion, optional and never salvaged: it is dropped, whatever its signal says, and the state is the one the last verdict before it gives (`model-routing.md` § Second opinion). Any other: GATE first on a decision recorded after the dispatch — a fable pin's ask when the call failed (`model-routing.md` § Fallback): `PENDING` → § The GATE. `ANSWERED` → § Salvage, then re-dispatch as the answer says. `NONE` → § Salvage, then re-dispatch at the same role, tier and round — a reviewer briefed by VARIANT; a producer at a fix round re-dispatched as `fix-loop.md` § A NEEDS_CHANGES round says for a gone agent (an implementer), or as `agent-brief.md` § Plan variant says (a planner). |
 | `many` | **S13** two live agents | Stop. Dispatch nothing and stop no agent. GATE, the question naming every live id: which one to keep is always a human's decision, never the cycle's. |
 
 **Group C — PHASE `RETURN`.** The producer is the `implementer`, or the `planner` in
@@ -160,7 +160,7 @@ is a dispatch, and the next verdict tests the cap again.
 
 | STATUS | reason | RETRIES | State | The single next action |
 |---|---|---|---|---|
-| `DONE`, `DONE_WITH_CONCERNS` | — | — | **S4** reviewable | SKILL.md § Step 4: dispatch a reviewer with VARIANT. |
+| `DONE`, `DONE_WITH_CONCERNS` | — | — | **S4** reviewable | SKILL.md § Step 4: dispatch a reviewer with VARIANT, or review it yourself when Step 2 rule 5's waiver holds for the diff as it stands. |
 | `NEEDS_CONTEXT` | — | — | **S5** needs context | GATE, the agent's question. `ANSWERED` → re-dispatch the same producer with the answer, at least opus. Never a review. |
 | `BLOCKED` | `setup` | < 3 | **S6a** retryable | Fix the setup the return names and re-dispatch the same producer. Not a round. |
 | `BLOCKED` | `setup` | ≥ 3 | **S6b** retries spent | `$WI block` when there is an item, then GATE, the blocked change. |

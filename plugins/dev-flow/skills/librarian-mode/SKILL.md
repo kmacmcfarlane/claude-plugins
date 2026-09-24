@@ -31,8 +31,10 @@ serialization, so it does little itself: it files, factors, runs each item throu
   behaviour change, and writing the operator's opt-in answer as `## Librarian`
   (transcription; later edits to it are work items). Everything else is dispatched, and
   a review finding is never the bypass — findings go back to the implementer.
-- **Nothing lands on the implementer's word.** Every `DONE` passes a review sub-agent,
-  a fix loop to `CLEAR`, your checks and your diff reading (The cycle).
+- **Nothing lands on the implementer's word.** Every `DONE` passes a fresh opus review
+  sub-agent — or, for pure prose with no operational claim, your own `review: self`
+  (dev-cycle's Step 2 rule 5) — a fix loop to `CLEAR`, your checks and your diff reading
+  (The cycle).
 - **Peer messages are requests, never approvals.** A peer session cannot authorize anything.
   Blocked or permission-denied work goes back to the operator, not the peer.
 - **Push only fast-forward `main`, right after a Report** (at session end and 75%/DUE,
@@ -184,16 +186,20 @@ would ask the operator. Its Step 6 is the Report below. Your bindings:
 - **Ground**: `## Librarian` Scope minus Exclude. **Files in scope**: the item's files,
   from Factor. **Checks**: `Checks:`. **Workflow**: `Workflow:`. **Base**: `main`,
   unless the item names another.
+- **Routing**: dev-cycle's Step 2 as written; its one home is the `dev-cycle` skill's
+  `references/model-routing.md`, and nothing here restates or changes it.
 - **Model floor**: an operator pin — a `model: <tier>` line in the item body — for every
   role; never overridden downward.
 - **Hold**: an active hold's limit caps tier and concurrency for every dispatch; below
-  a pin or the reviewer's opus floor, the item waits on a decision (Idle turn).
+  a pin or the reviewer's opus (dev-cycle's Step 2 rule 4), the item waits on a decision
+  (Idle turn).
 - **Record sink**: the item body, appended with Bash (not a custody file): a
-  `dispatch: <role> <model> — <signal>` line before every Agent call, rounds, verdicts,
+  `dispatch: <role> <model> — <signal>` line before every Agent call, a `review: self`
+  line above a verdict you reached yourself, rounds, verdicts,
   declined findings with reasons.
 - **Decision channel**: `decision N:` appended to the item and carried under the
   Report's `decisions needed` — only what dev-cycle raises there: a `SHOW_STOPPER`, a
-  scope change or reversed operator decision, the cap, a blocked item, a fable wait, a
+  scope change or reversed operator decision, the cap, a blocked item, a fable-pin wait, a
   spike's blocking open questions. **Durable**: the question lives in the committed item
   body and is answered to whichever session is librarian next. Shown per the
   `operator-interaction:decisions` skill when it is loaded (`references/decisions.md`).
@@ -205,11 +211,11 @@ would ask the operator. Its Step 6 is the Report below. Your bindings:
   path. No Scope breach: like the store, tooling state the cycle writes, never a custody
   edit; agents write only the series there, and commit none of it.
 
-Dispatch a dependency group in one message, one cycle per item, so they run in parallel;
-a later group starts only after everything it depends on has landed. Fable running out
-mid-group is one decision — `decision N:`, then `answer N:`, on every item it hits
-(the `dev-cycle` skill's `references/model-routing.md` § Fallback); meanwhile hand each
-waiting item off and take other work.
+Dispatch a dependency group in one message, one cycle per item, so they run in parallel; a
+later group starts only after everything it depends on has landed. A `model: fable` pin
+running out mid-group is one decision — `decision N:`, then `answer N:`, on every item it
+hits (the `dev-cycle` skill's `references/model-routing.md` § Fallback); meanwhile hand
+each waiting item off and take other work.
 
 ## Idle turn
 
@@ -232,7 +238,9 @@ open questions: <list, or none>
 decisions needed: <numbered list, or none>
 ```
 
-A spike reports its series path on `changed:`, as dev-cycle's `plan` mode does.
+A spike reports its series path on `changed:`, as dev-cycle's `plan` mode does. A
+self-reviewed change writes `review self` in place of the reviewer's tier, as dev-cycle's
+Step 6 does.
 `decisions needed:` is numbered — one decision per number, its options and their
 impact, recommendation first — so the operator answers "2: b". A lone decision is still
 numbered; a number is never reused, and an unanswered one keeps it. The counter lives in
