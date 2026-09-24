@@ -2,9 +2,11 @@
 id: dev-cycle-routing-policy-sonnet-mechanic-c0d6
 title: "dev-cycle routing policy: Sonnet mechanical / Opus otherwise, fresh Opus reviewer, self-review pure prose"
 type: feature
-status: todo
+status: doing
 priority: 0
 parent: dev-cycle-routing-a-cheaper-lane-for-doc-1293
+owner: Kyle-McFarlane@bf9f9839222c
+claimed: 2026-09-24T18:50Z
 created: 2026-09-24
 updated: 2026-09-24
 refs:
@@ -23,3 +25,9 @@ This replaces rule 3 (fable for security and gating code) and rule 4 (reviewer =
 - blocked: —
 - learned: —
 - checkpoint 2026-09-24 (continue): the next step is to build c0d6 at once after the compaction (operator)
+
+## Notes
+- 2026-09-24 claimed by Kyle-McFarlane@bf9f9839222c
+target: branch worktree-dev-cycle-routing-policy-sonnet-mechanic-c0d6 at .claude/worktrees/dev-cycle-routing-policy-sonnet-mechanic-c0d6, base main (61b0df6)
+dispatch: implementer opus — changes what a skill does (routing rules in dev-cycle Step 2); operator routing
+agent: implementer a213fb820d8ffc606 round 1
