@@ -1,6 +1,6 @@
 ---
 name: dev-cycle
-description: Carry one change from plan to merge through sub-agents — resolve the target (a work item, an investigation series, a plan file, or the current conversation), plan it when it needs one, route each dispatch to a model tier by explicit signals, delegate the build to a background agent in its own git worktree, gate the result through a review sub-agent with a fix loop capped at four review rounds, run the repo's checks, land it the way the user chooses (a local merge first, never a push unasked), and report in four lines. Use when the user says "dev cycle", "run the dev cycle on", "take this item to merge", "build this through sub-agents", "implement and review this", or wants one work item or plan carried to a reviewed, landed change without a standing librarian. Not for a session that owns a repo's whole stream of work (librarian-mode) or a hands-on plan-and-build session (investigate, implement).
+description: Carry one change from plan to merge through sub-agents — resolve the target (a work item, an investigation series, a plan file, or the current conversation), plan it when it needs one, route each dispatch to a model tier by explicit signals, delegate the build to a background agent in its own git worktree, gate the result through a fresh review sub-agent (a self-review for pure prose) with a fix loop capped at four review rounds, run the repo's checks, land it the way the user chooses (a local merge first, never a push unasked), and report in four lines. Use when the user says "dev cycle", "run the dev cycle on", "take this item to merge", "build this through sub-agents", "implement and review this", or wants one work item or plan carried to a reviewed, landed change without a standing librarian. Not for a session that owns a repo's whole stream of work (librarian-mode) or a hands-on plan-and-build session (investigate, implement).
 disable-model-invocation: false
 allowed-tools: Read, Write, Glob, Grep, Bash, Agent, AskUserQuestion, SendMessage, ListAgents, EnterWorktree
 argument-hint: "[wi-id | slug | plan-path] [plan | review branch]"
@@ -17,13 +17,14 @@ few questions, each asked once: the cycle brief, the checks, how to land.
 ## Critical
 
 - **Nothing passes on an agent's word.** Every `DONE`, a plan-mode series included,
-  goes through a review sub-agent and the fix loop until `CLEAR`; a change then also
-  passes your own checks and diff reading before it lands.
+  goes through a fresh opus review sub-agent and the fix loop until `CLEAR` — pure prose
+  with no operational claim excepted, which you review yourself (Step 2 rule 5); a change
+  then also passes your own checks and diff reading before it lands.
 - **You never edit the change**, and never fix a finding, not even a nit: a rejected result
   is re-dispatched with a sharper brief. Your only writes are the record sink, the cycle
   brief, a `.git/info/exclude` line (Step 3) and the merge.
-- **Every Agent call carries a `model`.** An unrouted sub-agent inherits your model, the
-  dearest tier (Step 2).
+- **Every Agent call carries a `model`.** An unrouted sub-agent inherits your model,
+  often the dearest tier (Step 2).
 - **One target, one worktree, one cycle.** Several items are several cycles; running them
   in parallel, and taking the next ready one when this lands, is the caller's business
   (`librarian-mode`'s Idle turn); a standalone run ends at its Report.
@@ -157,28 +158,44 @@ the plan agent revises, by a new serial.
 
 ## Step 2: Route
 
-Route every dispatch with the Agent tool's `model` field (`sonnet` | `opus` | `fable`);
-tables and worked examples: `references/model-routing.md`. Fix round n = the nth
-re-dispatch or resume with findings = review round n+1; cap 4 review rounds.
+Route every dispatch with the Agent tool's `model` field (`sonnet` | `opus` | `fable`;
+never haiku — mechanical checks you run yourself); tables and worked examples:
+`references/model-routing.md`. This step routes dev-cycle's own dispatches — planner,
+implementer, reviewer. The research skills route their lanes and verifiers by their own
+tables; nothing here governs them. Fix round n = the nth re-dispatch or resume with
+findings = review round n+1; cap 4 review rounds.
 
-1. **Default implementer: sonnet** — a failure costs a re-dispatch.
-2. **Implementer → opus** on any signal: executable logic (hook, `scripts/`, status
-   line, settings write); doctrine or marketplace shape (README catalog, CLAUDE.md layout,
-   marketplace.json, a plugin split or move); any code when Ground holds product code;
-   more than three files or one plugin; a recorded trade-off or judgement words in the
-   acceptance (coherent, align, reconcile); a prior `NEEDS_CONTEXT`.
-3. **Implementer → fable** only for a non-trivial change (beyond a small local edit) to
-   code that gates or blocks edits, commits or tool calls, or to a security surface
-   (credentials, permission allowlists, sandbox config, mounts, host access, sockets);
-   fix round 3 after a critical or high finding; a pin (rule 8). Rule 3 wins over rule 2.
-4. **Reviewer = implementer's tier, floor opus.** `review <branch>` mode has no
-   implementer: apply rules 2, 3 and 8 to the branch's diff itself, then this floor, and
-   record the `dispatch:` line the same way.
-5. **Haiku is out of scope.** Mechanical checks you run yourself.
-6. **A re-dispatch keeps the tier** and sharpens the brief; rule 3's round signal is the
-   only bump; a tier never falls, except the fallback (`references/model-routing.md`
-   § Fallback): fable unavailable and the reset over 2h or unknown → opus, recorded;
-   within 2h, or a `model: fable` pin → ask through the decision channel.
+1. **Implementer: sonnet for mechanical edits** — pointer and path fixes, frontmatter,
+   catalog rows, wording that changes no behaviour. Every edit in the change must be one
+   of these; when in doubt, opus.
+2. **Implementer: opus for everything else** — any change to what a skill, agent,
+   CLAUDE.md or doctrine rule does; a format bump; executable logic (hook, `scripts/`,
+   tests, status line, settings write; any code when Ground holds product code); a
+   marketplace shape change beyond a catalog row (`marketplace.json`, a plugin split or
+   move); a recorded trade-off or judgement words in the acceptance (coherent, align,
+   reconcile); a prior `NEEDS_CONTEXT`. A planner is opus at least (Step 1).
+3. **Fable is no implementer tier by signal.** It runs only under a `model: fable` pin
+   (rule 8), or as the second-opinion reviewer rule 4 allows.
+4. **Reviewer: always opus, always fresh** — a new sub-agent that never saw the
+   implementer's conversation: never a fork, never the implementer resumed, never you
+   (except rule 5's waiver). Resuming the same reviewer for its own re-review is fine.
+   `review <branch>` mode's reviewer is opus too. On a complex plan an opus agent made —
+   greenfield architecture, a major refactor — you may add one fresh fable reviewer after
+   the opus reviewer's `CLEAR`, as a second opinion: a second reviewer, never a
+   substitute (`references/model-routing.md` § Second opinion).
+5. **Review waiver: `review: self`.** A change that is pure prose with no operational
+   claim — wording, formatting or alignment in docs, adding, removing or altering no
+   command, host, path, permission, config value or rule agents follow — gets your own
+   review instead of a reviewer: read the full diff, run `references/review-checklist.md`
+   and the Checks binding, then record `review: self` and the verdict (Step 4). A diff
+   touching skill text (`SKILL.md`, `references/`), CLAUDE.md, an agent definition, a
+   script or any code always gets a reviewer, and so do `plan` and `review <branch>`
+   modes. When in doubt, a reviewer (`references/model-routing.md` § Review waiver).
+6. **A re-dispatch keeps the tier** and sharpens the brief. The one bump: a sonnet
+   implementer goes to opus, re-dispatched fresh, at the fix round after a critical or
+   high finding, and at fix round 2 whatever the severity. A tier never falls unasked: a
+   `model: fable` pin that cannot run on fable is asked through the decision channel,
+   never fallen back (`references/model-routing.md` § Fallback).
 7. **Record each dispatch** in the record sink before the call:
    `dispatch: <role> <model> — <signal>`. Then, the moment the Agent call returns an id,
    append `agent: <role> <id> round <n>` under it (`references/record-lines.md`). A
@@ -187,8 +204,9 @@ re-dispatch or resume with findings = review round n+1; cap 4 review rounds.
    <n>`, so every round opens with a phase line a resume can probe. The record,
    not `ListAgents`, is what a later turn or another session has to go on, and a
    `dispatch:` with no `agent:` under it says the call never returned one.
-8. **The Model floor binding** is a floor for every role; rule 4 still applies above it.
-   Never go below it.
+8. **The Model floor binding** — an operator `model:` pin — is a floor for every role,
+   reviewer included, and is never overridden downward: a `model: fable` pin runs every
+   role on fable.
 
 ## Step 3: Delegate
 
@@ -222,17 +240,18 @@ re-dispatch or resume with findings = review round n+1; cap 4 review rounds.
 ## Step 4: Review
 
 1. **Dispatch a reviewer**: one background `general-purpose` agent, review-only, `model`
-   per rule 4, briefed from `references/review-brief.md`, against what the producer
-   returned — the sha, or the series path, on the last `return:` line
-   (`references/record-lines.md`). In `review <branch>` mode before any fix round there is no
-   producer and no `return:` line: review the tip of `<branch>` in the workspace the
-   `target:` line records. Brief it with the commands from
-   `references/review-checklist.md` plus the Checks binding — what you run at Land. A
-   plan run's series gets the plan-review variant in `references/review-brief.md`
-   instead; before **every** such review record the output of
-   `sha256sum <series>/[0-9][0-9]_*.md` as a `baseline: <sha256 list>` line, and from the
-   second review on read the previous one too — its diff names the serials the re-review
-   is given (`references/record-lines.md`, `baseline:`).
+   per rule 4 — or, when rule 5's waiver holds for the full diff at this HEAD, review it
+   yourself (`references/model-routing.md` § Review waiver) — briefed from
+   `references/review-brief.md`, against what the producer returned — the sha, or the
+   series path, on the last `return:` line (`references/record-lines.md`). In
+   `review <branch>` mode before any fix round there is no producer and no `return:`
+   line: review the tip of `<branch>` in the workspace the `target:` line records. Brief
+   it with the commands from `references/review-checklist.md` plus the Checks binding —
+   what you run at Land. A plan run's series gets the plan-review variant in
+   `references/review-brief.md` instead; before **every** such review record the output
+   of `sha256sum <series>/[0-9][0-9]_*.md` as a `baseline: <sha256 list>` line, and from
+   the second review on read the previous one too — its diff names the serials the
+   re-review is given (`references/record-lines.md`, `baseline:`).
 2. **Severity scale** (defined in the review brief):
    - critical: data loss, security, breaks the harness or another plugin.
    - high: wrong on the main path; a failing or missing test for a claimed behaviour.
@@ -257,7 +276,8 @@ re-dispatch or resume with findings = review round n+1; cap 4 review rounds.
    inside the loop. The one exception: `review <branch>` mode's ask, before any fix loop,
    whether to dispatch an implementer at all (Usage) — a mode-entry decision, not a
    severity escalation.
-5. **Record the result** as `verdict: <V> round <n> at <sha>` plus, on a
+5. **Record the result** as `verdict: <V> round <n> at <sha>` — a self-review writes
+   `review: self at <sha> — <why it qualifies>` directly above it — plus, on a
    `NEEDS_CHANGES` or `SHOW_STOPPER`, the reviewer's FINDINGS pasted verbatim as a
    `findings:` block (`references/record-lines.md`) — what a fix dispatch reads. A `BLOCKED`
    reviewer is not a round and carries its reason in place of a round number —
@@ -325,6 +345,9 @@ open questions: <list, or none>
 decisions needed: <numbered list, or none>
 ```
 
+A self-reviewed change (Step 2 rule 5) writes `self` in place of the reviewer's tier:
+`verified: review CLEAR after 0 fix rounds (impl sonnet, review self); …`.
+
 `verified:`'s merge sha comes from the `landed:` line Step 5.5 recorded
 (`references/record-lines.md`), never memory.
 
@@ -350,7 +373,10 @@ Stop when you catch yourself:
   changes and the cap, never a medium. (`review <branch>` mode's before-any-fix-loop ask
   is the one exception — Usage.)
 - **Dispatching unrouted** — an Agent call with no `model`, or no `dispatch:` line
-  behind it.
+  behind it; an implementer sent to fable with no pin; a reviewer below opus.
+- **A reviewer that saw the build** — a fork, the implementer resumed as its own
+  reviewer, or you reviewing a diff outside rule 5's waiver (skill text, CLAUDE.md, an
+  agent, a script, any operational claim).
 - **Pushing unasked**, writing CLAUDE.md to save the checks, or guessing a caller's
   missing binding.
 
@@ -358,9 +384,14 @@ Stop when you catch yourself:
 
 - **`/dev-cycle` after discussing a wrong flag in the CLI docs.** A bug brief, one file;
   the checks question rides in the same dialog. No store: scratchpad record. No plan;
-  sonnet implementer, opus reviewer; `CLEAR`; the user picks the local merge.
-- **`/dev-cycle <id>`, a feature adding a hook that blocks commits.** Fable for both
-  roles; the implementer investigates, then implements; one fix round; `CLEAR`; land.
+  sonnet implementer, opus reviewer — a flag is an operational claim, so no waiver;
+  `CLEAR`; the user picks the local merge.
+- **`/dev-cycle <id>`, a feature adding a hook that blocks commits.** Opus for both
+  roles (executable logic); the implementer investigates, then implements; one fix
+  round; `CLEAR`; land.
+- **`/dev-cycle <id>`, reflowing two paragraphs of `docs/overview.md`.** Pure prose, no
+  operational claim: sonnet implementer, then your own review — `review: self`, `CLEAR`;
+  land.
 
 Per-dispatch routing examples: `references/model-routing.md` § Worked examples.
 

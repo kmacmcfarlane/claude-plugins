@@ -29,15 +29,16 @@ interrupted run up again; a line that is missing reads there as not recorded:
   reviewer's return is its `verdict:` line below — it never gets a separate `return:` of
   its own. A `BLOCKED` carries a reason, below.
 - `verdict: <V> round <n> at <sha>` — SKILL.md § Step 4.5, written as soon as a
-  **reviewer's** report comes back. `<n>` is the review round, counted only for
-  `CLEAR`, `NEEDS_CHANGES` and `SHOW_STOPPER` — a `BLOCKED` never reached a verdict on
-  the change, so it is never a round (`review-brief.md` § Verdict meanings) and carries a
-  reason in place of its round number, below. `<sha>` is
-  the HEAD reviewed for a change; for a **plan-mode** review, in its place:
-  `at <series path>` (the review covers the whole series, not one sha) — a finding's own
-  file:line still names the serial, and `baseline:` below, not this field, is what says
-  whether the series has moved.
-- The **`BLOCKED` reason**, on a `return:` and a `verdict:` and on no other line:
+  **reviewer's** report comes back, or the orchestrator's own review ends under the
+  waiver (the `review: self` line directly above it says which). `<n>` is the review
+  round, counted only for `CLEAR`, `NEEDS_CHANGES` and `SHOW_STOPPER` — a `BLOCKED` never
+  reached a verdict on the change, so it is never a round (`review-brief.md` § Verdict
+  meanings) and carries a reason in place of its round number, below. `<sha>` is the HEAD
+  reviewed for a change; for a **plan-mode** review, in its place: `at <series path>`
+  (the review covers the whole series, not one sha) — a finding's own file:line still
+  names the serial, and `baseline:` below, not this field, is what says whether the
+  series has moved. - The **`BLOCKED` reason**, on a `return:` and a `verdict:` and on no
+  other line:
 
   ```
   return: <role> BLOCKED <token> — permission | setup
@@ -69,10 +70,17 @@ interrupted run up again; a line that is missing reads there as not recorded:
   a record written before this line existed. The `verdict:` line's `at <series path>`
   cannot say this, naming the series and not its state. A list that has not moved means
   the planner wrote nothing; that is a finding for the re-review, not a new baseline.
+- `review: self at <sha> — <why it qualifies>` — SKILL.md § Step 4.5, written directly
+  above the `verdict:` of a round the orchestrator reviewed itself under Step 2 rule 5's
+  waiver: pure prose with no operational claim (`model-routing.md` § Review waiver).
+  `<sha>` is the HEAD it reviewed, the same as the verdict's; the clause names the test
+  it passed — a doc only, and no command, host, path, permission, config value or rule
+  agents follow touched. It has no `dispatch:` or `agent:` pair, since nothing was
+  dispatched. A `verdict:` with no `review: self` above it was a reviewer's.
 - `findings: …` — SKILL.md § Step 4.5, written together with a `NEEDS_CHANGES` or
   `SHOW_STOPPER` verdict: the reviewer's FINDINGS section, pasted verbatim, one line per
-  finding in the reviewer's own numbering — the source `fix-loop.md`'s NEEDS_CHANGES
-  round hands to the fix dispatch unchanged.
+  finding in the reviewer's (or the self-review's) own numbering — the source
+  `fix-loop.md`'s NEEDS_CHANGES round hands to the fix dispatch unchanged.
 - `target: <mode> <ref> <workspace>` — SKILL.md § Step 0.3, **every mode**, written before
   any dispatch.
   - `<mode>` is one bare word, `full` | `plan` | `review` — **one token wide in every

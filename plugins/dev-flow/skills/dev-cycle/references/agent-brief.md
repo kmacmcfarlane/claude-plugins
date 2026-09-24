@@ -9,9 +9,10 @@ orchestrator's context and must be able to finish from this text alone. Send it 
 prompt of one background `general-purpose` Agent. The orchestrator sets the `Model:` line
 from SKILL.md § Step 2 and passes the same value to the Agent tool's `model` field — the
 brief tells the agent which tier it runs on, the field enforces it, and the record sink's
-`dispatch:` line records it. A fix round that changes the tier (a bump, or the fable
-fallback) is a fresh dispatch with the full brief and the findings, never a resume — a
-resumed agent keeps its model; resume only when the tier is unchanged.
+`dispatch:` line records it. A fix round that changes the tier (a sonnet implementer's
+bump to opus, or a waived fable pin) is a fresh dispatch with the full brief and the
+findings, never a resume — a resumed agent keeps its model; resume only when the tier is
+unchanged.
 
 The prohibitions and the return contract are fixed. The verification commands vary with what
 the change touches — take them from `review-checklist.md`, plus every command in the Checks
@@ -38,7 +39,8 @@ Item: <id> — <title>
 <without one:>
 Brief: <the cycle brief or the plan file, by absolute path — read it first, in full>
 
-Model: <sonnet|opus|fable> — <the routing signal that chose it, or "default">
+Model: <sonnet|opus|fable> — <the routing signal that chose it: mechanical, an opus
+       signal, or a model: pin>
 Acceptance: <one or two lines, copied from the item, plan or brief>
 Base branch: <the Base binding>
 Ground: <the Ground binding — the only ground you may touch>
@@ -122,7 +124,7 @@ paths; never `git add .` or `git add -A`. Do not commit anything under .claude-s
 
 <conditional — fix round only: include when resuming or re-dispatching with review findings:>
 Fix round <n> — the nth re-dispatch or resume with review findings, i.e. review round n+1
-of a 4-review-round cap. The Model line above is this round's tier (routing rules 3 and 6);
+of a 4-review-round cap. The Model line above is this round's tier (routing rule 6);
 when it differs from the previous round's, this is a fresh dispatch, not a resume.
 Findings to fix are listed below, verbatim. Fix each finding at medium or
 above; each low/nit you decline, state under DECLINED with a reason. Fix as one or more NEW

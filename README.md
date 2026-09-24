@@ -279,10 +279,11 @@ present, and degrades to plain investigation series when it is not; `dev-cycle` 
 its record in the session scratchpad. `librarian-mode` drives `wi` throughout, found through
 the repo's own `plugins/*/skills/work-items` tree or the installed plugin's copy; without
 either it stops at start and says to install `work-items`. Soft dependency on
-`statusline-hub`: when `librarian-mode` or `dev-cycle` cannot dispatch to fable, it reads
-the exhausted usage window's reset time from the sensor record the hub writes on every
-status-line render (installing `statusline` brings the hub); without it the reset time is
-unknown and the fallback runs on opus at once. Soft dependency on `context-guard`:
+`statusline-hub`: when `librarian-mode` or `dev-cycle` cannot dispatch a `model: fable`
+pin to fable, it reads the exhausted usage window's reset time from the sensor record the
+hub writes on every status-line render (installing `statusline` brings the hub), and puts
+it in the question to the operator; without it the reset time is unknown and the question
+names none. Soft dependency on `context-guard`:
 `investigate` offers a checkpoint, `/clear`, then implement path when the checkpoint skill
 is in the session; `librarian-mode` answers the context gate's advisories with a
 checkpoint and weighs its manifest and ledger when it rehydrates; the fable fallback also

@@ -6,9 +6,10 @@ implementer's return and Land. Fill every placeholder from the run's bindings
 reviewer starts with none of the orchestrator's context and none of the implementer's, and
 must be able to review from this text alone. Send it as the prompt of one background
 `general-purpose` Agent. The reviewer is review-only: it never edits, never commits. The
-orchestrator sets the `Model:` line from SKILL.md § Step 2 — the implementer's tier, floor
-opus — and passes the same value to the Agent tool's `model` field; a reviewer is never
-routed below opus.
+orchestrator sets the `Model:` line from SKILL.md § Step 2 rule 4 — always opus, or fable
+under a `model: fable` pin or as a second opinion — and passes the same value to the Agent
+tool's `model` field; a reviewer is never routed below opus. The reviewer is always a
+fresh agent: never a fork and never the implementer resumed.
 
 The prohibitions, the severity scale and the report shape are fixed. The check commands vary
 with what the change touches — take them from `review-checklist.md`, the same list the
@@ -42,9 +43,8 @@ Read it in full first: $WI show <id>
 <without one:>
 Brief: <the cycle brief or plan file, by absolute path — read it in full first>
 
-Model: <opus|fable> — your tier; reviewer matches the implementer (<implementer's tier>,
-       <its signal>), floor opus (routing rule 4) | opus — fable unavailable (<resets in
-       Xh | unknown>); fallback
+Model: <opus — routing rule 4 | fable — model: fable pin (rule 8) | fable — second
+       opinion after an opus CLEAR | opus — fable pin unavailable; answer N>
 Acceptance: <one or two lines, copied from the item, plan or brief>
 Ground: <the Ground binding>
 Files in scope: <explicit list; anything else in the diff is a finding — or "undeclared">
@@ -154,10 +154,10 @@ NOTES: anything you noticed that is not a finding; questions for the orchestrato
 ## Re-review variant
 
 After the implementer commits its fixes, resume the **same** reviewer (it has the context)
-with this in place of "What to do" — unless the fix round changed the tier (routing rules
-3, 4 and 6): a resumed agent keeps its model, so dispatch a fresh reviewer at the new tier
-with the full brief, its `Model:` line and "Files changed, with reasons" updated, and the
-previous report pasted above this block.
+with this in place of "What to do" — unless the reviewer's tier changed (a waived fable
+pin, routing rule 6): a resumed agent keeps its model, so dispatch a fresh reviewer at the
+new tier with the full brief, its `Model:` line and "Files changed, with reasons"
+updated, and the previous report pasted above this block.
 
 ```
 Fix commits since your last review: git -C $WORKTREE log --oneline <last reviewed sha>..HEAD
@@ -253,8 +253,8 @@ Grade each changed file against this Intent in place of the item's or plan's acc
 itself a finding merely for lacking a one-line reason — there was no implementer to write
 one.
 
-Model: the tier Step 2 rule 4 gives by reading routing rules 2, 3 and 8 against the
-branch's own diff, since there is no implementer round to read a signal from.
+Model: opus (Step 2 rule 4), or the Model floor when one is pinned (rule 8) — the same
+whatever the branch's diff holds.
 
 ## Plan-review variant
 
