@@ -2,9 +2,11 @@
 id: research-tool-preflight-at-recon-and-a-l-8de3
 title: "research: tool preflight at recon and a lane PDF rule (Read branch)"
 type: feature
-status: todo
+status: doing
 priority: 2
 parent: research-tooling-the-tools-research-agen-04f7
+owner: Kyle-McFarlane@bf9f9839222c
+claimed: 2026-09-24T20:54Z
 created: 2026-09-24
 updated: 2026-09-24
 refs:
@@ -18,3 +20,9 @@ Port the ungated core of agent-research's research-tooling spike: the POSIX pref
 - next: —
 - blocked: —
 - learned: —
+
+## Notes
+- 2026-09-24 claimed by Kyle-McFarlane@bf9f9839222c
+target: branch worktree-research-tool-preflight-at-recon-and-a-l-8de3 at .claude/worktrees/research-tool-preflight-at-recon-and-a-l-8de3, base main (fe9dff0)
+dispatch: implementer opus — script + agent contract
+agent: implementer a6ece86b8174847a8 round 1
