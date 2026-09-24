@@ -26,3 +26,6 @@ Port the ungated core of agent-research's research-tooling spike: the POSIX pref
 target: branch worktree-research-tool-preflight-at-recon-and-a-l-8de3 at .claude/worktrees/research-tool-preflight-at-recon-and-a-l-8de3, base main (fe9dff0)
 dispatch: implementer opus — script + agent contract
 agent: implementer a6ece86b8174847a8 round 1
+return: implementer round 1 DONE_WITH_CONCERNS b92eabd (verifier PDF rule and run-record lane-prompt Tools: line not in scope — filed)
+dispatch: reviewer opus — fresh
+agent: reviewer a2c8ec6d8fe0d1271 round 1 at b92eabd
