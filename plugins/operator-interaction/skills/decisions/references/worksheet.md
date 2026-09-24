@@ -10,13 +10,19 @@ card shape. Each group answers one question and sets one thing — merging them 
 | Field | Values | Who can supply it |
 |---|---|---|
 | Warmth | **warm** — the operator saw this decision's context in this session, and nothing below happened since; **cold** — any of the events below, or they have never seen it | you, from your own session; a cross-session collector, when one exists |
-| Events since the operator last touched it | a context compaction or clear; a different session or repo in between; a hand-off from another agent | you (for your own session); a collector (for others) |
+| Events since the operator last touched it | a context compaction or clear; a different session or repo in between; a hand-off from another agent; **no operator turn since it was last shown** (you printed it while they were away) | you (for your own session); a collector (for others) |
 | Age | time since the decision was raised | you, from the decision's record |
 | Operator's expected return | when they said they would be back, if they did | you, from what the operator said |
 
 Cold raises the level: a cold reader never gets a line-only decision (the line-only rule in
-SKILL.md § Levels), and a block adds a *context you may have lost* part. Re-explaining is triggered by **events**, not by elapsed time alone: a compaction
-five minutes ago makes a reader colder than an idle hour with nothing in between.
+SKILL.md § Levels), and a block adds a *context you may have lost* part. Re-explaining is
+triggered by **events**, not by elapsed time alone: a compaction five minutes ago makes a
+reader colder than an idle hour with nothing in between.
+
+The last event is the commonest in a long session. A caller re-entered by background work can
+write several messages while the operator is away; a card in the first of them was printed,
+not seen. Check your own transcript: if the operator has not taken a turn since the card was
+shown, they have not seen it, and it is shown again.
 
 Whether *now* is a good moment to interrupt the operator is a real dimension too, but nothing
 observable measures it today; leave it alone rather than guess.
@@ -30,9 +36,8 @@ observable measures it today; leave it alone rather than guess.
 | Others rely on it before review | yes / no — will another agent, session or person act on the outcome before the operator sees it? | you |
 
 Judge **reversibility and blast radius together**; never add them up as two scores. A
-decision that is one-way *and* wide (or relied on) is **⚠ one-way**: a block, answered on its
-own, read back before acting, never batched, never handed back, never defaulted. One-way but
-narrow is a card marked *one-way, narrow*. Two-way and narrow is the fast tier: a card, or a
+decision that is one-way *and* wide (or relied on) is **⚠ one-way**; how it is shown and
+answered is SKILL.md § Critical. One-way but narrow is a card marked *one-way, narrow*. Two-way and narrow is the fast tier: a card, or a
 line when the line-only rule holds.
 
 ## C — How well is it understood? → what evidence is shown, and "investigate first"
@@ -47,26 +52,26 @@ line when the line-only rule holds.
 A thin basis or a new decision raises the level. When the missing fact could change the choice
 and finding it costs less than choosing wrong, offer **investigate first** as a priced option
 (its time and cost stated). Converging options are one of the conditions of the line-only
-rule: a decision may stay a list line only when the reader is warm, the stakes are low
-(two-way, narrow), the basis is strong, and a template carries the floor or the options
-converge.
+rule (SKILL.md § Levels).
 
 ## D — What does waiting cost? → the order
 
 | Field | Values | Who can supply it |
 |---|---|---|
-| Deadline | a clock time when something breaks if unanswered (a lock or lease expires, a due time passes), or none | you — state it |
+| Deadline | when something breaks if unanswered (a lock or lease expires, a due time passes), or none — as an absolute time in the operator's zone when known, with the relative time and when you wrote it | you — state it |
 | Blocks | what waits on it: your own next step; other work; other sessions | you (your own); a collector (other sessions) |
 | Age | as in A | you |
 
-A deadline that falls before the operator is likely back puts the decision first (see the
-order in SKILL.md). Otherwise waiting cost and age order it.
+A deadline that falls before the operator is back — or any stated deadline, when their return
+is unknown — puts the decision first (SKILL.md § Order). Otherwise waiting cost and age order
+it.
 
-Three different clocks are in play, and each sets something different:
+Two clocks are in play, and each sets something different:
 
 - **events since the operator last touched it** (group A) set how much to re-explain;
-- **time since it was raised** sets how long it may wait in a batch before it must be shown;
 - **time until something breaks** (the deadline) sets urgency.
+
+Age — time since it was raised — is shown on the list line and breaks ties, nothing more.
 
 ## E — What kind of ask is it? → the card's shape
 

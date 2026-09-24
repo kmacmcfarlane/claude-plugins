@@ -8,23 +8,9 @@ The examples below are **illustrative**: invented, generic, not about any real p
 
 ## Choosing the level
 
-**The line-only rule.** A decision may stay a list line only when all of these hold:
-
-- the reader is warm (group A);
-- the stakes are low: two-way and narrow (group B);
-- the basis is strong (group C);
-- a template the operator has already seen carries the floor, or the options converge — any
-  of them would do.
-
-Anything else is at least a card. Raise it to a **block** when:
-
-- it is **⚠ one-way** (always);
-- it is wide and the reader is cold;
-- it is wide and the basis is thin;
-- the operator asked to `expand` a card.
-
-`expand` on a line gives a card. The higher the stakes, the more information and the slower
-the decision: detail is bought by stakes, never spent by default.
+The line-only rule, when a block is due, and what counts as seen are in SKILL.md § Levels;
+they are not restated here. `expand` on a line gives a card, on a card a block. Detail is
+bought by stakes, never spent by default.
 
 ## List line
 
@@ -42,9 +28,13 @@ slots stay, since the floor needs them:
 - The number and title are bold together.
 - Stakes slot: *reversible, narrow* · *one-way, narrow* · ⚠ one-way (for Type 1; the ⚠ is
   followed by a space) · *your preference, no rec* · *template*.
-- A deadline is written as a clock time: *storage lease lapses 17:45*.
-- In a message where other decisions are expanded below, a line with nothing below it ends
-  *(line only)*, so the operator knows `expand` exists for it.
+- A deadline is written as the absolute time in the operator's zone when you know it, with
+  the relative time and when you wrote it: *storage lease lapses ~17:45 (90 min from 16:15)*.
+  With the zone unknown, say which: *17:45 UTC*.
+- In a message where other decisions are rendered above the list, a line with nothing above
+  it ends *(line only)*, so the operator knows `expand` exists for it. A line whose card was
+  seen and is unchanged ends *(shown before)*; one held back by paging ends *(expand for the
+  card)*.
 
 Example:
 
@@ -95,53 +85,55 @@ Rec **(a)** · basis **word** — *one-clause reason* · unknown: what isn't kno
 
 Rec **(b)** · basis **partial** — *reason*
 *Basis:* observed — … (link) · inferred — … · unknown — …
-*I'll repeat your choice back and act only once you confirm.*
+*If you pick (a), I'll repeat it back and act only once you confirm: it can't be undone.*
 ```
 
 - A block **includes** the basis drill-down (the tags and links). `expand` on a block is
   answered: *already at full detail — `tell me [what]` for something specific?*
-- A block for a wide decision that is not ⚠ drops the last line (no read-back).
+- The read-back line (⚠ blocks only) names the one-way option(s). A block for a wide decision that is
+  not ⚠ drops it.
+- Write every option's *Undo* line plainly — it is what decides whether an answer is read
+  back (`references/replies.md`).
 - Never use the words "answer alone" as a label; the ⚠ and the read-back line carry it.
 
 ## Several decisions in one message
 
-1. A heading line with the count: **Decisions** — *4 · one ⚠ one-way*.
-2. The **list**: one line per decision, in the order below.
-3. **Open questions**, if any: *(not decisions yet — each needs your framing)*, unnumbered.
-4. The **detail section**: every decision above list level, rendered **in list order**, each
-   at its own level, under its bold number.
-5. On messages with **two or more** decisions, the hint, last, in italics:
+The layout is SKILL.md § Several decisions in one message: the decisions close the message,
+the rendered cards and blocks first, the compact list and the hint last. In template form:
 
-*Reply with a letter (`72: a`) or in your own words · `later [when]` · `tell me [what]` · `expand` · `dig into [what]` · `you decide` · `drop`*
+```
+**Decisions** — *4 · one ⚠ one-way*
+
+**41 — …card…**
+**43 — …block…** ⚠ one-way
+
+**Open questions** *(not decisions yet — each needs your framing)*
+- …
+
+- **41 …list line…**
+- **43 …list line…**
+- **44 …list line…** *(line only)*
+- **42 …list line…** *(shown before)*
+
+*Reply with a letter (`41: a`) or in your own words · `later [when]` · `tell me [what]` · `expand` · `dig into [what]` · `you decide` · `drop`*
+```
 
 Use a real number from the list in the hint's example. A message with one decision carries no
-hint: the card itself is enough.
+hint and no separate list: the card itself is enough.
 
-`expand` raises one decision one level in the next round (line → card → block). It keeps its
-number and its place in the order, and stays raised on later re-shows unless the operator says
-otherwise. That next round shows:
+In a turn that also reports work — a status report, a push outcome, a summary for others —
+all of that comes first and the decisions block is the last thing written.
 
-1. the list, every open decision a line;
-2. below it, the expanded decision at its new level;
-3. any decision a rule requires at card or block that the operator has not yet seen at that
-   level — a new one, one whose facts changed, or all of them if the reader went cold since.
-
-A card or block the operator already saw, with nothing changed, is not re-rendered; its line
-ends *(shown before)*.
+After an `expand`, the next round renders the expanded decision at its new level, plus any
+decision a rule requires above list level that the operator has not seen at that level (new,
+changed, or the reader went cold). Everything else is a list line.
 
 ## Order
 
-Related decisions — same repo, same topic, one feeding another — form a **group**, kept
-together so the operator is not switching context between neighbours. A lone decision is a
-group of one. Order groups by their most pressing member, then apply the same precedence
-inside each group:
-
-1. **Breaks before the operator is likely back.** A stated clock deadline that falls before
-   the operator's expected return when you know it, otherwise within 4 hours of being shown.
-   (The rule is the operator's; the test is *provisional — pending the operator's ruling*.)
-2. **⚠ one-way.**
-3. **Waiting cost:** what it blocks, and how many wait on it.
-4. **Oldest first.**
+The precedence is SKILL.md § Order. Two notes on applying it: a group is placed by its most
+pressing member and kept together, the same precedence holding inside it; and a deadline
+decision placed first "because the return is unknown" costs nothing if the operator is back
+sooner — both get answered — while one placed low can lose the lease.
 
 ## Labels
 
@@ -152,8 +144,8 @@ inside each group:
 | No fact settles it | *your preference — no recommendation* |
 | Not the agent's call | *no recommendation — outside my authority*, and a clause saying why |
 | A recurring decision with fixed options | *template: name* — shown as a card the first time the operator meets it |
-| Time-critical, options not ready | **Alert:** in bold, bare; *options follow* |
-| Not defined yet | listed under **Open questions**, unnumbered |
+| Time-critical, options not ready (not a decision yet) | **Alert:** in bold, bare; *options follow* |
+| Not defined yet (not a decision yet) | listed under **Open questions**, unnumbered |
 
 ## FYI after acting
 
@@ -178,7 +170,16 @@ Options and recommendation unchanged.*
 When the options or recommendation changed, say which and why: *Recommendation changed from
 (a) vendor the font to (b) fetch it, because the CDN outage ended.*
 
-**A cold re-show** — after a context reset, a clear, or the operator's return — shows **every
-open decision at card level or above**, never as a line only: a cold reader needs the medium
-or high detail view to decide without scrolling back. The list still comes first, and each
-decision opens with what changed while it waited (*nothing changed* is worth saying).
+**From the store.** When the caller's store keeps the card (the floor's fields under the
+decision's record, with its raised-at time), a re-show renders that stored card and adds only
+the *while it waited* line. Composing the card again from memory can shift the letters or the
+recommendation, and the operator would answer an (a) that is not the (a) they read. When the
+options or recommendation really changed, say which and why, and the caller stores the new
+card.
+
+**A cold re-show** — whenever the reader is cold (SKILL.md § Before you write) — shows every
+open decision at card level or above, never as a line only (SKILL.md § Levels, the line-only
+rule), each opening with what changed while it waited (*nothing changed* is worth saying).
+With more than five, SKILL.md's paging rule applies *(provisional — pending the operator's
+ruling)*: the heading says how many are shown in full, and the rest are lines ending *(expand
+for the card)*.

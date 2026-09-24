@@ -14,51 +14,59 @@ requirement. Examples are **illustrative**.
 3. **Echo** every reply that is not an exact `N: letter`, in one italic line before you act:
    *Read as: 43 → dig into (other callers in the access logs).* The echo is how a misreading is caught
    in one turn instead of after the damage.
-4. Act — except on a ⚠ one-way choice (the read-back below).
+4. Act — except on a ⚠ decision when the chosen option is one-way (the read-back below).
 
 When a reply mixes a letter and words (`43: b, keep it with a sunset date`), the letter
 decides; the words are checked against the option and a mismatch is asked about, not guessed.
 
 ## Reply types
 
-**Choose — `N: letter`, or a choice in words.** Act on it. For a ⚠ one-way decision, first
-repeat the choice back and act only once the operator confirms:
+**Choose — `N: letter`, or a choice in words.** Act on it. On a **⚠ one-way decision**, when
+the **chosen option** is one-way — its *Undo* line says it cannot be undone, or only at real
+cost — first repeat the choice back and act only once the operator confirms. A *one-way,
+narrow* card is answered like any card: its narrowness is why it is not ⚠.
 
-*Read as: 43 → (b) keep the endpoint, with a deprecation header and a sunset date. This
-decision is one-way — confirm and I'll go ahead, or change it.*
+*Read as: 43 → (a) remove `/v1/export` on Thursday. That can't be undone for the partners who
+break — confirm and I'll go ahead, or change it.*
 
-A confirmation in any words counts ("yes", "go", "confirmed"). The read-back applies only to
-replies that choose an option that acts on the world; `later`, `tell me`, `expand`, `dig into`
-and `drop` on a ⚠ decision are echoed normally. So is picking a priced *investigate first*
-option (`43: c`): it is a `dig into`, it acts on nothing, and it gets an echo, not a
-read-back.
+A confirmation in any words counts ("yes", "go", "confirmed"). The read-back protects a
+misread choice from doing something that cannot be taken back, so it applies only there. On a
+⚠ decision, a reply that picks a **reversible** option is echoed and acted on at once:
+
+*Read as: 43 → (b) keep `/v1/export`, with a deprecation header and a 90-day sunset date. Going
+ahead — the header can be dropped at any time.*
+
+`later`, `tell me`, `expand`, `dig into` and `drop` are echoed normally. So is picking a
+priced *investigate first* option (`43: c`): it is a `dig into`, it acts on nothing, and it
+gets an echo, not a read-back.
 
 **`later [when]` — decide later.** Nothing happens except that the decision waits. Set its
 wake:
 
 - a time — "tomorrow morning", "after 14:00";
 - an event — "when the load test finishes", "after the release";
-- none given — your next check-in, if you have a rhythm (a status report); otherwise ask, and
-  state the default: *Read as: 3 → later. When? Unless you say, I'll bring it back the next
-  time you start a turn after at least one other exchange.* *(provisional — pending the
-  operator's ruling)*
+- none given — the next time you finish a piece of work and report (for a caller with a status
+  report, that report; for a plain session, the end of the current task). Say it in the echo
+  and ask once: *Read as: 3 → later. I'll bring it back when I next finish a piece of work and
+  report — or tell me a time.*
 
 **A deadline changes `later`.** When the decision has a deadline and the wake is not known to
 fall before it — a later time, an event with no time, or the default — the echo warns and
 restates what happens at the deadline:
 
-*Read as: 41 → later (after the standup). Note: the storage lease lapses at 17:45; if the
-backup is still paused then, the half-written snapshot is lost and the backup starts over
-(about 3 hours). Keep that, or pick a time before 17:45?*
+*Read as: 41 → later (after the standup). Note: the storage lease lapses at ~17:45 (90 min
+from 16:15); if the backup is still paused then, the half-written snapshot is lost and the
+backup starts over (about 3 hours). Keep that, or pick a time before 17:45?*
 
 When the wake fires, re-show the decision with what changed while it waited
 (`references/rendering.md` § Re-show with what changed). A deferral nobody wakes becomes a
 default by omission; every deferral has a wake.
 
-**`tell me [what]` — more context.** Re-show the **same decision, same number**, with the fact
-added in a **Added:** line. Options and recommendation stay as they were, unless the new fact
-changes the recommendation — then say so and why. Near-zero cost when you already know the
-fact; if finding it needs real work, say so and offer `dig into` instead.
+**`tell me [what]` — more context.** Answer under the **same number** with an **Added:** line
+and only the lines the fact changes — an option's impact, the rec line when it moves. The card
+itself is one scroll up; do not send it again. Re-render the whole card only when the options
+or the recommendation change, and then say which and why. Near-zero cost when you already
+know the fact; if finding it needs real work, say so and offer `dig into` instead.
 
 **`expand` — more detail.** Show the decision one level higher in your next message (line →
 card → block). It keeps its number and place, and stays raised on later re-shows. On a block:
@@ -73,8 +81,13 @@ costs less to find than a wrong choice would.
 
 **`you decide` — hand it back.** You decide, record your reason, and say what you chose in
 your next update: *Read as: 44 → you decide. I'll take (a) "deprecated", because it matches
-the earlier notices; noted in my next update.* **Refused on ⚠ one-way:** *43 is one-way — it
-needs your own choice. I recommend (b), because …. Which do you want?*
+the earlier notices; noted in my next update.*
+
+**On ⚠ one-way**, you may take a **reversible** option and say so; you never take the one-way
+one: *Read as: 43 → you decide. I'll take (b), keep it with a sunset date — it can be undone,
+and I won't remove the endpoint without your own choice.* When the only option you would
+recommend is the one-way one, repeat the recommendation and re-ask: *43's best answer is (a),
+which can't be undone — it needs your own choice. Which do you want?*
 
 **`drop` — retire it.** *Read as: 80 → drop. Retired; it won't come back.* If something still
 depends on it, say what happens now.
@@ -101,7 +114,7 @@ Never write "answer alone" in the echo; say why each was skipped.
 ## Defaults
 
 - **No timed default on an action.** An unanswered decision never turns into an action because
-  time passed. *(provisional — pending the operator's ruling)*
+  time passed.
 - **A status-quo default** may be stated on the card, because it changes nothing: *If
   unanswered: I leave the branch as it is and carry on with other work.* It says what stays as
   it is; it never says an option of the agent's choosing takes effect.

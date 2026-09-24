@@ -1,6 +1,6 @@
 ---
 name: decisions
-description: "Put a decision to the operator so they can understand and answer it where it is shown: a content floor every decision carries, detail that scales with the stakes and with how far the operator is from the work, a set order, natural-language replies with an echo, and 'decide later' with a wake. Use whenever you are about to ask the operator to decide, choose, approve or confirm something, list open decisions, re-show decisions after a break or a context reset, relay a decision raised elsewhere, read the operator's reply to one, or judge whether an action may be taken and reported afterwards instead of asked about first. Not for progress updates that ask nothing."
+description: "Put a decision to the operator so they can understand and answer it where it is shown: a content floor every decision carries, detail that scales with the stakes and with how far the operator is from the work, a set order, natural-language replies with an echo, and 'decide later' with a wake. Use whenever you are about to ask the operator to decide, choose, approve or confirm something, list open decisions, re-show decisions after a break or a context reset, read the operator's reply to one, or judge whether an action may be taken and reported afterwards instead of asked about first. Not for progress updates that ask nothing."
 ---
 
 # Decisions
@@ -17,20 +17,25 @@ order, how to answer.
 *Examples in this skill and its references are illustrative: invented, not about any real
 project.*
 
+**Per decision, before you write:** meet the floor → fill the worksheet → pick the level →
+place it in the order. Then write the message as § Several decisions in one message lays it
+out.
+
 ## Critical
 
 - **Every decision meets the floor before it is raised** (below). Without options it is not
   a decision: it is an open question, labelled as one.
-- **⚠ one-way decisions** — one-way *and* high impact — are shown as a block, never ratified
-  inside a batch, never handed back with `you decide`, never defaulted, and your reading of
-  the operator's choice is repeated back before you act on it.
+- **⚠ one-way decisions** — one-way *and* high impact — are never ratified inside a batch and
+  never defaulted. Shown as a block the first time and whenever the reader is cold. On a ⚠
+  decision, an answer that picks a **one-way option** is repeated back and acted on only once
+  confirmed, and `you decide` never takes the one-way option.
 - **No timed defaults on actions.** Silence never turns into an action.
-  *(provisional — pending the operator's ruling)*
 - **Never show a confidence percentage**, and never use one to order decisions.
-  *(provisional — pending the operator's ruling)*
 - **Raise decisions as text in your message**, per this skill — not through a modal dialog
   (AskUserQuestion) unless the rules you are running under require one: a dialog cannot
   carry the list, the hint, the echo or `later`.
+- **The decisions come last in the message**, the list and the hint at the very end, where the
+  operator's eye is when you stop.
 - **Keep the caller's numbering** when it has a counter; otherwise number from 1 in this
   session. Never reuse a number.
 - **Scale the card to the decision.** A small call gets a short card; stakes buy detail.
@@ -41,28 +46,29 @@ Every decision carries, at any level:
 
 1. **What is decided**, in plain words. Gloss every id, hash, file or item name on first use —
    a bare `a3f9` or `7c41e0d` tells a cold reader nothing.
-2. **Why now**, and what it blocks.
+2. **Why now**, and what it blocks. When nothing forces it, say so — *why now: nothing forces
+   it; raised because the audit turned it up* — and *blocks: nothing* is an honest answer.
 3. **The options**, each with its consequence — what happens to the world if it is chosen.
    Include "do nothing" when it is a real option.
 4. **Decide later**, always, as its own option (`(z)`), distinct from "do nothing": it says what
    waiting costs, and when there is a deadline, what happens at the deadline.
 5. **The recommendation**, or the labelled reason there is none.
-6. **The basis** — what the claims rest on (`references/evidence-basis.md`).
+6. **The basis** — what the claims rest on (§ Evidence).
 7. **What is unknown.**
 
-**Labelled exceptions** — five cases, each carrying its label, since a silent gap is a floor failure
-*(provisional — pending the operator's ruling)*:
+**Labelled exceptions** — each carries its label, since a silent gap is a floor failure:
 
 - *your preference — no recommendation*: no fact settles it; options, no recommendation.
 - *no recommendation — outside my authority*: the call belongs to the operator (a product or
   policy judgement); say why.
-- **Alert:** a time-critical fact, sent bare now because forming options would cost more than
-  the alert is worth; the options follow.
-- **Open question**: the decision is not defined yet (framing). Listed under *Open questions*,
-  unnumbered, until it has options.
 - A named **template** — a recurring decision with fixed options, such as a fixed
   review-round cap waiver — meets the floor by reference once the operator has seen the
   template; show it as a card the first time.
+
+Two labels mark things that are **not decisions yet**: an **Alert** (a time-critical fact, sent
+bare now because forming options would cost more than the alert is worth; the options follow)
+and an **Open question** (not defined yet; listed under *Open questions*, unnumbered, until it
+has options).
 
 ## Before you write: the worksheet
 
@@ -77,6 +83,10 @@ supply each):
 | D | What does waiting cost? | its place in the order |
 | E | What kind of ask is it? | the card's shape |
 
+**Warm or cold.** The reader is **cold** on a decision after any of: a context compaction or
+clear; a different session or repo in between; a hand-off; or **no operator turn since it was
+last shown** — a card printed while the operator was away has not been seen. Otherwise warm.
+
 **FYI after acting** (nothing to answer) is allowed only for an action that is
 two-way, narrow, relied on by nobody before the operator reviews it, and inside authority the
 operator already gave (an answered decision, or the task you were assigned). Never for ⚠,
@@ -84,23 +94,27 @@ never when others rely on it. When in doubt, ask.
 
 ## Levels
 
-Three levels (templates and worked shapes in `references/rendering.md`):
+Three levels; the templates are in `references/rendering.md`:
 
 - **List line** — every decision gets one: **bold number and title**, recommendation, stakes,
   basis, and its age, what it blocks and any deadline.
 - **Card** — what is decided, why now, the options with their impact in italics, decide
-  later, then `Rec · basis — reason · unknown`. Used whenever the line-only rule below does
-  not hold.
+  later, then `Rec · basis — reason · unknown`.
 - **Block** — a card plus: context the reader may have lost, a section per option (*what
-  happens*, *undo*, *who is affected*), and the basis drill-down with evidence links. Used for
-  every ⚠ decision, and for a wide one shown to a cold reader or on a thin basis.
+  happens*, *undo*, *who is affected*), and the basis drill-down with evidence links.
 
 **The line-only rule.** A decision may stay a list line only when all of these hold: the
-reader is warm; the stakes are low (two-way and narrow); the basis is strong; and either a
-template the operator has already seen carries the floor, or the options converge (any of them
-would do). Anything else is at least a card. So a **cold re-show** — after a context reset, a
-clear, or the operator's return — shows every open decision as a card or a block, never as a
-line only.
+reader is warm; the stakes are low (two-way and narrow); the basis is strong (for a
+preference: you checked that nothing depends on the choice); and either a template the
+operator has already seen carries the floor, or the options converge (any of them would do).
+Anything else is at least a card.
+
+**A block** for: a ⚠ decision on first show and whenever the reader is cold; a wide one shown
+to a cold reader or on a thin basis; a card the operator asked to `expand`.
+
+**Seen.** A card or block counts as seen once the operator has taken a turn since it was
+shown. One seen, with nothing changed, is not rendered again: its line ends *(shown before)*.
+This holds for ⚠ too — the line keeps its ⚠ label, and `expand` brings the block back.
 
 The higher the stakes, the more information and the slower the decision.
 
@@ -114,28 +128,38 @@ Related decisions (same repo, same topic) form a **group**, kept together to spa
 operator context switches; a lone decision is a group of one. Groups go in this order, each
 placed by its most pressing member, and the same precedence holds inside a group:
 
-1. **Breaks before the operator is likely back** — a stated clock deadline (a lock, a lease, a
-   due time) that falls before their expected return when you know it, otherwise within 4
-   hours of being shown. Say the deadline on the line. (The rule is the operator's; the test
-   for "likely back" is *provisional — pending the operator's ruling*.)
+1. **Breaks before the operator is back** — a stated deadline (a lock, a lease, a due time)
+   that falls before their known return; when their return is unknown, **every** stated
+   deadline, soonest first. Say the deadline on the line.
 2. **⚠ one-way.**
 3. **Waiting cost** — what it blocks, and who else waits on it.
 4. **Oldest first.**
 
 ## Several decisions in one message
 
-- The **list** comes first: one line per decision, in order.
-- Below it, every decision above list level is rendered **in list order**, each at its own
-  level, under its bold number. A list-only decision's line ends *(line only)*.
-- `expand` raises a decision one level in the next round; it keeps its number and position
-  and stays raised on later re-shows. That round shows the list, then below it the expanded
-  decision at its new level, plus any decision a rule requires at card or block that the
-  operator has not yet seen at that level. A card or block the operator already saw, with
-  nothing changed, is not re-rendered; its line ends *(shown before)*.
-- On a message carrying **two or more** decisions, end with the hint, in italics, numbered
-  from your list:
+The decisions close the message — after any report, push outcome or summary:
 
-  *Reply with a letter (`72: a`) or in your own words · `later [when]` · `tell me [what]` · `expand` · `dig into [what]` · `you decide` · `drop`*
+1. A heading line with the count: **Decisions** — *4 · one ⚠ one-way*.
+2. Every decision above list level, **in list order**, each at its level under its bold
+   number.
+3. **Open questions**, if any, unnumbered.
+4. The **list**, last: one line per decision, in order, so the operator can answer some or all
+   of them without scrolling up. A line with nothing rendered above ends *(line only)*.
+5. On a message carrying **two or more** decisions, the hint, in italics, the very last line:
+
+   *Reply with a letter (`72: a`) or in your own words · `later [when]` · `tell me [what]` · `expand` · `dig into [what]` · `you decide` · `drop`*
+
+`expand` raises a decision one level in the next round (line → card → block); it keeps its
+number and position and stays raised on later re-shows.
+
+**A cold re-show** — whenever the reader is cold on the open decisions (§ Before you write:
+a reset, a clear, or no operator turn since they were shown) — shows every
+open decision at card level or above, each opening with what changed while it waited
+(`references/rendering.md` § Re-show with what changed). When the store carries the card,
+render the stored card; do not compose it again. **Paging:** when more than five would be
+shown, render in full the first group or the first three decisions, whichever is larger, plus
+every ⚠; the rest are lines ending *(expand for the card)*, and the heading says *8 open · 4
+shown in full*. *(provisional — pending the operator's ruling)*
 
 ## Replies
 
@@ -144,12 +168,12 @@ Details, echo wording and edge cases: `references/replies.md`.
 
 | Reply | What you do |
 |---|---|
-| `N: letter`, or a choice in words | act — for ⚠, repeat the choice back and act only once confirmed |
-| `later [when]` | set the wake (a time, an event, or your next check-in); re-ask with what changed |
-| `tell me [what]` | re-show the same decision, same number, with that fact added |
+| `N: letter`, or a choice in words | act — on a ⚠ decision, when the chosen option is one-way, repeat it back and act only once confirmed |
+| `later [when]` | set the wake (a time, an event, or the next time you finish a piece of work and report); re-ask with what changed |
+| `tell me [what]` | answer under the same number with an **Added:** line and only the lines the fact changes |
 | `expand` | show it one level higher next round; on a block, say it is already at full detail |
 | `dig into [what]`, or picking a priced *investigate first* option | echo it (no read-back: it acts on nothing), run the bounded investigation, cost stated up front; bring the same number back |
-| `you decide` | decide, record why, report it — **refused on ⚠**: repeat your recommendation and re-ask |
+| `you decide` | decide, record why, report it — on ⚠ only a reversible option, said so; if the only good answer is the one-way option, repeat your recommendation and re-ask |
 | `drop` | retire it; it does not come back |
 | `ok N-M` | accept the recommendation for each in the range, skipping ⚠ items and items with no recommendation, and re-ask those |
 | anything else that changes the question | a reframe: withdraw it and raise the new question under a new number that points back |
@@ -157,52 +181,57 @@ Details, echo wording and edge cases: `references/replies.md`.
 **Echo** every reply that is not an exact `N: letter` — one italic line, *Read as: 43 → dig
 into (other callers in the access logs)* — so a misreading is caught in one turn.
 
-**Decide later** always has a wake. With no `[when]`, the default is your next check-in (a
-status report, if you make them); if you have none, ask when and state the default: the next
-time the operator starts a turn after at least one other exchange. *(provisional — pending
-the operator's ruling)* When the decision has a deadline and the wake is not known to fall
-before it, the echo warns and restates what happens at the deadline. A re-ask carries a diff:
-*while it waited: …; options and recommendation unchanged | changed because …*
+**Decide later** always has a wake. With no `[when]`, it is the next time you finish a piece
+of work and report — for a caller with a status report, that report; the echo says so and
+asks once whether another time suits. When the decision has a deadline and the wake is not
+known to fall before it, the echo warns and restates what happens at the deadline. A re-ask
+carries a diff: *while it waited: …; options and recommendation unchanged | changed because …*
 
 ## Defaults
 
 No timed default on an action. A **status-quo** default may be stated on the card — *if
 unanswered: I leave X as it is and carry on with other work* — because it changes nothing.
-*(provisional — pending the operator's ruling)*
 
 ## Evidence
 
 Show what the claims rest on as one word and a reason — `basis: strong | partial | thin |
-none — reason` — derived from tags, never chosen freely, and never as a percentage
-(`references/evidence-basis.md`). A claim is *observed* only when it points at a tool result
-you produced. *(provisional — pending the operator's ruling)*
+none — reason` — derived from the provenance of the weakest load-bearing claim, never chosen
+freely, and never as a percentage (`references/evidence-basis.md`). A claim is *observed* only
+when it points at a tool result you produced.
 
-## Provisional rules
+## Rulings
 
-Rules the operator has not ruled on yet. Each is marked *(provisional — pending the
-operator's ruling)* where it appears; when the operator rules, the marker and its line here
-go in the same edit.
+The operator has ruled on these; each keeps the alternative not taken, in case practice
+argues for it.
 
-- **Labelled exceptions** — the five labelled cases above. Not taken: no exceptions at all.
-- **Basis word** — `strong | partial | thin | none` from tags. Not taken: a confidence bucket.
-- **No confidence percentage**, shown or used for ordering. Not taken: a calibrated number used
-  internally.
-- **Defaults** — status-quo only; no timed action defaults. Not taken: timed defaults for
-  reversible, narrow decisions.
-- **Default wake** — the caller's next check-in; with no rhythm, the next turn after one other
-  exchange. Not taken: events only; time only.
-- **"Likely back"** — the operator's expected return when known, else 4 hours. Not taken: the
-  caller's next check-in.
+- **Labelled exceptions** (2026-09-24) — the labels above. Not taken: no exceptions at all.
+- **Basis word** (2026-09-24) — `strong | partial | thin | none` from the weakest load-bearing
+  claim. Not taken: a confidence bucket; a step-down arithmetic over every tag.
+- **No confidence percentage** (2026-09-24), shown or used for ordering. Not taken: a
+  calibrated number used internally.
+- **Defaults** (2026-09-24) — status-quo only; no timed action defaults. Not taken: timed
+  defaults for reversible, narrow decisions.
+- **Default wake** (2026-09-24) — the next time you finish a piece of work and report. Not
+  taken: the next operator turn after one other exchange; events only.
+- **Deadlines first** (2026-09-24) — before the operator's known return, else every stated
+  deadline. Not taken: a 4-hour "likely back" window.
+- **Read-back scope** (2026-09-24) — only when the chosen option is one-way. Not taken: every
+  answer on a ⚠ decision.
+- **⚠ blocks** (2026-09-24) — on first show and when cold. Not taken: a block in every message.
+- **Placement** (2026-09-24) — decisions last, the list and hint at the tail. Not taken: the
+  list first.
+- **Seen** (2026-09-24) — the operator has taken a turn since it was shown. Not taken: rendered
+  once.
+- **Hint scope** — messages with two or more decisions. Not taken: every message that asks
+  for a decision.
 
-Ruled, with the alternative recorded: **hint scope** — the hint goes on messages with two or
-more decisions (the operator's ruling); the alternative, every message that asks for a
-decision, is recorded in case adoption needs it.
+Still provisional, marked where it appears: **paging** on a cold re-show.
 
 ## References
 
-- `references/worksheet.md` — the five groups, their fields, who supplies each, the three clocks
-- `references/rendering.md` — the list line, card and block templates, mixed levels, order, labels
+- `references/worksheet.md` — the five groups, their fields, who supplies each, the two clocks
+- `references/rendering.md` — the list line, card and block templates, the message layout, labels, the re-show
 - `references/replies.md` — reply parsing, echo, read-back, batch, later and re-ask, reframe
-- `references/evidence-basis.md` — the basis word, its tags and the rule table
+- `references/evidence-basis.md` — the basis word, its tags and the rule
 - `references/rationale.md` — why each rule, with its sources
 - `references/gallery.md` — worked examples of every case (illustrative)

@@ -1,7 +1,5 @@
 # Evidence basis
 
-*(provisional — pending the operator's ruling)*
-
 What a decision's claims rest on, shown as **one word and a reason** at a glance, with the
 tags behind it on drill-down. It replaces a confidence number: an LLM's self-reported
 confidence runs high whether or not it is right, and a percentage looks precise without being
@@ -40,24 +38,30 @@ ran or read this session. Agents' citations often look grounded — real links, 
 while the claim attributed to them is wrong; the pointer is what lets the operator spot-check
 it.
 
-## The rule table
+## The rule
 
-Derive the word from the tags; never pick it freely.
+Derive the word; never pick it freely.
 
 1. Start from the provenance of the weakest **load-bearing** claim — the one the
    recommendation depends on:
 
-   | Provenance | Start at |
+   | Provenance | Word |
    |---|---|
    | observed | strong |
    | reported, inferred | partial |
    | recalled | thin |
    | no evidence | none |
 
-2. Step down one level for each of: completeness partial or none; a weak source (a summary
-   standing in for the primary, an assumption); agreement *conflict*. Never below **none**.
-3. Never step up past the start: more words do not make a recalled claim observed.
-4. Name the deciding tag in the reason: *partial — the load test covered 2 of 5 worker types*.
+2. Name the deciding tag in the reason: *partial — the load test covered 2 of 5 worker types*.
+   When completeness, the source or a conflict is what weakens the claim, the reason says so;
+   the word does not step down by arithmetic (why: `references/rationale.md` § Evidence basis
+   over confidence).
+
+**A decision with no recommendation** — a preference, or a call outside your authority — has a
+different load-bearing claim: *no fact settles it* (or *it is not mine to make*). Checked —
+you looked for what depends on the choice and found nothing — is **strong**; assumed is
+**thin**. So a trivial, warm, two-way preference you checked can stay a list line, and the
+same preference three renders apart gets the same word.
 
 ## Keep it apart from likelihood
 
