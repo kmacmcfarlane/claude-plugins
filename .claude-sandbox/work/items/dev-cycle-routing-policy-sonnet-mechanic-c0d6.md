@@ -48,3 +48,4 @@ agent: reviewer a33dc1f546750d008 round 3 at 6a60a38
 verdict: reviewer round 3 CLEAR at 6a60a38 (no findings)
 landed: 8b88f29 (merge --no-ff into main)
 - 2026-09-24 done
+- 2026-09-24 marketplace - librarian acknowledged: prompting the operator to update and reload; filed its re-point of CLAUDE.md § Models and kappa-agents to dev-cycle references/model-routing.md (CLAUDE.md half awaits the operator grant)
