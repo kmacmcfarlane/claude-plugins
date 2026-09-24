@@ -315,7 +315,7 @@ class TestSamplesAndSink(Base):
         self.assertEqual(rows[0]["at"], NOW)
 
     def sink(self, rows, day="2026-09-21"):
-        d = os.path.join(self.cfg, "plugins", "data", "claude-analytics-kmacmcfarlane", "samples")
+        d = os.path.join(self.cfg, "claude-analytics", "samples")
         os.makedirs(d, exist_ok=True)
         with open(os.path.join(d, day + ".jsonl"), "a") as f:
             for ts, five, week in rows:
@@ -593,7 +593,7 @@ class TestPoisonedInput(Base):
         self.assertEqual([x["at"] for x in rows], [NOW - H, NOW])
 
     def test_sink_line_is_skipped(self):
-        d = os.path.join(self.cfg, "plugins", "data", "claude-analytics-kmacmcfarlane", "samples")
+        d = os.path.join(self.cfg, "claude-analytics", "samples")
         os.makedirs(d)
         with open(os.path.join(d, "2026-09-22.jsonl"), "w") as f:
             f.write(DEEP + "\n")
@@ -832,7 +832,7 @@ class TestEpoch(Base):
 
 class TestSinkEdges(Base):
     def sinkdir(self):
-        d = os.path.join(self.cfg, "plugins", "data", "claude-analytics-kmacmcfarlane", "samples")
+        d = os.path.join(self.cfg, "claude-analytics", "samples")
         os.makedirs(d, exist_ok=True)
         return d
 
@@ -869,12 +869,46 @@ class TestSinkEdges(Base):
         self.assertEqual(r["signal"], "none")
         self.assertEqual(r["source"]["history"], "samples")
 
-    def test_dir_glob_needs_the_marketplace_suffix(self):
-        os.makedirs(os.path.join(self.cfg, "plugins", "data", "claude-analyticsX", "samples"))
+    def test_sink_dir_is_the_writers_path(self):
+        # claude-analytics writes CFG/claude-analytics/samples/<UTC day>.jsonl;
+        # nothing writes under plugin data, so that is not a sink.
+        os.makedirs(os.path.join(self.cfg, "plugins", "data", "claude-analytics-kmacmcfarlane", "samples"))
         self.assertEqual(qb.sink_dirs(self.cfg), [])
-        self.assertEqual(qb.sink_dirs(self.cfg), qb.sink_dirs(self.cfg))
+        d = self.sinkdir()
+        self.assertEqual(qb.sink_dirs(self.cfg), [d])
+
+    def test_absent_or_non_dir_sink_is_no_sink(self):
+        self.assertEqual(qb.sink_dirs(self.cfg), [])
+        os.makedirs(os.path.join(self.cfg, "claude-analytics"))
+        with open(os.path.join(self.cfg, "claude-analytics", "samples"), "w") as f:
+            f.write("not a dir\n")
+        self.assertEqual(qb.sink_dirs(self.cfg), [])
+
+    def test_override_still_replaces_the_default(self):
         self.sinkdir()
-        self.assertEqual(len(qb.sink_dirs(self.cfg)), 1)
+        other = os.path.join(self.cfg, "elsewhere")
+        self.assertEqual(qb.sink_dirs(self.cfg, other), [])
+        os.makedirs(other)
+        self.assertEqual(qb.sink_dirs(self.cfg, other), [other])
+
+    def test_writer_shaped_lines_read_through_sink_dirs(self):
+        # The writer's line shape: top-level ts/session_id/rate_limits plus
+        # v/key/sandbox/payload. An older line without the top-level fields
+        # is skipped.
+        d = self.sinkdir()
+        rl = {"five_hour": {"used_percentage": 12.0, "resets_at": NOW + 3 * H},
+              "seven_day": {"used_percentage": 30.0, "resets_at": NOW + 100 * H}}
+        with open(os.path.join(d, "2026-09-22.jsonl"), "w") as f:
+            f.write(json.dumps({"v": 1, "key": "k", "sandbox": "sb",
+                                "payload": {"session_id": "old", "rate_limits": rl}}) + "\n")
+            f.write(json.dumps({"v": 1, "key": "k", "sandbox": "sb", "ts": NOW - 60,
+                                "session_id": "s", "rate_limits": rl,
+                                "payload": {"session_id": "s", "rate_limits": rl}}) + "\n")
+        got = qb.read_sink(qb.sink_dirs(self.cfg), NOW)
+        self.assertEqual([(x["at"], x["session"]) for x in got], [(NOW - 60, "s")])
+        self.assertEqual(got[0]["windows"]["five_hour"]["used"], 12.0)
+        _, r, _ = self.run_qb()
+        self.assertEqual((r["source"]["reading"], r["source"]["sink_dirs"]), ("sink", [d]))
 
 
 class TestClaimRaces(Base):
@@ -1021,7 +1055,7 @@ class TestFifo(Base):
         self.assertFalse(os.path.exists(os.path.join(self.store, "samples.jsonl")))
 
     def test_fifo_sink_day_file_reads_as_absent(self):
-        d = os.path.join(self.cfg, "plugins", "data", "claude-analytics-kmacmcfarlane", "samples")
+        d = os.path.join(self.cfg, "claude-analytics", "samples")
         self.fifo(os.path.join(d, "2026-09-22.jsonl"))
         with open(os.path.join(d, "2026-09-21.jsonl"), "w") as f:
             f.write(json.dumps({"ts": NOW - 60, "session_id": "s", "rate_limits": {
