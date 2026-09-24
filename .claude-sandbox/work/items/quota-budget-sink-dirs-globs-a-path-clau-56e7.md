@@ -2,12 +2,11 @@
 id: quota-budget-sink-dirs-globs-a-path-clau-56e7
 title: "quota_budget: sink_dirs globs a path claude-analytics never writes, so samples never reach the budget"
 type: bug
-status: doing
+status: done
 priority: 1
-owner: Kyle-McFarlane@bf9f9839222c
-claimed: 2026-09-24T19:07Z
 created: 2026-09-24
 updated: 2026-09-24
+closed: 2026-09-24
 refs:
   - "peer: agents - librarian (agents item 9ab1), 2026-09-24"
 ---
@@ -30,3 +29,6 @@ agent: implementer a9de6aca8e7cd28b1 round 1
 return: implementer round 1 DONE 451580d (fail-first shown: 4 failures, 2 errors on main)
 dispatch: reviewer opus — fresh
 agent: reviewer aa0533c310e82a22c round 1 at 451580d
+verdict: reviewer round 1 CLEAR at 451580d (2 low: parse_sink_sample docstring; "external, planned" wording for claude-analytics in README/plugin.json/marketplace.json — filed; 1 nit)
+landed: 6d5ad03 (merge --no-ff into main)
+- 2026-09-24 done

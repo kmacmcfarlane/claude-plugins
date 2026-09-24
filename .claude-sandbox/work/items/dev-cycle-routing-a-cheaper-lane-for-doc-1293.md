@@ -2,10 +2,11 @@
 id: dev-cycle-routing-a-cheaper-lane-for-doc-1293
 title: "dev-cycle routing: a cheaper lane for docs-only changes — plan with options for the operator"
 type: spike
-status: todo
+status: done
 priority: 1
 created: 2026-09-24
 updated: 2026-09-24
+closed: 2026-09-24
 refs:
   - "peer: opencode - librarian (operator relay 2026-09-24)"
 ---
@@ -23,3 +24,7 @@ decision 82 update: option (e) added, the operator-confirmed policy above.
 decision 83: where the routing policy lives — (a) one home in dev-cycle, with librarian-mode and the marketplace pointing to it [recommended]; (b) a new routing plugin; (c) the marketplace only; (d) all three; (z) decide later
 answer 83: (a), with a clarification: "I think the use-case for routing development cycles and research should remain separate". dev-cycle owns dev-cycle routing; the research skills keep their own routing table; no shared plugin (operator 2026-09-24)
 answer 82: (e), the operator-confirmed policy: implement "that" right after the checkpoint (operator 2026-09-24: "checkpoint, then let's immediately implement that after we are back")
+
+## Notes
+- 2026-09-24 done
+- closed: implemented by c0d6 (landed)

@@ -2,13 +2,12 @@
 id: dev-cycle-routing-policy-sonnet-mechanic-c0d6
 title: "dev-cycle routing policy: Sonnet mechanical / Opus otherwise, fresh Opus reviewer, self-review pure prose"
 type: feature
-status: doing
+status: done
 priority: 0
 parent: dev-cycle-routing-a-cheaper-lane-for-doc-1293
-owner: Kyle-McFarlane@bf9f9839222c
-claimed: 2026-09-24T18:50Z
 created: 2026-09-24
 updated: 2026-09-24
+closed: 2026-09-24
 refs:
   - operator 2026-09-24 (decisions 82 e, 83 a)
 ---
@@ -43,3 +42,9 @@ agent: reviewer a33dc1f546750d008 round 2 at 81e340c
 verdict: reviewer round 2 NEEDS_CHANGES at 81e340c — 10/11 fixed; 1 medium (fix-loop.md:28-32 and Step 4.3 would resume the fable reviewer after a second opinion), 1 low, 2 nits
 dispatch: implementer opus — resume, fix round 2
 agent: implementer a213fb820d8ffc606 fix round 2
+return: implementer fix round 2 DONE 6a60a38
+dispatch: reviewer opus — resume, round 3
+agent: reviewer a33dc1f546750d008 round 3 at 6a60a38
+verdict: reviewer round 3 CLEAR at 6a60a38 (no findings)
+landed: 8b88f29 (merge --no-ff into main)
+- 2026-09-24 done
