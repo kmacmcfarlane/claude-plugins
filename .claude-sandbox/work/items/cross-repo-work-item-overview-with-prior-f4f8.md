@@ -17,3 +17,5 @@ Operator 2026-09-24: 'give me an overview of all of the work-items across the km
 - next: —
 - blocked: —
 - learned: —
+decision 80: where the cross-repo review skill lives — (a) the work-items plugin: the sweep becomes a `wi` command and the judgement a skill beside it [recommended: it reads work-item stores, and it borrows the decisions skill's presentation]; (b) the operator-interaction plugin, as something presented to the operator; (z) decide later
+decision 81: when the cross-repo review runs — (a) on demand first; a morning-brief form later, once the local-GPU routing research says what runs cheaply unattended [recommended]; (b) on demand plus a daily morning brief from the start; (z) decide later
