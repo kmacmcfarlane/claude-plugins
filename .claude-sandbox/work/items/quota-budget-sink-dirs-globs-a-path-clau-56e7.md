@@ -2,8 +2,10 @@
 id: quota-budget-sink-dirs-globs-a-path-clau-56e7
 title: "quota_budget: sink_dirs globs a path claude-analytics never writes, so samples never reach the budget"
 type: bug
-status: todo
+status: doing
 priority: 1
+owner: Kyle-McFarlane@bf9f9839222c
+claimed: 2026-09-24T19:07Z
 created: 2026-09-24
 updated: 2026-09-24
 refs:
@@ -17,3 +19,11 @@ agents - librarian relay 2026-09-24 (a request, not an approval): claude-analyti
 - next: —
 - blocked: —
 - learned: —
+- 2026-09-24 claude-analytics-5e (the writer's owner; a request, not an approval): the contract is ${CLAUDE_CONFIG_DIR:-~/.claude}/claude-analytics/samples/YYYY-MM-DD.jsonl (UTC day files) and it will not move to plugin data (deleted on uninstall; quota history can't be rebuilt). Lines carry top-level ts (epoch float), session_id, rate_limits, plus v, key, sandbox, payload; lines before ~04:00Z 2026-09-24 lack the top-level fields and parse_sink_sample skips them. They ran main's read_sink on the live dir: 2 samples, both windows. ~2 KB/line, ~0.5 MB/day.
+librarian decision: adopt the writer's path — sink_dirs returns CFG/claude-analytics/samples when it is a directory; drop the plugins/data glob (nothing writes there), with a test on a fixture dir at the new path (the writer owns its path; the config dir survives uninstall).
+
+## Notes
+- 2026-09-24 claimed by Kyle-McFarlane@bf9f9839222c
+target: branch worktree-quota-budget-sink-dirs-globs-a-path-clau-56e7 at .claude/worktrees/quota-budget-sink-dirs-globs-a-path-clau-56e7, base main (c960b13)
+dispatch: implementer opus — script (executable logic)
+agent: implementer a9de6aca8e7cd28b1 round 1
