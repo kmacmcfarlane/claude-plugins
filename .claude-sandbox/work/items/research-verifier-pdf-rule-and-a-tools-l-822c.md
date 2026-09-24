@@ -20,3 +20,4 @@ The rest of the research-tooling series' ungated step B, outside 8de3's scope: t
 - next: —
 - blocked: —
 - learned: —
+- also from 8de3 review: tool-preflight.sh:104 add set -f (unquoted $levels glob-expands a path with * ? [); run-record.md:22 wrap to ~95
