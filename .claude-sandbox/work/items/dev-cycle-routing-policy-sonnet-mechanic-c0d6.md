@@ -31,3 +31,6 @@ This replaces rule 3 (fable for security and gating code) and rule 4 (reviewer =
 target: branch worktree-dev-cycle-routing-policy-sonnet-mechanic-c0d6 at .claude/worktrees/dev-cycle-routing-policy-sonnet-mechanic-c0d6, base main (61b0df6)
 dispatch: implementer opus — changes what a skill does (routing rules in dev-cycle Step 2); operator routing
 agent: implementer a213fb820d8ffc606 round 1
+return: implementer round 1 DONE_WITH_CONCERNS f025fc0 (bump: sonnet→opus after crit/high or at fix round 2; breadth signal dropped; waiver never in plan/review modes; second opinion once per cycle)
+dispatch: reviewer opus — always opus, fresh (new policy)
+agent: reviewer a33dc1f546750d008 round 1 at f025fc0
