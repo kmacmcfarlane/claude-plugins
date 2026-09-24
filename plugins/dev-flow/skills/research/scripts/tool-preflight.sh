@@ -6,6 +6,11 @@
 # is data: tool names, package names and local paths, never fetched text.
 # It never tells a session to create a project-level .claude-sandbox/Dockerfile:
 # the nearest one wins, so a new project file would drop a parent one's tools.
+# Limit: paths are word-split, so a search chain containing whitespace prints
+# "CHILD unknown (path contains whitespace)" instead of a verdict. mountinfo
+# escapes a space in a mount point as \040, which is not decoded here; such a
+# mount point never matches, and the whitespace check reports those paths first.
+# An unreadable mountinfo counts every level as visible.
 # Test hooks (defaults in brackets): RESEARCH_PREFLIGHT_MOUNTINFO [/proc/self/mountinfo],
 # RESEARCH_PREFLIGHT_OS_RELEASE [/etc/os-release],
 # RESEARCH_PREFLIGHT_SANDBOX_MARKER [/opt/claude-sandbox/bin/entrypoint.sh].
@@ -46,6 +51,7 @@ host_kind() {
 # so the project level is always visible. Limit: an extra mount of a different
 # host path onto this path also reads as visible.
 visible() {
+  [ -r "$MOUNTINFO" ] || return 0
   while read -r _a _b _c _d mp _rest; do
     [ "$mp" = / ] && continue
     case "$1/" in "$mp"/*) return 0 ;; esac
@@ -91,6 +97,8 @@ sandbox_child() { # prints: <verdict> <detail...>
   # The launcher passes the physical project path; match it when the variable is unset.
   p=${CLAUDE_SANDBOX_PROJECT_DIR:-$(pwd -P)}
   levels=$(chain "$p")
+  ws=$(printf ' \t')
+  case "$p$levels" in *["$ws"]*) echo "unknown (path contains whitespace)"; return ;; esac
   seen=; near=; near_i=; unseen=; i=0
   for lvl in $levels; do
     i=$((i + 1))
@@ -187,6 +195,8 @@ case "$env:${verdict:-}" in
     echo "FIX by the launcher's default rule the child Dockerfile is $detail: add '$list' to an apt-get install line there, then relaunch. Not confirmed: $UNSEEN. $LAUNCH" ;;
   sandbox:base-image)
     echo "FIX this session runs the plain claude-sandbox base image (no child Dockerfile, or baseOnly set). Ask the operator: the upstream base change, or a child Dockerfile that starts 'FROM claude-sandbox' at a level they choose (baseOnly skips any child)" ;;
+  sandbox:unknown)
+    echo "FIX this session's project path contains whitespace, which this preflight cannot resolve. $LAUNCH. Ask the operator to add '$list' to that file, or to take the upstream base change. $DONT" ;;
   sandbox:built-from-unseen)
     echo "FIX this session's child image $detail was built from a Dockerfile no level of the search chain accounts for (usually a dockerfile/dockerfileDir override). $LAUNCH, and 'Building ... child image from ...' on a rebuild. Ask the operator to add '$list' there. $DONT" ;;
   sandbox:override)

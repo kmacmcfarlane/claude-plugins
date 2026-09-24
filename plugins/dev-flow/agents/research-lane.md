@@ -48,8 +48,8 @@ stop to ask; nobody is listening between dispatch and report.
 9. A PDF primary is read with `Read` (rule 8 still keeps a web lane off the shell); never
    `pip install` a PDF library. `WebFetch` of a PDF URL shows you binary, but it saves the
    raw file and prints its path; open that path, or the PDF in your local scope, this way:
-   - **Up to about 5 MB: `Read` it whole, with no `pages`.** The budget is cumulative per
-     lane context, so read at most one large PDF whole. If you cannot tell the size, try once.
+   - **Up to about 5 MB: `Read` it whole, with no `pages`.** The budget is likely cumulative
+     per lane, so read at most one large PDF whole. If you cannot tell the size, try once.
    - Larger, or `Read` refuses a whole read and asks for `pages`: read the cited pages with
      `pages`, at most 20 per call; they come back as images. That needs poppler. Without it,
      `pages` fails with "pdftoppm is not installed"; do not retry it.

@@ -2,9 +2,10 @@
 
 A port of agent-research's research-tooling harness (series 02 § Test matrix: 29
 assertions plus a negative control), made hermetic: every case runs against a
-fixture "host" tree in a temp dir, a fake mountinfo, stub docker/uname binaries
-and a PATH holding only the utilities the script needs, so no case depends on
-this machine's layout, its Docker, or whether poppler is installed. The three
+fixture "host" tree in a temp dir, a fake mountinfo, stub docker, uname, sha256sum
+and timeout binaries, and a PATH holding only the utilities the script needs, so
+no case depends on this machine's layout, its kernel, its Docker or coreutils, or
+whether poppler is installed. The three
 cases the source ran against its live container (D1, R1, R2) use fixtures here.
 
 Each case runs under dash and bash when both exist (else under sh), and the two
@@ -17,6 +18,7 @@ import os
 import re
 import shutil
 import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -25,8 +27,13 @@ HERE = Path(__file__).resolve().parent
 SCRIPT = HERE.parent / "tool-preflight.sh"
 
 SHELLS = [s for s in ("dash", "bash") if shutil.which(s)] or ["sh"]
-UTILS = ("dirname", "basename", "git", "grep", "sed", "tr", "sha256sum", "cut",
-         "head", "cat", "timeout", "uname")
+UTILS = ("dirname", "basename", "git", "grep", "sed", "tr", "cut", "head", "cat")
+# Stubbed rather than linked, so no case depends on the host's coreutils or kernel:
+# uname prints Linux (the macOS case puts its own uname first on PATH), sha256sum
+# is Python's hashlib, and timeout just runs its command.
+SHA256SUM = """import hashlib, sys
+print(hashlib.sha256(sys.stdin.buffer.read()).hexdigest() + "  -")
+"""
 
 F = {}  # fixture paths, filled by setUpModule
 
@@ -56,6 +63,10 @@ def setUpModule():
         p = shutil.which(u)
         if p:
             (bin_ / u).symlink_to(p)
+    _exe(bin_ / "uname", "echo Linux")
+    _exe(bin_ / "timeout", 'shift; exec "$@"')
+    (bin_ / "sha256sum").write_text("#!%s\n%s" % (sys.executable, SHA256SUM))
+    (bin_ / "sha256sum").chmod(0o755)
     F["BIN"] = str(bin_)
 
     b = w / "fs"                                  # stands in for the host filesystem
@@ -63,9 +74,10 @@ def setUpModule():
     p1, p2 = t / "proj1", t / "proj2"             # P1 has its own Dockerfile, P2 has none
     c = b / "home/rt/cfg"                         # tree for config-override cases
     e = b / "home/rt/empty/proj"                  # a project with no Dockerfile anywhere
+    sp = t / "with space/proj"                    # a project path with whitespace
     for d in (t / ".claude-sandbox", p1 / ".claude-sandbox", p2, c / ".claude-sandbox",
               c / "p3/.claude-sandbox", c / "p4", c / "p5/.claude-sandbox",
-              c / "p6/.claude-sandbox", e):
+              c / "p6/.claude-sandbox", e, sp):
         d.mkdir(parents=True)
     for d in (t, p1, c):
         (d / ".claude-sandbox/Dockerfile").write_text("FROM claude-sandbox\n")
@@ -75,7 +87,8 @@ def setUpModule():
         "baseOnly: false\ndockerfileDir: /opt/elsewhere  # override\n")
     (c / "p6/.claude-sandbox/config.yaml").write_text('baseOnly: false\ndockerfile: ""\n')
     (w / "link1").symlink_to(p1)                  # a logical path to P1
-    F.update(T=str(t), P1=str(p1), P2=str(p2), C=str(c), E=str(e), LINK1=str(w / "link1"))
+    F.update(T=str(t), P1=str(p1), P2=str(p2), C=str(c), E=str(e), LINK1=str(w / "link1"),
+             SPACE=str(sp))
 
     # linked worktree: main checkout with a Dockerfile, worktree as a sibling
     lw = w / "lw"
@@ -343,6 +356,29 @@ class LowFixes(unittest.TestCase):
                 rc, out = run(shell, path=[F["NODOCKER"]], cwd=F["LINK1"], PWD=F["LINK1"],
                               RESEARCH_PREFLIGHT_MOUNTINFO=F["MI_SEPHOME"])
                 self.assertIn("CHILD nearest-visible " + F["P1"] + "/.claude-sandbox/Dockerfile",
+                              out.splitlines(), out)
+
+
+class Guards(unittest.TestCase):
+    """Fix-round guards: whitespace in the chain, an unreadable mountinfo."""
+
+    def test_whitespace_path_is_unknown(self):
+        for shell in SHELLS:
+            for docker in (F["NODOCKER"], F["DTREE"]):
+                with self.subTest(shell=shell, docker=docker):
+                    rc, out = run(shell, path=[docker], CLAUDE_SANDBOX_PROJECT_DIR=F["SPACE"],
+                                  RESEARCH_PREFLIGHT_MOUNTINFO=F["MI_PARENT"])
+                    self.assertEqual(rc, 0, out)
+                    self.assertIn("CHILD unknown (path contains whitespace)", out.splitlines(), out)
+                    self.assertIn("Do not create a project-level", out)
+
+    def test_unreadable_mountinfo_counts_all_levels_visible(self):
+        for shell in SHELLS:
+            with self.subTest(shell=shell):
+                rc, out = run(shell, path=[F["NODOCKER"]], CLAUDE_SANDBOX_PROJECT_DIR=F["P2"],
+                              RESEARCH_PREFLIGHT_MOUNTINFO=F["W"] + "/no-such-mountinfo")
+                self.assertEqual(rc, 0, out)
+                self.assertIn("CHILD nearest-visible " + F["T"] + "/.claude-sandbox/Dockerfile",
                               out.splitlines(), out)
 
 

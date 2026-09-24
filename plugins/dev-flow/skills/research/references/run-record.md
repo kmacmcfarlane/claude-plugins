@@ -16,11 +16,18 @@ plan in place.
 
 ## The tool preflight
 
-Recon (Step 5.1) runs this skill's `scripts/tool-preflight.sh` once with `sh`, from the
-project directory, before any lane is planned. The script is read-only and always exits 0. It checks
-poppler's `pdftotext`, `pdfinfo` and `pdftoppm`. Without them a lane can read a PDF only
-whole, up to about 5 MB, and the Read tool's `pages` parameter fails. The `research-lane`
-agent's PDF rule owns what a lane does then.
+Recon (Step 5.1) runs the `research` skill's `scripts/tool-preflight.sh` (under that
+skill's base directory) once with `sh`, with the project directory as the working directory,
+before any lane is planned. A run reached via `research-deep` uses the same script, from the
+`research` skill's directory, not its own. The script is read-only and always exits 0. It checks poppler's
+`pdftotext`, `pdfinfo` and `pdftoppm`. Without them a lane can read a PDF only whole, up to
+about 5 MB, and the Read tool's `pages` parameter fails. The `research-lane` agent's PDF rule
+owns what a lane does then.
+
+Where the 5 MB comes from: measured on Claude Code 2.1.280 without poppler, one PDF per fresh
+context, a 5.2 MB PDF was read whole and an 8.4 MB one came back `[media removed: request
+limit]`. That the budget is cumulative per lane context is inferred from the API's
+per-request limit, not measured. Both are CLI internals and may drift.
 
 It prints:
 
@@ -51,12 +58,12 @@ drop every tool a parent-level one installs.
 Never `pip install` to fill the gap. In claude-sandbox the Python environment is read-only
 at runtime, so the install fails.
 
-> **Pending: unattended runs.** What an unattended run does when a tool is missing waits on
-> an operator decision (claude-plugins decision 85): stop and ask, or continue degraded.
-> Until it is made, an unattended run does what an interactive one does: it reports the
-> `MISSING` and `FIX` lines and asks. It does not pick a degraded path for the operator.
-> Whether an unattended run may `pip install --target` into its scratchpad is a separate
-> question. It comes up only if decision 85 allows a pip step.
+> **Pending: unattended runs.** Not yet decided: whether an unattended run stops or
+> continues degraded when a tool is missing. Until it is, an unattended run stops before any
+> lane launches, with status `BLOCKED` and the `MISSING` and `FIX` lines in the report.
+> Nobody is there to answer a question, and it does not pick a degraded path for the
+> operator. Whether an unattended run may `pip install --target` into its scratchpad is a
+> separate question, which comes up only if that policy allows a pip step.
 
 ## `00-brief.md`
 
