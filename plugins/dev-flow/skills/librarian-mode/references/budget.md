@@ -13,7 +13,8 @@ formula that is about to change.
 **Who owns what.** This file owns the mechanics: where the store lives, its schema, and how
 the numbers are computed. The **values** belong to the `agents` repo's
 `librarian-budget-policy` series (its item 8ad9): the reserve table, the claim TTLs and the
-absent-signal pool. They are defaults until the operator ratifies them. A value changes
+absent-signal pool. They are defaults until the operator ratifies them, except where a ruling
+is noted below. A value changes
 there first and is then copied into the constants at the top of the script, never the other
 way round.
 
@@ -153,11 +154,14 @@ idle-turn integration writes.
   |---|---|---|
   | `present` | 25 | 15 |
   | `away` | 10 | 15 |
-  | `done-for-the-day` | 0 | 15 |
+  | `done-for-the-day` | 5 | 15 |
   | `vacation` | 5 | 10 |
 
   away's five-hour reserve is 10, not the 5 that 1222's 00 gave in its F1 section: the
   agents policy resolved that series' F1/F5 disagreement that way.
+  done-for-the-day's five-hour reserve is 5, not 0: the operator ruled on 2026-09-24 (the
+  series' Open Question 3) that no intent's five-hour reserve goes below 5. The other
+  values are still the series' defaults.
 - **No signal.** The result is `signal: "none"` with a `reason` when there is no session
   id or sensor record, the record's `v` is not 1, it has no rate limits (an API-key
   session, or no render yet), it lacks either window, it is older than `--stale-after`, it

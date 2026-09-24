@@ -238,11 +238,16 @@ class TestIntentAndAllowed(Base):
 
     def test_modes(self):
         for stored, mode, r5, rw in (("present", "present", 25, 15), ("away", "away", 10, 15),
-                                     ("done for the day", "done-for-the-day", 0, 15),
-                                     ("done_for_the_day", "done-for-the-day", 0, 15),
+                                     ("done for the day", "done-for-the-day", 5, 15),
+                                     ("done_for_the_day", "done-for-the-day", 5, 15),
                                      ("vacation", "vacation", 5, 10)):
             self.intent({"mode": stored, "until": NOW + H, "set_by": "x", "at": NOW - 60})
             self.check(mode, r5, rw)
+
+    def test_five_hour_reserve_floor(self):
+        # The operator ruled 2026-09-24: no intent keeps a five-hour reserve below 5.
+        for mode, (r5, _rw) in qb.RESERVES.items():
+            self.assertGreaterEqual(r5, 5.0, mode)
 
     def test_no_until_holds(self):
         self.intent({"mode": "away"})
