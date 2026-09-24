@@ -14,16 +14,17 @@ requirement. Examples are **illustrative**.
 3. **Echo** every reply that is not an exact `N: letter`, in one italic line before you act:
    *Read as: 43 → dig into (other callers in the access logs).* The echo is how a misreading is caught
    in one turn instead of after the damage.
-4. Act — except when the chosen option is one-way (the read-back below).
+4. Act — except on a ⚠ decision when the chosen option is one-way (the read-back below).
 
 When a reply mixes a letter and words (`43: b, keep it with a sunset date`), the letter
 decides; the words are checked against the option and a mismatch is asked about, not guessed.
 
 ## Reply types
 
-**Choose — `N: letter`, or a choice in words.** Act on it. When the **chosen option** is
-one-way — its *Undo* line says it cannot be undone, or only at real cost — first repeat the
-choice back and act only once the operator confirms:
+**Choose — `N: letter`, or a choice in words.** Act on it. On a **⚠ one-way decision**, when
+the **chosen option** is one-way — its *Undo* line says it cannot be undone, or only at real
+cost — first repeat the choice back and act only once the operator confirms. A *one-way,
+narrow* card is answered like any card: its narrowness is why it is not ⚠.
 
 *Read as: 43 → (a) remove `/v1/export` on Thursday. That can't be undone for the partners who
 break — confirm and I'll go ahead, or change it.*

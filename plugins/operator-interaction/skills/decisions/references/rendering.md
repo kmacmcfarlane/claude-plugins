@@ -90,7 +90,7 @@ Rec **(b)** · basis **partial** — *reason*
 
 - A block **includes** the basis drill-down (the tags and links). `expand` on a block is
   answered: *already at full detail — `tell me [what]` for something specific?*
-- The read-back line names the one-way option(s) only. A block for a wide decision that is
+- The read-back line (⚠ blocks only) names the one-way option(s). A block for a wide decision that is
   not ⚠ drops it.
 - Write every option's *Undo* line plainly — it is what decides whether an answer is read
   back (`references/replies.md`).
@@ -177,8 +177,9 @@ recommendation, and the operator would answer an (a) that is not the (a) they re
 options or recommendation really changed, say which and why, and the caller stores the new
 card.
 
-**A cold re-show** — after a context reset, a clear, or the operator's return — shows every
+**A cold re-show** — whenever the reader is cold (SKILL.md § Before you write) — shows every
 open decision at card level or above, never as a line only (SKILL.md § Levels, the line-only
 rule), each opening with what changed while it waited (*nothing changed* is worth saying).
-With more than five, SKILL.md's paging rule applies: the heading says how many are shown in
-full, and the rest are lines ending *(expand for the card)*.
+With more than five, SKILL.md's paging rule applies *(provisional — pending the operator's
+ruling)*: the heading says how many are shown in full, and the rest are lines ending *(expand
+for the card)*.

@@ -353,7 +353,8 @@ questions under `decisions needed:`.
 
 With the `operator-interaction:decisions` skill in the session, `decisions needed:` names
 the numbers, and the decisions follow the four lines, written per that skill
-(`references/bindings.md` § Decisions).
+(`references/bindings.md` § Decisions) — last in the message, after any push outcome and
+team summary.
 
 `Merge and push` (Step 5.3) adds a team summary after the four lines:
 `references/bindings.md` § Landing.

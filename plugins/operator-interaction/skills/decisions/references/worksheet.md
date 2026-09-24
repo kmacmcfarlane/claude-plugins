@@ -36,9 +36,8 @@ observable measures it today; leave it alone rather than guess.
 | Others rely on it before review | yes / no — will another agent, session or person act on the outcome before the operator sees it? | you |
 
 Judge **reversibility and blast radius together**; never add them up as two scores. A
-decision that is one-way *and* wide (or relied on) is **⚠ one-way**: a block, answered on its
-own, read back before acting, never batched, never handed back, never defaulted. One-way but
-narrow is a card marked *one-way, narrow*. Two-way and narrow is the fast tier: a card, or a
+decision that is one-way *and* wide (or relied on) is **⚠ one-way**; how it is shown and
+answered is SKILL.md § Critical. One-way but narrow is a card marked *one-way, narrow*. Two-way and narrow is the fast tier: a card, or a
 line when the line-only rule holds.
 
 ## C — How well is it understood? → what evidence is shown, and "investigate first"
@@ -53,9 +52,7 @@ line when the line-only rule holds.
 A thin basis or a new decision raises the level. When the missing fact could change the choice
 and finding it costs less than choosing wrong, offer **investigate first** as a priced option
 (its time and cost stated). Converging options are one of the conditions of the line-only
-rule: a decision may stay a list line only when the reader is warm, the stakes are low
-(two-way, narrow), the basis is strong, and a template carries the floor or the options
-converge.
+rule (SKILL.md § Levels).
 
 ## D — What does waiting cost? → the order
 

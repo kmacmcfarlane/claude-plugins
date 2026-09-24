@@ -580,7 +580,8 @@ agent asks of its operator.
 The skill is knowledge only: no hooks, no settings, no state. It loads when an agent is about
 to ask you to decide, choose, approve or confirm something, or explicitly with
 `/operator-interaction:decisions`. Its `references/gallery.md` renders every case, and its
-`## Provisional rules` section lists the rules still awaiting your ruling. It names no other
+`## Rulings` section lists what you have ruled, each with the alternative not taken, and
+names what is still provisional (paging a large cold re-show). It names no other
 plugin and needs nothing else here; skills that raise decisions can adopt it.
 
 ### chat

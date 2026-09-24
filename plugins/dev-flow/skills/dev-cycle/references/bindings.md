@@ -184,11 +184,11 @@ When the session lists the `operator-interaction:decisions` skill (a soft depend
 load it and write every decision-channel decision to it, whatever the channel. That covers
 the decisions this section and SKILL.md send "through the decision channel". It includes
 its content floor, its list line / card / block, its order, the echo of a reply, and the
-read-back on a ⚠ one-way choice. A caller's channel still decides where the decision goes
-and what the store records. Standalone, those decisions go as text per the skill, not
-through AskUserQuestion: a dialog cannot carry the floor, the hint or the echo. Step 0.2's
-brief confirmation, the checks question and Land's terminal-action question are not
-decision-channel decisions; they stay dialogs, as the skill allows.
+read-back on a one-way choice in a ⚠ decision. A caller's channel still decides where the
+decision goes and what the store records. Standalone, those decisions go as text per the
+skill, not through AskUserQuestion: a dialog cannot carry the floor, the hint or the echo.
+Step 0.2's brief confirmation, the checks question and Land's terminal-action question are
+not decision-channel decisions; they stay dialogs, as the skill allows.
 
 With the skill or without it: never ask in the same turn as a heavy analysis; end the
 turn with the analysis and ask in the next. Append each raised

@@ -121,7 +121,8 @@ compacts when convenient, and it continues. Finish the step in hand, then:
 4. **Prompt the operator to compact, and stop.** The closing message is the final Report
    of the sequence above: the four-line Report for anything landed since the last one, the
    push outcome with its `incoming:` lines, then its team summary, then the in-flight
-   inventory (step 2), then the checkpoint's own close — its `/compact <guidance>`
+   inventory (step 2), then — with the `operator-interaction:decisions` skill loaded — the
+   decisions block (`references/decisions.md` § The Report), then the checkpoint's own close — its `/compact <guidance>`
    recommendation, to run at the operator's convenience (the next morning is fine), the
    manifest's absolute path, and last its Step 7 opener, led by
    `/dev-flow:librarian-mode start`, then
@@ -131,7 +132,9 @@ compacts when convenient, and it continues. Finish the step in hand, then:
    `copy forward <paths> first` (the checkpoint's Step 7), and the facts changed since
    the manifest, Holds first. Never run `/compact` yourself, and start no new work — no
    dispatch, no merge — in that turn (step 3's merge of `origin/main` through a rejected
-   push is not new work).
+   push is not new work). This is the one exception to "the decisions block is the last
+   thing in the turn": the checkpoint's close (the `/compact` line, the manifest path and the
+   opener) stays the literal end, so the decisions sit directly above it.
 
 The checkpoint stands the gate down, so nothing warns again before the compaction.
 Requests that arrive in that gap are filed through Intake as usual and held — no

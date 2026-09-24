@@ -26,9 +26,9 @@ out.
 - **Every decision meets the floor before it is raised** (below). Without options it is not
   a decision: it is an open question, labelled as one.
 - **⚠ one-way decisions** — one-way *and* high impact — are never ratified inside a batch and
-  never defaulted. Shown as a block the first time and whenever the reader is cold. An answer
-  that picks a **one-way option** is repeated back and acted on only once confirmed, and
-  `you decide` never takes the one-way option.
+  never defaulted. Shown as a block the first time and whenever the reader is cold. On a ⚠
+  decision, an answer that picks a **one-way option** is repeated back and acted on only once
+  confirmed, and `you decide` never takes the one-way option.
 - **No timed defaults on actions.** Silence never turns into an action.
 - **Never show a confidence percentage**, and never use one to order decisions.
 - **Raise decisions as text in your message**, per this skill — not through a modal dialog
@@ -152,7 +152,8 @@ The decisions close the message — after any report, push outcome or summary:
 `expand` raises a decision one level in the next round (line → card → block); it keeps its
 number and position and stays raised on later re-shows.
 
-**A cold re-show** — after a context reset, a clear, or the operator's return — shows every
+**A cold re-show** — whenever the reader is cold on the open decisions (§ Before you write:
+a reset, a clear, or no operator turn since they were shown) — shows every
 open decision at card level or above, each opening with what changed while it waited
 (`references/rendering.md` § Re-show with what changed). When the store carries the card,
 render the stored card; do not compose it again. **Paging:** when more than five would be
@@ -167,7 +168,7 @@ Details, echo wording and edge cases: `references/replies.md`.
 
 | Reply | What you do |
 |---|---|
-| `N: letter`, or a choice in words | act — when the chosen option is one-way, repeat it back and act only once confirmed |
+| `N: letter`, or a choice in words | act — on a ⚠ decision, when the chosen option is one-way, repeat it back and act only once confirmed |
 | `later [when]` | set the wake (a time, an event, or the next time you finish a piece of work and report); re-ask with what changed |
 | `tell me [what]` | answer under the same number with an **Added:** line and only the lines the fact changes |
 | `expand` | show it one level higher next round; on a block, say it is already at full detail |
