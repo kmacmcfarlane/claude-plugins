@@ -23,7 +23,7 @@ there been only the name to settle, it would be a numbered list of one, never a 
 dialog: other items' agents may be in flight, and a modal blocks their returns and peer
 messages (SKILL.md § Intake step 3). Each number is appended to the item body as
 `decision N:`, so the next Report can carry an unanswered one under `decisions needed`
-with its number intact. Then factor: catalog row + plugin skeleton first; the skill
-moves depend on it, each with its catalog edit inside — every dispatch routed as the
-same file gives it. The skeleton is the first dependency group; the skill moves, the
-second, go out in one message once it has landed.
+with its number intact. Then factor: catalog row + plugin skeleton first; the skill moves
+depend on it, each with its catalog edit inside — every dispatch routed as the
+`dev-cycle` skill's `references/model-routing.md` gives it. The skeleton is the first
+dependency group; the skill moves, the second, go out in one message once it has landed.

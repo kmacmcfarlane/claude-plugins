@@ -260,9 +260,10 @@ findings = review round n+1; cap 4 review rounds.
 3. **Fix loop.** Verdicts are `CLEAR`, `NEEDS_CHANGES`, `SHOW_STOPPER` and `BLOCKED`; who
    is resumed and who is re-dispatched: `references/fix-loop.md`. An agent you resume is
    the one its `agent:` line names (`references/record-lines.md`) — SendMessage to that
-   recorded id, never one remembered from this turn alone, with its `— resume` pair
-   written first (rule 7); a re-dispatch writes a fresh `dispatch:` and `agent:` pair.
-   Repeat until `CLEAR`.
+   recorded id, never one remembered from this turn alone — after a second opinion, the
+   opus reviewer's, not the fable one's (`references/fix-loop.md` § A NEEDS_CHANGES
+   round) — with its `— resume` pair written first (rule 7); a re-dispatch writes a
+   fresh `dispatch:` and `agent:` pair. Repeat until `CLEAR`.
    **Cap: 4 review rounds** — the first review plus three fix rounds; a fourth without
    `CLEAR` means the brief or the target is wrong, not the code: block it and raise it.
    Never argue a severity down.

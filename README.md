@@ -287,12 +287,13 @@ names none. Soft dependency on `context-guard`:
 `investigate` offers a checkpoint, `/clear`, then implement path when the checkpoint skill
 is in the session; `librarian-mode` answers the context gate's advisories with a
 checkpoint and weighs its manifest and ledger when it rehydrates; the question raised
-when a `model: fable` pin cannot run also reads reset times from its older state record. Without it none of these fire. Soft
-dependency on `kit-dev`: the `investigate` and `implement` retrospectives hand their findings
-to its user-invoked `update-kit`; without it the findings stand as the record. Soft
-dependency on `create-repo`: `investigate`'s scoping gate points the user at it when the
-target repo does not exist yet; without it the gate names the need and the user creates the
-repo. Soft dependency on `sandbox`: `investigate` and `deep-investigation` point to its skill
+when a `model: fable` pin cannot run also reads reset times from its older state record.
+Without it none of these fire. Soft dependency on `kit-dev`: the `investigate` and
+`implement` retrospectives hand their findings to its user-invoked `update-kit`; without
+it the findings stand as the record. Soft dependency on `create-repo`: `investigate`'s
+scoping gate points the user at it when the target repo does not exist yet; without it
+the gate names the need and the user creates the repo.
+Soft dependency on `sandbox`: `investigate` and `deep-investigation` point to its skill
 for the container `mounts:` cascade, and `investigate`'s series move follows its sidecar
 commit rule; without it the steps stand as written. Soft dependency on `operator-interaction`:
 `librarian-mode` and `dev-cycle` load its `decisions` skill when the session lists it, and
