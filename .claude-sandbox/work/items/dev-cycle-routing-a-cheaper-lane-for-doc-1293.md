@@ -17,3 +17,4 @@ Operator 2026-09-24, relayed by opencode - librarian: 'running a full review cyc
 - next: —
 - blocked: —
 - learned: —
+decision 82: a cheaper path for docs-only changes in dev-cycle — (a) split by what the doc claims: prose-only docs (wording, formatting, alignment; no commands, hosts, permissions, config values or rules agents follow) get a librarian self-review (reads the full diff, runs the lint and checks, records "review: self"), while docs with operational claims, skill text included, keep a sub-agent reviewer at the implementer's tier, with no opus floor for docs [recommended]; (b) every docs-only change reviews at the implementer's tier (sonnet), with no opus floor; (c) self-review any docs diff under about 20 changed lines; (d) keep things as they are; (z) decide later
