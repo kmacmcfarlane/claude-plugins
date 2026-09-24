@@ -2,9 +2,9 @@
 
 Loaded from `research` Step 5. This file owns the format of `00-brief.md` — the canonical
 state of a research run — plus the ledger, the lane-prompt skeleton the orchestrator sends
-to `research-lane`, and the report-back the run ends with. The findings-file shape and the
-evidence rules are **not** here; they live in the `research-lane` agent's body, which every
-lane loads by construction.
+to `research-lane`, and the report-back the run ends with. It also says what to do with the
+tool preflight that recon runs. The findings-file shape and the evidence rules are **not**
+here; they live in the `research-lane` agent's body, which every lane loads by construction.
 
 ## Why the brief exists
 
@@ -13,6 +13,57 @@ scheduled wakeup that launches the next round, and the operator. It is written *
 the first lane launches and updated **as things happen**, never reconstructed afterwards. When
 the plan changes, the brief changes — by a ledger entry that supersedes, not by editing the
 plan in place.
+
+## The tool preflight
+
+Recon (Step 5.1) runs the `research` skill's `scripts/tool-preflight.sh` (under that
+skill's base directory) once with `sh`, with the project directory as the working directory,
+before any lane is planned. A run reached via `research-deep` uses the same script, from the
+`research` skill's directory, not its own. The script is read-only and always exits 0. It checks poppler's
+`pdftotext`, `pdfinfo` and `pdftoppm`. Without them a lane can read a PDF only whole, up to
+about 5 MB, and the Read tool's `pages` parameter fails. The `research-lane` agent's PDF rule
+owns what a lane does then.
+
+Where the 5 MB comes from: measured on Claude Code 2.1.280 without poppler, one PDF per fresh
+context, a 5.2 MB PDF was read whole and an 8.4 MB one came back `[media removed: request
+limit]`. That the budget is cumulative per lane context is inferred from the API's
+per-request limit, not measured. Both are CLI internals and may drift.
+
+It prints:
+
+- a `TOOLS` line: the environment, the tools found and the tools missing;
+- inside claude-sandbox, a `CHILD` line naming which child Dockerfile built this session's
+  image, and how sure it is (`confirmed` by the image tag, or an unconfirmed guess);
+- when something is missing, one `MISSING <package>` line per package, then one `FIX` line
+  with the fix for this environment: the Dockerfile to add the package to, or the host's
+  package-manager command.
+
+The output carries only tool names, package names and local paths, so it may go in the brief.
+
+**Never create a project-level `.claude-sandbox/Dockerfile`, and never suggest one.** The
+script never does. The launcher uses the nearest Dockerfile, so a new project file would
+drop every tool a parent-level one installs.
+
+**Nothing missing:** carry on.
+
+**Something missing, interactive run:** show the `MISSING` and `FIX` lines and ask once:
+
+- **Stop.** The operator applies the fix and relaunches, and the child image rebuilds on its
+  own. Then they re-run the same invocation. Nothing is on disk to resume from, because the
+  brief is written at Step 5.5.
+- **Continue without the tool.** Lanes fall back per their PDF rule. Put the `TOOLS` line and
+  the choice in the brief's § Operator situation. When a source went unread for want of the
+  tool, name the tool under the report's `CONCERNS`.
+
+Never `pip install` to fill the gap. In claude-sandbox the Python environment is read-only
+at runtime, so the install fails.
+
+> **Pending: unattended runs.** Not yet decided: whether an unattended run stops or
+> continues degraded when a tool is missing. Until it is, an unattended run stops before any
+> lane launches, with status `BLOCKED` and the `MISSING` and `FIX` lines in the report.
+> Nobody is there to answer a question, and it does not pick a degraded path for the
+> operator. Whether an unattended run may `pip install --target` into its scratchpad is a
+> separate question, which comes up only if that policy allows a pip step.
 
 ## `00-brief.md`
 

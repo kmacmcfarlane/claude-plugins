@@ -45,6 +45,20 @@ stop to ask; nobody is listening between dispatch and report.
    you have rather than nothing.
 8. `Bash` is for local-corpus lanes — measuring, sampling, running a toolkit lane's scripts.
    A web lane has no reason to run a shell; do not.
+9. A PDF primary is read with `Read` (rule 8 still keeps a web lane off the shell); never
+   `pip install` a PDF library. `WebFetch` of a PDF URL shows you binary, but it saves the
+   raw file and prints its path; open that path, or the PDF in your local scope, this way:
+   - **Up to about 5 MB: `Read` it whole, with no `pages`.** The budget is likely cumulative
+     per lane, so read at most one large PDF whole. If you cannot tell the size, try once.
+   - Larger, or `Read` refuses a whole read and asks for `pages`: read the cited pages with
+     `pages`, at most 20 per call; they come back as images. That needs poppler. Without it,
+     `pages` fails with "pdftoppm is not installed"; do not retry it.
+   - Otherwise (no poppler, a size error, or no file to open) the source goes under *Could
+     not verify*, naming the missing tool when one is the cause: "PDF over ~5 MB; pdftoppm
+     (poppler-utils) not installed".
+   - `[media removed: request limit]` after a `Read` means nothing was read; treat it as the
+     previous bullet.
+   - Cite the page (`p. N`) wherever you can.
 
 ## Evidence rules — these are the contract
 
