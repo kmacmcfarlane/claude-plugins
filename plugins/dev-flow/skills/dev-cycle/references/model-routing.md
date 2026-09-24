@@ -46,7 +46,7 @@ mechanical.
 | A format bump | a record, file or report format gains, loses or changes a field |
 | Executable logic | a hook, anything under `scripts/`, tests, a status line, a `settings.json` write; in a product repo, any code inside Ground |
 | Marketplace shape beyond a row | `marketplace.json`, a plugin added, split, moved or retired |
-| Judgement in the item | the body records a real trade-off, or the acceptance uses words like coherent, align, reconcile |
+| Judgement in the item | the body records a real trade-off, or the acceptance uses judgement words that ask for a trade-off (coherent, reconcile, align two rules) — not "align" naming a path or value to match |
 | A prior `NEEDS_CONTEXT` return | the first run could not settle it from the brief alone |
 
 A planner is opus at least (SKILL.md § Step 1): a plan is judgement.
@@ -90,19 +90,22 @@ its reviewer is opus all the same.
 
 ### Second opinion
 
-On a complex plan an opus agent made — a `plan` mode series, or a feature whose opus
-implementer planned it in its worktree — for greenfield architecture or a major refactor,
-the orchestrator may add one fresh fable reviewer after the opus reviewer's `CLEAR`. It is
-a second reviewer, never a substitute: the opus review runs first and in full. It is
-optional and never for a text change.
+On a complex plan an opus planner made — a `plan` mode series whose subject is
+greenfield architecture or a major refactor — the orchestrator may add one fresh fable
+reviewer after the opus reviewer's `CLEAR` on the series. It is a second reviewer, never a
+substitute: the opus review runs first and in full. It reviews a plan, never a built diff,
+and never a text change; a feature that wants one is planned first in `plan` mode. It is
+optional.
 
-- Brief it as the next review round: the full brief, or the plan-review variant for a
-  series (`resume.md` § The reduction, VARIANT). Record
+- Not when the opus `CLEAR` was review round 4: a second opinion never pushes past the
+  cap.
+- Brief it with the plan-review variant (`review-brief.md`). Record
   `dispatch: reviewer fable — second opinion (<greenfield | major refactor>)`.
-- Its verdict is a review round like any other: it counts toward the cap, and a
-  `NEEDS_CHANGES` opens a fix round whose re-review resumes the fable reviewer.
-- One per cycle. Once it is `CLEAR`, the cycle goes on from that verdict, as from any
-  `CLEAR`.
+- Its verdict is a review round like any other and counts toward the cap. A
+  `NEEDS_CHANGES` opens a fix round whose re-review goes to the **opus** reviewer,
+  resumed, with the fable findings pasted for verification; the fable reviewer is never
+  resumed, so every fix lands under an opus review.
+- One per cycle, one dispatch. Its `CLEAR` goes on as any `CLEAR` does.
 - A second opinion that cannot run — fable unavailable, or the agent lost — is dropped,
   never fallen back to opus and never asked about: the opus `CLEAR` before it stands
   (`resume.md` § The state table, S3b). Name the drop under Step 6's `open questions:`.
@@ -114,14 +117,17 @@ Rule 5's one exception to a fresh reviewer: the orchestrator reviews the change 
 **The test** — all of these, read off the full diff `git -C <workspace> diff
 <base>...HEAD` at the HEAD about to be reviewed, never off the brief or the plan:
 
-- Every changed file is a doc: not skill text (`SKILL.md`, anything under
-  `references/`), not CLAUDE.md, not an agent definition, not a script, test, hook,
-  config file or any code.
+- Every changed file is a doc outside the agent layer: nothing under a plugin's
+  `skills/`, `agents/`, `hooks/` or `.claude-plugin/` (skill assets and templates
+  included), no skill text anywhere (`SKILL.md`, `references/`), not CLAUDE.md, not a
+  script, test, config file or any code.
 - Every changed line is pure prose: wording, formatting or alignment. None adds, removes
   or alters a command, a host, a path, a permission, a config value, or a rule agents
   follow.
 - The mode is `full`. A `plan` series is rules its implementer follows, and `review
   <branch>` mode was asked for a reviewer: both always get one.
+- No Model floor. An item with a `model:` pin — any tier — always gets a reviewer at the
+  pin's tier or above (rule 8).
 
 When in doubt, a reviewer. A later fix round is tested afresh on the cumulative diff: a
 fix that makes an operational claim ends the waiver, and the next review is a fresh opus

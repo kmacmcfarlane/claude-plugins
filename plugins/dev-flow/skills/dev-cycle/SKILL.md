@@ -170,27 +170,23 @@ findings = review round n+1; cap 4 review rounds.
    of these; when in doubt, opus.
 2. **Implementer: opus for everything else** — any change to what a skill, agent,
    CLAUDE.md or doctrine rule does; a format bump; executable logic (hook, `scripts/`,
-   tests, status line, settings write; any code when Ground holds product code); a
-   marketplace shape change beyond a catalog row (`marketplace.json`, a plugin split or
-   move); a recorded trade-off or judgement words in the acceptance (coherent, align,
-   reconcile); a prior `NEEDS_CONTEXT`. A planner is opus at least (Step 1).
+   tests, status line, settings write; any code when Ground holds product code);
+   `marketplace.json`, or a plugin added, split, moved or retired; a recorded trade-off
+   or judgement words that ask for one; a prior `NEEDS_CONTEXT`. The table:
+   `references/model-routing.md` § Implementer. A planner is opus at least (Step 1).
 3. **Fable is no implementer tier by signal.** It runs only under a `model: fable` pin
    (rule 8), or as the second-opinion reviewer rule 4 allows.
 4. **Reviewer: always opus, always fresh** — a new sub-agent that never saw the
    implementer's conversation: never a fork, never the implementer resumed, never you
    (except rule 5's waiver). Resuming the same reviewer for its own re-review is fine.
-   `review <branch>` mode's reviewer is opus too. On a complex plan an opus agent made —
-   greenfield architecture, a major refactor — you may add one fresh fable reviewer after
-   the opus reviewer's `CLEAR`, as a second opinion: a second reviewer, never a
-   substitute (`references/model-routing.md` § Second opinion).
-5. **Review waiver: `review: self`.** A change that is pure prose with no operational
-   claim — wording, formatting or alignment in docs, adding, removing or altering no
-   command, host, path, permission, config value or rule agents follow — gets your own
-   review instead of a reviewer: read the full diff, run `references/review-checklist.md`
-   and the Checks binding, then record `review: self` and the verdict (Step 4). A diff
-   touching skill text (`SKILL.md`, `references/`), CLAUDE.md, an agent definition, a
-   script or any code always gets a reviewer, and so do `plan` and `review <branch>`
-   modes. When in doubt, a reviewer (`references/model-routing.md` § Review waiver).
+   `review <branch>` mode's reviewer is opus too. On a complex `plan` mode series an
+   opus planner made — greenfield architecture, a major refactor — you may add one fresh
+   fable reviewer after the opus reviewer's `CLEAR`, as a second opinion: a second
+   reviewer, never a substitute (`references/model-routing.md` § Second opinion).
+5. **Review waiver: `review: self`.** Pure prose with no operational claim gets your own
+   review instead of a reviewer, recorded as `review: self` above its verdict (Step 4).
+   The test, and what always keeps a reviewer: `references/model-routing.md` § Review
+   waiver. When in doubt, a reviewer.
 6. **A re-dispatch keeps the tier** and sharpens the brief. The one bump: a sonnet
    implementer goes to opus, re-dispatched fresh, at the fix round after a critical or
    high finding, and at fix round 2 whatever the severity. A tier never falls unasked: a

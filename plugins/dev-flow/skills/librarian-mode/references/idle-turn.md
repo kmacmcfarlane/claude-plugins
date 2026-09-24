@@ -181,10 +181,9 @@ A rate limit or an exhausted usage allowance is the harness saying *not yet*, no
 operator saying *stop*. Never open a hold for one, and never leave the queue idle after
 it resets:
 
-- **Fable unavailable**: only a `model: fable` pin or a second-opinion reviewer asks
-  for fable — the `dev-cycle` skill's `references/model-routing.md` §§ Fallback, Second
-  opinion. A pin is a pending decision, never fallen back; a second opinion is dropped.
-  Meanwhile hand each waiting item off and take other work (The cycle).
+- **Fable unavailable**: as the `dev-cycle` skill's `references/model-routing.md`
+  §§ Fallback, Second opinion say. Meanwhile hand each waiting item off and take other
+  work (The cycle).
 - **Every tier limited**: hand each affected item off naming the limit and the reset
   time (`$WI handoff <id> --blocked "rate limit, resets <time>"`), say so in one line
   with the reset time, and resume dispatch at the first turn after the reset. The items

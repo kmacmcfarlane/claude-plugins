@@ -7,14 +7,13 @@ examples.
 
 **Operator: "the implement skill's worktree section still says `.worktrees/`; align it
 with the harness-native path."** Intake: `$WI add`; one file, one concern — decide inline
-("one feature, base main"). Route: impl sonnet (a path fix, mechanical), review opus
-(always; skill text never takes the `review: self` waiver), each recorded as a
-`dispatch:` line in the item. Delegate: one agent in `.claude/worktrees/<id>`. Review: a
-medium finding goes back to the implementer as a fix commit, same tier; re-review says
-`CLEAR` — one fix round, recorded in the item. Land: checklist, diff read,
-`git merge --no-ff` into local `main`, clean up. Report four lines;
-`decisions needed: none`; then push `main`, and write the
-push's team summary.
+("one feature, base main"). Route: implementer and reviewer tiers as the `dev-cycle`
+skill's `references/model-routing.md` gives them (its first worked example is this
+request), each recorded as a `dispatch:` line in the item. Delegate: one agent in
+`.claude/worktrees/<id>`. Review: a medium finding goes back to the implementer as a fix
+commit; re-review says `CLEAR` — one fix round, recorded in the item. Land: checklist,
+diff read, `git merge --no-ff` into local `main`, clean up. Report four lines;
+`decisions needed: none`; then push `main`, and write the push's team summary.
 
 **Operator: "split ralph's backlog skills into their own plugin."** Real trade-offs (name,
 dependency direction, catalog wording): three decisions, each numbered, in a prose list —
@@ -25,6 +24,6 @@ dialog: other items' agents may be in flight, and a modal blocks their returns a
 messages (SKILL.md § Intake step 3). Each number is appended to the item body as
 `decision N:`, so the next Report can carry an unanswered one under `decisions needed`
 with its number intact. Then factor: catalog row + plugin skeleton first; the skill
-moves depend on it, each with its catalog edit inside — every dispatch opus (marketplace
-shape), reviewers opus. The skeleton is the first dependency group;
-the skill moves, the second, go out in one message once it has landed.
+moves depend on it, each with its catalog edit inside — every dispatch routed as the
+same file gives it. The skeleton is the first dependency group; the skill moves, the
+second, go out in one message once it has landed.

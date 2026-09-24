@@ -186,9 +186,8 @@ would ask the operator. Its Step 6 is the Report below. Your bindings:
 - **Ground**: `## Librarian` Scope minus Exclude. **Files in scope**: the item's files,
   from Factor. **Checks**: `Checks:`. **Workflow**: `Workflow:`. **Base**: `main`,
   unless the item names another.
-- **Routing**: dev-cycle's Step 2 as written — a sonnet or opus implementer, an
-  always-opus fresh reviewer, the `review: self` waiver; its one home is the `dev-cycle`
-  skill's `references/model-routing.md`, and nothing here restates or changes it.
+- **Routing**: dev-cycle's Step 2 as written; its one home is the `dev-cycle` skill's
+  `references/model-routing.md`, and nothing here restates or changes it.
 - **Model floor**: an operator pin — a `model: <tier>` line in the item body — for every
   role; never overridden downward.
 - **Hold**: an active hold's limit caps tier and concurrency for every dispatch; below

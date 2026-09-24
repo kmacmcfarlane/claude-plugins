@@ -37,8 +37,8 @@ interrupted run up again; a line that is missing reads there as not recorded:
   reviewed for a change; for a **plan-mode** review, in its place: `at <series path>`
   (the review covers the whole series, not one sha) — a finding's own file:line still
   names the serial, and `baseline:` below, not this field, is what says whether the
-  series has moved. - The **`BLOCKED` reason**, on a `return:` and a `verdict:` and on no
-  other line:
+  series has moved.
+- The **`BLOCKED` reason**, on a `return:` and a `verdict:` and on no other line:
 
   ```
   return: <role> BLOCKED <token> — permission | setup
