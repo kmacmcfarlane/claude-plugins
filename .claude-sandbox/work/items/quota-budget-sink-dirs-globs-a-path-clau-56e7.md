@@ -27,3 +27,6 @@ librarian decision: adopt the writer's path — sink_dirs returns CFG/claude-ana
 target: branch worktree-quota-budget-sink-dirs-globs-a-path-clau-56e7 at .claude/worktrees/quota-budget-sink-dirs-globs-a-path-clau-56e7, base main (c960b13)
 dispatch: implementer opus — script (executable logic)
 agent: implementer a9de6aca8e7cd28b1 round 1
+return: implementer round 1 DONE 451580d (fail-first shown: 4 failures, 2 errors on main)
+dispatch: reviewer opus — fresh
+agent: reviewer aa0533c310e82a22c round 1 at 451580d

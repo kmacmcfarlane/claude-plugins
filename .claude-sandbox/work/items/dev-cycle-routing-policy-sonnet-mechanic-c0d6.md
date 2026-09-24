@@ -37,3 +37,9 @@ agent: reviewer a33dc1f546750d008 round 1 at f025fc0
 verdict: reviewer round 1 NEEDS_CHANGES at f025fc0 — 4 medium (fable-only re-review after a second opinion; pinned item can take the waiver; README 82/289 still describe auto fallback; record-lines.md:40 bullet folded), 7 low, 1 nit
 dispatch: implementer opus — resume, fix round 1
 agent: implementer a213fb820d8ffc606 fix round 1
+return: implementer fix round 1 DONE 81e340c (all 11 fixed; second opinion only in plan mode)
+dispatch: reviewer opus — resume, round 2
+agent: reviewer a33dc1f546750d008 round 2 at 81e340c
+verdict: reviewer round 2 NEEDS_CHANGES at 81e340c — 10/11 fixed; 1 medium (fix-loop.md:28-32 and Step 4.3 would resume the fable reviewer after a second opinion), 1 low, 2 nits
+dispatch: implementer opus — resume, fix round 2
+agent: implementer a213fb820d8ffc606 fix round 2
