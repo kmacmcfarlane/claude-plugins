@@ -245,7 +245,9 @@ class TestIntentAndAllowed(Base):
             self.check(mode, r5, rw)
 
     def test_five_hour_reserve_floor(self):
-        # The operator ruled 2026-09-24: no intent keeps a five-hour reserve below 5.
+        # Agents decision 0008's 5% floor (still provisional): no intent keeps a
+        # five-hour reserve below 5. The operator ruled only done-for-the-day to 5
+        # (2026-09-24).
         for mode, (r5, _rw) in qb.RESERVES.items():
             self.assertGreaterEqual(r5, 5.0, mode)
 
