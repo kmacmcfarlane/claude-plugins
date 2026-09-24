@@ -2,11 +2,13 @@
 id: operator-interaction-decisions-v1-1-the-ed26
 title: "operator-interaction decisions v1.1: the fable review's findings (seen test, turn placement, stored card)"
 type: feature
-status: todo
+status: doing
 priority: 1
 parent: checkpoint-around-continuation-how-agent-d3ee
+owner: Kyle-McFarlane@bf9f9839222c
+claimed: 2026-09-24T19:45Z
 created: 2026-09-23
-updated: 2026-09-23
+updated: 2026-09-24
 refs:
   - fable review 4fb0
 ---
@@ -34,3 +36,9 @@ answer 75: (a) read back and refuse `you decide` only when the chosen option is 
 answer 78: (a) default wake = next time I finish a piece of work and report; drop the 4-hour threshold; unknown return → any stated deadline first (operator 2026-09-24)
 answer 79: (a) rule in the labelled exceptions, the basis word (simplified derivation), no confidence percentage, status-quo defaults only (operator 2026-09-24)
 - 2026-09-24 all v1.1 decisions answered (74 a, 75 a, 76 a, 77 a, 78 a, 79 a); ready to plan
+
+## Notes
+- 2026-09-24 claimed by Kyle-McFarlane@bf9f9839222c
+target: branch worktree-operator-interaction-decisions-v1-1-the-ed26 at .claude/worktrees/operator-interaction-decisions-v1-1-the-ed26, base main (3ee1319)
+dispatch: implementer opus (fork, carries the operator rulings) — changes what a skill does; plans in its series first
+agent: implementer aa7cd9fef7703fb2b (fork) round 1

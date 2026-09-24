@@ -17,3 +17,5 @@ Operator 2026-09-24, instead of adding poppler-utils alone (R10): ask agent-rese
 - next: —
 - blocked: —
 - learned: —
+- 2026-09-24 agent-research - librarian filed research-tooling-the-tools-research-agen-39ae (spike); list comes back after its review
+- 2026-09-24 claude-sandbox librarian (item a864): small stable Debian tools such as poppler-utils go in the base image (batch them, since each change rebuilds every child); heavy or niche tools (pandoc, tesseract, Chromium, LaTeX) go in a documented opt-in child-Dockerfile snippet; pip only as a degraded path; skills must detect and name a missing tool; it measures sizes once the list arrives and puts the cut to the operator
