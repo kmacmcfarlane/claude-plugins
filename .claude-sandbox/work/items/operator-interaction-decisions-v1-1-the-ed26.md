@@ -2,13 +2,12 @@
 id: operator-interaction-decisions-v1-1-the-ed26
 title: "operator-interaction decisions v1.1: the fable review's findings (seen test, turn placement, stored card)"
 type: feature
-status: doing
+status: done
 priority: 1
 parent: checkpoint-around-continuation-how-agent-d3ee
-owner: Kyle-McFarlane@bf9f9839222c
-claimed: 2026-09-24T19:45Z
 created: 2026-09-23
 updated: 2026-09-24
+closed: 2026-09-24
 refs:
   - fable review 4fb0
 ---
@@ -58,3 +57,13 @@ decision 84: paging on a cold re-show — (a) with more than five open, the most
 return: render r3 done — 3 renders; gaps: cold re-show heading with a ⚠, parsing embedded deadlines; after a one-way read-back with no confirmation; one later naming two decisions
 dispatch: reviewer opus — fresh (grades the renders too)
 agent: reviewer a3d57640ea3ca68a2 round 1 at 3a5ca0b
+verdict: reviewer round 1 NEEDS_CHANGES at 3a5ca0b — 7 medium (worksheet restates old ⚠ rules; read-back widened to narrow one-way cards; "operator return" cold trigger undefined; stored card lacks who/basis drill-down for a ⚠ block; README dangling § Provisional rules; ending-the-session.md and dev-cycle SKILL.md standalone placement), 4 low; renders: no medium gaps
+librarian decision: the read-back stays scoped to ⚠ decisions (answer 75 narrowed it within ⚠; a narrow one-way card never had one); files in scope widen to ending-the-session.md and dev-cycle SKILL.md § Report for the placement
+dispatch: implementer opus (fork) — resume, fix round 1
+agent: implementer aa7cd9fef7703fb2b fix round 1
+return: implementer fix round 1 DONE 9f3cbca (who/basis required for any block)
+dispatch: reviewer opus — resume, round 2
+agent: reviewer a3d57640ea3ca68a2 round 2 at 9f3cbca
+verdict: reviewer round 2 CLEAR at 9f3cbca (2 low, 1 nit — filed as a follow-up)
+landed: 3385876 (merge --no-ff into main)
+- 2026-09-24 done
