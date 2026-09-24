@@ -22,3 +22,6 @@ decision 71: operator-interaction catalog aim — (a) keep "…your agents to pu
 decision 72: skill name `decisions` (provisional in README name status) — (a) confirm `decisions` [recommended: plain, and cheap to rename while unshipped]; (b) rename (e.g. `decide`, `operator-decisions`); (z) decide later
 decision 73: the "(shown before)" marker narrows plan R-14 for the round after an expand (already-seen cards are not re-rendered) — (a) keep [recommended: less repetition in long lists]; (b) re-render every card each round; (z) decide later
 - (6) from operator-attention 2026-09-23: replies.md should state that something must evaluate event wakes (the collector does for event wakes; a time wake anyone can check), since a deferral nobody evaluates is a default by omission. A decision with a wake re-enters the list only when its wake has fired.
+answer 71: (a) keep the aim line (operator 2026-09-24)
+answer 72: (a) confirm `decisions` (operator 2026-09-24)
+answer 73: (a) keep (shown before) (operator 2026-09-24)

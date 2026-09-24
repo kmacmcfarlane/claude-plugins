@@ -30,3 +30,7 @@ wake 75: next Report
 answer 76: (a) ⚠ in full on first show and when cold, else a line (operator 2026-09-24)
 answer 77: (a) — operator: "it'd be more useful to have the compact, one-line decision list below the cards/blocks so you can answer some/all of them without scrolling up" (read as: (a), cards above, list + hint at the tail; the build today is (c), list first)
 answer 78: expand — re-show at block level next round (operator 2026-09-24)
+answer 75: (a) read back and refuse `you decide` only when the chosen option is one-way (operator 2026-09-24)
+answer 78: (a) default wake = next time I finish a piece of work and report; drop the 4-hour threshold; unknown return → any stated deadline first (operator 2026-09-24)
+answer 79: (a) rule in the labelled exceptions, the basis word (simplified derivation), no confidence percentage, status-quo defaults only (operator 2026-09-24)
+- 2026-09-24 all v1.1 decisions answered (74 a, 75 a, 76 a, 77 a, 78 a, 79 a); ready to plan

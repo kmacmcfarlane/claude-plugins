@@ -17,3 +17,4 @@ agents - librarian relay 2026-09-24: quota_budget.py:51-56 RESERVES has done-for
 - next: —
 - blocked: —
 - learned: —
+- 2026-09-24 operator ruled: done-for-the-day reserve is 5% (answers agents series Open Question 3; relayed to agents - librarian to record in its decision records). Ready to build.
