@@ -22,3 +22,4 @@ This replaces rule 3 (fable for security and gating code) and rule 4 (reviewer =
 - next: —
 - blocked: —
 - learned: —
+- checkpoint 2026-09-24 (continue): the next step is to build c0d6 at once after the compaction (operator)
