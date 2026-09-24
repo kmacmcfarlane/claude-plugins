@@ -24,3 +24,9 @@ decision 76: ⚠ decisions render as a full block on first show and on a cold re
 decision 77: where decisions sit in the terminal — (a) the decisions block is last in the turn, cards above, list and hint at the tail [recommended: what is on screen when the agent stops]; (b) last in the turn, list first, plus a 'first: N' pointer by the hint; (c) keep as built; (z) decide later after a render test in your own terminal
 decision 78: two provisional rules fable would change — (a) the default wake becomes 'the next time I finish a piece of work and report', and the 4-hour threshold is dropped (with an unknown return, any stated deadline goes first) [recommended: no arbitrary numbers, and the asymmetry favours listing deadlines first]; (b) keep as shipped; (z) decide later
 decision 79: rule the other provisional rules in as shipped — the labelled exceptions (R1), the basis word with a simplified derivation (R4), no confidence percentage (R7), status-quo defaults only (R6) — (a) rule them in [recommended: fable and both research rounds agree]; (b) keep them provisional; (z) decide later
+answer 74: (a) fix all three high findings as v1.1 (operator 2026-09-24)
+answer 75: (z) decide later (operator 2026-09-24)
+wake 75: next Report
+answer 76: (a) ⚠ in full on first show and when cold, else a line (operator 2026-09-24)
+answer 77: (a) — operator: "it'd be more useful to have the compact, one-line decision list below the cards/blocks so you can answer some/all of them without scrolling up" (read as: (a), cards above, list + hint at the tail; the build today is (c), list first)
+answer 78: expand — re-show at block level next round (operator 2026-09-24)
