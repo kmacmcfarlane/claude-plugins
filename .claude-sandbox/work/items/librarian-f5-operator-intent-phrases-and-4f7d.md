@@ -18,3 +18,4 @@ Phase 1: present / away <h> / done for the day / vacation until <date> set inten
 - next: —
 - blocked: —
 - learned: —
+- 2026-09-24 note: the operator ruled done-for-the-day five-hour reserve = 5 (b112), not the series table 0/15; carry 5 in this brief

@@ -18,3 +18,4 @@ Operator 2026-09-24 on decision 80: the cross-repo summary could also present ea
 - next: —
 - blocked: —
 - learned: —
+- 2026-09-24 from v1.1 (ed26): the decisions skill dropped "relay a decision raised elsewhere" from its description; the relay (a from slot, where the answer goes) belongs to this spike

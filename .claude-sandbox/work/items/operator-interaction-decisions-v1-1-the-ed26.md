@@ -42,3 +42,16 @@ answer 79: (a) rule in the labelled exceptions, the basis word (simplified deriv
 target: branch worktree-operator-interaction-decisions-v1-1-the-ed26 at .claude/worktrees/operator-interaction-decisions-v1-1-the-ed26, base main (3ee1319)
 dispatch: implementer opus (fork, carries the operator rulings) — changes what a skill does; plans in its series first
 agent: implementer aa7cd9fef7703fb2b (fork) round 1
+return: implementer (fork) round 1 DONE_WITH_CONCERNS 3a5ca0b (render pass not run: forks cannot spawn; paging narrows the cold re-show, provisional)
+librarian decision: existing decisions (68-81) get their stored card written the next time each is re-shown, not back-filled
+dispatch: render agent sonnet — render pass r3 (a test, not a role)
+agent: render a17311cfcdd2a34ad r3
+decision 84: paging on a cold re-show — (a) with more than five open, the most pressing group and every ⚠ in full, the rest as lines ending (expand for the card) [recommended]; (b) every open decision as a card, as ruled; (z) decide later
+  raised: 2026-09-24
+  what: whether a cold re-show of many open decisions may show only the most pressing ones in full
+  why now: v1.1 adds it as a provisional rule; it narrows the ruled "every open decision as a card"
+  (a): six or more open → first group (or first three) and every ⚠ as cards, the rest one line each with the count stated; shorter messages, the rest one `expand` away
+  (b): every one a card; nothing hidden, but a re-show of eight runs past 100 lines
+  (z): ships provisional as (a) until ruled
+  rec: (a) · basis: partial — fable's review and a 70-line four-decision render; no operator use yet
+  unknown: how often you have more than five open in one repo
