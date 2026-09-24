@@ -25,6 +25,7 @@ plugins/
     agents/            # research-lane, research-verifier (the research family's workers)
     skills/
       {investigate,implement,dev-cycle,deep-investigation,research,research-deep,research-refine,research-prune,chain-of-verification,librarian-mode}/
+      research/scripts/  # tool-preflight.sh (Step 5.1 tool check) + unit tests
   kit-dev/             # Maintaining this kit itself
     skills/
       {create-skill,update-kit,new-project-from-template,factor-analysis}/
@@ -140,4 +141,5 @@ Checks:
 - (cd plugins/context-guard/skills/usage-report && python3 -m unittest discover -s tests -q)
 - (cd plugins/statusline-hub/hooks && python3 -m unittest discover -s tests -q)
 - (cd plugins/dev-flow/skills/librarian-mode/scripts && python3 -m unittest discover -s tests -q)
+- (cd plugins/dev-flow/skills/research/scripts && python3 -m unittest discover -s tests -q)
 Push: main

@@ -118,6 +118,7 @@ Read `references/research-criteria.md` and `references/run-record.md`.
    searches to learn what the field calls the thing, so lanes do not spend budget
    rediscovering vocabulary. For a local corpus: sizes, formats, whether it is mounted, one
    sample record. Recon routinely changes the lane set; that is its job.
+   Run `sh scripts/tool-preflight.sh` too, and act on it per `run-record.md` § The tool preflight.
 2. **Sub-questions**, numbered, each naming the evidence that settles it.
 3. **Criteria**: copy the universal axes with their mandatory marks, then **add the
    subject-specific axes** — this step is required, not optional; the reference's table
