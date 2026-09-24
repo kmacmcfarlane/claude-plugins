@@ -44,13 +44,17 @@ from datetime import datetime, timezone
 
 V = 1
 WINDOWS = ("five_hour", "seven_day")
-# Reserves in percentage points per intent: (five_hour, seven_day). Defaults
-# pending operator ratification; the agents librarian-budget-policy series owns
-# them (away's five-hour reserve is 10, per its resolution of 1222's F1/F5 split).
+# Reserves in percentage points per intent: (five_hour, seven_day). The agents
+# librarian-budget-policy series owns them. done-for-the-day's five-hour reserve
+# of 5 is the operator's ruling (2026-09-24, the series' Open Question 3). The
+# other values stay the series' provisional defaults pending ratification
+# (away's five-hour reserve is 10, per its resolution of 1222's F1/F5 split), as
+# does agents decision 0008's 5% floor, read provisionally as no intent's
+# five-hour reserve below 5.
 RESERVES = {
     "present": (25.0, 15.0),
     "away": (10.0, 15.0),
-    "done-for-the-day": (0.0, 15.0),
+    "done-for-the-day": (5.0, 15.0),
     "vacation": (5.0, 10.0),
 }
 DEFAULT_INTENT = "present"
