@@ -34,3 +34,6 @@ agent: implementer a213fb820d8ffc606 round 1
 return: implementer round 1 DONE_WITH_CONCERNS f025fc0 (bump: sonnet→opus after crit/high or at fix round 2; breadth signal dropped; waiver never in plan/review modes; second opinion once per cycle)
 dispatch: reviewer opus — always opus, fresh (new policy)
 agent: reviewer a33dc1f546750d008 round 1 at f025fc0
+verdict: reviewer round 1 NEEDS_CHANGES at f025fc0 — 4 medium (fable-only re-review after a second opinion; pinned item can take the waiver; README 82/289 still describe auto fallback; record-lines.md:40 bullet folded), 7 low, 1 nit
+dispatch: implementer opus — resume, fix round 1
+agent: implementer a213fb820d8ffc606 fix round 1
