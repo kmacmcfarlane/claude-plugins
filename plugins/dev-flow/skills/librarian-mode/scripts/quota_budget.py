@@ -21,7 +21,7 @@ Reads: this session's sensor record CFG/statusline/sensor/<sid>.json (the
 statusline-hub / statusline contract), this session's own registry file
 CFG/sessions/<CLAUDE_PID>.json (identity fields only, and only when its
 sessionId is ours), the store, and - when the claude-analytics sampler is
-installed and live - its sink CFG/plugins/data/claude-analytics-*/samples/.
+installed and live - its sink CFG/claude-analytics/samples/.
 Never reads a settings file or the user-level Claude state file.
 
 Stdlib only; never raises out of main(): a real error (a store write that
@@ -30,7 +30,6 @@ fails) exits 1 with a message on stderr, and still prints the JSON result.
 import argparse
 import errno
 import fcntl
-import glob
 import hashlib
 import json
 import math
@@ -303,10 +302,13 @@ def read_jsonl(path, parse, tail=SAMPLES_TAIL):
 
 
 def sink_dirs(cfg, override=None):
+    """The sampler's sink: CFG/claude-analytics/samples/, the path its owner
+    (claude-analytics) fixes - not plugin data, which an uninstall deletes. []
+    when it is not a directory. An override replaces it."""
     if override:
         return [override] if os.path.isdir(override) else []
-    return sorted(p for p in glob.glob(os.path.join(cfg, "plugins", "data", "claude-analytics-*", "samples"))
-                  if os.path.isdir(p))
+    d = os.path.join(cfg, "claude-analytics", "samples")
+    return [d] if os.path.isdir(d) else []
 
 
 def read_sink(dirs, now):

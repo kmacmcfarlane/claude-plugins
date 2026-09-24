@@ -119,11 +119,13 @@ idle-turn integration writes.
   `rate_limits.five_hour` and `seven_day` are read (`used_percentage`, `resets_at`), along
   with `rate_limits.at`.
 - **The history** comes from the claude-analytics sampler's sink when it is live. That is
-  a `samples/` directory under `CFG/plugins/data/claude-analytics-*/` (or `--sink-dir`)
-  holding a line dated within `--stale-after`. The reader follows the sampler's *designed*
-  schema, one line per render in `samples/YYYY-MM-DD.jsonl` carrying `ts` (epoch seconds
-  or ISO 8601), `session_id` and the payload's `rate_limits`. The sampler is not built yet,
-  so this path is tested only against synthetic lines. Only `YYYY-MM-DD.jsonl` files are
+  the directory `CFG/claude-analytics/samples/` (or `--sink-dir`), the path the sampler's
+  owner fixes (not plugin data, which an uninstall deletes), holding a line dated within
+  `--stale-after`. The sampler writes one line per render to UTC day files
+  `YYYY-MM-DD.jsonl`, each carrying top-level `ts` (epoch seconds; ISO 8601 is also
+  read), `session_id` and `rate_limits`, beside `v`, `key`, `sandbox` and `payload`, which
+  are ignored. A line without the top-level fields (the sampler's earliest lines) is
+  skipped. Only `YYYY-MM-DD.jsonl` files are
   read (never, say, `usage-cache-*.jsonl`). A line stamped more than 5 min in the future is
   dropped before anything else, so a skewed clock can neither keep the sink live nor win
   the reading. A live sink also supplies the
