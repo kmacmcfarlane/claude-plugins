@@ -55,3 +55,6 @@ decision 84: paging on a cold re-show — (a) with more than five open, the most
   (z): ships provisional as (a) until ruled
   rec: (a) · basis: partial — fable's review and a 70-line four-decision render; no operator use yet
   unknown: how often you have more than five open in one repo
+return: render r3 done — 3 renders; gaps: cold re-show heading with a ⚠, parsing embedded deadlines; after a one-way read-back with no confirmation; one later naming two decisions
+dispatch: reviewer opus — fresh (grades the renders too)
+agent: reviewer a3d57640ea3ca68a2 round 1 at 3a5ca0b
