@@ -74,7 +74,9 @@ the prior elsewhere — with:
 - lanes whose **read-first** line names the prior findings and synthesis paths.
 
 Step 5.1's tool preflight runs as in `research`, so this run's lane prompts carry a `Tools:`
-line and its report a `TOOL REQUEST` built from the preflight's `FIX` lines.
+line and its report a `TOOL REQUEST` built from the preflight's `FIX` lines. Staging is
+created with its `pdf/` directory per the `research` skill's `references/run-record.md` §
+Creating staging.
 
 ### Steps 6–9 — As `research`
 

@@ -55,8 +55,7 @@ around the tool and carries on:
   5 MB, or open the file `WebFetch` saved; beyond that the source is *could not verify*,
   naming the missing tool. Each lane prompt's `Tools:` line says poppler is absent.
   The same holds for the orchestrator reading a PDF itself (a `quick` run).
-- **Nothing is installed.** No `pip install` (in claude-sandbox the Python environment is
-  read-only at runtime, so it fails anyway), no `pip install --target`, no `apt-get`, no
+- **Nothing is installed.** No `pip install`, no `pip install --target`, no `apt-get`, no
   download of a binary. The fix is the operator's to make.
 - Record the `TOOLS`, `CHILD`, `MISSING` and `FIX` lines in the brief's § Operator
   situation, and make `TOOL GAP` its first ledger line. In an attended run, say in one line
