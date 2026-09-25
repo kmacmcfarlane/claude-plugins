@@ -80,3 +80,4 @@ decision 84: paging on a cold re-show — options: (a) with six or more open, th
   rec: (a) · basis partial — fable review finding 7; one render; no real use yet
   basis: inferred — eight open decisions run past 100 lines (fable-review.md finding 7) · observed — four decisions took 70 lines before the hint (7113 test-round renders-r2 r2-08) · observed — the estate held 29 unanswered decisions across 16 items (fable-review.md finding 7, operator-attention's count)
   unknown: how often one repo has more than five open at once
+answer 84: drop (operator 2026-09-25) (read as: the question is retired; paging stays in the skill as shipped)

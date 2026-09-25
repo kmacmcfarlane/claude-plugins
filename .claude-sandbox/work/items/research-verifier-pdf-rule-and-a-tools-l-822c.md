@@ -2,13 +2,14 @@
 id: research-verifier-pdf-rule-and-a-tools-l-822c
 title: "research: verifier PDF rule and a Tools: line in the lane-prompt skeleton"
 type: feature
-status: todo
+status: dropped
 priority: 2
 deps:
   - research-tool-preflight-at-recon-and-a-l-8de3
 parent: research-tooling-the-tools-research-agen-04f7
 created: 2026-09-24
-updated: 2026-09-24
+updated: 2026-09-25
+closed: 2026-09-25
 refs:
   - 8de3 implementer; agent-research 39ae series step B
 ---
@@ -21,3 +22,7 @@ The rest of the research-tooling series' ungated step B, outside 8de3's scope: t
 - blocked: —
 - learned: —
 - also from 8de3 review: tool-preflight.sh:104 add set -f (unquoted $levels glob-expands a path with * ? [); run-record.md:22 wrap to ~95
+
+## Notes
+- 2026-09-25 dropped
+- 2026-09-25 absorbed into the answers-85/86 build (same files)
