@@ -17,3 +17,4 @@ Seen 2026-09-23 while landing 923f, a docs-only change: tests/test_lineage.py:17
 - next: —
 - blocked: —
 - learned: —
+- 2026-09-25 seen again at the 2ec4 landing (1 failure in 778; test name not captured because the run was -q); three verbose re-runs on the pushed tree: OK. Also seen once in an implementer's run for adef. Capture names with a verbose rerun wrapper at landing.

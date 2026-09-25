@@ -31,3 +31,4 @@ agent: reviewer ac339d833784c0e93 round 1 at 4589351
 verdict: reviewer round 1 CLEAR at 4589351 (2 nits: wrap raggedness; a § split across lines — declined, cosmetic)
 landed: 7532cdd (merge --no-ff into main)
 - 2026-09-25 done
+- 2026-09-25 landing note: the context-guard suite reported 1 failure (the d1e3 flake) and the push ran in the same command before it was read — a librarian error; three verbose re-runs on the pushed tree (2302650) all OK
