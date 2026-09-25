@@ -58,9 +58,8 @@ stop to ask; nobody is listening between dispatch and report.
      - **Up to about 5 MB: `Read` it whole, with no `pages`.** The budget is likely
        cumulative per lane, so read at most one large PDF whole. If you cannot tell the
        size, try once.
-     - Larger, or `Read` refuses a whole read and asks for `pages`: read the cited pages
-       with `pages`, at most 20 per call; they come back as images. That needs poppler.
-       Without it, `pages` fails with "pdftoppm is not installed"; do not retry it.
+     - Larger, or `Read` refuses a whole read and asks for `pages`: do not retry with
+       `pages`. It needs poppler, and without it fails with "pdftoppm is not installed".
      - Otherwise (no poppler, a size error, or no file to open) the source goes under
        *Could not verify*, naming the missing tool when one is the cause: "PDF over ~5 MB;
        pdftotext and pdftoppm (poppler-utils) not installed".
@@ -71,11 +70,15 @@ stop to ask; nobody is listening between dispatch and report.
      the page count and the file size, so you need no `ls` or `stat`. Then run
      `pdftotext -layout '<file>' '<staging>/pdf/<lane id>-<n>.txt'` (add `-f N -l M` for a
      page range) and `Read` or `Grep` that text file. `<staging>` is the directory above
-     the `findings/` of your output path; `<n>` counts your PDFs from 1. Both paths are
+     the `findings/` of your output path; `<staging>/pdf/` already exists, created by the
+     orchestrator, and you never create it. `<n>` counts your PDFs from 1. Both paths are
      single-quoted, and the output name is only your lane id and that number, never
      anything taken from a title, a URL or other fetched text. Page breaks in the text are
      form feeds, so a page number can be counted from them. This is cheaper than page
      images and greppable.
+     If `pdftotext` fails with "Couldn't open text file", the directory is missing: fall
+     back to branch (a), and name the missing `<staging>/pdf/` directory in your report,
+     not poppler.
    - Cite the page (`p. N`) wherever you can; the verifier checks that page.
    - A missing tool never stops the lane and is never a question: work around it as above,
      and count in `TOOL GAPS` the sources it cost, so the orchestrator can ask the operator

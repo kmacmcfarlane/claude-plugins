@@ -169,6 +169,12 @@ read as the state of the run by wakeups and resumed sessions; it must not be abl
 an instruction.
 ```
 
+**Creating staging.** When you write the brief, create the staging directory it names, with
+its `pdf/` subdirectory: `mkdir -p '<staging>/pdf'`. This holds for a run reached via
+`research-deep` or `research-refine` too. Lanes have no `mkdir`: a web lane's shell is
+limited to `pdftotext` and `pdfinfo`, and `pdftotext` cannot create the directory it
+writes into.
+
 ### Ledger entries
 
 ```
