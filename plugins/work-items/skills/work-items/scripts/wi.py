@@ -15,6 +15,7 @@ Constraints this file lives under:
   error, 4 lock or claim conflict.
 """
 import argparse
+import base64
 import fcntl
 import fnmatch
 import getpass
@@ -24,6 +25,7 @@ import json
 import os
 import re
 import shlex
+import stat
 import subprocess
 import sys
 import time
@@ -155,6 +157,40 @@ def unanswered_decisions(item):
         if m:
             answered.add(int(m.group(1)))
     return [(n, text) for n, text in asked.items() if n not in answered]
+
+
+# A stored decision card (librarian-mode's references/decisions.md) indents
+# its fields under the `decision N:` headline; `raised:` is when it was asked.
+RAISED_RE = re.compile(r"^[ \t]+raised:\s*(\S+)")
+
+
+def decision_raised(item):
+    """{N: raised} from the indented `raised:` line of each `decision N:`
+    card, the first one per N (a revision keeps the original ask time).
+    Same fence rule as unanswered_decisions; a card ends at the first line
+    that is not indented."""
+    lines = item.body.replace("\r\n", "\n").split("\n")
+    fenced = set()
+    for i, j in _fence_spans(lines):
+        fenced.update(range(i, j + 1))
+    raised, current = {}, None
+    for i, line in enumerate(lines):
+        if i in fenced:
+            current = None
+            continue
+        m = DECISION_RE.match(line)
+        if m:
+            current = int(m.group(1))
+            continue
+        if current is None:
+            continue
+        if not line[:1].isspace():
+            current = None
+            continue
+        m = RAISED_RE.match(line)
+        if m:
+            raised.setdefault(current, m.group(1))
+    return raised
 
 
 class WiError(Exception):
@@ -2122,6 +2158,339 @@ def cmd_needs_input(args):
     return 0 if rows else 2
 
 
+# ── estate: the read-only cross-repo sweep ─────────────────────────────────
+
+ESTATE_STORES = (".claude-sandbox/work", ".work")
+ESTATE_COUNTED = ("todo", "doing", "blocked", "parked", "grooming", "done",
+                  "dropped")
+ESTATE_LISTS = ("decisions", "security", "stale", "problems")
+ESTATE_CAP = 20      # per store, per list; the rest is a count in `omitted`
+# A hint, not a verdict: the work-review skill judges what is a security item.
+SECURITY_TAG_RE = re.compile(r"secur|privacy|vuln|cve", re.I)
+SECURITY_TITLE_RE = re.compile(
+    r"\b(secur\w*|vulnerab\w*|cve-\d+|secrets?|credentials?|passwords?|"
+    r"api[ -]keys?|private keys?|exploit\w*|leak(?:s|ed|ing)?|exposed|"
+    r"exposure|privacy)\b", re.I)
+
+
+def _within(path, base):
+    """True when `path` resolves (symlinks followed) inside `base`, a
+    resolved directory. The one symlink rule of `estate`."""
+    try:
+        real = Path(os.path.realpath(path))
+    except (OSError, ValueError):
+        return False
+    return real == base or base in real.parents
+
+
+def _parse_when(text):
+    """A `claimed:` or `raised:` value as an aware datetime, else None."""
+    for fmt in ("%Y-%m-%dT%H:%MZ", "%Y-%m-%dT%H:%M:%SZ", "%Y-%m-%d"):
+        try:
+            return datetime.strptime(str(text), fmt).replace(tzinfo=timezone.utc)
+        except (ValueError, TypeError):
+            continue
+    return None
+
+
+def _printable(obj):
+    """Every string in `obj` made encodable: a path byte that is not UTF-8
+    (a lone surrogate from os.listdir) shows as \\xe9, as _git shows it."""
+    if isinstance(obj, str):
+        return obj.encode("utf-8", "surrogateescape").decode(
+            "utf-8", "backslashreplace")
+    if isinstance(obj, list):
+        return [_printable(v) for v in obj]
+    if isinstance(obj, dict):
+        return {_printable(k): _printable(v) for k, v in obj.items()}
+    return obj
+
+
+def estate_default_dirs(cwd=None):
+    """The parent of the current repo's main checkout: a linked worktree
+    resolves through the common git dir, a submodule to its superproject.
+    Refused (WiError 1) outside a repo, and when that parent is $HOME, an
+    ancestor of it, or / — a sweep that wide is never a default."""
+    cwd = cwd or os.getcwd()
+    r = _git(cwd, "rev-parse", "--show-superproject-working-tree")
+    if r is not None and r.returncode == 0 and r.stdout.strip():
+        cwd = r.stdout.strip()
+    r = _git(cwd, "rev-parse", "--path-format=absolute", "--git-common-dir")
+    if r is None or r.returncode != 0 or not r.stdout.strip():
+        raise WiError(1, "not in a git repo; name the dir to scan with --dir")
+    common = Path(r.stdout.strip())
+    top = common.parent if common.name == ".git" else common
+    cand = Path(os.path.realpath(top.parent))
+    home = Path(os.path.realpath(Path.home()))
+    if cand == home or cand in home.parents or cand == Path(cand.anchor):
+        raise WiError(1, f"the default scan dir would be {cand}, which is "
+                         "$HOME, above it, or /; name the dir with --dir")
+    return [cand]
+
+
+def estate_is_security(item):
+    return (any(SECURITY_TAG_RE.search(str(t)) for t in item.get("tags", []))
+            or bool(SECURITY_TITLE_RE.search(str(item.get("title", "")))))
+
+
+def _estate_load(paths, base, problems):
+    """Load each item file with wi's own loader, one file at a time, so a
+    bad file is a reported problem rather than a crash or a lost store. A
+    file that resolves outside `base` is never opened."""
+    items = []
+    for path in paths:
+        if not _within(path, base):
+            problems.append({"path": str(path),
+                             "error": "symlink out of the scanned dir; not read"})
+            continue
+        try:
+            if not path.is_file():
+                problems.append({"path": str(path),
+                                 "error": "not a regular file; not read"})
+                continue
+            if path.stat().st_size == 0:   # reported here, not warned on stderr
+                problems.append({"path": str(path), "error": STALE_RESERVATION})
+                continue
+            items += load_paths([path])
+        except Exception as e:  # a foreign store must never stop the sweep
+            problems.append({"path": str(path), "error": str(e)})
+    return items
+
+
+def _estate_cap(rec, cap):
+    rec["omitted"] = {}
+    for key in ESTATE_LISTS:
+        rest = len(rec[key]) - cap
+        rec["omitted"][key] = max(0, rest)
+        if rest > 0:
+            rec[key] = rec[key][:cap]
+    return rec
+
+
+def estate_store(store, base, top, stale_after, now, cap=ESTATE_CAP):
+    """One store's summary, read-only: no lock, no git, no write."""
+    problems = []
+    rec = {"store": str(store), "counts": {}, "ready": [], "decisions": [],
+           "stale": [], "security": [], "problems": problems}
+    try:
+        items = _estate_load(item_paths(store), base, problems)
+        archived = []
+        if (store / "archive").is_dir():
+            archived = _estate_load(sorted((store / "archive").glob("*/*.md")),
+                                    base, problems)
+    except Exception as e:  # the items dir itself unreadable
+        problems.append({"path": str(store), "error": str(e)})
+        return _estate_cap(rec, cap)
+    try:
+        by_id = DepIndex(store, items + archived, archived=True)
+        grouped, closed = split_by_status(items)
+        counts = {k: 0 for k in ESTATE_COUNTED}
+        for it in items:
+            st = it.get("status")
+            if st in counts:
+                counts[st] += 1
+        ready = rank_ready([it for it in grouped["todo"] if is_ready(it, by_id)])
+        counts["open"] = sum(len(v) for v in grouped.values())
+        counts["ready"] = len(ready)
+        rec["counts"] = counts
+        rec["ready"] = [{"id": it.id, "title": it.get("title"),
+                         "priority": it.get("priority", 2),
+                         "type": it.get("type"), "tags": it.get("tags", [])}
+                        for it in ready[:top]]
+        open_items = [it for it in items
+                      if it.get("status") not in ("done", "dropped")]
+        for it in rank_ready(open_items):
+            raised = decision_raised(it)
+            for n, text in unanswered_decisions(it):
+                when = raised.get(n)
+                dt = _parse_when(when) if when else None
+                rec["decisions"].append({
+                    "id": it.id, "title": it.get("title"), "n": n,
+                    "text": text, "raised": when,
+                    "age_days": (now - dt).days if dt else None})
+            if estate_is_security(it):
+                rec["security"].append({
+                    "id": it.id, "title": it.get("title"),
+                    "status": it.get("status"),
+                    "priority": it.get("priority", 2),
+                    "tags": it.get("tags", [])})
+        for it in grouped["doing"]:
+            dt = _parse_when(it.get("claimed"))
+            if dt and (now - dt).total_seconds() > stale_after:
+                rec["stale"].append({"id": it.id, "title": it.get("title"),
+                                     "owner": it.get("owner"),
+                                     "claimed": it.get("claimed"),
+                                     "age": age_str(it.get("claimed"))})
+    except Exception as e:  # a store whose values defeat ranking
+        problems.append({"path": str(store), "error": f"summary failed: {e}"})
+    return _estate_cap(rec, cap)
+
+
+def _read_pointer(path, key):
+    """The value of a one-line git pointer file (`gitdir: X` in a .git
+    file, or a bare `X` in a commondir file), resolved against the file's
+    own dir; None when it is missing, not a regular file (a FIFO would hang
+    the read, a device never ends), unreadable, or holds a NUL. A file
+    read, never a git call."""
+    try:
+        if not stat.S_ISREG(os.stat(path).st_mode):
+            return None
+        with open(path, encoding="utf-8", errors="surrogateescape") as fh:
+            text = fh.read(4096).strip()
+    except (OSError, ValueError):
+        return None
+    if "\0" in text:
+        return None
+    if key:
+        if not text.startswith(key):
+            return None
+        text = text[len(key):].strip()
+    if not text:
+        return None
+    try:
+        return Path(os.path.realpath(Path(path).parent / text))
+    except (OSError, ValueError):
+        return None
+
+
+def git_common_dir(repo):
+    """(common dir, is main checkout) for a repo dir, by file reads only.
+    A `.git` directory is its own common dir (the main checkout). A `.git`
+    file points at its gitdir; that gitdir's `commondir` file, when there is
+    one (a linked worktree), points at the shared dir. A submodule's or a
+    --separate-git-dir clone's gitdir has none, so it is its own. Not a git
+    repo, or an unreadable pointer: the dir's own realpath, not a main."""
+    g = repo / ".git"
+    if g.is_dir():
+        return os.path.realpath(g), True
+    if g.is_file():
+        gitdir = _read_pointer(g, "gitdir:")
+        if gitdir is not None:
+            common = _read_pointer(gitdir / "commondir", None)
+            return str(common or gitdir), False
+    return os.path.realpath(repo), False
+
+
+def _repo_candidates(dirs):
+    """[(d, base, name, repo)] for every repo dir one level under each dir
+    (not hidden, resolving inside its dir), one per git common dir: the main
+    checkout when it is among them, else the first seen. Also the skipped
+    duplicates, each with its reason."""
+    found = []
+    for d in dirs:
+        d = Path(d)
+        if not d.is_dir():
+            raise WiError(1, f"not a directory: {d}")
+        base = Path(os.path.realpath(d))
+        try:
+            entries = os.listdir(d)
+        except OSError as e:
+            raise WiError(3, f"{d}: {e}") from None
+        # real dirs before symlinked aliases, so a tie keeps the real name
+        for name in sorted(entries, key=lambda n: (os.path.islink(d / n), n)):
+            repo = d / name
+            if (name.startswith(".") or not repo.is_dir()
+                    or not _within(repo, base)):
+                continue
+            key, main = git_common_dir(repo)
+            found.append((key, main, d, base, name, repo))
+    keep = {}
+    for key, main, *rest in found:
+        if key not in keep or (main and not keep[key][0]):
+            keep[key] = (main, rest)
+    kept, skipped = [], []
+    for key, main, d, base, name, repo in found:
+        winner = keep[key][1]
+        if winner[3] is repo:
+            kept.append((d, base, name, repo))
+            continue
+        other = winner[3]
+        if os.path.realpath(repo) == os.path.realpath(other):
+            reason = f"symlink alias of {other}"
+        elif main:
+            reason = f"same git dir as {other}"
+        else:
+            reason = f"linked worktree of {other} (shares {key})"
+        skipped.append({"repo": name, "path": str(repo),
+                        "path_raw": _raw(repo), "reason": reason})
+    return kept, skipped
+
+
+def _raw(path):
+    """A path's exact bytes, base64: round-trips a name that is not UTF-8,
+    which the printable `path` cannot (os.fsdecode(b64decode(path_raw)))."""
+    return base64.b64encode(os.fsencode(str(path))).decode("ascii")
+
+
+def estate_scan(dirs, top=5, stale="24h", now=None, cap=ESTATE_CAP):
+    """Every work-item store one level under each dir, summarised."""
+    if top < 0:
+        raise WiError(1, f"--top must be 0 or more, not {top}")
+    now = now or datetime.now(timezone.utc)
+    stale_after = parse_duration(stale)
+    kept, skipped = _repo_candidates(dirs)
+    repos = []
+    for d, base, name, repo in kept:
+        for rel in ESTATE_STORES:
+            store = repo / rel
+            if not (store / "items").is_dir():
+                continue
+            if not (_within(store, base) and _within(store / "items", base)):
+                continue
+            rec = {"repo": name, "path": str(repo), "path_raw": _raw(repo)}
+            rec.update(estate_store(store, base, top, stale_after, now, cap))
+            rec["store"] = rel
+            repos.append(rec)
+    repos.sort(key=lambda r: (r["path"], r["store"]))
+    return {"dirs": [str(Path(d)) for d in dirs], "stale_after": stale,
+            "generated": now.strftime("%Y-%m-%dT%H:%MZ"), "repos": repos,
+            "skipped": skipped}
+
+
+def _estate_text(report):
+    out = [f"wi estate: scanned {', '.join(report['dirs'])} · "
+           f"{len(report['repos'])} store(s)"]
+    for r in report["repos"]:
+        c = r["counts"]
+        head = f"{r['repo']}  ({r['store']})"
+        if c:
+            head += (f"  {c['open']} open · {c['doing']} doing · "
+                     f"{c['blocked']} blocked · {c['ready']} ready")
+        out.append(head)
+        for s in r["security"]:
+            out.append(f"  SECURITY  P{s['priority']} {s['id']}  {s['title']}"
+                       f"  [{s['status']}]")
+        for d in r["decisions"]:
+            age = f"  ({d['age_days']}d)" if d["age_days"] is not None else ""
+            out.append(f"  DECISION  {d['id']}  {d['n']}: {d['text']}{age}")
+        for s in r["stale"]:
+            out.append(f"  STALE     {s['id']}  {s['title']}  "
+                       f"({s['owner'] or '-'}, {s['age']})")
+        for it in r["ready"]:
+            out.append(f"  READY     P{it['priority']} {it['id']}  {it['title']}")
+        for p in r["problems"]:
+            out.append(f"  PROBLEM   {p['path']}: {p['error']}")
+        more = [f"{n} {k}" for k, n in r["omitted"].items() if n]
+        if more:
+            out.append(f"  … and {', '.join(more)} not shown (--json lists "
+                       f"the first {ESTATE_CAP} of each)")
+    for sk in report["skipped"]:
+        out.append(f"skipped {sk['repo']}: {sk['reason']}")
+    return "\n".join(out)
+
+
+def cmd_estate(args):
+    if args.root:
+        raise WiError(1, "--root names one store; estate scans dirs of "
+                         "repos: use --dir")
+    dirs = args.dir or estate_default_dirs()
+    report = _printable(estate_scan(dirs, top=args.top, stale=args.stale))
+    if args.json:
+        print(json.dumps(report, indent=1))
+    else:
+        print(_estate_text(report))
+    return 0 if report["repos"] else 2
+
 # ── import-todo ─────────────────────────────────────────────────────────────
 
 def norm_title(title):
@@ -2919,6 +3288,11 @@ def build_parser():
         ("needs-input", cmd_needs_input, "list every item awaiting the "
          "operator: grooming items and unanswered decision N: lines"): [
             ("--json",), ("--plain",)],
+        ("estate", cmd_estate, "read-only sweep of every work-item store "
+         "one level under a dir: counts, top ready, unanswered decisions, "
+         "stale claims"): [
+            ("--dir", dict(action="append")), ("--top", dict(type=int, default=5)),
+            ("--stale", dict(default="24h")), ("--json",)],
         ("migrate-parked", cmd_migrate_parked,
          "convert blocked items whose reason starts PARKED to parked"): [
             ("--apply",)],

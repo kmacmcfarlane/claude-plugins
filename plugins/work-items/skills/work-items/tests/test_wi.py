@@ -3068,7 +3068,7 @@ class TestHostGitignoreUntouched(WiTestCase):
             ["unblock", iid, "--dep", dep], ["release", iid],
             ["park", iid, "later"], ["unpark", iid], ["migrate-parked"],
             ["groom", iid, "which?"], ["needs-input"], ["ungroom", iid],
-            ["repair-escapes"],
+            ["repair-escapes"], ["estate", "--dir", str(repo.parent)],
             ["import-todo", str(todo)],
             ["export", str(repo / "backlog.yaml"), "--format", "backlog-yaml"],
             ["import", str(repo / "backlog.yaml"), "--format", "backlog-yaml"],
