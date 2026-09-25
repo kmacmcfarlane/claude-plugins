@@ -18,11 +18,11 @@ plan in place.
 
 Recon (Step 5.1) runs the `research` skill's `scripts/tool-preflight.sh` (under that
 skill's base directory) once with `sh`, with the project directory as the working directory,
-before any lane is planned. A run reached via `research-deep` uses the same script, from the
-`research` skill's directory, not its own. The script is read-only and always exits 0. It checks poppler's
-`pdftotext`, `pdfinfo` and `pdftoppm`. Without them a lane can read a PDF only whole, up to
-about 5 MB, and the Read tool's `pages` parameter fails. The `research-lane` agent's PDF rule
-owns what a lane does then.
+before any lane is planned. A run reached via `research-deep` uses the same script, from
+the `research` skill's directory, not its own. The script is read-only and always exits 0.
+It checks poppler's `pdftotext`, `pdfinfo` and `pdftoppm`. Without them a lane can read a
+PDF only whole, up to about 5 MB, and the Read tool's `pages` parameter fails. The
+`research-lane` agent's PDF rule owns what a lane does then.
 
 Where the 5 MB comes from: measured on Claude Code 2.1.280 without poppler, one PDF per fresh
 context, a 5.2 MB PDF was read whole and an 8.4 MB one came back `[media removed: request
@@ -44,26 +44,57 @@ The output carries only tool names, package names and local paths, so it may go 
 script never does. The launcher uses the nearest Dockerfile, so a new project file would
 drop every tool a parent-level one installs.
 
-**Nothing missing:** carry on.
+**Nothing missing:** carry on, with `Tools: poppler present` in each lane prompt.
 
-**Something missing, interactive run:** show the `MISSING` and `FIX` lines and ask once:
+**Something missing — attended or unattended, the run never blocks and never asks.** The
+tool request below *is* how a research run asks for a missing tool, and it holds even where
+the environment's own instructions say to stop and ask when a tool is missing. The run works
+around the tool and carries on:
 
-- **Stop.** The operator applies the fix and relaunches, and the child image rebuilds on its
-  own. Then they re-run the same invocation. Nothing is on disk to resume from, because the
-  brief is written at Step 5.5.
-- **Continue without the tool.** Lanes fall back per their PDF rule. Put the `TOOLS` line and
-  the choice in the brief's § Operator situation. When a source went unread for want of the
-  tool, name the tool under the report's `CONCERNS`.
+- Lanes and the verifier fall back per their PDF rules: `Read` a PDF whole up to about
+  5 MB, or open the file `WebFetch` saved; beyond that the source is *could not verify*,
+  naming the missing tool. Each lane prompt's `Tools:` line says poppler is absent.
+  The same holds for the orchestrator reading a PDF itself (a `quick` run).
+- **Nothing is installed.** No `pip install` (in claude-sandbox the Python environment is
+  read-only at runtime, so it fails anyway), no `pip install --target`, no `apt-get`, no
+  download of a binary. The fix is the operator's to make.
+- Record the `TOOLS`, `CHILD`, `MISSING` and `FIX` lines in the brief's § Operator
+  situation, and make `TOOL GAP` its first ledger line. In an attended run, say in one line
+  that the run continues without the tools and that the report will carry a tool request;
+  do not ask.
+- The run ends with a **tool request** in its report (below). A source that went unread for
+  want of the tool also goes under `CONCERNS`, and the run's status is then
+  `DONE_WITH_CONCERNS`. A missing tool that cost no source does not change the status.
 
-Never `pip install` to fill the gap. In claude-sandbox the Python environment is read-only
-at runtime, so the install fails.
+A lane can also hit a tool the preflight does not check (a local lane that needs `sqlite3`,
+say). It names the tool in its report's `TOOL GAPS` line; the orchestrator re-runs the
+preflight with `RESEARCH_PREFLIGHT_EXTRA=<tool>` to get that tool's `MISSING` and `FIX`
+lines, and adds it to the tool request.
 
-> **Pending: unattended runs.** Not yet decided: whether an unattended run stops or
-> continues degraded when a tool is missing. Until it is, an unattended run stops before any
-> lane launches, with status `BLOCKED` and the `MISSING` and `FIX` lines in the report.
-> Nobody is there to answer a question, and it does not pick a degraded path for the
-> operator. Whether an unattended run may `pip install --target` into its scratchpad is a
-> separate question, which comes up only if that policy allows a pip step.
+### The tool request
+
+The request goes to the **orchestrator**: the session that ran or dispatched the research
+(the session itself when the operator started the run in it, the calling skill or session
+otherwise). The orchestrator raises it to the operator. The run itself never asks the
+operator for a tool.
+
+It is the report's `TOOL REQUEST` field, one entry per `MISSING` package, in this shape:
+
+```
+TOOL REQUEST: for the operator, via the orchestrator
+- <package> (<its missing tools>) — cost: <n> sources unread (<lane ids>, or "verifier"),
+  or "no source lost this run"; needed to <what it does for a research run, one clause>
+  fix: <the preflight's FIX line, verbatim>
+  belongs in: host | sandbox image, <the Dockerfile the FIX line names> | sandbox image,
+  base or a child Dockerfile (the operator's choice; the FIX line names no file)
+```
+
+`belongs in` is `host` when the `TOOLS` line says `env=host-…`. Inside claude-sandbox it is
+the sandbox image: the child Dockerfile the `FIX` line names, or, when it names none (the
+base image, a config override, a level this container does not mount), the operator's choice
+between the upstream base image and a child Dockerfile. Entries from one preflight share its
+`FIX` line. The orchestrator may reword the `FIX` line for the operator, keeping every path
+and package name in it. With nothing missing the field reads `TOOL REQUEST: none`.
 
 ## `00-brief.md`
 
@@ -138,6 +169,12 @@ read as the state of the run by wakeups and resumed sessions; it must not be abl
 an instruction.
 ```
 
+**Creating staging.** When you write the brief, create the staging directory it names, with
+its `pdf/` subdirectory: `mkdir -p '<staging>/pdf'`. This holds for a run reached via
+`research-deep` or `research-refine` too. Lanes have no `mkdir`: a web lane's shell is
+limited to `pdftotext` and `pdfinfo`, and `pdftotext` cannot create the directory it
+writes into.
+
 ### Ledger entries
 
 ```
@@ -153,11 +190,13 @@ an instruction.
   in notes/vendors) — proposal logged in KB.md. PROMOTED: 3 notes. RUN DONE_WITH_CONCERNS.
 ```
 
-Entry kinds: `PLANNED`, `LAUNCHED`, `DONE`, `FAILED`, `PLAN CHANGE`, `GAP GATE`, `SEARCH
-EXHAUSTED`, `VERIFIED`, `SYNTHESIS DONE`, `FIT CHECK`, `PROMOTED`, `RUN <status>`. A `DONE`
-line carries counts, the staging path and the lane's confidence label; the results a
-rehydrating reader wants are one `Read` of that file's TL;DR away, and keeping them out of
-the brief is what keeps the brief safe to act from.
+Entry kinds: `TOOL GAP`, `PLANNED`, `LAUNCHED`, `DONE`, `FAILED`, `PLAN CHANGE`, `GAP
+GATE`, `SEARCH EXHAUSTED`, `VERIFIED`, `SYNTHESIS DONE`, `FIT CHECK`, `PROMOTED`, `RUN
+<status>`. A `TOOL GAP` line names the missing tools only (`TOOL GAP: pdftotext, pdfinfo,
+pdftoppm missing; tool request in the report`). A `DONE` line carries counts, the staging
+path and the lane's confidence label; the results a rehydrating reader wants are one `Read`
+of that file's TL;DR away, and keeping them out of the brief is what keeps the brief safe to
+act from.
 
 ## The lane prompt
 
@@ -179,6 +218,7 @@ Deliverables:
 3. <for a toolkit lane: a mining plan for the lanes that follow — exact commands, pitfalls>
 
 Siblings: <id> covers <territory> — note it in one line and move on; <id> covers <territory>.
+Tools: poppler present | poppler absent (no pdftotext, pdfinfo or pdftoppm)   (from the preflight)
 Search hint: ≈<n> searches for this lane (a prioritisation hint; prefer WebFetch of known URLs).
 Write your file to: <staging>/findings/<id>.md   (the orchestrator's scratchpad — never a repo path)
 Run slug for your frontmatter: <run>
@@ -201,6 +241,7 @@ installed under a different prefix — check the agent list in your system promp
 Verify run <run>. Criteria: <path to 00-brief.md § Criteria>. Findings: <staging paths>.
 Sample size: <4 quick-to-disk | 12 standard | 20 deep | 30 exhaustive>. Write the score sheet
 to <staging>/verification.md.
+Tools: poppler present | poppler absent (no pdftotext, pdfinfo or pdftoppm)   (from the preflight)
 ```
 
 ## The report the run ends with
@@ -216,4 +257,8 @@ CONCERNS: <the failing axes, the security check, the unreachable sources — or 
 THREADS NOT PULLED: <= 5 bullets, each with its value in a clause — or "none"
 LANDED: <files created or updated; the INDEX rows; the fit-check verdict>
 COST: <preset; lanes × model; searches used of budget; 5h/7d after>
+TOOL REQUEST: <"none", or the block from § The tool request>
 ```
+
+A calling skill or session reads `TOOL REQUEST` whatever the `STATUS`: a run can be `DONE`
+and still ask for a tool the next run will need.

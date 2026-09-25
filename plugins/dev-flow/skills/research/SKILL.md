@@ -120,7 +120,9 @@ Read `references/research-criteria.md` and `references/run-record.md`.
    sample record. Recon routinely changes the lane set; that is its job.
    Run the `research` skill's `scripts/tool-preflight.sh` (under its base directory, also when
    reached via `research-deep`) with `sh`, with the project directory as the working
-   directory; act on it per `run-record.md` § The tool preflight.
+   directory; act on it per `run-record.md` § The tool preflight. A missing tool never
+   blocks the run and is never a question: the run works around it, installs nothing, and
+   its report carries a tool request for the operator.
 2. **Sub-questions**, numbered, each naming the evidence that settles it.
 3. **Criteria**: copy the universal axes with their mandatory marks, then **add the
    subject-specific axes** — this step is required, not optional; the reference's table
@@ -237,8 +239,8 @@ the storage reference. Both are written in staging. Ledger `SYNTHESIS DONE`.
 
 **Gate first.** The staged run record — findings, `verification.md`, `01-synthesis.md`,
 `sources.md`, `tools/` — is copied to the destination only now, and only when the verifier's
-security check passed. With a security concern open, nothing fetched-derived reaches a tracked
-tree: the run is **held**. A held run is moved out of the session-scoped scratchpad to a
+security check passed. The lanes' extracted PDF text in `pdf/` stays in staging. With a
+security concern open, nothing fetched-derived reaches a tracked tree: the run is **held**. A held run is moved out of the session-scoped scratchpad to a
 durable ignored path — `.claude-sandbox/research/_held/<run>/` when the held-path check in
 the storage reference (§ The ignore check) says it is ignored — and the brief's `staging:`
 is rewritten to it with status `HELD`, so
@@ -263,9 +265,9 @@ report's `STATUS` is `HELD`. Otherwise, per the shape (storage reference § Shap
 ## Step 11 — Report
 
 Print the report block from `run-record.md` § The report — `STATUS`, `RUN`, `ANSWER`, `KEY
-FINDINGS`, `CONCERNS`, `THREADS NOT PULLED`, `LANDED`, `COST` — and nothing after it except
-an offer: go deeper on a thread, chase a source, or refine with a revised scope. The first
-writeup is a starting position, not a verdict.
+FINDINGS`, `CONCERNS`, `THREADS NOT PULLED`, `LANDED`, `COST`, `TOOL REQUEST` — and nothing
+after it except an offer: go deeper on a thread, chase a source, or refine with a revised
+scope. The first writeup is a starting position, not a verdict.
 
 ---
 
@@ -288,8 +290,8 @@ Overnight and chained runs are normal. Gates change form rather than disappearin
   lost with the session), with the reason in the report — an unattended run never cleans a
   findings file itself.
 - A KB fit check of `REBALANCE FIRST` lands in `notes/_inbox/` with the proposal logged.
-- The report block is returned to the caller verbatim; a calling skill reads `STATUS` and
-  `THREADS NOT PULLED`.
+- The report block is returned to the caller verbatim; a calling skill reads `STATUS`,
+  `THREADS NOT PULLED` and `TOOL REQUEST`, and raises a tool request to the operator.
 
 ## Edge Cases
 

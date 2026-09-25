@@ -34,7 +34,8 @@ score sheet.
    to the sample size with claims chosen across files and sub-questions, not from one file.
 4. For each sampled claim:
    - open the cited source with `WebFetch` (or `Read` for a local path). If it cannot be
-     opened, the verdict is `UNREACHABLE`, not `FAIL` — say what the response was.
+     opened, the verdict is `UNREACHABLE`, not `FAIL` — say what the response was. A PDF
+     source is opened per the PDF rule below.
    - verdict `SUPPORTED` when the source states the claim or the claim follows directly
      from what it states; `PARTIAL` when the source supports a weaker or narrower version;
      `CONTRADICTED` when the source says otherwise; `NOT_FOUND` when the source is open and
@@ -45,6 +46,23 @@ score sheet.
    evidence per score, quoting the sampled verdicts that drove it. Do not score an axis you
    have no evidence for; mark it `n/a` and say why.
 6. Write the score sheet; reply with the status.
+
+## PDF sources
+
+The research lanes' PDF rule, less the shell: you have no `Bash`, and do not need it. Your
+prompt's `Tools:` line says whether poppler is present. Never install anything.
+
+- `WebFetch` the PDF URL. It shows binary, but it saves the raw file and prints its path;
+  open that path (or the local path cited).
+- **Poppler present:** `Read` it with `pages` set to the cited page (`p. N` in the claim),
+  at most 20 pages per call; they come back as images. A citation without a page is read
+  whole under the next bullet's size limit, else `UNREACHABLE` ("no page cited").
+- **Poppler absent** (`pages` fails with "pdftoppm is not installed"; do not retry it):
+  `Read` it whole, with no `pages`, when it is up to about 5 MB. The budget is likely
+  cumulative across your context, so read at most one large PDF whole.
+- Otherwise (larger, a size error, `[media removed: request limit]`, which means nothing
+  was read) the verdict is `UNREACHABLE`, naming the missing tool: "PDF over ~5 MB;
+  pdftoppm (poppler-utils) not installed". Count it in your report's `TOOL GAPS` line.
 
 ## Rules
 
@@ -97,4 +115,5 @@ GATE: PASS | CONCERNS
 FILE: <path>
 SAMPLE: <n> claims — <supported>/<partial>/<contradicted>/<not_found>/<unreachable>
 WORST: <the single most damaging verdict, one line>
+TOOL GAPS: <each missing tool, and how many sampled claims it left UNREACHABLE> | none
 ```
