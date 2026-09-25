@@ -2,12 +2,11 @@
 id: research-refine-name-staging-pdf-creatio-2ec4
 title: "research-refine: name staging pdf/ creation; rewrap research SKILL.md:243"
 type: chore
-status: doing
+status: done
 priority: 3
-owner: Kyle-McFarlane@bf9f9839222c
-claimed: 2026-09-25T18:36Z
 created: 2026-09-25
 updated: 2026-09-25
+closed: 2026-09-25
 refs:
   - adef review round 3
 ---
@@ -29,3 +28,6 @@ agent: implementer a2132a9622dccd204 round 1
 return: implementer round 1 DONE 4589351
 dispatch: reviewer opus — fresh
 agent: reviewer ac339d833784c0e93 round 1 at 4589351
+verdict: reviewer round 1 CLEAR at 4589351 (2 nits: wrap raggedness; a § split across lines — declined, cosmetic)
+landed: 7532cdd (merge --no-ff into main)
+- 2026-09-25 done
