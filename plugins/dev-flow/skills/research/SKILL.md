@@ -239,7 +239,7 @@ the storage reference. Both are written in staging. Ledger `SYNTHESIS DONE`.
 
 **Gate first.** The staged run record — findings, `verification.md`, `01-synthesis.md`,
 `sources.md`, `tools/` — is copied to the destination only now, and only when the verifier's
-security check passed. With a security concern open, nothing fetched-derived reaches a tracked
+security check passed. The lanes' extracted PDF text in `pdf/` stays in staging. With a security concern open, nothing fetched-derived reaches a tracked
 tree: the run is **held**. A held run is moved out of the session-scoped scratchpad to a
 durable ignored path — `.claude-sandbox/research/_held/<run>/` when the held-path check in
 the storage reference (§ The ignore check) says it is ignored — and the brief's `staging:`

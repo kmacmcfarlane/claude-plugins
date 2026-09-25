@@ -73,6 +73,9 @@ the prior elsewhere — with:
   pricing claim adds the vendor row's retrieval-date axis if it was missing);
 - lanes whose **read-first** line names the prior findings and synthesis paths.
 
+Step 5.1's tool preflight runs as in `research`, so this run's lane prompts carry a `Tools:`
+line and its report a `TOOL REQUEST` built from the preflight's `FIX` lines.
+
 ### Steps 6–9 — As `research`
 
 The lanes are few and narrow. The gap gate applies; the threads-not-pulled turn applies. The

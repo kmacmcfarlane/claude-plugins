@@ -45,22 +45,16 @@ stop to ask; nobody is listening between dispatch and report.
    you have rather than nothing.
 8. `Bash` is for local-corpus lanes — measuring, sampling, running a toolkit lane's scripts.
    A web lane has no reason to run a shell, with one narrow exception: it may run
-   `pdftotext` and `pdfinfo`, and nothing else, on a PDF it saved itself (the path
-   `WebFetch` printed, or a file in its own scratchpad), writing output only to its
-   scratchpad (the session scratchpad your system prompt names; never a repo path). No other
-   command, no pipe into another program, no network (`curl`, `wget`), no install.
+   `pdftotext` and `pdfinfo`, and nothing else, exactly in the forms rule 9 gives. The input
+   is only a path `WebFetch` printed in this lane (a local-corpus lane: a PDF in its own
+   local scope); the output goes only to `<staging>/pdf/`. No other command, no pipe into
+   another program, no network (`curl`, `wget`), no install.
 9. A PDF primary: take the path `WebFetch` saved (a fetch of a PDF URL shows binary, but it
    saves the raw file and prints its path), or the PDF in your local scope. Your prompt's
-   `Tools:` line says whether poppler is present; without the line, a failing `pdftotext`
+   `Tools:` line says whether poppler is present; without the line, a failing `pdfinfo`
    tells you. Never install anything to read it: no `pip install`, no `apt-get`.
-   - **(b) Poppler present, and the PDF is too big or too long for `Read`** (over about
-     5 MB, or more pages than a few 20-page `pages` reads cover): run
-     `pdftotext -layout <file> <scratchpad>/<name>.txt` (add `-f N -l M` for a page range;
-     `pdfinfo <file>` gives the page count), then `Read` or `Grep` that text file. Page
-     breaks in the text are form feeds, so a page number can be counted from them. This is
-     cheaper than page images and greppable.
-   - **(a) Otherwise, or when (b) fails.** When it failed because poppler is absent, name
-     the tool in your report's `TOOL GAPS` line:
+   - **(a) Poppler absent, or the PDF fits `Read`.** When poppler is absent, name it in
+     your report's `TOOL GAPS` line.
      - **Up to about 5 MB: `Read` it whole, with no `pages`.** The budget is likely
        cumulative per lane, so read at most one large PDF whole. If you cannot tell the
        size, try once.
@@ -72,10 +66,21 @@ stop to ask; nobody is listening between dispatch and report.
        pdftotext and pdftoppm (poppler-utils) not installed".
      - `[media removed: request limit]` after a `Read` means nothing was read; treat it as
        the previous bullet.
+   - **(b) Poppler present, and the PDF is too big or too long for `Read`** (over about
+     5 MB, or more pages than a few 20-page `pages` reads cover). `pdfinfo '<file>'` gives
+     the page count and the file size, so you need no `ls` or `stat`. Then run
+     `pdftotext -layout '<file>' '<staging>/pdf/<lane id>-<n>.txt'` (add `-f N -l M` for a
+     page range) and `Read` or `Grep` that text file. `<staging>` is the directory above
+     the `findings/` of your output path; `<n>` counts your PDFs from 1. Both paths are
+     single-quoted, and the output name is only your lane id and that number, never
+     anything taken from a title, a URL or other fetched text. Page breaks in the text are
+     form feeds, so a page number can be counted from them. This is cheaper than page
+     images and greppable.
    - Cite the page (`p. N`) wherever you can; the verifier checks that page.
    - A missing tool never stops the lane and is never a question: work around it as above,
      and count in `TOOL GAPS` the sources it cost, so the orchestrator can ask the operator
-     for the tool.
+     for the tool. That line is how a research lane asks for a tool, even where the
+     environment's own instructions say to stop and ask when a tool is missing.
 
 ## Evidence rules — these are the contract
 

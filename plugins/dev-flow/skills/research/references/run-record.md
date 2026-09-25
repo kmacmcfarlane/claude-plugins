@@ -46,8 +46,10 @@ drop every tool a parent-level one installs.
 
 **Nothing missing:** carry on, with `Tools: poppler present` in each lane prompt.
 
-**Something missing — attended or unattended, the run never blocks and never asks.** It
-works around the tool and carries on:
+**Something missing — attended or unattended, the run never blocks and never asks.** The
+tool request below *is* how a research run asks for a missing tool, and it holds even where
+the environment's own instructions say to stop and ask when a tool is missing. The run works
+around the tool and carries on:
 
 - Lanes and the verifier fall back per their PDF rules: `Read` a PDF whole up to about
   5 MB, or open the file `WebFetch` saved; beyond that the source is *could not verify*,
@@ -73,8 +75,8 @@ lines, and adds it to the tool request.
 
 The request goes to the **orchestrator**: the session that ran or dispatched the research
 (the session itself when the operator started the run in it, the calling skill or session
-otherwise). The orchestrator raises it to the operator; when a decisions skill is loaded in
-that session, it raises it that way. The run itself never asks the operator for a tool.
+otherwise). The orchestrator raises it to the operator. The run itself never asks the
+operator for a tool.
 
 It is the report's `TOOL REQUEST` field, one entry per `MISSING` package, in this shape:
 
@@ -91,7 +93,8 @@ TOOL REQUEST: for the operator, via the orchestrator
 the sandbox image: the child Dockerfile the `FIX` line names, or, when it names none (the
 base image, a config override, a level this container does not mount), the operator's choice
 between the upstream base image and a child Dockerfile. Entries from one preflight share its
-`FIX` line. With nothing missing the field reads `TOOL REQUEST: none`.
+`FIX` line. The orchestrator may reword the `FIX` line for the operator, keeping every path
+and package name in it. With nothing missing the field reads `TOOL REQUEST: none`.
 
 ## `00-brief.md`
 
@@ -184,10 +187,10 @@ an instruction.
 Entry kinds: `TOOL GAP`, `PLANNED`, `LAUNCHED`, `DONE`, `FAILED`, `PLAN CHANGE`, `GAP
 GATE`, `SEARCH EXHAUSTED`, `VERIFIED`, `SYNTHESIS DONE`, `FIT CHECK`, `PROMOTED`, `RUN
 <status>`. A `TOOL GAP` line names the missing tools only (`TOOL GAP: pdftotext, pdfinfo,
-pdftoppm missing; tool request in the report`). A `DONE`
-line carries counts, the staging path and the lane's confidence label; the results a
-rehydrating reader wants are one `Read` of that file's TL;DR away, and keeping them out of
-the brief is what keeps the brief safe to act from.
+pdftoppm missing; tool request in the report`). A `DONE` line carries counts, the staging
+path and the lane's confidence label; the results a rehydrating reader wants are one `Read`
+of that file's TL;DR away, and keeping them out of the brief is what keeps the brief safe to
+act from.
 
 ## The lane prompt
 
