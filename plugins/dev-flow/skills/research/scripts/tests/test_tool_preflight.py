@@ -75,11 +75,12 @@ def setUpModule():
     c = b / "home/rt/cfg"                         # tree for config-override cases
     e = b / "home/rt/empty/proj"                  # a project with no Dockerfile anywhere
     sp = t / "with space/proj"                    # a project path with whitespace
+    gp = t / "g*/proj"                            # a glob character in a chain level
     for d in (t / ".claude-sandbox", p1 / ".claude-sandbox", p2, c / ".claude-sandbox",
               c / "p3/.claude-sandbox", c / "p4", c / "p5/.claude-sandbox",
-              c / "p6/.claude-sandbox", e, sp):
+              c / "p6/.claude-sandbox", e, sp, gp, t / "gx/.claude-sandbox"):
         d.mkdir(parents=True)
-    for d in (t, p1, c):
+    for d in (t, p1, c, t / "gx"):                # gx: a sibling the level "g*" would glob to
         (d / ".claude-sandbox/Dockerfile").write_text("FROM claude-sandbox\n")
     (c / ".claude-sandbox/config.yaml").write_text("baseOnly: true\n")
     (c / "p3/.claude-sandbox/config.yaml").write_text("baseOnly: false\n")
@@ -88,7 +89,7 @@ def setUpModule():
     (c / "p6/.claude-sandbox/config.yaml").write_text('baseOnly: false\ndockerfile: ""\n')
     (w / "link1").symlink_to(p1)                  # a logical path to P1
     F.update(T=str(t), P1=str(p1), P2=str(p2), C=str(c), E=str(e), LINK1=str(w / "link1"),
-             SPACE=str(sp))
+             SPACE=str(sp), GLOB=str(gp))
 
     # linked worktree: main checkout with a Dockerfile, worktree as a sibling
     lw = w / "lw"
@@ -360,7 +361,8 @@ class LowFixes(unittest.TestCase):
 
 
 class Guards(unittest.TestCase):
-    """Fix-round guards: whitespace in the chain, an unreadable mountinfo."""
+    """Fix-round guards: whitespace or a glob character in the chain, an unreadable
+    mountinfo."""
 
     def test_whitespace_path_is_unknown(self):
         for shell in SHELLS:
@@ -371,6 +373,17 @@ class Guards(unittest.TestCase):
                     self.assertEqual(rc, 0, out)
                     self.assertIn("CHILD unknown (path contains whitespace)", out.splitlines(), out)
                     self.assertIn("Do not create a project-level", out)
+
+    def test_glob_characters_in_a_level_are_literal(self):
+        """A level named "g*" is that directory, not every sibling it would match."""
+        for shell in SHELLS:
+            with self.subTest(shell=shell):
+                rc, out = run(shell, path=[F["NODOCKER"]], CLAUDE_SANDBOX_PROJECT_DIR=F["GLOB"],
+                              RESEARCH_PREFLIGHT_MOUNTINFO=F["MI_PARENT"])
+                self.assertEqual(rc, 0, out)
+                self.assertIn("CHILD nearest-visible " + F["T"] + "/.claude-sandbox/Dockerfile",
+                              out.splitlines(), out)
+                self.assertNotIn("/gx/", out)
 
     def test_unreadable_mountinfo_counts_all_levels_visible(self):
         for shell in SHELLS:

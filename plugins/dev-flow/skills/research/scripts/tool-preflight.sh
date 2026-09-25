@@ -19,6 +19,10 @@
 # its round-3 review lows fixed: the matched Dockerfile is checked to still exist,
 # nearer= needs a nearer chain position, and the $PWD fallback is physical.
 
+# The unquoted $levels and $seen below rely on word splitting, never on pathname
+# expansion, which would turn a level containing * ? or [ into other paths.
+set -f
+
 WANT="pdftotext pdfinfo pdftoppm ${RESEARCH_PREFLIGHT_EXTRA:-}"
 MOUNTINFO=${RESEARCH_PREFLIGHT_MOUNTINFO:-/proc/self/mountinfo}
 OS_RELEASE=${RESEARCH_PREFLIGHT_OS_RELEASE:-/etc/os-release}
