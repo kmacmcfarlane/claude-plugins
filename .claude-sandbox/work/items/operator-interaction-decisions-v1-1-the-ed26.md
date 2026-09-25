@@ -68,3 +68,15 @@ verdict: reviewer round 2 CLEAR at 9f3cbca (2 low, 1 nit — filed as a follow-u
 landed: 3385876 (merge --no-ff into main)
 - 2026-09-24 done
 - 2026-09-24 marketplace - librarian filed relay-operator-interaction-decisions-v1-dc77 and is relaying the update + /reload-plugins ask to the operator
+decision 84: paging on a cold re-show — options: (a) with six or more open, the most pressing group and every ⚠ in full, the rest as lines [recommended] | (b) every open decision in full | (z) decide later
+  raised: 2026-09-24T20:30Z
+  revised: 2026-09-25 — expanded to a block at the operator's request; context, undo, who and basis added, options unchanged
+  what: whether a cold re-show of many open decisions may show only the most pressing ones in full
+  why now: v1.1 shipped it provisional and it is live as (a); it narrows the ruled "every open decision as a card"
+  context: a cold re-show happens after a reset or /clear, or when you have not taken a turn since a decision was shown; each shown decision appears twice (card above, line at the tail)
+  (a) first group (or first three, whichever is larger) plus every ⚠ as cards; the rest one line ending "(expand for the card)", with "N open · M shown in full" stated — undo: one edit to the skill — who: you, and every agent that raises decisions
+  (b) every open decision a card — undo: one edit — who: same; long messages when many are open
+  (z) decide later — it stays live as (a)
+  rec: (a) · basis partial — fable review finding 7; one render; no real use yet
+  basis: inferred — eight open decisions run past 100 lines (fable-review.md finding 7) · observed — four decisions took 70 lines before the hint (7113 test-round renders-r2 r2-08) · observed — the estate held 29 unanswered decisions across 16 items (fable-review.md finding 7, operator-attention's count)
+  unknown: how often one repo has more than five open at once
