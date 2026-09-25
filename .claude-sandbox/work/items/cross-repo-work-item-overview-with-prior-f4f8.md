@@ -30,3 +30,6 @@ answer 81: (a) on demand first; the morning review filed separately as a spike, 
 target: branch worktree-cross-repo-work-item-overview-with-prior-f4f8 at .claude/worktrees/cross-repo-work-item-overview-with-prior-f4f8, base main (7f00dd1)
 dispatch: implementer opus — new wi command (script) + skill; plans first
 agent: implementer ab98f8271aed44186 round 1
+return: implementer round 1 DONE_WITH_CONCERNS 6654302 (--dir not --root; security keyword hint; skill example names real estate items)
+dispatch: reviewer opus — fresh
+agent: reviewer a93634735827126c9 round 1 at 6654302
