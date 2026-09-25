@@ -138,7 +138,8 @@ Read `references/research-criteria.md` and `references/run-record.md`.
    `PLANNING` → `RUNNING` and the first ledger line. The brief is yours, not a lane's: it
    carries no fetched text, ever. Its frontmatter names the **staging path**
    (`<scratchpad>/research/<run>/`) where lanes, the verifier and the synthesis write; the run
-   record is assembled at the destination only in Step 10. Only now may a lane launch.
+   record is assembled at the destination only in Step 10. Staging is created with its `pdf/`
+   directory per `references/run-record.md` § Creating staging. Only now may a lane launch.
 
 Expected output: the brief on disk, self-sufficient for a session that rehydrates from it.
 
@@ -240,7 +241,8 @@ the storage reference. Both are written in staging. Ledger `SYNTHESIS DONE`.
 **Gate first.** The staged run record — findings, `verification.md`, `01-synthesis.md`,
 `sources.md`, `tools/` — is copied to the destination only now, and only when the verifier's
 security check passed. The lanes' extracted PDF text in `pdf/` stays in staging. With a
-security concern open, nothing fetched-derived reaches a tracked tree: the run is **held**. A held run is moved out of the session-scoped scratchpad to a
+security concern open, nothing fetched-derived reaches a tracked tree: the run is **held**. A
+held run is moved out of the session-scoped scratchpad to a
 durable ignored path — `.claude-sandbox/research/_held/<run>/` when the held-path check in
 the storage reference (§ The ignore check) says it is ignored — and the brief's `staging:`
 is rewritten to it with status `HELD`, so
