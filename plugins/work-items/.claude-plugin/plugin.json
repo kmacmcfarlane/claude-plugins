@@ -1,6 +1,6 @@
 {
   "name": "work-items",
-  "description": "Repo-durable work items for humans and agents — the wi CLI over one-markdown-file-per-item stores, and the work-source provider interface.",
+  "description": "Repo-durable work items for humans and agents — the wi CLI over one-markdown-file-per-item stores (including a read-only cross-repo sweep with an on-demand review skill over it), and the work-source provider interface (soft dependencies: statusline-hub, whose sensor record gives the review its quota line; operator-interaction, whose decisions skill the review follows when it puts a decision to the operator).",
   "author": {
     "name": "Kyle McFarlane"
   },

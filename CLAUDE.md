@@ -51,7 +51,8 @@ plugins/
       install-statusline-hub/  # installer script (install, remove, replace, wrap, unwrap, --status)
   work-items/          # Repo-durable work items + the work-source provider interface
     skills/
-      work-items/      # wi CLI, references/{format,provider-interface}.md, tests/
+      work-items/      # wi CLI (incl. `wi estate`, the cross-repo sweep), references/{format,provider-interface}.md, tests/
+      work-review/     # the on-demand cross-repo review, written from `wi estate`
 ```
 
 Every plugin carries `.claude-plugin/plugin.json`; a skill directory holds `SKILL.md` plus
