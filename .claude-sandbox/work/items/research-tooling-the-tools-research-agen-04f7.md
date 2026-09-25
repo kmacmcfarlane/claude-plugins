@@ -64,3 +64,4 @@ decision 86: may web research lanes run pdftotext — options: (a) narrow except
   unknown: whether other file types (docx, epub) will want the same exception
 answer 85: operator 2026-09-25: "work-around in the run without blocking; also send a message to the orchestrator requesting the necessary tools from the operator (to be added to host or sandbox)" (read as: an unattended run never blocks on a missing tool; it works around it (whole-PDF Read up to ~5 MB, WebFetch-saved files, could-not-verify beyond), installs nothing, and the run's report to its orchestrator carries a tool request naming each missing tool and where to add it (host or sandbox image), which the orchestrator raises to the operator)
 answer 86: (a) narrow exception: pdftotext and pdfinfo on a file the lane itself saved (operator 2026-09-25)
+- 2026-09-25 agent-research - librarian filed research-tooling-series-record-the-opera-d6af to record the rulings on OQ5-7

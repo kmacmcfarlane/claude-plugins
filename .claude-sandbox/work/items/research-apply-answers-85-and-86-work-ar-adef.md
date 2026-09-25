@@ -26,3 +26,6 @@ Operator 2026-09-25. (85) A research run never blocks on a missing tool, attende
 target: branch worktree-research-apply-answers-85-and-86-work-ar-adef at .claude/worktrees/research-apply-answers-85-and-86-work-ar-adef, base main (f675c71)
 dispatch: implementer opus — agent contracts + script
 agent: implementer a150d524782df8f8b round 1
+return: implementer round 1 DONE_WITH_CONCERNS 8730f9f (decisions skill named generically; TOOL GAPS lines)
+dispatch: reviewer opus — fresh
+agent: reviewer a1fb6bdd621b47144 round 1 at 8730f9f
