@@ -66,3 +66,4 @@ answer 85: operator 2026-09-25: "work-around in the run without blocking; also s
 answer 86: (a) narrow exception: pdftotext and pdfinfo on a file the lane itself saved (operator 2026-09-25)
 - 2026-09-25 agent-research - librarian filed research-tooling-series-record-the-opera-d6af to record the rulings on OQ5-7
 - 2026-09-25 relayed to claude-sandbox - librarian: container-context.md:23 "stop and ask" conflicts with answer 85; suggested rewording; plus OQ8 (:12 pip)
+- 2026-09-25 claude-sandbox - librarian filed container-context-md-missing-tools-rule-baf3 and put it to the operator as its decision 41 (our wording recommended); OQ8 already fixed on their main b506e4a

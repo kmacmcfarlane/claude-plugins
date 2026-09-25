@@ -2,8 +2,10 @@
 id: research-refine-name-staging-pdf-creatio-2ec4
 title: "research-refine: name staging pdf/ creation; rewrap research SKILL.md:243"
 type: chore
-status: todo
+status: doing
 priority: 3
+owner: Kyle-McFarlane@bf9f9839222c
+claimed: 2026-09-25T18:36Z
 created: 2026-09-25
 updated: 2026-09-25
 refs:
@@ -17,3 +19,10 @@ From adef's CLEAR review: research-refine SKILL.md:60-78 writes its own brief an
 - next: —
 - blocked: —
 - learned: —
+- 2026-09-25 also: run-record.md:58-59 says the claude-sandbox Python environment is read-only at runtime so pip fails anyway — no longer true (claude-sandbox b506e4a, item 6c58: the entrypoint hands the session user the venv dirs; installs are per-container). Drop the parenthetical; the no-install rule stands on the operator ruling.
+
+## Notes
+- 2026-09-25 claimed by Kyle-McFarlane@bf9f9839222c
+target: branch worktree-research-refine-name-staging-pdf-creatio-2ec4 at .claude/worktrees/research-refine-name-staging-pdf-creatio-2ec4, base main (9a12066)
+dispatch: implementer sonnet — mechanical: a pointer clause, a rewrap, a stale parenthetical
+agent: implementer a2132a9622dccd204 round 1
