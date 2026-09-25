@@ -2,9 +2,11 @@
 id: research-apply-answers-85-and-86-work-ar-adef
 title: "research: apply answers 85 and 86 (work around, request tools; pdftotext for web lanes) with the verifier PDF rule"
 type: feature
-status: todo
+status: doing
 priority: 1
 parent: research-tooling-the-tools-research-agen-04f7
+owner: Kyle-McFarlane@bf9f9839222c
+claimed: 2026-09-25T18:04Z
 created: 2026-09-25
 updated: 2026-09-25
 refs:
@@ -18,3 +20,9 @@ Operator 2026-09-25. (85) A research run never blocks on a missing tool, attende
 - next: —
 - blocked: —
 - learned: —
+
+## Notes
+- 2026-09-25 claimed by Kyle-McFarlane@bf9f9839222c
+target: branch worktree-research-apply-answers-85-and-86-work-ar-adef at .claude/worktrees/research-apply-answers-85-and-86-work-ar-adef, base main (f675c71)
+dispatch: implementer opus — agent contracts + script
+agent: implementer a150d524782df8f8b round 1
