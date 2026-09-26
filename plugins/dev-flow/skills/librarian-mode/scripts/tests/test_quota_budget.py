@@ -389,13 +389,13 @@ class TestClaims(Base):
         reg = os.path.join(self.cfg, "sessions")
         os.makedirs(reg)
         with open(os.path.join(reg, "42.json"), "w") as f:
-            json.dump({"sessionId": SID, "name": "myrepo - librarian", "pid": 42,
+            json.dump({"sessionId": SID, "name": "myrepo", "pid": 42,
                        "pidDomain": "pidns:1", "procStart": "123"}, f)
         env = dict(self.env, CLAUDE_PID="42")
         self.run_qb(env=env)
         c = self.read_claim("myrepo")
         self.assertEqual((c["session_name"], c["pid"], c["pidDomain"], c["procStart"]),
-                         ("myrepo - librarian", 42, "pidns:1", "123"))
+                         ("myrepo", 42, "pidns:1", "123"))
         # a registry file of another session is not ours to read from
         with open(os.path.join(reg, "42.json"), "w") as f:
             json.dump({"sessionId": "someone-else", "name": "x", "pid": 42}, f)

@@ -7,10 +7,22 @@ the name right before the librarian takes requests. Pointed at from SKILL.md § 
 
 ## The canonical form
 
-`<repo> - librarian`, where `<repo>` is `basename "$MAIN"` (Rehydrate step 1) — for
-example `claude-plugins - librarian`. One form, every repo: the repo name first so a
-peer list sorts by repo, ` - librarian` spelled exactly so a peer can match it. Older
-forms (`claude-kit librarian`, `mcfacehead-plugins librarian`) do not match.
+The bare `<repo>`, where `<repo>` is `basename "$MAIN"` (Rehydrate step 1) — for
+example `claude-plugins`. One form, every repo, no suffix: the operator names
+conversations by repo, and a sandbox's window labels come from the conversation name, so
+the bare repo name is the label the operator already reads.
+
+The bare name marks the repo's librarian when one runs, so a peer finds it by exact
+name. The name is advisory, not reserved. A create-repo first session holding the bare name is
+expected: it is the usual way a repo gets its librarian, when that session runs
+`librarian-mode start`. When a librarian starts while another session holds the bare
+name, one of them takes a qualified name, `<repo> - <task>`
+(`claude-plugins - statusline fix`). Nothing parses names: a peer that finds two
+sessions with one name asks the operator which is the librarian.
+
+Older forms (`<repo> - librarian`, `claude-kit librarian`,
+`mcfacehead-plugins librarian`) do not match: each is a `mismatch` and gets the
+`/rename` gate below like any other name.
 
 `/rename` is a built-in Claude Code slash command: the skill cannot run it, only tell the
 operator to type it.
@@ -25,7 +37,7 @@ Read only this session's file, and only when its `sessionId` equals
 `CLAUDE_CODE_SESSION_ID`; never list the directory or print another session's data.
 
 ```bash
-WANT="$(basename "$MAIN") - librarian"
+WANT="$(basename "$MAIN")"
 python3 - "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/sessions/${CLAUDE_PID:-none}.json" "$WANT" <<'PY'
 import json, os, sys
 try: d = json.load(open(sys.argv[1]))
@@ -48,7 +60,7 @@ After Rehydrate, before the Idle turn:
   exact text, on its own so it copies cleanly:
 
   ```
-  /rename claude-plugins - librarian
+  /rename claude-plugins
   ```
 
   (with this repo's name), then "and tell me when done". Until then, start no new
@@ -59,6 +71,10 @@ After Rehydrate, before the Idle turn:
   recorded (§ Keeping the name) and lifts the gate; never ask again for that name. This
   is the one `start` that ends its turn before the Idle turn — a wait on the operator,
   not an idle turn.
+  A `(collision)` mismatch means another session already holds `<repo>`: the operator
+  renames that session (`/rename <repo> - <task>`, typed there), then `/rename <repo>`
+  here; or declines to keep the current name (§ Keeping the name). This reading is
+  inferred from the registry's `nameSource` values; a collision has not been observed.
 - **`unobservable`** — no registry, no pid, or a file that is not this session: a soft
   gate. Show the same line once, say the name cannot be checked, and continue into the
   Idle turn in the same turn; never ask again this session.
@@ -98,6 +114,6 @@ canonical form, the gate asks again.
 
 Read-only: run the read above and put the result in the expected-output paragraph —
 "session name: `<name>` (canonical)", "session name: `<name>`; canonical is
-`<repo> - librarian`" (plus "kept by the operator" when § Keeping the name records it),
+`<repo>`" (plus "kept by the operator" when § Keeping the name records it),
 or "session name: not observable". Never prints the `/rename`
 line as a demand, never asks.
