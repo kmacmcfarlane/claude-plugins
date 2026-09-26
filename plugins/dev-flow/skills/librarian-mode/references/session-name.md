@@ -7,10 +7,18 @@ the name right before the librarian takes requests. Pointed at from SKILL.md § 
 
 ## The canonical form
 
-`<repo> - librarian`, where `<repo>` is `basename "$MAIN"` (Rehydrate step 1) — for
-example `claude-plugins - librarian`. One form, every repo: the repo name first so a
-peer list sorts by repo, ` - librarian` spelled exactly so a peer can match it. Older
-forms (`claude-kit librarian`, `mcfacehead-plugins librarian`) do not match.
+The bare `<repo>`, where `<repo>` is `basename "$MAIN"` (Rehydrate step 1) — for
+example `claude-plugins`. One form, every repo, no suffix: the operator names
+conversations by repo, and a sandbox's window labels come from the conversation name, so
+the bare repo name is the label the operator already reads.
+
+The bare name is **reserved for that repo's librarian**, so a peer still finds the
+librarian by exact name. Any other session working in the repo takes a qualified name,
+such as `<repo> - <task>` (`claude-plugins - statusline fix`), never the bare one.
+
+Older forms (`<repo> - librarian`, `claude-kit librarian`,
+`mcfacehead-plugins librarian`) do not match: each is a `mismatch` and gets the
+`/rename` gate below like any other name.
 
 `/rename` is a built-in Claude Code slash command: the skill cannot run it, only tell the
 operator to type it.
@@ -25,7 +33,7 @@ Read only this session's file, and only when its `sessionId` equals
 `CLAUDE_CODE_SESSION_ID`; never list the directory or print another session's data.
 
 ```bash
-WANT="$(basename "$MAIN") - librarian"
+WANT="$(basename "$MAIN")"
 python3 - "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/sessions/${CLAUDE_PID:-none}.json" "$WANT" <<'PY'
 import json, os, sys
 try: d = json.load(open(sys.argv[1]))
@@ -48,7 +56,7 @@ After Rehydrate, before the Idle turn:
   exact text, on its own so it copies cleanly:
 
   ```
-  /rename claude-plugins - librarian
+  /rename claude-plugins
   ```
 
   (with this repo's name), then "and tell me when done". Until then, start no new
@@ -98,6 +106,6 @@ canonical form, the gate asks again.
 
 Read-only: run the read above and put the result in the expected-output paragraph —
 "session name: `<name>` (canonical)", "session name: `<name>`; canonical is
-`<repo> - librarian`" (plus "kept by the operator" when § Keeping the name records it),
+`<repo>`" (plus "kept by the operator" when § Keeping the name records it),
 or "session name: not observable". Never prints the `/rename`
 line as a demand, never asks.
