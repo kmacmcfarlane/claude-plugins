@@ -13,7 +13,7 @@ conversations by repo, and a sandbox's window labels come from the conversation 
 the bare repo name is the label the operator already reads.
 
 The bare name marks the repo's librarian when one runs, so a peer finds it by exact
-name. The reservation is advisory. A create-repo first session holding the bare name is
+name. The name is advisory, not reserved. A create-repo first session holding the bare name is
 expected: it is the usual way a repo gets its librarian, when that session runs
 `librarian-mode start`. When a librarian starts while another session holds the bare
 name, one of them takes a qualified name, `<repo> - <task>`
@@ -71,9 +71,10 @@ After Rehydrate, before the Idle turn:
   recorded (§ Keeping the name) and lifts the gate; never ask again for that name. This
   is the one `start` that ends its turn before the Idle turn — a wait on the operator,
   not an idle turn.
-  A `(collision)` mismatch means another session already holds `<repo>`: rename that
-  session to `<repo> - <task>` and re-run, or decline to keep the current name
-  (§ Keeping the name).
+  A `(collision)` mismatch means another session already holds `<repo>`: the operator
+  renames that session (`/rename <repo> - <task>`, typed there), then `/rename <repo>`
+  here; or declines to keep the current name (§ Keeping the name). This reading is
+  inferred from the registry's `nameSource` values; a collision has not been observed.
 - **`unobservable`** — no registry, no pid, or a file that is not this session: a soft
   gate. Show the same line once, say the name cannot be checked, and continue into the
   Idle turn in the same turn; never ask again this session.
