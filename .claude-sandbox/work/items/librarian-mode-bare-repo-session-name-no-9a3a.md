@@ -2,12 +2,11 @@
 id: librarian-mode-bare-repo-session-name-no-9a3a
 title: "librarian-mode: bare <repo> session name, no ' - librarian' suffix"
 type: feature
-status: doing
+status: done
 priority: 0
-owner: Kyle-McFarlane@1827d80083e0
-claimed: 2026-09-26T17:27Z
 created: 2026-09-26
 updated: 2026-09-26
+closed: 2026-09-26
 refs:
   - "peer: claude-sandbox - librarian, relaying the operator 2026-09-26"
 ---
@@ -28,3 +27,19 @@ agent: implementer a543f6c1a8dd0640b round 1
 return: implementer round 1 DONE ff8b274 (session-name.md + test fixture; no other doc named the suffix)
 dispatch: reviewer opus — fresh
 agent: reviewer a518afe7c5d717dc2 round 1 at ff8b274
+verdict: reviewer round 1 NEEDS_CHANGES at ff8b274 — 1 medium (create-repo launches a non-librarian session with the bare <repo> name the change reserves), 1 low (nameSource collision)
+librarian decision: keep create-repo as is (the operator names conversations by repo); the reservation becomes advisory — the bare name marks the librarian when one runs, a create-repo first session holding it is expected and is the usual way a repo gets its librarian; on a collision, rename the other session to <repo> - <task> or keep the current name
+dispatch: implementer opus — resume, fix round 1
+agent: implementer a543f6c1a8dd0640b fix round 1
+return: implementer fix round 1 DONE 441de40
+dispatch: reviewer opus — resume, round 2
+agent: reviewer a518afe7c5d717dc2 round 2 at 441de40
+verdict: reviewer round 2 CLEAR at 441de40 (2 low: dangling "reservation"; the collision line tells the librarian to rename another session) — taking both, the second misdirects
+dispatch: implementer opus — resume, fix round 2 (lows)
+agent: implementer a543f6c1a8dd0640b fix round 2
+return: implementer fix round 2 DONE 8b51004
+dispatch: reviewer opus — resume, round 3
+agent: reviewer a518afe7c5d717dc2 round 3 at 8b51004
+verdict: reviewer round 3 CLEAR at 8b51004 (no findings)
+landed: da3b1c5 (merge --no-ff into main)
+- 2026-09-26 done
