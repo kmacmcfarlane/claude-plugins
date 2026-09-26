@@ -12,9 +12,13 @@ example `claude-plugins`. One form, every repo, no suffix: the operator names
 conversations by repo, and a sandbox's window labels come from the conversation name, so
 the bare repo name is the label the operator already reads.
 
-The bare name is **reserved for that repo's librarian**, so a peer still finds the
-librarian by exact name. Any other session working in the repo takes a qualified name,
-such as `<repo> - <task>` (`claude-plugins - statusline fix`), never the bare one.
+The bare name marks the repo's librarian when one runs, so a peer finds it by exact
+name. The reservation is advisory. A create-repo first session holding the bare name is
+expected: it is the usual way a repo gets its librarian, when that session runs
+`librarian-mode start`. When a librarian starts while another session holds the bare
+name, one of them takes a qualified name, `<repo> - <task>`
+(`claude-plugins - statusline fix`). Nothing parses names: a peer that finds two
+sessions with one name asks the operator which is the librarian.
 
 Older forms (`<repo> - librarian`, `claude-kit librarian`,
 `mcfacehead-plugins librarian`) do not match: each is a `mismatch` and gets the
@@ -67,6 +71,9 @@ After Rehydrate, before the Idle turn:
   recorded (§ Keeping the name) and lifts the gate; never ask again for that name. This
   is the one `start` that ends its turn before the Idle turn — a wait on the operator,
   not an idle turn.
+  A `(collision)` mismatch means another session already holds `<repo>`: rename that
+  session to `<repo> - <task>` and re-run, or decline to keep the current name
+  (§ Keeping the name).
 - **`unobservable`** — no registry, no pid, or a file that is not this session: a soft
   gate. Show the same line once, say the name cannot be checked, and continue into the
   Idle turn in the same turn; never ask again this session.
