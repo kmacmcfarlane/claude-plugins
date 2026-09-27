@@ -22,3 +22,4 @@ claude-sandbox - librarian asks what spawned a Claude Code 2.1.283 process via t
 
 ## Notes
 - 2026-09-27 done
+- 2026-09-27 CORRECTION from claude-sandbox - librarian: the process WAS in this session — the security-guidance plugin (claude-plugins-official 2.0.7/2.0.8, enabled in the shared settings) runs a PostToolUse hook on Bash(git commit:*) (and a Stop-time diff review) that starts a Python Agent SDK Claude to review the change; it fired 0.9 s after the implementer committed ff8b274. Not this repo's code; fix is on their side (723d: atomic ~/.claude.json writes across containers).
