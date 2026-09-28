@@ -25,3 +25,15 @@ target: branch worktree-librarian-mode-route-out-of-scope-work-t-3460 at .claude
 - 2026-09-28 claimed by Kyle-McFarlane@7696505da8e1
 dispatch: implementer opus — changes librarian-mode's routing rule (rule 2)
 agent: implementer aeab0d9ec2f36aa4c round 1
+return: implementer DONE_WITH_CONCERNS 87e496a (acceptance needs the operator's confirmation of the rule; open q: the "or reasoning about it" red flag vs forwarding; a forward with no reply stays closed pointing at the peer)
+changed: plugins/dev-flow/skills/librarian-mode/SKILL.md, references/walkthroughs.md
+dispatch: reviewer opus — fresh (rule 4); landing waits on decision 97
+decision 97: forward out-of-scope requests to the owning repo's live librarian instead of routing them to you — (a) adopt: forward when a live owner session exists (bare <repo> or "<repo> - librarian"), one hop only, grants nothing, you only when there's no live owner or a real decision [recommended] | (b) keep routing every out-of-scope request to you | (z) decide later
+  raised: 2026-09-28
+  what: whether librarians hand out-of-scope work straight to the owning repo's live librarian
+  why now: the change is built and in review; its acceptance asks for your confirmation because the evidence came through peers ("why would you ask me?", relayed), not from you directly
+  (a): fewer requests reach you; peers file each other's work — undo: revert one commit — who: every librarian and you
+  (b): nothing changes; you keep relaying — who: you
+  rec: (a) · basis: partial — 8 items were already routed this way on 2026-09-22 without trouble; your quoted words came via a peer, not first-hand
+  unknown: how often a forward goes unanswered
+agent: reviewer a99a1620600db715f round 1 at 87e496a

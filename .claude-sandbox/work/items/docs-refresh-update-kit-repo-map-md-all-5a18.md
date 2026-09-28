@@ -25,3 +25,7 @@ target: branch worktree-docs-refresh-update-kit-repo-map-md-all-5a18 at .claude/
 - 2026-09-28 claimed by Kyle-McFarlane@7696505da8e1
 dispatch: implementer sonnet — docs refresh: file lists and pointers, verify first (rule 1)
 agent: implementer ac4e627d736c55e18 round 1
+return: implementer DONE 2d204b9 (verification incomplete: 4 of 8 Checks and §1/§3 not run — the reviewer runs them; 5 scripts/ dirs on disk left out because CLAUDE.md omits them)
+changed: plugins/kit-dev/skills/update-kit/references/repo-map.md
+dispatch: reviewer opus — fresh (rule 4)
+agent: reviewer a7678c29118363940 round 1 at 2d204b9
