@@ -336,7 +336,8 @@ Only after a `CLEAR` recorded against the current HEAD — the last `verdict:` l
 
 A red check or a doctrine miss before the merge (steps 1–2) stops the landing:
 `$WI handoff <id> --blocked "<what>"` (no item: a `blocked:` line in the record sink), and
-it re-enters the fix loop as a finding, counting toward the cap. **Never merge to make a check pass later.**
+it re-enters the fix loop as a finding, counting toward the cap. **Never merge to make a
+check pass later.**
 
 ## Step 6: Report
 
