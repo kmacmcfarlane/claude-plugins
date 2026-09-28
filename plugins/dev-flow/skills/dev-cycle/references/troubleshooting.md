@@ -122,10 +122,21 @@ names the symptom.
     then `Merge origin/<base> and push`: `git -C "$MAIN" merge --no-ff --no-commit
     origin/<base>` on `<base>` in the main checkout, every Check run from `$MAIN`
     against the merged tree, all green → `git -C "$MAIN" commit --no-edit` (a merge
-    commit) and
-    `git -C "$MAIN" push origin <base>`, now a fast-forward; the Report names each
-    incoming commit as not the cycle's. If git refuses to start the merge (dirt in its
-    way), stop and say which paths; clear nothing. **A conflict or a red check stops:**
-    `git -C "$MAIN" merge --abort`, so `<base>` is as it was, nothing is pushed, and the
-    Report names the conflicting paths or the failing check and the incoming commits as a
-    decision for the user. A second rejection is reported, not retried.
+    commit) and `git -C "$MAIN" push origin <base>`, now a fast-forward; the Report names
+    each incoming commit as not the cycle's. If git refuses to start the merge (dirt in
+    its way), stop and say which paths; clear nothing. **A conflict or a red check
+    stops:** `git -C "$MAIN" merge --abort`, so `<base>` is as it was, nothing is pushed,
+    and the Report raises a decision naming the conflicting paths or the failing check and
+    the incoming commits, with two options: a new cycle whose implementer merges
+    `origin/<base>` into a worktree branch cut from the local `<base>` and resolves or
+    fixes it there — a conflict round, reviewed like any other, the shape of `fix-loop.md`
+    § A merge conflict — then lands and pushes it; or the user resolving it on origin. A
+    second rejection is reported, not retried.
+- **A merge left uncommitted in the main checkout.** `git -C "$MAIN" rev-parse -q
+  --verify MERGE_HEAD` succeeds when a cycle is re-invoked or reaches Land: a merge was
+  interrupted before its commit or abort, and its Checks result is gone. Never commit it
+  as found. `MERGE_HEAD` equal to `origin/<base>`'s commit
+  (`git -C "$MAIN" rev-parse origin/<base>`) is a push-rejection merge from the entry
+  above: `git -C "$MAIN" merge --abort`, then either redo that entry from the fetch and
+  the ask, or report the push as not done — the local landing merge stands either way.
+  Any other `MERGE_HEAD` is not the cycle's to decide: stop and ask.
