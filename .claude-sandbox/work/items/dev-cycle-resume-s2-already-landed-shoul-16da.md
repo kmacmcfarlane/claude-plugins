@@ -2,12 +2,11 @@
 id: dev-cycle-resume-s2-already-landed-shoul-16da
 title: "dev-cycle resume: S2 (already landed) should notice a pending push-rejection merge"
 type: chore
-status: doing
+status: done
 priority: 3
-owner: Kyle-McFarlane@7696505da8e1
-claimed: 2026-09-28T22:38Z
 created: 2026-09-28
 updated: 2026-09-28
+closed: 2026-09-28
 refs:
   - 5dbf review
 ---
@@ -35,3 +34,9 @@ findings:
   [low] resume.md:137 — "report the landing as not cleanly done" contradicts the bullet ("the local landing merge stands"); pass: "landed <merge sha>; a merge is pending in the main checkout", then follow the bullet
 dispatch: implementer opus — resume, fix round 1
 agent: implementer a913b61dd868620cc round 2
+return: implementer DONE 9d7776d (fix round 1)
+dispatch: reviewer opus — resume, round 2
+agent: reviewer a2a8c0904d5587680 round 2 at 9d7776d
+verdict: CLEAR round 2 at 9d7776d (2 low: S0b says 'not resumable' when the pending merge may be the operator's own; troubleshooting.md:60-62 S0b symptom bullet drift — carried to f6fd)
+landed: d405d0c
+- 2026-09-28 done: d405d0c

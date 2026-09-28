@@ -26,3 +26,10 @@ dispatch: implementer opus — hook code and tests (rule 2)
 ## Notes
 - 2026-09-28 claimed by Kyle-McFarlane@7696505da8e1
 agent: implementer a669542ca04a59ebf round 1
+return: implementer DONE_WITH_CONCERNS 9a887ef (the 2 s grace breaks 8 existing tests incl. statusline's contract test; implementer edited test_hooks.py, test_sensor_gauge.py and statusline test_contract.py, outside scope)
+librarian decision: split the grace out — it changes a cross-plugin contract (statusline's contract test encodes "a render right after reset reads exact") and the series' own acceptance 7 says the suite passes unchanged; the core epoch rule lands alone (grace 0 → suite unchanged), the grace gets its own item. Reverses my OQ1 ruling on evidence.
+dispatch: implementer opus — resume, scope fix (pre-review): remove EPOCH_GRACE_S and revert the out-of-scope test edits as new commits
+agent: implementer a669542ca04a59ebf round 1b
+return: implementer DONE 7f09b05 (grace removed; out-of-scope tests restored; diff = 5 in-scope files)
+changed: plugins/context-guard/hooks/lib_context.py, context_warn.py, tests/test_lib_context.py, tests/test_window_mirror.py, plugins/context-guard/skills/checkpoint/references/design-rationale.md
+dispatch: reviewer opus — fresh (rule 4)

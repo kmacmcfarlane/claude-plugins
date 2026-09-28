@@ -2,12 +2,11 @@
 id: research-verifier-the-score-sheet-frontm-6118
 title: "research-verifier: the score-sheet frontmatter puts five counts on one line, so strict YAML rejects it"
 type: bug
-status: doing
+status: done
 priority: 2
-owner: Kyle-McFarlane@7696505da8e1
-claimed: 2026-09-28T22:46Z
 created: 2026-09-23
 updated: 2026-09-28
+closed: 2026-09-28
 refs:
   - "peer: agent-research - librarian (item 7e28)"
 ---
@@ -25,3 +24,10 @@ target: branch worktree-research-verifier-the-score-sheet-frontm-6118 at .claude
 - 2026-09-28 claimed by Kyle-McFarlane@7696505da8e1
 dispatch: implementer sonnet — template format fix, no behaviour change (rule 1)
 agent: implementer aef8403cde4873f81 round 1
+return: implementer DONE 5229373
+changed: plugins/dev-flow/agents/research-verifier.md
+dispatch: reviewer opus — fresh (rule 4; agents keep a reviewer)
+agent: reviewer a63c18c42a0a3f6bd round 1 at 5229373
+verdict: CLEAR round 1 at 5229373 (no findings)
+landed: dfaa351
+- 2026-09-28 done: dfaa351

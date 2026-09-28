@@ -17,3 +17,4 @@ From the 16da review 2026-09-28: SKILL.md Step 5 numbering puts the push at 5.3 
 - next: —
 - blocked: —
 - learned: —
+- 2026-09-28 from the 16da review (lows): S0b's report reads 'not resumable' even when the pending MERGE_HEAD may be the operator's own — say 'a merge is pending in the main checkout (one this run may not have made)'; troubleshooting.md:60-62 S0b symptom bullet still says the orphan-worktree rule decides, but a pending merge now routes to the merge bullet
