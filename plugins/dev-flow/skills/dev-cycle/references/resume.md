@@ -134,7 +134,7 @@ none matches nothing.
 
 | SINK | REMNANT | LANDED | State | The single next action |
 |---|---|---|---|---|
-| `reachable` | — | yes | **S2** landed | Stop: report "already landed `<merge sha>`". Terminal — never re-dispatched, re-landed or rebuilt. |
+| `reachable` | — | yes | **S2** landed | First `git -C "$MAIN" rev-parse -q --verify MERGE_HEAD`: when it succeeds, a merge is pending in the main checkout — report the landing as not cleanly done and follow `troubleshooting.md` § Landing, "A merge left uncommitted in the main checkout". Otherwise stop: report "already landed `<merge sha>`". Terminal — never re-dispatched, re-landed or rebuilt. |
 | `unreachable` | `present` | absent | **S0b** not resumable | Report and stop: the run is not resumable from this session; name the remnant and leave it to the orphan-worktree rule (`troubleshooting.md` § Landing). No GATE — it would read and write the sink that is unreachable. Dispatch nothing. |
 | `unreachable` | `absent` | absent | **S0** | Nothing outlived the sink: go on as a new run. |
 | `reachable` | — | no | — | Read PHASE: groups A–D. |
