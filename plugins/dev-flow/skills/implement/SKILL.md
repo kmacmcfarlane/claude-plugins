@@ -169,7 +169,8 @@ what "done" can mean, and it rules out fan-out.
 
 **If there are decision-class questions, ask them first**, per the `investigate` skill's §
 Asking at a gate — a numbered list answered free-form while scope is open, `AskUserQuestion`
-for a closed choice late in the task. Each carries the evidence and the recommendation it rests
+for a closed choice late in the task only once the Step 3 agent's return is folded in (a
+dialog would block it). Each carries the evidence and the recommendation it rests
 on. End the turn there. Keep the defer option either way:
 
 > **Leave open and record in the investigation** — defer this; it stays under Open Questions

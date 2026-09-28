@@ -106,6 +106,12 @@ question 1; mode plus `then <next-skill>` → ask only question 2:
 3. **"How should the window be handled?"** — pre-draft the `/compact` guidance or the
    `/rewind` point so the answer is confirm/adjust, not compose.
 
+**A dialog only while nothing of this session's can be running** — ListAgents, or a
+dispatch with no completion notice yet, says whether an agent is. With one in flight a
+dialog blocks its return until answered, so ask the same questions as a numbered list last
+in the message, the inventory inside question 2 — per the `operator-interaction:decisions`
+skill when it is loaded — and end the turn there.
+
 **A stage boundary in a skill chain is a handoff trigger in its own right**, not a rescue for
 a degraded window. The test: the next skill reads its inputs from files this session already
 published. When that is true, hand off regardless of window health — a fresh session starts
