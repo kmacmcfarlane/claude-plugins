@@ -383,16 +383,21 @@ class TestEpochDemotion(Base):
         self.write_legacy("s", 950_000, 1_000_000, at=epoch_at + 1)
         self.assertEqual(L.depth("/nonexistent", "s")[:2], (0, 1_000_000))
 
-    def test_future_epoch_at_is_ignored(self):
-        # The clock stepped back after _reset stamped epoch_at: a cut more
-        # than FUTURE_SKEW_S ahead of now would demote every reading until the
-        # clock caught up, so the rule does not apply.
+    def test_future_epoch_at_still_demotes_a_pre_reset_record(self):
+        # The clock stepped back 75 s after a reset: the old epoch's last
+        # render (95%, stamped 30 s before the reset, so now 45 s "ahead" and
+        # still accepted) cannot be told from a new one by its stamp. It stays
+        # window-only - silencing the gate for the step, never blocking.
         now = time.time()
+        epoch_at = now + 75
+        for write in (self.write_sensor, self.write_legacy):
+            with self.subTest(writer=write.__name__):
+                L.save_state("s", {"epoch": 1, "epoch_at": epoch_at})
+                write("s", 950_000, 1_000_000, at=epoch_at - 30)
+                self.assertEqual(L.sensor("s"), {"window": 1_000_000, "at": 0})
+                self.assertEqual(L.depth("/nonexistent", "s")[:2], (0, 1_000_000))
         L.save_state("s", {"epoch": 1, "epoch_at": now + L.FUTURE_SKEW_S + 600})
         self.write_sensor("s", 300_000, 1_000_000, at=now - 5)
-        self.assertEqual(L.depth("/nonexistent", "s")[::3], (300_000, "exact"))
-        # Within the skew it still applies (a clock a little ahead is not a step).
-        L.save_state("s", {"epoch": 1, "epoch_at": now + 10})
         self.assertEqual(L.sensor("s"), {"window": 1_000_000, "at": 0})
 
     def test_demoted_new_record_uses_post_boundary_transcript(self):
@@ -417,6 +422,16 @@ class TestEpochDemotion(Base):
     def scored(self, sid, tokens, at):
         """What context_warn.decide() stores on a prompt: the scored depth."""
         L.update_state(sid, lambda st: st.update(tokens=tokens, tokens_at=at))
+
+    def test_epoch_end_tokens_ignores_a_future_epoch_at(self):
+        # Ledger header only: a cut more than FUTURE_SKEW_S ahead (the clock
+        # stepped back) is ignored, as for transcript counts (_epoch_cut).
+        now = time.time()
+        st = {"tokens": 820_000, "tokens_at": now - 5,
+              "epoch_at": now + L.FUTURE_SKEW_S + 600}
+        self.assertEqual(L._epoch_end_tokens({}, st), 820_000)
+        st["epoch_at"] = now + 10
+        self.assertEqual(L._epoch_end_tokens({}, st), 0)
 
     def test_epoch_end_tokens_prefers_a_fresher_scored_depth(self):
         # the status line last rendered long ago; the gate scored a later prompt

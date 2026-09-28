@@ -61,10 +61,11 @@ Depth sources, in order of preference:
    never writes the sensor file: _reset stamps `epoch_at` in its own state,
    and any record with `at <= epoch_at + EPOCH_GRACE_S` (from either path)
    is read as window-only. The tee stamps `at` when it runs, not when Claude
-   Code built the payload, so the grace is what covers a render whose payload
-   predates the compaction but whose write lands just after it. An `epoch_at` more than FUTURE_SKEW_S ahead of
-   now (the clock stepped back since _reset) is ignored: the rule does not
-   apply, for exact records or transcript counts.
+   Code built the payload, so the grace is what covers a payload built before
+   the compaction but read by the status line just after it. The exact-record
+   rule applies whatever the clock does: after a step back past `epoch_at`
+   no stamp can tell the old epoch's last render from a new one, and demoting
+   both only silences the gate for the length of the step, never blocks.
    The same rule holds for transcript counts (sources 2 and 3): a count
    whose usage line is stamped at or before `epoch_at` describes an earlier
    epoch and is dropped (_epoch_cur), so the depth reads unknown (0) until
@@ -168,10 +169,11 @@ def _future_skewed(at):
 
 
 def _epoch_cut(st):
-    """The state's `epoch_at` as the epoch rule's cut, or None when there is
-    none, it is not finite, or it is more than FUTURE_SKEW_S ahead of now (the
-    clock stepped back since _reset stamped it: applying it would demote every
-    reading until the clock caught up). Never raises."""
+    """The state's `epoch_at` as the transcript-count cut (_epoch_cur,
+    _epoch_end_tokens), or None when there is none, it is not finite, or it is
+    more than FUTURE_SKEW_S ahead of now (the clock stepped back since _reset
+    stamped it: applying it would drop every count until the clock caught
+    up). sensor() does not use this: see its docstring. Never raises."""
     cut = _finite(st.get("epoch_at")) if isinstance(st, dict) else None
     if cut is None or _future_skewed(cut):
         return None
@@ -614,15 +616,15 @@ def _epoch_end_tokens(end, st):
     context_warn.decide() stores on every prompt (the depth it last scored,
     exact or inferred, dated by `tokens_at`). The fresher wins; a tie goes to
     the exact record. A top-level count stamped at or before the state's
-    `epoch_at` scored an earlier epoch and is not used, nor is one stamped
-    more than FUTURE_SKEW_S ahead of now. A count with no `tokens_at`
-    (state written before it existed) is the fallback only. The ledger header
+    `epoch_at` (_epoch_cut) scored an earlier epoch and is not used, nor is
+    one stamped more than FUTURE_SKEW_S ahead of now. A count with no
+    `tokens_at` (state written before it existed) is the fallback only. The ledger header
     is its only reader: nothing here feeds the gate or can block."""
     ex_tok = int(end.get("tokens") or 0)
     top_tok = int(st.get("tokens") or 0)
     top_at = _finite(st.get("tokens_at"))
     if top_at is not None:
-        cut = _finite(st.get("epoch_at"))
+        cut = _epoch_cut(st)
         if (cut is not None and top_at <= cut) or _future_skewed(top_at):
             top_tok = 0
         elif ex_tok and top_tok and top_at > (_finite(end.get("at")) or 0.0):
@@ -1186,7 +1188,10 @@ def sensor(session_id, state=None):
     can neither read as fresh nor out-date the sensor file. A block stamped
     at or before the state's `epoch_at` plus EPOCH_GRACE_S describes an
     earlier epoch and is demoted to window-only ({"window", "at": 0}); an
-    `epoch_at` more than FUTURE_SKEW_S ahead of now is ignored (_epoch_cut).
+    `epoch_at` ahead of the clock still applies (unlike _epoch_cut): a
+    stale record lives up to EXACT_MAX_AGE_S, and after a clock step back it
+    cannot be told from a new render, so both read window-only - which only
+    silences the gate until the clock passes `epoch_at`, never blocks.
     Returns {} when neither exists. Never raises."""
     try:
         st = state if state is not None else load_state(session_id)
@@ -1202,7 +1207,7 @@ def sensor(session_id, state=None):
             ex = new
         else:
             ex = legacy
-        cut = _epoch_cut(st)
+        cut = _finite(st.get("epoch_at"))
         at = _finite(ex.get("at"))
         if cut is not None and at and at <= cut + EPOCH_GRACE_S and ex.get("window"):
             return {"window": int(ex["window"]), "at": 0}
@@ -1659,7 +1664,9 @@ def _epoch_cur(cur, cur_at, st):
     rule sensor() applies to the exact record, without its grace: the line's
     stamp is Claude Code's own, not a write time. A count with no stamp, or a
     state with no usable epoch_at (none, or one more than FUTURE_SKEW_S ahead
-    of now: _epoch_cut), is kept."""
+    of now: _epoch_cut), is kept. Ignoring a future cut here, unlike in
+    sensor(), trades a gate silenced for the whole clock step for a stale
+    count that lives only until the boundary line lands (about 100 ms)."""
     cut = _epoch_cut(st)
     at = _finite(cur_at)
     if cur and cut is not None and at is not None and at <= cut:
