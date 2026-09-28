@@ -48,14 +48,8 @@ class Base(unittest.TestCase):
 
     def set_exact(self, sid, tokens, window):
         st = L.load_state(sid)
-        # A render of the new epoch: live, it follows the epoch's first
-        # response, well past sensor()'s EPOCH_GRACE_S demotion window.
-        at = time.time()
-        cut = L._finite(st.get("epoch_at"))
-        if cut is not None:
-            at = max(at, cut + L.EPOCH_GRACE_S + 1)
         st["exact"] = {"pct": 100.0 * tokens / window, "tokens": tokens,
-                       "window": window, "at": at}
+                       "window": window, "at": time.time()}
         L.save_state(sid, st)
 
     def warn(self, sid, prompt="do a thing", transcript="/nonexistent"):
