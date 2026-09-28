@@ -2,11 +2,11 @@
 
 Two readers run this list: the **review sub-agent** briefed from `review-brief.md`
 (sections 1–5, as the check commands pasted into its brief), and the **orchestrator
-itself** at Land (all sections, inside the worktree before the merge and again on the base
-after it). Both run the same commands so a verdict and a landing rest on the same evidence;
-a verdict never substitutes for the orchestrator's own run. Every item is pass or fail; a
-fail stops the landing. `W` is the worktree path, `BASE` the Base binding
-(`bindings.md`).
+itself** at Land (sections 1–5 inside the worktree before the merge, then section 6 on the
+base after it, which re-runs sections 2, 4 and 5). Both run the same commands so a verdict
+and a landing rest on the same evidence; a verdict never substitutes for the
+orchestrator's own run. Every item is pass or fail; a fail stops the landing. `W` is the
+worktree path, `BASE` the Base binding (`bindings.md`).
 
 ```bash
 W=<absolute worktree path>
@@ -267,14 +267,15 @@ with no plugins/ tree most are vacuous:
 
 The FAIL line compares the shape itself at the merge base and at HEAD — plugin directories,
 skill directories (a `SKILL.md`), and marketplace entries (name and source) — so a
-description- or version-only edit to a `plugin.json` or `marketplace.json` stays silent.
+description- or version-only edit to a `plugin.json` or `marketplace.json` stays silent. The
+snippet needs bash: it uses process substitution (`<( )`).
 
 ```bash
 git -C $W diff --name-only $BASE...HEAD | grep -q '^plugins/.*/skills/[^/]*/SKILL.md$' && \
   { git -C $W diff --name-only $BASE...HEAD | grep -q '^README.md$' || echo "CHECK: skill added/changed — is a catalog edit needed?"; }
 shape() {  # the marketplace's shape at revision $1, one line per element
-  git -C $W ls-tree -r --name-only $1 -- plugins | awk -F/ 'NF>=3{print "plugin-dir "$1"/"$2} NF==5&&$3=="skills"&&$5=="SKILL.md"{print "skill-dir "$1"/"$2"/"$3"/"$4}'
-  git -C $W show $1:.claude-plugin/marketplace.json 2>/dev/null | python3 -c 'import json,sys; [print("entry",p.get("name"),p.get("source")) for p in json.load(sys.stdin).get("plugins",[])]' 2>/dev/null
+  git -C $W -c core.quotePath=false ls-tree -r --name-only $1 -- plugins | awk -F/ 'NF>=3{print "plugin-dir "$1"/"$2} NF==5&&$3=="skills"&&$5=="SKILL.md"{print "skill-dir "$1"/"$2"/"$3"/"$4}'
+  git -C $W show $1:.claude-plugin/marketplace.json 2>/dev/null | python3 -c 'import json,sys; [print("entry",p.get("name"),json.dumps(p.get("source"),sort_keys=True)) for p in json.load(sys.stdin).get("plugins",[])]' 2>/dev/null
 }
 d=$(diff <(shape $(git -C $W merge-base $BASE HEAD) | sort -u) <(shape HEAD | sort -u) | grep '^[<>]')
 [ -n "$d" ] && { git -C $W diff --name-only $BASE...HEAD | grep -q '^README.md$' || { echo "FAIL: plugin shape changed without README"; echo "$d"; }; }
@@ -354,8 +355,13 @@ EOF
 ## 6. After the merge, on the base
 
 - [ ] Sections 2, 4 and 5 re-run in the main checkout on the base (`BASE` the base's
-      pre-merge sha): a clean textual merge onto a moved base can still break frontmatter
-      or a script.
+      pre-merge sha — the merge commit's first parent): a clean textual merge onto a
+      moved base can still break frontmatter or a script.
+
+```bash
+W=$MAIN; BASE=$(git -C "$MAIN" rev-parse HEAD^1)
+```
+
 - [ ] `git -C "$MAIN" status --short` shows nothing the merge introduced. Dirt the
       cycle wrote itself — the record sink or store, the Series home, `.claude/worktrees/`
       — is expected and never blocks a merge; any other dirt stopped the merge before it

@@ -87,7 +87,7 @@ union of every round's CHANGED, one file per line with its one-line reason>
    the docs say versus the one the code makes — then test each one. A vague worry is not a
    finding; a reproduction is. Input bound for a CLI or API: try abbreviated flags,
    `file://` values, prototype keys, unicode look-alikes and parse confusion, against a
-   fake of the tool on PATH, never the real service.
+   fake of the tool on PATH or a stub of the service, never the real service.
 7. Review the whole branch history, not only the final diff: a secret or credential in
    any commit's patch or message is critical even when a later commit removes it, since
    the merge carries every commit. Run the history scan in the Checks below, read each
