@@ -96,7 +96,7 @@ git -C $W log -E -i --grep="$P" --format='%h (message)' $BASE..HEAD
       reserved placeholder for examples and is skipped.
 
 ```bash
-for s in $(git -C $W diff --name-only $BASE...HEAD | grep -o 'plugins/[^/]*/skills/[^/]*' | sort -u); do
+for s in $(git -C $W -c core.quotePath=false diff --name-only $BASE...HEAD | grep -o 'plugins/[^/]*/skills/[^/]*' | sort -u); do
   d=$W/$s
   echo "== $s"
   test -f $d/SKILL.md || echo "FAIL: no SKILL.md"
@@ -208,7 +208,7 @@ The strict-YAML check (ruamel.yaml's safe loader, else PyYAML's; `SKIP` when nei
 imports, never a silent pass):
 
 ```bash
-for s in $(git -C $W diff --name-only $BASE...HEAD | grep -o 'plugins/[^/]*/skills/[^/]*' | sort -u); do
+for s in $(git -C $W -c core.quotePath=false diff --name-only $BASE...HEAD | grep -o 'plugins/[^/]*/skills/[^/]*' | sort -u); do
   echo "== $s (strict YAML)"
   python3 - $W/$s/SKILL.md <<'PY'
 import sys
@@ -271,14 +271,14 @@ description- or version-only edit to a `plugin.json` or `marketplace.json` stays
 snippet needs bash: it uses process substitution (`<( )`).
 
 ```bash
-git -C $W diff --name-only $BASE...HEAD | grep -q '^plugins/.*/skills/[^/]*/SKILL.md$' && \
-  { git -C $W diff --name-only $BASE...HEAD | grep -q '^README.md$' || echo "CHECK: skill added/changed — is a catalog edit needed?"; }
+git -C $W -c core.quotePath=false diff --name-only $BASE...HEAD | grep -q '^plugins/.*/skills/[^/]*/SKILL.md$' && \
+  { git -C $W -c core.quotePath=false diff --name-only $BASE...HEAD | grep -q '^README.md$' || echo "CHECK: skill added/changed — is a catalog edit needed?"; }
 shape() {  # the marketplace's shape at revision $1, one line per element
   git -C $W -c core.quotePath=false ls-tree -r --name-only $1 -- plugins | awk -F/ 'NF>=3{print "plugin-dir "$1"/"$2} NF==5&&$3=="skills"&&$5=="SKILL.md"{print "skill-dir "$1"/"$2"/"$3"/"$4}'
   git -C $W show $1:.claude-plugin/marketplace.json 2>/dev/null | python3 -c 'import json,sys; [print("entry",p.get("name"),json.dumps(p.get("source"),sort_keys=True)) for p in json.load(sys.stdin).get("plugins",[])]' 2>/dev/null
 }
 d=$(diff <(shape $(git -C $W merge-base $BASE HEAD) | sort -u) <(shape HEAD | sort -u) | grep '^[<>]')
-[ -n "$d" ] && { git -C $W diff --name-only $BASE...HEAD | grep -q '^README.md$' || { echo "FAIL: plugin shape changed without README"; echo "$d"; }; }
+[ -n "$d" ] && { git -C $W -c core.quotePath=false diff --name-only $BASE...HEAD | grep -q '^README.md$' || { echo "FAIL: plugin shape changed without README"; echo "$d"; }; }
 ```
 
 ## 4. Tests where they exist
@@ -294,12 +294,12 @@ change — they come on top of the generic ones, never instead of them.
 - [ ] Any `.sh` touched → `bash -n` on it.
 
 ```bash
-git -C $W diff --name-only $BASE...HEAD | grep -q '/skills/work-items/' && \
+git -C $W -c core.quotePath=false diff --name-only $BASE...HEAD | grep -q '/skills/work-items/' && \
   (cd $W/plugins/*/skills/work-items && python3 -m unittest discover -s tests -q)
-for h in $(git -C $W diff --name-only $BASE...HEAD | grep -o '^plugins/[^/]*/hooks' | sort -u); do
+for h in $(git -C $W -c core.quotePath=false diff --name-only $BASE...HEAD | grep -o '^plugins/[^/]*/hooks' | sort -u); do
   (cd $W/$h && python3 -m unittest discover -s tests -q); done
-for p in $(git -C $W diff --name-only $BASE...HEAD | grep '\.py$'); do python3 -m py_compile $W/$p && echo "ok $p"; done
-for p in $(git -C $W diff --name-only --diff-filter=d $BASE...HEAD | grep '\.sh$'); do bash -n $W/$p && echo "ok $p"; done
+for p in $(git -C $W -c core.quotePath=false diff --name-only $BASE...HEAD | grep '\.py$'); do python3 -m py_compile $W/$p && echo "ok $p"; done
+for p in $(git -C $W -c core.quotePath=false diff --name-only --diff-filter=d $BASE...HEAD | grep '\.sh$'); do bash -n $W/$p && echo "ok $p"; done
 # then, from $W, each command in the Checks binding, one per line
 ```
 
@@ -315,7 +315,7 @@ for p in $(git -C $W diff --name-only --diff-filter=d $BASE...HEAD | grep '\.sh$
       `allowCrossMarketplaceDependenciesOn` is set.
 
 ```bash
-for j in $(git -C $W diff --name-only $BASE...HEAD | grep '\.json$'); do python3 -m json.tool $W/$j >/dev/null && echo "ok $j" || echo "FAIL $j"; done
+for j in $(git -C $W -c core.quotePath=false diff --name-only $BASE...HEAD | grep '\.json$'); do python3 -m json.tool $W/$j >/dev/null && echo "ok $j" || echo "FAIL $j"; done
 test -f $W/.claude-plugin/marketplace.json && python3 -c "import json,os,sys; m=json.load(open('$W/.claude-plugin/marketplace.json')); names={p['name'] for p in m['plugins']}; disk=set(os.listdir('$W/plugins')); print('marketplace==disk' if names==disk else 'FAIL: '+str(names^disk))"
 test -f $W/.claude-plugin/marketplace.json && python3 - "$W" <<'EOF'
 import json, os, re, sys
@@ -356,10 +356,16 @@ EOF
 
 - [ ] Sections 2, 4 and 5 re-run in the main checkout on the base (`BASE` the base's
       pre-merge sha — the merge commit's first parent): a clean textual merge onto a
-      moved base can still break frontmatter or a script.
+      moved base can still break frontmatter or a script. Bind it from the recorded
+      `landed: <merge sha>`, never from `HEAD`, which is the merge only until something
+      lands on top of it (`resume.md` step 3 binds it the same way). The guard FAILs
+      when the named sha is not a merge — a fast-forward has no first parent that is
+      the pre-merge base.
 
 ```bash
-W=$MAIN; BASE=$(git -C "$MAIN" rev-parse HEAD^1)
+M=<merge sha from the landed: line>
+git -C "$MAIN" rev-parse -q --verify "$M^2" >/dev/null || echo "FAIL: $M is not a merge"
+W=$MAIN; BASE=$(git -C "$MAIN" rev-parse "$M^1")
 ```
 
 - [ ] `git -C "$MAIN" status --short` shows nothing the merge introduced. Dirt the
