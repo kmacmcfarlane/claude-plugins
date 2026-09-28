@@ -265,9 +265,11 @@ def parse_sample(d):
 
 
 def parse_sink_sample(d):
-    """A sample from a claude-analytics sampler line, as its design specifies
-    (agent-telemetry 00, Collection): `ts`, `session_id`, and the payload's
-    `rate_limits` block; other fields are ignored. None when unusable."""
+    """A sample from a claude-analytics sampler line, per the writer's contract:
+    the line's top-level `ts`, `session_id` and `rate_limits` block. `v`, `key`,
+    `sandbox` and `payload` (and the rate_limits inside it) are ignored, so a
+    line without the top-level fields - the sampler's earliest - yields None, as
+    does any other unusable line."""
     if not isinstance(d, dict):
         return None
     at = epoch(d.get("ts"))
