@@ -320,7 +320,10 @@ Only after a `CLEAR` recorded against the current HEAD — the last `verdict:` l
    (`references/fix-loop.md` § A merge conflict). **The moment the merge succeeds**,
    append `landed: <merge sha>` to the record sink (`references/record-lines.md`) —
    before anything else, so a run that dies after the merge still says it landed. Then
-   re-run the checks on the base; `Merge and push` pushes only after both.
+   re-run the checks on the base. A red one there is no longer a fix-loop finding — the
+   merge has landed: follow `references/troubleshooting.md` § Landing, "A check is red on
+   the base after the merge", and push nothing. `Merge and push` pushes only after the
+   `landed:` line and green checks on the base.
 4. **Clean up**, only when merged and the worktree is clean: `git worktree remove` it and
    `git branch -d` the branch. A dirty worktree is never removed: report it and ask.
    `review <branch>` mode never deletes `<branch>` and removes only a worktree this cycle
@@ -330,7 +333,7 @@ Only after a `CLEAR` recorded against the current HEAD — the last `verdict:` l
    branch` nothing merged: no `landed:` line, and `$WI handoff <id>` with `--next` naming
    the branch instead.
 
-A red check or a doctrine miss stops the landing: `$WI handoff <id> --blocked "<what>"`
+A red check or a doctrine miss before the merge (steps 1–2) stops the landing: `$WI handoff <id> --blocked "<what>"`
 (no item: a `blocked:` line in the record sink), and it re-enters the fix loop as a
 finding, counting toward the cap. **Never merge to make a check pass later.**
 
