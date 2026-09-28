@@ -2,12 +2,11 @@
 id: dev-cycle-align-the-rejected-push-rule-w-5dbf
 title: "dev-cycle: align the rejected-push rule with librarian-mode (merge origin/main, never rebase/force)"
 type: chore
-status: doing
+status: done
 priority: 2
-owner: Kyle-McFarlane@7696505da8e1
-claimed: 2026-09-28T22:20Z
 created: 2026-09-22
 updated: 2026-09-28
+closed: 2026-09-28
 refs:
   - 25fa OQ
 ---
@@ -40,3 +39,6 @@ agent: implementer a8163efe6299339b1 round 2
 return: implementer DONE 3c546e9 (fix round 1)
 dispatch: reviewer opus — resume, round 2
 agent: reviewer a6b9885e5628ae3c8 round 2 at 3c546e9
+verdict: CLEAR round 2 at 3c546e9 (no findings)
+landed: 3f1d01c
+- 2026-09-28 done: 3f1d01c

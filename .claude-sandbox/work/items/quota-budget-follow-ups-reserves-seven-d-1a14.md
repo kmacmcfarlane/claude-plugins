@@ -25,3 +25,7 @@ target: branch worktree-quota-budget-follow-ups-reserves-seven-d-1a14 at .claude
 - 2026-09-28 claimed by Kyle-McFarlane@7696505da8e1
 dispatch: implementer opus — tests (rule 2)
 agent: implementer a30a939b6e301fea9 round 1
+return: implementer DONE 8d2d424 (open q: the fact now appears twice in budget.md, lines ~176 and the result section)
+changed: plugins/dev-flow/skills/librarian-mode/references/budget.md, scripts/tests/test_quota_budget.py
+dispatch: reviewer opus — fresh (rule 4)
+agent: reviewer a086b47ebff4827d2 round 1 at 8d2d424

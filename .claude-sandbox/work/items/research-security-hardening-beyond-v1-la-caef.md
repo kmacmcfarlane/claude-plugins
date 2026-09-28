@@ -48,3 +48,8 @@ return: planner DONE /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.
 baseline: f14d66cd2e1d3f07cb07fdb02c539e85633d52d2255c85fefeacb16870ed21fe  .claude-sandbox/investigations/caef-research-security/00_initial.md f6378546b4596c7a835a823b2e0c7a54c663f0cfe856f8b45d68552ef29ac264  .claude-sandbox/investigations/caef-research-security/01_probe-evidence-and-review-fixes.md 278af36fbb78ecc54b8502f4de4dc498a5abe086f2ae19fe925b68460222d4a2  .claude-sandbox/investigations/caef-research-security/02_read-write-rules-composed.md 
 dispatch: reviewer opus — resume, round 3 (last before the cap)
 agent: reviewer aa3ef03d44451c197 round 3
+verdict: NEEDS_CHANGES round 3 at 02 278af36f (2 high, 2 medium, 3 low; all r2 fixed; new highs: runs never stop being live so allows union over past runs; config-dir deny blocks the transcript corpora the plan names)
+findings: verbatim at .claude-sandbox/investigations/caef-research-security/reviews/plan-review-r3.md
+note: harness flagged the report as instruction-shaped (settings-json) — the plan's subject; relayed, not acted on
+dispatch: planner opus — resume, fix round 3 (serial 03; review round 4 is the cap)
+agent: planner a533b9e5c8c4a9126 round 4
