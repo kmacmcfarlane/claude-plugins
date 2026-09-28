@@ -96,7 +96,13 @@ class Contract(helpers.Hermetic):
         self.assertTrue(self.L.depth("/nonexistent", "s")[3].startswith("inferred"))
         # the reset read the sensor for the ending epoch's fill
         self.assertEqual(self.L.load_state("s")["epoch_end_tokens"], 420_000)
-        time.sleep(0.01)
+        # A render within the publisher's EPOCH_GRACE_S after the reset is
+        # demoted too (a payload built before the compaction, written after
+        # it); a live render of the new epoch follows a response, later.
+        self.show("s", dict(helpers.CTX, used_percentage=3.0, total_input_tokens=30_000))
+        self.assertEqual(self.L.sensor("s"), {"window": 1_000_000, "at": 0})
+        self.L.update_state("s", lambda st: st.update(
+            epoch_at=st["epoch_at"] - self.L.EPOCH_GRACE_S - 1))
         self.show("s", dict(helpers.CTX, used_percentage=3.0, total_input_tokens=30_000))
         self.assertEqual(self.L.depth("/nonexistent", "s"),
                          (30_000, 1_000_000, 3.0, "exact"))

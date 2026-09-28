@@ -15,6 +15,8 @@ guess, so under `hard` the hook emits the DUE-style advisory saying a hard
 stop was not applied and exits 0 (live-fired 2026-09-16: a 1M session was
 blocked against a guessed 200K). The window scored is the gate window
 (L.measure): the model window, lowered to a configured auto-compact window.
+A transcript count stamped before the epoch began (the compaction's boundary
+line not yet on disk) reads as 0 there, so it never warns, latches or blocks.
 A hard stop is measured against `block_window` - the gate window when every
 input to it resolved, else the model window - so an unresolved auto-compact
 window warns but never blocks.

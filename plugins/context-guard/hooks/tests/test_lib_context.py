@@ -225,6 +225,173 @@ class TestDepth(Base):
                         os.environ.pop(name, None)
 
 
+def _iso(t):
+    from datetime import datetime, timezone
+    return datetime.fromtimestamp(t, timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+
+
+class TestEpochRule(Base):
+    """A transcript count belongs to the epoch its usage line was written in:
+    after PostCompact stamps epoch_at, the compact_boundary line can still be
+    in Claude Code's 100 ms write queue when the queued opener's hook scans
+    the transcript (spike bace, cases B0, S2, S3)."""
+
+    def setUp(self):
+        super().setUp()
+        self.p = os.path.join(self.tmp.name, "t.jsonl")
+        self.t_old = time.time() - 60
+
+    def usage(self, tokens, at=None):
+        rec = {"type": "assistant", "message": {"usage": {
+            "input_tokens": 2, "cache_read_input_tokens": tokens - 2,
+            "cache_creation_input_tokens": 0}}}
+        if at is not None:
+            rec["timestamp"] = _iso(at)
+        return rec
+
+    def write(self, *recs, append=False):
+        with open(self.p, "a" if append else "w") as f:
+            for r in recs:
+                f.write(json.dumps(r) + "\n")
+        return self.p
+
+    def queued_opener(self):
+        """The non-usage lines a queued prompt writes before the boundary lands."""
+        return ({"type": "queue-operation", "operation": "enqueue",
+                 "timestamp": _iso(time.time())},
+                {"type": "attachment", "timestamp": _iso(time.time()),
+                 "attachment": {"type": "hook_success", "content": "x"}})
+
+    def test_fresh_scan_drops_a_pre_epoch_count_on_both_inferred_paths(self):
+        self.write(self.usage(950_000, self.t_old))
+        before = {m: L.measure(self.p, "s", mirror=m) for m in (True, False)}
+        L.reset_epoch("s")
+        for mirror in (True, False):
+            with self.subTest(mirror=mirror):
+                m = L.measure(self.p, "s", mirror=mirror)
+                self.assertEqual(before[mirror]["tokens"], 950_000)
+                self.assertEqual(m["tokens"], 0)
+                self.assertEqual(m["source"], before[mirror]["source"])
+                self.assertTrue(m["source"].startswith("inferred"))
+                self.assertEqual(m["model_window"], 1_000_000)   # peak still sets it
+                self.assertIn("predates this epoch", m["note"])
+        self.assertEqual(L.depth(self.p, "s", mirror=False)[0], 0)
+
+    def test_equal_stamp_is_the_earlier_epoch(self):
+        self.write(self.usage(950_000, self.t_old))
+        L.save_state("s", {"epoch": 1, "epoch_at": L._iso_ts(_iso(self.t_old))})
+        self.assertEqual(L.measure(self.p, "s")["tokens"], 0)
+        self.assertEqual(L.measure(self.p, "s", mirror=False)["tokens"], 0)
+
+    def test_a_line_of_the_new_epoch_recovers(self):
+        self.write(self.usage(950_000, self.t_old))
+        L.reset_epoch("s")
+        epoch_at = L.load_state("s")["epoch_at"]
+        self.write({"type": "system", "subtype": "compact_boundary",
+                    "timestamp": _iso(epoch_at + 0.1)},
+                   self.usage(30_000, epoch_at + 0.5), append=True)
+        for mirror in (True, False):
+            with self.subTest(mirror=mirror):
+                m = L.measure(self.p, "s", mirror=mirror)
+                self.assertEqual((m["tokens"], m["model_window"]), (30_000, 1_000_000))
+                self.assertTrue(m["source"].startswith("inferred"))
+                self.assertNotIn("predates", m["note"])
+
+    def test_unstamped_lines_behave_as_before(self):
+        # every fixture before this rule: no timestamp, no drop
+        self.write(self.usage(950_000))
+        L.reset_epoch("s")
+        for mirror in (True, False):
+            with self.subTest(mirror=mirror):
+                m = L.measure(self.p, "s", mirror=mirror)
+                self.assertEqual(m["tokens"], 950_000)
+                self.assertNotIn("predates", m["note"])
+
+    def test_scans_report_cur_at(self):
+        self.write(self.usage(950_000, self.t_old))
+        want = L._iso_ts(_iso(self.t_old))
+        self.assertEqual(L.scan_transcript(self.p)["cur_at"], want)
+        self.assertEqual(L._scan_usage_at(self.p), (950_000, 950_000, False, want))
+        self.assertEqual(L.scan_usage(self.p), (950_000, 950_000, False))
+        b_at = self.t_old + 5
+        self.write({"type": "system", "subtype": "compact_boundary",
+                    "timestamp": _iso(b_at)}, append=True)
+        r = L.scan_transcript(self.p)
+        self.assertEqual((r["cur"], r["cur_at"]), (0, L._iso_ts(_iso(b_at))))
+        self.assertEqual(L._scan_usage_at(self.p)[::3], (0, L._iso_ts(_iso(b_at))))
+
+    def spy_cache_start(self):
+        """Patch _cache_start to record the offset each scan resumed from."""
+        starts, real = [], L._cache_start
+
+        def spy(*a):
+            r = real(*a)
+            starts.append(r[0])
+            return r
+        patch = mock.patch.object(L, "_cache_start", spy)
+        patch.start()
+        self.addCleanup(patch.stop)
+        return starts
+
+    def test_cached_resume_carries_cur_at(self):
+        # The S2 path: the prompt gate kept the scan cache on the previous
+        # prompt; the opener's scan resumes from it and reads no usage line,
+        # so cur and cur_at come from the cache alone.
+        self.write(self.usage(950_000, self.t_old))
+        m = L.measure(self.p, "s")
+        cache = m["scan_cache"]
+        self.assertEqual(cache["cur_at"], L._iso_ts(_iso(self.t_old)))
+        L.update_state("s", lambda st: st.update(scan=cache))
+        self.write(*self.queued_opener(), append=True)
+        L.reset_epoch("s")
+        starts = self.spy_cache_start()
+        m = L.measure(self.p, "s")
+        self.assertEqual(starts, [cache["size"]])            # resumed, not rescanned
+        self.assertEqual(m["tokens"], 0)
+        self.assertTrue(m["source"].startswith("inferred"))
+        self.assertIn("predates this epoch", m["note"])
+        self.assertEqual(m["scan_cache"]["cur_at"], cache["cur_at"])
+
+    def test_malformed_or_missing_cached_cur_at_reads_as_none_without_rescan(self):
+        self.write(self.usage(950_000, self.t_old))
+        good = L.scan_transcript(self.p)["cache"]
+        self.write(*self.queued_opener(), append=True)
+        starts = self.spy_cache_start()
+        for bad in ("2026-09-21T22:49:56Z", float("nan"), float("inf"), True, None, "drop"):
+            with self.subTest(cur_at=bad):
+                c = dict(good)
+                if bad == "drop":
+                    del c["cur_at"]                         # a cache from before the rule
+                else:
+                    c["cur_at"] = bad
+                del starts[:]
+                r = L.scan_transcript(self.p, c)
+                self.assertEqual(starts, [good["size"]])
+                self.assertEqual((r["cur"], r["cur_at"]), (950_000, None))
+        # measure() with such a cache: the rule does not apply (today's behaviour)
+        c = dict(good)
+        del c["cur_at"]
+        L.update_state("s", lambda st: st.update(scan=c))
+        L.reset_epoch("s")
+        del starts[:]
+        self.assertEqual(L.measure(self.p, "s")["tokens"], 950_000)
+        self.assertEqual(starts, [good["size"]])
+
+    def test_epoch_cur_units(self):
+        st = {"epoch_at": 1000.0}
+        self.assertEqual(L._epoch_cur(950_000, None, st), (950_000, False))
+        self.assertEqual(L._epoch_cur(950_000, 999.0, {}), (950_000, False))
+        self.assertEqual(L._epoch_cur(950_000, 999.0, {"epoch_at": "soon"}), (950_000, False))
+        self.assertEqual(L._epoch_cur(950_000, 1000.0, st), (0, True))       # equal: earlier
+        self.assertEqual(L._epoch_cur(950_000, 999.9, st), (0, True))
+        self.assertEqual(L._epoch_cur(950_000, 1000.1, st), (950_000, False))
+        self.assertEqual(L._epoch_cur(950_000, time.time() + 3600, st),      # future: kept
+                         (950_000, False))
+        self.assertEqual(L._epoch_cur(0, 999.0, st), (0, False))
+        self.assertEqual(L._epoch_cur(950_000, float("nan"), st), (950_000, False))
+        self.assertEqual(L._epoch_cur(950_000, True, st), (950_000, False))
+
+
 class TestEnvSetting(Base):
     def test_canonical_then_alias(self):
         names = ("CANON", "ALIAS")
