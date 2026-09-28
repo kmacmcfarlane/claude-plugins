@@ -64,6 +64,10 @@ No id can name a path outside its directory.
   depends on was observed, and warns otherwise, as a depth inferred from the transcript does.
   A fresh record also cross-checks the derived window (a disagreement is logged and makes that
   Claude Code version warn-only). `CONTEXT_GUARD_DERIVE=off` turns derivation off.
+  A new epoch (a compaction or `/clear`) reads an `exact` block whose `at` is at or before
+  the epoch's start, or up to 2 s after it, as window-only: Claude Code can build a payload
+  before the compaction that the status line reads just after it. The new epoch's first
+  exact reading is expected to be the render after its first response.
 - Pruning: the plugin's SessionStart hook deletes records not modified for 30 days (never
   the starting session's own) and orphaned temp files older than one hour, at most once a day
   (the `.pruned` stamp in the same directory). A pruned record reads as absent.

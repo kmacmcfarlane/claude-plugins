@@ -130,10 +130,14 @@ Three layers, escalating; the first two are hooks, the third is a skill.
    read both records and use the one with the larger `exact.at` (`lib_context.sensor`); a
    sensor file that is not a regular file, or whose `at` is more than 60s in the future, reads
    as absent. They never write the sensor file: a new epoch stamps `epoch_at` in the gate's
-   own state, and a record stamped at or before it counts as window-only. A transcript usage
-   count stamped at or before `epoch_at` is dropped the same way (depth unknown until the
-   epoch's first response): Claude Code can run the queued opener's hook before the
-   compaction's boundary line reaches disk. The gate publishes
+   own state, and a record stamped at or before it, or up to 2 s after it (`EPOCH_GRACE_S`:
+   Claude Code can build a payload before the compaction that the status line reads just
+   after it), counts as window-only, even when the clock has since stepped back past
+   `epoch_at` (that only silences the gate). A transcript usage count stamped at or before
+   `epoch_at` is dropped the same way (depth unknown until the epoch's first response):
+   Claude Code can run the queued opener's hook before the compaction's boundary line
+   reaches disk. For transcript counts only, an `epoch_at` more than 60 s ahead of the clock
+   is ignored: such a stale count lives only until the boundary line lands. The gate publishes
    its threshold anchors and gauge labels to `claude-kit/context-gate/gauge.json` (`"v": 1`)
    at SessionStart, generated from the same `ANCHORS` constant it gates on. context-guard
    never writes `settings.json`: the `statusLine` entry belongs to the `statusline-hub` plugin.

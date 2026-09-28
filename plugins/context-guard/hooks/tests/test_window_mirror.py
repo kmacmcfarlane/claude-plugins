@@ -817,6 +817,25 @@ class TestHooks(Base):
         self.assertEqual(rc, 0, err)
         self.assertIn("65% used", out.get("systemMessage", ""))
 
+    def test_pre_epoch_band_count_neither_warns_nor_latches(self):
+        # A /compact at a band-level 750K of 1M (75%, both bands) with the
+        # opener queued: the stale count must not print a band or latch one,
+        # or the epoch's genuine 60% crossing would be swallowed.
+        self.session("claude-opus-5", 750_000)
+        self.write(model_line("claude-opus-5", self.t0), stamped(750_000, self.t0 + 2))
+        L.reset_epoch("s")
+        rc, out, err = self.warn()
+        self.assertEqual((rc, out, err), (0, {}, ""))
+        self.assertNotIn("bands", L.load_state("s"))
+        epoch_at = L.load_state("s")["epoch_at"]
+        self.write({"type": "system", "subtype": "compact_boundary",
+                    "timestamp": iso(epoch_at + 0.1)},
+                   stamped(650_000, epoch_at + 1), append=True)
+        rc, out, err = self.warn()
+        self.assertEqual(rc, 0, err)
+        self.assertIn("65% used", out.get("systemMessage", ""))
+        self.assertEqual(L.load_state("s")["bands"], {"60": L.epoch(L.load_state("s"))})
+
     def test_whitelisted_prompt_passes(self):
         self.session("claude-opus-5", 950_000)
         self.assertEqual(self.warn("/checkpoint")[0], 0)

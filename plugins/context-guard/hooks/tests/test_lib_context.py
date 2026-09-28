@@ -390,6 +390,23 @@ class TestEpochRule(Base):
         self.assertEqual(L._epoch_cur(0, 999.0, st), (0, False))
         self.assertEqual(L._epoch_cur(950_000, float("nan"), st), (950_000, False))
         self.assertEqual(L._epoch_cur(950_000, True, st), (950_000, False))
+        # No grace for transcript counts: the line stamp is Claude Code's own.
+        self.assertEqual(L._epoch_cur(950_000, 1000.0 + L.EPOCH_GRACE_S / 2, st),
+                         (950_000, False))
+
+    def test_future_epoch_at_is_ignored(self):
+        # The clock stepped back after _reset: a cut more than FUTURE_SKEW_S
+        # ahead of now does not apply; one within the skew still does.
+        now = time.time()
+        far = {"epoch_at": now + L.FUTURE_SKEW_S + 600}
+        self.assertEqual(L._epoch_cur(950_000, now - 5, far), (950_000, False))
+        self.assertEqual(L._epoch_cur(950_000, now - 5, {"epoch_at": now + 10}),
+                         (0, True))
+        self.write(self.usage(950_000, now - 5))
+        L.save_state("s", far)
+        for mirror in (True, False):
+            with self.subTest(mirror=mirror):
+                self.assertEqual(L.measure(self.p, "s", mirror=mirror)["tokens"], 950_000)
 
 
 class TestEnvSetting(Base):

@@ -366,8 +366,39 @@ class TestEpochDemotion(Base):
     def test_record_after_reset_is_exact(self):
         L.reset_epoch("s")
         epoch_at = L.load_state("s")["epoch_at"]
-        self.write_sensor("s", 30_000, 1_000_000, at=epoch_at + 1)
+        self.write_sensor("s", 30_000, 1_000_000, at=epoch_at + L.EPOCH_GRACE_S + 1)
         self.assertEqual(L.depth("/nonexistent", "s")[::3], (30_000, "exact"))
+
+    def test_record_inside_the_grace_is_window_only(self):
+        # A render that began before PostCompact stamped epoch_at and wrote
+        # just after it: the tee stamps the write, so `at` is past epoch_at
+        # but the count is the old epoch's (EPOCH_GRACE_S).
+        L.reset_epoch("s")
+        epoch_at = L.load_state("s")["epoch_at"]
+        for dt in (0.1, L.EPOCH_GRACE_S):
+            with self.subTest(dt=dt):
+                self.write_sensor("s", 950_000, 1_000_000, at=epoch_at + dt)
+                self.assertEqual(L.sensor("s"), {"window": 1_000_000, "at": 0})
+                self.assertEqual(L.depth("/nonexistent", "s")[:2], (0, 1_000_000))
+        self.write_legacy("s", 950_000, 1_000_000, at=epoch_at + 1)
+        self.assertEqual(L.depth("/nonexistent", "s")[:2], (0, 1_000_000))
+
+    def test_future_epoch_at_still_demotes_a_pre_reset_record(self):
+        # The clock stepped back 75 s after a reset: the old epoch's last
+        # render (95%, stamped 30 s before the reset, so now 45 s "ahead" and
+        # still accepted) cannot be told from a new one by its stamp. It stays
+        # window-only - silencing the gate for the step, never blocking.
+        now = time.time()
+        epoch_at = now + 75
+        for write in (self.write_sensor, self.write_legacy):
+            with self.subTest(writer=write.__name__):
+                L.save_state("s", {"epoch": 1, "epoch_at": epoch_at})
+                write("s", 950_000, 1_000_000, at=epoch_at - 30)
+                self.assertEqual(L.sensor("s"), {"window": 1_000_000, "at": 0})
+                self.assertEqual(L.depth("/nonexistent", "s")[:2], (0, 1_000_000))
+        L.save_state("s", {"epoch": 1, "epoch_at": now + L.FUTURE_SKEW_S + 600})
+        self.write_sensor("s", 300_000, 1_000_000, at=now - 5)
+        self.assertEqual(L.sensor("s"), {"window": 1_000_000, "at": 0})
 
     def test_demoted_new_record_uses_post_boundary_transcript(self):
         self.write_sensor("s", 950_000, 1_000_000, at=time.time() - 10)
@@ -391,6 +422,16 @@ class TestEpochDemotion(Base):
     def scored(self, sid, tokens, at):
         """What context_warn.decide() stores on a prompt: the scored depth."""
         L.update_state(sid, lambda st: st.update(tokens=tokens, tokens_at=at))
+
+    def test_epoch_end_tokens_ignores_a_future_epoch_at(self):
+        # Ledger header only: a cut more than FUTURE_SKEW_S ahead (the clock
+        # stepped back) is ignored, as for transcript counts (_epoch_cut).
+        now = time.time()
+        st = {"tokens": 820_000, "tokens_at": now - 5,
+              "epoch_at": now + L.FUTURE_SKEW_S + 600}
+        self.assertEqual(L._epoch_end_tokens({}, st), 820_000)
+        st["epoch_at"] = now + 10
+        self.assertEqual(L._epoch_end_tokens({}, st), 0)
 
     def test_epoch_end_tokens_prefers_a_fresher_scored_depth(self):
         # the status line last rendered long ago; the gate scored a later prompt
