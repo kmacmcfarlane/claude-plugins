@@ -38,6 +38,28 @@ def readf(path):
 def writef(path, text):
     with open(path, "w") as fh:
         fh.write(text)
+
+
+def run_timed(tc, path, run):
+    """Call `run()` - a mark_checkpoint.py run expected to report `path` as
+    "was last written N min ago" - and assert N is the minute the hook could
+    have printed. The hook prints int(age // 60) with age = its own now minus
+    the file's mtime, so an age set a whole number of minutes back sits on a
+    minute boundary: a second or more of load before the hook reads the clock
+    tips the printed minute over (119 became 120 under CPU load). Instead of
+    one exact minute, N is bounded by the ages at the clock readings just
+    before and just after the run, which the hook's own reading lies between.
+    Returns the run's result."""
+    import re
+    mtime = os.path.getmtime(path)
+    t0 = time.time()
+    r = run()
+    t1 = time.time()
+    m = re.search(r"was last written (\d+) min ago", r.stderr)
+    tc.assertIsNotNone(m, r.stderr)
+    lo, hi = int((t0 - mtime) // 60), int((t1 - mtime) // 60)
+    tc.assertTrue(lo <= int(m.group(1)) <= hi, (m.group(0), lo, hi))
+    return r
 PREAMBLE = "Precedence:"
 FOREIGN = "(not this session)"
 
@@ -866,9 +888,9 @@ class TestMarkStamps(Base):
         old = time.time() - 2 * 3600
         os.utime(self.path, (old, old))
         before = self.raw()
-        p = self.run_cli("S", env_sid="S")
+        # About 120 min; the exact minute is bounded by the run (run_timed).
+        p = run_timed(self, self.path, lambda: self.run_cli("S", env_sid="S"))
         self.assertEqual(self.raw(), before)
-        self.assertIn("was last written 120 min ago", p.stderr)
         self.assertIn("checkpoint recorded", p.stdout)
 
     def test_no_frontmatter_is_not_stamped(self):
@@ -1528,9 +1550,9 @@ class TestMarkStampsTheOwnPath(Base):
         old = time.time() - 2 * 3600
         os.utime(p, (old, old))
         before = self.stat_of(p)
-        r = self.run_cli("S", env_sid="S")
+        # About 120 min; the exact minute is bounded by the run (run_timed).
+        r = run_timed(self, p, lambda: self.run_cli("S", env_sid="S"))
         self.assertEqual(self.stat_of(p), before)
-        self.assertIn("was last written 120 min ago", r.stderr)
         self.assertIn("checkpoint recorded", r.stdout)
 
     def test_no_manifest_anywhere_names_the_store_path_first(self):
@@ -1749,8 +1771,9 @@ class TestStampGuardWarnsOnly(StoreBase):
         p = self.copied(age=2 * 3600)
         before = self.snap(p)
         self.rewrite("<stamped>", "Stranded in the repo file.")
-        r = self.run_cli("X", env_sid="X")
-        self.assertRegex(r.stderr, r"was last written 11[89] min ago")  # the window
+        # The window: about 119 min, the copy's mtime a second after its
+        # stamp; the exact minute is bounded by the run (run_timed).
+        r = run_timed(self, p, lambda: self.run_cli("X", env_sid="X"))
         self.assertIn(self.WARN, r.stderr)                        # the guard
         self.assertEqual(self.snap(p), before)
         store = readf(p)
@@ -1953,8 +1976,10 @@ class TestMarkInstallsTheDraft(Base):
         old = time.time() - 3 * 3600
         os.utime(self.draft, (old, old))
         draft_before = self.snap(self.draft)
-        r = self.run_cli("--from", self.draft, "S")
-        self.assertNotInstalled(r, "was last written 180 min ago")
+        # About 180 min; the exact minute is bounded by the run (run_timed).
+        r = run_timed(self, self.draft,
+                      lambda: self.run_cli("--from", self.draft, "S"))
+        self.assertNotInstalled(r, "was last written ")
         self.assertEqual(self.snap(L.manifest_path("S")), before)
         self.assertEqual(self.snap(self.draft), draft_before)
 
