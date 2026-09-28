@@ -37,8 +37,8 @@ observable measures it today; leave it alone rather than guess.
 
 Judge **reversibility and blast radius together**; never add them up as two scores. A
 decision that is one-way *and* wide (or relied on) is **⚠ one-way**; how it is shown and
-answered is SKILL.md § Critical. One-way but narrow is a card marked *one-way, narrow*. Two-way and narrow is the fast tier: a card, or a
-line when the line-only rule holds.
+answered is SKILL.md § Critical. One-way but narrow is a card marked *one-way, narrow*. Two-way and narrow is the fast
+tier: a card, or a line when the line-only rule holds.
 
 ## C — How well is it understood? → what evidence is shown, and "investigate first"
 

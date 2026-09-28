@@ -22,7 +22,6 @@ The skill is available when the session's skill listing carries `operator-intera
   It covers the content floor, the list line / card / block, the order, the layout, the
   hint, reading replies with an echo, the read-back on a one-way choice in a ⚠ decision, and
   "decide later" with a wake.
-
 - **Never through AskUserQuestion.** That is the librarian's own rule (SKILL.md § Intake
   step 3), and the skill agrees. The opt-in dialog is the one exception (`opt-in.md`).
 
@@ -76,8 +75,8 @@ renders what the operator read instead of composing it again.
   recorded because a natural-language reply can be misread, and the echo is what the
   operator saw.
 - **A one-way choice on a ⚠ decision** (the chosen option's `undo:` says it cannot be
-  undone): repeat the choice back first. Record `answer N:` only when the operator confirms. Nothing acts before
-  that. A reversible choice on a ⚠ decision is echoed and recorded at once.
+  undone): repeat the choice back first. Record `answer N:` only when the operator confirms.
+  Nothing acts before that. A reversible choice on a ⚠ decision is echoed and recorded at once.
 - **`later [when]`:** `wake N: <time | event | next Report>`. There is no `answer N:`, so the
   decision stays open and `wi needs-input` keeps listing it. Deferred again, it gets another
   `wake N:`; the last one wins (`grep -n '^wake N:'`, last hit). At the wake, re-show it
