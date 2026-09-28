@@ -140,6 +140,8 @@ There is **no single skills root any more.** A skill's upstream home is a *plugi
 of the two marketplaces, so every path is built as `$PLUGINS/<plugin>/skills/<name>/` or
 `$EXPERTISE/<plugin>/skills/<name>/`. Never hardcode a plugin name — Step 0.3 discovers it.
 
+For the upstream repos' structure (markers, shapes, how to derive current contents), read `references/repo-map.md`.
+
 Verify sibling repos exist. If any are missing, report which and continue with the reachable
 ones (`$EXPERTISE` and `$KIT` are optional; `$PLUGINS` is required for any skill sync).
 
