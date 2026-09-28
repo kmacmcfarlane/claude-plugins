@@ -2,10 +2,12 @@
 id: context-guard-test-flake-test-a-copy-old-d1e3
 title: "context-guard test flake: test_a_copy_older_than_the_window expects 118-119 min, gets 120 under load"
 type: bug
-status: todo
+status: doing
 priority: 2
+owner: Kyle-McFarlane@7696505da8e1
+claimed: 2026-09-28T21:55Z
 created: 2026-09-23
-updated: 2026-09-23
+updated: 2026-09-28
 refs:
   - 923f landing 2026-09-23
 ---
@@ -18,3 +20,9 @@ Seen 2026-09-23 while landing 923f, a docs-only change: tests/test_lineage.py:17
 - blocked: —
 - learned: —
 - 2026-09-25 seen again at the 2ec4 landing (1 failure in 778; test name not captured because the run was -q); three verbose re-runs on the pushed tree: OK. Also seen once in an implementer's run for adef. Capture names with a verbose rerun wrapper at landing.
+target: branch worktree-context-guard-test-flake-test-a-copy-old-d1e3 at .claude/worktrees/context-guard-test-flake-test-a-copy-old-d1e3, base main (9cafb1a)
+
+## Notes
+- 2026-09-28 claimed by Kyle-McFarlane@7696505da8e1
+dispatch: implementer opus — test code (rule 2)
+agent: implementer a2fd977c438048f4a round 1

@@ -2,11 +2,13 @@
 id: operator-interaction-refer-to-work-items-0b2d
 title: "operator-interaction: refer to work items by a plain-language name in operator-facing text, not a bare hash"
 type: spike
-status: todo
+status: doing
 priority: 1
 parent: checkpoint-around-continuation-how-agent-d3ee
+owner: Kyle-McFarlane@7696505da8e1
+claimed: 2026-09-28T21:55Z
 created: 2026-09-24
-updated: 2026-09-24
+updated: 2026-09-28
 refs:
   - operator 2026-09-24
 ---
@@ -18,3 +20,8 @@ Operator 2026-09-24: 'using hashes in messaging like this about work items is re
 - next: —
 - blocked: —
 - learned: —
+
+## Notes
+- 2026-09-28 claimed by Kyle-McFarlane@7696505da8e1
+dispatch: planner opus — spike, plan mode (Step 1)
+agent: planner acf7dd0ddde558b47 round 1

@@ -2,12 +2,10 @@
 id: context-guard-compact-and-clear-handoffs-5039
 title: "context-guard: /compact and /clear handoffs lose state — investigate failure modes and fix"
 type: spike
-status: doing
+status: todo
 priority: 1
-owner: unknown@360f41058e92
-claimed: 2026-09-22T15:44Z
 created: 2026-09-22
-updated: 2026-09-22
+updated: 2026-09-28
 refs:
   - operator 2026-09-22
 ---
@@ -16,7 +14,7 @@ Operator 2026-09-22: 'some stuff broke in the /compact handoff' — investigate 
 
 ## Handoff
 - doing: —
-- next: —
+- next: close when H7 (bace, stale depth warning after compaction) lands; H1-H6 done
 - blocked: —
 - learned: —
 

@@ -2,12 +2,10 @@
 id: spike-analyze-claude-code-usage-across-c-e5a7
 title: "spike: analyze Claude Code usage across conversations with a skill"
 type: spike
-status: doing
+status: todo
 priority: 3
-owner: unknown@4d338747396e
-claimed: 2026-09-16T17:08Z
 created: 2026-09-16
-updated: 2026-09-18
+updated: 2026-09-28
 refs:
   - operator message 2026-09-16
 ---
