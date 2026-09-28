@@ -81,23 +81,33 @@ claude-plugins/
     ├── context-guard/         (surviving the context window — a hook-owning plugin)
     │   ├── hooks/             (gate, ledger, rehydrate, gauge.json publish, deprecated statusline copy + tests)
     │   └── skills/{checkpoint,usage-report}/
-    ├── dev-flow/              (plan before you code; the librarian that takes custody of a repo)
-    │   └── skills/{investigate,implement,dev-cycle,deep-investigation,chain-of-verification,librarian-mode}/
+    ├── create-repo/           (start a new repo for a thread of work, with a session launched on it)
+    │   └── skills/create-repo/ (references/launch-command.md)
+    ├── dev-flow/              (plan before you code; research into findings or a knowledge base; the librarian that takes custody of a repo)
+    │   ├── agents/            (research-lane, research-verifier — the research family's workers)
+    │   └── skills/
+    │       ├── {investigate,implement,dev-cycle,deep-investigation,research,research-deep,research-refine,research-prune,chain-of-verification,librarian-mode}/
+    │       └── research/scripts/ (tool-preflight.sh + tests)
     ├── kit-dev/               (maintaining this kit itself — where THIS skill lives)
     │   └── skills/{create-skill,update-kit,new-project-from-template,factor-analysis}/
+    ├── operator-interaction/  (the agent-operator interface, starting with how decisions are raised and shown)
+    │   └── skills/decisions/  (references/{worksheet,rendering,replies,evidence-basis,rationale,gallery}.md)
     ├── ralph/                 (unattended agent loops over a backlog)
     │   └── skills/{backlog-yaml,backlog-entry,backlog-grooming}/
     ├── sandbox/               (isolated execution: claude-sandbox + checkout/worktree convention — a hook-owning plugin)
-    │   ├── hooks/             (checkout guard + tests)
+    │   ├── hooks/             (checkout guard + hooks.json + tests)
     │   └── skills/sandbox/
     ├── statusline/            (always-on status line footer, a statusline-hub display hook — hook-owning; hard-depends on statusline-hub)
-    │   ├── hooks/             (statusline renderer, sensor, session_start: registers the hub hook, prune + tests)
+    │   ├── settings.json      (plugin settings default: subagentStatusLine)
+    │   ├── hooks/             (statusline renderer, subagent_statusline agent-panel renderer, sensor, session_start: registers the hub hook, prune + hooks.json + tests)
     │   └── skills/install-statusline/ (coworker install, hands the slot to install-statusline-hub; references/sensor-contract.md)
-    ├── statusline-hub/        (the status-line slot, shared: owner-mode dispatcher + embed-mode tee — hook-owning; owns the statusLine entry)
-    │   ├── hooks/             (hub, registry, tee, owner, session_start, housekeeping + tests)
+    ├── statusline-hub/        (the status-line slot, shared: owner-mode dispatcher + embed-mode tee + consent-only wrap mode — hook-owning; owns the statusLine entry)
+    │   ├── hooks/             (hub, registry, tee, owner, session_start, housekeeping + hooks.json + tests)
     │   └── skills/{statusline-hub,install-statusline-hub}/ (embed recipes, references/hook-contract.md; installer script)
     └── work-items/            (repo-durable work items + work-source provider interface)
-        └── skills/work-items/ (wi CLI, references/, tests/)
+        └── skills/
+            ├── work-items/    (wi CLI incl. `wi estate`, references/, tests/)
+            └── work-review/   (the on-demand cross-repo review, written from `wi estate`)
 ```
 
 Derive the current set with `ls ../claude-plugins/plugins` and
