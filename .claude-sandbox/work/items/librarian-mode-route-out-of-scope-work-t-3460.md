@@ -37,3 +37,17 @@ decision 97: forward out-of-scope requests to the owning repo's live librarian i
   rec: (a) · basis: partial — 8 items were already routed this way on 2026-09-22 without trouble; your quoted words came via a peer, not first-hand
   unknown: how often a forward goes unanswered
 agent: reviewer a99a1620600db715f round 1 at 87e496a
+verdict: NEEDS_CHANGES round 1 at 87e496a (1 high, 4 medium, 2 low)
+findings:
+  [high] SKILL.md:155-157, walkthroughs.md:37-39 — peer safety lives only in the receiver's skill: the message must itself state it is a request from <our repo>'s librarian, originator quoted as provenance only, no operator approval, file under your own rules; the bare-name holder may be a non-librarian create-repo session
+  [medium] SKILL.md:157-158 — our item is dropped before the owner files anything; a lost forward vanishes; the id-only reply can't be matched back
+  [medium] SKILL.md:159-160 — one-hop guard untestable from the record: file a forwarded message with its header in --ref; say "out of Scope → operator"
+  [medium] walkthroughs.md:35-36 — pointer to session-name.md contradicts it (older forms "do not match" for the self-gate); bare + "- librarian" = two candidates → operator
+  [medium] SKILL.md:289 — the "or reasoning about it" red flag blocks the forward; carve-out for naming the owner
+  [low] Intake step 2 cross-reference to step 4; [low] define <our repo> = basename "$MAIN"
+librarian decision: no-reply policy — hold ours (blocked, "forwarded to <peer>, awaiting id") and drop only when the reply arrives; the forward asks the owner to reply "filed <their id> for <our repo> <our id>" so the reply matches back
+dispatch: implementer opus — resume, fix round 1
+agent: implementer aeab0d9ec2f36aa4c round 2
+return: implementer DONE_WITH_CONCERNS 80ad71a (fix round 1; landing still waits on decision 97)
+dispatch: reviewer opus — resume, round 2
+agent: reviewer a99a1620600db715f round 2 at 80ad71a

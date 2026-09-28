@@ -2,12 +2,11 @@
 id: dev-cycle-step-5-numbering-puts-the-push-f6fd
 title: "dev-cycle: Step 5 numbering puts the push (5.3) before landed: (5.5); a run dying between merge and landed: reads STALE"
 type: bug
-status: doing
+status: done
 priority: 3
-owner: Kyle-McFarlane@7696505da8e1
-claimed: 2026-09-28T23:02Z
 created: 2026-09-28
 updated: 2026-09-28
+closed: 2026-09-28
 refs:
   - 16da review
 ---
@@ -54,3 +53,6 @@ agent: implementer ad34ddcd4498110e0 round 3
 return: implementer DONE 0af7908 (fix round 2: 734ffa7 + 0af7908)
 dispatch: reviewer opus — resume, round 3
 agent: reviewer a8c21f2e82d60050d round 3 at 0af7908
+verdict: CLEAR round 3 at 0af7908 (2 low: a resumed push may carry later local commits — name them as step 3 does; store-less S2 re-runs base checks each time — declined, both safe and doctrine-consistent)
+landed: 9f2c425
+- 2026-09-28 done: 9f2c425

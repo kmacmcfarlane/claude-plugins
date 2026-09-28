@@ -37,3 +37,12 @@ return: implementer DONE 6c28d20 (1,2,3,5,6 + nits taken; 4 declined already fix
 changed: plugins/operator-interaction/skills/decisions/SKILL.md, references/worksheet.md, rendering.md, replies.md, gallery.md
 dispatch: reviewer opus — fresh (rule 4)
 agent: reviewer a06424d4e723e69f4 round 1 at 6c28d20
+verdict: NEEDS_CHANGES round 1 at 6c28d20 (3 medium, 4 low)
+findings:
+  [medium] point (3) was settled the other way in v1.1 (9f3cbca removed "the operator's return"); re-adding "stated absence" changes ruled behaviour (re-shows every seen card, every ⚠ as a block) and drifts from librarian-mode decisions.md:39/:113 — decline (3) and revert, or raise to the operator
+  [medium] replies.md:68-69 — a deferred decision would drop off the list; stays a list line with its wake until the wake fires
+  [medium] replies.md:10-13 — one verb over several numbers could ratify a ⚠ in a batch; acting verbs skip ⚠ and re-ask, as ok N-M does
+  [low] SKILL.md:156-158 trigger list incomplete (point, or list all five); [low] SKILL.md:160 ~125-char line; [low] worksheet.md:21-22 moot if reverted; [low] rationale.md fine as is
+librarian decision: decline (3) as already resolved at 9f3cbca and revert its additions — it would reverse a ruled v1.1 behaviour; not worth a decision to the operator
+dispatch: implementer opus — resume, fix round 1
+agent: implementer a77af10acb8c50b38 round 2
