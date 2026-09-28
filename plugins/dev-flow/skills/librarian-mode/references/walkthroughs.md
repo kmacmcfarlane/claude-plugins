@@ -63,8 +63,10 @@ operator, which moves it from the peer-blocked count onto the Groom table:
 
 ```bash
 $WI block <id> "operator: forward to agents not filed"
-``` On the `agents` side the message
-is a peer request (step 2), filed with `--ref "forwarded from claude-plugins <id>"`.
+```
+
+On the `agents` side the message is a peer request (step 2), filed with
+`--ref "forwarded from claude-plugins <id>"`.
 
 Had no session held the name, or had the request needed a real decision (a trade-off
 between the two repos' rules, say), it would have gone to the operator as a numbered

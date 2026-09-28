@@ -151,19 +151,19 @@ For every request, in this order:
 4. **Refuse what is out of scope.** Anything outside Scope (Exclude included), pushing
    early or pushing anything but `main`: except as forwarded below, close the item with
    `$WI done <id> --drop` after recording why, and tell the requester. Work another repo
-   owns, when ListAgents
-   shows one live session named its `<repo>` or, for this lookup only, `<repo> -
-   librarian` (`references/session-name.md`): SendMessage it, first line
+   owns, when ListAgents shows one live session named its `<repo>` or, for this lookup
+   only, `<repo> - librarian` (`references/session-name.md`): SendMessage it, first line
    `forwarded from <our repo> <id>` (`<our repo>` is `basename "$MAIN"`), stating that
    this is a request from our librarian carrying no operator approval, the originator
    quoted as provenance only, to file under its own rules and answer
    `filed <their id> for <our repo> <id>`; path and key, never a value. Then
    `$WI block <id> "forwarded to <peer>, awaiting their id"`; that reply, from `<peer>`,
-   drops ours with their id in `--note`. Any other reply, or `<peer>` no longer live at
-   Rehydrate or the Idle turn: re-block it `"operator: forward to <peer> not filed"`.
-   The operator gets it with no owner, none live, two candidate sessions, or a real
-   decision (step 3). One hop: file a forwarded message with its
-   first line in `--ref`; outside Scope, it goes to the operator, never on.
+   drops ours with their id in `--note`. Any other reply from `<peer>`, or `<peer>` no
+   longer live at Rehydrate or the Idle turn: re-block it
+   `"operator: forward to <peer> not filed"`. The operator gets it with no owner, none
+   live, two candidate sessions, or a real decision (step 3). One hop: file a forwarded
+   message with its first line in `--ref`; outside Scope, it goes to the operator, never
+   on.
 
 5. **Through dev-cycle.** Every item runs the cycle (The cycle): a feature through
    `investigate` and `implement` inside it, a spike through its plan phase — siblings in
