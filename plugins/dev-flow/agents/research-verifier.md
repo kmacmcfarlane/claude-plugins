@@ -85,7 +85,11 @@ prompt's `Tools:` line says whether poppler is present. Never install anything.
 run: <run slug>
 date: <today, ISO>
 sampled: <n>
-supported: <n>   partial: <n>   contradicted: <n>   not_found: <n>   unreachable: <n>
+supported: <n>
+partial: <n>
+contradicted: <n>
+not_found: <n>
+unreachable: <n>
 gate: PASS | CONCERNS
 ---
 # Verification — <run slug>
