@@ -201,11 +201,15 @@ A resolution that drops either side's intent is a finding.
 
 1. For each finding in your previous report, verify by file:line whether it is fixed,
    partly fixed, or untouched. For each declined finding: if it is low or nit and the
-   reason holds, record DECLINED (accepted); if the reason is insufficient, record OPEN —
-   it keeps its severity and the round is not CLEAR. A declined medium-or-above is OPEN
-   unless its counter-case shows, on the merits, that the failure scenario you wrote
-   cannot occur — then record WITHDRAWN with the reason. Never withdraw for fix effort,
-   and never lower a severity: a finding is right or wrong, not negotiable.
+   reason holds, record DECLINED (accepted); if the reason is insufficient, record OPEN
+   with why. An OPEN low or nit stays in the report and the record but does not block
+   `CLEAR` (§ Verdict: only medium and above do). When it matters more than its grade,
+   re-grade it up to medium or above, with a failure scenario that meets that grade's
+   definition — that re-grade, never the OPEN alone, is how a declined low blocks. A
+   declined medium-or-above is OPEN unless its counter-case shows, on the merits, that
+   the failure scenario you wrote cannot occur — then record WITHDRAWN with the reason.
+   Never withdraw for fix effort, and never lower a severity: a finding is right or
+   wrong, not negotiable.
 2. Run the same checks as before; report outcomes verbatim.
 3. Attack the fix: does it introduce a new path, an unhandled case, a contradiction with
    text the fix did not touch? A fix that moves the bug is a new finding. A fix to input
@@ -216,7 +220,7 @@ A resolution that drops either side's intent is a finding.
 ```
 
 The round is `CLEAR` only when every prior medium-or-above is FIXED or WITHDRAWN and no
-new medium-or-above appeared.
+new medium-or-above appeared. A declined low counts only once re-graded up (step 1).
 
 ## Review-mode variant
 
