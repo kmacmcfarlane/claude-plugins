@@ -114,6 +114,8 @@ the check, `git -C $WORKTREE checkout HEAD -- <path>` — or copy files to the s
 back. Never `git stash` or `git stash pop`: the stash stack is shared by every worktree and
 session of this repository, so a pop can apply another run's changes here.
 
+**Commit before any `git checkout <ref> -- <path>`: it overwrites uncommitted edits silently.**
+
 ## Commit
 
 One commit in the worktree. Message format `<verb>: <aspect> - <description>` with verb one
