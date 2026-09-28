@@ -90,3 +90,5 @@ decision 88: the no-unattended-dispatch hold (set 2026-09-24) — (a) keep it: I
   (b): faster catch-up; landings and pushes happen while you are away, reviewed by opus but not seen by you until you return — undo: say stop; reinstated at once — who: you, and peers that pull the marketplace
   rec: (a) · basis: partial — your 68 answer; no scheduler yet
   unknown: whether the agents scheduler lands this week
+answer 87: (a) A-D, "work in whatever order makes sense to you" (operator 2026-09-28)
+answer 88: (b) the no-unattended-dispatch hold is lifted for this week: keep working the queue between turns and while the operator is away, stopping at the 15% weekly reserve (operator 2026-09-28)
