@@ -177,11 +177,12 @@ Step 0 summary so the user can correct it. A non-default base is never chosen si
 
 A caller's channel is used as bound. Standalone: exactly one pending decision goes
 through AskUserQuestion, whose options carry the choices, recommended first — only while
-none of this cycle's agents can be running, since a dialog blocks an agent's return until
+no agent of this session's can be running, since a dialog blocks an agent's return until
 answered. Two or more, or one raised while an agent may be in flight, go as one numbered
 prose list — one decision per number, each with its options and their impact,
-recommendation first — so the user answers by number. The record sink says which: an
-`agent:` line with no `return:` or `verdict:` after it is in flight (ListAgents confirms).
+recommendation first — so the user answers by number. The cycle's own evidence is the
+record sink (an `agent:` line with no `return:` or `verdict:` after it is in flight);
+ListAgents covers the session's other agents.
 
 When the session lists the `operator-interaction:decisions` skill (a soft dependency),
 load it and write every decision-channel decision to it, whatever the channel. That covers
@@ -191,7 +192,8 @@ read-back on a one-way choice in a ⚠ decision. A caller's channel still decide
 decision goes and what the store records. Standalone, those decisions go as text per the
 skill, not through AskUserQuestion: a dialog cannot carry the floor, the hint or the echo.
 Step 0.2's brief confirmation, the checks question and Land's terminal-action question are
-not decision-channel decisions; they stay dialogs, as the skill allows.
+not decision-channel decisions; they stay dialogs, as the skill allows — the first two
+come before any dispatch, the third after a `CLEAR` with no agent left running.
 
 With the skill or without it: never ask in the same turn as a heavy analysis; end the
 turn with the analysis and ask in the next. Append each raised

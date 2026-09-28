@@ -62,8 +62,8 @@ is why", which fixed options fight, and an answer that redefines the problem is 
 re-scope from. Keep `AskUserQuestion` for a closed choice late in a task, never in the same
 turn as heavy analysis, and only while no agent you launched is still running — a dialog
 blocks its return until answered. Your own launches say which: one whose return you have
-not folded in is running (Step 11's verify batch always is while its questions are asked),
-so those go as the list.
+not folded in is running (Step 11's verify batch is, in any round that launched one), so
+those go as the list.
 
 **End the turn on the list.** Your recommendation is not the answer, and a background agent's
 return is not either: fold it in and keep waiting.
