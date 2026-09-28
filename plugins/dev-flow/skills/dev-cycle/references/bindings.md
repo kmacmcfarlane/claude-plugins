@@ -193,7 +193,10 @@ decision goes and what the store records. Standalone, those decisions go as text
 skill, not through AskUserQuestion: a dialog cannot carry the floor, the hint or the echo.
 Step 0.2's brief confirmation, the checks question and Land's terminal-action question are
 not decision-channel decisions; they stay dialogs, as the skill allows — the first two
-come before any dispatch, the third after a `CLEAR` with no agent left running.
+come before any dispatch, the third after a `CLEAR` with no agent left running. A resumed
+run may ask any of the three with an agent still in flight (an `agent:` line with no
+`return:` or `verdict:` after it, or one ListAgents lists as running): then it goes as the
+numbered list above instead.
 
 With the skill or without it: never ask in the same turn as a heavy analysis; end the
 turn with the analysis and ask in the next. Append each raised

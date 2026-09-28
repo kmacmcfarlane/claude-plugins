@@ -209,8 +209,9 @@ against the store (the hook names any since closed as a dead claim). If
 this session is running a standing mode (a skill that holds it in a role, entered by a
 command such as `/<plugin>:<mode> start`), set `mode_skill:` to that command exactly as the
 operator would type it; omit it otherwise. When the argument names `then <next-skill>`, set
-`next_skill:` to that skill's slash command, arguments included, exactly as the operator
-would type it (the same shape as `mode_skill:`); omit it otherwise. **Never type the
+`next_skill:` to that skill's slash command, arguments included (its arguments end before
+any ` — 2:` answers), exactly as the operator would type it (the same shape as
+`mode_skill:`); omit it otherwise. **Never type the
 machine fields** — all five: `written:`, `head:`, `branch:`, `top:`, `session:` (the
 format spec's machine-fields rule): write each as the placeholder
 `<stamped>`, and never copy them from the manifest being replaced (after a `/clear` or a

@@ -129,11 +129,13 @@ names the symptom.
     merge of other people's commits. So look, then ask once: `git -C "$MAIN" fetch
     origin`, and list the incoming commits
     (`git -C "$MAIN" log --format='%h %s — %an' <base>..origin/<base>`) and what they
-    touch (`git -C "$MAIN" diff --stat <base>...origin/<base>`). AskUserQuestion, with
-    that list as its evidence: `Leave it unpushed` first — the local merge stands, and the
-    Report's `verified:` line says the push was rejected and names the incoming commits —
-    then `Merge origin/<base> and push`: `git -C "$MAIN" merge --no-ff --no-commit
-    origin/<base>` on `<base>` in the main checkout, every Check run from `$MAIN`
+    touch (`git -C "$MAIN" diff --stat <base>...origin/<base>`). AskUserQuestion — a
+    dialog is safe here: the push follows Land, which runs only after a `CLEAR` with no
+    agent left running — with that list as its evidence: `Leave it unpushed` first — the
+    local merge stands, and the Report's `verified:` line says the push was rejected and
+    names the incoming commits — then `Merge origin/<base> and push`: `git -C "$MAIN"
+    merge --no-ff --no-commit origin/<base>` on `<base>` in the main checkout, every Check
+    run from `$MAIN`
     against the merged tree, all green → `git -C "$MAIN" commit --no-edit` (a merge
     commit) and `git -C "$MAIN" push origin <base>`, now a fast-forward; the Report names
     each incoming commit as not the cycle's. If git refuses to start the merge (dirt in
