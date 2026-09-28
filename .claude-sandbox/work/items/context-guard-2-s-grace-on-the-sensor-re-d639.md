@@ -26,3 +26,7 @@ target: branch worktree-context-guard-2-s-grace-on-the-sensor-re-d639 at .claude
 - 2026-09-28 claimed by Kyle-McFarlane@7696505da8e1
 dispatch: implementer opus — hook code across two plugins (rule 2)
 agent: implementer a269a8e741ea0a793 round 1
+return: implementer DONE b2120c0 (grace + _epoch_cut future guard + band-level e2e + contract doc; open q: _epoch_end_tokens reads raw epoch_at)
+changed: plugins/context-guard/hooks/lib_context.py, context_warn.py, tests/test_hooks.py, test_sensor_gauge.py, test_lib_context.py, test_window_mirror.py, plugins/statusline/hooks/tests/test_contract.py, plugins/statusline/skills/install-statusline/references/sensor-contract.md, plugins/context-guard/skills/checkpoint/references/design-rationale.md
+dispatch: reviewer opus — fresh (rule 4)
+agent: reviewer afb8341eaa84a1140 round 1 at b2120c0

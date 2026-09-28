@@ -17,3 +17,4 @@ Found by the 5a18 implementer 2026-09-28: CLAUDE.md's Repository Layout block om
 - next: —
 - blocked: —
 - learned: —
+- 2026-09-28 from the 5a18 review: also add '+ hooks.json' to the context-guard hooks/ note in both CLAUDE.md and repo-map.md; the comparison script is at scratchpad review-5a18/cmp.py

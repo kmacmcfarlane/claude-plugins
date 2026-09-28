@@ -2,12 +2,11 @@
 id: docs-refresh-update-kit-repo-map-md-all-5a18
 title: "docs: refresh update-kit repo-map.md (all skills + hooks/) and the README sections after the TODO.md migrations"
 type: chore
-status: doing
+status: done
 priority: 2
-owner: Kyle-McFarlane@7696505da8e1
-claimed: 2026-09-28T23:16Z
 created: 2026-09-22
 updated: 2026-09-28
+closed: 2026-09-28
 refs:
   - "peer: agents - librarian (uds 122.sock), operator relay"
 ---
@@ -29,3 +28,6 @@ return: implementer DONE 2d204b9 (verification incomplete: 4 of 8 Checks and §1
 changed: plugins/kit-dev/skills/update-kit/references/repo-map.md
 dispatch: reviewer opus — fresh (rule 4)
 agent: reviewer a7678c29118363940 round 1 at 2d204b9
+verdict: CLEAR round 1 at 2d204b9 (2 low: context-guard hooks note lacks + hooks.json, as CLAUDE.md — carried to fabd; update-kit SKILL.md never points at references/repo-map.md — filed)
+landed: f346bc6
+- 2026-09-28 done: f346bc6

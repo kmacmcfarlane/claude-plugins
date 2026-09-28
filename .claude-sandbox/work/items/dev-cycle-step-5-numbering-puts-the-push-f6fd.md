@@ -51,3 +51,6 @@ findings:
 librarian decision: finding 3 takes the scoping option inside dev-cycle; gating librarian-mode's push on green base checks filed as its own item (librarian-mode is outside this item's files)
 dispatch: implementer opus — resume, fix round 2
 agent: implementer ad34ddcd4498110e0 round 3
+return: implementer DONE 0af7908 (fix round 2: 734ffa7 + 0af7908)
+dispatch: reviewer opus — resume, round 3
+agent: reviewer a8c21f2e82d60050d round 3 at 0af7908

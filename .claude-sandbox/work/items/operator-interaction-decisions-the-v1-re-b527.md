@@ -33,3 +33,7 @@ target: branch worktree-operator-interaction-decisions-the-v1-re-b527 at .claude
 - 2026-09-28 claimed by Kyle-McFarlane@7696505da8e1
 dispatch: implementer opus — decisions-skill rule wording (rule 2)
 agent: implementer a77af10acb8c50b38 round 1
+return: implementer DONE 6c28d20 (1,2,3,5,6 + nits taken; 4 declined already fixed at evidence-basis.md:60-64; open q: rationale.md two-clocks could name the stated absence)
+changed: plugins/operator-interaction/skills/decisions/SKILL.md, references/worksheet.md, rendering.md, replies.md, gallery.md
+dispatch: reviewer opus — fresh (rule 4)
+agent: reviewer a06424d4e723e69f4 round 1 at 6c28d20
