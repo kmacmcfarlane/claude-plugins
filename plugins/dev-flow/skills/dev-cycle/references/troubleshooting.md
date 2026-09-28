@@ -129,13 +129,11 @@ names the symptom.
     merge of other people's commits. So look, then ask once: `git -C "$MAIN" fetch
     origin`, and list the incoming commits
     (`git -C "$MAIN" log --format='%h %s — %an' <base>..origin/<base>`) and what they
-    touch (`git -C "$MAIN" diff --stat <base>...origin/<base>`). AskUserQuestion — a
-    dialog is safe here: the push follows Land, which runs only after a `CLEAR` with no
-    agent left running — with that list as its evidence: `Leave it unpushed` first — the
-    local merge stands, and the Report's `verified:` line says the push was rejected and
-    names the incoming commits — then `Merge origin/<base> and push`: `git -C "$MAIN"
-    merge --no-ff --no-commit origin/<base>` on `<base>` in the main checkout, every Check
-    run from `$MAIN`
+    touch (`git -C "$MAIN" diff --stat <base>...origin/<base>`). AskUserQuestion, with
+    that list as its evidence: `Leave it unpushed` first — the local merge stands, and the
+    Report's `verified:` line says the push was rejected and names the incoming commits —
+    then `Merge origin/<base> and push`: `git -C "$MAIN" merge --no-ff --no-commit
+    origin/<base>` on `<base>` in the main checkout, every Check run from `$MAIN`
     against the merged tree, all green → `git -C "$MAIN" commit --no-edit` (a merge
     commit) and `git -C "$MAIN" push origin <base>`, now a fast-forward; the Report names
     each incoming commit as not the cycle's. If git refuses to start the merge (dirt in
@@ -146,7 +144,10 @@ names the symptom.
     `origin/<base>` into a worktree branch cut from the local `<base>` and resolves or
     fixes it there — a conflict round, reviewed like any other, the shape of `fix-loop.md`
     § A merge conflict — then lands and pushes it; or the user resolving it on origin. A
-    second rejection is reported, not retried.
+    second rejection is reported, not retried. The dialog is safe here because the push
+    follows Land, which runs only after a `CLEAR` with no agent of the cycle's left
+    running; with a session agent ListAgents lists as running, the question goes as the
+    numbered list instead, per `bindings.md` § Decisions.
 - **A merge left uncommitted in the main checkout.** `git -C "$MAIN" rev-parse -q
   --verify MERGE_HEAD` succeeds when a cycle is re-invoked or reaches Land: a merge was
   interrupted before its commit or abort, and its Checks result is gone. Never commit it

@@ -24,8 +24,8 @@ cleanup, two worktrees needing docker compose.
 - **Code drifted since the investigation** — record the drift, present it at gate 1, let the
   user decide whether the plan still holds.
 - **An in-scope issue the investigation missed** — surface it as Step 7 says: the numbered
-  list while a fan-out task or delegated subagent may be running, `AskUserQuestion` only once
-  none is. Never silently expand or silently ignore.
+  list while a fan-out task or delegated subagent's return is not yet folded in,
+  `AskUserQuestion` only once none is. Never silently expand or silently ignore.
 - **The project has no tests** — verification is build-only or run-only. State the tier, and do
   not fan out (the merge gate is missing).
 - **Fan-out merge goes red** — stop merging. Report which task broke it and what you tried.
