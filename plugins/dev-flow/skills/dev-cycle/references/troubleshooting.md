@@ -111,7 +111,9 @@ names the symptom.
 - **A check is red on the base after the merge.** Two green branches can be red together.
   Do not revert or patch by hand: file it (a new item when a store exists) or raise it,
   and report it on the `verified:` line. The merge has landed — its `landed:` line is
-  written — so it never re-enters the fix loop, and nothing is pushed past it.
+  written — so it never re-enters the fix loop. The cycle pushes nothing past it; under a
+  librarian it goes on the Report's `decisions needed:`, and the push is the librarian's
+  call.
 - **Orphan worktree from a crashed run.** Dirty: surface it, do not remove. Clean and
   merged: remove it; clean and unmerged: ask.
 - **Push rejected (non-fast-forward or fetch first)** — only when the terminal action

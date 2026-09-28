@@ -218,12 +218,18 @@ a dead run left undone. In order:
 1. **`MERGE_HEAD`.** `git -C "$MAIN" rev-parse -q --verify MERGE_HEAD` succeeds → report
    "landed `<merge sha>`; a merge is pending in the main checkout" and stop: follow
    `troubleshooting.md` § Landing, "A merge left uncommitted in the main checkout".
-2. **Anything left?** S2 only: the item is `done` — or, with no item, nothing SKILL.md
-   § Step 5.4 would remove still exists — → the tail already ran: report "already landed
-   `<merge sha>`" and stop. S2b never stops here: its `landed:` line is new.
-3. **Checks on the base**, as SKILL.md § Step 5.3 runs them. A red one follows
-   `troubleshooting.md` § Landing, "A check is red on the base after the merge", and
-   rules out the push below; it never re-enters the fix loop.
+2. **Anything left?** S2 with an item only: the item is `done` → the tail already ran:
+   report "already landed `<merge sha>`" and stop. With no item, and in S2b, go on: a
+   store-less record has no mark of a finished tail — nothing left to remove proves
+   nothing in `review` mode, whose Step 5.4 may have nothing to remove from the start —
+   and steps 3–5 are safe to repeat.
+3. **Checks on the base as it stands**: the Checks binding and `review-checklist.md` § 6
+   from `$MAIN`, with `BASE=<merge sha>^1`, the base before this merge. A red one is
+   this merge's only when `git -C "$MAIN" log --oneline <merge sha>..<base>` is empty;
+   otherwise the report names those later commits beside the red check, since any of
+   them may have caused it. Either way it follows `troubleshooting.md` § Landing, "A
+   check is red on the base after the merge", and rules out the push below; it never
+   re-enters the fix loop.
 4. **Push.** Already on `origin/<base>` (`git -C "$MAIN" merge-base --is-ancestor <merge
    sha> origin/<base>` succeeds) → nothing to do. Under a librarian, never: the push is
    the librarian's, after its Report (`bindings.md` § What a librarian binds). Standalone,

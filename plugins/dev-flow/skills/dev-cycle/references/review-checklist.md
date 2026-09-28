@@ -368,5 +368,5 @@ the merge goes back into the fix loop with the failing line quoted, to the imple
 as a new commit — see `agent-brief.md` § Sharpening a brief for re-dispatch when the
 implementer must be re-dispatched. A fail in this section, after the merge, never does:
 the merge has landed and its `landed:` line is written, so it follows `troubleshooting.md`
-§ Landing, "A check is red on the base after the merge" — filed or raised, reported,
-nothing pushed.
+§ Landing, "A check is red on the base after the merge" — filed or raised, reported, and
+the cycle pushes nothing past it.
