@@ -23,7 +23,7 @@ do Steps 0, 2, 4b only, then Step 7's close (the manifest path, the opener, and 
 handoff the continuation commands) — a lean checkpoint is when a handoff is likeliest and
 the next session has the least to go on. Keep the whole checkpoint under a screen.
 
-**Once this checkpoint is going ahead** — after Step 0 has been asked, or, under the
+**Once this checkpoint is going ahead** — after Step 0, or, under the
 mid-turn marker, after the `--check` below has confirmed it — tell the mid-turn check that
 a checkpoint is underway:
 
@@ -93,7 +93,8 @@ with `--checkpointing`, then:
 
 The operator holds the one input nobody else has. Ask exactly this (pre-drafted answers make
 the cheap path one click) — unless the argument already answers it: mode named → skip
-question 1; mode plus `then <next-skill>` → ask only question 2:
+question 1; mode plus `then <next-skill>` → ask only question 2; any `2:` / `3:` answers
+after it (the reply line below) → skip those too:
 
 1. **"What's the goal from here?"** — *continue* / *handoff*: *continue* keeps pulling
    this thread in this session (compact, then go on); *handoff* parks it, or moves it to a
@@ -112,8 +113,10 @@ on. **A dialog only while nothing of this session's can be running**: ListAgents
 a dispatch with no completion notice yet, says whether an agent is. With one in flight, a
 dialog blocks its return until answered. Put the open questions as a numbered list last
 in the message instead, the inventory inside question 2. End it with one pasteable reply
-line pre-filled with your drafts, `/checkpoint <mode> — 2: <nothing more | what I missed>
-3: <ok | your guidance>`, and end the turn. The answers come back as that argument, never
+line pre-filled with your drafts — the argument as given (`then <next-skill>` and any
+focus kept), your drafted mode first when it named none, then the answers:
+`/checkpoint <argument> — 2: <nothing more | what I missed> 3: <ok | your guidance>` — and
+end the turn. The answers come back as that argument, never
 as free text: at HARD depth the prompt gate erases every prompt except `/checkpoint`,
 `/compact` and `/clear`. Run `--checkpointing` in the turn that carries the answers, not
 before this turn ends.
