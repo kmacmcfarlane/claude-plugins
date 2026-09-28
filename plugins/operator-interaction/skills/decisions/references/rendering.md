@@ -27,7 +27,8 @@ slots stay, since the floor needs them:
 
 - The number and title are bold together.
 - Stakes slot: *reversible, narrow* · *one-way, narrow* · ⚠ one-way (for Type 1; the ⚠ is
-  followed by a space) · *your preference, no rec* · *template*.
+  followed by a space). The preference and authority labels take the rec slot (above); a
+  template's label, *template: name*, has its own slot just before the stakes.
 - A deadline is written as the absolute time in the operator's zone when you know it, with
   the relative time and when you wrote it: *storage lease lapses ~17:45 (90 min from 16:15)*.
   With the zone unknown, say which: *17:45 UTC*.
@@ -137,15 +138,15 @@ sooner — both get answered — while one placed low can lose the lease.
 
 ## Labels
 
-| Case | Label, in the stakes slot or under the title |
-|---|---|
-| One-way and high impact | ⚠ one-way |
-| One-way, narrow | *one-way, narrow* |
-| No fact settles it | *your preference — no recommendation* |
-| Not the agent's call | *no recommendation — outside my authority*, and a clause saying why |
-| A recurring decision with fixed options | *template: name* — shown as a card the first time the operator meets it |
-| Time-critical, options not ready (not a decision yet) | **Alert:** in bold, bare; *options follow* |
-| Not defined yet (not a decision yet) | listed under **Open questions**, unnumbered |
+| Case | Label | Where it goes |
+|---|---|---|
+| One-way and high impact | ⚠ one-way | the stakes slot; after the title on a card or block |
+| One-way, narrow | *one-way, narrow* | the stakes slot; after the title on a card |
+| No fact settles it | *your preference — no recommendation* | the rec slot (*your preference, no rec*); after the title on a card |
+| Not the agent's call | *no recommendation — outside my authority*, and a clause saying why | the rec slot; after the title on a card, the why on its own line |
+| A recurring decision with fixed options | *template: name* — shown as a card the first time the operator meets it | its own slot, before the stakes |
+| Time-critical, options not ready (not a decision yet) | **Alert:** in bold, bare; *options follow* | its own line, in place of a card |
+| Not defined yet (not a decision yet) | listed under **Open questions**, unnumbered | the *Open questions* section |
 
 ## FYI after acting
 

@@ -26,7 +26,7 @@ Rec **(a)** · basis **strong** — *checked the storage quota: 40% free, enough
 
 **43 — Remove the deprecated `/v1/export` endpoint?** ⚠ one-way
 **What:** whether to delete the old export endpoint `/v1/export`, replaced last quarter by `/v2/export`.
-**Why now:** the API cleanup release is cut on Thursday and waits on this.
+**Why now:** the API cleanup release is cut on Thursday; this change goes out in it, or waits for the next one.
 **Context you may have lost:** two partner integrations still call `/v1/export`; once it is removed their exports fail until they move to `/v2`, and a removed public endpoint cannot quietly come back for the clients that already adapted.
 
 **(a) Remove it now**
@@ -59,7 +59,7 @@ Rec **(b)** · basis **partial** — *observed: this week's access log shows 2 p
 *Gallery note — layout and order: the cards and the block come first, the compact list and the hint last, so the list is what is on screen when the agent stops. Why this order: 41 breaks before you are back; the API cleanup group comes next because it holds a ⚠, with 44 kept beside 43; then 42, which blocks the docs build, before 45, which blocks nothing. 44 and 42 stay list lines: you are warm on both, both are two-way and narrow on a strong basis, 44's options converge and 42 is a template you have seen. 41, 43 and 45 are cold, so each is at least a card; 43 is a block because this is its first showing.*
 
 - **41 Resume the paused nightly backup?** — rec **(a) resume** · *reversible, narrow* · basis **strong** · *25 min old, storage lease lapses ~17:45 (90 min from 16:15), blocks tonight's backup*
-- **43 Remove the deprecated `/v1/export` endpoint?** — rec **(b) keep it, with a sunset date** · ⚠ one-way · basis **partial** · *6 h old, blocks the API cleanup release*
+- **43 Remove the deprecated `/v1/export` endpoint?** — rec **(b) keep it, with a sunset date** · ⚠ one-way · basis **partial** · *6 h old, misses Thursday's API cleanup release if undecided*
 - **44 Deprecation notice: "deprecated" or "scheduled for removal"?** — rec **(a) "deprecated"** · *reversible, narrow* · basis **strong** · *50 min old, blocks nothing* *(line only)*
 - **42 Clear the docs build cache?** — rec **(a) clear it** · *template: cache reset* · *reversible, narrow* · basis **strong** · *10 min old, blocks the docs build* *(line only)*
 - **45 Units on the storage dashboard: MiB or MB?** — *your preference, no rec* · *reversible, narrow* · basis **strong** · *3 h old, blocks nothing*
@@ -211,11 +211,11 @@ the list: 41, 43 and 45 are unchanged, so they are not rendered again and their 
 
 Rec **(a)** · basis **strong** — *read the three earlier notices* · unknown: none
 
-- **41 Resume the paused nightly backup?** — rec **(a) resume** · *reversible, narrow* · basis **strong** · *storage lease lapses ~17:45 (80 min from 16:25), blocks tonight's backup* *(shown before)*
-- **43 Remove the deprecated `/v1/export` endpoint?** — rec **(b) keep it, with a sunset date** · ⚠ one-way · basis **partial** · *blocks the API cleanup release* *(shown before)*
+- **41 Resume the paused nightly backup?** — rec **(a) resume** · *reversible, narrow* · basis **strong** · *35 min old, storage lease lapses ~17:45 (80 min from 16:25), blocks tonight's backup* *(shown before)*
+- **43 Remove the deprecated `/v1/export` endpoint?** — rec **(b) keep it, with a sunset date** · ⚠ one-way · basis **partial** · *6 h old, misses Thursday's API cleanup release if undecided* *(shown before)*
 - **44 Deprecation notice: "deprecated" or "scheduled for removal"?** — rec **(a) "deprecated"** · *reversible, narrow* · basis **strong** · *1 h old, blocks nothing*
-- **42 Clear the docs build cache?** — rec **(a) clear it** · *template: cache reset* · *reversible, narrow* · basis **strong** · *blocks the docs build* *(line only)*
-- **45 Units on the storage dashboard: MiB or MB?** — *your preference, no rec* · *reversible, narrow* · basis **strong** · *blocks nothing* *(shown before)*
+- **42 Clear the docs build cache?** — rec **(a) clear it** · *template: cache reset* · *reversible, narrow* · basis **strong** · *20 min old, blocks the docs build* *(line only)*
+- **45 Units on the storage dashboard: MiB or MB?** — *your preference, no rec* · *reversible, narrow* · basis **strong** · *3 h old, blocks nothing* *(shown before)*
 
 *Reply with a letter (`44: a`) or in your own words · `later [when]` · `tell me [what]` · `expand` · `dig into [what]` · `you decide` · `drop`*
 

@@ -49,10 +49,10 @@ is the fast tier: a card, or a line when the line-only rule holds.
 | Options diverge | the options lead to materially different outcomes / they converge (any would do) | you |
 | Options exist | yes / not yet — then it is an open question, not a decision | you |
 
-A thin basis or a new decision raises the level. When the missing fact could change the choice
-and finding it costs less than choosing wrong, offer **investigate first** as a priced option
-(its time and cost stated). Converging options are one of the conditions of the line-only
-rule (SKILL.md § Levels).
+A thin basis raises the level; so does a new decision, unless its options converge (any would
+do) — converging options stand in for a seen template in the line-only rule (SKILL.md
+§ Levels). When the missing fact could change the choice and finding it costs less than
+choosing wrong, offer **investigate first** as a priced option (its time and cost stated).
 
 ## D — What does waiting cost? → the order
 
