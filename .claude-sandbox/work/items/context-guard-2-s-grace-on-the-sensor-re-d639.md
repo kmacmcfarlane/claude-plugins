@@ -2,12 +2,11 @@
 id: context-guard-2-s-grace-on-the-sensor-re-d639
 title: "context-guard: 2 s grace on the sensor record after a compaction (EPOCH_GRACE_S)"
 type: feature
-status: doing
+status: done
 priority: 3
-owner: Kyle-McFarlane@7696505da8e1
-claimed: 2026-09-28T23:16Z
 created: 2026-09-28
 updated: 2026-09-28
+closed: 2026-09-28
 refs:
   - 428e split
 ---
@@ -40,3 +39,6 @@ agent: implementer a269a8e741ea0a793 round 2
 return: implementer DONE d353f41 (fix round 1; sensor() back to raw epoch_at; future guard only for transcript counts and _epoch_end_tokens; open q: strict never-block in _epoch_cur too?)
 dispatch: reviewer opus — resume, round 2
 agent: reviewer afb8341eaa84a1140 round 2 at d353f41
+verdict: CLEAR round 2 at d353f41 (2 nit: a 90-char docstring line; the 'only silences for the length of the step' wording is conservative — declined; _epoch_cur keeps its future guard, residual negligible)
+landed: 2d879f3
+- 2026-09-28 done: 2d879f3

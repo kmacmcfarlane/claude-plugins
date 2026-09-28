@@ -62,3 +62,9 @@ return: implementer DONE_WITH_CONCERNS d05a0c6 (fix round 2; residual: a live pe
 librarian decision: accept the live-but-silent residual for now — Rehydrate re-checks liveness each session, and a session-end sweep belongs to ending-the-session.md (outside files); filed as a follow-up if the review agrees
 dispatch: reviewer opus — resume, round 3
 agent: reviewer a99a1620600db715f round 3 at d05a0c6
+verdict: NEEDS_CHANGES round 3 at d05a0c6 (1 medium: walkthroughs.md:66 broken closing fence hides the one-hop paragraph in a code block; 1 low: SKILL.md:162 "any other reply" → "from <peer>"; residual live-silent peer accepted as low, follow-up filed; 1 nit rewrap)
+dispatch: implementer opus — resume, fix round 3 (last before the cap)
+agent: implementer aeab0d9ec2f36aa4c round 4
+return: implementer DONE_WITH_CONCERNS 902e71e (fix round 3; landing still waits on decision 97)
+dispatch: reviewer opus — resume, round 4 (the cap)
+agent: reviewer a99a1620600db715f round 4 at 902e71e
