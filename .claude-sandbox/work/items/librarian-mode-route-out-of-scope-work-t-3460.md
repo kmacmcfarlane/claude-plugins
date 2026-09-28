@@ -16,7 +16,7 @@ Relayed 2026-09-22 by the agents librarian (peer relay from opencode-11 quoting 
 
 ## Handoff
 - doing: —
-- next: —
+- next: CLEAR at 902e71e; land (merge --no-ff, Checks, push) once decision 97 is answered (a); on (b) drop the branch
 - blocked: —
 - learned: —
 target: branch worktree-librarian-mode-route-out-of-scope-work-t-3460 at .claude/worktrees/librarian-mode-route-out-of-scope-work-t-3460, base main (a66d203)
@@ -68,3 +68,4 @@ agent: implementer aeab0d9ec2f36aa4c round 4
 return: implementer DONE_WITH_CONCERNS 902e71e (fix round 3; landing still waits on decision 97)
 dispatch: reviewer opus — resume, round 4 (the cap)
 agent: reviewer a99a1620600db715f round 4 at 902e71e
+verdict: CLEAR round 4 at 902e71e (1 low: live-silent residual, filed b514); landing waits on decision 97

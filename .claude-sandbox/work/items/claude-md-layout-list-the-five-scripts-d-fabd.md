@@ -26,3 +26,7 @@ target: branch worktree-claude-md-layout-list-the-five-scripts-d-fabd at .claude
 - 2026-09-28 claimed by Kyle-McFarlane@7696505da8e1
 dispatch: implementer sonnet — layout list entries and pointers (rule 1)
 agent: implementer ab981aef7dec5f043 round 1
+return: implementer DONE 739fca5
+changed: CLAUDE.md, plugins/kit-dev/skills/update-kit/references/repo-map.md
+dispatch: reviewer opus — fresh (rule 4; CLAUDE.md keeps a reviewer)
+agent: reviewer a69331eccfff66356 round 1 at 739fca5
