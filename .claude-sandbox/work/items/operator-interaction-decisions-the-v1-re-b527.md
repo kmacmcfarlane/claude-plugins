@@ -2,13 +2,12 @@
 id: operator-interaction-decisions-the-v1-re-b527
 title: "operator-interaction decisions: the v1 review's remaining lows"
 type: chore
-status: doing
+status: done
 priority: 2
 parent: checkpoint-around-continuation-how-agent-d3ee
-owner: Kyle-McFarlane@7696505da8e1
-claimed: 2026-09-28T23:16Z
 created: 2026-09-23
 updated: 2026-09-28
+closed: 2026-09-28
 refs:
   - 9f98 review r2
 ---
@@ -46,3 +45,9 @@ findings:
 librarian decision: decline (3) as already resolved at 9f3cbca and revert its additions — it would reverse a ruled v1.1 behaviour; not worth a decision to the operator
 dispatch: implementer opus — resume, fix round 1
 agent: implementer a77af10acb8c50b38 round 2
+return: implementer DONE a25a129 (fix round 1; (3) declined and reverted)
+dispatch: reviewer opus — resume, round 2
+agent: reviewer a06424d4e723e69f4 round 2 at a25a129
+verdict: CLEAR round 2 at a25a129 (1 nit: dig into missing from the multi-number list — declined, optional; acts on nothing)
+landed: 726a084
+- 2026-09-28 done: 726a084

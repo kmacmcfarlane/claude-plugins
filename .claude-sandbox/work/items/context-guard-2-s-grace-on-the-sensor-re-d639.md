@@ -30,3 +30,13 @@ return: implementer DONE b2120c0 (grace + _epoch_cut future guard + band-level e
 changed: plugins/context-guard/hooks/lib_context.py, context_warn.py, tests/test_hooks.py, test_sensor_gauge.py, test_lib_context.py, test_window_mirror.py, plugins/statusline/hooks/tests/test_contract.py, plugins/statusline/skills/install-statusline/references/sensor-contract.md, plugins/context-guard/skills/checkpoint/references/design-rationale.md
 dispatch: reviewer opus — fresh (rule 4)
 agent: reviewer afb8341eaa84a1140 round 1 at b2120c0
+verdict: NEEDS_CHANGES round 1 at b2120c0 (1 high, 2 medium, 2 low, 2 nit; grace itself correct, fail-first holds)
+findings:
+  [high] lib_context.py:170-178 _epoch_cut in sensor() — a backward clock step >60 s after a compaction brings the old epoch's exact 95% back (reproduced) → false HARD; pass: sensor() fails toward window-only for pre-reset records under a future cut (or keep the guard in _epoch_cur only) + test
+  [medium] sensor-contract.md:67-70 and design-rationale.md:133-134 — "a render that read its payload before the compaction" contradicts at = read time; the case is a payload Claude Code built before and the status line read just after
+  [low] _epoch_end_tokens use _epoch_cut; [low] commit message wording; [nit] lib_context.py:65 110-char line; [nit] sensor-contract "first exact reading" stated as fact
+dispatch: implementer opus — resume, fix round 1
+agent: implementer a269a8e741ea0a793 round 2
+return: implementer DONE d353f41 (fix round 1; sensor() back to raw epoch_at; future guard only for transcript counts and _epoch_end_tokens; open q: strict never-block in _epoch_cur too?)
+dispatch: reviewer opus — resume, round 2
+agent: reviewer afb8341eaa84a1140 round 2 at d353f41

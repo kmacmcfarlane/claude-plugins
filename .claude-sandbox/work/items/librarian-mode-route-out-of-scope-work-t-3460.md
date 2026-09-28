@@ -51,3 +51,14 @@ agent: implementer aeab0d9ec2f36aa4c round 2
 return: implementer DONE_WITH_CONCERNS 80ad71a (fix round 1; landing still waits on decision 97)
 dispatch: reviewer opus — resume, round 2
 agent: reviewer a99a1620600db715f round 2 at 80ad71a
+verdict: NEEDS_CHANGES round 2 at 80ad71a (2 medium, 2 low; all round-1 fixed)
+findings:
+  [medium] SKILL.md:160, walkthroughs.md:52-53 — an unanswered forward has no stop (idle-turn counts peer-blocked items in one line, never lists them); pass: when the peer is no longer live or it's unanswered at the next Report/session end, re-block naming the operator (Groom table) or raise a decision
+  [medium] SKILL.md:151-160 — no rule for a reply that declines; any reply other than filed → operator; optionally ask for "declined for <our repo> <id>: <why>"
+  [low] the filed reply must come from <peer>; [low] step 4's general drop rule should say "except work another repo owns"
+dispatch: implementer opus — resume, fix round 2
+agent: implementer aeab0d9ec2f36aa4c round 3
+return: implementer DONE_WITH_CONCERNS d05a0c6 (fix round 2; residual: a live peer that never replies still waits; landing still waits on decision 97)
+librarian decision: accept the live-but-silent residual for now — Rehydrate re-checks liveness each session, and a session-end sweep belongs to ending-the-session.md (outside files); filed as a follow-up if the review agrees
+dispatch: reviewer opus — resume, round 3
+agent: reviewer a99a1620600db715f round 3 at d05a0c6
