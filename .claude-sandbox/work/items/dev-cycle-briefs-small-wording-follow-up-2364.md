@@ -25,3 +25,7 @@ target: branch worktree-dev-cycle-briefs-small-wording-follow-up-2364 at .claude
 - 2026-09-28 claimed by Kyle-McFarlane@7696505da8e1
 dispatch: implementer opus — checklist commands and brief rules (rule 2)
 agent: implementer a8ec0aa89575d5ce5 round 1
+return: implementer DONE 512b8bc (open q: §2/§4/§5 loops also quote non-ASCII paths — same fix, outside acceptance)
+changed: plugins/dev-flow/skills/dev-cycle/references/review-checklist.md, review-brief.md, agent-brief.md
+dispatch: reviewer opus — fresh (rule 4)
+agent: reviewer a8fe3b994145b377d round 1 at 512b8bc

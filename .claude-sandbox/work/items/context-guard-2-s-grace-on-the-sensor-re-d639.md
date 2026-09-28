@@ -17,3 +17,4 @@ Split from 428e 2026-09-28 (series bace OQ1): a status-line render that straddle
 - next: —
 - blocked: —
 - learned: —
+- 2026-09-28 from the 428e review (carry here): guard _epoch_cur and sensor() against a future epoch_at (_future_skewed(cut)); an e2e test with a band-level stale count (750K prints nothing, latches no bands, then a real 65% band); context_warn.py:18 docstring 'at or before'

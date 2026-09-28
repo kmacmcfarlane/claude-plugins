@@ -2,13 +2,12 @@
 id: context-guard-ignore-transcript-token-co-428e
 title: "context-guard: ignore transcript token counts written before the compaction started"
 type: bug
-status: doing
+status: done
 priority: 1
 parent: context-guard-compact-and-clear-handoffs-5039
-owner: Kyle-McFarlane@7696505da8e1
-claimed: 2026-09-28T22:41Z
 created: 2026-09-28
 updated: 2026-09-28
+closed: 2026-09-28
 refs:
   - spike bace
 ---
@@ -33,3 +32,6 @@ agent: implementer a669542ca04a59ebf round 1b
 return: implementer DONE 7f09b05 (grace removed; out-of-scope tests restored; diff = 5 in-scope files)
 changed: plugins/context-guard/hooks/lib_context.py, context_warn.py, tests/test_lib_context.py, tests/test_window_mirror.py, plugins/context-guard/skills/checkpoint/references/design-rationale.md
 dispatch: reviewer opus — fresh (rule 4)
+verdict: CLEAR round 1 at 7f09b05 (2 low + 1 nit: no guard for a future epoch_at (fails open, matches sensor()); the HARD e2e's no-bands assertion doesn't discriminate — add a band-level stale case; context_warn.py docstring 'before' vs 'at or before' — carried to d639)
+landed: c31c824
+- 2026-09-28 done: c31c824

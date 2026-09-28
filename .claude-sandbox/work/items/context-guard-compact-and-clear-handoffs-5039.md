@@ -2,10 +2,11 @@
 id: context-guard-compact-and-clear-handoffs-5039
 title: "context-guard: /compact and /clear handoffs lose state — investigate failure modes and fix"
 type: spike
-status: todo
+status: done
 priority: 1
 created: 2026-09-22
 updated: 2026-09-28
+closed: 2026-09-28
 refs:
   - operator 2026-09-22
 ---
@@ -34,6 +35,7 @@ dispatch: investigator opus — spike through dev-flow investigate (orchestrated
 
 ## Notes
 - 2026-09-22 claimed by unknown@360f41058e92
+- 2026-09-28 done: H1-H7 done; fix 428e c31c824
 
 ## Investigation result (opus, 2026-09-22) — series .claude-sandbox/investigations/5039-handoff-failures/ (00_findings.md, INDEX.md)
 16 compaction boundaries across 8 transcripts, the /clear, and one cross-session manifest resume. Top modes: (1) /clear successor gets a ~230-char header while the predecessor promised full injection [strong]; (2) hand-typed machine fields — 13/15 manifest writes across 7 sessions carry invented times (some 11–12 h future → labelled FRESH), placeholder heads [strong]; (3) holds buried in Aware-of, trimmed second, absent from header-only injection; a "pause until bedtime" hold ran 37 h [strong]; (4) /clear splits session dirs (scratchpad moves, tasks/ stays), new ledger starts at epoch 1 unlinked [strong]; (5) "Read in full" not honoured (cat/grep) [strong]; (6) per-role agent ids not carried [moderate]; (7) compaction ledger tail is mostly commit pointers (13/17 lines) [moderate]; (8) foreign manifest injected on resume — fixed by F3a [moderate]; (9) operator hand-carries opener and /compact text, TUI hard-wraps break it [strong]; (10) stale depth warning right after compaction, cause unconfirmed [moderate]. Verified: $CLAUDE_CODE_SESSION_ID follows /clear; background agents survive /clear and resume by id. Summary drift is a code-level prediction only (summaries skimmed).
@@ -41,3 +43,4 @@ Factored (librarian): H1–H7 below as children; F3b's serial 04 takes: a next_s
 decisions (librarian, one line each): OQ1 build H5 now against the current repo manifest (P1; F3b re-points it); OQ2 a `## Holds` section, never trimmed; OQ4 unread "Read in full" paths reminded as a line in the next prompt's context (no extra turn); OQ5 both — mark step rewrites machine fields, the hook falls back to file mtime; OQ6 the opener names the Read tool (cat does not adopt, by design).
 decision 60: what a linked /clear successor is given (item H5) — (a) the full manifest plus a digest of the predecessor's ledger (reasoning lines first) [recommended: /clear in handoff mode is a continuation of the same work; F3a already links it, and header-only is what broke today]; (b) the header plus the ledger digest, full manifest only after a Read; (c) header only (today).
 answer 60: (a) a linked /clear successor gets the full manifest plus a digest of the predecessor's ledger (reasoning first) (operator 2026-09-22)
+- 2026-09-28 closed: H1-H6 landed earlier; H7 spike bace found the cause and its fix 428e landed (c31c824); the grace split to d639

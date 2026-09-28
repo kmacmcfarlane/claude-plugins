@@ -44,3 +44,9 @@ agent: implementer a44821e7103e482ac round 2
 return: implementer DONE 71cc30c (fix round 1; all 7 fixed)
 dispatch: reviewer opus — resume, round 2
 agent: reviewer aacdb3acf5fca1b43 round 2 at 71cc30c
+verdict: NEEDS_CHANGES round 2 at 71cc30c (1 medium, 1 low; all round-1 fixed; HARD-gate path traced end to end; librarian composition holds)
+findings:
+  [medium] checkpoint SKILL.md:115-116 — the reply line drops `then <next-skill>` and focus text; pass: repeat the original argument, mode first, before the answers
+  [low] SKILL.md:94-96 argument rule doesn't mention the `— 2: … 3: …` answers; :26 "after Step 0 has been asked" → "after Step 0"
+dispatch: implementer opus — resume, fix round 2
+agent: implementer a44821e7103e482ac round 3
