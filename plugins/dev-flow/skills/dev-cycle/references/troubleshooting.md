@@ -103,5 +103,29 @@ names the symptom.
   and report it on the `verified:` line.
 - **Orphan worktree from a crashed run.** Dirty: surface it, do not remove. Clean and
   merged: remove it; clean and unmerged: ask.
-- **Push rejected (non-fast-forward)** — only when the terminal action included a push.
-  Do not pull, fetch, rebase or merge around it, and never `--force`: stop and report it.
+- **Push rejected (non-fast-forward or fetch first)** — only when the terminal action
+  included a push. Someone pushed to `origin/<base>` since the last sync. Get past it only
+  by a checked merge, the procedure the `librarian-mode` skill's
+  `references/troubleshooting.md` § Push rejected sets out (read `main` there as
+  `<base>`): never `git pull`, rebase, reset or `--force`, never a conflict resolved by
+  hand, never a push past a red check.
+  - **Under a librarian** the cycle never pushes — the push is the librarian's, after its
+    Report (`bindings.md` § What a librarian binds), and a rejection is handled by that
+    section as written.
+  - **Standalone**, the user asked for one push of the cycle's own landing, not for a
+    merge of other people's commits. So look, then ask once: `git -C "$MAIN" fetch
+    origin`, and list the incoming commits
+    (`git -C "$MAIN" log --format='%h %s — %an' <base>..origin/<base>`) and what they
+    touch (`git -C "$MAIN" diff --stat <base>...origin/<base>`). AskUserQuestion, with
+    that list as its evidence: `Leave it unpushed` first — the local merge stands, and the
+    Report's `verified:` line says the push was rejected and names the incoming commits —
+    then `Merge origin/<base> and push`: `git -C "$MAIN" merge --no-ff --no-commit
+    origin/<base>` on `<base>` in the main checkout, every Check run from `$MAIN`
+    against the merged tree, all green → `git -C "$MAIN" commit --no-edit` (a merge
+    commit) and
+    `git -C "$MAIN" push origin <base>`, now a fast-forward; the Report names each
+    incoming commit as not the cycle's. If git refuses to start the merge (dirt in its
+    way), stop and say which paths; clear nothing. **A conflict or a red check stops:**
+    `git -C "$MAIN" merge --abort`, so `<base>` is as it was, nothing is pushed, and the
+    Report names the conflicting paths or the failing check and the incoming commits as a
+    decision for the user. A second rejection is reported, not retried.
