@@ -39,3 +39,6 @@ findings:
   [low] resume.md:154 — S2b ignores "a push the invocation asked for in words" (bindings.md:266); say reported unpushed explicitly
 dispatch: implementer opus — resume, fix round 1
 agent: implementer ad34ddcd4498110e0 round 2
+return: implementer DONE 2543c2a (fix round 1; shared landing tail for S2/S2b)
+dispatch: reviewer opus — resume, round 2
+agent: reviewer a8c21f2e82d60050d round 2 at 2543c2a
