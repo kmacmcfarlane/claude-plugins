@@ -2,12 +2,11 @@
 id: dev-flow-reconcile-plugin-json-and-marke-0156
 title: "dev-flow: reconcile plugin.json and marketplace.json descriptions (pre-existing drift)"
 type: chore
-status: doing
+status: done
 priority: 3
-owner: Kyle-McFarlane@7696505da8e1
-claimed: 2026-09-28T21:55Z
 created: 2026-09-23
 updated: 2026-09-28
+closed: 2026-09-28
 refs:
   - d44e implementer 2026-09-23
 ---
@@ -23,3 +22,5 @@ Found by the d44e implementer 2026-09-23: dev-flow's plugin.json description and
 ## Notes
 - 2026-09-28 claimed by Kyle-McFarlane@7696505da8e1
 librarian decision: built with e115 on worktree-claude-analytics-is-live-drop-planned-fr-e115 (same files); recorded there
+landed: 2e489ff (with e115)
+- 2026-09-28 done: 2e489ff
