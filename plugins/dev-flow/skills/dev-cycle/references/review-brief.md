@@ -85,7 +85,9 @@ union of every round's CHANGED, one file per line with its one-line reason>
 6. Try to break it. Write down at least three concrete edge cases before you look for
    them — empty input, a missing file, a second run, a path with a space, the branch name
    the docs say versus the one the code makes — then test each one. A vague worry is not a
-   finding; a reproduction is.
+   finding; a reproduction is. Input bound for a CLI or API: try abbreviated flags,
+   `file://` values, prototype keys, unicode look-alikes and parse confusion, against a
+   fake of the tool on PATH, never the real service.
 7. Review the whole branch history, not only the final diff: a secret or credential in
    any commit's patch or message is critical even when a later commit removes it, since
    the merge carries every commit. Run the history scan in the Checks below, read each
@@ -130,7 +132,8 @@ $WORKTREE, in addition to the generic ones>
 
 - Do not edit any file. Do not commit, stage, stash, rebase, merge, push, or check out.
   If a check needs a scratch file, put it under <absolute scratchpad path>, never in
-  $WORKTREE.
+  $WORKTREE. To read another revision, `git -C $WORKTREE show <rev>:<path>`, or
+  `git -C $WORKTREE archive <rev>` unpacked under the scratchpad — never a checkout.
 - Do not run `wi claim`, `wi done`, `wi handoff` or any writing `wi` command.
 - Do not soften a severity because the fix is small, or raise one because the fix is
   large. Grade the failure, not the effort.
@@ -205,7 +208,8 @@ A resolution that drops either side's intent is a finding.
    and never lower a severity: a finding is right or wrong, not negotiable.
 2. Run the same checks as before; report outcomes verbatim.
 3. Attack the fix: does it introduce a new path, an unhandled case, a contradiction with
-   text the fix did not touch? A fix that moves the bug is a new finding.
+   text the fix did not touch? A fix that moves the bug is a new finding. A fix to input
+   validation gets What to do step 6's attack classes again, run against a fake.
 4. Report in the same shape. Under FINDINGS, list prior findings first with their status
    (FIXED / PARTIAL / OPEN / DECLINED / WITHDRAWN, each with the reason), then any new
    ones numbered on.

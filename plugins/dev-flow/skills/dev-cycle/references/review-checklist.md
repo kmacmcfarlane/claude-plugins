@@ -282,6 +282,7 @@ change — they come on top of the generic ones, never instead of them.
 - [ ] The `work-items` skill touched → wi tests green.
 - [ ] A plugin's `hooks/` touched → that plugin's hook tests green.
 - [ ] Any `scripts/*.py` touched → at least `python3 -m py_compile` on it.
+- [ ] Any `.sh` touched → `bash -n` on it.
 
 ```bash
 git -C $W diff --name-only $BASE...HEAD | grep -q '/skills/work-items/' && \
@@ -289,6 +290,7 @@ git -C $W diff --name-only $BASE...HEAD | grep -q '/skills/work-items/' && \
 for h in $(git -C $W diff --name-only $BASE...HEAD | grep -o '^plugins/[^/]*/hooks' | sort -u); do
   (cd $W/$h && python3 -m unittest discover -s tests -q); done
 for p in $(git -C $W diff --name-only $BASE...HEAD | grep '\.py$'); do python3 -m py_compile $W/$p && echo "ok $p"; done
+for p in $(git -C $W diff --name-only --diff-filter=d $BASE...HEAD | grep '\.sh$'); do bash -n $W/$p && echo "ok $p"; done
 # then, from $W, each command in the Checks binding, one per line
 ```
 
@@ -343,7 +345,9 @@ EOF
 
 ## 6. After the merge, on the base
 
-- [ ] Sections 4 and 5 re-run in the main checkout on the base.
+- [ ] Sections 2, 4 and 5 re-run in the main checkout on the base (`BASE` the base's
+      pre-merge sha): a clean textual merge onto a moved base can still break frontmatter
+      or a script.
 - [ ] `git -C "$MAIN" status --short` shows nothing the merge introduced. Dirt the
       cycle wrote itself — the record sink or store, the Series home, `.claude/worktrees/`
       — is expected and never blocks a merge; any other dirt stopped the merge before it
