@@ -177,9 +177,9 @@ recommendation, and the operator would answer an (a) that is not the (a) they re
 options or recommendation really changed, say which and why, and the caller stores the new
 card.
 
-**A cold re-show** — whenever the reader is cold (SKILL.md § Before you write) — shows each
-open decision the reader is cold on at card level or above, never as a line only (SKILL.md § Levels, the line-only
-rule), each opening with what changed while it waited (*nothing changed* is worth saying).
-With more than five, SKILL.md's paging rule applies *(provisional — pending the operator's
-ruling)*: the heading says how many are shown in full, and the rest are lines ending *(expand
-for the card)*.
+**A cold re-show** — whenever the reader is cold (SKILL.md § Before you write) — shows
+each open decision the reader is cold on at card level or above, never as a line only (SKILL.md
+§ Levels, the line-only rule), each opening with what changed while it waited (*nothing
+changed* is worth saying). With more than five, SKILL.md's paging rule applies *(provisional
+— pending the operator's ruling)*: the heading says how many are shown in full, and the rest
+are lines ending *(expand for the card)*.

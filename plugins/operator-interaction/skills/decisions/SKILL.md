@@ -152,9 +152,9 @@ The decisions close the message — after any report, push outcome or summary:
 `expand` raises a decision one level in the next round (line → card → block); it keeps its
 number and position and stays raised on later re-shows.
 
-**A cold re-show** — whenever the reader is cold on the open decisions (§ Before you write:
-a reset, a clear, or no operator turn since they were shown) — shows each
-open decision the reader is cold on at card level or above, each opening with what changed while it waited
+**A cold re-show** — whenever the reader is cold on any open decision (§ Before you write: a
+reset, a clear, or no operator turn since they were shown) — shows each open decision the
+reader is cold on at card level or above, each opening with what changed while it waited
 (`references/rendering.md` § Re-show with what changed). When the store carries the card,
 render the stored card; do not compose it again. **Paging:** when more than five would be
 shown, render in full the first group or the first three decisions, whichever is larger, plus

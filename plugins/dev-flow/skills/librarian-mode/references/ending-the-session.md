@@ -124,9 +124,9 @@ compacts when convenient, and it continues. Finish the step in hand, then:
    of the sequence above: the four-line Report for anything landed since the last one, the
    push outcome with its `incoming:` lines, then its team summary, then the in-flight
    inventory (step 2), then — with the `operator-interaction:decisions` skill loaded — the
-   decisions block (`references/decisions.md` § The Report), then the checkpoint's own
-   close — its `/compact <guidance>` recommendation, to run at the operator's
-   convenience (the next morning is fine), the manifest's absolute path, and last its Step 7 opener, led by
+   decisions block (`references/decisions.md` § The Report), then the checkpoint's own close
+   — its `/compact <guidance>` recommendation, to run at the operator's convenience (the next
+   morning is fine), the manifest's absolute path, and last its Step 7 opener, led by
    `/dev-flow:librarian-mode start`, then
    `Read (the Read tool) <absolute manifest path> in full first`, then — when the roster
    is not `None` — `resume <ids>` per the `dev-cycle` skill's `references/resume.md`
