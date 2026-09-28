@@ -2,8 +2,10 @@
 id: no-modal-while-agents-run-the-remaining-a66d
 title: "no modal while agents run: the remaining dialog sites (implement Step 7, dev-cycle push-rejection and resumed Step 0)"
 type: chore
-status: todo
+status: doing
 priority: 3
+owner: Kyle-McFarlane@7696505da8e1
+claimed: 2026-09-28T23:43Z
 created: 2026-09-28
 updated: 2026-09-28
 refs:
@@ -18,3 +20,8 @@ From the 09f1 implementer 2026-09-28: implement Step 7 (and references/edge-case
 - blocked: —
 - learned: —
 - 2026-09-28 from the 09f1 review (low): checkpoint SKILL.md ~211-212 Step 4b next_skill: 'arguments included' — add '(its arguments end before any ` — 2:` answers)'
+target: branch worktree-no-modal-while-agents-run-the-remaining-a66d at .claude/worktrees/no-modal-while-agents-run-the-remaining-a66d, base main (577d93b)
+
+## Notes
+- 2026-09-28 claimed by Kyle-McFarlane@7696505da8e1
+dispatch: implementer opus — changes when skills ask the operator (rule 2)

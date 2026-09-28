@@ -2,8 +2,10 @@
 id: claude-md-layout-list-the-five-scripts-d-fabd
 title: "CLAUDE.md layout: list the five scripts/ dirs that exist on disk"
 type: chore
-status: todo
+status: doing
 priority: 4
+owner: Kyle-McFarlane@7696505da8e1
+claimed: 2026-09-28T23:43Z
 created: 2026-09-28
 updated: 2026-09-28
 refs:
@@ -18,3 +20,8 @@ Found by the 5a18 implementer 2026-09-28: CLAUDE.md's Repository Layout block om
 - blocked: —
 - learned: —
 - 2026-09-28 from the 5a18 review: also add '+ hooks.json' to the context-guard hooks/ note in both CLAUDE.md and repo-map.md; the comparison script is at scratchpad review-5a18/cmp.py
+target: branch worktree-claude-md-layout-list-the-five-scripts-d-fabd at .claude/worktrees/claude-md-layout-list-the-five-scripts-d-fabd, base main (577d93b)
+
+## Notes
+- 2026-09-28 claimed by Kyle-McFarlane@7696505da8e1
+dispatch: implementer sonnet — layout list entries and pointers (rule 1)
