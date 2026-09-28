@@ -8,9 +8,11 @@ requirement. Examples are **illustrative**.
 
 1. Find the decision it answers: the number, or the one decision in play. A reply that names
    no number while several are open: ask which, in one line. One verb over several numbers
-   (`later 41, 44`, `drop 80-82`) applies to each, and each keeps its own rules: a one-way
-   choice on a ⚠ decision is still read back, a `later` still warns about that decision's
-   deadline. `ok N-M` is the batch below.
+   (`later 41, 44`, `drop 80-82`) applies to each number under its own rules — a `later`
+   still warns about that decision's deadline. `later`, `drop`, `expand` and `tell me` apply
+   to every number; a verb that acts (a choice, `you decide`) skips each ⚠ decision among
+   them and re-asks it, as `ok N-M` does (the batch below), since a ⚠ decision is never
+   ratified inside a batch.
 2. Classify it as one of the reply types below. Words other than the shortcuts count — "look
    into who imports it first" is `dig into`; "remind me tomorrow" is `later`; "skip it" is
    `drop`; "your call" is `you decide`.
@@ -65,8 +67,9 @@ When the wake fires, re-show the decision with what changed while it waited
 (`references/rendering.md` § Re-show with what changed). A deferral nobody wakes becomes a
 default by omission; every deferral has a wake. Something must evaluate that wake — anyone
 can check a time wake, but an event wake needs whoever watches for the event (your own
-session for your own work, a cross-session collector for other sessions) — and a deferred
-decision re-enters the list only once its wake has fired.
+session for your own work; for other sessions, a cross-session collector, when one exists) —
+and a deferred decision is shown in full again only once its wake has fired; until then it
+stays a list line showing its wake.
 
 **`tell me [what]` — more context.** Answer under the **same number** with an **Added:** line
 and only the lines the fact changes — an option's impact, the rec line when it moves. The card
