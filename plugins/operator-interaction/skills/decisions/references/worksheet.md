@@ -35,10 +35,10 @@ observable measures it today; leave it alone rather than guess.
 | Blast radius | narrow (your own branch, sandbox or task) / wide (shared history, other people, other sessions, published artifacts, spend) | you, from what the change touches |
 | Others rely on it before review | yes / no — will another agent, session or person act on the outcome before the operator sees it? | you |
 
-Judge **reversibility and blast radius together**; never add them up as two scores. A
-decision that is one-way *and* wide (or relied on) is **⚠ one-way**; how it is shown and
-answered is SKILL.md § Critical. One-way but narrow is a card marked *one-way, narrow*. Two-way and narrow is the fast tier: a card, or a
-line when the line-only rule holds.
+Judge **reversibility and blast radius together**; never add them up as two scores. A decision
+that is one-way *and* wide (or relied on) is **⚠ one-way**; how it is shown and answered is
+SKILL.md § Critical. One-way but narrow is a card marked *one-way, narrow*. Two-way and narrow
+is the fast tier: a card, or a line when the line-only rule holds.
 
 ## C — How well is it understood? → what evidence is shown, and "investigate first"
 
