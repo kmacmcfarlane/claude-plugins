@@ -2,12 +2,11 @@
 id: claude-md-layout-list-the-five-scripts-d-fabd
 title: "CLAUDE.md layout: list the five scripts/ dirs that exist on disk"
 type: chore
-status: doing
+status: done
 priority: 4
-owner: Kyle-McFarlane@7696505da8e1
-claimed: 2026-09-28T23:43Z
 created: 2026-09-28
 updated: 2026-09-28
+closed: 2026-09-28
 refs:
   - 5a18 implementer
 ---
@@ -30,3 +29,6 @@ return: implementer DONE 739fca5
 changed: CLAUDE.md, plugins/kit-dev/skills/update-kit/references/repo-map.md
 dispatch: reviewer opus — fresh (rule 4; CLAUDE.md keeps a reviewer)
 agent: reviewer a69331eccfff66356 round 1 at 739fca5
+verdict: CLEAR round 1 at 739fca5 (2 nit: a double space in repo-map.md:85; mild repetition with the existing installer line — declined, cosmetic)
+landed: 7a418f3
+- 2026-09-28 done: 7a418f3

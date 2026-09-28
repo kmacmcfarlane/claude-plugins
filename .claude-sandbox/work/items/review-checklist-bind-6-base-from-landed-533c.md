@@ -2,12 +2,11 @@
 id: review-checklist-bind-6-base-from-landed-533c
 title: "review-checklist: bind §6 BASE from landed: <merge sha>^1 with a guard; core.quotePath=false on every diff --name-only"
 type: chore
-status: doing
+status: done
 priority: 4
-owner: Kyle-McFarlane@7696505da8e1
-claimed: 2026-09-28T23:43Z
 created: 2026-09-28
 updated: 2026-09-28
+closed: 2026-09-28
 refs:
   - 2364 review
 ---
@@ -29,3 +28,6 @@ return: implementer DONE 3932868
 changed: plugins/dev-flow/skills/dev-cycle/references/review-checklist.md
 dispatch: reviewer opus — fresh (rule 4)
 agent: reviewer a65b3f94f74edc90e round 1 at 3932868
+verdict: CLEAR round 1 at 3932868 (2 low: BASE still bound after a guard FAIL — matches the checklist's print-FAIL style; §1 git log --name-only quoting — outside acceptance; both declined)
+landed: c4d8798
+- 2026-09-28 done: c4d8798

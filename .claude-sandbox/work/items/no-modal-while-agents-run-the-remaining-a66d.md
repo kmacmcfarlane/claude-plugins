@@ -30,3 +30,9 @@ return: implementer DONE b2f6aa8 (open q: implement Step 10a terminal-action dia
 changed: plugins/dev-flow/skills/implement/SKILL.md, implement/references/edge-cases.md, dev-cycle/references/troubleshooting.md, dev-cycle/references/bindings.md, plugins/context-guard/skills/checkpoint/SKILL.md
 dispatch: reviewer opus — fresh (rule 4)
 agent: reviewer ab3dbd465c3be0a86 round 1 at b2f6aa8
+verdict: NEEDS_CHANGES round 1 at b2f6aa8 (1 medium, 2 low, 1 nit)
+findings:
+  [medium] troubleshooting.md:132-134 + bindings.md:196-199 — the "safe" reason covers only the cycle's agents; answer 58 as 09f1 applied it is any session agent; make the bindings clause unconditional ("any of the three raised with an agent still in flight … numbered list; a resumed run is the likely case"), and troubleshooting's reason "no agent of the cycle's left running" + ListAgents → numbered list
+  [low] implement SKILL.md:261-264 restates investigate's rule — keep pointer + tell only; [low] edge-cases.md:26-28 use Step 7's "whose return is not yet folded in"; [nit] troubleshooting.md:132-138 put the reason in its own sentence
+dispatch: implementer opus — resume, fix round 1
+agent: implementer a4c047914a458f00c round 2
