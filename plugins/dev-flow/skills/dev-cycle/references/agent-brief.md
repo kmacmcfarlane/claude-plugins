@@ -78,7 +78,7 @@ Rules that reviewers reject on sight:
   updates the README catalog and the CLAUDE.md layout block in the SAME commit.
 - Hooks, status lines and settings writes belong only in the plugin whose stated aim is
   that behavior, never as passengers on a knowledge skill.
-- A rule restated from another file keeps every scope-bearing noun and restriction
+- A rule restated from anywhere else keeps every scope-bearing noun and restriction
   verbatim: "the librarian may self-review" never becomes "a session may".
 - Validation that gates an external CLI or API call is an allow-list of the named
   operations the code itself builds, never a deny-list over the user's tokens.
