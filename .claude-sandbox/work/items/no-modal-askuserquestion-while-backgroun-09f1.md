@@ -41,3 +41,6 @@ findings:
 librarian decision: for the undeclared dependency, drop the checkpoint's pointer to the decisions skill (its three questions are plain numbered questions) rather than widen context-guard's declared deps; for the HARD gate, the list path must accept the answers as the /checkpoint argument (whitelisted) and say so in the list, never rely on a free-text reply under the gate
 dispatch: implementer opus — resume, fix round 1
 agent: implementer a44821e7103e482ac round 2
+return: implementer DONE 71cc30c (fix round 1; all 7 fixed)
+dispatch: reviewer opus — resume, round 2
+agent: reviewer aacdb3acf5fca1b43 round 2 at 71cc30c

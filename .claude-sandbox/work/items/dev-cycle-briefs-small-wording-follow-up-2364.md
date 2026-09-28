@@ -2,8 +2,10 @@
 id: dev-cycle-briefs-small-wording-follow-up-2364
 title: "dev-cycle briefs: small wording follow-ups from the 774d and 775a reviews"
 type: chore
-status: todo
+status: doing
 priority: 4
+owner: Kyle-McFarlane@7696505da8e1
+claimed: 2026-09-28T23:02Z
 created: 2026-09-28
 updated: 2026-09-28
 refs:
@@ -17,3 +19,9 @@ From the 774d review (2026-09-28): checklist §6 should say how to get the pre-m
 - next: —
 - blocked: —
 - learned: —
+target: branch worktree-dev-cycle-briefs-small-wording-follow-up-2364 at .claude/worktrees/dev-cycle-briefs-small-wording-follow-up-2364, base main (4dcf3de)
+
+## Notes
+- 2026-09-28 claimed by Kyle-McFarlane@7696505da8e1
+dispatch: implementer opus — checklist commands and brief rules (rule 2)
+agent: implementer a8ec0aa89575d5ce5 round 1
