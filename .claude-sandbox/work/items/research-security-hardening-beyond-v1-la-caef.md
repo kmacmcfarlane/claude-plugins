@@ -2,10 +2,11 @@
 id: research-security-hardening-beyond-v1-la-caef
 title: research security hardening beyond v1 lane contract
 type: feature
-status: doing
+status: blocked
 priority: 1
 owner: Kyle-McFarlane@7696505da8e1
 claimed: 2026-09-28T21:55Z
+blocked: review cap reached at round 4; decision 96
 created: 2026-09-22
 updated: 2026-09-28
 refs:
@@ -53,3 +54,18 @@ findings: verbatim at .claude-sandbox/investigations/caef-research-security/revi
 note: harness flagged the report as instruction-shaped (settings-json) — the plan's subject; relayed, not acted on
 dispatch: planner opus — resume, fix round 3 (serial 03; review round 4 is the cap)
 agent: planner a533b9e5c8c4a9126 round 4
+return: planner DONE_WITH_CONCERNS /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude-sandbox/investigations/caef-research-security/ 03_f3-authority-and-adversary-walk.md (all 7 fixed; 03 is F3's sole authority; 28-row adversary walk; Q18 transcripts; residuals: local lane Bash bounded by OS user only, verifier corpus+WebFetch bounded only by strict URL mode)
+baseline: f14d66cd2e1d3f07cb07fdb02c539e85633d52d2255c85fefeacb16870ed21fe  .claude-sandbox/investigations/caef-research-security/00_initial.md f6378546b4596c7a835a823b2e0c7a54c663f0cfe856f8b45d68552ef29ac264  .claude-sandbox/investigations/caef-research-security/01_probe-evidence-and-review-fixes.md 278af36fbb78ecc54b8502f4de4dc498a5abe086f2ae19fe925b68460222d4a2  .claude-sandbox/investigations/caef-research-security/02_read-write-rules-composed.md 7cef67d3052866c26fa1b780227e61054b29ce07f16e5fcf0501007c960af92c  .claude-sandbox/investigations/caef-research-security/03_f3-authority-and-adversary-walk.md 
+dispatch: reviewer opus — resume, round 4 (the cap)
+agent: reviewer aa3ef03d44451c197 round 4
+verdict: NEEDS_CHANGES round 4 at 03 7cef67d3 — the 4-round cap (1 high, 4 medium, 2 low, 1 nit; findings verbatim at .claude-sandbox/investigations/caef-research-security/reviews/plan-review-r4.md; reviewer: each a line or two of spec, none reshapes the plan)
+decision 96: the research security plan hit the 4-round review cap — (a) waive the cap for one more planner round, fresh opus reviewer, then the fable second opinion [recommended] | (b) stop planning; take the plan to your 18 questions now and carry the round-4 findings into the build items as acceptance | (c) park the security work | (z) decide later
+  raised: 2026-09-28
+  what: whether the security plan gets one more fix-and-review round past the cap
+  why now: the cap blocks the item; nothing in the security work can move until you rule
+  context: 4 reviews; each round fixed its findings, and the last two each opened new holes in the rules they added; round 4's remaining findings are each a line or two of spec (a default that would deny all research web fetches when no URL list exists yet; a missing state transition; a hash check that drops the orchestrator's own clean-up; an overstated bound on the local lane's shell; an agent split not offered)
+  (a): one more planner round (~15-25 min) and a fresh reviewer who has not seen the plan — undo: none needed — who: this repo
+  (b): the questions come to you now; the build items carry the fixes, reviewed at build time — undo: re-plan later — who: you (18 questions on a plan with known gaps)
+  (c): nothing lands; the research tools stay on the v1 contract (prompt-level rules only) — who: every research run
+  rec: (a) · basis: strong — four review files in the series; reviewer's own note that none of the findings reshapes the plan
+  unknown: whether a fresh reviewer finds new classes of holes (the last two rounds each did)

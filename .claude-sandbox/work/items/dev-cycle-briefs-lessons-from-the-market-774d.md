@@ -2,12 +2,11 @@
 id: dev-cycle-briefs-lessons-from-the-market-774d
 title: "dev-cycle briefs: lessons from the marketplace's first wave under the new routing"
 type: chore
-status: doing
+status: done
 priority: 2
-owner: Kyle-McFarlane@7696505da8e1
-claimed: 2026-09-28T22:33Z
 created: 2026-09-24
 updated: 2026-09-28
+closed: 2026-09-28
 refs:
   - "peer: marketplace - librarian retrospective, 2026-09-24 (operator-requested)"
 ---
@@ -29,3 +28,6 @@ return: implementer DONE f86843c (took 1,3,4,6-part,8; declined 5 already presen
 changed: plugins/dev-flow/skills/dev-cycle/references/agent-brief.md, review-brief.md, review-checklist.md
 dispatch: reviewer opus — fresh (rule 4)
 agent: reviewer afa73e8099fb46388 round 1 at f86843c
+verdict: CLEAR round 1 at f86843c (2 low, 2 nit — declined for this landing, filed as a follow-up)
+landed: eef59e5
+- 2026-09-28 done: eef59e5

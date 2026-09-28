@@ -24,3 +24,8 @@ dispatch: implementer opus — changes what a skill does on resume (rule 2)
 
 ## Notes
 - 2026-09-28 claimed by Kyle-McFarlane@7696505da8e1
+agent: implementer a913b61dd868620cc round 1
+return: implementer DONE 9061d61 (open q: S0b could take the same pointer; a run dying between merge and landed: reads STALE — pre-existing)
+changed: plugins/dev-flow/skills/dev-cycle/references/resume.md
+dispatch: reviewer opus — fresh (rule 4)
+agent: reviewer a2a8c0904d5587680 round 1 at 9061d61

@@ -2,12 +2,11 @@
 id: review-checklist-3-plugin-shape-changed-775a
 title: "review-checklist §3: 'plugin shape changed without README' fires on any .claude-plugin edit"
 type: bug
-status: doing
+status: done
 priority: 3
-owner: Kyle-McFarlane@7696505da8e1
-claimed: 2026-09-28T22:33Z
 created: 2026-09-28
 updated: 2026-09-28
+closed: 2026-09-28
 refs:
   - 1a54 implementer
 ---
@@ -29,3 +28,6 @@ return: implementer DONE 4effa0d
 changed: plugins/dev-flow/skills/dev-cycle/references/review-checklist.md
 dispatch: reviewer opus — fresh (rule 4)
 agent: reviewer a0530ba80d27bbf98 round 1 at 4effa0d
+verdict: CLEAR round 1 at 4effa0d (4 low: non-ASCII path detail misprinted but still FAILs; object source key-order; bash-only <( ); generic var d — declined for this landing: every failure mode is loud, none lets a shape change through)
+landed: a4ef1f4
+- 2026-09-28 done: a4ef1f4

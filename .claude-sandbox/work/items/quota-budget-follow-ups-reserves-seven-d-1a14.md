@@ -2,12 +2,11 @@
 id: quota-budget-follow-ups-reserves-seven-d-1a14
 title: "quota_budget follow-ups: reserves.seven_day is the reserve in effect; taper test name"
 type: chore
-status: doing
+status: done
 priority: 4
-owner: Kyle-McFarlane@7696505da8e1
-claimed: 2026-09-28T22:33Z
 created: 2026-09-28
 updated: 2026-09-28
+closed: 2026-09-28
 refs:
   - 1fd2 review
 ---
@@ -29,3 +28,6 @@ return: implementer DONE 8d2d424 (open q: the fact now appears twice in budget.m
 changed: plugins/dev-flow/skills/librarian-mode/references/budget.md, scripts/tests/test_quota_budget.py
 dispatch: reviewer opus — fresh (rule 4)
 agent: reviewer a086b47ebff4827d2 round 1 at 8d2d424
+verdict: CLEAR round 1 at 8d2d424 (2 low + 1 nit, all budget.md wording: the tapered-value fact stated in both § The weekly taper and § The result; base named twice; no-signal clause — declined: acceptance (1) asked for the sentence in § The result, and both copies are in one file)
+landed: 23e09b5
+- 2026-09-28 done: 23e09b5
