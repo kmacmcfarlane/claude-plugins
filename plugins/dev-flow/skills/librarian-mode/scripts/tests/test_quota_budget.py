@@ -355,8 +355,8 @@ class TestWeeklyTaper(Base):
         self.assertWeekly(r, 3.0, 6)
         self.assertEqual(r["weekly_taper"]["base"], 10.0)
 
-    def test_taper_frees_weekly_headroom_and_can_move_the_binding(self):
-        # used 88: untapered, headroom is -3 and the weekly binds at zero;
+    def test_taper_frees_weekly_headroom(self):
+        # used 88: untapered, headroom is -3 and the weekly allows zero;
         # 12 h out, the reserve is 3.75 and 8.25 points may be spent.
         r = self.run_at(12, used=88.0)
         self.assertWeekly(r, 3.75, 12, used=88.0)
@@ -364,6 +364,31 @@ class TestWeeklyTaper(Base):
         far = self.run_at(100, used=88.0)
         self.assertEqual(far["windows"]["seven_day"]["allowed"], 0)
         self.assertEqual(far["binding"], "seven_day")
+
+    def test_taper_moves_the_binding(self):
+        # The same usage in both readings; only the weekly reset's distance
+        # differs. Five-hour: used 73, 4 h out, reserve 25 -> 2 points, 0.5/h.
+        # Weekly used 88 at 48 h out: reserve 15, headroom -3, allowed 0, so
+        # the weekly binds. At 12 h out: reserve 3.75, 8.25 points over 12 h
+        # is 0.6875/h, above the five-hour's 0.5, so the five-hour binds.
+        def at(week_hours):
+            self.sensor(five=(73.0, NOW + 4 * H), week=(88.0, NOW + week_hours * H), at=NOW)
+            _, r, _ = self.run_qb()
+            self.assertEqual(r["signal"], "ok")
+            self.assertAlmostEqual(r["windows"]["five_hour"]["allowed"], 0.5, places=4)
+            return r
+
+        untapered = at(48)
+        self.assertFalse(untapered["weekly_taper"]["tapering"])
+        self.assertEqual(untapered["windows"]["seven_day"]["allowed"], 0)
+        self.assertEqual(untapered["binding"], "seven_day")
+        self.assertEqual(untapered["allowed"], 0)
+
+        tapered = at(12)
+        self.assertTrue(tapered["weekly_taper"]["tapering"])
+        self.assertAlmostEqual(tapered["windows"]["seven_day"]["allowed"], 0.6875, places=4)
+        self.assertEqual(tapered["binding"], "five_hour")
+        self.assertAlmostEqual(tapered["allowed"], 0.5, places=4)
 
     def test_no_signal_keeps_the_untapered_reserve(self):
         _, r, _ = self.run_qb()

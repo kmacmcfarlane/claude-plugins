@@ -249,12 +249,14 @@ runs. An unreadable `at` is never fresh. The count reads `claims/*.json` only, n
  "next_check": 3600}
 ```
 
+`reserves.seven_day` and `windows.seven_day.reserve` are the weekly reserve in effect,
+tapered in the last 48 h (agents decision 0008); the flat `R` is `weekly_taper.base`.
 `weekly_taper` gives the intent's untapered weekly `R` (`base`), the floor, the taper's
 length in hours, and whether the weekly window is inside it now.
 
-With no signal, `windows`, `binding`, `allowed` and `weekly_taper` are `null`. `intent`, `reserves` and
-`claims` are still filled in. Readers ignore keys they do not know. A change of meaning to
-an existing key bumps `v`.
+With no signal, `windows`, `binding`, `allowed` and `weekly_taper` are `null`. `intent`,
+`reserves` and `claims` are still filled in. Readers ignore keys they do not know. A change
+of meaning to an existing key bumps `v`.
 
 ## Not here yet
 
