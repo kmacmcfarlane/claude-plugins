@@ -258,7 +258,9 @@ In both modes:
 - **Delegate context-heavy work to subagents** — long logs, broad exploration, mechanical
   edits across many files. Keep your context for the plan and the diff.
 - **An in-scope issue the investigation missed** is neither silently fixed nor silently
-  ignored: surface it via `AskUserQuestion` and let the user decide whether it belongs here.
+  ignored: surface it per the `investigate` skill's § Asking at a gate — a fan-out task or
+  delegated subagent whose return is not yet folded in is running — and let the user decide
+  whether it belongs here.
 
 ---
 
