@@ -24,3 +24,7 @@ Two observed cases; cause unconfirmed (.claude-sandbox/investigations/5039-hando
 librarian decision: the item's 'fix routes fable' predates c0d6 routing (fable only by pin); planned with opus, any fix built by opus with a fresh opus reviewer
 dispatch: planner opus — spike, plan mode (Step 1)
 agent: planner a9d8035671945cec8 round 1
+return: planner DONE /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude-sandbox/investigations/bace-stale-depth-warning/ (cause: transcript flush lag after PostCompact; fix: drop transcript counts stamped at/before epoch_at in lib_context.measure; OQ1 sensor 2s grace, OQ2 upstream flush — neither blocking)
+baseline: e63ed6146611d807ee18a82042b378435207557f4f8b9ab90bca690885936572  .claude-sandbox/investigations/bace-stale-depth-warning/00_initial.md 
+dispatch: reviewer opus — fresh, plan review (rule 4)
+agent: reviewer abf5b8ff982a87ffe round 1

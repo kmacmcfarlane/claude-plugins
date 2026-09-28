@@ -79,3 +79,4 @@ answer 69: hold — same as 68 (operator 2026-09-24)
 wake 69: when the agents repo's scheduler spec lands
 - 2026-09-24 agents - librarian filed notify-claude-plugins-librarian-when-the-29d6 (it will tell us when the scheduler spec lands; wakes 68/69)
 - 2026-09-24 agents - librarian: decision record 0008 (librarian budget policy) is on agents main (222dc57). Five items ratified; the rest (modes, hard cap, TTLs, reserve table and tiers by intent) in one block of provisional series defaults; changes land as new agents decision records; the P0-floor condition is mode not stop and N_total < 1 (the block governs over the gloss). Read it before serial 05.
+- 2026-09-28 from the 1fd2 review: series 1222 01_f2-modes-pool-heartbeat.md (lines ~28, 148, 428, N3) still says the decaying weekly reserve is not adopted; 0008 ratified it and 1fd2 built it. F2 reads headroom/allowed, so it picks the taper up; the plan text is stale

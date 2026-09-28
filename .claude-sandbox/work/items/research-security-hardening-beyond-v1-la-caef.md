@@ -35,3 +35,16 @@ findings: verbatim at .claude-sandbox/investigations/caef-research-security/revi
 librarian decision: no new `claude -p` probe sessions in the fix round (not operator-cleared); unrecorded probe facts are marked unverified and re-probing becomes a gate before F3/F4 build
 dispatch: planner opus — resume, fix round 1 (serial 01)
 agent: planner a533b9e5c8c4a9126 round 2
+return: planner DONE_WITH_CONCERNS /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude-sandbox/investigations/caef-research-security/ 01_probe-evidence-and-review-fixes.md + evidence/probe-record-2026-09-28.txt (all 20 fixed; P4/P5b/P12b/P13 unverified → gate G-probe; Q16 asks whether live probes are allowed; Q1-Q17, many blocking F3/F4/F5)
+baseline: f14d66cd2e1d3f07cb07fdb02c539e85633d52d2255c85fefeacb16870ed21fe  .claude-sandbox/investigations/caef-research-security/00_initial.md f6378546b4596c7a835a823b2e0c7a54c663f0cfe856f8b45d68552ef29ac264  .claude-sandbox/investigations/caef-research-security/01_probe-evidence-and-review-fixes.md 
+dispatch: reviewer opus — resume, round 2
+agent: reviewer aa3ef03d44451c197 round 2
+verdict: NEEDS_CHANGES round 2 at 01 f6378546 (1 high, 2 medium, 3 low, 2 nit; all r1 fixed, probe grading honest)
+findings: verbatim at .claude-sandbox/investigations/caef-research-security/reviews/plan-review-r2.md — high: verifier read allowlist filled from lane-cited paths admits secrets (denylist must always win, cited paths only under brief-declared roots)
+note: harness flagged the reviewer's report as instruction-shaped (settings-json) — the plan's own subject; relayed, not acted on
+dispatch: planner opus — resume, fix round 2 (serial 02)
+agent: planner a533b9e5c8c4a9126 round 3
+return: planner DONE /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude-sandbox/investigations/caef-research-security/ 02_read-write-rules-composed.md (all 8 fixed; composed per-agent re-check; one further gap closed: held re-verify read roots)
+baseline: f14d66cd2e1d3f07cb07fdb02c539e85633d52d2255c85fefeacb16870ed21fe  .claude-sandbox/investigations/caef-research-security/00_initial.md f6378546b4596c7a835a823b2e0c7a54c663f0cfe856f8b45d68552ef29ac264  .claude-sandbox/investigations/caef-research-security/01_probe-evidence-and-review-fixes.md 278af36fbb78ecc54b8502f4de4dc498a5abe086f2ae19fe925b68460222d4a2  .claude-sandbox/investigations/caef-research-security/02_read-write-rules-composed.md 
+dispatch: reviewer opus — resume, round 3 (last before the cap)
+agent: reviewer aa3ef03d44451c197 round 3

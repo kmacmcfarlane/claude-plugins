@@ -2,12 +2,11 @@
 id: work-items-reconcile-plugin-json-and-mar-1a54
 title: "work-items: reconcile plugin.json and marketplace.json descriptions"
 type: chore
-status: doing
+status: done
 priority: 3
-owner: Kyle-McFarlane@7696505da8e1
-claimed: 2026-09-28T22:20Z
 created: 2026-09-28
 updated: 2026-09-28
+closed: 2026-09-28
 refs:
   - e115 review 2026-09-28
 ---
@@ -25,3 +24,10 @@ target: branch worktree-work-items-reconcile-plugin-json-and-mar-1a54 at .claude
 - 2026-09-28 claimed by Kyle-McFarlane@7696505da8e1
 dispatch: implementer opus — marketplace.json (rule 2)
 agent: implementer a88523d7b9ac1d380 round 1
+return: implementer DONE c0372dd (1 mismatch of 11: work-items; plugin.json the source)
+changed: .claude-plugin/marketplace.json
+dispatch: reviewer opus — fresh (rule 4)
+agent: reviewer af26e222010281ca6 round 1 at c0372dd
+verdict: CLEAR round 1 at c0372dd (no findings; §3 FAIL graded a false positive, filed 775a)
+landed: 7c7b138
+- 2026-09-28 done: 7c7b138

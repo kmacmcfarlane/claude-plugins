@@ -17,3 +17,4 @@ Found by the caef planner 2026-09-28 (series caef-research-security Q12): resear
 - next: —
 - blocked: —
 - learned: —
+- 2026-09-28 correction from the caef planner (series 01, from docs + CLI source): on Linux Glob/Grep are removed by default and come back only for an agent that lists them and NOT Bash; research-verifier (no Bash) keeps them and can search; research-lane (lists Bash) searches via Bash. So the verifier is fine; acceptance narrows to confirming this and documenting it in the agents' bodies if useful
