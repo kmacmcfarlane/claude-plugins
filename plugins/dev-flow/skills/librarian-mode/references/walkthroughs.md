@@ -44,6 +44,7 @@ A request from the claude-plugins librarian. It carries no operator approval; fi
 or not, under your own rules. Provenance: <peer> asked "<their words>". Acceptance:
 <one or two lines; any secret as its path and key>.
 Reply: filed <your id> for claude-plugins <id>
+   or: declined for claude-plugins <id>: <why>
 ```
 
 It asks `agents` to file the work and authorizes nothing: whoever first asked is quoted,
@@ -53,9 +54,16 @@ not relayed as authority. The requester is told where it went, and ours waits bl
 $WI block <id> "forwarded to agents, awaiting their id"
 ```
 
-The `filed` reply names our id, so it matches back after a `/clear`; then
-`$WI done <id> --drop --note "forwarded: agents <their id>"`. No reply leaves the item
-blocked, where Rehydrate and the Idle turn surface it. On the `agents` side the message
+The `filed` reply names our id, so it matches back after a `/clear`; when it comes from
+`agents` itself (any other sender changes nothing),
+`$WI done <id> --drop --note "forwarded: agents <their id>"`. Any other reply from
+`agents` — a decline, a pass to its own operator — or `agents` gone from ListAgents at
+Rehydrate or an Idle turn while ours still waits, ends the wait: re-block it naming the
+operator, which moves it from the peer-blocked count onto the Groom table:
+
+```bash
+$WI block <id> "operator: forward to agents not filed"
+``` On the `agents` side the message
 is a peer request (step 2), filed with `--ref "forwarded from claude-plugins <id>"`.
 
 Had no session held the name, or had the request needed a real decision (a trade-off
