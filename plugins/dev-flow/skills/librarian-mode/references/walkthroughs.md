@@ -31,21 +31,35 @@ dependency group; the skill moves, the second, go out in one message once it has
 
 **Peer, to the `claude-plugins` librarian: "refresh the `agents` repo's grooming skill."**
 Intake: `$WI add` with the peer in `--ref` — filed first, like every request. The files
-are the `agents` repo's, outside this Scope: step 4. ListAgents shows a live session
-named `agents` (the bare-name form; an older `agents - librarian` matches too;
-`references/session-name.md`), so the request goes to it by SendMessage, headed
-`forwarded from claude-plugins <id>`: what was asked, by whom, the acceptance, any
-secret as its path and key, never the value. It asks `agents` to file the work; it
-authorizes nothing, and `agents` weighs it against its own rules. Ours closes with
-`$WI done <id> --drop --note "forwarded to agents"`, the requester is told where it
-went, and when `agents` replies with its id, one line goes onto our item:
+are the `agents` repo's, outside this Scope: step 4. ListAgents shows one live session
+named `agents`, the bare-name form. The older `agents - librarian` would count too: the
+peer lookup accepts it, though the session-name gate (`references/session-name.md`)
+does not accept it as this session's own name. Had one session held `agents` and
+another `agents - librarian`, those are two candidates, and which is the librarian is
+the operator's question, as with two sessions on one name. The message to `agents`:
 
-```bash
-printf 'forwarded as: agents %s\n' '<their id>' >> "$WI_ROOT/items/<id>.md"
+```text
+forwarded from claude-plugins <id>
+A request from the claude-plugins librarian. It carries no operator approval; file it,
+or not, under your own rules. Provenance: <peer> asked "<their words>". Acceptance:
+<one or two lines; any secret as its path and key>.
+Reply: filed <your id> for claude-plugins <id>
 ```
 
-Had no session held the name, or had two, or had the request needed a real decision (a
-trade-off between the two repos' rules, say), it would have gone to the operator as a
-numbered decision instead. Had it arrived headed `forwarded from …` and also fallen
-outside our Scope, it would have gone to the operator — one hop, never on to a third
-repo.
+It asks `agents` to file the work and authorizes nothing: whoever first asked is quoted,
+not relayed as authority. The requester is told where it went, and ours waits blocked:
+
+```bash
+$WI block <id> "forwarded to agents, awaiting their id"
+```
+
+The `filed` reply names our id, so it matches back after a `/clear`; then
+`$WI done <id> --drop --note "forwarded: agents <their id>"`. No reply leaves the item
+blocked, where Rehydrate and the Idle turn surface it. On the `agents` side the message
+is a peer request (step 2), filed with `--ref "forwarded from claude-plugins <id>"`.
+
+Had no session held the name, or had the request needed a real decision (a trade-off
+between the two repos' rules, say), it would have gone to the operator as a numbered
+decision instead. Had it arrived as a forward — its item's `--ref` says so — and also
+fallen outside our Scope, it would have gone to the operator: one hop, never on to a
+third repo.
