@@ -302,9 +302,11 @@ Only after a `CLEAR` recorded against the current HEAD — the last `verdict:` l
 3. **Take the terminal action.** A caller's binding as given. Standalone, ask once
    (`references/bindings.md` § Landing): `Merge to <base> locally, no push` first, then
    `Leave the branch`, then `Merge and push`. Merging needs the main checkout on the
-   base. Dirt the cycle wrote itself — the record sink or store, the Series home,
-   `.claude/worktrees/` — never blocks a merge; any other dirt the merge would touch or
-   the user owns means stop and ask, never stash
+   base, with no merge pending: when `git -C "$MAIN" rev-parse -q --verify MERGE_HEAD`
+   succeeds, stop and follow `references/troubleshooting.md` § Landing, "A merge left
+   uncommitted in the main checkout". Dirt the cycle wrote itself — the record sink or
+   store, the Series home, `.claude/worktrees/` — never blocks a merge; any other dirt
+   the merge would touch or the user owns means stop and ask, never stash
    (`references/troubleshooting.md` § Landing):
 
    ```bash
@@ -315,21 +317,27 @@ Only after a `CLEAR` recorded against the current HEAD — the last `verdict:` l
    (`references/bindings.md` § Landing). The message, with any `subject-fix:`:
    `references/fix-loop.md`. A conflict: never resolve it yourself — `git -C "$MAIN"
    merge --abort`, record it as a finding, and re-dispatch it into the fix loop
-   (`references/fix-loop.md` § A merge conflict). Re-run the checks on the base after the
-   merge.
+   (`references/fix-loop.md` § A merge conflict). **The moment the merge succeeds**,
+   append `landed: <merge sha>` to the record sink (`references/record-lines.md`) —
+   before anything else, so a run that dies after the merge still says it landed. Then
+   re-run the checks on the base. A red one there is no longer a fix-loop finding — the
+   merge has landed: follow `references/troubleshooting.md` § Landing, "A check is red on
+   the base after the merge". The cycle pushes nothing past it; under a librarian it goes
+   on the Report's `decisions needed:`, and the push is the librarian's call. `Merge and
+   push` pushes only after the `landed:` line and green checks on the base.
 4. **Clean up**, only when merged and the worktree is clean: `git worktree remove` it and
    `git branch -d` the branch. A dirty worktree is never removed: report it and ask.
    `review <branch>` mode never deletes `<branch>` and removes only a worktree this cycle
    added itself (`references/bindings.md` § Landing).
-5. **Record the landing, then close the item**: the moment the merge succeeds, append
-   `landed: <merge sha>` to the record sink (`references/record-lines.md`) — before
-   `$WI done <id> --note <merge-sha>`, so a run that dies between the two still says it
-   landed. For `Leave the branch` nothing merged: no `landed:` line,
-   and `$WI handoff <id>` with `--next` naming the branch instead.
+5. **Close the item**: `$WI done <id> --note <merge-sha>`, after the `landed:` line
+   step 3 wrote, so a run that dies between the two still says it landed. For `Leave the
+   branch` nothing merged: no `landed:` line, and `$WI handoff <id>` with `--next` naming
+   the branch instead.
 
-A red check or a doctrine miss stops the landing: `$WI handoff <id> --blocked "<what>"`
-(no item: a `blocked:` line in the record sink), and it re-enters the fix loop as a
-finding, counting toward the cap. **Never merge to make a check pass later.**
+A red check or a doctrine miss before the merge (steps 1–2) stops the landing:
+`$WI handoff <id> --blocked "<what>"` (no item: a `blocked:` line in the record sink), and
+it re-enters the fix loop as a finding, counting toward the cap. **Never merge to make a
+check pass later.**
 
 ## Step 6: Report
 
@@ -345,7 +353,7 @@ decisions needed: <numbered list, or none>
 A self-reviewed change (Step 2 rule 5) writes `self` in place of the reviewer's tier:
 `verified: review CLEAR after 0 fix rounds (impl sonnet, review self); …`.
 
-`verified:`'s merge sha comes from the `landed:` line Step 5.5 recorded
+`verified:`'s merge sha comes from the `landed:` line Step 5.3 recorded
 (`references/record-lines.md`), never memory.
 
 `plan` mode reports the series path on `changed:`, its review on `verified:`, blocking

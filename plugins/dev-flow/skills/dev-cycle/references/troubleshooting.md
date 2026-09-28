@@ -58,8 +58,18 @@ names the symptom.
 - **The run was interrupted.** Re-invoke `/dev-cycle` on the same target: SKILL.md
   § Step 0.4 reduces the record and takes the one action its state names.
 - **A store-less run, re-invoked in a new session, finds what the old one left.** S0b: not
-  resumable from this session — report it and stop; `resume.md` § The reduction, REMNANT names what
-  counts, and the orphan-worktree rule below decides it. Nothing is re-dispatched over it.
+  resumable from this session — report it and stop; `resume.md` § The reduction, REMNANT
+  names what counts. A leftover worktree, branch or series goes to the orphan-worktree rule
+  below; a pending merge goes to "A merge left uncommitted in the main checkout" below,
+  since it may not be this run's. Nothing is re-dispatched over it.
+- **A run died after Land's merge, before its `landed:` line.** Its worktree may already be
+  gone, so the last `CLEAR` would read `STALE`. S2b: `resume.md` § The reduction, MERGED
+  finds the merge on the base whose merged parent is the `CLEAR`'s sha; the run writes
+  `landed:` with it and runs `resume.md` § The landing tail — never a second review or
+  merge.
+- **A run died after its `landed:` line, before the item was closed.** S2: `resume.md`
+  § The landing tail finishes the base checks, push, cleanup and `$WI done` that are still
+  undone, and names any push it did not make.
 - **A recorded dispatch's agent does not answer.** S3b: it counts as gone only after a
   SendMessage to its recorded id fails; then salvage what it left and re-dispatch on top of
   it, never over it.
@@ -100,7 +110,10 @@ names the symptom.
 - **A dirty worktree at cleanup.** Never removed: report its `git status --short` and ask.
 - **A check is red on the base after the merge.** Two green branches can be red together.
   Do not revert or patch by hand: file it (a new item when a store exists) or raise it,
-  and report it on the `verified:` line.
+  and report it on the `verified:` line. The merge has landed — its `landed:` line is
+  written — so it never re-enters the fix loop. The cycle pushes nothing past it; under a
+  librarian it goes on the Report's `decisions needed:`, and the push is the librarian's
+  call.
 - **Orphan worktree from a crashed run.** Dirty: surface it, do not remove. Clean and
   merged: remove it; clean and unmerged: ask.
 - **Push rejected (non-fast-forward or fetch first)** — only when the terminal action

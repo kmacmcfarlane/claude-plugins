@@ -368,8 +368,11 @@ W=$MAIN; BASE=$(git -C "$MAIN" rev-parse HEAD^1)
       ran (`troubleshooting.md` § Landing).
 - [ ] The worktree was removed and the branch deleted only after both of the above.
 
-A result that passes every box lands. A fail found by the reviewer is a finding at medium
-or above in its report; a fail found by the orchestrator at Land goes back into the fix
-loop with the failing line quoted, to the implementer as a new commit — see
-`agent-brief.md` § Sharpening a brief for re-dispatch when the implementer must be
-re-dispatched.
+A result that passes every box before the merge lands. A fail found by the reviewer is a
+finding at medium or above in its report; a fail found by the orchestrator at Land before
+the merge goes back into the fix loop with the failing line quoted, to the implementer
+as a new commit — see `agent-brief.md` § Sharpening a brief for re-dispatch when the
+implementer must be re-dispatched. A fail in this section, after the merge, never does:
+the merge has landed and its `landed:` line is written, so it follows `troubleshooting.md`
+§ Landing, "A check is red on the base after the merge" — filed or raised, reported, and
+the cycle pushes nothing past it.
