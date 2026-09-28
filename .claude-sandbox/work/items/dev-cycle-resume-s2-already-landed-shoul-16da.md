@@ -29,3 +29,9 @@ return: implementer DONE 9061d61 (open q: S0b could take the same pointer; a run
 changed: plugins/dev-flow/skills/dev-cycle/references/resume.md
 dispatch: reviewer opus — fresh (rule 4)
 agent: reviewer a2a8c0904d5587680 round 1 at 9061d61
+verdict: NEEDS_CHANGES round 1 at 9061d61 (1 high, 1 low)
+findings:
+  [high] resume.md:112-122,138,139 — unreachable-sink rows never check MERGE_HEAD: a store-less run rejected on push, merged --no-commit and dead reads REMNANT absent → S0 rebuilds landed work, or S0b without the pointer; pass: add a pending main-checkout merge to REMNANT's artefact list so it selects S0b, and give S0b the same pointer (or a MERGE_HEAD precondition ahead of Group P)
+  [low] resume.md:137 — "report the landing as not cleanly done" contradicts the bullet ("the local landing merge stands"); pass: "landed <merge sha>; a merge is pending in the main checkout", then follow the bullet
+dispatch: implementer opus — resume, fix round 1
+agent: implementer a913b61dd868620cc round 2
