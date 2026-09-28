@@ -2,11 +2,13 @@
 id: operator-interaction-decisions-the-v1-re-b527
 title: "operator-interaction decisions: the v1 review's remaining lows"
 type: chore
-status: todo
+status: doing
 priority: 2
 parent: checkpoint-around-continuation-how-agent-d3ee
+owner: Kyle-McFarlane@7696505da8e1
+claimed: 2026-09-28T23:16Z
 created: 2026-09-23
-updated: 2026-09-23
+updated: 2026-09-28
 refs:
   - 9f98 review r2
 ---
@@ -25,3 +27,8 @@ decision 73: the "(shown before)" marker narrows plan R-14 for the round after a
 answer 71: (a) keep the aim line (operator 2026-09-24)
 answer 72: (a) confirm `decisions` (operator 2026-09-24)
 answer 73: (a) keep (shown before) (operator 2026-09-24)
+target: branch worktree-operator-interaction-decisions-the-v1-re-b527 at .claude/worktrees/operator-interaction-decisions-the-v1-re-b527, base main (a66d203)
+
+## Notes
+- 2026-09-28 claimed by Kyle-McFarlane@7696505da8e1
+dispatch: implementer opus — decisions-skill rule wording (rule 2)

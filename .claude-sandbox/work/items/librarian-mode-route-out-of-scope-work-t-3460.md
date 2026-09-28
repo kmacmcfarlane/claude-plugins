@@ -2,10 +2,12 @@
 id: librarian-mode-route-out-of-scope-work-t-3460
 title: "librarian-mode: route out-of-scope work to the owning live librarian, not the operator"
 type: feature
-status: todo
+status: doing
 priority: 2
+owner: Kyle-McFarlane@7696505da8e1
+claimed: 2026-09-28T23:16Z
 created: 2026-09-22
-updated: 2026-09-22
+updated: 2026-09-28
 refs:
   - "peer: agents - librarian (uds 122.sock); opencode-11 relay; agents investigations/downtime-grooming-workflow/00_initial.md"
 ---
@@ -17,3 +19,8 @@ Relayed 2026-09-22 by the agents librarian (peer relay from opencode-11 quoting 
 - next: —
 - blocked: —
 - learned: —
+target: branch worktree-librarian-mode-route-out-of-scope-work-t-3460 at .claude/worktrees/librarian-mode-route-out-of-scope-work-t-3460, base main (a66d203)
+
+## Notes
+- 2026-09-28 claimed by Kyle-McFarlane@7696505da8e1
+dispatch: implementer opus — changes librarian-mode's routing rule (rule 2)

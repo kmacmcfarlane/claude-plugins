@@ -2,8 +2,10 @@
 id: context-guard-2-s-grace-on-the-sensor-re-d639
 title: "context-guard: 2 s grace on the sensor record after a compaction (EPOCH_GRACE_S)"
 type: feature
-status: todo
+status: doing
 priority: 3
+owner: Kyle-McFarlane@7696505da8e1
+claimed: 2026-09-28T23:16Z
 created: 2026-09-28
 updated: 2026-09-28
 refs:
@@ -18,3 +20,8 @@ Split from 428e 2026-09-28 (series bace OQ1): a status-line render that straddle
 - blocked: —
 - learned: —
 - 2026-09-28 from the 428e review (carry here): guard _epoch_cur and sensor() against a future epoch_at (_future_skewed(cut)); an e2e test with a band-level stale count (750K prints nothing, latches no bands, then a real 65% band); context_warn.py:18 docstring 'at or before'
+target: branch worktree-context-guard-2-s-grace-on-the-sensor-re-d639 at .claude/worktrees/context-guard-2-s-grace-on-the-sensor-re-d639, base main (a66d203)
+
+## Notes
+- 2026-09-28 claimed by Kyle-McFarlane@7696505da8e1
+dispatch: implementer opus — hook code across two plugins (rule 2)
