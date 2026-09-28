@@ -58,6 +58,14 @@ RESERVES = {
     "vacation": (5.0, 10.0),
 }
 DEFAULT_INTENT = "present"
+# The weekly reserve's taper (agents decision 0008 item 3 and its series
+# defaults): reserve still unused at the weekly reset is wasted, so over the last
+# WEEKLY_TAPER_H hours before seven_day.resets_at the weekly reserve R above
+# decays linearly, never below WEEKLY_TAPER_FLOOR points:
+#     max(WEEKLY_TAPER_FLOOR, R * min(1, hours_to_weekly_reset / WEEKLY_TAPER_H))
+# The five-hour reserve does not taper.
+WEEKLY_TAPER_H = 48.0
+WEEKLY_TAPER_FLOOR = 3.0
 IDLE_TTL_S = 2 * 3600          # a claim with nothing in flight is fresh this long
 IN_FLIGHT_TTL_S = 4 * 3600     # a claim with items in flight is fresh this long
 STALE_AFTER_S = 30 * 60        # a reading older than this is no signal
@@ -444,12 +452,23 @@ def read_intent(store, now):
     return out
 
 
+def weekly_reserve(base, hours_to_reset):
+    """The weekly reserve in effect `hours_to_reset` hours before the weekly
+    reset: `base` (the intent's R) from WEEKLY_TAPER_H hours out and beyond,
+    falling linearly to WEEKLY_TAPER_FLOOR at the reset, never below it. A
+    negative distance (the reset has passed) counts as the reset itself."""
+    frac = min(1.0, max(0.0, hours_to_reset) / WEEKLY_TAPER_H)
+    return max(WEEKLY_TAPER_FLOOR, base * frac)
+
+
 def windows_result(current, history, reserves, now):
     res = {}
     for i, w in enumerate(WINDOWS):
         c = current["windows"][w]
         hours = (c["resets_at"] - now) / 3600.0
         reserve = reserves[i]
+        if w == "seven_day":
+            reserve = round(weekly_reserve(reserve, hours), 4)
         headroom = 100.0 - c["used"] - reserve
         v, n, span = velocity(history, w, c, now)
         res[w] = {
@@ -691,7 +710,8 @@ def compute(args, env, now):
     store = store_dir(cfg)
     session = args.session or env.get("CLAUDE_CODE_SESSION_ID") or None
     result = {"v": V, "now": now, "session": session, "signal": "none", "reason": None,
-              "source": None, "intent": None, "reserves": None, "windows": None,
+              "source": None, "intent": None, "reserves": None, "weekly_taper": None,
+              "windows": None,
               "binding": None, "allowed": None, "claims": None, "next_check": None}
 
     intent = read_intent(store, now)
@@ -737,6 +757,12 @@ def compute(args, env, now):
             history = history + [reading]
         wins = windows_result(reading, history, reserves, now)
         binding = min(WINDOWS, key=lambda w: wins[w]["allowed"])
+        # The reserves in effect: the weekly one after its taper. With no
+        # reading the reset instant is unknown and the untapered R stands.
+        result["reserves"]["seven_day"] = wins["seven_day"]["reserve"]
+        result["weekly_taper"] = {"base": reserves[1], "floor": WEEKLY_TAPER_FLOOR,
+                                  "window_h": WEEKLY_TAPER_H,
+                                  "tapering": wins["seven_day"]["hours_to_reset"] < WEEKLY_TAPER_H}
         result.update(signal="ok", reading_at=reading["at"], windows=wins, binding=binding,
                       allowed=wins[binding]["allowed"])
     else:
