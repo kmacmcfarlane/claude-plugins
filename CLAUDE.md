@@ -15,9 +15,11 @@ plugins/
     skills/
       product-research/
   context-guard/       # Surviving the context window (hook-owning)
-    hooks/             # Gate, ledger, rehydrate, gauge.json publish (+ deprecated statusline copy) + unit tests
+    hooks/             # Gate, ledger, rehydrate, gauge.json publish (+ deprecated statusline copy) + hooks.json + unit tests
     skills/
       {checkpoint,usage-report}/
+      checkpoint/scripts/  # context_forensics.py (where a session's context went, from its transcript)
+      usage-report/scripts/  # usage_report.py + prices.json (token-spend accounting)
   create-repo/         # Start a new repo for a thread of work, with a session launched on it
     skills/
       create-repo/     # references/launch-command.md
@@ -26,6 +28,7 @@ plugins/
     skills/
       {investigate,implement,dev-cycle,deep-investigation,research,research-deep,research-refine,research-prune,chain-of-verification,librarian-mode}/
       research/scripts/  # tool-preflight.sh (Step 5.1 tool check) + unit tests
+      librarian-mode/scripts/  # quota_budget.py (the librarian's quota sense) + unit tests
   kit-dev/             # Maintaining this kit itself
     skills/
       {create-skill,update-kit,new-project-from-template,factor-analysis}/
@@ -49,9 +52,11 @@ plugins/
     skills/
       statusline-hub/  # embed recipes (ccstatusline, Starship, shell wrapper), references/hook-contract.md
       install-statusline-hub/  # installer script (install, remove, replace, wrap, unwrap, --status)
+      install-statusline-hub/scripts/  # install_hub.py, the installer
   work-items/          # Repo-durable work items + the work-source provider interface
     skills/
       work-items/      # wi CLI (incl. `wi estate`, the cross-repo sweep), references/{format,provider-interface}.md, tests/
+      work-items/scripts/  # wi.py, the wi CLI
       work-review/     # the on-demand cross-repo review, written from `wi estate`
 ```
 

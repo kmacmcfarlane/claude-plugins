@@ -79,15 +79,19 @@ claude-plugins/
     ├── chat/                  (web-UI chat-session skills)
     │   └── skills/product-research/
     ├── context-guard/         (surviving the context window — a hook-owning plugin)
-    │   ├── hooks/             (gate, ledger, rehydrate, gauge.json publish, deprecated statusline copy + tests)
-    │   └── skills/{checkpoint,usage-report}/
+    │   ├── hooks/             (gate, ledger, rehydrate, gauge.json publish, deprecated statusline copy + hooks.json + tests)
+    │   └── skills/
+    │       ├── {checkpoint,usage-report}/
+    │       ├── checkpoint/scripts/  (context_forensics.py: where a session's context went, from its transcript)
+    │       └── usage-report/scripts/ (usage_report.py + prices.json: token-spend accounting)
     ├── create-repo/           (start a new repo for a thread of work, with a session launched on it)
     │   └── skills/create-repo/ (references/launch-command.md)
     ├── dev-flow/              (plan before you code; research into findings or a knowledge base; the librarian that takes custody of a repo)
     │   ├── agents/            (research-lane, research-verifier — the research family's workers)
     │   └── skills/
     │       ├── {investigate,implement,dev-cycle,deep-investigation,research,research-deep,research-refine,research-prune,chain-of-verification,librarian-mode}/
-    │       └── research/scripts/ (tool-preflight.sh + tests)
+    │       ├── research/scripts/ (tool-preflight.sh + tests)
+    │       └── librarian-mode/scripts/ (quota_budget.py: the librarian's quota sense + tests)
     ├── kit-dev/               (maintaining this kit itself — where THIS skill lives)
     │   └── skills/{create-skill,update-kit,new-project-from-template,factor-analysis}/
     ├── operator-interaction/  (the agent-operator interface, starting with how decisions are raised and shown)
@@ -103,10 +107,13 @@ claude-plugins/
     │   └── skills/install-statusline/ (coworker install, hands the slot to install-statusline-hub; references/sensor-contract.md)
     ├── statusline-hub/        (the status-line slot, shared: owner-mode dispatcher + embed-mode tee + consent-only wrap mode — hook-owning; owns the statusLine entry)
     │   ├── hooks/             (hub, registry, tee, owner, session_start, housekeeping + hooks.json + tests)
-    │   └── skills/{statusline-hub,install-statusline-hub}/ (embed recipes, references/hook-contract.md; installer script)
+    │   └── skills/
+    │       ├── {statusline-hub,install-statusline-hub}/ (embed recipes, references/hook-contract.md; installer script)
+    │       └── install-statusline-hub/scripts/ (install_hub.py, the installer)
     └── work-items/            (repo-durable work items + work-source provider interface)
         └── skills/
             ├── work-items/    (wi CLI incl. `wi estate`, references/, tests/)
+            ├── work-items/scripts/ (wi.py, the wi CLI)
             └── work-review/   (the on-demand cross-repo review, written from `wi estate`)
 ```
 
