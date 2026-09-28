@@ -283,6 +283,95 @@ class TestIntentAndAllowed(Base):
         self.assertEqual(r["binding"], "five_hour")
 
 
+class TestWeeklyTaper(Base):
+    """Agents decision 0008 item 3: the weekly reserve is
+    max(3, R * min(1, hours_to_weekly_reset / 48)); the five-hour one does not taper."""
+
+    def test_the_function(self):
+        R = 15.0
+        self.assertEqual(qb.weekly_reserve(R, 100.0), R)       # outside the window
+        self.assertEqual(qb.weekly_reserve(R, 48.0), R)        # 48 h before the reset
+        self.assertAlmostEqual(qb.weekly_reserve(R, 24.0), 7.5)  # midway
+        self.assertAlmostEqual(qb.weekly_reserve(R, 12.0), 3.75)
+        self.assertEqual(qb.weekly_reserve(R, 0.0), 3.0)       # at the reset: the floor
+        self.assertEqual(qb.weekly_reserve(R, -5.0), 3.0)      # past the reset
+        self.assertEqual(qb.weekly_reserve(10.0, 24.0), 5.0)   # vacation's R
+        self.assertEqual(qb.weekly_reserve(10.0, 12.0), 3.0)   # 2.5 floored to 3
+
+    def test_floor_holds_everywhere(self):
+        for mode, (_r5, rw) in qb.RESERVES.items():
+            for tenths in range(-10, 1000):
+                v = qb.weekly_reserve(rw, tenths / 10.0)
+                self.assertGreaterEqual(v, qb.WEEKLY_TAPER_FLOOR, (mode, tenths))
+                self.assertLessEqual(v, max(rw, qb.WEEKLY_TAPER_FLOOR), (mode, tenths))
+
+    def test_monotone_toward_the_reset(self):
+        prev = None
+        for h in range(60, -1, -1):
+            v = qb.weekly_reserve(15.0, float(h))
+            if prev is not None:
+                self.assertLessEqual(v, prev)
+            prev = v
+
+    def run_at(self, hours, used=50.0, mode=None):
+        if mode:
+            self.intent({"mode": mode})
+        self.sensor(five=(40.0, NOW + 3 * H), week=(used, NOW + hours * H), at=NOW)
+        _, r, _ = self.run_qb()
+        self.assertEqual(r["signal"], "ok")
+        return r
+
+    def assertWeekly(self, r, reserve, hours, used=50.0):
+        w = r["windows"]["seven_day"]
+        self.assertAlmostEqual(w["reserve"], reserve, places=3)
+        self.assertAlmostEqual(r["reserves"]["seven_day"], reserve, places=3)
+        self.assertAlmostEqual(w["headroom"], 100 - used - reserve, places=3)
+        self.assertAlmostEqual(w["allowed"], (100 - used - reserve) / hours, places=3)
+        self.assertEqual(r["reserves"]["five_hour"], qb.RESERVES[r["intent"]["mode"]][0])
+        self.assertEqual(r["windows"]["five_hour"]["reserve"], r["reserves"]["five_hour"])
+
+    def test_past_the_window_is_untapered(self):
+        r = self.run_at(100)
+        self.assertWeekly(r, 15.0, 100)
+        self.assertEqual(r["weekly_taper"], {"base": 15.0, "floor": 3.0, "window_h": 48.0,
+                                             "tapering": False})
+
+    def test_48h_before_the_reset(self):
+        r = self.run_at(48)
+        self.assertWeekly(r, 15.0, 48)
+        self.assertFalse(r["weekly_taper"]["tapering"])
+
+    def test_midway(self):
+        r = self.run_at(24)
+        self.assertWeekly(r, 7.5, 24)
+        self.assertTrue(r["weekly_taper"]["tapering"])
+        self.assertEqual(r["weekly_taper"]["base"], 15.0)
+
+    def test_at_the_reset_the_floor_holds(self):
+        # The last reading before the reset (a reset already passed is no signal).
+        r = self.run_at(0.01)
+        self.assertWeekly(r, 3.0, 0.01)
+        r = self.run_at(6, mode="vacation")  # 10 * 6/48 = 1.25, floored to 3
+        self.assertWeekly(r, 3.0, 6)
+        self.assertEqual(r["weekly_taper"]["base"], 10.0)
+
+    def test_taper_frees_weekly_headroom_and_can_move_the_binding(self):
+        # used 88: untapered, headroom is -3 and the weekly binds at zero;
+        # 12 h out, the reserve is 3.75 and 8.25 points may be spent.
+        r = self.run_at(12, used=88.0)
+        self.assertWeekly(r, 3.75, 12, used=88.0)
+        self.assertGreater(r["windows"]["seven_day"]["allowed"], 0)
+        far = self.run_at(100, used=88.0)
+        self.assertEqual(far["windows"]["seven_day"]["allowed"], 0)
+        self.assertEqual(far["binding"], "seven_day")
+
+    def test_no_signal_keeps_the_untapered_reserve(self):
+        _, r, _ = self.run_qb()
+        self.assertEqual(r["signal"], "none")
+        self.assertEqual(r["reserves"]["seven_day"], 15.0)
+        self.assertIsNone(r["weekly_taper"])
+
+
 class TestSamplesAndSink(Base):
     def lines(self):
         p = os.path.join(self.store, "samples.jsonl")

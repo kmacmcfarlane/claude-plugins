@@ -162,6 +162,22 @@ idle-turn integration writes.
   (the series' Open Question 3). The other values are still the series' defaults. No
   intent's five-hour reserve is below 5, which agents decision 0008's 5% floor asks for;
   that floor is still read provisionally.
+
+  The weekly column is `R`, the reserve until the last 48 h of the weekly window.
+- **The weekly taper.** Reserve still unused at the weekly reset is wasted, so over the
+  last 48 h before `seven_day.resets_at` the weekly reserve decays linearly toward a floor
+  of 3 points (agents decision 0008, item 3 and its series defaults):
+
+  `weekly reserve = max(3, R × min(1, hours to the weekly reset ÷ 48))`
+
+  With `R` 15: 15 at 48 h out and beyond, 7.5 at 24 h, 3.75 at 12 h, and 3 from 9.6 h
+  out to the reset. With `vacation`'s `R` of 10 it reaches the floor at 14.4 h. The
+  five-hour reserve does not taper. The tapered value is the one the weekly `headroom`
+  and `allowed` use, and the one printed as `reserves.seven_day` and
+  `windows.seven_day.reserve`. With no signal the reset instant is unknown, so
+  `reserves.seven_day` is the untapered `R`. The taper needs nothing from the idle turn
+  or a scheduler: it is recomputed from the reading on every call, and `next_check`
+  (at most an hour out) already re-reads it through the last 48 h.
 - **No signal.** The result is `signal: "none"` with a `reason` when there is no session
   id or sensor record, the record's `v` is not 1, it has no rate limits (an API-key
   session, or no render yet), it lacks either window, it is older than `--stale-after`, it
@@ -222,6 +238,7 @@ runs. An unreadable `at` is never fresh. The count reads `claims/*.json` only, n
  "intent": {"mode": "present", "source": "default", "stored": null, "until": null,
             "set_by": null, "at": null, "expired": false},
  "reserves": {"five_hour": 25.0, "seven_day": 15.0},
+ "weekly_taper": {"base": 15.0, "floor": 3.0, "window_h": 48.0, "tapering": false},
  "windows": {"five_hour": {"used": 23.5, "resets_at": 1789763600.0, "hours_to_reset": 1.0,
                            "reserve": 25.0, "headroom": 51.5, "velocity": 6.2,
                            "velocity_points": 9, "velocity_span_s": 7210.0, "allowed": 51.5},
@@ -232,7 +249,10 @@ runs. An unreadable `at` is never fresh. The count reads `claims/*.json` only, n
  "next_check": 3600}
 ```
 
-With no signal, `windows`, `binding` and `allowed` are `null`. `intent`, `reserves` and
+`weekly_taper` gives the intent's untapered weekly `R` (`base`), the floor, the taper's
+length in hours, and whether the weekly window is inside it now.
+
+With no signal, `windows`, `binding`, `allowed` and `weekly_taper` are `null`. `intent`, `reserves` and
 `claims` are still filled in. Readers ignore keys they do not know. A change of meaning to
 an existing key bumps `v`.
 
@@ -240,4 +260,4 @@ an existing key bumps `v`.
 
 These are the policy's asks for later features, not built here: the mode table and the
 pool arithmetic, the claim-flip detector and the two-writer hold, tombstoning,
-`escalations/` markers, `claims.log.jsonl`, and the decaying weekly reserve.
+`escalations/` markers, and `claims.log.jsonl`.
