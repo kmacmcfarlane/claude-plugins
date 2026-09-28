@@ -264,10 +264,14 @@ main checkout, separately, is on `<base>`; cleanup then removes only a worktree 
 added, never `<branch>` itself.
 
 Never push unless the user picked option 3 or the invocation asked for it in words. A
-rejected push stops: never pull, rebase or force around it — report it.
+rejected push is never pulled, rebased, reset or forced past: fetch, show the incoming
+commits and ask once whether to merge `origin/<base>` in — a checked merge, every Check
+re-run before the push, a conflict or red check aborting it — or leave the local merge
+unpushed (`troubleshooting.md` § Landing, "Push rejected", which follows the
+`librarian-mode` skill's `references/troubleshooting.md` § Push rejected).
 
 Option 3 (or a push the invocation asked for in words), once the push succeeds, also
-means Step 6 adds one team summary after the Report — a rejected push gets none. The
+means Step 6 adds one team summary after the Report — a push left rejected gets none. The
 shape is the `librarian-mode` skill's `references/team-summary.md`, read there and not
 restated here, with one clause read against this cycle instead of a librarian's: its
 commit-range recipe reads `main`/`origin/main` as `<base>`/`origin/<base>`; its
