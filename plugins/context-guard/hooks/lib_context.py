@@ -60,8 +60,17 @@ Depth sources, in order of preference:
    epoch, and the status line may not have re-rendered yet. context-guard
    never writes the sensor file: _reset stamps `epoch_at` in its own state,
    and any record with `at <= epoch_at` (from either path) is read as
-   window-only - which also covers a render whose payload predates the
-   compaction but whose write lands after it.
+   window-only. The tee stamps `at` when it writes, so this covers a render
+   whose payload predates the compaction only when its write lands at or
+   before `epoch_at`.
+   The same rule holds for transcript counts (sources 2 and 3): a count
+   whose usage line is stamped at or before `epoch_at` describes an earlier
+   epoch and is dropped (_epoch_cur), so the depth reads unknown (0) until
+   the epoch's first response. Claude Code queues transcript lines and
+   drains the queue on a 100 ms timer, and PostCompact stamps the epoch
+   before the compact_boundary line is even queued, so a queued prompt's
+   hook can scan the transcript before the boundary is on disk. A usage
+   line with no `timestamp` is never dropped.
 
 The GATE window (measure()'s `window`) is the model window above lowered to
 the auto-compact window when one is configured below it
@@ -783,9 +792,18 @@ def scan_usage(transcript_path):
     new window and older state (a stale exact record) must not floor it.
     This is the pre-mirror scan, unchanged: the inferred path with the mirror
     off (or the window pinned) runs exactly this."""
+    return _scan_usage_at(transcript_path)[:3]
+
+
+def _scan_usage_at(transcript_path):
+    """scan_usage's (cur, peak, boundary) plus `cur_at`: the epoch timestamp
+    of the line that set `cur` (a compact_boundary's own, or None when that
+    line has no parseable `timestamp`). measure() drops a count whose line
+    predates the epoch (_epoch_cur)."""
     if not transcript_path or not os.path.exists(transcript_path):
-        return 0, 0, False
+        return 0, 0, False, None
     cur = peak = 0
+    cur_at = None
     boundary = False
     try:
         with open(transcript_path, errors="replace") as fh:
@@ -796,12 +814,14 @@ def scan_usage(transcript_path):
                     # reported 62% used on a ~2% session. Keep peak (the model
                     # window did not change); reset current.
                     cur = 0
+                    cur_at = _line_ts(line)
                     boundary = True
                     continue
                 if '"usage"' not in line:
                     continue
                 try:
-                    u = (json.loads(line).get("message") or {}).get("usage")
+                    obj = json.loads(line)
+                    u = (obj.get("message") or {}).get("usage")
                 except Exception:
                     continue
                 if not u:
@@ -811,20 +831,22 @@ def scan_usage(transcript_path):
                          "cache_creation_input_tokens"))
                 if t:
                     cur = t
+                    cur_at = _iso_ts(obj.get("timestamp"))
                     peak = max(peak, t)
     except Exception:
-        return 0, 0, False
-    return cur, peak, boundary
+        return 0, 0, False, None
+    return cur, peak, boundary, cur_at
 
 
 LATCH_KEEP = 16
 SCAN_V = 1
 TAIL_CHECK = 64
-_SCAN_KEYS = ("cur", "peak", "boundary", "model_id", "model_off", "model_at", "latches")
+_SCAN_KEYS = ("cur", "cur_at", "peak", "boundary", "model_id", "model_off", "model_at",
+              "latches")
 
 
 def _scan_empty():
-    return {"cur": 0, "peak": 0, "boundary": False, "model_id": None,
+    return {"cur": 0, "cur_at": None, "peak": 0, "boundary": False, "model_id": None,
             "model_off": -1, "model_at": None, "cc_version": None,
             "latches": [], "size": 0}
 
@@ -839,6 +861,18 @@ def _iso_ts(v):
         if d.tzinfo is None:
             d = d.replace(tzinfo=timezone.utc)
         return d.timestamp()
+    except Exception:
+        return None
+
+
+def _line_ts(line):
+    """The `timestamp` of one transcript line (str or bytes) as epoch
+    seconds, or None when the line is not a JSON object or has none."""
+    try:
+        if isinstance(line, bytes):
+            line = line.decode("utf-8", "replace")
+        obj = json.loads(line)
+        return _iso_ts(obj.get("timestamp")) if isinstance(obj, dict) else None
     except Exception:
         return None
 
@@ -885,6 +919,9 @@ def _cache_start(fh, st_, cache, path):
         if fh.read(len(tail)) != tail:
             return 0, None
         state = {k: cache.get(k) for k in _SCAN_KEYS}
+        # cur_at postdates the cache format: a missing or malformed one reads
+        # as unknown (the epoch rule then does not apply), never as a rescan.
+        state["cur_at"] = _finite(state["cur_at"])
         state["latches"] = [tuple(x) for x in (state["latches"] or [])
                             if isinstance(x, (list, tuple)) and len(x) == 2]
         if not isinstance(state["cur"], int) or not isinstance(state["peak"], int) \
@@ -900,6 +937,8 @@ def scan_transcript(transcript_path, cache=None):
     call's `cache` result, from the session state) has not covered.
     Returns a dict:
     cur, peak, boundary - as scan_usage;
+    cur_at - the epoch timestamp of the line that set `cur` (None when it
+      has none), for measure()'s epoch rule (_epoch_cur);
     model_id, model_off, model_at - the last `attachment.type:"model"` line's
       identity.modelId, its byte offset and timestamp (epoch);
     cc_version - the `version` of the last line carrying one (a tail read);
@@ -941,6 +980,7 @@ def scan_transcript(transcript_path, cache=None):
                     # reported 62% used on a ~2% session. Keep peak (the model
                     # window did not change); reset current.
                     out["cur"] = 0
+                    out["cur_at"] = _line_ts(line)
                     out["boundary"] = True
                     continue
                 has_u = b'"usage"' in line
@@ -965,6 +1005,7 @@ def scan_transcript(transcript_path, cache=None):
                             t = 0
                         if t:
                             out["cur"] = t
+                            out["cur_at"] = _iso_ts(obj.get("timestamp"))
                             out["peak"] = max(out["peak"], t)
                 if obj.get("type") == "attachment":
                     att = obj.get("attachment")
@@ -1582,6 +1623,25 @@ def exact_fresh(ex):
     return bool(ex.get("window")) and time.time() - (ex.get("at") or 0) < EXACT_MAX_AGE_S
 
 
+STALE_NOTE = "transcript count predates this epoch (compaction not yet on disk); depth unknown"
+
+
+def _epoch_cur(cur, cur_at, st):
+    """(cur, stale): a transcript count belongs to the epoch its usage line was
+    written in. When the state has an `epoch_at` and the line that set `cur`
+    is stamped at or before it, the count describes an earlier epoch - the
+    compact_boundary line is still in Claude Code's write queue (it drains on
+    a 100 ms timer, after PostCompact has stamped the epoch) - and is dropped
+    (0, True): what the scan returns once the boundary is on disk. The same
+    rule sensor() applies to the exact record. A count with no stamp, or a
+    state with no epoch_at, is kept."""
+    cut = _finite(st.get("epoch_at")) if isinstance(st, dict) else None
+    at = _finite(cur_at)
+    if cur and cut is not None and at is not None and at <= cut:
+        return 0, True
+    return cur, False
+
+
 def _inferred(res, ex, cur, peak, boundary, environ=None):
     """The pre-mirror inferred depth (a stale exact record floors it)."""
     known = int(ex.get("window") or 0)
@@ -1632,12 +1692,17 @@ def measure(transcript_path, session_id=None, cwd=None, environ=None, mirror=Tru
             res.update(tokens=ex["tokens"], model_window=ex["window"], model_pct=ex["pct"],
                        source="exact")
             return _gate(res, True)
-        _inferred(res, ex, *scan_usage(transcript_path), environ=environ)
+        cur, peak, boundary, cur_at = _scan_usage_at(transcript_path)
+        cur, stale = _epoch_cur(cur, cur_at, st)
+        _inferred(res, ex, cur, peak, boundary, environ=environ)
+        if stale:
+            res["note"] = STALE_NOTE
         return _gate(res, False)
     R = _rules()
     pi = proc_info()
     scan = scan_transcript(transcript_path, st.get("scan"))
     res["scan_cache"] = scan["cache"]
+    cur, stale = _epoch_cur(scan["cur"], scan.get("cur_at"), st)
     try:
         d, env = derived_window(scan, st, environ, transcript_path, pi["key"])
     except Exception:
@@ -1655,19 +1720,21 @@ def measure(transcript_path, session_id=None, cwd=None, environ=None, mirror=Tru
             # since: the status line wins, as the inferred path below does.
             d.update(resolved=False, distrusted=True)
         if d and d["resolved"]:
-            cur = scan["cur"]
             w = int(d["window"])
             res.update(tokens=cur, model_window=w, model_pct=100.0 * cur / w,
                        source="derived")
             blocking = True
         else:
-            _inferred(res, ex, scan["cur"], scan["peak"], scan["boundary"], environ=environ)
+            _inferred(res, ex, cur, scan["peak"], scan["boundary"], environ=environ)
             blocking = False
             if d and d.get("window"):
                 why = d["rule"]
                 if d.get("distrusted"):
                     why += f", CC {d.get('cc_version')} distrusted"
                 res["note"] = f"derived window {int(d['window']):,} unresolved ({why})"
+        if stale:
+            # Diagnostic only: 0 tokens print nothing in any hook.
+            res["note"] = "; ".join(x for x in (res["note"], STALE_NOTE) if x)
     res["derived"] = d
     res["side_cache"] = d.get("side_cache") if d else None
     if env is not None:

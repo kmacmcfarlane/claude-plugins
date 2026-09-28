@@ -335,6 +335,54 @@ class TestModelSwitch(Base):
         self.assertEqual((m["window"], m["source"]), (200_000, "derived"))
 
 
+def stamped(tokens, at):
+    """usage_line with a `timestamp`: the epoch rule reads it (_epoch_cur)."""
+    return dict(usage_line(tokens), timestamp=iso(at))
+
+
+QUEUED = ({"type": "queue-operation", "operation": "enqueue"},
+          {"type": "attachment", "attachment": {"type": "hook_success", "content": "x"}})
+
+
+class TestEpochRule(Base):
+    """A derived count from before the epoch: the compact_boundary line is
+    still in Claude Code's write queue when the opener's hook scans."""
+
+    def stale_session(self):
+        self.write(model_line("claude-opus-5", self.t0), stamped(950_000, self.t0 + 2))
+        L.save_state("s", {"proc": {"offset": 0, "key": self.key,
+                                    "at": self.t0 + 1, "source": "startup"}})
+
+    def test_fresh_scan_drops_the_pre_epoch_count(self):
+        self.stale_session()
+        self.assertEqual(self.measure()["tokens"], 950_000)
+        L.reset_epoch("s")
+        m = self.measure()
+        self.assertEqual((m["tokens"], m["window"], m["source"], m["block_window"]),
+                         (0, 1_000_000, "derived", 1_000_000))
+        self.assertIn("predates this epoch", m["note"])
+
+    def test_cached_resume_drops_the_pre_epoch_count(self):
+        # S2: the gate kept the scan cache on the previous prompt; the opener's
+        # scan resumes from it and reads no usage line at all.
+        self.stale_session()
+        m = self.measure()
+        L.update_state("s", lambda st: st.update(scan=m["scan_cache"]))
+        size = m["scan_cache"]["size"]
+        self.write(*QUEUED, append=True)
+        L.reset_epoch("s")
+        starts, real = [], L._cache_start
+
+        def spy(*a):
+            r = real(*a)
+            starts.append(r[0])
+            return r
+        with mock.patch.object(L, "_cache_start", spy):
+            m = self.measure()
+        self.assertEqual(starts, [size])                 # resumed, not rescanned
+        self.assertEqual((m["tokens"], m["source"]), (0, "derived"))
+
+
 class TestScanCache(Base):
     def test_incremental_scan_equals_a_full_scan(self):
         self.write(model_line("claude-opus-5", self.t0), usage_line(100_000))
@@ -742,6 +790,32 @@ class TestHooks(Base):
         self.assertIn("50,000 tokens left of 1,000,000 (derived)", err)
         self.assertEqual(L.load_state("s")["derived"]["rule"], "native_1m")
         self.assertEqual(L.load_state("s")["derived"]["rules_version"], R.RULES_CC_VERSION)
+
+    def test_pre_epoch_count_neither_blocks_nor_latches_the_opener(self):
+        # Spike bace: a manual /compact at 950K of 1M with the opener queued.
+        # Control, today's behaviour: an unstamped usage line cannot be
+        # dated, so the stale count is scored against the new epoch and the
+        # opener is erased by a HARD stop.
+        self.session("claude-opus-5", 950_000)
+        L.reset_epoch("s")
+        rc, out, err = self.warn("/dev-flow:librarian-mode")
+        self.assertEqual(rc, 2, (out, err))
+        # The same transcript with the usage line stamped (as Claude Code
+        # writes it) before PostCompact stamped epoch_at: dropped.
+        self.session("claude-opus-5", 950_000)
+        self.write(model_line("claude-opus-5", self.t0), stamped(950_000, self.t0 + 2))
+        L.reset_epoch("s")
+        rc, out, err = self.warn("/dev-flow:librarian-mode")
+        self.assertEqual((rc, out, err), (0, {}, ""))
+        self.assertNotIn("bands", L.load_state("s"))
+        # A genuine 65% later in the epoch still gets its 60% band.
+        epoch_at = L.load_state("s")["epoch_at"]
+        self.write({"type": "system", "subtype": "compact_boundary",
+                    "timestamp": iso(epoch_at + 0.1)},
+                   stamped(650_000, epoch_at + 1), append=True)
+        rc, out, err = self.warn()
+        self.assertEqual(rc, 0, err)
+        self.assertIn("65% used", out.get("systemMessage", ""))
 
     def test_whitelisted_prompt_passes(self):
         self.session("claude-opus-5", 950_000)
