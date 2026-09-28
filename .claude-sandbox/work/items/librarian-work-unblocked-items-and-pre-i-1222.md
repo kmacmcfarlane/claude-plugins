@@ -72,3 +72,21 @@ W4: wi fixes one at a time (same script): 1d1c, 59ce, fc04, bf1b, then 8e14 (opu
 W5 (judgement, planner first, most expensive): c79e librarian F2 (opus plan), 8ab6 loop items, bace H7 spike, 0599, ee7b, 3460, 09f1, d05d, bfd6, b8d6, 0d6b (gate code: fable), caef (fable) last
 Held for the operator/peers, not dispatched: e466 (iterate with operator), 4b0e (peer coordination), 32cc/380c (blocked), e5a7/7e8f (another session's claim), 680a/919c/d3a8/8189/segment 40ed/8c2c/7647/a95a/8482/8605/fa54/9ec9/bb7e taken after W5 as budget allows.
 - 2026-09-24 via agents - librarian: the operator is hitting subscription limits (weekly 60% with 4 days left) and worries that overnight work depletes the quota they need during the day. They asked for research into routing a "free" class of tasks to the local RTX PRO 6000 before any overnight model use (agents repo; results to be shared). Until then the librarian does not dispatch queue work overnight or unattended.
+- 2026-09-28 post-compaction status (session e9bb00fc): quota weekly 0% used (reset ~6.6 d), 5h 2%; recommended first batch A-D, second wave, interactive 2b15, waiting list; housekeeping: ask claude-analytics re usage-report retirement, release stale claims 5039/e5a7, orphan check of two old worktrees
+decision 87: first batch to dispatch now, attended — (a) all four: flake fix d1e3, security-hardening plan caef, plain-language item names 0b2d, sonnet wording batch e115/0156/6bff [recommended] | (b) only A-C | (c) you pick | (z) decide later
+  raised: 2026-09-28
+  what: which items I start on now while you are here
+  why now: quota is back (weekly 0% used); nothing is in flight
+  (a): three builders plus reviewers at once; about a day of wall time for caef's plan, the rest within hours — undo: stop any item before it lands — who: this repo only
+  (b): the wording fixes wait for the second wave
+  (z): I start nothing and stay idle
+  rec: (a) · basis: strong — queue read from the store; quota from quota_budget --read-only
+  unknown: how much of caef's plan will need your ruling
+decision 88: the no-unattended-dispatch hold (set 2026-09-24) — (a) keep it: I dispatch only while you are taking turns [recommended] | (b) lift it for this week: I keep working the queue between your turns and while you are away, stopping at the 15% weekly reserve | (z) decide later
+  raised: 2026-09-28
+  what: whether I may keep dispatching while you are away
+  why now: weekly quota is 0% used with ~6.6 days to reset, and you want the backlog caught up; your 68 answer tied librarian quota use to the agents scheduler
+  (a): slower catch-up; nothing spends quota unseen — undo: lift any time — who: you
+  (b): faster catch-up; landings and pushes happen while you are away, reviewed by opus but not seen by you until you return — undo: say stop; reinstated at once — who: you, and peers that pull the marketplace
+  rec: (a) · basis: partial — your 68 answer; no scheduler yet
+  unknown: whether the agents scheduler lands this week
