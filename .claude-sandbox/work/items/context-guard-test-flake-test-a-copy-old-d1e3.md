@@ -2,12 +2,11 @@
 id: context-guard-test-flake-test-a-copy-old-d1e3
 title: "context-guard test flake: test_a_copy_older_than_the_window expects 118-119 min, gets 120 under load"
 type: bug
-status: doing
+status: done
 priority: 2
-owner: Kyle-McFarlane@7696505da8e1
-claimed: 2026-09-28T21:55Z
 created: 2026-09-23
 updated: 2026-09-28
+closed: 2026-09-28
 refs:
   - 923f landing 2026-09-23
 ---
@@ -26,3 +25,10 @@ target: branch worktree-context-guard-test-flake-test-a-copy-old-d1e3 at .claude
 - 2026-09-28 claimed by Kyle-McFarlane@7696505da8e1
 dispatch: implementer opus — test code (rule 2)
 agent: implementer a2fd977c438048f4a round 1
+return: implementer DONE 5eb0096 (open q: two countdown tests in test_hooks.py share the shape with a 30-60s margin; left alone)
+changed: plugins/context-guard/hooks/tests/test_lineage.py
+dispatch: reviewer opus — fresh (rule 4)
+agent: reviewer aacd269d44608e0b5 round 1 at 5eb0096
+verdict: CLEAR round 1 at 5eb0096 (1 low: regex not tied to path — declined, all four callers correct, carried as-is; 1 nit: import placement and PEP 8 spacing match the file — declined; open q graded: countdown tests have 30-60 s margin, acceptable)
+landed: 681c8a1
+- 2026-09-28 done: 681c8a1

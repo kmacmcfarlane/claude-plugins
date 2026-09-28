@@ -25,3 +25,8 @@ Operator called security critical (relayed by agent-research 2026-09-22). v1 shi
 librarian decision: plan mode first (security surface, open policy choices such as allow/deny lists go to the operator); fable second opinion on the plan after the opus review's CLEAR (operator called security critical)
 dispatch: planner opus — plan mode (Step 1)
 agent: planner a533b9e5c8c4a9126 round 1
+return: planner DONE_WITH_CONCERNS /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude-sandbox/investigations/caef-research-security/ (F1 scan floor+detector tests, F2 deep-investigation parity, F3 confinement hook, F4 URL policy, F5 quarantine; Q1-Q12, Q1-Q6/Q8/Q12 blocking parts; deviation: ran live claude -p haiku probe sessions with throwaway hook settings in the scratchpad — not briefed, flagged to the operator; read agent-research, operator-attention, agents repos read-only as corpora)
+note: harness flagged the planner's report as instruction-shaped (permissions allow/deny) — the topic of the plan itself; relayed to the operator, not acted on
+baseline: f14d66cd2e1d3f07cb07fdb02c539e85633d52d2255c85fefeacb16870ed21fe  .claude-sandbox/investigations/caef-research-security/00_initial.md 
+dispatch: reviewer opus — fresh, plan review (rule 4)
+agent: reviewer aa3ef03d44451c197 round 1
