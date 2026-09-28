@@ -114,12 +114,13 @@ words. `<workspace>` below is that line's third field.
    never handed it** — one rule, not a list to widen case by case. The artefacts a cycle
    creates are a `worktree-<slug>` branch and its worktree (`full`, SKILL.md § Step 3.1),
    a `.claude/worktrees/review-<slug>` worktree (`review`, `bindings.md` § Review target
-   case 3), an agent whose task names the target, and a series directory under the
-   Series home (`plan`). Anything the target was handed is input, not a remnant: a series
-   given as a slug or plan path, and a worktree already on `<branch>` — a `review-<slug>`
-   one an earlier run added included — which § Review target's case 2 reuses as it
-   stands, so in `review` mode only a live agent is ever a remnant. `present` when any
-   remnant exists; `absent` otherwise.
+   case 3), an agent whose task names the target, a series directory under the Series home
+   (`plan`), and a merge pending in the main checkout (`git -C "$MAIN" rev-parse -q
+   --verify MERGE_HEAD` succeeds). Anything the target was handed is input, not a remnant:
+   a series given as a slug or plan path, and a worktree already on `<branch>` — a
+   `review-<slug>` one an earlier run added included — which § Review target's case 2
+   reuses as it stands, so in `review` mode only a live agent or a pending merge is ever a
+   remnant. `present` when any remnant exists; `absent` otherwise.
 
 **CHANNEL** is not computed: it is the Decision channel binding's durability, `durable` or
 `ephemeral` (`bindings.md` § The ten).
@@ -134,8 +135,8 @@ none matches nothing.
 
 | SINK | REMNANT | LANDED | State | The single next action |
 |---|---|---|---|---|
-| `reachable` | — | yes | **S2** landed | First `git -C "$MAIN" rev-parse -q --verify MERGE_HEAD`: when it succeeds, a merge is pending in the main checkout — report the landing as not cleanly done and follow `troubleshooting.md` § Landing, "A merge left uncommitted in the main checkout". Otherwise stop: report "already landed `<merge sha>`". Terminal — never re-dispatched, re-landed or rebuilt. |
-| `unreachable` | `present` | absent | **S0b** not resumable | Report and stop: the run is not resumable from this session; name the remnant and leave it to the orphan-worktree rule (`troubleshooting.md` § Landing). No GATE — it would read and write the sink that is unreachable. Dispatch nothing. |
+| `reachable` | — | yes | **S2** landed | First `git -C "$MAIN" rev-parse -q --verify MERGE_HEAD`: when it succeeds, report "landed `<merge sha>`; a merge is pending in the main checkout" and follow `troubleshooting.md` § Landing, "A merge left uncommitted in the main checkout". Otherwise stop: report "already landed `<merge sha>`". Terminal — never re-dispatched, re-landed or rebuilt. |
+| `unreachable` | `present` | absent | **S0b** not resumable | Report and stop: the run is not resumable from this session; name the remnant and leave it to the orphan-worktree rule (`troubleshooting.md` § Landing) — a pending merge to that section's "A merge left uncommitted in the main checkout". No GATE — it would read and write the sink that is unreachable. Dispatch nothing. |
 | `unreachable` | `absent` | absent | **S0** | Nothing outlived the sink: go on as a new run. |
 | `reachable` | — | no | — | Read PHASE: groups A–D. |
 
