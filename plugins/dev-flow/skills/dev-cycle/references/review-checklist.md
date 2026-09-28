@@ -265,11 +265,19 @@ with no plugins/ tree most are vacuous:
       table, and CLAUDE.md's layout block where it enumerates skills, changed in this same
       commit.
 
+The FAIL line compares the shape itself at the merge base and at HEAD — plugin directories,
+skill directories (a `SKILL.md`), and marketplace entries (name and source) — so a
+description- or version-only edit to a `plugin.json` or `marketplace.json` stays silent.
+
 ```bash
 git -C $W diff --name-only $BASE...HEAD | grep -q '^plugins/.*/skills/[^/]*/SKILL.md$' && \
   { git -C $W diff --name-only $BASE...HEAD | grep -q '^README.md$' || echo "CHECK: skill added/changed — is a catalog edit needed?"; }
-git -C $W diff --name-only $BASE...HEAD | grep -q '\.claude-plugin/' && \
-  { git -C $W diff --name-only $BASE...HEAD | grep -q '^README.md$' || echo "FAIL: plugin shape changed without README"; }
+shape() {  # the marketplace's shape at revision $1, one line per element
+  git -C $W ls-tree -r --name-only $1 -- plugins | awk -F/ 'NF>=3{print "plugin-dir "$1"/"$2} NF==5&&$3=="skills"&&$5=="SKILL.md"{print "skill-dir "$1"/"$2"/"$3"/"$4}'
+  git -C $W show $1:.claude-plugin/marketplace.json 2>/dev/null | python3 -c 'import json,sys; [print("entry",p.get("name"),p.get("source")) for p in json.load(sys.stdin).get("plugins",[])]' 2>/dev/null
+}
+d=$(diff <(shape $(git -C $W merge-base $BASE HEAD) | sort -u) <(shape HEAD | sort -u) | grep '^[<>]')
+[ -n "$d" ] && { git -C $W diff --name-only $BASE...HEAD | grep -q '^README.md$' || { echo "FAIL: plugin shape changed without README"; echo "$d"; }; }
 ```
 
 ## 4. Tests where they exist
