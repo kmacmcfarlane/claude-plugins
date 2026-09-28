@@ -144,8 +144,8 @@ interrupted run up again; a line that is missing reads there as not recorded:
   (`bindings.md` § Decisions says what a run does with one), and an answered one is never
   raised again while its answer is in force (the same section).
 - `spent:` — written and read by `resume.md` (§ The GATE), and by nothing else.
-- `landed: <merge sha>` — SKILL.md § Step 5.5, written once Land's merge succeeds and
-  before `$WI done` / `$WI handoff`. It is the record's only evidence that a target
-  reached a merge, and SKILL.md § Step 6 reports it on the `verified:` line. `Leave the
-  branch` lands nothing and writes no `landed:` line.
+- `landed: <merge sha>` — SKILL.md § Step 5.3, written the moment Land's merge succeeds —
+  before the checks on the base, any push, cleanup and `$WI done`. It is the record's
+  only evidence that a target reached a merge, and SKILL.md § Step 6 reports it on the
+  `verified:` line. `Leave the branch` lands nothing and writes no `landed:` line.
 - `checks:`, the `changed:` block — `bindings.md` §§ Checks, Undeclared files

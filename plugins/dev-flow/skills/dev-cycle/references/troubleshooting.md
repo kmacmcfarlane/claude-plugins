@@ -58,8 +58,14 @@ names the symptom.
 - **The run was interrupted.** Re-invoke `/dev-cycle` on the same target: SKILL.md
   § Step 0.4 reduces the record and takes the one action its state names.
 - **A store-less run, re-invoked in a new session, finds what the old one left.** S0b: not
-  resumable from this session — report it and stop; `resume.md` § The reduction, REMNANT names what
-  counts, and the orphan-worktree rule below decides it. Nothing is re-dispatched over it.
+  resumable from this session — report it and stop; `resume.md` § The reduction, REMNANT
+  names what counts. A leftover worktree, branch or series goes to the orphan-worktree rule
+  below; a pending merge goes to "A merge left uncommitted in the main checkout" below,
+  since it may not be this run's. Nothing is re-dispatched over it.
+- **A run died after Land's merge, before its `landed:` line.** Its worktree may already be
+  gone, so the last `CLEAR` would read `STALE`. S2b: `resume.md` § The reduction, MERGED
+  finds the merge on the base whose merged parent is the `CLEAR`'s sha, and Land resumes
+  after its merge with that sha — never a second review or merge.
 - **A recorded dispatch's agent does not answer.** S3b: it counts as gone only after a
   SendMessage to its recorded id fails; then salvage what it left and re-dispatch on top of
   it, never over it.

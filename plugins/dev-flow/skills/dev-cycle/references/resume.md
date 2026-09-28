@@ -121,6 +121,21 @@ words. `<workspace>` below is that line's third field.
    `review-<slug>` one an earlier run added included — which § Review target's case 2
    reuses as it stands, so in `review` mode only a live agent or a pending merge is ever a
    remnant. `present` when any remnant exists; `absent` otherwise.
+10. **MERGED** — `yes` | `no`, computed when SINK is `reachable`, LANDED is absent, the
+    mode is `full` or `review`, and the last phase line is a `verdict: CLEAR`; `no`
+    otherwise. `yes` when a merge on the base has that verdict's `at <sha>` as its merged
+    parent — the landing merge, made and never recorded, because the run died between
+    SKILL.md § Step 5.3's merge and its `landed:` line:
+
+    ```bash
+    git -C "$MAIN" log --merges --format='%H %P' <sha>..<base> \
+      | awk -v s="$(git -C "$MAIN" rev-parse --verify -q <sha>^{commit})" 's != "" && $3 == s {print $1}'
+    ```
+
+    `<base>` is the Base binding. A printed sha is `yes`, and it is the merge sha; no
+    output, or a `<sha>` git cannot resolve, is `no`. It reads git alone, so it holds when
+    the workspace and its branch are already gone — where fresh() alone would read
+    `STALE` and re-review, and re-land, work that has landed.
 
 **CHANNEL** is not computed: it is the Decision channel binding's durability, `durable` or
 `ephemeral` (`bindings.md` § The ten).
@@ -133,12 +148,13 @@ none matches nothing.
 
 **Group P — preconditions**
 
-| SINK | REMNANT | LANDED | State | The single next action |
-|---|---|---|---|---|
-| `reachable` | — | yes | **S2** landed | First `git -C "$MAIN" rev-parse -q --verify MERGE_HEAD`: when it succeeds, report "landed `<merge sha>`; a merge is pending in the main checkout" and follow `troubleshooting.md` § Landing, "A merge left uncommitted in the main checkout". Otherwise stop: report "already landed `<merge sha>`". Terminal — never re-dispatched, re-landed or rebuilt. |
-| `unreachable` | `present` | absent | **S0b** not resumable | Report and stop: the run is not resumable from this session; name the remnant and leave it to the orphan-worktree rule (`troubleshooting.md` § Landing) — a pending merge to that section's "A merge left uncommitted in the main checkout". No GATE — it would read and write the sink that is unreachable. Dispatch nothing. |
-| `unreachable` | `absent` | absent | **S0** | Nothing outlived the sink: go on as a new run. |
-| `reachable` | — | no | — | Read PHASE: groups A–D. |
+| SINK | REMNANT | LANDED | MERGED | State | The single next action |
+|---|---|---|---|---|---|
+| `reachable` | — | yes | — | **S2** landed | First `git -C "$MAIN" rev-parse -q --verify MERGE_HEAD`: when it succeeds, report "landed `<merge sha>`; a merge is pending in the main checkout" and follow `troubleshooting.md` § Landing, "A merge left uncommitted in the main checkout". Otherwise stop: report "already landed `<merge sha>`". Terminal — never re-dispatched, re-landed or rebuilt. |
+| `reachable` | — | no | `yes` | **S2b** merged, not recorded | Land's merge was made; its `landed:` line was not. First `git -C "$MAIN" rev-parse -q --verify MERGE_HEAD`: when it succeeds, stop and follow `troubleshooting.md` § Landing, "A merge left uncommitted in the main checkout". Otherwise take SKILL.md § Step 5 up after its merge, with the merge sha MERGED printed: step 3's `landed: <merge sha>`, the checks on the base, a push only when the Terminal action binding or a recorded `answer:` names one (otherwise report the landing unpushed), then steps 4 and 5 on whatever still exists. Never a second merge, a review or a dispatch. |
+| `unreachable` | `present` | absent | — | **S0b** not resumable | Report and stop: the run is not resumable from this session; name the remnant and leave it to the orphan-worktree rule (`troubleshooting.md` § Landing). When the remnant is a pending merge, the report says "a merge is pending in the main checkout (one this run may not have made)" and leaves it to that section's "A merge left uncommitted in the main checkout" instead. No GATE — it would read and write the sink that is unreachable. Dispatch nothing. |
+| `unreachable` | `absent` | absent | — | **S0** | Nothing outlived the sink: go on as a new run. |
+| `reachable` | — | no | `no` | — | Read PHASE: groups A–D. |
 
 **Group A — PHASE `NONE` or `RIDERS`**
 
@@ -241,4 +257,4 @@ the old id stays in the generation, so a later resume probes both.
 Step 0's expected output names the state, the facts that selected it, and the action
 taken — e.g. `resumed at S10: verdict NEEDS_CHANGES round 2 at 1a2b3c is STALE (HEAD
 4d5e6f), ROUNDS UNDER; findings spent, re-review dispatched`. S0 says there was nothing
-to resume; S0b says what is not resumable and why.
+to resume; S0b says what is not resumable and why; S2b names the merge sha it found.
