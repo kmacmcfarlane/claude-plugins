@@ -10,14 +10,16 @@ card shape. Each group answers one question and sets one thing — merging them 
 | Field | Values | Who can supply it |
 |---|---|---|
 | Warmth | **warm** — the operator saw this decision's context in this session, and nothing below happened since; **cold** — any of the events below, or they have never seen it | you, from your own session; a cross-session collector, when one exists |
-| Events since the operator last touched it | a context compaction or clear; a different session or repo in between; a hand-off from another agent; **no operator turn since it was last shown** (you printed it while they were away) | you (for your own session); a collector (for others) |
+| Events since the operator last touched it | a context compaction or clear; a different session or repo in between; a hand-off from another agent; **the operator returned from an absence they stated** ("back after lunch", "off until tomorrow"); **no operator turn since it was last shown** (you printed it while they were away) | you (for your own session); a collector (for others) |
 | Age | time since the decision was raised | you, from the decision's record |
 | Operator's expected return | when they said they would be back, if they did | you, from what the operator said |
 
 Cold raises the level: a cold reader never gets a line-only decision (the line-only rule in
 SKILL.md § Levels), and a block adds a *context you may have lost* part. Re-explaining is
 triggered by **events**, not by elapsed time alone: a compaction five minutes ago makes a
-reader colder than an idle hour with nothing in between.
+reader colder than an idle hour with nothing in between. A stated absence counts because it is
+an event the operator announced, not a guess from the clock: a card they saw before leaving
+for the day is re-shown as a card when they are back.
 
 The last event is the commonest in a long session. A caller re-entered by background work can
 write several messages while the operator is away; a card in the first of them was printed,
@@ -49,10 +51,10 @@ is the fast tier: a card, or a line when the line-only rule holds.
 | Options diverge | the options lead to materially different outcomes / they converge (any would do) | you |
 | Options exist | yes / not yet — then it is an open question, not a decision | you |
 
-A thin basis or a new decision raises the level. When the missing fact could change the choice
-and finding it costs less than choosing wrong, offer **investigate first** as a priced option
-(its time and cost stated). Converging options are one of the conditions of the line-only
-rule (SKILL.md § Levels).
+A thin basis raises the level; so does a new decision, unless its options converge (any would
+do) — converging options stand in for a seen template in the line-only rule (SKILL.md
+§ Levels). When the missing fact could change the choice and finding it costs less than
+choosing wrong, offer **investigate first** as a priced option (its time and cost stated).
 
 ## D — What does waiting cost? → the order
 
