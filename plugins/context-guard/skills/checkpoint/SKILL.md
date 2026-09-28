@@ -2,7 +2,7 @@
 name: checkpoint
 description: Land the state of a long session before context is compacted or cleared — ask the operator the goal from here (continue / handoff), write the reasoning that exists only in this conversation as a delta over the session ledger, route every finding to the repo that owns it, write this session's own HANDOFF.md rehydration manifest (one per session, in the Claude config dir, never in a repo), record the checkpoint so the context gate stands down, then print the manifest's absolute path and hand the operator the decision. Use when the gate warns (DUE/HARD), when an auto-compaction is deferred, when the user says "checkpoint", "we're running out of context", "wrap this up", or before switching topics after a long thread. Also use at a stage boundary in a skill chain — the next skill reads its inputs from files this session already published — regardless of window health.
 disable-model-invocation: false
-allowed-tools: Read, Write, Edit, Glob, Grep, Bash, Agent, AskUserQuestion
+allowed-tools: Read, Write, Edit, Glob, Grep, Bash, Agent, AskUserQuestion, ListAgents
 argument-hint: "[continue | handoff] [then /next-skill] [optional focus]"
 ---
 
@@ -23,7 +23,7 @@ do Steps 0, 2, 4b only, then Step 7's close (the manifest path, the opener, and 
 handoff the continuation commands) — a lean checkpoint is when a handoff is likeliest and
 the next session has the least to go on. Keep the whole checkpoint under a screen.
 
-**Once this checkpoint is going ahead** — after Step 0 has been asked, or, under the
+**Once this checkpoint is going ahead** — after Step 0, or, under the
 mid-turn marker, after the `--check` below has confirmed it — tell the mid-turn check that
 a checkpoint is underway:
 
@@ -93,7 +93,8 @@ with `--checkpointing`, then:
 
 The operator holds the one input nobody else has. Ask exactly this (pre-drafted answers make
 the cheap path one click) — unless the argument already answers it: mode named → skip
-question 1; mode plus `then <next-skill>` → ask only question 2:
+question 1; mode plus `then <next-skill>` → ask only question 2; any `2:` / `3:` answers
+after it (the reply line below) → skip those too:
 
 1. **"What's the goal from here?"** — *continue* / *handoff*: *continue* keeps pulling
    this thread in this session (compact, then go on); *handoff* parks it, or moves it to a
@@ -105,6 +106,20 @@ question 1; mode plus `then <next-skill>` → ask only question 2:
    live use).
 3. **"How should the window be handled?"** — pre-draft the `/compact` guidance or the
    `/rewind` point so the answer is confirm/adjust, not compose.
+
+**Ask only what is still open.** Answers already in the argument, or given by a calling
+custody skill that answers 2 and 3 itself, stand; with nothing open, ask nothing and carry
+on. **A dialog only while nothing of this session's can be running**: ListAgents, or
+a dispatch with no completion notice yet, says whether an agent is. With one in flight, a
+dialog blocks its return until answered. Put the open questions as a numbered list last
+in the message instead, the inventory inside question 2. End it with one pasteable reply
+line pre-filled with your drafts — the argument as given (`then <next-skill>` and any
+focus kept), your drafted mode first when it named none, then the answers:
+`/checkpoint <argument> — 2: <nothing more | what I missed> 3: <ok | your guidance>` — and
+end the turn. The answers come back as that argument, never
+as free text: at HARD depth the prompt gate erases every prompt except `/checkpoint`,
+`/compact` and `/clear`. Run `--checkpointing` in the turn that carries the answers, not
+before this turn ends.
 
 **A stage boundary in a skill chain is a handoff trigger in its own right**, not a rescue for
 a degraded window. The test: the next skill reads its inputs from files this session already

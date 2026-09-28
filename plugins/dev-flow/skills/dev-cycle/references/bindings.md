@@ -21,7 +21,7 @@ order given, and asks the user only where the table says so.
 | **Base** | The branch the worktree starts from and the merge lands on | Named by the item or plan (implement's recorded base, re-verified); otherwise the default branch, § Base |
 | **Model floor** | The lowest tier any role on this change may run | A `model: <tier>` line in the item body, or the invocation's own words ("at least opus"); otherwise none |
 | **Record sink** | Where the run's record lines are appended (`record-lines.md`) | The item body when a store holds the target; otherwise always the scratchpad run record, `<scratchpad>/dev-cycle/<slug>/record.md`. Never a file in an investigation series: series files belong to `/implement` and are append-only. An item body is durable across sessions; **a scratchpad sink is session-scoped by contract**, so a store-less run's record cannot be read outside the session that wrote it (or one that inherits the same scratchpad) — Step 0's summary says so |
-| **Decision channel** | How a decision reaches a human, and the channel's **durability**: **durable** when the question outlives the session that raised it and a human answers it to whichever session reads it next (a caller's channel on a committed item), **ephemeral** when it exists only as a live prompt in this session. A caller states the durability with the channel; a channel supplied without it is a missing binding | AskUserQuestion, or § Decisions' numbered prose list for two or more — both **ephemeral**; written per the `operator-interaction:decisions` skill when the session lists it (§ Decisions) |
+| **Decision channel** | How a decision reaches a human, and the channel's **durability**: **durable** when the question outlives the session that raised it and a human answers it to whichever session reads it next (a caller's channel on a committed item), **ephemeral** when it exists only as a live prompt in this session. A caller states the durability with the channel; a channel supplied without it is a missing binding | AskUserQuestion, or § Decisions' numbered prose list for two or more or with an agent in flight — both **ephemeral**; written per the `operator-interaction:decisions` skill when the session lists it (§ Decisions) |
 | **Terminal action** | What Land does with a `CLEAR`, checked branch | Asked once at Land, § Landing |
 | **Series home** | Where the plan phase writes an investigation series | `$MAIN/.claude-sandbox/investigations/<slug>/`, the canonical path `/implement` reads |
 
@@ -176,9 +176,13 @@ Step 0 summary so the user can correct it. A non-default base is never chosen si
 ## Decisions
 
 A caller's channel is used as bound. Standalone: exactly one pending decision goes
-through AskUserQuestion, whose options carry the choices, recommended first; two or more
-go as one numbered prose list — one decision per number, each with its options and their
-impact, recommendation first — so the user answers by number.
+through AskUserQuestion, whose options carry the choices, recommended first — only while
+no agent of this session's can be running, since a dialog blocks an agent's return until
+answered. Two or more, or one raised while an agent may be in flight, go as one numbered
+prose list — one decision per number, each with its options and their impact,
+recommendation first — so the user answers by number. The cycle's own evidence is the
+record sink (an `agent:` line with no `return:` or `verdict:` after it is in flight);
+ListAgents covers the session's other agents.
 
 When the session lists the `operator-interaction:decisions` skill (a soft dependency),
 load it and write every decision-channel decision to it, whatever the channel. That covers
@@ -188,7 +192,8 @@ read-back on a one-way choice in a ⚠ decision. A caller's channel still decide
 decision goes and what the store records. Standalone, those decisions go as text per the
 skill, not through AskUserQuestion: a dialog cannot carry the floor, the hint or the echo.
 Step 0.2's brief confirmation, the checks question and Land's terminal-action question are
-not decision-channel decisions; they stay dialogs, as the skill allows.
+not decision-channel decisions; they stay dialogs, as the skill allows — the first two
+come before any dispatch, the third after a `CLEAR` with no agent left running.
 
 With the skill or without it: never ask in the same turn as a heavy analysis; end the
 turn with the analysis and ask in the next. Append each raised
