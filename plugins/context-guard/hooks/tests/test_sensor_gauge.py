@@ -366,8 +366,34 @@ class TestEpochDemotion(Base):
     def test_record_after_reset_is_exact(self):
         L.reset_epoch("s")
         epoch_at = L.load_state("s")["epoch_at"]
-        self.write_sensor("s", 30_000, 1_000_000, at=epoch_at + 1)
+        self.write_sensor("s", 30_000, 1_000_000, at=epoch_at + L.EPOCH_GRACE_S + 1)
         self.assertEqual(L.depth("/nonexistent", "s")[::3], (30_000, "exact"))
+
+    def test_record_inside_the_grace_is_window_only(self):
+        # A render that began before PostCompact stamped epoch_at and wrote
+        # just after it: the tee stamps the write, so `at` is past epoch_at
+        # but the count is the old epoch's (EPOCH_GRACE_S).
+        L.reset_epoch("s")
+        epoch_at = L.load_state("s")["epoch_at"]
+        for dt in (0.1, L.EPOCH_GRACE_S):
+            with self.subTest(dt=dt):
+                self.write_sensor("s", 950_000, 1_000_000, at=epoch_at + dt)
+                self.assertEqual(L.sensor("s"), {"window": 1_000_000, "at": 0})
+                self.assertEqual(L.depth("/nonexistent", "s")[:2], (0, 1_000_000))
+        self.write_legacy("s", 950_000, 1_000_000, at=epoch_at + 1)
+        self.assertEqual(L.depth("/nonexistent", "s")[:2], (0, 1_000_000))
+
+    def test_future_epoch_at_is_ignored(self):
+        # The clock stepped back after _reset stamped epoch_at: a cut more
+        # than FUTURE_SKEW_S ahead of now would demote every reading until the
+        # clock caught up, so the rule does not apply.
+        now = time.time()
+        L.save_state("s", {"epoch": 1, "epoch_at": now + L.FUTURE_SKEW_S + 600})
+        self.write_sensor("s", 300_000, 1_000_000, at=now - 5)
+        self.assertEqual(L.depth("/nonexistent", "s")[::3], (300_000, "exact"))
+        # Within the skew it still applies (a clock a little ahead is not a step).
+        L.save_state("s", {"epoch": 1, "epoch_at": now + 10})
+        self.assertEqual(L.sensor("s"), {"window": 1_000_000, "at": 0})
 
     def test_demoted_new_record_uses_post_boundary_transcript(self):
         self.write_sensor("s", 950_000, 1_000_000, at=time.time() - 10)

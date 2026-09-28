@@ -130,7 +130,9 @@ Three layers, escalating; the first two are hooks, the third is a skill.
    read both records and use the one with the larger `exact.at` (`lib_context.sensor`); a
    sensor file that is not a regular file, or whose `at` is more than 60s in the future, reads
    as absent. They never write the sensor file: a new epoch stamps `epoch_at` in the gate's
-   own state, and a record stamped at or before it counts as window-only. A transcript usage
+   own state, and a record stamped at or before it, or up to 2 s after it (`EPOCH_GRACE_S`:
+   a render that read its payload before the compaction can write just after it), counts as
+   window-only. An `epoch_at` more than 60 s ahead of the clock is ignored. A transcript usage
    count stamped at or before `epoch_at` is dropped the same way (depth unknown until the
    epoch's first response): Claude Code can run the queued opener's hook before the
    compaction's boundary line reaches disk. The gate publishes
