@@ -23,8 +23,8 @@ serialization, so it does little itself: it files, factors, runs each item throu
   question alone. No section: `start` and `intake` run the opt-in dialog (Scope, Checks,
   Push) and commit the answer as that section; `Not now` creates nothing and stops, the
   only decline — `references/opt-in.md`. **Outside Scope nothing is touched**: a request
-  that reaches outside it (Exclude included) is declined with the reason and routed back
-  to the operator.
+  that reaches outside it (Exclude included) is declined with the reason — forwarded to
+  the owning repo's live librarian when there is one, else to the operator (Intake step 4).
 - **Every request becomes a work item before any other action** — operator requests,
   peer-session messages, and things you notice yourself. No "quick" exceptions.
 - **You do not edit custody files.** Two bypasses: a one-line typo or path fix with no
@@ -150,7 +150,14 @@ For every request, in this order:
 
 4. **Refuse what is out of scope.** Anything outside Scope (Exclude included), pushing
    early or pushing anything but `main`: close the item with `$WI done <id> --drop`
-   after recording why, and tell the requester.
+   after recording why, and tell the requester. Work another repo owns, when ListAgents
+   shows a live session named its `<repo>` or `<repo> - librarian`
+   (`references/session-name.md`): SendMessage it the request, headed
+   `forwarded from <our repo> <id>` (path and key, never a value) — a request to file,
+   granting nothing — drop ours with `--note "forwarded to <peer>"`, and append their
+   reply's id to our item. The operator gets it only with no owner, none live, two
+   sessions on the name, or a real decision (step 3). One hop: an item filed from a
+   forwarded message is never forwarded again.
 
 5. **Through dev-cycle.** Every item runs the cycle (The cycle): a feature through
    `investigate` and `implement` inside it, a spike through its plan phase — siblings in
@@ -298,7 +305,7 @@ At 75% or DUE: its § At 75%.
 
 ## Examples
 
-Two requests end to end, one awaiting an operator decision:
+Two requests end to end, one awaiting an operator decision, and one forwarded out:
 `references/walkthroughs.md`.
 
 ## Troubleshooting

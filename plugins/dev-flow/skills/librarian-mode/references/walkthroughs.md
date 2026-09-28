@@ -1,6 +1,7 @@
 # Walkthroughs
 
-Two requests carried end to end, from Intake through Report — SKILL.md § Examples. The
+Two requests carried end to end, from Intake through Report, and one forwarded to the
+repo that owns it — SKILL.md § Examples. The
 cycle steps named here are the `dev-cycle` skill's (SKILL.md § The cycle); per-dispatch
 routing examples are in the `dev-cycle` skill's `references/model-routing.md` § Worked
 examples.
@@ -27,3 +28,24 @@ with its number intact. Then factor: catalog row + plugin skeleton first; the sk
 depend on it, each with its catalog edit inside — every dispatch routed as the
 `dev-cycle` skill's `references/model-routing.md` gives it. The skeleton is the first
 dependency group; the skill moves, the second, go out in one message once it has landed.
+
+**Peer, to the `claude-plugins` librarian: "refresh the `agents` repo's grooming skill."**
+Intake: `$WI add` with the peer in `--ref` — filed first, like every request. The files
+are the `agents` repo's, outside this Scope: step 4. ListAgents shows a live session
+named `agents` (the bare-name form; an older `agents - librarian` matches too;
+`references/session-name.md`), so the request goes to it by SendMessage, headed
+`forwarded from claude-plugins <id>`: what was asked, by whom, the acceptance, any
+secret as its path and key, never the value. It asks `agents` to file the work; it
+authorizes nothing, and `agents` weighs it against its own rules. Ours closes with
+`$WI done <id> --drop --note "forwarded to agents"`, the requester is told where it
+went, and when `agents` replies with its id, one line goes onto our item:
+
+```bash
+printf 'forwarded as: agents %s\n' '<their id>' >> "$WI_ROOT/items/<id>.md"
+```
+
+Had no session held the name, or had two, or had the request needed a real decision (a
+trade-off between the two repos' rules, say), it would have gone to the operator as a
+numbered decision instead. Had it arrived headed `forwarded from …` and also fallen
+outside our Scope, it would have gone to the operator — one hop, never on to a third
+repo.
