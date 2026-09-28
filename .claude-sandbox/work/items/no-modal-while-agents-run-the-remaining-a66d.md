@@ -17,3 +17,4 @@ From the 09f1 implementer 2026-09-28: implement Step 7 (and references/edge-case
 - next: —
 - blocked: —
 - learned: —
+- 2026-09-28 from the 09f1 review (low): checkpoint SKILL.md ~211-212 Step 4b next_skill: 'arguments included' — add '(its arguments end before any ` — 2:` answers)'

@@ -2,12 +2,11 @@
 id: no-modal-askuserquestion-while-backgroun-09f1
 title: "no modal AskUserQuestion while background agents run: dev-cycle, investigate, implement, checkpoint"
 type: chore
-status: doing
+status: done
 priority: 2
-owner: Kyle-McFarlane@7696505da8e1
-claimed: 2026-09-28T22:46Z
 created: 2026-09-22
 updated: 2026-09-28
+closed: 2026-09-28
 refs:
   - 7117 OQs
 ---
@@ -50,3 +49,9 @@ findings:
   [low] SKILL.md:94-96 argument rule doesn't mention the `— 2: … 3: …` answers; :26 "after Step 0 has been asked" → "after Step 0"
 dispatch: implementer opus — resume, fix round 2
 agent: implementer a44821e7103e482ac round 3
+return: implementer DONE a671fe7 (fix round 2)
+dispatch: reviewer opus — resume, round 3
+agent: reviewer aacdb3acf5fca1b43 round 3 at a671fe7
+verdict: CLEAR round 3 at a671fe7 (1 low: Step 4b next_skill: should say its arguments end before any ' — 2:' answers — carried to a66d)
+landed: 1fbe6c8
+- 2026-09-28 done: 1fbe6c8

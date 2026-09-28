@@ -2,12 +2,11 @@
 id: dev-cycle-briefs-small-wording-follow-up-2364
 title: "dev-cycle briefs: small wording follow-ups from the 774d and 775a reviews"
 type: chore
-status: doing
+status: done
 priority: 4
-owner: Kyle-McFarlane@7696505da8e1
-claimed: 2026-09-28T23:02Z
 created: 2026-09-28
 updated: 2026-09-28
+closed: 2026-09-28
 refs:
   - 774d, 775a reviews
 ---
@@ -29,3 +28,6 @@ return: implementer DONE 512b8bc (open q: §2/§4/§5 loops also quote non-ASCII
 changed: plugins/dev-flow/skills/dev-cycle/references/review-checklist.md, review-brief.md, agent-brief.md
 dispatch: reviewer opus — fresh (rule 4)
 agent: reviewer a8fe3b994145b377d round 1 at 512b8bc
+verdict: CLEAR round 1 at 512b8bc (2 low: HEAD^1 silently wrong after a fast-forward or a later commit; §3's first line and §2/§4/§5 loops still quote non-ASCII paths — filed as a follow-up)
+landed: 073a13f
+- 2026-09-28 done: 073a13f
