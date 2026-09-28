@@ -30,3 +30,8 @@ note: harness flagged the planner's report as instruction-shaped (permissions al
 baseline: f14d66cd2e1d3f07cb07fdb02c539e85633d52d2255c85fefeacb16870ed21fe  .claude-sandbox/investigations/caef-research-security/00_initial.md 
 dispatch: reviewer opus — fresh, plan review (rule 4)
 agent: reviewer aa3ef03d44451c197 round 1
+verdict: NEEDS_CHANGES round 1 at 00_initial.md f14d66cd (1 critical, 5 high, 9 medium, 4 low)
+findings: verbatim at .claude-sandbox/investigations/caef-research-security/reviews/plan-review-r1.md — critical: F3's Write rule falsely blocks held-run re-verify and every host (non-sandbox) research run (CLAUDE_CODE_TMPDIR unset); highs: unmatched tools pass (MCP, Agent, ToolSearch-loaded), Read denylist bypassable (/proc env, ~/.config…) and Q4 impact overstated, local lane's residuals understated, loopback deny is name-based (nip.io), probe claims lack recorded evidence
+librarian decision: no new `claude -p` probe sessions in the fix round (not operator-cleared); unrecorded probe facts are marked unverified and re-probing becomes a gate before F3/F4 build
+dispatch: planner opus — resume, fix round 1 (serial 01)
+agent: planner a533b9e5c8c4a9126 round 2

@@ -2,13 +2,12 @@
 id: decisions-v1-1-follow-ups-cold-re-show-s-6bff
 title: "decisions v1.1 follow-ups: cold re-show scope wording, session-end placement clause, in-situ render"
 type: chore
-status: doing
+status: done
 priority: 2
 parent: checkpoint-around-continuation-how-agent-d3ee
-owner: Kyle-McFarlane@7696505da8e1
-claimed: 2026-09-28T21:55Z
 created: 2026-09-24
 updated: 2026-09-28
+closed: 2026-09-28
 refs:
   - ed26 review round 2 lows
 ---
@@ -44,3 +43,6 @@ agent: implementer ae76ece7d4236a8f7 round 2
 return: implementer DONE 9dd5a24 (fix round 1; both optional lows taken)
 dispatch: reviewer opus — resume, round 2
 agent: reviewer a4e01e24c1b91bd05 round 2 at 9dd5a24
+verdict: CLEAR round 2 at 9dd5a24 (1 low: SKILL.md:156 'since they were shown' → 'since it was shown'; applied after landing as the one-line wording bypass)
+landed: 25a6b44 (+ cbc7509 one-word bypass for the review low)
+- 2026-09-28 done: 25a6b44; in-situ render pass split out
