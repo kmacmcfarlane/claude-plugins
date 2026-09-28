@@ -51,3 +51,4 @@ dispatch, with --flat; (5) self-consistent local estimate, with a documented /us
 Factoring, on approval: F1 parser+dedupe+price table+tests (base main); F2 report/CLI+skill doc+README catalog
 row (dep F1); F3 optional ccusage oracle test (dep F1). Routing: F1 opus (scripts/, judgement), F2 opus
 (catalog), F3 sonnet.
+- 2026-09-28 held: claude-analytics will notify at report parity; then close and retire usage-report (see 4b0e)

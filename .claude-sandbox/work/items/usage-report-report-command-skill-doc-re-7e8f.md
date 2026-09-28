@@ -30,3 +30,4 @@ entry) must be visible in the report — a separate row or a marker — not sile
 
 ## Hold 2026-09-19
 - Do NOT build: operator intends usage-report to retire into kmacmcfarlane/claude-analytics (peer agents-61); close when `ca report usage` reaches parity and the skill is removed (their Phase 3).
+- 2026-09-28 held: claude-analytics will notify at report parity; then close and retire usage-report (see 4b0e)
