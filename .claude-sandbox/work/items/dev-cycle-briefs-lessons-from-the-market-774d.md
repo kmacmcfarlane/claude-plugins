@@ -2,10 +2,12 @@
 id: dev-cycle-briefs-lessons-from-the-market-774d
 title: "dev-cycle briefs: lessons from the marketplace's first wave under the new routing"
 type: chore
-status: todo
+status: doing
 priority: 2
+owner: Kyle-McFarlane@7696505da8e1
+claimed: 2026-09-28T22:33Z
 created: 2026-09-24
-updated: 2026-09-24
+updated: 2026-09-28
 refs:
   - "peer: marketplace - librarian retrospective, 2026-09-24 (operator-requested)"
 ---
@@ -17,3 +19,9 @@ Input, not a request, from marketplace - librarian's first wave under c0d6's rou
 - next: —
 - blocked: —
 - learned: —
+target: branch worktree-dev-cycle-briefs-lessons-from-the-market-774d at .claude/worktrees/dev-cycle-briefs-lessons-from-the-market-774d, base main (49f9420)
+
+## Notes
+- 2026-09-28 claimed by Kyle-McFarlane@7696505da8e1
+dispatch: implementer opus — changes what agents are told (rule 2)
+agent: implementer a5d64b9cec46d140f round 1

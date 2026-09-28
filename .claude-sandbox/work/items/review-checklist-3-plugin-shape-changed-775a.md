@@ -2,8 +2,10 @@
 id: review-checklist-3-plugin-shape-changed-775a
 title: "review-checklist §3: 'plugin shape changed without README' fires on any .claude-plugin edit"
 type: bug
-status: todo
+status: doing
 priority: 3
+owner: Kyle-McFarlane@7696505da8e1
+claimed: 2026-09-28T22:33Z
 created: 2026-09-28
 updated: 2026-09-28
 refs:
@@ -17,3 +19,9 @@ Found by the 1a54 implementer 2026-09-28: dev-cycle references/review-checklist.
 - next: —
 - blocked: —
 - learned: —
+target: branch worktree-review-checklist-3-plugin-shape-changed-775a at .claude/worktrees/review-checklist-3-plugin-shape-changed-775a, base main (49f9420)
+
+## Notes
+- 2026-09-28 claimed by Kyle-McFarlane@7696505da8e1
+dispatch: implementer opus — executable checklist commands (rule 2)
+agent: implementer ae1c9c8cdf3769714 round 1
