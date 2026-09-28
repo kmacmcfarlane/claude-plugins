@@ -891,6 +891,28 @@ class TestSinkEdges(Base):
             f.write("not a dir\n")
         self.assertEqual(qb.sink_dirs(self.cfg), [])
 
+    def test_symlinked_sink_dir_is_followed(self):
+        # A samples dir that is a symlink (e.g. to a shared mount) is still the sink.
+        real = os.path.join(self.cfg, "elsewhere", "samples")
+        os.makedirs(real)
+        os.makedirs(os.path.join(self.cfg, "claude-analytics"))
+        link = os.path.join(self.cfg, "claude-analytics", "samples")
+        os.symlink(real, link)
+        self.assertEqual(qb.sink_dirs(self.cfg), [link])
+        with open(os.path.join(real, "2026-09-22.jsonl"), "w") as f:
+            f.write(self.line(NOW - 60, 12.0))
+        _, r, _ = self.run_qb()
+        self.assertEqual((r["source"]["reading"], r["windows"]["five_hour"]["used"]), ("sink", 12.0))
+
+    def test_empty_sink_dir_is_not_live(self):
+        d = self.sinkdir()
+        self.assertEqual(qb.sink_dirs(self.cfg), [d])
+        _, r, _ = self.run_qb()
+        self.assertEqual(r["signal"], "none")
+        self.sensor(five=(20.0, NOW + 3 * H), at=NOW)
+        _, r, _ = self.run_qb()
+        self.assertEqual((r["source"]["reading"], r["source"]["history"]), ("sensor", "samples"))
+
     def test_override_still_replaces_the_default(self):
         self.sinkdir()
         other = os.path.join(self.cfg, "elsewhere")
