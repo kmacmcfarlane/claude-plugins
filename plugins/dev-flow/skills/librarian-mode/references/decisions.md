@@ -76,8 +76,10 @@ renders what the operator read instead of composing it again.
   the durable record (the item, its series, its commits) and written as a revised card with
   `revised: <time> — backfilled` before it renders; a field no record holds is written and
   shown as `not recorded`, never invented at render time. A card with no `raised:` takes it
-  from the record: the time the headline was committed (`git -C "$MAIN" log --reverse
-  --format=%cI -S'decision N:' -- <item file>`, first hit).
+  from the record: the time the headline was committed — the commit time, not the ask
+  time, the closest the record holds — in the form `wi` parses (`TZ=UTC git -C "$MAIN" log
+  --reverse --date=format-local:%Y-%m-%dT%H:%MZ --format=%cd -S'decision N:' -- <item
+  file>`, first hit).
   A preference or an outside-authority decision writes its label on the `rec:` line.
 - **Revised:** when the options or the recommendation really change, or the skill's re-show
   check finds a stored field stale, write `decision N:` again with the new card and a
