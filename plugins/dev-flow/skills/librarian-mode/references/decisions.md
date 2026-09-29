@@ -75,11 +75,15 @@ renders what the operator read instead of composing it again.
   the store lacks — a headline-only entry, a block's missing `undo:` — is backfilled from
   the durable record (the item, its series, its commits) and written as a revised card with
   `revised: <time> — backfilled` before it renders; a field no record holds is written and
-  shown as `not recorded`, never invented at render time.
+  shown as `not recorded`, never invented at render time. A card with no `raised:` takes it
+  from the record: the time the headline was committed (`git -C "$MAIN" log --reverse
+  --format=%cI -S'decision N:' -- <item file>`, first hit).
   A preference or an outside-authority decision writes its label on the `rec:` line.
 - **Revised:** when the options or the recommendation really change, or the skill's re-show
   check finds a stored field stale, write `decision N:` again with the new card and a
-  `revised: <time> — <why>` line under it; the last one wins.
+  `revised: <time> — <why>` line under it; the last one wins. A revised or backfilled card
+  keeps the first card's `raised:` (`wi` reads the first one per N), so its age, its order
+  and *while it waited* still count from the ask.
 - **Re-show:** render the last stored card, adding only what the skill allows. *While it
   waited* is read from the record, never from memory: the item's lines written after the
   card's `raised:` time, and `git -C "$MAIN" log --since=<that time>` over the files the
@@ -87,8 +91,8 @@ renders what the operator read instead of composing it again.
 - **Open question:** `open question: <text>` in the item body. It closes with a later line:
   `open question: <text> → decision N` when it gains options and is raised as `decision N:`,
   or `open question dropped: <text> — <why>` when retired. The open ones are the `^open
-  question:` lines with no closing line, read from the record; each is listed under *Open
-  questions* on every cold re-show.
+  question:` lines without `→` and with no later closing line for the same text, read from
+  the record; each is listed under *Open questions* on every cold re-show.
 - **Answered:** `answer N: <the reply> (read as: <the echo's reading>)`. The reading is
   recorded because a natural-language reply can be misread, and the echo is what the
   operator saw.

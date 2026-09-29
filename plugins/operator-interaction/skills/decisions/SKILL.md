@@ -138,6 +138,9 @@ placed by its most pressing member, and the same precedence holds inside a group
 3. **Waiting cost** — what it blocks, and who else waits on it.
 4. **Oldest first**; a tie goes to the lower number.
 
+On a cold re-show, a deferred decision whose wake has not come goes last
+(`references/rendering.md` § Re-show with what changed).
+
 ## Several decisions in one message
 
 The decisions close the message — after any report, push outcome or summary:

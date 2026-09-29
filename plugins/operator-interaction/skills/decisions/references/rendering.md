@@ -188,7 +188,8 @@ open decision the reader is cold on at card level or above, never as a line only
 paged (SKILL.md § Levels, the line-only rule), each opening with what changed while it
 waited (*nothing changed* is worth saying). A deferred decision whose wake has not come is a
 card too, opening with its wake: *deferred until the release; no answer needed before then*;
-it goes after every decision still waiting on an answer, so paging reaches it last. Open
+it leaves its group and goes last, in the cards and the list alike, so paging reaches it
+last. Open
 questions still open are listed under *Open questions*. A cold re-show's heading has one
 form: **Decisions** — *N open · shown again after a context reset · M shown in full · one ⚠
 one-way*, naming what made the reader cold, and dropping *M shown in full* when nothing is
