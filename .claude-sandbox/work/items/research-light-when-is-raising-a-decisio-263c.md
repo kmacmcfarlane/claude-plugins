@@ -3,13 +3,12 @@ id: research-light-when-is-raising-a-decisio-263c
 title: "research (light): when is raising a decision to the operator warranted, and where should the boundary sit"
 short_display_name: decision-raising boundaries
 type: spike
-status: doing
+status: done
 priority: 1
 parent: librarian-where-the-line-sits-between-ju-8dee
-owner: Kyle-McFarlane@7696505da8e1
-claimed: 2026-09-29T06:51Z
 created: 2026-09-29
 updated: 2026-09-29
+closed: 2026-09-29
 refs:
   - operator 2026-09-29
 ---
@@ -42,3 +41,6 @@ dispatch: planner opus — resume, serial 02
 serial 02 written: build caps: (f) raise on a high, grant low-impact rounds within a budget (lean, 8 of 9; asks as (d) until the operator sets a budget); (e) 4 of 9 with real costs, needs the operators ruling; plan caps stay (e)
 dispatch: plan reviewer opus — fresh, round 3
 agent: a0cafeaee70e900b6 (plan reviewer r3)
+plan review r3 CLEAR (2 lows for 8dee to fold: row 30 is determinate, (b) matches 4 of 9; (f) must raise as (d) when its budget is spent — G5)
+closed on its series 00-02 + reviews r1-r3; input to 8dee; pointers owed to agents and operator-attention (in delta 01)
+- 2026-09-29 done

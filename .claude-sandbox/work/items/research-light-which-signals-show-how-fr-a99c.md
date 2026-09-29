@@ -40,3 +40,6 @@ agent: a64a2778a457cb64d (plan reviewer r2)
 plan review r2 NEEDS_CHANGES (1H 2M 1L): H with D3 (b) (no re-printing while away) 84-86 would have been cards, so D1 (b) catches nothing extra — make (a)/(z) conditional on D3, gain inferred; M the stated D1 (b) scores 43 cold / 8 warm (1 of 44 re-shown warm), 42/9 was an unstated 5-turn variant; M D4 restated against D1 (b), homes 76bc/R48; L range 7-9 of 20
 CORRECTION owed to the operator: "catches exactly 84-86" — the no-re-printing-while-away rule alone would have caught 84-86
 dispatch: planner opus — resume, serial 02
+serial 02 written: D3 (b) recommended (re-show as cards at the first turn back after being away; all 44 re-shown cold, all 9 lost-context covered); D1 becomes (c) a later refinement once 0999 stores seen N: and 76bc/R48 publish turn times; D4 (b) send requirements to 76bc/R48
+dispatch: plan reviewer opus — fresh, round 3
+agent: a475313e4557dda4d (plan reviewer r3)
