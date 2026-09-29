@@ -3,12 +3,11 @@ id: present-tonight-s-research-to-the-operat-2081
 title: "present tonight's research to the operator: the key findings and considerations, before the pyramid decision turn"
 short_display_name: research briefing for the operator
 type: chore
-status: doing
+status: done
 priority: 0
-owner: Kyle-McFarlane@7696505da8e1
-claimed: 2026-09-29T17:05Z
 created: 2026-09-29
 updated: 2026-09-29
+closed: 2026-09-29
 refs:
   - operator 2026-09-29
 ---
@@ -29,3 +28,5 @@ form: a Claude Docs document started from the Docs artifact type (quickstart 202
 dispatch: brief writer opus — drafts the briefing markdown from the closed series and the store (judgement on what matters)
 agent: a1402e59185a5834c (brief writer)
 briefing delivered 2026-09-29 as the Claude Docs document "Decision Handling Research Briefing": https://claude.ai/code/artifact/22c2745f-4b0a-4030-85dd-5b5ac0369287 (draft at scratchpad briefing-2081.md, ~3.5K words; 14 sections filled, rev 15); awaiting the operators follow-ups before the pyramid (acceptance 6)
+closed 2026-09-29: briefing delivered (doc 22c2745f, rev 15); no follow-ups in chat or doc comments at the pyramid turn (doc comment query empty); later follow-ups are answered under 69ee
+- 2026-09-29 done

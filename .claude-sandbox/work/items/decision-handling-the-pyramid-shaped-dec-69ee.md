@@ -3,12 +3,14 @@ id: decision-handling-the-pyramid-shaped-dec-69ee
 title: "decision handling: the pyramid-shaped decision turn on the decisions skill and its future"
 short_display_name: decision-handling pyramid
 type: chore
-status: todo
+status: doing
 priority: 1
 deps:
   - present-tonight-s-research-to-the-operat-2081
   - librarian-where-the-line-sits-between-ju-8dee
   - research-light-which-signals-show-how-fr-a99c
+owner: Kyle-McFarlane@7696505da8e1
+claimed: 2026-09-29T18:48Z
 created: 2026-09-29
 updated: 2026-09-29
 refs:
@@ -128,3 +130,6 @@ decision 128: When do the review-only agents get read-only tools (a88a Q1)? — 
   rec: (a) · basis partial — limits are for containment first; a reviewer needing Write for a scratch file would return BLOCKED
 pyramid doc: https://claude.ai/code/artifact/73ea6f51-443e-45ae-8af0-61627e3f36af (Claude Docs project 73ea6f51-443e-45ae-8af0-61627e3f36af, prose root 011f43e0-dda4, rev 9; Answer column enum b2c061f0-12a1; one comment on 110 (a), thread 114480b2-fb9d, asking whether the build-here-now split is what the operator meant)
 render notes: cards rendered by the librarian from the reviewed series, no fresh review of the render (quota hold until the dev-flow update); 98's (b)/(c) worded from the stored options (as today / per-series made visible); 128 (b) reworded "now, as its own change" since F1 (900a) landed; 123 (a) and (z) note the trial is what landed with b3c5
+
+## Notes
+- 2026-09-29 claimed by Kyle-McFarlane@7696505da8e1
