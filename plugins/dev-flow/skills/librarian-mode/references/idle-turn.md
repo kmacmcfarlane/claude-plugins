@@ -66,9 +66,11 @@ Groom                                               Work
   spare time", which is not parked (below) and not a `hold` item.
 
   A decision's Groom row stays one line: its number, the `decision N:` question and its
-  recommendation, the headline's `[recommended]` option (or the label saying there is
-  none) — one row per decision, never several folded into one row. A deferred one also
-  shows its last `wake N:`, and stays a Groom row until the wake comes.
+  recommendation as the headline names it — `[recommended]` or an older mark, or a
+  preference or authority label, read as the `work-items` skill's format reference,
+  § Operator questions, lists them — one row per decision, never several folded into one
+  row. A deferred one also shows its last `wake N:`, and stays a Groom row until the wake
+  comes.
   With the `operator-interaction:decisions` skill loaded, a decision is put to the operator
   in full only when `decisions.md` § The Report's item 4 selects it (raised since the last
   Report, its wake come, not yet seen, after Rehydrate, a ⚠ one on first showing or to a

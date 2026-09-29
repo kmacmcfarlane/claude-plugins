@@ -279,15 +279,39 @@ questions starting with punctuation (`- [ ] x`) export quoted, `GROOMING:
 ## Operator questions: `decision N:` / `answer N:`
 
 The canonical marker for a question to the operator is a body line that
-starts `decision N: <one line>`; the reply is a body line `answer N:
-<reply>`, anywhere in the same item's body (the librarian-mode Report
-convention). A decision is unanswered while its item has no `answer N:`
+starts `decision N: <one line>`; the reply is a body line
+`answer N: <reply>`, anywhere in the same item's body (the librarian-mode
+Report convention). A decision is unanswered while its item has no `answer N:`
 line with the same N. Both must start the line — `- decision 4:` is not a
 marker — and a line inside a fenced code block is text, not a marker. N is
 never reused across the store; a revised question keeps its number: add a
 new `decision N:` line (or edit the old one in place) — when N repeats,
 `needs-input` shows the last line's text. `answer 40:` answers decision 40
 only, never decision 4.
+
+The headline is one physical line: `wi` reads its text to the end of the
+line, so a headline wrapped over two lines loses everything after the
+break. Its canonical form lists the options in letter order and marks the
+recommended one with `[recommended]` right after it:
+
+```
+decision N: <question> — options: (a) … [recommended] | (b) … | (z) decide later
+```
+
+**Reading the recommendation from a headline.** Older headlines mark it
+other ways, and a reader of the store (the `work-review` skill, the
+librarian's Groom table) takes each as the same mark:
+
+- `[recommended]`, or a bracket that opens with it — `[recommended: why]`,
+  `[recommended by the planner]` — after an option;
+- `(rec)`, or `(plan rec)` with or without a reason, after an option;
+- `Rec (x)`, `Rec x`, or `rec: (x)`, naming the option's letter;
+- the word `recommended` beside an option.
+
+A headline with none of these may carry a label in their place — *your
+preference — no recommendation*, or *no recommendation — outside my
+authority* — and a reader shows that label. Only a headline that names
+neither a recommendation nor a label reads "no recommendation recorded".
 
 `wi needs-input` lists every open item awaiting the operator: each grooming
 item (with its questions) and each unanswered `decision N:` (with N and its

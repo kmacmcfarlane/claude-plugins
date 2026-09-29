@@ -213,8 +213,10 @@ round — carries its justification, with the skill or without it, so the user c
 `Failure:` sentence of the last review's `findings:` block); and **what the round costs** —
 about how long a round has taken in this run, its quota share when a reading exists, and
 one more answer from the user if the round does not clear. The `decision:` line carries
-both in its question, so it can still be put verbatim. With the skill loaded, its floor
-for a round ask governs how this is written.
+both after its question, so it can still be put verbatim — except under a caller that
+stores a card (librarian-mode), where the card's own lines carry them and the headline
+keeps the question alone. With the skill loaded, its floor for a round ask governs how
+this is written.
 
 A **pending** decision — a `decision:` with no `answer:` — never makes a run wait on a
 question this session is not asking: one whose prompt is gone, or one on a durable

@@ -245,10 +245,16 @@ Step 6 does.
 recommendation, its options in (a), (b), (c) order with their impact and the recommended
 one in bold, never moved first — so the operator answers "2: b". A lone decision is still
 numbered; a number is never reused, and an unanswered one keeps it. The counter lives in
-the store: raising a decision appends `decision N: <question> — options: (a) …
-[recommended] | (b) … | (z) decide later` to its item's body (the `dev-cycle` skill's
-`references/record-lines.md` `decision:` line, numbered), and the reply
-`answer N: <reply>`; on re-entry continue from the highest N (Rehydrate step 3), else 1.
+the store: raising a decision appends one line to its item's body — one physical line,
+never wrapped, since `wi` reads the headline only to the line's end — in the form of the
+`dev-cycle` skill's `references/record-lines.md` `decision:` line, numbered:
+
+```
+decision N: <question> — options: (a) … [recommended] | (b) … | (z) decide later
+```
+
+The reply is `answer N: <reply>`; on re-entry continue from the highest N (Rehydrate step
+3), else 1.
 
 With the `operator-interaction:decisions` skill loaded, the four lines stay, and each
 `decisions needed:` names only its decision numbers. One decisions block, written per that
