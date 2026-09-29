@@ -2,12 +2,11 @@
 id: research-how-decision-makers-control-whi-d618
 title: "research: how decision-makers control which decisions reach them and which are handled first"
 type: spike
-status: doing
+status: done
 priority: 1
-owner: Kyle-McFarlane@7696505da8e1
-claimed: 2026-09-29T06:09Z
 created: 2026-09-29
 updated: 2026-09-29
+closed: 2026-09-29
 refs:
   - operator 2026-09-29T05:53Z
 ---
@@ -52,3 +51,5 @@ decision 105: The decision-surfacing research (d618) hit the review cap with two
   if left: 8dee could misweigh two past cases (a49b's unscored finding; caef's r5 stop, which the operator in fact saw as decision 101) and the lean's counts (1-4 raises, not 2-3) — unless 8dee reads review r4, which (a) requires
   round costs: one planner round plus a fresh reviewer, about 15-20 minutes and roughly 0.5-1% of weekly quota at the current xhigh sub-agent effort; none of the operator's time
   rec: (a) · basis strong — review r4 states each correction exactly; 8dee reads d618 anyway
+answer 105: a (read as: close the series; 8dee takes review r4 as known corrections its planner must fold in)
+- 2026-09-29 done

@@ -110,3 +110,13 @@ decision 104: May a local research lane read the operator's Claude session trans
   stakes: reversible; secrets printed in past sessions could reach an agent that can fetch (narrowed, not closed)
   why now: blocks F3's transcript carve-out; operator-attention research mines transcripts
   rec: (a) · basis partial — carve-out rules in 03/04; reviews r3-r5
+answer 102: a (read as: per-run URL mode, open by default; only the operator's user-level file allows; repo files only add denies; LAN denied unless the operator's file allows)
+answer 103: a (read as: bounded live probes allowed for the build: haiku, throwaway dir, temporary --settings, public test URLs and a closed loopback port, at most about 15 sessions, all kept in evidence)
+reply 101 (2026-09-29T15:59Z): tell me — "what's the advantage of limiting tool usage? Does it save on money? enforce 'stay in your lane, let the other agent do the analysis' separation?" (read as: tell me the purpose and cost effect of the tool limits; re-shown with that added)
+  revised: 2026-09-29T15:59Z — added: the limits are for security first (no single worker holds private data, untrusted content and a way to send data out); lane separation is the mechanism; money saved is small (fewer tool definitions per turn)
+answer 104: reframed as decision 108 — the operator: "I often DO want to research past conversations. I either want to explicitly allow it or make it a specific class of research and/or an agent persona for that specifically. What's your recommendation? A separate agent for that one type of task might be less efficient than one that also is doing the web research, but I want your opinion on that"
+decision 108: How should research over the operator's past conversations work? — options: (a) a standing opt-in in the operator's policy file plus a dedicated conversation-research lane: its own agent (sonnet, medium) with file tools and a read-only search shell over the declared transcript folders, no web tools, a local-only verifier, the current session's log excluded, findings scanned for secrets before landing [recommended] | (b) per-run opt-in: each run names the folders it may read (the old 104 a) | (c) one combined worker that reads transcripts and the web | (z) decide later
+  raised: 2026-09-29T15:59Z
+  stakes: reversible; what a hijacked worker could leak from the operator's logs
+  why now: the operator often wants conversation research; blocks the guard's transcript rules
+  rec: (a) · basis strong — it keeps the logs away from any agent that can send data out, at sonnet cost
