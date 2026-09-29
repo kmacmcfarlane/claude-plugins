@@ -34,3 +34,5 @@ decision 109: What should the new role agents be called? — options: (a) role n
   stakes: reversible but wide (ten files, the pin test, four docs and every dispatch site name them; a rename after F2 lands touches all of them)
   why now: the files are built and in review; answering before they land avoids a rename
   rec: (a) · basis partial — names say the job and how hard it digs; efforts can change later without renaming files
+review r1 CLEAR at b0af914 (2 lows, 2 nits carried into F2 b3c5: forward refs resolved by F2; README implementer row; subTest placement; SUPPORTED_KEYS experimental); smoke dispatches confirmed dev-flow:scribe on sonnet low and dev-flow:cross-checker-deep on fable xhigh
+librarian ruling: hold the merge until decision 109 (names) is answered, to avoid a rename; F2 builds now on top of this branch

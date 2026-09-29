@@ -40,3 +40,8 @@ dispatch: plan reviewer opus — fresh, round 1
 agent: a3276e2f014e57e25 (plan reviewer r1)
 plan review r1 NEEDS_CHANGES (1H 6M 6L): 00 intact; H trivial docs in another repo settled silently — must be a question on L3; M apex (a)/(z) contradict layer depends-on lines; M every option bolded (ruled option order); M a filed reply is not acceptance (forward can be lost); M walkthroughs conflict source misattributed; M cross-plugin path in F-list; M L2 (b) changes answer 30 and extends 88 (b) unsaid, 9 of 9 assumes a grant never in force; M trivial-docs definition not offered as a choice; lows
 dispatch: planner opus — resume, serial 01
+serial 01 written: apex (b); L1a class table; L1b trivial docs = prose-only (new); L2 plans on high impact, builds one round inside a grant (names rulings 30 and 88 b); L3a other-repo trivial docs posed as a question (rec: this repo only); L3b forward custody until landed or dropped; L4 impact tiers; L5 keyed to L1a
+dispatch: plan reviewer opus — fresh, round 2
+agent: af37de614a49fb81f (plan reviewer r2)
+plan review r2 NEEDS_CHANGES (0H 2M 1L): M "session end" is days for a standing librarian (this one ran 09-22..09-29; compactions 7h-4d apart): state the rate or choose a more frequent bound; M L3a: the case behind 97 (a skill refresh) falls outside every option — disclose; "within the owners next turn" unsupported; L1b vs L3a disagree on whose trivial test governs; L apex (c) vs L5 cell
+dispatch: planner opus — resume, serial 02

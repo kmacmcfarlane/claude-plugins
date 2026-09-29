@@ -21,3 +21,7 @@ Build F2 of .claude-sandbox/investigations/2eb7-effort-routing (00-04, CLEAR): d
 - next: —
 - blocked: —
 - learned: —
+acceptance added from 900a review r1: model-routing.md gains § Profiles (resolves the F1 description pointers); README implementer row adds "and for wording and docs elsewhere"; test_agents.py moves self.fields(stem) inside subTest at :299/:313/:326; SUPPORTED_KEYS gains experimental
+dispatch: implementer opus — routing rule text across dev-cycle and librarian-mode (routing rule 2); branched from worktree-dev-flow-ten-role-agents-with-pinned-mod-900a (F1 unmerged pending 109)
+note: not claimable until F1 is done (dep); built ahead on the F1 branch by librarian ruling, claim at F1 landing
+agent: a3e2781fc5387b84c (implementer r1)
