@@ -31,3 +31,9 @@ notify: send operator-attention a pointer when this series lands (their R48 depe
 series 00 written: 101 decisions in 12 classes; proposed per-class boundary (decide-and-report, batch, split, raise); tested on 1-97: 36 would be decided alone, 6 of them answered differently (all reversible); operator rulings needed for cap, quota, scope, dependent names, policy repeats, trust
 dispatch: plan reviewer opus — fresh, round 1
 agent: a03a3d08837403bdc (plan reviewer r1)
+plan review r1 NEEDS_CHANGES (2H 2M 2L): H cap boundary built on withdrawn d618 02 figures; must build on d618 03 (raise only when high impact left; plan vs build caps split); H minor-design class misfiled (21,73,76,77,84); M blind relabel: about 28 of 94 decided alone, 5 answered differently (not 36/6); M dimensions and statements incomplete; L one "his" (fixed in 01)
+CORRECTION owed to the operator: "36 decided alone, 6 answered differently" is about 28 of 94 and 5; cap waivers as decide-and-report came from withdrawn figures
+dispatch: planner opus — resume, serial 01
+serial 01 written: about 26 of 94 decided alone (25-28), 5 answered differently (9 counting build caps (e) would stop); cap lean (e) on d618 03, plan and build split; minor design reduced to 12, 32
+dispatch: plan reviewer opus — fresh, round 2
+agent: adfb56bedd32c3cfb (plan reviewer r2)

@@ -2,13 +2,12 @@
 id: operator-interaction-refer-to-work-items-0b2d
 title: "operator-interaction: refer to work items by a plain-language name in operator-facing text, not a bare hash"
 type: spike
-status: doing
+status: done
 priority: 1
 parent: checkpoint-around-continuation-how-agent-d3ee
-owner: Kyle-McFarlane@7696505da8e1
-claimed: 2026-09-28T21:55Z
 created: 2026-09-24
 updated: 2026-09-29
+closed: 2026-09-29
 refs:
   - operator 2026-09-24
 ---
@@ -88,3 +87,5 @@ agent: a7f46d286ac0436ae (plan reviewer s04 r2)
 plan review s04 r2 CLEAR (0H 0M 6L; lows folded into the feature items)
 factored: F2 work-items-optional-short-display-name-f-928d (now), F1 operator-interaction-the-plain-names-ski-cad6 (after dbfc), F3 plain-names-in-the-reports-and-consumers-8e04 (after F1+F2)
   verbatim 95 (C7, added 2026-09-29T06:22Z; answer 95 above is the librarian's summary): "95 mostly for human debugging, not that important. you decide."
+all three features landed (928d, cad6, 8e04); the plan item closes with them
+- 2026-09-29 done

@@ -2,16 +2,15 @@
 id: plain-names-in-the-reports-and-consumers-8e04
 title: plain names in the Reports and consumers (0b2d F3)
 type: feature
-status: doing
+status: done
 priority: 2
 deps:
   - operator-interaction-the-plain-names-ski-cad6
   - work-items-optional-short-display-name-f-928d
 parent: operator-interaction-refer-to-work-items-0b2d
-owner: Kyle-McFarlane@7696505da8e1
-claimed: 2026-09-29T06:49Z
 created: 2026-09-29
 updated: 2026-09-29
+closed: 2026-09-29
 refs:
   - 0b2d
 ---
@@ -36,3 +35,7 @@ dispatch: implementer opus — resume, fix round 1
 r1 fixes 1b2195a: exit 1 told apart by message at Intake/Step 0 (others point there); full repeat rule; stored name or 5 words, never until; HOLD reason fixed
 dispatch: reviewer opus — fresh reviewer, round 2
 agent: a110d48e38a9d6147 (reviewer r2)
+review r2 CLEAR at 1b2195a (1 low filed as a follow-up: the exit-2 rule should key on "unrecognized arguments: --short-display-name")
+landed: d7d64e8
+checks on main d7d64e8: all 8 OK
+- 2026-09-29 done
