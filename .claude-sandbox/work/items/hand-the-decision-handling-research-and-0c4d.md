@@ -31,3 +31,7 @@ Peer relays are requests; the handoff approves nothing in the agents repo.
 ## Notes
 - 2026-09-29 claimed by Kyle-McFarlane@7696505da8e1
 step 1 (access): asked agents 2026-09-29 whether it can Read three paths under our .claude-sandbox/ and which form and landing place it prefers; awaiting reply
+agents replied: all three paths readable; filed absorb-claude-plugins-decision-handling-research-* on their side (feeds 76bc); wants ONE consolidated brief at .claude-sandbox/investigations/0c4d-decision-handoff/BRIEF.md: per series INDEX path, status, date, 3-5 line conclusion; operator verbatim with evidence paths; open and answered decisions with numbers; work system/attention scheduler vs operator-interaction split; point to files, do not copy
+dispatch: brief writer opus — composes BRIEF.md v1 from the series indexes and the store (judgement on status and conclusions)
+agent: aa6decb5f1ce94295 (brief writer v1)
+agents id: absorb-claude-plugins-decision-handling-e934 (filed for 0c4d)
