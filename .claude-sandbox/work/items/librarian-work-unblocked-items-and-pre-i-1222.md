@@ -7,7 +7,7 @@ priority: 0
 owner: unknown@360f41058e92
 claimed: 2026-09-22T02:36Z
 created: 2026-09-22
-updated: 2026-09-28
+updated: 2026-09-29
 refs:
   - operator 2026-09-22
 ---
@@ -15,8 +15,8 @@ refs:
 Operator 2026-09-22: an idle librarian should work new items as they arrive when no operator decision is needed (doc-only requests nearly always; skill changes often; implementation or complex skill changes warrant an investigation round). Investigations can run without waiting on the operator, so when the operator returns the decisions are ready to present. Today items queue up waiting for attention when many are unblocked or at least investigable. Question: how to achieve this without accidentally running the operator's quota into the ground. Acceptance: an investigation series with findings and a recommendation (routing rules for what proceeds unattended vs what waits; quota guards; how investigations pre-run and park their decisions), presented to the operator; decisions raised by number.
 
 ## Handoff
-- doing: session e9bb00fc (2026-09-24..28) landed c0d6 routing, 56e7, b112, ed26 v1.1, 8de3, f4f8 wi estate + work-review, adef, 2ec4, 9a3a; c121/8519/ba8f landed earlier
-- next: after compaction: status report on top-priority work (operator: quota available again); the old P2/P3 queue list here is stale — rank from wi next and wi needs-input
+- doing: session e9bb00fc 2026-09-28/29 (post-compaction): landed and pushed e115+0156, d1e3, 6bff, 1a54, 09e1, 1fd2, 5dbf, 1a14, 775a, 774d, 16da, 6118, 358a, 428e (closes 5039), 09f1, 2364, f6fd, 5a18, b527, d639, fabd, aa14, 533c, a66d; spikes bace and 0b2d CLEAR (0b2d waits on decisions 90-95); caef blocked at the review cap (decision 96); 3460 CLEAR at 902e71e, held for decision 97
+- next: operator answers 89-97; on 97(a) land 3460 (worktree kept); on 90/91 build 0b2d's F1/F2; on 96(a) one more caef planner round + fresh reviewer + fable second opinion; else continue the queue (da89, b514, 6fea, 16da-style follow-ups); hold on unattended dispatch lifted for this week (answer 88 b), stop at the 15% weekly reserve
 - blocked: —
 - learned: —
 
