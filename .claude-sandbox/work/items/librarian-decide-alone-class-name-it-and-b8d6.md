@@ -17,3 +17,4 @@ Operator 2026-09-22 (1222 gate, G5): the class of reversible, low-impact, high-p
 - next: —
 - blocked: —
 - learned: —
+folded into policy spike 8dee 2026-09-29 (operator reply to 97); its evidence base (decision N / answer N history on disk) is shared with spike 5140

@@ -4,8 +4,6 @@ title: "librarian-mode SKILL.md: the three deferred 6fea render-pass gaps"
 type: chore
 status: todo
 priority: 3
-deps:
-  - librarian-mode-route-out-of-scope-work-t-3460
 created: 2026-09-29
 updated: 2026-09-29
 refs:
@@ -19,3 +17,4 @@ Deferred from 6394 (findings 18 push-outcome template, 19 verified: check names,
 - next: —
 - blocked: —
 - learned: —
+dep on 3460 removed 2026-09-29: 3460 parked behind policy spike 8dee; the shared file (LM/SKILL.md) is a merge concern, not a dependency

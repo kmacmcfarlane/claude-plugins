@@ -2,12 +2,11 @@
 id: librarian-mode-route-out-of-scope-work-t-3460
 title: "librarian-mode: route out-of-scope work to the owning live librarian, not the operator"
 type: feature
-status: doing
+status: parked
 priority: 2
-owner: Kyle-McFarlane@7696505da8e1
-claimed: 2026-09-28T23:16Z
+parked: answer 97 reframed it as policy spike 8dee; the CLEAR branch at 902e71e and its worktree are kept until 8dee decides land, amend or drop
 created: 2026-09-22
-updated: 2026-09-28
+updated: 2026-09-29
 refs:
   - "peer: agents - librarian (uds 122.sock); opencode-11 relay; agents investigations/downtime-grooming-workflow/00_initial.md"
 ---
@@ -69,3 +68,5 @@ return: implementer DONE_WITH_CONCERNS 902e71e (fix round 3; landing still waits
 dispatch: reviewer opus — resume, round 4 (the cap)
 agent: reviewer a99a1620600db715f round 4 at 902e71e
 verdict: CLEAR round 4 at 902e71e (1 low: live-silent residual, filed b514); landing waits on decision 97
+answer 97: reframed as policy spike 8dee (read as: not (a) or (b): define a policy — trivial docs and simple low-risk fixes just get done, forwarding with return-to-sender custody so nothing is lost, blockers escalated by impact; the branch stays parked until 8dee decides land, amend or drop)
+- 2026-09-29 parked: answer 97 reframed it as policy spike 8dee; the CLEAR branch at 902e71e and its worktree are kept until 8dee decides land, amend or drop

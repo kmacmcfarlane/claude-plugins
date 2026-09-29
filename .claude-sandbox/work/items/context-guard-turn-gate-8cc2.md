@@ -67,3 +67,4 @@ answer 47: (c) per-session manifests only — plus: checkpoint goal options beco
 decision 89: the old context-guard-turn-gate worktree (clean; 4 prototype commits not on main by sha; its item 8cc2 closed 2026-09-22 with F1-F3b landed by other commits) — (a) remove the worktree and delete the branch [recommended] | (b) keep | (z) decide later
   raised: 2026-09-28
   basis: observed — git cherry shows 4 unmerged shas; 8cc2 status done with F1 3adc, F2 1f9d, F3a 5126, F3b a49b landed
+answer 89: a (read as: remove the context-guard-turn-gate worktree and delete its branch; tip 05e6c68 recorded here for recovery)

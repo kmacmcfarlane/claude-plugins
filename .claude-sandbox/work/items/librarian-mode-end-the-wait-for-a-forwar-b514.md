@@ -17,3 +17,4 @@ From the 3460 review 2026-09-28 (residual accepted there): a forward held blocke
 - next: —
 - blocked: —
 - learned: —
+folded into policy spike 8dee 2026-09-29: the operator wants an unaccepted forward to land back on the forwarder
