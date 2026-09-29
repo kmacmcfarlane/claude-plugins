@@ -19,3 +19,9 @@ Relayed 2026-09-29 from the agents librarian (76bc: the decision ledger records 
 - next: —
 - blocked: —
 - learned: —
+operator-attention requirements for the shape (their commit 591a428; they will not build their interim log):
+  - ISO-8601 UTC timestamp, never relative or human text
+  - per decision number, not per item
+  - last-write-wins on a re-show (same rule as wake N:)
+  - distinct from raised: (two of the three clocks)
+  - optional, cheap if possible: a reason on swept/dropped — "dropped by the operator" (a decision) vs "swept as stale" (a miss) — so arrival-vs-clearance is not pooled; if absent they treat all sweeps as misses
