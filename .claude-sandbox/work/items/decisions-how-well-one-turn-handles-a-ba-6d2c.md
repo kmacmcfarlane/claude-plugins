@@ -34,3 +34,10 @@ dispatch: planner opus — resume, serial 01
 serial 01 written: rec now (c) single pass + two sentences + hold on materially ambiguous relied-on actions; pilot is priced option (g) ~$47-70; one open question
 dispatch: plan reviewer opus — fresh, round 2
 agent: a37520fd95af6852f (plan reviewer r2)
+plan review r2 NEEDS_CHANGES (2H 3M 5L): H1 hold firings miscounted, caught 0 errors when counted consistently; H2 pilot (g) cannot separate the flows; M1-M3 hold conflicts with replies/decisions-last and overlaps 8dee; lows: 1 reading problem not 2
+dispatch: planner opus — resume, serial 02
+serial 02 written: confirm-first caught 0 errors, rec (b) two sentences; ladder a-d + z; pilot not offered; correction on the two relayed lines already delivered to the operator after r1
+dispatch: plan reviewer opus — fresh, round 3
+agent: a61ded2910fee94aa (plan reviewer r3)
+review r3 NEEDS_CHANGES (0H 2M 5L): card wording only — (b) line must say reply-driven pushes/peer messages still act before the operator sees them; sentence 2 repeats the existing echo rule; echo rewording must keep the ⚠ read-back and its purpose; lows incl. correction already delivered, 8dee handoff line (added)
+dispatch: planner opus — resume, serial 03 (round 4 is the cap)

@@ -17,7 +17,7 @@ Build F2 of series .claude-sandbox/investigations/0b2d-plain-item-names (03 + 04
 
 ## Handoff
 - doing: —
-- next: —
+- next: review round 1 at cb3b116
 - blocked: —
 - learned: —
 
@@ -25,3 +25,6 @@ Build F2 of series .claude-sandbox/investigations/0b2d-plain-item-names (03 + 04
 - 2026-09-29 claimed by Kyle-McFarlane@7696505da8e1
 dispatch: implementer opus — wi.py script + tests (routing rule 2)
 agent: a81a68f654d678d32 (implementer r1)
+r1 DONE cb3b116: 6 files, TestShortDisplayName (15), work-items 277 tests OK; fail-first shown; deviations: add treats a lone em dash as blank
+dispatch: reviewer opus — fresh reviewer, round 1
+agent: a568ad75a93e42095 (reviewer r1)

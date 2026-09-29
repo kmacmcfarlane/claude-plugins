@@ -87,3 +87,4 @@ dispatch: plan reviewer opus — fresh, serial 04 round 2
 agent: a7f46d286ac0436ae (plan reviewer s04 r2)
 plan review s04 r2 CLEAR (0H 0M 6L; lows folded into the feature items)
 factored: F2 work-items-optional-short-display-name-f-928d (now), F1 operator-interaction-the-plain-names-ski-cad6 (after dbfc), F3 plain-names-in-the-reports-and-consumers-8e04 (after F1+F2)
+  verbatim 95 (C7, added 2026-09-29T06:22Z; answer 95 above is the librarian's summary): "95 mostly for human debugging, not that important. you decide."

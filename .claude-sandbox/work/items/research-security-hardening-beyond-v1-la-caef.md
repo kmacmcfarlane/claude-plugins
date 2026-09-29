@@ -79,3 +79,10 @@ decision 96: give the research security plan one more review round past the 4-ro
 answer 96: "96 - you are approved to continue, but this gate is annoying, how can we improve it while still preventing research consuming too much resources?" (read as: (a); the gate itself goes to policy spike 8dee) — given 2026-09-29T05:53Z, found in the session transcript at ~07:00Z, not seen live
 dispatch: planner opus — round 5 past the cap (answer 96 a), resume on reviews/plan-review-r4.md
 agent: a533b9e5c8c4a9126 round 5 (resumed)
+serial 04 written (round 5, answer 96 a): all round-4 findings folded; missing policy file = built-in defaults (open mode); verifier split recommended in Q18; 12 of 17 questions blocking
+dispatch: plan reviewer opus — fresh, round 5 (then the fable second opinion)
+agent: a27ff4a6ce81e8f99 (plan reviewer r5)
+correction 2026-09-29T06:22Z: answer 96 above says "found in the session transcript at ~07:00Z"; the librarian found and acted on it by about 06:08Z (committed 5268efa)
+review r5 NEEDS_CHANGES (1H 3M 3L): H Q2(b) shell confinement bypassable (dangerouslyDisableSandbox, cwd writable); M bwrap missing -> silent unsandboxed, project-settings keys ignored; M research-verifier-local has no F3 rules; M Risk 5 overstated; about 7 of 12 questions need the operator (Q1.2, Q3, Q18.2 librarian-decidable; merges proposed); the one waived round is spent
+dispatch: second opinion fable — per answer 96 (a), on 00-04 and reviews r1-r5
+agent: a72dfd5f1fa641aab (fable second opinion)

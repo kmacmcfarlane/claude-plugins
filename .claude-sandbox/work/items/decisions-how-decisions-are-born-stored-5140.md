@@ -37,3 +37,8 @@ agent: a19ef8d90eb76190c (plan reviewer r2)
 review r2 NEEDS_CHANGES (1H 4M 2L): OQ5 and OQ1 handed to 8dee; D-3 applied by the librarian (caef 96 card re-written, answer 96 recorded); D-2 needs the operator (make it an OQ4 option); corrections owed to the operator for the 05:44Z claims; 05:53Z operator message found in transcript
 dispatch: planner opus — resume, serial 02
 agent: a48708cf8f38447a0 serial 02 (resumed)
+serial 02 written: 3 questions (OQ3 one counter, OQ4 closed N: + restore old answers, OQ6 68/69 hold); C7 answer lines keep replies verbatim (12 of 27 older free-form replies are summaries); corrections list 1-6
+dispatch: plan reviewer opus — fresh, round 3
+agent: ad6046b51deacaa41 (plan reviewer r3)
+review r3 NEEDS_CHANGES (1H 2M 3L): corrections: item 3 went out wrong ("in 13 the options did not fit"), "89-97 stored in your words" wrong (95, 97 were summaries; verbatim lines added now), "no decisions are open" wrong (70 open, 68/69 held); OQ6 why-now false (agents 29d6/bf41 track the scheduler) and must include 70; OQ4 decide-later needs the transcript-retention deadline; C7 grounding; 12 of 27 -> about 5 whole; provenance times fixed (06:08Z, not 07:00Z)
+dispatch: planner opus — resume, serial 03 (round 4 is the cap)

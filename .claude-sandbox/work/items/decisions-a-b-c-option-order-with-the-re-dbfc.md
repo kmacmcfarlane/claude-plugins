@@ -2,12 +2,11 @@
 id: decisions-a-b-c-option-order-with-the-re-dbfc
 title: "decisions: a-b-c option order with the rec bolded; every rec shown; one-more-round asks state impact"
 type: chore
-status: doing
+status: done
 priority: 1
-owner: Kyle-McFarlane@7696505da8e1
-claimed: 2026-09-29T05:26Z
 created: 2026-09-29
 updated: 2026-09-29
+closed: 2026-09-29
 refs:
   - operator 2026-09-29
 ---
@@ -34,3 +33,10 @@ dispatch: reviewer opus — fresh reviewer, round 2
 agent: ac1404c69ea8fd62f (reviewer r2)
 review r2 NEEDS_CHANGES: M1 work-review/Groom only honour [recommended]; 9 live decisions name a rec in older forms ((rec), Rec (a), recommended); M2 research SKILL.md size, pre-existing: cleared by widening fefd; notes taken: SKILL.md:248-249 wrapped code span, [recommended] documented in work-items format.md
 dispatch: implementer opus — resume, fix round 2
+r2 fixes 84b0bd1: recommendation marks home in work-items format.md § Operator questions; store line fenced one-line; card title is the question alone
+dispatch: reviewer opus — fresh reviewer, round 3
+agent: a5425e61e1b92f98b (reviewer r3)
+review r3 CLEAR at 84b0bd1 (2 lows filed as a follow-up)
+landed: d3f2c70
+checks on main d3f2c70: all 8 OK
+- 2026-09-29 done

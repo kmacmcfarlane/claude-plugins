@@ -25,3 +25,7 @@ Operator 2026-09-29T05:53Z (verbatim in .claude-sandbox/investigations/5140-deci
 dispatch: planner opus — research spike with web evidence, plan mode (series d618-decision-surfacing)
 agent: acf6d568dfd99c636 (planner r1)
 notify: send agents a pointer when this series lands
+agents replied: d618 recorded as an input to their 76bc
+series 00 written: the line is written in advance, the out-of-budget outcome is agreed in advance, and decided-below is reported separately; 7 transferable mechanisms ranked; 4 open questions
+dispatch: plan reviewer opus — fresh, round 1 (verify sources)
+agent: abe9e0f3f1f9be901 (plan reviewer r1)
