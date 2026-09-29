@@ -2,12 +2,11 @@
 id: no-modal-while-agents-run-the-remaining-a66d
 title: "no modal while agents run: the remaining dialog sites (implement Step 7, dev-cycle push-rejection and resumed Step 0)"
 type: chore
-status: doing
+status: done
 priority: 3
-owner: Kyle-McFarlane@7696505da8e1
-claimed: 2026-09-28T23:43Z
 created: 2026-09-28
-updated: 2026-09-28
+updated: 2026-09-29
+closed: 2026-09-29
 refs:
   - 09f1 implementer
 ---
@@ -36,3 +35,9 @@ findings:
   [low] implement SKILL.md:261-264 restates investigate's rule — keep pointer + tell only; [low] edge-cases.md:26-28 use Step 7's "whose return is not yet folded in"; [nit] troubleshooting.md:132-138 put the reason in its own sentence
 dispatch: implementer opus — resume, fix round 1
 agent: implementer a4c047914a458f00c round 2
+return: implementer DONE 0fde855 (fix round 1)
+dispatch: reviewer opus — resume, round 2
+agent: reviewer ab3dbd465c3be0a86 round 2 at 0fde855
+verdict: CLEAR round 2 at 0fde855 (no findings)
+landed: 943a488
+- 2026-09-29 done: 943a488
