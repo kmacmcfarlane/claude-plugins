@@ -29,3 +29,8 @@ agent: a7a61a3e688e0313b (implementer r1)
 r1 DONE b0af914: 10 agent files (name, description, model, effort), test_agents.py (24 tests, fail-first shown), manifests in parity, CLAUDE.md (layout, conventions, new Checks line), README, repo-map; claude plugin validate passes (pre-existing version warnings only); names provisional pending the naming question
 dispatch: reviewer opus — fresh reviewer, round 1
 agent: a542958cf2490ac7f (reviewer r1)
+decision 109: What should the new role agents be called? — options: (a) role names with a -deep suffix for the xhigh variant and -critical for the opus-high builder: scribe, scout, implementer, implementer-critical, implementer-deep, planner, planner-deep, reviewer, cross-checker, cross-checker-deep [recommended] | (b) names that carry the effort: implementer-medium, implementer-high, implementer-xhigh, planner-high, planner-xhigh and so on | (c) the librarian picks names at build time and reports them | (z) decide later
+  raised: 2026-09-29T16:37Z
+  stakes: reversible but wide (ten files, the pin test, four docs and every dispatch site name them; a rename after F2 lands touches all of them)
+  why now: the files are built and in review; answering before they land avoids a rename
+  rec: (a) · basis partial — names say the job and how hard it digs; efforts can change later without renaming files
