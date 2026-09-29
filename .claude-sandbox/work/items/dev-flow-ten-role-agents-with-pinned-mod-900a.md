@@ -18,7 +18,7 @@ Build F1 of .claude-sandbox/investigations/2eb7-effort-routing (00-04, plan revi
 
 ## Handoff
 - doing: —
-- next: —
+- next: CLEAR at b0af914; merge after decision 109 (names), then b3c5 on CLEAR; 9 Checks; push
 - blocked: —
 - learned: —
 
