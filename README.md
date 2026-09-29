@@ -268,10 +268,34 @@ The research family lives in `dev-flow` by operator decision (2026-09-22): its l
 and run record are the superset of `deep-investigation`'s, one plugin lets the two share
 references, and `deep-investigation` is planned to become a thin caller over `research`.
 
-The plugin ships two agents for the research family: `research-lane` (sonnet, effort medium —
-gathers evidence for one lane and writes one findings file to a fixed shape) and
-`research-verifier` (haiku, effort low — checks sampled claims against their sources and scores
-the run). Their contract lives in the agent body, so every dispatch loads it. Soft dependency
+The plugin ships twelve agents, each pinned to one model and one effort: one role and one
+effort per file, so a role that needs a second effort has a second file, and the per-call
+model moves a file across models. Ten are the dev cycle's role workers:
+
+| Agent | Pin (model, effort) | Role |
+|---|---|---|
+| `scribe` | sonnet, low | a helper with no judgement on its dispatch line: renders a card, fills a brief template, summarises given text |
+| `scout` | sonnet, medium | answers read-only with `file:line` or URL evidence, and says "could not determine" rather than guess |
+| `implementer` | sonnet, medium | builds one change in its worktree: sonnet for the canonical mechanical kinds, opus by per-call model for everything else |
+| `implementer-critical` | opus, high | builds one change the operator called critical |
+| `implementer-deep` | opus, xhigh | builds one change, only for an item the operator pinned to effort xhigh |
+| `planner` | opus, high | writes or revises an investigation series |
+| `planner-deep` | opus, xhigh | the same, for an item pinned to effort xhigh or a plan round that routing sends to xhigh |
+| `reviewer` | opus, high | reviews a change or a plan in a fresh context and returns a verdict |
+| `cross-checker` | fable, high | cross-checks a plan after its opus `CLEAR`, at the stages routing enables |
+| `cross-checker-deep` | fable, xhigh | cross-checks at the stages routing enables; none under the defaults |
+
+`dev-cycle` and `librarian-mode` dispatch them by the `dev-cycle` skill's model routing, with
+the model passed on every call; none is for direct use. A session that has not loaded an agent
+file yet (it needs a plugin update and a restart) falls back to `general-purpose` with the
+routed model, at the session's own effort; a dispatch under an operator's pin asks first. Their
+bodies are minimal, the role only, since the prompt is the brief; `scout` alone adds a short
+read-only evidence contract. The ten names are **provisional** pending operator review.
+
+The other two serve the research family: `research-lane` (sonnet, effort medium — gathers
+evidence for one lane and writes one findings file to a fixed shape) and `research-verifier`
+(haiku, effort low — checks sampled claims against their sources and scores the run). Their
+contract lives in the agent body, so every dispatch loads it. Soft dependency
 on `statusline-hub` for the research skills: they read the usage windows from its sensor record
 to pick an intensity that fits; without it they ask.
 
