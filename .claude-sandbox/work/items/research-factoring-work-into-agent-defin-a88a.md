@@ -42,3 +42,8 @@ plan review r2 NEEDS_CHANGES (0H 1M 4L): M the map of 6421 answers to files miss
 librarian ruling: hold serial 02 until 6421 serial 01 lands (r1 changes criteria that drive the file map), then fold r2 and 6421 01 together
 dispatch: planner opus — resume, serial 02 folding review r2 and 6421 serial 01
 agent: a1f0aa368080b709e serial 02 (resumed)
+serial 02 written: base ten files (adds implementer-critical opus/high), up to two conditional (reviewer-light, reviewer-deep); recommended answers ship eleven; answer-to-files map for 6421 Q1-Q5
+dispatch: plan reviewer opus — fresh, round 3
+agent: a6fd7cd904891c48c (plan reviewer r3)
+plan review r3 NEEDS_CHANGES (0H 1M 3L): M Q5 (a) step-down: pinned items still ask; research cross-checks are never queued; step down only from an items first review; lows: pin test wording, reviewer-deep trigger no longer an option, all-(z) defaults inconsistent, Q1/Q2 wording
+librarian ruling: hold serial 03 (final, round 4 is the cap) until 6421 serial 02 lands, then fold both

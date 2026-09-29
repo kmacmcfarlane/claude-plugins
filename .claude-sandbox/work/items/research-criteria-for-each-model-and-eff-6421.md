@@ -35,3 +35,6 @@ dispatch: planner opus — resume, serial 01
 serial 01 written: any-high 17% of 390 (claude-sandbox 14%); sonnet 7 of 50, narrower mechanical test moves 52% (about $15/week); xhigh-planned plans averaged 3.5 rounds vs 2.7 (depth signal no longer sets a tier); both fable outcome changes were fable xhigh (3.3-5.6x opus high); opus xhigh now a reactive trial after a late high (exit test 10 bumps or 4 weeks); a88a slots mapped
 dispatch: plan reviewer opus — fresh, round 2
 agent: a34e04d5a940f9bbe (plan reviewer r2)
+plan review r2 NEEDS_CHANGES (2H 3M 3L): H1 like-for-like the xhigh evidence is null (kit-repo medium plans also 3.5 rounds); Q1 (a) must say it is narrower than the operators ask and rest on cost; H2 the xhigh trial exit test cannot reliably fail (no baselines; build median 1 round after a late high); M Q1 overlaps 2eb7 Q3, planner effort fixed unasked; M fable high at plan stage has no exit and the evidence favours xhigh; M narrowed M test uncomputed (44-52%, $12-15), "row" wording; lows
+CORRECTION owed to the operator: "planning at xhigh did not help (3.5 vs 2.7)" is null evidence like-for-like, not evidence against
+dispatch: planner opus — resume, serial 02
