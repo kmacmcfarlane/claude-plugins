@@ -35,3 +35,8 @@ plan review r1 NEEDS_CHANGES (0H 4M 8L): M1 deep-worker covers three roles at on
 librarian ruling: hold serial 01 until 6421 lands, then fold r1 and 6421 together (M1/M2 turn on 6421 criteria); then 2eb7 reconciles
 dispatch: planner opus — resume, serial 01 folding review r1 and 6421 00 (in parallel with 6421 review; a delta follows if that review moves numbers)
 agent: a1f0aa368080b709e serial 01 (resumed)
+serial 01 written: one role per file; deep-worker withdrawn; profiles scribe, scout, implementer, implementer-deep, planner, planner-deep, reviewer, cross-checker, cross-checker-deep (+ reviewer-light / reviewer-deep conditional on 6421 Q4/Q1); saving 30-47% vs today, +26-66% vs last week as run; 2 questions left (read-only tools later; -deep/-light naming)
+dispatch: plan reviewer opus — fresh, round 2
+agent: a3b28734ba95cb5fa (plan reviewer r2)
+plan review r2 NEEDS_CHANGES (0H 1M 4L): M the map of 6421 answers to files misses Q5 (a) (xhigh steps down to high; no implementer file at opus high) and Q4 (c) (needs reviewer-light); lows: research cross-check stage ownership, 00 deployment rule not superseded, Q2 blocks/naming wording, file counts and research-refine
+librarian ruling: hold serial 02 until 6421 serial 01 lands (r1 changes criteria that drive the file map), then fold r2 and 6421 01 together

@@ -29,3 +29,6 @@ agent: a9070b683583b6b04 (planner r1)
 series 00 written: 715 transcripts, 1368 sub-agents, 789 items, 14 repos; depth tracks kind of work (planned-first 54% vs 17%; five late-high shapes); sonnet failed only on rule text marked mechanical (4 of 50); fable changed an outcome once in 21 (4fb0); waste was effort not model (108 xhigh sub-agents); criteria per tier with cost ratios; 5 operator questions (Q1-Q3 decide which xhigh/fable agents 2eb7 F1 ships)
 dispatch: plan reviewer opus — fresh, round 1
 agent: ac960639bedeec6f8 (plan reviewer r1)
+plan review r1 NEEDS_CHANGES (4H 6M 5L): H1 parser misses free-form highs (about 12% any high, not 1%); H2 5140/6d2c were planned at xhigh and still took 4 rounds (counter-evidence for xhigh planners); H3 both fable outcome changes ran at xhigh, costed as high; plan-stage evidence is fable on fable; H4 the rule-text test moves about 80% of sonnet work to opus (+9 units/week, not +1); M opus-high ratio method; signal precedence; circular shapes; Q2c; author rule vs Q1a; a88a slots unmapped
+CORRECTION owed to the operator: fable outcome changes were at xhigh; xhigh planning has counter-evidence (5140, 6d2c); the sonnet exclusion would move most sonnet work to opus
+dispatch: planner opus — resume, serial 01

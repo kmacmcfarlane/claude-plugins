@@ -43,3 +43,6 @@ dispatch: planner opus — resume, serial 02
 serial 02 written: D3 (b) recommended (re-show as cards at the first turn back after being away; all 44 re-shown cold, all 9 lost-context covered); D1 becomes (c) a later refinement once 0999 stores seen N: and 76bc/R48 publish turn times; D4 (b) send requirements to 76bc/R48
 dispatch: plan reviewer opus — fresh, round 3
 agent: a475313e4557dda4d (plan reviewer r3)
+plan review r3 NEEDS_CHANGES (1H 2M 1L): H d3overlap skips D3 (b)s own lines-while-away rule: at least 6 of 44 re-shown are lines (16 if a resets cold ends at the next Report, incl. 96); 84-86 covered only if the re-show waits for the first decisions block after the return and repeats until a turn follows; the away test fires with the operator present; M D3 narrows Seen and reverses gallery 21, unnamed; files omitted; M D1 (c) is really (z) with a wake; L away fires on about 21 of 63 turns
+CORRECTION owed to the operator: "covers all 9" is false as worded — at least 6 of 44 re-shown would still be lines
+dispatch: planner opus — resume, serial 03 (round 4 is the cap)
