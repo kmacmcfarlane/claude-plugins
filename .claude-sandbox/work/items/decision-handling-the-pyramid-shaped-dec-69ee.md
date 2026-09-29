@@ -6,6 +6,7 @@ type: chore
 status: todo
 priority: 1
 deps:
+  - present-tonight-s-research-to-the-operat-2081
   - librarian-where-the-line-sits-between-ju-8dee
   - research-light-which-signals-show-how-fr-a99c
 created: 2026-09-29
@@ -27,3 +28,4 @@ agents replied: ledger design recorded on 76bc, to be settled with 0a7c (waits o
 operator-attention (c4443d7, their 07_ledger-split.md): accepts one ledger, drops private decisions.jsonl; proposes a timestamps-only observation log (shown|answered|deferred|swept) because no store records "shown"; moot if 76bc takes a shown field; will not build until agents or the operator answers — relayed to agents with our 5140 finding (no shown-at time in the store)
 agents position (76bc): ledger records timestamped lifecycle events (raised, shown, answered, deferred with wake, swept/dropped); no objection to operator-attention interim ids-and-timestamps log (their call); claude-plugins shown-at item filed as 0999, both peers told
 operator-attention: not building the interim log (591a428); 0999 shape requirements recorded on 0999
+order: the research briefing (2081) goes first, so the operator is warm when the pyramid decisions arrive
