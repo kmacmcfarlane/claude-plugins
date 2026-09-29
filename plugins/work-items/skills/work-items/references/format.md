@@ -81,6 +81,7 @@ except `claimed` (ISO-8601 UTC to the minute).
 |---|---|---|
 | `id` | `<slug>-<4hex>` | equals the filename stem; immutable; hash suffix from title+time+random so branches rarely collide; a new id is redrawn until it is in neither the store (items/, archive/) nor the same batch, and a new item is never written over an existing file (the write fails, nothing written) |
 | `title` | one line, ≤120 chars | |
+| `short_display_name` | one line, 1–40 chars | optional; the name agents give the item to the operator (§ Short display name and tag) |
 | `type` | `task bug feature refactor workflow chore epic spike` | default `task`; drives backlog-yaml prefix and bugs-first |
 | `status` | `todo doing blocked parked grooming done dropped` | the only authority on state |
 | `stage` | `implement review testing uat uat_feedback` | pipeline sub-state; meaningful only when `doing` |
@@ -178,6 +179,54 @@ Sets exactly one front-matter field. `id` and `created` are immutable (exit 1).
   `--force` does not bypass it. The item is then schema-validated as a whole;
   a value that breaks it (bad `status`, priority out of range, …) exits 3 and
   nothing is written.
+- **`short_display_name`** is stripped, a blank value clears it, and one
+  over 40 characters exits 1 before anything is written (§ Short display
+  name and tag).
+
+## Short display name and tag
+
+`short_display_name` is optional: the name agents give the item when they
+write to the operator. It is a noun phrase of 3–6 words, with no id or tag
+in it and no leading article (`flaky gate test`, not `the flaky gate test`
+or `gate test d1e3`). Its words are used verbatim, and an agent adds an
+article in prose when the sentence needs one. `wi` checks only its shape,
+never its words.
+
+- **Setting it.** At filing, with `wi add "<title>" --short-display-name
+  "<name>"`, or later by an explicit `wi set <id> short_display_name
+  "<name>"` from the item's owner. A mention never writes it.
+- **Its shape.** `add` and `set` strip it. On `add` a blank value (or `—`)
+  leaves the field unset; on `set` a blank value (whitespace-only included)
+  clears it, as `""` and `—` do. So neither ever writes
+  `short_display_name: ""` or a literal dash. Over 40 characters, counted
+  after the strip, exits 1 and writes nothing. A hand-written value that is
+  blank, padded or over 40 characters is a `lint` problem, and a `set` of
+  any other field on that item exits 3 until the name is set right.
+- **When it is absent,** an agent writes a name from the title at each
+  mention and stores nothing.
+- **Output.** Every text row that prints a title prints the title cell
+  `[<name>] <title>` in the title's own column: `ls`, `next` (every form),
+  `prime` (its HOLD, DOING and READY lines), `needs-input`, and `estate`'s
+  SECURITY, DECISION, STALE and READY rows. No `--plain` column is added,
+  and an item without the name prints its title alone. Every `--json`
+  record carries `short_display_name`, null when unset; it is the
+  unambiguous form, since a title that itself starts with `[` reads like a
+  name in text. `show --brief` prints it after `title`.
+- **Store-only.** The backlog-yaml bridge does not carry it: `export` leaves
+  it out, `import --update` keeps it, and a fresh import creates items
+  without it.
+
+**The tag** is the id's last four hex, `id[-4:]` (`d1e3` in
+`flaky-gate-test-d1e3`): a recognition cue for the operator, not a unique
+reference. `wi` resolves an id by exact match or alias, then by unique
+prefix, and never by suffix, so a tag handed to `wi` can resolve to a
+different item whose slug begins with those four hex, and two items can
+share a tag. Given a bare tag, list the files that carry it, and ask when
+more than one matches:
+
+```bash
+find <store>/items <store>/archive -name '*.md' | grep -E -- "-<tag>\.md$|/<tag>[^/]*\.md$"
+```
 
 ## Parked
 
@@ -316,12 +365,17 @@ neither a recommendation nor a label reads "no recommendation recorded".
 `wi needs-input` lists every open item awaiting the operator: each grooming
 item (with its questions) and each unanswered `decision N:` (with N and its
 text), on todo, doing, blocked, parked and grooming items alike; closed
-items never show. `--plain` prints `id<TAB>grooming|decision<TAB>N or
--<TAB>text`; `--json` one record per item with `grooming` and `decisions`.
-It exits 2 when nothing awaits the operator.
+items never show. A human row reads `<id>  <title cell>  grooming:
+<questions>` or `<id>  <title cell>  decision N: <text>`, the title cell
+being `[<name>] <title>` or the title alone (§ Short display name and tag).
+`--plain` prints `id<TAB>grooming|decision<TAB>N or -<TAB><title
+cell><TAB>text`: the title cell is fourth, so the free text stays last;
+`--json` one record per item with `title`, `short_display_name`,
+`grooming` and `decisions`. It exits 2 when nothing awaits the operator.
 
-`wi prime` also shows a `HOLD <n>: <id> (<title>) …` line, first under the
-header, for open items tagged `hold` — an operator hold gates what may move.
+`wi prime` also shows a `HOLD <n>: <id> (<title cell>) …` line, first under
+the header, for open items tagged `hold` — an operator hold gates what may
+move.
 
 ## Body sections
 

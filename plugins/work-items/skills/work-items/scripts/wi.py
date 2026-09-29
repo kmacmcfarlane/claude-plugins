@@ -32,7 +32,8 @@ import time
 from datetime import datetime, timezone
 from pathlib import Path
 
-FIELD_ORDER = ["id", "title", "type", "status", "stage", "priority", "tags",
+FIELD_ORDER = ["id", "title", "short_display_name", "type", "status", "stage",
+               "priority", "tags",
                "deps", "parent", "owner", "claimed", "blocked", "parked",
                "grooming", "feedback",
                "mode", "complexity", "alias", "created", "updated", "closed",
@@ -47,6 +48,9 @@ STATUSES = {"todo", "doing", "blocked", "parked", "grooming", "done", "dropped"}
 STAGES = {"implement", "review", "testing", "uat", "uat_feedback"}
 MODES = {"autonomous", "interactive", "mixed"}
 COMPLEXITIES = {"low", "medium", "high"}
+# short_display_name: the optional name agents give an item to the operator
+# (format.md § Short display name and tag); wi checks its shape only
+SHORT_NAME_MAX = 40
 ID_RE = re.compile(r"^[a-z0-9][a-z0-9-]{0,40}-[0-9a-f]{4}$")
 ALIAS_RE = re.compile(r"^[SBRWM]-\d{1,3}$")
 HANDOFF_KEYS = ("doing", "next", "blocked", "learned")
@@ -829,6 +833,14 @@ class Item:
             errs.append(f"priority out of range: {m['priority']}")
         if m.get("alias") and not ALIAS_RE.match(m["alias"]):
             errs.append(f"invalid alias '{m['alias']}'")
+        # add and set strip the value and check its length first (exit 1),
+        # so this catches a hand-written one: blank, padded or too long
+        name = m.get("short_display_name")
+        if name is not None and not (
+                isinstance(name, str) and name == name.strip()
+                and 1 <= len(name) <= SHORT_NAME_MAX):
+            errs.append(f"short_display_name must be 1-{SHORT_NAME_MAX} "
+                        "chars, no surrounding spaces")
         if m.get("status") == "blocked" and not m.get("blocked"):
             errs.append("blocked without a reason")
         if m.get("status") == "parked" and not m.get("parked"):
@@ -1331,6 +1343,19 @@ def item_json(item, by_id=None):
     return rec
 
 
+def title_cell(title, name):
+    """What a text row prints for an item's title: `[<name>] <title>` when
+    it has a short display name, else the title alone. One cell, so no
+    `--plain` column moves (a name holds no tab: the writer refuses one)."""
+    if isinstance(name, str) and name.strip():
+        return f"[{name.strip()}] {title}"
+    return title
+
+
+def item_title(item):
+    return title_cell(item.get("title"), item.get("short_display_name"))
+
+
 # ── Commands ────────────────────────────────────────────────────────────────
 
 # Host-.gitignore spellings that ignore the whole .claude-sandbox/ dir.
@@ -1393,13 +1418,31 @@ def cmd_init(args):
     return 0
 
 
+def _short_name_arg(value):
+    """A short_display_name given to `add` or `set`, stripped; None when it
+    is blank or the `—` placeholder (the field is then absent, never `""`
+    or a literal dash). Over SHORT_NAME_MAX exits 1: the caller checks
+    before anything is read or written, as the title check does."""
+    if value is None:
+        return None
+    value = value.strip()
+    if value in ("", "—"):
+        return None
+    if len(value) > SHORT_NAME_MAX:
+        raise WiError(1, f"short_display_name must be 1-{SHORT_NAME_MAX} "
+                         f"chars (got {len(value)})")
+    return value
+
+
 def cmd_add(args):
     _one_line("title", args.title)
+    _one_line("--short-display-name", args.short_display_name)
     root = resolve_root(args.root)
     created = today()
     title = args.title.strip()
     if not title or len(title) > 120:
         raise WiError(1, "title must be 1-120 chars")
+    short_name = _short_name_arg(args.short_display_name)
     with Lock(root):
         items = load_all(root, archived=True)
         by_id = {it.id: it for it in items}
@@ -1410,7 +1453,8 @@ def cmd_add(args):
             raise WiError(1, f"parent '{args.parent}' does not resolve")
         iid = make_id(title, created, taken_ids(root, items), slug=args.slug)
         desc = sys.stdin.read().strip() if args.desc == "-" else (args.desc or "")
-        meta = {"id": iid, "title": title, "type": args.type, "status": "todo",
+        meta = {"id": iid, "title": title, "short_display_name": short_name,
+                "type": args.type, "status": "todo",
                 "priority": args.priority, "tags": args.tag or [],
                 "deps": args.dep or [], "parent": args.parent,
                 "refs": args.ref or [], "created": created, "updated": created}
@@ -1812,6 +1856,9 @@ def cmd_set(args):
         raise WiError(1, f"'{field}' is immutable")
     if field not in FIELD_ORDER:
         raise WiError(1, f"unknown field '{field}'")
+    if field == "short_display_name":
+        # stripped; blank (whitespace-only included) clears, as "" does
+        value = _short_name_arg(value) or ""
     with Lock(root):
         items = load_all(root, archived=True)
         by_id = {it.id: it for it in items}
@@ -1899,7 +1946,8 @@ def cmd_ls(args):
     else:
         for it in rows:
             line = (f"{it.id}\tP{it.get('priority', 2)}\t{it.get('status')}\t"
-                    f"{it.get('stage') or '-'}\t{it.get('owner') or '-'}\t{it.get('title')}")
+                    f"{it.get('stage') or '-'}\t{it.get('owner') or '-'}\t"
+                    f"{item_title(it)}")
             print(line if args.plain else line.expandtabs(2))
     return 0 if rows else 2
 
@@ -1975,7 +2023,7 @@ def cmd_next(args):
             for it in its:
                 out.append("\t".join([section, it.id, f"P{it.get('priority', 2)}",
                                       it.get("status"), it.get("stage") or "-",
-                                      it.get("owner") or "-", it.get("title")]))
+                                      it.get("owner") or "-", item_title(it)]))
         print("\n".join(out))
         return 0 if (doing or grouped["blocked"] or ready) else 2
     if doing:
@@ -1987,7 +2035,7 @@ def cmd_next(args):
                 dt = datetime.strptime(claimed, "%Y-%m-%dT%H:%MZ").replace(tzinfo=timezone.utc)
                 if (datetime.now(timezone.utc) - dt).total_seconds() > stale_after:
                     stale = " stale?"
-            out.append(f"  P{it.get('priority', 2)} {it.id}  {it.get('title')}   "
+            out.append(f"  P{it.get('priority', 2)} {it.id}  {item_title(it)}   "
                        f"{it.get('owner') or '-'} {age_str(claimed)}{stale}")
             nxt = it.handoff().get("next")
             if nxt:
@@ -1995,12 +2043,12 @@ def cmd_next(args):
     if grouped["blocked"]:
         out.append("BLOCKED")
         for it in grouped["blocked"]:
-            out.append(f"  P{it.get('priority', 2)} {it.id}  {it.get('title')}   "
+            out.append(f"  P{it.get('priority', 2)} {it.id}  {item_title(it)}   "
                        f"blocked: {it.get('blocked')}")
     if ready:
         out.append("READY")
         for it in ready[:args.limit]:
-            out.append(f"  P{it.get('priority', 2)} {it.id}  {it.get('title')}")
+            out.append(f"  P{it.get('priority', 2)} {it.id}  {item_title(it)}")
     parked = (f" · {len(grouped['parked'])} parked (wi ls --status parked)"
               if grouped["parked"] else "")
     if grouped["grooming"]:
@@ -2031,14 +2079,14 @@ def next_pipeline(root, args):
             rec = item_json(item, by_id)
             rec["queue"] = queue
             print(json.dumps(rec, indent=1) if args.json else
-                  f"{queue}\t{item.id}\t{item.get('title')}")
+                  f"{queue}\t{item.id}\t{item_title(item)}")
             return 0
     if args.json:
         print(json.dumps([dict(item_json(it, by_id), queue=q)
                           for q, it in ordered], indent=1))
     else:
         for q, it in ordered:
-            print(f"{q}\t{it.id}\tP{it.get('priority', 2)}\t{it.get('title')}")
+            print(f"{q}\t{it.id}\tP{it.get('priority', 2)}\t{item_title(it)}")
     return 0 if ordered else 2
 
 
@@ -2078,10 +2126,10 @@ def cmd_prime(args):
     if holds:
         # an operator hold gates what may move: first, before any work line
         take(f"HOLD {len(holds)}: " + " ".join(
-            f"{it.id} ({it.get('title')})" for it in holds[:3]))
+            f"{it.id} ({item_title(it)})" for it in holds[:3]))
     for it in doing:
         who = "you" if it.get("owner") == me else it.get("owner", "-")
-        take(f"DOING  P{it.get('priority', 2)} {it.id}  {it.get('title')}  "
+        take(f"DOING  P{it.get('priority', 2)} {it.id}  {item_title(it)}  "
              f"({who}, {age_str(it.get('claimed'))})")
         h = it.handoff()
         if h.get("next"):
@@ -2100,7 +2148,7 @@ def cmd_prime(args):
     shown = 0
     for i, it in enumerate(ready):
         prefix = "READY  " if shown == 0 else "       "
-        if not take(f"{prefix}P{it.get('priority', 2)} {it.id}  {it.get('title')}"):
+        if not take(f"{prefix}P{it.get('priority', 2)} {it.id}  {item_title(it)}"):
             break
         shown += 1
     if shown < len(ready):
@@ -2140,6 +2188,8 @@ def cmd_needs_input(args):
     rows = needs_input(rank_ready(load_all(root)))
     if args.json:
         print(json.dumps([{"id": it.id, "title": it.get("title"),
+                           "short_display_name":
+                               it.meta.get("short_display_name"),
                            "status": it.get("status"),
                            "grooming": it.get("grooming"),
                            "decisions": [{"n": n, "text": text}
@@ -2150,11 +2200,14 @@ def cmd_needs_input(args):
     for it, asks in rows:
         for kind, n, text in asks:
             if args.plain:
+                # the title cell is fourth: id, kind and N keep their
+                # columns, and the free text (never checked for tabs) stays
+                # last
                 print("\t".join([it.id, kind, "-" if n is None else str(n),
-                                 text]))
+                                 item_title(it), text]))
             else:
                 label = "grooming" if n is None else f"decision {n}"
-                print(f"{it.id}  {label}: {text}")
+                print(f"{it.id}  {item_title(it)}  {label}: {text}")
     return 0 if rows else 2
 
 
@@ -2294,6 +2347,7 @@ def estate_store(store, base, top, stale_after, now, cap=ESTATE_CAP):
         counts["ready"] = len(ready)
         rec["counts"] = counts
         rec["ready"] = [{"id": it.id, "title": it.get("title"),
+                         "short_display_name": it.meta.get("short_display_name"),
                          "priority": it.get("priority", 2),
                          "type": it.get("type"), "tags": it.get("tags", [])}
                         for it in ready[:top]]
@@ -2305,12 +2359,14 @@ def estate_store(store, base, top, stale_after, now, cap=ESTATE_CAP):
                 when = raised.get(n)
                 dt = _parse_when(when) if when else None
                 rec["decisions"].append({
-                    "id": it.id, "title": it.get("title"), "n": n,
-                    "text": text, "raised": when,
+                    "id": it.id, "title": it.get("title"),
+                    "short_display_name": it.meta.get("short_display_name"),
+                    "n": n, "text": text, "raised": when,
                     "age_days": (now - dt).days if dt else None})
             if estate_is_security(it):
                 rec["security"].append({
                     "id": it.id, "title": it.get("title"),
+                    "short_display_name": it.meta.get("short_display_name"),
                     "status": it.get("status"),
                     "priority": it.get("priority", 2),
                     "tags": it.get("tags", [])})
@@ -2318,6 +2374,8 @@ def estate_store(store, base, top, stale_after, now, cap=ESTATE_CAP):
             dt = _parse_when(it.get("claimed"))
             if dt and (now - dt).total_seconds() > stale_after:
                 rec["stale"].append({"id": it.id, "title": it.get("title"),
+                                     "short_display_name":
+                                         it.meta.get("short_display_name"),
                                      "owner": it.get("owner"),
                                      "claimed": it.get("claimed"),
                                      "age": age_str(it.get("claimed"))})
@@ -2447,6 +2505,10 @@ def estate_scan(dirs, top=5, stale="24h", now=None, cap=ESTATE_CAP):
             "skipped": skipped}
 
 
+def _estate_title(rec):
+    return title_cell(rec["title"], rec["short_display_name"])
+
+
 def _estate_text(report):
     out = [f"wi estate: scanned {', '.join(report['dirs'])} · "
            f"{len(report['repos'])} store(s)"]
@@ -2458,16 +2520,18 @@ def _estate_text(report):
                      f"{c['blocked']} blocked · {c['ready']} ready")
         out.append(head)
         for s in r["security"]:
-            out.append(f"  SECURITY  P{s['priority']} {s['id']}  {s['title']}"
+            out.append(f"  SECURITY  P{s['priority']} {s['id']}  {_estate_title(s)}"
                        f"  [{s['status']}]")
         for d in r["decisions"]:
             age = f"  ({d['age_days']}d)" if d["age_days"] is not None else ""
-            out.append(f"  DECISION  {d['id']}  {d['n']}: {d['text']}{age}")
+            out.append(f"  DECISION  {d['id']}  {_estate_title(d)}  "
+                       f"{d['n']}: {d['text']}{age}")
         for s in r["stale"]:
-            out.append(f"  STALE     {s['id']}  {s['title']}  "
+            out.append(f"  STALE     {s['id']}  {_estate_title(s)}  "
                        f"({s['owner'] or '-'}, {s['age']})")
         for it in r["ready"]:
-            out.append(f"  READY     P{it['priority']} {it['id']}  {it['title']}")
+            out.append(f"  READY     P{it['priority']} {it['id']}  "
+                       f"{_estate_title(it)}")
         for p in r["problems"]:
             out.append(f"  PROBLEM   {p['path']}: {p['error']}")
         more = [f"{n} {k}" for k, n in r["omitted"].items() if n]
@@ -3265,7 +3329,8 @@ def build_parser():
             ("-p", "--priority", dict(type=int, default=2, choices=range(5))),
             ("--tag", dict(action="append")), ("--dep", dict(action="append")),
             ("--parent", {}), ("--ref", dict(action="append")), ("--slug", {}),
-            ("--desc", {}), ("--force",), ("--json",)],
+            ("--short-display-name", {}), ("--desc", {}), ("--force",),
+            ("--json",)],
         ("claim", cmd_claim, "claim an item"): [
             ("id", {}), ("--as", dict(dest="as_owner")), ("--steal",)],
         ("release", cmd_release, "release a claim"): [("id", {})],
