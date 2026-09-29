@@ -276,7 +276,7 @@ model moves a file across models. Ten are the dev cycle's role workers:
 |---|---|---|
 | `scribe` | sonnet, low | a helper with no judgement on its dispatch line: renders a card, fills a brief template, summarises given text |
 | `scout` | sonnet, medium | answers read-only with `file:line` or URL evidence, and says "could not determine" rather than guess |
-| `implementer` | sonnet, medium | builds one change in its worktree: sonnet for the canonical mechanical kinds, opus by per-call model for everything else |
+| `implementer` | sonnet, medium | builds one change in its worktree: sonnet for the canonical mechanical kinds in a kit repo and for wording and docs elsewhere, opus by per-call model for everything else |
 | `implementer-critical` | opus, high | builds one change the operator called critical |
 | `implementer-deep` | opus, xhigh | builds one change, only for an item the operator pinned to effort xhigh |
 | `planner` | opus, high | writes or revises an investigation series |
@@ -288,8 +288,9 @@ model moves a file across models. Ten are the dev cycle's role workers:
 `dev-cycle` and `librarian-mode` dispatch them by the `dev-cycle` skill's model routing, with
 the model passed on every call; none is for direct use. A session that has not loaded an agent
 file yet (it needs a plugin update and a restart) falls back to `general-purpose` with the
-routed model, at the session's own effort; a dispatch under an operator's pin asks first. Their
-bodies are minimal, the role only, since the prompt is the brief; `scout` alone adds a short
+routed model, at the session's own effort. A dispatch under an operator's effort pin asks
+first; one under a model pin alone falls back the same way, since the routed model keeps
+that pin. Their bodies are minimal, the role only, since the prompt is the brief; `scout` alone adds a short
 read-only evidence contract. The ten names are **provisional** pending operator review.
 
 The other two serve the research family: `research-lane` (sonnet, effort medium — gathers

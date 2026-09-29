@@ -5,7 +5,9 @@ row's model and effort pin. The per-model and per-effort rules hold on the table
 disk. The frontmatter must parse the way the harness needs it to: a plugin agent whose
 YAML does not parse still loads, with every field ignored (so no pin), and the error goes
 only to the debug log. Every agent is named in CLAUDE.md, README.md and both manifests,
-and the dev-flow description is identical in the two manifests.
+and the dev-flow description is identical in the two manifests. Every role file is a row
+of dev-cycle's model-routing.md § Profiles, which its description points at, and the row
+carries the file's own pin.
 
 Standard library only. Run from plugins/dev-flow:
 
@@ -19,6 +21,7 @@ from pathlib import Path
 PLUGIN = Path(__file__).resolve().parent.parent
 REPO = PLUGIN.parent.parent
 AGENTS = PLUGIN / "agents"
+ROUTING = PLUGIN / "skills" / "dev-cycle" / "references" / "model-routing.md"
 
 # The keys a role file carries, and nothing else. `tools` stays out (every tool) until the
 # tool-limits change edits this table.
@@ -28,7 +31,7 @@ ROLE_KEYS = frozenset({"name", "description", "model", "effort"})
 # file may carry any of these; a role file carries ROLE_KEYS only.
 SUPPORTED_KEYS = frozenset({
     "name", "description", "model", "effort", "maxTurns", "tools", "disallowedTools",
-    "skills", "memory", "background", "omitClaudeMd", "isolation", "color",
+    "skills", "memory", "background", "omitClaudeMd", "isolation", "color", "experimental",
 })
 
 MODELS = frozenset({"sonnet", "opus", "haiku", "fable", "inherit"})
@@ -296,8 +299,8 @@ class TestAgentFiles(unittest.TestCase):
     def test_pins_match_the_table(self):
         for stem in self.files.keys() & EXPECTED.keys():
             model, effort, _, _ = EXPECTED[stem]
-            fields = self.fields(stem)
             with self.subTest(agent=stem):
+                fields = self.fields(stem)
                 self.assertEqual(fields.get("model"), (model, "plain"))
                 self.assertEqual(fields.get("effort"), (effort, "plain"))
 
@@ -310,9 +313,9 @@ class TestAgentFiles(unittest.TestCase):
 
     def test_keys(self):
         for stem in self.files.keys() & EXPECTED.keys():
-            keys = set(self.fields(stem))
             expected = EXPECTED[stem][2]
             with self.subTest(agent=stem):
+                keys = set(self.fields(stem))
                 if expected is None:
                     self.assertLessEqual(ROLE_KEYS, keys)
                     self.assertLessEqual(keys, SUPPORTED_KEYS)
@@ -323,9 +326,9 @@ class TestAgentFiles(unittest.TestCase):
         roles = [s for s in self.files if s in EXPECTED and EXPECTED[s][2] is ROLE_KEYS]
         self.assertGreaterEqual(len(roles), 10)
         for stem in roles:
-            desc, quoting = self.fields(stem)["description"]
             model, effort, _, _ = EXPECTED[stem]
             with self.subTest(agent=stem):
+                desc, quoting = self.fields(stem)["description"]
                 self.assertEqual(quoting, "double")
                 sentences = re.split(r"(?<=[.!?])\s+(?=[A-Z])", desc)
                 self.assertEqual(len(sentences), 2, sentences)
@@ -335,6 +338,50 @@ class TestAgentFiles(unittest.TestCase):
                     self.assertRegex(role, re.compile(r"\b%s\b" % word, re.IGNORECASE))
                 self.assertTrue(dispatch.startswith(DISPATCHER), dispatch)
                 self.assertTrue(dispatch.endswith(NOT_DIRECT), dispatch)
+
+
+def profile_rows(text):
+    """{agent: pin cell} for each `| `agent` | pin | ... |` row of the ## Profiles section,
+    or None when the section is missing."""
+    m = re.search(r"^## Profiles\n(.*?)(?=^## |\Z)", text, re.S | re.M)
+    if not m:
+        return None
+    rows = {}
+    for line in m.group(1).splitlines():
+        row = re.match(r"\|\s*`([\w-]+)`\s*\|([^|]*)\|", line)
+        if row:
+            rows[row.group(1)] = row.group(2).strip()
+    return rows
+
+
+class TestProfiles(unittest.TestCase):
+    """Each role description routes by model-routing.md § Profiles: the pointer resolves, and
+    the table there keeps each file's pin."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.rows = profile_rows(ROUTING.read_text(encoding="utf-8"))
+
+    def test_section_exists(self):
+        self.assertIsNotNone(self.rows, f"{ROUTING.name} has no ## Profiles section")
+
+    def test_every_role_file_is_a_row_with_its_pin(self):
+        roles = sorted(s for s in agent_files() if s in EXPECTED and EXPECTED[s][2] is ROLE_KEYS)
+        self.assertGreaterEqual(len(roles), 10)
+        for stem in roles:
+            model, effort, _, _ = EXPECTED[stem]
+            with self.subTest(agent=stem):
+                self.assertIn(stem, self.rows or {})
+                self.assertRegex(self.rows[stem], r"^%s / %s\b" % (model, effort))
+
+    def test_every_row_is_an_agent_file(self):
+        self.assertEqual(set(self.rows or {}) - set(agent_files()), set())
+
+    def test_reader_takes_rows_of_the_section_only(self):
+        text = ("## Profiles\n\n| Agent | Pin | When |\n|---|---|---|\n"
+                "| `planner` | opus / high | x |\n\n## Next\n\n| `scout` | sonnet / low | y |\n")
+        self.assertEqual(profile_rows(text), {"planner": "opus / high"})
+        self.assertIsNone(profile_rows("## Other\n"))
 
 
 class TestDocs(unittest.TestCase):
