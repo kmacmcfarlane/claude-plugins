@@ -21,3 +21,8 @@ Operator 2026-09-29 (.claude-sandbox/investigations/5140-decision-lifecycle/evid
 - next: —
 - blocked: —
 - learned: —
+agents replied: decision ledger and attention scheduler filed on their 76bc (scheduler as a component for control-plane contract 0a7c); wants pointers to 263c and a99c with the others
+operator-attention replied: filed r48-decision-scheduling-decisions-as-a-s-0495 (spec R48, their commit 9ef1ab1; their series decision-collector/06_decision-scheduling.md); adds two requirements: group by what a decision turns on (same fact) across sessions, and arrival-vs-clearance throughput as the scheduler metric; wants pointers to a99c and 263c; flags one decision ledger (in the unified work system) with their collector as a reader, relayed to agents
+agents replied: ledger design recorded on 76bc, to be settled with 0a7c (waits on agents decision 10); asked operator-attention (relayed) not to build a private ledger store meanwhile — a request, not a ruling
+operator-attention (c4443d7, their 07_ledger-split.md): accepts one ledger, drops private decisions.jsonl; proposes a timestamps-only observation log (shown|answered|deferred|swept) because no store records "shown"; moot if 76bc takes a shown field; will not build until agents or the operator answers — relayed to agents with our 5140 finding (no shown-at time in the store)
+agents position (76bc): ledger records timestamped lifecycle events (raised, shown, answered, deferred with wake, swept/dropped); no objection to operator-attention interim ids-and-timestamps log (their call); claude-plugins shown-at item filed as 0999, both peers told

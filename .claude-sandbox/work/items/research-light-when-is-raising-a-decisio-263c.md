@@ -26,3 +26,5 @@ Operator 2026-09-29 (.claude-sandbox/investigations/5140-decision-lifecycle/evid
 - 2026-09-29 claimed by Kyle-McFarlane@7696505da8e1
 dispatch: planner opus — light research spike, plan mode (series 263c-decision-raising-boundaries)
 agent: ab1d3379068e4381e (planner r1)
+notify: send agents a pointer when this series lands (agents asked)
+notify: send operator-attention a pointer when this series lands (their R48 depends on it)

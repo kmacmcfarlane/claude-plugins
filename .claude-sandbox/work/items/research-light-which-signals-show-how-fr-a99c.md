@@ -25,3 +25,6 @@ Operator 2026-09-29 (.claude-sandbox/investigations/5140-decision-lifecycle/evid
 - 2026-09-29 claimed by Kyle-McFarlane@7696505da8e1
 dispatch: planner opus — light research spike, plan mode (series a99c-operator-freshness-signals)
 agent: a8307a75146d1df1b (planner r1)
+notify: send agents a pointer when this series lands (agents asked)
+notify: send operator-attention a pointer when this series lands (their R48 depends on it)
+input from operator-attention: no store records that a decision was shown to the operator; their R47 (recency) and shared warm/cold test rest on it — a shown timestamp is a candidate signal source

@@ -37,3 +37,6 @@ agent: a77d75cda6cf7fcf5 (plan reviewer r2)
 plan review r2 NEEDS_CHANGES (1H 3M 1L): H past-cap history incomplete — a49b fifth round self-granted and cleared; librarian stopped 4 plans at the cap without asking (e770, caef after r5, 5140, 6d2c); operator granted more rounds on 9 of 11 cap answers (the lean to stop runs against that); M SRE backs only a pre-agreed outcome, not carrying findings; M ADP 6-0 1-65 (commanders write intent personally) omitted; M I2/I3 leans lack basis
 note for the operator: the librarians 5140/6d2c cap closures run against the operators 9-of-11 history of granting rounds — say so in the next message
 dispatch: planner opus — resume, serial 02
+serial 02 written: I1 lean now (b) self-grant one round only on quota headroom and shrinking findings, else stop and carry; I4 lean (d) operator writes intent
+dispatch: plan reviewer opus — fresh, round 3
+agent: a2aab621a4742e2dd (plan reviewer r3)
