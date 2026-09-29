@@ -26,3 +26,6 @@ Build F1 of .claude-sandbox/investigations/2eb7-effort-routing (00-04, plan revi
 - 2026-09-29 claimed by Kyle-McFarlane@7696505da8e1
 dispatch: implementer opus — marketplace shape change and new agents (routing rule 2); runs at the inherited session effort, which this item exists to fix
 agent: a7a61a3e688e0313b (implementer r1)
+r1 DONE b0af914: 10 agent files (name, description, model, effort), test_agents.py (24 tests, fail-first shown), manifests in parity, CLAUDE.md (layout, conventions, new Checks line), README, repo-map; claude plugin validate passes (pre-existing version warnings only); names provisional pending the naming question
+dispatch: reviewer opus — fresh reviewer, round 1
+agent: a542958cf2490ac7f (reviewer r1)
