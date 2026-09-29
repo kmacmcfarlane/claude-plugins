@@ -53,7 +53,8 @@ out.
 Every decision carries, at any level:
 
 1. **What is decided**, in plain words. Gloss every id, hash, file or item name on first use —
-   a bare `a3f9` or `7c41e0d` tells a cold reader nothing.
+   a bare `a3f9` or `7c41e0d` tells a cold reader nothing. Name items in plain words, the id
+   at most a trailing tag: load the `plain-names` skill (same plugin) and follow it.
 2. **Why now**, and what it blocks. When nothing forces it, say so — *why now: nothing forces
    it; raised because the audit turned it up* — and *blocks: nothing* is an honest answer.
 3. **The options**, each with its consequence — what happens to the world if it is chosen.

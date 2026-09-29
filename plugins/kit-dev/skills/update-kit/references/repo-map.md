@@ -95,7 +95,9 @@ claude-plugins/
     ├── kit-dev/               (maintaining this kit itself — where THIS skill lives)
     │   └── skills/{create-skill,update-kit,new-project-from-template,factor-analysis}/
     ├── operator-interaction/  (the agent-operator interface, starting with how decisions are raised and shown)
-    │   └── skills/decisions/  (references/{worksheet,rendering,replies,evidence-basis,rationale,gallery}.md)
+    │   └── skills/
+    │       ├── decisions/     (references/{worksheet,rendering,replies,evidence-basis,rationale,gallery}.md)
+    │       └── plain-names/   (plain names for what agents mention, the id a trailing tag)
     ├── ralph/                 (unattended agent loops over a backlog)
     │   └── skills/{backlog-yaml,backlog-entry,backlog-grooming}/
     ├── sandbox/               (isolated execution: claude-sandbox + checkout/worktree convention — a hook-owning plugin)

@@ -190,6 +190,7 @@ write to.
 `operator-interaction` is **confirmed** by the operator (2026-09-23), chosen for its scope: the
 interface and flow between agent and human operator. It ships no state yet (no data dir, no
 settings path). Its first skill's name, `decisions`, is **confirmed** by the operator (2026-09-24).
+Its second skill's name, `plain-names`, is **confirmed** by the operator (2026-09-29).
 
 ## Plugins today
 
@@ -571,19 +572,24 @@ and investigates directly without it.
 ### operator-interaction
 
 The agent–operator interface: how your agents put what they need from you in front of you so
-you can act on it where it appears. It starts with decisions — the most consequential thing an
-agent asks of its operator.
+you can act on it where it appears. It starts with decisions, the most consequential thing an
+agent asks of its operator, and with plain names for everything an agent mentions to you.
 
 | Skill | Description |
 |---|---|
 | `decisions` | Put a decision to the operator so they can understand and answer it where it is shown — a content floor every decision carries, a list line / card / block that scales with the stakes and with how far the operator is from the work, a set order, natural-language replies with an echo, and "decide later" with a wake |
+| `plain-names` | Name what an agent mentions to the operator — work items, tickets, branches, investigation series, commits — in plain words, with the id at most as a trailing tag (*the flaky upload test (7c2a)*); a tracker's stored short display name is used as given |
 
-The skill is knowledge only: no hooks, no settings, no state. It loads when an agent is about
-to ask you to decide, choose, approve or confirm something, or explicitly with
-`/operator-interaction:decisions`. Its `references/gallery.md` renders every case, and its
-`## Rulings` section lists what you have ruled, each with the alternative not taken, and
-names what is still provisional (paging a large cold re-show). It names no other
-plugin and needs nothing else here; skills that raise decisions can adopt it.
+Both skills are knowledge only: no hooks, no settings, no state. `decisions` loads when an
+agent is about to ask you to decide, choose, approve or confirm something; `plain-names` when
+an agent writes text you will read, or when a skill that writes to you loads it (the
+`decisions` floor does). Either loads explicitly with `/operator-interaction:decisions` or
+`/operator-interaction:plain-names`. `decisions`' `references/gallery.md` renders every case.
+Each skill's `## Rulings` section lists what you have ruled, each with the alternative not
+taken: `decisions` names what is still provisional (paging a large cold re-show), and
+`plain-names` marks the two calls that were not yours (one delegated, one made in review).
+The plugin names no other plugin and needs nothing else here; skills that raise decisions or
+write to you can adopt it.
 
 ### chat
 
