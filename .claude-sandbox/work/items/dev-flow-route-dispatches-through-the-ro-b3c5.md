@@ -28,3 +28,5 @@ agent: a3e2781fc5387b84c (implementer r1)
 r1 DONE_WITH_CONCERNS 67b64ed (on F1 b0af914): model-routing § Mechanism, § Profiles, § Critical work, § The xhigh trial; dev-cycle steps, rules 6-8, bindings, record-lines, fix-loop, agent-brief, review-brief, resume; librarian-mode routing, Model floor, Hold, record sink; idle-turn; README; test_agents (28 tests, TestProfiles); deviations: targets without an item are not trial units; dev-cycle SKILL.md 4475 words (fefd)
 dispatch: reviewer opus — fresh reviewer, round 1
 agent: ab66d9882d55fd0d2 (reviewer r1)
+review r1 NEEDS_CHANGES (0H 3M 7L): M transcript path rule wrong (Claude Code also rewrites "."); M the critical signal must use 6421s full word list (critical, crucial, foundational, important, or asking for fable); M helper (scribe/scout) dispatch lines break resume; lows: trial plan-review check on CLEAR path, store list and close owner, model-pin fallback, effort-pin run-now scope, fix-loop old records, S3b old lines, kit-repo widening, § Recording restates record-lines
+dispatch: implementer opus — resume, fix round 1

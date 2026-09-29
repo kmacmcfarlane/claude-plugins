@@ -29,3 +29,4 @@ operator-attention (c4443d7, their 07_ledger-split.md): accepts one ledger, drop
 agents position (76bc): ledger records timestamped lifecycle events (raised, shown, answered, deferred with wake, swept/dropped); no objection to operator-attention interim ids-and-timestamps log (their call); claude-plugins shown-at item filed as 0999, both peers told
 operator-attention: not building the interim log (591a428); 0999 shape requirements recorded on 0999
 order: the research briefing (2081) goes first, so the operator is warm when the pyramid decisions arrive
+pyramid note (b3c5 review r1): 6421 Q2 (z) impact must read "keeps its trigger but runs at fable high, down from the xhigh it inherits today"

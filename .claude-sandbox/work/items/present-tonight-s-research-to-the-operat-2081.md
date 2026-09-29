@@ -19,7 +19,7 @@ Acceptance: (1) understanding first, not decisions: per topic, the question in t
 
 ## Handoff
 - doing: —
-- next: —
+- next: answer the operators follow-up questions on the briefing (chat or doc comments); then the pyramid turn (69ee)
 - blocked: —
 - learned: —
 
@@ -28,3 +28,4 @@ Acceptance: (1) understanding first, not decisions: per topic, the question in t
 form: a Claude Docs document started from the Docs artifact type (quickstart 2026-09-29), filled through the connector; content drafted first by an agent into the scratchpad
 dispatch: brief writer opus — drafts the briefing markdown from the closed series and the store (judgement on what matters)
 agent: a1402e59185a5834c (brief writer)
+briefing delivered 2026-09-29 as the Claude Docs document "Decision Handling Research Briefing": https://claude.ai/code/artifact/22c2745f-4b0a-4030-85dd-5b5ac0369287 (draft at scratchpad briefing-2081.md, ~3.5K words; 14 sections filled, rev 15); awaiting the operators follow-ups before the pyramid (acceptance 6)
