@@ -25,3 +25,6 @@ Acceptance: (1) understanding first, not decisions: per topic, the question in t
 
 ## Notes
 - 2026-09-29 claimed by Kyle-McFarlane@7696505da8e1
+form: a Claude Docs document started from the Docs artifact type (quickstart 2026-09-29), filled through the connector; content drafted first by an agent into the scratchpad
+dispatch: brief writer opus — drafts the briefing markdown from the closed series and the store (judgement on what matters)
+agent: a1402e59185a5834c (brief writer)

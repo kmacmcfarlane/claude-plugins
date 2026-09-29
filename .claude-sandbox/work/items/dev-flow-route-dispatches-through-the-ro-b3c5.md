@@ -25,3 +25,6 @@ acceptance added from 900a review r1: model-routing.md gains § Profiles (resolv
 dispatch: implementer opus — routing rule text across dev-cycle and librarian-mode (routing rule 2); branched from worktree-dev-flow-ten-role-agents-with-pinned-mod-900a (F1 unmerged pending 109)
 note: not claimable until F1 is done (dep); built ahead on the F1 branch by librarian ruling, claim at F1 landing
 agent: a3e2781fc5387b84c (implementer r1)
+r1 DONE_WITH_CONCERNS 67b64ed (on F1 b0af914): model-routing § Mechanism, § Profiles, § Critical work, § The xhigh trial; dev-cycle steps, rules 6-8, bindings, record-lines, fix-loop, agent-brief, review-brief, resume; librarian-mode routing, Model floor, Hold, record sink; idle-turn; README; test_agents (28 tests, TestProfiles); deviations: targets without an item are not trial units; dev-cycle SKILL.md 4475 words (fefd)
+dispatch: reviewer opus — fresh reviewer, round 1
+agent: ab66d9882d55fd0d2 (reviewer r1)
