@@ -47,3 +47,5 @@ dispatch: plan reviewer opus — fresh, round 3
 agent: a6fd7cd904891c48c (plan reviewer r3)
 plan review r3 NEEDS_CHANGES (0H 1M 3L): M Q5 (a) step-down: pinned items still ask; research cross-checks are never queued; step down only from an items first review; lows: pin test wording, reviewer-deep trigger no longer an option, all-(z) defaults inconsistent, Q1/Q2 wording
 librarian ruling: hold serial 03 (final, round 4 is the cap) until 6421 serial 02 lands, then fold both
+dispatch: planner opus — resume, serial 03 (final; round 4 is the cap) folding r3 and 6421 02
+agent: a1f0aa368080b709e serial 03 (resumed)

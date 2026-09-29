@@ -38,3 +38,6 @@ agent: a34e04d5a940f9bbe (plan reviewer r2)
 plan review r2 NEEDS_CHANGES (2H 3M 3L): H1 like-for-like the xhigh evidence is null (kit-repo medium plans also 3.5 rounds); Q1 (a) must say it is narrower than the operators ask and rest on cost; H2 the xhigh trial exit test cannot reliably fail (no baselines; build median 1 round after a late high); M Q1 overlaps 2eb7 Q3, planner effort fixed unasked; M fable high at plan stage has no exit and the evidence favours xhigh; M narrowed M test uncomputed (44-52%, $12-15), "row" wording; lows
 CORRECTION owed to the operator: "planning at xhigh did not help (3.5 vs 2.7)" is null evidence like-for-like, not evidence against
 dispatch: planner opus — resume, serial 02
+serial 02 written: Q1 (a) plans start at opus high, xhigh trial on alternate hard plans (narrower than the ask, stated; rests on cost and learning; evidence null like-for-like); Q2 (b) proven stages at fable xhigh + plan stage at fable high with a keep rule (2 of first 8); xhigh trial exit test: planners only, alternating arms, cap-hit measure, n>=6 per arm
+dispatch: plan reviewer opus — fresh, round 3
+agent: ae03279cea851635e (plan reviewer r3)
