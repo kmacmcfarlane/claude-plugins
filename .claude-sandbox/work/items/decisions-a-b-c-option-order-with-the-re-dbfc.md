@@ -24,3 +24,11 @@ Operator feedback 2026-09-29 on the decisions skill: (1) 'these options should b
 - 2026-09-29 claimed by Kyle-McFarlane@7696505da8e1
 dispatch: implementer opus — operator-ruled rule wording across three skills (routing rule 2)
 agent: aafc9cdc4b38acb54 (implementer r1)
+r1 DONE 0e87ae3: 16 files across decisions, librarian-mode, dev-cycle, research-prune, work-review, create-skill; stored card gains if left:/round costs:; AskUserQuestion (Recommended)-first left as the dialog convention
+dispatch: reviewer opus — fresh reviewer, round 1
+agent: afaa2c3ed186163c2 (reviewer r1)
+review r1 NEEDS_CHANGES: 1 medium (dev-cycle SKILL.md size, pre-existing: cleared by filing a trim item, filed), lows 2-6, nits 7-12
+dispatch: implementer opus — resume, fix round 1
+r1 fixes 9332809: findings 2-12 fixed (research round-ask home in intensity-and-routing.md); 1 cleared by fefd
+dispatch: reviewer opus — fresh reviewer, round 2
+agent: ac1404c69ea8fd62f (reviewer r2)

@@ -25,3 +25,12 @@ Operator 2026-09-29, replying to decisions 89-97: 'how are decisions created and
 dispatch: planner opus — research spike, plan mode (series 5140-decision-lifecycle)
 agent: a48708cf8f38447a0 (planner r1)
 notify: send agents a pointer when this series lands (agents asked)
+series 00 written: 94 numbered decisions in 13 days (+38 outside the counter); 72% took the rec; 18 unanswerable as posed; 14 never stored, 9 answer formats; decide-alone invisible; no retirement; 5 open questions; 3 store fixes proposed as rule-in-force
+dispatch: plan reviewer opus — fresh, round 1 (verify counts)
+agent: ad9b50151acc7fd54 (plan reviewer r1)
+plan review r1 NEEDS_CHANGES (2H 5M 9L): H1 Q5/C5 duplicate dbfc; H2 D-1 (68/69 as deferrals) is a guess, not a rule in force; M: 43 bare letters is 29; 18-unanswerable label inconsistent; 175 D lines include restated rulings; stakes: judged too early; Q2(b)/Q5(a) belong to 8dee
+CORRECTION owed to operator: "43 as a bare letter" is 29 (43 took the rec as offered)
+dispatch: planner opus — resume, serial 01
+serial 01 written: recounts (29 bare letters; 195 D lines, <=82 own rulings); only D-3 stays rule-in-force; D-1 -> OQ6; C5 dropped; OQ1,3,4,5,6 (OQ2 to 8dee)
+dispatch: plan reviewer opus — fresh, round 2
+agent: a19ef8d90eb76190c (plan reviewer r2)

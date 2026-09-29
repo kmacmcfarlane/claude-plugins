@@ -25,3 +25,12 @@ Operator 2026-09-29: 'could there be a performance difference in replying to a b
 dispatch: planner opus — research spike with web evidence, plan mode (series 6d2c-batched-decision-replies)
 agent: a3aadbcfa2cdcba92 (planner r1)
 notify: send agents a pointer when this series lands (agents asked)
+series 00 written: 16 multi-decision replies/109 parts audited, 0 dropped, 1 misread (pre-echo), 1 question acted on without words; rec (b) ledger before acting; 3 open questions
+dispatch: plan reviewer opus — fresh, round 1 (verify sources)
+agent: a3f07ddf0e7d185f9 (plan reviewer r1)
+plan review r1 NEEDS_CHANGES (2H 8M 9L): H1 self-check evidence contradicts current-model guidance; H2 pilot adopts on noise; M1-M3 literature transfers overstated (two already relayed to the operator in chat as findings -> CORRECTION owed); M4 counts miss rows 4 and 8; M5 costly-to-undo undefined; M6-M8 question options
+CORRECTION owed to operator: "misses are follow-through items" and "one per turn does worse" were relayed as findings; the sources do not support them for this case
+dispatch: planner opus — resume, serial 01
+serial 01 written: rec now (c) single pass + two sentences + hold on materially ambiguous relied-on actions; pilot is priced option (g) ~$47-70; one open question
+dispatch: plan reviewer opus — fresh, round 2
+agent: a37520fd95af6852f (plan reviewer r2)

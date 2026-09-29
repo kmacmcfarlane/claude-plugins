@@ -77,3 +77,13 @@ answer 95: you decide — chose (a) leave store-commit subjects terse, because t
 next: planner serial 03 folds answers 90-95 (93b adds a wi field) before the build
 dispatch: planner opus — serial 03 folding answers 90-95
 agent: a945c3247aaba07d8 (planner serial 03)
+serial 03 written (03_rulings-folded.md): F1 plain-names skill, F2 short_display_name in wi (1-40 chars, tests), F3 consumers (after F1+F2); 94 withdrawn to agents
+dispatch: plan reviewer opus — fresh, serial 03 round 1
+agent: a3e74832845f19acb (plan reviewer s03 r1)
+plan review s03 r1 NEEDS_CHANGES (1H 3M 6L): H1 rebase->merge order after dbfc, overlap 7 files; M1 backfill-on-next-write exceeds answer 93 -> librarian ruling: drop it (set at filing or explicit wi set only); M2 exit 1 in cmd_add/cmd_set, blank clears; M3 marketplace.json descriptions
+dispatch: planner opus — resume, serial 04
+serial 04 written: all 10 findings folded; F2 disjoint from dbfc and can start now; F1 then F3 after dbfc
+dispatch: plan reviewer opus — fresh, serial 04 round 2
+agent: a7f46d286ac0436ae (plan reviewer s04 r2)
+plan review s04 r2 CLEAR (0H 0M 6L; lows folded into the feature items)
+factored: F2 work-items-optional-short-display-name-f-928d (now), F1 operator-interaction-the-plain-names-ski-cad6 (after dbfc), F3 plain-names-in-the-reports-and-consumers-8e04 (after F1+F2)
