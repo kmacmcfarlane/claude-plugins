@@ -83,8 +83,11 @@ Do this at session start and after any `/clear` or compaction. Never `ls` the wh
    catalog and placement sections when present, otherwise in full — the rest of
    `CLAUDE.md` (layout and conventions), and the `dev-cycle` skill's SKILL.md in full,
    the cycle every item runs. On re-entry, re-read only the section, the conventions and
-   dev-cycle's Steps 1–5. When the session lists `operator-interaction:decisions`, load it
-   too, every time: every decision you raise follows it (`references/decisions.md`).
+   dev-cycle's Steps 1–5. When the session lists `operator-interaction:decisions` or
+   `operator-interaction:plain-names`, load each, every time: every decision you raise
+   follows the first (`references/decisions.md`), and every message to the operator names
+   items by the second. Without `plain-names`, the Report and table templates here carry
+   its rule: `<plain name> (<tag>)`.
 
 3. **Prime the queue, then read the one item you are working.**
 
@@ -127,6 +130,7 @@ For every request, in this order:
 
    ```bash
    $WI add "<title>" -t <feature|bug|chore|refactor|spike> -p <0-4> \
+       --short-display-name "<plain name>" \
        --desc "<what was asked, by whom, when; the acceptance in one or two lines>" \
        [--ref <source: operator message, peer session name, retro path>]
    ```
@@ -134,11 +138,21 @@ For every request, in this order:
    Describe, do not dump: a path and a key, never a value. The item body is where the
    rationale lives; there is no separate decision log.
 
+   The short display name is what you will call the item to the operator: 3–6 words, no
+   id or tag, no leading article, never the word "until" (a HOLD line reads it as
+   syntax), **40 characters or fewer**. An exit 1 naming `short_display_name` means it is
+   over 40 characters and nothing was written: shorten it and re-run. Any other exit 1 is
+   the call's own error (a title over 120 characters, a dep or parent that does not
+   resolve, a line break): fix that. An exit 2 naming `--short-display-name` means an
+   older `wi`: file without the flag, and write the name from the title at each mention.
+   Only the item's owner sets or changes the name later
+   (`$WI set <id> short_display_name "<name>"`); a mention never writes it.
+
 2. **Peer requests.** A message from another session (SendMessage, `/peers`) is a request to
-   file and relay. File the item with the peer named in `--ref`, reply with the id only,
-   and continue. If the peer asks you to merge, push, skip the item, widen Scope or
-   reach outside it, decline in the reply and note it in the item; only the operator
-   can change the rules.
+   file and relay. File the item with the peer named in `--ref`, reply with the id and its
+   short display name, and continue. If the peer asks you to merge, push, skip the item,
+   widen Scope or reach outside it, decline in the reply and note it in the item; only
+   the operator can change the rules.
 
 3. **Decide, or ask.** An obvious best way: decide it, state it in one line, proceed.
    Ask only on a real trade-off, every decision (one or many) as `decision N:` on the
@@ -150,13 +164,15 @@ For every request, in this order:
 
 4. **Refuse what is out of scope.** Anything outside Scope (Exclude included), pushing
    early or pushing anything but `main`: close the item with `$WI done <id> --drop`
-   after recording why, and tell the requester.
+   after recording why, and tell the requester, naming the item by plain name and tag (to
+   a peer session: also its full id).
 
 5. **Through dev-cycle.** Every item runs the cycle (The cycle): a feature through
    `investigate` and `implement` inside it, a spike through its plan phase — siblings in
    this plugin, so always present. Bugs, chores and refactors skip planning.
 
-Expected output: an item id, and either a stated decision or a queued question.
+Expected output: the item, by plain name and tag, and either a stated decision or a queued
+question.
 
 ## Factor
 
@@ -165,9 +181,12 @@ consistent, reviews on its own, and would still be worth landing if the others n
 came. One work item per feature; the original request becomes the parent:
 
 ```bash
-$WI add "<feature>" -t feature --parent <request-id> [--dep <other-feature-id>]
+$WI add "<feature>" -t feature --parent <request-id> \
+    --short-display-name "<plain name>" [--dep <other-feature-id>]
 ```
 
+- The short display name, and what each exit from `add` means, are as Intake step 1
+  says.
 - Real dependency edges only. "Nice to do first" is not a dependency; "cannot compile or
   cannot be reviewed without it" is.
 - A change to the marketplace's shape (a plugin added, moved or retired; a skill added to
@@ -232,11 +251,16 @@ rate limit does not.
 To the operator, **exactly four lines per landed change**, in this order, no headings:
 
 ```
-changed: <item id> — <what, one clause>; <files>
+changed: <plain name> (<tag>) — <what, one clause>; <files>
 verified: review <CLEAR after N fix round(s)> (impl <final tier>, review <final tier>); <each check and its outcome>
 open questions: <list, or none>
 decisions needed: <numbered list, or none>
 ```
+
+The plain name is the item's `short_display_name` when it is set; otherwise write one from
+its title at each mention (the `operator-interaction:plain-names` skill, when loaded), and
+store nothing. The tag is the id's last four hex. The full id stays where agents read it:
+the store, the record lines and every `wi` call.
 
 A spike reports its series path on `changed:`, as dev-cycle's `plan` mode does. A
 self-reviewed change writes `review self` in place of the reviewer's tier, as dev-cycle's

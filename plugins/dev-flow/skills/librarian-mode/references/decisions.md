@@ -68,7 +68,8 @@ renders what the operator read instead of composing it again.
   question, as the card's title shows it, and the question alone: a round ask's
   justification goes in `if left:` and `round costs:`, never in the headline. `raised:`
   carries the time, not a date alone (an existing date-only `raised:` is kept as
-  written); every line glosses its ids (no bare item id, sha, series or finding number).
+  written); every line names items by plain name with the tag trailing, and glosses any
+  other id (no bare item id, sha, series or finding number).
   The options are every option the source offered (a series, a dispatch's `decision:`
   line), one choice per letter: a compound choice gets its own letters, never `(a)+…`.
   When the decision is ⚠ one-way — or any decision shown as a block — write `⚠ one-way`

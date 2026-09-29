@@ -27,7 +27,10 @@ WI="python3 ${CLAUDE_PLUGIN_ROOT}/skills/work-items/scripts/wi.py"
 - **Plain words for items.** Name every work item by what it is ("move the nightly
   export off the old host"), with its id at most as a trailing tag: `(a1b2)`, the last four
   hex of the id.
-  A bare id means nothing to the operator.
+  A bare id means nothing to the operator. The name is the item's `short_display_name`
+  from `wi estate --json` when it is set, else one you write from the title; never set
+  it, since the review is read-only. The `operator-interaction` plugin's `plain-names`
+  skill, when loaded, is the full rule.
 - Secrets: an item may name a path or key; never print a value, even one found in an item.
 
 ## Step 1: Sweep
@@ -119,6 +122,9 @@ is loaded, follow it for how to write that decision. Without it, give a numbered
 decision per number, each with its own recommendation, its options in (a), (b), (c) order
 with their impact and the recommended one in bold — never moved first — and "decide later"
 always offered.
+
+When the session lists `operator-interaction:plain-names`, load it before writing the
+overview. Without it, the "Plain words for items" rule above stands.
 
 ## Examples
 
