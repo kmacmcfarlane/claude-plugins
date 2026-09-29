@@ -69,7 +69,8 @@ default by omission; every deferral has a wake. Something must evaluate that wak
 can check a time wake, but an event wake needs whoever watches for the event (your own
 session for your own work; for other sessions, a cross-session collector, when one exists) —
 and a deferred decision is shown in full again only once its wake has fired; until then it
-stays a list line showing its wake.
+stays a list line showing its wake — except on a cold re-show, where it is a card that opens
+with its wake (`references/rendering.md` § Re-show with what changed).
 
 **`tell me [what]` — more context.** Answer under the **same number** with an **Added:** line
 and only the lines the fact changes — an option's impact, the rec line when it moves. The card

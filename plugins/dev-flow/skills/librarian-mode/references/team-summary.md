@@ -40,13 +40,13 @@ Plain text, in this order:
    any fetch and merge; the value noted before the push that succeeds is `old` (SKILL.md
    § Report).
    The second line, plain text right under the first, is one short sentence naming the
-   pickup step, then one confirming review: in a plugin marketplace, "Update your
-   plugins to pick it up." — a change under `plugins/` reaches a user only after
+   pickup step, then one confirming review: when the push carries a change under
+   `plugins/` of a plugin marketplace, "Update your plugins to pick it up." — a change under `plugins/` reaches a user only after
    `/plugin marketplace update <marketplace name>` (the `name` in
    `.claude-plugin/marketplace.json`) and then `/reload-plugins`, which is what that
    sentence stands for — followed by "Every change was reviewed before it merged." With
-   no pickup step — a plain repo with nothing to install or reload — the second line
-   keeps only the review sentence.
+   no pickup step — a plain repo with nothing to install or reload, or a push with no
+   change under `plugins/` — the second line keeps only the review sentence.
    With `Push: none` or no `origin`, `old` is `main` before the batch's first merge (that
    merge's first parent), the header's first line names the range alongside `local only,
    not pushed` (for example `local only, not pushed, a1b2c3d..e4f5a6b`), and the second
@@ -59,8 +59,8 @@ Plain text, in this order:
    or the evidence behind it; and never a commit subject, an item id, a tier, a model, a
    review round, a fix round or a verdict. Several items that make one visible change
    share a title and its bullet; maintenance and plumbing (tests, refactors, dependency
-   bumps, store bookkeeping) collapse the same way, under one title such as
-   `**Housekeeping**`. Order the areas by what the reader feels: the change most people
+   bumps) collapse the same way, under one title such as `**Housekeeping**`. Work-item
+   store and checkpoint commits get no bullet at all. Order the areas by what the reader feels: the change most people
    will notice first, invisible plumbing last.
 
 3. **No tables, no sub-bullets, no lists of files or commit shas under an item.** The

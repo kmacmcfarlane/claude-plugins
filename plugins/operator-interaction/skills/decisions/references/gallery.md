@@ -334,7 +334,7 @@ wide and the reader is cold, so it is a block (with no read-back: it is not ⚠)
 each card with its raised-at time, so each is rendered from the stored card, plus what changed
 while it waited — not composed again.*
 
-**Decisions** — *3, raised yesterday · shown again after a context reset*
+**Decisions** — *3 open · shown again after a context reset*
 
 **62 — back, as you asked ("until the load test finishes"):** move the job queue to the new message broker?
 *While it waited (1 day): the load test finished — the new broker held three times peak load with no lost messages. Options and recommendation unchanged.*
@@ -400,10 +400,10 @@ report shows it as a line ending (shown before), unless something about it chang
 ## 22. Paging a cold re-show
 
 *Situation: after a context reset, eight decisions are open; one is ⚠. The first group (three
-decisions on the release) and the ⚠ one are rendered in full; the other four are lines. The
-heading says so.* *(Paging is provisional.)*
+decisions on the release) already makes three, so it and the ⚠ one are rendered in full; the
+other four are lines. The heading says so.* *(Paging is provisional.)*
 
-**Decisions** — *8 open · 4 shown in full · one ⚠ one-way*
+**Decisions** — *8 open · shown again after a context reset · 4 shown in full · one ⚠ one-way*
 
 *…the three release cards and the ⚠ block, then the list, where the four held back read:*
 
