@@ -3,13 +3,12 @@ id: research-criteria-for-each-model-and-eff-6421
 title: "research: criteria for each model and effort tier, from the operator's real conversations"
 short_display_name: tier criteria from real usage
 type: spike
-status: doing
+status: done
 priority: 0
 parent: model-routing-set-reasoning-effort-per-r-2eb7
-owner: Kyle-McFarlane@7696505da8e1
-claimed: 2026-09-29T07:16Z
 created: 2026-09-29
 updated: 2026-09-29
+closed: 2026-09-29
 refs:
   - operator 2026-09-29
 ---
@@ -44,3 +43,9 @@ agent: ae03279cea851635e (plan reviewer r3)
 plan review r3 NEEDS_CHANGES (0H 2M 3L): M1 false pass under 1% holds only at the 86% base (15% at 60%); fix with "at least 3 fewer than control" and fresh planner in both arms; M2 nothing says what runs after a pass; trial cost +$5-12/week (6-9 hard plans a week), not under +1%; about 2 weeks; lows: keep rule about 10% like for like, trial unit a late high at round 1-2 (not the cap 8dee redesigns), no shared counter, two "you"
 CORRECTION owed to the operator: the xhigh trial costs about $5-12 a week more, not under 1%
 dispatch: planner opus — resume, serial 03 (final; round 4 is the cap)
+serial 03 final: Q1 (a) trial, late high at round 1-2, half the plans by item id get fresh xhigh vs fresh high, pass = at least 3 fewer misses of 6, false pass <=7%, power about 54%, +$5-12/week (after a pass +$5-23); (b) +$44-72/week; (c) named only. Q2 (b) fable high plan stage with keep rule (kept about 80% if the 1-in-3 holds, wrongly about 10%)
+dispatch: plan reviewer opus — fresh, round 4 (the cap)
+agent: a590787fb25f4f8e7 (plan reviewer r4)
+plan review r4 CLEAR (3 lows, applied when the cards are rendered: Q2 (b) base "1 of 3 after an opus review; only one after a pass (n=1)"; the bump lasts one round (+$3-8/week, +$3-16 after a pass) or until CLEAR/review 3; false pass "about 7% (7.3% worst)", measure "not CLEAR by the third review")
+closed on its series 00-03 + reviews r1-r4; its five questions go to the pyramid (69ee); pointer owed to agents and operator-attention (delta 01)
+- 2026-09-29 done
