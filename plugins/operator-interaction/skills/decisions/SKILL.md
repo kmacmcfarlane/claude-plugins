@@ -34,7 +34,8 @@ out.
 - **Raise decisions as text in your message**, per this skill — not through a modal dialog
   (AskUserQuestion) unless the rules you are running under require one: a dialog cannot
   carry the list, the hint, the echo or `later`.
-- **The decisions come last in the message**, the list and the hint at the very end, where the
+- **The decisions come last in the message** — the last thing written before you stop, after
+  any follow-up in the same turn — the list and the hint at the very end, where the
   operator's eye is when you stop.
 - **Keep the caller's numbering** when it has a counter; otherwise number from 1 in this
   session. Never reuse a number.
@@ -63,7 +64,9 @@ Every decision carries, at any level:
   policy judgement); say why.
 - A named **template** — a recurring decision with fixed options, such as a fixed
   review-round cap waiver — meets the floor by reference once the operator has seen the
-  template; show it as a card the first time.
+  template; show it as a card the first time. Only the caller names templates, with their
+  options; a decision whose options differ is not that template, and a caller that names
+  none has none.
 
 Two labels mark things that are **not decisions yet**: an **Alert** (a time-critical fact, sent
 bare now because forming options would cost more than the alert is worth; the options follow)
@@ -133,7 +136,10 @@ placed by its most pressing member, and the same precedence holds inside a group
    deadline, soonest first. Say the deadline on the line.
 2. **⚠ one-way.**
 3. **Waiting cost** — what it blocks, and who else waits on it.
-4. **Oldest first.**
+4. **Oldest first**; a tie goes to the lower number.
+
+On a cold re-show, a deferred decision whose wake has not come goes last
+(`references/rendering.md` § Re-show with what changed).
 
 ## Several decisions in one message
 
@@ -154,11 +160,12 @@ number and position and stays raised on later re-shows.
 
 **A cold re-show** — whenever the reader is cold on any open decision (§ Before you write) —
 shows each open decision the reader is cold on at card level or above, each opening with what
-changed while it waited (`references/rendering.md` § Re-show with what changed). When the
-store carries the card, render the stored card; do not compose it again. **Paging:** when
-more than five would be shown, render in full the first group or the first three decisions,
-whichever is larger, plus every ⚠; the rest are lines ending *(expand for the card)*, and the
-heading says *8 open · 4 shown in full*. *(provisional — pending the operator's ruling)*
+changed while it waited (`references/rendering.md` § Re-show with what changed, which also
+gives its heading). When the store carries the card, render the stored card, checked and
+repaired as that section says; do not compose it again. **Paging:** when more than five
+would be shown, render in full whole groups, in list order, until at least three decisions
+are shown, plus every ⚠; the rest are lines ending *(expand for the card)*, and the heading
+says how many are shown in full. *(provisional — pending the operator's ruling)*
 
 ## Replies
 
