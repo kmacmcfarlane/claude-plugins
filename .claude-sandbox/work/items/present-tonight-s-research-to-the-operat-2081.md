@@ -3,8 +3,10 @@ id: present-tonight-s-research-to-the-operat-2081
 title: "present tonight's research to the operator: the key findings and considerations, before the pyramid decision turn"
 short_display_name: research briefing for the operator
 type: chore
-status: todo
+status: doing
 priority: 0
+owner: Kyle-McFarlane@7696505da8e1
+claimed: 2026-09-29T17:05Z
 created: 2026-09-29
 updated: 2026-09-29
 refs:
@@ -20,3 +22,6 @@ Acceptance: (1) understanding first, not decisions: per topic, the question in t
 - next: —
 - blocked: —
 - learned: —
+
+## Notes
+- 2026-09-29 claimed by Kyle-McFarlane@7696505da8e1

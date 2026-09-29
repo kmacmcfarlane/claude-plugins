@@ -2,15 +2,14 @@
 id: librarian-where-the-line-sits-between-ju-8dee
 title: "librarian: where the line sits between just doing it, forwarding, and asking the operator (policy spike)"
 type: spike
-status: doing
+status: done
 priority: 1
 deps:
   - research-light-when-is-raising-a-decisio-263c
   - research-how-decision-makers-control-whi-d618
-owner: Kyle-McFarlane@7696505da8e1
-claimed: 2026-09-29T15:59Z
 created: 2026-09-29
 updated: 2026-09-29
+closed: 2026-09-29
 refs:
   - decision 97
   - operator 2026-09-29
@@ -45,3 +44,14 @@ dispatch: plan reviewer opus — fresh, round 2
 agent: af37de614a49fb81f (plan reviewer r2)
 plan review r2 NEEDS_CHANGES (0H 2M 1L): M "session end" is days for a standing librarian (this one ran 09-22..09-29; compactions 7h-4d apart): state the rate or choose a more frequent bound; M L3a: the case behind 97 (a skill refresh) falls outside every option — disclose; "within the owners next turn" unsupported; L1b vs L3a disagree on whose trivial test governs; L apex (c) vs L5 cell
 dispatch: planner opus — resume, serial 02
+serial 02 written: L3b silent forward lands back at the first reply/Report/Idle turn after the operators next message (about 25-90 min active); L4 tier recomputed each Report, rises one tier per operator turn, later stops it; L3a discloses 97 was skill text, new (d) prepares another repos skill text for owner review; L1b this repo only
+dispatch: plan reviewer opus — fresh, round 3
+agent: afebea490a98fcceb (plan reviewer r3)
+plan review r3 NEEDS_CHANGES (0H 2M 2L): M L4 blockers reach tier 1 within two operator turns (minutes), so tier 1 means old not important; later only works on numbered decisions; M L3a (b)/(d) ask the owner to merge a peers branch, which its rules decline today, and (d) is a peer-relayed rule that L1a raises to the operator; L the bounds pass over answer 78 (a)s default wake unsaid; L a bold sentence starts with (d)
+dispatch: planner opus — resume, serial 03 (final; round 4 is the cap)
+serial 03 final: L3a (a) this repo only, forward the rest ((b)/(d) need receivers to accept peer branches; (d) still reaches the operator); L4 (b) tier 1 for impact and deadlines only, age lifts to tier 2 at Reports, later N / later <name> holds; L3b bound uses the operators next turn, named against 78 (a)
+dispatch: plan reviewer opus — fresh, round 4 (the cap)
+agent: a054ca3935ca576cb (plan reviewer r4)
+plan review r4 CLEAR (3 lows applied when the pyramid cards are rendered: apex (c) row vs L1a (c); tier 3 covers P3-P4; a later-wake restarts the age count)
+closed on its series 00-03 + reviews r1-r4; its apex and layers go to the pyramid (69ee); follow-on features F1-F8 are filed once the operator answers
+- 2026-09-29 done
