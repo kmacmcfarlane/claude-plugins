@@ -31,6 +31,13 @@ out.
   confirmed, and `you decide` never takes the one-way option.
 - **No timed defaults on actions.** Silence never turns into an action.
 - **Never show a confidence percentage**, and never use one to order decisions.
+- **Options in letter order.** (a), (b), (c) …, with decide later last as (z). The
+  recommended option keeps its letter and its place and is the one option in **bold**; it
+  is never moved first. With no recommendation, no option is bold.
+- **Every decision shows its own recommendation where the operator reads it** — its own
+  list line, and its own card or block. Never fold several decisions into one line or card
+  that lists their recommendations together (`92–95 — …`), however related: a group
+  (§ Order) keeps them side by side, each one whole.
 - **Raise decisions as text in your message**, per this skill — not through a modal dialog
   (AskUserQuestion) unless the rules you are running under require one: a dialog cannot
   carry the list, the hint, the echo or `later`.
@@ -57,6 +64,17 @@ Every decision carries, at any level:
 6. **The basis** — what the claims rest on (§ Evidence).
 7. **What is unknown.**
 
+**An ask for another round** — a review-round cap waiver, or any ask for one more round of
+work, review or investigation — also carries its **justification**, or the operator has
+nothing to weigh it by:
+
+- **If left:** each leftover finding, and what it would break if the work stops here.
+- **A round costs:** the time, the quota, and the operator's attention — this answer, and
+  another if the round does not settle it.
+
+High impact at a modest cost justifies the round; the recommendation's reason says which
+way it falls.
+
 **Labelled exceptions** — each carries its label, since a silent gap is a floor failure:
 
 - *your preference — no recommendation*: no fact settles it; options, no recommendation.
@@ -64,9 +82,11 @@ Every decision carries, at any level:
   policy judgement); say why.
 - A named **template** — a recurring decision with fixed options, such as a fixed
   review-round cap waiver — meets the floor by reference once the operator has seen the
-  template; show it as a card the first time. Only the caller names templates, with their
-  options; a decision whose options differ is not that template, and a caller that names
-  none has none.
+  template; show it as a card the first time. Only the fixed options ride by reference: an
+  ask for another round shows its justification every time, since what is left and what a
+  round costs change each time. Only the caller names templates, with their options; a
+  decision whose options differ is not that template, and a caller that names none has
+  none.
 
 Two labels mark things that are **not decisions yet**: an **Alert** (a time-critical fact, sent
 bare now because forming options would cost more than the alert is worth; the options follow)
@@ -100,9 +120,9 @@ never when others rely on it. When in doubt, ask.
 Three levels; the templates are in `references/rendering.md`:
 
 - **List line** — every decision gets one: **bold number and title**, recommendation, stakes,
-  basis, and its age, what it blocks and any deadline.
-- **Card** — what is decided, why now, the options with their impact in italics, decide
-  later, then `Rec · basis — reason · unknown`.
+  basis, and its age, what it blocks and any deadline; a round ask, its justification too.
+- **Card** — what is decided, why now (and a round ask's justification), the options with
+  their impact in italics, decide later, then `Rec · basis — reason · unknown`.
 - **Block** — a card plus: context the reader may have lost, a section per option (*what
   happens*, *undo*, *who is affected*), and the basis drill-down with evidence links.
 
@@ -230,6 +250,14 @@ argues for it.
   once.
 - **Hint scope** — messages with two or more decisions. Not taken: every message that asks
   for a decision.
+- **Option order** (2026-09-29) — (a), (b), (c) … (z), the recommended option in bold in
+  its own place. Not taken: the recommended option moved first, as a modal dialog lists it.
+- **A recommendation on every decision** (2026-09-29) — shown on the decision's own line
+  and card, never folded into a line or card shared with others. Not taken: one grouped
+  entry for related decisions, listing their recommendations together.
+- **Round asks justify themselves** (2026-09-29) — what the leftover findings would break,
+  and what the round costs in time, quota and attention. Not taken: a bare waiver ask whose
+  template carries the floor by reference.
 
 Still provisional, marked where it appears: **paging** on a cold re-show.
 

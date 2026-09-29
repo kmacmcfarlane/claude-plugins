@@ -241,11 +241,19 @@ decisions needed: <numbered list, or none>
 A spike reports its series path on `changed:`, as dev-cycle's `plan` mode does. A
 self-reviewed change writes `review self` in place of the reviewer's tier, as dev-cycle's
 Step 6 does.
-`decisions needed:` is numbered — one decision per number, its options and their
-impact, recommendation first — so the operator answers "2: b". A lone decision is still
+`decisions needed:` is numbered — one decision per number, each with its own
+recommendation, its options in (a), (b), (c) order with their impact and the recommended
+one in bold, never moved first — so the operator answers "2: b". A lone decision is still
 numbered; a number is never reused, and an unanswered one keeps it. The counter lives in
-the store: raising a decision appends `decision N: <one line>` to its item's body, and
-the reply `answer N: <reply>`; on re-entry continue from the highest N (Rehydrate step
+the store: raising a decision appends one line to its item's body — one physical line,
+never wrapped, since `wi` reads the headline only to the line's end — in the form of the
+`dev-cycle` skill's `references/record-lines.md` `decision:` line, numbered:
+
+```
+decision N: <question> — options: (a) … [recommended] | (b) … | (z) decide later
+```
+
+The reply is `answer N: <reply>`; on re-entry continue from the highest N (Rehydrate step
 3), else 1.
 
 With the `operator-interaction:decisions` skill loaded, the four lines stay, and each

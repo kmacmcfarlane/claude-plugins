@@ -1,7 +1,8 @@
 # Rendering decisions
 
 Templates for the three levels, how several decisions share one message, the order, and the
-labels. Markdown only: **bold** titles, *italic* impacts and hint, `code` for reply words.
+labels. Markdown only: **bold** titles and the recommended option, *italic* impacts and hint,
+`code` for reply words.
 Terminals give no colour control; italics and code spans are the quiet tools.
 
 The examples below are **illustrative**: invented, generic, not about any real project.
@@ -26,6 +27,13 @@ slots stay, since the floor needs them:
 ```
 
 - The number and title are bold together.
+- One line per decision, its own recommendation in its own rec slot: never a range or a
+  group on one line (SKILL.md § Critical).
+- A line for a named template may end with its fixed options, after the age slot (gallery
+  example 5); they run in letter order and only the recommended one is bold.
+- An ask for another round carries its justification after the basis: *if left: what the
+  leftover findings would break · a round: time, quota, your attention* (SKILL.md § The
+  floor).
 - Stakes slot: *reversible, narrow* · *one-way, narrow* · ⚠ one-way (for Type 1; the ⚠ is
   followed by a space). The preference and authority labels take the rec slot (above); a
   template's label, *template: name*, has its own slot just before the stakes.
@@ -47,17 +55,23 @@ Example:
 **N — Title as a question?**
 **What:** what is decided, in plain words, ids glossed.
 **Why now:** why it is up, and what it blocks.
-- **(a) Option** — *what happens if chosen*
+- (a) Option — *what happens if chosen*
 - **(b) Option** — *what happens if chosen*
-- **(z) Decide later** — *what waiting costs; at a deadline, what happens then*
+- (z) Decide later — *what waiting costs; at a deadline, what happens then*
 
-Rec **(a)** · basis **word** — *one-clause reason* · unknown: what isn't known, or none
+Rec **(b)** · basis **word** — *one-clause reason* · unknown: what isn't known, or none
 ```
 
-- One line per option; its impact in italics after the dash.
+- One line per option, in letter order; its impact in italics after the dash. Only the
+  recommended option is bold — (b) above, in its own place, not moved first (SKILL.md
+  § Critical). With no recommendation, none is.
+- An ask for another round adds two lines after **Why now:** — **If left:** *each leftover
+  finding, and what it would break* and **A round costs:** *the time, the quota, and your
+  attention: this answer, and another if the round does not settle it* (SKILL.md § The
+  floor).
 - When a status-quo default applies, add: **If unanswered:** *I leave X as it is and carry on
   with other work.*
-- When investigating could change the choice, add a priced option: **(c) Investigate first** —
+- When investigating could change the choice, add a priced option: (c) Investigate first —
   *about 15 minutes: read the access logs for other callers; could change the answer if …*
 - A small call gets a short card. Do not pad a two-way, narrow decision with sections it does
   not need.
@@ -70,7 +84,7 @@ Rec **(a)** · basis **word** — *one-clause reason* · unknown: what isn't kno
 **Why now:** … Blocks: …
 **Context you may have lost:** the two or three facts a cold reader needs.
 
-**(a) Option**
+(a) Option
 - *What happens:* …
 - *Undo:* … (or: cannot be undone, because …)
 - *Who is affected:* …
@@ -80,15 +94,18 @@ Rec **(a)** · basis **word** — *one-clause reason* · unknown: what isn't kno
 - *Undo:* …
 - *Who is affected:* …
 
-**(c) Investigate first** — *time and cost; what it would settle*
+(c) Investigate first — *time and cost; what it would settle*
 
-**(z) Decide later** — *wake; what happens at the deadline if there is one*
+(z) Decide later — *wake; what happens at the deadline if there is one*
 
 Rec **(b)** · basis **partial** — *reason*
 *Basis:* observed — … (link) · inferred — … · unknown — …
 *If you pick (a), I'll repeat it back and act only once you confirm: it can't be undone.*
 ```
 
+- The options follow the card's rule: letter order, and only the recommended option's
+  heading bold. The opening lines run **What:**, **Why now:**, **Context you may have
+  lost:**, then a round ask's **If left:** and **A round costs:**.
 - A block **includes** the basis drill-down (the tags and links). `expand` on a block is
   answered: *already at full detail — `tell me [what]` for something specific?*
 - The read-back line (⚠ blocks only) names the one-way option(s). A block for a wide

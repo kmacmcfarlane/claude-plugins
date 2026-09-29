@@ -1,9 +1,11 @@
 # Intensity, cost and routing
 
-Loaded from `research` Step 3. This file owns the presets, the rules for when to ask the
-operator about intensity and when it is obvious, the quota read, the search-budget rule and
-the model/effort routing table. The orchestrator copies the chosen preset and the routing
-table it used into the brief; nothing here is restated in SKILL.md.
+Loaded from `research` Step 3, and again at every ask for another round (Steps 7 and 8;
+`research-deep` Step 7). This file owns the presets, the rules for when to ask the
+operator about intensity and when it is obvious, what an ask for another round states, the
+quota read, the search-budget rule and the model/effort routing table. The orchestrator
+copies the chosen preset and the routing table it used into the brief; nothing here is
+restated in SKILL.md.
 
 ## Why intensity is one dial
 
@@ -33,6 +35,24 @@ Default is `standard`. `research-deep` invokes with `deep` unless told otherwise
 `Intensity: <preset> — ~<n> lanes on <model>, ≤<n> rounds, ~<multiple>× a chat turn,
 ~<minutes>; 5h window at <pct>% (resets <time>), 7d at <pct>%.` The operator can always
 interrupt it; the line is what makes the interruption informed.
+
+## Asking for another round
+
+Every ask to spend one more round — the threads-not-pulled turn and the re-source or
+re-run ask after a failing verification (`research` Steps 7 and 8), round 3 in
+`research-deep` — states, at the moment of asking, what the round would buy and what it
+costs. The operator cannot weigh an impact they are not shown.
+
+- **Value:** for each thread or lane, the gap it would close — the gap condition it would
+  satisfy — and what the answer lacks if it is left: a load-bearing claim on one secondary
+  source, a sub-question with no coverage, a mandatory axis shipped marked.
+- **Cost:** one round cost line, from a fresh quota read (§ The quota read):
+  `Round <n>: ~<n> lanes on <model>, ~<multiple>× a chat turn, ~<minutes>; 5h window at
+  <pct>% (resets <time>), 7d at <pct>%` — the multiple and the wall clock sized from the
+  presets table for that many lanes. When the round could bring another ask (a further
+  gap gate, a re-verification), say so: the operator's attention is part of the cost.
+
+High value at a modest cost is the case for the round; say which way it falls.
 
 ## When to ask, and when it is obvious
 

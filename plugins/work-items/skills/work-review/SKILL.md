@@ -96,8 +96,12 @@ Write it in this order, short enough to read in two minutes:
    operator cannot act on. Group quiet repos into one line ("garden-api, notes: nothing
    in flight, a few ready items each").
 3. **Waiting on you.** The open decisions, per repo, each named in plain words with how long
-   it has waited when `age_days` is known, and the note that it is answered in that repo's
-   own session. Oldest and most blocking first.
+   it has waited when `age_days` is known, its recommendation as its stored headline (the
+   decision's `text`) names it — read by the marks and labels the `work-items` skill's
+   `references/format.md` § Operator questions lists, a label shown as the label, and "no
+   recommendation recorded" only when the headline names neither — and the note that it
+   is answered in that repo's own session. Oldest and most blocking first. Showing the
+   recommendation is not asking: never put the options to the operator here.
 4. **Stale claims.** Work marked doing with an old claim: name it and its owner, and suggest
    the owning session check it. Do not release it.
 5. **What to do next.** One recommendation, then at most two runners-up. For each: what it
@@ -112,8 +116,9 @@ Write it in this order, short enough to read in two minutes:
 When the overview needs a decision from the operator (which repo to take up next, say), put
 it last, after the overview. When the `decisions` skill from the operator-interaction plugin
 is loaded, follow it for how to write that decision. Without it, give a numbered list: one
-decision per number, each option with its impact, the recommended option first, and
-"decide later" always offered.
+decision per number, each with its own recommendation, its options in (a), (b), (c) order
+with their impact and the recommended one in bold — never moved first — and "decide later"
+always offered.
 
 ## Examples
 

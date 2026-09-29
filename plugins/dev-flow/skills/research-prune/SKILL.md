@@ -70,9 +70,10 @@ deleted (archive or supersede only); a note is archived only when *every* claim 
 superseded and the successor is named; moves preserve history (`git mv` in a tracked KB).
 
 Then present the proposal to the operator as a numbered decision list — one row per number,
-recommended action first, with what each does to the access-pattern walk. Do not pair the
-list with the fit-check analysis in the same turn; show the analysis, then ask. Unattended,
-stop here with the proposal logged and `STATUS: BLOCKED — proposal awaits approval`.
+its options in (a), (b), (c) order with the recommended action in bold, never moved first,
+and what each does to the access-pattern walk. Do not pair the list with the fit-check
+analysis in the same turn; show the analysis, then ask. Unattended, stop here with the
+proposal logged and `STATUS: BLOCKED — proposal awaits approval`.
 
 ### Step 4 — Execute (approved rows only)
 

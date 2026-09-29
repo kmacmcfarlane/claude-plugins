@@ -42,16 +42,19 @@ $WI ls --dep <hold-id> --status todo,doing,blocked,grooming,parked --plain
 ```
 
 Print a `hold:` line first for each active hold, then two short tables, at most seven
-rows each with `+N more` below:
+rows each with `+N more` below. With the `operator-interaction:decisions` skill loaded,
+Groom's `+N more` says the decisions block that closes the turn lists every open decision
+with its recommendation (`+3 more — every open decision is in the list below`), so no
+decision is cut off:
 
 ```
 hold: <hold-id> — <scope>, until <end condition> ("<operator's words>"); holds <ids>
 
-Groom                                        Work
-| item | why                           |     | item | P | next                        |
-| ab12 | decision 46: <one line>       |     | cd34 | 1 | dispatch now                |
-| ef56 | blocked: operator review      |     | 7890 | 2 | after cd34 (same files)     |
-|      |                               |     | 1a2b | 1 | after reset 14:05           |
+Groom                                               Work
+| item | why                                  |     | item | P | next                        |
+| ab12 | decision 46: <one line> — rec (b)    |     | cd34 | 1 | dispatch now                |
+| ef56 | blocked: operator review             |     | 7890 | 2 | after cd34 (same files)     |
+|      |                                      |     | 1a2b | 1 | after reset 14:05           |
 ```
 
 - **Groom** — items that need the operator: every row `wi needs-input` prints — a
@@ -62,8 +65,12 @@ Groom                                        Work
   does not cover: including a free-text deferral such as "operator holding until
   spare time", which is not parked (below) and not a `hold` item.
 
-  A decision's Groom row stays one line: its number and the `decision N:` question. A
-  deferred one also shows its last `wake N:`, and stays a Groom row until the wake comes.
+  A decision's Groom row stays one line: its number, the `decision N:` question and its
+  recommendation as the headline names it — `[recommended]` or an older mark, or a
+  preference or authority label, read as the `work-items` skill's format reference,
+  § Operator questions, lists them — one row per decision, never several folded into one
+  row. A deferred one also shows its last `wake N:`, and stays a Groom row until the wake
+  comes.
   With the `operator-interaction:decisions` skill loaded, a decision is put to the operator
   in full only when `decisions.md` § The Report's item 4 selects it (raised since the last
   Report, its wake come, not yet seen, after Rehydrate, a ⚠ one on first showing or to a

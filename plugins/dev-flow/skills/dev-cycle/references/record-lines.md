@@ -108,10 +108,12 @@ interrupted run up again; a line that is missing reads there as not recorded:
 - `intent: <one line>` — `bindings.md` § Intent, `review <branch>` mode with no item or
   plan
 - `decision: <question> — options: <a> | <b> | <c>` — `bindings.md` § Decisions, written
-  before a decision is raised. **Self-contained**: the question in full and its options,
-  recommendation first, so that a reader who was not in the session that raised it can put
-  it to a human verbatim. Under a caller it composes as
-  `decision N: <question> — options: …`, so the caller's numbered channel is unchanged.
+  before a decision is raised. **Self-contained**: the question in full — for an ask for
+  another round, with its justification (`bindings.md` § Decisions) — and its options in
+  letter order, the recommended one marked `[recommended]`, so that a reader who was not
+  in the session that raised it can put it to a human verbatim. Under a caller it
+  composes as `decision N: <question> — options: …`, so the caller's numbered channel is
+  unchanged.
   **Exactly one decision carries a tag**: SKILL.md § Usage's `review <branch>` ask,
   whether to dispatch an implementer for the findings, is written
   `decision: dispatch-permission — <question> — options: <a> | <b>`, and under a caller

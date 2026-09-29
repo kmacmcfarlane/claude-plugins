@@ -176,13 +176,14 @@ Step 0 summary so the user can correct it. A non-default base is never chosen si
 ## Decisions
 
 A caller's channel is used as bound. Standalone: exactly one pending decision goes
-through AskUserQuestion, whose options carry the choices, recommended first — only while
-no agent of this session's can be running, since a dialog blocks an agent's return until
-answered. Two or more, or one raised while an agent may be in flight, go as one numbered
-prose list — one decision per number, each with its options and their impact,
-recommendation first — so the user answers by number. The cycle's own evidence is the
-record sink (an `agent:` line with no `return:` or `verdict:` after it is in flight);
-ListAgents covers the session's other agents.
+through AskUserQuestion, whose options carry the choices, recommended first (the
+dialog's own convention) — only while no agent of this session's can be running, since a
+dialog blocks an agent's return until answered. Two or more, or one raised while an agent
+may be in flight, go as one numbered prose list — one decision per number, each with its
+own recommendation and its options in (a), (b), (c) order with their impact, the
+recommended one in bold, never moved first — so the user answers by number. The cycle's
+own evidence is the record sink (an `agent:` line with no `return:` or `verdict:` after it
+is in flight); ListAgents covers the session's other agents.
 
 When the session lists the `operator-interaction:decisions` skill (a soft dependency),
 load it and write every decision-channel decision to it, whatever the channel. That covers
@@ -201,9 +202,21 @@ list above instead — a resumed run is the likely case.
 With the skill or without it: never ask in the same turn as a heavy analysis; end the
 turn with the analysis and ask in the next. Append each raised
 decision to the record sink as `decision: <question> — options: <a> | <b> | <c>` before
-asking — the question in full and its options, recommendation first, so the line can be
-put to a human verbatim by a reader who was not there — and the reply as
-`answer: <decision> — <reply>` (`record-lines.md`) as soon as it arrives.
+asking — the question in full and its options in letter order, the recommended one
+marked `[recommended]`, so the line can be put to a human verbatim by a reader who was not
+there — and the reply as `answer: <decision> — <reply>` (`record-lines.md`) as soon as it
+arrives.
+
+**An ask for another round** — the cap (SKILL.md § Step 4.3), or any ask to open one more
+round — carries its justification, with the skill or without it, so the user can weigh it:
+**if left**, each finding still open, with its severity and what it would break (the
+`Failure:` sentence of the last review's `findings:` block); and **what the round costs** —
+about how long a round has taken in this run, its quota share when a reading exists, and
+one more answer from the user if the round does not clear. The `decision:` line carries
+both after its question, so it can still be put verbatim — except under a caller that
+stores a card (librarian-mode), where the card's own lines carry them and the headline
+keeps the question alone. With the skill loaded, its floor for a round ask governs how
+this is written.
 
 A **pending** decision — a `decision:` with no `answer:` — never makes a run wait on a
 question this session is not asking: one whose prompt is gone, or one on a durable

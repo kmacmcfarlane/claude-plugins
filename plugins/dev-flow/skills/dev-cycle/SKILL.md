@@ -265,8 +265,9 @@ findings = review round n+1; cap 4 review rounds.
    round) — with its `— resume` pair written first (rule 7); a re-dispatch writes a
    fresh `dispatch:` and `agent:` pair. Repeat until `CLEAR`.
    **Cap: 4 review rounds** — the first review plus three fix rounds; a fourth without
-   `CLEAR` means the brief or the target is wrong, not the code: block it and raise it.
-   Never argue a severity down.
+   `CLEAR` means the brief or the target is wrong, not the code: block it and raise it,
+   with what the open findings would break and what another round costs
+   (`references/bindings.md` § Decisions). Never argue a severity down.
 4. **What escalates** through the decision channel is only a show-stopper with real
    impact: a `SHOW_STOPPER` verdict, a finding that changes the scope or reverses a
    recorded human decision, or the cap. Everything else, critical included, is resolved

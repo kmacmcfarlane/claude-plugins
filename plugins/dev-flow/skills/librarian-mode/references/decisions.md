@@ -25,9 +25,8 @@ The skill is available when the session's skill listing carries `operator-intera
 - **Never through AskUserQuestion.** That is the librarian's own rule (SKILL.md § Intake
   step 3), and the skill agrees. The opt-in dialog is the one exception (`opt-in.md`).
 
-Without the skill, nothing here applies. `decisions needed:` stays the numbered list SKILL.md
-§ Report describes (one decision per number, its options and their impact, recommendation
-first), and replies are recorded as `answer N:`.
+Without the skill, nothing here applies: `decisions needed:`, its store lines and the
+replies are as SKILL.md § Report gives them.
 
 ## What the librarian supplies to the skill
 
@@ -52,6 +51,8 @@ renders what the operator read instead of composing it again.
     raised: <UTC time, e.g. 2026-09-24T14:05Z>
     what: <what is decided>
     why now: <why now; blocks: …>
+    if left: <a round ask only: each leftover finding — what it would break>
+    round costs: <a round ask only: time, quota, the operator's attention>
     stakes: <reversible | one-way>, <narrow | wide — who>
     (a) <option> — <its impact> [— undo: <how, or cannot>] [— who: <who is affected>]
     (b) <option> — <its impact>
@@ -64,23 +65,32 @@ renders what the operator read instead of composing it again.
   The headline is as the `dev-cycle` skill's `references/record-lines.md` gives the
   `decision:` line, so `wi needs-input` and the counter grep (`^decision [0-9]`) read it
   unchanged; the indented lines match neither `^decision` nor `^answer`. The question is a
-  question, as the card's title shows it; `raised:` carries the time, not a date alone (an
-  existing date-only `raised:` is kept as written); every line glosses its ids (no bare item
-  id, sha, series or finding number). The options are every option the source offered (a
-  series, a dispatch's `decision:` line), one choice per letter: a compound choice gets its
-  own letters, never `(a)+…`. When the decision is ⚠ one-way — or any decision shown as a
-  block — write `⚠ one-way` after the question (⚠ only), and every option line carries its
-  `undo:` and `who:`, a `context:` line follows `why now:`, and the `basis:` drill-down line
-  is required. **A card or block renders only from stored fields**: a field it needs that
-  the store lacks — a headline-only entry, a block's missing `undo:` — is backfilled from
-  the durable record (the item, its series, its commits) and written as a revised card with
+  question, as the card's title shows it, and the question alone: a round ask's
+  justification goes in `if left:` and `round costs:`, never in the headline. `raised:`
+  carries the time, not a date alone (an existing date-only `raised:` is kept as
+  written); every line glosses its ids (no bare item id, sha, series or finding number).
+  The options are every option the source offered (a series, a dispatch's `decision:`
+  line), one choice per letter: a compound choice gets its own letters, never `(a)+…`.
+  When the decision is ⚠ one-way — or any decision shown as a block — write `⚠ one-way`
+  after the question (⚠ only), and every option line carries its `undo:` and `who:`, a
+  `context:` line follows `why now:` (before any `if left:`), and the `basis:` drill-down
+  line is required. An ask for another round — the dev-cycle cap, most often — requires
+  the `if left:` and `round costs:` lines, in that order after `why now:` and any
+  `context:` (the skill's floor), filled from the reviewer's `findings:` block and the
+  run's record; any other decision leaves both out. The options stay in letter order,
+  `[recommended]` on the headline marking the recommended one.
+  **A card or block renders only from stored fields**: a field it needs that the store
+  lacks — a headline-only entry, a block's missing `undo:` — is backfilled from the durable
+  record (the item, its series, its commits) and written as a revised card with
   `revised: <time> — backfilled` before it renders; a field no record holds is written and
   shown as `not recorded`, never invented at render time. A card with no `raised:` takes it
   from the record: the time the headline was committed — the commit time, not the ask
   time, the closest the record holds — in the form `wi` parses (`TZ=UTC git -C "$MAIN" log
   --reverse --date=format-local:%Y-%m-%dT%H:%MZ --format=%cd -S'decision N:' -- <item
   file>`, first hit).
-  A preference or an outside-authority decision writes its label on the `rec:` line.
+  A preference or an outside-authority decision writes its label on the `rec:` line, and
+  on the headline after the last option in place of `[recommended]` — *your preference —
+  no recommendation* — so a reader of the headline alone can show it.
 - **Revised:** when the options or the recommendation really change, or the skill's re-show
   check finds a stored field stale, write `decision N:` again with the new card and a
   `revised: <time> — <why>` line under it; the last one wins. A revised or backfilled card

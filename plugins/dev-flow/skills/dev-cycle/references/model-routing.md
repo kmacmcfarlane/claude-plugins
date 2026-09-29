@@ -152,7 +152,8 @@ then, on `NEEDS_CHANGES`, the `findings:` block (`record-lines.md`). There is no
 Fix round n = the nth re-dispatch or resume with review findings = review round n+1. The
 cap is 4 review rounds — the first review plus three fix rounds; a fourth review without
 `CLEAR` means the brief or the item is wrong, not the code: block the change and raise it
-through the decision channel.
+through the decision channel, with the justification `bindings.md` § Decisions gives an ask
+for another round.
 
 | Dispatch | Implementer tier |
 |---|---|
