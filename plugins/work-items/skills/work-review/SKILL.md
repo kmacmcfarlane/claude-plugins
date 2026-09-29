@@ -112,8 +112,9 @@ Write it in this order, short enough to read in two minutes:
 When the overview needs a decision from the operator (which repo to take up next, say), put
 it last, after the overview. When the `decisions` skill from the operator-interaction plugin
 is loaded, follow it for how to write that decision. Without it, give a numbered list: one
-decision per number, each option with its impact, the recommended option first, and
-"decide later" always offered.
+decision per number, each with its own recommendation, its options in (a), (b), (c) order
+with their impact and the recommended one in bold — never moved first — and "decide later"
+always offered.
 
 ## Examples
 

@@ -78,8 +78,9 @@ Age — time since it was raised — is shown on the list line and breaks ties, 
 
 | Kind | Shape |
 |---|---|
-| **Choose** among options | options with impacts, recommendation, decide later |
+| **Choose** among options | options with impacts in letter order, the recommended one bold, decide later |
 | **Approve** a proposed action | approve / change it / decide later, with the consequence of each |
+| **Another round** — a review-cap waiver, or any "one more round" | as *choose*, plus its justification: what the leftover findings would break if left, and what the round costs in time, quota and the operator's attention (SKILL.md § The floor) |
 | **Preference** — no fact settles it | options with impacts, labelled *your preference — no recommendation* |
 | **Outside my authority** | options with impacts, labelled *no recommendation — outside my authority*, with why |
 | **Alert** — time-critical | the fact now, bare; the options next |

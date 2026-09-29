@@ -19,8 +19,8 @@ today.*
 **What:** the nightly backup of the reporting database paused halfway through its snapshot and holds a storage lease.
 **Why now:** the lease lapses at ~17:45 today (90 min from 16:15); after that the half-written snapshot is discarded and the backup starts over (about 3 hours).
 - **(a) Resume now** — *the snapshot finishes in about 15 minutes*
-- **(b) Abort the backup** — *releases the lease; no backup tonight unless it is started again*
-- **(z) Decide later** — *it waits; at 17:45 the lease lapses and the snapshot is lost*
+- (b) Abort the backup — *releases the lease; no backup tonight unless it is started again*
+- (z) Decide later — *it waits; at 17:45 the lease lapses and the snapshot is lost*
 
 Rec **(a)** · basis **strong** — *checked the storage quota: 40% free, enough to finish* · unknown: none
 
@@ -29,7 +29,7 @@ Rec **(a)** · basis **strong** — *checked the storage quota: 40% free, enough
 **Why now:** the API cleanup release is cut on Thursday; this change goes out in it, or waits for the next one.
 **Context you may have lost:** two partner integrations still call `/v1/export`; once it is removed their exports fail until they move to `/v2`, and a removed public endpoint cannot quietly come back for the clients that already adapted.
 
-**(a) Remove it now**
+(a) Remove it now
 - *What happens:* the two partners' exports fail from Thursday until they switch.
 - *Undo:* restoring it takes a hotfix release; the partners see an outage either way.
 - *Who is affected:* the two partners, and their users.
@@ -39,9 +39,9 @@ Rec **(a)** · basis **strong** — *checked the storage quota: 40% free, enough
 - *Undo:* the header can be dropped at any time.
 - *Who is affected:* nobody now; the old code stays for 90 more days.
 
-**(c) Investigate first** — *about 15 minutes: read this month's access logs for other callers; could change the answer if both partners have already switched*
+(c) Investigate first — *about 15 minutes: read this month's access logs for other callers; could change the answer if both partners have already switched*
 
-**(z) Decide later** — *it waits; the endpoint stays as it is, and the cleanup release goes out without this change*
+(z) Decide later — *it waits; the endpoint stays as it is, and the cleanup release goes out without this change*
 
 Rec **(b)** · basis **partial** — *observed: this week's access log shows 2 partners calling it; inferred: no internal callers (only this repo searched)*
 *Basis:* observed — access log, 2 partner callers this week (link) · inferred — no callers in this repo · unknown — whether the partners have a switch planned
@@ -50,13 +50,13 @@ Rec **(b)** · basis **partial** — *observed: this week's access log shows 2 p
 **45 — Units on the storage dashboard: MiB or MB?** · *your preference — no recommendation*
 **What:** show sizes in binary units (MiB, 1,048,576 bytes) or decimal units (MB, 1,000,000 bytes).
 **Why now:** the new dashboard needs one; nothing else waits on it.
-- **(a) MiB** — *matches what the operating system's tools report*
-- **(b) MB** — *matches the storage provider's bill*
-- **(z) Decide later** — *it waits; the dashboard keeps its placeholder units until you choose (one config line)*
+- (a) MiB — *matches what the operating system's tools report*
+- (b) MB — *matches the storage provider's bill*
+- (z) Decide later — *it waits; the dashboard keeps its placeholder units until you choose (one config line)*
 
 *No recommendation: no fact settles this.* · basis **strong** — *checked: nothing reads the dashboard's units programmatically* · unknown: none
 
-*Gallery note — layout and order: the cards and the block come first, the compact list and the hint last, so the list is what is on screen when the agent stops. Why this order: 41 breaks before you are back; the API cleanup group comes next because it holds a ⚠, with 44 kept beside 43; then 42, which blocks the docs build, before 45, which blocks nothing. 44 and 42 stay list lines: you are warm on both, both are two-way and narrow on a strong basis, 44's options converge and 42 is a template you have seen. 41, 43 and 45 are cold, so each is at least a card; 43 is a block because this is its first showing.*
+*Gallery note — layout and order: the cards and the block come first, the compact list and the hint last, so the list is what is on screen when the agent stops. Why this order: 41 breaks before you are back; the API cleanup group comes next because it holds a ⚠, with 44 kept beside 43; then 42, which blocks the docs build, before 45, which blocks nothing. 44 and 42 stay list lines: you are warm on both, both are two-way and narrow on a strong basis, 44's options converge and 42 is a template you have seen. 41, 43 and 45 are cold, so each is at least a card; 43 is a block because this is its first showing. In each card and the block the options keep their letter order and only the recommended one is bold: 43's (b) stays second, and 45, with no recommendation, bolds none.*
 
 - **41 Resume the paused nightly backup?** — rec **(a) resume** · *reversible, narrow* · basis **strong** · *25 min old, storage lease lapses ~17:45 (90 min from 16:15), blocks tonight's backup*
 - **43 Remove the deprecated `/v1/export` endpoint?** — rec **(b) keep it, with a sunset date** · ⚠ one-way · basis **partial** · *6 h old, misses Thursday's API cleanup release if undecided*
@@ -76,8 +76,8 @@ Rec **(b)** · basis **partial** — *observed: this week's access log shows 2 p
 **What:** the preview deploy of the search-page change failed while pulling its base image.
 **Why now:** the design review this afternoon needs the preview.
 - **(a) Retry now** — *about 4 minutes; the preview is up if it succeeds*
-- **(b) Deploy yesterday's build instead** — *the review sees the old page*
-- **(z) Decide later** — *it waits; no preview until someone deploys*
+- (b) Deploy yesterday's build instead — *the review sees the old page*
+- (z) Decide later — *it waits; no preview until someone deploys*
 
 Rec **(a)** · basis **strong** — *the deploy log shows a registry timeout, not a build error* · unknown: none
 
@@ -89,8 +89,8 @@ Rec **(a)** · basis **strong** — *the deploy log shows a registry timeout, no
 **What:** delete the staging database snapshot from August 14, which nothing restores from.
 **Why now:** staging storage is at 85% of its quota.
 - **(a) Delete it** — *frees 120 GB; the snapshot cannot be recovered afterwards*
-- **(b) Keep it** — *storage stays at 85%; a later snapshot may fail when it fills*
-- **(z) Decide later** — *it waits; storage keeps filling by about 2% a day*
+- (b) Keep it — *storage stays at 85%; a later snapshot may fail when it fills*
+- (z) Decide later — *it waits; storage keeps filling by about 2% a day*
 
 Rec **(a)** · basis **strong** — *listed the restore jobs: none reference it* · unknown: none
 
@@ -114,14 +114,34 @@ undone at any time, so it is echoed and acted on — no confirmation round.*
 
 ---
 
-## 5. A template
+## 5. An ask for another round (a template)
 
-*Situation: a recurring decision whose options are fixed. The operator has seen this template
-before and is warm; the stakes are low and the basis strong, so it may stay a line.*
+*Situation: the retry-policy change has had its four review rounds — the cap — and the last
+review left one medium finding open. The review-round cap is a template: its options are
+fixed, so they ride by reference once the operator has seen it. Its justification never
+does, because what is left and what a round costs change every time. The first time in a
+session, a card:*
 
-- **48 Waive the review-round cap for the retry-policy change?** — rec **(a) one more round** · *template: review-round cap* · *reversible, narrow* · basis **strong** · *the reviewer's last finding is a one-line fix* · *(a) one more round · (b) ship as is · (c) park it · (z) decide later — it waits, unreviewed*
+**48 — One more review round for the retry-policy change?** · *template: review-round cap*
+**What:** the change has used its four review rounds; the last review left one finding open, so it cannot land as it is.
+**Why now:** the change is blocked until you answer; nothing else waits on it.
+**If left:** *one medium finding: after a restart the retry counter starts again from zero, so a job that fails on every run is retried forever instead of stopping after five tries.*
+**A round costs:** *about 20 minutes and roughly 3% of the 5-hour quota; one more answer from you if that round does not clear it.*
+- **(a) One more round** — *the fix goes back to the implementer, then a fresh review; it lands in about 20 minutes if it clears*
+- (b) Ship as is — *it lands now, with the endless retry in it*
+- (c) Park it — *the change waits, unmerged, until someone takes it up*
+- (z) Decide later — *it waits, unreviewed; nothing lands*
 
-*The first time the operator meets this template in a session, it is shown as a full card.*
+Rec **(a)** · basis **strong** — *the finding names the line and a one-line fix; an endless retry costs more than one round* · unknown: none
+
+*Later in the session the operator is warm and has seen the template, so a new ask on it,
+low-stakes on a strong basis, may stay a line — the options by reference, the justification
+still on it:*
+
+- **49 One more review round for the search-index change?** — rec **(a) one more round** · *template: review-round cap* · *reversible, narrow* · basis **strong** · *if left: a deleted page stays in search results until the nightly rebuild · a round: ~10 min, ~1% of quota, one more answer from you* · **(a) one more round** · (b) ship as is · (c) park it · (z) decide later — *it waits, unreviewed*
+
+*Not this: "Waive the cap? — rec (a) one more round" with nothing about what is left or what
+the round costs. The operator cannot weigh an impact they are not shown.*
 
 ---
 
@@ -138,10 +158,10 @@ basis kept), then a card with options, their impacts, the label, and no recommen
 **What:** a report run passed with one check waived; shipping it puts the waived output in front of users.
 **Why now:** the release is scheduled for Friday.
 **Why no recommendation:** whether users may see output a reviewer waived is a product call, not mine.
-- **(a) Ship it** — *users see the report on Friday, with the waived section as is*
-- **(b) Hold it** — *the release slips until the check passes; about a day's work*
-- **(c) Ship without the waived section** — *users get a shorter report; about an hour's work*
-- **(z) Decide later** — *it waits; the release slips past Friday if undecided by Thursday noon*
+- (a) Ship it — *users see the report on Friday, with the waived section as is*
+- (b) Hold it — *the release slips until the check passes; about a day's work*
+- (c) Ship without the waived section — *users get a shorter report; about an hour's work*
+- (z) Decide later — *it waits; the release slips past Friday if undecided by Thursday noon*
 
 *No recommendation: see why above.* · basis **partial** — *observed: the waived check's output; inferred: the fix estimate* · unknown: how users use that section
 
@@ -174,8 +194,8 @@ basis kept), then a card with options, their impacts, the label, and no recommen
 **What:** whether to put a cache in front of the product-listing query, or first make the query itself fast.
 **Why now:** the listing page takes about 2 seconds to load, and the performance review is next week.
 - **(a) Fix the query first** — *about half a day; may make caching unnecessary*
-- **(b) Add the cache now** — *faster reads this week; the slow query stays*
-- **(z) Decide later** — *it waits; reads stay slow*
+- (b) Add the cache now — *faster reads this week; the slow query stays*
+- (z) Decide later — *it waits; reads stay slow*
 
 Rec **(a)** · basis **partial** — *observed: the query takes 1.8 s in the profile; inferred: an index would fix it* · unknown: write load
 
@@ -206,8 +226,8 @@ the list: 41, 43 and 45 are unchanged, so they are not rendered again and their 
 **What:** the wording of the notice in the `/v1/export` response header and in the release notes.
 **Why now:** it goes out with the API cleanup release.
 - **(a) "deprecated"** — *matches the three endpoints deprecated before*
-- **(b) "scheduled for removal"** — *says more plainly that it will go; the only notice worded this way*
-- **(z) Decide later** — *it waits; no notice is published until you choose*
+- (b) "scheduled for removal" — *says more plainly that it will go; the only notice worded this way*
+- (z) Decide later — *it waits; no notice is published until you choose*
 
 Rec **(a)** · basis **strong** — *read the three earlier notices* · unknown: none
 
@@ -314,9 +334,9 @@ status page (a preference). The operator replies "ok 51-55".*
 **56 — Open the pull request now, or wait for the benchmark run?**
 **What:** the retry-policy change is ready; its benchmark run finishes in about 25 minutes.
 **Why now:** you asked for the change today.
-- **(a) Open it now** — *reviewers start today; the benchmark result arrives mid-review*
+- (a) Open it now — *reviewers start today; the benchmark result arrives mid-review*
 - **(b) Wait for the benchmark** — *about 25 minutes*
-- **(z) Decide later** — *it waits*
+- (z) Decide later — *it waits*
 
 **If unanswered:** *I leave the branch as it is, unopened, and carry on with the next task. Nothing is lost.*
 Rec **(b)** · basis **strong** — *the benchmark is running now* · unknown: whether it shows a regression
@@ -347,12 +367,12 @@ while it waited — not composed again.*
 - *Undo:* switch each service's config back within the week; after that the old queue is gone.
 - *Who is affected:* every worker service, and whoever is on call for them.
 
-**(b) Move one service first**
+(b) Move one service first
 - *What happens:* the email worker moves today; the rest follow in two days if it stays quiet.
 - *Undo:* one config change.
 - *Who is affected:* the email worker only, for now.
 
-**(z) Decide later** — *it waits; the rollout stays paused and the old queue keeps running*
+(z) Decide later — *it waits; the rollout stays paused and the old queue keeps running*
 
 Rec **(a)** · basis **partial** — *observed: the load test report; inferred: no worker relies on the old queue's ordering*
 *Basis:* observed — load test, three times peak, no lost messages (link) · inferred — ordering not relied on (read 4 of the 6 workers' code) · unknown — the 2 workers not read
@@ -361,9 +381,9 @@ Rec **(a)** · basis **partial** — *observed: the load test report; inferred: 
 *While it waited (1 day): the CDN outage that prompted vendoring ended, and the provider published its fix. Recommendation changed from (a) vendor to (b) fetch, because the outage is over.*
 **What:** ship the docs site's web font inside the repo (vendor), or load it from the font CDN (fetch).
 **Why now:** the docs site build waits on it.
-- **(a) Vendor it** — *adds 400 KB to the repo; the font still loads if the CDN goes down again*
+- (a) Vendor it — *adds 400 KB to the repo; the font still loads if the CDN goes down again*
 - **(b) Fetch it** — *no growth in the repo; the font depends on the CDN*
-- **(z) Decide later** — *it waits; the build stays on hold*
+- (z) Decide later — *it waits; the build stays on hold*
 
 Rec **(b)** · basis **strong** — *checked the CDN's status history and loaded the font from it* · unknown: none
 
@@ -372,8 +392,8 @@ Rec **(b)** · basis **strong** — *checked the CDN's status history and loaded
 **What:** enable the type checker's strict mode for every package.
 **Why now:** new code is being written against the loose setting, so each week adds more to fix later.
 - **(a) Turn it on** — *31 existing warnings to fix, about an hour of my time*
-- **(b) Leave it off** — *no work now; the loosely typed code keeps growing*
-- **(z) Decide later** — *it waits; the setting stays off*
+- (b) Leave it off — *no work now; the loosely typed code keeps growing*
+- (z) Decide later — *it waits; the setting stays off*
 
 Rec **(a)** · basis **strong** — *ran strict mode locally: 31 warnings, all in two packages* · unknown: none
 
@@ -408,3 +428,21 @@ other four are lines. The heading says so.* *(Paging is provisional.)*
 *…the three release cards and the ⚠ block, then the list, where the four held back read:*
 
 - **71 Rename the internal metrics prefix?** — rec **(a) keep it** · *reversible, narrow* · basis **strong** · *2 days old, blocks nothing* *(expand for the card)*
+
+---
+
+## 23. Related decisions, each whole
+
+*Situation: four decisions on the same command-line tool, 92 to 95, were shown as cards an
+hour ago and the operator has replied since, so each is now a line ending (shown before).
+They are one group and stay together in the list, but each keeps its own line and its own
+recommendation.*
+
+- **92 Rename the `sync` command to `pull`?** — rec **(a) rename it, keep `sync` as an alias** · *reversible, narrow* · basis **strong** · *1 h old, blocks nothing* *(shown before)*
+- **93 Drop the `--legacy` flag?** — rec **(b) keep it one more release** · *reversible, narrow* · basis **partial** · *1 h old, blocks nothing* *(shown before)*
+- **94 Default log level: `info` or `warn`?** — *your preference, no rec* · *reversible, narrow* · basis **strong** · *1 h old, blocks nothing* *(shown before)*
+- **95 Move the config file under `~/.config`?** — rec **(a) move it, and read the old path too** · *reversible, narrow* · basis **strong** · *1 h old, blocks nothing* *(shown before)*
+
+*Not this: one entry for the four — "92–95 CLI cleanup: four small calls, see the cards
+above" — which leaves no recommendation where the operator reads the list, so they cannot
+answer from it.*

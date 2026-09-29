@@ -17,13 +17,13 @@ diff read, `git merge --no-ff` into local `main`, clean up. Report four lines;
 
 **Operator: "split ralph's backlog skills into their own plugin."** Real trade-offs (name,
 dependency direction, catalog wording): three decisions, each numbered, in a prose list —
-`1. plugin name: (a) ralph-backlog, (b) backlog` and so on, one decision per number, each
-option's impact named, recommendation first — and the operator answers "1: a, 2: b". Had
-there been only the name to settle, it would be a numbered list of one, never a modal
-dialog: other items' agents may be in flight, and a modal blocks their returns and peer
-messages (SKILL.md § Intake step 3). Each number is appended to the item body as
-`decision N:`, so the next Report can carry an unanswered one under `decisions needed`
-with its number intact. Then factor: catalog row + plugin skeleton first; the skill moves
-depend on it, each with its catalog edit inside — every dispatch routed as the
-`dev-cycle` skill's `references/model-routing.md` gives it. The skeleton is the first
+`1. plugin name: **(a) ralph-backlog**, (b) backlog` and so on, one decision per number,
+each option's impact named, the options in letter order with the recommended one in bold —
+and the operator answers "1: a, 2: b". Had there been only the name to settle, it would be
+a numbered list of one, never a modal dialog: other items' agents may be in flight, and a
+modal blocks their returns and peer messages (SKILL.md § Intake step 3). Each number is
+appended to the item body as `decision N:`, so the next Report can carry an unanswered one
+under `decisions needed` with its number intact. Then factor: catalog row + plugin
+skeleton first; the skill moves depend on it, each with its catalog edit inside — every
+dispatch routed as the `dev-cycle` skill's `references/model-routing.md` gives it. The skeleton is the first
 dependency group; the skill moves, the second, go out in one message once it has landed.

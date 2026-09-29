@@ -26,8 +26,8 @@ The skill is available when the session's skill listing carries `operator-intera
   step 3), and the skill agrees. The opt-in dialog is the one exception (`opt-in.md`).
 
 Without the skill, nothing here applies. `decisions needed:` stays the numbered list SKILL.md
-§ Report describes (one decision per number, its options and their impact, recommendation
-first), and replies are recorded as `answer N:`.
+§ Report describes (one decision per number, with its own recommendation, its options in
+letter order with the recommended one in bold), and replies are recorded as `answer N:`.
 
 ## What the librarian supplies to the skill
 
@@ -52,6 +52,8 @@ renders what the operator read instead of composing it again.
     raised: <UTC time, e.g. 2026-09-24T14:05Z>
     what: <what is decided>
     why now: <why now; blocks: …>
+    if left: <a round ask only: each leftover finding — what it would break>
+    round costs: <a round ask only: time, quota, the operator's attention>
     stakes: <reversible | one-way>, <narrow | wide — who>
     (a) <option> — <its impact> [— undo: <how, or cannot>] [— who: <who is affected>]
     (b) <option> — <its impact>
@@ -71,9 +73,13 @@ renders what the operator read instead of composing it again.
   own letters, never `(a)+…`. When the decision is ⚠ one-way — or any decision shown as a
   block — write `⚠ one-way` after the question (⚠ only), and every option line carries its
   `undo:` and `who:`, a `context:` line follows `why now:`, and the `basis:` drill-down line
-  is required. **A card or block renders only from stored fields**: a field it needs that
-  the store lacks — a headline-only entry, a block's missing `undo:` — is backfilled from
-  the durable record (the item, its series, its commits) and written as a revised card with
+  is required. An ask for another round — the dev-cycle cap, most often — requires the
+  `if left:` and `round costs:` lines (the skill's floor), filled from the reviewer's
+  `findings:` block and the run's record; any other decision leaves both out. The options
+  stay in letter order, `[recommended]` on the headline marking the recommended one.
+  **A card or block renders only from stored fields**: a field it needs that the store
+  lacks — a headline-only entry, a block's missing `undo:` — is backfilled from the durable
+  record (the item, its series, its commits) and written as a revised card with
   `revised: <time> — backfilled` before it renders; a field no record holds is written and
   shown as `not recorded`, never invented at render time. A card with no `raised:` takes it
   from the record: the time the headline was committed — the commit time, not the ask

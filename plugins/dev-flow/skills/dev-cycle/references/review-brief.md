@@ -331,4 +331,5 @@ changed or missing one is a finding at medium (the format's rule 1).
 
 A fourth review round without `CLEAR` is itself a show-stopper — the cap is 4 review
 rounds, the first review plus three fix rounds: block the change and raise it through the
-decision channel, with the round history from the record sink.
+decision channel, with the round history from the record sink and the justification
+`bindings.md` § Decisions gives an ask for another round.

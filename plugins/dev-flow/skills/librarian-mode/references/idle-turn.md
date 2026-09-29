@@ -47,11 +47,11 @@ rows each with `+N more` below:
 ```
 hold: <hold-id> — <scope>, until <end condition> ("<operator's words>"); holds <ids>
 
-Groom                                        Work
-| item | why                           |     | item | P | next                        |
-| ab12 | decision 46: <one line>       |     | cd34 | 1 | dispatch now                |
-| ef56 | blocked: operator review      |     | 7890 | 2 | after cd34 (same files)     |
-|      |                               |     | 1a2b | 1 | after reset 14:05           |
+Groom                                               Work
+| item | why                                  |     | item | P | next                        |
+| ab12 | decision 46: <one line> — rec (b)    |     | cd34 | 1 | dispatch now                |
+| ef56 | blocked: operator review             |     | 7890 | 2 | after cd34 (same files)     |
+|      |                                      |     | 1a2b | 1 | after reset 14:05           |
 ```
 
 - **Groom** — items that need the operator: every row `wi needs-input` prints — a
@@ -62,8 +62,10 @@ Groom                                        Work
   does not cover: including a free-text deferral such as "operator holding until
   spare time", which is not parked (below) and not a `hold` item.
 
-  A decision's Groom row stays one line: its number and the `decision N:` question. A
-  deferred one also shows its last `wake N:`, and stays a Groom row until the wake comes.
+  A decision's Groom row stays one line: its number, the `decision N:` question and its
+  recommendation (or the label saying there is none) — one row per decision, never several
+  folded into one row. A deferred one also shows its last `wake N:`, and stays a Groom row
+  until the wake comes.
   With the `operator-interaction:decisions` skill loaded, a decision is put to the operator
   in full only when `decisions.md` § The Report's item 4 selects it (raised since the last
   Report, its wake come, not yet seen, after Rehydrate, a ⚠ one on first showing or to a

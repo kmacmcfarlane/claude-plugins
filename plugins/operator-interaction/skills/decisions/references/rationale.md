@@ -156,6 +156,31 @@ compact list with the hint is the very last thing — the operator's own ask (20
 compact, one-line decision list below the cards/blocks so you can answer some/all of them
 without scrolling up".
 
+## Options and recommendations, as the operator reads them
+
+The operator's rulings (2026-09-29), each from reading decisions shown the other way:
+
+- **Letter order, the recommendation in bold.** "These options should be in abc...z order,
+  if you have a recommendation, let's bold it." Putting the recommended option first is a
+  modal dialog's convention, where the first choice is the default. In a card the operator
+  reads the options as a list and answers by letter, so the letters run in order and the
+  recommendation is marked where it stands.
+- **Every decision's own recommendation.** Four related decisions shown as one grouped
+  entry drew: "you haven't provided any recommendations?" A group spares context switches
+  (§ Order) only while each decision in it can still be answered from where it is shown; the
+  folded entry kept the topic and lost the answer — the failure § The floor observed in
+  checkpoint digests.
+
+## Asks for another round
+
+A review-cap waiver asked with its fixed options and little else drew: "each ask for another
+turn needs to justify why it's worth the cost of an operator decision along with the ask. If
+the impact is high, it's justified. I have no insight into the impact, so I can't make a
+decision." A template spares the operator reading the options again, not the weighing.
+What the leftover findings would break and what the round costs are the two sides of that
+weighing, and both change every time. Completed staff work (§ The floor) asks the same: the
+decider can approve or disapprove from what is shown alone.
+
 ## Replies
 
 Deciders answer with more than choices: a request for information tied to a decision point
