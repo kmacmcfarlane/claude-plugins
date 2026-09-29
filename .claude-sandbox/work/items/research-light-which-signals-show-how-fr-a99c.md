@@ -49,3 +49,10 @@ dispatch: planner opus — resume, serial 03 (round 4 is the cap)
 serial 03 final: D3 (b) cards 8 of 9 lost-context answers (9 of 9 with the show-me trigger) vs today 5 (6); full cards printed while away 109 -> 1; away test derived from the operators own turn gaps (87 min upper quartile), may conflict with ruling 78 (a); D1 (z) wake at 0999 + 76bc/R48; D2 (b); D4 (b)
 dispatch: plan reviewer opus — fresh, round 4 (the cap)
 agent: af6e453dc669f6b50 (plan reviewer r4)
+plan review r4 (the cap) NEEDS_CHANGES (0H 1M 2L): M the D3 card leaves the conflict with ruling 78 (a) "no arbitrary numbers" as an unknown and offers no number-free option; pass: ask it, offering D3 (b) without the time part (8 of 9 either way; 22 of 55 turns owe a re-show; 96 becomes a line with the pull); L "same at the median" true only without the pull; L "none under an hour apart" follows from the threshold
+decision 106: The operator-freshness research (a99c) hit the review cap with one medium left, about how its recommended card is worded; close it and carry that fix into the pyramid card, or run one more round? — options: (a) close the series; the librarian renders the D3 card in the pyramid with the 78 (a) conflict asked as a question and a no-number variant offered, using 03's own figures [recommended] | (b) one more planner round and a fresh review | (c) park the series | (z) decide later
+  raised: 2026-09-29T08:00Z
+  stakes: reversible, narrow (research input; the fix is to the card the operator will read)
+  if left: the pyramid card would hide a conflict with the operator's own "no arbitrary numbers" ruling unless the librarian renders it as (a) says
+  round costs: one planner round plus a fresh reviewer, about 15-20 minutes and roughly 0.5-1% of weekly quota at the current sub-agent effort; none of the operator's time
+  rec: (a) · basis strong — review r4 gives the exact figures for the no-number variant
