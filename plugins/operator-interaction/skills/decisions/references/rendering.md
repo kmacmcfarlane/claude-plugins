@@ -172,24 +172,25 @@ When the options or recommendation changed, say which and why: *Recommendation c
 (a) vendor the font to (b) fetch it, because the CDN outage ended.*
 
 **From the store.** When the caller's store keeps the card (the floor's fields under the
-decision's record, with its raised-at time), a re-show renders that stored card and adds only
-the *while it waited* line — read from the caller's record, never from memory — and a gloss
-for any id the stored text left bare. Composing the card again from memory can shift the
-letters or the recommendation, and the operator would answer an (a) that is not the (a) they
-read. Before rendering, check the stored card against now: a floor field it lacks, or one
-events have made false — a *why now* that no longer holds, a basis word the rule
+decision's record, with its raised-at time), a re-show renders that stored card and adds
+only the *while it waited* line — read from the caller's record, never from memory — and a
+gloss for any id the stored text left bare. Composing the card again from memory can shift
+the letters or the recommendation, and the operator would answer an (a) that is not the (a)
+they read. Before rendering, check the stored card against now: a floor field it lacks, or
+one events have made false — a *why now* that no longer holds, a basis word the rule
 (`references/evidence-basis.md`) no longer gives — is a revision. The caller stores the
 revised card (a missing field no record holds reads *not recorded*), and *while it waited*
 says what changed. When the options or recommendation really changed, say which and why, and
 the caller stores the new card.
 
-**A cold re-show** — whenever the reader is cold (SKILL.md § Before you write) — shows
-each open decision the reader is cold on at card level or above, never as a line only except
-as paged (SKILL.md § Levels, the line-only rule), each opening with what changed while it
+**A cold re-show** — whenever the reader is cold (SKILL.md § Before you write) — shows each
+open decision the reader is cold on at card level or above, never as a line only except as
+paged (SKILL.md § Levels, the line-only rule), each opening with what changed while it
 waited (*nothing changed* is worth saying). A deferred decision whose wake has not come is a
-card too, opening with its wake: *deferred until the release; no answer needed before then*.
-Open questions still open are listed under *Open questions*. The heading has one form:
-**Decisions** — *N open · shown again after a context reset · M shown in full · one ⚠
+card too, opening with its wake: *deferred until the release; no answer needed before then*;
+it goes after every decision still waiting on an answer, so paging reaches it last. Open
+questions still open are listed under *Open questions*. A cold re-show's heading has one
+form: **Decisions** — *N open · shown again after a context reset · M shown in full · one ⚠
 one-way*, naming what made the reader cold, and dropping *M shown in full* when nothing is
 paged and the ⚠ part when there is none. With more than five, SKILL.md's paging rule applies
 *(provisional — pending the operator's ruling)*: the rest are lines ending *(expand for the

@@ -37,7 +37,7 @@ first), and replies are recorded as `answer N:`.
 | the default wake ("the next time I finish a piece of work and report") | **the next Report**; a `later` with no time or event wakes there |
 | the operator's expected return | what the operator said ("back tomorrow morning"), in the item or the transcript; when they said nothing, the return is unknown and every stated deadline goes first |
 | who is reading, and how warm | after Rehydrate the operator is **cold** on every decision raised before the reset; the first Report after it re-shows them per the skill, with what changed since each was raised. Between resets: a decision shown in a Report written after the operator's last turn has **not been seen** — background returns can write several Reports while the operator is away — so the next Report shows it at its level again, not *(shown before)*. Your own transcript tells you: has the operator taken a turn since that Report? |
-| related decisions (groups) | decisions on one item or on sibling items (one parent); a decision with no item groups by plugin or files. Never transitive: two groups that share a file stay two groups |
+| related decisions (groups) | decisions on one item, or on sibling items (one parent) about the same plugin; a decision with no item groups by plugin or files. Never transitive: two groups that share a file stay two groups |
 | named templates | none: the librarian names no template, so every decision carries the floor on its own card |
 
 ## What the store records
@@ -64,17 +64,18 @@ renders what the operator read instead of composing it again.
   The headline is as the `dev-cycle` skill's `references/record-lines.md` gives the
   `decision:` line, so `wi needs-input` and the counter grep (`^decision [0-9]`) read it
   unchanged; the indented lines match neither `^decision` nor `^answer`. The question is a
-  question, as the card's title shows it; `raised:` carries the time, not a date alone; every
-  line glosses its ids (no bare item id, sha, series or finding number). The options are every
-  option the source offered (a series, a dispatch's `decision:` line), one choice per letter:
-  a compound choice gets its own letters, never `(a)+…`. When the decision is
-  ⚠ one-way — or any decision shown as a block — write `⚠ one-way` after the question (⚠
-  only), and every option line carries its `undo:` and `who:`, a `context:` line follows
-  `why now:`, and the `basis:` drill-down line is required. **A card or block renders only
-  from stored fields**: a field it needs that the store lacks — a headline-only entry, a block's missing
-  `undo:` — is backfilled from the durable record (the item, its series, its commits) and
-  written as a revised card with `revised: <time> — backfilled` before it renders; a field no
-  record holds is written and shown as `not recorded`, never invented at render time.
+  question, as the card's title shows it; `raised:` carries the time, not a date alone (an
+  existing date-only `raised:` is kept as written); every line glosses its ids (no bare item
+  id, sha, series or finding number). The options are every option the source offered (a
+  series, a dispatch's `decision:` line), one choice per letter: a compound choice gets its
+  own letters, never `(a)+…`. When the decision is ⚠ one-way — or any decision shown as a
+  block — write `⚠ one-way` after the question (⚠ only), and every option line carries its
+  `undo:` and `who:`, a `context:` line follows `why now:`, and the `basis:` drill-down line
+  is required. **A card or block renders only from stored fields**: a field it needs that
+  the store lacks — a headline-only entry, a block's missing `undo:` — is backfilled from
+  the durable record (the item, its series, its commits) and written as a revised card with
+  `revised: <time> — backfilled` before it renders; a field no record holds is written and
+  shown as `not recorded`, never invented at render time.
   A preference or an outside-authority decision writes its label on the `rec:` line.
 - **Revised:** when the options or the recommendation really change, or the skill's re-show
   check finds a stored field stale, write `decision N:` again with the new card and a
@@ -83,8 +84,11 @@ renders what the operator read instead of composing it again.
   waited* is read from the record, never from memory: the item's lines written after the
   card's `raised:` time, and `git -C "$MAIN" log --since=<that time>` over the files the
   decision is about; nothing there is *nothing changed*.
-- **Open question:** `open question: <text>` in the item body; it stays under *Open
-  questions* on every cold re-show until it has options and is raised as `decision N:`.
+- **Open question:** `open question: <text>` in the item body. It closes with a later line:
+  `open question: <text> → decision N` when it gains options and is raised as `decision N:`,
+  or `open question dropped: <text> — <why>` when retired. The open ones are the `^open
+  question:` lines with no closing line, read from the record; each is listed under *Open
+  questions* on every cold re-show.
 - **Answered:** `answer N: <the reply> (read as: <the echo's reading>)`. The reading is
   recorded because a natural-language reply can be misread, and the echo is what the
   operator saw.
@@ -122,10 +126,10 @@ skill, the decisions come **last in the turn**, where the operator's eye is when
 2. Then the push outcome, any `incoming:` lines, and the team summary, as SKILL.md § Report
    gives them.
 3. Then **one decisions block**, the last thing written in the turn — when the push outcome
-   and team summary go out as a follow-up message (SKILL.md § Report), the block moves to the
-   end of that follow-up — laid out as the skill says: the
-   decisions shown in full first, in list order, then the compact list of every open decision
-   (a deferred one also shows its wake), then the hint when it carries two or more.
+   and team summary go out as a follow-up message (SKILL.md § Report), the block moves to
+   the end of that follow-up — laid out as the skill says: the decisions shown in full
+   first, in list order, then the compact list of every open decision (a deferred one also
+   shows its wake), then the hint when it carries two or more.
 4. Shown in full, at the level the skill gives them:
    - those raised since the last Report;
    - those whose wake has come;
@@ -136,9 +140,8 @@ skill, the decisions come **last in the turn**, where the operator's eye is when
    - any the operator raised with `expand`, which stays raised.
 
    Every other open decision is a list line only, ending *(shown before)* or *(line only)*,
-   as the skill says. A deferred one
-   stays a list line with its wake until the wake comes — on a cold re-show, a card showing
-   its wake, as the skill says.
+   as the skill says. A deferred one stays a list line with its wake until the wake comes —
+   on a cold re-show, a card showing its wake, as the skill says.
 
 A decision raised between Reports (an Intake ask, a blocked item) is put to the operator in
 the message that raises it, per the skill — last in that message. It is carried in every
