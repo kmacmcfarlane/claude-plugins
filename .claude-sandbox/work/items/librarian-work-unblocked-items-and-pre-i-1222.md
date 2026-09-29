@@ -16,7 +16,7 @@ Operator 2026-09-22: an idle librarian should work new items as they arrive when
 
 ## Handoff
 - doing: session e9bb00fc 2026-09-28/29 (post-compaction): landed and pushed e115+0156, d1e3, 6bff, 1a54, 09e1, 1fd2, 5dbf, 1a14, 775a, 774d, 16da, 6118, 358a, 428e (closes 5039), 09f1, 2364, f6fd, 5a18, b527, d639, fabd, aa14, 533c, a66d; spikes bace and 0b2d CLEAR (0b2d waits on decisions 90-95); caef blocked at the review cap (decision 96); 3460 CLEAR at 902e71e, held for decision 97
-- next: operator answers 89-97; on 97(a) land 3460 (worktree kept); on 90/91 build 0b2d's F1/F2; on 96(a) one more caef planner round + fresh reviewer + fable second opinion; else continue the queue (da89, b514, 6fea, 16da-style follow-ups); hold on unattended dispatch lifted for this week (answer 88 b), stop at the 15% weekly reserve
+- next: checkpoint 2026-09-29 ~17Z at 79%: b3c5 review r2 in flight; 900a merge held for 109; answer briefing follow-ups then the pyramid (69ee); open 101, 108, 109; delta 01 to agents (0c4d); hold lifted this week to the 15% reserve
 - blocked: —
 - learned: —
 
