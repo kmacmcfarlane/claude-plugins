@@ -2,11 +2,13 @@
 id: librarian-where-the-line-sits-between-ju-8dee
 title: "librarian: where the line sits between just doing it, forwarding, and asking the operator (policy spike)"
 type: spike
-status: todo
+status: doing
 priority: 1
 deps:
   - research-light-when-is-raising-a-decisio-263c
   - research-how-decision-makers-control-whi-d618
+owner: Kyle-McFarlane@7696505da8e1
+claimed: 2026-09-29T15:59Z
 created: 2026-09-29
 updated: 2026-09-29
 refs:
@@ -28,3 +30,8 @@ handed in from 5140 review r2: OQ1 (how the operator sees decide-alone; the oper
 handed in from 6d2c (serial 02): the trigger for confirm-first readings (which reply-driven actions others rely on and so wait for the operator) is 8dees to set
 operator 2026-09-29 notes (.claude-sandbox/investigations/5140-decision-lifecycle/evidence/operator-notes-2026-09-29-stream.md): the attention-scheduler idea, decision ledger in the work system, boundaries spike research-light-when-is-raising-a-decisio-263c as input; 8dee now depends on research-light-when-is-raising-a-decisio-263c and d618, not on 5140
 relevant to 8dee and the pyramid (2026-09-29): b92b (cross-repo decisions, trust model for relayed answers) is the owner agents named for how an answer given outside its repo carries authority (their teach-back G10)
+
+## Notes
+- 2026-09-29 claimed by Kyle-McFarlane@7696505da8e1
+dispatch: planner opus — policy spike, plan mode (series 8dee-the-line); inputs 263c, d618 (+ r4 corrections per answer 105 a), 5140, 6d2c, a99c, operator notes, peers, 3460, b514, b8d6, b92b
+agent: a7b8bf30c12e88eee (planner r1)
