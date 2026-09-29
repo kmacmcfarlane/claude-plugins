@@ -86,3 +86,6 @@ correction 2026-09-29T06:22Z: answer 96 above says "found in the session transcr
 review r5 NEEDS_CHANGES (1H 3M 3L): H Q2(b) shell confinement bypassable (dangerouslyDisableSandbox, cwd writable); M bwrap missing -> silent unsandboxed, project-settings keys ignored; M research-verifier-local has no F3 rules; M Risk 5 overstated; about 7 of 12 questions need the operator (Q1.2, Q3, Q18.2 librarian-decidable; merges proposed); the one waived round is spent
 dispatch: second opinion fable — per answer 96 (a), on 00-04 and reviews r1-r5
 agent: a72dfd5f1fa641aab (fable second opinion)
+second opinion (fable): build-with-acceptance after a closing serial 05 that narrows claims (honest-by-default confinement; verifier split deferred; F1->F2 first; r5 findings carried as acceptance with failing tests first); librarian decides Q1 (a)/(a), Q3 (a), Q6 (a)/(a), Q14 (a), Q18.2 one verifier now, Q7/Q9/Q10/Q17 defaults; operator gets 4 cards now (Q2 shell, URL policy Q4+Q5+Q13, Q16 probes, Q18.1 transcripts), F5 (Q8+Q15) later
+librarian ruling: take the second opinion; serial 05 records it, no further review round (the waived round is spent; the build items are reviewed)
+dispatch: planner opus — resume, closing serial 05 per the second opinion

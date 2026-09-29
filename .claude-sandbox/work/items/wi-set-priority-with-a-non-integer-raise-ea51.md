@@ -17,3 +17,4 @@ Found by the 928d implementer 2026-09-29: 'wi set <id> priority abc' prints a tr
 - next: —
 - blocked: —
 - learned: —
+widened 2026-09-29 (928d review r1): provider-interface.md:92 exit-1 list is not exact — "title longer than its limit or empty" is true only of add (set title "" exits 3, set accepts 200 chars); the missing-root error (exit 1) is not listed; fix the list with this bug

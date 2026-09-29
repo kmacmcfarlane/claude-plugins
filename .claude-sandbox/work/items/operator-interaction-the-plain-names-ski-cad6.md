@@ -2,11 +2,13 @@
 id: operator-interaction-the-plain-names-ski-cad6
 title: "operator-interaction: the plain-names skill (0b2d F1)"
 type: feature
-status: todo
+status: doing
 priority: 1
 deps:
   - decisions-a-b-c-option-order-with-the-re-dbfc
 parent: operator-interaction-refer-to-work-items-0b2d
+owner: Kyle-McFarlane@7696505da8e1
+claimed: 2026-09-29T06:26Z
 created: 2026-09-29
 updated: 2026-09-29
 refs:
@@ -20,3 +22,8 @@ Build F1 of series .claude-sandbox/investigations/0b2d-plain-item-names (03 + 04
 - next: —
 - blocked: —
 - learned: —
+
+## Notes
+- 2026-09-29 claimed by Kyle-McFarlane@7696505da8e1
+dispatch: implementer opus — new skill + catalog/marketplace shape change (routing rule 2)
+agent: a0f63f68b3becabab (implementer r1)

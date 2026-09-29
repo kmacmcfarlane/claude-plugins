@@ -2,13 +2,12 @@
 id: work-items-optional-short-display-name-f-928d
 title: "work-items: optional short_display_name field in wi (0b2d F2)"
 type: feature
-status: doing
+status: done
 priority: 1
 parent: operator-interaction-refer-to-work-items-0b2d
-owner: Kyle-McFarlane@7696505da8e1
-claimed: 2026-09-29T06:06Z
 created: 2026-09-29
 updated: 2026-09-29
+closed: 2026-09-29
 refs:
   - 0b2d
 ---
@@ -28,3 +27,7 @@ agent: a81a68f654d678d32 (implementer r1)
 r1 DONE cb3b116: 6 files, TestShortDisplayName (15), work-items 277 tests OK; fail-first shown; deviations: add treats a lone em dash as blank
 dispatch: reviewer opus — fresh reviewer, round 1
 agent: a568ad75a93e42095 (reviewer r1)
+review r1 CLEAR at cb3b116 (3 lows, 1 nit: exit-1 list accuracy folded into ea51; format characters + two untested behaviours filed)
+landed: 42e28bc
+checks on main 42e28bc: all 8 OK (work-items 277)
+- 2026-09-29 done

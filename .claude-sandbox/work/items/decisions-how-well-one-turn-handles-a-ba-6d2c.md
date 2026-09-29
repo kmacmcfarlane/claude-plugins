@@ -41,3 +41,6 @@ dispatch: plan reviewer opus — fresh, round 3
 agent: a61ded2910fee94aa (plan reviewer r3)
 review r3 NEEDS_CHANGES (0H 2M 5L): card wording only — (b) line must say reply-driven pushes/peer messages still act before the operator sees them; sentence 2 repeats the existing echo rule; echo rewording must keep the ⚠ read-back and its purpose; lows incl. correction already delivered, 8dee handoff line (added)
 dispatch: planner opus — resume, serial 03 (round 4 is the cap)
+serial 03 final card written: ladder (a)-(d)+(z), rec (b) answer questions in words, echo per part, echo timing matches practice except the ⚠ read-back
+dispatch: plan reviewer opus — fresh, round 4 (the cap)
+agent: a0e5ae3828b64d323 (plan reviewer r4)
