@@ -288,8 +288,9 @@ model moves a file across models. Ten are the dev cycle's role workers:
 `dev-cycle` and `librarian-mode` dispatch them by the `dev-cycle` skill's model routing, with
 the model passed on every call; none is for direct use. A session that has not loaded an agent
 file yet (it needs a plugin update and a restart) falls back to `general-purpose` with the
-routed model, at the session's own effort; a dispatch under an operator's pin asks first. Their
-bodies are minimal, the role only, since the prompt is the brief; `scout` alone adds a short
+routed model, at the session's own effort. A dispatch under an operator's effort pin asks
+first; one under a model pin alone falls back the same way, since the routed model keeps
+that pin. Their bodies are minimal, the role only, since the prompt is the brief; `scout` alone adds a short
 read-only evidence contract. The ten names are **provisional** pending operator review.
 
 The other two serve the research family: `research-lane` (sonnet, effort medium — gathers

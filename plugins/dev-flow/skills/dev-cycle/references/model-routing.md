@@ -58,9 +58,9 @@ stage; another choice changes that row here.
 | Agent | Pin: model / effort | Dispatched when |
 |---|---|---|
 | `scribe` | sonnet / low | a helper with no judgement on its dispatch line: render a decision card, fill a brief from its template, summarise given text |
-| `scout` | sonnet / medium; `model: opus` on the call after a sonnet `scout` returned "could not determine" on a question the work depends on | a read-only question: locating code, read-and-reason, a diagnostic — a question that asks for a plan goes to a planner instead |
+| `scout` | sonnet / medium; `model: opus` on the call after a sonnet `scout` returned "could not determine" on a question the work depends on | a read-only question: locating code, read-and-reason, a diagnostic. A question that needs a plan runs as a spike, in a cycle of its own |
 | `implementer` | sonnet / medium; `model: opus` on any opus signal; `model: fable` under a pin | every implementer dispatch the two rows below do not take: sonnet for the canonical kinds in a kit repo, and for wording and docs elsewhere; opus otherwise (§ Implementer) |
-| `implementer-critical` | opus / high | an implementer dispatch on work the operator called critical (§ Critical work) |
+| `implementer-critical` | opus / high | an implementer dispatch on work the operator called critical: the item or its refs quote the operator calling it critical, crucial, foundational or important, or asking for fable (§ Critical work) |
 | `implementer-deep` | opus / xhigh | an implementer dispatch under an `effort: xhigh` pin (SKILL.md § Step 2 rule 8) |
 | `planner` | opus / high | every plan dispatch not sent to `planner-deep`, from the first; the trial's control arm (default, § The xhigh trial) |
 | `planner-deep` | opus / xhigh | a plan dispatch under an `effort: xhigh` pin (rule 8); the trial's bump arm (default, § The xhigh trial) |
@@ -74,8 +74,11 @@ stage; another choice changes that row here.
 - **The two pins compose.** A plan with both `effort: xhigh` and `model: fable` is
   `planner-deep` with `model: fable` (rule 8).
 - **A caller's own helpers and questions** — a decision card, a filled brief, a summary; a
-  `dig into` or a diagnostic — go to `scribe` and `scout` by the rows above, recorded like
-  any dispatch (§ Recording).
+  `dig into` or a diagnostic — go to `scribe` and `scout` by the rows above. The caller
+  records each as a **helper line**, a `dispatch:` with role `scribe` or `scout`
+  (`record-lines.md`). A helper line is a rider, never a phase of the cycle, so it never
+  displaces the cycle's own state or a pending decision (`resume.md` § Phase lines and
+  riders).
 
 ## Implementer
 
@@ -130,11 +133,18 @@ A planner is opus at least (SKILL.md § Step 1): a plan is judgement. It runs on
 
 ### Critical work
 
-When the operator called the work critical — in the item body, or in the request it was
-filed from — every implementer dispatch on it, fix rounds included, goes to
-`implementer-critical`: opus high, one tier and one effort for the whole build. Its plan
-stays on `planner`: "critical" raises the build's effort, not the plan's. Under an effort
-pin the build is `implementer-deep` instead (rule 8).
+**The operator called the work critical** when the item body or its refs quote the operator
+calling it critical, crucial, foundational or important, or asking for fable. Only the
+operator's own words count: these words are rare, so routing never relies on them to find
+deep work, and never infers them from the work itself. When they are present they are
+the operator's ruling.
+
+Every implementer dispatch on such work, fix rounds included, goes to
+`implementer-critical`: opus high, one tier and one effort for the whole build. A request
+for fable reads the same way: it sets no model by itself, and only a `model: fable` pin
+puts the build on fable, with `implementer-critical` as its file (rule 8). The plan stays
+on `planner`: the operator's word raises the build's effort, not the plan's. Under an
+effort pin the build is `implementer-deep` instead (rule 8).
 
 ### Fable
 
@@ -191,10 +201,10 @@ It is optional.
 - Brief it with the plan-review variant (`review-brief.md`). Record
   `dispatch: cross-checker fable high — second opinion (<greenfield | major refactor>)`.
 - Its verdict is a review round like any other and counts toward the cap. A
-  `NEEDS_CHANGES` opens a fix round whose re-review goes to the **opus** reviewer — the
-  last `agent: reviewer` line — resumed, with the cross-check's findings pasted for
-  verification; the cross-checker is never resumed, so every fix lands under an opus
-  review.
+  `NEEDS_CHANGES` opens a fix round whose re-review goes to the **opus** reviewer
+  (`fix-loop.md` § A NEEDS_CHANGES round says which `agent:` line that is) — resumed,
+  with the cross-check's findings pasted for verification; the cross-checker is never
+  resumed, so every fix lands under an opus review.
 - One per cycle, one dispatch. Its `CLEAR` goes on as any `CLEAR` does.
 - A second opinion that cannot run — fable unavailable, or the agent lost — is dropped,
   never fallen back to opus and never asked about: the opus `CLEAR` before it stands
@@ -295,18 +305,20 @@ one round after a late high.
   window dispatch names its arm on its `dispatch:` line, such as
   `dispatch: planner opus xhigh — trial bump (L at round 1)`.
 - **Check at each return.** When each window dispatch returns — every planner, and every
-  plan reviewer — read the effort its transcript ran at:
+  plan reviewer, the last one included: the review whose verdict closes the window, the
+  plan's `CLEAR` or its third plan review — read the effort its transcript ran at. Find
+  the transcript by the dispatch's `agent:` id, never by rebuilding the project
+  directory's name:
 
   ```bash
-  grep -o '"effort":"[a-z]*"' <session dir>/subagents/agent-<id>.jsonl | sort | uniq -c
+  f=$(find "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/projects" -path "*/subagents/agent-<id>.jsonl")
+  grep -o '"effort":"[a-z]*"' "$f" | sort | uniq -c
   ```
 
-  `<id>` is the dispatch's `agent:` id. `<session dir>` is
-  `${CLAUDE_CONFIG_DIR:-~/.claude}/projects/<project>/<session id>`, where `<project>` is
-  the dispatching session's working directory with every `/` written `-`. A planner must
-  show its arm's effort, `high` for control and `xhigh` for bump; a plan reviewer must
-  show `high` in both arms. **The first mismatch excludes the unit** there and then,
-  before its arm can read as full: append
+  A planner must show its arm's effort, `high` for control and `xhigh` for bump; a plan
+  reviewer must show `high` in both arms. **The first mismatch excludes the unit** there
+  and then, before its arm can read as full — at the window's last review, before the
+  unit counts as closed: append
   `trial: xhigh-planner <bump | control> excluded — <reason>`, the reason naming the
   dispatch and the effort seen (`planner showed xhigh (fallback)`). The next unit of that
   parity takes its place.
@@ -319,24 +331,34 @@ one round after a late high.
   `CLEAR` earlier counts as a hit.
 - **Sample.** Exactly the first 6 units per arm, in the order of their L verdicts. An arm's
   units are the items carrying its `trial:` line, minus the items that also carry its
-  exclusion, counted over every store whose cycles run the trial:
+  exclusion, counted over **the trial's stores**: every work-item store `$WI estate` lists
+  — the repos beside this one, this one included — each at its repo's `path` plus its
+  `store`. A `wi` without `estate` leaves this repo's own store alone (`bindings.md`
+  § Store).
 
   ```bash
-  grep -lx 'trial: xhigh-planner bump' items/*.md          # the bump arm's lines...
-  grep -l '^trial: xhigh-planner bump excluded' items/*.md  # ...minus these
+  STORES=$($WI estate --json | python3 -c 'import json,sys; print("\n".join(r["path"] + "/" + r["store"] for r in json.load(sys.stdin)["repos"]))') || STORES=$WI_ROOT
+  for s in $STORES; do
+    grep -lx 'trial: xhigh-planner bump' "$s"/items/*.md             # the bump arm's lines...
+    grep -l '^trial: xhigh-planner bump excluded' "$s"/items/*.md     # ...minus these
+  done
   ```
 
-  A later unit whose arm is already full routes as the control and writes no `trial:`
-  line.
+  **The full-arm test** belongs to the trial routing step at enrolment, the moment L is
+  read before the next planner dispatch (SKILL.md § Step 1): it counts the unit's arm
+  first, and a unit whose arm already holds 6 routes as the control and writes no
+  `trial:` line.
 - **Pass and fail.** Pass: the bump arm misses `CLEAR` by the third plan review at least
   **3 fewer times** than the control arm (bump 2 of 6 against control 5 of 6, say). Fail:
   anything else. With no real effect a false pass is about 7% at worst (7.3% at a 50%
   base); if xhigh halves an 86% miss rate, the trial passes about 54% of the time. It
   detects only a large effect.
-- **Close.** When both arms hold 6 units and each has reached `CLEAR` or its third plan
-  review, report the counts to the operator. A pass means every unit's window runs on
-  `planner-deep` from then on; a fail means `planner-deep` runs only under an effort pin.
-  Either result is a routing change made here.
+- **Close.** The same step owns it, at the return that closes a unit's window, once that
+  return's check has passed: it counts both arms over the trial's stores. When each arm
+  holds 6 units whose windows have all closed, that run's Report names the result and the
+  counts under `open questions:`. A pass means every unit's window runs on `planner-deep`
+  from then on; a fail means `planner-deep` runs only under an effort pin. Either result
+  is a routing change made here, as a change of its own.
 - **Pause.** If the review cap changes so that fewer than three plan reviews can run, or
   changes what a round is, the trial pauses until this section is re-read against it.
 
@@ -351,21 +373,31 @@ loaded, or fable is unavailable.
 agent types the Agent tool offers — or a call naming it fails as an unknown agent type:
 dev-flow was updated without a restart, or not updated since the agent shipped.
 
-- **An unpinned dispatch** falls back silently. Dispatch `general-purpose` with the routed
-  `model`: it runs at the session's effort, and nothing better is available. Record
-  `inherit` as the effort and name the missing agent after the signal —
-  `dispatch: reviewer opus inherit — rule 4; dev-flow:reviewer not loaded` — and say it
-  once under the Report's `open questions:`: "role agents not loaded; sub-agents run at the
-  session's effort; update dev-flow and restart". Never block or ask over it.
+- **A dispatch with no effort pin** falls back silently — a dispatch under a `model:` pin
+  alone included, since the per-call `model` still carries that pin. Dispatch
+  `general-purpose` with the routed `model`: it runs at the session's effort, and nothing
+  better is available. Record `inherit` as the effort and name the missing agent after
+  the signal — `dispatch: reviewer opus inherit — rule 4; dev-flow:reviewer not loaded` —
+  and say it once under the Report's `open questions:`: "role agents not loaded;
+  sub-agents run at the session's effort; update dev-flow and restart". Never block or
+  ask over it.
 - **A dispatch under an effort pin** never falls back silently. When `planner-deep` or
   `implementer-deep` is not loaded the pin cannot run, and it is asked through the
   decision channel as a fable pin is (below): update dev-flow and restart, then run; or run
-  now on `general-purpose` at the session's effort. An answer of "run now" is recorded
-  before the dispatch, naming the answer:
+  now on `general-purpose` at the session's effort, for the rest of this item. An answer
+  of "run now" is recorded before the dispatch, naming the answer:
 
   ```
   dispatch: planner opus inherit — effort pin; dev-flow:planner-deep not loaded; answer <N>
   ```
+
+  **It covers the rest of the item.** A file that is not loaded stays so until the
+  session restarts, so asking again at every dispatch would only repeat the question. Each
+  later dispatch on the item checks afresh: one that finds its `-deep` file loaded takes
+  it; one that still does not runs on `general-purpose` the same way and names the same
+  answer on its `dispatch:` line, never asking again. The answer is carried by those
+  dispatch lines, not by the answer's own in-force window (`bindings.md` § Decisions).
+  An answer to update and restart first leaves the item waiting until then.
 
 ### Fable unavailable
 
@@ -431,17 +463,10 @@ Before each Agent call, append one line to the record sink (Bash):
 dispatch: <role> <model> <effort> — <the signal, or "default">
 ```
 
-- `<role>` is the role word: `scribe`, `scout`, `implementer`, `planner`, `reviewer` or
-  `cross-checker`.
-- `<model>` is the per-call `model`: `sonnet`, `opus` or `fable`.
-- `<effort>` is the dispatched file's pin — `low`, `medium`, `high` or `xhigh` — or
-  `inherit` when the fallback dispatched `general-purpose` (§ Fallback). Role and effort
-  together name the file, since each file is one role at one effort: `planner xhigh` is
-  `planner-deep`, `implementer high` is `implementer-critical`.
-
-A line written before the effort field existed, its model followed directly by the `—`,
-reads as effort unrecorded (`record-lines.md`). The trial's `trial:` lines: § The xhigh
-trial.
+The fields, who writes the line (the cycle's roles, or a caller's helper line), and how a
+line written before the effort field reads are `record-lines.md`'s, the one home of record
+shapes. The effort is the dispatched file's pin, or `inherit` under § Fallback. The
+trial's `trial:` lines: § The xhigh trial.
 
 The brief's `Model:` line carries the same model, so the agent's transcript and the item
 agree. A self-review writes its `review: self` line instead (§ Review waiver). Step 6's

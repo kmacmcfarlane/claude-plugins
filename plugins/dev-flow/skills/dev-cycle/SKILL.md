@@ -190,9 +190,11 @@ n = the nth re-dispatch or resume with findings = review round n+1; cap 4 review
    executable logic (hook, `scripts/`, tests, status line, settings write; any code when
    Ground holds product code); `marketplace.json`, or a plugin added, split, moved or
    retired; a recorded trade-off or judgement words that ask for one; a prior
-   `NEEDS_CONTEXT`; any other kit-repo text. Work the operator called critical goes to
-   `implementer-critical` (opus high). The table: `references/model-routing.md`
-   § Implementer. A planner is opus at least (Step 1), on `planner`.
+   `NEEDS_CONTEXT`; any other kit-repo text. Work the operator called critical — the
+   item or its refs quote the operator calling it critical, crucial, foundational or
+   important, or asking for fable — goes to `implementer-critical` (opus high). The
+   table: `references/model-routing.md` § Implementer. A planner is opus at least
+   (Step 1), on `planner`.
 3. **Fable is no implementer tier by signal.** It runs only under a `model: fable` pin
    (rule 8), or as the second-opinion cross-check rule 4 allows.
 4. **Reviewer: always opus, always fresh**, on `reviewer` (opus high) — a new sub-agent

@@ -210,7 +210,9 @@ would ask the operator. Its Step 6 is the Report below. Your bindings:
   the role agent every dispatch names (`dev-flow:<agent>`, its § Profiles), the
   `general-purpose` fallback when one is not loaded (its § Fallback), and the dispatches
   you make outside a cycle's roles: a helper (a card, a brief, a summary) and a read-only
-  question (a `dig into`, a diagnostic) route by the same § Profiles.
+  question (a `dig into`, a diagnostic) route by the same § Profiles, and you record each
+  as a helper line, which is yours to write and never a phase of the item's cycle (the
+  `dev-cycle` skill's `references/record-lines.md`).
 - **Model floor**: an operator pin — a `model: <tier>` line and/or an `effort: xhigh`
   line in the item body; the model pin for every role, the effort pin for planner and
   implementer dispatches (the `dev-cycle` skill's Step 2 rule 8); never overridden

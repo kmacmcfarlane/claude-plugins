@@ -27,6 +27,12 @@ They move the run, and only a phase line can be its last state. Every other line
 **rider**: it never displaces a phase line, and it is read only where a fact below names
 it.
 
+A **helper line** is a rider too, although it is a `dispatch:`: one whose role is `scribe`
+or `scout`, which a caller writes for its own helper or read-only question, and the
+`agent:` line under it (`record-lines.md`). It never counts as a phase line, so a scribe
+rendering a decision's card leaves that decision after the last phase line, and the GATE
+still reads it as pending.
+
 A line that is missing reads as **not recorded**, and every default escalates: a
 `BLOCKED` with no reason reads as `permission` (`record-lines.md`), an unreadable freshness test
 as `STALE`, an untagged dispatch permission as not found. None of them lands, and none
@@ -100,8 +106,8 @@ words. `<workspace>` below is that line's third field.
    record is not found, and the question is asked again.
 8. **LIVE** — `one` | `none` | `many`, computed when PHASE is `DISPATCH`. The
    **generation** is every `agent:` id recorded since the last phase line that is not a
-   `dispatch:` — a re-dispatch appends a new pair, so a resume of a resume probes every id
-   it made. No `agent:` line in it → `none`: the Agent call never returned an id. Otherwise
+   `dispatch:`, a helper line's `agent:` never included — a re-dispatch appends a new
+   pair, so a resume of a resume probes every id it made. No `agent:` line in it → `none`: the Agent call never returned an id. Otherwise
    probe each id: `ListAgents` first; an id it does not list gets a SendMessage asking for
    its status, because a fresh process may not list an agent that is alive. Running, or
    answering, counts as alive; so does a finished one whose report carries a `STATUS`
@@ -169,7 +175,7 @@ is a dispatch, and the next verdict tests the cap again.
 | LIVE | State | The single next action |
 |---|---|---|
 | `one` | **S3a** attach | Never dispatch beside it. Still running: leave it to finish. Finished with a report never recorded: collect the report and hand it to the step that writes its phase line — SKILL.md § Step 1 (planner), § Step 3.5 (implementer) or § Step 4.5 (reviewer). |
-| `none` | **S3b** salvage | A `cross-checker` or `cross-checker-deep` dispatch is a cross-check — a `dispatch: cross-checker` line, whatever its effort. A record written before the role agents shows a second opinion as a `reviewer fable` dispatch in a run with no `model: fable` pin. Either is a second opinion, optional and never salvaged: it is dropped, whatever its signal says, and the state is the one the last verdict before it gives (`model-routing.md` § Second opinion). Any other: GATE first on a decision recorded after the dispatch — a fable pin's ask, or an effort pin's, when the call failed (`model-routing.md` § Fallback): `PENDING` → § The GATE. `ANSWERED` → § Salvage, then re-dispatch as the answer says. `NONE` → § Salvage, then re-dispatch at the same role, agent file, tier and round — the file the dead dispatch's role and effort name, or under `inherit` the one its signal names as not loaded — a reviewer briefed by VARIANT; a producer at a fix round re-dispatched as `fix-loop.md` § A NEEDS_CHANGES round says for a gone agent (an implementer), or as `agent-brief.md` § Plan variant says (a planner). |
+| `none` | **S3b** salvage | A `cross-checker` or `cross-checker-deep` dispatch is a cross-check — a `dispatch: cross-checker` line, whatever its effort. A record written before the role agents shows a second opinion as a `reviewer fable` dispatch in a run with no `model: fable` pin. Either is a second opinion, optional and never salvaged: it is dropped, whatever its signal says, and the state is the one the last verdict before it gives (`model-routing.md` § Second opinion). Any other: GATE first on a decision recorded after the dispatch — a fable pin's ask, or an effort pin's, when the call failed (`model-routing.md` § Fallback): `PENDING` → § The GATE. `ANSWERED` → § Salvage, then re-dispatch as the answer says. `NONE` → § Salvage, then re-dispatch at the same role, agent file, tier and round — the file the dead dispatch's role and effort name; under `inherit`, the one its signal names as not loaded; on a line written before the effort field (effort unrecorded), the file `model-routing.md` § Profiles routes that role and tier to now, the item's pins and any trial arm applied — a reviewer briefed by VARIANT; a producer at a fix round re-dispatched as `fix-loop.md` § A NEEDS_CHANGES round says for a gone agent (an implementer), or as `agent-brief.md` § Plan variant says (a planner). |
 | `many` | **S13** two live agents | Stop. Dispatch nothing and stop no agent. GATE, the question naming every live id: which one to keep is always a human's decision, never the cycle's. |
 
 **Group C — PHASE `RETURN`.** The producer is the `implementer`, or the `planner` in

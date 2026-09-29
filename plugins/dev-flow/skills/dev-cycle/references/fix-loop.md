@@ -44,7 +44,10 @@ SKILL.md § Step 4.
   and its opus never change, rule 4). **After a second opinion** the reviewer resumed is
   the opus one — the last `agent: reviewer` line — never the cross-check, whose line is
   `agent: cross-checker` and which is never resumed (`model-routing.md` § Second
-  opinion). Resume it with the re-review variant in
+  opinion). In a record written before the role agents, the second opinion's own line
+  is an `agent: reviewer` too: there the opus reviewer is the `agent: reviewer` line
+  before the fable dispatch, never the fable one, whose line is the last. Resume it with
+  the re-review variant in
   `review-brief.md`, pasting the new shas, the declined list and, every round, the
   cumulative "Files changed, with reasons" — the record sink's `changed:` block after
   this round's CHANGED was merged in, so a file a fix round added arrives with its
