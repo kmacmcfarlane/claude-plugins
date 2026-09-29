@@ -38,3 +38,11 @@ agent: a1db1057941f8460b (plan reviewer r1)
 plan review r1 NEEDS_CHANGES (0H 3M 10L): M1 fix-loop.md resumes planners, so the trial control arm would be a resume: fresh planners in both arms; M2 the per-item effort pin must reach bindings.md and rule 8; M3 count trial arms only when the transcript shows that arms effort; lows incl. record-line regex, pin test, repo-map.md, the new Checks line is a ## Librarian edit, 31b4 duplicate
 dispatch: planner opus — resume, serial 02
 absorbed 31b4 (operator 2026-09-23: the same ask, unworked for six days)
+serial 02 written: all r1 findings; F1 + repo-map.md; agent descriptions one role sentence each; F2 + fix-loop.md (fresh dispatch on any agent-file change) and bindings.md (effort floor)
+dispatch: plan reviewer opus — fresh, round 2
+agent: a029948b55e0b27ac (plan reviewer r2)
+plan review r2 NEEDS_CHANGES (0H 1M 3L): M F2 still ships answer-dependent parts (reviewer row names the author rule; cross-checker-deep row and description list Q2 stages); strip them and add the four descriptions to F2b; L pinned items are not trial units, every planner dispatch in the window must show the arms effort; L "the ten" bindings become eleven; L validate plugins/dev-flow (not agents/) and rely on smoke dispatches
+dispatch: planner opus — resume, serial 03
+serial 03 written: F2 ships only answer-independent rows; four descriptions re-worded; pinned items not trial units; effort pin folded into the Model floor row; validate plugins/dev-flow
+dispatch: plan reviewer opus — fresh, round 3
+agent: aff5d1599bf476875 (plan reviewer r3)

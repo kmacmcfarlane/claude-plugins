@@ -35,3 +35,6 @@ relevant to 8dee and the pyramid (2026-09-29): b92b (cross-repo decisions, trust
 - 2026-09-29 claimed by Kyle-McFarlane@7696505da8e1
 dispatch: planner opus — policy spike, plan mode (series 8dee-the-line); inputs 263c, d618 (+ r4 corrections per answer 105 a), 5140, 6d2c, a99c, operator notes, peers, 3460, b514, b8d6, b92b
 agent: a7b8bf30c12e88eee (planner r1)
+series 00 written as a pyramid: apex (b) ask by stakes and show what was decided alone; L1 class table + decided:/Done: lines + why ask:; L2 plans raise only on a high-impact leftover, builds one unasked round inside the operators dispatch grant; L3 forward with return-to-sender custody, never edit another repos files, amend then land 3460; L4 impact tiers inherited from what is blocked; L5 conditional on 100 (c); F1-F8; planner reported 00_initial.md reformatted on disk by another process mid-write — reviewer to check integrity
+dispatch: plan reviewer opus — fresh, round 1
+agent: a3276e2f014e57e25 (plan reviewer r1)
