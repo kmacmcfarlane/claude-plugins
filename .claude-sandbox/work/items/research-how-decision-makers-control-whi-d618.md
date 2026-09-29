@@ -42,3 +42,6 @@ dispatch: plan reviewer opus — fresh, round 3
 agent: a2aab621a4742e2dd (plan reviewer r3)
 plan review r3 NEEDS_CHANGES (2H 3M): H 9-of-11 mixes build caps; on plans the operator answered 48 stop, 68 hold, 96 granted; H (b) drops the operators impact test and dev-cycle escalations; M shrinking undefined; M the librarians cap stops were not "not a breach" — the cap rule said block and raise, so they are unratified librarian practice (to be said plainly to the operator); M (b) needs c79e, held on answer 68
 dispatch: planner opus — resume, serial 03 (round 4 is the cap)
+serial 03 final: I1 plan caps only; options (a) stop and carry, (b) budgeted self-grant (waits on c79e), (c) park, (d) ask at every cap, (e) impact-gated (lean); past cap stops labelled unratified practice; G4 open for 8dee
+dispatch: plan reviewer opus — fresh, round 4 (the cap)
+agent: a1948592826de8cb3 (plan reviewer r4)

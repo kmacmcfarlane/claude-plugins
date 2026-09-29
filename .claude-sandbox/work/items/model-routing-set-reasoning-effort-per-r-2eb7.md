@@ -27,3 +27,4 @@ Acceptance: routing names an effort for every role and signal (implementer mecha
 - 2026-09-29 claimed by Kyle-McFarlane@7696505da8e1
 dispatch: planner opus — plan mode for a routing-rule and agent-shape change (runs at the inherited session effort; nothing lower is available until this lands)
 agent: aa8a6f616ed8ed9ba (planner r1)
+reconcile with a88a (agent-definition factoring, operator 2026-09-29): 2eb7 builds only after its agent names and effort table fit a88a 00

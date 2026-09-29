@@ -35,3 +35,5 @@ agents replied: all three paths readable; filed absorb-claude-plugins-decision-h
 dispatch: brief writer opus — composes BRIEF.md v1 from the series indexes and the store (judgement on status and conclusions)
 agent: aa6decb5f1ce94295 (brief writer v1)
 agents id: absorb-claude-plugins-decision-handling-e934 (filed for 0c4d)
+brief v1 written (.claude-sandbox/investigations/0c4d-decision-handoff/BRIEF.md, 453 lines); librarian spot-checked § 3 against the store; pointer sent to agents; awaiting teach-back; deltas owed: d618 final, 263c, a99c, 8dee, 8e04, 69ee answers
+agents: brief received; absorbing as their series .claude-sandbox/investigations/decision-handling-absorption/ (agents repo) with a § Teach-back; teach-back comes after their review; deltas fold in as new serials
