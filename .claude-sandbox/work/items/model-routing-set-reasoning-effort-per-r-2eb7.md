@@ -46,3 +46,9 @@ dispatch: planner opus — resume, serial 03
 serial 03 written: F2 ships only answer-independent rows; four descriptions re-worded; pinned items not trial units; effort pin folded into the Model floor row; validate plugins/dev-flow
 dispatch: plan reviewer opus — fresh, round 3
 agent: aff5d1599bf476875 (plan reviewer r3)
+plan review r3 NEEDS_CHANGES (0H 1M 3L): M the effort pin is lost under the librarian (librarian-mode SKILL.md:210-211 Model floor is model-only; F2 must edit it); L trial counting must check the plan-reviewer effort and record excluded units; L acceptance grep lacks -r; L "Model floor" readers still assume a tier; implementer-deep model on a mechanical pinned item unstated
+dispatch: planner opus — resume, serial 04 (final; round 4 is the cap)
+serial 04 final: librarian-mode Model floor carries the effort pin; four tier readers handle an effort-only floor; trial exclusions recorded; grep -r; effort-only pin runs implementer-deep on opus
+dispatch: plan reviewer opus — fresh, round 4 (the cap)
+agent: a0ad71c591cb00000 (plan reviewer r4)
+plan review r4 CLEAR (3 lows carried into F2 as acceptance); factored F1 dev-flow-ten-role-agents-with-pinned-mod-900a (now), F2 dev-flow-route-dispatches-through-the-ro-b3c5 (after F1); F2b waits on the pyramid answers (6421 Q1-Q5)
