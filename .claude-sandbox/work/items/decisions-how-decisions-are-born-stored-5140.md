@@ -34,3 +34,6 @@ dispatch: planner opus — resume, serial 01
 serial 01 written: recounts (29 bare letters; 195 D lines, <=82 own rulings); only D-3 stays rule-in-force; D-1 -> OQ6; C5 dropped; OQ1,3,4,5,6 (OQ2 to 8dee)
 dispatch: plan reviewer opus — fresh, round 2
 agent: a19ef8d90eb76190c (plan reviewer r2)
+review r2 NEEDS_CHANGES (1H 4M 2L): OQ5 and OQ1 handed to 8dee; D-3 applied by the librarian (caef 96 card re-written, answer 96 recorded); D-2 needs the operator (make it an OQ4 option); corrections owed to the operator for the 05:44Z claims; 05:53Z operator message found in transcript
+dispatch: planner opus — resume, serial 02
+agent: a48708cf8f38447a0 serial 02 (resumed)

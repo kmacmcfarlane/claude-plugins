@@ -32,3 +32,5 @@ dispatch: implementer opus — resume, fix round 1
 r1 fixes 9332809: findings 2-12 fixed (research round-ask home in intensity-and-routing.md); 1 cleared by fefd
 dispatch: reviewer opus — fresh reviewer, round 2
 agent: ac1404c69ea8fd62f (reviewer r2)
+review r2 NEEDS_CHANGES: M1 work-review/Groom only honour [recommended]; 9 live decisions name a rec in older forms ((rec), Rec (a), recommended); M2 research SKILL.md size, pre-existing: cleared by widening fefd; notes taken: SKILL.md:248-249 wrapped code span, [recommended] documented in work-items format.md
+dispatch: implementer opus — resume, fix round 2

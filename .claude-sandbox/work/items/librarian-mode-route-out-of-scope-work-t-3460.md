@@ -70,3 +70,4 @@ agent: reviewer a99a1620600db715f round 4 at 902e71e
 verdict: CLEAR round 4 at 902e71e (1 low: live-silent residual, filed b514); landing waits on decision 97
 answer 97: reframed as policy spike 8dee (read as: not (a) or (b): define a policy — trivial docs and simple low-risk fixes just get done, forwarding with return-to-sender custody so nothing is lost, blockers escalated by impact; the branch stays parked until 8dee decides land, amend or drop)
 - 2026-09-29 parked: answer 97 reframed it as policy spike 8dee; the CLEAR branch at 902e71e and its worktree are kept until 8dee decides land, amend or drop
+operator 2026-09-29T05:53Z on this case: "a routing decision error made by an agent that doesnt understand the factoring properly"; "misaddressed mail ... trivial if that is the issue" (see 8dee)

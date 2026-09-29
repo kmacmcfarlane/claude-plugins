@@ -2,13 +2,12 @@
 id: research-security-hardening-beyond-v1-la-caef
 title: research security hardening beyond v1 lane contract
 type: feature
-status: blocked
+status: doing
 priority: 1
 owner: Kyle-McFarlane@7696505da8e1
 claimed: 2026-09-28T21:55Z
-blocked: review cap reached at round 4; decision 96
 created: 2026-09-22
-updated: 2026-09-28
+updated: 2026-09-29
 refs:
   - peer agent-research, 2026-09-22
 ---
@@ -71,3 +70,12 @@ decision 96: the research security plan hit the 4-round review cap — (a) waive
   unknown: whether a fresh reviewer finds new classes of holes (the last two rounds each did)
 reply 96 (2026-09-29T05:25Z): tell me — "each ask for another turn needs to justify why it's worth the cost of an operator decision along with the ask. If the impact is high, it's justified. I have no insight into the impact, so I can't make a decision" (read as: tell me the impact of the leftover findings and the cost of the round; re-shown with both)
   revised: 2026-09-29T05:25Z — added: impact of round-4's findings if left unfixed (high: installing the guard denies every research web fetch by default, since the URL list starts missing; mediums: a re-source round after failed verification is impossible, the orchestrator's own clean-up is dropped at landing, one protection claim is overstated, one option missing from Q4/Q18 that changes what you'd be asked) and the round's cost (one planner round, a fresh reviewer, a fable second opinion; about an hour and roughly 1% of weekly quota; none of your time until the questions)
+note 2026-09-29: the `reply 96` line above is a line kind the spec does not define; superseded by the re-written card below (5140 review r2, D-3)
+decision 96: give the research security plan one more review round past the 4-round cap? — options: (a) waive the cap for one more planner round, fresh opus reviewer, then the fable second opinion [recommended] | (b) stop planning; take the plan's 18 questions now and carry the round-4 findings into the build items as acceptance | (c) park the security work | (z) decide later
+  raised: 2026-09-28
+  revised: 2026-09-29T05:25Z — tell me; the operator's words: "each ask for another turn needs to justify why it's worth the cost of an operator decision along with the ask. If the impact is high, it's justified. I have no insight into the impact, so I can't make a decision"
+  if left: installing the guard denies every research web fetch by default (the URL list starts missing); a re-source round after failed verification is impossible; the orchestrator's own clean-up is dropped at landing; one protection claim is overstated; one option missing from Q4/Q18 changes what the operator is asked
+  round costs: one planner round, a fresh reviewer, a fable second opinion; about an hour and roughly 1% of weekly quota (estimate from earlier rounds); none of the operator's time until the questions
+answer 96: "96 - you are approved to continue, but this gate is annoying, how can we improve it while still preventing research consuming too much resources?" (read as: (a); the gate itself goes to policy spike 8dee) — given 2026-09-29T05:53Z, found in the session transcript at ~07:00Z, not seen live
+dispatch: planner opus — round 5 past the cap (answer 96 a), resume on reviews/plan-review-r4.md
+agent: a533b9e5c8c4a9126 round 5 (resumed)

@@ -1,6 +1,6 @@
 ---
 id: dev-cycle-skill-md-trim-under-the-5000-t-fefd
-title: "dev-cycle SKILL.md: trim under the ~5000-token skill line"
+title: "dev-cycle and research SKILL.md: trim under the ~5000-token skill line"
 type: chore
 status: todo
 priority: 3
@@ -17,3 +17,4 @@ Found by dbfc review r1 2026-09-29: dev-cycle SKILL.md is ~6,600 tokens by the c
 - next: —
 - blocked: —
 - learned: —
+widened 2026-09-29 (dbfc review r2): research SKILL.md is ~5,784 tokens (23,138 chars), over on main too (22,885)
