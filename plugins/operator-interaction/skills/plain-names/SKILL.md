@@ -17,7 +17,7 @@ Any text the operator reads: a report or summary line, a decision and its echo, 
 relay or a peer message meant for them, a hand-off note they will read. That includes stored
 text the operator is shown as written, such as a stored decision card.
 
-**Exempt, full ids kept:**
+**Exempt (no plain name needed):**
 
 - agent-only text: briefs, store and record lines, commit trailers, CLI arguments;
 - anything a parser reads;
@@ -62,7 +62,7 @@ name**: what it is, in about 3–6 words, the way the operator would say it. The
 
 - The first mention in a message carries the name and the tag. Later mentions in the same
   message use the name alone.
-- A table cell holds `name (tag)`.
+- An item's own cell holds `name (tag)`.
 
 ## Examples
 
@@ -88,7 +88,7 @@ A table:
 A relay:
 
 *From the billing session: the invoice-rounding bug (9f3c) is fixed on their side, so the
-export retry fix can land.*
+export retry fix (a1b2) can land.*
 
 ## When it goes wrong
 
@@ -105,14 +105,15 @@ alternative not taken, in case practice argues for it.
 - **Handle** (2026-09-29) — a plain name, then the id's short tag trailing. Not taken: the
   name only; the title verbatim with the tag; the full id.
 - **Home** (2026-09-29) — this generic skill, which the skills that write to the operator
-  point at. Not taken: the decisions skill only; the tracker's own format reference; both.
+  point at. Not taken: the decisions skill only; the tracker's own format reference; both
+  this skill and the format reference.
 - **Stored name** (2026-09-29) — a tracker's stored short display name is used verbatim, with
   an article added in prose; without one, a name is written from the title. Not taken: always
   writing it fresh; the tracker deriving it mechanically.
 - **Report lines** (2026-09-29) — a report's line about a change leads with
   `<plain name> (<tag>)`. Not taken: the full id; the name with the full id.
-- **Mentions store nothing** (2026-09-29; not the operator's ruling: the kit maintainer's
-  call, made in plan review) — a name written at a mention is not stored; a stored name is
+- **Mentions store nothing** (2026-09-29; not the operator's ruling: an agent's call, made
+  in plan review) — a name written at a mention is not stored; a stored name is
   set at filing, or later by the thing's owner. Not taken: storing the written name with the
   next write to the thing.
 - **Bookkeeping commit subjects** (2026-09-29; delegated: the operator said "you decide") —
