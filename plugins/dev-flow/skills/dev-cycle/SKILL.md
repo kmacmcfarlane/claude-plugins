@@ -88,7 +88,12 @@ only on a `CLEAR` recorded against the current HEAD sha.
    type (feature, bug, chore, refactor or spike) — show it, and ask once with
    AskUserQuestion: Proceed / Discuss / Reject. Discuss: revise and ask again. Reject:
    stop, nothing written. Proceed: `$WI add` it when a store exists (that item is the
-   target), else write it to `<scratchpad>/dev-cycle/<slug>/record.md`. **`review
+   target), else write it to `<scratchpad>/dev-cycle/<slug>/record.md`. The add passes
+   `--short-display-name "<plain name>"`, a name for the brief's goal in 3–6 words, no id
+   or leading article, **40 characters or fewer**: an exit 1 means it is too long and
+   nothing was written, so shorten it and re-run; an exit 2 naming `--short-display-name`
+   means an older `wi`, so file without the flag and write the name from the title at
+   each mention. **`review
    <branch>` mode with no other target:** skip the cycle brief — there is nothing to
    plan, the branch already exists; collect a one-line intent instead
    (`references/bindings.md` § Intent), in the same question as any other Step 0 ask.
@@ -345,11 +350,17 @@ check pass later.**
 Four lines, no headings:
 
 ```
-changed: <item id or slug> — <what, one clause>; <files>
+changed: <plain name> (<tag>) — <what, one clause>; <files>
 verified: review <CLEAR after N fix round(s)> (impl <tier>, review <tier>); <each check and its outcome>; <landed: merge sha | branch left | pushed>
 open questions: <list, or none>
 decisions needed: <numbered list, or none>
 ```
+
+The plain name is the item's `short_display_name` when it is set; otherwise write one from
+its title at each mention (the `operator-interaction:plain-names` skill, when loaded), and
+store nothing. The tag is the id's last four hex. A target with no item — a series, a plan
+file, a reviewed branch, a scratchpad record — has no tag, so its plain name stands alone.
+The full id stays where agents read it: the record sink and every `wi` call.
 
 A self-reviewed change (Step 2 rule 5) writes `self` in place of the reviewer's tier:
 `verified: review CLEAR after 0 fix rounds (impl sonnet, review self); …`.
@@ -359,6 +370,9 @@ A self-reviewed change (Step 2 rule 5) writes `self` in place of the reviewer's 
 
 `plan` mode reports the series path on `changed:`, its review on `verified:`, blocking
 questions under `decisions needed:`.
+
+When the session lists `operator-interaction:plain-names`, load it before writing the
+Report; `changed:` names the item by it.
 
 With the `operator-interaction:decisions` skill in the session, `decisions needed:` names
 the numbers, and the decisions follow the four lines, written per that skill
