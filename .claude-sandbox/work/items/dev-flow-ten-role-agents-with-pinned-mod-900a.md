@@ -3,13 +3,12 @@ id: dev-flow-ten-role-agents-with-pinned-mod-900a
 title: "dev-flow: ten role agents with pinned model and effort (2eb7 F1)"
 short_display_name: role agents with pinned effort
 type: feature
-status: doing
+status: done
 priority: 0
 parent: model-routing-set-reasoning-effort-per-r-2eb7
-owner: Kyle-McFarlane@7696505da8e1
-claimed: 2026-09-29T16:25Z
 created: 2026-09-29
 updated: 2026-09-29
+closed: 2026-09-29
 refs:
   - 2eb7
 ---
@@ -36,3 +35,7 @@ decision 109: What should the new role agents be called? — options: (a) role n
   rec: (a) · basis partial — names say the job and how hard it digs; efforts can change later without renaming files
 review r1 CLEAR at b0af914 (2 lows, 2 nits carried into F2 b3c5: forward refs resolved by F2; README implementer row; subTest placement; SUPPORTED_KEYS experimental); smoke dispatches confirmed dev-flow:scribe on sonnet low and dev-flow:cross-checker-deep on fable xhigh
 librarian ruling: hold the merge until decision 109 (names) is answered, to avoid a rename; F2 builds now on top of this branch
+answer 109: a — "this sounds good, but I'm open to other better ideas that get raised to me during implementation" (read as: keep the proposed names; better names found during implementation may be raised)
+landed: cb7eea7
+checks on main cb7eea7: all 9 OK (dev-flow 24)
+- 2026-09-29 done
