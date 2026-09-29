@@ -3,12 +3,11 @@ id: research-factoring-work-into-agent-defin-a88a
 title: "research: factoring work into agent definitions vs skills (investigate, research stages, implementation profiles)"
 short_display_name: agent-definition factoring
 type: spike
-status: doing
+status: done
 priority: 0
-owner: Kyle-McFarlane@7696505da8e1
-claimed: 2026-09-29T07:05Z
 created: 2026-09-29
 updated: 2026-09-29
+closed: 2026-09-29
 refs:
   - operator 2026-09-29
 ---
@@ -59,3 +58,5 @@ decision 107: The agent-definitions research (a88a) hit the review cap with one 
   if left: research syntheses could be cross-checked at fable high without the keep rule, and option (c) could route to the wrong file, unless 2eb7 builds from review r4, which (a) requires
   round costs: one planner round plus a fresh reviewer, about 15-20 minutes and roughly 0.5-1% of weekly quota; none of the operator's time
   rec: (a) · basis strong — review r4 states each fix exactly and confirms the file set and pins
+answer 107: a (read as: close the series; 2eb7 reconciles with a88a 03 and builds, taking review r4s three fixes as acceptance)
+- 2026-09-29 done

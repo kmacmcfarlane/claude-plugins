@@ -3,12 +3,11 @@ id: research-light-which-signals-show-how-fr-a99c
 title: "research (light): which signals show how fresh a decision's subject is in the operator's mind"
 short_display_name: operator-freshness signals
 type: spike
-status: doing
+status: done
 priority: 1
-owner: Kyle-McFarlane@7696505da8e1
-claimed: 2026-09-29T06:51Z
 created: 2026-09-29
 updated: 2026-09-29
+closed: 2026-09-29
 refs:
   - operator 2026-09-29
 ---
@@ -56,3 +55,5 @@ decision 106: The operator-freshness research (a99c) hit the review cap with one
   if left: the pyramid card would hide a conflict with the operator's own "no arbitrary numbers" ruling unless the librarian renders it as (a) says
   round costs: one planner round plus a fresh reviewer, about 15-20 minutes and roughly 0.5-1% of weekly quota at the current sub-agent effort; none of the operator's time
   rec: (a) · basis strong — review r4 gives the exact figures for the no-number variant
+answer 106: a (read as: close the series; the librarian renders the D3 card in the pyramid with the 78 (a) conflict asked as a question and a no-number variant offered, from 03 and review r4)
+- 2026-09-29 done
