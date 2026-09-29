@@ -67,8 +67,10 @@ URLs and primary documents rather than search for summaries.
 The gap gate runs after each round; the cap is 3. Round 2 is expected at `deep` and
 mandatory at `exhaustive` (the adversarial lane). Round 3 launches only on a gap condition
 and never on "it might find more". The threads-not-pulled turn runs after every round: in an
-interactive run the operator decides whether to spend round 3 on them; in a chained or
-unattended run the run continues and the report carries them.
+interactive run the operator decides whether to spend round 3 on them, asked with its value
+and cost as the `research` skill's `references/intensity-and-routing.md` § Asking for
+another round gives them; in a chained or unattended run the run continues and the report
+carries them.
 
 Waves *within* a round exist only for the pacing reason from Step 1, fired from a one-shot
 wakeup whose prompt is "read `<brief>` and launch round N wave M" and nothing more — never a

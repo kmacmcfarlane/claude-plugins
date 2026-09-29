@@ -29,8 +29,8 @@ slots stay, since the floor needs them:
 - The number and title are bold together.
 - One line per decision, its own recommendation in its own rec slot: never a range or a
   group on one line (SKILL.md § Critical).
-- Where a line lists the options (a template's line), they run in letter order and only
-  the recommended one is bold.
+- A line for a named template may end with its fixed options, after the age slot (gallery
+  example 5); they run in letter order and only the recommended one is bold.
 - An ask for another round carries its justification after the basis: *if left: what the
   leftover findings would break · a round: time, quota, your attention* (SKILL.md § The
   floor).
@@ -104,8 +104,8 @@ Rec **(b)** · basis **partial** — *reason*
 ```
 
 - The options follow the card's rule: letter order, and only the recommended option's
-  heading bold. A round ask's **If left:** and **A round costs:** lines follow **Why now:**,
-  as on a card.
+  heading bold. The opening lines run **What:**, **Why now:**, **Context you may have
+  lost:**, then a round ask's **If left:** and **A round costs:**.
 - A block **includes** the basis drill-down (the tags and links). `expand` on a block is
   answered: *already at full detail — `tell me [what]` for something specific?*
 - The read-back line (⚠ blocks only) names the one-way option(s). A block for a wide

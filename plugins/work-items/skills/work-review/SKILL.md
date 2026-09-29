@@ -96,8 +96,11 @@ Write it in this order, short enough to read in two minutes:
    operator cannot act on. Group quiet repos into one line ("garden-api, notes: nothing
    in flight, a few ready items each").
 3. **Waiting on you.** The open decisions, per repo, each named in plain words with how long
-   it has waited when `age_days` is known, and the note that it is answered in that repo's
-   own session. Oldest and most blocking first.
+   it has waited when `age_days` is known, its recommendation — the option its stored
+   headline (the decision's `text`) marks `[recommended]`, or "no recommendation recorded"
+   when none is marked — and the note that it is answered in that repo's own session.
+   Oldest and most blocking first. Showing the recommendation is not asking: never put the
+   options to the operator here.
 4. **Stale claims.** Work marked doing with an old claim: name it and its owner, and suggest
    the owning session check it. Do not release it.
 5. **What to do next.** One recommendation, then at most two runners-up. For each: what it

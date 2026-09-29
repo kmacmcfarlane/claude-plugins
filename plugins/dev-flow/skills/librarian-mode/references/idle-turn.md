@@ -42,7 +42,10 @@ $WI ls --dep <hold-id> --status todo,doing,blocked,grooming,parked --plain
 ```
 
 Print a `hold:` line first for each active hold, then two short tables, at most seven
-rows each with `+N more` below:
+rows each with `+N more` below. With the `operator-interaction:decisions` skill loaded,
+Groom's `+N more` says the decisions block that closes the turn lists every open decision
+with its recommendation (`+3 more — every open decision is in the list below`), so no
+decision is cut off:
 
 ```
 hold: <hold-id> — <scope>, until <end condition> ("<operator's words>"); holds <ids>
@@ -63,9 +66,9 @@ Groom                                               Work
   spare time", which is not parked (below) and not a `hold` item.
 
   A decision's Groom row stays one line: its number, the `decision N:` question and its
-  recommendation (or the label saying there is none) — one row per decision, never several
-  folded into one row. A deferred one also shows its last `wake N:`, and stays a Groom row
-  until the wake comes.
+  recommendation, the headline's `[recommended]` option (or the label saying there is
+  none) — one row per decision, never several folded into one row. A deferred one also
+  shows its last `wake N:`, and stays a Groom row until the wake comes.
   With the `operator-interaction:decisions` skill loaded, a decision is put to the operator
   in full only when `decisions.md` § The Report's item 4 selects it (raised since the last
   Report, its wake come, not yet seen, after Rehydrate, a ⚠ one on first showing or to a

@@ -25,9 +25,8 @@ The skill is available when the session's skill listing carries `operator-intera
 - **Never through AskUserQuestion.** That is the librarian's own rule (SKILL.md § Intake
   step 3), and the skill agrees. The opt-in dialog is the one exception (`opt-in.md`).
 
-Without the skill, nothing here applies. `decisions needed:` stays the numbered list SKILL.md
-§ Report describes (one decision per number, with its own recommendation, its options in
-letter order with the recommended one in bold), and replies are recorded as `answer N:`.
+Without the skill, nothing here applies: `decisions needed:`, its store lines and the
+replies are as SKILL.md § Report gives them.
 
 ## What the librarian supplies to the skill
 
@@ -72,9 +71,10 @@ renders what the operator read instead of composing it again.
   series, a dispatch's `decision:` line), one choice per letter: a compound choice gets its
   own letters, never `(a)+…`. When the decision is ⚠ one-way — or any decision shown as a
   block — write `⚠ one-way` after the question (⚠ only), and every option line carries its
-  `undo:` and `who:`, a `context:` line follows `why now:`, and the `basis:` drill-down line
-  is required. An ask for another round — the dev-cycle cap, most often — requires the
-  `if left:` and `round costs:` lines (the skill's floor), filled from the reviewer's
+  `undo:` and `who:`, a `context:` line follows `why now:` (before any `if left:`), and the
+  `basis:` drill-down line is required. An ask for another round — the dev-cycle cap, most
+  often — requires the `if left:` and `round costs:` lines, in that order after `why now:`
+  and any `context:` (the skill's floor), filled from the reviewer's
   `findings:` block and the run's record; any other decision leaves both out. The options
   stay in letter order, `[recommended]` on the headline marking the recommended one.
   **A card or block renders only from stored fields**: a field it needs that the store

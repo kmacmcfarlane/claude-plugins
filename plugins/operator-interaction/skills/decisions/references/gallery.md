@@ -130,7 +130,7 @@ session, a card:*
 - **(a) One more round** — *the fix goes back to the implementer, then a fresh review; it lands in about 20 minutes if it clears*
 - (b) Ship as is — *it lands now, with the endless retry in it*
 - (c) Park it — *the change waits, unmerged, until someone takes it up*
-- (z) Decide later — *it waits, unreviewed; nothing lands*
+- (z) Decide later — *it waits, unmerged; nothing lands*
 
 Rec **(a)** · basis **strong** — *the finding names the line and a one-line fix; an endless retry costs more than one round* · unknown: none
 
@@ -138,7 +138,7 @@ Rec **(a)** · basis **strong** — *the finding names the line and a one-line f
 low-stakes on a strong basis, may stay a line — the options by reference, the justification
 still on it:*
 
-- **49 One more review round for the search-index change?** — rec **(a) one more round** · *template: review-round cap* · *reversible, narrow* · basis **strong** · *if left: a deleted page stays in search results until the nightly rebuild · a round: ~10 min, ~1% of quota, one more answer from you* · **(a) one more round** · (b) ship as is · (c) park it · (z) decide later — *it waits, unreviewed*
+- **49 One more review round for the search-index change?** — rec **(a) one more round** · *template: review-round cap* · *reversible, narrow* · basis **strong** · *if left: a deleted page stays in search results until the nightly rebuild · a round: ~10 min, ~1% of quota, one more answer from you* · *10 min old, blocks the search-index change* · **(a) one more round** · (b) ship as is · (c) park it · (z) decide later — *it waits, unmerged*
 
 *Not this: "Waive the cap? — rec (a) one more round" with nothing about what is left or what
 the round costs. The operator cannot weigh an impact they are not shown.*
