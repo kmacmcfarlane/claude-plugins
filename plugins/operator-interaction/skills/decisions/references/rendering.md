@@ -53,7 +53,7 @@ Example:
 
 ```
 **N — Title as a question?**
-**What:** what is decided, in plain words, ids glossed.
+**What:** what is decided, in plain words; items by plain name, the id as a trailing tag; other ids glossed.
 **Why now:** why it is up, and what it blocks.
 - (a) Option — *what happens if chosen*
 - **(b) Option** — *what happens if chosen*
@@ -191,7 +191,8 @@ When the options or recommendation changed, say which and why: *Recommendation c
 **From the store.** When the caller's store keeps the card (the floor's fields under the
 decision's record, with its raised-at time), a re-show renders that stored card and adds
 only the *while it waited* line — read from the caller's record, never from memory — and a
-gloss for any id the stored text left bare. Composing the card again from memory can shift
+plain name (the `plain-names` skill) for any item, and a gloss for any other id, that the
+stored text left bare. Composing the card again from memory can shift
 the letters or the recommendation, and the operator would answer an (a) that is not the (a)
 they read. Before rendering, check the stored card against now: a floor field it lacks, or
 one events have made false — a *why now* that no longer holds, a basis word the rule

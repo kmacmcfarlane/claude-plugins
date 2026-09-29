@@ -18,7 +18,9 @@ requirement. Examples are **illustrative**.
    `drop`; "your call" is `you decide`.
 3. **Echo** every reply that is not an exact `N: letter`, in one italic line before you act:
    *Read as: 43 → dig into (other callers in the access logs).* The echo is how a misreading is caught
-   in one turn instead of after the damage.
+   in one turn instead of after the damage. It names any item it mentions per the
+   `plain-names` skill: short, but never a bare id. *Read as: 44 → (b) the export migration
+   (b7d4) waits for the release.*
 4. Act — except on a ⚠ decision when the chosen option is one-way (the read-back below).
 
 When a reply mixes a letter and words (`43: b, keep it with a sunset date`), the letter
