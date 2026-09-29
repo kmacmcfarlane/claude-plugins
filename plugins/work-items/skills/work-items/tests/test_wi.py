@@ -2597,9 +2597,9 @@ class TestGrooming(WiTestCase):
         self.wi_ok(["lint"])
 
     def test_needs_input_lists_grooming_and_unanswered_decisions(self):
-        self.write_item("groom-1111", status="grooming", grooming="which store?",
-                        priority=1)
-        self.write_item("dec-2222", sections=(
+        self.write_item("groom-1111", "Store choice", status="grooming",
+                        grooming="which store?", priority=1)
+        self.write_item("dec-2222", "Alias cleanup", sections=(
             "## Notes\n"
             "decision 3: a or b\n"
             "decision 4: keep the alias?\n"
@@ -2608,7 +2608,8 @@ class TestGrooming(WiTestCase):
             "decision 7: already answered further down\n"
             "```\ndecision 9: an example in a fence\n```\n"
             "answer 7: yes\n"))
-        self.write_item("parked-3333", status="parked", parked="later",
+        self.write_item("parked-3333", "Later revisit", status="parked",
+                        parked="later",
                         sections="## Notes\ndecision 5: revisit when?\n")
         self.write_item("answered-4444",
                         sections="## Notes\ndecision 6: x\nanswer 6: y\n")
@@ -2618,12 +2619,14 @@ class TestGrooming(WiTestCase):
                         sections="## Notes\n- decision 10: not the marker\n")
         out = self.wi_ok(["needs-input"])
         self.assertEqual(out.splitlines(), [
-            "groom-1111  grooming: which store?",
-            "dec-2222  decision 4: keep the alias?",
-            "parked-3333  decision 5: revisit when?"])
+            "groom-1111  Store choice  grooming: which store?",
+            "dec-2222  Alias cleanup  decision 4: keep the alias?",
+            "parked-3333  Later revisit  decision 5: revisit when?"])
         plain = self.wi_ok(["needs-input", "--plain"]).splitlines()
-        self.assertIn("groom-1111\tgrooming\t-\twhich store?", plain)
-        self.assertIn("dec-2222\tdecision\t4\tkeep the alias?", plain)
+        self.assertIn("groom-1111\tgrooming\t-\tStore choice\twhich store?",
+                      plain)
+        self.assertIn("dec-2222\tdecision\t4\tAlias cleanup\tkeep the alias?",
+                      plain)
         data = json.loads(self.wi_ok(["needs-input", "--json"]))
         self.assertEqual([r["id"] for r in data],
                          ["groom-1111", "dec-2222", "parked-3333"])
@@ -2642,7 +2645,7 @@ class TestGrooming(WiTestCase):
             b"---\r\nid: crlf-1111\r\ntitle: c\r\nstatus: todo\r\n"
             b"created: 2026-08-01\r\nupdated: 2026-08-01\r\n---\r\n\r\n"
             b"decision 2: crlf?\r\n")
-        self.assertIn("crlf-1111  decision 2: crlf?",
+        self.assertIn("crlf-1111  c  decision 2: crlf?",
                       self.wi_ok(["needs-input"]))
 
     def test_prime_shows_grooming_count_and_hold_line(self):
@@ -2934,6 +2937,251 @@ class TestSet(WiTestCase):
             run(["set", "target-3333", "id", "x-1111"], self.root).returncode, 1)
         self.assertEqual(
             run(["set", "target-3333", "nofield", "x"], self.root).returncode, 1)
+
+
+class TestShortDisplayName(WiTestCase):
+    """The optional `short_display_name` (format.md § Short display name and
+    tag): set by `add --short-display-name` or `set`, stripped, 1-40 chars
+    (exit 1 before any write); a bad hand-written value is a lint problem;
+    text rows print the title cell `[<name>] <title>` with no column added;
+    every --json record carries the key, null when unset."""
+    NAME = "flaky gate test"
+    TITLE = "Fix the flaky context-guard gate test"
+    CELL = f"[{NAME}] {TITLE}"
+
+    def path(self, iid):
+        return self.root / "items" / f"{iid}.md"
+
+    def show(self, iid):
+        return json.loads(self.wi_ok(["show", iid, "--json"]))
+
+    def add(self, *extra, title=TITLE):
+        return json.loads(self.wi_ok(["add", title, "--json"] + list(extra)))
+
+    def item_files(self):
+        return sorted(p.name for p in (self.root / "items").iterdir())
+
+    # add
+
+    def test_add_writes_it_on_the_line_after_title(self):
+        rec = self.add("--short-display-name", self.NAME)
+        self.assertEqual(rec["short_display_name"], self.NAME)   # add --json
+        self.assertEqual(self.show(rec["id"])["short_display_name"], self.NAME)
+        front = self.path(rec["id"]).read_text().split("---\n")[1].splitlines()
+        i = front.index(f"title: {self.TITLE}")
+        self.assertEqual(front[i + 1], f"short_display_name: {self.NAME}")
+        self.assertIn("lint clean", self.wi_ok(["lint"]))
+
+    def test_add_strips_it_and_a_blank_or_dash_value_writes_no_line(self):
+        rec = self.add("--short-display-name", "  export fix  ")
+        self.assertEqual(self.show(rec["id"])["short_display_name"], "export fix")
+        self.assertIn("\nshort_display_name: export fix\n",
+                      self.path(rec["id"]).read_text())
+        for blank in ("", "   ", "—", " — "):
+            with self.subTest(blank=blank):
+                rec = self.add("--short-display-name", blank)
+                self.assertIsNone(rec["short_display_name"])
+                self.assertNotIn("short_display_name",
+                                 self.path(rec["id"]).read_text())
+
+    def test_add_40_chars_passes_and_41_exits_1_writing_nothing(self):
+        self.assertEqual(self.add("--short-display-name", "n" * 40)
+                         ["short_display_name"], "n" * 40)
+        # the length is counted after the strip
+        self.assertEqual(self.add("--short-display-name", f" {'n' * 40} ")
+                         ["short_display_name"], "n" * 40)
+        before = self.item_files()
+        r = run(["add", "Too long", "--short-display-name", "n" * 41], self.root)
+        self.assertEqual(r.returncode, 1, r.stderr)
+        self.assertIn("short_display_name must be 1-40 chars", r.stderr)
+        self.assertEqual(self.item_files(), before)
+
+    def test_add_line_break_exits_1_writing_nothing(self):
+        r = run(["add", "t", "--short-display-name", "a\nb"], self.root)
+        self.assertEqual(r.returncode, 1)
+        self.assertIn("--short-display-name must be one line", r.stderr)
+        self.assertEqual(self.item_files(), [])
+
+    # set
+
+    def test_set_sets_strips_and_clears(self):
+        iid = self.write_item("item-1111", self.TITLE)
+        self.wi_ok(["set", iid, "short_display_name", "  export fix  "])
+        self.assertEqual(self.show(iid)["short_display_name"], "export fix")
+        for clear in ("", "—", "   "):
+            with self.subTest(clear=clear):
+                self.wi_ok(["set", iid, "short_display_name", "x"])
+                self.wi_ok(["set", iid, "short_display_name", clear])
+                # cleared: no line at all, never `short_display_name: ""`
+                self.assertNotIn("short_display_name",
+                                 self.path(iid).read_text())
+                self.assertIsNone(self.show(iid)["short_display_name"])
+
+    def test_set_41_chars_or_a_line_break_exits_1_file_byte_identical(self):
+        iid = self.write_item("item-1111", short_display_name="old name")
+        before = self.path(iid).read_bytes()
+        for bad in ("n" * 41, "a\nb"):
+            with self.subTest(bad=bad):
+                r = run(["set", iid, "short_display_name", bad], self.root)
+                self.assertEqual(r.returncode, 1, r.stderr)
+                self.assertEqual(self.path(iid).read_bytes(), before)
+        r = run(["set", iid, "short_display_name", "n" * 41], self.root)
+        self.assertIn("short_display_name must be 1-40 chars", r.stderr)
+
+    def test_set_on_another_field_validates_the_whole_item(self):
+        # a hand-written bad name fails any set on the item (exit 3, as any
+        # schema problem does) until the name itself is set right
+        iid = self.write_item("long-1111", short_display_name="n" * 41)
+        before = self.path(iid).read_bytes()
+        r = run(["set", iid, "priority", "1"], self.root)
+        self.assertEqual(r.returncode, 3, r.stderr)
+        self.assertIn("short_display_name must be 1-40 chars", r.stderr)
+        self.assertEqual(self.path(iid).read_bytes(), before)
+        self.wi_ok(["set", iid, "short_display_name", "short"])
+        self.wi_ok(["set", iid, "priority", "1"])
+
+    # lint
+
+    def test_lint_reports_a_bad_hand_written_value(self):
+        for iid, bad, written in (
+                ("long-1111", "n" * 41, "n" * 41),
+                ("padded-2222", " x", '" x"'),
+                ("blank-3333", "   ", '"   "')):
+            with self.subTest(bad=bad):
+                self.write_item(iid, short_display_name=bad)
+                self.assertIn(f"\nshort_display_name: {written}\n",
+                              self.path(iid).read_text())
+                r = run(["lint"], self.root)
+                self.assertEqual(r.returncode, 3)
+                self.assertIn(f"{iid}.md: short_display_name must be 1-40 "
+                              "chars, no surrounding spaces", r.stdout)
+                self.path(iid).unlink()
+        self.assertIn("lint clean", self.wi_ok(["lint"]))
+        # a bare `short_display_name:` with nothing after it is blank too
+        path = self.path(self.write_item("bare-4444"))
+        path.write_text(path.read_text().replace(
+            "title: bare-4444\n", "title: bare-4444\nshort_display_name:\n"))
+        r = run(["lint"], self.root)
+        self.assertEqual(r.returncode, 3)
+        self.assertIn("bare-4444.md: short_display_name must be 1-40", r.stdout)
+
+    def test_a_quoted_empty_value_reads_as_absent(self):
+        path = self.path(self.write_item("empty-1111"))
+        path.write_text(path.read_text().replace(
+            "title: empty-1111\n", 'title: empty-1111\nshort_display_name: ""\n'))
+        self.assertIn("lint clean", self.wi_ok(["lint"]))
+        self.assertIsNone(self.show("empty-1111")["short_display_name"])
+
+    # output
+
+    def test_title_cell_in_every_text_row(self):
+        cell = self.CELL
+        self.write_item("ready-1111", self.TITLE, short_display_name=self.NAME)
+        self.write_item("doing-2222", self.TITLE, status="doing",
+                        owner="tester@local", claimed="2026-08-30T10:00Z",
+                        handoff={"next": "n"}, short_display_name=self.NAME)
+        self.write_item("hold-3333", self.TITLE, status="blocked",
+                        blocked="operator", tags=["hold"],
+                        short_display_name=self.NAME)
+        for line in self.wi_ok(["ls"]).splitlines():
+            self.assertTrue(line.endswith(cell), line)
+        plain = self.wi_ok(["ls", "--plain"]).splitlines()
+        self.assertEqual(len(plain), 3)
+        for line in plain:   # six columns, as without the field
+            cols = line.split("\t")
+            self.assertEqual((len(cols), cols[-1]), (6, cell))
+        nxt = self.wi_ok(["next"]).splitlines()
+        for head in ("DOING", "BLOCKED", "READY"):
+            self.assertIn(cell, nxt[nxt.index(head) + 1])
+        plain = self.wi_ok(["next", "--plain"]).splitlines()
+        self.assertEqual(len(plain), 3)
+        for line in plain:   # seven columns, as without the field
+            cols = line.split("\t")
+            self.assertEqual((len(cols), cols[-1]), (7, cell))
+        pipe = self.wi_ok(["next", "--pipeline"]).splitlines()
+        self.assertEqual(len(pipe), 2)   # in_progress, then ready todo
+        for line in pipe:
+            self.assertEqual(line.split("\t")[-1], cell)
+        one = self.wi_ok(["next", "--pipeline", "--one"]).rstrip("\n")
+        self.assertEqual(one.split("\t"), ["in_progress", "doing-2222", cell])
+        prime = self.wi_ok(["prime"]).splitlines()
+        self.assertEqual(prime[1], f"HOLD 1: hold-3333 ({cell})")
+        self.assertTrue(any(ln.startswith("DOING") and cell in ln
+                            for ln in prime), prime)
+        self.assertTrue(any(ln.startswith("READY") and cell in ln
+                            for ln in prime), prime)
+
+    def test_an_item_without_it_prints_as_before(self):
+        self.write_item("plain-1111", "Plain title")
+        self.assertEqual(self.wi_ok(["ls", "--plain"]),
+                         "plain-1111\tP2\ttodo\t-\t-\tPlain title\n")
+        self.assertEqual(self.wi_ok(["next", "--plain"]),
+                         "ready\tplain-1111\tP2\ttodo\t-\t-\tPlain title\n")
+        self.assertIn("READY  P2 plain-1111  Plain title\n",
+                      self.wi_ok(["prime"]))
+        # a rewrite adds no line
+        self.wi_ok(["set", "plain-1111", "priority", "1"])
+        self.assertNotIn("short_display_name",
+                         self.path("plain-1111").read_text())
+
+    def test_every_json_record_carries_the_key_null_when_unset(self):
+        self.write_item("named-1111", "Named", short_display_name=self.NAME,
+                        sections="## Notes\ndecision 1: which?\n")
+        self.write_item("bare-2222", "Bare",
+                        sections="## Notes\ndecision 2: when?\n")
+        want = {"named-1111": self.NAME, "bare-2222": None}
+        for what, recs in (
+                ("ls", json.loads(self.wi_ok(["ls", "--json"]))),
+                ("next", json.loads(self.wi_ok(["next", "--json"]))["ready"]),
+                ("pipeline", json.loads(self.wi_ok(
+                    ["next", "--pipeline", "--json"]))),
+                ("show", [self.show(iid) for iid in want]),
+                ("needs-input", json.loads(self.wi_ok(
+                    ["needs-input", "--json"])))):
+            with self.subTest(what=what):
+                self.assertEqual({r["id"]: r["short_display_name"]
+                                  for r in recs}, want)
+
+    def test_show_brief_prints_it_after_title(self):
+        self.write_item("named-1111", "Named", short_display_name=self.NAME)
+        lines = self.wi_ok(["show", "named-1111", "--brief"]).splitlines()
+        i = lines.index("title: Named")
+        self.assertEqual(lines[i + 1], f"short_display_name: {self.NAME}")
+
+    def test_needs_input_rows_show_the_title_cell(self):
+        self.write_item("named-1111", self.TITLE, short_display_name=self.NAME,
+                        sections="## Notes\ndecision 3: a or b?\n")
+        self.write_item("groom-2222", "Pick a store", status="grooming",
+                        grooming="which store?")
+        human = self.wi_ok(["needs-input"]).splitlines()
+        self.assertIn(f"named-1111  {self.CELL}  decision 3: a or b?", human)
+        self.assertIn("groom-2222  Pick a store  grooming: which store?", human)
+        # --plain: id, kind and N keep columns 1-3; the title cell is 4th
+        plain = [ln.split("\t") for ln in
+                 self.wi_ok(["needs-input", "--plain"]).splitlines()]
+        self.assertIn(["named-1111", "decision", "3", self.CELL, "a or b?"],
+                      plain)
+        self.assertIn(["groom-2222", "grooming", "-", "Pick a store",
+                       "which store?"], plain)
+
+    def test_the_bridge_leaves_it_alone(self):
+        self.write_item("named-1111", "Named", short_display_name=self.NAME)
+        out = self.tmp / "backlog.yaml"
+        self.wi_ok(["export", "--format", "backlog-yaml", str(out),
+                    "--project", "t"])
+        self.assertNotIn("short_display_name", out.read_text())
+        self.assertNotIn(self.NAME, out.read_text())
+        # import --update rewrites the item and keeps the store-only field
+        self.wi_ok(["import", "--format", "backlog-yaml", "--update", str(out)])
+        self.assertIn(f"\nshort_display_name: {self.NAME}\n",
+                      self.path("named-1111").read_text())
+        # a fresh import has nothing to carry it from
+        fresh = self.tmp / ".fresh"
+        self.assertEqual(run(["init"], fresh).returncode, 0)
+        r = run(["import", "--format", "backlog-yaml", str(out)], fresh)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        rec = json.loads(run(["ls", "--json"], fresh).stdout)[0]
+        self.assertIsNone(rec["short_display_name"])
 
 
 class TestInitShapes(WiTestCase):
@@ -3517,11 +3765,11 @@ class TestB020Lows(WiTestCase):
 
     # (3)
     def test_answer_40_does_not_answer_decision_4(self):
-        self.write_item("num-1111", sections=(
+        self.write_item("num-1111", "Numbering", sections=(
             "## Notes\ndecision 4: open?\ndecision 40: answered\n"
             "answer 40: yes\n"))
         self.assertEqual(self.wi_ok(["needs-input"]).splitlines(),
-                         ["num-1111  decision 4: open?"])
+                         ["num-1111  Numbering  decision 4: open?"])
 
     # (4)
     def test_ls_dep_refuses_an_ambiguous_prefix(self):

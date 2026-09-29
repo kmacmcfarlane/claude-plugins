@@ -28,9 +28,12 @@ NOW = datetime(2026, 9, 25, 12, 0, tzinfo=timezone.utc)
 
 
 def item_text(iid, status="todo", priority=2, created="2026-09-01",
-              tags=(), deps=(), claimed=None, owner=None, body="", title=None):
-    lines = ["---", f"id: {iid}", f"title: {title or iid}", "type: task",
-             f"status: {status}", f"priority: {priority}"]
+              tags=(), deps=(), claimed=None, owner=None, body="", title=None,
+              short_display_name=None):
+    lines = ["---", f"id: {iid}", f"title: {title or iid}"]
+    if short_display_name:
+        lines.append(f"short_display_name: {short_display_name}")
+    lines += ["type: task", f"status: {status}", f"priority: {priority}"]
     if tags:
         lines.append("tags: [" + ", ".join(tags) + "]")
     if deps:
@@ -522,14 +525,53 @@ class TestJsonShape(EstateCase):
                          {"todo", "doing", "blocked", "parked", "grooming",
                           "done", "dropped", "open", "ready"})
         self.assertEqual(set(r["ready"][0]),
-                         {"id", "title", "priority", "type", "tags"})
+                         {"id", "title", "short_display_name", "priority",
+                          "type", "tags"})
         self.assertEqual(set(r["decisions"][0]),
-                         {"id", "title", "n", "text", "raised", "age_days"})
+                         {"id", "title", "short_display_name", "n", "text",
+                          "raised", "age_days"})
         self.assertIsInstance(r["decisions"][0]["age_days"], int)
         self.assertEqual(set(r["stale"][0]),
-                         {"id", "title", "owner", "claimed", "age"})
+                         {"id", "title", "short_display_name", "owner",
+                          "claimed", "age"})
         self.assertEqual(set(r["security"][0]),
-                         {"id", "title", "status", "priority", "tags"})
+                         {"id", "title", "short_display_name", "status",
+                          "priority", "tags"})
+
+    def test_short_display_name_in_records_and_the_title_cell_in_rows(self):
+        s = self.store("alpha")
+        self.put(s, "sec-0001", title="Rotate the deploy key",
+                 short_display_name="key rotation", tags=["security"],
+                 body="decision 1: now or later?")
+        self.put(s, "stale-0001", title="Move the nightly export",
+                 short_display_name="export move", status="doing",
+                 claimed="2026-09-01T00:00Z", owner="o@h")
+        self.put(s, "bare-0001", title="Tidy the docs",
+                 body="decision 2: which docs?")
+        r = self.repo(self.scan_one(), "alpha")
+        names = {k: {x["id"]: x["short_display_name"] for x in r[k]}
+                 for k in ("ready", "decisions", "security", "stale")}
+        self.assertEqual(names, {
+            "ready": {"sec-0001": "key rotation", "bare-0001": None},
+            "decisions": {"sec-0001": "key rotation", "bare-0001": None},
+            "security": {"sec-0001": "key rotation"},
+            "stale": {"stale-0001": "export move"}})
+        res = run(["estate", "--dir", str(self.scan)])
+        self.assertEqual(res.returncode, 0, res.stderr)
+        rows = res.stdout.splitlines()
+        rot = "[key rotation] Rotate the deploy key"
+        for want in (
+                f"  SECURITY  P2 sec-0001  {rot}  [todo]",
+                f"  DECISION  sec-0001  {rot}  1: now or later?",
+                # a DECISION row now carries the title, name or not
+                "  DECISION  bare-0001  Tidy the docs  2: which docs?",
+                f"  READY     P2 sec-0001  {rot}",
+                "  READY     P2 bare-0001  Tidy the docs"):
+            self.assertIn(want, rows)
+        # the claim's age is counted from the real clock
+        stale = ("  STALE     stale-0001  [export move] Move the nightly "
+                 "export  (o@h, ")
+        self.assertTrue(any(ln.startswith(stale) for ln in rows), rows)
 
 
 if __name__ == "__main__":
