@@ -49,3 +49,13 @@ plan review r3 NEEDS_CHANGES (0H 1M 3L): M Q5 (a) step-down: pinned items still 
 librarian ruling: hold serial 03 (final, round 4 is the cap) until 6421 serial 02 lands, then fold both
 dispatch: planner opus — resume, serial 03 (final; round 4 is the cap) folding r3 and 6421 02
 agent: a1f0aa368080b709e serial 03 (resumed)
+serial 03 final: reviewer-deep removed; ten base files, reviewer-light conditional on 6421 Q4 (b)/(c): eleven at most; Q5 (a) pinned items ask, research cross-checks dropped and named, reviewers never step down mid-item
+dispatch: plan reviewer opus — fresh, round 4 (the cap)
+agent: adb528de431ffdc9d (plan reviewer r4)
+plan review r4 (the cap) NEEDS_CHANGES (0H 1M 2L), none changes a file or a pin: M the research changes (F4) route through 02's older per-answer table: research syntheses must go through Q2 (b)'s keep rule, and (c) to cross-checker-deep; L research-verifier's inert low effort vs the "low only on scribe" rule; L quota step-down table lacks Q1 (b)'s first-dispatch planner-deep row
+decision 107: The agent-definitions research (a88a) hit the review cap with one medium left, in how research runs route to the cross-checkers; close it and carry the three fixes into the effort-routing build (2eb7) as acceptance, or run one more round? — options: (a) close the series; 2eb7's reconcile and build take review r4's three fixes as acceptance items [recommended] | (b) one more planner round and a fresh review | (c) park the series | (z) decide later
+  raised: 2026-09-29T08:20Z
+  stakes: reversible, narrow (no file or pin changes; routing text only)
+  if left: research syntheses could be cross-checked at fable high without the keep rule, and option (c) could route to the wrong file, unless 2eb7 builds from review r4, which (a) requires
+  round costs: one planner round plus a fresh reviewer, about 15-20 minutes and roughly 0.5-1% of weekly quota; none of the operator's time
+  rec: (a) · basis strong — review r4 states each fix exactly and confirms the file set and pins

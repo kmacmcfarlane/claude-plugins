@@ -41,3 +41,6 @@ dispatch: planner opus — resume, serial 02
 serial 02 written: Q1 (a) plans start at opus high, xhigh trial on alternate hard plans (narrower than the ask, stated; rests on cost and learning; evidence null like-for-like); Q2 (b) proven stages at fable xhigh + plan stage at fable high with a keep rule (2 of first 8); xhigh trial exit test: planners only, alternating arms, cap-hit measure, n>=6 per arm
 dispatch: plan reviewer opus — fresh, round 3
 agent: ae03279cea851635e (plan reviewer r3)
+plan review r3 NEEDS_CHANGES (0H 2M 3L): M1 false pass under 1% holds only at the 86% base (15% at 60%); fix with "at least 3 fewer than control" and fresh planner in both arms; M2 nothing says what runs after a pass; trial cost +$5-12/week (6-9 hard plans a week), not under +1%; about 2 weeks; lows: keep rule about 10% like for like, trial unit a late high at round 1-2 (not the cap 8dee redesigns), no shared counter, two "you"
+CORRECTION owed to the operator: the xhigh trial costs about $5-12 a week more, not under 1%
+dispatch: planner opus — resume, serial 03 (final; round 4 is the cap)
