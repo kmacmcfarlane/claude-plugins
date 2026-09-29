@@ -32,3 +32,6 @@ agent: ac960639bedeec6f8 (plan reviewer r1)
 plan review r1 NEEDS_CHANGES (4H 6M 5L): H1 parser misses free-form highs (about 12% any high, not 1%); H2 5140/6d2c were planned at xhigh and still took 4 rounds (counter-evidence for xhigh planners); H3 both fable outcome changes ran at xhigh, costed as high; plan-stage evidence is fable on fable; H4 the rule-text test moves about 80% of sonnet work to opus (+9 units/week, not +1); M opus-high ratio method; signal precedence; circular shapes; Q2c; author rule vs Q1a; a88a slots unmapped
 CORRECTION owed to the operator: fable outcome changes were at xhigh; xhigh planning has counter-evidence (5140, 6d2c); the sonnet exclusion would move most sonnet work to opus
 dispatch: planner opus — resume, serial 01
+serial 01 written: any-high 17% of 390 (claude-sandbox 14%); sonnet 7 of 50, narrower mechanical test moves 52% (about $15/week); xhigh-planned plans averaged 3.5 rounds vs 2.7 (depth signal no longer sets a tier); both fable outcome changes were fable xhigh (3.3-5.6x opus high); opus xhigh now a reactive trial after a late high (exit test 10 bumps or 4 weeks); a88a slots mapped
+dispatch: plan reviewer opus — fresh, round 2
+agent: a34e04d5a940f9bbe (plan reviewer r2)

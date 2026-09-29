@@ -40,3 +40,5 @@ dispatch: plan reviewer opus — fresh, round 2
 agent: a3b28734ba95cb5fa (plan reviewer r2)
 plan review r2 NEEDS_CHANGES (0H 1M 4L): M the map of 6421 answers to files misses Q5 (a) (xhigh steps down to high; no implementer file at opus high) and Q4 (c) (needs reviewer-light); lows: research cross-check stage ownership, 00 deployment rule not superseded, Q2 blocks/naming wording, file counts and research-refine
 librarian ruling: hold serial 02 until 6421 serial 01 lands (r1 changes criteria that drive the file map), then fold r2 and 6421 01 together
+dispatch: planner opus — resume, serial 02 folding review r2 and 6421 serial 01
+agent: a1f0aa368080b709e serial 02 (resumed)

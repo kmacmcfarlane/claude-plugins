@@ -46,3 +46,6 @@ agent: a475313e4557dda4d (plan reviewer r3)
 plan review r3 NEEDS_CHANGES (1H 2M 1L): H d3overlap skips D3 (b)s own lines-while-away rule: at least 6 of 44 re-shown are lines (16 if a resets cold ends at the next Report, incl. 96); 84-86 covered only if the re-show waits for the first decisions block after the return and repeats until a turn follows; the away test fires with the operator present; M D3 narrows Seen and reverses gallery 21, unnamed; files omitted; M D1 (c) is really (z) with a wake; L away fires on about 21 of 63 turns
 CORRECTION owed to the operator: "covers all 9" is false as worded — at least 6 of 44 re-shown would still be lines
 dispatch: planner opus — resume, serial 03 (round 4 is the cap)
+serial 03 final: D3 (b) cards 8 of 9 lost-context answers (9 of 9 with the show-me trigger) vs today 5 (6); full cards printed while away 109 -> 1; away test derived from the operators own turn gaps (87 min upper quartile), may conflict with ruling 78 (a); D1 (z) wake at 0999 + 76bc/R48; D2 (b); D4 (b)
+dispatch: plan reviewer opus — fresh, round 4 (the cap)
+agent: af6e453dc669f6b50 (plan reviewer r4)
