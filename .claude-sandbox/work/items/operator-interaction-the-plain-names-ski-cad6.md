@@ -27,3 +27,6 @@ Build F1 of series .claude-sandbox/investigations/0b2d-plain-item-names (03 + 04
 - 2026-09-29 claimed by Kyle-McFarlane@7696505da8e1
 dispatch: implementer opus — new skill + catalog/marketplace shape change (routing rule 2)
 agent: a0f63f68b3becabab (implementer r1)
+r1 DONE e87edfb: plain-names skill + decisions pointers + plugin.json/marketplace/README/CLAUDE.md/repo-map; deviations: examples invented, L3 marked as "the kit maintainers call", added When it goes wrong; answer 90 was given 2026-09-29 so the README date is right
+dispatch: reviewer opus — fresh reviewer, round 1
+agent: a63441010c68f6094 (reviewer r1)

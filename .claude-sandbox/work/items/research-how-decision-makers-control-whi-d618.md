@@ -29,3 +29,5 @@ agents replied: d618 recorded as an input to their 76bc
 series 00 written: the line is written in advance, the out-of-budget outcome is agreed in advance, and decided-below is reported separately; 7 transferable mechanisms ranked; 4 open questions
 dispatch: plan reviewer opus — fresh, round 1 (verify sources)
 agent: abe9e0f3f1f9be901 (plan reviewer r1)
+plan review r1 NEEDS_CHANGES (1H 5M 5L): H the 4 open questions belong to 8dee -> become inputs to 8dee; M seven-statements claim wrong (eight; two carried); figures predate 5140 recount; cap decision 68 missing; ADP 6-0 quoted from superseded 2012 edition (unverified); AR 25-50 clause cut, 93% applied beyond per-tool prompts, OQ1 rec rests on PRINCE2 not SRE
+dispatch: planner opus — resume, serial 01

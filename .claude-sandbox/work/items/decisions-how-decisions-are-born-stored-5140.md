@@ -45,3 +45,15 @@ dispatch: planner opus — resume, serial 03 (round 4 is the cap)
 serial 03 final: OQ3 one counter (a), OQ4 closed N: + re-record 28 verbatim (c), OQ6 held until agents bf41 (29d6 notifies); verbatim copy of replies 1-63 saved; corrections A-C delivered in the librarian message after 06:22Z
 dispatch: plan reviewer opus — fresh, round 4 (the cap)
 agent: a303d1e438bcfcb29 (plan reviewer r4)
+plan review r4 (the cap) NEEDS_CHANGES (0H 1M 4L), all sentence-level: M OQ4 says nothing of the ~15 recent summary answers (64-88 only in the live transcript); L decision 27 wording exists in 0c7eafc7; L correction C did not echo OQ6; L dbfc cites moved; L glosses
+librarian ruling: no round past the cap — the cards go out with these fixed in the rendering (OQ4 (c) widened to the recent summary answers; 27 from the transcript); the build items carry the rest as acceptance; series closes on 00-03 + review r4
+decision 98: Should every question put to the operator take a number from the one decision counter? — options: (a) yes; series labels (R/G/P, OQ) become tags, another repo's decision is written <repo>#N, the opt-in dialog is the one exception [recommended] | (b) numbered only when raised on a work item, as today | (c) numbered per series, as today | (z) decide later
+  raised: 2026-09-29T06:36Z
+  stakes: reversible, wide (every librarian session; readers of decision lines in other repos)
+  why now: 25 questions ran outside the counter in 13 days, and 13 more before it existed; they can't be listed, aged or closed
+  rec: (a) · basis strong — one counter is what makes every ask findable (5140 series)
+decision 99: Should the store record when an answer was carried out, superseded or made into a rule, and restore the answers stored as summaries in the operator's own words? — options: (a) no new line; the commit subject is enough | (b) a closed N: line from now on (acted <commit|item> | rule <path> | superseded by M), and wi lists answered-but-not-closed | (c) (b), plus re-recording in the operator's words the 28 old closed-item answers (from the verbatim evidence copy) and the ~15 recent answers stored as the librarian's summary (from the transcripts) [recommended] | (z) decide later
+  raised: 2026-09-29T06:36Z
+  stakes: reversible, narrow (this repo's store and wi)
+  why now: at least 10 answers became skill rules with no link back; the operator called word-for-word storage "a good source of truth to be able to go back to", yet many answers are summaries
+  rec: (c) · basis partial — puts the operator's words in the tracked store at the cost of one short chore

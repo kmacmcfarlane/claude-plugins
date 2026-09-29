@@ -44,3 +44,10 @@ dispatch: planner opus — resume, serial 03 (round 4 is the cap)
 serial 03 final card written: ladder (a)-(d)+(z), rec (b) answer questions in words, echo per part, echo timing matches practice except the ⚠ read-back
 dispatch: plan reviewer opus — fresh, round 4 (the cap)
 agent: a0e5ae3828b64d323 (plan reviewer r4)
+plan review r4 (the cap) NEEDS_CHANGES (0H 1M 5L), all wording: M build step-3 text must keep "When in doubt, ask" for actions others rely on and state the echo limit (reviewer wording at reviews/plan-review-r4.md:42-53); lows: (b) card line tightened (r4:67-83), 3 of 23 not 3 of 78, (b) stakes wide, two Supersedes misses, three unglossed terms
+librarian ruling: no round past the cap — every finding is wording; the card goes out with the reviewers wording applied, and the build text (M1) is carried as acceptance on the build item; the series closes on 00-03 + review r4
+decision 100: How should the librarian handle a message that answers several decisions at once? — options: (a) change nothing | (b) answer questions in words: every question inside a reply gets an answer in words, each part of a mixed message gets its Read-as line, the echo happens with the actions, the ⚠ read-back still waits [recommended] | (c) (b), plus confirm-first on uncertain readings that drive actions others rely on (line set by 8dee) | (d) (c), plus a visible list of every part and its planned action before anything changes | (z) decide later
+  raised: 2026-09-29T06:36Z
+  stakes: reversible, wide (every librarian session follows it)
+  why now: the operator asked (2026-09-29) whether one pass over a batch gives the best traction; one question in the 89-97 batch got an action and no words
+  rec: (b) · basis partial — the question gap is observed; the confirm-first check would have caught 0 errors in 16 batches

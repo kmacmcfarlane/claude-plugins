@@ -89,3 +89,24 @@ agent: a72dfd5f1fa641aab (fable second opinion)
 second opinion (fable): build-with-acceptance after a closing serial 05 that narrows claims (honest-by-default confinement; verifier split deferred; F1->F2 first; r5 findings carried as acceptance with failing tests first); librarian decides Q1 (a)/(a), Q3 (a), Q6 (a)/(a), Q14 (a), Q18.2 one verifier now, Q7/Q9/Q10/Q17 defaults; operator gets 4 cards now (Q2 shell, URL policy Q4+Q5+Q13, Q16 probes, Q18.1 transcripts), F5 (Q8+Q15) later
 librarian ruling: take the second opinion; serial 05 records it, no further review round (the waived round is spent; the build items are reviewed)
 dispatch: planner opus — resume, closing serial 05 per the second opinion
+serial 05 closing written (second opinion taken): librarian decisions Q1 (a)/(a), Q3 (a), Q6 (a)/(a), Q7 (a), Q9 (a), Q10 (a), Q14 (a), Q17 (b), Q18.2 one verifier now; Card 5 (F5) held until F1 lands and F5 is next
+decision 101: Does a local research lane get a general shell, and what bounds it? — options: (a) yes, split: the web lane's shell runs only the two PDF commands; a separate local lane without web tools gets a shell behind an always-on command filter, bounded by the OS user and saying so [recommended] | (b) (a), plus Claude Code's OS sandbox for host research sessions through a research-only --settings file | (c) no general shell for any research agent | (z) decide later
+  raised: 2026-09-29T06:36Z
+  stakes: one-way-ish for trust, reversible in code; a hijacked local lane can do what the OS user can under any option but (c)
+  why now: blocks F3's rules for local lanes; the largest residual in the plan
+  rec: (a) · basis strong — sandboxing docs and container checks (no bubblewrap, user namespaces refused)
+decision 102: What may a research agent fetch, and who owns the URL lists? — options: (a) per run: open by default, strict on request or by a knowledge base's charter; lists only tighten below the operator's user-level file, which alone may allow; LAN addresses denied except in that file; a missing file means these defaults [recommended] | (b) strict always, with a shipped starter allowlist | (c) open always, LAN deny fixed, the operator's file only | (z) decide later
+  raised: 2026-09-29T06:36Z
+  stakes: reversible; what a hijacked research agent can reach and send
+  why now: blocks F4; the defaults apply from the moment the guard is installed
+  rec: (a) · basis strong — permissions and hooks docs; loopback-name checks 2026-09-28
+decision 103: May the builder run live claude -p probe sessions to settle six facts the docs leave open? — options: (a) yes, bounded: haiku, throwaway directory, a temporary --settings file, public test URLs and a closed loopback port only, at most ~15 sessions, every command and result kept in evidence [recommended] | (b) only in a session the operator attends | (c) no probes; build each fact's conservative branch | (z) decide later
+  raised: 2026-09-29T06:36Z
+  stakes: reversible; small quota cost; without them F3/F4 are built on guesses (session scoping falls to its weakest bound)
+  why now: blocks the F3/F4 build; the planner once ran unbriefed probes and the librarian stopped them as not cleared
+  rec: (a) · basis partial — probe record 2026-09-28 graded in serial 01
+decision 104: May a local research lane read the operator's Claude session transcripts as a corpus? — options: (a) a carve-out: a run's manifest names specific projects/<project>/ dirs, readable by that run's local lane and verifier; the current session always excluded; enabled only by the operator's policy file (key transcript_corpora) [recommended] | (b) shell only: file tools deny transcripts and the local lane's shell reads them | (c) not at all | (z) decide later
+  raised: 2026-09-29T06:36Z
+  stakes: reversible; secrets printed in past sessions could reach an agent that can fetch (narrowed, not closed)
+  why now: blocks F3's transcript carve-out; operator-attention research mines transcripts
+  rec: (a) · basis partial — carve-out rules in 03/04; reviews r3-r5
