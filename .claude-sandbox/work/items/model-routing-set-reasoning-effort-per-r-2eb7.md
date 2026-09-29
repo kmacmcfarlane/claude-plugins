@@ -19,7 +19,7 @@ Acceptance: routing names an effort for every role and signal (implementer mecha
 
 ## Handoff
 - doing: —
-- next: planner r1 running; plan review; build only after a88a 00 reconciles the agent names
+- next: F2b after the pyramid answers 6421 Q1-Q5; follow-ups 4d27, fefd
 - blocked: —
 - learned: —
 
@@ -52,3 +52,4 @@ serial 04 final: librarian-mode Model floor carries the effort pin; four tier re
 dispatch: plan reviewer opus — fresh, round 4 (the cap)
 agent: a0ad71c591cb00000 (plan reviewer r4)
 plan review r4 CLEAR (3 lows carried into F2 as acceptance); factored F1 dev-flow-ten-role-agents-with-pinned-mod-900a (now), F2 dev-flow-route-dispatches-through-the-ro-b3c5 (after F1); F2b waits on the pyramid answers (6421 Q1-Q5)
+F1 900a and F2 b3c5 landed and pushed 2026-09-29; F2b (fable cross-check stages, author rule, reviewer-light, estate-wide cross-check, step-down) waits on the pyramid answers to 6421 Q1-Q5; takes effect after a plugin update and session restart

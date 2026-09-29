@@ -3,15 +3,14 @@ id: dev-flow-route-dispatches-through-the-ro-b3c5
 title: "dev-flow: route dispatches through the role agents with effort recorded (2eb7 F2)"
 short_display_name: routing through role agents
 type: feature
-status: doing
+status: done
 priority: 0
 deps:
   - dev-flow-ten-role-agents-with-pinned-mod-900a
 parent: model-routing-set-reasoning-effort-per-r-2eb7
-owner: Kyle-McFarlane@7696505da8e1
-claimed: 2026-09-29T17:29Z
 created: 2026-09-29
 updated: 2026-09-29
+closed: 2026-09-29
 refs:
   - 2eb7
 ---
@@ -38,3 +37,7 @@ agent: ade22b36cc6de60b0 (reviewer r2)
 
 ## Notes
 - 2026-09-29 claimed by Kyle-McFarlane@7696505da8e1
+review r2 CLEAR at 791eb8e (1 low filed as a follow-up: trial enrolment on a resumed plan-mode fix round)
+landed: ac51674
+checks on main ac51674: all 9 OK (dev-flow 28)
+- 2026-09-29 done
