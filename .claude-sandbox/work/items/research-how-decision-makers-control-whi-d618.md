@@ -31,3 +31,9 @@ dispatch: plan reviewer opus — fresh, round 1 (verify sources)
 agent: abe9e0f3f1f9be901 (plan reviewer r1)
 plan review r1 NEEDS_CHANGES (1H 5M 5L): H the 4 open questions belong to 8dee -> become inputs to 8dee; M seven-statements claim wrong (eight; two carried); figures predate 5140 recount; cap decision 68 missing; ADP 6-0 quoted from superseded 2012 edition (unverified); AR 25-50 clause cut, 93% applied beyond per-tool prompts, OQ1 rec rests on PRINCE2 not SRE
 dispatch: planner opus — resume, serial 01
+serial 01 written: no operator questions; I1-I4 handed to 8dee (stop-and-report at the cap; decided-alone digest; line moves per class; per-repo intent); 12 past-cap rounds found; ADP 6-0 re-quoted from 2026 edition
+dispatch: plan reviewer opus — fresh, round 2
+agent: a77d75cda6cf7fcf5 (plan reviewer r2)
+plan review r2 NEEDS_CHANGES (1H 3M 1L): H past-cap history incomplete — a49b fifth round self-granted and cleared; librarian stopped 4 plans at the cap without asking (e770, caef after r5, 5140, 6d2c); operator granted more rounds on 9 of 11 cap answers (the lean to stop runs against that); M SRE backs only a pre-agreed outcome, not carrying findings; M ADP 6-0 1-65 (commanders write intent personally) omitted; M I2/I3 leans lack basis
+note for the operator: the librarians 5140/6d2c cap closures run against the operators 9-of-11 history of granting rounds — say so in the next message
+dispatch: planner opus — resume, serial 02

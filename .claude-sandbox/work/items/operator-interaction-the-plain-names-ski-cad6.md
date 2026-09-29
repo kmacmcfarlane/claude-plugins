@@ -2,15 +2,14 @@
 id: operator-interaction-the-plain-names-ski-cad6
 title: "operator-interaction: the plain-names skill (0b2d F1)"
 type: feature
-status: doing
+status: done
 priority: 1
 deps:
   - decisions-a-b-c-option-order-with-the-re-dbfc
 parent: operator-interaction-refer-to-work-items-0b2d
-owner: Kyle-McFarlane@7696505da8e1
-claimed: 2026-09-29T06:26Z
 created: 2026-09-29
 updated: 2026-09-29
+closed: 2026-09-29
 refs:
   - 0b2d
 ---
@@ -30,3 +29,10 @@ agent: a0f63f68b3becabab (implementer r1)
 r1 DONE e87edfb: plain-names skill + decisions pointers + plugin.json/marketplace/README/CLAUDE.md/repo-map; deviations: examples invented, L3 marked as "the kit maintainers call", added When it goes wrong; answer 90 was given 2026-09-29 so the README date is right
 dispatch: reviewer opus — fresh reviewer, round 1
 agent: a63441010c68f6094 (reviewer r1)
+review r1 CLEAR at e87edfb (4 lows, 1 nit, all wording in the new skill); librarian ruling: take them in one fix round before landing, since the misattributed ruling label matters to the operator
+dispatch: implementer opus — resume, fix round 1
+review: self
+fix round 1 42b99ca: the diff is exactly review r1s "would pass" wording for lows 1-4 and the nit (b7d4 checked unused); verdict CLEAR (self, pure wording)
+landed: 016daae
+checks on main 016daae: all 8 OK
+- 2026-09-29 done
