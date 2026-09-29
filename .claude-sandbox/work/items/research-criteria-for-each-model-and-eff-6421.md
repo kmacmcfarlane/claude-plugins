@@ -26,3 +26,6 @@ Operator 2026-09-29 (verbatim on 2eb7): add an opus xhigh tier for really deep, 
 - 2026-09-29 claimed by Kyle-McFarlane@7696505da8e1
 dispatch: planner opus — research spike over real transcripts; mining delegated to dev-flow:research-lane agents (sonnet, medium) to save quota
 agent: a9070b683583b6b04 (planner r1)
+series 00 written: 715 transcripts, 1368 sub-agents, 789 items, 14 repos; depth tracks kind of work (planned-first 54% vs 17%; five late-high shapes); sonnet failed only on rule text marked mechanical (4 of 50); fable changed an outcome once in 21 (4fb0); waste was effort not model (108 xhigh sub-agents); criteria per tier with cost ratios; 5 operator questions (Q1-Q3 decide which xhigh/fable agents 2eb7 F1 ships)
+dispatch: plan reviewer opus — fresh, round 1
+agent: ac960639bedeec6f8 (plan reviewer r1)

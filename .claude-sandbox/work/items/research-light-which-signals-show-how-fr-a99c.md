@@ -37,3 +37,6 @@ dispatch: planner opus — resume, serial 01
 serial 01 written: recoded 8 of 20 vs 1 of 31 (range 7-9 vs 0-1); revised D1 (b) a turn counts as seeing only with no work elsewhere in between (adds 84-86); 0999 needs a seen N: time beside shown N:; D2 (b) stored Context: cue (untested); D3 names the rules it changes
 dispatch: plan reviewer opus — fresh, round 2
 agent: a64a2778a457cb64d (plan reviewer r2)
+plan review r2 NEEDS_CHANGES (1H 2M 1L): H with D3 (b) (no re-printing while away) 84-86 would have been cards, so D1 (b) catches nothing extra — make (a)/(z) conditional on D3, gain inferred; M the stated D1 (b) scores 43 cold / 8 warm (1 of 44 re-shown warm), 42/9 was an unstated 5-turn variant; M D4 restated against D1 (b), homes 76bc/R48; L range 7-9 of 20
+CORRECTION owed to the operator: "catches exactly 84-86" — the no-re-printing-while-away rule alone would have caught 84-86
+dispatch: planner opus — resume, serial 02

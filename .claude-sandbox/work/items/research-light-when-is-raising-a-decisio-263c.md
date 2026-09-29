@@ -37,3 +37,8 @@ dispatch: planner opus — resume, serial 01
 serial 01 written: about 26 of 94 decided alone (25-28), 5 answered differently (9 counting build caps (e) would stop); cap lean (e) on d618 03, plan and build split; minor design reduced to 12, 32
 dispatch: plan reviewer opus — fresh, round 2
 agent: adfb56bedd32c3cfb (plan reviewer r2)
+plan review r2 NEEDS_CHANGES (0H 2M 1L): N1 (e) on build caps overturns 5 of 6 operator grants (incl. 57) and is not free (56 loses held research runs; follow-ups dispatch unasked) — flag as needing the operators ruling with the real cost; N2 (b) re-scored (at most 5 of 9); add "raise on a high, grant low-impact rounds within a budget" (fits 8 of 9) as its own option; L1 range 26 (23-27) with a standing quota grant, 20 without
+dispatch: planner opus — resume, serial 02
+serial 02 written: build caps: (f) raise on a high, grant low-impact rounds within a budget (lean, 8 of 9; asks as (d) until the operator sets a budget); (e) 4 of 9 with real costs, needs the operators ruling; plan caps stay (e)
+dispatch: plan reviewer opus — fresh, round 3
+agent: a0cafeaee70e900b6 (plan reviewer r3)

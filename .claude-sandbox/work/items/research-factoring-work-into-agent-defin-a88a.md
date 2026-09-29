@@ -31,3 +31,7 @@ the operator tier input was relayed to the running a88a planner (queued at its n
 series 00 written: seven profiles (scribe sonnet/low, scout sonnet/medium, implementer sonnet/medium, planner and reviewer opus/high, deep-worker opus/xhigh, cross-checker fable/high) in dev-flow/agents, fallback general-purpose recorded as inherit; census: 868 dispatch lines (reviewer 380, implementer 375, planner 61, plan reviewer 30); sub-agents about 65-70% of project spend; estimate -28 to -36% sub-agent spend net; F1-F6; 2 open questions; harness flagged a lane report as instruction-shaped (it named bypassPermissions as a finding) — treated as data
 dispatch: plan reviewer opus — fresh, round 1
 agent: a32498eb13540d165 (plan reviewer r1)
+plan review r1 NEEDS_CHANGES (0H 4M 8L): M1 deep-worker covers three roles at one effort (breaks one-role-per-file; review via deep-worker escapes read-only tools); M2 slots give 6421 opus medium/high criteria nowhere to land (effort is per file, so a new role-effort pair is a new file); M3 F4 research cross-check underspecified; M4 quota drops the comparison with last week as run (+30-60%), cross-check cost, task-mix caveat; lows incl. the 868 count
+librarian ruling: hold serial 01 until 6421 lands, then fold r1 and 6421 together (M1/M2 turn on 6421 criteria); then 2eb7 reconciles
+dispatch: planner opus — resume, serial 01 folding review r1 and 6421 00 (in parallel with 6421 review; a delta follows if that review moves numbers)
+agent: a1f0aa368080b709e serial 01 (resumed)
