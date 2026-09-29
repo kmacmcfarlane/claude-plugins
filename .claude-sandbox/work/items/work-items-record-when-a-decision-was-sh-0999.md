@@ -25,3 +25,4 @@ operator-attention requirements for the shape (their commit 591a428; they will n
   - last-write-wins on a re-show (same rule as wake N:)
   - distinct from raised: (two of the three clocks)
   - optional, cheap if possible: a reason on swept/dropped — "dropped by the operator" (a decision) vs "swept as stale" (a miss) — so arrival-vs-clearance is not pooled; if absent they treat all sweeps as misses
+input from a99c 01 (2026-09-29): a stored shown time alone does not make the cold test work (re-prints overwrite it); it needs a seen N: time beside shown N:, plus the operator turn times in other sessions

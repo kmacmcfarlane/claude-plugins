@@ -28,3 +28,6 @@ dispatch: planner opus — research spike, plan mode (series a88a-agent-factorin
 agent: a1f0aa368080b709e (planner r1)
 input from the operator for a88a (2026-09-29): profiles must include an opus xhigh tier for deep complex work and a fable high/xhigh cross-check for foundational cross-cutting planning and research; criteria come from spike research-criteria-for-each-model-and-eff-6421
 the operator tier input was relayed to the running a88a planner (queued at its next tool round)
+series 00 written: seven profiles (scribe sonnet/low, scout sonnet/medium, implementer sonnet/medium, planner and reviewer opus/high, deep-worker opus/xhigh, cross-checker fable/high) in dev-flow/agents, fallback general-purpose recorded as inherit; census: 868 dispatch lines (reviewer 380, implementer 375, planner 61, plan reviewer 30); sub-agents about 65-70% of project spend; estimate -28 to -36% sub-agent spend net; F1-F6; 2 open questions; harness flagged a lane report as instruction-shaped (it named bypassPermissions as a finding) — treated as data
+dispatch: plan reviewer opus — fresh, round 1
+agent: a32498eb13540d165 (plan reviewer r1)
