@@ -57,3 +57,5 @@ decision 99: Should the store record when an answer was carried out, superseded 
   stakes: reversible, narrow (this repo's store and wi)
   why now: at least 10 answers became skill rules with no link back; the operator called word-for-word storage "a good source of truth to be able to go back to", yet many answers are summaries
   rec: (c) · basis partial — puts the operator's words in the tracked store at the cost of one short chore
+wake 98: the pyramid decision turn (decision-handling-the-pyramid-shaped-dec-69ee) — operator 2026-09-29: "let's continue before making final decisions"
+wake 99: the pyramid decision turn (decision-handling-the-pyramid-shaped-dec-69ee) — operator 2026-09-29: "let's continue before making final decisions"

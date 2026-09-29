@@ -16,7 +16,7 @@ Operator called security critical (relayed by agent-research 2026-09-22). v1 shi
 
 ## Handoff
 - doing: —
-- next: —
+- next: operator answers 101-104; then build F1 then F2 per serial 05 acceptance
 - blocked: —
 - learned: —
 

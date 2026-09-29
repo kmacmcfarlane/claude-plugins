@@ -5,7 +5,8 @@ type: spike
 status: todo
 priority: 1
 deps:
-  - decisions-how-decisions-are-born-stored-5140
+  - research-light-when-is-raising-a-decisio-263c
+  - research-how-decision-makers-control-whi-d618
 created: 2026-09-29
 updated: 2026-09-29
 refs:
@@ -25,3 +26,4 @@ agents replied: filed work-system-requirements-from-claude-plu-76bc for claude-p
 operator 2026-09-29T05:53Z (verbatim in .claude-sandbox/investigations/5140-decision-lifecycle/evidence/operator-message-2026-09-29T0553Z.md): the 3460 out-of-scope case "is a routing decision error made by an agent that doesn't understand the factoring properly … misaddressed mail is another thing and trivial if that's the issue"; and on 96: "this gate is annoying, how can we improve it while still preventing research consuming too much resources?" — acceptance widened: the review-cap gate for plans (a waiver the librarian may grant within a budget, versus an operator ask) is in scope here
 handed in from 5140 review r2: OQ1 (how the operator sees decide-alone; the operator's 09-22 answer to b8d6 already asked for decisions "you can just run with and be sure I see") and OQ5 (a why-ask line on every card)
 handed in from 6d2c (serial 02): the trigger for confirm-first readings (which reply-driven actions others rely on and so wait for the operator) is 8dees to set
+operator 2026-09-29 notes (.claude-sandbox/investigations/5140-decision-lifecycle/evidence/operator-notes-2026-09-29-stream.md): the attention-scheduler idea, decision ledger in the work system, boundaries spike research-light-when-is-raising-a-decisio-263c as input; 8dee now depends on research-light-when-is-raising-a-decisio-263c and d618, not on 5140

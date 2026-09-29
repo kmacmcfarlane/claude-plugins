@@ -51,3 +51,5 @@ decision 100: How should the librarian handle a message that answers several dec
   stakes: reversible, wide (every librarian session follows it)
   why now: the operator asked (2026-09-29) whether one pass over a batch gives the best traction; one question in the 89-97 batch got an action and no words
   rec: (b) · basis partial — the question gap is observed; the confirm-first check would have caught 0 errors in 16 batches
+reply 100 noted (not an answer): "Your recommendation about how to handle batched-replies sounds sound to me" — and a low-priority follow-up filed (decisions-refine-and-test-the-batched-re-852f)
+wake 100: the pyramid decision turn (decision-handling-the-pyramid-shaped-dec-69ee) — operator 2026-09-29: "let's continue before making final decisions"
