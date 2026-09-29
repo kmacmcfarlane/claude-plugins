@@ -18,7 +18,7 @@ Operator 2026-09-29 (.claude-sandbox/investigations/5140-decision-lifecycle/evid
 
 ## Handoff
 - doing: —
-- next: —
+- next: planner r1 running; then a fresh plan review; notify agents and operator-attention when it lands
 - blocked: —
 - learned: —
 

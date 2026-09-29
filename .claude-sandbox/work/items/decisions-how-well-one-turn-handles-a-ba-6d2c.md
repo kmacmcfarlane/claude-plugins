@@ -16,7 +16,7 @@ Operator 2026-09-29: 'could there be a performance difference in replying to a b
 
 ## Handoff
 - doing: —
-- next: —
+- next: series closed at the cap; decision 100 wakes at the pyramid turn (69ee)
 - blocked: —
 - learned: —
 

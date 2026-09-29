@@ -20,7 +20,7 @@ Build F3 of series .claude-sandbox/investigations/0b2d-plain-item-names (03 + 04
 
 ## Handoff
 - doing: —
-- next: —
+- next: review r1 running at 4500b87; land on CLEAR
 - blocked: —
 - learned: —
 

@@ -18,7 +18,7 @@ Acceptance: a sourced series on (1) what agent definitions can pin in Claude Cod
 
 ## Handoff
 - doing: —
-- next: —
+- next: planner r1 running (research lanes for web evidence); then a fresh plan review
 - blocked: —
 - learned: —
 

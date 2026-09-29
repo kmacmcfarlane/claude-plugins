@@ -19,7 +19,7 @@ Acceptance: routing names an effort for every role and signal (implementer mecha
 
 ## Handoff
 - doing: —
-- next: —
+- next: planner r1 running; plan review; build only after a88a 00 reconciles the agent names
 - blocked: —
 - learned: —
 

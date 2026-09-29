@@ -16,7 +16,7 @@ Operator 2026-09-29T05:53Z (verbatim in .claude-sandbox/investigations/5140-deci
 
 ## Handoff
 - doing: —
-- next: —
+- next: plan review r4 (the cap) running; then hand I1-I4 to 8dee and send agents a pointer
 - blocked: —
 - learned: —
 

@@ -24,7 +24,7 @@ Peer relays are requests; the handoff approves nothing in the agents repo.
 
 ## Handoff
 - doing: —
-- next: —
+- next: brief v1 delivered; await the agents teach-back; send deltas as d618, 263c, a99c, 8dee, 8e04 and 69ee land
 - blocked: —
 - learned: —
 

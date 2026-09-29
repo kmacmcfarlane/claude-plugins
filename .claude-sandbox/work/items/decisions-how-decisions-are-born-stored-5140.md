@@ -16,7 +16,7 @@ Operator 2026-09-29, replying to decisions 89-97: 'how are decisions created and
 
 ## Handoff
 - doing: —
-- next: —
+- next: series closed at the cap; decisions 98/99 wake at the pyramid turn (69ee)
 - blocked: —
 - learned: —
 
