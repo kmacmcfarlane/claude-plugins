@@ -31,3 +31,8 @@ agent: a4a6196cdb2a5b64a (implementer r1)
 r1 DONE_WITH_CONCERNS 4500b87: 10 files; dev-cycle SKILL.md now 4076 words (fefd covers the trim); deviations: no commit trailer claim, name-only targets, tables stacked
 dispatch: reviewer opus — fresh reviewer, round 1
 agent: a40cc33f41d4c005c (reviewer r1)
+review r1 NEEDS_CHANGES (0H 1M 2L): M exit 1 has four causes, not only a long name — tie the retry to the message, say it once at Intake and dev-cycle Step 0; L idle-turn restates half the repeat rule; L hold-name rule (5 words, no until) vs stored names (6 words)
+dispatch: implementer opus — resume, fix round 1
+r1 fixes 1b2195a: exit 1 told apart by message at Intake/Step 0 (others point there); full repeat rule; stored name or 5 words, never until; HOLD reason fixed
+dispatch: reviewer opus — fresh reviewer, round 2
+agent: a110d48e38a9d6147 (reviewer r2)

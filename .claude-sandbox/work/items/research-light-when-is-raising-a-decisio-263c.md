@@ -28,3 +28,6 @@ dispatch: planner opus — light research spike, plan mode (series 263c-decision
 agent: ab1d3379068e4381e (planner r1)
 notify: send agents a pointer when this series lands (agents asked)
 notify: send operator-attention a pointer when this series lands (their R48 depends on it)
+series 00 written: 101 decisions in 12 classes; proposed per-class boundary (decide-and-report, batch, split, raise); tested on 1-97: 36 would be decided alone, 6 of them answered differently (all reversible); operator rulings needed for cap, quota, scope, dependent names, policy repeats, trust
+dispatch: plan reviewer opus — fresh, round 1
+agent: a03a3d08837403bdc (plan reviewer r1)

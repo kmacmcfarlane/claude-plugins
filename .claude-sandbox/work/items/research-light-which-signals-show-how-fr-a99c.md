@@ -31,3 +31,6 @@ input from operator-attention: no store records that a decision was shown to the
 series 00 written: age >=12h and >=20 operator turns elsewhere each mark 10 of 11 lost-context answers (1 of 31 otherwise); compaction and latency weak; "show me the decisions" is an observable signal; proposal: long-absence event, full re-show on request, stored context line, no re-printing while away; D1-D4 candidates
 dispatch: plan reviewer opus — fresh, round 1
 agent: a3e0a42b012f2f697 (plan reviewer r1)
+plan review r1 NEEDS_CHANGES (1H 3M 1L): H D1 8h rule untested (counted from last show it catches 0); M coding uneven: recoded 8-9 of 20 vs 0-1 of 31 (not 10 of 11 vs 1 of 31); M the 84-86 re-show was three full blocks, not a context line; M D1/D3 change ruled rules unnamed; L shown timestamp input unanswered
+CORRECTION owed to the operator: "10 of 11 vs 1 of 31" is the most favourable coding (8-9 of 20 vs 0-1 of 31); the 84-86 re-show was full blocks, not a context line
+dispatch: planner opus — resume, serial 01

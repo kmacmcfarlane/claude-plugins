@@ -26,3 +26,5 @@ Acceptance: a sourced series on (1) what agent definitions can pin in Claude Cod
 - 2026-09-29 claimed by Kyle-McFarlane@7696505da8e1
 dispatch: planner opus — research spike, plan mode (series a88a-agent-factoring); instructed to gather web evidence through dev-flow:research-lane agents (sonnet, medium) to save quota
 agent: a1f0aa368080b709e (planner r1)
+input from the operator for a88a (2026-09-29): profiles must include an opus xhigh tier for deep complex work and a fable high/xhigh cross-check for foundational cross-cutting planning and research; criteria come from spike research-criteria-for-each-model-and-eff-6421
+the operator tier input was relayed to the running a88a planner (queued at its next tool round)
