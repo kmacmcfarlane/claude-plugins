@@ -28,8 +28,9 @@ with its end condition, per the checkpoint skill's hold rule:
 - HOLD <plain name> (<item id>) — waits on the F1 review — until the F1 review is CLEAR
 ```
 
-A held item's plain name is 5 words or fewer and never contains "until": context-guard's
-rehydrate hook caps each HOLD line and reads the end condition after the last "until".
+A held item's plain name is its short display name as stored, else one of 5 words or
+fewer, and never contains "until": context-guard's rehydrate hook caps each HOLD line and
+reads the end condition after the last "until".
 
 The Holds lines mirror the store's active `hold` items (`$WI ls --tag hold`) and their end
 conditions, one line per item plus any operator hold that has no item; where the two
@@ -113,9 +114,8 @@ compacts when convenient, and it continues. Finish the step in hand, then:
    then close with a three-line brief (in flight, decided or refused, the one next action)
    and the `/clear` or `/compact <guidance>` the advisory names, for the operator to run.
    Custody holds throughout: its residue goes into item bodies
-   (append) or new items (`$WI add`, with `--short-display-name`: 40 characters or fewer,
-   an exit 1 means shorten it and re-run, and SKILL.md § Intake step 1's fallback for an
-   older `wi` applies), never into CLAUDE.md or a skill file; its commits
+   (append) or new items (`$WI add` with `--short-display-name`, as SKILL.md § Intake
+   step 1 says), never into CLAUDE.md or a skill file; its commits
    are store-only — the work-item store. The manifest is never committed: it lives in the
    config dir, one per session, and the store and the investigation series carry the
    durable record.

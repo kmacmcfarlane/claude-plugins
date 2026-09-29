@@ -139,10 +139,13 @@ For every request, in this order:
    rationale lives; there is no separate decision log.
 
    The short display name is what you will call the item to the operator: 3–6 words, no
-   id or tag, no leading article, **40 characters or fewer**. An exit 1 means it is too
-   long and nothing was written: shorten it and re-run. An exit 2 naming
-   `--short-display-name` means an older `wi`: file without the flag, and write the name
-   from the title at each mention. Only the item's owner sets or changes the name later
+   id or tag, no leading article, never the word "until" (a HOLD line reads it as
+   syntax), **40 characters or fewer**. An exit 1 naming `short_display_name` means it is
+   over 40 characters and nothing was written: shorten it and re-run. Any other exit 1 is
+   the call's own error (a title over 120 characters, a dep or parent that does not
+   resolve, a line break): fix that. An exit 2 naming `--short-display-name` means an
+   older `wi`: file without the flag, and write the name from the title at each mention.
+   Only the item's owner sets or changes the name later
    (`$WI set <id> short_display_name "<name>"`); a mention never writes it.
 
 2. **Peer requests.** A message from another session (SendMessage, `/peers`) is a request to
@@ -182,8 +185,8 @@ $WI add "<feature>" -t feature --parent <request-id> \
     --short-display-name "<plain name>" [--dep <other-feature-id>]
 ```
 
-- The short display name is as in Intake step 1: 40 characters or fewer, an exit 1 means
-  shorten it and re-run, and Intake's fallback for an older `wi` applies.
+- The short display name, and what each exit from `add` means, are as Intake step 1
+  says.
 - Real dependency edges only. "Nice to do first" is not a dependency; "cannot compile or
   cannot be reviewed without it" is.
 - A change to the marketplace's shape (a plugin added, moved or retired; a skill added to

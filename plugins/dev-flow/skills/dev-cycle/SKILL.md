@@ -89,11 +89,13 @@ only on a `CLEAR` recorded against the current HEAD sha.
    AskUserQuestion: Proceed / Discuss / Reject. Discuss: revise and ask again. Reject:
    stop, nothing written. Proceed: `$WI add` it when a store exists (that item is the
    target), else write it to `<scratchpad>/dev-cycle/<slug>/record.md`. The add passes
-   `--short-display-name "<plain name>"`, a name for the brief's goal in 3–6 words, no id
-   or leading article, **40 characters or fewer**: an exit 1 means it is too long and
-   nothing was written, so shorten it and re-run; an exit 2 naming `--short-display-name`
-   means an older `wi`, so file without the flag and write the name from the title at
-   each mention. **`review
+   `--short-display-name "<plain name>"`, a name for the brief's goal in 3–6 words, with
+   no id, no leading article and never the word "until", **40 characters or fewer**. An
+   exit 1 naming `short_display_name` means it is over 40 characters and nothing was
+   written: shorten it and re-run. Any other exit 1 is the call's own error (a title over
+   120 characters, a dep or parent that does not resolve, a line break): fix that. An
+   exit 2 naming `--short-display-name` means an older `wi`: file without the flag, and
+   write the name from the title at each mention. **`review
    <branch>` mode with no other target:** skip the cycle brief — there is nothing to
    plan, the branch already exists; collect a one-line intent instead
    (`references/bindings.md` § Intent), in the same question as any other Step 0 ask.

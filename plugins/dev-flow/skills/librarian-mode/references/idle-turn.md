@@ -45,9 +45,10 @@ Print a `hold:` line first for each active hold, then two short tables, at most 
 rows each with `+N more` below. With the `operator-interaction:decisions` skill loaded,
 Groom's `+N more` says the decisions block that closes the turn lists every open decision
 with its recommendation (`+3 more — every open decision is in the list below`), so no
-decision is cut off. Every item is named by its plain name and tag (SKILL.md § Report),
-a later mention in the same message by its name alone; the two tables stack, since named
-rows no longer fit side by side:
+decision is cut off. Every item is named by its plain name and tag (SKILL.md § Report):
+an item's own cell always carries its tag, and a later mention of an item the message has
+already shown with its tag (a `next` cell, say) uses the name alone. The two tables
+stack, since named rows no longer fit side by side:
 
 ```
 hold: <plain name> (<tag>) — <scope>, until <end condition> ("<operator's words>"); holds <plain names (tags)>
@@ -95,8 +96,9 @@ Work
     answered. dev-cycle claims before its Agent call, so these never show as ready.
 
   `next` says what happens to each row: `dispatch now`, `resume`, `after <plain name>`
-  (a dependency or the same files), `after reset <time>` (a rate limit), or `held
-  (<hold's plain name>)`.
+  (a dependency or the same files; its tag too when the message has not yet shown that
+  item with it), `after reset <time>` (a rate limit), or `held (<hold's plain name>)`
+  (the `hold:` line above carries the hold's tag).
 
 Nothing in either table: say so in one line and end the turn — that is a real idle.
 
@@ -148,9 +150,11 @@ $WI add "hold: <scope> until <end condition>" -t chore -p 0 --tag hold \
 $WI block <hold-id> "HOLD: <scope> until <end condition>"
 ```
 
-The short display name (`fable hold`, `one-agent hold`) never contains "until", which the
-`hold:` line reads as syntax. It is 40 characters or fewer: an exit 1 means shorten it and
-re-run, and SKILL.md § Intake step 1's fallback for an older `wi` applies.
+The short display name (`fable hold`, `one-agent hold`) never contains "until":
+context-guard's rehydrate hook reads each HOLD line of a checkpoint manifest (the Holds
+lines in `ending-the-session.md`) and takes its end condition from after the last
+"until". Its length, and what each exit from `add` means, are as SKILL.md § Intake step 1
+says.
 
 It records three things:
 
