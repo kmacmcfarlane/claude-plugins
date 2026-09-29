@@ -206,20 +206,27 @@ would ask the operator. Its Step 6 is the Report below. Your bindings:
   from Factor. **Checks**: `Checks:`. **Workflow**: `Workflow:`. **Base**: `main`,
   unless the item names another.
 - **Routing**: dev-cycle's Step 2 as written; its one home is the `dev-cycle` skill's
-  `references/model-routing.md`, and nothing here restates or changes it.
-- **Model floor**: an operator pin — a `model: <tier>` line in the item body — for every
-  role; never overridden downward.
+  `references/model-routing.md`, and nothing here restates or changes it. That covers
+  the role agent every dispatch names (`dev-flow:<agent>`, its § Profiles), the
+  `general-purpose` fallback when one is not loaded (its § Fallback), and the dispatches
+  you make outside a cycle's roles: a helper (a card, a brief, a summary) and a read-only
+  question (a `dig into`, a diagnostic) route by the same § Profiles.
+- **Model floor**: an operator pin — a `model: <tier>` line and/or an `effort: xhigh`
+  line in the item body; the model pin for every role, the effort pin for planner and
+  implementer dispatches (the `dev-cycle` skill's Step 2 rule 8); never overridden
+  downward.
 - **Hold**: an active hold's limit caps tier and concurrency for every dispatch; below
-  a pin or the reviewer's opus (dev-cycle's Step 2 rule 4), the item waits on a decision
-  (Idle turn).
+  a pin's tier (opus for an `effort:` pin's `-deep` files) or the reviewer's opus
+  (dev-cycle's Step 2 rule 4), the item waits on a decision (Idle turn).
 - **Record sink**: the item body, appended with Bash (not a custody file): a
-  `dispatch: <role> <model> — <signal>` line before every Agent call, a `review: self`
-  line above a verdict you reached yourself, rounds, verdicts,
-  declined findings with reasons.
+  `dispatch: <role> <model> <effort> — <signal>` line before every Agent call, a
+  `review: self` line above a verdict you reached yourself, rounds, verdicts, `trial:`
+  lines, declined findings with reasons.
 - **Decision channel**: `decision N:` appended to the item and carried under the
   Report's `decisions needed` — only what dev-cycle raises there: a `SHOW_STOPPER`, a
-  scope change or reversed operator decision, the cap, a blocked item, a fable-pin wait, a
-  spike's blocking open questions. **Durable**: the question lives in the committed item
+  scope change or reversed operator decision, the cap, a blocked item, a fable-pin wait,
+  an effort pin whose `-deep` agent is not loaded, a spike's blocking open questions.
+  **Durable**: the question lives in the committed item
   body and is answered to whichever session is librarian next. Shown per the
   `operator-interaction:decisions` skill when it is loaded (`references/decisions.md`).
 - **Terminal action**: `git merge --no-ff` into local `main`; the push is yours, after
@@ -309,7 +316,8 @@ Stop when you catch yourself doing any of these:
 
 - **Any of dev-cycle's red flags** — self-fixing (a custody file edited to make a result
   land, a finding fixed), landing without a `CLEAR`, merging unchecked, escalating what
-  the loop could resolve, dispatching with no `model` or no `dispatch:` line.
+  the loop could resolve, dispatching with no `model` or no `dispatch:` line, or on
+  `general-purpose` while the role agent is loaded.
 - **Skipping the work item** for a request that looks too small to file.
 - **Touching anything outside Scope** — Exclude included — or reasoning about it.
 - **Editing the main checkout from a worktree session.**

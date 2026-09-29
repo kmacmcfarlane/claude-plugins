@@ -23,7 +23,7 @@ choose that question (§ The state table, the dispatch permission).
 Four line kinds are **phase lines**: `dispatch:`, `return:`, `verdict:` and `landed:`.
 They move the run, and only a phase line can be its last state. Every other line —
 `target:`, `checks:`, `intent:`, `agent:`, `review:`, `baseline:`, `findings:`, `changed:`,
-`decision:`, `answer:`, `spent:`, `subject-fix:`, `conflict:`, `blocked:` — is a
+`decision:`, `answer:`, `spent:`, `subject-fix:`, `conflict:`, `blocked:`, `trial:` — is a
 **rider**: it never displaces a phase line, and it is read only where a fact below names
 it.
 
@@ -169,7 +169,7 @@ is a dispatch, and the next verdict tests the cap again.
 | LIVE | State | The single next action |
 |---|---|---|
 | `one` | **S3a** attach | Never dispatch beside it. Still running: leave it to finish. Finished with a report never recorded: collect the report and hand it to the step that writes its phase line — SKILL.md § Step 1 (planner), § Step 3.5 (implementer) or § Step 4.5 (reviewer). |
-| `none` | **S3b** salvage | A `reviewer fable` dispatch in a run whose Model floor is not fable is a second opinion, optional and never salvaged: it is dropped, whatever its signal says, and the state is the one the last verdict before it gives (`model-routing.md` § Second opinion). Any other: GATE first on a decision recorded after the dispatch — a fable pin's ask when the call failed (`model-routing.md` § Fallback): `PENDING` → § The GATE. `ANSWERED` → § Salvage, then re-dispatch as the answer says. `NONE` → § Salvage, then re-dispatch at the same role, tier and round — a reviewer briefed by VARIANT; a producer at a fix round re-dispatched as `fix-loop.md` § A NEEDS_CHANGES round says for a gone agent (an implementer), or as `agent-brief.md` § Plan variant says (a planner). |
+| `none` | **S3b** salvage | A `cross-checker` or `cross-checker-deep` dispatch is a cross-check — a `dispatch: cross-checker` line, whatever its effort. A record written before the role agents shows a second opinion as a `reviewer fable` dispatch in a run with no `model: fable` pin. Either is a second opinion, optional and never salvaged: it is dropped, whatever its signal says, and the state is the one the last verdict before it gives (`model-routing.md` § Second opinion). Any other: GATE first on a decision recorded after the dispatch — a fable pin's ask, or an effort pin's, when the call failed (`model-routing.md` § Fallback): `PENDING` → § The GATE. `ANSWERED` → § Salvage, then re-dispatch as the answer says. `NONE` → § Salvage, then re-dispatch at the same role, agent file, tier and round — the file the dead dispatch's role and effort name, or under `inherit` the one its signal names as not loaded — a reviewer briefed by VARIANT; a producer at a fix round re-dispatched as `fix-loop.md` § A NEEDS_CHANGES round says for a gone agent (an implementer), or as `agent-brief.md` § Plan variant says (a planner). |
 | `many` | **S13** two live agents | Stop. Dispatch nothing and stop no agent. GATE, the question naming every live id: which one to keep is always a human's decision, never the cycle's. |
 
 **Group C — PHASE `RETURN`.** The producer is the `implementer`, or the `planner` in

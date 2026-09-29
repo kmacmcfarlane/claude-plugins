@@ -276,7 +276,7 @@ model moves a file across models. Ten are the dev cycle's role workers:
 |---|---|---|
 | `scribe` | sonnet, low | a helper with no judgement on its dispatch line: renders a card, fills a brief template, summarises given text |
 | `scout` | sonnet, medium | answers read-only with `file:line` or URL evidence, and says "could not determine" rather than guess |
-| `implementer` | sonnet, medium | builds one change in its worktree: sonnet for the canonical mechanical kinds, opus by per-call model for everything else |
+| `implementer` | sonnet, medium | builds one change in its worktree: sonnet for the canonical mechanical kinds in a kit repo and for wording and docs elsewhere, opus by per-call model for everything else |
 | `implementer-critical` | opus, high | builds one change the operator called critical |
 | `implementer-deep` | opus, xhigh | builds one change, only for an item the operator pinned to effort xhigh |
 | `planner` | opus, high | writes or revises an investigation series |

@@ -6,13 +6,16 @@ merge-conflict clauses under Commit (only in those rounds), the Workflow block (
 the Workflow binding is set) and the dev-flow block (only for a feature with no plan yet,
 or a given plan). The agent starts with none of the
 orchestrator's context and must be able to finish from this text alone. Send it as the
-prompt of one background `general-purpose` Agent. The orchestrator sets the `Model:` line
-from SKILL.md § Step 2 and passes the same value to the Agent tool's `model` field — the
-brief tells the agent which tier it runs on, the field enforces it, and the record sink's
-`dispatch:` line records it. A fix round that changes the tier (a sonnet implementer's
-bump to opus, or a waived fable pin) is a fresh dispatch with the full brief and the
-findings, never a resume — a resumed agent keeps its model; resume only when the tier is
-unchanged.
+prompt of one background implementer agent — `subagent_type: "dev-flow:implementer"`,
+`implementer-critical` or `implementer-deep`, as SKILL.md § Step 2 routes it;
+`general-purpose` only as `model-routing.md` § Fallback says. The orchestrator sets the
+`Model:` line from SKILL.md § Step 2 and passes the same value to the Agent tool's `model`
+field — the brief tells the agent which tier it runs on, the field enforces it, and the
+record sink's `dispatch:` line records it with the agent file's effort. A fix round that
+changes the tier (a sonnet implementer's bump to opus, or a waived fable pin) or the agent
+file (an effort change) is a fresh dispatch with the full brief and the findings, never a
+resume — a resumed agent keeps its file, model and effort; resume only when both the file
+and the tier are unchanged.
 
 The prohibitions and the return contract are fixed. The verification commands vary with what
 the change touches — take them from `review-checklist.md`, plus every command in the Checks
@@ -40,7 +43,7 @@ Item: <id> — <title>
 Brief: <the cycle brief or the plan file, by absolute path — read it first, in full>
 
 Model: <sonnet|opus|fable> — <the routing signal that chose it: mechanical, an opus
-       signal, or a model: pin>
+       signal, a model: pin, or an effort: pin>
 Acceptance: <one or two lines, copied from the item, plan or brief>
 Base branch: <the Base binding>
 Ground: <the Ground binding — the only ground you may touch>
@@ -131,7 +134,8 @@ paths; never `git add .` or `git add -A`. Do not commit anything under .claude-s
 <conditional — fix round only: include when resuming or re-dispatching with review findings:>
 Fix round <n> — the nth re-dispatch or resume with review findings, i.e. review round n+1
 of a 4-review-round cap. The Model line above is this round's tier (routing rule 6);
-when it differs from the previous round's, this is a fresh dispatch, not a resume.
+when it, or the agent file, differs from the previous round's, this is a fresh dispatch,
+not a resume.
 Findings to fix are listed below, verbatim. Fix each finding at medium or
 above; each low/nit you decline, state under DECLINED with a reason. Fix as one or more NEW
 commits on top of <reviewed sha>; never amend, rebase, or squash — the reviewer diffs from
@@ -192,8 +196,12 @@ COMMIT: sha and message subject — in a fix round, every new sha
 
 ## Plan variant
 
-For SKILL.md § Step 1 (`plan` mode, or a spike): one background `general-purpose` agent,
-no worktree. Use the brief above with these changes: drop the WORKTREE lines, Files in
+For SKILL.md § Step 1 (`plan` mode, or a spike): one background planner agent,
+`dev-flow:planner` — or `planner-deep` under an `effort:` pin or on the xhigh trial's bump
+arm (`model-routing.md` § Profiles, § The xhigh trial); `general-purpose` only as
+`model-routing.md` § Fallback says — and no worktree. The dispatch names its file on its
+`dispatch:` line through the effort (`planner opus xhigh` is `planner-deep`). Use the
+brief above with these changes: drop the WORKTREE lines, Files in
 scope, Verification and Commit; set What to do to /investigate alone, in its orchestrated
 mode (the `investigate` skill's § Running under an orchestrator) with the Series home
 binding and the Base, and no worktree; replace the prohibitions'
@@ -204,7 +212,12 @@ marked blocking or not), DEVIATIONS. The series is gated like a change, by
 findings verbatim and the rules of the `investigate` skill's
 `references/investigation-format.md`: never edit a written serial; write the revision as a
 new serial at the next free number, opening with a `Supersedes` block that names what the
-findings overturned; regenerate `INDEX.md`.
+findings overturned; regenerate `INDEX.md`. A round whose planner file and model are
+unchanged may resume the planner instead (`fix-loop.md` § A NEEDS_CHANGES round), with one
+exception: a trial unit's rounds are fresh in both arms, never a resume, from the round
+after its late high until `CLEAR` or its third plan review — this brief re-dispatched to
+`planner-deep` in the bump arm and to `planner` in the control arm (`model-routing.md`
+§ The xhigh trial).
 
 ## Review-mode fix variant
 

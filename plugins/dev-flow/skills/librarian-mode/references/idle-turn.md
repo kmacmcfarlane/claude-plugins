@@ -175,13 +175,15 @@ It records three things:
 
 **A limit against a floor.** The operator's more recent instruction wins, but never
 silently: when a limit caps below a floor a dispatch must meet — an item's `model:` pin
-(a `model: fable` pin under "no fable"), or the reviewer's opus (dev-cycle's Step 2
-rule 4, so a "sonnet only" limit clashes on every review that is not a `review: self`)
-— that item is not
-downgraded. It waits — `next: held (<hold's plain name>)` — and the clash goes through
-the decision channel as one `decision N:` on the item, carried under the next Report's
-`decisions needed`: keep it waiting, lift the pin or loosen the limit, or exempt it from
-the hold.
+(a `model: fable` pin under "no fable"); the opus an item's `effort:` pin runs its
+planners and implementers on, since its `-deep` files never run on sonnet (dev-cycle's
+Step 2 rule 8, so a "sonnet only" limit clashes with every such dispatch); or the
+reviewer's opus (dev-cycle's Step 2 rule 4, so a "sonnet only" limit clashes on every
+review that is not a `review: self`) — that item is not downgraded: never a `-deep`
+file on sonnet, and never the pin dropped for a lower file. It waits —
+`next: held (<hold's plain name>)` — and the clash goes through the decision channel as
+one `decision N:` on the item, carried under the next Report's `decisions needed`: keep
+it waiting, lift the pin or loosen the limit, or exempt it from the hold.
 
 Being `blocked`, the hold item never enters the ready queue and shows on `wi prime`'s
 BLOCKED line; Rehydrate step 3 reads it explicitly with `$WI ls --tag hold`, since that

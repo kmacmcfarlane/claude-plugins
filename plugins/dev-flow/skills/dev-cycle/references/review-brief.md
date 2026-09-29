@@ -5,11 +5,13 @@ implementer's return and Land. Fill every placeholder from the run's bindings
 (`bindings.md`); delete nothing except the store lines when there is no work item. The
 reviewer starts with none of the orchestrator's context and none of the implementer's, and
 must be able to review from this text alone. Send it as the prompt of one background
-`general-purpose` Agent. The reviewer is review-only: it never edits, never commits. The
-orchestrator sets the `Model:` line from SKILL.md § Step 2 rule 4 — always opus, or fable
-under a `model: fable` pin or as a second opinion — and passes the same value to the Agent
-tool's `model` field; a reviewer is never routed below opus. The reviewer is always a
-fresh agent: never a fork and never the implementer resumed.
+`dev-flow:reviewer` Agent (opus high) — for the second opinion, `dev-flow:cross-checker`
+(fable high); `general-purpose` only as `model-routing.md` § Fallback says. The reviewer
+is review-only: it never edits, never commits. The orchestrator sets the `Model:` line
+from SKILL.md § Step 2 rule 4 — always opus, or fable under a `model: fable` pin or as a
+second opinion — and passes the same value to the Agent tool's `model` field; a reviewer
+is never routed below opus, and an `effort:` pin never moves it off `reviewer` (rule 8).
+The reviewer is always a fresh agent: never a fork and never the implementer resumed.
 
 The prohibitions, the severity scale and the report shape are fixed. The check commands vary
 with what the change touches — take them from `review-checklist.md`, the same list the
@@ -158,9 +160,11 @@ NOTES: anything you noticed that is not a finding; questions for the orchestrato
 
 After the implementer commits its fixes, resume the **same** reviewer (it has the context)
 with this in place of "What to do" — unless the reviewer's tier changed (a waived fable
-pin, routing rule 6): a resumed agent keeps its model, so dispatch a fresh reviewer at the
-new tier with the full brief, its `Model:` line and "Files changed, with reasons"
-updated, and the previous report pasted above this block.
+pin, routing rule 6): a resumed agent keeps its file and its model, so dispatch a fresh
+reviewer at the new tier with the full brief, its `Model:` line and "Files changed, with
+reasons" updated, and the previous report pasted above this block. After a second
+opinion the reviewer resumed is the `reviewer`, never the `cross-checker`
+(`fix-loop.md` § A NEEDS_CHANGES round).
 
 ```
 Fix commits since your last review: git -C $WORKTREE log --oneline <last reviewed sha>..HEAD
@@ -261,8 +265,8 @@ Grade each changed file against this Intent in place of the item's or plan's acc
 itself a finding merely for lacking a one-line reason — there was no implementer to write
 one.
 
-Model: opus (Step 2 rule 4), or the Model floor when one is pinned (rule 8) — the same
-whatever the branch's diff holds.
+Model: opus (Step 2 rule 4), or the Model floor's `model:` pin when one is set (rule 8);
+an `effort:` pin alone leaves opus — the same whatever the branch's diff holds.
 
 ## Plan-review variant
 

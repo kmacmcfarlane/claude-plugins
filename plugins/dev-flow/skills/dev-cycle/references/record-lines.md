@@ -9,13 +9,25 @@ thing. Two shapes have two writers, each for a different role: `return:` (SKILL.
 record is a log, read in the order it was written, and what `resume.md` reads to take an
 interrupted run up again; a line that is missing reads there as not recorded:
 
-- `dispatch: <role> <model> — <signal>` — SKILL.md § Step 2 rule 7, written before every
-  dispatch (implementer, planner or reviewer), and before every SendMessage that resumes
-  an agent for a new round, as `dispatch: <role> <model> — resume` (SKILL.md § Step 4.3
-  writes it through rule 7), so that no round opens without a phase line
+- `dispatch: <role> <model> <effort> — <signal>` — SKILL.md § Step 2 rule 7, written
+  before every dispatch (implementer, planner, reviewer, cross-checker, or a caller's
+  scribe or scout), and before every SendMessage that resumes an agent for a new round,
+  as `dispatch: <role> <model> <effort> — resume` (SKILL.md § Step 4.3 writes it through
+  rule 7), so that no round opens without a phase line.
+  - `<role>` is one role word: `scribe`, `scout`, `implementer`, `planner`, `reviewer` or
+    `cross-checker`.
+  - `<model>` is the per-call model: `sonnet`, `opus` or `fable`.
+  - `<effort>` is the dispatched agent file's pin, `low` | `medium` | `high` | `xhigh`,
+    or `inherit` when the fallback dispatched `general-purpose` at the session's effort
+    (`model-routing.md` § Fallback). With the role it names the file, one role at one
+    effort per file: `planner xhigh` is `planner-deep`.
+
+  A line written before the effort field existed, its model followed directly by the `—`,
+  reads as **effort unrecorded**, never as a malformed line.
 - `agent: <role> <id> round <n>` — SKILL.md § Step 2 rule 7, written as soon as the Agent
-  call returns an id, directly under the `dispatch:` line it belongs to; under a
-  `— resume` dispatch it repeats the resumed agent's id with the round it now serves.
+  call returns an id, directly under the `dispatch:` line it belongs to, with the same
+  role word; under a `— resume` dispatch it repeats the resumed agent's id with the round
+  it now serves.
   `<n>` is the
   round that dispatch serves (the first build or the first review is round 1). It is what
   SKILL.md § Step 4.3 resumes an agent by and what a caller copies into a handoff: an id
@@ -144,6 +156,15 @@ interrupted run up again; a line that is missing reads there as not recorded:
   (`bindings.md` § Decisions says what a run does with one), and an answered one is never
   raised again while its answer is in force (the same section).
 - `spent:` — written and read by `resume.md` (§ The GATE), and by nothing else.
+- `trial: xhigh-planner <bump | control>` and
+  `trial: xhigh-planner <bump | control> excluded — <reason>` — both written by the trial
+  routing step, `model-routing.md` § The xhigh trial, which SKILL.md § Step 1 runs before
+  a planner round and at each window dispatch's return, and by nothing else. The first
+  goes in before the first planner dispatch of a trial unit's window; the second, when a
+  window dispatch's transcript shows another effort than its arm's, at that dispatch's
+  return, the reason naming the dispatch and the effort seen (`planner showed xhigh
+  (fallback)`). An item that is no trial unit carries neither. Each is one unindented
+  line, since the trial's count reads them with `grep -x` and `grep '^trial:'`.
 - `landed: <merge sha>` — SKILL.md § Step 5.3, written the moment Land's merge succeeds —
   before the checks on the base, any push, cleanup and `$WI done`. It is the record's
   only evidence that a target reached a merge, and SKILL.md § Step 6 reports it on the
