@@ -35,3 +35,6 @@ dispatch: planner opus — resume, serial 01: reconcile with a88a 03 (+ review r
 serial 01 written: F1 ten agent files (name, description, model, effort; tools omitted = all) + pin test + manifests + CLAUDE.md/README; F2 ships now on defaults, waits per 6421 question listed; quota about -40% vs xhigh, +$17-27/week (+3-6%) over the 2eb7 table during the trial; two a88a questions carried (read-only tools later; naming before F1 lands)
 dispatch: plan reviewer opus — fresh, round 1
 agent: a1db1057941f8460b (plan reviewer r1)
+plan review r1 NEEDS_CHANGES (0H 3M 10L): M1 fix-loop.md resumes planners, so the trial control arm would be a resume: fresh planners in both arms; M2 the per-item effort pin must reach bindings.md and rule 8; M3 count trial arms only when the transcript shows that arms effort; lows incl. record-line regex, pin test, repo-map.md, the new Checks line is a ## Librarian edit, 31b4 duplicate
+dispatch: planner opus — resume, serial 02
+absorbed 31b4 (operator 2026-09-23: the same ask, unworked for six days)
