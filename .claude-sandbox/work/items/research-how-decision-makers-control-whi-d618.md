@@ -45,3 +45,10 @@ dispatch: planner opus — resume, serial 03 (round 4 is the cap)
 serial 03 final: I1 plan caps only; options (a) stop and carry, (b) budgeted self-grant (waits on c79e), (c) park, (d) ask at every cap, (e) impact-gated (lean); past cap stops labelled unratified practice; G4 open for 8dee
 dispatch: plan reviewer opus — fresh, round 4 (the cap)
 agent: a1948592826de8cb3 (plan reviewer r4)
+plan review r4 (the cap) NEEDS_CHANGES (0H 2M 1L): M a49b's unlabelled r4 must-fix is scored medium without saying so, and 68's fixes are labelled medium (the (e) lean's counts shift: raises 1-4, not 2-3; (d) 7-8 asks); M "caef after r5" was not an unseen stop — answer 96 approved the round and the r5 high went to the operator as decision 101; (e) never says what ends a granted round; L 02 lines not superseded
+decision 105: The decision-surfacing research (d618) hit the review cap with two medium corrections to its evidence left; close it and hand those corrections to the policy spike (8dee), or run one more round? — options: (a) close the series and hand review r4 to 8dee as known corrections, which 8dee's planner must fold in [recommended] | (b) one more planner round and a fresh review | (c) park the series | (z) decide later
+  raised: 2026-09-29T07:07Z
+  stakes: reversible, narrow (research input to 8dee; nothing is built from it directly)
+  if left: 8dee could misweigh two past cases (a49b's unscored finding; caef's r5 stop, which the operator in fact saw as decision 101) and the lean's counts (1-4 raises, not 2-3) — unless 8dee reads review r4, which (a) requires
+  round costs: one planner round plus a fresh reviewer, about 15-20 minutes and roughly 0.5-1% of weekly quota at the current xhigh sub-agent effort; none of the operator's time
+  rec: (a) · basis strong — review r4 states each correction exactly; 8dee reads d618 anyway

@@ -28,3 +28,6 @@ agent: a8307a75146d1df1b (planner r1)
 notify: send agents a pointer when this series lands (agents asked)
 notify: send operator-attention a pointer when this series lands (their R48 depends on it)
 input from operator-attention: no store records that a decision was shown to the operator; their R47 (recency) and shared warm/cold test rest on it — a shown timestamp is a candidate signal source
+series 00 written: age >=12h and >=20 operator turns elsewhere each mark 10 of 11 lost-context answers (1 of 31 otherwise); compaction and latency weak; "show me the decisions" is an observable signal; proposal: long-absence event, full re-show on request, stored context line, no re-printing while away; D1-D4 candidates
+dispatch: plan reviewer opus — fresh, round 1
+agent: a3e0a42b012f2f697 (plan reviewer r1)
