@@ -87,11 +87,12 @@ claude-plugins/
     ├── create-repo/           (start a new repo for a thread of work, with a session launched on it)
     │   └── skills/create-repo/ (references/launch-command.md)
     ├── dev-flow/              (plan before you code; research into findings or a knowledge base; the librarian that takes custody of a repo)
-    │   ├── agents/            (research-lane, research-verifier — the research family's workers)
-    │   └── skills/
-    │       ├── {investigate,implement,dev-cycle,deep-investigation,research,research-deep,research-refine,research-prune,chain-of-verification,librarian-mode}/
-    │       ├── research/scripts/ (tool-preflight.sh + tests)
-    │       └── librarian-mode/scripts/ (quota_budget.py: the librarian's quota sense + tests)
+    │   ├── agents/            (scribe, scout, implementer, implementer-critical, implementer-deep, planner, planner-deep, reviewer, cross-checker, cross-checker-deep — the dev cycle's role workers; research-lane, research-verifier — the research family's workers)
+    │   ├── skills/
+    │   │   ├── {investigate,implement,dev-cycle,deep-investigation,research,research-deep,research-refine,research-prune,chain-of-verification,librarian-mode}/
+    │   │   ├── research/scripts/ (tool-preflight.sh + tests)
+    │   │   └── librarian-mode/scripts/ (quota_budget.py: the librarian's quota sense + tests)
+    │   └── tests/             (test_agents.py: every agent file's model and effort pin)
     ├── kit-dev/               (maintaining this kit itself — where THIS skill lives)
     │   └── skills/{create-skill,update-kit,new-project-from-template,factor-analysis}/
     ├── operator-interaction/  (the agent-operator interface, starting with how decisions are raised and shown)

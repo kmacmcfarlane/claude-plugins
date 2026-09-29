@@ -24,11 +24,12 @@ plugins/
     skills/
       create-repo/     # references/launch-command.md
   dev-flow/            # Plan before you code; research into findings or a knowledge base; the librarian that takes custody of a repo
-    agents/            # research-lane, research-verifier (the research family's workers)
+    agents/            # scribe, scout, implementer, implementer-critical, implementer-deep, planner, planner-deep, reviewer, cross-checker, cross-checker-deep (the dev cycle's role workers); research-lane, research-verifier (the research family's workers)
     skills/
       {investigate,implement,dev-cycle,deep-investigation,research,research-deep,research-refine,research-prune,chain-of-verification,librarian-mode}/
       research/scripts/  # tool-preflight.sh (Step 5.1 tool check) + unit tests
       librarian-mode/scripts/  # quota_budget.py (the librarian's quota sense) + unit tests
+    tests/             # test_agents.py: every agent file's model and effort pin, and its frontmatter shape
   kit-dev/             # Maintaining this kit itself
     skills/
       {create-skill,update-kit,new-project-from-template,factor-analysis}/
@@ -68,12 +69,22 @@ optional `references/`, `scripts/`, `assets/`.
 
 - **Skill location**: `plugins/<plugin>/skills/<name>/SKILL.md` (never `.claude/skills/`).
 - **Agent location**: `plugins/<plugin>/agents/<name>.md` — auto-loaded by the plugin system.
-  Agent `.md` files define role, tools, and model. Task-specific context is injected via the
-  Agent prompt, not baked into the definition. `dev-flow` ships two: `research-lane` and
-  `research-verifier`, the workers of the `research` skill family — their contract (file shape,
-  evidence and security rules, effort pin) lives in the agent body so every lane loads it by
-  construction. (The three agents that served the deprecated plan-execution skill were retired
-  at Phase 3.)
+  Agent `.md` files define role, tools, model and effort. Task-specific context is injected via
+  the Agent prompt, not baked into the definition. One role per file and one effort per file: a
+  role that needs a second effort gets a second file, and the per-call `model` moves a file
+  across models. `dev-flow` ships twelve:
+  - ten role workers for the dev cycle — `scribe`, `scout`, `implementer`,
+    `implementer-critical`, `implementer-deep`, `planner`, `planner-deep`, `reviewer`,
+    `cross-checker`, `cross-checker-deep` — whose frontmatter is `name`, `description`,
+    `model` and `effort` only (`tools` left out: every tool);
+  - `research-lane` and `research-verifier`, the workers of the `research` skill family.
+
+  Bodies come in three classes: minimal (the role only; the prompt is the brief) on nine of the
+  ten; a short read-only evidence contract on `scout`; and the research pair's full contract
+  (file shape, evidence and security rules), in the body so every lane loads it by
+  construction. `plugins/dev-flow/tests/test_agents.py` keeps every file's model and effort
+  pin in step with its table. (The three agents that served the deprecated plan-execution
+  skill were retired at Phase 3.)
 - **Hook location**: `plugins/<plugin>/hooks/<name>.py` — registered in that plugin's
   `plugins/<plugin>/hooks/hooks.json`, which lists each hook under its event (`PreToolUse`,
   `UserPromptSubmit`, `SessionStart`, `Stop`, …) with a `matcher` and a `command` that names
@@ -83,6 +94,8 @@ optional `references/`, `scripts/`, `assets/`.
   from the hooks dir. Hooks, status lines and `settings.json` writes belong only in the
   plugin whose stated aim is that behavior; each such plugin carries its own `hooks.json`
   with only its hooks.
+- **Plugin-level tests**: tests not tied to hooks live in `plugins/<plugin>/tests/`, run with
+  `python3 -m unittest discover -s tests -q` from the plugin dir.
 - **Plugin registry**: `.claude-plugin/marketplace.json` — update when adding or removing a
   plugin (not when adding skills to an existing plugin). Its `name` field, `kmacmcfarlane`,
   is **frozen**: it suffixes every plugin-data directory.
@@ -149,4 +162,5 @@ Checks:
 - (cd plugins/statusline-hub/hooks && python3 -m unittest discover -s tests -q)
 - (cd plugins/dev-flow/skills/librarian-mode/scripts && python3 -m unittest discover -s tests -q)
 - (cd plugins/dev-flow/skills/research/scripts && python3 -m unittest discover -s tests -q)
+- (cd plugins/dev-flow && python3 -m unittest discover -s tests -q)
 Push: main
