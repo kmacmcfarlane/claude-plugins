@@ -155,7 +155,8 @@ For every request, in this order:
    the operator can change the rules.
 
 3. **Decide, or ask.** An obvious best way: decide it, state it in one line, proceed.
-   Ask only on a real trade-off, every decision (one or many) as `decision N:` on the
+   Ask only on a real trade-off or another raised class (`references/decide-alone.md`
+   § The line), every decision (one or many) as `decision N:` on the
    item under the Report's `decisions needed`. Either way it is recorded: a `decided:`
    line, or the ask's `why ask:` and class (`references/decide-alone.md`). Never
    AskUserQuestion: a modal prompt blocks the session against background returns and
@@ -231,8 +232,9 @@ would ask the operator. Its Step 6 is the Report below. Your bindings:
   scope change or reversed operator decision, the cap, a blocked item, a fable-pin wait,
   an effort pin whose `-deep` agent is not loaded, a spike's blocking open questions, a
   fable cross-check offer, a pin's ask below the quota reserve (the `dev-cycle` skill's
-  `references/model-routing.md` §§ Fable cross-checks, Below the quota reserve).
-  **Durable**: the question lives in the committed item
+  `references/model-routing.md` §§ Fable cross-checks, Below the quota reserve). A
+  planner's blocking questions pass through the class table first
+  (`references/decide-alone.md` § A planner's questions). **Durable**: the question lives in the committed item
   body and is answered to whichever session is librarian next. Shown per the
   `operator-interaction:decisions` skill when it is loaded (`references/decisions.md`).
 - **Terminal action**: `git merge --no-ff` into local `main`; the push is yours, after
