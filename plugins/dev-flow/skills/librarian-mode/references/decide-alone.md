@@ -88,6 +88,15 @@ tells the classes apart; it says nothing about which side of the line a class is
 spellings are provisional until the operator confirms them; nothing writes a class tag to a
 store before then.
 
+**Until the operator confirms the spellings,** this interim rule stands in for the store
+lines above:
+
+- no `decided:` line is written, so there is no **Done alone** group;
+- `why ask:` is shown on every raised card, its class named in words, but not stored;
+- no backfill of `why ask:` is written to an older card.
+
+Once they are confirmed, the lines above apply as written.
+
 | Class | What it names |
 |---|---|
 | `wording` | the words of a text, a message or a label, not a name something parses |

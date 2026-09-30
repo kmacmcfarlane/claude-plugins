@@ -397,9 +397,10 @@ The time is in `raised:`'s form (`2026-09-30T14:05Z`); the class is a
 kebab-case tag from the caller's class list; the authority names what let
 the caller decide it (`task`, `answer N`, or a class the caller's rules let
 it decide alone); `reopen` says how it is undone. The what field never
-contains ` · authority: ` or ` · reopen: `, the separators a reader splits on. It is neither `decision N:` nor `answer N:`, so it opens
-no question and answers none: `needs-input`, the decision counter and the
-estate sweep pass it by. `wi` does not parse it yet; a reader splits it
+contains ` · authority: ` or ` · reopen: `, the separators a reader splits
+on. It is neither `decision N:` nor `answer N:`, so it opens no question
+and answers none: `needs-input`, the decision counter and the estate sweep
+pass it by. `wi` does not parse it yet; a reader splits it
 with `^decided: (\S+) ([a-z-]+) — (.*?) · authority: (.*?) · reopen: (.*)$`.
 
 ## Body sections
