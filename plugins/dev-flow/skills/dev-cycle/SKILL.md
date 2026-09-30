@@ -159,7 +159,9 @@ the plan agent revises, by a new serial.
   `trial:` lines and checks each of its window's planner and plan-review dispatches at
   their return — which revises by a new serial per the `investigate` skill's
   `references/investigation-format.md`. After `CLEAR`, its
-  blocking open questions go to the decision channel; then Step 6. With a work item:
+  blocking open questions go to the decision channel, with any fable cross-check offer
+  (`references/model-routing.md` § Fable cross-checks), which never holds the build;
+  then Step 6. With a work item:
   `$WI claim <id>` before the plan dispatch (unless already yours); after `CLEAR`,
   `$WI done <id> --note <series path>`, or `$WI handoff <id>` naming the series while
   blocking questions are open.
@@ -176,8 +178,10 @@ checks you run yourself). The agent file pins the effort and the field sets the 
 agents and when each runs: `references/model-routing.md` § Profiles, with the tables and
 worked examples. When the agent is not loaded, dispatch `general-purpose` with the same
 `model`, recorded `inherit` — asked first under an effort pin
-(`references/model-routing.md` § Fallback). This step routes dev-cycle's own dispatches —
-planner, implementer, reviewer, and the second opinion's cross-checker. The research skills
+(`references/model-routing.md` § Fallback); below the quota reserve, its § Below the
+quota reserve. This
+step routes dev-cycle's own dispatches — planner, implementer, reviewer, and the fable
+cross-checks the operator accepts. The research skills
 route their lanes and verifiers by their own tables; nothing here governs them. Fix round
 n = the nth re-dispatch or resume with findings = review round n+1; cap 4 review rounds.
 
@@ -196,15 +200,14 @@ n = the nth re-dispatch or resume with findings = review round n+1; cap 4 review
    table: `references/model-routing.md` § Implementer. A planner is opus at least
    (Step 1), on `planner`.
 3. **Fable is no implementer tier by signal.** It runs only under a `model: fable` pin
-   (rule 8), or as the second-opinion cross-check rule 4 allows.
-4. **Reviewer: always opus, always fresh**, on `reviewer` (opus high) — a new sub-agent
-   that never saw the implementer's conversation: never a fork, never the implementer
-   resumed, never you (except rule 5's waiver). Resuming the same reviewer for its own
-   re-review is fine. `review <branch>` mode's reviewer is opus too. On a complex `plan`
-   mode series an opus planner made — greenfield architecture, a major refactor — you may
-   add one fresh cross-check on `cross-checker` (fable high) after the opus reviewer's
-   `CLEAR`, as a second opinion: a second reviewer, never a substitute
-   (`references/model-routing.md` § Second opinion).
+   (rule 8), or as a fable cross-check the operator accepted (rule 4).
+4. **Reviewer: always opus, always fresh**, on `reviewer` (opus high), or `reviewer-light`
+   (opus medium) for the one kind `references/model-routing.md` § Reviewer effort by kind
+   names — a new sub-agent that never saw the implementer's conversation: never a fork,
+   never the implementer resumed, never you (except rule 5's waiver). Resuming the same
+   reviewer for its own re-review is fine. `review <branch>` mode's reviewer is opus too.
+   **Fable cross-checks are offered with why, never dispatched unasked**
+   (`references/model-routing.md` § Fable cross-checks).
 5. **Review waiver: `review: self`.** Pure prose with no operational claim gets your own
    review instead of a reviewer, recorded as `review: self` above its verdict (Step 4).
    The test, and what always keeps a reviewer: `references/model-routing.md` § Review
@@ -299,7 +302,7 @@ n = the nth re-dispatch or resume with findings = review round n+1; cap 4 review
 3. **Fix loop.** Verdicts are `CLEAR`, `NEEDS_CHANGES`, `SHOW_STOPPER` and `BLOCKED`; who
    is resumed and who is re-dispatched: `references/fix-loop.md`. An agent you resume is
    the one its `agent:` line names (`references/record-lines.md`) — SendMessage to that
-   recorded id, never one remembered from this turn alone — after a second opinion, the
+   recorded id, never one remembered from this turn alone — after a cross-check, the
    `reviewer`'s, never the `cross-checker`'s (`references/fix-loop.md` § A NEEDS_CHANGES
    round) — with its `— resume` pair written first (rule 7); a re-dispatch writes a
    fresh `dispatch:` and `agent:` pair. A change of agent file or model is always a
@@ -310,7 +313,8 @@ n = the nth re-dispatch or resume with findings = review round n+1; cap 4 review
    (`references/bindings.md` § Decisions). Never argue a severity down.
 4. **What escalates** through the decision channel is only a show-stopper with real
    impact: a `SHOW_STOPPER` verdict, a finding that changes the scope or reverses a
-   recorded human decision, or the cap. Everything else, critical included, is resolved
+   recorded human decision, or the cap — and a fable cross-check offer (rule 4).
+   Everything else, critical included, is resolved
    inside the loop. The one exception: `review <branch>` mode's ask, before any fix loop,
    whether to dispatch an implementer at all (Usage) — a mode-entry decision, not a
    severity escalation.
@@ -371,8 +375,9 @@ Only after a `CLEAR` recorded against the current HEAD — the last `verdict:` l
    `review <branch>` mode never deletes `<branch>` and removes only a worktree this cycle
    added itself (`references/bindings.md` § Landing).
 5. **Close the item**: `$WI done <id> --note <merge-sha>`, after the `landed:` line
-   step 3 wrote, so a run that dies between the two still says it landed. For `Leave the
-   branch` nothing merged: no `landed:` line, and `$WI handoff <id>` with `--next` naming
+   step 3 wrote, so a run that dies between the two still says it landed. The last
+   piece of a multi-item capability then gets the post-landing offer (rule 4). For
+   `Leave the branch` nothing merged: no `landed:` line, and `$WI handoff <id>` with `--next` naming
    the branch instead.
 
 A red check or a doctrine miss before the merge (steps 1–2) stops the landing:
@@ -431,7 +436,7 @@ Stop when you catch yourself:
 - **Dispatching unrouted** — an Agent call with no `model`, or no `dispatch:` line
   behind it; `general-purpose` while the role agent is loaded; an implementer sent to
   fable with no pin; a reviewer below opus; an `effort:` pin's planner or implementer on
-  a file below xhigh.
+  a file below xhigh; a fable cross-check the operator did not accept.
 - **A reviewer that saw the build** — a fork, the implementer resumed as its own
   reviewer, or you reviewing a diff outside rule 5's waiver (skill text, CLAUDE.md, an
   agent, a script, any operational claim).

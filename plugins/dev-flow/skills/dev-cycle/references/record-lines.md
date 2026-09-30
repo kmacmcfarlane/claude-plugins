@@ -7,12 +7,12 @@ thing. Four shapes have two writers, each for a different role: `return:` (SKILL
 § Step 3.5 for an implementer, § Step 1 for a planner), `answer:` (`bindings.md`
 § Decisions for a raised decision, SKILL.md § Step 3.5 for a `NEEDS_CONTEXT`), and
 `dispatch:` and `agent:` (SKILL.md § Step 2 rule 7 for the cycle's own roles; the
-dispatching caller for a `scribe` or `scout`, below). The
+dispatching caller for a `scribe`, a `scout` or a cross-check, below). The
 record is a log, read in the order it was written, and what `resume.md` reads to take an
 interrupted run up again; a line that is missing reads there as not recorded:
 
 - `dispatch: <role> <model> <effort> — <signal>` — two writers, by role:
-  - **the cycle's roles** — `implementer`, `planner`, `reviewer`, `cross-checker` —
+  - **the cycle's roles** — `implementer`, `planner`, `reviewer` —
     SKILL.md § Step 2 rule 7, written before every dispatch, and before every SendMessage
     that resumes an agent for a new round, as `dispatch: <role> <model> <effort> —
     resume` (SKILL.md § Step 4.3 writes it through rule 7), so that no round opens without
@@ -22,7 +22,12 @@ interrupted run up again; a line that is missing reads there as not recorded:
     summary, `dig into` or diagnostic; `model-routing.md` § Profiles), written before
     that Agent call. A helper line is a **rider**, never a phase line: it never opens or
     moves a round, and a decision recorded before it stays after the cycle's last phase
-    line, where the GATE reads it (`resume.md` § Phase lines and riders).
+    line, where the GATE reads it (`resume.md` § Phase lines and riders). A
+    **cross-check** is a helper line too: role `cross-checker`, or `reviewer` with the
+    signal `cross-check stand-in (…)`, dispatched on an operator's accepted offer by the
+    orchestrator that made it (`model-routing.md` § Fable cross-checks). A record written
+    before cross-checks became riders may carry a `cross-checker` phase line
+    (`resume.md` S3b).
 
   The fields:
   - `<role>` is one role word: `scribe`, `scout`, `implementer`, `planner`, `reviewer` or
@@ -31,14 +36,15 @@ interrupted run up again; a line that is missing reads there as not recorded:
   - `<effort>` is the dispatched agent file's pin, `low` | `medium` | `high` | `xhigh`,
     or `inherit` when the fallback dispatched `general-purpose` at the session's effort
     (`model-routing.md` § Fallback). With the role it names the file, one role at one
-    effort per file: `planner xhigh` is `planner-deep`.
+    effort per file: `planner xhigh` is `planner-deep`, `reviewer medium` is
+    `reviewer-light`, `cross-checker xhigh` is `cross-checker-deep`.
 
   A line written before the effort field existed, its model followed directly by the `—`,
   reads as **effort unrecorded**, never as a malformed line.
 - `agent: <role> <id> round <n>` — SKILL.md § Step 2 rule 7, written as soon as the Agent
   call returns an id, directly under the `dispatch:` line it belongs to, with the same
   role word; under a `— resume` dispatch it repeats the resumed agent's id with the round
-  it now serves. Under a helper line the caller writes `agent: <scribe | scout> <id>`,
+  it now serves. Under a helper line the caller writes `agent: <role> <id>`,
   with no round: a rider too, never in a resume's generation.
   `<n>` is the
   round that dispatch serves (the first build or the first review is round 1). It is what
@@ -104,7 +110,11 @@ interrupted run up again; a line that is missing reads there as not recorded:
 - `findings: …` — SKILL.md § Step 4.5, written together with a `NEEDS_CHANGES` or
   `SHOW_STOPPER` verdict: the reviewer's FINDINGS section, pasted verbatim, one line per
   finding in the reviewer's (or the self-review's) own numbering — the source
-  `fix-loop.md`'s NEEDS_CHANGES round hands to the fix dispatch unchanged.
+  `fix-loop.md`'s NEEDS_CHANGES round hands to the fix dispatch unchanged. One more
+  writer, a different role: the orchestrator that ran an accepted cross-check writes its
+  accepted findings onto the build's item as `findings: cross-check (<stage>) — …`, a
+  rider no verdict carries, which the build's next review brief pastes for that reviewer
+  to rule on (`model-routing.md` § Fable cross-checks).
 - `target: <mode> <ref> <workspace>` — SKILL.md § Step 0.3, **every mode**, written before
   any dispatch.
   - `<mode>` is one bare word, `full` | `plan` | `review` — **one token wide in every
@@ -138,16 +148,20 @@ interrupted run up again; a line that is missing reads there as not recorded:
   in the session that raised it can put it to a human verbatim. Under a caller it
   composes as `decision N: <question> — options: …`, so the caller's numbered channel is
   unchanged.
-  **Exactly one decision carries a tag**: SKILL.md § Usage's `review <branch>` ask,
-  whether to dispatch an implementer for the findings, is written
-  `decision: dispatch-permission — <question> — options: <a> | <b>`, and under a caller
-  the same tag follows the number of `decision N:`. The tag is a fixed identifier, not a
-  kind: every other decision is untagged. It lets a later reader find that one decision
-  by name; what its answer's scope is, `bindings.md` § Decisions says.
+  **Two tags exist**, each a fixed identifier, not a kind; every other decision is
+  untagged. SKILL.md § Usage's `review <branch>` ask, whether to dispatch an
+  implementer for the findings, is written
+  `decision: dispatch-permission — <question> — options: <a> | <b>`; a fable cross-check
+  offer (`model-routing.md` § Fable cross-checks) is written
+  `decision: fable-offer — <question> — options: …`. Under a caller the tag follows the
+  number of `decision N:`. A tag lets a later reader find that decision by name; what
+  the dispatch permission's answer scope is, `bindings.md` § Decisions says, and the
+  GATE never reads a `fable-offer` pair (`resume.md`, GATE).
 - `answer: <decision> — <reply>` — `bindings.md` § Decisions and SKILL.md § Step 3.5 (a
   `NEEDS_CONTEXT` answer), written as soon as the reply arrives; `<decision>` repeats the
-  `decision:` line's question (or, for a `NEEDS_CONTEXT`, the question) — for the one
-  tagged decision, its tag instead: `answer: dispatch-permission — <reply>`. A caller's
+  `decision:` line's question (or, for a `NEEDS_CONTEXT`, the question) — for a
+  tagged decision, its tag instead: `answer: dispatch-permission — <reply>`,
+  `answer: fable-offer — <reply>`. A caller's
   numbered pair — librarian-mode's `decision N: …` and `answer N: <reply>`, matched by
   `N` — is the same pair and is read the same way; its `answer N:` carries no tag, the
   number already pairing it. Under a caller whose session loads the
@@ -175,8 +189,24 @@ interrupted run up again; a line that is missing reads there as not recorded:
   goes in before the first planner dispatch of a trial unit's window; the second, when a
   window dispatch's transcript shows another effort than its arm's, at that dispatch's
   return, the reason naming the dispatch and the effort seen (`planner showed xhigh
-  (fallback)`). An item that is no trial unit carries neither. Each is one unindented
-  line, since the trial's count reads them with `grep -x` and `grep '^trial:'`.
+  (fallback)`), or when a bump round steps down, with the reason `below the quota reserve`
+  (`model-routing.md` § Below the quota reserve). An item that is no trial unit carries
+  neither. Each is one unindented line, since the trial's count reads them with `grep -x`
+  and `grep '^trial:'`.
+- `cross-check: <stage> <high | xhigh | stand-in> <n> accepted highs <UTC time>` —
+  written by the orchestrator that dispatched a cross-check, when it returns, and by
+  nothing else: it is the rider's return. `<stage>` is `plan-stage` (a research
+  synthesis's included), `estate-wide`, `post-landing` or `at-the-cap`; `stand-in` marks
+  the author rule's opus review; `<n>` is the number of its high or critical findings the
+  opus `CLEAR` missed that the orchestrator accepts, `0` for a `CLEAR`; the time is
+  `YYYY-MM-DDTHH:MMZ`. A dropped cross-check writes `<n>` as `dropped`: not a trial. The
+  keep rule counts only `plan-stage high` and `plan-stage xhigh` lines with a numeric
+  `<n>`, the first 8 by time over the stores (`model-routing.md` § Fable cross-checks), so
+  each is one unindented line.
+- `cross-check-rulings: …` — SKILL.md § Step 4.5, written directly under the `verdict:` of
+  a review that was given a `findings: cross-check` block, whatever the verdict: the
+  reviewer's CROSS-CHECK section pasted verbatim, one line per pasted finding, `stands
+  (FINDINGS #<k>)` or `withdrawn — <reason>` (`review-brief.md`).
 - `landed: <merge sha>` — SKILL.md § Step 5.3, written the moment Land's merge succeeds —
   before the checks on the base, any push, cleanup and `$WI done`. It is the record's
   only evidence that a target reached a merge, and SKILL.md § Step 6 reports it on the

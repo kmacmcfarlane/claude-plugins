@@ -1,6 +1,6 @@
 ---
 name: cross-checker-deep
-description: "Cross-checks at fable xhigh, at the stages model-routing.md § Profiles enables; none under the defaults. Dispatched by dev-flow's dev-cycle and librarian-mode with a full brief; not for direct use."
+description: "Cross-checks work at fable xhigh after its opus review, only on the operator's yes to an offer, as model-routing.md § Profiles routes it. Dispatched by dev-flow's dev-cycle and librarian-mode with a full brief; not for direct use."
 model: fable
 effort: xhigh
 ---

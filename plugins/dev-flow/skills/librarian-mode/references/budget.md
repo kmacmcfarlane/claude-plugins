@@ -8,7 +8,8 @@ mode and the concurrency cap N are chosen in F2's idle turn from those numbers, 
 integration has not landed yet. The reason is the librarian's decision on R1, recorded on
 work item 9882: F2 owns the mode table and the N formula, and the agents policy is about to
 change the librarian count that formula divides by. Computing N here would bake in a
-formula that is about to change.
+formula that is about to change. Routing's reader of these numbers: the `dev-cycle`
+skill's `references/model-routing.md` § Below the quota reserve.
 
 **Who owns what.** This file owns the mechanics: where the store lives, its schema, and how
 the numbers are computed. The **values** belong to the `agents` repo's

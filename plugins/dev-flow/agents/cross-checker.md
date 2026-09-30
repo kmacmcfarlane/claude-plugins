@@ -1,6 +1,6 @@
 ---
 name: cross-checker
-description: "Cross-checks a plan at fable high after its opus CLEAR, at the stages model-routing.md § Profiles enables. Dispatched by dev-flow's dev-cycle and librarian-mode with a full brief; not for direct use."
+description: "Cross-checks work at fable high after its opus review, only on the operator's yes to an offer, as model-routing.md § Profiles routes it. Dispatched by dev-flow's dev-cycle and librarian-mode with a full brief; not for direct use."
 model: fable
 effort: high
 ---

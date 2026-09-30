@@ -268,9 +268,9 @@ The research family lives in `dev-flow` by operator decision (2026-09-22): its l
 and run record are the superset of `deep-investigation`'s, one plugin lets the two share
 references, and `deep-investigation` is planned to become a thin caller over `research`.
 
-The plugin ships twelve agents, each pinned to one model and one effort: one role and one
+The plugin ships thirteen agents, each pinned to one model and one effort: one role and one
 effort per file, so a role that needs a second effort has a second file, and the per-call
-model moves a file across models. Ten are the dev cycle's role workers:
+model moves a file across models. Eleven are the dev cycle's role workers:
 
 | Agent | Pin (model, effort) | Role |
 |---|---|---|
@@ -282,8 +282,9 @@ model moves a file across models. Ten are the dev cycle's role workers:
 | `planner` | opus, high | writes or revises an investigation series |
 | `planner-deep` | opus, xhigh | the same, for an item pinned to effort xhigh or a plan round that routing sends to xhigh |
 | `reviewer` | opus, high | reviews a change or a plan in a fresh context and returns a verdict |
-| `cross-checker` | fable, high | cross-checks a plan after its opus `CLEAR`, at the stages routing enables |
-| `cross-checker-deep` | fable, xhigh | cross-checks at the stages routing enables; none under the defaults |
+| `reviewer-light` | opus, medium | the same, only for fact and docs changes in the home-network and product-docs repos |
+| `cross-checker` | fable, high | cross-checks work after its opus review, only on the operator's yes to routing's offer |
+| `cross-checker-deep` | fable, xhigh | the same at xhigh, at the stages routing names |
 
 `dev-cycle` and `librarian-mode` dispatch them by the `dev-cycle` skill's model routing, with
 the model passed on every call; none is for direct use. A session that has not loaded an agent
@@ -291,7 +292,7 @@ file yet (it needs a plugin update and a restart) falls back to `general-purpose
 routed model, at the session's own effort. A dispatch under an operator's effort pin asks
 first; one under a model pin alone falls back the same way, since the routed model keeps
 that pin. Their bodies are minimal, the role only, since the prompt is the brief; `scout` alone adds a short
-read-only evidence contract. The ten names are **provisional** pending operator review.
+read-only evidence contract. The eleven names are **provisional** pending operator review.
 
 The other two serve the research family: `research-lane` (sonnet, effort medium — gathers
 evidence for one lane and writes one findings file to a fixed shape) and `research-verifier`

@@ -99,8 +99,8 @@ states it; the one line here is what the librarian binds:
   `references/fix-loop.md` § A merge conflict.
 - **A fable dispatch returns HTTP 429 or a usage-credits error.** Not a `BLOCKED`: under
   a `model: fable` pin it is a numbered decision for the operator, never a fallback; a
-  second-opinion reviewer is dropped — the `dev-cycle` skill's
-  `references/model-routing.md` §§ Fallback, Second opinion.
+  fable cross-check is dropped — the `dev-cycle` skill's
+  `references/model-routing.md` §§ Fallback, Fable cross-checks.
 - **Implementer disputes a medium-or-above finding**, **a reviewer returns
   `SHOW_STOPPER` for something a fix would close** (mis-routed: re-route it as
   `NEEDS_CHANGES`, noted in the item, severity kept), **a dirty main checkout or worktree

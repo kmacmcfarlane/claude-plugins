@@ -208,7 +208,7 @@ operator saying *stop*. Never open a hold for one, and never leave the queue idl
 it resets:
 
 - **Fable unavailable**: as the `dev-cycle` skill's `references/model-routing.md`
-  §§ Fallback, Second opinion say. Meanwhile hand each waiting item off and take other
+  §§ Fallback, Fable cross-checks say. Meanwhile hand each waiting item off and take other
   work (The cycle).
 - **Every tier limited**: hand each affected item off naming the limit and the reset
   time (`$WI handoff <id> --blocked "rate limit, resets <time>"`), say so in one line

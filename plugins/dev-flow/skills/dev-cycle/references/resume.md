@@ -23,15 +23,24 @@ choose that question (§ The state table, the dispatch permission).
 Four line kinds are **phase lines**: `dispatch:`, `return:`, `verdict:` and `landed:`.
 They move the run, and only a phase line can be its last state. Every other line —
 `target:`, `checks:`, `intent:`, `agent:`, `review:`, `baseline:`, `findings:`, `changed:`,
-`decision:`, `answer:`, `spent:`, `subject-fix:`, `conflict:`, `blocked:`, `trial:` — is a
+`decision:`, `answer:`, `spent:`, `subject-fix:`, `conflict:`, `blocked:`, `trial:`,
+`cross-check:`, `cross-check-rulings:` — is a
 **rider**: it never displaces a phase line, and it is read only where a fact below names
 it.
 
 A **helper line** is a rider too, although it is a `dispatch:`: one whose role is `scribe`
-or `scout`, which a caller writes for its own helper or read-only question, and the
+or `scout`, which a caller writes for its own helper or read-only question, or a
+cross-check on an accepted offer (`record-lines.md`), and the
 `agent:` line under it (`record-lines.md`). It never counts as a phase line, so a scribe
 rendering a decision's card leaves that decision after the last phase line, and the GATE
-still reads it as pending.
+still reads it as pending. One rider check runs at every resume, outside the states: a
+cross-check helper line — signal `— cross-check (…)` or `— cross-check stand-in (…)`,
+never an older record's `— second opinion (…)` — with no `cross-check:` line after it is
+probed as LIVE probes an id. Still running: left to finish. Finished with a report:
+collected, and its return recorded as when it returns (`model-routing.md` § Fable
+cross-checks). Gone: its `cross-check: … dropped` line is written and the drop is named
+in the resume summary and the Report's `open questions:`, so the operator can accept it
+again.
 
 A line that is missing reads as **not recorded**, and every default escalates: a
 `BLOCKED` with no reason reads as `permission` (`record-lines.md`), an unreadable freshness test
@@ -96,7 +105,7 @@ words. `<workspace>` below is that line's third field.
 
    | arm | the pair read | its value |
    |---|---|---|
-   | **state-scoped** — every question but one | the last `decision:` or `answer:` recorded after the last phase line, skipping the tagged decision's own lines — its `decision:`, its `answer:` (a caller's `answer N:` by its number) and `spent:` — which only the run-scoped arm reads | an `answer:` → `ANSWERED`; a `decision:` with no `answer:` after it → `PENDING`; neither → `NONE` |
+   | **state-scoped** — every question but one | the last `decision:` or `answer:` recorded after the last phase line, skipping the tagged decisions' own lines — each `dispatch-permission` or `fable-offer` `decision:`, its `answer:` (a caller's `answer N:` by its number) and `spent:`. Only the run-scoped arm reads the dispatch permission; nothing here reads a fable offer, which never gates a run | an `answer:` → `ANSWERED`; a `decision:` with no `answer:` after it → `PENDING`; neither → `NONE` |
    | **run-scoped** — `q` is `review` mode's dispatch permission | the last `decision: dispatch-permission` anywhere in the record | its `answer:` recorded → `ANSWERED`; none → `PENDING`; no such line, or a `spent:` line recorded after it → `NONE` |
 
    Under a caller the tagged line is its `decision N:` carrying the same tag, and its
@@ -175,7 +184,7 @@ is a dispatch, and the next verdict tests the cap again.
 | LIVE | State | The single next action |
 |---|---|---|
 | `one` | **S3a** attach | Never dispatch beside it. Still running: leave it to finish. Finished with a report never recorded: collect the report and hand it to the step that writes its phase line — SKILL.md § Step 1 (planner), § Step 3.5 (implementer) or § Step 4.5 (reviewer). |
-| `none` | **S3b** salvage | A `cross-checker` or `cross-checker-deep` dispatch is a cross-check — a `dispatch: cross-checker` line, whatever its effort. A record written before the role agents shows a second opinion as a `reviewer fable` dispatch in a run with no `model: fable` pin. Either is a second opinion, optional and never salvaged: it is dropped, whatever its signal says, and the state is the one the last verdict before it gives (`model-routing.md` § Second opinion). Any other: GATE first on a decision recorded after the dispatch — a fable pin's ask, or an effort pin's, when the call failed (`model-routing.md` § Fallback): `PENDING` → § The GATE. `ANSWERED` → § Salvage, then re-dispatch as the answer says. `NONE` → § Salvage, then re-dispatch at the same role, agent file, tier and round — the file the dead dispatch's role and effort name; under `inherit`, the one its signal names as not loaded; on a line written before the effort field (effort unrecorded), the file `model-routing.md` § Profiles routes that role and tier to now, the item's pins and any trial arm applied — a reviewer briefed by VARIANT; a producer at a fix round re-dispatched as `fix-loop.md` § A NEEDS_CHANGES round says for a gone agent (an implementer), or as `agent-brief.md` § Plan variant says (a planner). |
+| `none` | **S3b** salvage | In a record written before cross-checks became riders, a `cross-checker` or `cross-checker-deep` dispatch is a cross-check — a `dispatch: cross-checker` line, whatever its effort. A record written before the role agents shows a second opinion as a `reviewer fable` dispatch in a run with no `model: fable` pin. Either is a cross-check, never salvaged: it is dropped, whatever its signal says, named under the Report's `open questions:` so the operator can accept it again, and the state is the one the last verdict before it gives (`model-routing.md` § Fable cross-checks). Any other: GATE first on a decision recorded after the dispatch — a fable pin's ask, or an effort pin's, when the call failed (`model-routing.md` § Fallback): `PENDING` → § The GATE. `ANSWERED` → § Salvage, then re-dispatch as the answer says. `NONE` → § Salvage, then re-dispatch at the same role, agent file, tier and round — the file the dead dispatch's role and effort name; under `inherit`, the one its signal names as not loaded; on a line written before the effort field (effort unrecorded), the file `model-routing.md` § Profiles routes that role and tier to now, the item's pins and any trial arm applied — a reviewer briefed by VARIANT; a producer at a fix round re-dispatched as `fix-loop.md` § A NEEDS_CHANGES round says for a gone agent (an implementer), or as `agent-brief.md` § Plan variant says (a planner). |
 | `many` | **S13** two live agents | Stop. Dispatch nothing and stop no agent. GATE, the question naming every live id: which one to keep is always a human's decision, never the cycle's. |
 
 **Group C — PHASE `RETURN`.** The producer is the `implementer`, or the `planner` in
@@ -195,10 +204,10 @@ does not read, because its action opens no round.
 | verdict | FRESH | ROUNDS | State | The single next action |
 |---|---|---|---|---|
 | `BLOCKED` | — | — | **S12** | RETRIES < 3 and reason `setup` → re-dispatch the reviewer with the setup fixed and VARIANT; not a round. Otherwise `$WI block` when there is an item, then GATE, the blocked review. |
-| `CLEAR` | `CURRENT` | — | **S7** | `full`, `review`: SKILL.md § Step 5 (Land). `plan`: Step 1's after-`CLEAR` tail, its blocking open questions being the GATE's question, then Step 6. |
+| `CLEAR` | `CURRENT` | — | **S7** | `full`, `review`: SKILL.md § Step 5 (Land). `plan`: Step 1's after-`CLEAR` tail, its blocking open questions being the GATE's question, then Step 6. A fable offer is raised there too, never gated on (`model-routing.md` § Fable cross-checks). |
 | `CLEAR` | `STALE` | `UNDER` | **S8** | `spent:` first (§ The GATE); then Step 4 with VARIANT. |
 | `CLEAR` | `STALE` | `AT_CAP` | **S11** | `spent:` first; then GATE, the cap, naming the staleness. |
-| `NEEDS_CHANGES` | `CURRENT` | `UNDER` | **S9** | Open a fix round: resume the producer its `agent:` line names, or dispatch one, with the `findings:` block verbatim (`fix-loop.md` § A NEEDS_CHANGES round). In `review` mode, GATE on the dispatch permission first (below). |
+| `NEEDS_CHANGES` | `CURRENT` | `UNDER` | **S9** | Open a fix round: resume the producer its `agent:` line names, or dispatch one, with the verdict's own `findings:` block verbatim — never a `findings: cross-check` rider, which goes to the next review brief (`fix-loop.md` § A NEEDS_CHANGES round). In `review` mode, GATE on the dispatch permission first (below). |
 | `NEEDS_CHANGES` | `CURRENT` | `AT_CAP` | **S11** | GATE, the cap. |
 | `NEEDS_CHANGES` | `STALE` | `UNDER` | **S10** | `spent:` first. The findings are spent with the verdict — the tree they judged is gone. Step 4 with VARIANT, the findings pasted for verification only. |
 | `NEEDS_CHANGES` | `STALE` | `AT_CAP` | **S11** | `spent:` first; then GATE, the cap, naming the staleness. |

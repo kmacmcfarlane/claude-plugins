@@ -5,13 +5,19 @@ implementer's return and Land. Fill every placeholder from the run's bindings
 (`bindings.md`); delete nothing except the store lines when there is no work item. The
 reviewer starts with none of the orchestrator's context and none of the implementer's, and
 must be able to review from this text alone. Send it as the prompt of one background
-`dev-flow:reviewer` Agent (opus high) — for the second opinion, `dev-flow:cross-checker`
-(fable high); `general-purpose` only as `model-routing.md` § Fallback says. The reviewer
+`dev-flow:reviewer` Agent (opus high), or `dev-flow:reviewer-light` (opus medium) for the
+kind `model-routing.md` § Reviewer effort by kind names — for a fable cross-check the
+operator accepted, `dev-flow:cross-checker` or `dev-flow:cross-checker-deep` (§ Fable
+cross-checks); `general-purpose` only as `model-routing.md` § Fallback says. The reviewer
 is review-only: it never edits, never commits. The orchestrator sets the `Model:` line
-from SKILL.md § Step 2 rule 4 — always opus, or fable under a `model: fable` pin or as a
-second opinion — and passes the same value to the Agent tool's `model` field; a reviewer
+from SKILL.md § Step 2 rule 4 — always opus, or fable under a `model: fable` pin or as an
+accepted cross-check — and passes the same value to the Agent tool's `model` field; a reviewer
 is never routed below opus, and an `effort:` pin never moves it off `reviewer` (rule 8).
 The reviewer is always a fresh agent: never a fork and never the implementer resumed.
+A `findings: cross-check (<stage>)` block on the item since the last verdict is pasted
+under "The implementer claims" for the reviewer to rule on: each that stands goes in its
+FINDINGS, and its CROSS-CHECK line rules on every one, whatever the verdict
+(`model-routing.md` § Fable cross-checks).
 
 The prohibitions, the severity scale and the report shape are fixed. The check commands vary
 with what the change touches — take them from `review-checklist.md`, the same list the
@@ -45,8 +51,8 @@ Read it in full first: $WI show <id>
 <without one:>
 Brief: <the cycle brief or plan file, by absolute path — read it in full first>
 
-Model: <opus — routing rule 4 | fable — model: fable pin (rule 8) | fable — second
-       opinion after an opus CLEAR | opus — fable pin unavailable; answer N>
+Model: <opus — routing rule 4 | fable — model: fable pin (rule 8) | fable — cross-check
+       (<stage>) after an opus CLEAR; answer N | opus — fable pin unavailable; answer N>
 Acceptance: <one or two lines, copied from the item, plan or brief>
 Ground: <the Ground binding>
 Files in scope: <explicit list; anything else in the diff is a finding — or "undeclared">
@@ -151,6 +157,8 @@ FINDINGS:
   2. ...
   (or: none)
 DOCTRINE: one line per principle, pass or fail with the diff line for any fail
+CROSS-CHECK: only when the brief pasted cross-check findings — one line each: stands
+  (FINDINGS #<k>), or withdrawn — <reason>
 NOTES: anything you noticed that is not a finding; questions for the orchestrator
 ```
 
@@ -159,11 +167,12 @@ NOTES: anything you noticed that is not a finding; questions for the orchestrato
 ## Re-review variant
 
 After the implementer commits its fixes, resume the **same** reviewer (it has the context)
-with this in place of "What to do" — unless the reviewer's tier changed (a waived fable
-pin, routing rule 6): a resumed agent keeps its file and its model, so dispatch a fresh
-reviewer at the new tier with the full brief, its `Model:` line and "Files changed, with
-reasons" updated, and the previous report pasted above this block. After a second
-opinion the reviewer resumed is the `reviewer`, never the `cross-checker`
+with this in place of "What to do" — unless the reviewer's tier or file changed (a waived
+fable pin, routing rule 6; a `reviewer-light` moving up to `reviewer`, `model-routing.md`
+§ Reviewer effort by kind): a resumed agent keeps its file and its model, so dispatch a
+fresh reviewer at the new tier or file with the full brief, its `Model:` line and "Files changed, with
+reasons" updated, and the previous report pasted above this block. After a fable
+cross-check the reviewer resumed is the `reviewer`, never the `cross-checker`
 (`fix-loop.md` § A NEEDS_CHANGES round).
 
 ```

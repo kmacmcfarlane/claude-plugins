@@ -229,7 +229,9 @@ would ask the operator. Its Step 6 is the Report below. Your bindings:
 - **Decision channel**: `decision N:` appended to the item and carried under the
   Report's `decisions needed` — only what dev-cycle raises there: a `SHOW_STOPPER`, a
   scope change or reversed operator decision, the cap, a blocked item, a fable-pin wait,
-  an effort pin whose `-deep` agent is not loaded, a spike's blocking open questions.
+  an effort pin whose `-deep` agent is not loaded, a spike's blocking open questions, a
+  fable cross-check offer, a pin's ask below the quota reserve (the `dev-cycle` skill's
+  `references/model-routing.md` §§ Fable cross-checks, Below the quota reserve).
   **Durable**: the question lives in the committed item
   body and is answered to whichever session is librarian next. Shown per the
   `operator-interaction:decisions` skill when it is loaded (`references/decisions.md`).
