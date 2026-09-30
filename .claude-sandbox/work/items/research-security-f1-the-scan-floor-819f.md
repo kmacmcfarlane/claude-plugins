@@ -75,3 +75,14 @@ agent: implementer a33ea65041c3dc364 round 3
 return: implementer DONE d79f37e
 dispatch: reviewer opus high — resume
 agent: reviewer af1c1850266095f2a round 3
+verdict: NEEDS_CHANGES round 3 at d79f37e
+findings:
+  N1 PARTIAL (mid-word quote in markdown silent; run-record.md:282 claim false); N2 FIXED; N3 PARTIAL (bypass N6); N4 PARTIAL (backticked override in verification.md FLAG, lands unadjudicated; STATUS effect unstated)
+  N5. [medium] scan-findings.py:242 — joined markdown view drops only backticks: mid-word emphasis, links, inline HTML/comments, entities, backslash, mid-word quote split a HOLD phrase silently
+  N6. [low] scan-findings.py:102 — the quote lookahead exempts a real turn Human:'…'
+  N7. [medium] scan-findings.py:281 — per-line `have` set walks every hit so far: quadratic in hits (80k flagged lines 66.5 s vs 0.82 s); docstring's linear claim false
+  N8. [low] scan-findings.py:281-284 — joined-view check skips a rule already found on the line
+  N9. [low] scan-findings.py:237-248 — each literal read as a line start: startswith("Human:") HOLDs a benign parser
+librarian ruling: fix N5 (a de-markup pass for the joined view) and N7 (per-line hit set, with a many-hit linear-time test); state what the static floor still cannot catch as a named residual in run-record.md instead of any "still holds" claim; N6, N8, N9 cheap fixes unless declined with reason; N4: say a landing FLAG in an unadjudicated file makes the run DONE_WITH_CONCERNS
+dispatch: implementer opus medium — resume (fix round 3; the next review is round 4, the cap)
+agent: implementer a33ea65041c3dc364 round 4

@@ -34,3 +34,12 @@ changed:
 note: smoke test not run (it would write into the shared config dir, load the operator's hooks, join the peer registry; 35 MB transcript) — filed as an operator-attended follow-up
 dispatch: reviewer opus high — review round 1 (rule 4)
 agent: reviewer a89d6ae7dfaf0dc3f round 1
+verdict: NEEDS_CHANGES round 1 at 502bf95
+findings:
+  1. [medium] gallery.md:511-521 — example 25 answers a "why" question only by filing an item, the pattern its own closing line forbids
+  2. [low] replies.md:39-45 — "each part through the steps above" applies step 1's "ask which" to free-standing questions/requests; no test for telling them from an unnumbered reply
+  3. [low] replies.md:42-43 — relation of "answer in words" to tell me (Added: line) and to a reframe unstated
+  4. [low] SKILL.md:220, replies.md:44 — "echo each part" overstates (exact N: letter gets none); example 24's combined Read-as vs 25's split
+  5. [nit] replies.md:30-31 — heading "Before you write: the worksheet"; "that line" ambiguous
+dispatch: implementer opus medium — resume
+agent: implementer a70699c5ec56ef8c2 round 2
