@@ -16,17 +16,22 @@ One line in the item body when the librarian decides something alone, appended w
 like every record line — one physical line, never wrapped, at the start of the line:
 
 ```
-decided: <UTC time> <class> — <what was decided, and why> · authority: <authority> · reopen: <how to undo it>
+decided: <UTC time> <class> — <what was decided, and why it was safe to decide alone> · authority: <authority> · reopen: <how to undo it>
 ```
 
 - **UTC time** in the form `raised:` uses, `2026-09-30T14:05Z`.
 - **class** — one name from § Class names, as written there.
-- **what, and why** — plain words; items by plain name, the tag trailing; no bare id.
+- **what, and why it was safe** — plain words: what was decided, and why it was safe to
+  decide alone (two-way, narrow, nobody relies on it before the operator sees it); the
+  `Done:` line's safety clause is read from here. Items by plain name, the tag trailing; no
+  bare id. It never contains ` · authority: ` or ` · reopen: `, the separators the regex
+  splits on; reword instead.
 - **authority** — what let the librarian decide it, one of:
   - `task` — the request filed as this item;
   - `answer N` — an answered decision whose case this is;
-  - `rule <file> § <section>` — a skill rule that decides it;
   - `class <class>` — a class this file marks decided alone (none yet).
+
+  These are the FYI rule's three authorities, and no other.
 - **reopen** — how it is undone: `revert <short sha>`, `one edit to <what>`, or the reply that
   pulls it back.
 
@@ -65,19 +70,29 @@ Every decision the librarian raises carries, in its stored card, directly under 
 With no recommendation, the reason says why the call is not the librarian's. It is one
 physical line, indented like every card line (`decisions.md` § What the store records), and
 split by `^\s+why ask: ([a-z-]+) — (.*)$`. The class is picked at birth, when the decision is
-raised, never assigned later. Without the decisions skill, the headline stays as SKILL.md
-§ Report gives it, and the `why ask:` line still goes under it.
+raised, never assigned later. A card stored before `why ask:` existed is backfilled on its
+next re-show (`decisions.md` § What the store records) in one fixed form, which keeps the
+grammar:
+
+```
+  why ask: unclassed — not recorded (raised before why ask)
+```
+
+Without the decisions skill, the headline stays as SKILL.md § Report gives it, and the
+`why ask:` line still goes under it.
 
 ## Class names
 
 Each decision, raised or decided alone, gets one of these names. The clause after each only
-tells the classes apart; it says nothing about which side of the line a class is on.
+tells the classes apart; it says nothing about which side of the line a class is on. The
+spellings are provisional until the operator confirms them; nothing writes a class tag to a
+store before then.
 
 | Class | What it names |
 |---|---|
 | `wording` | the words of a text, a message or a label, not a name something parses |
-| `minor-design` | a design choice inside one item, reversible by an edit, touching no shared contract |
-| `trade-off` | a design choice whose options each cost something real |
+| `minor-design` | minor design (inside one item, reversible by an edit, no shared contract, the alternatives the status quo or strictly worse) |
+| `trade-off` | a design choice with a real trade-off; what makes one real is the class table's test, not written here yet |
 | `narrowing` | leaving part of the work to a filed, linked follow-up |
 | `wider-scope` | taking on more than the request or the Scope covers |
 | `ruled-rule-case` | a new case of a rule the operator ruled, citing `answer N` |

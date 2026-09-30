@@ -88,9 +88,10 @@ renders what the operator read instead of composing it again.
   recommended one.
   **A card or block renders only from stored fields**: a field it needs that the store
   lacks — a headline-only entry, a block's missing `undo:`, a card stored before `why ask:`
-  existed — is backfilled from the durable record (the item, its series, its commits) and
-  written as a revised card with `revised: <time> — backfilled` before it renders; a field
-  no record holds is written and shown as `not recorded`, never invented at render time. A card with no `raised:` takes it
+  existed (in the one form `decide-alone.md` § Raised gives it) — is backfilled from the
+  durable record (the item, its series, its commits) and written as a revised card with
+  `revised: <time> — backfilled` before it renders; a field no record holds is written and
+  shown as `not recorded`, never invented at render time. A card with no `raised:` takes it
   from the record: the time the headline was committed — the commit time, not the ask
   time, the closest the record holds — in the form `wi` parses (`TZ=UTC git -C "$MAIN" log
   --reverse --date=format-local:%Y-%m-%dT%H:%MZ --format=%cd -S'decision N:' -- <item
@@ -149,15 +150,15 @@ skill, the decisions come **last in the turn**, where the operator's eye is when
    `decisions needed` of the next" — is raised as its own decision and carried in the
    block, not on another change's line.
 2. Then the **Done alone** group (`decide-alone.md` § The Report), each line in the skill's
-   FYI form; no group when nothing was decided alone since the last Report.
-3. Then the push outcome, any `incoming:` lines, and the team summary, as SKILL.md § Report
-   gives them.
-4. Then **one decisions block**, the last thing written in the turn — when the push outcome
+   FYI form, with no group when nothing was decided alone since the last Report; then the
+   push outcome, any `incoming:` lines, and the team summary, as SKILL.md § Report gives
+   them.
+3. Then **one decisions block**, the last thing written in the turn — when the push outcome
    and team summary go out as a follow-up message (SKILL.md § Report), the block moves to
    the end of that follow-up — laid out as the skill says: the decisions shown in full
    first, in list order, then the compact list of every open decision (a deferred one also
    shows its wake), then the hint when it carries two or more.
-5. Shown in full, at the level the skill gives them:
+4. Shown in full, at the level the skill gives them:
    - those raised since the last Report;
    - those whose wake has come;
    - those shown in a Report the operator has not had a turn since (not yet seen);
@@ -172,4 +173,4 @@ skill, the decisions come **last in the turn**, where the operator's eye is when
 
 A decision raised between Reports (an Intake ask, a blocked item) is put to the operator in
 the message that raises it, per the skill — last in that message. It is carried in every
-later Report per items 4 and 5 until it is answered.
+later Report per items 3 and 4 until it is answered.

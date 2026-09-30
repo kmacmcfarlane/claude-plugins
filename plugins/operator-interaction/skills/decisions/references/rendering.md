@@ -173,7 +173,7 @@ sooner — both get answered — while one placed low can lose the lease.
 | One-way, narrow | *one-way, narrow* | the stakes slot; after the title on a card |
 | No fact settles it | *your preference — no recommendation* | the rec slot (*your preference, no rec*); after the title on a card |
 | Not the agent's call | *no recommendation — outside my authority*, and a clause saying why | the rec slot; after the title on a card, the why on its own line |
-| A recurring decision with fixed options | *template: name* — shown as a card the first time the operator meets it | its own slot, before the stakes |
+| A recurring decision with fixed options | *template: name* — shown as a card the first time the operator meets it | its own slot (§ List line) |
 | Time-critical, options not ready (not a decision yet) | **Alert:** in bold, bare; *options follow* | its own line, in place of a card |
 | Not defined yet (not a decision yet) | listed under **Open questions**, unnumbered | the *Open questions* section |
 
@@ -197,7 +197,8 @@ last:
 - One line per ruling, never merged: the operator reopens them one at a time. With a single
   line, the heading may be left out and the line stands alone, as above.
 - Where the caller keeps a record, each line matches a record the caller wrote when it
-  acted; the line is rendered from that record, not from memory.
+  acted, and that record holds every part of the line — why it was safe included; the line
+  is rendered from that record, not from memory.
 
 Only for actions that pass the guard in `references/worksheet.md` § E. An action that happens
 unless the operator stops it is an approve ask, rendered as a card, and it waits. A reply

@@ -390,13 +390,14 @@ What a caller decided without asking is recorded as a body line that starts
 `decided:` — one physical line, never wrapped:
 
 ```
-decided: <UTC time> <class> — <what was decided, and why> · authority: <authority> · reopen: <how to undo it>
+decided: <UTC time> <class> — <what was decided, and why it was safe to decide alone> · authority: <authority> · reopen: <how to undo it>
 ```
 
 The time is in `raised:`'s form (`2026-09-30T14:05Z`); the class is a
 kebab-case tag from the caller's class list; the authority names what let
-the caller decide it (`task`, `answer N`, a rule, a class); `reopen` says
-how it is undone. It is neither `decision N:` nor `answer N:`, so it opens
+the caller decide it (`task`, `answer N`, or a class the caller's rules let
+it decide alone); `reopen` says how it is undone. The what field never
+contains ` · authority: ` or ` · reopen: `, the separators a reader splits on. It is neither `decision N:` nor `answer N:`, so it opens
 no question and answers none: `needs-input`, the decision counter and the
 estate sweep pass it by. `wi` does not parse it yet; a reader splits it
 with `^decided: (\S+) ([a-z-]+) — (.*?) · authority: (.*?) · reopen: (.*)$`.

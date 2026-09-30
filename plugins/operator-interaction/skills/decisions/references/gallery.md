@@ -163,7 +163,7 @@ basis kept), then a card with options, their impacts, the label, and no recommen
 **78 — Allow a run the reviewer waived to ship to users?** · *no recommendation — outside my authority*
 **What:** a report run passed with one check waived; shipping it puts the waived output in front of users.
 **Why now:** the release is scheduled for Friday.
-**Why ask:** who may see output a reviewer waived is not mine to decide (below).
+**Why ask:** shipping it puts output a reviewer waived in front of users, and nothing I can check says whether that is acceptable.
 **Why no recommendation:** whether users may see output a reviewer waived is a product call, not mine.
 - (a) Ship it — *users see the report on Friday, with the waived section as is*
 - (b) Hold it — *the release slips until the check passes; about a day's work*
@@ -487,8 +487,8 @@ Rec **(a)** · basis **partial** — *observed: the other four tools ship one fi
 *What the caller's store holds, one physical line each — a record line for each thing decided alone, and the ask's card line, indented under its headline, that carries its class. The exact lines are the caller's format; these are this invented caller's:*
 
 ```
-decided: 2026-10-02T14:05Z wording — renamed the "Setup" heading to "Install" in the command-line guide, to match the other four guides · authority: task · reopen: one edit to the heading
-decided: 2026-10-02T14:12Z narrowing — left the Windows install steps to the follow-up item "Windows install steps" · authority: class narrowing · reopen: say "pull it back in"
+decided: 2026-10-02T14:05Z wording — renamed the "Setup" heading to "Install" in the command-line guide, to match the other four guides; safe alone: one edit undoes it and nothing links to the heading · authority: task · reopen: one edit to the heading
+decided: 2026-10-02T14:12Z narrowing — left the Windows install steps to the follow-up item "Windows install steps"; safe alone: it can be pulled back in any time and nobody waits on it · authority: class narrowing · reopen: say "pull it back in"
 decision 85: Ship the install script as one file or as a package? — options: (a) one file [recommended] | (b) a package | (z) decide later
   raised: 2026-10-02T14:20Z
   what: how users get the new install script: one file, or a package from the package manager
