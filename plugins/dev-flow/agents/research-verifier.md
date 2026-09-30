@@ -119,8 +119,9 @@ gate: PASS | CONCERNS
 # Verification — <run slug>
 
 ## Security check
-<none found | one row per hit: file · line number · a neutral description of the kind of
-text (e.g. "imperative addressed to an agent, 2 lines") — never the text itself>
+<none found | one row per hit: file · every line number it covers (never a count) · a
+neutral description of the kind of text (e.g. "imperative addressed to an agent") — never
+the text itself>
 
 Scanner flags: <none | one row per flagged line: file · line number · rule · benign
 mention | instruction-shaped>

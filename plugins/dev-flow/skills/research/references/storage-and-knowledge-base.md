@@ -71,7 +71,8 @@ to the scratchpad. Never create a tracked path.
 
 **Promotion out of the sidecar** — "this was worth keeping, check it in" — is a separate,
 explicit step, and it is gated: it refuses unless the run's `verification.md` exists and its
-security section is clean (a run that was never verified is verified first). Then copy the
+security section is clean, and a rescan of the run with the scan floor (`run-record.md` § The
+scan floor) finds no HOLD (a run that was never verified is verified first). Then copy the
 run to `docs/research/<run>/` (or the path the operator names), add frontmatter
 `promoted_from:`, and leave the sidecar copy in place. If the repo would benefit
 from a KB, offer to establish one (below) rather than accumulating loose run dirs under
