@@ -38,8 +38,11 @@ Tiers:
   pipe-to-shell shapes hold everywhere in a script); in toolkit mode, on every file,
   network use, subprocesses, file writes, secret paths and env reads.
 - At line 0, the whole file: HOLD for a symlink (never followed), an entry that is not a
-  regular file (never opened), or an unreadable or undecodable file; FLAG for an unsafe
-  file name.
+  regular file (never opened), an unreadable or undecodable file, or a directory that
+  cannot be listed; FLAG for an unsafe file name.
+- A HOLD phrase split by a code span or a quote boundary still holds: the rules also run
+  on the joined line. Runtime construction in a script (chr, base64, joins across lines)
+  gets past any static floor; for toolkit code the verifier's script review is the gate.
 Prose rules match text with invisible characters and combining marks removed, common
 Cyrillic and Greek look-alikes mapped to Latin, and NFKC applied, so full-width,
 zero-width and look-alike evasions still match. Every pass is linear in the input.
@@ -96,7 +99,7 @@ RULES = [
     Rule("control-char", HOLD, RAW, "[\x00-\x08\x0b\x0c\x0e-\x1f\x7f-\x9f]"),
     Rule("control-tag", HOLD, PROSE, r"<\s*/?\s*" + _TAGS + r"(?![\w-])" + _ATTRS + r"\s*/?\s*>"),
     Rule("special-token", HOLD, PROSE, r"<\|[\w-]{2,40}\|>|\[/?inst\]|<</?sys>>|<(?:start|end)_of_turn>"),
-    Rule("chat-role-prefix", HOLD, PROSE, r"^\s{0,3}(?:>\s*)*[\"']?(?:\*\*|__)?(?:human|assistant)(?:\*\*|__)?\s*:"),
+    Rule("chat-role-prefix", HOLD, PROSE, r"^\s{0,3}(?:>\s*)*[\"']?(?:\*\*|__)?(?:human|assistant)(?:\*\*|__)?\s*:(?![\"'])"),
     Rule("override-phrase", HOLD, PROSE, r"\b(?:ignore|disregard|forget)\b(?:\W+\w+){0,3}?\W+(?:previous|prior|above|earlier|preceding|foregoing|all|any|every|system|original|initial|your)\b(?:\W+\w+){0,3}?\W+(?:instructions?|directions?|directives?|rules|prompts?|guidelines|guidance|constraints|messages)\b"),
     Rule("pipe-to-shell", HOLD, PROSE, r"\b(?:curl|wget|iwr|irm|invoke-webrequest|invoke-restmethod)\b[^\n]{0,300}?\|\s*(?:sudo\s+(?:-\S+\s+)*)?(?:(?:ba|z|da|k|fi)?sh|pyth[o]n3?|p[e]rl|r[u]by|n[o]de|i[e]x)\b|\b(?:ba|z)?sh\s+(?:-c\s+)?[\"']?(?:<\(|\$\()\s*(?:curl|wget)\b"),
     Rule("agent-addressed", FLAG, PROSE, r"\b(?:if|when)\s+you(?:'re|\s+are)\s+an?\s+" + _ADDRESSEE + r"\b|\b(?:dear|attention|note to|hey|hello)\s*,?\s+(?:the\s+|any\s+|all\s+)?" + _ADDRESSEE + r"s?\b|\b" + _ADDRESSEE + r"s?\s+(?:reading|processing|summari[sz]ing|parsing|crawling|browsing)\s+(?:this|these)\b"),
@@ -114,6 +117,12 @@ RULES = [
 # In a script, these shapes inside a quoted string are FLAG (a parser matching harness
 # markup names it as a string); every other prose HOLD holds wherever it is.
 DEMOTE_IN_STRINGS = {"control-tag", "special-token"}
+
+# A phrase split by a code span or a quote boundary matches no single segment. These
+# rules also run on the joined line (backticks dropped; a script's literals joined), and
+# a hit there that no segment explains is HOLD for the rules below, FLAG for the rest.
+JOINED_HOLD = {"override-phrase", "chat-role-prefix", "pipe-to-shell"}
+_ESCAPED_BREAK = re.compile(r"\\[nr]")
 
 # Common Cyrillic and Greek look-alikes of Latin letters, for matching only.
 _CONFUSABLE = str.maketrans(
@@ -225,6 +234,21 @@ def script_segments(line):
     return out
 
 
+def joined_views(line, segs, markdown):
+    """Whole-line views a split phrase cannot hide from: the markdown line with its
+    backticks dropped; a script line's string literals joined (with and without a space),
+    each also cut at escaped line breaks, so a literal's own start is a line start."""
+    if markdown:
+        return [line.replace("`", "")] if "`" in line else []
+    lits = [seg[1:-1] for seg, quoted in segs if quoted]
+    if not lits:
+        return []
+    views = []
+    for text in ["".join(lits), " ".join(lits)] + lits:
+        views.extend(_ESCAPED_BREAK.split(text))
+    return views
+
+
 def scan_text(text, markdown, scripts):
     """{(line, rule, tier)} for one decoded file."""
     if text.startswith("\ufeff"):
@@ -253,6 +277,14 @@ def scan_text(text, markdown, scripts):
                 if r.hit(ns):
                     found.add((no, r.name, FLAG if demote else r.tier))
             start += len(seg)
+        if idx not in fenced:
+            have = {r for n, r, _ in found if n == no}
+            for v in joined_views(line, segs, markdown):
+                nv = _norm(v)
+                for r in RULES:
+                    if r.kind == PROSE and r.name not in have and r.hit(nv):
+                        have.add(r.name)
+                        found.add((no, r.name, HOLD if r.name in JOINED_HOLD else FLAG))
         if scripts:
             nl = _norm(line)
             for r in RULES:
@@ -317,7 +349,10 @@ def collect(paths, scripts):
         if k != "dir":
             out.append((p, p, False, k))
             continue
-        for root, dirs, files in os.walk(p):
+        def unlistable(err, p=p):
+            rel, esc = display(os.path.relpath(err.filename, p))
+            out.append((err.filename, os.path.join(p, rel), esc, "unlistable"))
+        for root, dirs, files in os.walk(p, onerror=unlistable):
             dirs.sort()
             for d in list(dirs):
                 if kind_of(os.path.join(root, d)) != "dir":
@@ -338,6 +373,8 @@ def report(targets, scripts):
     for path, shown, escaped, kind in targets:
         if kind == "link":
             found = {(0, "symlink", HOLD)}
+        elif kind == "unlistable":
+            found = {(0, "unreadable", HOLD)}
         elif kind != "file":
             found = {(0, "not-regular", HOLD)}
         else:
