@@ -92,3 +92,6 @@ decision 88: the no-unattended-dispatch hold (set 2026-09-24) — (a) keep it: I
   unknown: whether the agents scheduler lands this week
 answer 87: (a) A-D, "work in whatever order makes sense to you" (operator 2026-09-28)
 answer 88: (b) the no-unattended-dispatch hold is lifted for this week: keep working the queue between turns and while the operator is away, stopping at the 15% weekly reserve (operator 2026-09-28)
+decision 132: Which waves of tonight's plan may run unattended (plan shown 2026-09-30 in chat; weekly 41% used, stop at 85%)? — options: (a) waves 1-3, stopping at the reserve; waves 4-5 wait for your review [recommended] | (b) all five waves, stopping at the reserve | (c) wave 1 only | (z) decide later
+  raised: 2026-09-30
+  rec: (a) · basis partial — per-item cost from past rounds (~0.5-1% weekly per planner or review round), not measured per feature

@@ -20,3 +20,4 @@ refs:
 - next: —
 - blocked: —
 - learned: —
+2026-09-30 130 a: the estate-wide stage is an offer (once per series, final plan, fable xhigh), like 124's

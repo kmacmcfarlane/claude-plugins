@@ -3,10 +3,11 @@ id: groom-delete-or-keep-the-stale-worktree-b480
 title: "groom: delete or keep the stale worktree-librarian-mode branch"
 short_display_name: stale librarian-mode branch
 type: chore
-status: todo
+status: done
 priority: 3
 created: 2026-09-30
 updated: 2026-09-30
+closed: 2026-09-30
 ---
 
 Found at rehydrate (handoff 5, Aware of): branch worktree-librarian-mode, one commit f1f07ca (2026-09-04), an early draft of the librarian-mode skill under plugins/kit-dev/ (6 files, +522); main landed the skill from worktree-librarian-mode-main (e1b3459) and later moved it to dev-flow. No worktree uses it. Deleting is one-way, so asked (decision 131).
@@ -25,3 +26,8 @@ decision 131: Delete the stale branch worktree-librarian-mode (one commit, the 2
   (z): it stays
   rec: (a) · basis strong — git diff main...branch adds only the kit-dev draft (6 files), superseded on main
   unknown: —
+answer 131: a — "131a" (2026-09-30T22:14Z, chat)
+closed 131: acted — branch deleted (was f1f07ca)
+
+## Notes
+- 2026-09-30 done
