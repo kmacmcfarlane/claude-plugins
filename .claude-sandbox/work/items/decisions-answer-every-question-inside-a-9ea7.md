@@ -26,3 +26,11 @@ refs:
 target: full decisions-answer-every-question-inside-a-9ea7 /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude/worktrees/decisions-answer-every-question-inside-a-9ea7
 dispatch: implementer opus medium — opus signal: changes what the decisions skill does (reply handling); given plan 6d2c 03 + r4 M1 (wave 2, 132 a)
 agent: implementer a70699c5ec56ef8c2 round 1
+return: implementer DONE_WITH_CONCERNS 502bf95
+changed:
+  plugins/operator-interaction/skills/decisions/references/replies.md — step 3 reworded (r4 M1: echo with the actions, its limit, what stops an action first); new § A message with several replies
+  plugins/operator-interaction/skills/decisions/SKILL.md — § Replies table: one row pointing to the new section
+  plugins/operator-interaction/skills/decisions/references/gallery.md — example 25, a mixed batch
+note: smoke test not run (it would write into the shared config dir, load the operator's hooks, join the peer registry; 35 MB transcript) — filed as an operator-attended follow-up
+dispatch: reviewer opus high — review round 1 (rule 4)
+agent: reviewer a89d6ae7dfaf0dc3f round 1
