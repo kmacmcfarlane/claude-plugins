@@ -3,10 +3,8 @@ id: work-items-typed-cross-repo-edges-repo-i-375e
 title: "work-items: typed cross-repo edges (repo:id) that wi estate reads and shows"
 short_display_name: cross-repo edges
 type: feature
-status: doing
+status: todo
 priority: 2
-owner: Kyle-McFarlane@401123cbad11
-claimed: 2026-09-30T22:27Z
 created: 2026-09-30
 updated: 2026-09-30
 refs:
@@ -18,7 +16,7 @@ Requested 2026-09-30 by the agents librarian (peer request, not an approval) for
 
 ## Handoff
 - doing: —
-- next: —
+- next: plan CLEAR (series 00-02); build in wave 4 as a full cycle from the series, carrying review r3's lows 13-15 as acceptance
 - blocked: —
 - learned: —
 
@@ -61,3 +59,6 @@ return: planner DONE /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.
 baseline: 4e1be3b1f4f3cc3dafc905bc62e779bd487dba52d8de118e9e98bc59e1f97fb3 00_initial.md 9fe551426d32f9b67b01eb5eeed2b2ff861cc3367abcb682972277c537a3d99f 01_review-fixes.md 0278ed544d51b191f69af3f23a8d3b11b75cf7557d50ebd10ee79d89a1905c9e 02_review-r2-fixes.md 
 dispatch: reviewer opus high — resume
 agent: reviewer a5869445e366eb4e6 round 3
+verdict: CLEAR round 3 at .claude-sandbox/investigations/375e-cross-repo-edges
+notes: prior 10 FIXED (hidden-entry suggestion WITHDRAWN on the merits), 11 FIXED, 12 FIXED; new lows carried into the build as acceptance: 13 an edge to a target item with no status: reads resolution failed — give it its own outcome (item unreadable, target named); 14 resolution-time problems appended after estate_store's cap — re-cap or count them in omitted.problems; 15 sort archive paths as Path objects, not str
+plan cleared; blocking open questions: none (blocked-by, cross-repo gating, verified date are the agents librarian's and the operator's, not blocking). The build is wave 4 (not tonight, per 132 a); relay the design to agents now
