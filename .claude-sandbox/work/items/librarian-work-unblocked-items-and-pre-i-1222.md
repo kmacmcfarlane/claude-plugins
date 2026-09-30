@@ -16,7 +16,7 @@ Operator 2026-09-22: an idle librarian should work new items as they arrive when
 
 ## Handoff
 - doing: checkpoint 2026-09-30 (continue): pyramid out as doc + answer page v3; answers 110 a, 111 b, 112 b stored; nothing in flight
-- next: role agents NOT loaded: /clear kept the process (PID 277, started 2026-09-28 21:38, dev-flow 901255af); operator exits and relaunches, then dispatch the Work table
+- next: on the relaunched session: confirm dev-flow:scribe..cross-checker-deep are listed, then run waves 1-3 (answers 132 a, 133 a; plan in chat 2026-09-30): W1 58f4 fa73 819f 0c4d 375e(plan) ec4f; W2 00ef 1ffd 9ea7 6e8e; W3 5579 dabd b6f7 3716 20d8; stop at weekly 85%
 - blocked: —
 - learned: —
 
@@ -95,3 +95,5 @@ answer 88: (b) the no-unattended-dispatch hold is lifted for this week: keep wor
 decision 132: Which waves of tonight's plan may run unattended (plan shown 2026-09-30 in chat; weekly 41% used, stop at 85%)? — options: (a) waves 1-3, stopping at the reserve; waves 4-5 wait for your review [recommended] | (b) all five waves, stopping at the reserve | (c) wave 1 only | (z) decide later
   raised: 2026-09-30
   rec: (a) · basis partial — per-item cost from past rounds (~0.5-1% weekly per planner or review round), not measured per feature
+answer 132: a — "wave 1 approved, continue on up through wave 3 and I'll check on your progress later" (2026-09-30T22:17Z, chat)
+answer 133: a — "133a" (2026-09-30T22:22Z, chat; operator relaunches; the new session runs waves 1-3 per 132 a)
