@@ -44,3 +44,4 @@ dispatch: planner opus high — BRIEF-delta-01 writer (judgement on status and c
 agent: planner ab8ca028946fa9521 round 1
 return: planner DONE_WITH_CONCERNS .claude-sandbox/investigations/0c4d-decision-handoff/BRIEF-delta-01.md (782 lines; unsure: 8dee's ~20 Done: lines figure, 129 has no time, agents back-end plan cited from its in-review INDEX, G2 left as their question 1)
 delta 01 spot-checked by the librarian (section map, 124 words verbatim, 112/113/130 lines match 69ee); pointers sent 2026-09-30 to agents and operator-attention; awaiting teach-backs
+agents 2026-09-30: delta 01 received; absorbing into their e934 as serial 03 (restates rows that depended on their decision 10 (a)); teach-back answers § 12 point by point, operator-owned questions marked as theirs; pointer after their review

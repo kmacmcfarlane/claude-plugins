@@ -27,3 +27,15 @@ refs:
 target: full decisions-record-and-show-what-is-decide-58f4 /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude/worktrees/decisions-record-and-show-what-is-decide-58f4
 dispatch: implementer opus medium — opus signal: changes what a skill does (decisions skill, librarian decisions.md, work-items format); feature with no plan: /investigate then /implement (waves 1-3, 132 a)
 agent: implementer ad599a521afa99e57 round 1
+return: implementer DONE_WITH_CONCERNS 1f35cb8
+changed:
+  plugins/operator-interaction/skills/decisions/SKILL.md — why ask as floor item 3; FYI authority by caller class; shown-after paragraph; two Rulings
+  plugins/operator-interaction/skills/decisions/references/rendering.md — class slot, Why ask line, Done alone group
+  plugins/operator-interaction/skills/decisions/references/worksheet.md — FYI rule restated; § E why-ask and class fields
+  plugins/operator-interaction/skills/decisions/references/gallery.md — Why ask on every card; example 24
+  plugins/dev-flow/skills/librarian-mode/references/decide-alone.md — new: decided: record, done-alone group, class names
+  plugins/dev-flow/skills/librarian-mode/references/decisions.md — class rows, why ask on stored cards, decided: bullet
+  plugins/dev-flow/skills/librarian-mode/SKILL.md — pointers in Intake step 3 and § Report
+  plugins/work-items/skills/work-items/references/format.md — Card lines; § Decided alone
+dispatch: reviewer opus high — review round 1 (rule 4)
+agent: reviewer a46d8fc8aba824c9d round 1
