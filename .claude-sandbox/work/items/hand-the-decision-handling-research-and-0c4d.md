@@ -24,7 +24,7 @@ Peer relays are requests; the handoff approves nothing in the agents repo.
 
 ## Handoff
 - doing: —
-- next: after the session relaunch (role agents loaded): dispatch the brief writer for BRIEF-delta-01 (contents listed 2026-09-30 in Notes), send the pointer to agents and operator-attention, await teach-back
+- next: await teach-backs on delta 01 from agents and operator-attention; deltas follow as the filed builds land
 - blocked: —
 - learned: —
 
@@ -42,3 +42,5 @@ reply to agents: b92b explained (G10); G2 = 8dee OQ8 (b514 folded); delta 01 (BR
 2026-09-30 pyramid answered (24 of 24 first responses; 113 later, 130 raised on 124/125): BRIEF-delta-01 now carries, besides d618, 263c, a99c, b92b, 8e04, 2eb7/a88a/6421: the pyramid answers verbatim (69ee, 5140, 6d2c, caef lines), the builds filed from them, 8dee F8's pointers (to agents 76bc: the cross-repo half of the decided-alone digest (d618 I2), cross-repo blocker escalation, the budget's future home, forward custody as built; to operator-attention R48: the same plus done-alone volume), answer 121 b's turn-time requirements (a99c D4) with the pointers owed, 120 z's wake, and 4d29 (decision streams) for both. Waits on the session relaunch (role agents not loaded; the brief writer is a dispatch).
 dispatch: planner opus high — BRIEF-delta-01 writer (judgement on status and conclusions, as v1); writes only under 0c4d-decision-handoff/
 agent: planner ab8ca028946fa9521 round 1
+return: planner DONE_WITH_CONCERNS .claude-sandbox/investigations/0c4d-decision-handoff/BRIEF-delta-01.md (782 lines; unsure: 8dee's ~20 Done: lines figure, 129 has no time, agents back-end plan cited from its in-review INDEX, G2 left as their question 1)
+delta 01 spot-checked by the librarian (section map, 124 words verbatim, 112/113/130 lines match 69ee); pointers sent 2026-09-30 to agents and operator-attention; awaiting teach-backs
