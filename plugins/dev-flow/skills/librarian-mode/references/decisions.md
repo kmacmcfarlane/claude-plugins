@@ -39,7 +39,7 @@ replies are as SKILL.md § Report gives them.
 | related decisions (groups) | decisions on one item, or on sibling items (one parent) about the same plugin; a decision with no item groups by plugin or files. Never transitive: two groups that share a file stay two groups |
 | named templates | none: the librarian names no template, so every decision carries the floor on its own card |
 | classes of decision (the class in *why ask* and on the list line) | the class names in `decide-alone.md` § Class names, picked when the decision is raised; `unclassed` when none fits |
-| a decide-alone class the caller's rules define (the FYI rule's authority) | none yet: `decide-alone.md` marks no class decided alone, so the FYI authority stays an answered decision or the task the item carries |
+| a decide-alone class the caller's rules define (the FYI rule's authority) | the classes `decide-alone.md` § The line marks decided alone, cited as `class <class>` on the `decided:` line; beside them, the FYI authority is an answered decision or the task the item carries |
 | the record of what was decided alone | the `decided:` line and the Report's **Done alone** group (`decide-alone.md`) |
 
 ## What the store records
