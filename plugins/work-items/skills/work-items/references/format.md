@@ -373,9 +373,35 @@ cell><TAB>text`: the title cell is fourth, so the free text stays last;
 `--json` one record per item with `title`, `short_display_name`,
 `grooming` and `decisions`. It exits 2 when nothing awaits the operator.
 
+**Card lines.** A caller may store the decision's card as indented lines
+under its headline (`raised:`, `what:`, `why now:`, `why ask:`, …; the
+librarian-mode convention). Indented, they match neither marker, and `wi`
+reads none of them except the first `raised:` per N (the decision's age).
+`why ask: <class> — <reason>` is one physical line: why the question came
+to the operator, opening with its class.
+
 `wi prime` also shows a `HOLD <n>: <id> (<title cell>) …` line, first under
 the header, for open items tagged `hold` — an operator hold gates what may
 move.
+
+## Decided alone: `decided:`
+
+What a caller decided without asking is recorded as a body line that starts
+`decided:` — one physical line, never wrapped:
+
+```
+decided: <UTC time> <class> — <what was decided, and why it was safe to decide alone> · authority: <authority> · reopen: <how to undo it>
+```
+
+The time is in `raised:`'s form (`2026-09-30T14:05Z`); the class is a
+kebab-case tag from the caller's class list; the authority names what let
+the caller decide it (`task`, `answer N`, or a class the caller's rules let
+it decide alone); `reopen` says how it is undone. The what field never
+contains ` · authority: ` or ` · reopen: `, the separators a reader splits
+on. It is neither `decision N:` nor `answer N:`, so it opens no question
+and answers none: `needs-input`, the decision counter and the estate sweep
+pass it by. `wi` does not parse it yet; a reader splits it
+with `^decided: (\S+) ([a-z-]+) — (.*?) · authority: (.*?) · reopen: (.*)$`.
 
 ## Body sections
 

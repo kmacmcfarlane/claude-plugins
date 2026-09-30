@@ -16,14 +16,14 @@ bought by stakes, never spent by default.
 ## List line
 
 ```
-- **N Title as a question?** — rec **(x) short label** · *stakes* · basis **word** · *age, what it blocks, deadline*
+- **N Title as a question?** — rec **(x) short label** · *class* · *stakes* · basis **word** · *age, what it blocks, deadline*
 ```
 
 For a decision with no recommendation, the label takes the rec slot; the stakes and basis
 slots stay, since the floor needs them:
 
 ```
-- **N Title as a question?** — *your preference, no rec* · *stakes* · basis **word** · *age, what it blocks*
+- **N Title as a question?** — *your preference, no rec* · *class* · *stakes* · basis **word** · *age, what it blocks*
 ```
 
 - The number and title are bold together.
@@ -34,9 +34,16 @@ slots stay, since the floor needs them:
 - An ask for another round carries its justification after the basis: *if left: what the
   leftover findings would break · a round: time, quota, your attention* (SKILL.md § The
   floor).
+- Class slot: the decision's class, when the caller names classes of decision; left out
+  when it names none. A template's slot, when there is one, comes before it.
+- A line-only decision — nothing of it rendered above, now or before — carries its why ask
+  after the basis: *why ask: what would go wrong if I took the recommendation alone*; on a
+  round ask, its *if left* and *a round* stand in for it. A line whose card was shown carries
+  the class alone; the card has the rest.
 - Stakes slot: *reversible, narrow* · *one-way, narrow* · ⚠ one-way (for Type 1; the ⚠ is
   followed by a space). The preference and authority labels take the rec slot (above); a
-  template's label, *template: name*, has its own slot just before the stakes.
+  template's label, *template: name*, has its own slot just before the class slot (just
+  before the stakes when there is no class).
 - A deadline is written as the absolute time in the operator's zone when you know it, with
   the relative time and when you wrote it: *storage lease lapses ~17:45 (90 min from 16:15)*.
   With the zone unknown, say which: *17:45 UTC*.
@@ -47,7 +54,7 @@ slots stay, since the floor needs them:
 
 Example:
 
-- **42 Clear the docs build cache?** — rec **(a) clear it** · *template: cache reset* · *reversible, narrow* · basis **strong** · *10 min old, blocks the docs build* *(line only)*
+- **42 Clear the docs build cache?** — rec **(a) clear it** · *template: cache reset* · *reversible, narrow* · basis **strong** · *why ask: clearing it drops the other branch's cached build too* · *10 min old, blocks the docs build* *(line only)*
 
 ## Card
 
@@ -55,6 +62,7 @@ Example:
 **N — Title as a question?**
 **What:** what is decided, in plain words; items by plain name, the id as a trailing tag; other ids glossed.
 **Why now:** why it is up, and what it blocks.
+**Why ask:** *class* — what would go wrong if I took the recommendation alone.
 - (a) Option — *what happens if chosen*
 - **(b) Option** — *what happens if chosen*
 - (z) Decide later — *what waiting costs; at a deadline, what happens then*
@@ -65,7 +73,10 @@ Rec **(b)** · basis **word** — *one-clause reason* · unknown: what isn't kno
 - One line per option, in letter order; its impact in italics after the dash. Only the
   recommended option is bold — (b) above, in its own place, not moved first (SKILL.md
   § Critical). With no recommendation, none is.
-- An ask for another round adds two lines after **Why now:** — **If left:** *each leftover
+- **Why ask:** opens with the class in italics when the caller names classes; otherwise it
+  is the reason alone. With no recommendation it says why the call is not yours. On an ask
+  for another round it may point at the two lines below: *cap — the finding under If left*.
+- An ask for another round adds two lines after **Why ask:** — **If left:** *each leftover
   finding, and what it would break* and **A round costs:** *the time, the quota, and your
   attention: this answer, and another if the round does not settle it* (SKILL.md § The
   floor).
@@ -82,6 +93,7 @@ Rec **(b)** · basis **word** — *one-clause reason* · unknown: what isn't kno
 **N — Title as a question?** ⚠ one-way
 **What:** …
 **Why now:** … Blocks: …
+**Why ask:** *class* — …
 **Context you may have lost:** the two or three facts a cold reader needs.
 
 (a) Option
@@ -104,8 +116,8 @@ Rec **(b)** · basis **partial** — *reason*
 ```
 
 - The options follow the card's rule: letter order, and only the recommended option's
-  heading bold. The opening lines run **What:**, **Why now:**, **Context you may have
-  lost:**, then a round ask's **If left:** and **A round costs:**.
+  heading bold. The opening lines run **What:**, **Why now:**, **Why ask:**, **Context you
+  may have lost:**, then a round ask's **If left:** and **A round costs:**.
 - A block **includes** the basis drill-down (the tags and links). `expand` on a block is
   answered: *already at full detail — `tell me [what]` for something specific?*
 - The read-back line (⚠ blocks only) names the one-way option(s). A block for a wide
@@ -161,19 +173,38 @@ sooner — both get answered — while one placed low can lose the lease.
 | One-way, narrow | *one-way, narrow* | the stakes slot; after the title on a card |
 | No fact settles it | *your preference — no recommendation* | the rec slot (*your preference, no rec*); after the title on a card |
 | Not the agent's call | *no recommendation — outside my authority*, and a clause saying why | the rec slot; after the title on a card, the why on its own line |
-| A recurring decision with fixed options | *template: name* — shown as a card the first time the operator meets it | its own slot, before the stakes |
+| A recurring decision with fixed options | *template: name* — shown as a card the first time the operator meets it | its own slot (§ List line) |
 | Time-critical, options not ready (not a decision yet) | **Alert:** in bold, bare; *options follow* | its own line, in place of a card |
 | Not defined yet (not a decision yet) | listed under **Open questions**, unnumbered | the *Open questions* section |
 
 ## FYI after acting
 
-Not a decision: no number, no options, no hint. One line, under a **Done** heading when there
-are several:
+Not a decision: no number, no options, no hint. One `Done:` line per thing decided alone,
+in a **Done alone** group the next time you report — before the decisions block, which stays
+last:
 
-- **Done: fixed a broken link in the contributing guide, on my task branch** — *two-way (one revert), nobody else uses the branch; inside the task you gave me.*
+```
+**Done alone** — *N since my last report · say so in your own words to undo or reopen any*
+- **Done: what was done** — *class · why it was safe: two-way, narrow · authority · undo: how*
+```
+
+- **Done: fixed a broken link in the contributing guide, on my task branch** — *two-way, nobody else uses the branch · inside the task you gave me · undo: one revert*
+
+- The class slot is filled when the caller names classes of decision, and left out
+  otherwise, as on the list line.
+- The authority is the one the FYI rule accepted: an answered decision (by number), the
+  task you were assigned, or the decide-alone class the caller's rules define.
+- One line per ruling, never merged: the operator reopens them one at a time. With a single
+  line, the heading may be left out and the line stands alone, as above.
+- Where the caller keeps a record, each line matches a record the caller wrote when it
+  acted, and that record holds every part of the line — why it was safe included; the line
+  is rendered from that record, not from memory.
 
 Only for actions that pass the guard in `references/worksheet.md` § E. An action that happens
-unless the operator stops it is an approve ask, rendered as a card, and it waits.
+unless the operator stops it is an approve ask, rendered as a card, and it waits. A reply
+that objects to a `Done:` line — *undo the rename*, *I'd rather decide that one* — is read
+like any reply (`references/replies.md`): an undo is echoed and done; a reopen is raised as a
+new numbered decision that names the line it reopens.
 
 ## Re-show with what changed
 
