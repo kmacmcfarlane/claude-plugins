@@ -21,12 +21,12 @@ class puts it on one side:
 | `minor-design` | decided alone | only while all four of its terms hold (§ Class names); touching a shared contract, doctrine or a ruling makes it `trade-off` or `rule-change` |
 | `narrowing` | decided alone | the part left is filed as a linked follow-up first; the `Done:` line says "pull back <tag>" reverses it |
 | `ruled-rule-case` | decided alone | the authority is `answer N`; narrowing or widening the ruled rule is `rule-change`, and an answer that states a policy in the operator's words is filed as a rule change they see land |
-| `table-placement` | decided alone | exactly one row of the README's placement table (CLAUDE.md's Aim → home) settles it |
+| `table-placement` | decided alone | exactly one row of the repo's placement table settles it (in this marketplace, CLAUDE.md's Aim → home); a repo with no placement table has no `table-placement`, and its placements are `placement` |
 | `reply-reading` | decided alone | the reading is echoed; raised when it drives a one-way act, or one others rely on |
-| `forwarding` | decided alone | to the repo that owns the work; with no live owner, raised as a `blocker` |
+| `forwarding` | decided alone | once forwarding with watched custody lands (item 3460): to the repo that owns the work, and with no live owner, raised as a `blocker`. Until then SKILL.md § Critical governs: a request outside Scope is declined and routed back to the operator |
 | `trade-off` | raised | after the sign test (§ What makes a trade-off real) |
 | `wider-scope` | raised | — |
-| `rule-change` | raised | including narrowing or widening a ruled rule, and moving a class across this line |
+| `rule-change` | raised | including narrowing or widening a ruled rule, and moving a class across this line; except the narrowing an operator's undo asks for (§ How the line moves) |
 | `placement` | raised | — |
 | `api-name` | raised | before it ships: plugin, skill, env var, stored field, parsed tag, settings key |
 | `relay` | raised | as a batchable confirm (`ok N-M`) |
@@ -44,13 +44,18 @@ case that fails any of these is raised, under the class that names what failed. 
 whose `why ask:` cannot be filled is decided alone when the FYI rule allows; otherwise it is
 asked.
 
-*Evidence* (investigation 263c, decisions 1-101 by class): each class decided alone is one the
-operator delegated in their own words ("you decide" on 9, 10 and 95) or where they took every
-recommendation (wording 2 of 2, minor design 2 of 2). Each class raised is one where they
-steered: 6 of 11 real trade-offs diverged from the recommendation, the options fit 4 of 11
-placements, 3 of 4 trust calls diverged, and 93 reversed a recommended stored field. On
-decisions 1-97 the line decides about 26 of 94 alone with a standing quota grant, about 15
-without one.
+*Evidence* (investigation 263c, decisions 1-101 classed by subject; 8dee's check on 1-97).
+The decided-alone side rests on the operator's own words ("reversable, low impact,
+high-probability decisions you can just run with and be sure I see", 2026-09-22; "trivial
+documentation … just do it"; "you decide" on the wording decisions 9 and 95) and on a thin
+record: wording and minor design took the recommendation 2 of 2 each. Scope changes took it 4
+of 5, but 34 was a narrowing the operator kept in and 94 was redirected, which is why a
+narrowing says how to pull it back. The raised side is where they steered: 6 of 11 real
+trade-offs diverged from the recommendation, the options did not fit 7 of 11 placements, 3 of
+4 trust calls diverged, and 93 reversed a recommended stored field. Applied to decisions 1-97,
+the line decides about 26 of 94 alone with a standing quota grant (about 15 without one); on 4
+of those 26 (53, 62, 34 and 94, all two-way), the operator's answer differed from what the line
+would have done.
 
 ## What makes a trade-off real
 
@@ -79,26 +84,29 @@ differ, and a reasonable operator could weigh them differently, counts too. When
 ask.
 
 **The sign test**, at birth: name the kind of impact the options differ on, and what would go
-wrong if the librarian took its recommendation alone. When nothing would, the question is
-`minor-design` (or `wording`) and is decided alone. A raised `trade-off` names the kind in its
-`why ask:` (§ Raised). Because a decision whose options converge is not raised, the decisions
+wrong if the librarian took its recommendation alone. When nothing would, it is not a
+trade-off: it is decided alone under the class whose terms it meets (`wording`, or
+`minor-design` only while its four terms hold), and otherwise keeps the raised class that
+fits it. Every raised card names the kind in its `why ask:` (§ Raised). Because a decision whose options converge is not raised, the decisions
 skill's line-only branch "or the options converge" rarely meets a raised decision.
 
 ## How the line moves
 
 - **Promotion to a count line.** A class decided alone shows one `Done:` line per ruling until
   it is promoted. Promotion changes what the operator sees, so it is asked, never
-  self-granted: a `decision N:` of class `rule-change`, its card carrying that class's
-  `decided:` lines since the last promotion or narrowing as the spot-check sample. When the
+  self-granted. The librarian proposes it when a class has 10 `decided:` lines since its last
+  promotion ask with no undo or reopen among them: a `decision N:` of class `rule-change`, its
+  card carrying those lines as the spot-check sample. When the
   operator marks none of them for reversal and answers yes, the class shows from then as one
   count line in the done-alone group (`- **Done: <count> <class>** — *promoted by answer N ·
   the rulings are on the items · say so to see or undo any*`), and the `decided:` lines are
   still written, one per ruling.
 - **Per-class narrowing.** An undo the operator asks for on a `Done:` line (§ The Report)
   narrows that class and no other: a promoted class goes back to one line per ruling, and
-  the kind of case reversed is filed as a rule change to this table (its row's condition),
-  which lands through the cycle and is shown like any change. Until it lands, cases of that
-  kind are raised.
+  the kind of case reversed is written into that class's row (its condition). The operator's
+  undo is the authority: the edit is filed and lands through the cycle with no new ask, and is
+  shown in the next Report as a landed change. Until it lands, cases of that kind are
+  raised.
 - **Widening** a class, moving it from raised to decided alone, is a raised `rule-change`.
   Silence never widens anything.
 
@@ -150,7 +158,9 @@ when the librarian acts, not at Report time; one line per ruling.
 ## The Report: the done-alone group
 
 Every `decided:` line written since the last Report gets one `Done:` line in a **Done alone**
-group, after the four lines per landed change and before the push outcome:
+group, after the four lines per landed change and before the push outcome — except a class
+the operator promoted by `answer N` (§ How the line moves), whose rulings show as one count
+line:
 
 ```
 **Done alone** — *N since my last report · say so in your own words to undo or reopen any*
@@ -158,10 +168,13 @@ group, after the four lines per landed change and before the push outcome:
 ```
 
 - Rendered from the `decided:` lines (`git -C "$MAIN" log --since=<last Report>` over the
-  store, or the item bodies), never from memory; one line per ruling, never merged.
+  store, or the item bodies), never from memory; one line per ruling, never merged, bar a
+  promoted class's count line. Any class not promoted by an answer keeps one line per
+  ruling.
 - No group when nothing was decided alone; a single line may drop the heading.
 - With the `operator-interaction:decisions` skill loaded, the line is that skill's FYI line
-  (`decisions.md` § The Report places the group).
+  (`decisions.md` § The Report places the group); a promoted class's count line is this
+  binding's own, beside those lines.
 - An operator reply against a line is read as any reply: an undo is echoed, done through the
   cycle like any change, and noted on the item with the operator's words; a reopen is raised
   as a new `decision N:` whose `why now:` names the `decided:` line it reopens.
@@ -174,9 +187,13 @@ Every decision the librarian raises carries, in its stored card, directly under 
   why ask: <class> — <what would go wrong if the librarian took its recommendation alone>
 ```
 
-With no recommendation, the reason says why the call is not the librarian's. A `trade-off`
-opens the reason with the kind of impact the options differ on (§ What makes a trade-off
-real): `why ask: trade-off — spend: <what would go wrong …>`. It is one
+With no recommendation, the reason says why the call is not the librarian's. Every raised
+card names the kind of impact the options differ on (§ What makes a trade-off real). Where
+the class names its own kind, the class stands for it: `one-way` (reversibility), `trust`
+(trust and security), `spend` (spend), `api-name` (contracts and stored data), `wider-scope`
+and `rule-change` (scope and precedent). Every other class — `trade-off`, `placement`,
+`relay`, `cap`, `blocker`, `unclassed` — opens the reason with the kind:
+`why ask: trade-off — spend: <what would go wrong …>`. It is one
 physical line, indented like every card line (`decisions.md` § What the store records), and
 split by `^\s+why ask: ([a-z-]+) — (.*)$`. The class is picked at birth, when the decision is
 raised, never assigned later. A card stored before `why ask:` existed is backfilled on its

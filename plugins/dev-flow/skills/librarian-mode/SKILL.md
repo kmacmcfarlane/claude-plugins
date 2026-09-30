@@ -234,8 +234,9 @@ would ask the operator. Its Step 6 is the Report below. Your bindings:
   fable cross-check offer, a pin's ask below the quota reserve (the `dev-cycle` skill's
   `references/model-routing.md` §§ Fable cross-checks, Below the quota reserve). A
   planner's blocking questions pass through the class table first
-  (`references/decide-alone.md` § A planner's questions). **Durable**: the question lives in the committed item
-  body and is answered to whichever session is librarian next. Shown per the
+  (`references/decide-alone.md` § A planner's questions). **Durable**: the question
+  lives in the committed item body and is answered to whichever session is librarian
+  next. Shown per the
   `operator-interaction:decisions` skill when it is loaded (`references/decisions.md`).
 - **Terminal action**: `git merge --no-ff` into local `main`; the push is yours, after
   the Report (Critical). An item naming another base merges into that base instead, with
