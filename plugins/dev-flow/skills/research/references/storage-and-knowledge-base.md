@@ -15,10 +15,12 @@ research checked in.
 
 **Staging.** Everything drafted from fetched pages — lane findings, a report draft, a quick
 run's `--to` file — lands first in `<scratchpad>/research/<run>/`, the run's staging area,
-named in the brief's frontmatter, and is scanned there by the verifier. The verifier's sheet,
-the synthesis and `sources.md` are written after that scan, from scanned files, into the
-same staging area, and the whole record is copied to the destination only on a clean scan
-(not `pdf/`, the lanes' extracted PDF text, which is unscanned and stays in staging).
+named in the brief's frontmatter, and is scanned there by the scan floor
+(`scripts/scan-findings.py`, `run-record.md` § The scan floor) and then the verifier. The
+verifier's sheet, the synthesis and `sources.md` are written after those scans, from scanned
+files, into the same staging area, and the whole record is copied to the destination only on
+a clean scan (not `pdf/`, the lanes' extracted PDF text, which is unscanned and stays in
+staging); a toolkit's `tools/` also needs its toolkit gate to have passed.
 The brief is the one file written at the destination before that, because the orchestrator
 authors it and it carries no fetched text. A run held on a security concern moves to
 `.claude-sandbox/research/_held/<run>/` when the held-path check (§ The ignore check) says
