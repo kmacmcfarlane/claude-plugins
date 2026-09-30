@@ -80,8 +80,7 @@ renders what the operator read instead of composing it again.
   after the question (⚠ only), and every option line carries its `undo:` and `who:`, a
   `context:` line follows `why ask:` (before any `if left:`), and the `basis:` drill-down
   line is required. `why ask:` follows `why now:` on every card, one physical line, its
-  class from `decide-alone.md` § Class names (once the class tags are confirmed,
-  `decide-alone.md`). An ask for another round — the dev-cycle
+  class from `decide-alone.md` § Class names. An ask for another round — the dev-cycle
   cap, most often — requires the `if left:` and `round costs:` lines, in that order after
   `why now:`, `why ask:` and any `context:` (the skill's floor), filled from the
   reviewer's `findings:` block and the run's record; any other decision leaves both out.

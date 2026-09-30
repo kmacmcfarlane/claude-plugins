@@ -85,17 +85,9 @@ Without the decisions skill, the headline stays as SKILL.md § Report gives it, 
 
 Each decision, raised or decided alone, gets one of these names. The clause after each only
 tells the classes apart; it says nothing about which side of the line a class is on. The
-spellings are provisional until the operator confirms them; nothing writes a class tag to a
-store before then.
-
-**Until the operator confirms the spellings,** this interim rule stands in for the store
-lines above:
-
-- no `decided:` line is written, so there is no **Done alone** group;
-- `why ask:` is shown on every raised card, its class named in words, but not stored;
-- no backfill of `why ask:` is written to an older card.
-
-Once they are confirmed, the lines above apply as written.
+spellings are provisional until the operator confirms them; they are written as spelled
+meanwhile, and if they are renamed, the `decided:` and `why ask:` lines written in between are
+migrated to the new spellings.
 
 | Class | What it names |
 |---|---|
