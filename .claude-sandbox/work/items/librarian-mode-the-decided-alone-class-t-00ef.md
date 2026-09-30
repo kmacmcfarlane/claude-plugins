@@ -3,10 +3,12 @@ id: librarian-mode-the-decided-alone-class-t-00ef
 title: "librarian-mode: the decided-alone class table, with what makes a trade-off real"
 short_display_name: decided-alone class table
 type: feature
-status: todo
+status: doing
 priority: 1
 deps:
   - decisions-record-and-show-what-is-decide-58f4
+owner: Kyle-McFarlane@401123cbad11
+claimed: 2026-09-30T23:30Z
 created: 2026-09-30
 updated: 2026-09-30
 refs:
@@ -21,3 +23,9 @@ refs:
 - next: —
 - blocked: —
 - learned: —
+
+## Notes
+- 2026-09-30 claimed by Kyle-McFarlane@401123cbad11
+target: full librarian-mode-the-decided-alone-class-t-00ef /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude/worktrees/librarian-mode-the-decided-alone-class-t-00ef
+dispatch: implementer opus medium — opus signal: changes what a skill does (librarian-mode class table); feature with no own plan: /investigate then /implement from 8dee F2 (wave 2, 132 a)
+agent: implementer a591ad0e6fcc5cfa5 round 1

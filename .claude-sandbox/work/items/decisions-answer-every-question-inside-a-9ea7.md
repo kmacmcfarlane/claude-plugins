@@ -3,8 +3,10 @@ id: decisions-answer-every-question-inside-a-9ea7
 title: "decisions: answer every question inside a batched reply in words, one Read-as per part"
 short_display_name: batched replies in words
 type: feature
-status: todo
+status: doing
 priority: 2
+owner: Kyle-McFarlane@401123cbad11
+claimed: 2026-09-30T23:30Z
 created: 2026-09-30
 updated: 2026-09-30
 refs:
@@ -18,3 +20,9 @@ refs:
 - next: —
 - blocked: —
 - learned: —
+
+## Notes
+- 2026-09-30 claimed by Kyle-McFarlane@401123cbad11
+target: full decisions-answer-every-question-inside-a-9ea7 /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude/worktrees/decisions-answer-every-question-inside-a-9ea7
+dispatch: implementer opus medium — opus signal: changes what the decisions skill does (reply handling); given plan 6d2c 03 + r4 M1 (wave 2, 132 a)
+agent: implementer a70699c5ec56ef8c2 round 1
