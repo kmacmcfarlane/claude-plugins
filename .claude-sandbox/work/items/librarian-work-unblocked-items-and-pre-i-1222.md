@@ -7,7 +7,7 @@ priority: 0
 owner: unknown@360f41058e92
 claimed: 2026-09-22T02:36Z
 created: 2026-09-22
-updated: 2026-09-29
+updated: 2026-09-30
 refs:
   - operator 2026-09-22
 ---
@@ -15,8 +15,8 @@ refs:
 Operator 2026-09-22: an idle librarian should work new items as they arrive when no operator decision is needed (doc-only requests nearly always; skill changes often; implementation or complex skill changes warrant an investigation round). Investigations can run without waiting on the operator, so when the operator returns the decisions are ready to present. Today items queue up waiting for attention when many are unblocked or at least investigable. Question: how to achieve this without accidentally running the operator's quota into the ground. Acceptance: an investigation series with findings and a recommendation (routing rules for what proceeds unattended vs what waits; quota guards; how investigations pre-run and park their decisions), presented to the operator; decisions raised by number.
 
 ## Handoff
-- doing: session e9bb00fc 2026-09-28/29 (post-compaction): landed and pushed e115+0156, d1e3, 6bff, 1a54, 09e1, 1fd2, 5dbf, 1a14, 775a, 774d, 16da, 6118, 358a, 428e (closes 5039), 09f1, 2364, f6fd, 5a18, b527, d639, fabd, aa14, 533c, a66d; spikes bace and 0b2d CLEAR (0b2d waits on decisions 90-95); caef blocked at the review cap (decision 96); 3460 CLEAR at 902e71e, held for decision 97
-- next: checkpoint 2026-09-29 after 900a+b3c5 landed (3663bb4): nothing in flight; operator to update dev-flow and restart for the role agents; answer briefing follow-ups then the pyramid (69ee); open 101, 108; delta 01 to agents (0c4d); hold lifted this week to the 15% reserve
+- doing: checkpoint 2026-09-30 (continue): pyramid out as doc + answer page v3; answers 110 a, 111 b, 112 b stored; nothing in flight
+- next: restart the session so the role agents load (dev-flow b27e7b72 installed 05:33Z); read the answer page (ArtifactData list answers) as the operator answers; file 8dee F1-F8 once the pyramid is answered (F1, F2 already unblocked); delta to agents/operator-attention with the outcome and 4d29
 - blocked: —
 - learned: —
 
