@@ -3,12 +3,11 @@ id: decisions-record-and-show-what-is-decide-58f4
 title: "decisions: record and show what is decided alone — decided: line, done-alone group, why ask:, class tag"
 short_display_name: decided-alone record
 type: feature
-status: doing
+status: done
 priority: 1
-owner: Kyle-McFarlane@401123cbad11
-claimed: 2026-09-30T22:27Z
 created: 2026-09-30
 updated: 2026-09-30
+closed: 2026-09-30
 refs:
   - .claude-sandbox/investigations/8dee-the-line/INDEX.md
   - 69ee answers 110, 111, 112
@@ -92,3 +91,8 @@ return: implementer DONE 46afbf2
 changed: (same 8 files; this round: decide-alone.md sentence replaced, interim rule removed; decisions.md and SKILL.md back to f20c96a)
 dispatch: reviewer opus high — resume
 agent: reviewer a46d8fc8aba824c9d round 4
+verdict: CLEAR round 4 at 46afbf2
+notes: prior 10, 12 FIXED; new 13 [low] decide-alone.md:88-90 — the migrate-on-rename sentence names no owner (suggest: the change that renames them migrates those lines in the same landing) — carried as a follow-up; reviewer flags 134's stored card as stale (revise before showing)
+landed: 0c2757b
+- 2026-09-30 done: 0c2757b
+  revised: 2026-09-30 — decision 134's card: the "nothing writes a tag until you answer" rule was withdrawn in fix round 3. why now: the build landed (0c2757b); tags are written as spelled from the next plugin update. (a) keep — nothing to migrate; (b) rename some — the change that renames them migrates the decided:/why ask: lines written since the update; (z) later — tags written as spelled meanwhile

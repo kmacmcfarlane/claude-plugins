@@ -71,3 +71,14 @@ changed: (same 22-file set; this round: model-routing.md, record-lines.md, resum
 note: implementer's first combined Checks run was killed (exit 144) during work-items; re-run separately, all pass — watch at Land
 dispatch: reviewer opus high — resume
 agent: reviewer a5abb53ae3c3981d6 round 3
+verdict: NEEDS_CHANGES round 3 at be5b465
+findings:
+  prior 1, 3 FIXED; 2, 4 PARTIAL
+  1. [medium] record-lines.md:181-183, model-routing.md:282 — keep-rule grep counts `dropped` lines as misses; breaks "a check counts only when it ran"
+  2. [medium] review-brief.md:17-19, model-routing.md:252-256 — the build reviewer can CLEAR over accepted cross-check findings with no record of which it overruled; cross-check: line already counted them
+  3. [low] resume.md:36-40 — a finished-but-uncollected cross-check is treated as alive and never collected
+  4. [low] resume.md:36-40 — old second-opinion lines match the drop probe → false dropped line
+  5. [low] resume.md:207 (S9), fix-loop.md — "the findings: block" singular; a cross-check block after a reviewer's NEEDS_CHANGES hides the reviewer's findings
+  6. [nit] record-lines.md:162 "the one tagged decision"; model-routing.md:612 opus+fable
+dispatch: implementer opus medium — resume (fix round 3; the next review is round 4, the cap)
+agent: implementer a61d37fcc4f73c086 round 4
