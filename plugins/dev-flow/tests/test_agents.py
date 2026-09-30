@@ -43,8 +43,8 @@ NOT_DIRECT = "not for direct use."
 # name: (model, effort, keys, kind)
 #   keys: ROLE_KEYS for a role file; None for a research contract-body file, whose keys are
 #         checked against SUPPORTED_KEYS.
-#   kind: "role" (always shipped, dormant or not), "research" (the research family's
-#         workers), or "conditional" (may be absent).
+#   kind: "role" (always shipped, dormant or not) or "research" (the research family's
+#         workers).
 EXPECTED = {
     "scribe": ("sonnet", "low", ROLE_KEYS, "role"),
     "scout": ("sonnet", "medium", ROLE_KEYS, "role"),
@@ -277,9 +277,8 @@ class TestAgentFiles(unittest.TestCase):
 
     def test_every_shipped_row_exists_on_disk(self):
         # Dormant files (dispatched only on a pin or a stage that may not arise) included.
-        required = {n for n, row in EXPECTED.items() if row[3] != "conditional"}
-        self.assertEqual(len(required), 13)
-        self.assertEqual(required - set(self.files), set())
+        self.assertEqual(len(EXPECTED), 13)
+        self.assertEqual(set(EXPECTED) - set(self.files), set())
 
     def test_every_file_on_disk_is_in_the_table(self):
         self.assertEqual(set(self.files) - set(EXPECTED), set())

@@ -7,12 +7,12 @@ thing. Four shapes have two writers, each for a different role: `return:` (SKILL
 § Step 3.5 for an implementer, § Step 1 for a planner), `answer:` (`bindings.md`
 § Decisions for a raised decision, SKILL.md § Step 3.5 for a `NEEDS_CONTEXT`), and
 `dispatch:` and `agent:` (SKILL.md § Step 2 rule 7 for the cycle's own roles; the
-dispatching caller for a `scribe` or `scout`, below). The
+dispatching caller for a `scribe`, a `scout` or a cross-check, below). The
 record is a log, read in the order it was written, and what `resume.md` reads to take an
 interrupted run up again; a line that is missing reads there as not recorded:
 
 - `dispatch: <role> <model> <effort> — <signal>` — two writers, by role:
-  - **the cycle's roles** — `implementer`, `planner`, `reviewer`, `cross-checker` —
+  - **the cycle's roles** — `implementer`, `planner`, `reviewer` —
     SKILL.md § Step 2 rule 7, written before every dispatch, and before every SendMessage
     that resumes an agent for a new round, as `dispatch: <role> <model> <effort> —
     resume` (SKILL.md § Step 4.3 writes it through rule 7), so that no round opens without
@@ -22,7 +22,12 @@ interrupted run up again; a line that is missing reads there as not recorded:
     summary, `dig into` or diagnostic; `model-routing.md` § Profiles), written before
     that Agent call. A helper line is a **rider**, never a phase line: it never opens or
     moves a round, and a decision recorded before it stays after the cycle's last phase
-    line, where the GATE reads it (`resume.md` § Phase lines and riders).
+    line, where the GATE reads it (`resume.md` § Phase lines and riders). A
+    **cross-check** is a helper line too: role `cross-checker`, or `reviewer` with the
+    signal `cross-check stand-in (…)`, dispatched on an operator's accepted offer by the
+    orchestrator that made it (`model-routing.md` § Fable cross-checks). A record written
+    before cross-checks became riders may carry a `cross-checker` phase line
+    (`resume.md` S3b).
 
   The fields:
   - `<role>` is one role word: `scribe`, `scout`, `implementer`, `planner`, `reviewer` or
@@ -39,7 +44,7 @@ interrupted run up again; a line that is missing reads there as not recorded:
 - `agent: <role> <id> round <n>` — SKILL.md § Step 2 rule 7, written as soon as the Agent
   call returns an id, directly under the `dispatch:` line it belongs to, with the same
   role word; under a `— resume` dispatch it repeats the resumed agent's id with the round
-  it now serves. Under a helper line the caller writes `agent: <scribe | scout> <id>`,
+  it now serves. Under a helper line the caller writes `agent: <role> <id>`,
   with no round: a rider too, never in a resume's generation.
   `<n>` is the
   round that dispatch serves (the first build or the first review is round 1). It is what
@@ -180,13 +185,14 @@ interrupted run up again; a line that is missing reads there as not recorded:
   (`model-routing.md` § Below the quota reserve). An item that is no trial unit carries
   neither. Each is one unindented line, since the trial's count reads them with `grep -x`
   and `grep '^trial:'`.
-- `cross-check: plan-stage <high | xhigh> <n> accepted highs` — written by the step that
-  records a plan-stage fable cross-check's verdict (SKILL.md § Step 4.5), right after that
-  `verdict:` line, and by nothing else: `<n>` is the number of its high or critical
-  findings the opus `CLEAR` missed that the orchestrator accepts into the fix round, `0`
-  for a `CLEAR`. Only a cross-check the operator accepted and that ran writes one; the
-  keep rule counts them over the stores with `grep '^cross-check: plan-stage'`, so each
-  is one unindented line (`model-routing.md` § Fable cross-checks).
+- `cross-check: plan-stage <high | xhigh> <n> accepted highs <UTC time>` — written by
+  the orchestrator that dispatched a plan-stage fable cross-check (a research synthesis's
+  included), when it returns, and by nothing else: `<n>` is the number of its high or
+  critical findings the opus `CLEAR` missed that the orchestrator accepts, `0` for a
+  `CLEAR`; the time is `YYYY-MM-DDTHH:MMZ`. Only a fable cross-check the operator accepted
+  and that ran writes one — never the author rule's opus stand-in. The keep rule takes
+  the first 8 by time over the stores (`model-routing.md` § Fable cross-checks), so each
+  is one unindented line.
 - `landed: <merge sha>` — SKILL.md § Step 5.3, written the moment Land's merge succeeds —
   before the checks on the base, any push, cleanup and `$WI done`. It is the record's
   only evidence that a target reached a merge, and SKILL.md § Step 6 reports it on the

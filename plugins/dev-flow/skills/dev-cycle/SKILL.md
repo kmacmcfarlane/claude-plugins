@@ -159,12 +159,12 @@ the plan agent revises, by a new serial.
   `trial:` lines and checks each of its window's planner and plan-review dispatches at
   their return — which revises by a new serial per the `investigate` skill's
   `references/investigation-format.md`. After `CLEAR`, its
-  blocking open questions go to the decision channel, and so does the fable cross-check
-  offer its stage calls for (`references/model-routing.md` § Fable cross-checks) — a yes
-  dispatches that cross-check through Step 4 before Step 6; then Step 6. With a work item:
+  blocking open questions go to the decision channel, with any fable cross-check offer
+  (`references/model-routing.md` § Fable cross-checks), which never holds the build;
+  then Step 6. With a work item:
   `$WI claim <id>` before the plan dispatch (unless already yours); after `CLEAR`,
   `$WI done <id> --note <series path>`, or `$WI handoff <id>` naming the series while
-  blocking questions or an offer are open.
+  blocking questions are open.
 - **A feature in full mode:** no separate dispatch; the implementer runs /investigate
   then /implement in its worktree, each in its orchestrated mode (each skill's § Running
   under an orchestrator), as the brief's dev-flow block directs
@@ -178,8 +178,8 @@ checks you run yourself). The agent file pins the effort and the field sets the 
 agents and when each runs: `references/model-routing.md` § Profiles, with the tables and
 worked examples. When the agent is not loaded, dispatch `general-purpose` with the same
 `model`, recorded `inherit` — asked first under an effort pin
-(`references/model-routing.md` § Fallback). Below the quota reserve the xhigh tier steps
-down and fable offers wait (`references/model-routing.md` § Below the quota reserve). This
+(`references/model-routing.md` § Fallback); below the quota reserve, its § Below the
+quota reserve. This
 step routes dev-cycle's own dispatches — planner, implementer, reviewer, and the fable
 cross-checks the operator accepts. The research skills
 route their lanes and verifiers by their own tables; nothing here governs them. Fix round
@@ -206,10 +206,8 @@ n = the nth re-dispatch or resume with findings = review round n+1; cap 4 review
    names — a new sub-agent that never saw the implementer's conversation: never a fork,
    never the implementer resumed, never you (except rule 5's waiver). Resuming the same
    reviewer for its own re-review is fine. `review <branch>` mode's reviewer is opus too.
-   **A fable cross-check is offered, never dispatched unasked:** at the stages
-   `references/model-routing.md` § Fable cross-checks names, offer one with why through
-   the decision channel, and dispatch it on `cross-checker` or `cross-checker-deep` only on
-   the operator's yes — a second reviewer, never a substitute.
+   **Fable cross-checks are offered with why, never dispatched unasked**
+   (`references/model-routing.md` § Fable cross-checks).
 5. **Review waiver: `review: self`.** Pure prose with no operational claim gets your own
    review instead of a reviewer, recorded as `review: self` above its verdict (Step 4).
    The test, and what always keeps a reviewer: `references/model-routing.md` § Review
@@ -315,9 +313,8 @@ n = the nth re-dispatch or resume with findings = review round n+1; cap 4 review
    (`references/bindings.md` § Decisions). Never argue a severity down.
 4. **What escalates** through the decision channel is only a show-stopper with real
    impact: a `SHOW_STOPPER` verdict, a finding that changes the scope or reverses a
-   recorded human decision, or the cap — and a fable cross-check offer, which is the
-   operator's to accept (`references/model-routing.md` § Fable cross-checks). Everything
-   else, critical included, is resolved
+   recorded human decision, or the cap — and a fable cross-check offer (rule 4).
+   Everything else, critical included, is resolved
    inside the loop. The one exception: `review <branch>` mode's ask, before any fix loop,
    whether to dispatch an implementer at all (Usage) — a mode-entry decision, not a
    severity escalation.
@@ -327,10 +324,7 @@ n = the nth re-dispatch or resume with findings = review round n+1; cap 4 review
    `findings:` block (`references/record-lines.md`) — what a fix dispatch reads. A `BLOCKED`
    reviewer is not a round and carries its reason in place of a round number —
    `verdict: BLOCKED at <token> — permission | setup`, the same closed set Step 3.5
-   writes. After a plan-stage fable cross-check's verdict, also its
-   `cross-check: plan-stage <high | xhigh> <n> accepted highs` line, the keep rule's count
-   (`references/model-routing.md` § Fable cross-checks). Also record: findings fixed,
-   findings declined with reasons, and the reviewer
+   writes. Also record: findings fixed, findings declined with reasons, and the reviewer
    NOTES worth keeping. Reviewer questions you cannot settle go on Step 6's
    `open questions:`.
 
@@ -381,8 +375,9 @@ Only after a `CLEAR` recorded against the current HEAD — the last `verdict:` l
    `review <branch>` mode never deletes `<branch>` and removes only a worktree this cycle
    added itself (`references/bindings.md` § Landing).
 5. **Close the item**: `$WI done <id> --note <merge-sha>`, after the `landed:` line
-   step 3 wrote, so a run that dies between the two still says it landed. For `Leave the
-   branch` nothing merged: no `landed:` line, and `$WI handoff <id>` with `--next` naming
+   step 3 wrote, so a run that dies between the two still says it landed. The last
+   piece of a multi-item capability then gets the post-landing offer (rule 4). For
+   `Leave the branch` nothing merged: no `landed:` line, and `$WI handoff <id>` with `--next` naming
    the branch instead.
 
 A red check or a doctrine miss before the merge (steps 1–2) stops the landing:

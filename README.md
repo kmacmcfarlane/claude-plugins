@@ -283,8 +283,8 @@ model moves a file across models. Eleven are the dev cycle's role workers:
 | `planner-deep` | opus, xhigh | the same, for an item pinned to effort xhigh or a plan round that routing sends to xhigh |
 | `reviewer` | opus, high | reviews a change or a plan in a fresh context and returns a verdict |
 | `reviewer-light` | opus, medium | the same, only for fact and docs changes in the home-network and product-docs repos |
-| `cross-checker` | fable, high | cross-checks a plan or research synthesis after its opus `CLEAR`, only when the operator accepts routing's offer at the plan stage |
-| `cross-checker-deep` | fable, xhigh | the same at the estate-wide, post-landing and at-the-cap stages and the plan stage's second try, only on the operator's yes |
+| `cross-checker` | fable, high | cross-checks work after its opus review, only on the operator's yes to routing's offer |
+| `cross-checker-deep` | fable, xhigh | the same at xhigh, at the stages routing names |
 
 `dev-cycle` and `librarian-mode` dispatch them by the `dev-cycle` skill's model routing, with
 the model passed on every call; none is for direct use. A session that has not loaded an agent

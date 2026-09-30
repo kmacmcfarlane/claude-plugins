@@ -225,12 +225,14 @@ the estate-wide one included (answer 130 a), is therefore an **offer**: the orch
 names the stage and why a cross-check would help this work, through the decision channel
 (`bindings.md` § Decisions) — its options: add the cross-check (the file and its effort),
 or go on without it — and dispatches it only on the operator's yes. Silence is never a
-yes. An offer already answered on the item is not made again. Below the quota reserve an
-offer waits (§ Below the quota reserve).
+yes. An offer is not made again once answered on the item, nor on a plan whose record
+already shows a fable cross-check after its last `CLEAR` (an older record's
+orchestrator-added second opinion included). Below the quota reserve an offer waits
+(§ Below the quota reserve).
 
 | Stage | Offered when | File | What it reviews |
 |---|---|---|---|
-| **Plan stage** | after the opus plan review's `CLEAR`, on plans that change a contract other plugins or repos use, change doctrine, or that the operator called critical; and on research syntheses whose decision no plan covers | `cross-checker` while the keep rule holds the stage at high; `cross-checker-deep` on its second try; none once it drops | the series (or synthesis), plan-review variant |
+| **Plan stage** | after the opus plan review's `CLEAR`, on plans that change a contract other plugins or repos use, change doctrine, or that the operator called critical; and on research syntheses whose decision no plan covers, when the synthesis lands in the orchestrator's hands (its run's own verification done) | `cross-checker` while the keep rule holds the stage at high; `cross-checker-deep` on its second try; none once it drops | the series (or synthesis), plan-review variant |
 | **Estate-wide plan** | once per series, on the final plan, after its opus `CLEAR`: plans that change what every repo's agents do — routing, agent factoring, librarian doctrine, plugin boundaries. On that plan it takes the plan stage's place | `cross-checker-deep` | the series, plan-review variant |
 | **Post-landing** | after the last piece of a multi-item capability lands: the item has a parent, or is a feature of a plan series, and it is the last open child | `cross-checker-deep` | the whole capability on the base at the landing sha |
 | **At the cap** | a plan at the review cap with a high still open: an option of the cap's own decision, "one fable cross-check: stop or continue" | `cross-checker-deep` | the series as it stands, plan-review variant |
@@ -241,58 +243,64 @@ in scope (`record-lines.md`, a `format.md`, `provider-interface.md`, `sensor-con
 doctrine is README principles or catalog, `marketplace.json`, a plugin added or moved, or
 CLAUDE.md § Placement rules; the operator called it critical as § Critical work reads it.
 
-**What waits on an offer.** A plan with an open offer is not built until the offer is
-answered: a `plan` run still reaches Step 6, with the offer under `decisions needed:`, and
-hands its item off (`$WI handoff`) rather than closing it. A post-landing offer holds
-nothing: the landing stands. The at-the-cap offer is part of the cap's decision.
+**An offer never holds the build.** The plan's build proceeds while a fable offer is
+open, deferred, or waiting below the reserve; a `plan` run closes as usual, the offer under
+its Report's `decisions needed:`. An accepted plan-stage or estate-wide check runs when
+headroom allows; its accepted findings enter the build's fix loop if the build has not
+landed, else they become a follow-up item. A post-landing offer holds nothing: the landing
+stands. The at-the-cap offer is part of the cap's decision.
 
 **The author rule.** On work fable wrote — a `model: fable` pin's plan or build — a fresh
 opus review stands in for the fable cross-check at every stage: the offer names `reviewer`
-(opus high) in its place, never fable checking fable.
+(opus high) in its place, never fable checking fable. It is offered and run exactly as a
+cross-check (below), recorded `dispatch: reviewer opus high — cross-check stand-in
+(<stage>); answer <N>`: the one opus dispatch a `model: fable` pin allows, by the
+operator's answer 124 b, and no review round. Not being fable, it writes no `cross-check:`
+line and never counts toward the keep rule.
 
 **The keep rule** (plan stage, research syntheses included). The stage is kept only if at
 least 2 of its first 8 checks find a high the opus review missed; else it tries xhigh for
 8 more, then drops. A check counts only when it ran — an offer the operator accepted — and
 it finds one when it raises a high or critical the opus `CLEAR` missed and the
-orchestrator accepts into the fix round. After each plan-stage cross-check's verdict,
-append `cross-check: plan-stage <high | xhigh> <n> accepted highs` (`record-lines.md`),
-`<n>` 0 for a `CLEAR`. Before each plan-stage offer, count the lines over the trial's
-stores (§ The xhigh trial, Sample):
+orchestrator accepts. When each plan-stage cross-check returns, append
+`cross-check: plan-stage <high | xhigh> <n> accepted highs <UTC time>` (`record-lines.md`),
+`<n>` 0 for a `CLEAR`, the time as `YYYY-MM-DDTHH:MMZ`. Before each plan-stage offer, take
+the **first 8** lines by that time over the trial's stores (§ The xhigh trial, Sample), so
+concurrent sessions read the same 8:
 
 ```bash
-for s in $STORES; do grep -h '^cross-check: plan-stage high ' "$s"/items/*.md; done
+for s in $STORES; do grep -h '^cross-check: plan-stage high ' "$s"/items/*.md; done | sort -k7,7 | head -8
 ```
 
 - Fewer than 8 `high` lines: the stage offers `cross-checker`.
-- 8 or more `high` lines, at least 2 of them with `<n>` of 1 or more: kept at high.
-- Otherwise the same count on the `xhigh` lines, offering `cross-checker-deep`; a short 8
-  there drops the stage — no more plan-stage offers. The operator can still ask for one.
+- 8, at least 2 of those first 8 with `<n>` of 1 or more: kept at high.
+- Otherwise the same on the first 8 `xhigh` lines, offering `cross-checker-deep`; a short
+  8 there drops the stage — no more plan-stage offers. The operator can still ask for one.
 
 A move to xhigh or a drop is said once, under the Report's `open questions:`.
 
 **Running one**, on the operator's yes:
 
-- Record `dispatch: cross-checker fable <high | xhigh> — cross-check (<stage>); answer <N>`.
-  It runs at its file's effort, never the session's.
+- Record `dispatch: cross-checker fable <high | xhigh> — cross-check (<stage>); answer <N>`
+  on the item that carries the answer. It is a **rider**, like a helper line
+  (`record-lines.md`): no review round, and it never moves that item's cycle. It runs at
+  its file's effort, never the session's, and is never resumed.
 - **Plan, estate-wide and at-the-cap stages** review a plan, never a built diff; brief them
-  with the plan-review variant (`review-brief.md`). At the plan and estate-wide stages the
-  verdict is a review round like any other and counts toward the cap: a `NEEDS_CHANGES`
-  opens a fix round whose re-review goes to the **opus** reviewer (`fix-loop.md` § A
-  NEEDS_CHANGES round says which `agent:` line that is) — resumed, with the cross-check's
-  findings pasted for verification; the cross-checker is never resumed, so every fix lands
-  under an opus review. They are not offered when the opus `CLEAR` was review round 4: that
-  is the cap, and only the at-the-cap stage runs there, as the operator's grant; its
-  verdict and findings go back to the operator with the cap's decision, stop or continue.
-- **Post-landing** runs as its own `review` run on the base at the landing sha, recorded in
-  the capability's parent item, or in a work item filed for it when there is none — never
-  in the landed item's record. Its brief is the review-mode variant with a
-  whole-capability intent: does it work for its operator. It dispatches no implementer:
-  its findings become follow-up work items and decisions; it never reverts a landing and
-  is no round of any item.
-- One dispatch per accepted offer. A `CLEAR` goes on as any `CLEAR` does.
+  with the plan-review variant (`review-brief.md`). Their accepted findings go to the build
+  as the rule above says: into the build's next fix round, re-reviewed by the build's
+  opus reviewer and counted toward the build's cap, or, once it has landed, a follow-up
+  item. The plan and estate-wide stages are not offered when the opus `CLEAR` was review
+  round 4: that is the cap, and only the at-the-cap stage runs there, as the operator's
+  grant; its verdict and findings go back to the operator with the cap's decision, stop or
+  continue.
+- **Post-landing** reviews the base at the landing sha, recorded on the capability's
+  parent item, or on a work item filed for it when there is none — never in the landed
+  item's record. Its brief is the review-mode variant with a whole-capability intent:
+  does it work for its operator. Its findings become follow-up work items and decisions;
+  it never reverts a landing.
+- One dispatch per accepted offer.
 - A cross-check that cannot run — fable unavailable, or the agent lost — is dropped,
-  never fallen back to opus: the opus `CLEAR` before it stands (`resume.md` § The state
-  table, S3b). Name the drop under Step 6's `open questions:`, so the operator can accept
+  never fallen back to opus: the opus `CLEAR` before it stands. Name the drop under Step 6's `open questions:`, so the operator can accept
   it again. A `cross-checker` file that is not loaded is not a drop: it falls back as any
   unpinned dispatch does (§ Fallback).
 
@@ -370,8 +378,8 @@ high; when a plan turns out hard in its first or second review, its next planner
 runs at xhigh on half such plans, chosen by item id, as a two-week trial against the other
 half; an item the operator pins always gets xhigh** (rule 8, never a trial unit). This
 section is that trial. It routes plan rounds only; builds stay out, since they close a
-median of one round after a late high. Below the quota reserve a bump round steps down
-and its unit is excluded (§ Below the quota reserve).
+median of one round after a late high. A window planner round due below the quota
+reserve excludes its unit, in either arm (§ Below the quota reserve).
 
 - **Unit.** A `plan` run whose **late high** (L) falls at plan-review round 1 or 2: at
   least one critical or two highs at round 1, or any high at round 2, read off the
@@ -459,15 +467,16 @@ the extra-deep opus tier steps down to high and fable offers wait until the rese
 items still ask.**
 
 **Below the reserve** means the quota sense's reading shows a window spent down to its
-reserve: `headroom` ≤ 0 in the five-hour or the weekly window (the `librarian-mode`
-skill's `references/budget.md` § The numbers). A librarian uses its latest reading; a
+reserve: `headroom` ≤ 0 in the **weekly** (`seven_day`) window (the `librarian-mode`
+skill's `references/budget.md` § The numbers). The five-hour window never triggers it. A librarian uses its latest reading; a
 standalone run takes one with that skill's `scripts/quota_budget.py --read-only`. No
 signal reads as not below. Read it before each dispatch or offer the table names.
 
 | What would run | Below the reserve |
 |---|---|
-| `planner-deep` with no pin — the trial's bump arm | `planner`, a fresh dispatch, recorded `dispatch: planner opus high — trial bump stepped down (below the quota reserve)`. The unit is excluded: `trial: xhigh-planner bump excluded — below the quota reserve` (§ The xhigh trial) |
-| A fable cross-check offer (§ Fable cross-checks) | waits: not raised until a reading is above the reserve again, after the reset. `$WI handoff <id> --next` names the offer meanwhile |
+| `planner-deep` with no pin — the trial's bump arm | `planner`, a fresh dispatch, recorded `dispatch: planner opus high — trial bump stepped down (below the quota reserve)` |
+| Any trial window's planner round, either arm | the unit is excluded: `trial: xhigh-planner <bump \| control> excluded — below the quota reserve` (§ The xhigh trial), so both arms count only windows run above the reserve |
+| A fable cross-check offer (§ Fable cross-checks) | waits: not raised until a reading is above the reserve again, after the reset; the Report's `open questions:` names it waiting. The build never waits for it |
 | An accepted cross-check not yet dispatched | waits the same way; the operator's yes stands |
 | An item's `effort: xhigh` or `model: fable` pin | asks through the decision channel: run at the pin now, or wait for the reset. Once per item until the reset: the answer covers the item's later dispatches until then |
 | Reviewers, `implementer`, `implementer-critical`, `scribe`, `scout` | unchanged: no reviewer file runs above high, and a reviewer's file is set at its first review |
@@ -647,12 +656,13 @@ the final serial, one fable xhigh cross-check, naming why: the plan moves a boun
 repo's agents route by. Only on the operator's yes:
 
 ```
-decision 41: Add a fable xhigh cross-check of the ralph split plan? It redraws plugin boundaries every repo's agents rely on — options: (a) add it (cross-checker-deep) [recommended] | (b) go on without it | (z) decide later
+decision 41: Add a fable xhigh cross-check of the ralph split plan? It redraws plugin boundaries every repo's agents rely on — options: (a) add it (cross-checker-deep): one fable xhigh review of the final plan; its findings join the build's fix loop [recommended] | (b) go on without it: no fable spend; the opus CLEAR stands | (z) decide later: the build goes ahead; the offer stays open
 answer 41: a
 dispatch: cross-checker fable xhigh — cross-check (estate-wide plan); answer 41
 ```
 
-Had the operator answered (b), nothing fable runs and the plan goes on to its build. Had
+The build starts without waiting for the answer. Had the operator answered (b), nothing
+fable runs. Had
 a `model: fable` pin written the plan, the offer would name a fresh `reviewer` at opus
 high instead (the author rule).
 

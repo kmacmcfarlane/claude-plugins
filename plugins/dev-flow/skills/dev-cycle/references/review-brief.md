@@ -7,7 +7,7 @@ reviewer starts with none of the orchestrator's context and none of the implemen
 must be able to review from this text alone. Send it as the prompt of one background
 `dev-flow:reviewer` Agent (opus high), or `dev-flow:reviewer-light` (opus medium) for the
 kind `model-routing.md` § Reviewer effort by kind names — for a fable cross-check the
-operator accepted, `dev-flow:cross-checker` or `cross-checker-deep` (§ Fable
+operator accepted, `dev-flow:cross-checker` or `dev-flow:cross-checker-deep` (§ Fable
 cross-checks); `general-purpose` only as `model-routing.md` § Fallback says. The reviewer
 is review-only: it never edits, never commits. The orchestrator sets the `Model:` line
 from SKILL.md § Step 2 rule 4 — always opus, or fable under a `model: fable` pin or as an
