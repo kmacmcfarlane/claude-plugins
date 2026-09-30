@@ -14,6 +14,9 @@ from SKILL.md § Step 2 rule 4 — always opus, or fable under a `model: fable` 
 accepted cross-check — and passes the same value to the Agent tool's `model` field; a reviewer
 is never routed below opus, and an `effort:` pin never moves it off `reviewer` (rule 8).
 The reviewer is always a fresh agent: never a fork and never the implementer resumed.
+A `findings: cross-check (<stage>)` block on the item since the last verdict is pasted
+under "The implementer claims" for the reviewer to rule on; each that stands goes in its
+FINDINGS (`model-routing.md` § Fable cross-checks).
 
 The prohibitions, the severity scale and the report shape are fixed. The check commands vary
 with what the change touches — take them from `review-checklist.md`, the same list the

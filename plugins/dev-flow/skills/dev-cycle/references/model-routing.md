@@ -223,9 +223,12 @@ cross-check would be helpful and why. The operator needs to decide to add the fa
 cross-check explicitly, but you should offer it when appropriate."* Every stage below,
 the estate-wide one included (answer 130 a), is therefore an **offer**: the orchestrator
 names the stage and why a cross-check would help this work, through the decision channel
-(`bindings.md` § Decisions) — its options: add the cross-check (the file and its effort),
-or go on without it — and dispatches it only on the operator's yes. Silence is never a
-yes. An offer is not made again once answered on the item, nor on a plan whose record
+(`bindings.md` § Decisions) as a tagged `decision: fable-offer — …` (`record-lines.md`)
+— its options: add the cross-check (the file and its effort), or go on without it — and
+dispatches it only on the operator's yes. The GATE never reads the tagged pair, so an
+offer neither holds a run nor stands in for another decision's answer; the orchestrator
+reads its answer itself when it next acts on the item. The at-the-cap offer is instead an
+option of the cap's own, untagged decision. Silence is never a yes. An offer is not made again once answered on the item, nor on a plan whose record
 already shows a fable cross-check after its last `CLEAR` (an older record's
 orchestrator-added second opinion included). Below the quota reserve an offer waits
 (§ Below the quota reserve).
@@ -246,25 +249,31 @@ CLAUDE.md § Placement rules; the operator called it critical as § Critical wor
 **An offer never holds the build.** The plan's build proceeds while a fable offer is
 open, deferred, or waiting below the reserve; a `plan` run closes as usual, the offer under
 its Report's `decisions needed:`. An accepted plan-stage or estate-wide check runs when
-headroom allows; its accepted findings enter the build's fix loop if the build has not
-landed, else they become a follow-up item. A post-landing offer holds nothing: the landing
-stands. The at-the-cap offer is part of the cap's decision.
+headroom allows. Its accepted findings that arrive **before the build's `CLEAR`** are
+written onto the build's item — the item whose cycle builds that series — as a
+`findings: cross-check (<stage>) — …` block (`record-lines.md`), and open its next fix
+round: the build's next review brief pastes them, a reviewer already running is sent them
+before it returns, and that review's verdict carries each that stands, counted toward the
+build's cap. Any that arrive **after the build's `CLEAR`** — merged or not — or on a plan
+whose build has not started become a follow-up item. A post-landing offer holds
+nothing: the landing stands. The at-the-cap offer is part of the cap's decision.
 
 **The author rule.** On work fable wrote — a `model: fable` pin's plan or build — a fresh
 opus review stands in for the fable cross-check at every stage: the offer names `reviewer`
 (opus high) in its place, never fable checking fable. It is offered and run exactly as a
 cross-check (below), recorded `dispatch: reviewer opus high — cross-check stand-in
 (<stage>); answer <N>`: the one opus dispatch a `model: fable` pin allows, by the
-operator's answer 124 b, and no review round. Not being fable, it writes no `cross-check:`
-line and never counts toward the keep rule.
+operator's answer 124 b, and no review round. Its return line reads `stand-in` in place
+of an effort, so it never counts toward the keep rule.
 
 **The keep rule** (plan stage, research syntheses included). The stage is kept only if at
 least 2 of its first 8 checks find a high the opus review missed; else it tries xhigh for
 8 more, then drops. A check counts only when it ran — an offer the operator accepted — and
 it finds one when it raises a high or critical the opus `CLEAR` missed and the
-orchestrator accepts. When each plan-stage cross-check returns, append
-`cross-check: plan-stage <high | xhigh> <n> accepted highs <UTC time>` (`record-lines.md`),
-`<n>` 0 for a `CLEAR`, the time as `YYYY-MM-DDTHH:MMZ`. Before each plan-stage offer, take
+orchestrator accepts. When each cross-check returns, append
+`cross-check: <stage> <high | xhigh | stand-in> <n> accepted highs <UTC time>`
+(`record-lines.md`), `<n>` 0 for a `CLEAR`, the time as `YYYY-MM-DDTHH:MMZ`; the keep
+rule reads the `plan-stage` ones. Before each plan-stage offer, take
 the **first 8** lines by that time over the trial's stores (§ The xhigh trial, Sample), so
 concurrent sessions read the same 8:
 
@@ -287,9 +296,7 @@ A move to xhigh or a drop is said once, under the Report's `open questions:`.
   its file's effort, never the session's, and is never resumed.
 - **Plan, estate-wide and at-the-cap stages** review a plan, never a built diff; brief them
   with the plan-review variant (`review-brief.md`). Their accepted findings go to the build
-  as the rule above says: into the build's next fix round, re-reviewed by the build's
-  opus reviewer and counted toward the build's cap, or, once it has landed, a follow-up
-  item. The plan and estate-wide stages are not offered when the opus `CLEAR` was review
+  as § An offer never holds the build says. The plan and estate-wide stages are not offered when the opus `CLEAR` was review
   round 4: that is the cap, and only the at-the-cap stage runs there, as the operator's
   grant; its verdict and findings go back to the operator with the cap's decision, stop or
   continue.
@@ -300,9 +307,11 @@ A move to xhigh or a drop is said once, under the Report's `open questions:`.
   it never reverts a landing.
 - One dispatch per accepted offer.
 - A cross-check that cannot run — fable unavailable, or the agent lost — is dropped,
-  never fallen back to opus: the opus `CLEAR` before it stands. Name the drop under Step 6's `open questions:`, so the operator can accept
-  it again. A `cross-checker` file that is not loaded is not a drop: it falls back as any
-  unpinned dispatch does (§ Fallback).
+  never fallen back to opus: the opus `CLEAR` before it stands. Write its
+  `cross-check: … dropped` line and name the drop under Step 6's `open questions:`, so
+  the operator can accept it again; a resume finds a lost one the same way
+  (`resume.md` § Phase lines and riders). A `cross-checker` file that is not loaded is
+  not a drop: it falls back as any unpinned dispatch does (§ Fallback).
 
 ## Review waiver
 
@@ -656,7 +665,7 @@ the final serial, one fable xhigh cross-check, naming why: the plan moves a boun
 repo's agents route by. Only on the operator's yes:
 
 ```
-decision 41: Add a fable xhigh cross-check of the ralph split plan? It redraws plugin boundaries every repo's agents rely on — options: (a) add it (cross-checker-deep): one fable xhigh review of the final plan; its findings join the build's fix loop [recommended] | (b) go on without it: no fable spend; the opus CLEAR stands | (z) decide later: the build goes ahead; the offer stays open
+decision 41: fable-offer — Add a fable xhigh cross-check of the ralph split plan? It redraws plugin boundaries every repo's agents rely on — options: (a) add it (cross-checker-deep): one fable xhigh review of the final plan; its findings join the build's fix loop [recommended] | (b) go on without it: no fable spend; the opus CLEAR stands | (z) decide later: the build goes ahead; the offer stays open
 answer 41: a
 dispatch: cross-checker fable xhigh — cross-check (estate-wide plan); answer 41
 ```

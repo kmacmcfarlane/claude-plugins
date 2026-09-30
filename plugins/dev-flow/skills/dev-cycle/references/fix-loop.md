@@ -42,11 +42,12 @@ SKILL.md § Step 4.
   resume the **reviewer** (its `— resume` pair recorded the same way) — re-dispatched
   fresh only if gone, or when its tier or file changed (a waived fable pin; a
   `reviewer-light` whose round no longer passes `model-routing.md` § Reviewer effort by
-  kind, which moves up to `reviewer`; its opus never changes, rule 4). **After a fable
-  cross-check** the reviewer resumed is the opus one — the last `agent: reviewer` line —
-  never the cross-check, whose line is
-  `agent: cross-checker` and which is never resumed (`model-routing.md` § Fable
-  cross-checks). In a record written before the role agents, a second opinion's own line
+  kind, which moves up to `reviewer`; its opus never changes, rule 4). The reviewer
+  resumed is the last `agent: reviewer` line **under a phase `dispatch:`** — never a
+  cross-check's or the author rule's stand-in's, helper lines that are never resumed
+  (`model-routing.md` § Fable cross-checks). In a record written before cross-checks
+  became riders, a cross-check's line is `agent: cross-checker`, never resumed; in one
+  written before the role agents, a second opinion's own line
   is an `agent: reviewer` too: there the opus reviewer is the `agent: reviewer` line
   before the fable dispatch, never the fable one, whose line is the last. Resume it with
   the re-review variant in

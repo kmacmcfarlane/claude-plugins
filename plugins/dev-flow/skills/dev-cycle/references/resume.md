@@ -33,7 +33,11 @@ or `scout`, which a caller writes for its own helper or read-only question, or a
 cross-check on an accepted offer (`record-lines.md`), and the
 `agent:` line under it (`record-lines.md`). It never counts as a phase line, so a scribe
 rendering a decision's card leaves that decision after the last phase line, and the GATE
-still reads it as pending.
+still reads it as pending. One rider check runs at every resume, outside the states: a
+cross-check helper line with no `cross-check:` line after it is probed as LIVE probes an
+id — alive, it is left to finish; gone, its `cross-check: … dropped` line is written and
+the drop is named in the resume summary and the Report's `open questions:`, so the
+operator can accept it again.
 
 A line that is missing reads as **not recorded**, and every default escalates: a
 `BLOCKED` with no reason reads as `permission` (`record-lines.md`), an unreadable freshness test
@@ -98,7 +102,7 @@ words. `<workspace>` below is that line's third field.
 
    | arm | the pair read | its value |
    |---|---|---|
-   | **state-scoped** — every question but one | the last `decision:` or `answer:` recorded after the last phase line, skipping the tagged decision's own lines — its `decision:`, its `answer:` (a caller's `answer N:` by its number) and `spent:` — which only the run-scoped arm reads | an `answer:` → `ANSWERED`; a `decision:` with no `answer:` after it → `PENDING`; neither → `NONE` |
+   | **state-scoped** — every question but one | the last `decision:` or `answer:` recorded after the last phase line, skipping the tagged decisions' own lines — each `dispatch-permission` or `fable-offer` `decision:`, its `answer:` (a caller's `answer N:` by its number) and `spent:`. Only the run-scoped arm reads the dispatch permission; nothing here reads a fable offer, which never gates a run | an `answer:` → `ANSWERED`; a `decision:` with no `answer:` after it → `PENDING`; neither → `NONE` |
    | **run-scoped** — `q` is `review` mode's dispatch permission | the last `decision: dispatch-permission` anywhere in the record | its `answer:` recorded → `ANSWERED`; none → `PENDING`; no such line, or a `spent:` line recorded after it → `NONE` |
 
    Under a caller the tagged line is its `decision N:` carrying the same tag, and its

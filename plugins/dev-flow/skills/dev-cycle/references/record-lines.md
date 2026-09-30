@@ -110,7 +110,11 @@ interrupted run up again; a line that is missing reads there as not recorded:
 - `findings: …` — SKILL.md § Step 4.5, written together with a `NEEDS_CHANGES` or
   `SHOW_STOPPER` verdict: the reviewer's FINDINGS section, pasted verbatim, one line per
   finding in the reviewer's (or the self-review's) own numbering — the source
-  `fix-loop.md`'s NEEDS_CHANGES round hands to the fix dispatch unchanged.
+  `fix-loop.md`'s NEEDS_CHANGES round hands to the fix dispatch unchanged. One more
+  writer, a different role: the orchestrator that ran an accepted cross-check writes its
+  accepted findings onto the build's item as `findings: cross-check (<stage>) — …`, a
+  rider no verdict carries, which the build's next review brief pastes for that reviewer
+  to rule on (`model-routing.md` § Fable cross-checks).
 - `target: <mode> <ref> <workspace>` — SKILL.md § Step 0.3, **every mode**, written before
   any dispatch.
   - `<mode>` is one bare word, `full` | `plan` | `review` — **one token wide in every
@@ -144,16 +148,20 @@ interrupted run up again; a line that is missing reads there as not recorded:
   in the session that raised it can put it to a human verbatim. Under a caller it
   composes as `decision N: <question> — options: …`, so the caller's numbered channel is
   unchanged.
-  **Exactly one decision carries a tag**: SKILL.md § Usage's `review <branch>` ask,
-  whether to dispatch an implementer for the findings, is written
-  `decision: dispatch-permission — <question> — options: <a> | <b>`, and under a caller
-  the same tag follows the number of `decision N:`. The tag is a fixed identifier, not a
-  kind: every other decision is untagged. It lets a later reader find that one decision
-  by name; what its answer's scope is, `bindings.md` § Decisions says.
+  **Two tags exist**, each a fixed identifier, not a kind; every other decision is
+  untagged. SKILL.md § Usage's `review <branch>` ask, whether to dispatch an
+  implementer for the findings, is written
+  `decision: dispatch-permission — <question> — options: <a> | <b>`; a fable cross-check
+  offer (`model-routing.md` § Fable cross-checks) is written
+  `decision: fable-offer — <question> — options: …`. Under a caller the tag follows the
+  number of `decision N:`. A tag lets a later reader find that decision by name; what
+  the dispatch permission's answer scope is, `bindings.md` § Decisions says, and the
+  GATE never reads a `fable-offer` pair (`resume.md`, GATE).
 - `answer: <decision> — <reply>` — `bindings.md` § Decisions and SKILL.md § Step 3.5 (a
   `NEEDS_CONTEXT` answer), written as soon as the reply arrives; `<decision>` repeats the
   `decision:` line's question (or, for a `NEEDS_CONTEXT`, the question) — for the one
-  tagged decision, its tag instead: `answer: dispatch-permission — <reply>`. A caller's
+  tagged decision, its tag instead: `answer: dispatch-permission — <reply>`,
+  `answer: fable-offer — <reply>`. A caller's
   numbered pair — librarian-mode's `decision N: …` and `answer N: <reply>`, matched by
   `N` — is the same pair and is read the same way; its `answer N:` carries no tag, the
   number already pairing it. Under a caller whose session loads the
@@ -185,14 +193,15 @@ interrupted run up again; a line that is missing reads there as not recorded:
   (`model-routing.md` § Below the quota reserve). An item that is no trial unit carries
   neither. Each is one unindented line, since the trial's count reads them with `grep -x`
   and `grep '^trial:'`.
-- `cross-check: plan-stage <high | xhigh> <n> accepted highs <UTC time>` — written by
-  the orchestrator that dispatched a plan-stage fable cross-check (a research synthesis's
-  included), when it returns, and by nothing else: `<n>` is the number of its high or
-  critical findings the opus `CLEAR` missed that the orchestrator accepts, `0` for a
-  `CLEAR`; the time is `YYYY-MM-DDTHH:MMZ`. Only a fable cross-check the operator accepted
-  and that ran writes one — never the author rule's opus stand-in. The keep rule takes
-  the first 8 by time over the stores (`model-routing.md` § Fable cross-checks), so each
-  is one unindented line.
+- `cross-check: <stage> <high | xhigh | stand-in> <n> accepted highs <UTC time>` —
+  written by the orchestrator that dispatched a cross-check, when it returns, and by
+  nothing else: it is the rider's return. `<stage>` is `plan-stage` (a research
+  synthesis's included), `estate-wide`, `post-landing` or `at-the-cap`; `stand-in` marks
+  the author rule's opus review; `<n>` is the number of its high or critical findings the
+  opus `CLEAR` missed that the orchestrator accepts, `0` for a `CLEAR`; the time is
+  `YYYY-MM-DDTHH:MMZ`. A dropped cross-check writes `<n>` as `dropped`. The keep rule
+  counts only `plan-stage high` and `plan-stage xhigh` lines, the first 8 by time over
+  the stores (`model-routing.md` § Fable cross-checks), so each is one unindented line.
 - `landed: <merge sha>` — SKILL.md § Step 5.3, written the moment Land's merge succeeds —
   before the checks on the base, any push, cleanup and `$WI done`. It is the record's
   only evidence that a target reached a merge, and SKILL.md § Step 6 reports it on the
