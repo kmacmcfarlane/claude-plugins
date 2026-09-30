@@ -2,12 +2,11 @@
 id: decisions-how-decisions-are-born-stored-5140
 title: "decisions: how decisions are born, stored and retired (genesis and lifecycle research spike)"
 type: spike
-status: doing
+status: done
 priority: 1
-owner: Kyle-McFarlane@7696505da8e1
-claimed: 2026-09-29T05:26Z
 created: 2026-09-29
-updated: 2026-09-29
+updated: 2026-09-30
+closed: 2026-09-30
 refs:
   - operator 2026-09-29
 ---
@@ -59,3 +58,7 @@ decision 99: Should the store record when an answer was carried out, superseded 
   rec: (c) · basis partial — puts the operator's words in the tracked store at the cost of one short chore
 wake 98: the pyramid decision turn (decision-handling-the-pyramid-shaped-dec-69ee) — operator 2026-09-29: "let's continue before making final decisions"
 wake 99: the pyramid decision turn (decision-handling-the-pyramid-shaped-dec-69ee) — operator 2026-09-29: "let's continue before making final decisions"
+answer 98: a (pyramid answer page, 2026-09-30T20:51Z)
+answer 99: c (pyramid answer page, 2026-09-30T20:51Z)
+2026-09-30 builds filed from 98 a / 99 c: C2 decisions-record-one-counter-for-every-q-b6f7, C1 wi-parse-closed-n-list-decisions-by-stat-728a, C4 dev-cycle-record-open-question-and-close-8edb, C7 decisions-record-every-answer-line-keeps-3716, backfill store-re-record-old-answers-in-the-opera-a5d8; C6 stays with OQ6 at the bf41 wake (c79e). Spike closed on its series 00-03.
+- 2026-09-30 done

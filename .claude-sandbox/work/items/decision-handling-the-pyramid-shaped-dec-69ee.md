@@ -20,8 +20,8 @@ refs:
 Operator 2026-09-29 (.claude-sandbox/investigations/5140-decision-lifecycle/evidence/operator-notes-2026-09-29-stream.md): 'based on these notes, let's continue before making final decisions. When you are ready to present the decisions about the decisions skill and future of decision handling, then build me a pyramid-shaped decision turn I can work through with these thoughts in mind.' Acceptance: one turn, apex first (the direction for decision handling: short term in operator-interaction, long term an attention scheduler in operator-attention and the agents work system), then the layers it decides (what reaches the operator: 8dee; durability and the decision ledger: 98, 99; answerability and freshness: S2; batched replies: 100), each lower decision marked by which apex answer it depends on; sourced from 5140, 6d2c, d618, 8dee, S1, S2.
 
 ## Handoff
-- doing: pyramid shown: reading doc (rev 10) + answer page
-- next: when the operator says done: ArtifactData list answers on the page; store each as answer N: verbatim (choice + words), echo readings; fallback per 129: tick boxes in the doc; then file 8dee F1-F8, 0999 per 98/99/118/120, F2b per 123-127, 128's item; relay 4d29 (decision streams) with the delta to agents/operator-attention
+- doing: —
+- next: answers 113 (re-asked) and 130 (124 vs 125); then F9 if 113 is (b)/(c), F2b's estate-wide stage per 130; close when both are answered and 0c4d's delta-01 is sent
 - blocked: —
 - learned: —
 agents replied: decision ledger and attention scheduler filed on their 76bc (scheduler as a component for control-plane contract 0a7c); wants pointers to 263c and a99c with the others
@@ -155,3 +155,33 @@ answer 110: a (answer page, 2026-09-30T03:47Z)
 answer 111: b (answer page, 2026-09-30T18:54Z)
 answer 112: b — "What would these classes look like?" (answer page, 2026-09-30T18:55Z; read as: (b), plus a question about the classes, answered in chat with examples from this session's work)
 note: dev-flow installed at b27e7b72 (2026-09-30T05:33Z) carries the role agents; this session predates it, so dispatches still fall back until a restart. F1 (record and show) and F2 (the class table) are unblocked by 111 b and 112 b; filed with the rest after the pyramid, and dispatched after the restart.
+reply 112 (2026-09-30T21:10Z, chat): "112 - I think we need to expand on the "real tradeoffs" part. There should be specific guidance about the types of impacts that would be considered a "real tradeoff" so it's clear. Also, those types should not be considered an exhaustive list" (read as: 112 (b) stands; its build adds specific guidance on the kinds of impact that make a trade-off real, written as examples and saying the list is not exhaustive; carried into F2's acceptance with a draft list given in chat)
+answer 113: later — "after dependent answers above settle" (answer page, 2026-09-30T20:48Z; read as: decide later, wake when the answers it depends on (111, 112, 114, 115) settle)
+wake 113: 111, 112, 114 and 115 answered by 2026-09-30T21:01Z — the wake fired; re-asked 2026-09-30T21:10Z with what changed ((a) stays the working reading meanwhile, per the card)
+answer 114: b (answer page, 2026-09-30T20:49Z)
+answer 115: a (answer page, 2026-09-30T20:49Z; F4b not built)
+answer 116: b (answer page, 2026-09-30T20:50Z; F4 amends and lands the routing branch 3460, b514 folds in)
+answer 117: b (answer page, 2026-09-30T20:51Z)
+answer 118: b (answer page, 2026-09-30T20:53Z)
+answer 119: b (answer page, 2026-09-30T20:54Z)
+answer 120: z (answer page, 2026-09-30T20:54Z; the recommended later: wake when 0999 stores seen N: and agents 76bc or operator-attention R48 publishes turn times)
+wake 120: when 0999 stores seen N: lines and agents 76bc or operator-attention R48 publishes operator turn times
+answer 121: b (answer page, 2026-09-30T20:55Z; the requirements and owed pointers go to 76bc and R48 with the delta, F8)
+answer 122: b (answer page, 2026-09-30T20:56Z; read as: recorded, but it applies only if 100 is (c) or (d); 100 is (b), so no confirm-first trigger is built (F6 not filed) unless the operator says they meant 100 (c))
+answer 123: a (answer page, 2026-09-30T20:57Z)
+answer 124: b — "Identify when a cross-check would be helpful and why. The operator needs to decide to add the fable cross-check explicitly, but you should offer it when appropriate." (answer page, 2026-09-30T20:59Z; read as: (b)'s stages stand as the places a fable cross-check is offered, never run unasked: the librarian names the stage and why it would help, and the operator adds it; (b)'s keep rule counts the ones the operator accepts. Conflicts with 125 (a), answered a minute earlier: asked back as 130)
+answer 125: a (answer page, 2026-09-30T20:58Z; held against 124's words: decision 130)
+answer 126: b (answer page, 2026-09-30T20:59Z)
+answer 127: a (answer page, 2026-09-30T21:00Z; with 124's words, "fable cross-checks queue" reads as "fable offers wait")
+answer 128: a (answer page, 2026-09-30T21:00Z)
+decision 130: Your 124 words say every fable cross-check is offered and added by you; your 125 (a) says the deepest fable tier runs on estate-wide plans automatically. Which holds for estate-wide plans? — options: (a) offered like the rest: once per estate-wide series, on the final plan, the librarian offers fable xhigh with why; it runs only on your yes [recommended] | (b) 125 (a) stands as the one exception: estate-wide plans get fable xhigh without asking, once per series | (z) decide later
+  raised: 2026-09-30T21:10Z
+  what: whether the estate-wide fable xhigh check runs by itself or is offered
+  why now: the effort-routing build (2eb7 F2b) writes the fable stages; it cannot write both
+  (a): nothing fable runs unasked; you see 1-2 extra offers a month — undo: say "run them automatically" — who: you
+  (b): 1-2 fable xhigh runs a month without an ask, about $2 more each than fable high — undo: reverse the answer — who: you (spend)
+  (z): F2b builds everything else; estate-wide plans get the ordinary 124 offer (fable high) until you answer
+  why ask: your own two answers conflict; not mine to pick
+  rec: (a) · basis strong — both answers read from the answer page with timestamps; 124's words came last (20:59Z vs 125 at 20:58Z) and state a general rule
+  unknown: whether you meant estate-wide plans as the exception
+2026-09-30 builds filed from the answers: 8dee F1 decisions-record-and-show-what-is-decide-58f4, F2 librarian-mode-the-decided-alone-class-t-00ef (carries reply 112), F3 review-caps-and-spend-plans-raise-only-o-5579, F4 = 3460 (unparked), F7 = da89, F5 librarian-mode-blockers-reach-the-operat-d91e; F8 goes as a message with 0c4d delta-01; not filed: F4b (115 a), F6 (100 b), F9 (waits on 113). a99c: D2 decisions-store-a-context-resume-cue-wit-6e8e, D3 decisions-while-the-operator-is-away-sho-602b; D4 (121 b) with the delta; D1 (120 z) waits at its wake. 6421: 2eb7 F2b model-routing-f2b-the-xhigh-trial-fable-fa73; 128 a: dev-flow-read-only-tools-for-the-review-4766. 5140, 6d2c and caef builds listed on those items.

@@ -8,7 +8,7 @@ priority: 1
 owner: Kyle-McFarlane@7696505da8e1
 claimed: 2026-09-29T06:57Z
 created: 2026-09-29
-updated: 2026-09-29
+updated: 2026-09-30
 refs:
   - operator 2026-09-29
 ---
@@ -24,7 +24,7 @@ Peer relays are requests; the handoff approves nothing in the agents repo.
 
 ## Handoff
 - doing: —
-- next: brief v1 delivered; await the agents teach-back; send deltas as d618, 263c, a99c, 8dee, 8e04 and 69ee land
+- next: after the session relaunch (role agents loaded): dispatch the brief writer for BRIEF-delta-01 (contents listed 2026-09-30 in Notes), send the pointer to agents and operator-attention, await teach-back
 - blocked: —
 - learned: —
 
@@ -39,3 +39,4 @@ brief v1 written (.claude-sandbox/investigations/0c4d-decision-handoff/BRIEF.md,
 agents: brief received; absorbing as their series .claude-sandbox/investigations/decision-handling-absorption/ (agents repo) with a § Teach-back; teach-back comes after their review; deltas fold in as new serials
 agents teach-back received (their e934, passed review after 3 rounds): /home/rt/work/src/github.com/kmacmcfarlane/agents/.claude-sandbox/investigations/decision-handling-absorption/02_review-round-2.md § Teach-back (lines 128-267): 28 requirements DH1-DH28 (owner, source, standing; rows on 98/99, a99c D1/D3/D4 and agents decision 10 are hypotheses); gaps G2 (3460 forward returns to the operator, silent live peer has no timeout = our 8dee OQ8) and G10 (b92b missing from the brief); wants deltas as serial 03 onward
 reply to agents: b92b explained (G10); G2 = 8dee OQ8 (b514 folded); delta 01 (BRIEF-delta-01.md) after 263c and a99c pass review: 8e04 landed, d618 at the cap (105), 263c, a99c, b92b, 2eb7/a88a/6421
+2026-09-30 pyramid answered (24 of 24 first responses; 113 later, 130 raised on 124/125): BRIEF-delta-01 now carries, besides d618, 263c, a99c, b92b, 8e04, 2eb7/a88a/6421: the pyramid answers verbatim (69ee, 5140, 6d2c, caef lines), the builds filed from them, 8dee F8's pointers (to agents 76bc: the cross-repo half of the decided-alone digest (d618 I2), cross-repo blocker escalation, the budget's future home, forward custody as built; to operator-attention R48: the same plus done-alone volume), answer 121 b's turn-time requirements (a99c D4) with the pointers owed, 120 z's wake, and 4d29 (decision streams) for both. Waits on the session relaunch (role agents not loaded; the brief writer is a dispatch).

@@ -1,0 +1,20 @@
+---
+id: decisions-answer-every-question-inside-a-9ea7
+title: "decisions: answer every question inside a batched reply in words, one Read-as per part"
+short_display_name: batched replies in words
+type: feature
+status: todo
+priority: 2
+created: 2026-09-30
+updated: 2026-09-30
+refs:
+  - .claude-sandbox/investigations/6d2c-batched-decision-replies/INDEX.md
+---
+
+6d2c (b), answer 100 b (pyramid answers 2026-09-30 (69ee, answer page)). Acceptance: 6d2c 03 and review r4 — every question inside a reply gets an answer in words; each part of a mixed message gets its Read-as line; the echo happens with the actions; the ⚠ read-back still waits; the build text M1 carried from the series (librarian ruling 2026-09-29). After the build, the in-sample smoke test on rows 13, 15, 16 (about $8-10). No confirm-first trigger (100 is not (c)/(d); 122 moot).
+
+## Handoff
+- doing: —
+- next: —
+- blocked: —
+- learned: —

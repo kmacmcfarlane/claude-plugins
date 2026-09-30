@@ -2,12 +2,11 @@
 id: decisions-how-well-one-turn-handles-a-ba-6d2c
 title: "decisions: how well one turn handles a batch of free-form decision replies (research spike)"
 type: spike
-status: doing
+status: done
 priority: 2
-owner: Kyle-McFarlane@7696505da8e1
-claimed: 2026-09-29T05:26Z
 created: 2026-09-29
-updated: 2026-09-29
+updated: 2026-09-30
+closed: 2026-09-30
 refs:
   - operator 2026-09-29
 ---
@@ -53,3 +52,6 @@ decision 100: How should the librarian handle a message that answers several dec
   rec: (b) · basis partial — the question gap is observed; the confirm-first check would have caught 0 errors in 16 batches
 reply 100 noted (not an answer): "Your recommendation about how to handle batched-replies sounds sound to me" — and a low-priority follow-up filed (decisions-refine-and-test-the-batched-re-852f)
 wake 100: the pyramid decision turn (decision-handling-the-pyramid-shaped-dec-69ee) — operator 2026-09-29: "let's continue before making final decisions"
+answer 100: b (pyramid answer page, 2026-09-30T20:55Z)
+2026-09-30 build filed from 100 b: decisions-answer-every-question-inside-a-9ea7 (M1 carried as acceptance); no confirm-first trigger (8dee F6 not built). Spike closed on its series 00-03 + review r4; the agents pointer goes with 0c4d's delta-01.
+- 2026-09-30 done

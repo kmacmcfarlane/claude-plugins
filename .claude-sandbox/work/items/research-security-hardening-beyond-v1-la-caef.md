@@ -7,7 +7,7 @@ priority: 1
 owner: Kyle-McFarlane@7696505da8e1
 claimed: 2026-09-28T21:55Z
 created: 2026-09-22
-updated: 2026-09-29
+updated: 2026-09-30
 refs:
   - peer agent-research, 2026-09-22
 ---
@@ -16,7 +16,7 @@ Operator called security critical (relayed by agent-research 2026-09-22). v1 shi
 
 ## Handoff
 - doing: —
-- next: operator answers 101-104; then build F1 then F2 per serial 05 acceptance
+- next: builds filed (F1 819f first); Card 5 (F5 quarantine) to the operator when F1 lands
 - blocked: —
 - learned: —
 
@@ -120,3 +120,6 @@ decision 108: How should research over the operator's past conversations work? �
   stakes: reversible; what a hijacked worker could leak from the operator's logs
   why now: the operator often wants conversation research; blocks the guard's transcript rules
   rec: (a) · basis strong — it keeps the logs away from any agent that can send data out, at sonnet cost
+answer 101: a (pyramid answer page, 2026-09-30T21:00Z)
+answer 108: a (pyramid answer page, 2026-09-30T21:01Z)
+2026-09-30 builds filed per serial 05 with answers 101 a, 102 a, 103 a, 108 a: F1 research-security-f1-the-scan-floor-819f, F2 research-security-f2-deep-investigation-1ffd, probes research-security-bounded-live-probes-fo-ec4f, F3 research-security-f3-the-confinement-hoo-20d8, F3b (108 a's conversation lane + the verifier split) research-a-conversation-research-lane-fo-5452, F4 research-security-f4-the-url-policy-a3b1. Card 5 (F5 quarantine) goes to the operator when F1 lands.

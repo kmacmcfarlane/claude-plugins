@@ -16,7 +16,7 @@ Operator 2026-09-22: an idle librarian should work new items as they arrive when
 
 ## Handoff
 - doing: checkpoint 2026-09-30 (continue): pyramid out as doc + answer page v3; answers 110 a, 111 b, 112 b stored; nothing in flight
-- next: restart the session so the role agents load (dev-flow b27e7b72 installed 05:33Z); read the answer page (ArtifactData list answers) as the operator answers; file 8dee F1-F8 once the pyramid is answered (F1, F2 already unblocked); delta to agents/operator-attention with the outcome and 4d29
+- next: role agents NOT loaded: /clear kept the process (PID 277, started 2026-09-28 21:38, dev-flow 901255af); operator exits and relaunches, then dispatch the Work table
 - blocked: —
 - learned: —
 
