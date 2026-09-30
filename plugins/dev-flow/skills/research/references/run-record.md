@@ -263,7 +263,7 @@ It runs:
   `tools-review.md`), plus `--scripts <staging>/tools` when a toolkit ran. A FLAG there in a
   file the verifier did not adjudicate (its own sheet, `01-synthesis.md`, `sources.md`,
   `tools-review.md`) is ledgered and named, by position and rule, in the report's
-  `CONCERNS`; it does not hold the run;
+  `CONCERNS`, and the run's status is `DONE_WITH_CONCERNS`; it does not hold the run;
 - over `<staging>/tools/` with `--scripts`, before any mining lane runs a script (§ The
   toolkit gate).
 
@@ -278,9 +278,11 @@ flag, <n> files`, and exits 0 clean, 1 on any HOLD, 3 on FLAG only, 2 on a usage
 **Any exit other than 0 or 3 — a HOLD, a usage error, a crash, a timeout — or output with no
 `SCAN` line holds the run**, as a HOLD does. Line 0 means the whole file: a symlink (never
 followed), an entry that is not a regular file (never opened), an unreadable or undecodable
-file, a directory it cannot list (all HOLD), or an unsafe file name (FLAG). A HOLD phrase
-split by a code span or a quote boundary still holds: the rules also run on the joined
-line. **It never prints a file's text**, so its
+file, a directory it cannot list (all HOLD), or an unsafe file name (FLAG). The rules also
+run on a de-markup view of each line (code spans, emphasis, quotes and backslashes inside
+words, links, inline tags, comments and entities removed). **Residual:** a static floor
+cannot catch markup beyond that pass, or text built at run time; for those the verifier
+(findings) and the script review (`tools/`) are the gate. **It never prints a file's text**, so its
 output is safe to read and to ledger.
 
 - **HOLD** — structural smuggling: invisible, bidi, Unicode-tag and control characters
@@ -296,9 +298,10 @@ output is safe to read and to ledger.
   comments and strings, plus FLAG rules for network use, subprocesses, file writes, secret
   paths and environment reads on every file. Inside a quoted string only a control-tag or
   special-token shape drops to FLAG; override, chat-role and pipe-to-shell shapes hold in
-  comments, in strings and across a line's joined literals. Text a script builds at run
-  time (`chr`, base64, joins across lines) gets past any static scan, so for toolkit code
-  the script review, not the scan, is the gate.
+  comments, in strings and across literals joined by `+` or implicit concatenation on one
+  line. **Residual:** text a script builds at run time (`chr`, base64, joins across lines
+  or through variables) gets past any static scan, so for toolkit code the script review,
+  not the scan, is the gate.
 - **`--strip`** deletes the named lines from one file by position, writes it back
   atomically, and rescans it. The positions come from the scanner's own output or the
   verifier's security rows (which list every line number); nothing reads the lines to remove

@@ -40,17 +40,22 @@ Tiers:
 - At line 0, the whole file: HOLD for a symlink (never followed), an entry that is not a
   regular file (never opened), an unreadable or undecodable file, or a directory that
   cannot be listed; FLAG for an unsafe file name.
-- A HOLD phrase split by a code span or a quote boundary still holds: the rules also run
-  on the joined line. Runtime construction in a script (chr, base64, joins across lines)
-  gets past any static floor; for toolkit code the verifier's script review is the gate.
+- Split phrases: the prose rules also run on joined views of each line (markdown with
+  code spans, emphasis, quotes and backslashes inside words, links, inline tags,
+  comments and entities removed; a script's literals joined by `+` or implicit
+  concatenation). Residual: markup beyond that pass and text built at run time (chr,
+  base64, joins across lines) get past any static floor; the verifier and the script
+  review are the gate for those.
 Prose rules match text with invisible characters and combining marks removed, common
 Cyrillic and Greek look-alikes mapped to Latin, and NFKC applied, so full-width,
-zero-width and look-alike evasions still match. Every pass is linear in the input.
+zero-width and the mapped look-alike forms match; other homoglyphs are a residual.
+Every pass is linear in the input, and hits are kept per line.
 A clean scan is not a clean file.
 
 Stdlib only.
 """
 import argparse
+import html
 import os
 import re
 import stat
@@ -76,6 +81,13 @@ class Rule:
                 return True
         return False
 
+    def count(self, text, need_tail=False):
+        """Matches in text; with need_tail, only those followed by more text (a bare
+        role label is not a turn)."""
+        return sum(1 for m in self.rx.finditer(text)
+                   if (self.check is None or self.check(m.group(0)))
+                   and (not need_tail or text[m.end():].strip()))
+
 
 def _mixed(s):
     return (any(c.isdigit() for c in s) and any(c.islower() for c in s)
@@ -99,7 +111,7 @@ RULES = [
     Rule("control-char", HOLD, RAW, "[\x00-\x08\x0b\x0c\x0e-\x1f\x7f-\x9f]"),
     Rule("control-tag", HOLD, PROSE, r"<\s*/?\s*" + _TAGS + r"(?![\w-])" + _ATTRS + r"\s*/?\s*>"),
     Rule("special-token", HOLD, PROSE, r"<\|[\w-]{2,40}\|>|\[/?inst\]|<</?sys>>|<(?:start|end)_of_turn>"),
-    Rule("chat-role-prefix", HOLD, PROSE, r"^\s{0,3}(?:>\s*)*[\"']?(?:\*\*|__)?(?:human|assistant)(?:\*\*|__)?\s*:(?![\"'])"),
+    Rule("chat-role-prefix", HOLD, PROSE, r"^\s{0,3}(?:>\s*)*[\"']?(?:\*\*|__)?(?:human|assistant)(?:\*\*|__)?\s*:(?![\"'](?:\s|$|[,.;:)]))"),
     Rule("override-phrase", HOLD, PROSE, r"\b(?:ignore|disregard|forget)\b(?:\W+\w+){0,3}?\W+(?:previous|prior|above|earlier|preceding|foregoing|all|any|every|system|original|initial|your)\b(?:\W+\w+){0,3}?\W+(?:instructions?|directions?|directives?|rules|prompts?|guidelines|guidance|constraints|messages)\b"),
     Rule("pipe-to-shell", HOLD, PROSE, r"\b(?:curl|wget|iwr|irm|invoke-webrequest|invoke-restmethod)\b[^\n]{0,300}?\|\s*(?:sudo\s+(?:-\S+\s+)*)?(?:(?:ba|z|da|k|fi)?sh|pyth[o]n3?|p[e]rl|r[u]by|n[o]de|i[e]x)\b|\b(?:ba|z)?sh\s+(?:-c\s+)?[\"']?(?:<\(|\$\()\s*(?:curl|wget)\b"),
     Rule("agent-addressed", FLAG, PROSE, r"\b(?:if|when)\s+you(?:'re|\s+are)\s+an?\s+" + _ADDRESSEE + r"\b|\b(?:dear|attention|note to|hey|hello)\s*,?\s+(?:the\s+|any\s+|all\s+)?" + _ADDRESSEE + r"s?\b|\b" + _ADDRESSEE + r"s?\s+(?:reading|processing|summari[sz]ing|parsing|crawling|browsing)\s+(?:this|these)\b"),
@@ -118,11 +130,17 @@ RULES = [
 # markup names it as a string); every other prose HOLD holds wherever it is.
 DEMOTE_IN_STRINGS = {"control-tag", "special-token"}
 
-# A phrase split by a code span or a quote boundary matches no single segment. These
-# rules also run on the joined line (backticks dropped; a script's literals joined), and
-# a hit there that no segment explains is HOLD for the rules below, FLAG for the rest.
+# A phrase split by inline markup or a literal boundary matches no single segment. The
+# prose rules also run on joined views of the line (joined_views); a view with more
+# matches of a rule than the segments explain is HOLD for the rules below, FLAG for the
+# rest.
 JOINED_HOLD = {"override-phrase", "chat-role-prefix", "pipe-to-shell"}
 _ESCAPED_BREAK = re.compile(r"\\[nr]")
+_COMMENT = re.compile(r"<!--.*?-->")
+_LINK = re.compile(r"\[([^\]\n]*)\]\([^)\n]*\)")
+_TAG = re.compile(r"</?[A-Za-z][^<>\n]*>")
+_IN_WORD = re.compile(r"(?<=\w)[*_~\"'`\\]+(?=\w)")
+_CONCAT_GAP = re.compile(r"\s*\+?\s*")
 
 # Common Cyrillic and Greek look-alikes of Latin letters, for matching only.
 _CONFUSABLE = str.maketrans(
@@ -234,19 +252,36 @@ def script_segments(line):
     return out
 
 
+def demarkup(line):
+    """The markdown line as a reader sees it: comments, inline tags and link targets
+    removed, entities decoded, emphasis, quotes and backslashes inside words dropped, and
+    backticks dropped."""
+    s = _TAG.sub("", _LINK.sub(r"\1", _COMMENT.sub("", line)))
+    s = _IN_WORD.sub("", html.unescape(s))
+    return s.replace("`", "")
+
+
 def joined_views(line, segs, markdown):
-    """Whole-line views a split phrase cannot hide from: the markdown line with its
-    backticks dropped; a script line's string literals joined (with and without a space),
-    each also cut at escaped line breaks, so a literal's own start is a line start."""
+    """[(view, bare)] for one line. Markdown: its de-markup view. Script: each run of
+    literals joined by `+` or implicit concatenation (with and without a space), and
+    each literal alone, all cut at escaped line breaks so a literal's start is a line
+    start; `bare` marks these, where a role label needs text after it to be a turn."""
     if markdown:
-        return [line.replace("`", "")] if "`" in line else []
-    lits = [seg[1:-1] for seg, quoted in segs if quoted]
-    if not lits:
-        return []
-    views = []
-    for text in ["".join(lits), " ".join(lits)] + lits:
-        views.extend(_ESCAPED_BREAK.split(text))
-    return views
+        v = demarkup(line)
+        return [(v, False)] if v != line else []
+    groups, cur = [], []
+    for seg, quoted in segs:
+        if quoted:
+            cur.append(seg[1:-1])
+        elif not (cur and _CONCAT_GAP.fullmatch(seg)):
+            if len(cur) > 1:
+                groups.append(cur)
+            cur = []
+    if len(cur) > 1:
+        groups.append(cur)
+    texts = [j.join(g) for g in groups for j in ("", " ")]
+    texts += [seg[1:-1] for seg, quoted in segs if quoted]
+    return [(p, True) for t in texts for p in _ESCAPED_BREAK.split(t)]
 
 
 def scan_text(text, markdown, scripts):
@@ -258,9 +293,15 @@ def scan_text(text, markdown, scripts):
     found = set()
     for idx, line in enumerate(lines):
         no = idx + 1
+        tiers, counts = {}, {}     # this line only: rule -> tier, rule -> segment matches
+
+        def add(name, tier):
+            if tiers.get(name) != HOLD:
+                tiers[name] = tier
+
         for r in RULES:
             if r.kind == RAW and r.hit(line):
-                found.add((no, r.name, r.tier))
+                add(r.name, r.tier)
         if idx in fenced:
             segs = [(line, True)]
         elif markdown:
@@ -274,24 +315,24 @@ def scan_text(text, markdown, scripts):
                 if r.kind != PROSE or (r.line_start and start):
                     continue
                 demote = is_code and (markdown or r.name in DEMOTE_IN_STRINGS)
-                if r.hit(ns):
-                    found.add((no, r.name, FLAG if demote else r.tier))
+                c = r.count(ns)
+                if c:
+                    counts[r.name] = counts.get(r.name, 0) + c
+                    add(r.name, FLAG if demote else r.tier)
             start += len(seg)
         if idx not in fenced:
-            have = {r for n, r, _ in found if n == no}
-            for v in joined_views(line, segs, markdown):
+            for v, bare in joined_views(line, segs, markdown):
                 nv = _norm(v)
                 for r in RULES:
-                    if r.kind == PROSE and r.name not in have and r.hit(nv):
-                        have.add(r.name)
-                        found.add((no, r.name, HOLD if r.name in JOINED_HOLD else FLAG))
+                    if r.kind == PROSE and r.count(nv, bare and r.line_start) > counts.get(r.name, 0):
+                        add(r.name, HOLD if r.name in JOINED_HOLD else FLAG)
         if scripts:
             nl = _norm(line)
             for r in RULES:
                 if r.kind == SCRIPT and r.hit(nl):
-                    found.add((no, r.name, r.tier))
-    # A rule found at HOLD on a line needs no FLAG row beside it.
-    return {h for h in found if not (h[2] == FLAG and (h[0], h[1], HOLD) in found)}
+                    add(r.name, r.tier)
+        found.update((no, name, tier) for name, tier in tiers.items())
+    return found
 
 
 def display(path):
