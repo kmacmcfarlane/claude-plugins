@@ -24,7 +24,7 @@ Four line kinds are **phase lines**: `dispatch:`, `return:`, `verdict:` and `lan
 They move the run, and only a phase line can be its last state. Every other line —
 `target:`, `checks:`, `intent:`, `agent:`, `review:`, `baseline:`, `findings:`, `changed:`,
 `decision:`, `answer:`, `spent:`, `subject-fix:`, `conflict:`, `blocked:`, `trial:`,
-`cross-check:` — is a
+`cross-check:`, `cross-check-rulings:` — is a
 **rider**: it never displaces a phase line, and it is read only where a fact below names
 it.
 
@@ -34,10 +34,13 @@ cross-check on an accepted offer (`record-lines.md`), and the
 `agent:` line under it (`record-lines.md`). It never counts as a phase line, so a scribe
 rendering a decision's card leaves that decision after the last phase line, and the GATE
 still reads it as pending. One rider check runs at every resume, outside the states: a
-cross-check helper line with no `cross-check:` line after it is probed as LIVE probes an
-id — alive, it is left to finish; gone, its `cross-check: … dropped` line is written and
-the drop is named in the resume summary and the Report's `open questions:`, so the
-operator can accept it again.
+cross-check helper line — signal `— cross-check (…)` or `— cross-check stand-in (…)`,
+never an older record's `— second opinion (…)` — with no `cross-check:` line after it is
+probed as LIVE probes an id. Still running: left to finish. Finished with a report:
+collected, and its return recorded as when it returns (`model-routing.md` § Fable
+cross-checks). Gone: its `cross-check: … dropped` line is written and the drop is named
+in the resume summary and the Report's `open questions:`, so the operator can accept it
+again.
 
 A line that is missing reads as **not recorded**, and every default escalates: a
 `BLOCKED` with no reason reads as `permission` (`record-lines.md`), an unreadable freshness test
@@ -204,7 +207,7 @@ does not read, because its action opens no round.
 | `CLEAR` | `CURRENT` | — | **S7** | `full`, `review`: SKILL.md § Step 5 (Land). `plan`: Step 1's after-`CLEAR` tail, its blocking open questions being the GATE's question, then Step 6. A fable offer is raised there too, never gated on (`model-routing.md` § Fable cross-checks). |
 | `CLEAR` | `STALE` | `UNDER` | **S8** | `spent:` first (§ The GATE); then Step 4 with VARIANT. |
 | `CLEAR` | `STALE` | `AT_CAP` | **S11** | `spent:` first; then GATE, the cap, naming the staleness. |
-| `NEEDS_CHANGES` | `CURRENT` | `UNDER` | **S9** | Open a fix round: resume the producer its `agent:` line names, or dispatch one, with the `findings:` block verbatim (`fix-loop.md` § A NEEDS_CHANGES round). In `review` mode, GATE on the dispatch permission first (below). |
+| `NEEDS_CHANGES` | `CURRENT` | `UNDER` | **S9** | Open a fix round: resume the producer its `agent:` line names, or dispatch one, with the verdict's own `findings:` block verbatim — never a `findings: cross-check` rider, which goes to the next review brief (`fix-loop.md` § A NEEDS_CHANGES round). In `review` mode, GATE on the dispatch permission first (below). |
 | `NEEDS_CHANGES` | `CURRENT` | `AT_CAP` | **S11** | GATE, the cap. |
 | `NEEDS_CHANGES` | `STALE` | `UNDER` | **S10** | `spent:` first. The findings are spent with the verdict — the tree they judged is gone. Step 4 with VARIANT, the findings pasted for verification only. |
 | `NEEDS_CHANGES` | `STALE` | `AT_CAP` | **S11** | `spent:` first; then GATE, the cap, naming the staleness. |

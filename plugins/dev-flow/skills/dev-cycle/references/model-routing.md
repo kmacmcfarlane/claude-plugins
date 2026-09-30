@@ -254,7 +254,10 @@ written onto the build's item — the item whose cycle builds that series — as
 `findings: cross-check (<stage>) — …` block (`record-lines.md`), and open its next fix
 round: the build's next review brief pastes them, a reviewer already running is sent them
 before it returns, and that review's verdict carries each that stands, counted toward the
-build's cap. Any that arrive **after the build's `CLEAR`** — merged or not — or on a plan
+build's cap. Whatever its verdict, that reviewer rules on each one — stands or withdrawn,
+with a reason — and the ruling is recorded as a `cross-check-rulings:` block under its
+verdict (`record-lines.md`); a withdrawn one is named under the Report's
+`open questions:`. Any that arrive **after the build's `CLEAR`** — merged or not — or on a plan
 whose build has not started become a follow-up item. A post-landing offer holds
 nothing: the landing stands. The at-the-cap offer is part of the cap's decision.
 
@@ -268,17 +271,19 @@ of an effort, so it never counts toward the keep rule.
 
 **The keep rule** (plan stage, research syntheses included). The stage is kept only if at
 least 2 of its first 8 checks find a high the opus review missed; else it tries xhigh for
-8 more, then drops. A check counts only when it ran — an offer the operator accepted — and
-it finds one when it raises a high or critical the opus `CLEAR` missed and the
-orchestrator accepts. When each cross-check returns, append
+8 more, then drops. A check counts only when it ran — an offer the operator accepted; a
+dropped check is not a trial and never counts — and it finds one when it raises a high
+or critical the opus `CLEAR` missed and the orchestrator accepts. `<n>` counts the
+orchestrator's acceptance when the check returns, not the build reviewer's later ruling
+on each finding, which is recorded apart (below). When each cross-check returns, append
 `cross-check: <stage> <high | xhigh | stand-in> <n> accepted highs <UTC time>`
 (`record-lines.md`), `<n>` 0 for a `CLEAR`, the time as `YYYY-MM-DDTHH:MMZ`; the keep
-rule reads the `plan-stage` ones. Before each plan-stage offer, take
+rule reads the `plan-stage` ones with a numeric `<n>`. Before each plan-stage offer, take
 the **first 8** lines by that time over the trial's stores (§ The xhigh trial, Sample), so
 concurrent sessions read the same 8:
 
 ```bash
-for s in $STORES; do grep -h '^cross-check: plan-stage high ' "$s"/items/*.md; done | sort -k7,7 | head -8
+for s in $STORES; do grep -hE '^cross-check: plan-stage high [0-9]+ ' "$s"/items/*.md; done | sort -k7,7 | head -8
 ```
 
 - Fewer than 8 `high` lines: the stage offers `cross-checker`.
@@ -609,8 +614,9 @@ verified: review CLEAR after 1 fix round (impl sonnet, review opus); <checks>
 verified: review CLEAR after 0 fix rounds (impl sonnet, review self); <checks>
 ```
 
-Name the final tiers; write `sonnet→opus` when a round bumped one, `opus+fable` for the
-reviewer when a cross-check ran (`opus, fable dropped` when it was dropped), and mark
+Name the final tiers; write `sonnet→opus` when a round bumped one, add `; fable
+cross-check` after the tiers when one ran on the item (`; fable cross-check dropped` when
+it was dropped), and mark
 a waived pin as § Fallback shows. N counts fix rounds (see Rounds), so a first-pass
 `CLEAR` is `after 0 fix rounds`.
 

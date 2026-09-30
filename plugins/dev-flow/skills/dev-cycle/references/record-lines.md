@@ -159,7 +159,7 @@ interrupted run up again; a line that is missing reads there as not recorded:
   GATE never reads a `fable-offer` pair (`resume.md`, GATE).
 - `answer: <decision> — <reply>` — `bindings.md` § Decisions and SKILL.md § Step 3.5 (a
   `NEEDS_CONTEXT` answer), written as soon as the reply arrives; `<decision>` repeats the
-  `decision:` line's question (or, for a `NEEDS_CONTEXT`, the question) — for the one
+  `decision:` line's question (or, for a `NEEDS_CONTEXT`, the question) — for a
   tagged decision, its tag instead: `answer: dispatch-permission — <reply>`,
   `answer: fable-offer — <reply>`. A caller's
   numbered pair — librarian-mode's `decision N: …` and `answer N: <reply>`, matched by
@@ -199,9 +199,14 @@ interrupted run up again; a line that is missing reads there as not recorded:
   synthesis's included), `estate-wide`, `post-landing` or `at-the-cap`; `stand-in` marks
   the author rule's opus review; `<n>` is the number of its high or critical findings the
   opus `CLEAR` missed that the orchestrator accepts, `0` for a `CLEAR`; the time is
-  `YYYY-MM-DDTHH:MMZ`. A dropped cross-check writes `<n>` as `dropped`. The keep rule
-  counts only `plan-stage high` and `plan-stage xhigh` lines, the first 8 by time over
-  the stores (`model-routing.md` § Fable cross-checks), so each is one unindented line.
+  `YYYY-MM-DDTHH:MMZ`. A dropped cross-check writes `<n>` as `dropped`: not a trial. The
+  keep rule counts only `plan-stage high` and `plan-stage xhigh` lines with a numeric
+  `<n>`, the first 8 by time over the stores (`model-routing.md` § Fable cross-checks), so
+  each is one unindented line.
+- `cross-check-rulings: …` — SKILL.md § Step 4.5, written directly under the `verdict:` of
+  a review that was given a `findings: cross-check` block, whatever the verdict: the
+  reviewer's CROSS-CHECK section pasted verbatim, one line per pasted finding, `stands
+  (FINDINGS #<k>)` or `withdrawn — <reason>` (`review-brief.md`).
 - `landed: <merge sha>` — SKILL.md § Step 5.3, written the moment Land's merge succeeds —
   before the checks on the base, any push, cleanup and `$WI done`. It is the record's
   only evidence that a target reached a merge, and SKILL.md § Step 6 reports it on the

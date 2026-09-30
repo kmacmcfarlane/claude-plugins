@@ -20,8 +20,9 @@ SKILL.md § Step 4.
 
 ## A NEEDS_CHANGES round
 
-- `NEEDS_CHANGES`: hand the findings, verbatim, to the **implementer** (in `plan` mode,
-  the planner) — resume the same agent (SendMessage, its `— resume` pair recorded first by
+- `NEEDS_CHANGES`: hand the findings — the verdict's own `findings:` block, never a
+  `findings: cross-check` rider (that goes to the next review brief) — verbatim, to the
+  **implementer** (in `plan` mode, the planner) — resume the same agent (SendMessage, its `— resume` pair recorded first by
   SKILL.md § Step 2 rule 7; it has the context) only when the next round's **agent file
   and model are both unchanged**: a resumed agent keeps its file, and with it its model
   and its effort. Otherwise, or if gone, re-dispatch fresh with the full brief, the

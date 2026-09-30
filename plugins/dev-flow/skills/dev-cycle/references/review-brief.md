@@ -15,8 +15,9 @@ accepted cross-check — and passes the same value to the Agent tool's `model` f
 is never routed below opus, and an `effort:` pin never moves it off `reviewer` (rule 8).
 The reviewer is always a fresh agent: never a fork and never the implementer resumed.
 A `findings: cross-check (<stage>)` block on the item since the last verdict is pasted
-under "The implementer claims" for the reviewer to rule on; each that stands goes in its
-FINDINGS (`model-routing.md` § Fable cross-checks).
+under "The implementer claims" for the reviewer to rule on: each that stands goes in its
+FINDINGS, and its CROSS-CHECK line rules on every one, whatever the verdict
+(`model-routing.md` § Fable cross-checks).
 
 The prohibitions, the severity scale and the report shape are fixed. The check commands vary
 with what the change touches — take them from `review-checklist.md`, the same list the
@@ -156,6 +157,8 @@ FINDINGS:
   2. ...
   (or: none)
 DOCTRINE: one line per principle, pass or fail with the diff line for any fail
+CROSS-CHECK: only when the brief pasted cross-check findings — one line each: stands
+  (FINDINGS #<k>), or withdrawn — <reason>
 NOTES: anything you noticed that is not a finding; questions for the orchestrator
 ```
 
