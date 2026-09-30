@@ -3,9 +3,11 @@ id: model-routing-f2b-the-xhigh-trial-fable-fa73
 title: "model routing F2b: the xhigh trial, fable cross-checks offered, reviewer effort by kind, quota step-down"
 short_display_name: routing F2b
 type: feature
-status: todo
+status: doing
 priority: 1
 parent: model-routing-set-reasoning-effort-per-r-2eb7
+owner: Kyle-McFarlane@401123cbad11
+claimed: 2026-09-30T22:27Z
 created: 2026-09-30
 updated: 2026-09-30
 refs:
@@ -21,3 +23,9 @@ refs:
 - blocked: —
 - learned: —
 2026-09-30 130 a: the estate-wide stage is an offer (once per series, final plan, fable xhigh), like 124's
+
+## Notes
+- 2026-09-30 claimed by Kyle-McFarlane@401123cbad11
+target: full model-routing-f2b-the-xhigh-trial-fable-fa73 /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude/worktrees/model-routing-f2b-the-xhigh-trial-fable-fa73
+dispatch: implementer opus medium — opus signal: routing rules skill text; feature with no own series: /investigate then /implement from 2eb7 04 + 6421 03 + answers (waves 1-3, 132 a)
+agent: implementer a61d37fcc4f73c086 round 1

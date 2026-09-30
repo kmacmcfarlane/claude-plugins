@@ -3,8 +3,10 @@ id: work-items-typed-cross-repo-edges-repo-i-375e
 title: "work-items: typed cross-repo edges (repo:id) that wi estate reads and shows"
 short_display_name: cross-repo edges
 type: feature
-status: todo
+status: doing
 priority: 2
+owner: Kyle-McFarlane@401123cbad11
+claimed: 2026-09-30T22:27Z
 created: 2026-09-30
 updated: 2026-09-30
 refs:
@@ -19,3 +21,9 @@ Requested 2026-09-30 by the agents librarian (peer request, not an approval) for
 - next: —
 - blocked: —
 - learned: —
+
+## Notes
+- 2026-09-30 claimed by Kyle-McFarlane@401123cbad11
+target: plan work-items-typed-cross-repo-edges-repo-i-375e /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude-sandbox/investigations/375e-cross-repo-edges
+dispatch: planner opus high — plan-only in wave 1 (132 a); spike-style plan for a feature
+agent: planner ad19358f9a90c2117 round 1

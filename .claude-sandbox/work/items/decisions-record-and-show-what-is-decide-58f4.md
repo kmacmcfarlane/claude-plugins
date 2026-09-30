@@ -3,8 +3,10 @@ id: decisions-record-and-show-what-is-decide-58f4
 title: "decisions: record and show what is decided alone — decided: line, done-alone group, why ask:, class tag"
 short_display_name: decided-alone record
 type: feature
-status: todo
+status: doing
 priority: 1
+owner: Kyle-McFarlane@401123cbad11
+claimed: 2026-09-30T22:27Z
 created: 2026-09-30
 updated: 2026-09-30
 refs:
@@ -19,3 +21,9 @@ refs:
 - next: —
 - blocked: —
 - learned: —
+
+## Notes
+- 2026-09-30 claimed by Kyle-McFarlane@401123cbad11
+target: full decisions-record-and-show-what-is-decide-58f4 /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude/worktrees/decisions-record-and-show-what-is-decide-58f4
+dispatch: implementer opus medium — opus signal: changes what a skill does (decisions skill, librarian decisions.md, work-items format); feature with no plan: /investigate then /implement (waves 1-3, 132 a)
+agent: implementer ad599a521afa99e57 round 1

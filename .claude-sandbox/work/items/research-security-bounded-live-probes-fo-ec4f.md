@@ -3,8 +3,10 @@ id: research-security-bounded-live-probes-fo-ec4f
 title: "research security: bounded live probes for the six facts the docs leave open"
 short_display_name: security probes
 type: task
-status: todo
+status: doing
 priority: 2
+owner: Kyle-McFarlane@401123cbad11
+claimed: 2026-09-30T22:27Z
 created: 2026-09-30
 updated: 2026-09-30
 refs:
@@ -19,3 +21,9 @@ caef G-probe under answer 103 a: haiku, throwaway directory, a temporary --setti
 - next: —
 - blocked: —
 - learned: —
+
+## Notes
+- 2026-09-30 claimed by Kyle-McFarlane@401123cbad11
+target: plan research-security-bounded-live-probes-fo-ec4f /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude-sandbox/investigations/caef-research-security
+dispatch: planner opus high — G-probe under answer 103 a; results as a new caef serial + evidence
+agent: planner a5ed8bf89325b00cd round 1
