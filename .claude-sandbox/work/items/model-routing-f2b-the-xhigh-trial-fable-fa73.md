@@ -33,3 +33,22 @@ return: implementer DONE_WITH_CONCERNS 3a9e338
 changed: undeclared Files in scope — 22 files; reasons per the implementer's CHANGED (model-routing.md home; agents reviewer-light (new), reviewer, cross-checker, cross-checker-deep, planner-deep descriptions; tests/test_agents.py; dev-cycle SKILL.md, record-lines.md, resume.md, fix-loop.md, review-brief.md, troubleshooting.md; librarian-mode SKILL.md, budget.md, idle-turn.md, troubleshooting.md; dev-flow plugin.json + marketplace.json (pin test); CLAUDE.md + README.md (agent added); kit-dev update-kit repo-map.md (agent listing))
 dispatch: reviewer opus high — review round 1 (rule 4)
 agent: reviewer a5abb53ae3c3981d6 round 1
+verdict: NEEDS_CHANGES round 1 at 3a9e338
+findings:
+  1. [medium] model-routing.md:244-247 (with :470) — an open fable offer holds the plan's build; below the reserve the offer waits for reset and the item is handed off — stalls builds for days, contradicts 127 a's stated effect ("deep items keep moving") and the series' own non-blocking mitigation; undeclared
+  2. [medium] librarian-mode references/budget.md:8-11 — restates the routing threshold and effect (second home); insertion also breaks the following "The reason is…" sentence
+  3. [low] model-routing.md:233 (with :8-11, record-lines.md:184) — research-synthesis plan stage has no trigger and a one-writer contract that forbids its lines
+  4. [low] model-routing.md:249-251 — author-rule opus stand-in: dispatch line, round counting, cross-check line unspecified; reads against "a pinned tier never falls below its pin"
+  5. [low] model-routing.md:262-268 — keep rule counts 8+ lines unordered, not "first 8"
+  6. [low] resume.md:199 (S7) — resumed plan run whose record ends in an old second-opinion CLEAR gets a fresh offer
+  7. [low] dev-cycle SKILL.md Steps 5-6 — no step names the post-landing offer
+  8. [low] dev-cycle SKILL.md — 4601 words, +107 over main's already-over size (fefd)
+  9. [low] agents/cross-checker*.md:3, README.md:286-287 — stage lists restate the routing table; README "the same" misstates the post-landing stage
+  10. [nit] tests/test_agents.py:47,280 — dead "conditional" branch
+  11. [nit] review-brief.md:10 — cross-checker-deep lacks dev-flow: prefix
+  12. [nit] model-routing.md:650 — example decision line lacks per-option impact
+  13. [nit] model-routing.md:468 — below the reserve only bump units excluded; selection bias
+decided: 2026-09-30 reply-reading — finding 1: an offer never holds the build; 127 a's card said deep items keep moving. The plan's build proceeds while an offer is open or deferred; an accepted plan-stage check runs when headroom allows and its findings enter the build's fix loop before landing, or become a follow-up item after it · authority: answer 127 · reopen: say "hold builds on open offers"
+decided: 2026-09-30 reply-reading — the five-hour window's reserve does not trigger the step-down; "below the reserve" is the weekly window (127 a's grant stops at the 15% weekly reserve; the five-hour default reserve would trip it constantly) · authority: answers 88, 127 · reopen: say "both windows"
+dispatch: implementer opus medium — resume
+agent: implementer a61d37fcc4f73c086 round 2
