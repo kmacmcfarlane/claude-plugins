@@ -16,15 +16,46 @@ requirement. Examples are **illustrative**.
 2. Classify it as one of the reply types below. Words other than the shortcuts count — "look
    into who imports it first" is `dig into`; "remind me tomorrow" is `later`; "skip it" is
    `drop`; "your call" is `you decide`.
-3. **Echo** every reply that is not an exact `N: letter`, in one italic line before you act:
-   *Read as: 43 → dig into (other callers in the access logs).* The echo is how a misreading is caught
-   in one turn instead of after the damage. It names any item it mentions per the
-   `plain-names` skill: short, but never a bare id. *Read as: 44 → (b) the export migration
-   (b7d4) waits for the release.*
+3. **Echo** every reply that is not an exact `N: letter`, in one italic line:
+   *Read as: 43 → dig into (other callers in the access logs).* It names any item it
+   mentions per the `plain-names` skill: short, but never a bare id. *Read as: 44 → (b) the
+   export migration (b7d4) waits for the release.* The operator sees it with the turn's
+   actions, so a misreading is caught in one turn instead of after the damage: before later
+   work is built on it, while a two-way action is still cheap to undo. That does not hold
+   where a push others pull, or another session, has already acted on the reading. The echo
+   itself stops nothing. What stops an action first:
+   - the ⚠ one-way read-back (below);
+   - a question asked instead of a guess, such as a letter that the words contradict, or a
+     reply naming no number while several are open;
+   - for an action others rely on, `SKILL.md` § Before you write: the worksheet, "When in
+     doubt, ask". Which actions count as relied on is for the caller's rules to set.
 4. Act — except on a ⚠ decision when the chosen option is one-way (the read-back below).
 
 When a reply mixes a letter and words (`43: b, keep it with a sunset date`), the letter
 decides; the words are checked against the option and a mismatch is asked about, not guessed.
+
+## A message with several replies
+
+One message often answers several decisions and mixes in questions, feedback and new
+requests; the whole message is the reply. Split it into parts first. A part that answers an
+open decision — a choice, a shortcut, or words about its options — is read through the steps
+above. A part that answers none — a question of its own, feedback, a new request — is not an
+answer with its number missing: step 1's "ask which" is only for a part that answers a
+decision without saying which. Then:
+
+- **Every question inside a reply gets an answer in words**, in the same message — also when
+  an action is the fix, and also when the answer is "I don't know yet" and what finding out
+  costs. An action alone does not tell the operator what the answer was. A question asked
+  alongside a choice (`62: keep it, but why two formats?`) is answered and the choice
+  stands; a question about a fact behind a decision is its `tell me` (the **Added:** line
+  is the answer); a question that doubts the decision itself (`do we even need caching?`) is
+  a reframe, and the new decision says why. A question that answers no decision is
+  answered all the same.
+- **Echo every part that is not an exact `N: letter`** (step 3), however many share the
+  message; an exact letter gets none. Several readings may share one italic line when each
+  names its part.
+
+Example 25 in `references/gallery.md` shows one.
 
 ## Reply types
 

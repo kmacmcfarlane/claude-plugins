@@ -498,8 +498,41 @@ decision 85: Ship the install script as one file or as a package? — options: (
 
 *The operator replies "put Setup back, and 85: a".*
 
-*Read as: undo the "Install" rename; 85 → (a) one file. The heading reads "Setup" again, and the install section will point at the one file.*
+*Read as: undo the "Install" rename.* The heading reads "Setup" again. 85 (a): the install section will point at the one file.
+
+*"85: a" is an exact letter, so it gets no* Read as *line; the words beside it get theirs.*
 
 *Had they replied "I'd rather decide the Windows split myself", it would be read as a reopen: a new numbered decision, naming the* Done *line it reopens, with its own card and* why ask.
 
 *Not this: a report that says nothing of the rename and the split because neither was asked. What was decided alone is shown, once, where the operator already reads.*
+
+---
+
+## 25. A message with several replies
+
+*Situation: decisions 61–63 were shown as a list: 61 the retry limit for the upload job, 62
+keep the old export format or drop it, 63 which week to upgrade the database. The operator
+answers all three in one message, with two questions mixed in: "61: b. 62 —
+keep it, but why does it need its own test suite? 63 the week of the 14th is fine. And why is
+the nightly build so slow lately?"*
+
+*Read as: 62 → (a) keep the old export format.*
+*Read as: 63 → (b) the upgrade in the week of the 14th.*
+*Read as: a question of its own — why the nightly build got slow.*
+
+**62, your question:** the old format has its own test suite because its dates are parsed by
+separate code that the main suite never runs. Folding the two together is about an hour; I
+filed it as a follow-up rather than doing it now.
+
+**The nightly build, your question:** I don't know yet. It went from about 20 to about 35
+minutes in the last week, starting the day the new integration tests landed; that is the
+likely cause, not a confirmed one. Finding out is about an hour; I filed it as the item "slow
+nightly build" and will bring back what I find.
+
+Going ahead: the upload job retries three times, then alerts (61 (b)); the old export stays;
+the upgrade is booked for the week of the 14th.
+
+*61: b is an exact letter, so it gets no echo line. Not this: filing either follow-up with no
+words — neither why the suite exists nor what is known about the slow build — or calling the
+build question "a new request" and answering it with an item. The operator asked; an action is
+not an answer. Nor one echo for 62 that leaves 63 and the build question without theirs.*

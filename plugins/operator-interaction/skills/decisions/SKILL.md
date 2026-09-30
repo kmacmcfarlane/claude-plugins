@@ -217,6 +217,7 @@ Details, echo wording and edge cases: `references/replies.md`.
 | `drop` | retire it; it does not come back |
 | `ok N-M` | accept the recommendation for each in the range, skipping ⚠ items and items with no recommendation, and re-ask those |
 | anything else that changes the question | a reframe: withdraw it and raise the new question under a new number that points back |
+| one message answering several, with questions or requests mixed in | answer every question inside it in words, also when an action is the fix; echo each part that is not an exact `N: letter` (`references/replies.md` § A message with several replies) |
 
 **Echo** every reply that is not an exact `N: letter` — one italic line, *Read as: 43 → dig
 into (other callers in the access logs)* — so a misreading is caught in one turn.
