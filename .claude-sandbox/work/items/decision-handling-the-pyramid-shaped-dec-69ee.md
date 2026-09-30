@@ -12,7 +12,7 @@ deps:
 owner: Kyle-McFarlane@7696505da8e1
 claimed: 2026-09-29T18:48Z
 created: 2026-09-29
-updated: 2026-09-29
+updated: 2026-09-30
 refs:
   - operator 2026-09-29
 ---
@@ -20,8 +20,8 @@ refs:
 Operator 2026-09-29 (.claude-sandbox/investigations/5140-decision-lifecycle/evidence/operator-notes-2026-09-29-stream.md): 'based on these notes, let's continue before making final decisions. When you are ready to present the decisions about the decisions skill and future of decision handling, then build me a pyramid-shaped decision turn I can work through with these thoughts in mind.' Acceptance: one turn, apex first (the direction for decision handling: short term in operator-interaction, long term an attention scheduler in operator-attention and the agents work system), then the layers it decides (what reaches the operator: 8dee; durability and the decision ledger: 98, 99; answerability and freshness: S2; batched replies: 100), each lower decision marked by which apex answer it depends on; sourced from 5140, 6d2c, d618, 8dee, S1, S2.
 
 ## Handoff
-- doing: pyramid shown in the doc and chat (110-128 + 98-101, 108)
-- next: read answers from chat or the doc's Answer column (read the doc from rev 9); store each answer verbatim; then file 8dee F1-F8 per the answers, 0999 per 98/99/118/120, F2b per 123-127, 128's item, delta to agents/operator-attention
+- doing: pyramid shown: reading doc (rev 10) + answer page
+- next: when the operator says done: ArtifactData list answers on the page; store each as answer N: verbatim (choice + words), echo readings; fallback per 129: tick boxes in the doc; then file 8dee F1-F8, 0999 per 98/99/118/120, F2b per 123-127, 128's item; relay 4d29 (decision streams) with the delta to agents/operator-attention
 - blocked: —
 - learned: —
 agents replied: decision ledger and attention scheduler filed on their 76bc (scheduler as a component for control-plane contract 0a7c); wants pointers to 263c and a99c with the others
@@ -142,3 +142,6 @@ decision 129: How should the pyramid take answers? — options: (a) an answer pa
   stakes: reversible, narrow (how 24 answers are entered; answers stored verbatim either way)
   why now: the operator asked for options; the pyramid waits on its answer surface
   rec: (a) · basis partial — the only option with real radio buttons, either/or enforced and a text area; the runtime's db capability is available; untested here
+answer 129: "129a, if I don't like that, then c is the most attractive. The "continuation options" (e.g. later/dit into/ etc) should have the meta placeholder hint in their dropdown label (e.g. `later [when]`) to preserve the hinting we have in the TUI." (read as: build the answer page; fallback (c) tick boxes in the doc if the page does not suit; follow-up labels carry the hint's placeholders: later [when], tell me [what], dig into [what])
+answer page (129 a): https://claude.ai/artifact/PaNDz5iaFpRnqnWEdTJaWQ ("Pyramid Answer Sheet", capability db, private to the operator; source scratchpad pyramid-answers.html). Store: collection answers, one doc per decision number {n, choice, kind option|follow-up, words, rec, at}; read with ArtifactData list answers. Per card one radio group (option buttons + follow-ups later [when], tell me [what], expand, dig into [what], you decide, drop) so one choice only; Your words text area; map rows have Use recommendation / Later. Functional pass: probe doc written, listed, deleted (v1). No render preview available in this session.
+doc rev 10: lead points at the answer page; the map's Answer column (enum b2c061f0-12a1, now unused) removed; the doc is the reading copy.
