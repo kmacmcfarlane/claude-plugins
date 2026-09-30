@@ -56,3 +56,13 @@ return: implementer DONE 12ee2cc
 changed: (this round adds nothing new to the file set; README.md, cross-checker*.md, test_agents.py, model-routing.md, record-lines.md, resume.md, SKILL.md, budget.md, review-brief.md edited again)
 dispatch: reviewer opus high — resume
 agent: reviewer a5abb53ae3c3981d6 round 2
+verdict: NEEDS_CHANGES round 2 at 12ee2cc
+findings:
+  prior 1-7, 9-13 FIXED; 8 DECLINED (accepted)
+  1. [medium] resume.md:200 (S7) with :108-119 (GATE) — the offer's own decision:/answer: lines are not excluded like the tagged dispatch-permission lines: a pending offer holds the plan run (PENDING), an answered offer after a pending blocking question bypasses it (ANSWERED)
+  2. [medium] model-routing.md:248-250, 289-293 — accepted plan-stage/estate-wide findings "enter the build's next fix round" but nothing hands them to the build's record; no state opens a fix round from a fresh CLEAR; CLEARed-not-merged and not-started cases open
+  3. [low] fix-loop.md:45-51 — "the last agent: reviewer line" can pick the author-rule opus stand-in rider on a fable-pinned item
+  4. [low] resume.md:108-112 with :179 — a lost cross-check rider is never probed or reported on resume
+decided: 2026-09-30 reply-reading — finding 2: an accepted check's findings that arrive before the build's CLEAR are written onto the build item as a findings: block and open its next fix round (counted toward the cap); any that arrive after the build's CLEAR — merged or not, or before the build starts on a plan already closed — become a follow-up item; no new resume state · authority: answer 127, ruling A · reopen: say "hold the landing for late findings"
+dispatch: implementer opus medium — resume
+agent: implementer a61d37fcc4f73c086 round 3

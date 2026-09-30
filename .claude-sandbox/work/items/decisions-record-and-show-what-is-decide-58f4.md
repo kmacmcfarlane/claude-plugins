@@ -68,3 +68,10 @@ changed: (same 8 files; this round: decisions.md, decide-alone.md, format.md, re
 note: implementer's concern — the ruled provisional sentence blocks every store write of decided: and why ask: until 134 is answered; accepted as intended (a short wait on one operator answer; nothing is lost, the Report still shows what was done alone)
 dispatch: reviewer opus high — resume
 agent: reviewer a46d8fc8aba824c9d round 2
+verdict: NEEDS_CHANGES round 2 at f20c96a
+findings:
+  prior 1-8 FIXED; 9 first half FIXED, second half DECLINED (accepted)
+  10. [medium] decide-alone.md:88-89 — "nothing writes a class tag to a store before then" contradicts the lines that require one (decide-alone.md:4-6, 15-23, 64-67, 73-78; decisions.md:57, 82; SKILL.md:158-160) and gives no interim rule; add it next to the provisional sentence (until 134: no decided: line and no Done alone group; why ask: shown on the card but not stored; no backfill written) and have the mandating lines defer to it
+  11. [nit] format.md:400 — joined long line
+dispatch: implementer opus medium — resume
+agent: implementer ad599a521afa99e57 round 3
