@@ -27,8 +27,8 @@ requirement. Examples are **illustrative**.
    - the ⚠ one-way read-back (below);
    - a question asked instead of a guess, such as a letter that the words contradict, or a
      reply naming no number while several are open;
-   - for an action others rely on, `SKILL.md` § Before you write, "When in doubt, ask".
-     Where that line sits is for the caller's rules to set.
+   - for an action others rely on, `SKILL.md` § Before you write: the worksheet, "When in
+     doubt, ask". Which actions count as relied on is for the caller's rules to set.
 4. Act — except on a ⚠ decision when the chosen option is one-way (the read-back below).
 
 When a reply mixes a letter and words (`43: b, keep it with a sunset date`), the letter
@@ -37,12 +37,23 @@ decides; the words are checked against the option and a mismatch is asked about,
 ## A message with several replies
 
 One message often answers several decisions and mixes in questions, feedback and new
-requests. Read each part through the steps above, and:
+requests; the whole message is the reply. Split it into parts first. A part that answers an
+open decision — a choice, a shortcut, or words about its options — is read through the steps
+above. A part that answers none — a question of its own, feedback, a new request — is not an
+answer with its number missing: step 1's "ask which" is only for a part that answers a
+decision without saying which. Then:
 
 - **Every question inside a reply gets an answer in words**, in the same message — also when
-  an action is the fix. An action alone does not tell the operator what the answer was.
-- **Each part gets its own echo:** every reply in it that is not an exact `N: letter` gets
-  its `Read as` line (step 3), however many parts share the message.
+  an action is the fix, and also when the answer is "I don't know yet" and what finding out
+  costs. An action alone does not tell the operator what the answer was. A question asked
+  alongside a choice (`62: keep it, but why two formats?`) is answered and the choice
+  stands; a question about a fact behind a decision is its `tell me` (the **Added:** line
+  is the answer); a question that doubts the decision itself (`do we even need caching?`) is
+  a reframe, and the new decision says why. A question that answers no decision is
+  answered all the same.
+- **Echo every part that is not an exact `N: letter`** (step 3), however many share the
+  message; an exact letter gets none. Several readings may share one italic line when each
+  names its part.
 
 Example 25 in `references/gallery.md` shows one.
 
