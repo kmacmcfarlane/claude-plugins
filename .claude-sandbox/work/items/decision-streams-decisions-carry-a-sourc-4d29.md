@@ -18,3 +18,4 @@ Operator 2026-09-30, verbatim: 'For the long-term solution, I imagine defining "
 - next: —
 - blocked: —
 - learned: —
+operator 2026-09-30T05:05Z, feedback on the 129 answer page (full text on 69ee): requirements for the long-term surface — (1) decisions carry a short name; a reference to a decision renders as a slug (number + short name, marked as a decision), and one to a decision on the same surface opens its card in a popup on hover or click, without scrolling; (2) drill-down: the most important information flat, extra layers in accordion panes (the operator's team ticket format, sussex marketplace kappa-dev:kappa-jira-ticket, not on this machine); (3) generation time must not limit use: the page is a template plus structured card data, so a new set of decisions is a data write and a republish, not a hand-built page.
