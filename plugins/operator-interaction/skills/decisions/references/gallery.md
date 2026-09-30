@@ -503,3 +503,28 @@ decision 85: Ship the install script as one file or as a package? — options: (
 *Had they replied "I'd rather decide the Windows split myself", it would be read as a reopen: a new numbered decision, naming the* Done *line it reopens, with its own card and* why ask.
 
 *Not this: a report that says nothing of the rename and the split because neither was asked. What was decided alone is shown, once, where the operator already reads.*
+
+---
+
+## 25. A message with several replies
+
+*Situation: decisions 61–63 were shown as a list: 61 the retry limit for the upload job, 62
+keep the old export format or drop it, 63 which week to upgrade the database. The operator
+answers all three in one message, with a question and a new request mixed in: "61: b. 62 —
+keep it, but why does it need its own test suite? 63 the week of the 14th is fine. And why is
+the nightly build so slow lately?"*
+
+*Read as: 62 → (a) keep the old export format.*
+*Read as: 63 → (b) the upgrade in the week of the 14th.*
+*Read as: a new request — find out why the nightly build got slow; filed as the item "slow nightly build".*
+
+**62, your question:** the old format has its own test suite because its dates are parsed by
+separate code that the main suite never runs. Folding the two together is about an hour; I
+filed it as a follow-up rather than doing it now.
+
+Going ahead: the upload job retries three times, then alerts (61 (b)); the old export stays;
+the upgrade is booked for the week of the 14th.
+
+*61: b is an exact letter, so it gets no echo line. Not this: filing the test-suite follow-up
+with no words about why the suite exists — the operator asked a question, and an action is not
+an answer. Nor one echo for 62 that leaves 63 and the new request without their own.*
