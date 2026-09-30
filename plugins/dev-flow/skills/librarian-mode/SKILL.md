@@ -156,10 +156,12 @@ For every request, in this order:
 
 3. **Decide, or ask.** An obvious best way: decide it, state it in one line, proceed.
    Ask only on a real trade-off, every decision (one or many) as `decision N:` on the
-   item under the Report's `decisions needed` — never AskUserQuestion: a modal prompt
-   blocks the session against background returns and peer messages (opt-in excepted,
-   `references/opt-in.md`). With the `operator-interaction:decisions` skill loaded, put
-   each one to the operator per that skill (`references/decisions.md`).
+   item under the Report's `decisions needed`. Either way it is recorded: a `decided:`
+   line, or the ask's `why ask:` and class (`references/decide-alone.md`). Never
+   AskUserQuestion: a modal prompt blocks the session against background returns and
+   peer messages (opt-in excepted, `references/opt-in.md`). With the
+   `operator-interaction:decisions` skill loaded, put each one to the operator per that
+   skill (`references/decisions.md`).
    Never in the same turn as a heavy analysis: end with it, ask next turn.
 
 4. **Refuse what is out of scope.** Anything outside Scope (Exclude included), pushing
@@ -294,6 +296,10 @@ With the `operator-interaction:decisions` skill loaded, the four lines stay, and
 skill, is the **last thing in the turn** — after the push outcome, its `incoming:` lines and
 the team summary below. The stored card, the store lines per reply, the default wake (the next
 Report) and the re-show after Rehydrate are in `references/decisions.md`.
+
+What was decided alone since the last Report goes in a **Done alone** group of `Done:`
+lines after the four lines per landed change — extra lines, beyond the four
+(`references/decide-alone.md` § The Report).
 
 Batch several landings in one message, four lines each; anything blocked or declined
 since the last report goes under `decisions needed` of the next. Do not wait for the

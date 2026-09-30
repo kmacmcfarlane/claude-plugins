@@ -18,6 +18,7 @@ today.*
 **41 — Resume the paused nightly backup?**
 **What:** the nightly backup of the reporting database paused halfway through its snapshot and holds a storage lease.
 **Why now:** the lease lapses at ~17:45 today (90 min from 16:15); after that the half-written snapshot is discarded and the backup starts over (about 3 hours).
+**Why ask:** aborting is a real choice too: the snapshot fills shared storage the reporting team also writes to, and whether tonight's backup outranks their jobs is yours to weigh.
 - **(a) Resume now** — *the snapshot finishes in about 15 minutes*
 - (b) Abort the backup — *releases the lease; no backup tonight unless it is started again*
 - (z) Decide later — *it waits; at 17:45 the lease lapses and the snapshot is lost*
@@ -27,6 +28,7 @@ Rec **(a)** · basis **strong** — *checked the storage quota: 40% free, enough
 **43 — Remove the deprecated `/v1/export` endpoint?** ⚠ one-way
 **What:** whether to delete the old export endpoint `/v1/export`, replaced last quarter by `/v2/export`.
 **Why now:** the API cleanup release is cut on Thursday; this change goes out in it, or waits for the next one.
+**Why ask:** removing it breaks two partners and cannot be quietly undone; that call is not mine to take alone.
 **Context you may have lost:** two partner integrations still call `/v1/export`; once it is removed their exports fail until they move to `/v2`, and a removed public endpoint cannot quietly come back for the clients that already adapted.
 
 (a) Remove it now
@@ -50,6 +52,7 @@ Rec **(b)** · basis **partial** — *observed: this week's access log shows 2 p
 **45 — Units on the storage dashboard: MiB or MB?** · *your preference — no recommendation*
 **What:** show sizes in binary units (MiB, 1,048,576 bytes) or decimal units (MB, 1,000,000 bytes).
 **Why now:** the new dashboard needs one; nothing else waits on it.
+**Why ask:** no fact settles it; which readers the units should suit is yours to say.
 - (a) MiB — *matches what the operating system's tools report*
 - (b) MB — *matches the storage provider's bill*
 - (z) Decide later — *it waits; the dashboard keeps its placeholder units until you choose (one config line)*
@@ -60,8 +63,8 @@ Rec **(b)** · basis **partial** — *observed: this week's access log shows 2 p
 
 - **41 Resume the paused nightly backup?** — rec **(a) resume** · *reversible, narrow* · basis **strong** · *25 min old, storage lease lapses ~17:45 (90 min from 16:15), blocks tonight's backup*
 - **43 Remove the deprecated `/v1/export` endpoint?** — rec **(b) keep it, with a sunset date** · ⚠ one-way · basis **partial** · *6 h old, misses Thursday's API cleanup release if undecided*
-- **44 Deprecation notice: "deprecated" or "scheduled for removal"?** — rec **(a) "deprecated"** · *reversible, narrow* · basis **strong** · *50 min old, blocks nothing* *(line only)*
-- **42 Clear the docs build cache?** — rec **(a) clear it** · *template: cache reset* · *reversible, narrow* · basis **strong** · *10 min old, blocks the docs build* *(line only)*
+- **44 Deprecation notice: "deprecated" or "scheduled for removal"?** — rec **(a) "deprecated"** · *reversible, narrow* · basis **strong** · *why ask: partners read it, and (b) warns them more plainly* · *50 min old, blocks nothing* *(line only)*
+- **42 Clear the docs build cache?** — rec **(a) clear it** · *template: cache reset* · *reversible, narrow* · basis **strong** · *why ask: clearing it drops the other branch's cached build too* · *10 min old, blocks the docs build* *(line only)*
 - **45 Units on the storage dashboard: MiB or MB?** — *your preference, no rec* · *reversible, narrow* · basis **strong** · *3 h old, blocks nothing*
 
 *Reply with a letter (`41: a`) or in your own words · `later [when]` · `tell me [what]` · `expand` · `dig into [what]` · `you decide` · `drop`*
@@ -75,6 +78,7 @@ Rec **(b)** · basis **partial** — *observed: this week's access log shows 2 p
 **46 — Retry the failed preview deploy?**
 **What:** the preview deploy of the search-page change failed while pulling its base image.
 **Why now:** the design review this afternoon needs the preview.
+**Why ask:** if the retry fails too, the review starts with no preview at all; you may prefer yesterday's build as the sure thing.
 - **(a) Retry now** — *about 4 minutes; the preview is up if it succeeds*
 - (b) Deploy yesterday's build instead — *the review sees the old page*
 - (z) Decide later — *it waits; no preview until someone deploys*
@@ -88,6 +92,7 @@ Rec **(a)** · basis **strong** — *the deploy log shows a registry timeout, no
 **47 — Delete last month's unused staging snapshot `stg-0814`?** · *one-way, narrow*
 **What:** delete the staging database snapshot from August 14, which nothing restores from.
 **Why now:** staging storage is at 85% of its quota.
+**Why ask:** the snapshot cannot be recovered once it is deleted.
 - **(a) Delete it** — *frees 120 GB; the snapshot cannot be recovered afterwards*
 - (b) Keep it — *storage stays at 85%; a later snapshot may fail when it fills*
 - (z) Decide later — *it waits; storage keeps filling by about 2% a day*
@@ -125,6 +130,7 @@ session, a card:*
 **48 — One more review round for the retry-policy change?** · *template: review-round cap*
 **What:** the change has used its four review rounds; the last review left one finding open, so it cannot land as it is.
 **Why now:** the change is blocked until you answer; nothing else waits on it.
+**Why ask:** another round spends quota and your attention past the cap you set: the finding under *If left* is what it buys.
 **If left:** *one medium finding: after a restart the retry counter starts again from zero, so a job that fails on every run is retried forever instead of stopping after five tries.*
 **A round costs:** *about 20 minutes and roughly 3% of the 5-hour quota; one more answer from you if that round does not clear it.*
 - **(a) One more round** — *the fix goes back to the implementer, then a fresh review; it lands in about 20 minutes if it clears*
@@ -157,6 +163,7 @@ basis kept), then a card with options, their impacts, the label, and no recommen
 **78 — Allow a run the reviewer waived to ship to users?** · *no recommendation — outside my authority*
 **What:** a report run passed with one check waived; shipping it puts the waived output in front of users.
 **Why now:** the release is scheduled for Friday.
+**Why ask:** who may see output a reviewer waived is not mine to decide (below).
 **Why no recommendation:** whether users may see output a reviewer waived is a product call, not mine.
 - (a) Ship it — *users see the report on Friday, with the waived section as is*
 - (b) Hold it — *the release slips until the check passes; about a day's work*
@@ -193,6 +200,7 @@ basis kept), then a card with options, their impacts, the label, and no recommen
 **81 — Cache at all, or fix the slow query first?**
 **What:** whether to put a cache in front of the product-listing query, or first make the query itself fast.
 **Why now:** the listing page takes about 2 seconds to load, and the performance review is next week.
+**Why ask:** it turns what you asked for — a cache — into a query fix; changing the scope of your request is yours to say.
 - **(a) Fix the query first** — *about half a day; may make caching unnecessary*
 - (b) Add the cache now — *faster reads this week; the slow query stays*
 - (z) Decide later — *it waits; reads stay slow*
@@ -225,6 +233,7 @@ the list: 41, 43 and 45 are unchanged, so they are not rendered again and their 
 **44 — Deprecation notice: "deprecated" or "scheduled for removal"?**
 **What:** the wording of the notice in the `/v1/export` response header and in the release notes.
 **Why now:** it goes out with the API cleanup release.
+**Why ask:** partners read the notice, and (b) warns them more plainly than the three notices before it.
 - **(a) "deprecated"** — *matches the three endpoints deprecated before*
 - (b) "scheduled for removal" — *says more plainly that it will go; the only notice worded this way*
 - (z) Decide later — *it waits; no notice is published until you choose*
@@ -234,7 +243,7 @@ Rec **(a)** · basis **strong** — *read the three earlier notices* · unknown:
 - **41 Resume the paused nightly backup?** — rec **(a) resume** · *reversible, narrow* · basis **strong** · *35 min old, storage lease lapses ~17:45 (80 min from 16:25), blocks tonight's backup* *(shown before)*
 - **43 Remove the deprecated `/v1/export` endpoint?** — rec **(b) keep it, with a sunset date** · ⚠ one-way · basis **partial** · *6 h old, misses Thursday's API cleanup release if undecided* *(shown before)*
 - **44 Deprecation notice: "deprecated" or "scheduled for removal"?** — rec **(a) "deprecated"** · *reversible, narrow* · basis **strong** · *1 h old, blocks nothing*
-- **42 Clear the docs build cache?** — rec **(a) clear it** · *template: cache reset* · *reversible, narrow* · basis **strong** · *20 min old, blocks the docs build* *(line only)*
+- **42 Clear the docs build cache?** — rec **(a) clear it** · *template: cache reset* · *reversible, narrow* · basis **strong** · *why ask: clearing it drops the other branch's cached build too* · *20 min old, blocks the docs build* *(line only)*
 - **45 Units on the storage dashboard: MiB or MB?** — *your preference, no rec* · *reversible, narrow* · basis **strong** · *3 h old, blocks nothing* *(shown before)*
 
 *Reply with a letter (`44: a`) or in your own words · `later [when]` · `tell me [what]` · `expand` · `dig into [what]` · `you decide` · `drop`*
@@ -323,9 +332,9 @@ status page (a preference). The operator replies "ok 51-55".*
 
 ## 18. FYI after acting
 
-- **Done: fixed a broken link in the contributing guide, on my task branch** — *two-way (one revert), nobody else uses the branch; inside the task you gave me.*
+- **Done: fixed a broken link in the contributing guide, on my task branch** — *two-way, nobody else uses the branch · inside the task you gave me · undo: one revert*
 
-*Not a decision: no number, no options, no hint. Never used for anything one-way or relied on by others.*
+*Not a decision: no number, no options, no hint. Never used for anything one-way or relied on by others. A single line needs no heading; several go under* **Done alone** *(example 24).*
 
 ---
 
@@ -334,6 +343,7 @@ status page (a preference). The operator replies "ok 51-55".*
 **56 — Open the pull request now, or wait for the benchmark run?**
 **What:** the retry-policy change is ready; its benchmark run finishes in about 25 minutes.
 **Why now:** you asked for the change today.
+**Why ask:** opening it now starts the reviewers' time before the benchmark is known, against your wish to have it today.
 - (a) Open it now — *reviewers start today; the benchmark result arrives mid-review*
 - **(b) Wait for the benchmark** — *about 25 minutes*
 - (z) Decide later — *it waits*
@@ -360,6 +370,7 @@ while it waited — not composed again.*
 *While it waited (1 day): the load test finished — the new broker held three times peak load with no lost messages. Options and recommendation unchanged.*
 **What:** switch every worker service from the old job queue to the new message broker.
 **Why now:** the worker rollout waits on it.
+**Why ask:** every worker service moves at once; how fast the rollout goes is yours to set.
 **Context you may have lost:** the switch is a config change in each service; the old queue keeps running for a week as a fallback.
 
 **(a) Move all workers now**
@@ -381,6 +392,7 @@ Rec **(a)** · basis **partial** — *observed: the load test report; inferred: 
 *While it waited (1 day): the CDN outage that prompted vendoring ended, and the provider published its fix. Recommendation changed from (a) vendor to (b) fetch, because the outage is over.*
 **What:** ship the docs site's web font inside the repo (vendor), or load it from the font CDN (fetch).
 **Why now:** the docs site build waits on it.
+**Why ask:** 400 KB in the repo against a font that fails when the CDN does: a trade-off with no fact to settle it for you.
 - (a) Vendor it — *adds 400 KB to the repo; the font still loads if the CDN goes down again*
 - **(b) Fetch it** — *no growth in the repo; the font depends on the CDN*
 - (z) Decide later — *it waits; the build stays on hold*
@@ -391,6 +403,7 @@ Rec **(b)** · basis **strong** — *checked the CDN's status history and loaded
 *While it waited (1 day): nothing changed.*
 **What:** enable the type checker's strict mode for every package.
 **Why now:** new code is being written against the loose setting, so each week adds more to fix later.
+**Why ask:** it changes how everyone writes new code in the repo, not just this task.
 - **(a) Turn it on** — *31 existing warnings to fix, about an hour of my time*
 - (b) Leave it off — *no work now; the loosely typed code keeps growing*
 - (z) Decide later — *it waits; the setting stays off*
@@ -446,3 +459,47 @@ recommendation.*
 *Not this: one entry for the four — "92–95 CLI cleanup: four small calls, see the cards
 above" — which leaves no recommendation where the operator reads the list, so they cannot
 answer from it.*
+
+---
+
+## 24. Decided alone, shown after — and a class on every ask
+
+*Situation: the caller names classes of decision and keeps a store. Its rules let the agent
+decide wording and narrowing alone; a trade-off is asked. Since its last report the agent
+renamed a heading and left one part of the work for a filed follow-up, and it has one question.
+Each thing decided alone was recorded in the store when the agent acted; the report renders
+those records. The decisions block stays last.*
+
+**Done alone** — *2 since my last report · say so in your own words to undo or reopen any*
+- **Done: renamed the "Setup" heading to "Install" in the command-line guide, to match the other four guides** — *wording · two-way (one edit), nothing links to the heading · inside the task you gave me · undo: one edit*
+- **Done: left the Windows install steps to a follow-up item, "Windows install steps"** — *narrowing · two-way (pull it back in any time), nobody waits on it · the class "narrowing", which your rules let me decide · undo: say "pull it back in"*
+
+**85 — Ship the install script as one file or as a package?**
+**What:** how users get the new install script: one file they download and run, or a package from the package manager.
+**Why now:** the command-line guide's install section waits on it.
+**Why ask:** *trade-off* — one file is quicker to get but never updates itself; a package updates but needs the package manager. Which your users would rather have is not a fact I have.
+- **(a) One file** — *users download and run it; each new version is downloaded again by hand*
+- (b) A package — *users install it with the package manager, and updates come with it; about a day to publish*
+- (z) Decide later — *it waits; the install section says "coming soon"*
+
+Rec **(a)** · basis **partial** — *observed: the other four tools ship one file; inferred: users are used to that* · unknown: how many users lack the package manager
+
+*What the caller's store holds, one physical line each — a record line for each thing decided alone, and the ask's card line, indented under its headline, that carries its class. The exact lines are the caller's format; these are this invented caller's:*
+
+```
+decided: 2026-10-02T14:05Z wording — renamed the "Setup" heading to "Install" in the command-line guide, to match the other four guides · authority: task · reopen: one edit to the heading
+decided: 2026-10-02T14:12Z narrowing — left the Windows install steps to the follow-up item "Windows install steps" · authority: class narrowing · reopen: say "pull it back in"
+decision 85: Ship the install script as one file or as a package? — options: (a) one file [recommended] | (b) a package | (z) decide later
+  raised: 2026-10-02T14:20Z
+  what: how users get the new install script: one file, or a package from the package manager
+  why now: the command-line guide's install section waits on it
+  why ask: trade-off — one file never updates itself, a package needs the package manager; which users would rather have is not a fact the agent has
+```
+
+*The operator replies "put Setup back, and 85: a".*
+
+*Read as: undo the "Install" rename; 85 → (a) one file. The heading reads "Setup" again, and the install section will point at the one file.*
+
+*Had they replied "I'd rather decide the Windows split myself", it would be read as a reopen: a new numbered decision, naming the* Done *line it reopens, with its own card and* why ask.
+
+*Not this: a report that says nothing of the rename and the split because neither was asked. What was decided alone is shown, once, where the operator already reads.*

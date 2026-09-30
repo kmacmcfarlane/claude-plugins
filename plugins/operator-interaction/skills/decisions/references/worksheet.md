@@ -85,10 +85,24 @@ Age — time since it was raised — is shown on the list line and breaks ties, 
 | **Outside my authority** | options with impacts, labelled *no recommendation — outside my authority*, with why |
 | **Alert** — time-critical | the fact now, bare; the options next |
 | **Open question** — not defined yet | listed under *Open questions*, unnumbered, until it has options |
-| **FYI after acting** — nothing to answer | one line: what was done, why it was safe to do, how to undo it |
+| **FYI after acting** — nothing to answer | one `Done:` line in the *Done alone* group: what was done, its class, why it was safe to do, the authority, how to undo it |
 
 **FYI after acting** is allowed only for an action that is two-way, narrow, relied on by
 nobody before the operator reviews it, and inside authority the operator already gave — an
-answered decision, or the task you were assigned. Never for ⚠, never when others rely on it.
+answered decision, the task you were assigned, or a decide-alone class the caller's rules
+define. Never for ⚠, never when others rely on it.
 An action about to happen unless the operator stops it is **not** an FYI: it is an approve
 ask, and it waits. When in doubt, ask.
+
+**Why ask, and the class.** Every kind above but the FYI, the alert and the open question
+carries *why ask* (SKILL.md § The floor): what would go wrong if you took your recommendation
+alone. Fill it before you write the card. When the caller names classes of decision, pick
+the one this ask belongs to at birth and open *why ask* with it; one that fits no class says
+so in the caller's word for that. An ask whose *why ask* comes out empty — nothing goes wrong
+if you take the recommendation — is decided alone when the FYI rule above allows, and shown
+after; otherwise it is asked.
+
+| Field | Values | Who can supply it |
+|---|---|---|
+| Class | one of the caller's class names, or none when the caller names none | the caller's rules; you pick at birth |
+| Why ask | what would go wrong if you took your recommendation alone; with no recommendation, why the call is not yours | you |

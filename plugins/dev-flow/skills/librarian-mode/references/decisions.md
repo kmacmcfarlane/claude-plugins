@@ -38,6 +38,9 @@ replies are as SKILL.md § Report gives them.
 | who is reading, and how warm | after Rehydrate the operator is **cold** on every decision raised before the reset; the first Report after it re-shows them per the skill, with what changed since each was raised. Between resets: a decision shown in a Report written after the operator's last turn has **not been seen** — background returns can write several Reports while the operator is away — so the next Report shows it at its level again, not *(shown before)*. Your own transcript tells you: has the operator taken a turn since that Report? |
 | related decisions (groups) | decisions on one item, or on sibling items (one parent) about the same plugin; a decision with no item groups by plugin or files. Never transitive: two groups that share a file stay two groups |
 | named templates | none: the librarian names no template, so every decision carries the floor on its own card |
+| classes of decision (the class in *why ask* and on the list line) | the class names in `decide-alone.md` § Class names, picked when the decision is raised; `unclassed` when none fits |
+| a decide-alone class the caller's rules define (the FYI rule's authority) | none yet: `decide-alone.md` marks no class decided alone, so the FYI authority stays an answered decision or the task the item carries |
+| the record of what was decided alone | the `decided:` line and the Report's **Done alone** group (`decide-alone.md`) |
 
 ## What the store records
 
@@ -51,6 +54,7 @@ renders what the operator read instead of composing it again.
     raised: <UTC time, e.g. 2026-09-24T14:05Z>
     what: <what is decided>
     why now: <why now; blocks: …>
+    why ask: <class> — <what would go wrong if the librarian took its recommendation alone>
     if left: <a round ask only: each leftover finding — what it would break>
     round costs: <a round ask only: time, quota, the operator's attention>
     stakes: <reversible | one-way>, <narrow | wide — who>
@@ -74,17 +78,19 @@ renders what the operator read instead of composing it again.
   line), one choice per letter: a compound choice gets its own letters, never `(a)+…`.
   When the decision is ⚠ one-way — or any decision shown as a block — write `⚠ one-way`
   after the question (⚠ only), and every option line carries its `undo:` and `who:`, a
-  `context:` line follows `why now:` (before any `if left:`), and the `basis:` drill-down
-  line is required. An ask for another round — the dev-cycle cap, most often — requires
-  the `if left:` and `round costs:` lines, in that order after `why now:` and any
-  `context:` (the skill's floor), filled from the reviewer's `findings:` block and the
-  run's record; any other decision leaves both out. The options stay in letter order,
-  `[recommended]` on the headline marking the recommended one.
+  `context:` line follows `why ask:` (before any `if left:`), and the `basis:` drill-down
+  line is required. `why ask:` follows `why now:` on every card, one physical line, its
+  class from `decide-alone.md` § Class names. An ask for another round — the dev-cycle
+  cap, most often — requires the `if left:` and `round costs:` lines, in that order after
+  `why now:`, `why ask:` and any `context:` (the skill's floor), filled from the
+  reviewer's `findings:` block and the run's record; any other decision leaves both out.
+  The options stay in letter order, `[recommended]` on the headline marking the
+  recommended one.
   **A card or block renders only from stored fields**: a field it needs that the store
-  lacks — a headline-only entry, a block's missing `undo:` — is backfilled from the durable
-  record (the item, its series, its commits) and written as a revised card with
-  `revised: <time> — backfilled` before it renders; a field no record holds is written and
-  shown as `not recorded`, never invented at render time. A card with no `raised:` takes it
+  lacks — a headline-only entry, a block's missing `undo:`, a card stored before `why ask:`
+  existed — is backfilled from the durable record (the item, its series, its commits) and
+  written as a revised card with `revised: <time> — backfilled` before it renders; a field
+  no record holds is written and shown as `not recorded`, never invented at render time. A card with no `raised:` takes it
   from the record: the time the headline was committed — the commit time, not the ask
   time, the closest the record holds — in the form `wi` parses (`TZ=UTC git -C "$MAIN" log
   --reverse --date=format-local:%Y-%m-%dT%H:%MZ --format=%cd -S'decision N:' -- <item
@@ -106,6 +112,8 @@ renders what the operator read instead of composing it again.
   or `open question dropped: <text> — <why>` when retired. The open ones are the `^open
   question:` lines without `→` and with no later closing line for the same text, read from
   the record; each is listed under *Open questions* on every cold re-show.
+- **Decided alone:** a `decided:` line, as `decide-alone.md` § The record gives it — never a
+  `decision N:` or `answer N:` line.
 - **Answered:** `answer N: <the reply> (read as: <the echo's reading>)`. The reading is
   recorded because a natural-language reply can be misread, and the echo is what the
   operator saw.
@@ -140,14 +148,16 @@ skill, the decisions come **last in the turn**, where the operator's eye is when
    item blocked or declined since the last Report — SKILL.md § Report's "goes under
    `decisions needed` of the next" — is raised as its own decision and carried in the
    block, not on another change's line.
-2. Then the push outcome, any `incoming:` lines, and the team summary, as SKILL.md § Report
+2. Then the **Done alone** group (`decide-alone.md` § The Report), each line in the skill's
+   FYI form; no group when nothing was decided alone since the last Report.
+3. Then the push outcome, any `incoming:` lines, and the team summary, as SKILL.md § Report
    gives them.
-3. Then **one decisions block**, the last thing written in the turn — when the push outcome
+4. Then **one decisions block**, the last thing written in the turn — when the push outcome
    and team summary go out as a follow-up message (SKILL.md § Report), the block moves to
    the end of that follow-up — laid out as the skill says: the decisions shown in full
    first, in list order, then the compact list of every open decision (a deferred one also
    shows its wake), then the hint when it carries two or more.
-4. Shown in full, at the level the skill gives them:
+5. Shown in full, at the level the skill gives them:
    - those raised since the last Report;
    - those whose wake has come;
    - those shown in a Report the operator has not had a turn since (not yet seen);
@@ -162,4 +172,4 @@ skill, the decisions come **last in the turn**, where the operator's eye is when
 
 A decision raised between Reports (an Intake ask, a blocked item) is put to the operator in
 the message that raises it, per the skill — last in that message. It is carried in every
-later Report per items 3 and 4 until it is answered.
+later Report per items 4 and 5 until it is answered.

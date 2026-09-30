@@ -57,13 +57,18 @@ Every decision carries, at any level:
    at most a trailing tag: load the `plain-names` skill (same plugin) and follow it.
 2. **Why now**, and what it blocks. When nothing forces it, say so — *why now: nothing forces
    it; raised because the audit turned it up* — and *blocks: nothing* is an honest answer.
-3. **The options**, each with its consequence — what happens to the world if it is chosen.
+3. **Why ask** — why it comes to the operator instead of being decided and shown after: what
+   would go wrong if you took your recommendation alone (with no recommendation, why the call
+   is not yours). It opens with the decision's **class** when the caller names classes of
+   decision. A question that cannot fill it is decided alone when the FYI rule (§ Before you
+   write) allows; otherwise it is asked.
+4. **The options**, each with its consequence — what happens to the world if it is chosen.
    Include "do nothing" when it is a real option.
-4. **Decide later**, always, as its own option (`(z)`), distinct from "do nothing": it says what
+5. **Decide later**, always, as its own option (`(z)`), distinct from "do nothing": it says what
    waiting costs, and when there is a deadline, what happens at the deadline.
-5. **The recommendation**, or the labelled reason there is none.
-6. **The basis** — what the claims rest on (§ Evidence).
-7. **What is unknown.**
+6. **The recommendation**, or the labelled reason there is none.
+7. **The basis** — what the claims rest on (§ Evidence).
+8. **What is unknown.**
 
 **An ask for another round** — a review-round cap waiver, or any ask for one more round of
 work, review or investigation — also carries its **justification**, or the operator has
@@ -113,17 +118,25 @@ last shown** — a card printed while the operator was away has not been seen. O
 
 **FYI after acting** (nothing to answer) is allowed only for an action that is
 two-way, narrow, relied on by nobody before the operator reviews it, and inside authority the
-operator already gave (an answered decision, or the task you were assigned). Never for ⚠,
-never when others rely on it. When in doubt, ask.
+operator already gave (an answered decision, the task you were assigned, or a decide-alone
+class the caller's rules define). Never for ⚠, never when others rely on it. When in doubt,
+ask.
+
+**Decided alone is recorded and shown.** Each choice made under the FYI rule gets a record
+where the caller keeps one (its authority and how to undo it) and a `Done:` line the next
+time you report, in a *Done alone* group (`references/rendering.md` § FYI after acting). The
+operator who objects says so in their own words; that reopens it as a numbered decision, or
+undoes it when that is what they asked.
 
 ## Levels
 
 Three levels; the templates are in `references/rendering.md`:
 
-- **List line** — every decision gets one: **bold number and title**, recommendation, stakes,
-  basis, and its age, what it blocks and any deadline; a round ask, its justification too.
-- **Card** — what is decided, why now (and a round ask's justification), the options with
-  their impact in italics, decide later, then `Rec · basis — reason · unknown`.
+- **List line** — every decision gets one: **bold number and title**, recommendation, its
+  class when the caller names classes, stakes, basis, and its age, what it blocks and any
+  deadline; a round ask, its justification too; a line-only decision, its why ask too.
+- **Card** — what is decided, why now, why ask (and a round ask's justification), the options
+  with their impact in italics, decide later, then `Rec · basis — reason · unknown`.
 - **Block** — a card plus: context the reader may have lost, a section per option (*what
   happens*, *undo*, *who is affected*), and the basis drill-down with evidence links.
 
@@ -259,6 +272,11 @@ argues for it.
 - **Round asks justify themselves** (2026-09-29) — what the leftover findings would break,
   and what the round costs in time, quota and attention. Not taken: a bare waiver ask whose
   template carries the floor by reference.
+- **Every ask justifies itself** (2026-09-30) — *why ask* on every decision, opening with its
+  class when the caller names classes. Not taken: the justification on round asks only.
+- **Shown after** (2026-09-30) — what a caller's rules let you decide alone is recorded and
+  shown as a `Done:` line in a *Done alone* group, never left unseen. Not taken: a record seen
+  only on request.
 
 Still provisional, marked where it appears: **paging** on a cold re-show.
 
