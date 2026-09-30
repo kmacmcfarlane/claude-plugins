@@ -3,12 +3,11 @@ id: model-routing-set-reasoning-effort-per-r-2eb7
 title: "model routing: set reasoning effort per role, so sub-agents stop inheriting the session's xhigh"
 short_display_name: sub-agent effort routing
 type: feature
-status: doing
+status: done
 priority: 0
-owner: Kyle-McFarlane@7696505da8e1
-claimed: 2026-09-29T07:00Z
 created: 2026-09-29
 updated: 2026-09-30
+closed: 2026-09-30
 refs:
   - operator 2026-09-29
 ---
@@ -54,3 +53,5 @@ agent: a0ad71c591cb00000 (plan reviewer r4)
 plan review r4 CLEAR (3 lows carried into F2 as acceptance); factored F1 dev-flow-ten-role-agents-with-pinned-mod-900a (now), F2 dev-flow-route-dispatches-through-the-ro-b3c5 (after F1); F2b waits on the pyramid answers (6421 Q1-Q5)
 F1 900a and F2 b3c5 landed and pushed 2026-09-29; F2b (fable cross-check stages, author rule, reviewer-light, estate-wide cross-check, step-down) waits on the pyramid answers to 6421 Q1-Q5; takes effect after a plugin update and session restart
 2026-09-30 F2b filed as a child: model-routing-f2b-the-xhigh-trial-fable-fa73 (6421 answers 123 a, 124 b + the operator's words: fable cross-checks offered, never unasked; 125 per decision 130; 126 b; 127 a). a88a's 128 a filed after it: dev-flow-read-only-tools-for-the-review-4766.
+2026-09-30 F2b landed a597939 (fa73); 2eb7 closes
+- 2026-09-30 done: F1 900a, F2 b3c5, F2b a597939

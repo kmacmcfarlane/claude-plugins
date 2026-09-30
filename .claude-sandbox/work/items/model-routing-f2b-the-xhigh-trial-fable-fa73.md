@@ -3,13 +3,12 @@ id: model-routing-f2b-the-xhigh-trial-fable-fa73
 title: "model routing F2b: the xhigh trial, fable cross-checks offered, reviewer effort by kind, quota step-down"
 short_display_name: routing F2b
 type: feature
-status: doing
+status: done
 priority: 1
 parent: model-routing-set-reasoning-effort-per-r-2eb7
-owner: Kyle-McFarlane@401123cbad11
-claimed: 2026-09-30T22:27Z
 created: 2026-09-30
 updated: 2026-09-30
+closed: 2026-09-30
 refs:
   - .claude-sandbox/investigations/6421-tier-criteria/INDEX.md
   - 69ee answers 123-127, decision 130
@@ -85,3 +84,7 @@ agent: implementer a61d37fcc4f73c086 round 4
 return: implementer DONE 592c47c
 dispatch: reviewer opus high — resume
 agent: reviewer a5abb53ae3c3981d6 round 4
+verdict: CLEAR round 4 at 592c47c
+notes: prior 1-6 FIXED; new low 1: SKILL.md Step 4.5 does not name the cross-check-rulings: block (record-lines.md:206 does) — carried to fefd's trim as a ~12-word pointer
+landed: a597939
+- 2026-09-30 done: a597939

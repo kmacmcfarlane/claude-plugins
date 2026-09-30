@@ -63,3 +63,12 @@ changed: + plugins/dev-flow/skills/research-refine/SKILL.md — a prior whose re
 note: the implementer sent SIGTERM by pattern to test processes that were not all its own (pkill absent) — likely other agents' exit 143/144 Check kills tonight; filed dev-cycle-briefs-never-signal-processes-54fe
 dispatch: reviewer opus high — resume
 agent: reviewer af1c1850266095f2a round 2
+verdict: NEEDS_CHANGES round 2 at 09846cb
+findings:
+  prior 1-7, 9-13 FIXED; 8 PARTIAL (two parts DECLINED, accepted); 14 PARTIAL
+  N1. [medium] scan-findings.py:246-255 — prose rules run per segment; a code span or quote boundary inside a HOLD phrase splits it: findings-mode `Ig…nore all `previous` instructions`, `` `Human`: ``, `curl … `|` sh`; scripts-mode split/concatenated literals, "\n\nHuman: …", x = "Human: …" — exit 0, no FLAG; contradicts run-record.md:291-294 "hold anywhere in a script"
+  N2. [low] scan-findings.py:320 — os.walk without onerror skips an unreadable dir silently
+  N3. [low] scan-findings.py:99 — optional opening quote HOLDs benign `"Human:" and "Assistant:" are the role labels.`
+  N4. [low] run-record.md:261-263 — FLAG lines in verification.md / 01-synthesis.md at Step 10 are adjudicated by no one
+dispatch: implementer opus medium — resume
+agent: implementer a33ea65041c3dc364 round 3

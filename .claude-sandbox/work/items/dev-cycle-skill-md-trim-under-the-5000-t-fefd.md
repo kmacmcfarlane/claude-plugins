@@ -18,3 +18,4 @@ Found by dbfc review r1 2026-09-29: dev-cycle SKILL.md is ~6,600 tokens by the c
 - blocked: —
 - learned: —
 widened 2026-09-29 (dbfc review r2): research SKILL.md is ~5,784 tokens (23,138 chars), over on main too (22,885)
+2026-09-30 from fa73 review r4 low 1: add a ~12-word pointer at dev-cycle SKILL.md Step 4.5 to the cross-check-rulings: block (record-lines.md) as part of the trim
