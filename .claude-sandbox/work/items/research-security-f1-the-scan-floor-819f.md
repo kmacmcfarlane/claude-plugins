@@ -58,3 +58,8 @@ findings:
 librarian ruling on 7: fix it here — a small wiring change in a file already in scope (scan at Step 7 and never open a file with a HOLD), not a separate item
 dispatch: implementer opus medium — resume
 agent: implementer a33ea65041c3dc364 round 2
+return: implementer DONE_WITH_CONCERNS 09846cb
+changed: + plugins/dev-flow/skills/research-refine/SKILL.md — a prior whose rescan finds a HOLD counts as held (finding 5); others as before
+note: the implementer sent SIGTERM by pattern to test processes that were not all its own (pkill absent) — likely other agents' exit 143/144 Check kills tonight; filed dev-cycle-briefs-never-signal-processes-54fe
+dispatch: reviewer opus high — resume
+agent: reviewer af1c1850266095f2a round 2

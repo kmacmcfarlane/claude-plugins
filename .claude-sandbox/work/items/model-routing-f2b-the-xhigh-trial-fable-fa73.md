@@ -82,3 +82,6 @@ findings:
   6. [nit] record-lines.md:162 "the one tagged decision"; model-routing.md:612 opus+fable
 dispatch: implementer opus medium — resume (fix round 3; the next review is round 4, the cap)
 agent: implementer a61d37fcc4f73c086 round 4
+return: implementer DONE 592c47c
+dispatch: reviewer opus high — resume
+agent: reviewer a5abb53ae3c3981d6 round 4
