@@ -35,8 +35,8 @@ Pointed at from SKILL.md § Troubleshooting and from `fix-loop.md` for the permi
   raise it.
 - **A fable dispatch returns HTTP 429 or a usage-credits error.** Not a `BLOCKED`. Under
   a `model: fable` pin, ask through the decision channel — wait for the reset, or opus
-  now — never falling back unasked; a second-opinion reviewer is dropped, and the opus
-  `CLEAR` before it stands. `model-routing.md` §§ Fallback, Second opinion.
+  now — never falling back unasked; a fable cross-check is dropped, and the opus
+  `CLEAR` before it stands. `model-routing.md` §§ Fallback, Fable cross-checks.
 - **Implementer disputes a medium-or-above finding.** It cannot decline it: it fixes, or
   states the counter-case for the re-review. The reviewer withdraws on the merits (the
   failure cannot occur) or holds; if it holds, fix it — that round is spent.

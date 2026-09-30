@@ -87,7 +87,7 @@ claude-plugins/
     ├── create-repo/           (start a new repo for a thread of work, with a session launched on it)
     │   └── skills/create-repo/ (references/launch-command.md)
     ├── dev-flow/              (plan before you code; research into findings or a knowledge base; the librarian that takes custody of a repo)
-    │   ├── agents/            (scribe, scout, implementer, implementer-critical, implementer-deep, planner, planner-deep, reviewer, cross-checker, cross-checker-deep — the dev cycle's role workers; research-lane, research-verifier — the research family's workers)
+    │   ├── agents/            (scribe, scout, implementer, implementer-critical, implementer-deep, planner, planner-deep, reviewer, reviewer-light, cross-checker, cross-checker-deep — the dev cycle's role workers; research-lane, research-verifier — the research family's workers)
     │   ├── skills/
     │   │   ├── {investigate,implement,dev-cycle,deep-investigation,research,research-deep,research-refine,research-prune,chain-of-verification,librarian-mode}/
     │   │   ├── research/scripts/ (tool-preflight.sh + tests)

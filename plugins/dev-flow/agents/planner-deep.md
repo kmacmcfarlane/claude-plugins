@@ -1,6 +1,6 @@
 ---
 name: planner-deep
-description: "Writes or revises an investigation series at opus xhigh, for an item pinned to effort xhigh or a plan round that model-routing.md § Profiles sends to xhigh. Dispatched by dev-flow's dev-cycle and librarian-mode with a full brief; not for direct use."
+description: "Writes or revises an investigation series at opus xhigh, for an item pinned to effort xhigh or a trial bump round above the quota reserve, as model-routing.md § Profiles routes it. Dispatched by dev-flow's dev-cycle and librarian-mode with a full brief; not for direct use."
 model: opus
 effort: xhigh
 ---

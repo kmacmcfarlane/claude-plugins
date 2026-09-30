@@ -159,10 +159,12 @@ the plan agent revises, by a new serial.
   `trial:` lines and checks each of its window's planner and plan-review dispatches at
   their return — which revises by a new serial per the `investigate` skill's
   `references/investigation-format.md`. After `CLEAR`, its
-  blocking open questions go to the decision channel; then Step 6. With a work item:
+  blocking open questions go to the decision channel, and so does the fable cross-check
+  offer its stage calls for (`references/model-routing.md` § Fable cross-checks) — a yes
+  dispatches that cross-check through Step 4 before Step 6; then Step 6. With a work item:
   `$WI claim <id>` before the plan dispatch (unless already yours); after `CLEAR`,
   `$WI done <id> --note <series path>`, or `$WI handoff <id>` naming the series while
-  blocking questions are open.
+  blocking questions or an offer are open.
 - **A feature in full mode:** no separate dispatch; the implementer runs /investigate
   then /implement in its worktree, each in its orchestrated mode (each skill's § Running
   under an orchestrator), as the brief's dev-flow block directs
@@ -176,8 +178,10 @@ checks you run yourself). The agent file pins the effort and the field sets the 
 agents and when each runs: `references/model-routing.md` § Profiles, with the tables and
 worked examples. When the agent is not loaded, dispatch `general-purpose` with the same
 `model`, recorded `inherit` — asked first under an effort pin
-(`references/model-routing.md` § Fallback). This step routes dev-cycle's own dispatches —
-planner, implementer, reviewer, and the second opinion's cross-checker. The research skills
+(`references/model-routing.md` § Fallback). Below the quota reserve the xhigh tier steps
+down and fable offers wait (`references/model-routing.md` § Below the quota reserve). This
+step routes dev-cycle's own dispatches — planner, implementer, reviewer, and the fable
+cross-checks the operator accepts. The research skills
 route their lanes and verifiers by their own tables; nothing here governs them. Fix round
 n = the nth re-dispatch or resume with findings = review round n+1; cap 4 review rounds.
 
@@ -196,15 +200,16 @@ n = the nth re-dispatch or resume with findings = review round n+1; cap 4 review
    table: `references/model-routing.md` § Implementer. A planner is opus at least
    (Step 1), on `planner`.
 3. **Fable is no implementer tier by signal.** It runs only under a `model: fable` pin
-   (rule 8), or as the second-opinion cross-check rule 4 allows.
-4. **Reviewer: always opus, always fresh**, on `reviewer` (opus high) — a new sub-agent
-   that never saw the implementer's conversation: never a fork, never the implementer
-   resumed, never you (except rule 5's waiver). Resuming the same reviewer for its own
-   re-review is fine. `review <branch>` mode's reviewer is opus too. On a complex `plan`
-   mode series an opus planner made — greenfield architecture, a major refactor — you may
-   add one fresh cross-check on `cross-checker` (fable high) after the opus reviewer's
-   `CLEAR`, as a second opinion: a second reviewer, never a substitute
-   (`references/model-routing.md` § Second opinion).
+   (rule 8), or as a fable cross-check the operator accepted (rule 4).
+4. **Reviewer: always opus, always fresh**, on `reviewer` (opus high), or `reviewer-light`
+   (opus medium) for the one kind `references/model-routing.md` § Reviewer effort by kind
+   names — a new sub-agent that never saw the implementer's conversation: never a fork,
+   never the implementer resumed, never you (except rule 5's waiver). Resuming the same
+   reviewer for its own re-review is fine. `review <branch>` mode's reviewer is opus too.
+   **A fable cross-check is offered, never dispatched unasked:** at the stages
+   `references/model-routing.md` § Fable cross-checks names, offer one with why through
+   the decision channel, and dispatch it on `cross-checker` or `cross-checker-deep` only on
+   the operator's yes — a second reviewer, never a substitute.
 5. **Review waiver: `review: self`.** Pure prose with no operational claim gets your own
    review instead of a reviewer, recorded as `review: self` above its verdict (Step 4).
    The test, and what always keeps a reviewer: `references/model-routing.md` § Review
@@ -299,7 +304,7 @@ n = the nth re-dispatch or resume with findings = review round n+1; cap 4 review
 3. **Fix loop.** Verdicts are `CLEAR`, `NEEDS_CHANGES`, `SHOW_STOPPER` and `BLOCKED`; who
    is resumed and who is re-dispatched: `references/fix-loop.md`. An agent you resume is
    the one its `agent:` line names (`references/record-lines.md`) — SendMessage to that
-   recorded id, never one remembered from this turn alone — after a second opinion, the
+   recorded id, never one remembered from this turn alone — after a cross-check, the
    `reviewer`'s, never the `cross-checker`'s (`references/fix-loop.md` § A NEEDS_CHANGES
    round) — with its `— resume` pair written first (rule 7); a re-dispatch writes a
    fresh `dispatch:` and `agent:` pair. A change of agent file or model is always a
@@ -310,7 +315,9 @@ n = the nth re-dispatch or resume with findings = review round n+1; cap 4 review
    (`references/bindings.md` § Decisions). Never argue a severity down.
 4. **What escalates** through the decision channel is only a show-stopper with real
    impact: a `SHOW_STOPPER` verdict, a finding that changes the scope or reverses a
-   recorded human decision, or the cap. Everything else, critical included, is resolved
+   recorded human decision, or the cap — and a fable cross-check offer, which is the
+   operator's to accept (`references/model-routing.md` § Fable cross-checks). Everything
+   else, critical included, is resolved
    inside the loop. The one exception: `review <branch>` mode's ask, before any fix loop,
    whether to dispatch an implementer at all (Usage) — a mode-entry decision, not a
    severity escalation.
@@ -320,7 +327,10 @@ n = the nth re-dispatch or resume with findings = review round n+1; cap 4 review
    `findings:` block (`references/record-lines.md`) — what a fix dispatch reads. A `BLOCKED`
    reviewer is not a round and carries its reason in place of a round number —
    `verdict: BLOCKED at <token> — permission | setup`, the same closed set Step 3.5
-   writes. Also record: findings fixed, findings declined with reasons, and the reviewer
+   writes. After a plan-stage fable cross-check's verdict, also its
+   `cross-check: plan-stage <high | xhigh> <n> accepted highs` line, the keep rule's count
+   (`references/model-routing.md` § Fable cross-checks). Also record: findings fixed,
+   findings declined with reasons, and the reviewer
    NOTES worth keeping. Reviewer questions you cannot settle go on Step 6's
    `open questions:`.
 
@@ -431,7 +441,7 @@ Stop when you catch yourself:
 - **Dispatching unrouted** — an Agent call with no `model`, or no `dispatch:` line
   behind it; `general-purpose` while the role agent is loaded; an implementer sent to
   fable with no pin; a reviewer below opus; an `effort:` pin's planner or implementer on
-  a file below xhigh.
+  a file below xhigh; a fable cross-check the operator did not accept.
 - **A reviewer that saw the build** — a fork, the implementer resumed as its own
   reviewer, or you reviewing a diff outside rule 5's waiver (skill text, CLAUDE.md, an
   agent, a script, any operational claim).

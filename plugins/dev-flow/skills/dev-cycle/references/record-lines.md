@@ -31,7 +31,8 @@ interrupted run up again; a line that is missing reads there as not recorded:
   - `<effort>` is the dispatched agent file's pin, `low` | `medium` | `high` | `xhigh`,
     or `inherit` when the fallback dispatched `general-purpose` at the session's effort
     (`model-routing.md` § Fallback). With the role it names the file, one role at one
-    effort per file: `planner xhigh` is `planner-deep`.
+    effort per file: `planner xhigh` is `planner-deep`, `reviewer medium` is
+    `reviewer-light`, `cross-checker xhigh` is `cross-checker-deep`.
 
   A line written before the effort field existed, its model followed directly by the `—`,
   reads as **effort unrecorded**, never as a malformed line.
@@ -175,8 +176,17 @@ interrupted run up again; a line that is missing reads there as not recorded:
   goes in before the first planner dispatch of a trial unit's window; the second, when a
   window dispatch's transcript shows another effort than its arm's, at that dispatch's
   return, the reason naming the dispatch and the effort seen (`planner showed xhigh
-  (fallback)`). An item that is no trial unit carries neither. Each is one unindented
-  line, since the trial's count reads them with `grep -x` and `grep '^trial:'`.
+  (fallback)`), or when a bump round steps down, with the reason `below the quota reserve`
+  (`model-routing.md` § Below the quota reserve). An item that is no trial unit carries
+  neither. Each is one unindented line, since the trial's count reads them with `grep -x`
+  and `grep '^trial:'`.
+- `cross-check: plan-stage <high | xhigh> <n> accepted highs` — written by the step that
+  records a plan-stage fable cross-check's verdict (SKILL.md § Step 4.5), right after that
+  `verdict:` line, and by nothing else: `<n>` is the number of its high or critical
+  findings the opus `CLEAR` missed that the orchestrator accepts into the fix round, `0`
+  for a `CLEAR`. Only a cross-check the operator accepted and that ran writes one; the
+  keep rule counts them over the stores with `grep '^cross-check: plan-stage'`, so each
+  is one unindented line (`model-routing.md` § Fable cross-checks).
 - `landed: <merge sha>` — SKILL.md § Step 5.3, written the moment Land's merge succeeds —
   before the checks on the base, any push, cleanup and `$WI done`. It is the record's
   only evidence that a target reached a merge, and SKILL.md § Step 6 reports it on the

@@ -60,8 +60,9 @@ EXPECTED = {
     # Its effort pin is inert on haiku, and allowed as it stands: the test passes without
     # touching research-verifier.md.
     "research-verifier": ("haiku", "low", None, "research"),
-    # Built only if the operator's reviewer-effort answer adds it; its absence passes.
-    "reviewer-light": ("opus", "medium", ROLE_KEYS, "conditional"),
+    # The operator's reviewer-effort answer (126 b) added it: opus medium for fact and docs
+    # changes in the home-network and product-docs repos.
+    "reviewer-light": ("opus", "medium", ROLE_KEYS, "role"),
 }
 
 # (rule, predicate on (model, effort), the only agents that may satisfy it)
@@ -277,7 +278,7 @@ class TestAgentFiles(unittest.TestCase):
     def test_every_shipped_row_exists_on_disk(self):
         # Dormant files (dispatched only on a pin or a stage that may not arise) included.
         required = {n for n, row in EXPECTED.items() if row[3] != "conditional"}
-        self.assertEqual(len(required), 12)
+        self.assertEqual(len(required), 13)
         self.assertEqual(required - set(self.files), set())
 
     def test_every_file_on_disk_is_in_the_table(self):
