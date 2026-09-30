@@ -75,3 +75,20 @@ findings:
   11. [nit] format.md:400 — joined long line
 dispatch: implementer opus medium — resume
 agent: implementer ad599a521afa99e57 round 3
+return: implementer DONE cf29358
+changed: (same 8 files; this round: decide-alone.md interim rule, decisions.md and SKILL.md deferral clauses, format.md rewrap)
+dispatch: reviewer opus high — resume
+agent: reviewer a46d8fc8aba824c9d round 3
+verdict: NEEDS_CHANGES round 3 at cf29358
+findings:
+  10. [medium] PARTIAL — decisions.md:90-94 (backfill), :82-84 (stored why ask), :43, :153-154 and SKILL.md:301-303 (Done alone group), SKILL.md:159-161 (decided: line) still mandate what the interim rule forbids
+  11. [nit] FIXED
+  12. [medium] decide-alone.md:94-95 — interim rule contradicts untouched text: (a) why ask shown but not stored breaks "renders only from stored fields" (decisions.md:90, rendering.md:221-232) on every re-show; (b) no Done alone group contradicts the generic skill's shown-after rule (decisions SKILL.md:125-129, 277-279; rendering.md:182-184)
+C: root cause is my round-1 ruling ("nothing writes a class tag until 134"). Reversed: no interim rule. The tags are written as spelled; they stay provisional until 134 is answered, and a rename then migrates the lines written in between. No librarian uses this text before the operator updates the plugin and restarts, so 134 will usually be answered first.
+revised 134 (2026-09-30): (a) keep — nothing to migrate; (b) rename — a sed over the decided:/why ask: lines written since the plugin update, if any; (z) later — tags are written as spelled meanwhile
+dispatch: implementer opus medium — resume (fix round 3; the next review is round 4, the cap)
+agent: implementer ad599a521afa99e57 round 4
+return: implementer DONE 46afbf2
+changed: (same 8 files; this round: decide-alone.md sentence replaced, interim rule removed; decisions.md and SKILL.md back to f20c96a)
+dispatch: reviewer opus high — resume
+agent: reviewer a46d8fc8aba824c9d round 4

@@ -3,10 +3,11 @@ id: research-security-bounded-live-probes-fo-ec4f
 title: "research security: bounded live probes for the six facts the docs leave open"
 short_display_name: security probes
 type: task
-status: doing
+status: blocked
 priority: 2
 owner: Kyle-McFarlane@401123cbad11
 claimed: 2026-09-30T22:27Z
+blocked: decision 135 (review cap)
 created: 2026-09-30
 updated: 2026-09-30
 refs:
@@ -18,7 +19,7 @@ caef G-probe under answer 103 a: haiku, throwaway directory, a temporary --setti
 
 ## Handoff
 - doing: —
-- next: —
+- next: on 135: (a) close the series (done --note series) and add M1's fix to 20d8's acceptance; (b) planner round then fresh review; (c) reword then close
 - blocked: —
 - learned: —
 
@@ -65,3 +66,40 @@ findings:
 librarian ruling on N2/N3: PB-1 runs from the MAIN THREAD of a disposable interactive session: throwaway cwd, a temporary --settings file, haiku, counted against 103 (a)'s ~15-session bound (12 used) — inside the answer's bounds as written. An interactive session needs the operator, so PB-1 is an operator-attended step, carded when F3 is next; F3's build (20d8) waits for it and does not run unattended tonight. PA-2 (a hand resume mid-run) is carded at announce time.
 dispatch: planner opus high — resume
 agent: planner a5ed8bf89325b00cd round 3
+return: planner DONE /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude-sandbox/investigations/caef-research-security (08_staging-exception-and-pb1-attended.md; N1-N6 fixed; 0 new probes)
+baseline: f14d66cd2e1d3f07cb07fdb02c539e85633d52d2255c85fefeacb16870ed21fe 00_initial.md f6378546b4596c7a835a823b2e0c7a54c663f0cfe856f8b45d68552ef29ac264 01_probe-evidence-and-review-fixes.md 278af36fbb78ecc54b8502f4de4dc498a5abe086f2ae19fe925b68460222d4a2 02_read-write-rules-composed.md 7cef67d3052866c26fa1b780227e61054b29ce07f16e5fcf0501007c960af92c 03_f3-authority-and-adversary-walk.md dd48c863d6ee6c96a18f72c42aaccf499ec3d1b959d43fbb5c96beb688667642 04_round-4-fixes.md 47e56da84e3fdd2810da222f0dbdf5fd75602f944a0c13d4dd6ed9fbaf5b4c3c 05_second-opinion-closing.md 2e85a92a73234745039df66a4030422645f64e979c2a79a5f3028771fa914795 06_g-probe-results.md 1aba2061ecc91c141be96754443902ea17effe55fd3941ea555d23c26b46a69c 07_probe-serial-fixes.md 92a4dda1b8acf06bcbab9522efa479bc7b349f135a9bbd5427fb4dfedfcd23b9 08_staging-exception-and-pb1-attended.md 
+dispatch: reviewer opus high — resume
+agent: reviewer ad04a11756bc2fdf2 round 3
+verdict: NEEDS_CHANGES round 3 at .claude-sandbox/investigations/caef-research-security
+findings:
+  prior N1-N4, N6 FIXED; N5 PARTIAL (variable override → R2)
+  R1. [medium] 08:104 — "execute scripts only from tools.reviewed/" covers every local lane; 03:207 limits it to mining lanes; the toolkit lane must run its own tools/ scripts to validate them
+  R2. [medium] 08:271-273 — a lane can reassign HOME/TMPDIR/CLAUDE_CONFIG_DIR inside its own command; the filter expands the hook's values, the shell reads the transcript; Security says this cannot happen
+  R3. [low] 08:101-108 — on a host-shaped /tmp temp root, other runs' staging is not denylisted; narrowing holds only in sandbox
+  R4. [low] 08:105 — findings/<lane id>.md unenforceable (hook sees agent_id); 03 § F3.5 allows findings/*.md
+  R5. [nit] INDEX.md:84, :58 — 08 not named as an F3 authority
+librarian rulings: R2 — deny rule (deny any assignment to, or export/declare/env/set/unset of, the listed variables and cd-affecting ones like CDPATH, with tests), keeping the Security claim meaningful for one-liners; R1 — the tools.reviewed/ restriction applies to mining lanes only (03:207); the toolkit lane may run its own tools/ scripts in state lanes, with a fixture
+dispatch: planner opus high — resume (fix round 3; the next review is round 4, the cap)
+agent: planner a5ed8bf89325b00cd round 4
+return: planner DONE /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude-sandbox/investigations/caef-research-security (09_filter-assignment-deny-and-scope.md; R1-R5 fixed; 0 new probes)
+baseline: f14d66cd2e1d3f07cb07fdb02c539e85633d52d2255c85fefeacb16870ed21fe 00_initial.md f6378546b4596c7a835a823b2e0c7a54c663f0cfe856f8b45d68552ef29ac264 01_probe-evidence-and-review-fixes.md 278af36fbb78ecc54b8502f4de4dc498a5abe086f2ae19fe925b68460222d4a2 02_read-write-rules-composed.md 7cef67d3052866c26fa1b780227e61054b29ce07f16e5fcf0501007c960af92c 03_f3-authority-and-adversary-walk.md dd48c863d6ee6c96a18f72c42aaccf499ec3d1b959d43fbb5c96beb688667642 04_round-4-fixes.md 47e56da84e3fdd2810da222f0dbdf5fd75602f944a0c13d4dd6ed9fbaf5b4c3c 05_second-opinion-closing.md 2e85a92a73234745039df66a4030422645f64e979c2a79a5f3028771fa914795 06_g-probe-results.md 1aba2061ecc91c141be96754443902ea17effe55fd3941ea555d23c26b46a69c 07_probe-serial-fixes.md 92a4dda1b8acf06bcbab9522efa479bc7b349f135a9bbd5427fb4dfedfcd23b9 08_staging-exception-and-pb1-attended.md e22d70a387d2cf4ca0fe2a8e532dd0913662fedb28e0da8335dbac66164f709d 09_filter-assignment-deny-and-scope.md 
+dispatch: reviewer opus high — resume
+agent: reviewer ad04a11756bc2fdf2 round 4
+verdict: NEEDS_CHANGES round 4 at .claude-sandbox/investigations/caef-research-security
+findings:
+  prior R1 PARTIAL (mining half, M1); R2-R5 FIXED
+  M1. [medium] 09:24-32, 87 (INDEX 152-155) — after the freeze a mining lane can still write tools/** (03:175) and run it (09:87 admits tools/** unconditionally); F3.7 covers only tools.reviewed/; 09's enforcement claim is false. Fix: admit running tools/** only while the run has no tools.reviewed/, deny writes to tools/** once it exists, post-freeze fixture — or reword to put 03:207 under the honest bound
+  L1. [low] 08:114-119 — assignment RHS to an unprotected name not a path token: shopt -s cdable_vars; x=<config>/projects; cd x
+  L2. [low] 08:118-119 — "$…" in a path position denies routine loops ("$f", "$PWD/x", find -exec sh -c)
+cap: 4 review rounds without CLEAR — blocked; raised as decision 135
+decision 135: The research-security probe write-up (caef serials 06-09) hit the 4-round review cap with one medium left: after the scripts freeze, a hijacked mining lane could still write and run an unreviewed script, while the plan claims that is enforced. Close it how? — options: (a) close the series now and carry the fix (a one-condition filter rule: run tools/ scripts only before the freeze, no tools/ writes after it, plus a post-freeze test) into the confinement-hook build (20d8) as acceptance, reviewed there [recommended] | (b) one more planner round and a fresh review | (c) close with the claim reworded: the rule sits under the honest bound (the OS user), not the hook | (z) decide later
+  raised: 2026-09-30
+  what: how to finish the probe write-up that the confinement hook builds on
+  why now: the review cap; the hook build (20d8) cannot start without a closed plan
+  why ask: cap — the loop cannot go past 4 rounds without you
+  (a): series closes; the hook's build must carry one extra rule and test, and its own opus review checks it — undo: none needed — who: the hook build
+  (b): about 15-20 minutes and roughly 0.5-1% of weekly quota; none of your time
+  (c): cheapest; the plan stops claiming a protection the hook cannot give, and mining-lane script review rests on the freeze step and the OS user
+  (z): the series stays blocked; the hook build waits (it already waits on the PB-1 check, which needs you)
+  rec: (a) · basis strong — the reviewer states the fix exactly and calls it one condition plus a fixture; the build review re-checks it
+  unknown: none

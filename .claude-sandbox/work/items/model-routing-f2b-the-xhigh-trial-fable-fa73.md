@@ -66,3 +66,8 @@ findings:
 decided: 2026-09-30 reply-reading — finding 2: an accepted check's findings that arrive before the build's CLEAR are written onto the build item as a findings: block and open its next fix round (counted toward the cap); any that arrive after the build's CLEAR — merged or not, or before the build starts on a plan already closed — become a follow-up item; no new resume state · authority: answer 127, ruling A · reopen: say "hold the landing for late findings"
 dispatch: implementer opus medium — resume
 agent: implementer a61d37fcc4f73c086 round 3
+return: implementer DONE be5b465
+changed: (same 22-file set; this round: model-routing.md, record-lines.md, resume.md, fix-loop.md, review-brief.md)
+note: implementer's first combined Checks run was killed (exit 144) during work-items; re-run separately, all pass — watch at Land
+dispatch: reviewer opus high — resume
+agent: reviewer a5abb53ae3c3981d6 round 3
