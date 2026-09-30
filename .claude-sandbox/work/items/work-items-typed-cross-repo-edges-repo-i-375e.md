@@ -49,3 +49,15 @@ return: planner DONE /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.
 baseline: 4e1be3b1f4f3cc3dafc905bc62e779bd487dba52d8de118e9e98bc59e1f97fb3 00_initial.md 9fe551426d32f9b67b01eb5eeed2b2ff861cc3367abcb682972277c537a3d99f 01_review-fixes.md 
 dispatch: reviewer opus high — resume
 agent: reviewer a5869445e366eb4e6 round 2
+verdict: NEEDS_CHANGES round 2 at .claude-sandbox/investigations/375e-cross-repo-edges
+findings:
+  prior 1-9: FIXED
+  10. [medium] 01:252-257 — _estate_archive_paths lists archive/ with os.listdir and does not skip non-directories or hidden entries or keep sorted order; a stray archive/README.md or .DS_Store → NotADirectoryError → spurious "archive unreadable" PROBLEM and edges read store unreadable instead of not found; list only non-hidden directories, keep non-hidden *.md, sort as the glob did, test a stray file
+  11. [low] 00:546-548, 00:387 — relay list still says "five things / five kinds"; 01's Supersedes does not name these lines
+  12. [low] 01:241-244, 309-311 — _estate_failed_rec gets only _failed; D3 reads _index, _unreadable, _archive_gaps too; the catch-all leaves unresolved edges without a reason
+dispatch: planner opus high — resume
+agent: planner ad19358f9a90c2117 round 3
+return: planner DONE /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude-sandbox/investigations/375e-cross-repo-edges (02_review-r2-fixes.md; findings 10-12 fixed; deviation: hidden archive entries kept, matching the glob wi's store-local commands use)
+baseline: 4e1be3b1f4f3cc3dafc905bc62e779bd487dba52d8de118e9e98bc59e1f97fb3 00_initial.md 9fe551426d32f9b67b01eb5eeed2b2ff861cc3367abcb682972277c537a3d99f 01_review-fixes.md 0278ed544d51b191f69af3f23a8d3b11b75cf7557d50ebd10ee79d89a1905c9e 02_review-r2-fixes.md 
+dispatch: reviewer opus high — resume
+agent: reviewer a5869445e366eb4e6 round 3

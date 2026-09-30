@@ -39,3 +39,22 @@ changed:
   CLAUDE.md — research/scripts layout line names scan-findings.py (00 Files to Modify)
 dispatch: reviewer opus high — review round 1 (rule 4)
 agent: reviewer af1c1850266095f2a round 1
+verdict: NEEDS_CHANGES round 1 at 06a76df
+findings:
+  1. [high] tests/test_scan_findings.py — untested: unreadable file HOLD (scan-findings.py:245-246), symlinked dir skip+flag (:263-266); no negative for special-token or each script-* rule
+  2. [medium] scan-findings.py:209-215, run-record.md:285 — --scripts: any quoted HOLD shape drops to FLAG, in comments and docstrings too (8/8 probed); 02:169-170 runs HOLD over comments and string literals
+  3. [medium] scan-findings.py:264-271, 283-284 — a symlink is FLAG and its target never scanned, but verifier and orchestrator follow it; should HOLD
+  4. [medium] run-record.md:259, SKILL.md Step 10 (:257-259) — rescan before landing covers findings/ only; verification.md and 01-synthesis.md carry source excerpts and land unscanned
+  5. [medium] research-refine SKILL.md:115; research SKILL.md:279, storage-and-knowledge-base.md:72-73 — gate readers still check the verifier sheet only, not the scanner HOLD
+  6. [medium] scan-findings.py:243, 112-129; run-record.md:271 — no rule that a timeout/crash/other exit holds the run; FIFO blocks forever; unclosed fences quadratic (80 KB 16.7 s); --strip on unreadable file tracebacks as exit 1
+  7. [medium] research SKILL.md:170 vs :201 — Step 7 reads TL;DR and Could-not-verify before Step 8's first scan (pre-existing)
+  8. [low] line-based rules miss split overrides, homoglyphs, curl|tee|sh
+  9. [low] display() escapes ancestors: a space in the staging path makes every file unsafe-filename FLAG; escaped path unusable by --strip
+  10. [low] predictable strip temp name followed through a planted symlink
+  11. [low] ^ anchors after a code span: `x` Assistant: hello HOLDs (false positive)
+  12. [low] SKILL.md Step 8 (:207-214) — strip procedure: one call or rescan; row→position mapping; line-0 HOLD
+  13. [low] --scripts treats *.md as markdown, no script rules
+  14. [nit] --help lacks output and exit codes; research SKILL.md size
+librarian ruling on 7: fix it here — a small wiring change in a file already in scope (scan at Step 7 and never open a file with a HOLD), not a separate item
+dispatch: implementer opus medium — resume
+agent: implementer a33ea65041c3dc364 round 2

@@ -63,3 +63,8 @@ decision 134: The decided-alone record introduces 19 class tags stored on decisi
   (z): they stay provisional; librarians keep raising and recording without class tags
   rec: (a) · basis partial — the names follow 263c's and 8dee's class list; the reviewer found no clash, only that you had not seen them
   unknown: whether other repos' parsers want a different case or prefix
+return: implementer DONE_WITH_CONCERNS f20c96a
+changed: (same 8 files; this round: decisions.md, decide-alone.md, format.md, rendering.md, gallery.md)
+note: implementer's concern — the ruled provisional sentence blocks every store write of decided: and why ask: until 134 is answered; accepted as intended (a short wait on one operator answer; nothing is lost, the Report still shows what was done alone)
+dispatch: reviewer opus high — resume
+agent: reviewer a46d8fc8aba824c9d round 2

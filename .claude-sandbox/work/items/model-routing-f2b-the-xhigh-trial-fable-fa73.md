@@ -52,3 +52,7 @@ decided: 2026-09-30 reply-reading — finding 1: an offer never holds the build;
 decided: 2026-09-30 reply-reading — the five-hour window's reserve does not trigger the step-down; "below the reserve" is the weekly window (127 a's grant stops at the 15% weekly reserve; the five-hour default reserve would trip it constantly) · authority: answers 88, 127 · reopen: say "both windows"
 dispatch: implementer opus medium — resume
 agent: implementer a61d37fcc4f73c086 round 2
+return: implementer DONE 12ee2cc
+changed: (this round adds nothing new to the file set; README.md, cross-checker*.md, test_agents.py, model-routing.md, record-lines.md, resume.md, SKILL.md, budget.md, review-brief.md edited again)
+dispatch: reviewer opus high — resume
+agent: reviewer a5abb53ae3c3981d6 round 2
