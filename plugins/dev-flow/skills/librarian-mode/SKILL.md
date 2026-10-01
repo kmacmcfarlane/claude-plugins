@@ -226,7 +226,7 @@ would ask the operator. Its Step 6 is the Report below. Your bindings:
 - **Hold**: an active hold's limit caps tier and concurrency for every dispatch; below
   a pin's tier (opus for an `effort:` pin's `-deep` files) or the reviewer's opus
   (dev-cycle's Step 2 rule 4), the item waits on a decision (Idle turn). A hold in force
-  leaves no round budget (below).
+  leaves no self-granted build round (below).
 - **Record sink**: the item body, appended with Bash (not a custody file): a
   `dispatch: <role> <model> <effort> — <signal>` line before every Agent call, a
   `review: self` line above a verdict you reached yourself, rounds, verdicts, `trial:`
