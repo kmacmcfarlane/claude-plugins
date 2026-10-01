@@ -55,6 +55,7 @@ renders what the operator read instead of composing it again.
     what: <what is decided>
     why now: <why now; blocks: …>
     why ask: <class> — <what would go wrong if the librarian took its recommendation alone>
+    context: <where the operator left it · what they decide now>
     if left: <a round ask only: each leftover finding — what it would break>
     round costs: <a round ask only: time, quota, the operator's attention>
     stakes: <reversible | one-way>, <narrow | wide — who>
@@ -77,20 +78,24 @@ renders what the operator read instead of composing it again.
   The options are every option the source offered (a series, a dispatch's `decision:`
   line), one choice per letter: a compound choice gets its own letters, never `(a)+…`.
   When the decision is ⚠ one-way — or any decision shown as a block — write `⚠ one-way`
-  after the question (⚠ only), and every option line carries its `undo:` and `who:`, a
-  `context:` line follows `why ask:` (before any `if left:`), and the `basis:` drill-down
-  line is required. `why ask:` follows `why now:` on every card, one physical line, its
-  class from `decide-alone.md` § Class names. An ask for another round — the dev-cycle
-  cap, most often — requires the `if left:` and `round costs:` lines, in that order after
-  `why now:`, `why ask:` and any `context:` (the skill's floor), filled from the
-  reviewer's `findings:` block and the run's record; any other decision leaves both out.
-  The options stay in letter order, `[recommended]` on the headline marking the
-  recommended one.
+  after the question (⚠ only), and every option line carries its `undo:` and `who:`, and
+  the `basis:` drill-down line is required. `why ask:` follows `why now:` on every card,
+  one physical line, its class from `decide-alone.md` § Class names. `context:` follows
+  `why ask:` on every card, one physical line, written when the decision is raised: where
+  the operator left it (what they last saw or decided on this subject) · what they decide
+  now — never what changed since, which *while it waited* carries at the re-show. It is the
+  card's **Context:** cue for a cold reader and opens a block's *Context you may have
+  lost*. An ask for another round — the dev-cycle cap, most often — requires the `if left:`
+  and `round costs:` lines, in that order after `why now:`, `why ask:` and `context:` (the
+  skill's floor), filled from the reviewer's `findings:` block and the run's record; any
+  other decision leaves both out. The options stay in letter order, `[recommended]` on the
+  headline marking the recommended one.
   **A card or block renders only from stored fields**: a field it needs that the store
   lacks — a headline-only entry, a block's missing `undo:`, a card stored before `why ask:`
-  existed (in the one form `decide-alone.md` § Raised gives it) — is backfilled from the
-  durable record (the item, its series, its commits) and written as a revised card with
-  `revised: <time> — backfilled` before it renders; a field no record holds is written and
+  existed (in the one form `decide-alone.md` § Raised gives it), one stored before
+  `context:` existed — is backfilled from the durable record (the item, its series, its
+  commits) and written as a revised card with `revised: <time> — backfilled` before it
+  renders; a field no record holds is written and
   shown as `not recorded`, never invented at render time. A card with no `raised:` takes it
   from the record: the time the headline was committed — the commit time, not the ask
   time, the closest the record holds — in the form `wi` parses (`TZ=UTC git -C "$MAIN" log

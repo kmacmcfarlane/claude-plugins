@@ -136,7 +136,9 @@ Three levels; the templates are in `references/rendering.md`:
   class when the caller names classes, stakes, basis, and its age, what it blocks and any
   deadline; a round ask, its justification too; a line-only decision, its why ask too.
 - **Card** — what is decided, why now, why ask (and a round ask's justification), the options
-  with their impact in italics, decide later, then `Rec · basis — reason · unknown`.
+  with their impact in italics, decide later, then `Rec · basis — reason · unknown`. To a cold
+  reader, also its **Context:** cue, written when it is raised: where you left it · what you
+  decide now.
 - **Block** — a card plus: context the reader may have lost, a section per option (*what
   happens*, *undo*, *who is affected*), and the basis drill-down with evidence links.
 

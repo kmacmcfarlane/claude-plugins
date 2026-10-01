@@ -362,7 +362,9 @@ since ended. Nothing changed for 61. None has a deadline and none is ⚠, so the
 cost: 62 blocks the worker rollout, 63 blocks the docs site build, 61 blocks nothing. 62 is
 wide and the reader is cold, so it is a block (with no read-back: it is not ⚠). The store kept
 each card with its raised-at time, so each is rendered from the stored card, plus what changed
-while it waited — not composed again.*
+while it waited — not composed again. Each stored card holds the context cue written when it
+was raised, so under *while it waited* the cards carry **Context:**, and 62's block opens its
+*Context you may have lost* with the same cue.*
 
 **Decisions** — *3 open · shown again after a context reset*
 
@@ -371,7 +373,7 @@ while it waited — not composed again.*
 **What:** switch every worker service from the old job queue to the new message broker.
 **Why now:** the worker rollout waits on it.
 **Why ask:** every worker service moves at once; how fast the rollout goes is yours to set.
-**Context you may have lost:** the switch is a config change in each service; the old queue keeps running for a week as a fallback.
+**Context you may have lost:** you left it at the broker trial on the email worker · you decide whether every worker moves now or one goes first. The switch is a config change in each service; the old queue keeps running for a week as a fallback.
 
 **(a) Move all workers now**
 - *What happens:* every worker service reads from the new broker from today.
@@ -393,6 +395,7 @@ Rec **(a)** · basis **partial** — *observed: the load test report; inferred: 
 **What:** ship the docs site's web font inside the repo (vendor), or load it from the font CDN (fetch).
 **Why now:** the docs site build waits on it.
 **Why ask:** 400 KB in the repo against a font that fails when the CDN does: a trade-off with no fact to settle it for you.
+**Context:** you left it when the CDN outage blanked the docs site's font · you decide where the font comes from in future.
 - (a) Vendor it — *adds 400 KB to the repo; the font still loads if the CDN goes down again*
 - **(b) Fetch it** — *no growth in the repo; the font depends on the CDN*
 - (z) Decide later — *it waits; the build stays on hold*
@@ -404,6 +407,7 @@ Rec **(b)** · basis **strong** — *checked the CDN's status history and loaded
 **What:** enable the type checker's strict mode for every package.
 **Why now:** new code is being written against the loose setting, so each week adds more to fix later.
 **Why ask:** it changes how everyone writes new code in the repo, not just this task.
+**Context:** you left it at the review that flagged loose types in two packages · you decide whether the whole repo goes strict, not just those two.
 - **(a) Turn it on** — *31 existing warnings to fix, about an hour of my time*
 - (b) Leave it off — *no work now; the loosely typed code keeps growing*
 - (z) Decide later — *it waits; the setting stays off*
