@@ -3,10 +3,12 @@ id: dev-cycle-at-the-review-cap-the-orchestr-5bdd
 title: "dev-cycle: at the review cap, the orchestrator finishes trivial leftover fixes by default instead of raising a decision"
 short_display_name: finish trivial fixes at the cap
 type: feature
-status: todo
+status: doing
 priority: 1
 deps:
   - review-caps-and-spend-plans-raise-only-o-5579
+owner: Kyle-McFarlane@401123cbad11
+claimed: 2026-10-01T07:22Z
 created: 2026-10-01
 updated: 2026-10-01
 refs:
@@ -20,3 +22,9 @@ Operator 2026-10-01 on decision 137, verbatim: 'I think the orchestrator should 
 - next: —
 - blocked: —
 - learned: —
+
+## Notes
+- 2026-10-01 claimed by Kyle-McFarlane@401123cbad11
+dispatch: planner opus high — plan (operator-requested rule change, answer 137)
+target: plan dev-cycle-at-the-review-cap-the-orchestr-5bdd /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude-sandbox/investigations/5bdd-finish-trivial-at-cap
+agent: planner ab1a5ac379668d226 round 1

@@ -3,15 +3,14 @@ id: review-caps-and-spend-plans-raise-only-o-5579
 title: "review caps and spend: plans raise only on a high left; builds get one self-granted round inside a grant"
 short_display_name: review caps and spend
 type: feature
-status: doing
+status: done
 priority: 2
 deps:
   - decisions-record-and-show-what-is-decide-58f4
   - librarian-mode-the-decided-alone-class-t-00ef
-owner: Kyle-McFarlane@401123cbad11
-claimed: 2026-10-01T00:01Z
 created: 2026-09-30
 updated: 2026-10-01
+closed: 2026-10-01
 refs:
   - .claude-sandbox/investigations/8dee-the-line/INDEX.md
   - 69ee answer 114
@@ -112,3 +111,28 @@ decision 137: Review caps and spend hit the 4-round review cap with two medium g
 answer 137: 137 I think the orchestrator should just finish trivial changes when the cap is reached. Make a work-item to make that the default behavior (read as: (a) finish it — one more small fix round for findings 21-22, fresh review; and a new item making that the default: trivial leftovers at the cap are finished without a decision)
 dispatch: implementer opus medium — resume (fix round 4 past the cap, answer 137: findings 21, 22, nit 23)
 agent: implementer ae4df26f8668a3cac round 5
+return: implementer DONE 3ebc6a0
+dispatch: reviewer opus high — fresh review, round 5 (granted past the cap, answer 137)
+agent: reviewer aca1dee8e9bd0e4da round 5
+verdict: NEEDS_CHANGES round 5 at 3ebc6a0
+findings:
+  21 PARTIAL, 22 FIXED, 23 FIXED
+  1. [medium] dev-cycle SKILL.md:85-86 + agent-brief.md:47-49 — a standalone /dev-cycle <slug> build has no step to find the plan item (series records no item; link runs item → series only), so the carried-findings clause cannot trigger there; fix: one sentence in Step 0.2 — with a store, find the plan item by its series path (grep the items for the series path, the note Step 1's tail writes) and read its findings: carried lines into Step 3's Acceptance
+  2. [low] librarian-mode SKILL.md:228-229 — "a hold in force leaves no round budget" also removes a plan's stop-and-carry during a hold; narrow to "leaves no self-granted build round"
+  3. [low] record-lines.md:119-120, agent-brief.md:48 — name only the stop at the cap; bindings.md:237-239 also writes carried findings at the end of a granted plan path; fix: "stops at its cap, or ends a granted plan path"
+  4. [low] resume.md:221-225 — S11 NONE re-applies Step 4.3 on resume and can write decided:/findings: carried twice; fix: a decided: line of class cap after the last verdict means 4.3 already ran — take its action, write nothing new
+decided: 2026-10-01T07:17Z ruled-rule-case — one more fix round (6) for the medium the round-5 review left, a one-sentence fix the reviewer states exactly, plus the three one-clause lows, same reviewer resumed to check them; safe: prose in one item's files, under 1% weekly, nothing lands without CLEAR · authority: answer 137 ("the orchestrator should just finish trivial changes when the cap is reached") · reopen: say so and it goes back to a decision
+dispatch: implementer opus medium — resume (fix round 5, under answer 137)
+agent: implementer ae4df26f8668a3cac round 6
+return: implementer DONE 2077da9
+dispatch: reviewer opus high — resume (round 6, checks the round-5 fixes)
+agent: reviewer aca1dee8e9bd0e4da round 6
+verdict: CLEAR round 6 at 2077da9
+findings:
+  round-5 1-4 FIXED
+  5. [low] agent-brief.md:51-52 — the series-path grep can hit several items and misses archived ones; say the plan item is the hit with findings: carried lines, include archive/*/*.md
+  6. [low] resume.md:225-227 + bindings.md:237-243 — the end of a granted plan path (8dee E2) carries findings but writes no decided: cap line, so a resume between carry and wi done writes the block twice
+  7. [nit] record-lines.md:121-122 — reflow the paragraph
+landed: 2f071a8
+closed 137: acted 2f071a8
+- 2026-10-01 done: landed 2f071a8 (CLEAR r6, past the cap on answer 137); lows filed as follow-up

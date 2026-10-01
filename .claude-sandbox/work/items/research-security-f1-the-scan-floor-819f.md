@@ -3,10 +3,11 @@ id: research-security-f1-the-scan-floor-819f
 title: "research security F1: the scan floor"
 short_display_name: research scan floor
 type: feature
-status: doing
+status: blocked
 priority: 1
 owner: Kyle-McFarlane@401123cbad11
 claimed: 2026-09-30T22:27Z
+blocked: decision 138 (another round past the cap)
 created: 2026-09-30
 updated: 2026-10-01
 refs:
@@ -126,3 +127,27 @@ decision 136: The research scan floor hit the 4-round review cap with one medium
 answer 136: 136a - ask for more rounds if you can justify it based on where we are at (read as: (a) one more fix round past the cap — bound the two spans plus a test, fresh review; if that round does not clear, another round may be asked with its justification)
 dispatch: implementer opus medium — resume (fix round 4 past the cap, answer 136: R1 only)
 agent: implementer a33ea65041c3dc364 round 5
+return: implementer DONE 638479b
+dispatch: reviewer opus high — fresh review, round 5 (granted past the cap, answer 136)
+agent: reviewer a0a35fdcad507b97f round 5
+verdict: NEEDS_CHANGES round 5 at 638479b
+findings:
+  R1 FIXED (0.11 s on 100k "<!-- "); the bounds reopen split forms (nested opener, >1000-char comment/link text) — rated low, docstring names them residual
+  1. [medium] scan-findings.py:104,113,118 — other patterns still stall on tiny inputs: _ATTRS (control-tag) exponential ('<system' + ' a="x"'*40, 247 bytes, >60 s), control-tag \s*/?\s* and agent-addressed \s*,?\s+ quadratic (20k spaces: 11-14 s); docstring :52 "every pass is linear" and the Bounded tests' claim false; fail-closed only if the caller times out, and run-record.md:271-273's commands carry no timeout, so one string in a fetched page can stall a research run; fix: unquoted value [^\s>"']+, \s*(?:/\s*)?, (?:\s*,)?\s+, timeout 120 on the run-record commands, Bounded cases for the three inputs
+  2. [low] scan-findings.py:142 — replace _COMMENT with a linear find loop (no length cap), closing the nested-opener and long-comment split forms
+  note: harness flagged instruction-shaped text in this return — the reviewer's hostile test strings (control tags), not directives
+decision 138: The research scan floor's granted round fixed the slow comment and link patterns, but the fresh review found three other patterns that stall on a tiny hostile string, and the research run's scan commands have no timeout; another round? — options: (a) one more fix round: the three pattern rewrites the reviewer gives, a timeout on the scan commands, tests, plus the linear comment loop; same reviewer re-checks [recommended] | (b) land now and file the stall fix as a P1 follow-up | (c) leave it unlanded until you look | (z) decide later
+  raised: 2026-10-01T07:22Z
+  what: whether the scan floor (the first research-security build) gets a sixth review round to close a newly found stall
+  why now: the granted round 5 ended NEEDS_CHANGES; blocks: the deep-investigation parity build (1ffd), and through it the confinement hook (20d8)
+  why ask: cap — you said to ask for more rounds when I can justify them (answer 136)
+  context: you granted one round past the cap on 2026-10-01 to bound two slow patterns · you decide whether a newly found stall in three other patterns gets one more round — then: none
+  if left: a 247-byte string in any fetched page can make the scan run for minutes to hours, and the research run's scan commands carry no timeout, so the run stalls instead of failing closed; nothing leaks. Also low: the new bounds let a split phrase hide behind a nested comment opener or 1000+ characters of comment or link text (the linear comment loop closes the comment half)
+  round costs: about 30-40 minutes and roughly 1% of weekly quota (weekly at 58%); your attention again only if this round does not clear
+  stakes: reversible, narrow — research runs
+  (a) one more fix round — exact fixes the reviewer already checked on 500 KB inputs (0.04 s), a timeout on the commands, regression tests; lands with no known medium — undo: n/a — who: research runs
+  (b) land now, P1 follow-up — the scan floor and its wiring land at once; until the follow-up, a hostile page can stall a research run
+  (c) leave it unlanded — nothing lands; the parity build and the hook keep waiting
+  (z) decide later — as (c)
+  rec: (a) · basis strong — the reviewer measured each stall and verified the rewritten pattern matches the same samples in 0.04 s
+  unknown: whether a further fresh look would find more slow patterns; this round's reviewer read every pattern in the file
