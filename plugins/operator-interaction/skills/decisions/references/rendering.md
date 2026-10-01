@@ -63,6 +63,7 @@ Example:
 **What:** what is decided, in plain words; items by plain name, the id as a trailing tag; other ids glossed.
 **Why now:** why it is up, and what it blocks.
 **Why ask:** *class* — what would go wrong if I took the recommendation alone.
+**Context:** where you left it · what you decide now *(a cold reader only)*
 - (a) Option — *what happens if chosen*
 - **(b) Option** — *what happens if chosen*
 - (z) Decide later — *what waiting costs; at a deadline, what happens then*
@@ -76,10 +77,18 @@ Rec **(b)** · basis **word** — *one-clause reason* · unknown: what isn't kno
 - **Why ask:** opens with the class in italics when the caller names classes; otherwise it
   is the reason alone. With no recommendation it says why the call is not yours. On an ask
   for another round it may point at the two lines below: *cap — the finding under If left*.
-- An ask for another round adds two lines after **Why ask:** — **If left:** *each leftover
-  finding, and what it would break* and **A round costs:** *the time, the quota, and your
-  attention: this answer, and another if the round does not settle it* (SKILL.md § The
-  floor).
+- **Context:** the resume cue, on a card shown to a cold reader (SKILL.md § Before you
+  write). Write it when the decision is raised, not at the re-show, so it is there when the
+  reader has gone cold: where the operator left it (what they last saw or decided on this
+  subject) and what they decide now. Never what changed since: that is *while it waited*,
+  which opens the re-show (§ Re-show with what changed). When the caller's store keeps the
+  card, the cue is stored with it, and a block's lost-context facts with it. With no store,
+  keep it with your notes on the decision; with nowhere to keep it, show it on the card at
+  its first showing too, cold reader or not, so a re-show copies it from that message.
+- An ask for another round adds two lines after **Why ask:** and any **Context:** —
+  **If left:** *each leftover finding, and what it would break* and **A round costs:** *the
+  time, the quota, and your attention: this answer, and another if the round does not settle
+  it* (SKILL.md § The floor).
 - When a status-quo default applies, add: **If unanswered:** *I leave X as it is and carry on
   with other work.*
 - When investigating could change the choice, add a priced option: (c) Investigate first —
@@ -94,7 +103,7 @@ Rec **(b)** · basis **word** — *one-clause reason* · unknown: what isn't kno
 **What:** …
 **Why now:** … Blocks: …
 **Why ask:** *class* — …
-**Context you may have lost:** the two or three facts a cold reader needs.
+**Context you may have lost:** the card's context cue, then the two or three facts a cold reader needs.
 
 (a) Option
 - *What happens:* …
@@ -235,10 +244,13 @@ the caller stores the new card.
 **A cold re-show** — whenever the reader is cold (SKILL.md § Before you write) — shows each
 open decision the reader is cold on at card level or above, never as a line only except as
 paged (SKILL.md § Levels, the line-only rule), each opening with what changed while it
-waited (*nothing changed* is worth saying). A deferred decision whose wake has not come is a
-card too, opening with its wake: *deferred until the release; no answer needed before then*;
-it leaves its group and goes last, in the cards and the list alike, so paging reaches it
-last. Open
+waited (*nothing changed* is worth saying). Under it the card runs **What:**, **Why now:**,
+**Why ask:**, then **Context:**, where the operator left it; a block's *Context you may have
+lost* opens with the same cue. A stored card from before the cue existed is revised as above:
+backfilled from the record, *not recorded* when no record holds it. A deferred decision whose
+wake has not come is a card too, opening with its wake: *deferred until the release; no
+answer needed before then*; it leaves its group and goes last, in the cards and the list
+alike, so paging reaches it last. Open
 questions still open are listed under *Open questions*. A cold re-show's heading has one
 form: **Decisions** — *N open · shown again after a context reset · M shown in full · one ⚠
 one-way*, naming what made the reader cold, and dropping *M shown in full* when nothing is
