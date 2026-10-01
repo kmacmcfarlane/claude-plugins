@@ -3,12 +3,11 @@ id: decisions-store-a-context-resume-cue-wit-6e8e
 title: "decisions: store a Context: resume cue with every decision when it is raised"
 short_display_name: resume cue
 type: feature
-status: doing
+status: done
 priority: 2
-owner: Kyle-McFarlane@401123cbad11
-claimed: 2026-10-01T00:01Z
 created: 2026-09-30
 updated: 2026-10-01
+closed: 2026-10-01
 refs:
   - .claude-sandbox/investigations/a99c-operator-freshness-signals/INDEX.md
 ---
@@ -50,3 +49,19 @@ return: implementer DONE_WITH_CONCERNS a3c7c1a
 changed: + decisions references/worksheet.md (one clause, finding 6); SKILL.md § Rulings entry (finding 4)
 dispatch: reviewer opus high — resume
 agent: reviewer a471fb33f7c6d3d58 round 2
+verdict: NEEDS_CHANGES round 2 at a3c7c1a
+findings:
+  1. [medium] PARTIAL — decisions.md:58, 85-89, 138: `then: none` closes the backfill path; a card later rendered as a block (expand, or wide-and-cold) shows the cue alone
+  2-7 FIXED
+  8. [low] a cue containing " — then: " is cut short
+  9. [nit] rendering.md:86-87 vs SKILL.md:140-141 — warm first-show fallback not mentioned in SKILL.md
+librarian ruling on 1: when a decision renders as a block and its stored facts are `none`, `none` counts as missing: the facts are backfilled from the durable record and written as a revised card (revised: <time> — backfilled), `not recorded` when no record holds them; 8 — the cue may not contain " — then: " (reword)
+dispatch: implementer opus medium — resume
+agent: implementer ab8913da1d118e0f0 round 3
+return: implementer DONE_WITH_CONCERNS a426e76
+dispatch: reviewer opus high — resume
+agent: reviewer a471fb33f7c6d3d58 round 3
+verdict: CLEAR round 3 at a426e76
+notes: 1, 8, 9 FIXED; new nit 10 (a block raised with none facts: caught by backfill) accepted as is
+landed: d38d0fd
+- 2026-10-01 done: d38d0fd

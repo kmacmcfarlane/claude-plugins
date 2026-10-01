@@ -47,3 +47,16 @@ findings:
 librarian rulings: 1 — at the cap the librarian takes a fresh `quota_budget.py --read-only` reading itself (not the held idle-turn wiring); point to model-routing for what "below" means; 3 — standalone dev-cycle asks at every cap, plans included; stop-and-carry applies only under a caller that binds it (librarian); 4 — carried findings are written onto the build's item as acceptance (the build item named by the series, or filed if none); 5 — carry E2; 6 — a stopped plan gets no fable offer (the at-the-cap stage needs a high left); 9 — a model: fable pin's extra round stays asked; 10 — a self-granted round's reopen: "say stop: the round ends and its commits do not land"
 dispatch: implementer opus medium — resume
 agent: implementer ae4df26f8668a3cac round 2
+return: implementer DONE bad98c3
+dispatch: reviewer opus high — resume
+agent: reviewer ad2a1543b77f3da33 round 2
+verdict: NEEDS_CHANGES round 2 at bad98c3
+findings:
+  1, 2, 6-11, 13 FIXED; 12 DECLINED (accepted); 3, 4, 5 PARTIAL
+  14. [high] bindings.md:234-236 (resume.md:181-183, 220-222) — E2 applied to builds: an operator-granted build round that does not clear can neither land nor be raised; contradicts :218; also overrides standalone
+  15. [medium] bindings.md:216 vs 234 — standalone no longer matches today after a waiver round; a store-less run has no item for "build acceptance"
+  16. [medium] bindings.md:221-222 — the filed build item: no source for "the item the series names"; title/type/short name/link unstated; could reach another repo's store
+  17. [low] budget.md:279 — unreflowed 99-char line
+librarian rulings: 14/15 — E2 applies only to plan runs under a caller-bound budget; a build's operator-granted round that does not clear is raised again, as today; standalone runs keep today's behaviour exactly (a waiver round's verdict tests the cap again); fix :218 to except the end of an E2 path; 16 — the build item is filed in the same store as the plan item, never another repo's (out of Scope routes as Intake step 4), with title "build: <series slug>", type feature, a short display name from the series, a --ref to the series path and --parent the plan item when it has one; a store-less run writes the carried findings to its record sink and Step 6's open questions only
+dispatch: implementer opus medium — resume (fix round 2; the next review is round 3)
+agent: implementer ae4df26f8668a3cac round 3
