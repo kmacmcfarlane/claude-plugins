@@ -3,13 +3,15 @@ id: review-caps-and-spend-plans-raise-only-o-5579
 title: "review caps and spend: plans raise only on a high left; builds get one self-granted round inside a grant"
 short_display_name: review caps and spend
 type: feature
-status: todo
+status: doing
 priority: 2
 deps:
   - decisions-record-and-show-what-is-decide-58f4
   - librarian-mode-the-decided-alone-class-t-00ef
+owner: Kyle-McFarlane@401123cbad11
+claimed: 2026-10-01T00:01Z
 created: 2026-09-30
-updated: 2026-09-30
+updated: 2026-10-01
 refs:
   - .claude-sandbox/investigations/8dee-the-line/INDEX.md
   - 69ee answer 114
@@ -22,3 +24,9 @@ refs:
 - next: —
 - blocked: —
 - learned: —
+
+## Notes
+- 2026-10-01 claimed by Kyle-McFarlane@401123cbad11
+target: full review-caps-and-spend-plans-raise-only-o-5579 /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude/worktrees/review-caps-and-spend-plans-raise-only-o-5579
+dispatch: implementer opus medium — opus signal: changes what dev-cycle and librarian-mode do (caps and spend); feature from 8dee F3 (wave 3, 132 a)
+agent: implementer ae4df26f8668a3cac round 1

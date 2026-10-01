@@ -3,10 +3,12 @@ id: decisions-store-a-context-resume-cue-wit-6e8e
 title: "decisions: store a Context: resume cue with every decision when it is raised"
 short_display_name: resume cue
 type: feature
-status: todo
+status: doing
 priority: 2
+owner: Kyle-McFarlane@401123cbad11
+claimed: 2026-10-01T00:01Z
 created: 2026-09-30
-updated: 2026-09-30
+updated: 2026-10-01
 refs:
   - .claude-sandbox/investigations/a99c-operator-freshness-signals/INDEX.md
 ---
@@ -18,3 +20,9 @@ a99c D2, answer 119 b (pyramid answers 2026-09-30 (69ee, answer page)). Acceptan
 - next: —
 - blocked: —
 - learned: —
+
+## Notes
+- 2026-10-01 claimed by Kyle-McFarlane@401123cbad11
+target: full decisions-store-a-context-resume-cue-wit-6e8e /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude/worktrees/decisions-store-a-context-resume-cue-wit-6e8e
+dispatch: implementer opus medium — opus signal: changes what the decisions skill and librarian-mode do; given plan a99c D2 (wave 2, 132 a)
+agent: implementer ab8913da1d118e0f0 round 1
