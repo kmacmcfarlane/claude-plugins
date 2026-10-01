@@ -3,12 +3,11 @@ id: decisions-record-every-answer-line-keeps-3716
 title: "decisions record: every answer line keeps the operator's reply verbatim"
 short_display_name: verbatim answer lines
 type: feature
-status: doing
+status: done
 priority: 2
-owner: Kyle-McFarlane@401123cbad11
-claimed: 2026-10-01T01:01Z
 created: 2026-09-30
 updated: 2026-10-01
+closed: 2026-10-01
 refs:
   - .claude-sandbox/investigations/5140-decision-lifecycle/03_final.md
 ---
@@ -45,3 +44,10 @@ findings:
 librarian rulings: 1 — a plain answer whose reply opens with a form word (drop, later, you decide, tell me, expand, dig into) is written with the reply in double quotes, so `answer N: drop` stays the drop form's key; older lines unchanged; 2 — the verbatim rule is a store rule and applies without the skill (add it to the :28 exemptions); 4 — the interim lines written before this rule are left as written; 5 — the choice's words are the verbatim reply; the confirmation appends — confirmed "<reply>"; 6 — drop the hold example; a hold reply waits on OQ6 (5140); 7 — a reader splits the read-as on the last " (read as: "; a batched part keeps its words as written, number included unless it is an exact letter; no quote escaping; 3 — filed as a follow-up
 dispatch: implementer opus medium — resume
 agent: implementer a9fb658940aaa4746 round 2
+return: implementer DONE 837994e
+dispatch: reviewer opus high — resume
+agent: reviewer a37c322ccef1c42c2 round 2
+verdict: CLEAR round 2 at 837994e
+notes: 1-7 FIXED; new low 8 (⚠ read-back template should quote form-word choices) and nit 9 (case/whole-word) added to follow-up 6665
+landed: e4ae4fc
+- 2026-10-01 done: e4ae4fc

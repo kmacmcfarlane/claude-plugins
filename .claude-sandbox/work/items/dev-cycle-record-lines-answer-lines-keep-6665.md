@@ -18,3 +18,4 @@ refs:
 - next: —
 - blocked: —
 - learned: —
+2026-10-01 from 3716 review r2: also say the ⚠ read-back template's choice words follow the form-word quoting rule (decisions.md:170), and that the form word matches case-sensitively as a whole word
