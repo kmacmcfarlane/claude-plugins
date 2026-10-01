@@ -26,3 +26,11 @@ a99c D2, answer 119 b (pyramid answers 2026-09-30 (69ee, answer page)). Acceptan
 target: full decisions-store-a-context-resume-cue-wit-6e8e /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude/worktrees/decisions-store-a-context-resume-cue-wit-6e8e
 dispatch: implementer opus medium — opus signal: changes what the decisions skill and librarian-mode do; given plan a99c D2 (wave 2, 132 a)
 agent: implementer ab8913da1d118e0f0 round 1
+return: implementer DONE_WITH_CONCERNS 9e9b1e6
+changed:
+  plugins/operator-interaction/skills/decisions/SKILL.md — Card entry names the cold reader's Context: cue
+  plugins/operator-interaction/skills/decisions/references/rendering.md — card template, when the cue is written, cold re-show order, backfill
+  plugins/operator-interaction/skills/decisions/references/gallery.md — example 20 cards carry the cue
+  plugins/dev-flow/skills/librarian-mode/references/decisions.md — stored context: field on every card, backfill
+dispatch: reviewer opus high — review round 1 (rule 4)
+agent: reviewer a471fb33f7c6d3d58 round 1
