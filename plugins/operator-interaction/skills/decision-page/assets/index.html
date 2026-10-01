@@ -103,7 +103,11 @@ legend{margin-bottom:4px}
 .oi em{font-style:normal;font-family:var(--f-mono);font-size:.78rem;color:var(--muted)}
 .impact{color:var(--muted);font-size:.86rem;margin-top:-2px}
 .mono{font-family:var(--f-mono)}
-.ot b{font-family:var(--f-mono);margin-right:.35em}
+.ol{font-family:var(--f-mono);margin-right:.35em}
+.extra{font-size:.9rem;max-width:70ch}
+.extra strong{font-weight:600}
+ul.block{margin:0 0 4px;padding-left:1.1em;font-size:.88rem}
+ul.block em{color:var(--muted)}
 .ot .pill{margin-left:.4em;font-weight:400}
 .oi{grid-column:2;font-size:.86rem;color:var(--muted)}
 details.more{margin:0 12px 9px 38px;font-size:.86rem}
@@ -133,7 +137,7 @@ details.pane>div{padding:6px 0 2px;font-size:.92rem;max-width:70ch;display:flex;
 .pop-h{font-family:var(--f-display);font-stretch:88%;font-weight:700;font-size:1rem;display:flex;gap:8px;align-items:baseline}
 .pop-h .n{font-family:var(--f-mono);font-size:.9rem}
 .pop ol{margin:0;padding-left:0;list-style:none;display:flex;flex-direction:column;gap:3px}
-.pop ol b{font-family:var(--f-mono);margin-right:.3em}
+.pop ol .ol{margin-right:.3em}
 .pop .muted{color:var(--muted);font-size:.8rem}
 .pop-f{display:flex;gap:6px;flex-wrap:wrap}
 footer{color:var(--muted);font-size:.85rem;max-width:70ch}
@@ -152,6 +156,7 @@ footer{color:var(--muted);font-size:.85rem;max-width:70ch}
       <button class="linkish" id="toggleall" type="button">Open all cards</button>
     </div>
     <div class="banner" id="nodb" hidden>This view can't save answers. Nothing you pick here is kept; answer in chat instead (<code id="nodbex">N: a</code>).</div>
+    <div class="banner" id="viewonly" hidden>You are viewing these answers. Only the page's owner can answer here.</div>
     <div class="banner" id="nodata" hidden>The decisions didn't load. Reload the page; if it keeps failing, ask Claude for them in chat.</div>
   </header>
 
@@ -168,25 +173,64 @@ footer{color:var(--muted);font-size:.85rem;max-width:70ch}
 
 <script>
 let LAYERS=[],FOLLOW=[],CARDS=[],REFS={},byN=new Map(),FOLLOW_KEYS=new Set();
-let answers={},db=null,col=null;const timers={};
+let answers={},raw={},db=null,col=null,readonly=false;const timers={},inflight={},dirty={};
 const $=(s,r=document)=>r.querySelector(s);
-const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c]));
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));
 const nameOf=k=>{const c=byN.get(k);if(c)return c.t;const r=REFS[k];return r?r.short:""};
 const slug=k=>'<button type="button" class="slug'+(byN.has(k)?' in':'')+'" data-ref="'+esc(k)+'" aria-haspopup="dialog">'+esc(k)+(nameOf(k)?' · '+esc(nameOf(k)):'')+'</button>';
 const code=s=>s.replace(/`([^`]+)`/g,"<code>$1</code>");
-const fmt=s=>code(esc(s)).replace(/\[\[([0-9-]+)\]\]/g,(m,k)=>slug(k));
-const fmtPlain=s=>code(esc(s)).replace(/\[\[([0-9-]+)\]\]/g,(m,k)=>'<span class="slug-t">'+esc(k)+(nameOf(k)?' · '+esc(nameOf(k)):'')+'</span>');
-function split(t){
-  let i=t.indexOf(". "),head=i<0?t:t.slice(0,i),body=i<0?"":t.slice(i+2);
-  if(head.length>120){const j=head.indexOf(": ");if(j>0){body=head.slice(j+2)+(i<0?"":". "+body);head=head.slice(0,j)}}
-  return [head.replace(/\.$/,""),body.trim()];
-}
+const fmt=s=>code(esc(s==null?"":s)).replace(/\[\[([0-9]+)\]\]/g,(m,k)=>slug(k));
+const fmtPlain=s=>code(esc(s==null?"":s)).replace(/\[\[([0-9]+)\]\]/g,(m,k)=>'<span class="slug-t">'+esc(k)+(nameOf(k)?' · '+esc(nameOf(k)):'')+'</span>');
 const recOpt=c=>c.o.find(o=>o[0]===c.rec)||["","","","",""];
 const recHead=c=>recOpt(c)[3];
 /* the rec slot: "rec (b)", or the no-recommendation label */
 const recPill=c=>c.rec?'<span class="pill rec">rec ('+esc(c.rec)+')</span>':'<span class="pill none">'+esc(c.norec||"no recommendation")+'</span>';
 const recSub=c=>c.rec?fmtPlain(recHead(c)):"";
 const metaPills=c=>(c.warn?'<span class="pill warn">⚠ one-way</span>':'')+(c.class?'<span class="pill cls">'+esc(c.class)+'</span>':'');
+const fid=k=>esc(k.replace(/\s/g,"_"));
+
+/* the data is checked before anything renders: a card that fails is a refused file, not a half page */
+const FOLLOW_FIXED=["later","tell me","expand","dig into","you decide","drop"];
+function check(d){
+  const bad=[],isStr=v=>typeof v==="string",T=Date.parse;
+  if(!d||typeof d!=="object")return ["cards.json is not an object"];
+  if(!Array.isArray(d.layers)||!d.layers.length)bad.push("layers: missing");
+  if(!Array.isArray(d.follow)||d.follow.map(f=>Array.isArray(f)&&f[0]).join("|")!==FOLLOW_FIXED.join("|"))bad.push("follow: must be the six fixed follow-ups");
+  if(!Array.isArray(d.cards)||!d.cards.length)bad.push("cards: missing");
+  if(bad.length)return bad;
+  const keys=new Set(),seen=new Set();
+  d.layers.forEach((l,i)=>{if(!Array.isArray(l)||!isStr(l[0])||!isStr(l[1]))bad.push("layer "+i+": needs [key, title, note]");else keys.add(l[0])});
+  for(const c of d.cards){
+    const w="card "+(Number.isInteger(c&&c.n)?c.n:"?");
+    if(!c||!Number.isInteger(c.n)||c.n<0){bad.push(w+": n must be a whole number");continue}
+    if(seen.has(c.n))bad.push(w+": number used twice");seen.add(c.n);
+    if(!keys.has(c.L))bad.push(w+": L is not a layer key");
+    for(const k of ["t","what","why","whyask","stakes","basis","reason","unknown","rev"])if(!isStr(c[k]))bad.push(w+": "+k+" missing");
+    if(isStr(c.rev)&&isNaN(T(c.rev)))bad.push(w+": rev is not a time");
+    if(!["strong","partial","thin","none"].includes(c.basis))bad.push(w+": basis must be strong, partial, thin or none");
+    if(!Array.isArray(c.tldr)||!c.tldr.every(isStr))bad.push(w+": tldr must be a list of text");
+    if(!Array.isArray(c.o)||!c.o.length){bad.push(w+": no options");continue}
+    const ls=[];
+    for(const o of c.o){if(!Array.isArray(o)||o.length!==5||!o.every(isStr)||!/^[a-z]$/.test(o[0])){bad.push(w+": each option is [letter a-z, full, impact, title, one line]");break}ls.push(o[0])}
+    if(ls[ls.length-1]!=="z")bad.push(w+": the last option must be (z) decide later");
+    if(new Set(ls).size!==ls.length||ls.slice(0,-1).join("")!==ls.slice(0,-1).sort().join(""))bad.push(w+": options must be in letter order, each letter once");
+    if(c.rec===null){if(!isStr(c.norec))bad.push(w+": rec null needs norec")}
+    else if(!ls.includes(c.rec))bad.push(w+": rec is not one of its option letters");
+    if(c.warn&&(typeof c.blocks!=="object"||!c.blocks||!ls.every(k=>k==="z"||(c.blocks[k]&&isStr(c.blocks[k].happens)&&isStr(c.blocks[k].undo)&&isStr(c.blocks[k].who)))))bad.push(w+": a ⚠ one-way card needs blocks {happens, undo, who} for every option but (z)");
+  }
+  for(const k in (d.refs||{}))if(!/^[0-9]+$/.test(k))bad.push("refs: key "+k+" is not a number");
+  return bad;
+}
+
+const fresh=(c,v)=>!!v&&!isNaN(Date.parse(v.at))&&Date.parse(v.at)>Date.parse(c.rev);
+/* answers shown = stored answers newer than their card's revision; an older one reads as open */
+function applyRaw(){
+  const next={};
+  for(const id in raw){const c=byN.get(id),v=raw[id];if(c&&fresh(c,v))next[id]={choice:v.choice||null,words:v.words||"",at:v.at}}
+  for(const n in timers){if(timers[n]&&answers[n])next[n]=Object.assign({},next[n]||{},{words:answers[n].words})}
+  for(const n in inflight){if(inflight[n]&&answers[n])next[n]=answers[n]}
+  answers=next;syncAll();
+}
 
 function ansLabel(c,a){
   if(!a||(!a.choice&&!a.words))return '<span class="pill none">open</span>';
@@ -201,45 +245,55 @@ function renderHud(){
   for(const [key,title] of LAYERS){
     h+='<div class="hud-layer">'+esc(title)+'</div>';
     for(const c of CARDS.filter(x=>x.L===key)){
-      h+='<div class="row"><span class="n">'+c.n+'</span>'
-        +'<span class="t"><button type="button" data-open="'+c.n+'">'+esc(c.t)+'</button>'
+      const n=esc(c.n);
+      h+='<div class="row"><span class="n">'+n+'</span>'
+        +'<span class="t"><button type="button" data-open="'+n+'">'+esc(c.t)+'</button>'
         +'<span class="sub">'+metaPills(c)+' '+recPill(c)+' '+recSub(c)+'</span></span>'
-        +'<span class="quick">'+(c.rec?'<button class="btn" type="button" data-quick="rec" data-n="'+c.n+'">Use recommendation</button>':'')
-        +'<button class="btn" type="button" data-quick="later" data-n="'+c.n+'">Later</button></span>'
-        +'<span class="ans" id="ans-'+c.n+'">'+ansLabel(c,answers[c.n])+'</span></div>';
+        +'<span class="quick">'+(c.rec?'<button class="btn" type="button" data-quick="rec" data-n="'+n+'">Use recommendation</button>':'')
+        +'<button class="btn" type="button" data-quick="later" data-n="'+n+'">Later</button></span>'
+        +'<span class="ans" id="ans-'+n+'">'+ansLabel(c,answers[c.n])+'</span></div>';
     }
   }
   $("#hud").innerHTML=h;
 }
 
+function line(label,text){return text?'<p class="extra"><strong>'+esc(label)+'</strong> '+fmt(text)+'</p>':''}
+function optionsInFull(c){
+  return c.o.map(([k,full,imp])=>{
+    const b=c.warn&&c.blocks&&c.blocks[k];
+    return '<p><span class="mono ol">('+esc(k)+')</span> '+fmt(full)+'</p><p class="impact">'+fmt(imp)+'</p>'
+      +(b?'<ul class="block"><li><em>What happens:</em> '+fmt(b.happens)+'</li><li><em>Undo:</em> '+fmt(b.undo)+'</li><li><em>Who is affected:</em> '+fmt(b.who)+'</li></ul>':'');
+  }).join("");
+}
 function renderCards(){
   let h="";
   for(const [key,title,note] of LAYERS){
-    h+='<section class="layer" aria-label="'+esc(title)+'"><h2>'+esc(title)+'</h2><p class="layer-note">'+fmt(note)+'</p>';
+    h+='<section class="layer" aria-label="'+esc(title)+'"><h2>'+esc(title)+'</h2>'+(note?'<p class="layer-note">'+fmt(note)+'</p>':'');
     for(const c of CARDS.filter(x=>x.L===key)){
-      const g="d"+c.n;
-      h+='<details class="card" id="card-'+c.n+'"><summary><span class="n">'+c.n+'</span><h3>'+esc(c.t)+'</h3>'
-        +'<span class="meta">'+metaPills(c)+recPill(c)+(c.dep?'<span>depends on: '+fmtPlain(c.dep)+'</span>':'')+'<span id="sum-'+c.n+'">'+ansLabel(c,answers[c.n])+'</span></span></summary>'
+      const n=esc(c.n),g="d"+n;
+      h+='<details class="card" id="card-'+n+'"><summary><span class="n">'+n+'</span><h3>'+esc(c.t)+'</h3>'
+        +'<span class="meta">'+metaPills(c)+recPill(c)+(c.dep?'<span>depends on: '+fmtPlain(c.dep)+'</span>':'')+'<span id="sum-'+n+'">'+ansLabel(c,answers[c.n])+'</span></span></summary>'
         +'<div class="body"><div><span class="lbl">TLDR</span><ul class="tldr">'+c.tldr.map(b=>'<li>'+fmt(b)+'</li>').join("")+'</ul></div>'
-        +(c.context?'<div class="ask"><strong>Context.</strong> '+fmt(c.context)+'</div>':'')
+        +(c.context?'<div class="ask"><strong>Context:</strong> '+fmt(c.context)+'</div>':'')
+        +line("If left:",c.ifleft)+line("A round costs:",c.roundcosts)+line("If unanswered:",c.ifunanswered)
         +'<fieldset><legend>Your answer: one option or one follow-up</legend><div class="opts">';
       for(const [k,full,imp,ttl,why] of c.o){
         const isRec=!!c.rec&&k===c.rec, lab=k==="z"?"if left:":(isRec?"because:":(c.rec?"not recommended because:":"if chosen:"));
-        h+='<div class="opt'+(isRec?' isrec':'')+'"><label class="optl"><input type="radio" name="'+g+'" id="'+g+'-'+k+'" value="'+k+'">'
-          +'<span class="ot"><b>('+esc(k)+')</b>'+esc(ttl)+(isRec?'<span class="pill rec">recommended</span>':'')+'</span>'
+        h+='<div class="opt'+(isRec?' isrec':'')+'"><label class="optl"><input type="radio" name="'+g+'" id="'+g+'-'+fid(k)+'" value="'+esc(k)+'">'
+          +'<span class="ot"><span class="ol">('+esc(k)+')</span>'+esc(ttl)+(isRec?'<span class="pill rec">recommended</span>':'')+'</span>'
           +'<span class="oi"><em>'+lab+'</em> '+fmt(why)+'</span></label></div>';
       }
       h+='</div><div class="follow"><div><span class="sublabel">Or a follow-up</span><div class="chips">';
       for(const [k,label,ph] of FOLLOW){
-        h+='<label class="chip"><input type="radio" name="'+g+'" id="'+g+'-'+k.replace(/\s/g,"_")+'" value="'+k+'">'+esc(label)+(ph?' <span class="ph">'+esc(ph)+'</span>':'')+'</label>';
+        h+='<label class="chip"><input type="radio" name="'+g+'" id="'+g+'-'+fid(k)+'" value="'+esc(k)+'">'+esc(label)+(ph?' <span class="ph">'+esc(ph)+'</span>':'')+'</label>';
       }
       h+='</div></div><div><label class="lbl" for="'+g+'-words">Your words</label>'
-        +'<textarea id="'+g+'-words" data-n="'+c.n+'"></textarea></div></div></fieldset>'
-        +'<p class="recline">'+(c.rec?'Rec <strong>('+esc(c.rec)+')</strong>':'<em>'+esc(c.norec||"no recommendation")+'</em>')+' · basis <strong>'+esc(c.basis)+'</strong>'+(c.reason?' — <em>'+fmt(c.reason)+'</em>':'')+'</p>'
-        +'<div class="cardfoot"><span class="lbl">Details, most compressed first</span><button class="btn" type="button" data-clear="'+c.n+'">Clear answer</button></div>'
+        +'<textarea id="'+g+'-words" data-n="'+n+'"></textarea></div></div></fieldset>'
+        +'<p class="recline">'+(c.rec?'Rec <strong>('+esc(c.rec)+')</strong>':'<em>'+esc(c.norec||"no recommendation")+'</em>')+' · basis <strong>'+esc(c.basis)+'</strong>'+(c.reason?' — <em>'+fmt(c.reason)+'</em>':'')+' · unknown: '+fmt(c.unknown||"none")+'</p>'
+        +'<div class="cardfoot"><span class="lbl">Details, most compressed first</span><button class="btn" type="button" data-clear="'+n+'">Clear answer</button></div>'
         +'<div class="panes">'
         +'<details class="pane"><summary>Background</summary><div><p><span class="lbl">What</span>'+fmt(c.what)+'</p><p><span class="lbl">Why now</span>'+fmt(c.why)+'</p><p><span class="lbl">Why ask</span>'+(c.class?'<em>'+esc(c.class)+'</em> — ':'')+fmt(c.whyask)+'</p></div></details>'
-        +'<details class="pane"><summary>Options in full</summary><div>'+c.o.map(([k,full,imp])=>'<p><b class="mono">('+esc(k)+')</b> '+fmt(full)+'</p><p class="impact">'+fmt(imp)+'</p>').join("")+'</div></details>'
+        +'<details class="pane"'+(c.warn?' open':'')+'><summary>Options in full</summary><div>'+optionsInFull(c)+'</div></details>'
         +'<details class="pane"><summary>Stakes and dependencies</summary><div><p><span class="lbl">Stakes</span>'+(c.warn?'⚠ one-way. ':'')+fmt(c.stakes)+'</p><p><span class="lbl">Depends on</span>'+fmt(c.dep||"nothing on this page")+'</p></div></details>'
         +'<details class="pane"><summary>Evidence and unknowns</summary><div><p><span class="lbl">Basis</span>'+esc(c.basis)+(c.reason?' — '+fmt(c.reason):'')+'</p>'+(c.evidence?'<p>'+fmt(c.evidence)+'</p>':'')+'<p><span class="lbl">Unknown</span>'+fmt(c.unknown||"none")+'</p></div></details>'
         +'</div></div></details>';
@@ -253,11 +307,11 @@ function placeholderFor(choice){const f=FOLLOW.find(x=>x[0]===choice);return f?f
 
 function syncCard(n){
   const c=byN.get(String(n)),a=answers[n]||{},g="d"+n;
-  document.querySelectorAll('input[name="'+g+'"]').forEach(r=>{r.checked=(r.value===a.choice)});
+  document.querySelectorAll('input[name="'+g+'"]').forEach(r=>{r.checked=(r.value===a.choice);r.disabled=readonly});
   const ta=$("#"+g+"-words");
-  if(ta){if(document.activeElement!==ta)ta.value=a.words||"";ta.placeholder=placeholderFor(a.choice)}
+  if(ta){if(document.activeElement!==ta)ta.value=a.words||"";ta.placeholder=placeholderFor(a.choice);ta.disabled=readonly}
   for(const id of ["#sum-"+n,"#ans-"+n]){const el=$(id);if(el)el.innerHTML=ansLabel(c,answers[n])}
-  document.querySelectorAll('[data-n="'+n+'"][data-quick]').forEach(b=>b.classList.toggle("on",b.dataset.quick==="rec"?(!!c.rec&&a.choice===c.rec):a.choice==="later"));
+  document.querySelectorAll('[data-n="'+n+'"][data-quick]').forEach(b=>{b.classList.toggle("on",b.dataset.quick==="rec"?(!!c.rec&&a.choice===c.rec):a.choice==="later");b.disabled=readonly});
 }
 function syncAll(){
   if(!CARDS.length)return;
@@ -269,20 +323,33 @@ function syncAll(){
 }
 function setSave(t,err){const s=$("#save");s.textContent=t;s.classList.toggle("err",!!err)}
 
+/* one write at a time per document: a change made while one is in flight is written after it, once */
 async function write(n){
-  const a=answers[n];
+  if(readonly)return;
   if(!db){setSave("not saved: this view can't store answers",true);return}
+  if(inflight[n]){dirty[n]=true;return}
+  inflight[n]=true;
+  const once=async()=>{
+    const a=answers[n],ref=col.doc(String(n));
+    if(!a||(!a.choice&&!a.words))await ref.delete();
+    else await ref.set({n:Number(n),choice:a.choice||null,kind:a.choice?(FOLLOW_KEYS.has(a.choice)?"follow-up":"option"):null,words:a.words||"",rec:byN.get(String(n)).rec||null,at:new Date().toISOString()});
+  };
   try{
-    setSave("saving…");
-    if(!a||(!a.choice&&!a.words))await col.doc(String(n)).delete();
-    else await col.doc(String(n)).set({n:Number(n),choice:a.choice||null,kind:a.choice?(FOLLOW_KEYS.has(a.choice)?"follow-up":"option"):null,words:a.words||"",rec:byN.get(String(n)).rec||null,at:new Date().toISOString()});
+    do{
+      dirty[n]=false;setSave("saving…");
+      try{await once()}
+      catch(e){
+        if(!(e&&e.code==="unavailable"))throw e;
+        await new Promise(r=>setTimeout(r,800+Math.random()*800));
+        await once();
+      }
+    }while(dirty[n]);
     setSave("saved "+new Date().toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"}));
   }catch(e){
-    if(e&&e.code==="unavailable"){setTimeout(()=>write(n),800+Math.random()*800);return}
     setSave("not saved: "+((e&&e.message)||"the store refused the write"),true);
-  }
+  }finally{inflight[n]=false;dirty[n]=false}
 }
-function choose(n,choice){answers[n]=Object.assign({},answers[n]||{},{choice});syncCard(n);syncAll();write(n)}
+function choose(n,choice){if(readonly)return;answers[n]=Object.assign({},answers[n]||{},{choice});syncCard(n);syncAll();write(n)}
 
 /* popup */
 const pop=$("#pop");let popKey=null,popPinned=false,popTimer=null,popAnchor=null;
@@ -293,8 +360,8 @@ function fillPop(k){
      +'<p>'+metaPills(c)+recPill(c)+' '+recSub(c)+'</p>'
      +'<p><span class="lbl">Your answer</span>'+ansLabel(c,answers[c.n])+'</p>'
      +'<ul class="tldr">'+c.tldr.map(b=>'<li>'+fmtPlain(b)+'</li>').join("")+'</ul>'
-     +'<ol>'+c.o.map(o=>'<li'+(c.rec&&o[0]===c.rec?' class="isrec"':'')+'><b>('+esc(o[0])+')</b>'+esc(o[3])+'</li>').join("")+'</ol>'
-     +'<div class="pop-f"><button class="btn" type="button" data-open="'+c.n+'">Open card</button>'+(c.rec?'<button class="btn" type="button" data-quick="rec" data-n="'+c.n+'">Use recommendation</button>':'')+'</div>';
+     +'<ol>'+c.o.map(o=>'<li'+(c.rec&&o[0]===c.rec?' class="isrec"':'')+'><span class="ol">('+esc(o[0])+')</span>'+esc(o[3])+'</li>').join("")+'</ol>'
+     +'<div class="pop-f"><button class="btn" type="button" data-open="'+esc(c.n)+'">Open card</button>'+(c.rec&&!readonly?'<button class="btn" type="button" data-quick="rec" data-n="'+esc(c.n)+'">Use recommendation</button>':'')+'</div>';
   }else if(r){
     h='<div class="pop-h"><span class="n">'+esc(k)+'</span><span>'+esc(r.short)+'</span></div>'
      +'<p><span class="lbl">Asked</span>'+code(esc(r.q))+'</p>'
@@ -333,7 +400,7 @@ document.addEventListener("change",e=>{
   if(["later","tell me","dig into"].includes(t.value))$("#"+t.name+"-words").focus();
 });
 document.addEventListener("input",e=>{
-  const t=e.target;if(t.tagName!=="TEXTAREA"||!t.dataset.n)return;
+  const t=e.target;if(t.tagName!=="TEXTAREA"||!t.dataset.n||readonly)return;
   const n=t.dataset.n;answers[n]=Object.assign({},answers[n]||{},{words:t.value});
   clearTimeout(timers[n]);timers[n]=setTimeout(()=>{timers[n]=null;syncAll();write(n)},600);
 });
@@ -341,35 +408,39 @@ document.addEventListener("click",e=>{
   const s=e.target.closest(".slug");
   if(s){e.preventDefault();e.stopPropagation();if(popKey===s.dataset.ref&&popPinned)closePop();else openPop(s,true);return}
   const q=e.target.closest("[data-quick]");
-  if(q){const n=q.dataset.n,c=byN.get(n);if(q.dataset.quick==="rec"&&!c.rec)return;choose(n,q.dataset.quick==="rec"?c.rec:"later");return}
+  if(q){const n=q.dataset.n,c=byN.get(n);if(!c||(q.dataset.quick==="rec"&&!c.rec))return;choose(n,q.dataset.quick==="rec"?c.rec:"later");return}
   const o=e.target.closest("[data-open]");
-  if(o){closePop();const d=$("#card-"+o.dataset.open);d.open=true;d.scrollIntoView({behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth",block:"start"});return}
+  if(o){closePop();const d=$("#card-"+o.dataset.open);if(!d)return;d.open=true;d.scrollIntoView({behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth",block:"start"});return}
   const cl=e.target.closest("[data-clear]");
-  if(cl){const n=cl.dataset.clear;answers[n]={};const ta=$("#d"+n+"-words");if(ta)ta.value="";syncCard(n);syncAll();write(n);return}
+  if(cl){if(readonly)return;const n=cl.dataset.clear;answers[n]={};const ta=$("#d"+n+"-words");if(ta)ta.value="";syncCard(n);syncAll();write(n);return}
   if(e.target.id==="toggleall"){const all=[...document.querySelectorAll("details.card")],open=!all.every(d=>d.open);all.forEach(d=>d.open=open);e.target.textContent=open?"Close all cards":"Open all cards";return}
   if(!pop.hidden&&!e.target.closest("#pop"))closePop();
 });
 addEventListener("resize",()=>{if(!pop.hidden&&popAnchor)place(popAnchor)});
 
-fetch("cards.json").then(r=>{if(!r.ok)throw new Error(r.status);return r.json()}).then(d=>{
+fetch("cards.json").then(r=>{if(!r.ok)throw new Error("cards.json: HTTP "+r.status);return r.json()}).then(d=>{
+  const bad=check(d);
+  if(bad.length){const b=$("#nodata");b.textContent="The decisions can't be shown: cards.json is not valid. "+bad.slice(0,6).join("; ")+(bad.length>6?"; and "+(bad.length-6)+" more":"")+".";b.hidden=false;$("#count").textContent="not loaded";$("#hud").textContent="";return}
   LAYERS=d.layers;FOLLOW=d.follow;CARDS=d.cards;REFS=d.refs||{};
   byN=new Map(CARDS.map(c=>[String(c.n),c]));FOLLOW_KEYS=new Set(FOLLOW.map(f=>f[0]));
   const pg=d.page||{};
-  if(pg.title){$("#title").textContent=pg.title;document.title=pg.title}
-  $("#lede").innerHTML=pg.lede?fmt(pg.lede):"";
-  if(pg.doc&&/^https:\/\//.test(pg.doc.url||""))$("#doclink").innerHTML=' The reading copy is <a href="'+esc(pg.doc.url)+'" target="_blank" rel="noopener">'+esc(pg.doc.name||"this doc")+'</a>.';
-  if(CARDS.length)$("#nodbex").textContent=CARDS[0].n+": "+(CARDS[0].rec||CARDS[0].o[0][0]);
-  renderHud();renderCards();syncAll();
-}).catch(()=>{$("#nodata").hidden=false;$("#count").textContent="not loaded"});
+  if(typeof pg.title==="string"&&pg.title){$("#title").textContent=pg.title;document.title=pg.title}
+  $("#lede").innerHTML=typeof pg.lede==="string"?fmt(pg.lede):"";
+  if(pg.doc&&typeof pg.doc.url==="string"&&/^https:\/\//.test(pg.doc.url))$("#doclink").innerHTML=' The reading copy is <a href="'+esc(pg.doc.url)+'" target="_blank" rel="noopener">'+esc(pg.doc.name||"this doc")+'</a>.';
+  $("#nodbex").textContent=CARDS[0].n+": "+(CARDS[0].rec||CARDS[0].o[0][0]);
+  renderHud();renderCards();applyRaw();
+}).catch(e=>{$("#nodata").hidden=false;$("#count").textContent="not loaded"});
 
-(window.claude&&window.claude.use?window.claude.use("db"):Promise.resolve(null)).then(d=>{
+const use=n=>window.claude&&window.claude.use?window.claude.use(n).catch(()=>null):Promise.resolve(null);
+/* only the artifact's owner answers; another viewer sees the answers read-only (the store's rules enforce it too) */
+use("user").then(u=>u?u.isOwner():null).then(own=>{if(own===false){readonly=true;$("#viewonly").hidden=false;syncAll()}}).catch(()=>{});
+use("db").then(d=>{
   if(!d){$("#nodb").hidden=false;setSave("not connected",true);return}
   db=d;col=db.collection("answers");setSave("connected");
   col.onSnapshot(snap=>{
-    const next={};
-    snap.docs.forEach(doc=>{if(doc.exists){const v=doc.data();next[doc.id]={choice:v.choice||null,words:v.words||"",at:v.at}}});
-    for(const n in timers){if(timers[n]&&answers[n])next[n]=Object.assign({},next[n]||{},{words:answers[n].words})}
-    answers=next;syncAll();
+    raw={};
+    snap.docs.forEach(doc=>{if(doc.exists)raw[doc.id]=doc.data()});
+    applyRaw();
   },err=>setSave("live updates stopped: "+((err&&(err.message||err.code))||"unknown"),true));
 }).catch(()=>{$("#nodb").hidden=false;setSave("not connected",true)});
 </script>

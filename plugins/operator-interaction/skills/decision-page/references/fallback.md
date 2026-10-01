@@ -32,6 +32,10 @@ in Your words to add anything.* When reading it back:
 - no box and words written: a words-only answer;
 - nothing: unanswered.
 
+When a decision changes after the doc is shared (an **Added:** line, a re-ask), rewrite its
+section with every box unticked and say so in chat: ticks on the old text answered the old
+card. Note when you read the doc, and hand over only what changed since your last read.
+
 Read the doc back with the same tool, then echo and hand over as SKILL.md's read-back step
 says. The doc is the record of what was ticked: quote it, do not paraphrase it.
 
