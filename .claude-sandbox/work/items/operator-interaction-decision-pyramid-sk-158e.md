@@ -1,7 +1,7 @@
 ---
 id: operator-interaction-decision-pyramid-sk-158e
-title: "operator-interaction: decision-pyramid skill — put a set of decisions to the operator as an answer page"
-short_display_name: decision pyramid skill
+title: "operator-interaction: decision-page skill — put a set of decisions to the operator as an answer page"
+short_display_name: decision page skill
 type: feature
 status: doing
 priority: 1
@@ -28,3 +28,4 @@ Operator 2026-10-01: 'file it and plan it now so we can get it landed now' (afte
 target: full operator-interaction-decision-pyramid-sk-158e /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude/worktrees/operator-interaction-decision-pyramid-sk-158e
 dispatch: implementer opus medium — opus signal: a new skill (marketplace shape: catalog + layout); feature with no plan: /investigate then /implement (operator-authorized 2026-10-01)
 agent: implementer aee46bd9c5802babb round 1
+operator 2026-10-01: "I'd rather call it `decision-page`, pyramid is too metaphorical" — skill renamed to decision-page; relayed to the implementer mid-build
