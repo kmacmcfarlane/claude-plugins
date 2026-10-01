@@ -1,6 +1,6 @@
 ---
 name: dev-cycle
-description: Carry one change from plan to merge through sub-agents — resolve the target (a work item, an investigation series, a plan file, or the current conversation), plan it when it needs one, route each dispatch to a model tier by explicit signals, delegate the build to a background agent in its own git worktree, gate the result through a fresh review sub-agent (a self-review for pure prose) with a fix loop capped at four review rounds, run the repo's checks, land it the way the user chooses (a local merge first, never a push unasked), and report in four lines. Use when the user says "dev cycle", "run the dev cycle on", "take this item to merge", "build this through sub-agents", "implement and review this", or wants one work item or plan carried to a reviewed, landed change without a standing librarian. Not for a session that owns a repo's whole stream of work (librarian-mode) or a hands-on plan-and-build session (investigate, implement).
+description: Carry one change from plan to merge through sub-agents — resolve the target (a work item, an investigation series, a plan file, or the current conversation), plan it when it needs one, route each dispatch to a model tier by explicit signals, delegate the build to a background agent in its own git worktree, gate the result through a fresh review sub-agent (a self-review for pure prose) with a capped fix loop, run the repo's checks, land it the way the user chooses (a local merge first, never a push unasked), and report in four lines. Use when the user says "dev cycle", "run the dev cycle on", "take this item to merge", "build this through sub-agents", "implement and review this", or wants one work item or plan carried to a reviewed, landed change without a standing librarian. Not for a session that owns a repo's whole stream of work (librarian-mode) or a hands-on plan-and-build session (investigate, implement).
 disable-model-invocation: false
 allowed-tools: Read, Write, Glob, Grep, Bash, Agent, AskUserQuestion, SendMessage, ListAgents, EnterWorktree
 argument-hint: "[wi-id | slug | plan-path] [plan | review branch]"
@@ -308,11 +308,11 @@ n = the nth re-dispatch or resume with findings = review round n+1; cap 4 review
    fresh `dispatch:` and `agent:` pair. A change of agent file or model is always a
    re-dispatch. Repeat until `CLEAR`.
    **Cap: 4 review rounds** — the first review plus three fix rounds; a fourth without
-   `CLEAR` means the brief or the target is wrong, not the code. A high left is raised;
-   otherwise a plan stops and carries its findings to the build, and a build takes the one
-   round a caller's budget allows, else is blocked and raised — with what the open
-   findings would break and what another round costs (`references/bindings.md`
-   § Decisions, What a cap ends in). Never argue a severity down.
+   `CLEAR` means the brief or the target is wrong, not the code. With no high left, a
+   caller's round budget may stop a plan, carrying its findings to the build, or allow a
+   build one more round; otherwise block it and raise it, with what the open findings
+   would break and what another round costs (`references/bindings.md` § Decisions, What
+   a cap ends in). Never argue a severity down.
 4. **What escalates** through the decision channel is only a show-stopper with real
    impact: a `SHOW_STOPPER` verdict, a finding that changes the scope or reverses a
    recorded human decision, or a cap that is raised (rule 3) — and a fable cross-check

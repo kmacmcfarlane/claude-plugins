@@ -264,8 +264,7 @@ of meaning to an existing key bumps `v`.
 The reading behind the librarian's round budget (SKILL.md § The cycle, Decision channel):
 when a build reaches its first review cap with no high left, may it take one more round
 unasked (answer 114 (b); the rule itself is the `dev-cycle` skill's
-`references/bindings.md` § Decisions, What a cap ends in)? Yes only when all three hold,
-read at the cap:
+`references/bindings.md` § Decisions, What a cap ends in)? Yes only when all three hold:
 
 - **A standing dispatch grant is in force**: an operator `answer N:` that lets the
   librarian dispatch unasked for a stated span, stopping at a stated reserve. Answer 88 (b)
@@ -273,19 +272,22 @@ read at the cap:
   of "this week" ends at the weekly window's first reset after the answer, and the
   `decided:` line says so. An active `hold` item is not a grant: while one stands there is
   no budget.
-- **Headroom above the reserve**, on the reading the `dev-cycle` skill's
-  `references/model-routing.md` § Below the quota reserve uses: `headroom` > 0 in the
-  weekly (`seven_day`) window of the latest reading; the five-hour window never counts.
-  When the grant names a reserve of its own, `used` stays under 100 minus it too. One
-  difference from there: **no signal is a spent budget**, not a pass — `signal: "none"`,
-  or no reading, and the cap is asked.
+- **Not below the reserve, on a fresh reading taken at the cap.** The librarian runs
+  `python3 scripts/quota_budget.py --read-only` itself at that moment; it never waits on
+  the idle-turn integration, which has not landed (the opening of this file). "Below the
+  reserve" is the `dev-cycle` skill's `references/model-routing.md` § Below the quota
+  reserve, read from that output. When the grant names a reserve of its own, `used` stays under 100
+  minus it too. One difference from there: **no signal is a spent budget**, not a pass,
+  and the cap is asked. A step-down there only saves quota, so it may err toward spending;
+  a round spent unasked needs evidence that the quota is there.
 - **The item's round is unspent**: the cap is its first (the rule above).
 
 The round is recorded as a `decided:` line, class `cap`, authority `answer 114`, its what
-naming the grant, the weekly headroom read, the findings left and the round's cost. Answer
-114 (b) supersedes 68's words for this round only; 68's hold on the F2 wiring (above)
-stands. Lifting a hold, crossing the reserve, a fable pin and an expensive one-off (a
-deeper research preset, live probes) stay raised (`decide-alone.md`, `spend`).
+naming the grant, the reading, the findings left and the round's cost, its reopen "say
+stop: the round ends and its commits do not land". Answer 114 (b) supersedes 68's words
+for this round only; 68's hold on the F2 plan (item c79e) stands. Lifting a hold,
+crossing the reserve, a `model: fable` pin's round and an expensive one-off (a deeper
+research preset, live probes) stay raised (`decide-alone.md`, `spend`).
 
 ## Not here yet
 

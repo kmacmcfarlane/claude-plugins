@@ -33,7 +33,7 @@ class puts it on one side:
 | `one-way` | raised | ⚠ when high impact, never batched |
 | `trust` | raised | except a case a ruled permission covers |
 | `spend` | raised | outside a standing grant |
-| `cap` | raised | with a high left, or a build cap the round budget does not cover (SKILL.md § The cycle); a plan's cap with no high left (stopped and carried) and a build's one self-granted round are decided alone, authority `answer 114`, their `if left:` and `round costs:` in the `decided:` line's what |
+| `cap` | raised | with a high left, or a build cap the round budget does not cover (SKILL.md § The cycle); a plan's cap with no high left (stopped and carried) and a build's one self-granted round are decided alone, authority `answer 114`, their `if left:` and `round costs:` in the `decided:` line's what. Both are two-way: a stop's reopen is the round the operator grants on reading it; a round's is "say stop: the round ends and its commits do not land" |
 | `blocker` | raised | — |
 | `unclassed` | raised | when in doubt, ask |
 

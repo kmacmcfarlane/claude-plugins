@@ -42,7 +42,7 @@ For reference, the values `librarian-mode` supplies (its own SKILL.md is authori
 | Base | `main`, unless the item names another |
 | Model floor | A `model:` pin and/or an `effort:` pin in the item body |
 | Record sink | The item body |
-| Decision channel | `decision N:` appended to the item, carried under `decisions needed` in its Report — **durable**; round budget: one self-granted build round per item, inside a standing grant with weekly headroom above the reserve |
+| Decision channel | `decision N:` appended to the item, carried under `decisions needed` in its Report — **durable**; round budget: plans stop and carry; one self-granted build round per item, inside a standing grant, on a fresh reading not below the reserve |
 | Terminal action | `git merge --no-ff` into local `main`; the push is the librarian's, after its Report; an item naming another base merges into that base, never pushed |
 | Series home | `$MAIN/.claude-sandbox/investigations/<slug>/`, as standalone — tooling state like the store, written by the cycle, never a custody edit; agents write there only the series, and dispatched commits never include `.claude-sandbox/` |
 
@@ -213,25 +213,34 @@ its `Failure:` sentence names breakage outside the change (another item, the bas
 contract, the operator's data or quota), or it is a must-fix with no severity whose fix the
 reviewer did not give verbatim.
 
+- **No round budget bound** (a standalone run): every cap is raised, plan or build, as
+  below.
 - **A high left** is raised, plan or build — as are a `SHOW_STOPPER`, a scope change and a
   reversed recorded decision, at every cap.
-- **A plan** with no high left stops and carries: the run goes on as after `CLEAR`
-  (Step 1's tail), the open findings carried verbatim, with their severities, as acceptance
-  for the build — on the `$WI done` note beside the series path, and under Step 6's
-  `open questions:`. A plan round past the cap is never spent unasked.
-- **A build** with no high left takes one more fix round unasked when the caller's round
-  budget allows it — only at the item's first cap (exactly four counted review verdicts,
-  the ROUNDS count of `resume.md`; a fifth means the round is spent). Its `dispatch:`
-  signal names it a self-granted cap round; it is routed and briefed as any fix round, and
-  its review tests the cap again. Otherwise — no budget bound (a standalone run), a budget
-  that does not allow it, or the round spent — it is raised, as below.
+- **A plan** with no high left, under a bound budget, stops and carries: the open findings,
+  verbatim with their severities, are written onto the build's item as acceptance — the
+  build item the series names, or one filed for it (`$WI add`) when none exists — so the
+  build brief's Acceptance copies them; then Step 1's tail runs, with no fable offer (the
+  at-the-cap stage needs a high left, and the plan stage is not offered at the cap:
+  `model-routing.md` § Fable cross-checks). A plan round past the cap is never spent
+  unasked.
+- **A build** with no high left takes one more fix round unasked when the round budget
+  allows it — only at the item's first cap (exactly four counted review verdicts, the
+  ROUNDS count of `resume.md`; a fifth means the round is spent) and never under a
+  `model: fable` pin, whose extra round is asked. Its `dispatch:` signal names it a
+  self-granted cap round; it is routed and briefed as any fix round, and its review tests
+  the cap again. Otherwise — a budget that does not allow it, or the round spent — it is
+  raised, as below.
+- **A round the operator granted** at a cap ends on the path the grant named: the cap rule
+  does not re-apply after it, and a high still open at its end goes to build acceptance,
+  written as a plan's carried findings are (8dee E2).
 - **A stop or a self-granted round is decided, not asked**: recorded as the caller's
-  decided-alone record, else named under Step 6's `open questions:` — with **if left** and
-  **what the round costs** as below.
+  decided-alone record, with **if left** and **what the round costs** as below. A
+  self-granted round's reopen is "say stop: the round ends and its commits do not land".
 
-A **round budget** answers one question when a build reaches its first cap with no high left:
-may this item take one more round unasked now? The caller states how it is read; the cycle
-never infers one.
+A **round budget** is bound by a caller with its Decision channel, and answers, at a cap
+with no high left: may a plan stop and carry, and may this build take one more round unasked
+now? The caller states how it is read; the cycle never infers one.
 
 **An ask for another round** — a cap that is raised (above), or any ask to open one more
 round — carries its justification, with the skill or without it, so the user can weigh it:
