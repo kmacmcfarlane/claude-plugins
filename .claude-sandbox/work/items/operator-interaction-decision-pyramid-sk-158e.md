@@ -29,3 +29,7 @@ target: full operator-interaction-decision-pyramid-sk-158e /home/rt/work/src/git
 dispatch: implementer opus medium — opus signal: a new skill (marketplace shape: catalog + layout); feature with no plan: /investigate then /implement (operator-authorized 2026-10-01)
 agent: implementer aee46bd9c5802babb round 1
 operator 2026-10-01: "I'd rather call it `decision-page`, pyramid is too metaphorical" — skill renamed to decision-page; relayed to the implementer mid-build
+return: implementer DONE e397c93
+changed: plugins/operator-interaction/skills/decision-page/ (SKILL.md, references/cards-schema.md, references/fallback.md, assets/index.html, assets/cards.example.json) — the new skill; README.md (operator-interaction skill row, paragraph); CLAUDE.md (layout line); operator-interaction plugin.json + marketplace.json (description names each skill); decisions SKILL.md (two-line pointer)
+dispatch: reviewer opus high — review round 1 (rule 4)
+agent: reviewer a234af080c0fb09f4 round 1
