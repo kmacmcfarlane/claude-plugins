@@ -17,8 +17,8 @@ refs:
 5140 C2 with answers 98 a and 99 c (pyramid answers 2026-09-30 (69ee, answer page)). Acceptance: librarian references/decisions.md and work-items references/format.md gain closed N: acted <commit|item> | rule <path> | superseded by M, and <repo>#N for another repo's decision; every question put to the operator takes a number from the one counter (series labels R/G/P, OQ become tags; the opt-in dialog is the one exception). ^decision N: / ^answer N: keep their shapes (estate parsers).
 
 ## Handoff
-- doing: fix round 1: implementer aed94609b2cc4a2a3 (rulings recorded)
-- next: resume reviewer a4c0ac1f35c166622 for round 2; then 3716 (C7, same file) and 728a/8edb after it
+- doing: review round 2: reviewer a4c0ac1f35c166622 on 6319e7e
+- next: CLEAR → land; then 3716 (C7, same file), 728a and 8edb (after b6f7)
 - blocked: —
 - learned: —
 
@@ -47,3 +47,6 @@ findings:
 librarian rulings: 1 — no new field: the source label rides in the card's what: line, e.g. "(was OQ3)"; 3 — several changes: the closed N: line is written when the last one lands (the answer stays open until then); no change: `closed N: acted <the item id the answer was recorded on>`; 4 — drop the rendering rule; a label is never a bare number; 5 — <repo> is the name of the repo's origin remote (basename, no .git), else the main checkout's directory name; 6 — the session-name gate is the second named exception; 2, 7, 8 fix as found
 dispatch: implementer opus medium — resume
 agent: implementer aed94609b2cc4a2a3 round 2
+return: implementer DONE_WITH_CONCERNS 6319e7e
+dispatch: reviewer opus high — resume
+agent: reviewer a4c0ac1f35c166622 round 2

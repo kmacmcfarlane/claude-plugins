@@ -18,7 +18,7 @@ caef serial 05 F1 (acceptance A1.1-A1.3; failing tests first). Unblocked: needs 
 
 ## Handoff
 - doing: —
-- next: —
+- next: blocked on decision 136 (cap): (a) resume implementer a33ea65041c3dc364 to bound _COMMENT/_LINK + test, fresh review; (b) strike the linearity sentence, land, follow-up
 - blocked: —
 - learned: —
 

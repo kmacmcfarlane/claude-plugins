@@ -21,8 +21,8 @@ refs:
 8dee F3 (L2, answer 114 b, pyramid answers 2026-09-30 (69ee, answer page)). Acceptance: 8dee F3 — plans impact-gated (raise only when a high is left at the cap, else stop and carry); builds take at most one self-granted round inside a standing grant with headroom above the reserve, else ask; dev-cycle keeps the home, the caller supplies the budget (librarian: grant + quota_budget.py; standalone dev-cycle asks as today). Ruling changes per 8dee INDEX § Ruling changes (answer 30, 88 (b), 68).
 
 ## Handoff
-- doing: review round 4 (cap) running: reviewer ad2a1543b77f3da33 on 87ed36f
-- next: CLEAR → land (merge main first if conflicts: dabd waits on this); else decision at the cap
+- doing: —
+- next: blocked on decision 137 (cap): (a) resume implementer ae4df26f8668a3cac for one round (agent-brief Acceptance clause + record-lines findings: carried) then a fresh review; (b) land as is + P1 follow-up
 - blocked: —
 - learned: —
 
