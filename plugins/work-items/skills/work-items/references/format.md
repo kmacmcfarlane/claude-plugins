@@ -340,16 +340,17 @@ only, never decision 4.
 
 **One counter.** Every question a caller puts to the operator takes its N
 from the store's one counter, so `needs-input` and the estate sweep see
-every ask; the caller's rules may name an exception (librarian-mode's
-opt-in dialog). A source's own label — a series' `OQ3`, a gate's `G5` — is
-a tag on the card (librarian-mode stores it as an indented `label:` line),
-never a marker: `decision OQ3:` and `answer G5:` match neither.
+every ask; the caller's rules may name exceptions (librarian-mode's opt-in
+dialog and session-name gate). A source's own label — a series' `OQ3`, a
+gate's `G5` — is a tag in the decision's text, never a marker: `decision
+OQ3:` and `answer G5:` match neither.
 
 **Another repo's decision: `<repo>#N`.** A line that names a decision in
-another repo's store writes it `<repo>#N`, `<repo>` being that repo's name
-as `estate` lists it (`agents#12`); a bare N, or `decision N`, always means
-this store's own. It never starts a line, so neither marker takes it for
-one of this store's.
+another repo's store writes it `<repo>#N` (`agents#12`), `<repo>` being
+the name of that repo's `origin` remote (its last path part, without
+`.git`), else its main checkout's directory name; a bare N, or `decision
+N`, always means this store's own. It never starts a line, so neither
+marker takes it for one of this store's.
 
 The headline is one physical line: `wi` reads its text to the end of the
 line, so a headline wrapped over two lines loses everything after the
@@ -411,8 +412,12 @@ closed N: superseded by <M | <repo>#M>
 
 `acted` names the commit or the item that carried the answer out; `rule`
 the file the answer became a standing rule in; `superseded by` the later
-decision that replaced it. An answered decision with no `closed N:` line is
-answered but not closed. When N repeats, the last line is its state.
+decision that replaced it. An answer carried out by several changes is
+closed when the last of them lands; one that changes nothing closes as
+`acted <the id of the item it was recorded on>`. A `drop` answer
+(`answer N: drop …`) needs no `closed N:` line and counts as closed; any
+other answered decision with no `closed N:` line is answered but not
+closed. When N repeats, the last line is its state.
 `closed N:` is neither `decision N:` nor `answer N:`, so it opens no
 question and answers none: `needs-input`, the decision counter and the
 estate sweep pass it by. The target is one token, never containing a

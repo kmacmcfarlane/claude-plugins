@@ -33,7 +33,7 @@ SKILL.md § Report gives them.
 
 | The skill asks for | The librarian's binding |
 |---|---|
-| the caller's numbering | the store counter, the one counter for every question put to the operator (SKILL.md § Report): `decision N:` continues from the highest N (SKILL.md § Rehydrate step 3); a number is never reused. A source's own label (a series' OQ3, a gate's G5) is the card's `label:` line, never a number |
+| the caller's numbering | the store counter, the one counter for every question put to the operator (SKILL.md § Report): `decision N:` continues from the highest N (SKILL.md § Rehydrate step 3); a number is never reused. A source's own label (a series' OQ3, a gate's G5) rides in the card's `what:` line, never as a number |
 | the default wake ("the next time I finish a piece of work and report") | **the next Report**; a `later` with no time or event wakes there |
 | the operator's expected return | what the operator said ("back tomorrow morning"), in the item or the transcript; when they said nothing, the return is unknown and every stated deadline goes first |
 | who is reading, and how warm | after Rehydrate the operator is **cold** on every decision raised before the reset; the first Report after it re-shows them per the skill, with what changed since each was raised. Between resets: a decision shown in a Report written after the operator's last turn has **not been seen** — background returns can write several Reports while the operator is away — so the next Report shows it at its level again, not *(shown before)*. Your own transcript tells you: has the operator taken a turn since that Report? |
@@ -53,7 +53,6 @@ renders what the operator read instead of composing it again.
   ```
   decision N: <question, one line> — options: (a) … [recommended] | (b) … | (z) decide later
     raised: <UTC time, e.g. 2026-09-24T14:05Z>
-    label: <a labelled source only: its own label — the source, by plain name>
     what: <what is decided>
     why now: <why now; blocks: …>
     why ask: <class> — <what would go wrong if the librarian took its recommendation alone>
@@ -77,11 +76,9 @@ renders what the operator read instead of composing it again.
   carries the time, not a date alone (an existing date-only `raised:` is kept as
   written); every line names items by plain name with the tag trailing, and glosses any
   other id (no bare item id, sha, series or finding number).
-  `label:` follows `raised:` only when the source numbered the question its own way (a
-  series' OQ3, a gate's G5), one physical line: the label, then the source by plain name —
-  `label: OQ3 — the decision-lifecycle investigation (5140)`. The card shows the label as
-  a tag after the number (*Decision 131 · OQ3*), never in its place; any other decision
-  leaves the line out.
+  When the source numbered the question its own way (a series' OQ3, a gate's G5), the
+  label rides at the end of `what:`, with the source by plain name — *… (was OQ3 of the
+  decision-lifecycle investigation, 5140)* — and is never a bare number.
   The options are every option the source offered (a series, a dispatch's `decision:`
   line), one choice per letter: a compound choice gets its own letters, never `(a)+…`.
   When the decision is ⚠ one-way — or any decision shown as a block — write `⚠ one-way`
@@ -167,17 +164,21 @@ renders what the operator read instead of composing it again.
   ```
 
   `acted` names the commit on main, or the item, that carried the answer out — written when
-  that change lands, in the store commit that records the landing. `rule` names the file
-  the answer became a standing rule in, written once the rule change lands. `superseded by`
-  names the later decision that replaced it: a reframe is closed this way when M is raised,
-  and an answer a later decision overturns when that one is answered. A `drop` needs none
-  (its answer line is its close), and a `you decide` closes as any answer does. An answered
-  decision with no `closed N:` line is answered but not closed. A later `closed N:` for the
-  same N (an acted answer later made a rule, say) adds to the record; the last one is
-  its state (`grep -n '^closed N:'`, last hit). Its shape, and the reader's split, are the
-  `work-items` skill's format reference, § Closed.
-- **Another repo's decision:** `<repo>#N` — `<repo>` the repo's name as `wi estate` lists
-  it — in any line of this store that names one (a card's `basis:`, a `wake N:` event, a
+  that change lands, in the store commit that records the landing. An answer carried out
+  by several changes is closed when the last of them lands, and stays answered but not
+  closed until then; an answer that changes nothing closes at once as `closed N: acted
+  <the id of the item the answer was recorded on>`. `rule` names the file the answer
+  became a standing rule in, written once the rule change lands. `superseded by` names the
+  later decision that replaced it: a reframe is closed this way when M is raised, and an
+  answer a later decision overturns when that one is answered. A `drop` needs none (its
+  answer line is its close, and it counts as closed), and a `you decide` closes as any
+  answer does. Any other answered decision with no `closed N:` line is answered but not
+  closed. A later `closed N:` for the same N (an acted answer later made a rule, say) adds
+  to the record; the last one is its state (`grep -n '^closed N:'`, last hit). Its shape,
+  and the reader's split, are the `work-items` skill's format reference, § Closed.
+- **Another repo's decision:** `<repo>#N` — `<repo>` the name of that repo's `origin`
+  remote (its last path part, without `.git`), else its main checkout's directory name —
+  in any line of this store that names one (a card's `basis:`, a `wake N:` event, a
   `superseded by`). A bare N, or `decision N`, always means this store's counter.
 
 ## The Report
