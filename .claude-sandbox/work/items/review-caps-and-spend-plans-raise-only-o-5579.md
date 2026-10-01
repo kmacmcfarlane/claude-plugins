@@ -3,13 +3,14 @@ id: review-caps-and-spend-plans-raise-only-o-5579
 title: "review caps and spend: plans raise only on a high left; builds get one self-granted round inside a grant"
 short_display_name: review caps and spend
 type: feature
-status: doing
+status: blocked
 priority: 2
 deps:
   - decisions-record-and-show-what-is-decide-58f4
   - librarian-mode-the-decided-alone-class-t-00ef
 owner: Kyle-McFarlane@401123cbad11
 claimed: 2026-10-01T00:01Z
+blocked: decision 137 (review cap)
 created: 2026-09-30
 updated: 2026-10-01
 refs:
@@ -75,3 +76,21 @@ agent: implementer ae4df26f8668a3cac round 4
 return: implementer DONE_WITH_CONCERNS 87ed36f
 dispatch: reviewer opus high — resume
 agent: reviewer ad2a1543b77f3da33 round 4
+verdict: NEEDS_CHANGES round 4 at 87ed36f
+findings:
+  5, 18, 20 FIXED; 4, 19 PARTIAL
+  21. [medium] bindings.md:224-225 — only librarian Factor carries the carried findings; a standalone /dev-cycle <series> build reads acceptance from the series alone (SKILL.md:45, :86; agent-brief.md:47)
+  22. [medium] record-lines.md:110-117 — the contract file does not list the new `findings: carried` shape or its writer (no run-time reader affected today)
+  23. [nit] bindings.md:228 — 93 chars
+cap: 4 review rounds without CLEAR — blocked; decision 137
+decision 137: Review caps and spend (the build of your 114 answer) hit the 4-round review cap with two medium gaps, each a one-sentence fix: carried findings reach a build only through the librarian's factoring, not a standalone dev-cycle build of the series; and the record-line contract file does not list the new carried-findings line. Finish it how? — options: (a) one more small fix round (one clause in agent-brief.md's Acceptance, one sentence in record-lines.md) and a fresh review [recommended] | (b) land it now and file the two as a P1 follow-up | (c) leave it unlanded until you look | (z) decide later
+  raised: 2026-10-01
+  what: whether review caps and spend lands after one more small round or as is
+  why now: the review cap; the trivial-docs build (dabd) waits on it (same file)
+  why ask: cap — another round past the cap is yours to grant
+  (a): about 20 minutes and under 1% of weekly quota; lands with no known medium
+  (b): lands now; until the follow-up lands, a standalone build of a capped series can miss carried mediums
+  (c): nothing lands; dabd keeps waiting
+  (z): as (c)
+  rec: (a) · basis strong — the reviewer names both fixes exactly and says nothing else is open at medium or above
+  unknown: none
