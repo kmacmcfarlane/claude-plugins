@@ -3,12 +3,11 @@ id: decisions-record-one-counter-for-every-q-b6f7
 title: "decisions record: one counter for every question, closed N: lines, <repo>#N references"
 short_display_name: one counter, closed lines
 type: feature
-status: doing
+status: done
 priority: 2
-owner: Kyle-McFarlane@401123cbad11
-claimed: 2026-10-01T00:34Z
 created: 2026-09-30
 updated: 2026-10-01
+closed: 2026-10-01
 refs:
   - .claude-sandbox/investigations/5140-decision-lifecycle/03_final.md
   - 5140 answers 98, 99
@@ -50,3 +49,7 @@ agent: implementer aed94609b2cc4a2a3 round 2
 return: implementer DONE_WITH_CONCERNS 6319e7e
 dispatch: reviewer opus high — resume
 agent: reviewer a4c0ac1f35c166622 round 2
+verdict: CLEAR round 2 at 6319e7e
+notes: prior 1-8 FIXED; new low 9 (<repo> origin name vs wi estate's directory name), nit 10 (label in text vs what:) — filed with C1 (728a) as acceptance notes; 3716 must keep the 'answer N: drop' wording C1 keys on
+landed: 0eb4a50
+- 2026-10-01 done: 0eb4a50

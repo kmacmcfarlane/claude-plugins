@@ -20,3 +20,4 @@ refs:
 - next: —
 - blocked: —
 - learned: —
+2026-10-01 from b6f7 review r2: C1 must match <repo>#N by origin name as well as directory name (low 9); the drop check keys on 'answer N: drop …' — coordinate with 3716
