@@ -108,3 +108,19 @@ decision 136: The research scan floor (the first research-security build) hit th
   (z): as (c)
   rec: (a) · basis strong — the reviewer measured it and names the exact fix; everything else left is low
   unknown: none
+decision 136: The research scan floor hit the 4-round review cap with one medium left; finish it how? — options: (a) one more fix round: bound the two patterns plus a test, and a fresh review [recommended] | (b) land it now with the linearity sentence struck, the bound filed as a follow-up | (c) leave it unlanded until you look | (z) decide later
+  raised: 2026-10-01
+  revised: 2026-10-01T07:06Z — backfilled: context:, if left:, round costs:, stakes:; headline trimmed to the question
+  what: whether the scan floor (the first research-security build) lands after one more small round or as is
+  why now: the review cap; blocks: the deep-investigation parity build (1ffd)
+  why ask: cap — another round past the cap is yours to grant
+  context: you saw this card on 2026-10-01 during the unattended run · you decide whether the scan floor gets one more round — then: none
+  if left: two markup patterns (comment and link) go quadratic on a hostile file of unclosed openers, so the docs' "every pass is linear" is false; it fails safe (a timeout holds the run, nothing leaks); all else left is low
+  round costs: about 20-30 minutes and roughly 1% of weekly quota; another answer from you if it does not settle
+  stakes: reversible, narrow — research runs
+  (a) one more fix round — a one-line bound on each pattern plus a test, fresh review; lands clean — undo: n/a — who: research runs
+  (b) land now, sentence struck — lands at once; a hostile lane can still force a slow scan that holds the run until the follow-up lands
+  (c) leave it unlanded — nothing lands; the parity build keeps waiting
+  (z) decide later — as (c)
+  rec: (a) · basis strong — the reviewer measured it and names the exact fix
+  unknown: none

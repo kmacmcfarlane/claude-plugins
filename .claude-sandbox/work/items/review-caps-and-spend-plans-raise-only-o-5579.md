@@ -94,3 +94,19 @@ decision 137: Review caps and spend (the build of your 114 answer) hit the 4-rou
   (z): as (c)
   rec: (a) · basis strong — the reviewer names both fixes exactly and says nothing else is open at medium or above
   unknown: none
+decision 137: Review caps and spend hit the 4-round review cap with two medium gaps, each a one-sentence fix; finish it how? — options: (a) one more small fix round and a fresh review [recommended] | (b) land it now and file the two as a P1 follow-up | (c) leave it unlanded until you look | (z) decide later
+  raised: 2026-10-01
+  revised: 2026-10-01T07:06Z — backfilled: context:, if left:, round costs:, stakes:; headline trimmed to the question
+  what: whether review caps and spend (the build of your answer 114) lands after one more small round or as is
+  why now: the review cap; blocks: the trivial-docs build (dabd), which edits the same file
+  why ask: cap — another round past the cap is yours to grant
+  context: you saw this card on 2026-10-01 during the unattended run · you decide whether review caps and spend gets one more round — then: none
+  if left: (1) carried findings reach a build only through the librarian's factoring, so a standalone dev-cycle build of a capped series can miss carried mediums (fix: one clause in agent-brief.md's Acceptance); (2) the record-line contract (record-lines.md) does not list the new findings: carried line (fix: one sentence)
+  round costs: about 20 minutes and under 1% of weekly quota; another answer from you if it does not settle
+  stakes: reversible, narrow — dev-cycle builds of capped series
+  (a) one more small fix round — the two sentences and a fresh review; lands with no known medium — undo: n/a — who: dev-cycle users
+  (b) land now, P1 follow-up — lands at once; until the follow-up lands, a standalone build of a capped series can miss carried mediums
+  (c) leave it unlanded — nothing lands; the trivial-docs build keeps waiting
+  (z) decide later — as (c)
+  rec: (a) · basis strong — the reviewer names both fixes exactly and says nothing else is open at medium or above
+  unknown: none

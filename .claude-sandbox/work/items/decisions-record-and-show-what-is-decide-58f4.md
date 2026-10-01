@@ -96,3 +96,16 @@ notes: prior 10, 12 FIXED; new 13 [low] decide-alone.md:88-90 — the migrate-on
 landed: 0c2757b
 - 2026-09-30 done: 0c2757b
   revised: 2026-09-30 — decision 134's card: the "nothing writes a tag until you answer" rule was withdrawn in fix round 3. why now: the build landed (0c2757b); tags are written as spelled from the next plugin update. (a) keep — nothing to migrate; (b) rename some — the change that renames them migrates the decided:/why ask: lines written since the update; (z) later — tags written as spelled meanwhile
+decision 134: The decided-alone record uses 19 class tags on stored decision lines (wording, minor-design, trade-off, narrowing, wider-scope, ruled-rule-case, rule-change, table-placement, placement, api-name, reply-reading, forwarding, relay, one-way, trust, spend, cap, blocker, unclassed); keep these spellings? — options: (a) keep them as written [recommended] | (b) rename some (say which) | (z) decide later
+  raised: 2026-09-30
+  revised: 2026-10-01T07:06Z — backfilled: context:, stakes:; why now and options restated as one card (the interim no-tags rule was withdrawn in fix round 3)
+  what: the class names written on every decided: and why ask: line; wi and other repos' tools may parse them
+  why now: the decided-alone record landed (0c2757b, pushed) with the names marked provisional, and they are already written as spelled, so each new decision adds a line a rename must migrate; blocks: nothing
+  why ask: api-name — a parsed tag's name is yours before it ships (answer 111 b)
+  context: you last saw this card on 2026-09-30 while the decided-alone record was in review · you decide now whether its 19 tag names stand — then: none
+  stakes: reversible, wide — every librarian store
+  (a) keep them as written — the tags stop being provisional; nothing to migrate — undo: a later rename migrates the stored lines — who: every librarian store
+  (b) rename some — the change that renames them migrates the decided:/why ask: lines written since the update, in the same landing
+  (z) decide later — tags keep being written as spelled; each new decision adds a line a later rename must migrate
+  rec: (a) · basis partial — the names follow the class list the reviewer checked; it found no clash, only that you had not seen them
+  unknown: whether other repos' parsers want a different case or prefix

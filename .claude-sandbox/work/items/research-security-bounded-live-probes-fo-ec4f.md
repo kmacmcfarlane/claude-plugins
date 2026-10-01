@@ -103,3 +103,19 @@ decision 135: The research-security probe write-up (caef serials 06-09) hit the 
   (z): the series stays blocked; the hook build waits (it already waits on the PB-1 check, which needs you)
   rec: (a) · basis strong — the reviewer states the fix exactly and calls it one condition plus a fixture; the build review re-checks it
   unknown: none
+decision 135: The research-security probe write-up hit the 4-round review cap with one medium left; close it how? — options: (a) close the series now and carry the fix into the confinement-hook build (20d8) as acceptance, reviewed there [recommended] | (b) one more planner round and a fresh review | (c) close with the claim reworded: the rule rests on the OS user, not the hook | (z) decide later
+  raised: 2026-09-30
+  revised: 2026-10-01T07:06Z — backfilled: context:, if left:, round costs:, stakes:; headline trimmed to the question
+  what: how to finish the probe write-up (serials 06-09 of the research-security series) that the confinement hook builds on
+  why now: the review cap; blocks: the confinement-hook build (20d8), which cannot start without a closed plan
+  why ask: cap — the loop cannot go past 4 rounds without you
+  context: you saw this card on 2026-09-30 during the unattended run · you decide how the probe write-up closes — then: none
+  if left: after the scripts freeze, a hijacked mining lane can still write a tools/ script and run it; the plan says the hook stops that, which is false (fix: run tools/ scripts only before the freeze, deny tools/ writes after it, plus a post-freeze test)
+  round costs: (b) about 15-20 minutes and roughly 0.5-1% of weekly quota; another answer from you if it does not settle
+  stakes: reversible, narrow — the hook build
+  (a) close and carry the fix — the series closes; the hook build carries one extra rule and test, which its own opus review checks — undo: none needed — who: the hook build
+  (b) one more planner round — about 15-20 minutes and 0.5-1% of weekly quota; none of your time unless it fails again
+  (c) close with the claim reworded — cheapest; the plan stops claiming a protection the hook cannot give, and post-freeze script safety rests on the freeze step and the OS user
+  (z) decide later — the series stays blocked; the hook build waits (it already waits on the PB-1 check, which needs you)
+  rec: (a) · basis strong — the reviewer states the fix exactly as one condition plus a test; the build's review re-checks it
+  unknown: none
