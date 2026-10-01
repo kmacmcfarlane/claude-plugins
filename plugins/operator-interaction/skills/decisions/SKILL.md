@@ -138,7 +138,8 @@ Three levels; the templates are in `references/rendering.md`:
 - **Card** — what is decided, why now, why ask (and a round ask's justification), the options
   with their impact in italics, decide later, then `Rec · basis — reason · unknown`. Its
   **Context:** cue (where you left it · what you decide now) is written for every decision
-  when it is raised, and shown to a cold reader.
+  when it is raised, and shown to a cold reader (with nowhere to keep it, at the first
+  showing too).
 - **Block** — a card plus: context the reader may have lost, a section per option (*what
   happens*, *undo*, *who is affected*), and the basis drill-down with evidence links.
 

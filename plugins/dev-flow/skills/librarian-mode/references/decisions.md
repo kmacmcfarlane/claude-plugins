@@ -84,21 +84,24 @@ renders what the operator read instead of composing it again.
   `why ask:` on every card, one physical line, written when the decision is raised. Before
   its first ` — then: ` is the cue: where the operator left it (what they last saw or
   decided on this subject) · what they decide now — never what changed since, which *while
-  it waited* carries at the re-show. After it are the facts a block's *Context you may have
-  lost* adds, or `none`. The separator is always written. A card shows the cue alone as its
-  **Context:** for a cold reader; a block shows the cue, then the facts. An ask for another
-  round — the dev-cycle cap, most often — requires the `if left:` and `round costs:` lines,
-  in that order after `why now:`, `why ask:` and `context:` (the skill's floor), filled
-  from the reviewer's `findings:` block and the run's record; any other decision leaves
-  both out. The options stay in letter order, `[recommended]` on the headline marking the
-  recommended one.
+  it waited* carries at the re-show; the cue never contains ` — then: ` (reword it). After
+  the separator are the facts a block's *Context you may have lost* adds, or `none` on a
+  decision raised as a card. The separator is always written. A card shows the cue alone as
+  its **Context:** for a cold reader; a block shows the cue, then the facts. An ask for
+  another round — the dev-cycle cap, most often — requires the `if left:` and `round
+  costs:` lines, in that order after `why now:`, `why ask:` and `context:` (the skill's
+  floor), filled from the reviewer's `findings:` block and the run's record; any other
+  decision leaves both out. The options stay in letter order, `[recommended]` on the
+  headline marking the recommended one.
   **A card or block renders only from stored fields**: a field it needs that the store
   lacks — a headline-only entry, a block's missing `undo:`, a card stored before `why ask:`
   existed (in the one form `decide-alone.md` § Raised gives it), one stored before the cue
-  existed — no `context:` line, or one with no ` — then: `, whose text is a block's facts
-  and is kept as the part after it — is backfilled from the durable record (the item, its
-  series, its commits) and written as a revised card with `revised: <time> — backfilled`
-  before it renders; a field no record holds is written and shown as `not recorded`, never
+  existed (no `context:` line, or one with no ` — then: `, whose text is a block's facts
+  and is kept as the part after it), a block whose facts read `none` (a decision raised as
+  a card, rendered as a block by `expand` or as a wide one shown to a cold reader: `none`
+  counts as missing) — is backfilled from the durable record (the item, its series, its
+  commits) and written as a revised card with `revised: <time> — backfilled` before it
+  renders; a field no record holds is written and shown as `not recorded`, never
   invented at render time. A card with no `raised:` takes it from the record: the time the
   headline was committed — the commit time, not the ask time, the closest the record holds
   — in the form `wi` parses (`TZ=UTC git -C "$MAIN" log
