@@ -34,3 +34,19 @@ changed:
   plugins/dev-flow/skills/librarian-mode/references/decisions.md — stored context: field on every card, backfill
 dispatch: reviewer opus high — review round 1 (rule 4)
 agent: reviewer a471fb33f7c6d3d58 round 1
+verdict: NEEDS_CHANGES round 1 at 9e9b1e6
+findings:
+  1. [medium] librarian decisions.md:58, 83-88 — context: now holds the cue only; a block's lost-context facts have no stored field, and rendering renders only from stored fields
+  2. [medium] gallery.md:18-55 — example 1's cold cards 41/45 lack Context:, block 43 does not open with the cue
+  3. [low] decisions SKILL.md:139-141 — wording ties writing the cue to a cold reader
+  4. [low] SKILL.md § Rulings — no entry for 119 b with (c) as the alternative not taken
+  5. [low] decisions.md:93-98 — backfill misses old block context: lines holding facts
+  6. [low] worksheet.md:17-18 — cold card's cue not mentioned (scope widened: one clause)
+  7. [nit] rendering.md:80-85 — a caller with no store: where the cue lives until re-show
+librarian ruling on 1: no new stored field name (that would be an api-name the operator has not seen); the block's facts ride on the same context: line after the cue (one physical line, a fixed separator), and an old block context: line with facts and no cue is read as facts with the cue backfilled (closes 5)
+dispatch: implementer opus medium — resume
+agent: implementer ab8913da1d118e0f0 round 2
+return: implementer DONE_WITH_CONCERNS a3c7c1a
+changed: + decisions references/worksheet.md (one clause, finding 6); SKILL.md § Rulings entry (finding 4)
+dispatch: reviewer opus high — resume
+agent: reviewer a471fb33f7c6d3d58 round 2

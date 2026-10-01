@@ -35,3 +35,15 @@ changed: 9 files — dev-cycle bindings.md (cap rule home), SKILL.md (Step 4.3/4
 note: commit subject verb "changed:" is outside the house set (low; carried in the merge message)
 dispatch: reviewer opus high — review round 1 (rule 4)
 agent: reviewer ad2a1543b77f3da33 round 1
+verdict: NEEDS_CHANGES round 1 at 1b71912
+findings:
+  1. [medium] budget.md:276-281 — "the latest reading" is never taken (idle-turn wiring held on 68), "fresh" dropped
+  2. [medium] budget.md:276-279 — restates model-routing's reading
+  3. [medium] bindings.md:218-221 — plan stop-and-carry applies to standalone dev-cycle too
+  4. [medium] bindings.md:219-220 — carried findings never reach the build's acceptance
+  5. [medium] bindings.md:222-227 (resume.md:182) — 8dee E2 missing: a granted round ends on the path the grant named; the cap rule does not re-apply
+  6. [medium] bindings.md:218 vs model-routing.md:302-306 — stop-and-carry via Step 1's tail brings in a plan-stage fable offer at the cap
+  7-13. [low/nit] no-signal rationale; dangling 68 pointer; fable-pinned self-granted round; FYI two-way + reopen for cap; SKILL.md:235 reflow; "changed:" verb; SKILL.md description "capped at four"
+librarian rulings: 1 — at the cap the librarian takes a fresh `quota_budget.py --read-only` reading itself (not the held idle-turn wiring); point to model-routing for what "below" means; 3 — standalone dev-cycle asks at every cap, plans included; stop-and-carry applies only under a caller that binds it (librarian); 4 — carried findings are written onto the build's item as acceptance (the build item named by the series, or filed if none); 5 — carry E2; 6 — a stopped plan gets no fable offer (the at-the-cap stage needs a high left); 9 — a model: fable pin's extra round stays asked; 10 — a self-granted round's reopen: "say stop: the round ends and its commits do not land"
+dispatch: implementer opus medium — resume
+agent: implementer ae4df26f8668a3cac round 2
