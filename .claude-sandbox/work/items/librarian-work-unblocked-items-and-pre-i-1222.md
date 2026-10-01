@@ -16,7 +16,7 @@ Operator 2026-09-22: an idle librarian should work new items as they arrive when
 
 ## Handoff
 - doing: waves 1-3 (132 a/133 a); checkpoint at 75% 2026-10-01
-- next: landed: 58f4 0c2757b, fa73 a597939, 9ea7 d096fd7, 00ef d0526b3, 6e8e d38d0fd (all pushed). In flight: b6f7 review r2 (reviewer a4c0ac1f35c166622). Blocked on decisions: 819f (136), 5579 (137), ec4f (135); 20d8 needs 135 + PB-1; 1ffd after 819f; dabd after 5579; 3716 after b6f7. Open decisions: 134, 135, 136, 137
+- next: landed: 58f4, fa73, 9ea7, 00ef, 6e8e, b6f7 0eb4a50 (all pushed). In flight: 3716 implementer a9fb658940aaa4746 (resume, do not re-dispatch). Blocked on decisions 135/136/137; 1ffd after 819f; dabd after 5579; 20d8 needs 135 + PB-1. Open decisions 134-137. No wave 4.
 - blocked: —
 - learned: —
 
