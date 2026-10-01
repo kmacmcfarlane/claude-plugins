@@ -198,6 +198,9 @@ $WI add "<feature>" -t feature --parent <request-id> \
 - A request that is already one landable feature stays one item. Do not manufacture
   structure.
 - Say what you factored and why in the parent item's body, not in the transcript.
+- Factoring a series whose plan item carries findings (`findings: carried`, the
+  `dev-cycle` skill's `references/bindings.md` § Decisions) copies them into each
+  factored feature's acceptance.
 
 ## The cycle
 

@@ -215,25 +215,18 @@ reviewer did not give verbatim.
 
 - **No round budget bound** (a standalone run): every cap is raised, plan or build, as
   below, and the verdict of a round the operator granted tests the cap again.
-- **A high left** is raised, plan or build — as are a `SHOW_STOPPER`, a scope change and a
-  reversed recorded decision, at every cap but the end of a granted plan path (below).
+- **A high left** is raised, plan or build, at every cap but the end of a granted plan
+  path (below). A `SHOW_STOPPER`, a scope change and a reversed recorded decision are
+  raised at every cap, that path's end included.
 - **A plan** with no high left, under a bound budget, stops and carries: the open findings,
-  verbatim with their severities, are **carried** — written as acceptance onto a build
-  item filed for the series in the plan item's own store, never another repo's (a series
-  naming another repo's work is outside Ground, out of Scope as the `librarian-mode`
-  skill's Intake step 4 routes it):
-
-  ```bash
-  $WI add "build: <series slug>" -t feature --short-display-name "<from the series>" \
-      --desc "<the carried findings, as acceptance>" --ref <series path> \
-      [--parent <plan item>]
-  ```
-
-  so the build brief's Acceptance copies them. A store-less run (the scratchpad record
-  sink) writes them to its record sink and Step 6's `open questions:` only. Then Step 1's
-  tail runs, with no fable offer (the at-the-cap stage needs a high left, and the plan
-  stage is not offered at the cap: `model-routing.md` § Fable cross-checks). A plan round
-  past the cap is never spent unasked.
+  verbatim with their severities, are **carried** — written onto the plan item as a
+  `findings: carried — …` block, a rider no verdict carries (store-less: the record sink
+  and Step 6's `open questions:`). Every build dispatched from that series copies them
+  into its brief's Acceptance line. A series naming another repo's work raises its carried
+  findings to the operator as a `blocker` instead, until forwarding (item 3460) lands.
+  Then Step 1's tail runs, with no fable offer (the at-the-cap stage needs a high left, and
+  the plan stage is not offered at the cap: `model-routing.md` § Fable cross-checks). A plan
+  round past the cap is never spent unasked.
 - **A build** with no high left takes one more fix round unasked when the round budget
   allows it — only at the item's first cap (exactly four counted review verdicts, the
   ROUNDS count of `resume.md`; a fifth means the round is spent) and never under a

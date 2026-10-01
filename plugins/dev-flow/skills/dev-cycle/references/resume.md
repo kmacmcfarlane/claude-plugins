@@ -221,7 +221,8 @@ S11, `ANSWERED`: act exactly as SKILL.md § Step 4.4 would have — a waiver ope
 it grants; a park or a block stops. S11 at the cap on a `CURRENT` verdict, `NONE`: apply
 SKILL.md § Step 4.3 first — a stop it makes, a self-granted round it allows or, on a plan
 under a caller's round budget, the end of a path the operator granted is taken, not
-raised; only its raise goes to § The GATE.
+raised, unless the verdict is a `SHOW_STOPPER` or a finding changes the scope or reverses
+a recorded decision; only its raise goes to § The GATE.
 
 **The dispatch permission in `review` mode.** There, S9's question is the dispatch
 permission (SKILL.md § Usage), and so is the question of S11's current `SHOW_STOPPER` row
