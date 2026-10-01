@@ -15,8 +15,8 @@ refs:
 Operator 2026-09-22: an idle librarian should work new items as they arrive when no operator decision is needed (doc-only requests nearly always; skill changes often; implementation or complex skill changes warrant an investigation round). Investigations can run without waiting on the operator, so when the operator returns the decisions are ready to present. Today items queue up waiting for attention when many are unblocked or at least investigable. Question: how to achieve this without accidentally running the operator's quota into the ground. Acceptance: an investigation series with findings and a recommendation (routing rules for what proceeds unattended vs what waits; quota guards; how investigations pre-run and park their decisions), presented to the operator; decisions raised by number.
 
 ## Handoff
-- doing: waves 1-3 (132 a/133 a); checkpoint at 75% 2026-10-01
-- next: landed: 58f4, fa73, 9ea7, 00ef, 6e8e, b6f7 0eb4a50 (all pushed). In flight: 3716 implementer a9fb658940aaa4746 (resume, do not re-dispatch). Blocked on decisions 135/136/137; 1ffd after 819f; dabd after 5579; 20d8 needs 135 + PB-1. Open decisions 134-137. No wave 4.
+- doing: waves 1-3 done as far as decisions allow
+- next: landed tonight: 58f4, fa73, 9ea7, 00ef, 6e8e, b6f7, 3716, plus operator-requested 158e decision-page (all pushed, origin 8f21ef4). Nothing in flight. Blocked on decisions: 819f (136), 5579 (137), ec4f (135); 20d8 needs 135 + PB-1; 1ffd after 819f; dabd after 5579. Open decisions 134-137. No wave 4 without the operator.
 - blocked: —
 - learned: —
 
