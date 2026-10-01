@@ -192,6 +192,9 @@ The decisions close the message — after any report, push outcome or summary:
 
    *Reply with a letter (`72: a`) or in your own words · `later [when]` · `tell me [what]` · `expand` · `dig into [what]` · `you decide` · `drop`*
 
+To put several decisions on a page the operator answers by clicking, instead of in the
+message, use the `decision-page` skill (same plugin); the cards it renders are this skill's.
+
 `expand` raises a decision one level in the next round (line → card → block); it keeps its
 number and position and stays raised on later re-shows.
 

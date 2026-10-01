@@ -53,7 +53,7 @@
     {
       "name": "operator-interaction",
       "source": "./plugins/operator-interaction",
-      "description": "The agent–operator interface — how your agents put what they need from you in front of you so you can act on it where it appears. The decisions skill puts a decision to you so you can understand and answer it where it is shown: a content floor every decision carries, detail that scales with the stakes, a set order, natural-language replies with an echo, and \"decide later\" with a wake. The plain-names skill names everything they mention (work items, branches, commits) in plain words, with an id only as a trailing tag."
+      "description": "The agent–operator interface — how your agents put what they need from you in front of you so you can act on it where it appears. The decisions skill puts a decision to you so you can understand and answer it where it is shown: a content floor every decision carries, detail that scales with the stakes, a set order, natural-language replies with an echo, and \"decide later\" with a wake. The plain-names skill names everything they mention (work items, branches, commits) in plain words, with an id only as a trailing tag. The decision-page skill puts a set of decisions on a page you answer by clicking, saved as you go, and reads your answers back for the agent to record."
     },
     {
       "name": "ralph",
