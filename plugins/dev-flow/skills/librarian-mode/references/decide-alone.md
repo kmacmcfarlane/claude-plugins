@@ -121,9 +121,55 @@ question stays in the series.
 ## Trivial documentation
 
 Trivial documentation just gets done: it is work, not a decision, filed and run through the
-cycle with no ask (SKILL.md § Intake step 5), and the words it picks are `wording`. Which docs
-take a self-review is the `dev-cycle` skill's Step 2 rule 5 (the review waiver) until the
-wider reading of answer 113 (b) is written here.
+cycle with no ask (SKILL.md § Intake step 5), and the words it picks are `wording`.
+
+What counts (answer 113 (b), 2026-09-30): prose-only docs, which the `dev-cycle` skill's
+Step 2 rule 5 already self-reviews (the review waiver), **plus skill wording that changes no
+rule**: a typo, a broken link or path, a sentence restating an existing rule. Both take the
+waiver's `review: self` instead of a reviewer; every other leg of that waiver still holds
+(the `dev-cycle` skill's `references/model-routing.md` § Review waiver: `full` mode, no Model
+floor). Everything else keeps today's path: a fresh reviewer. The wider reading covers this
+librarian's own Ground only. A write into another repo, if one is ever allowed, takes the
+prose-only test.
+
+**Skill wording** is the body of a `SKILL.md` and its `references/`. The frontmatter
+(`name`, `description`: what makes a skill load), agent files, hooks, scripts, tests,
+config, `.claude-plugin/`, CLAUDE.md and templates are never skill wording: they keep a
+reviewer whatever the edit.
+
+**The test: the same agent, both texts.** Read the old line and the new line as the agent
+that loads the skill would. A line changes no rule only when an agent following the new text
+does, writes, asks, skips and stops exactly as one following the old would, in every case the
+text covers, not just the usual one. A line fails when it adds, removes or alters any of:
+
+- a must, should, may, never, always, only, unless, except or when;
+- a number, threshold, cap, default or order of steps;
+- a name, field, tag or line shape an agent writes or parses;
+- a command, path, host, permission or config value an agent uses;
+- who does a step, or which file or section is authoritative;
+- an example (examples teach the rule agents copy).
+
+The three kinds, each held to the test:
+
+- **A typo:** the misspelled or ungrammatical word is fixed, and no other word moves. A typo
+  inside a name, command, path or value is that thing, not a typo: a reviewer.
+- **A broken link or path:** a pointer that leads nowhere is fixed to the file or section the
+  text already meant, and it exists. Repointing at different content, or changing a path an
+  agent writes to or runs, is a rule.
+- **A restatement:** the sentence restates a rule already in force, cites where it lives, and
+  keeps every scope-bearing noun and restriction verbatim ("the librarian may self-review"
+  never becomes "a session may"). A restatement that narrows, widens or reorders the rule
+  is the rule changed.
+
+One failing line fails the change. **When in doubt, today's path:** a fresh reviewer. Doubt
+includes not being able to name the kind, or a line the test reads two ways.
+
+**The `review: self` line says why it changes no rule** — the kind, the file, and the rule
+left untouched or the rule restated with where it lives: `review: self at <sha> — rule-free
+skill wording: typo in <file>; no instruction moves` or `— rule-free skill wording:
+restates <rule> (<file> § <section>) verbatim in <file>`. A clause that cannot be written
+that way is the doubt above. A later fix round is tested afresh on the cumulative diff
+(the waiver's own rule).
 
 ## The record: `decided:`
 
