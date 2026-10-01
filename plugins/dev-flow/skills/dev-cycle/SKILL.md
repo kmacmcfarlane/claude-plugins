@@ -439,8 +439,8 @@ Stop when you catch yourself:
   fable with no pin; a reviewer below opus; an `effort:` pin's planner or implementer on
   a file below xhigh; a fable cross-check the operator did not accept.
 - **A reviewer that saw the build** — a fork, the implementer resumed as its own
-  reviewer, or you reviewing a diff outside rule 5's waiver (a skill's rules, CLAUDE.md, an
-  agent, a script, any operational claim).
+  reviewer, or you reviewing outside rule 5's waiver (skill text, bar `librarian-mode`'s
+  rule-free wording, CLAUDE.md, an agent, a script, any operational claim).
 - **Pushing unasked**, writing CLAUDE.md to save the checks, or guessing a caller's
   missing binding.
 

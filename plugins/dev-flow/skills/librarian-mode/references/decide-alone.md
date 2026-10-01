@@ -1,11 +1,13 @@
 # Decided alone
 
-Loaded from SKILL.md § Intake step 3, the decision channel (§ The cycle) and § Report, and
-from `decisions.md`. What the librarian decides without asking is **recorded and shown**: a
+Loaded from SKILL.md § Intake step 3, the decision channel (§ The cycle), § Report and
+§ Critical, from `decisions.md`, and from the `dev-cycle` skill's `references/model-routing.md`
+§ Review waiver. What the librarian decides without asking is **recorded and shown**: a
 `decided:` line on the item when it decides, a `Done:` line in the next Report. Every decision
 it raises carries `why ask:` and a class. This file holds the line (which classes are decided
 alone and which are raised), what makes a trade-off real, how the line moves, the triage of a
-planner's questions, the record, the Report group and the class names.
+planner's questions, what counts as trivial documentation and when it is self-reviewed
+(§ Trivial documentation), the record, the Report group and the class names.
 
 ## The line
 
@@ -132,44 +134,70 @@ floor). Everything else keeps today's path: a fresh reviewer. The wider reading 
 librarian's own Ground only. A write into another repo, if one is ever allowed, takes the
 prose-only test.
 
-**Skill wording** is the body of a `SKILL.md` and its `references/`. The frontmatter
-(`name`, `description`: what makes a skill load), agent files, hooks, scripts, tests,
-config, `.claude-plugin/`, CLAUDE.md and templates are never skill wording: they keep a
-reviewer whatever the edit.
+**Skill wording** is the body of a `SKILL.md` and its `references/`. Never skill wording,
+whatever the edit, so they keep a reviewer:
+
+- the frontmatter (`name`, `description`: what makes a skill load), agent files, hooks,
+  scripts, tests, config, `.claude-plugin/` and CLAUDE.md;
+- templates: an `assets/` file, and any `references/` file pasted into a dispatch brief or
+  written to a store (the `dev-cycle` skill's `references/agent-brief.md` and
+  `references/review-brief.md` among them);
+- the self-review gate itself: this section, the `dev-cycle` skill's Step 2 rule 5, the
+  `dev-cycle` skill's `references/model-routing.md` § Review waiver, and the review
+  machinery: the `dev-cycle` skill's `references/review-brief.md`, the `dev-cycle` skill's
+  `references/review-checklist.md` and the `dev-cycle` skill's `references/fix-loop.md`.
 
 **The test: the same agent, both texts.** Read the old line and the new line as the agent
 that loads the skill would. A line changes no rule only when an agent following the new text
 does, writes, asks, skips and stops exactly as one following the old would, in every case the
-text covers, not just the usual one. A line fails when it adds, removes or alters any of:
+text covers, not just the usual one. The list below is a floor, not a definition: a change
+it does not name can still change a rule. It is judged against the rule in force. Words a
+restatement copies verbatim from the home it cites are not added; any word that differs is.
+A line fails when it adds, removes or alters any of:
 
-- a must, should, may, never, always, only, unless, except or when;
+- a condition or modal: must, should, may, never, always, only, if, when, unless, except,
+  not, no, none; a quantifier (every, each, any, all); a sequence word (before, after,
+  until, first, then); an and or or joining conditions;
 - a number, threshold, cap, default or order of steps;
-- a name, field, tag or line shape an agent writes or parses;
-- a command, path, host, permission or config value an agent uses;
+- a name, field, tag or line shape an agent writes or parses, and a section heading that
+  other files cite (a name, never a typo);
+- a command, host, permission or config value an agent uses, and any path an agent reads
+  data from, writes to, runs or passes to a tool;
 - who does a step, or which file or section is authoritative;
 - an example (examples teach the rule agents copy).
+
+"Run every Check after each fix round, if the item touches code" reworded to "Run the Checks
+after the fix round" drops a quantifier and a condition: it fails.
 
 The three kinds, each held to the test:
 
 - **A typo:** the misspelled or ungrammatical word is fixed, and no other word moves. A typo
-  inside a name, command, path or value is that thing, not a typo: a reviewer.
-- **A broken link or path:** a pointer that leads nowhere is fixed to the file or section the
-  text already meant, and it exists. Repointing at different content, or changing a path an
-  agent writes to or runs, is a rule.
-- **A restatement:** the sentence restates a rule already in force, cites where it lives, and
-  keeps every scope-bearing noun and restriction verbatim ("the librarian may self-review"
-  never becomes "a session may"). A restatement that narrows, widens or reorders the rule
-  is the rule changed.
+  inside a name, heading, command, path or value is that thing, not a typo: a reviewer.
+- **A broken link:** the only path this kind may fix is a `file` or `§ section` pointer the
+  agent reads for instructions. One that leads nowhere is fixed to the file or section the
+  text already meant, and it exists. Repointing at different content is a rule, and so is
+  any path in the list above.
+- **A restatement:** a sentence outside the rule's home that restates a rule already in
+  force, cites the home, and keeps every scope-bearing noun and restriction verbatim ("the
+  librarian may self-review" never becomes "a session may"). A restatement that narrows,
+  widens or reorders the rule is the rule changed. Any edit to the sentence that states the
+  rule in its home is never rule-free and gets a reviewer, unless it is a pure typo under
+  the typo kind.
 
 One failing line fails the change. **When in doubt, today's path:** a fresh reviewer. Doubt
 includes not being able to name the kind, or a line the test reads two ways.
 
-**The `review: self` line says why it changes no rule** — the kind, the file, and the rule
-left untouched or the rule restated with where it lives: `review: self at <sha> — rule-free
-skill wording: typo in <file>; no instruction moves` or `— rule-free skill wording:
-restates <rule> (<file> § <section>) verbatim in <file>`. A clause that cannot be written
-that way is the doubt above. A later fix round is tested afresh on the cumulative diff
-(the waiver's own rule).
+**The `review: self` line says why it changes no rule**: the kind, the file, and the rule
+left untouched, the target the link already meant, or the rule restated with its home:
+
+- `— rule-free skill wording: typo in <file>; no instruction moves`
+- `— rule-free skill wording: broken link in <file> to <target>, the section it already
+  meant`
+- `— rule-free skill wording: restates <rule> (<file> § <section>) verbatim in <file>`
+
+A change with several kinds lists one clause per kind, separated by `;`. A clause that
+cannot be written that way is the doubt above. A later fix round is tested afresh on the
+cumulative diff (the waiver's own rule).
 
 ## The record: `decided:`
 
