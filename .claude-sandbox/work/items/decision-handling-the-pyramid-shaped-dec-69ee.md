@@ -189,3 +189,4 @@ answer 112 (follow-on): "112: looks good" (2026-09-30T22:14Z, chat; read as: the
 answer 130: a — "130a" (2026-09-30T22:14Z, chat; estate-wide plans get the fable xhigh offer like the rest; nothing fable runs unasked)
 answer 113: b — "113b" (2026-09-30T22:14Z, chat; trivial docs = prose-only plus skill wording that changes no rule, self-reviewed; 8dee F9 filed)
 2026-09-30 wake 120 re-read after the agents teach-back (76bc will not publish turn times): the wake stands as written — "76bc or R48" still names R48, and agents will say when a publisher is named; no re-raise
+closed 113: acted 2f66939
