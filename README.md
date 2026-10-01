@@ -84,7 +84,7 @@ dependency is marked (hard) here.
 | …isolated execution for agent sessions (containers, and the checkout/worktree convention) | `sandbox` | **current** | claude-sandbox repo (external) |
 | …unattended agent loops over a backlog ("ralph") | `ralph` | **current** | claude-sandbox repo (external; its `init-ralph` seeds `backlog.py`, and the loops run in its containers), `sandbox` (soft; its skill bootstraps and troubleshoots those containers), `work-items` (soft; the `wi` ↔ `backlog.yaml` bridge, when both stores are present) |
 | …to start a new repo for a thread of work, with an agent session launched on it | `create-repo` | **current** | claude-sandbox repo (external; `init` bootstraps the repo's `.claude-sandbox/` and the launch command runs the session in its container; without it the repo is created all the same and the command is plain `claude`), `kit-dev` (soft; `new-project-from-template` scaffolds a claude-templates template as the goal), `sandbox` (soft; its skill troubleshoots an `init` or launch that fails), `dev-flow` (soft; the launched session runs the first investigation with its `investigate` skill when installed, and investigates directly without it) |
-| …your agents to put what they need from you in a form you can act on where it appears | `operator-interaction` | **current** | — |
+| …your agents to put what they need from you in a form you can act on where it appears | `operator-interaction` | **current** | claude.ai Artifacts (external, soft; `decision-page` publishes its answer page there with the `db` capability, and a docs connector serves its tick-box fallback; without either it puts the decisions in chat) |
 | …to maintain this kit itself (skill authoring, upstream sync, templates) | `kit-dev` | **current** | claude-templates repo (external; `new-project-from-template` scaffolds from it, `update-kit` syncs to it), claude-sandbox repo (external; `new-project-from-template` bootstraps with its `init-ralph`, `update-kit` syncs to it), claude-expertise repo (external; `update-kit` syncs to it), `create-repo` (soft; `new-project-from-template` points at it for a bare repo with a session launched on it) |
 | …to make Claude good at a specific stack (Goa, Playwright, musubi-tuner, …) | one plugin per stack | **moved** to the expertise marketplace (local scaffold, remote pending) | — |
 
@@ -191,6 +191,8 @@ write to.
 interface and flow between agent and human operator. It ships no state yet (no data dir, no
 settings path). Its first skill's name, `decisions`, is **confirmed** by the operator (2026-09-24).
 Its second skill's name, `plain-names`, is **confirmed** by the operator (2026-09-29).
+Its third skill's name, `decision-page`, is the operator's (2026-10-01, in place of
+decision-pyramid).
 
 ## Plugins today
 
@@ -608,16 +610,24 @@ agent asks of its operator, and with plain names for everything an agent mention
 |---|---|
 | `decisions` | Put a decision to the operator so they can understand and answer it where it is shown — a content floor every decision carries, a list line / card / block that scales with the stakes and with how far the operator is from the work, a set order, natural-language replies with an echo, and "decide later" with a wake |
 | `plain-names` | Name what an agent mentions to the operator — work items, tickets, branches, investigation series, commits — in plain words, with the id at most as a trailing tag (*the flaky upload test (7c2a)*); a tracker's stored short display name is used as given |
+| `decision-page` | Put a set of decisions to the operator as an answer page — a published page of `decisions` cards (short names, decision slugs with popups, flat essentials and folds), one radio group per decision for its options and follow-ups, saved on click with no submit — then read the answers back and hand them to the caller, echoed before anything acts on them; a template plus a data file, with a tick-box doc or the plain decisions block as fallbacks |
 
-Both skills are knowledge only: no hooks, no settings, no state. `decisions` loads when an
+No skill carries hooks or settings, and the plugin keeps no state of its own. `decisions` and
+`plain-names` are knowledge only. `decisions` loads when an
 agent is about to ask you to decide, choose, approve or confirm something; `plain-names` when
 an agent writes text you will read, or when a skill that writes to you loads it (the
 `decisions` floor does). Either loads explicitly with `/operator-interaction:decisions` or
-`/operator-interaction:plain-names`. `decisions`' `references/gallery.md` renders every case.
-Each skill's `## Rulings` section lists what you have ruled, each with the alternative not
+`/operator-interaction:plain-names`. `decision-page` loads when an agent has several decisions
+for you and you want to answer them on a page (`/operator-interaction:decision-page`): it
+publishes the page with the Artifact tool and the artifact's `db` capability, so your answers
+live in that artifact's database, writable by you alone, read back with ArtifactData; without those it falls back to
+a doc with tick boxes, or to the decisions in chat. The caller supplies the decisions and
+records the answers. `decisions`' `references/gallery.md` renders every case.
+The `## Rulings` sections of `decisions` and `plain-names` list what you have ruled, each with the alternative not
 taken: `decisions` names what is still provisional (paging a large cold re-show), and
 `plain-names` marks the two calls that were not yours (one delegated, one made in review).
-The plugin names no other plugin and needs nothing else here; skills that raise decisions or
+The plugin names no other plugin and needs nothing else here (`decision-page` needs
+claude.ai Artifacts, outside this marketplace, and degrades without them); skills that raise decisions or
 write to you can adopt it.
 
 ### chat

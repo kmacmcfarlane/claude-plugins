@@ -1,0 +1,212 @@
+{
+  "page": {
+    "title": "Docs Site Decisions",
+    "lede": "Three invented decisions about a documentation site, to show the format. Read top down: [[41]] sets the direction for the rest."
+  },
+  "layers": [
+    [
+      "direction",
+      "Direction",
+      "One card sets where the docs build lives; the cards below are answerable whatever you pick here."
+    ],
+    [
+      "details",
+      "Details",
+      "How the move is carried out. Each card says which answer above it depends on."
+    ]
+  ],
+  "follow": [
+    [
+      "later",
+      "later",
+      "[when]",
+      "When should it come back? Blank means the next report."
+    ],
+    [
+      "tell me",
+      "tell me",
+      "[what]",
+      "What should the card add?"
+    ],
+    [
+      "expand",
+      "expand",
+      "",
+      "Anything in particular to show in more detail?"
+    ],
+    [
+      "dig into",
+      "dig into",
+      "[what]",
+      "What should I look into first?"
+    ],
+    [
+      "you decide",
+      "you decide",
+      "",
+      "Anything I should weigh?"
+    ],
+    [
+      "drop",
+      "drop",
+      "",
+      "Why drop it? (optional)"
+    ]
+  ],
+  "cards": [
+    {
+      "n": 41,
+      "L": "direction",
+      "t": "Docs build home",
+      "rev": "2026-01-12T09:30:00Z",
+      "tldr": [
+        "The docs build runs on a laptop today",
+        "Move it to CI, or keep it local",
+        "Rec: move it to CI"
+      ],
+      "context": "You last saw the build fail twice on a stale cache ([[38]]) · now you pick where it runs.",
+      "what": "Where the documentation site is built and published from: a maintainer's laptop, as today, or the CI pipeline.",
+      "why": "Two broken publishes this month came from a local cache. Blocks [[42]] and [[43]].",
+      "whyask": "Moving the build changes who can publish; the team may rely on publishing by hand.",
+      "class": "wider scope",
+      "stakes": "Reversible (pipeline config); wide (every docs contributor).",
+      "ifunanswered": "I leave the build on the laptop and carry on with other work.",
+      "rec": "b",
+      "o": [
+        [
+          "a",
+          "Keep building on a laptop. Nothing changes; the maintainer publishes by hand.",
+          "Stale-cache failures continue at about two a month.",
+          "Keep the local build",
+          "the cache failures stay"
+        ],
+        [
+          "b",
+          "Build and publish from CI on every merge to main, with the local build kept for previews.",
+          "Publishing no longer depends on one machine; about 4 minutes of CI per merge.",
+          "Publish from CI",
+          "removes the one-machine dependency"
+        ],
+        [
+          "z",
+          "Decide later.",
+          "The local build stays until you answer; [[42]] and [[43]] wait.",
+          "Decide later",
+          "[[42]] and [[43]] wait"
+        ]
+      ],
+      "basis": "strong",
+      "reason": "both failures were read in the build logs",
+      "unknown": "whether anyone publishes from a fork",
+      "evidence": "Build logs for both failed publishes show the same stale cache directory."
+    },
+    {
+      "n": 42,
+      "L": "details",
+      "t": "Old URLs after the move",
+      "rev": "2026-01-12T09:30:00Z",
+      "tldr": [
+        "The CI build changes some page URLs",
+        "Redirect them, or let them break"
+      ],
+      "context": "Only matters if [[41]] is (b) · you pick how old links behave.",
+      "what": "What happens to the twelve page URLs that change shape when the site is built in CI.",
+      "why": "Needed before the first CI publish. Blocks nothing else.",
+      "whyask": "Breaking public links is a call about readers, not about the build.",
+      "class": "a real trade-off",
+      "stakes": "One-way once search engines drop the old URLs; wide (external readers).",
+      "warn": true,
+      "rec": "a",
+      "o": [
+        [
+          "a",
+          "Add a redirect for each of the twelve URLs.",
+          "Old links keep working; twelve lines of redirect config to maintain.",
+          "Redirect the old URLs",
+          "old links keep working"
+        ],
+        [
+          "b",
+          "Let the old URLs return not found.",
+          "External links break; search ranking for those pages is lost and cannot be won back on demand.",
+          "Let old URLs break",
+          "lost links cannot be restored"
+        ],
+        [
+          "z",
+          "Decide later.",
+          "The first CI publish waits for this answer.",
+          "Decide later",
+          "the first CI publish waits"
+        ]
+      ],
+      "blocks": {
+        "a": {
+          "happens": "Twelve redirects are added to the site config before the first CI publish.",
+          "undo": "Remove the redirect lines; nothing else changes.",
+          "who": "Readers following old links, who land on the new pages."
+        },
+        "b": {
+          "happens": "The twelve old URLs return not found from the first CI publish.",
+          "undo": "Cannot be fully undone: once search engines drop the old URLs, redirects added later do not win the ranking back.",
+          "who": "External readers and every site linking to the old pages."
+        }
+      },
+      "dep": "[[41]] (b)",
+      "basis": "partial",
+      "reason": "the URL list is observed; the traffic to them is estimated",
+      "unknown": "how many external sites link to the old URLs"
+    },
+    {
+      "n": 43,
+      "L": "details",
+      "t": "Theme colour",
+      "rev": "2026-01-12T09:30:00Z",
+      "tldr": [
+        "The CI build can apply a new theme",
+        "Pick a colour, or keep the current one"
+      ],
+      "what": "Which accent colour the rebuilt site uses.",
+      "why": "Nothing forces it; raised because the move touches the theme files anyway.",
+      "whyask": "A taste call; no fact settles it.",
+      "stakes": "Reversible, narrow.",
+      "rec": null,
+      "norec": "your preference — no recommendation",
+      "o": [
+        [
+          "a",
+          "Keep the current blue.",
+          "No visual change.",
+          "Keep the blue",
+          "no visual change"
+        ],
+        [
+          "b",
+          "Switch to the green from the logo.",
+          "The site matches the logo; screenshots in the guides look dated until refreshed.",
+          "Switch to logo green",
+          "matches the logo"
+        ],
+        [
+          "z",
+          "Decide later.",
+          "The site keeps the blue meanwhile.",
+          "Decide later",
+          "the blue stays"
+        ]
+      ],
+      "dep": "[[41]] (b)",
+      "basis": "strong",
+      "reason": "nothing depends on the choice (checked)",
+      "unknown": "none"
+    }
+  ],
+  "refs": {
+    "38": {
+      "short": "build cache reset",
+      "q": "Clear the docs build cache?",
+      "a": "a — clear it",
+      "when": "earlier this month"
+    }
+  }
+}
