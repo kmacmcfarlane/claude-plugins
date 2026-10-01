@@ -105,8 +105,10 @@ interrupted run up again; a line that is missing reads there as not recorded:
   waiver: pure prose with no operational claim (`model-routing.md` § Review waiver).
   `<sha>` is the HEAD it reviewed, the same as the verdict's; the clause names the test
   it passed — a doc only, and no command, host, path, permission, config value or rule
-  agents follow touched. It has no `dispatch:` or `agent:` pair, since nothing was
-  dispatched. A `verdict:` with no `review: self` above it was a reviewer's.
+  agents follow touched; or, under `librarian-mode`'s wider reading, `rule-free skill
+  wording:` with the kind and why it changes no rule (the `librarian-mode` skill's
+  `references/decide-alone.md` § Trivial documentation). It has no `dispatch:` or
+  `agent:` pair, since nothing was dispatched. A `verdict:` with no `review: self` above it was a reviewer's.
 - `findings: …` — SKILL.md § Step 4.5, written together with a `NEEDS_CHANGES` or
   `SHOW_STOPPER` verdict: the reviewer's FINDINGS section, pasted verbatim, one line per
   finding in the reviewer's (or the self-review's) own numbering — the source

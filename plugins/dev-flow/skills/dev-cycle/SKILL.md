@@ -17,9 +17,9 @@ few questions, each asked once: the cycle brief, the checks, how to land.
 ## Critical
 
 - **Nothing passes on an agent's word.** Every `DONE`, a plan-mode series included,
-  goes through a fresh opus review sub-agent and the fix loop until `CLEAR` — pure prose
-  with no operational claim excepted, which you review yourself (Step 2 rule 5); a change
-  then also passes your own checks and diff reading before it lands.
+  goes through a fresh opus review sub-agent and the fix loop until `CLEAR` — Step 2
+  rule 5's waiver excepted, which you review yourself; a change then also passes your own
+  checks and diff reading before it lands.
 - **You never edit the change**, and never fix a finding, not even a nit: a rejected result
   is re-dispatched with a sharper brief. Your only writes are the record sink, the cycle
   brief, a `.git/info/exclude` line (Step 3) and the merge.
@@ -209,9 +209,9 @@ n = the nth re-dispatch or resume with findings = review round n+1; cap 4 review
    **Fable cross-checks are offered with why, never dispatched unasked**
    (`references/model-routing.md` § Fable cross-checks).
 5. **Review waiver: `review: self`.** Pure prose with no operational claim gets your own
-   review instead of a reviewer, recorded as `review: self` above its verdict (Step 4).
-   The test, and what always keeps a reviewer: `references/model-routing.md` § Review
-   waiver. When in doubt, a reviewer.
+   review instead of a reviewer (Step 4) — under `librarian-mode`, so does skill wording
+   that changes no rule. The test, and what always keeps a reviewer:
+   `references/model-routing.md` § Review waiver. When in doubt, a reviewer.
 6. **A re-dispatch keeps the tier** and sharpens the brief. The one bump: a sonnet
    implementer goes to opus, re-dispatched fresh, at the fix round after a critical or
    high finding, and at fix round 2 whatever the severity. A resume keeps the agent file,
@@ -439,8 +439,8 @@ Stop when you catch yourself:
   fable with no pin; a reviewer below opus; an `effort:` pin's planner or implementer on
   a file below xhigh; a fable cross-check the operator did not accept.
 - **A reviewer that saw the build** — a fork, the implementer resumed as its own
-  reviewer, or you reviewing a diff outside rule 5's waiver (skill text, CLAUDE.md, an
-  agent, a script, any operational claim).
+  reviewer, or you reviewing outside rule 5's waiver (skill text, bar `librarian-mode`'s
+  rule-free wording, CLAUDE.md, an agent, a script, any operational claim).
 - **Pushing unasked**, writing CLAUDE.md to save the checks, or guessing a caller's
   missing binding.
 

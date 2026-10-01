@@ -338,6 +338,13 @@ Rule 5's one exception to a fresh reviewer: the orchestrator reviews the change 
   at the `model:` pin's tier or above when there is one, otherwise `reviewer` at opus high
   (rule 8). The operator pinned the item, so it keeps its reviewer.
 
+**Under `librarian-mode`, the first two legs widen** to skill wording that changes no rule
+(answer 113 (b)): a `SKILL.md` body or `references/` file may pass them when every changed
+line is a typo, a broken link or path, or a sentence restating an existing rule, held to
+the `librarian-mode` skill's `references/decide-alone.md` § Trivial documentation, which
+holds the test, what is never skill wording, and its `review: self` clause. The last two
+legs are unchanged. A standalone run keeps the legs as written.
+
 When in doubt, a reviewer. A later fix round is tested afresh on the cumulative diff: a
 fix that makes an operational claim ends the waiver, and the next review is a fresh opus
 reviewer with the full brief.
@@ -624,8 +631,8 @@ a waived pin as § Fallback shows. N counts fix rounds (see Rounds), so a first-
 
 **"The implement skill's worktree section still says `.worktrees/`; align it with the
 harness-native path."** One file, a path fix — a canonical kind in this kit repo; "align"
-here names a path to match, not a trade-off. Implementer sonnet. It is skill text, so no
-waiver: reviewer opus. Record:
+here names a path to match, not a trade-off. Implementer sonnet. It is skill text, and the
+path is where agents work, a rule, so no waiver even under a librarian: reviewer opus. Record:
 
 ```
 dispatch: implementer sonnet medium — mechanical (path fix)
