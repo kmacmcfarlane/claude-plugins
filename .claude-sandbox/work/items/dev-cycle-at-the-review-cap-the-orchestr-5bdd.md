@@ -3,12 +3,13 @@ id: dev-cycle-at-the-review-cap-the-orchestr-5bdd
 title: "dev-cycle: at the review cap, the orchestrator finishes trivial leftover fixes by default instead of raising a decision"
 short_display_name: finish trivial fixes at the cap
 type: feature
-status: doing
+status: blocked
 priority: 1
 deps:
   - review-caps-and-spend-plans-raise-only-o-5579
 owner: Kyle-McFarlane@401123cbad11
 claimed: 2026-10-01T07:22Z
+blocked: decisions 139-142 (the plan's operator questions)
 created: 2026-10-01
 updated: 2026-10-01
 refs:
@@ -31,3 +32,100 @@ agent: planner ab1a5ac379668d226 round 1
 return: planner PLAN_READY .claude-sandbox/investigations/5bdd-finish-trivial-at-cap/ (INDEX, 00) — 5 operator questions, all blocking the build
 dispatch: reviewer opus high — plan review round 1
 agent: reviewer ad602e1cf89b0aad2 round 1
+verdict: NEEDS_CHANGES round 1 (plan)
+findings:
+  1. [medium] 00:162-168,318 — a finish round in plan mode cannot work as written (serials immutable; PLAN_READY has no CONCERNS); add agent-brief § Plan variant finish clause, re-review "applied" against the new serial, acceptance + trace
+  2. [medium] 00:164-168 — "DONE_WITH_CONCERNS raises" contradicts resume.md:197 S4; name the specific concern, decide partly-applied commits, add a resume touch point
+  3. [medium] 00:312 — bindings.md:237-240 "a granted round that does not clear … is raised" untouched, contradicts D5
+  4. [medium] 00:488-495,246-255 — OQ5 (a) not honestly costed: spends during a hold, with no quota signal, under a fable pin, outside the spend class's grant; reconcile budget.md:273-290; name answer 137 as spend authority or not
+  5. [medium] 00:140-145,431-432 — "exact fix" lexical test rejects ordinary sentences; define "no alternative" structurally; documenting a landed shape is not adding one; 5579 walk overstated (round-5 fix was exact-but-incomplete)
+  6. [medium] 00:278-280 — A1 single-home claim contradicted (bindings restates Fix: conditions; SKILL.md restates the bound); one home each, drop "up to two" from SKILL.md
+  7. [medium] 00:208-217,176-179 — resume cannot reconstruct the bound or the finish-round brief; define the bound by ROUNDS or read the dispatch signal; VARIANT note; traces
+  8. [medium] 00:273-304,373-385 — acceptance and traces incomplete (819f r4/r5 raised; if left: names finish rounds; budget.md; model-routing § Rounds; fix-loop:68-70; review-brief § Verdict meanings; bindings:249; hold/no signal/fable; plan mode; DONE_WITH_CONCERNS)
+  9-15. [low] OQ3 costing omits that 137's rec named a fresh review and round 5's fresh reviewer caught 21; size bound under 5k tokens already breached; Fix: is an api-name; no Fix: on review: self; "21 restates 4 and 19" is inference; lows without Fix: declined "outside the finish round"; OQ2/OQ3 may be plan calls
+  16-17. [nit] resume dispatch signal shape; "a fourth without CLEAR means the brief is wrong" qualifier
+dispatch: planner opus high — resume (plan fix round 1)
+agent: planner ab1a5ac379668d226 round 2
+return: planner PLAN_READY — serial 01_review-fixes.md (1-17); Q2 decided in plan (producer edits; authority: 113 (c) declined, answer 137); Q5 rec moved to (d)
+dispatch: reviewer opus high — resume (plan review round 2)
+agent: reviewer ad602e1cf89b0aad2 round 2
+verdict: NEEDS_CHANGES round 2 (plan)
+findings:
+  prior 1-17 FIXED
+  18. [medium] 01:210-214,440-445,460; INDEX:76,85-86,104 — R8 makes the reviewer's words binding every round (a different edit that removes the failure is ruled OPEN), past answer 137, unshown to the operator, and contradicts Out of Scope; fix: re-review rules FIXED when the failure is gone by the given words or another edit graded like any commit; or state it plainly in Q1(a), re-grade R8, withdraw the scope line
+  19. [medium] 01:312-323,426,518-522 — (d)'s "a fable pin's finish round is not raised" overrides the pin's own asks (below the reserve; fable unavailable); fix: "not raised as a cap; the pin's own asks still apply"; reviewer at fable too; split trace 12 into above-reserve / below-reserve / 429
+  20. [medium] 01:433,447 — Risk Assessment and Open Questions not ## sections; promote
+  21-22. [low] hold rule as a caller binding in bindings.md, librarian SKILL.md the home, add to B1; Q2 decided in the plan needs a decided: line (librarian writes it)
+  23-24. [nit] "would be expected to"; "when the four conditions hold"
+librarian ruling on 18: take the first fix (grade the failure, not the words) — it keeps review-brief.md's "grade the failure" rule and keeps rounds 1-3 out of scope; no new operator question
+decided: 2026-10-01T07:45Z minor-design — who makes a finish round's edit: the producer (implementer or planner) resumed, never the orchestrator; changes no rule, and the alternative (the librarian edits itself) was declined at decision 113 (c) · authority: answer 137 · reopen: say so and it goes back to the operator as a question on this item
+dispatch: planner opus high — resume (plan fix round 2)
+agent: planner ab1a5ac379668d226 round 3
+return: planner PLAN_READY — serial 02_review-r2-fixes.md (18-24)
+dispatch: reviewer opus high — resume (plan review round 3)
+agent: reviewer ad602e1cf89b0aad2 round 3
+verdict: CLEAR round 3 (plan)
+findings:
+  prior 18-24 FIXED
+  25. [low] 02:171 — B4' "nothing below the cap reads Fix:" vs the producer's every-round default; "nothing below the cap grades, counts or routes on Fix:"
+  26. [low] 02:65-68, INDEX:57-58 — the Q2 decided: line's class should be ruled-rule-case, not minor-design (corrected below)
+  27. [low] 02:190-198 — give the librarian SKILL.md row in full (no grant/reading conditions; decided: class cap, authority answer 137); B7 depends on it
+  28. [nit] trace 12b — "the pin's ask, unless an earlier answer still covers the item"
+  29. [nit] 02:11-12 — drop "01's lines were reflowed after it was written"
+findings: carried — 25 [low], 26 [low], 27 [low], 28 [nit], 29 [nit] above, verbatim; into this item's build
+decided: 2026-10-01T07:49Z ruled-rule-case — who makes a finish round's edit: the producer (implementer or planner) resumed, never the orchestrator; changes no rule, and the alternative (the librarian edits itself) was declined at decision 113 (c) · authority: answer 137 · reopen: say so and it goes back to the operator as a question on this item
+note: corrects the class on the decided: line above it (minor-design → ruled-rule-case), per plan review finding 26
+C: I skipped dev-cycle Step 4.1's baseline: line (sha256 of the series serials) before each plan review on this item and on 90bc; no harm found (the reviewer checked 00/01 unchanged by size and mtime), but write it before every plan review from now on
+decision 139: For finishing trivial fixes at the cap, what counts as a trivial leftover? — options: (a) the reviewer certifies each with a Fix: clause, and the orchestrator checks only its shape [recommended] | (b) the orchestrator applies a checklist to the reviewer's free-text findings | (c) the reviewer adds one whole-report EXACT-FIX yes/no line | (z) decide later
+  raised: 2026-10-01T07:49Z
+  what: the test that lets a finish round run without asking you (was OQ1 of the finish-at-cap plan, 5bdd); two sub-choices ride with (a): at most 3 leftovers (or 2), and prose and skill text only (or code too) — say them in your reply to change them
+  why now: the plan cleared review in 3 rounds; blocks: the build of finishing trivial fixes at the cap
+  why ask: api-name — (a) makes Fix: a stored, parsed name, and the test sets what runs without you
+  context: you asked for trivial leftovers at the cap to be finished by default (answer 137) · you decide what counts as trivial — then: none
+  stakes: reversible, wide — every dev-cycle run at a review cap, librarian or standalone
+  (a) reviewer certifies — a Fix: is one set of words for one place, at most one sentence or one line, no new choice; the orchestrator checks: changes needed, no high left, every leftover a medium with a Fix:, at most 3; tonight's review-caps rounds would have finished unasked, the scan floor's code fixes still come to you — undo: an edit to review-brief.md and bindings.md — who: every capped run
+  (b) orchestrator checklist — no new reviewer clause; the orchestrator judges free text, which is the drift the plan tried to avoid
+  (c) one EXACT-FIX line — simplest for the reviewer; all-or-nothing, so one non-trivial leftover blocks every trivial one
+  (z) decide later — the build waits; caps keep coming to you as today
+  rec: (a) · basis partial — traced on tonight's two real cases (review caps finishes, scan floor still asks) and 17 traces; untested in use
+  unknown: how often reviewers will certify in practice
+decision 140: What review does a finish round get before it can land? — options: (a) the same reviewer, resumed, grading each finding on its failure [recommended] | (b) a fresh full review | (c) the orchestrator reviews it itself | (z) decide later
+  raised: 2026-10-01T07:49Z
+  what: the check after a finish round applies the reviewer's fixes (was OQ3 of the finish-at-cap plan, 5bdd)
+  why now: blocks the build of finishing trivial fixes at the cap
+  why ask: trade-off — cost against what a fresh look catches
+  context: you asked for trivial leftovers at the cap to be finished by default (answer 137) · you decide who checks the finish round — then: none
+  stakes: reversible, narrow — capped runs
+  (a) same reviewer resumed — cheapest, a few minutes; it attacks the fix it asked for; on a fable-pinned item it runs at fable — undo: an edit to bindings.md — who: capped runs
+  (b) fresh full review — likeliest to find something new: tonight's fresh round 5 caught a half-fixed finding; also likeliest to loop, as round 5 led to round 6; your 137 card's recommended option named a fresh review
+  (c) orchestrator self-review — fastest; the orchestrator checks fixes it routed, with no independent eye
+  (z) decide later — the build waits
+  rec: (a) · basis partial — the reviewer that wrote a fix knows the failure best; but the one real case where a fresh reviewer caught more argues for (b)
+  unknown: how often a resumed reviewer misses what a fresh one would catch
+decision 141: How many finish rounds may run before the cap comes to you? — options: (a) one, at round 4 only | (b) round 4 always; round 5 only with fewer leftovers than round 4; never at 6 or later [recommended] | (c) as long as the leftover count keeps falling | (z) decide later
+  raised: 2026-10-01T07:49Z
+  what: the bound on finish rounds (was OQ4 of the finish-at-cap plan, 5bdd)
+  why now: blocks the build of finishing trivial fixes at the cap
+  why ask: spend — each round is agent time and quota taken without asking
+  context: you asked for trivial leftovers at the cap to be finished by default (answer 137) · you decide how many such rounds run unasked — then: none
+  stakes: reversible, narrow — capped runs
+  (a) round 4 only — tightest; tonight's review caps would still have asked you once, at round 5
+  (b) round 4, then round 5 if fewer leftovers — tonight's review caps would have landed at round 6 with no question; a run that is not converging stops at round 5 — undo: an edit to bindings.md — who: capped runs
+  (c) while the count falls — fewest asks; no hard ceiling on quota per item
+  (z) decide later — the build waits
+  rec: (b) · basis partial — fits the one real case; the "fewer leftovers" test is a proxy for converging
+  unknown: whether two is enough in practice
+decision 142: When may a finish round spend without asking — during your hold, with no quota reading, under a fable pin? — options: (a) always, no exclusions | (b) only by lifting the self-granted round's grant condition (librarian only) | (c) never under a hold, a fable pin, or with no quota reading | (d) only your hold stops it; otherwise it runs with no grant or quota reading, and a fable pin's own asks still apply [recommended] | (z) decide later
+  raised: 2026-10-01T07:49Z
+  what: how finish rounds fit the review caps and spend rules (5579) (was OQ5 of the finish-at-cap plan, 5bdd); your answer here becomes the spend authority for finish rounds — answer 137 alone is not one
+  why now: blocks the build of finishing trivial fixes at the cap
+  why ask: spend — it sets when quota is used without asking you
+  context: you asked for trivial leftovers at the cap to be finished by default (answer 137); review caps and spend landed with grant and quota conditions for the one self-granted round · you decide which of those conditions finish rounds keep — then: none
+  stakes: reversible, narrow — capped runs and your holds
+  (a) no exclusions — runs even during a hold you set, which overrides your hold
+  (b) lift only the self-granted round's grant — covers the librarian only; a standalone dev-cycle still asks, which misses what you asked for
+  (c) all exclusions — a hold, a fable pin, or no quota reading each send it to you; most asks
+  (d) only your hold stops it — a hold still means ask; otherwise it runs with no grant or quota reading (rounds are small); on a fable-pinned item the pin still asks below the quota reserve or when fable is unavailable — undo: an edit to bindings.md and budget.md — who: capped runs
+  (z) decide later — the build waits
+  rec: (d) · basis partial — keeps your hold as the stop and finish rounds cheap; the fable pin keeps its own asks
+  unknown: the quota cost of finish rounds across a busy night
