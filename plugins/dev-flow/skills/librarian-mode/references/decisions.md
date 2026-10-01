@@ -25,9 +25,9 @@ The skill is available when the session's skill listing carries `operator-intera
 - **Never through AskUserQuestion.** That is the librarian's own rule (SKILL.md § Intake
   step 3), and the skill agrees. The opt-in dialog is the one exception (`opt-in.md`).
 
-Without the skill, nothing here applies but the `closed N:` line and the `<repo>#N` form
-(§ What the store records): `decisions needed:`, its store lines and the replies are as
-SKILL.md § Report gives them.
+Without the skill, nothing here applies but the `closed N:` line, the `<repo>#N` form and
+the verbatim rule on every answer line (§ What the store records, **Answered**):
+`decisions needed:`, its store lines and the replies are as SKILL.md § Report gives them.
 
 ## What the librarian supplies to the skill
 
@@ -134,26 +134,41 @@ renders what the operator read instead of composing it again.
   recorded because a natural-language reply can be misread, and the echo is what the
   operator saw. **Every answer line keeps the operator's reply verbatim**, so the store
   is a source of truth to go back to: `<the reply>` is the operator's own words as
-  written, never a summary — a letter reply keeps its letter, without the number it
-  opens with; a message with several replies gives each `answer N:` the part that
-  answers N, the part its echo names; a reply over several lines stays one physical
-  line, its line breaks written ` / `. An answer form below that opens with its own
-  wording (`you decide`, `drop`, a reframe) appends ` — "<the reply>"` after that
-  wording, and so does any other answer line that opens with the librarian's wording (a
-  `hold`, say); a redirect is a plain answer, its reply verbatim. The read-as stays: a
-  line that carries `(read as: …)` keeps it last, after the reply. A reply added after
-  the fact to an answer stored without it (one recorded before this rule, or as a
-  summary) is one indented line under that `answer N:` line, the answer line itself kept
-  as written:
+  written, never a summary.
+  - **A letter reply** (an exact `N: letter`) keeps its letter, without the number it
+    opens with. Any other reply keeps its words as written, its number included; a
+    message with several replies gives each `answer N:` the part that answers N, the
+    part its echo names, kept the same way.
+  - **One physical line:** a reply over several lines has its line breaks written
+    ` / `. Nothing in a reply is escaped — not a quote mark, not a ` / ` of its own.
+  - **A reply that opens with a form word** (`drop`, `later`, `you decide`, `tell me`,
+    `expand`, `dig into`) and is a plain answer — not that form — is written in double
+    quotes, `answer 7: "drop the flag" (read as: (a) …)`, so an unquoted
+    `answer N: drop` stays the drop form's key. Lines written before this rule are
+    left as they are.
+  - **The forms below** that open with their own wording (`you decide`, `drop`, a
+    reframe) append ` — "<the reply>"` after that wording. A redirect is a plain
+    answer. A hold reply waits on OQ6 of the decision-lifecycle investigation (5140),
+    which settles its form.
+  - **On a ⚠ read-back** (below), the choice's words are the verbatim reply, and the
+    confirmation appends ` — confirmed "<reply>"`.
+  - **The read-as stays**, last on the line; a reader splits it off at the last
+    ` (read as: `.
+  - **A reply added after the fact** to an answer stored without it (one recorded
+    before this rule, or as a summary) is one indented line under that `answer N:`
+    line, the answer line itself kept as written:
 
-  ```
-  answer N: <as stored>
-    verbatim N (added <UTC time>, from <source>): "<the reply>"
-  ```
+    ```
+    answer N: <as stored>
+      verbatim N (added <UTC time>, from <source>): "<the reply>"
+    ```
 
-  Indented, it matches neither `^decision` nor `^answer`.
+    Indented, it matches neither `^decision` nor `^answer`. Interim `verbatim N` lines
+    written before this rule, in other shapes, are left as written; this shape applies
+    from now on.
 - **A one-way choice on a ⚠ decision** (the chosen option's `undo:` says it cannot be
-  undone): repeat the choice back first. Record `answer N:` only when the operator confirms.
+  undone): repeat the choice back first. Record `answer N:` only when the operator confirms
+  (`answer N: <the choice's words> — confirmed "<reply>" (read as: …)`).
   Nothing acts before that. A reversible choice on a ⚠ decision is echoed and recorded
   at once.
 - **`later [when]`:** `wake N: <time | event | next Report>`. There is no `answer N:`, so the

@@ -337,10 +337,12 @@ never reused across the store; a revised question keeps its number: add a
 new `decision N:` line (or edit the old one in place) — when N repeats,
 `needs-input` shows the last line's text. `answer 40:` answers decision 40
 only, never decision 4. `<reply>` is the operator's reply verbatim, on one
-physical line; a caller's form that opens with its own wording (`answer N:
-drop …`, say) appends it as ` — "<reply>"`. A reply recorded after the fact
-goes on an indented `verbatim N …` line under the answer, which, indented,
-matches neither marker.
+physical line (an exact `N: letter` reply is stored as its letter; the
+caller's rules give the rest); a caller's form that opens with its own
+wording (`answer N: drop …`, say) appends it as ` — "<reply>"`, and a plain
+reply that opens with such a form word is written in double quotes. A reply
+recorded after the fact goes on an indented `verbatim N …` line under the
+answer, which, indented, matches neither marker.
 
 **One counter.** Every question a caller puts to the operator takes its N
 from the store's one counter, so `needs-input` and the estate sweep see
@@ -419,9 +421,10 @@ the file the answer became a standing rule in; `superseded by` the later
 decision that replaced it. An answer carried out by several changes is
 closed when the last of them lands; one that changes nothing closes as
 `acted <the id of the item it was recorded on>`. A `drop` answer
-(`answer N: drop …`) needs no `closed N:` line and counts as closed; any
-other answered decision with no `closed N:` line is answered but not
-closed. When N repeats, the last line is its state.
+(`answer N: drop …`, the word `drop` unquoted) needs no `closed N:` line
+and counts as closed — a plain reply quoted as `answer N: "drop …"` is not
+one; any other answered decision with no `closed N:` line is answered but
+not closed. When N repeats, the last line is its state.
 `closed N:` is neither `decision N:` nor `answer N:`, so it opens no
 question and answers none: `needs-input`, the decision counter and the
 estate sweep pass it by. The target is one token, never containing a
