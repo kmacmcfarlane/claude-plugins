@@ -216,7 +216,9 @@ does not read, because its action opens no round.
 | `SHOW_STOPPER` | `STALE` | `AT_CAP` | **S11** | `spent:` first; then GATE, the cap, naming the staleness. |
 
 S11, `ANSWERED`: act exactly as SKILL.md § Step 4.4 would have — a waiver opens the round
-it grants; a park or a block stops.
+it grants; a park or a block stops. S11 at the cap on a `CURRENT` verdict, `NONE`: apply
+SKILL.md § Step 4.3 first — a stop it makes or a self-granted round it allows is taken, not
+raised; only its raise goes to § The GATE.
 
 **The dispatch permission in `review` mode.** There, S9's question is the dispatch
 permission (SKILL.md § Usage), and so is the question of S11's current `SHOW_STOPPER` row

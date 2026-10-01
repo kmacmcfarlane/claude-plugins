@@ -21,7 +21,7 @@ order given, and asks the user only where the table says so.
 | **Base** | The branch the worktree starts from and the merge lands on | Named by the item or plan (implement's recorded base, re-verified); otherwise the default branch, § Base |
 | **Model floor** | The lowest tier any role on this change may run; and its second pin kind, the **effort pin**: the lowest effort for planner and implementer dispatches (SKILL.md § Step 2 rule 8) | A `model: <tier>` line and/or an `effort: xhigh` line in the item body, or the invocation's own words ("at least opus", "at xhigh"); otherwise none |
 | **Record sink** | Where the run's record lines are appended (`record-lines.md`) | The item body when a store holds the target; otherwise always the scratchpad run record, `<scratchpad>/dev-cycle/<slug>/record.md`. Never a file in an investigation series: series files belong to `/implement` and are append-only. An item body is durable across sessions; **a scratchpad sink is session-scoped by contract**, so a store-less run's record cannot be read outside the session that wrote it (or one that inherits the same scratchpad) — Step 0's summary says so |
-| **Decision channel** | How a decision reaches a human, and the channel's **durability**: **durable** when the question outlives the session that raised it and a human answers it to whichever session reads it next (a caller's channel on a committed item), **ephemeral** when it exists only as a live prompt in this session. A caller states the durability with the channel; a channel supplied without it is a missing binding | AskUserQuestion, or § Decisions' numbered prose list for two or more or with an agent in flight — both **ephemeral**; written per the `operator-interaction:decisions` skill when the session lists it (§ Decisions) |
+| **Decision channel** | How a decision reaches a human, and the channel's **durability**: **durable** when the question outlives the session that raised it and a human answers it to whichever session reads it next (a caller's channel on a committed item), **ephemeral** when it exists only as a live prompt in this session. A caller states the durability with the channel; a channel supplied without it is a missing binding. A caller may also bind a **round budget** with it, which § Decisions' cap reads; none bound means none | AskUserQuestion, or § Decisions' numbered prose list for two or more or with an agent in flight — both **ephemeral**; written per the `operator-interaction:decisions` skill when the session lists it (§ Decisions) |
 | **Terminal action** | What Land does with a `CLEAR`, checked branch | Asked once at Land, § Landing |
 | **Series home** | Where the plan phase writes an investigation series | `$MAIN/.claude-sandbox/investigations/<slug>/`, the canonical path `/implement` reads |
 
@@ -42,7 +42,7 @@ For reference, the values `librarian-mode` supplies (its own SKILL.md is authori
 | Base | `main`, unless the item names another |
 | Model floor | A `model:` pin and/or an `effort:` pin in the item body |
 | Record sink | The item body |
-| Decision channel | `decision N:` appended to the item, carried under `decisions needed` in its Report — **durable** |
+| Decision channel | `decision N:` appended to the item, carried under `decisions needed` in its Report — **durable**; round budget: one self-granted build round per item, inside a standing grant with weekly headroom above the reserve |
 | Terminal action | `git merge --no-ff` into local `main`; the push is the librarian's, after its Report; an item naming another base merges into that base, never pushed |
 | Series home | `$MAIN/.claude-sandbox/investigations/<slug>/`, as standalone — tooling state like the store, written by the cycle, never a custody edit; agents write there only the series, and dispatched commits never include `.claude-sandbox/` |
 
@@ -207,7 +207,33 @@ marked `[recommended]`, so the line can be put to a human verbatim by a reader w
 there — and the reply as `answer: <decision> — <reply>` (`record-lines.md`) as soon as it
 arrives.
 
-**An ask for another round** — the cap (SKILL.md § Step 4.3), or any ask to open one more
+**What a cap ends in** (SKILL.md § Step 4.3; answer 114 (b)). Read when the cap is reached,
+before anything is raised. **A high is left** when a finding still open is critical or high,
+its `Failure:` sentence names breakage outside the change (another item, the base, a shared
+contract, the operator's data or quota), or it is a must-fix with no severity whose fix the
+reviewer did not give verbatim.
+
+- **A high left** is raised, plan or build — as are a `SHOW_STOPPER`, a scope change and a
+  reversed recorded decision, at every cap.
+- **A plan** with no high left stops and carries: the run goes on as after `CLEAR`
+  (Step 1's tail), the open findings carried verbatim, with their severities, as acceptance
+  for the build — on the `$WI done` note beside the series path, and under Step 6's
+  `open questions:`. A plan round past the cap is never spent unasked.
+- **A build** with no high left takes one more fix round unasked when the caller's round
+  budget allows it — only at the item's first cap (exactly four counted review verdicts,
+  the ROUNDS count of `resume.md`; a fifth means the round is spent). Its `dispatch:`
+  signal names it a self-granted cap round; it is routed and briefed as any fix round, and
+  its review tests the cap again. Otherwise — no budget bound (a standalone run), a budget
+  that does not allow it, or the round spent — it is raised, as below.
+- **A stop or a self-granted round is decided, not asked**: recorded as the caller's
+  decided-alone record, else named under Step 6's `open questions:` — with **if left** and
+  **what the round costs** as below.
+
+A **round budget** answers one question when a build reaches its first cap with no high left:
+may this item take one more round unasked now? The caller states how it is read; the cycle
+never infers one.
+
+**An ask for another round** — a cap that is raised (above), or any ask to open one more
 round — carries its justification, with the skill or without it, so the user can weigh it:
 **if left**, each finding still open, with its severity and what it would break (the
 `Failure:` sentence of the last review's `findings:` block); and **what the round costs** —

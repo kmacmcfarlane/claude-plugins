@@ -65,8 +65,9 @@ SKILL.md § Step 4.
   holds, dispatch a fresh opus reviewer with the full brief and the self-review's
   `findings:` pasted for verification.
 
-Then repeat until `CLEAR`, inside the cap: a fourth review that is not `CLEAR` blocks the
-change and goes to the decision channel.
+Then repeat until `CLEAR`, inside the cap: a fourth review that is not `CLEAR` ends as
+SKILL.md § Step 4.3 says — raised, stopped and carried, or one self-granted round
+(`bindings.md` § Decisions).
 
 ## A merge conflict
 

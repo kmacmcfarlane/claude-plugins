@@ -342,7 +342,8 @@ changed or missing one is a finding at medium (the format's rule 1).
 | `SHOW_STOPPER` | Unfixable in scope, or changes scope / a user decision | `wi block` when there is an item; raise it through the decision channel; do not land |
 | `BLOCKED` | The reviewer could not start: worktree, branch, brief or permissions wrong | Fix the brief, re-dispatch — twice at most; not a round. A third `BLOCKED`, or a permission denial, is `wi block` (when there is an item) and a blocked change raised through the decision channel, not a show-stopper |
 
-A fourth review round without `CLEAR` is itself a show-stopper — the cap is 4 review
-rounds, the first review plus three fix rounds: block the change and raise it through the
-decision channel, with the round history from the record sink and the justification
-`bindings.md` § Decisions gives an ask for another round.
+A fourth review round without `CLEAR` is the cap — 4 review rounds, the first review plus
+three fix rounds. What it ends in (raised, stopped and carried, or one self-granted round)
+is SKILL.md § Step 4.3's (`bindings.md` § Decisions); a raise carries the round history
+from the record sink and the justification `bindings.md` § Decisions gives an ask for
+another round.
