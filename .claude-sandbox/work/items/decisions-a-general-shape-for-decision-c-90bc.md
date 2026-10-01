@@ -3,12 +3,11 @@ id: decisions-a-general-shape-for-decision-c-90bc
 title: "decisions: a general shape for decision classes, not tags fitted to the cases analyzed so far"
 short_display_name: general shape for decision classes
 type: spike
-status: doing
+status: done
 priority: 1
-owner: Kyle-McFarlane@401123cbad11
-claimed: 2026-10-01T07:13Z
 created: 2026-10-01
 updated: 2026-10-01
+closed: 2026-10-01
 refs:
   - operator 2026-10-01, decision 134
 ---
@@ -43,3 +42,24 @@ agent: planner a8587db799d0fa021 round 2
 return: planner PLAN_READY — serial 03_review-fixes.md (all 11 findings), INDEX rewritten
 dispatch: reviewer opus high — resume (plan review round 2)
 agent: reviewer af72c7119ecda3329 round 2
+verdict: NEEDS_CHANGES round 2 (plan)
+findings:
+  prior 1-9, 11 FIXED; 10 PARTIAL
+  12. [medium] 03:244-248 vs :331-336 — the Rehydrate sed has no old→new map a librarian loads (it lives in the series), and putting one in decide-alone.md trips the residue grep; fix: a "Retired spellings" table in § Class names exempted from the grep, or drop the Rehydrate sed for a one-time sweep item
+  13-15. [low] relayed batchable only for precedent and not ⚠; place = one standing rule settles it (a CLAUDE.md row or convention); contract = something outside this work relies on, add to Risk
+  16-17. [nit] provenance and line refs to 2f66939 (or by section); H5 cite :36; H12 independence overstated
+dispatch: planner opus high — resume (plan fix round 2)
+agent: planner a8587db799d0fa021 round 3
+return: planner PLAN_READY — serial 04_review-r2-fixes.md (12-17)
+dispatch: reviewer opus high — resume (plan review round 3)
+agent: reviewer af72c7119ecda3329 round 3
+verdict: CLEAR round 3 (plan)
+findings:
+  prior 10, 12-17 FIXED
+  18. [low] 04:80-82 — a new trade-off why-ask "trade-off — latency: …" matches the retired "trade-off — <impact>:" form; make the retired form a closed list of the eight reply-112 impact words, or say a new trade-off never opens with <word>:
+  19. [low] 04:85-88 — Rehydrate rewrite: every Rehydrate greps captured tags and writes only on a hit (no plugin-version trigger exists); stage only rewritten files; rewrite matched lines in place; skip items claimed by another owner
+  20. [nit] 04:90 — wi estate does not parse tags; removal check is the per-store captured-tag grep; name who files the removal item and when
+  21. [nit] 04:109-110 — "no heading inside the subsection", not "table only"; spell the retired form with a placeholder, never a real impact word
+findings: carried — 18 [low], 19 [low], 20 [nit], 21 [nit] above, verbatim; into the build of decision 134 (a), if chosen
+open question: OQ2 of the decision-class plan — keep the reasons in librarian-mode, or lift them later into the decisions skill as every agent's default (blocks nothing)
+- 2026-10-01 done: closed on its series .claude-sandbox/investigations/90bc-decision-classes/ (00-04, plan CLEAR r3); result back on decision 134
