@@ -27,3 +27,11 @@ refs:
 target: full decisions-record-one-counter-for-every-q-b6f7 /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude/worktrees/decisions-record-one-counter-for-every-q-b6f7
 dispatch: implementer opus medium — opus signal: changes a stored contract (format.md) and librarian rules; given plan 5140 03 C2 (wave 3, 132 a)
 agent: implementer aed94609b2cc4a2a3 round 1
+return: implementer DONE_WITH_CONCERNS cdb5849
+changed:
+  plugins/dev-flow/skills/librarian-mode/SKILL.md — § Report numbering sentence: one counter, labels as tags, opt-in exception, <repo>#N
+  plugins/dev-flow/skills/librarian-mode/references/decisions.md — numbering row, label: card line, Closed bullet, Another repo's decision
+  plugins/work-items/skills/work-items/references/format.md — One counter, <repo>#N, § Closed with a reader regex
+note: label: is a new (indented, unparsed) card line — 98 a says labels become tags; reviewer to judge whether it is an api-name needing the operator
+dispatch: reviewer opus high — review round 1 (rule 4)
+agent: reviewer a4c0ac1f35c166622 round 1

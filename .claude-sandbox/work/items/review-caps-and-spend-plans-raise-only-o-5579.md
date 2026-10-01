@@ -60,3 +60,6 @@ findings:
 librarian rulings: 14/15 — E2 applies only to plan runs under a caller-bound budget; a build's operator-granted round that does not clear is raised again, as today; standalone runs keep today's behaviour exactly (a waiver round's verdict tests the cap again); fix :218 to except the end of an E2 path; 16 — the build item is filed in the same store as the plan item, never another repo's (out of Scope routes as Intake step 4), with title "build: <series slug>", type feature, a short display name from the series, a --ref to the series path and --parent the plan item when it has one; a store-less run writes the carried findings to its record sink and Step 6's open questions only
 dispatch: implementer opus medium — resume (fix round 2; the next review is round 3)
 agent: implementer ae4df26f8668a3cac round 3
+return: implementer DONE c5459a2
+dispatch: reviewer opus high — resume
+agent: reviewer ad2a1543b77f3da33 round 3
