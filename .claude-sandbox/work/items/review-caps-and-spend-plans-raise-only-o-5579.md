@@ -3,14 +3,13 @@ id: review-caps-and-spend-plans-raise-only-o-5579
 title: "review caps and spend: plans raise only on a high left; builds get one self-granted round inside a grant"
 short_display_name: review caps and spend
 type: feature
-status: blocked
+status: doing
 priority: 2
 deps:
   - decisions-record-and-show-what-is-decide-58f4
   - librarian-mode-the-decided-alone-class-t-00ef
 owner: Kyle-McFarlane@401123cbad11
 claimed: 2026-10-01T00:01Z
-blocked: decision 137 (review cap)
 created: 2026-09-30
 updated: 2026-10-01
 refs:
@@ -110,3 +109,6 @@ decision 137: Review caps and spend hit the 4-round review cap with two medium g
   (z) decide later — as (c)
   rec: (a) · basis strong — the reviewer names both fixes exactly and says nothing else is open at medium or above
   unknown: none
+answer 137: 137 I think the orchestrator should just finish trivial changes when the cap is reached. Make a work-item to make that the default behavior (read as: (a) finish it — one more small fix round for findings 21-22, fresh review; and a new item making that the default: trivial leftovers at the cap are finished without a decision)
+dispatch: implementer opus medium — resume (fix round 4 past the cap, answer 137: findings 21, 22, nit 23)
+agent: implementer ae4df26f8668a3cac round 5

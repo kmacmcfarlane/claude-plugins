@@ -3,13 +3,11 @@ id: research-security-bounded-live-probes-fo-ec4f
 title: "research security: bounded live probes for the six facts the docs leave open"
 short_display_name: security probes
 type: task
-status: blocked
+status: done
 priority: 2
-owner: Kyle-McFarlane@401123cbad11
-claimed: 2026-09-30T22:27Z
-blocked: decision 135 (review cap)
 created: 2026-09-30
-updated: 2026-09-30
+updated: 2026-10-01
+closed: 2026-10-01
 refs:
   - .claude-sandbox/investigations/caef-research-security/05_second-opinion-closing.md
   - caef answer 103
@@ -119,3 +117,6 @@ decision 135: The research-security probe write-up hit the 4-round review cap wi
   (z) decide later — the series stays blocked; the hook build waits (it already waits on the PB-1 check, which needs you)
   rec: (a) · basis strong — the reviewer states the fix exactly as one condition plus a test; the build's review re-checks it
   unknown: none
+answer 135: 135 - same (read as: (a) close the series now and carry M1's fix into the confinement-hook build (20d8) as acceptance, reviewed there; further rounds may be asked there if justified)
+closed 135: acted research-security-bounded-live-probes-fo-ec4f
+- 2026-10-01 done: closed on its series (caef 06-09) per answer 135 a; M1 carried into 20d8's acceptance

@@ -3,11 +3,10 @@ id: research-security-f1-the-scan-floor-819f
 title: "research security F1: the scan floor"
 short_display_name: research scan floor
 type: feature
-status: blocked
+status: doing
 priority: 1
 owner: Kyle-McFarlane@401123cbad11
 claimed: 2026-09-30T22:27Z
-blocked: decision 136 (review cap)
 created: 2026-09-30
 updated: 2026-10-01
 refs:
@@ -124,3 +123,6 @@ decision 136: The research scan floor hit the 4-round review cap with one medium
   (z) decide later — as (c)
   rec: (a) · basis strong — the reviewer measured it and names the exact fix
   unknown: none
+answer 136: 136a - ask for more rounds if you can justify it based on where we are at (read as: (a) one more fix round past the cap — bound the two spans plus a test, fresh review; if that round does not clear, another round may be asked with its justification)
+dispatch: implementer opus medium — resume (fix round 4 past the cap, answer 136: R1 only)
+agent: implementer a33ea65041c3dc364 round 5

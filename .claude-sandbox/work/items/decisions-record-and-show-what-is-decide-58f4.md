@@ -109,3 +109,4 @@ decision 134: The decided-alone record uses 19 class tags on stored decision lin
   (z) decide later — tags keep being written as spelled; each new decision adds a line a later rename must migrate
   rec: (a) · basis partial — the names follow the class list the reviewer checked; it found no clash, only that you had not seen them
   unknown: whether other repos' parsers want a different case or prefix
+note: operator 2026-10-01 on decision 134, verbatim: "134 - these seem pretty specific to the data you happen to have analyzed. Investigate a better shape for this" (read as: dig into — investigate a more general shape for the class tags; the result comes back on 134 with options) — spike decisions-a-general-shape-for-decision-c-90bc

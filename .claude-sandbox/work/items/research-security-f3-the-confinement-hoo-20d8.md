@@ -22,3 +22,5 @@ caef serial 05 F3 (A3.1-A3.10) under answer 101 a: the web lane's shell runs onl
 - next: —
 - blocked: —
 - learned: —
+
+Acceptance added by answer 135 (carried from the security-probes plan, ec4f, finding M1, serial 09:24-32, 87): the filter admits running tools/** only while the run has no tools.reviewed/; once tools.reviewed/ exists it denies writes to tools/**; a post-freeze fixture proves a mining lane cannot write then run an unreviewed script. The build's opus review checks it.
