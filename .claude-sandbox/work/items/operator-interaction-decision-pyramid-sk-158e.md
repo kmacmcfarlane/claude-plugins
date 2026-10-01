@@ -33,3 +33,12 @@ return: implementer DONE e397c93
 changed: plugins/operator-interaction/skills/decision-page/ (SKILL.md, references/cards-schema.md, references/fallback.md, assets/index.html, assets/cards.example.json) — the new skill; README.md (operator-interaction skill row, paragraph); CLAUDE.md (layout line); operator-interaction plugin.json + marketplace.json (description names each skill); decisions SKILL.md (two-line pointer)
 dispatch: reviewer opus high — review round 1 (rule 4)
 agent: reviewer a234af080c0fb09f4 round 1
+verdict: NEEDS_CHANGES round 1 at e397c93
+findings:
+  1. [medium] SKILL.md:73,85-86; cards-schema.md:84-86 — stale answers survive a republish and are handed back again (tell me / later re-ask under the same number)
+  2. [medium] cards-schema.md:84-85; SKILL.md:62,86,98 — default db rules let any Contributor write; answers are handed over as the operator's
+  3. [medium] index.html:204-209,221-239,297 — n, option letters and follow-up keys reach innerHTML unescaped (XSS reproduced in jsdom)
+  4-12. [low/nit] empty first-card o throws; all option letters bold; flat Rec line lacks unknown; ⚠ as card not block, no if-left/round-costs/if-unanswered fields; republish needs file_path and a prior files read; "no design pass" vs the Artifact tool's design rule; unbounded retries and overlapping sets; catalog Depends-on for the Artifacts runtime; nits
+librarian rulings: 1 — each card carries a revision (bumped when the card changes); an answer counts only when its `at` is after that card's revision time, and the caller records the time of each read so a read hands over only answers newer than the last read; 2 — write rules owner-only (the operator who owns the artifact); readers may view; 3 — escape every field reaching HTML, validate n as an integer and option letters as a-z; 7 — a ⚠ one-way decision renders its per-option sections (what happens, undo, who) and the optional if-left / round-costs / if-unanswered fields exist in the schema; 9 — the template is the page's design: the skill names the artifact-design guidance as satisfied by the shipped template, and any change to the template goes through it; fix 4-6, 8, 10, 12; 11 — add the Artifacts runtime to the plugin's description/catalog note as a soft external need
+dispatch: implementer opus medium — resume
+agent: implementer aee46bd9c5802babb round 2
