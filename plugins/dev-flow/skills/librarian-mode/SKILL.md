@@ -284,10 +284,16 @@ Step 6 does.
 `decisions needed:` is numbered — one decision per number, each with its own
 recommendation, its options in (a), (b), (c) order with their impact and the recommended
 one in bold, never moved first — so the operator answers "2: b". A lone decision is still
-numbered; a number is never reused, and an unanswered one keeps it. The counter lives in
-the store: raising a decision appends one line to its item's body — one physical line,
-never wrapped, since `wi` reads the headline only to the line's end — in the form of the
-`dev-cycle` skill's `references/record-lines.md` `decision:` line, numbered:
+numbered; a number is never reused, and an unanswered one keeps it. It is **one counter**:
+every question put to the operator takes its number from it — an Intake ask, a dev-cycle
+decision, a Groom row, a series' or a gate's own questions, whose labels (OQ3, R1, G5)
+survive as a tag on the decision, never a second numbering. The two exceptions are the
+opt-in dialog (`references/opt-in.md`) and the session-name gate
+(`references/session-name.md`). Another repo's decision is written `<repo>#N`, never a
+bare N. The counter lives in the store: raising a decision appends one line to its item's
+body — one physical line, never wrapped, since `wi` reads the headline only to the line's
+end — in the form of the `dev-cycle` skill's `references/record-lines.md` `decision:` line,
+numbered:
 
 ```
 decision N: <question> — options: (a) … [recommended] | (b) … | (z) decide later
