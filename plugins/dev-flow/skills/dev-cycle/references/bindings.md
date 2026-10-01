@@ -214,16 +214,26 @@ contract, the operator's data or quota), or it is a must-fix with no severity wh
 reviewer did not give verbatim.
 
 - **No round budget bound** (a standalone run): every cap is raised, plan or build, as
-  below.
+  below, and the verdict of a round the operator granted tests the cap again.
 - **A high left** is raised, plan or build — as are a `SHOW_STOPPER`, a scope change and a
-  reversed recorded decision, at every cap.
+  reversed recorded decision, at every cap but the end of a granted plan path (below).
 - **A plan** with no high left, under a bound budget, stops and carries: the open findings,
-  verbatim with their severities, are written onto the build's item as acceptance — the
-  build item the series names, or one filed for it (`$WI add`) when none exists — so the
-  build brief's Acceptance copies them; then Step 1's tail runs, with no fable offer (the
-  at-the-cap stage needs a high left, and the plan stage is not offered at the cap:
-  `model-routing.md` § Fable cross-checks). A plan round past the cap is never spent
-  unasked.
+  verbatim with their severities, are **carried** — written as acceptance onto a build
+  item filed for the series in the plan item's own store, never another repo's (a series
+  naming another repo's work is outside Ground, out of Scope as the `librarian-mode`
+  skill's Intake step 4 routes it):
+
+  ```bash
+  $WI add "build: <series slug>" -t feature --short-display-name "<from the series>" \
+      --desc "<the carried findings, as acceptance>" --ref <series path> \
+      [--parent <plan item>]
+  ```
+
+  so the build brief's Acceptance copies them. A store-less run (the scratchpad record
+  sink) writes them to its record sink and Step 6's `open questions:` only. Then Step 1's
+  tail runs, with no fable offer (the at-the-cap stage needs a high left, and the plan
+  stage is not offered at the cap: `model-routing.md` § Fable cross-checks). A plan round
+  past the cap is never spent unasked.
 - **A build** with no high left takes one more fix round unasked when the round budget
   allows it — only at the item's first cap (exactly four counted review verdicts, the
   ROUNDS count of `resume.md`; a fifth means the round is spent) and never under a
@@ -231,9 +241,10 @@ reviewer did not give verbatim.
   self-granted cap round; it is routed and briefed as any fix round, and its review tests
   the cap again. Otherwise — a budget that does not allow it, or the round spent — it is
   raised, as below.
-- **A round the operator granted** at a cap ends on the path the grant named: the cap rule
-  does not re-apply after it, and a high still open at its end goes to build acceptance,
-  written as a plan's carried findings are (8dee E2).
+- **A plan round the operator granted** at a cap, under a bound budget, ends on the path
+  the grant named: the cap rule does not re-apply after it, and whatever is still open at
+  its end, a high included, is carried as above (8dee E2). A build's granted round that
+  does not clear tests the cap again, and is raised.
 - **A stop or a self-granted round is decided, not asked**: recorded as the caller's
   decided-alone record, with **if left** and **what the round costs** as below. A
   self-granted round's reopen is "say stop: the round ends and its commits do not land".

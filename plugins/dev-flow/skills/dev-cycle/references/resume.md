@@ -179,8 +179,9 @@ none matches nothing.
 | `RIDERS` | **S1** bindings only | GATE, the question being any decision the riders carry (the only live case: one raised before the first dispatch). `PENDING` → § The GATE. `ANSWERED` or `NONE` → as S0, with the recorded bindings and answers; nothing the record answers is asked again. |
 
 **Group B — PHASE `DISPATCH`.** ROUNDS is never read here: a dispatch a cap waiver opened
-is a dispatch, and its verdict ends on the path the waiver named (`bindings.md`
-§ Decisions, What a cap ends in).
+is a dispatch, and its verdict tests the cap again — except a plan's under a caller's
+round budget, which ends on the path the waiver named (`bindings.md` § Decisions, What a
+cap ends in).
 
 | LIVE | State | The single next action |
 |---|---|---|
@@ -218,8 +219,9 @@ does not read, because its action opens no round.
 
 S11, `ANSWERED`: act exactly as SKILL.md § Step 4.4 would have — a waiver opens the round
 it grants; a park or a block stops. S11 at the cap on a `CURRENT` verdict, `NONE`: apply
-SKILL.md § Step 4.3 first — a stop it makes, a self-granted round it allows or the end of a
-path the operator granted is taken, not raised; only its raise goes to § The GATE.
+SKILL.md § Step 4.3 first — a stop it makes, a self-granted round it allows or, on a plan
+under a caller's round budget, the end of a path the operator granted is taken, not
+raised; only its raise goes to § The GATE.
 
 **The dispatch permission in `review` mode.** There, S9's question is the dispatch
 permission (SKILL.md § Usage), and so is the question of S11's current `SHOW_STOPPER` row

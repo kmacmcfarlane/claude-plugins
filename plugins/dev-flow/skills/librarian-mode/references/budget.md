@@ -276,10 +276,10 @@ unasked (answer 114 (b); the rule itself is the `dev-cycle` skill's
   `python3 scripts/quota_budget.py --read-only` itself at that moment; it never waits on
   the idle-turn integration, which has not landed (the opening of this file). "Below the
   reserve" is the `dev-cycle` skill's `references/model-routing.md` § Below the quota
-  reserve, read from that output. When the grant names a reserve of its own, `used` stays under 100
-  minus it too. One difference from there: **no signal is a spent budget**, not a pass,
-  and the cap is asked. A step-down there only saves quota, so it may err toward spending;
-  a round spent unasked needs evidence that the quota is there.
+  reserve, read from that output. When the grant names a reserve of its own, `used` stays
+  under 100 minus it too. One difference from there: **no signal is a spent budget**, not
+  a pass, and the cap is asked. A step-down there only saves quota, so it may err toward
+  spending; a round spent unasked needs evidence that the quota is there.
 - **The item's round is unspent**: the cap is its first (the rule above).
 
 The round is recorded as a `decided:` line, class `cap`, authority `answer 114`, its what
