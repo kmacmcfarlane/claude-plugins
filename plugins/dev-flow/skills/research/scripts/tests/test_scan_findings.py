@@ -568,6 +568,34 @@ class DeMarkup(Base):
         self.assertEqual(rc, 3)
 
 
+class DeMarkupBounded(Base):
+    """The comment and link spans are bounded, so unclosed openers stay linear."""
+
+    def timed(self, name, text):
+        import time
+        p = self.write(name, text)
+        t0 = time.monotonic()
+        rc, out, _ = run(p)
+        took = time.monotonic() - t0
+        self.assertTrue(out.strip().splitlines()[-1].startswith("SCAN:"))
+        return took
+
+    def test_many_unclosed_comment_openers(self):
+        self.assertLess(self.timed("c.md", "<!-- " * 100000 + "\n"), 1.0)
+
+    def test_many_unclosed_link_openers(self):
+        self.assertLess(self.timed("l.md", "[x](" * 100000 + "\n"), 1.0)
+        self.assertLess(self.timed("t.md", "[" * 400000 + "\n"), 1.0)
+
+    def test_real_comment_and_link_still_match(self):
+        cases = [IG + "<!-- " + "c" * 900 + " -->" + NORE + " " + TAIL,
+                 "[" + WORDS[0] + "](https://example.invalid/" + "x" * 1500 + ") " + TAIL]
+        for text in cases:
+            with self.subTest(text=text[:12]):
+                rc, h, _ = self.scan_one(text + "\n")
+                self.assertIn((1, "override-phrase", "HOLD"), h)
+
+
 class ScriptJoins(Base):
     def test_label_check_in_a_parser_is_not_a_turn(self):
         self.write("pj/t.py", 'if line.startswith("' + R(":namuH") + '"):\n    n += 1\n')

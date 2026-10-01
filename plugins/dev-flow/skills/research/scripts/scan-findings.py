@@ -49,7 +49,8 @@ Tiers:
 Prose rules match text with invisible characters and combining marks removed, common
 Cyrillic and Greek look-alikes mapped to Latin, and NFKC applied, so full-width,
 zero-width and the mapped look-alike forms match; other homoglyphs are a residual.
-Every pass is linear in the input, and hits are kept per line.
+Every pass is linear in the input (the de-markup comment and link spans are bounded at
+1,000 and 2,000 characters; a longer one is left as written), and hits are kept per line.
 A clean scan is not a clean file.
 
 Stdlib only.
@@ -136,8 +137,10 @@ DEMOTE_IN_STRINGS = {"control-tag", "special-token"}
 # rest.
 JOINED_HOLD = {"override-phrase", "chat-role-prefix", "pipe-to-shell"}
 _ESCAPED_BREAK = re.compile(r"\\[nr]")
-_COMMENT = re.compile(r"<!--.*?-->")
-_LINK = re.compile(r"\[([^\]\n]*)\]\([^)\n]*\)")
+# Bounded spans that stop at the next opener keep unclosed openers linear; a longer
+# comment or link, or one nested in another, stays as written.
+_COMMENT = re.compile(r"<!--(?:(?!<!--)[^\n]){0,1000}?-->")
+_LINK = re.compile(r"\[([^\[\]\n]{0,1000})\]\([^()\n]{0,2000}\)")
 _TAG = re.compile(r"</?[A-Za-z][^<>\n]*>")
 _IN_WORD = re.compile(r"(?<=\w)[*_~\"'`\\]+(?=\w)")
 _CONCAT_GAP = re.compile(r"\s*\+?\s*")
