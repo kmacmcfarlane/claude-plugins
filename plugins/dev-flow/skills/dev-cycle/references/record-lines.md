@@ -115,6 +115,11 @@ interrupted run up again; a line that is missing reads there as not recorded:
   accepted findings onto the build's item as `findings: cross-check (<stage>) — …`, a
   rider no verdict carries, which the build's next review brief pastes for that reviewer
   to rule on (`model-routing.md` § Fable cross-checks).
+- `findings: carried — <finding, its severity, verbatim>` — `bindings.md` § Decisions,
+  What a cap ends in: written by the orchestrator onto the plan item when a plan under a
+  caller's round budget stops at its cap, one line per open finding; a rider no verdict
+  carries, never read by the GATE. Every build of that series copies the lines into its
+  brief's Acceptance (`agent-brief.md`).
 - `target: <mode> <ref> <workspace>` — SKILL.md § Step 0.3, **every mode**, written before
   any dispatch.
   - `<mode>` is one bare word, `full` | `plan` | `review` — **one token wide in every

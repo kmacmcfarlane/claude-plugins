@@ -44,7 +44,9 @@ Brief: <the cycle brief or the plan file, by absolute path — read it first, in
 
 Model: <sonnet|opus|fable> — <the routing signal that chose it: mechanical, an opus
        signal, a model: pin, or an effort: pin>
-Acceptance: <one or two lines, copied from the item, plan or brief>
+Acceptance: <one or two lines, copied from the item, plan or brief; a build of a series
+            whose plan stopped at its cap adds the plan item's `findings: carried`
+            lines (`bindings.md` § Decisions), whoever dispatches it>
 Base branch: <the Base binding>
 Ground: <the Ground binding — the only ground you may touch>
 Files in scope: <explicit list, inside Ground; anything else is out of scope — or
