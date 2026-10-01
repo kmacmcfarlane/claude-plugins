@@ -34,7 +34,8 @@ in Your words to add anything.* When reading it back:
 
 When a decision changes after the doc is shared (an **Added:** line, a re-ask), rewrite its
 section with every box unticked and say so in chat: ticks on the old text answered the old
-card. Note when you read the doc, and hand over only what changed since your last read.
+card. Keep what you last handed over for each decision (its ticks and words), and hand over
+only the decisions whose ticks or words differ from it; the rest are unchanged, not open.
 
 Read the doc back with the same tool, then echo and hand over as SKILL.md's read-back step
 says. The doc is the record of what was ticked: quote it, do not paraphrase it.

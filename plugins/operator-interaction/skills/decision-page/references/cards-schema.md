@@ -10,8 +10,8 @@ decision not on the page.
 decisions can't be shown: cards.json is not valid* with the first problems found, and renders
 nothing else. It refuses: an `n` that is not a whole number or is used twice; an option letter
 that is not a single `a`–`z`; options out of letter order or not ending in `z`; a `rec` that is
-not one of the card's letters (or null without `norec`); a missing required field; a `rev`
-that is not a time; a `basis` word outside the four; a `follow` list other than the fixed
+not one of the card's letters (or null without `norec`); a missing required field; an empty
+`rev`; a `basis` word outside the four; a `follow` list other than the fixed
 six; a `refs` key that is not a number; a ⚠ card without its `blocks`. Every text field is
 escaped wherever it reaches the page, attributes and ids included.
 
@@ -43,7 +43,7 @@ Each field maps to a part of the `decisions` skill's card (its `references/rende
 | `n` | integer | yes | the decision number, the caller's own, never reused | everywhere |
 | `L` | string | yes | its group: a `layers` key | groups the map and the cards |
 | `t` | string | yes | the short name, 2–6 words, a noun phrase (it is what a slug shows) | title |
-| `rev` | string | yes | the card's revision: an ISO-8601 UTC time (`2026-01-12T09:30:00Z`), set when the card is written and set again whenever it changes (a `tell me` answer added, a re-ask, a reframe kept under its number) | not shown; it decides which answers count (below) |
+| `rev` | string | yes | the card's revision: a label that changes whenever the card does (a `tell me` answer added, a re-ask, a reframe kept under its number). An ISO-8601 UTC time when you write it (`2026-01-12T09:30:00Z`) is the convention, but it is only ever compared for equality, never as a time | not shown; the page copies it into each answer, and it decides which answers count (below) |
 | `tldr` | array of strings | yes | 2–3 fragment bullets: the decision at a glance | flat |
 | `context` | string | no | **Context:** where the operator left it · what they decide now | flat |
 | `ifleft` | string | no | **If left:** an ask for another round: each leftover finding and what it would break | flat |
@@ -96,11 +96,17 @@ publish rule in SKILL.md step 3); any other viewer sees the answers read-only.
 | `kind` | string or null | `option`, `follow-up`, or null for words only |
 | `words` | string | the operator's words, verbatim; for `later`, `tell me` and `dig into` they are its `[when]` or `[what]`; empty when none |
 | `rec` | string or null | the recommendation shown when they answered |
-| `at` | string | ISO-8601 time of the write |
+| `rev` | string | the card's `rev` when they answered: the revision this answer was given to |
+| `at` | string | ISO-8601 time of the write, by the operator's browser clock: compared only with other `at` values for the same number, never with the agent's clock or with `rev` |
 
-**Which answers count.** An answer counts only when its `at` is later than its card's
-`rev`. The collection outlives a republish, so a revised card under the same number still has
-the answer given to its earlier version; the page shows that answer as *open*, unticked, and
-the read-back skips it. The operator's next click on the revised card replaces it. Answers to
-numbers not on the current `cards.json` are skipped too. The page reads the collection live,
-so an answer set in the owner's other tab shows at once.
+**Which answers count.** An answer counts only when its `rev` equals its card's current
+`rev`: no clocks are compared, so a browser clock ahead of or behind the agent's makes no
+difference. The collection outlives a republish, so a revised card under the same number still
+has the answer given to its earlier version; that answer carries the old `rev`, the page shows
+it as *open*, unticked, and the read-back skips it. The operator's next click on the revised
+card replaces it. Answers to numbers not on the current `cards.json` are skipped too. The page
+reads the collection live, so an answer set in the owner's other tab shows at once.
+
+**Already handed over.** The read-back compares a counting answer's `at` with the `at` it last
+handed over for that number. Equal: the same answer, unchanged. Different: the operator changed
+it since. Both values come from the operator's browser, so this too needs no shared clock.

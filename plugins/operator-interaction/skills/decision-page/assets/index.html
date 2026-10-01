@@ -192,7 +192,7 @@ const fid=k=>esc(k.replace(/\s/g,"_"));
 /* the data is checked before anything renders: a card that fails is a refused file, not a half page */
 const FOLLOW_FIXED=["later","tell me","expand","dig into","you decide","drop"];
 function check(d){
-  const bad=[],isStr=v=>typeof v==="string",T=Date.parse;
+  const bad=[],isStr=v=>typeof v==="string";
   if(!d||typeof d!=="object")return ["cards.json is not an object"];
   if(!Array.isArray(d.layers)||!d.layers.length)bad.push("layers: missing");
   if(!Array.isArray(d.follow)||d.follow.map(f=>Array.isArray(f)&&f[0]).join("|")!==FOLLOW_FIXED.join("|"))bad.push("follow: must be the six fixed follow-ups");
@@ -206,7 +206,7 @@ function check(d){
     if(seen.has(c.n))bad.push(w+": number used twice");seen.add(c.n);
     if(!keys.has(c.L))bad.push(w+": L is not a layer key");
     for(const k of ["t","what","why","whyask","stakes","basis","reason","unknown","rev"])if(!isStr(c[k]))bad.push(w+": "+k+" missing");
-    if(isStr(c.rev)&&isNaN(T(c.rev)))bad.push(w+": rev is not a time");
+    if(isStr(c.rev)&&!c.rev.trim())bad.push(w+": rev is empty");
     if(!["strong","partial","thin","none"].includes(c.basis))bad.push(w+": basis must be strong, partial, thin or none");
     if(!Array.isArray(c.tldr)||!c.tldr.every(isStr))bad.push(w+": tldr must be a list of text");
     if(!Array.isArray(c.o)||!c.o.length){bad.push(w+": no options");continue}
@@ -222,8 +222,9 @@ function check(d){
   return bad;
 }
 
-const fresh=(c,v)=>!!v&&!isNaN(Date.parse(v.at))&&Date.parse(v.at)>Date.parse(c.rev);
-/* answers shown = stored answers newer than their card's revision; an older one reads as open */
+/* an answer counts for the card revision it was given to: no clocks are compared */
+const fresh=(c,v)=>!!v&&v.rev===c.rev;
+/* answers shown = stored answers given to the card's current revision; one given to an earlier revision reads as open */
 function applyRaw(){
   const next={};
   for(const id in raw){const c=byN.get(id),v=raw[id];if(c&&fresh(c,v))next[id]={choice:v.choice||null,words:v.words||"",at:v.at}}
@@ -332,7 +333,7 @@ async function write(n){
   const once=async()=>{
     const a=answers[n],ref=col.doc(String(n));
     if(!a||(!a.choice&&!a.words))await ref.delete();
-    else await ref.set({n:Number(n),choice:a.choice||null,kind:a.choice?(FOLLOW_KEYS.has(a.choice)?"follow-up":"option"):null,words:a.words||"",rec:byN.get(String(n)).rec||null,at:new Date().toISOString()});
+    else await ref.set({n:Number(n),choice:a.choice||null,kind:a.choice?(FOLLOW_KEYS.has(a.choice)?"follow-up":"option"):null,words:a.words||"",rec:byN.get(String(n)).rec||null,rev:byN.get(String(n)).rev,at:new Date().toISOString()});
   };
   try{
     do{
