@@ -17,8 +17,8 @@ refs:
 5140 C2 with answers 98 a and 99 c (pyramid answers 2026-09-30 (69ee, answer page)). Acceptance: librarian references/decisions.md and work-items references/format.md gain closed N: acted <commit|item> | rule <path> | superseded by M, and <repo>#N for another repo's decision; every question put to the operator takes a number from the one counter (series labels R/G/P, OQ become tags; the opt-in dialog is the one exception). ^decision N: / ^answer N: keep their shapes (estate parsers).
 
 ## Handoff
-- doing: —
-- next: —
+- doing: fix round 1: implementer aed94609b2cc4a2a3 (rulings recorded)
+- next: resume reviewer a4c0ac1f35c166622 for round 2; then 3716 (C7, same file) and 728a/8edb after it
 - blocked: —
 - learned: —
 
@@ -35,3 +35,15 @@ changed:
 note: label: is a new (indented, unparsed) card line — 98 a says labels become tags; reviewer to judge whether it is an api-name needing the operator
 dispatch: reviewer opus high — review round 1 (rule 4)
 agent: reviewer a4c0ac1f35c166622 round 1
+verdict: NEEDS_CHANGES round 1 at cdb5849
+findings:
+  1. [medium] decisions.md:56, 80-84; format.md:345 — label: is a new stored field shipped unraised (api-name)
+  2. [medium] format.md:414-415 vs decisions.md:173-174 — drop needs no closed line in one, every answer without one is "not closed" in the other
+  3. [medium] decisions.md:169-177; format.md:402-415 — no rule for an answer carried out by several changes, or by no change
+  4. [low] decisions.md:82-84 — a rendering rule in the binding; numeric labels collide with decision numbers
+  5. [low] <repo> = the sweep's directory name: unstable across machines/worktrees
+  6. [low] SKILL.md:290-291 — the rename gate is a second ask outside the counter
+  7. [nit] SKILL.md:294 long line; 8. [nit] format.md:345 names librarian-mode's private field
+librarian rulings: 1 — no new field: the source label rides in the card's what: line, e.g. "(was OQ3)"; 3 — several changes: the closed N: line is written when the last one lands (the answer stays open until then); no change: `closed N: acted <the item id the answer was recorded on>`; 4 — drop the rendering rule; a label is never a bare number; 5 — <repo> is the name of the repo's origin remote (basename, no .git), else the main checkout's directory name; 6 — the session-name gate is the second named exception; 2, 7, 8 fix as found
+dispatch: implementer opus medium — resume
+agent: implementer aed94609b2cc4a2a3 round 2

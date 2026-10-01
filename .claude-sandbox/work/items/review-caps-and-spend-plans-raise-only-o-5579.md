@@ -20,8 +20,8 @@ refs:
 8dee F3 (L2, answer 114 b, pyramid answers 2026-09-30 (69ee, answer page)). Acceptance: 8dee F3 — plans impact-gated (raise only when a high is left at the cap, else stop and carry); builds take at most one self-granted round inside a standing grant with headroom above the reserve, else ask; dev-cycle keeps the home, the caller supplies the budget (librarian: grant + quota_budget.py; standalone dev-cycle asks as today). Ruling changes per 8dee INDEX § Ruling changes (answer 30, 88 (b), 68).
 
 ## Handoff
-- doing: —
-- next: —
+- doing: review round 4 (cap) running: reviewer ad2a1543b77f3da33 on 87ed36f
+- next: CLEAR → land (merge main first if conflicts: dabd waits on this); else decision at the cap
 - blocked: —
 - learned: —
 
@@ -63,3 +63,15 @@ agent: implementer ae4df26f8668a3cac round 3
 return: implementer DONE c5459a2
 dispatch: reviewer opus high — resume
 agent: reviewer ad2a1543b77f3da33 round 3
+verdict: NEEDS_CHANGES round 3 at c5459a2
+findings:
+  3, 14, 15, 16, 17 FIXED; 4, 5 PARTIAL
+  18. [medium] bindings.md:218-219 (resume.md:221-224) — the granted-plan-path exception also swallows a SHOW_STOPPER, scope change or reversed decision; card 114 says escalations raise at every cap
+  19. [medium] bindings.md:220-229 vs librarian SKILL.md § Factor — an auto-filed "build: <slug>" item duplicates the librarian's factored features or loses the carried findings
+  20. [low] bindings.md:222-224 — Intake step 4 drops with --drop; carried findings for a peer repo vanish until 3460
+librarian rulings: 18 — the exception covers only "a high left"; a SHOW_STOPPER, scope change or reversed decision raises at every cap; 19 — no auto-filed build item: the carried findings are written onto the plan item as a `findings: carried …` block; a build dispatched from that series (each factored feature included) copies them into its acceptance — librarian § Factor copies them into each feature's acceptance; a standalone build from the series reads the plan item's block; 20 — a series naming another repo's work raises the carried findings to the operator as a blocker until forwarding (3460) lands, never --drop
+dispatch: implementer opus medium — resume (fix round 3; the next review is round 4, the cap)
+agent: implementer ae4df26f8668a3cac round 4
+return: implementer DONE_WITH_CONCERNS 87ed36f
+dispatch: reviewer opus high — resume
+agent: reviewer ad2a1543b77f3da33 round 4

@@ -7,7 +7,7 @@ priority: 0
 owner: unknown@360f41058e92
 claimed: 2026-09-22T02:36Z
 created: 2026-09-22
-updated: 2026-09-30
+updated: 2026-10-01
 refs:
   - operator 2026-09-22
 ---
@@ -15,8 +15,8 @@ refs:
 Operator 2026-09-22: an idle librarian should work new items as they arrive when no operator decision is needed (doc-only requests nearly always; skill changes often; implementation or complex skill changes warrant an investigation round). Investigations can run without waiting on the operator, so when the operator returns the decisions are ready to present. Today items queue up waiting for attention when many are unblocked or at least investigable. Question: how to achieve this without accidentally running the operator's quota into the ground. Acceptance: an investigation series with findings and a recommendation (routing rules for what proceeds unattended vs what waits; quota guards; how investigations pre-run and park their decisions), presented to the operator; decisions raised by number.
 
 ## Handoff
-- doing: checkpoint 2026-09-30 (continue): pyramid out as doc + answer page v3; answers 110 a, 111 b, 112 b stored; nothing in flight
-- next: on the relaunched session: confirm dev-flow:scribe..cross-checker-deep are listed, then run waves 1-3 (answers 132 a, 133 a; plan in chat 2026-09-30): W1 58f4 fa73 819f 0c4d 375e(plan) ec4f; W2 00ef 1ffd 9ea7 6e8e; W3 5579 dabd b6f7 3716 20d8; stop at weekly 85%
+- doing: waves 1-3 running (132 a/133 a)
+- next: landed: 58f4 0c2757b, fa73 a597939, 9ea7 d096fd7, 00ef d0526b3, 6e8e d38d0fd; in flight: 5579 r4 review, b6f7 fix r1; held: 819f (decision 136), ec4f (135), 20d8 (135 + PB-1), 1ffd (after 819f), dabd (after 5579), 3716 (after b6f7); open decisions 134, 135, 136
 - blocked: —
 - learned: —
 
