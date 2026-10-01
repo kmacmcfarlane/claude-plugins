@@ -136,9 +136,9 @@ Three levels; the templates are in `references/rendering.md`:
   class when the caller names classes, stakes, basis, and its age, what it blocks and any
   deadline; a round ask, its justification too; a line-only decision, its why ask too.
 - **Card** — what is decided, why now, why ask (and a round ask's justification), the options
-  with their impact in italics, decide later, then `Rec · basis — reason · unknown`. To a cold
-  reader, also its **Context:** cue, written when it is raised: where you left it · what you
-  decide now.
+  with their impact in italics, decide later, then `Rec · basis — reason · unknown`. Its
+  **Context:** cue (where you left it · what you decide now) is written for every decision
+  when it is raised, and shown to a cold reader.
 - **Block** — a card plus: context the reader may have lost, a section per option (*what
   happens*, *undo*, *who is affected*), and the basis drill-down with evidence links.
 
@@ -277,6 +277,8 @@ argues for it.
   template carries the floor by reference.
 - **Every ask justifies itself** (2026-09-30) — *why ask* on every decision, opening with its
   class when the caller names classes. Not taken: the justification on round asks only.
+- **Resume cue** (2026-09-30) — a **Context:** cue stored when raised, shown to a cold reader
+  under *while it waited*. Not taken: every cold decision as a block.
 - **Shown after** (2026-09-30) — what a caller's rules let you decide alone is recorded and
   shown as a `Done:` line in a *Done alone* group, never left unseen. Not taken: a record seen
   only on request.

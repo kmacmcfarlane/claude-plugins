@@ -19,6 +19,7 @@ today.*
 **What:** the nightly backup of the reporting database paused halfway through its snapshot and holds a storage lease.
 **Why now:** the lease lapses at ~17:45 today (90 min from 16:15); after that the half-written snapshot is discarded and the backup starts over (about 3 hours).
 **Why ask:** aborting is a real choice too: the snapshot fills shared storage the reporting team also writes to, and whether tonight's backup outranks their jobs is yours to weigh.
+**Context:** you last saw the backup running normally last night · you decide whether it finishes tonight or starts again.
 - **(a) Resume now** — *the snapshot finishes in about 15 minutes*
 - (b) Abort the backup — *releases the lease; no backup tonight unless it is started again*
 - (z) Decide later — *it waits; at 17:45 the lease lapses and the snapshot is lost*
@@ -29,7 +30,7 @@ Rec **(a)** · basis **strong** — *checked the storage quota: 40% free, enough
 **What:** whether to delete the old export endpoint `/v1/export`, replaced last quarter by `/v2/export`.
 **Why now:** the API cleanup release is cut on Thursday; this change goes out in it, or waits for the next one.
 **Why ask:** removing it breaks two partners and cannot be quietly undone; that call is not mine to take alone.
-**Context you may have lost:** two partner integrations still call `/v1/export`; once it is removed their exports fail until they move to `/v2`, and a removed public endpoint cannot quietly come back for the clients that already adapted.
+**Context you may have lost:** you left it at last quarter's launch of `/v2/export` · you decide whether `/v1` goes in this release. Two partner integrations still call `/v1/export`; once it is removed their exports fail until they move to `/v2`, and a removed public endpoint cannot quietly come back for the clients that already adapted.
 
 (a) Remove it now
 - *What happens:* the two partners' exports fail from Thursday until they switch.
@@ -53,13 +54,14 @@ Rec **(b)** · basis **partial** — *observed: this week's access log shows 2 p
 **What:** show sizes in binary units (MiB, 1,048,576 bytes) or decimal units (MB, 1,000,000 bytes).
 **Why now:** the new dashboard needs one; nothing else waits on it.
 **Why ask:** no fact settles it; which readers the units should suit is yours to say.
+**Context:** you left it at the dashboard mock-up, which had placeholder units · you decide which units it shows.
 - (a) MiB — *matches what the operating system's tools report*
 - (b) MB — *matches the storage provider's bill*
 - (z) Decide later — *it waits; the dashboard keeps its placeholder units until you choose (one config line)*
 
 *No recommendation: no fact settles this.* · basis **strong** — *checked: nothing reads the dashboard's units programmatically* · unknown: none
 
-*Gallery note — layout and order: the cards and the block come first, the compact list and the hint last, so the list is what is on screen when the agent stops. Why this order: 41 breaks before you are back; the API cleanup group comes next because it holds a ⚠, with 44 kept beside 43; then 42, which blocks the docs build, before 45, which blocks nothing. 44 and 42 stay list lines: you are warm on both, both are two-way and narrow on a strong basis, 44's options converge and 42 is a template you have seen. 41, 43 and 45 are cold, so each is at least a card; 43 is a block because this is its first showing. In each card and the block the options keep their letter order and only the recommended one is bold: 43's (b) stays second, and 45, with no recommendation, bolds none.*
+*Gallery note — layout and order: the cards and the block come first, the compact list and the hint last, so the list is what is on screen when the agent stops. Why this order: 41 breaks before you are back; the API cleanup group comes next because it holds a ⚠, with 44 kept beside 43; then 42, which blocks the docs build, before 45, which blocks nothing. 44 and 42 stay list lines: you are warm on both, both are two-way and narrow on a strong basis, 44's options converge and 42 is a template you have seen. 41, 43 and 45 are cold, so each is at least a card, with its **Context:** cue; 43 is a block because this is its first showing, its *Context you may have lost* opening with the same cue. In each card and the block the options keep their letter order and only the recommended one is bold: 43's (b) stays second, and 45, with no recommendation, bolds none.*
 
 - **41 Resume the paused nightly backup?** — rec **(a) resume** · *reversible, narrow* · basis **strong** · *25 min old, storage lease lapses ~17:45 (90 min from 16:15), blocks tonight's backup*
 - **43 Remove the deprecated `/v1/export` endpoint?** — rec **(b) keep it, with a sunset date** · ⚠ one-way · basis **partial** · *6 h old, misses Thursday's API cleanup release if undecided*

@@ -82,7 +82,9 @@ Rec **(b)** · basis **word** — *one-clause reason* · unknown: what isn't kno
   reader has gone cold: where the operator left it (what they last saw or decided on this
   subject) and what they decide now. Never what changed since: that is *while it waited*,
   which opens the re-show (§ Re-show with what changed). When the caller's store keeps the
-  card, the cue is stored with it.
+  card, the cue is stored with it, and a block's lost-context facts with it. With no store,
+  keep it with your notes on the decision; with nowhere to keep it, show it on the card at
+  its first showing too, cold reader or not, so a re-show copies it from that message.
 - An ask for another round adds two lines after **Why ask:** and any **Context:** —
   **If left:** *each leftover finding, and what it would break* and **A round costs:** *the
   time, the quota, and your attention: this answer, and another if the round does not settle
