@@ -3,12 +3,11 @@ id: decisions-answer-every-question-inside-a-9ea7
 title: "decisions: answer every question inside a batched reply in words, one Read-as per part"
 short_display_name: batched replies in words
 type: feature
-status: doing
+status: done
 priority: 2
-owner: Kyle-McFarlane@401123cbad11
-claimed: 2026-09-30T23:30Z
 created: 2026-09-30
 updated: 2026-09-30
+closed: 2026-09-30
 refs:
   - .claude-sandbox/investigations/6d2c-batched-decision-replies/INDEX.md
 ---
@@ -43,3 +42,10 @@ findings:
   5. [nit] replies.md:30-31 — heading "Before you write: the worksheet"; "that line" ambiguous
 dispatch: implementer opus medium — resume
 agent: implementer a70699c5ec56ef8c2 round 2
+return: implementer DONE_WITH_CONCERNS 465f0ae
+dispatch: reviewer opus high — resume
+agent: reviewer a89d6ae7dfaf0dc3f round 2
+verdict: CLEAR round 2 at 465f0ae
+notes: prior 1-5 FIXED; new lows 6 (an ambiguous undo of a Done: line in a batch is not covered by ask-which), 7 (a question that doubts the choice beside it) and nits 8, 9 — filed as a follow-up
+landed: d096fd7
+- 2026-09-30 done: d096fd7

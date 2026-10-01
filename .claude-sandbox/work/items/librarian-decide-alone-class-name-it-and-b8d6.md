@@ -2,10 +2,11 @@
 id: librarian-decide-alone-class-name-it-and-b8d6
 title: "librarian decide-alone class: name it and refine the guidelines from conversations on disk"
 type: chore
-status: todo
+status: done
 priority: 2
 created: 2026-09-22
-updated: 2026-09-22
+updated: 2026-10-01
+closed: 2026-10-01
 refs:
   - operator 2026-09-22
 ---
@@ -18,3 +19,6 @@ Operator 2026-09-22 (1222 gate, G5): the class of reversible, low-impact, high-p
 - blocked: —
 - learned: —
 folded into policy spike 8dee 2026-09-29 (operator reply to 97); its evidence base (decision N / answer N history on disk) is shared with spike 5140
+
+## Notes
+- 2026-10-01 done: closed by 00ef (d0526b3), per 8dee

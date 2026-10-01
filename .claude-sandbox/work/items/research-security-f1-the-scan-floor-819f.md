@@ -3,12 +3,13 @@ id: research-security-f1-the-scan-floor-819f
 title: "research security F1: the scan floor"
 short_display_name: research scan floor
 type: feature
-status: doing
+status: blocked
 priority: 1
 owner: Kyle-McFarlane@401123cbad11
 claimed: 2026-09-30T22:27Z
+blocked: decision 136 (review cap)
 created: 2026-09-30
-updated: 2026-09-30
+updated: 2026-10-01
 refs:
   - .claude-sandbox/investigations/caef-research-security/05_second-opinion-closing.md
 ---
@@ -86,3 +87,24 @@ findings:
 librarian ruling: fix N5 (a de-markup pass for the joined view) and N7 (per-line hit set, with a many-hit linear-time test); state what the static floor still cannot catch as a named residual in run-record.md instead of any "still holds" claim; N6, N8, N9 cheap fixes unless declined with reason; N4: say a landing FLAG in an unadjudicated file makes the run DONE_WITH_CONCERNS
 dispatch: implementer opus medium — resume (fix round 3; the next review is round 4, the cap)
 agent: implementer a33ea65041c3dc364 round 4
+return: implementer DONE 827334a
+dispatch: reviewer opus high — resume
+agent: reviewer af1c1850266095f2a round 4
+verdict: NEEDS_CHANGES round 4 at 827334a
+findings:
+  N1, N4, N5, N7, N9 FIXED; N6, N8 PARTIAL (low)
+  R1. [medium] scan-findings.py:139-140 — _COMMENT and _LINK lazy spans are quadratic on unclosed openers (100k "<!-- " 500 KB: 118.9 s); docstring :52 "every pass is linear" false; fail-closed (a timeout holds the run); only a hostile file triggers it; fix: bound the spans (<!--[^\n]{0,1000}?-->) or drop the claim
+  R2. [low] _CONCAT_GAP lacks string prefixes (f"", r"")
+  R3. [low] a markdown table row with curl | … reads as pipe-to-shell HOLD
+cap: 4 review rounds without CLEAR — blocked; decision 136
+decision 136: The research scan floor (the first research-security build) hit the 4-round review cap with one medium left: two markup patterns go slow (quadratic) on a hostile file of unclosed openers, so the docs' "every pass is linear" is false; it fails safe (a timeout holds the run). Finish it how? — options: (a) one more fix round: bound the two patterns (a one-line change each) plus a test, and a fresh review [recommended] | (b) land it now with the linearity sentence struck as the only edit, the bound filed as a follow-up | (c) leave it unlanded until you look | (z) decide later
+  raised: 2026-10-01
+  what: whether the scan floor lands after one more small round or as is
+  why now: the review cap; the deep-investigation parity build (1ffd) waits on it
+  why ask: cap — another round past the cap is yours to grant
+  (a): about 20-30 minutes and roughly 1% of weekly quota; lands clean — undo: n/a — who: research runs
+  (b): lands tonight; a hostile lane can still force a slow scan that holds the run (fail-safe) until the follow-up lands
+  (c): nothing lands; 1ffd keeps waiting
+  (z): as (c)
+  rec: (a) · basis strong — the reviewer measured it and names the exact fix; everything else left is low
+  unknown: none
