@@ -338,6 +338,19 @@ new `decision N:` line (or edit the old one in place) — when N repeats,
 `needs-input` shows the last line's text. `answer 40:` answers decision 40
 only, never decision 4.
 
+**One counter.** Every question a caller puts to the operator takes its N
+from the store's one counter, so `needs-input` and the estate sweep see
+every ask; the caller's rules may name an exception (librarian-mode's
+opt-in dialog). A source's own label — a series' `OQ3`, a gate's `G5` — is
+a tag on the card (librarian-mode stores it as an indented `label:` line),
+never a marker: `decision OQ3:` and `answer G5:` match neither.
+
+**Another repo's decision: `<repo>#N`.** A line that names a decision in
+another repo's store writes it `<repo>#N`, `<repo>` being that repo's name
+as `estate` lists it (`agents#12`); a bare N, or `decision N`, always means
+this store's own. It never starts a line, so neither marker takes it for
+one of this store's.
+
 The headline is one physical line: `wi` reads its text to the end of the
 line, so a headline wrapped over two lines loses everything after the
 break. Its canonical form lists the options in letter order and marks the
@@ -383,6 +396,28 @@ to the operator, opening with its class.
 `wi prime` also shows a `HOLD <n>: <id> (<title cell>) …` line, first under
 the header, for open items tagged `hold` — an operator hold gates what may
 move.
+
+## Closed: `closed N:`
+
+Once an answered decision's outcome has taken effect, the caller records it
+as a body line in the same item, one physical line, never wrapped, in one
+of three forms:
+
+```
+closed N: acted <short sha | item id>
+closed N: rule <repo path>
+closed N: superseded by <M | <repo>#M>
+```
+
+`acted` names the commit or the item that carried the answer out; `rule`
+the file the answer became a standing rule in; `superseded by` the later
+decision that replaced it. An answered decision with no `closed N:` line is
+answered but not closed. When N repeats, the last line is its state.
+`closed N:` is neither `decision N:` nor `answer N:`, so it opens no
+question and answers none: `needs-input`, the decision counter and the
+estate sweep pass it by. The target is one token, never containing a
+space. `wi` does not parse it yet; a reader splits it with
+`^closed (\d+): (acted|rule|superseded by) (\S+)$`.
 
 ## Decided alone: `decided:`
 
