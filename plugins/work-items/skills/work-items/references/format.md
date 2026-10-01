@@ -336,7 +336,11 @@ marker — and a line inside a fenced code block is text, not a marker. N is
 never reused across the store; a revised question keeps its number: add a
 new `decision N:` line (or edit the old one in place) — when N repeats,
 `needs-input` shows the last line's text. `answer 40:` answers decision 40
-only, never decision 4.
+only, never decision 4. `<reply>` is the operator's reply verbatim, on one
+physical line; a caller's form that opens with its own wording (`answer N:
+drop …`, say) appends it as ` — "<reply>"`. A reply recorded after the fact
+goes on an indented `verbatim N …` line under the answer, which, indented,
+matches neither marker.
 
 **One counter.** Every question a caller puts to the operator takes its N
 from the store's one counter, so `needs-input` and the estate sweep see
