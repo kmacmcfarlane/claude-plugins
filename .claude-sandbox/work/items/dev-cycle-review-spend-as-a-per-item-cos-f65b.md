@@ -3,9 +3,11 @@ id: dev-cycle-review-spend-as-a-per-item-cos-f65b
 title: "dev-cycle: review spend as a per-item cost budget with justified increases, not a round count"
 short_display_name: review spend as a cost budget
 type: spike
-status: done
+status: doing
 priority: 1
 parent: dev-cycle-at-the-review-cap-the-orchestr-5bdd
+owner: Kyle-McFarlane@401123cbad11
+claimed: 2026-10-02T19:18Z
 created: 2026-10-02
 updated: 2026-10-02
 closed: 2026-10-02
@@ -78,3 +80,8 @@ findings:
   25. [nit] 03:159-165 — Q1 (a)'s text should say the round count also stays as the plans' stop at the fourth review under Q8 (i)
 findings: carried — 24 [low], 25 [nit] above, verbatim; into the build of decision 145 (a), if chosen
 - 2026-10-02 done: closed on its series .claude-sandbox/investigations/f65b-review-cost-budget/ (00-03, plan CLEAR r4); result back as decision 145, replacing 141 and 142
+- 2026-10-02 claimed by Kyle-McFarlane@401123cbad11
+reopened: operator 2026-10-02 on decision 145 — widen the evidence (every repo's store and all local transcripts, not one repo over 14 days), verify prices on the web, and look for external practice on agent cost thresholds
+baseline: a88831aa8df8 00_initial.md 98c18dec7ccd 01_review-fixes.md 85fb607d5d9e 02_review-r2-fixes.md 25a751beac23 03_convergence-simulated.md 
+dispatch: planner opus high — resume (widen the evidence, operator on 145)
+agent: planner af46608c4b7a2f7a2 round 5
