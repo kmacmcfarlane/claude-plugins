@@ -212,3 +212,6 @@ decision 144: The scan floor's seventh review confirmed every stall fixed, but f
 answer 144: a
 dispatch: implementer opus medium — resume (fix round 7, answer 144: round-7 1-4; after this round a further bypass is filed as a follow-up and does not hold the landing)
 agent: implementer a33ea65041c3dc364 round 8
+return: implementer DONE 84b5104 (markup vs plain-word tag names; plain-word opener with no > mid-line is a named residual)
+dispatch: reviewer opus high — resume (round 8, checks round-7 fixes; per answer 144 any further bypass is a follow-up)
+agent: reviewer a0a35fdcad507b97f round 8
