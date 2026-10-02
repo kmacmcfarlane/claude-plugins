@@ -3,13 +3,12 @@ id: dev-cycle-at-the-review-cap-the-orchestr-5bdd
 title: "dev-cycle: at the review cap, the orchestrator finishes trivial leftover fixes by default instead of raising a decision"
 short_display_name: finish trivial fixes at the cap
 type: feature
-status: blocked
+status: doing
 priority: 1
 deps:
   - review-caps-and-spend-plans-raise-only-o-5579
 owner: Kyle-McFarlane@401123cbad11
 claimed: 2026-10-01T07:22Z
-blocked: decision 145 (cost budget, replacing 141 and 142)
 created: 2026-10-01
 updated: 2026-10-02
 refs:
@@ -197,3 +196,5 @@ decision 145: Should a spend budget per item, set when each phase starts and rai
   rec: (a) with the headroom table · basis partial — real spend on 204 items across six repos at verified prices, simulated and reviewed; but only 10 days of records, and spend is drifting up
   basis: observed — .claude-sandbox/investigations/f65b-review-cost-budget/ serials 04-06, evidence/item-costs.md, item_cost.py, sim_asks.py, week_rate.py, prices_cited.json · observed — Anthropic pricing page https://platform.claude.com/docs/en/about-claude/pricing (2026-10-02) · cited — 13 external sources (04 § 4)
   unknown: whether repos need their own defaults (not enough data yet); whether the October rise holds; whether effort xhigh should scale the budget
+answer 145: a (read as: (a) a per-item spend budget replaces the round count as the trigger to ask, with the headroom table and every recommended setting; build order per the cost-budget series: price the 5.5 models (ebbe), a spend reader by agent id in context-guard, then this item's dev-flow rule, which takes over from the finish-at-cap plan where they overlap)
+dep note: build after ebbe (prices) and usage-report-read-an-item-s-spend-by-age-0865 (spend reader); e4ca (review caps follow-up lows) touches the same files — one at a time

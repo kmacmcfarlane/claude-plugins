@@ -141,3 +141,4 @@ decision 134: What shape should decision classes take, now that the 19 tags turn
   basis: observed — 16 sample decisions across 5 repos + 12 held-out (.claude-sandbox/investigations/90bc-decision-classes/ serials 00, 03, 04); observed — plan review CLEAR round 3
   unknown: whether 16 words is the right size in practice; how often reach and contract raise in daily use
 note: operator 2026-10-02 on decision 134, verbatim: "134 - give me some examples of what this would be like in different scenarios" (read as: tell me — worked examples of the two-words shape, given in the reply from the decision-class plan cases T1-T18, H1-H12; nothing in the card changes)
+note: operator 2026-10-02, verbatim: "134 - show the examples table again" (read as: tell me — the examples table re-shown; nothing in the card changes)

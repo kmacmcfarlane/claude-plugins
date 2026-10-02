@@ -97,3 +97,16 @@ decision 132: Which waves of tonight's plan may run unattended (plan shown 2026-
   rec: (a) · basis partial — per-item cost from past rounds (~0.5-1% weekly per planner or review round), not measured per feature
 answer 132: a — "wave 1 approved, continue on up through wave 3 and I'll check on your progress later" (2026-09-30T22:17Z, chat)
 answer 133: a — "133a" (2026-09-30T22:22Z, chat; operator relaunches; the new session runs waves 1-3 per 132 a)
+decision 146: Weekly usage is at 82%, 3 points from your 85% stop on new dispatch, and climbing about 1 point an hour; the reset is 2026-10-05 11:00 UTC. What should happen to the work you just approved? — options: (a) keep the 85% stop: finish what is running (the scan floor's last round, the prices fix, the research-routing plan), and queue the spend reader, the budget rule and the research-routing build until the reset [recommended] | (b) raise the stop to 90% for these items only, so the spend reader and the research-routing build can land before the reset | (c) stop new dispatch now, at 82% | (z) decide later
+  raised: 2026-10-02T22:09Z
+  what: whether your 85% weekly stop holds for the work approved today (answers 144 a, 145 a, and the research routing go-ahead)
+  why now: the reading crosses 85% in about three hours at today's rate, mid-way through that work; blocks: the spend reader (0865), the budget rule (5bdd) and the research-routing build (e184) past their current step
+  why ask: spend — your threshold (answer 132 a / 133 a); moving it is yours
+  context: you set the 85% weekly stop for the unattended run; today you approved 144, 145 and the research routing to land · you decide whether the stop holds for that work — then: none
+  stakes: reversible, narrow — this week's quota
+  (a) keep 85% — running work finishes (each step is about $4-30 list price, roughly 0.2-1.4% of a week); new steps after the line wait about 2.5 days; nothing is lost, each item keeps its handoff — undo: lift it later — who: the queued items
+  (b) 90% for these items — the spend reader and research routing likely land this week; about 5 more points of the week go to them, leaving 10% for everything else until the reset — undo: n/a once spent — who: your other sessions' headroom this week
+  (c) stop now — the running agents finish; nothing new starts until the reset
+  (z) decide later — as (a) by default: the 85% stop is the rule in force
+  rec: (a) · basis strong — the rule is yours and the queued work loses nothing by waiting; this week's spend is already high
+  unknown: how much the research-routing plan and its reviews will cost (planner runs this week were $13-40 each)

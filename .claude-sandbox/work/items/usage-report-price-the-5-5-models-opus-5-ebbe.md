@@ -3,8 +3,10 @@ id: usage-report-price-the-5-5-models-opus-5-ebbe
 title: "usage-report: price the 5.5 models (opus-5-5, sonnet-5-5) and fable-5-1 from a cited source"
 short_display_name: price the 5.5 models
 type: bug
-status: todo
+status: doing
 priority: 2
+owner: Kyle-McFarlane@401123cbad11
+claimed: 2026-10-02T22:08Z
 created: 2026-10-02
 updated: 2026-10-02
 refs:
@@ -18,3 +20,9 @@ Found by the cost-budget investigation (f65b, 00-01): plugins/context-guard/skil
 - next: —
 - blocked: —
 - learned: —
+
+## Notes
+- 2026-10-02 claimed by Kyle-McFarlane@401123cbad11
+target: full usage-report-price-the-5-5-models-opus-5-ebbe /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude/worktrees/usage-report-price-the-5-5-models-opus-5-ebbe
+dispatch: implementer opus medium — build (data table + test; cited source)
+agent: implementer aad59d4eef75ceee3 round 1

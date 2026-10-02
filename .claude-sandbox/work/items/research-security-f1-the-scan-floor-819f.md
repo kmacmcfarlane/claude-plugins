@@ -3,11 +3,10 @@ id: research-security-f1-the-scan-floor-819f
 title: "research security F1: the scan floor"
 short_display_name: research scan floor
 type: feature
-status: blocked
+status: doing
 priority: 1
 owner: Kyle-McFarlane@401123cbad11
 claimed: 2026-09-30T22:27Z
-blocked: decision 144 (round 8)
 created: 2026-09-30
 updated: 2026-10-02
 refs:
@@ -210,3 +209,6 @@ decision 144: The scan floor's seventh review confirmed every stall fixed, but f
   revised: 2026-10-02T17:10Z — decision 144's round cost: the cost-budget plan review (f65b) found the per-item dollars priced the 5.5 models too high (~1.7x); at cited prices a fix round on this item is about $3-4 list price, not $6; options and recommendation unchanged
   revised: 2026-10-02T17:18Z — decision 144's round cost again: measured at cited prices, an 819f fix round is $3.57-5.21 (median $4.73), 8-30 minutes; about $4-5, about 0.2% of a week; options and recommendation unchanged
   revised: 2026-10-02T17:28Z — decision 144's round cost settled: $3.57-5.21 per 819f fix round, median $4.73 (about $4-5, about 0.2% of a week), confirmed after the cost evidence was corrected
+answer 144: a
+dispatch: implementer opus medium — resume (fix round 7, answer 144: round-7 1-4; after this round a further bypass is filed as a follow-up and does not hold the landing)
+agent: implementer a33ea65041c3dc364 round 8
