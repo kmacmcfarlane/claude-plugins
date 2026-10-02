@@ -181,3 +181,6 @@ decision 143: The scan floor's sixth review found two more mediums — three mor
 answer 143: a
 dispatch: implementer opus medium — resume (fix round 6, answer 143: round-6 1, 2 + a timing property test over every pattern)
 agent: implementer a33ea65041c3dc364 round 7
+return: implementer DONE f818c50 (property test tests/test_scan_patterns.py; the suggested _ATTRS was itself quadratic, fixed with no < in values)
+dispatch: reviewer opus high — resume (round 7, checks round-6 fixes and the property test)
+agent: reviewer a0a35fdcad507b97f round 7

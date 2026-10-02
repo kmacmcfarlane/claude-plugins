@@ -27,3 +27,7 @@ Operator 2026-10-02 on decision 141 (how many finish rounds before the cap asks)
 dispatch: planner opus high — spike plan (dig into on decisions 141, 142)
 target: plan dev-cycle-review-spend-as-a-per-item-cos-f65b /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude-sandbox/investigations/f65b-review-cost-budget
 agent: planner af46608c4b7a2f7a2 round 1
+return: planner PLAN_READY .claude-sandbox/investigations/f65b-review-cost-budget/ (INDEX, 00, evidence/item-costs.md, evidence/item_cost.py)
+baseline: a88831aa8df8 00_initial.md 
+dispatch: reviewer opus high — plan review round 1
+agent: reviewer aa75f970dc65e2c2e round 1
