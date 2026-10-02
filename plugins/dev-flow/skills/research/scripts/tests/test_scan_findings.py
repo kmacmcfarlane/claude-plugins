@@ -667,6 +667,14 @@ class ControlTagForms(Base):
         ("unquoted value with a single quote", "<" + TAG + " a=b'>"),
         ("unclosed opener at end of line", "text <" + TAG),
         ("unclosed opener with attributes at end of line", "text <" + TAG + ' a="b"'),
+        ("a < in a quoted value", "x <" + TAG + ' a="<"> y'),
+        ("a closing tag with a < value", "x </" + TAG + ' a="<"> y'),
+        ("a < inside a value", "x <" + TAG + ' data-x="1<2"> y'),
+        ("an unquoted < value", "x <" + TAG + " a=<> y"),
+        ("an unclosed < value", "x <" + TAG + " a=<x"),
+        ("a plain-word tag with a < value", "x <" + J("sys", "tem") + ' a="<"> y'),
+        ("a plain-word closing tag", "x </" + J("instr", "uctions") + "> y"),
+        ("a plain-word tag at end of line", "x <" + J("instr", "uctions")),
     ]
 
     def test_each_form_holds(self):
@@ -676,7 +684,10 @@ class ControlTagForms(Base):
                 self.assertIn((1, "control-tag", "HOLD"), h)
 
     def test_lookalikes_do_not_match(self):
-        for text in ("see <path> here", "the <" + J("sys", "tems") + "> list"):
+        for text in ("see <path> here", "the <" + J("sys", "tems") + "> list",
+                     "The tool spends 3x more when context < " + J("sys", "tem")
+                     + " prompt size.",
+                     "Use the <" + J("instr", "uctions") + " element only in v2."):
             with self.subTest(text=text):
                 rc, h, _ = self.scan_one(text + "\n")
                 self.assertNotIn("control-tag", {r for _, r, _ in h})

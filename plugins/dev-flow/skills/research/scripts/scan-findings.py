@@ -29,9 +29,11 @@ named without anything reading them.
 
 Tiers:
 - HOLD (structural; holds the run): invisible, bidi, Unicode-tag and control characters
-  (on raw text, anywhere); control-tag (bare attributes, and an unclosed opener at the
-  end of a line, included), special-token and chat-role shapes, override phrasing and
-  pipe-to-shell outside code.
+  (on raw text, anywhere); control-tag shapes (a glued opener of a markup name such as
+  system-reminder alone; a plain-word name such as system when closed, at the end of a
+  line, or with a > within 300 characters; a spaced opener with its attributes and >),
+  special-token and chat-role shapes, override phrasing and pipe-to-shell outside code.
+  Residual: a plain-word opener with no > after it mid-line is not held.
 - FLAG (semantic; the verifier adjudicates each line): agent-addressed phrasing,
   second-person obligations, authority claims, execution requests, long base64; any
   HOLD shape inside a markdown code span or a closed fence; a control-tag or
@@ -54,7 +56,7 @@ Every pass is linear in the input, and hits are kept per line: the rules avoid
 overlapping quantifiers, comments are removed by a find loop, attribute values never
 hold a "<", and the open-ended spans are bounded (link text 1,000 characters and target
 2,000, a longer or nested link left as written; an open() call's arguments 200; sudo
-options 8; a /proc path 64). tests/test_scan_patterns.py times every compiled pattern
+options 8; a /proc path 64; the > after a plain-word tag opener 300). tests/test_scan_patterns.py times every compiled pattern
 here against standard hostile shapes, so a new pattern is covered automatically.
 A clean scan is not a clean file.
 
@@ -102,10 +104,14 @@ def _mixed(s):
 
 # Control-tag names: harness, chat-template and tool-call markup. Common placeholders
 # (<path>, <user>, <host>) and ordinary HTML are deliberately absent.
-_TAGS = (r"(?:system(?:[-_](?:reminder|prompt|message))?|instructions?|assistant|human|"
-         r"developer|tool_(?:use|result|call)s?|function_(?:calls|results)|invoke|"
-         r"command-(?:name|message|args)|local-command-std(?:out|err)|"
-         r"user-prompt-submit-hook|thinking|antml:[a-z_]+)")
+# Markup names (with - _ or :) never occur in prose, so a glued opener alone holds; a
+# plain-word name holds glued only when it is closed (> or /) or ends the line, or a >
+# follows within 300 characters, so prose like "the <instructions element" does not.
+_TAGS_MARKUP = (r"(?:system[-_](?:reminder|prompt|message)|tool_(?:use|result|call)s?|"
+                r"function_(?:calls|results)|command-(?:name|message|args)|"
+                r"local-command-std(?:out|err)|user-prompt-submit-hook|antml:[a-z_]+)")
+_TAGS_WORD = r"(?:system|instructions?|assistant|human|developer|invoke|thinking)"
+_TAGS = r"(?:" + _TAGS_MARKUP + "|" + _TAGS_WORD + ")"
 # No attribute value holds a "<", so an attribute chain ends at the next tag opener (linear).
 _ATTRS = r"(?:\s+[\w:-]+(?:\s*=\s*(?:\"[^\"<]*\"|'[^'<]*'|[^\s<>\"'][^\s<>]*))?)*"
 _ADDRESSEE = r"(?:ai|llm|language model|assistant|agent|bot|chatbot|claude|chatgpt|gpt|model)"
@@ -116,7 +122,7 @@ RULES = [
     Rule("bidi-control", HOLD, RAW, "[\u200e\u200f\u061c\u202a-\u202e\u2066-\u2069]"),
     Rule("unicode-tag", HOLD, RAW, "[\U000e0000-\U000e007f]"),
     Rule("control-char", HOLD, RAW, "[\x00-\x08\x0b\x0c\x0e-\x1f\x7f-\x9f]"),
-    Rule("control-tag", HOLD, PROSE, r"<\s*(?:/\s*)?" + _TAGS + r"(?![\w-])(?:" + _ATTRS + r"\s*(?:/\s*)?>|[^<>\n]*$)"),
+    Rule("control-tag", HOLD, PROSE, r"<(?:/\s*)?" + _TAGS_MARKUP + r"(?![\w-])(?=[\s/>]|$)|<(?:/\s*)?" + _TAGS_WORD + r"(?![\w-])(?=[/>]|$|\s[^\n]{0,300}?>)|<\s+(?:/\s*)?" + _TAGS + r"(?![\w-])" + _ATTRS + r"\s*(?:/\s*)?>"),
     Rule("special-token", HOLD, PROSE, r"<\|[\w-]{2,40}\|>|\[/?inst\]|<</?sys>>|<(?:start|end)_of_turn>"),
     Rule("chat-role-prefix", HOLD, PROSE, r"^\s{0,3}(?:>\s*)*[\"']?(?:\*\*|__)?(?:human|assistant)(?:\*\*|__)?\s*:(?![\"'](?:\s|$|[,.;:)]))"),
     Rule("override-phrase", HOLD, PROSE, r"\b(?:ignore|disregard|forget)\b(?:\W+\w+){0,3}?\W+(?:previous|prior|above|earlier|preceding|foregoing|all|any|every|system|original|initial|your)\b(?:\W+\w+){0,3}?\W+(?:instructions?|directions?|directives?|rules|prompts?|guidelines|guidance|constraints|messages)\b"),
@@ -162,6 +168,8 @@ _CONFUSABLE = str.maketrans(
     "ABEZHIKMNOPTYX")
 
 _INVISIBLE = re.compile("[\u200b-\u200d\u2060-\u2064\ufeff\u00ad\u180e\u200e\u200f\u061c\u202a-\u202e\u2066-\u2069\U000e0000-\U000e007f]")
+_BACKTICKS = re.compile(r"`+")
+_DIGITS = re.compile(r"[0-9]+")
 _FENCE = re.compile(r"^ {0,3}(`{3,}|~{3,})")
 _CLOSER = re.compile(r"^ {0,3}(`{3,}|~{3,})\s*$")
 _SAFE_PATH = re.compile(r"[A-Za-z0-9._/@+,=-]")
@@ -213,7 +221,7 @@ def fences(lines):
 def md_segments(line):
     """[(text, is_code)] for one markdown line: inline code spans are backtick runs
     closed by a run of the same length on the same line. Raw ASCII backticks only."""
-    runs = [(m.start(), m.end()) for m in re.finditer(r"`+", line)]
+    runs = [(m.start(), m.end()) for m in _BACKTICKS.finditer(line)]
     nxt, seen = [None] * len(runs), {}
     for k in range(len(runs) - 1, -1, -1):   # next run of the same length, in one pass
         ln = runs[k][1] - runs[k][0]
@@ -461,7 +469,7 @@ def report(targets, scripts):
 
 def parse_lines(spec):
     parts = spec.split(",")
-    if not spec or any(not re.fullmatch(r"[0-9]+", p) for p in parts):
+    if not spec or any(not _DIGITS.fullmatch(p) for p in parts):
         raise ValueError
     nums = {int(p) for p in parts}
     if 0 in nums:
