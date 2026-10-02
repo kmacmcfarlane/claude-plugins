@@ -289,8 +289,8 @@ cannot catch markup beyond that pass, or text built at run time; for those the v
 output is safe to read and to ledger.
 
 - **HOLD** — structural smuggling: invisible, bidi, Unicode-tag and control characters
-  anywhere; control-tag, special-token and chat-role shapes, override phrasing and
-  pipe-to-shell outside code. A HOLD holds the run like a verifier security hit (Step 8).
+  anywhere; control-tag shapes (an unclosed tag opener at the end of a line included),
+  special-token and chat-role shapes, override phrasing and pipe-to-shell outside code. A HOLD holds the run like a verifier security hit (Step 8).
   The verifier cannot clear it.
 - **FLAG** — semantic signals the verifier adjudicates line by line: agent-addressed
   phrasing, second-person obligations, authority claims, execution requests, long base64,
@@ -303,8 +303,8 @@ output is safe to read and to ledger.
   special-token shape drops to FLAG; override, chat-role and pipe-to-shell shapes hold in
   comments, in strings and across literals joined by `+` or implicit concatenation on one
   line. **Residual:** text a script builds at run time (`chr`, base64, joins across lines
-  or through variables) gets past any static scan, so for toolkit code the script review,
-  not the scan, is the gate.
+  or through variables), and file writes through method calls or a variable mode, get
+  past any static scan, so for toolkit code the script review, not the scan, is the gate.
 - **`--strip`** deletes the named lines from one file by position, writes it back
   atomically, and rescans it. The positions come from the scanner's own output or the
   verifier's security rows (which list every line number); nothing reads the lines to remove
