@@ -129,3 +129,5 @@ decision 142: When may a finish round spend without asking — during your hold,
   (z) decide later — the build waits
   rec: (d) · basis partial — keeps your hold as the stop and finish rounds cheap; the fable pin keeps its own asks
   unknown: the quota cost of finish rounds across a busy night
+answer 139: a
+answer 140: 140a - reviewer can still tell the orchestrator to make non-trivial changes (read as: (a) the same reviewer, resumed, checks a finish round; it is not limited to grading the certified fixes — it may still return non-trivial findings, which go back through the orchestrator by the normal rules: a fix round inside the bound, else the cap comes to the operator)

@@ -3,13 +3,12 @@ id: research-security-f1-the-scan-floor-819f
 title: "research security F1: the scan floor"
 short_display_name: research scan floor
 type: feature
-status: blocked
+status: doing
 priority: 1
 owner: Kyle-McFarlane@401123cbad11
 claimed: 2026-09-30T22:27Z
-blocked: decision 138 (another round past the cap)
 created: 2026-09-30
-updated: 2026-10-01
+updated: 2026-10-02
 refs:
   - .claude-sandbox/investigations/caef-research-security/05_second-opinion-closing.md
 ---
@@ -151,3 +150,6 @@ decision 138: The research scan floor's granted round fixed the slow comment and
   (z) decide later — as (c)
   rec: (a) · basis strong — the reviewer measured each stall and verified the rewritten pattern matches the same samples in 0.04 s
   unknown: whether a further fresh look would find more slow patterns; this round's reviewer read every pattern in the file
+answer 138: a
+dispatch: implementer opus medium — resume (fix round 5, answer 138: finding 1 + low 2)
+agent: implementer a33ea65041c3dc364 round 6
