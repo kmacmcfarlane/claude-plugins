@@ -596,6 +596,68 @@ class DeMarkupBounded(Base):
                 self.assertIn((1, "override-phrase", "HOLD"), h)
 
 
+class NoBacktracking(Base):
+    """Overlapping quantifiers in the rules stall on tiny hostile inputs; each must scan
+    in well under a second."""
+
+    def timed(self, name, text):
+        import time
+        p = self.write(name, text + "\n")
+        t0 = time.monotonic()
+        rc, out, _ = run(p)
+        self.assertTrue(out.strip().splitlines()[-1].startswith("SCAN:"))
+        return time.monotonic() - t0
+
+    def test_many_attributes_without_a_close(self):
+        self.assertLess(self.timed("a.md", J("<sys", "tem") + ' a="x"' * 40), 1.0)
+
+    def test_spaces_after_an_open_angle(self):
+        self.assertLess(self.timed("s.md", "<" + " " * 20000 + "x"), 1.0)
+
+    def test_spaces_after_a_greeting(self):
+        self.assertLess(self.timed("h.md", "hey" + " " * 20000 + "x"), 1.0)
+
+    def test_unclosed_write_mode_string(self):
+        import time
+        (self.d / "w").mkdir()
+        p = self.write("w/t.py", 'open(x, "' + "w" * 20000 + "\n")
+        t0 = time.monotonic()
+        rc, out, _ = run("--scripts", p)
+        self.assertLess(time.monotonic() - t0, 1.0)
+
+    def test_many_open_calls_with_commas(self):
+        import time
+        (self.d / "oc").mkdir()
+        p = self.write("oc/t.py", "open(a, " * 20000 + "\n")
+        t0 = time.monotonic()
+        rc, out, _ = run("--scripts", p)
+        self.assertLess(time.monotonic() - t0, 1.0)
+
+    SAMPLES = [J("<sys", "tem") + ' a="x" b=y/>',
+               J("< / sys", "tem-rem", "inder >"),
+               J("<inv", "oke") + " name='a'>"]
+
+    def test_control_tag_samples_still_hold(self):
+        for text in self.SAMPLES:
+            with self.subTest(text=ascii(text[:8])):
+                rc, h, _ = self.scan_one("x " + text + " y\n")
+                self.assertIn((1, "control-tag", "HOLD"), h)
+
+    def test_control_tag_samples_scale(self):
+        body = "\n".join("x " + t + " y" for t in self.SAMPLES) + "\n"
+        self.assertLess(self.timed("big.md", body * (500000 // len(body))), 2.0)
+
+    def test_nested_comment_opener_does_not_hide_a_phrase(self):
+        text = IG + "<!-- <!-- -->" + NORE + " " + " ".join(WORDS[2:]) + "."
+        rc, h, _ = self.scan_one(text + "\n")
+        self.assertIn((1, "override-phrase", "HOLD"), h)
+
+    def test_long_comment_does_not_hide_a_phrase(self):
+        text = IG + "<!-- " + "c" * 5000 + " -->" + NORE + " " + " ".join(WORDS[2:])
+        rc, h, _ = self.scan_one(text + "\n")
+        self.assertIn((1, "override-phrase", "HOLD"), h)
+
+
 class ScriptJoins(Base):
     def test_label_check_in_a_parser_is_not_a_turn(self):
         self.write("pj/t.py", 'if line.startswith("' + R(":namuH") + '"):\n    n += 1\n')

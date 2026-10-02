@@ -268,10 +268,13 @@ It runs:
   toolkit gate).
 
 ```
-python3 '<research skill dir>/scripts/scan-findings.py' '<staging>/findings'
-python3 '<research skill dir>/scripts/scan-findings.py' --scripts '<staging>/tools'
-python3 '<research skill dir>/scripts/scan-findings.py' --strip '<file>' --lines <n,…>
+timeout 120 python3 '<research skill dir>/scripts/scan-findings.py' '<staging>/findings'
+timeout 120 python3 '<research skill dir>/scripts/scan-findings.py' --scripts '<staging>/tools'
+timeout 120 python3 '<research skill dir>/scripts/scan-findings.py' --strip '<file>' --lines <n,…>
 ```
+
+Always run it under `timeout 120`. A scan that times out (exit 124) holds the run, as a
+HOLD does; never retry it without the timeout.
 
 It prints one line per hit, `<path>:<line>: <rule> <HOLD|FLAG>`, then `SCAN: <n> hold, <n>
 flag, <n> files`, and exits 0 clean, 1 on any HOLD, 3 on FLAG only, 2 on a usage error.

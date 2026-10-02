@@ -49,8 +49,11 @@ Tiers:
 Prose rules match text with invisible characters and combining marks removed, common
 Cyrillic and Greek look-alikes mapped to Latin, and NFKC applied, so full-width,
 zero-width and the mapped look-alike forms match; other homoglyphs are a residual.
-Every pass is linear in the input (the de-markup comment and link spans are bounded at
-1,000 and 2,000 characters; a longer one is left as written), and hits are kept per line.
+Every pass is linear in the input, and hits are kept per line: the rules avoid
+overlapping quantifiers, comments are removed by a find loop, and the open-ended spans
+are bounded (link text 1,000 characters and target 2,000, a longer or nested link left
+as written; an open() call's arguments 200). The Bounded and NoBacktracking tests pin
+the known hostile shapes.
 A clean scan is not a clean file.
 
 Stdlib only.
@@ -101,7 +104,7 @@ _TAGS = (r"(?:system(?:[-_](?:reminder|prompt|message))?|instructions?|assistant
          r"developer|tool_(?:use|result|call)s?|function_(?:calls|results)|invoke|"
          r"command-(?:name|message|args)|local-command-std(?:out|err)|"
          r"user-prompt-submit-hook|thinking|antml:[a-z_]+)")
-_ATTRS = r"(?:\s+[\w:-]+\s*=\s*(?:\"[^\"]*\"|'[^']*'|[^\s>]+))*"
+_ATTRS = r"(?:\s+[\w:-]+\s*=\s*(?:\"[^\"]*\"|'[^']*'|[^\s>\"']+))*"
 _ADDRESSEE = r"(?:ai|llm|language model|assistant|agent|bot|chatbot|claude|chatgpt|gpt|model)"
 
 # One row per rule, each on one line: the tests' negative control deletes a row by name.
@@ -110,19 +113,19 @@ RULES = [
     Rule("bidi-control", HOLD, RAW, "[\u200e\u200f\u061c\u202a-\u202e\u2066-\u2069]"),
     Rule("unicode-tag", HOLD, RAW, "[\U000e0000-\U000e007f]"),
     Rule("control-char", HOLD, RAW, "[\x00-\x08\x0b\x0c\x0e-\x1f\x7f-\x9f]"),
-    Rule("control-tag", HOLD, PROSE, r"<\s*/?\s*" + _TAGS + r"(?![\w-])" + _ATTRS + r"\s*/?\s*>"),
+    Rule("control-tag", HOLD, PROSE, r"<\s*(?:/\s*)?" + _TAGS + r"(?![\w-])" + _ATTRS + r"\s*(?:/\s*)?>"),
     Rule("special-token", HOLD, PROSE, r"<\|[\w-]{2,40}\|>|\[/?inst\]|<</?sys>>|<(?:start|end)_of_turn>"),
     Rule("chat-role-prefix", HOLD, PROSE, r"^\s{0,3}(?:>\s*)*[\"']?(?:\*\*|__)?(?:human|assistant)(?:\*\*|__)?\s*:(?![\"'](?:\s|$|[,.;:)]))"),
     Rule("override-phrase", HOLD, PROSE, r"\b(?:ignore|disregard|forget)\b(?:\W+\w+){0,3}?\W+(?:previous|prior|above|earlier|preceding|foregoing|all|any|every|system|original|initial|your)\b(?:\W+\w+){0,3}?\W+(?:instructions?|directions?|directives?|rules|prompts?|guidelines|guidance|constraints|messages)\b"),
     Rule("pipe-to-shell", HOLD, PROSE, r"\b(?:curl|wget|iwr|irm|invoke-webrequest|invoke-restmethod)\b[^\n]{0,300}?\|\s*(?:sudo\s+(?:-\S+\s+)*)?(?:(?:ba|z|da|k|fi)?sh|pyth[o]n3?|p[e]rl|r[u]by|n[o]de|i[e]x)\b|\b(?:ba|z)?sh\s+(?:-c\s+)?[\"']?(?:<\(|\$\()\s*(?:curl|wget)\b"),
-    Rule("agent-addressed", FLAG, PROSE, r"\b(?:if|when)\s+you(?:'re|\s+are)\s+an?\s+" + _ADDRESSEE + r"\b|\b(?:dear|attention|note to|hey|hello)\s*,?\s+(?:the\s+|any\s+|all\s+)?" + _ADDRESSEE + r"s?\b|\b" + _ADDRESSEE + r"s?\s+(?:reading|processing|summari[sz]ing|parsing|crawling|browsing)\s+(?:this|these)\b"),
+    Rule("agent-addressed", FLAG, PROSE, r"\b(?:if|when)\s+you(?:'re|\s+are)\s+an?\s+" + _ADDRESSEE + r"\b|\b(?:dear|attention|note to|hey|hello)(?:\s*,)?\s+(?:the\s+|any\s+|all\s+)?" + _ADDRESSEE + r"s?\b|\b" + _ADDRESSEE + r"s?\s+(?:reading|processing|summari[sz]ing|parsing|crawling|browsing)\s+(?:this|these)\b"),
     Rule("second-person-obligation", FLAG, PROSE, r"\byou\s+(?:must|shall|need to|have to|are (?:required|instructed|expected|obliged) to|will now|are now)\b"),
     Rule("authority-claim", FLAG, PROSE, r"\b(?:operator|administrator|admin|developer|orchestrator|system|harness|anthropic|owner)\s+(?:has\s+|have\s+)?(?:instructed|authori[sz]ed|approved|permitted|requires?|required|wants|asks|asked|says|said|told|mandates?|directs?)\b|\buser\s+(?:has\s+)?(?:instructed|authori[sz]ed|approved|permitted|mandated|told you)\b|\b(?:official|authori[sz]ed|priority|urgent|system)\s+(?:instruction|directive|override)s?\b|\bmessage from (?:the\s+)?(?:operator|system|developer|administrator|orchestrator|harness|anthropic)\b"),
     Rule("execution-request", FLAG, PROSE, r"\b(?:run|execute|eval|paste)\s+(?:the\s+)?(?:following|this|these|below)\s+(?:command|code|script|snippet|line)s?\b|\b(?:please|now|immediately)\s+(?:run|execute|fetch|download|install|delete|remove|send|post|upload|visit)\b|\b(?:send|post|upload|exfiltrate|forward|leak|email)\s+(?:the\s+|your\s+|all\s+|any\s+|its\s+)?(?:\w+\s+){0,2}(?:secrets?|credentials?|tokens?|api[ _-]?keys?|passwords?|cookies?)\b"),
     Rule("long-base64", FLAG, PROSE, r"(?<![A-Za-z0-9+/=])[A-Za-z0-9+/]{100,}={0,2}(?![A-Za-z0-9+/=])", _mixed),
     Rule("script-network", FLAG, SCRIPT, r"\b(?:import|from)\s+(?:urllib\d?|requests|socket|http|httpx|aiohttp|ftplib|smtplib|telnetlib|paramiko|websockets?|pycurl)\b|\b(?:curl|wget|nc|ncat|netcat|socat|telnet|ssh|scp|sftp|rsync)\b|/dev/(?:tcp|udp)/|https?://"),
     Rule("script-subprocess", FLAG, SCRIPT, r"\bsubprocess\b|\bos\.(?:system|popen|exec\w*|spawn\w*|posix_spawn\w*|fork)\b|\bpty\.spawn\b|\b(?:eval|exec)\s*\(|\bshell\s*=\s*true\b|\b__import__\s*\(|\bctypes\b"),
-    Rule("script-write", FLAG, SCRIPT, r"\bopen\s*\([^)]*,\s*(?:mode\s*=\s*)?[\"'][^\"']*[wax+][^\"']*[\"']|\.write_(?:text|bytes)\s*\(|\bshutil\.(?:copy\w*|move|rmtree)\b|\bos\.(?:rename|replace|remove|unlink|rmdir|makedirs|mkdir|symlink|link|chmod|chown)\b|\.(?:unlink|rmdir|mkdir|symlink_to|touch)\s*\(|(?<![<>=!-])>>?\s*[\"']?(?:/|~|\.\.)"),
+    Rule("script-write", FLAG, SCRIPT, r"\bopen\s*\([^)\n]{0,200}?,\s*(?:mode\s*=\s*)?[\"'](?=[^\"'\n]*[wax+])[^\"'\n]*[\"']|\.write_(?:text|bytes)\s*\(|\bshutil\.(?:copy\w*|move|rmtree)\b|\bos\.(?:rename|replace|remove|unlink|rmdir|makedirs|mkdir|symlink|link|chmod|chown)\b|\.(?:unlink|rmdir|mkdir|symlink_to|touch)\s*\(|(?<![<>=!-])>>?\s*[\"']?(?:/|~|\.\.)"),
     Rule("script-secret-path", FLAG, SCRIPT, r"\.ssh\b|\.aws\b|\.claude\.json|\.claude-sandbox/env|(?<![\w.])\.env\b|\.netrc|\.git-credentials|/proc/\S*environ|settings(?:\.local)?\.json|\.config/gh|\.docker/config|\bid_(?:rsa|dsa|ecdsa|ed25519)\b|\.pem\b|\.kube\b|\.gnupg|\.npmrc|\.pypirc"),
     Rule("script-env", FLAG, SCRIPT, r"\bos\.environ\b|\bgetenv\s*\(|\benviron\b|\$\{?[A-Z_]*(?:TOKEN|SECRET|KEY|PASSWORD)"),
 ]
@@ -137,9 +140,8 @@ DEMOTE_IN_STRINGS = {"control-tag", "special-token"}
 # rest.
 JOINED_HOLD = {"override-phrase", "chat-role-prefix", "pipe-to-shell"}
 _ESCAPED_BREAK = re.compile(r"\\[nr]")
-# Bounded spans that stop at the next opener keep unclosed openers linear; a longer
-# comment or link, or one nested in another, stays as written.
-_COMMENT = re.compile(r"<!--(?:(?!<!--)[^\n]){0,1000}?-->")
+# A bounded span that stops at the next opener keeps unclosed link openers linear; a
+# longer link, or one nested in another, stays as written. Comments: strip_comments.
 _LINK = re.compile(r"\[([^\[\]\n]{0,1000})\]\([^()\n]{0,2000}\)")
 _TAG = re.compile(r"</?[A-Za-z][^<>\n]*>")
 _IN_WORD = re.compile(r"(?<=\w)[*_~\"'`\\]+(?=\w)")
@@ -255,11 +257,28 @@ def script_segments(line):
     return out
 
 
+def strip_comments(s):
+    """Remove every closed <!-- --> comment, in one linear pass with no length cap. An
+    opener with no closer after it ends the pass: no later opener can close either."""
+    out, i = [], 0
+    while True:
+        j = s.find("<!--", i)
+        if j < 0:
+            break
+        k = s.find("-->", j + 4)
+        if k < 0:
+            break
+        out.append(s[i:j])
+        i = k + 3
+    out.append(s[i:])
+    return "".join(out)
+
+
 def demarkup(line):
     """The markdown line as a reader sees it: comments, inline tags and link targets
     removed, entities decoded, emphasis, quotes and backslashes inside words dropped, and
     backticks dropped."""
-    s = _TAG.sub("", _LINK.sub(r"\1", _COMMENT.sub("", line)))
+    s = _TAG.sub("", _LINK.sub(r"\1", strip_comments(line)))
     s = _IN_WORD.sub("", html.unescape(s))
     return s.replace("`", "")
 
