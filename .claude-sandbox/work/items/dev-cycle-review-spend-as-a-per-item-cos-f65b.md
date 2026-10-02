@@ -46,3 +46,16 @@ return: planner PLAN_READY — serial 01_review-fixes.md (1-15), evidence regene
 baseline: a88831aa8df8 00_initial.md 98c18dec7ccd 01_review-fixes.md 
 dispatch: reviewer opus high — resume (plan review round 2)
 agent: reviewer aa75f970dc65e2c2e round 2
+verdict: NEEDS_CHANGES round 2 (plan)
+findings:
+  prior 1-9, 11-15 fixed; 10 partly
+  16. [high] evidence/item_cost.py:108,117 — the agent: pattern requires a role before the id; 18 items with transcripts are skipped (plan runs 5140, 6421, a99c, 6d2c, d618, 8dee, a88a at $24.7-30.8; chore dbfc $20.90; feature b3c5 $20.32; caef loses two agents); the per-kind table, simulation, defaults, walkthroughs, Q1/Q3 impacts and INDEX are overturned; fix: every a[0-9a-f]{16} on any agent: line, role from the text; regenerate; Item 2's reader accepts old line shapes
+  17. [high] item_cost.py:129-132 (adopted for the real reader, 01:254-259,338) — transcript segments beyond an id's agent: line count are dropped ($39.79 over 29 items; caef reaches ~$19.33 before its sixth planner round); fix: never drop a segment — attribute surplus to the last recorded round or split by timestamp; flag unrecorded_rounds; § 4 states the reader may over-attribute between rounds but never under-read a phase
+  18. [low] 01:240-246 — the 142 table's Today column is librarian-only; standalone runs today raise every cap and (a)+Q7 (i) loosens them; add a standalone row to the table and Q1 (a)
+  19. [nit] 01:166-169 — leave non-Claude models out of the per-1% rate
+dispatch: planner opus high — resume (plan fix round 2)
+agent: planner af46608c4b7a2f7a2 round 3
+return: planner PLAN_READY — serial 02_review-r2-fixes.md (16-19), evidence regenerated (112 items)
+baseline: a88831aa8df8 00_initial.md 98c18dec7ccd 01_review-fixes.md 85fb607d5d9e 02_review-r2-fixes.md 
+dispatch: reviewer opus high — resume (plan review round 3)
+agent: reviewer aa75f970dc65e2c2e round 3
