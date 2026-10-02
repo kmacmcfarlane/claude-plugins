@@ -85,3 +85,7 @@ decision 148: Which research runs should file a work item of their own? — opti
 target: full research-skills-effort-based-routing-par-e184 /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude/worktrees/research-skills-effort-based-routing-par-e184
 dispatch: implementer opus medium — build (plan CLEAR r2; prose, agent files, tests)
 agent: implementer a40f03413970add35 round 1
+return: implementer DONE_WITH_CONCERNS 296dd9b (deep-investigation partial until 1ffd; prose rules untested; store-lookup snippet restated from dev-cycle bindings.md by "keep them separate")
+librarian ruling: concerns accepted — the partial delivery is the plan's stated interim; the restated snippet follows the operator's "keep them separate"; the reviewer reads the prose criteria
+dispatch: reviewer opus high — review round 1
+agent: reviewer aeedf8a6c590ba4eb round 1
