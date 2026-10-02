@@ -291,9 +291,11 @@ output is safe to read and to ledger.
 - **HOLD** — structural smuggling: invisible, bidi, Unicode-tag and control characters
   anywhere; control-tag shapes (a glued opener of a markup name such as
   `system-reminder` alone; a plain-word name such as `system` when closed, at the end of a
-  line, or with a `>` within 300 characters), special-token and chat-role shapes, override
-  phrasing and pipe-to-shell outside code. **Residual:** a plain-word tag opener with no
-  `>` after it mid-line is not held; the verifier is the gate there. A HOLD holds the run like a verifier security hit (Step 8).
+  line, with a `>` within 300 characters or after its attributes, or with an attribute
+  with `=` running to the end of the line), special-token and chat-role shapes, override
+  phrasing and pipe-to-shell outside code. **Residual:** a plain-word tag opener mid-line
+  with no `>` after it and no `=` attribute to the end of the line is not held; the
+  verifier is the gate there. A HOLD holds the run like a verifier security hit (Step 8).
   The verifier cannot clear it.
 - **FLAG** — semantic signals the verifier adjudicates line by line: agent-addressed
   phrasing, second-person obligations, authority claims, execution requests, long base64,

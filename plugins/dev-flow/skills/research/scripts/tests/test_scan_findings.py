@@ -675,6 +675,16 @@ class ControlTagForms(Base):
         ("a plain-word tag with a < value", "x <" + J("sys", "tem") + ' a="<"> y'),
         ("a plain-word closing tag", "x </" + J("instr", "uctions") + "> y"),
         ("a plain-word tag at end of line", "x <" + J("instr", "uctions")),
+        ("a plain-word tag with a long quoted value", "<" + J("sys", "tem") + ' data="'
+         + "x" * 400 + '">'),
+        ("a plain-word tag with a long bare attribute", "<" + J("sys", "tem") + " "
+         + "x" * 400 + ">"),
+        ("a plain-word unclosed tag with a value at end of line", "text <" + J("sys", "tem")
+         + ' a="b"'),
+        ("a plain-word unclosed tag with a bare value at end of line", "<" + J("assis", "tant")
+         + " a=b"),
+        ("a plain-word unclosed role tag at end of line", "text <" + J("instr", "uctions")
+         + ' role="x"'),
     ]
 
     def test_each_form_holds(self):
@@ -687,7 +697,8 @@ class ControlTagForms(Base):
         for text in ("see <path> here", "the <" + J("sys", "tems") + "> list",
                      "The tool spends 3x more when context < " + J("sys", "tem")
                      + " prompt size.",
-                     "Use the <" + J("instr", "uctions") + " element only in v2."):
+                     "Use the <" + J("instr", "uctions") + " element only in v2.",
+                     "The ratio 3<" + J("instr", "uctions") + " count is fine"):
             with self.subTest(text=text):
                 rc, h, _ = self.scan_one(text + "\n")
                 self.assertNotIn("control-tag", {r for _, r, _ in h})

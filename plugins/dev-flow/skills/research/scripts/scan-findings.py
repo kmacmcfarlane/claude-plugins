@@ -31,9 +31,11 @@ Tiers:
 - HOLD (structural; holds the run): invisible, bidi, Unicode-tag and control characters
   (on raw text, anywhere); control-tag shapes (a glued opener of a markup name such as
   system-reminder alone; a plain-word name such as system when closed, at the end of a
-  line, or with a > within 300 characters; a spaced opener with its attributes and >),
+  line, with a > within 300 characters or after its attributes, or with an attribute
+  with = running to the end of the line; a spaced opener with its attributes and >),
   special-token and chat-role shapes, override phrasing and pipe-to-shell outside code.
-  Residual: a plain-word opener with no > after it mid-line is not held.
+  Residual: a plain-word opener mid-line with no > after it and no attribute with = to
+  the end of the line is not held.
 - FLAG (semantic; the verifier adjudicates each line): agent-addressed phrasing,
   second-person obligations, authority claims, execution requests, long base64; any
   HOLD shape inside a markdown code span or a closed fence; a control-tag or
@@ -105,8 +107,9 @@ def _mixed(s):
 # Control-tag names: harness, chat-template and tool-call markup. Common placeholders
 # (<path>, <user>, <host>) and ordinary HTML are deliberately absent.
 # Markup names (with - _ or :) never occur in prose, so a glued opener alone holds; a
-# plain-word name holds glued only when it is closed (> or /) or ends the line, or a >
-# follows within 300 characters, so prose like "the <instructions element" does not.
+# plain-word name holds glued only when it is closed (> or /) or ends the line, a >
+# follows within 300 characters, its attributes parse up to a >, or an attribute with
+# = runs to the end of the line, so prose like "the <instructions element" does not.
 _TAGS_MARKUP = (r"(?:system[-_](?:reminder|prompt|message)|tool_(?:use|result|call)s?|"
                 r"function_(?:calls|results)|command-(?:name|message|args)|"
                 r"local-command-std(?:out|err)|user-prompt-submit-hook|antml:[a-z_]+)")
@@ -122,7 +125,7 @@ RULES = [
     Rule("bidi-control", HOLD, RAW, "[\u200e\u200f\u061c\u202a-\u202e\u2066-\u2069]"),
     Rule("unicode-tag", HOLD, RAW, "[\U000e0000-\U000e007f]"),
     Rule("control-char", HOLD, RAW, "[\x00-\x08\x0b\x0c\x0e-\x1f\x7f-\x9f]"),
-    Rule("control-tag", HOLD, PROSE, r"<(?:/\s*)?" + _TAGS_MARKUP + r"(?![\w-])(?=[\s/>]|$)|<(?:/\s*)?" + _TAGS_WORD + r"(?![\w-])(?=[/>]|$|\s[^\n]{0,300}?>)|<\s+(?:/\s*)?" + _TAGS + r"(?![\w-])" + _ATTRS + r"\s*(?:/\s*)?>"),
+    Rule("control-tag", HOLD, PROSE, r"<(?:/\s*)?" + _TAGS_MARKUP + r"(?![\w-])(?=[\s/>]|$)|<(?:/\s*)?" + _TAGS_WORD + r"(?![\w-])(?=[/>]|$|\s[^\n]{0,300}?>|" + _ATTRS + r"\s*(?:/\s*)?>|\s+[\w:-]+\s*=[^<>\n]*$)|<\s+(?:/\s*)?" + _TAGS + r"(?![\w-])" + _ATTRS + r"\s*(?:/\s*)?>"),
     Rule("special-token", HOLD, PROSE, r"<\|[\w-]{2,40}\|>|\[/?inst\]|<</?sys>>|<(?:start|end)_of_turn>"),
     Rule("chat-role-prefix", HOLD, PROSE, r"^\s{0,3}(?:>\s*)*[\"']?(?:\*\*|__)?(?:human|assistant)(?:\*\*|__)?\s*:(?![\"'](?:\s|$|[,.;:)]))"),
     Rule("override-phrase", HOLD, PROSE, r"\b(?:ignore|disregard|forget)\b(?:\W+\w+){0,3}?\W+(?:previous|prior|above|earlier|preceding|foregoing|all|any|every|system|original|initial|your)\b(?:\W+\w+){0,3}?\W+(?:instructions?|directions?|directives?|rules|prompts?|guidelines|guidance|constraints|messages)\b"),
