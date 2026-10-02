@@ -3,10 +3,11 @@ id: research-security-f1-the-scan-floor-819f
 title: "research security F1: the scan floor"
 short_display_name: research scan floor
 type: feature
-status: doing
+status: blocked
 priority: 1
 owner: Kyle-McFarlane@401123cbad11
 claimed: 2026-09-30T22:27Z
+blocked: decision 143 (round 7)
 created: 2026-09-30
 updated: 2026-10-02
 refs:
@@ -153,3 +154,28 @@ decision 138: The research scan floor's granted round fixed the slow comment and
 answer 138: a
 dispatch: implementer opus medium — resume (fix round 5, answer 138: finding 1 + low 2)
 agent: implementer a33ea65041c3dc364 round 6
+return: implementer DONE 0767b69 (plus two script-write stalls beyond the brief)
+librarian ruling: the script-write fixes are accepted — same finding (the docstring's "every pass is linear" claim), same file, tested; the reviewer checks them
+dispatch: reviewer opus high — resume (round 6, checks round-5 fixes)
+agent: reviewer a0a35fdcad507b97f round 6
+verdict: NEEDS_CHANGES round 6 at 0767b69
+findings:
+  round-5 1 FIXED (measured: 0.02-0.16 s on every prior hostile input), 2 FIXED (strip_comments exact and linear)
+  1. [medium] scan-findings.py:120,129,148 — three more patterns backtrack: pipe-to-shell sudo option chain ("sudo " + "-curl|sudo "*2000: 9.1 s; x8000 killed at 60 s), script-secret-path /proc/\S*environ ("/proc/"*20000: 5.9 s), _CONCAT_GAP \s*\+?\s* ('"a"' + 80k spaces: 11.6 s); a timeout holds the whole run (no lines to strip); fix: (?:-\S+\s+){0,8}, /proc/\S{0,64}?environ, \s*(?:\+\s*)?, NoBacktracking cases
+  2. [medium] scan-findings.py:107,116 — control-tag HOLD bypassed by a bare attribute (every round), regression this round (unquoted value containing a quote no longer matches), and a tag split across lines never matched; fix: _ATTRS = (?:\s+[\w:-]+(?:\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>"'][^\s>]*))?)* (checked linear and matching), HOLD an unclosed opener at line end or name it as a residual, tests
+  3. [low] scan-findings.py:128 — the 200-char open() cap lets open(<201 chars>, "w") through; the rule was already easy to evade (method calls, variable modes); optional residual note
+decision 143: The scan floor's sixth review found two more mediums — three more patterns that stall, and a cheap way past the control-tag hold — each with an exact fix; another round? — options: (a) one more fix round with the exact fixes, plus a test that times every pattern against a standard set of hostile shapes so no further stall is left to find one at a time [recommended] | (b) land now and file both as a P1 follow-up | (c) leave it unlanded until you look | (z) decide later
+  raised: 2026-10-02T07:46Z
+  what: whether the research scan floor (819f) gets a seventh review round
+  why now: the round you granted (answer 138) ended with changes still needed; blocks: the deep-investigation parity build (1ffd), and through it the confinement hook (20d8)
+  why ask: cap — you asked me to ask for more rounds when I can justify them (answer 136)
+  context: you granted round 6 to fix three stalling patterns; they are fixed · you decide whether the two new mediums get one more round — then: none
+  if left: (1) three more patterns stall on a 22-120 KB hostile string; the run now fails closed under the 2-minute timeout, but the whole run is held instead of stripping the bad lines; (2) a tag like <system-reminder foo> with one bare word inside slips past the control-tag hold (true in every round so far), and this round's change also let a quoted value slip through
+  round costs: about 40 minutes and roughly 1% of weekly quota; your attention again if this round does not clear — each fresh pass so far has found new slow patterns, which is why (a) adds a test over every pattern instead of fixing them one at a time
+  stakes: reversible, narrow — research runs
+  (a) one more fix round + a timing test over every pattern — the reviewer's exact fixes (each checked: 0.002-2 s on 500 KB, the real cases still match) and a test that runs every pattern against repeated prefixes, long space runs and unclosed openers, so the next review checks a property, not a list — undo: n/a — who: research runs
+  (b) land now, P1 follow-up — the scan floor protects runs from tonight; until the follow-up, a hostile page can hold a run for 2 minutes and a bare-word tag slips past the hold
+  (c) leave it unlanded — the parity build and the hook keep waiting
+  (z) decide later — as (c)
+  rec: (a) · basis strong — the reviewer measured each stall and bypass and verified each fix; the timing test turns the remaining unknown into a check
+  unknown: whether the property test will surface more patterns that need the same treatment
