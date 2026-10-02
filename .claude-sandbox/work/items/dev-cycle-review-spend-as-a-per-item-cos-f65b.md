@@ -3,11 +3,9 @@ id: dev-cycle-review-spend-as-a-per-item-cos-f65b
 title: "dev-cycle: review spend as a per-item cost budget with justified increases, not a round count"
 short_display_name: review spend as a cost budget
 type: spike
-status: doing
+status: done
 priority: 1
 parent: dev-cycle-at-the-review-cap-the-orchestr-5bdd
-owner: Kyle-McFarlane@401123cbad11
-claimed: 2026-10-02T19:18Z
 created: 2026-10-02
 updated: 2026-10-02
 closed: 2026-10-02
@@ -85,3 +83,37 @@ reopened: operator 2026-10-02 on decision 145 — widen the evidence (every repo
 baseline: a88831aa8df8 00_initial.md 98c18dec7ccd 01_review-fixes.md 85fb607d5d9e 02_review-r2-fixes.md 25a751beac23 03_convergence-simulated.md 
 dispatch: planner opus high — resume (widen the evidence, operator on 145)
 agent: planner af46608c4b7a2f7a2 round 5
+return: planner PLAN_READY — serial 04_wider-evidence.md (six repos, 204 items, prices verified on the web, 13 external sources; defaults $8/$10/$20/$22/$32)
+baseline: a88831aa8df8 00_initial.md 98c18dec7ccd 01_review-fixes.md 85fb607d5d9e 02_review-r2-fixes.md 25a751beac23 03_convergence-simulated.md f0a8c6f6dc35 04_wider-evidence.md 
+dispatch: reviewer opus high — resume (review of serial 04, the reopened pass, round 1)
+agent: reviewer aa75f970dc65e2c2e round 5
+verdict: NEEDS_CHANGES (serial 04 review, round 1 of the reopened pass)
+findings:
+  coverage, census, week rate, pricing page and other repos' round-4 claims reproduce; f65b itself is at $29.08 of its own $32 spike default (information, not a finding)
+  26. [medium] 04:241-260,311-319,344-349 — "94th-97th percentile" hides that each default sits just above one named item (bug $10 vs $9.73; plan $22 vs $21.69; chore $8 vs $7.11; spike $32 vs $30.76); sensitivity x1.1 → 4 budget asks, x1.25 → 9, x1.5 → 26; October's median per dispatch $3.27 vs $1.92 (+70%) rated Low; the $18→$20 build change fixes a simulation artifact; fix: state margins, add sensitivity to Q3 (i), raise the drift to medium, offer a headroom option (~1.25x)
+  27. [medium] 04:114,245-251,266-276 — in-flight phases already over the new defaults are left out (claude-sandbox ab95 bug $15.40 of $10; 34d5 chore $12.36 of $8; 819f $34.58); list as pending asks; include or state the exclusion and its bias
+  28-30. [low] 34% vs matching-window 65% (83% since 09-28); Agent SDK resume comment belongs to error_max_turns; task-budgets "p99" is for an advisory budget — say so
+  31-33. [nit] 4-6 items floor; separate Teams/Enterprise vs Pro/Max attributions; item_cost.py docstring
+dispatch: planner opus high — resume (fix round on serial 04)
+agent: planner af46608c4b7a2f7a2 round 6
+return: planner PLAN_READY — serial 05_margins-and-headroom.md (26-33); recommends a headroom table $10/$12/$22/$28/$40
+baseline: a88831aa8df8 00_initial.md 98c18dec7ccd 01_review-fixes.md 85fb607d5d9e 02_review-r2-fixes.md 25a751beac23 03_convergence-simulated.md f0a8c6f6dc35 04_wider-evidence.md 0b931a732d3e 05_margins-and-headroom.md 
+dispatch: reviewer opus high — resume (serial 05 review, round 2 of the reopened pass)
+agent: reviewer aa75f970dc65e2c2e round 6
+verdict: NEEDS_CHANGES (serial 05 review, round 2 of the reopened pass)
+findings:
+  26 mostly fixed (sensitivity off by one, see 34); 27-33 fixed; f65b itself now $32.65, past its own tight spike default
+  34. [medium] 05:81,97-101,58-60,160-161,205 — § 2 takes a check at the review, not when the next round opens (the rule since 00; caef $26.05); re-counted: headroom 2/3/3/9, tight 3/5/11/29; caef's margin under $28 is $1.95 (~7%), so headroom holds to ~+7%, not +25%; recommendation survives, its impact and reason do not; fix: measure checks when the next round opens, rerun, restate Q3 (i) and § 4
+  35. [low] 05:169 — under headroom, 819f's first ask hangs on $0.05 ($22.05 vs $22); state it
+dispatch: planner opus high — resume (fix round on serial 05)
+agent: planner af46608c4b7a2f7a2 round 7
+return: planner PLAN_READY — serial 06_checks-when-a-round-opens.md (34-35), evidence/sim_asks.py
+baseline: a88831aa8df8 00_initial.md 98c18dec7ccd 01_review-fixes.md 85fb607d5d9e 02_review-r2-fixes.md 25a751beac23 03_convergence-simulated.md f0a8c6f6dc35 04_wider-evidence.md 0b931a732d3e 05_margins-and-headroom.md 21949a04c984 06_checks-when-a-round-opens.md 
+dispatch: reviewer opus high — resume (serial 06 review, round 3 of the reopened pass)
+agent: reviewer aa75f970dc65e2c2e round 7
+verdict: CLEAR (serial 06 review, round 3 of the reopened pass)
+findings:
+  34, 35 FIXED; sim_asks.py reproduces the recount; ordinary items clear to x1.30-1.51 under headroom (x1.04-1.21 tight)
+  36. [nit] 06:38,52 — f65b's own row moved ($33.01): tight x1.0 count is 4 with it; headroom clears it only to x1.21; date-stamp or bracket
+findings: carried — 36 [nit] above, verbatim; into the build of decision 145 (a), if chosen; plus 24 [low], 25 [nit] carried earlier
+- 2026-10-02 done: closed on its series (00-06; reopened pass CLEAR r3); result back on decision 145
