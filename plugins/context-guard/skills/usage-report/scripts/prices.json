@@ -1,6 +1,6 @@
 {
-  "version": 1,
-  "retrieved": "2026-09-16",
+  "version": 2,
+  "retrieved": "2026-10-02",
   "currency": "USD",
   "unit": "per_1m_tokens",
   "source": "https://platform.claude.com/docs/en/about-claude/pricing",
@@ -9,11 +9,13 @@
   "notes": [
     "List prices only. Claude Code transcripts have carried no costUSD since 1.0.9, so every dollar figure here is a local estimate, not a bill.",
     "On subscription plans (Pro/Max/Team) the dollar total is not what is billed; use it as a relative routing metric.",
-    "Every entry is marked uncertain: the figures come from a single 2026-09-16 fetch of the pricing page and were not cross-checked against the claude-api skill. Confirm before treating any number as authoritative.",
+    "Every figure, cache writes included, is the pricing page's own (Model pricing table and Prompt caching multipliers), fetched 2026-10-02 and in agreement with the claude-api skill's model table (cached 2026-09-25). Cache writes are 1.25x (5m) and 2x (1h) input; cache reads are 0.05x input on Opus 5.5, 0.025x on Fable 5.1 and 0.1x elsewhere, so they are stored as dollars, never derived.",
+    "claude-fable-5 is its own entry: its cache read is $1, not Fable 5.1's $0.25.",
+    "claude-opus-4-7 and claude-opus-4-8 alias to claude-opus-5: the page lists identical prices for them.",
     "Opus 5 fast mode ($10 input / $50 output) is not modelled; records are priced at the standard tier.",
     "Batch API discount (50%) is not modelled.",
     "cache_write_1h is used when the usage block splits cache creation into ephemeral_1h_input_tokens; otherwise cache creation is priced at the 5m rate.",
-    "Model ids observed locally that predate the priced entries (claude-fable-5, claude-opus-4-7, claude-opus-4-8) are aliased to the current same-family entry. Historical pricing is not modelled, so records served by an older model are priced at today's rate for its family \u2014 an approximation, not a sourced price."
+    "A model id with no entry or alias here is reported as unknown (a warning and its own unknown: row) and priced at default_model so the total is not silently short; add the model here rather than aliasing it to a different-priced one."
   ],
   "aliases": {
     "opus": "claude-opus-5",
@@ -21,42 +23,58 @@
     "haiku": "claude-haiku-4-5",
     "fable": "claude-fable-5-1",
     "inherit": null,
-    "claude-fable-5": "claude-fable-5-1",
     "claude-opus-4-7": "claude-opus-5",
     "claude-opus-4-8": "claude-opus-5"
   },
   "models": {
-    "claude-opus-5": {
-      "input": 5.0,
-      "output": 25.0,
-      "cache_write_5m": 6.25,
-      "cache_write_1h": 10.0,
-      "cache_read": 0.5,
-      "uncertain": true
+    "claude-opus-5-5": {
+      "input": 4.0,
+      "output": 20.0,
+      "cache_write_5m": 5.0,
+      "cache_write_1h": 8.0,
+      "cache_read": 0.2
     },
-    "claude-sonnet-5": {
+    "claude-sonnet-5-5": {
       "input": 2.0,
       "output": 10.0,
       "cache_write_5m": 2.5,
       "cache_write_1h": 4.0,
-      "cache_read": 0.2,
-      "uncertain": true
-    },
-    "claude-haiku-4-5": {
-      "input": 1.0,
-      "output": 5.0,
-      "cache_write_5m": 1.25,
-      "cache_write_1h": 2.0,
-      "cache_read": 0.1,
-      "uncertain": true
+      "cache_read": 0.2
     },
     "claude-fable-5-1": {
       "input": 10.0,
       "output": 50.0,
       "cache_write_5m": 12.5,
       "cache_write_1h": 20.0,
-      "cache_read": 0.25,
-      "uncertain": true
+      "cache_read": 0.25
+    },
+    "claude-fable-5": {
+      "input": 10.0,
+      "output": 50.0,
+      "cache_write_5m": 12.5,
+      "cache_write_1h": 20.0,
+      "cache_read": 1.0
+    },
+    "claude-opus-5": {
+      "input": 5.0,
+      "output": 25.0,
+      "cache_write_5m": 6.25,
+      "cache_write_1h": 10.0,
+      "cache_read": 0.5
+    },
+    "claude-sonnet-5": {
+      "input": 2.0,
+      "output": 10.0,
+      "cache_write_5m": 2.5,
+      "cache_write_1h": 4.0,
+      "cache_read": 0.2
+    },
+    "claude-haiku-4-5": {
+      "input": 1.0,
+      "output": 5.0,
+      "cache_write_5m": 1.25,
+      "cache_write_1h": 2.0,
+      "cache_read": 0.1
     }
   }
 }
