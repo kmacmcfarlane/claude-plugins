@@ -3,11 +3,10 @@ id: research-security-f1-the-scan-floor-819f
 title: "research security F1: the scan floor"
 short_display_name: research scan floor
 type: feature
-status: blocked
+status: doing
 priority: 1
 owner: Kyle-McFarlane@401123cbad11
 claimed: 2026-09-30T22:27Z
-blocked: decision 143 (round 7)
 created: 2026-09-30
 updated: 2026-10-02
 refs:
@@ -179,3 +178,6 @@ decision 143: The scan floor's sixth review found two more mediums — three mor
   (z) decide later — as (c)
   rec: (a) · basis strong — the reviewer measured each stall and bypass and verified each fix; the timing test turns the remaining unknown into a check
   unknown: whether the property test will surface more patterns that need the same treatment
+answer 143: a
+dispatch: implementer opus medium — resume (fix round 6, answer 143: round-6 1, 2 + a timing property test over every pattern)
+agent: implementer a33ea65041c3dc364 round 7

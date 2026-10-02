@@ -131,3 +131,34 @@ decision 142: When may a finish round spend without asking — during your hold,
   unknown: the quota cost of finish rounds across a busy night
 answer 139: a
 answer 140: 140a - reviewer can still tell the orchestrator to make non-trivial changes (read as: (a) the same reviewer, resumed, checks a finish round; it is not limited to grading the certified fixes — it may still return non-trivial findings, which go back through the orchestrator by the normal rules: a fix round inside the bound, else the cap comes to the operator)
+decision 141: How many finish rounds may run before the cap comes to you? — options: (a) one, at round 4 only | (b) round 4 always; round 5 only with fewer leftovers than round 4; never at 6 or later [recommended] | (c) as long as the leftover count keeps falling | (z) decide later
+  raised: 2026-10-01T07:49Z
+  revised: 2026-10-02T16:46Z — expanded to a block on the operator's word: backfilled the lost-context facts, undo/who per option, basis drill-down
+  what: the bound on finish rounds (was OQ4 of the finish-at-cap plan, 5bdd)
+  why now: blocks the build of finishing trivial fixes at the cap
+  why ask: spend — each round is agent time and quota taken without asking
+  context: you asked for trivial leftovers at the cap to be finished by default (answer 137) · you decide how many such rounds run unasked — then: review caps and spend (on main since 2f071a8) already lets a plan with no high left stop and carry its findings, and a build take one self-granted round inside a standing grant with weekly headroom; a show-stopper, scope change or reversed decision always comes to you. Your 139 a and 140 a: a finish round runs only when every leftover is a medium with a certified one-place fix, at most 3, and the same reviewer checks it and may still send back non-trivial changes. Tonight's review caps run: round 4 left 2 exact fixes, round 5 left 1 exact medium plus 3 lows, round 6 was clear
+  stakes: reversible, narrow — capped runs
+  (a) one, at round 4 only — the tightest limit; tonight's review caps would still have asked you once, at round 5 — undo: an edit to bindings.md — who: every capped run
+  (b) round 4, then round 5 only with fewer leftovers — tonight's review caps would have landed at round 6 with no question; a run that is not converging stops and asks at round 5; never more than two unasked — undo: an edit to bindings.md — who: every capped run
+  (c) while the count falls — fewest asks; no hard ceiling, so a slowly converging item can spend several rounds unasked — undo: an edit to bindings.md — who: every capped run, and your quota
+  (z) decide later — the build waits; caps keep coming to you as today
+  rec: (b) · basis partial — fits the one real case; "fewer leftovers" stands in for "converging"
+  basis: observed — review caps and spend rounds 4-6 (.claude-sandbox/work/items/review-caps-and-spend-plans-raise-only-o-5579.md) · observed — the plan's traces 1-19 (.claude-sandbox/investigations/5bdd-finish-trivial-at-cap/02_review-r2-fixes.md), plan review CLEAR round 3 · inferred — fewer leftovers approximates converging
+  unknown: whether two is enough in practice
+decision 142: When may a finish round spend without asking — during your hold, with no quota reading, under a fable pin? — options: (a) always, no exclusions | (b) only by lifting the self-granted round's grant condition (librarian only) | (c) never under a hold, a fable pin, or with no quota reading | (d) only your hold stops it; otherwise it runs with no grant or quota reading, and a fable pin's own asks still apply [recommended] | (z) decide later
+  raised: 2026-10-01T07:49Z
+  revised: 2026-10-02T16:46Z — expanded to a block on the operator's word: backfilled the lost-context facts, undo/who per option, basis drill-down
+  what: how finish rounds fit the review caps and spend rules (5579) (was OQ5 of the finish-at-cap plan, 5bdd); your answer here becomes the spend authority for finish rounds — answer 137 alone is not one
+  why now: blocks the build of finishing trivial fixes at the cap
+  why ask: spend — it sets when quota is used without asking you
+  context: you asked for trivial leftovers at the cap to be finished by default (answer 137); review caps and spend landed with grant and quota conditions for the one self-granted round · you decide which of those conditions finish rounds keep — then: the self-granted build round needs a standing grant (an answer that authorizes spend, like your wave approvals) and a fresh quota reading with weekly headroom, and is never taken during a hold or under a fable pin; a hold is your standing stop on dispatch; a fable pin asks you below the quota reserve and when fable is unavailable, never falling back; a finish round is small (one sentence or line per leftover, at most 3)
+  stakes: reversible, narrow — capped runs and your holds
+  (a) always, no exclusions — runs even during a hold you set — undo: an edit to bindings.md and budget.md — who: you (your hold stops dispatch but not finish rounds)
+  (b) lift only the self-granted round's grant — a librarian still needs a quota reading; a standalone dev-cycle has no grant to lift and still asks, which misses what you asked for — undo: an edit — who: standalone dev-cycle users
+  (c) all exclusions — a hold, a fable pin, or no quota reading each send it to you; the most asks — undo: an edit — who: you (more questions)
+  (d) only your hold stops it — a hold still means ask; otherwise it runs with no grant or quota reading; on a fable-pinned item the pin still asks below the reserve or when fable is unavailable, and the reviewer runs at fable — undo: an edit to bindings.md and budget.md — who: capped runs
+  (z) decide later — the build waits
+  rec: (d) · basis partial — keeps your hold as the stop and finish rounds cheap; the fable pin keeps its own asks
+  basis: observed — the self-granted round's conditions (plugins/dev-flow/skills/librarian-mode/references/budget.md, § round budget; dev-cycle references/bindings.md § Decisions) · observed — the plan's traces 7, 10-12c (.claude-sandbox/investigations/5bdd-finish-trivial-at-cap/02_review-r2-fixes.md) · inferred — finish rounds stay small enough that a quota reading adds little
+  unknown: the quota cost of finish rounds across a busy night
