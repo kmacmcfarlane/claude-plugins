@@ -47,8 +47,10 @@ and the ordering rules earn their place:
 - **Empirical-local first, toolkit ahead of mining.** A toolkit lane reverse-engineers a
   format, ships validated scripts under `tools/` and a *mining plan* (exact commands, known
   pitfalls); the mining lanes in the same round read it first and spend their budget on
-  classification, not parsing. Mining-lane prompts say: validate by sampling before quoting
-  any toolkit number onward.
+  classification, not parsing. They launch only after the toolkit gate has passed (the
+  `research` skill's `references/run-record.md` § The toolkit gate), never alongside the
+  toolkit lane. Mining-lane prompts say: validate by sampling before quoting any toolkit
+  number onward.
 - **Landscape lanes** carry a verdict per item found: steal / ignore / gap remains.
 - **At least one unconventional lane** — a donor discipline that sounds like colour.
 - **At `exhaustive`, one adversarial lane** (`a1-…`, launched with `model: opus` on the call)

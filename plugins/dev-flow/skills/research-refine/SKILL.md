@@ -112,7 +112,9 @@ searched.
 
 - **The prior run is `DONE_WITH_CONCERNS`** — the refinement's first lane is the one that
   clears the concern, whatever the operator asked for; say so.
-- **The prior's verifier sheet has a security hit still open** — the prior is a held run:
+- **The prior's verifier sheet has a security hit still open, or a rescan of its record
+  with the scan floor (the `research` skill's `references/run-record.md` § The scan floor)
+  finds a HOLD** — the prior is a held run:
   find it at the `staging:` path its brief names (`.claude-sandbox/research/_held/<run>/`),
   clean it first (`research` Step 8), re-verify, and only then refine; a refinement never
   promotes over an open security concern.
