@@ -31,3 +31,14 @@ return: planner PLAN_READY .claude-sandbox/investigations/f65b-review-cost-budge
 baseline: a88831aa8df8 00_initial.md 
 dispatch: reviewer opus high — plan review round 1
 agent: reviewer aa75f970dc65e2c2e round 1
+verdict: NEEDS_CHANGES round 1 (plan)
+findings:
+  1. [high] 00:102,116-119,227-229; INDEX:55-59 — the opus-5-5 → opus-5 price alias overstates cost ~1.73x (cited 5.5 prices: Opus $4/$20/$0.20 cache read; cache reads dominate); every item's dollars ~0.6x; under the proposed defaults no item reaches its budget; "2 of 94", "819f asks at the same three points", the simulation, $38-per-1% and the medians are false; fix: price at cited 5.5 rates, regenerate everything, re-derive defaults (~$4/$6/$18/$18); note in Q2 that share-of-week is price-independent
+  2. [medium] 00:193-197,320,323-324,501-514 — (a) loosens two stops 142 asked about (rounds past 4 run with no grant/reading, below the reserve, during a hold) and Q1 does not say so; state how (a) answers 142's three conditions, or a "hold stops rounds past the 4th" sub-choice
+  3. [medium] 00:220-221,303,333-339 — the spend window after an increase is undefined; sum since the phase's first budget: line vs the last line's amount; split an id spanning phases
+  4. [medium] 00:265-268,347-350 — resume would rebuild the convergence count from free-text findings; store must-fix <n> on the cost: rider at Step 4.5
+  5. [medium] 00:246 — defaults miss task/refactor/workflow/epic (wi.py:46); map every type, name a fallback
+  6-11,15. [low] skip zero-usage <synthetic> records; transcript cleanup → phase spend = last cost: line + later agents; dev-flow plugin.json description names the new context-guard edge; "Estimated cost: $N" is a parsed tag (api-name); ship the cumulative-series step, flag lost rounds; two budgets per feature is a planner call — offer one per item in Q3; SDK sessions in a worktree not counted
+  12-14. [nit] "near the max"; compare like with like for 45x; sonnet ~0.70x opus at cited prices
+dispatch: planner opus high — resume (plan fix round 1)
+agent: planner af46608c4b7a2f7a2 round 2
