@@ -30,3 +30,7 @@ decided: 2026-10-02T21:57Z ruled-rule-case — the second lane file is named res
 dispatch: planner opus high — plan (operator: plan it and land it)
 target: plan research-skills-effort-based-routing-par-e184 /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude-sandbox/investigations/e184-research-routing
 agent: planner a755d6374fee501cb round 1
+return: planner PLAN_READY .claude-sandbox/investigations/e184-research-routing/ (INDEX, 00, evidence/verifier-record.md); verifier to sonnet/low on evidence; research-lane-deep opus/high
+baseline: 978f34264739 00_initial.md 
+dispatch: reviewer opus high — plan review round 1
+agent: reviewer a20dd05df1987148f round 1
