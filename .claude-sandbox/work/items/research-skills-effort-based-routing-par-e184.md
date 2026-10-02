@@ -56,7 +56,7 @@ findings:
   11. [low] 00:767-768, 00:577 — acceptance 10 and the run-record.md outline still say ## Record is the no-store case only; say "used when the run records on no item: a sub-agent run, or no store"
   12. [nit] 00:730-731 — § 14 cites "§ 5 rule 2" for nested runs, now 01 § 1 rule 1
 findings: carried — 11 [low], 12 [nit] above, verbatim; into this item's build
-decided: 2026-10-02T22:22Z narrowing — the verifier's procedure faults (OQ3 of the research-routing plan) go to a filed follow-up, , landing after 819f; this build moves only the verifier's pin · authority: class narrowing (the plan's recommended option) · reopen: pull it back into this build
+decided: 2026-10-02T22:22Z narrowing — the verifier's procedure faults (OQ3 of the research-routing plan) go to a filed follow-up, research-verifier-fix-its-procedure-faul-2e75, landing after 819f; this build moves only the verifier's pin · authority: class narrowing (the plan's recommended option) · reopen: pull it back into this build
 decision 147: The research-routing build adds six stored names: the research-run tag, an item: field, a ## Record section, an --item argument, the synthesis role word, and chain-of-verification's Record: line; keep them as named? — options: (a) keep them as named [recommended] | (b) rename some (say which) | (z) decide later
   raised: 2026-10-02T22:22Z
   what: names stored in work items and briefs, or parsed by the spend reader (was OQ1 of the research-routing plan, e184)
