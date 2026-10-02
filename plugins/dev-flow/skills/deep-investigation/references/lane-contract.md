@@ -97,5 +97,7 @@ Siblings: <territory line>
 <the privacy rule, verbatim — only if the corpus is sensitive>
 ```
 
-Launch with `Agent`, `model:` set to the run's cheap lane model, all of a wave's lanes in one
-message so they run concurrently.
+Launch with `Agent` as the `research` skill's `references/intensity-and-routing.md`
+§ Dispatches outside the profiles routes these lanes, `model:` on every call set to the run's
+cheap lane model, each dispatch recorded per that file's § Recording, all of a wave's lanes in
+one message so they run concurrently.

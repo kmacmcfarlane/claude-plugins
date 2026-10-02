@@ -3,7 +3,7 @@ name: deep-investigation
 description: Run a multi-agent deep-research fan-out for a broad, open-ended question — recon the corpora, write a canonical strategy doc (lanes, output contract, ledger), launch many research lanes on a cheaper model against a fixed contract, then synthesize in one pass into an investigation series. Use when the user says "deep research", "deep investigation", "fan out", "map the landscape of", "what should X become", "research this overnight", or when a question is too broad for one session to read its way through — you can name three to five categories of evidence that would answer it and no single one suffices. Do NOT use for a scoped bug or feature — that is the investigate skill, one session reading its way to a plan.
 disable-model-invocation: false
 allowed-tools: Read, Write, Edit, Glob, Grep, Bash, Agent, WebSearch, WebFetch, AskUserQuestion
-argument-hint: "<broad research question>"
+argument-hint: "<broad research question> [--item <id>]"
 ---
 
 # Deep investigation
@@ -60,8 +60,10 @@ turn on the list**: your recommendation is not the answer. You need:
    wants to review wave 1 before wave 2. **Ask for the reason, not just the constraint** —
    scheduling machinery built for a constraint that evaporates is wasted work, and reasons
    expire on their own schedule.
-6. **The model for lanes** — a cheaper one than yours, deliberately. Lanes read a lot and write
-   ≤300 lines to a fixed shape; that is not where the expensive model earns its keep.
+6. **The model for lanes** — a cheaper one than yours, deliberately: `sonnet` by default
+   (the `research` skill's `references/intensity-and-routing.md` § Profiles, the `research-lane` row), unless the operator names another. Lanes read a
+   lot and write ≤300 lines to a fixed shape; that is not where the expensive model earns its
+   keep.
 
 Skip the round only when the invocation already answers all six; say that you skipped it.
 
@@ -143,8 +145,16 @@ Then launch, per the pacing decision from Step 1:
 - **Overrun rule, stated in the doc**: synthesis starts by time T with whatever findings exist;
   hard stop at T+1h.
 
-Launch each lane with `Agent`, `model:` set to the cheap model from Step 1, prompt = mission +
-scope + sibling territories + the verbatim contract (+ privacy rule). Launch a wave's lanes in
+Before the first lane, open the record: decide the run's item by the `research` skill's `references/intensity-and-routing.md` § The work item (a
+sub-agent's run, or a run with no store, writes the strategy doc's `## Record`; `--item`
+adopts a named item; otherwise, with a store and `wi`, file one) and write `Item:` into the
+strategy doc's opening paragraph.
+
+Launch each lane with `Agent` as that file's § Dispatches outside the profiles routes it —
+`general-purpose` until item 1ffd moves these lanes onto `research-lane` — with `model:` on
+every call, set to the lane model from Step 1; prompt = mission + scope + sibling territories +
+the verbatim contract (+ privacy rule). Record each lane's `dispatch:` line before the call
+and its `agent:` line as its id comes back (that file's § Recording). Launch a wave's lanes in
 **one message** so they run concurrently.
 
 ## Step 5 — Orchestrate: launch, log, and nothing else
@@ -162,6 +172,8 @@ context the synthesis needs.
   the same context twice.
 - If a lane fails or returns nothing usable, ledger it as `FAILED`, and decide once: relaunch
   with a narrower mission, or synthesize without it and say so.
+- **Later waves and relaunches route and record as Step 4 does**: `model:` on every call, one
+  `dispatch:` line before and one `agent:` line after each lane.
 
 ## Step 6 — Validate before any number travels
 
@@ -207,9 +219,12 @@ non-interactively** below.
    own conventions.
 4. **POC break-out.** Anything the synthesis says to *build* leaves this series as an
    `investigate`/`implement`-format spec under `<series>/pocs/<poc-slug>/`, handed to subagents.
-   Pin a shared conventions file when several POCs must agree on a schema. **Never build inline
-   on the research thread** — the synthesis context is the wrong context to write code in, and
+   Pin a shared conventions file when several POCs must agree on a schema. Each POC is carried
+   by `dev-cycle` or `implement`, never dispatched from the research thread, and the run
+   records no dispatch for it. **Never build inline on the research thread** — the synthesis context is the wrong context to write code in, and
    the build will consume it.
+5. **Close the run's item**, if the run filed one (the `research` skill's `references/intensity-and-routing.md` § Closing); a named item is never
+   closed.
 
 ---
 
@@ -273,8 +288,9 @@ than disappearing, exactly as in `investigate`:
 - Every lane prompt named its sibling lanes' territories.
 - Every lane prompt carried the output contract **verbatim**, and every sensitive-corpus lane
   carried the privacy rule **inline**.
-- Lanes ran on a cheaper model; the orchestrator launched, logged, and synthesized, and did no
-  research of its own.
+- Lanes ran on a cheaper model, `model:` passed and recorded on every dispatch, and the run's
+  item was filed, adopted or skipped by the research routing's § The work item; the
+  orchestrator launched, logged, and synthesized, and did no research of its own.
 - The ledger has one line per lane completion and one per plan change, written as they happened.
 - No toolkit number was carried into the synthesis without a sampling validation or an explicit
   mark that it lacks one.

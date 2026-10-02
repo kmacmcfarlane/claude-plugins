@@ -3,7 +3,7 @@ name: chain-of-verification
 description: Run Chain-of-Verification (CoVe) on a prompt to reduce hallucinations. Generates a baseline response, plans verification questions, answers them independently via subagent, then revises. Use when user says "cove", "chain of verification", "verify this", "fact-check this response", "reduce hallucinations", or wants a high-accuracy factual answer.
 disable-model-invocation: false
 allowed-tools: Agent, WebSearch, WebFetch, Read, Glob, Grep
-argument-hint: "[question or prompt to verify]"
+argument-hint: "[question or prompt to verify] [--item <id>]"
 ---
 
 # Chain-of-Verification (CoVe)
@@ -98,9 +98,19 @@ Before executing verifications, classify the prompt to determine the right subag
 
 Pass both the questions AND their how-to-check methods (from Step 2) to the subagent.
 
+**Routing and record.** Every batch goes to the `scout` agent with `model: "sonnet"` on the
+call (`model: "opus"` only when the invocation names a stronger model), as the `research` skill's `references/intensity-and-routing.md` § Profiles
+routes it; when `dev-flow:scout` is not loaded, that file's § Fallback. Before each call
+write its `dispatch:` line (`dispatch: scout sonnet medium — cove <mode> batch <n> of <m>`),
+and after it its `agent:` line (`agent: scout <id> round 1`), per that file's § Recording.
+This skill files no work item. Only when the invocation passes `--item <id>` and this run is
+on the main thread (not inside a sub-agent) do the lines go onto that item, appended with
+`Bash` under the session's own permissions; the item is never closed here. Otherwise they go
+in the Verification Summary's `Record:` line (Step 6).
+
 #### Codebase mode
 
-Spawn an `Agent` subagent with `subagent_type: "general-purpose"`:
+Spawn an `Agent` subagent with `subagent_type: "dev-flow:scout"`, `model: "sonnet"`:
 
 ```
 You are a fact-checker verifying claims about a codebase. For each question below,
@@ -124,7 +134,7 @@ For each question, respond with:
 
 #### General knowledge mode
 
-Spawn an `Agent` subagent with `subagent_type: "general-purpose"`:
+Spawn an `Agent` subagent with `subagent_type: "dev-flow:scout"`, `model: "sonnet"`:
 
 ```
 You are a fact-checker. For each question below, actually perform the check
@@ -202,6 +212,7 @@ Output format:
 - Checked: N claims
 - Consistent: X | Contradicted: Y | Unverified: Z
 - Result: VERIFIED | CORRECTED | PARTIAL
+- Record: item <id> | none — <the dispatch lines, one per batch, separated by "; ">
 
 ## Verified Response
 
@@ -229,7 +240,7 @@ Pipeline produces: baseline explanation, verification questions about specific m
 **"Yes-Man" loop (confirmation bias)**
 The verification subagent answers questions in a way that supports the original draft rather than checking independently. Symptoms: ALL CONFIRMED on a response you'd expect to have errors, or verification answers that parrot phrasing from the baseline.
 Cause: The subagent prompt leaked baseline context, or the questions were leading rather than neutral.
-Solution: Ensure subagent prompt contains ONLY the verification questions and how-to-check methods — never the baseline text. Rewrite leading questions (bad: "Confirm that X is true" → good: "What is X?"). If the problem persists, consider using `model: haiku` for the verification subagent to get a different "opinion."
+Solution: Ensure subagent prompt contains ONLY the verification questions and how-to-check methods — never the baseline text. Rewrite leading questions (bad: "Confirm that X is true" → good: "What is X?"). If the problem persists, consider `model: opus` on the scout for a different tier's reading.
 
 **Verifier fallibility / false assurance**
 ALL CONFIRMED doesn't mean the response is correct — it means the verifier couldn't find errors. The verifier can fail if: (1) the model is uniformly ignorant on the topic (garbage in, garbage out), (2) the verification questions don't target the actual weak points, or (3) web sources themselves are wrong.

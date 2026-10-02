@@ -3,7 +3,7 @@ name: research-refine
 description: Extend or correct an existing research run — read its brief, synthesis and threads not pulled, take a new sub-question, a challenged claim, a pulled thread or a changed scope, run only the lanes that gap needs through the research skill, and land a new run that names what it supersedes, re-promoting the knowledge-base notes it changes. Use when the user says "refine the research on", "follow up on", "pull that thread", "the research on X is out of date", "re-check the claim that", or names an existing run or note to build on. Not for a fresh question with no prior run (research), nor restructuring a knowledge base (research-prune).
 disable-model-invocation: true
 allowed-tools: Read, Glob, Grep, Bash, WebSearch, WebFetch, Agent, AskUserQuestion, Write
-argument-hint: "<run slug, note path, or question> [what to refine] [--intensity quick|standard|deep]"
+argument-hint: "<run slug, note path, or question> [what to refine] [--intensity quick|standard|deep] [--item <id>]"
 ---
 
 # Research — refine
@@ -73,6 +73,10 @@ the prior elsewhere — with:
   pricing claim adds the vendor row's retrieval-date axis if it was missing);
 - lanes whose **read-first** line names the prior findings and synthesis paths.
 
+The new run's item follows `research` Step 5.5. When it files one and the prior brief's
+`item:` names an item, the filing carries `--ref wi:<prior run's item>` (the `research`
+skill's `references/intensity-and-routing.md` § The work item).
+
 Step 5.1's tool preflight runs as in `research`, so this run's lane prompts carry a `Tools:`
 line and its report a `TOOL REQUEST` built from the preflight's `FIX` lines. Staging is
 created with its `pdf/` directory per the `research` skill's `references/run-record.md` §
@@ -115,7 +119,10 @@ searched.
 - **The prior's verifier sheet has a security hit still open** — the prior is a held run:
   find it at the `staging:` path its brief names (`.claude-sandbox/research/_held/<run>/`),
   clean it first (`research` Step 8), re-verify, and only then refine; a refinement never
-  promotes over an open security concern.
+  promotes over an open security concern. When the held run's item is blocked as held,
+  this run's item carries `--ref wi:<held item>`, and the held item is closed with a note
+  naming this run's (the `research` skill's `references/intensity-and-routing.md`
+  § Closing).
 - **The prior's brief says its held record was lost with the session**, or the prior lives
   in the scratchpad of a dead session — it is gone; say so, and run `research` fresh with the
   operator's memory of the answer as an assumption.

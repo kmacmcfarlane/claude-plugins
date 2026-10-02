@@ -5,10 +5,10 @@ are the contract; this file is how to apply them without re-deriving them per di
 It is the one home of dev-cycle's routing, and of every caller that runs dev-cycle as its
 cycle spec (`librarian-mode`). It routes the dispatches of a development cycle — planner,
 implementer, reviewer, and the fable cross-checks the operator adds — and the helper and
-read-only dispatches a caller makes around them (§ Profiles). The research skills
-(`research`, `research-deep`, `research-refine`, `research-prune`) and their
-`research-lane` and `research-verifier` agents keep their own routing, and nothing here
-governs them.
+read-only dispatches a caller makes around them (§ Profiles). The research family
+(`research`, `research-deep`, `research-refine`, `research-prune`), `deep-investigation` and
+`chain-of-verification` route by the `research` skill's `references/intensity-and-routing.md`;
+nothing here governs them, though `scout` serves both.
 
 ## Why route at all
 

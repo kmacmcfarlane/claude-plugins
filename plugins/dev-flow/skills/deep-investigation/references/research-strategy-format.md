@@ -24,8 +24,10 @@ with a ledger entry marking it superseded — supersede, do not rewrite.
 
 ### `# 00 — Research strategy: <question>`
 
-Opening paragraph: when it was written, by which session, and one sentence saying this document
-is the canonical brief and the rehydration point.
+Opening paragraph: when it was written, by which session, one sentence saying this document
+is the canonical brief and the rehydration point, and the run's item: `Item: <id>` or
+`Item: none — <reason>` (the `research` skill's `references/intensity-and-routing.md`
+§ The work item).
 
 ### `## Problem statement`
 
@@ -101,6 +103,13 @@ A `DONE` line carries the findings path plus the two or three results a reader w
 they read nothing else — this is what makes the ledger a usable rehydration point rather than a
 list of checkmarks. Mark any number that has not been validated by sampling as unsampled, right
 there in the line.
+
+### `## Record`
+
+The last section, used when the run records on no item: a sub-agent run, or no store
+(the `research` skill's `references/intensity-and-routing.md` § The work item). It holds the `dispatch:` and `agent:` lines of that file's
+§ Recording, one per line, in the orchestrator's words. Omitted when `Item:` names an item.
+Lane paragraphs keep their `model` as before.
 
 ## Anti-patterns
 

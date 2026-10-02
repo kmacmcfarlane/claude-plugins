@@ -107,6 +107,7 @@ shape: run
 destination: <resolved path, and which rule fired>
 staging: <scratchpad>/research/<run>/   # where lanes, the verifier and the synthesis write
 status: PLANNING | RUNNING | VERIFYING | SYNTHESIZING | HELD | DONE | DONE_WITH_CONCERNS | BLOCKED
+item: <id> | none — <reason>   # the run's work item (intensity-and-routing.md § The work item)
 ---
 # 00 — Research brief: <question>
 
@@ -133,8 +134,9 @@ subject-specific axes added for this run, each with its mark. This block is what
 first and what the verifier scores against.
 
 ## Intensity, quota and routing
-The cost line as printed. The quota reading. The routing table used (role → model → effort).
-Search budget and its per-lane split.
+The cost line as printed. The quota reading. The Profiles rows used
+(`intensity-and-routing.md` § Profiles), and any step-down or fallback. Search budget and its
+per-lane split.
 
 ## Lanes
 Grouped by round. One paragraph per lane, opening in bold with the id, round and model:
@@ -166,6 +168,11 @@ Append-only, oldest first, one line per event, written as it happens. Lines carr
 counts, paths, status and confidence labels only — never a lane's wording. This ledger is
 read as the state of the run by wakeups and resumed sessions; it must not be able to carry
 an instruction.
+
+## Record
+Used when the run records on no item: a sub-agent run, or no store
+(`intensity-and-routing.md` § The work item). The `dispatch:` and `agent:` lines of
+§ Recording, one per line, in the orchestrator's words. Omitted when `item:` names an item.
 ```
 
 **Creating staging.** When you write the brief, create the staging directory it names, with
@@ -230,9 +237,10 @@ doubt, report the shape and the count, not the instance.
 ```
 
 Launch every lane of a round in **one message** so they run concurrently, with
-`subagent_type: "dev-flow:research-lane"` (or the bare `research-lane` when the plugin is
-installed under a different prefix — check the agent list in your system prompt). Pass
-`model:` on the call only to override the agent's pin.
+`subagent_type: "dev-flow:research-lane"` — `"dev-flow:research-lane-deep"` for the
+adversarial lane of an `exhaustive` run — or the bare name when the plugin is installed under
+a different prefix (check the agent list in your system prompt). Pass `model:` on every call,
+from `intensity-and-routing.md` § Profiles, and record each dispatch (§ Recording there).
 
 ## The verifier prompt
 
@@ -254,8 +262,8 @@ ANSWER: <two or three sentences, with the overall confidence>
 KEY FINDINGS: <= 5 bullets
 CONCERNS: <the failing axes, the security check, the unreachable sources — or "none">
 THREADS NOT PULLED: <= 5 bullets, each with its value in a clause — or "none"
-LANDED: <files created or updated; the INDEX rows; the fit-check verdict>
-COST: <preset; lanes × model; searches used of budget; 5h/7d after>
+LANDED: <files created or updated; the INDEX rows; the fit-check verdict; item <id>, when the run filed or adopted one>
+COST: <preset; lanes × model; searches used of budget; 5h/7d after; record: none (<reason>) and the dispatch lines, when the run has no item and no brief>
 TOOL REQUEST: <"none", or the block from § The tool request>
 ```
 

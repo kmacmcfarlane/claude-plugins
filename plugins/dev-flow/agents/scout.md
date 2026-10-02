@@ -1,6 +1,6 @@
 ---
 name: scout
-description: "Read-only answerer at medium effort (sonnet, or opus on the call after a could-not-determine) that locates code and answers with file:line or URL evidence, as model-routing.md § Profiles routes it. Dispatched by dev-flow's dev-cycle and librarian-mode with a full brief; not for direct use."
+description: "Read-only answerer at medium effort (sonnet, or opus on the call after a could-not-determine) that locates code and answers with file:line or URL evidence, as model-routing.md § Profiles routes it. Dispatched by dev-flow's dev-cycle and librarian-mode, and by chain-of-verification, with a full brief; not for direct use."
 model: sonnet
 effort: medium
 ---

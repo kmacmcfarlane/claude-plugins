@@ -3,7 +3,7 @@ name: research-deep
 description: Run the research skill at deep or exhaustive intensity for a subject too broad for one round — two or three rounds of research lanes on a cheaper model, a gap gate between rounds, an adversarial lane at exhaustive, a larger verifier sample, and a synthesis that may run in a fork; lands as a run record or knowledge-base notes. Use when the user says "research this thoroughly", "exhaustive research on", "research this from every angle", "thorough sourced research", or when the research skill proposes it after a quick run finds its core claim contested or thin. Not for a fan-out that writes an investigation series' plan — "deep research", "map the landscape of", "research this overnight" for a build decision are deep-investigation — nor a bug or feature in this repo (investigate).
 disable-model-invocation: true
 allowed-tools: Read, Glob, Grep, Bash, WebSearch, WebFetch, Agent, AskUserQuestion, Write
-argument-hint: "<broad question> [--intensity deep|exhaustive] [--shape run|kb] [--to <path>]"
+argument-hint: "<broad question> [--intensity deep|exhaustive] [--shape run|kb] [--to <path>] [--item <id>]"
 ---
 
 # Research — deep
@@ -51,7 +51,10 @@ and the ordering rules earn their place:
   any toolkit number onward.
 - **Landscape lanes** carry a verdict per item found: steal / ignore / gap remains.
 - **At least one unconventional lane** — a donor discipline that sounds like colour.
-- **At `exhaustive`, one adversarial lane** (`a1-…`, launched with `model: opus` on the call)
+- **At `exhaustive`, one adversarial lane** (`a1-…`, launched on `research-lane-deep` with
+  `model: opus`; below the quota reserve or when that file is not loaded, `research-lane` on
+  opus — the `research` skill's `references/intensity-and-routing.md` § Below the quota
+  reserve, § Fallback)
   whose mission is to break the answer forming in the round-1 TL;DRs: find the strongest
   evidence against it, the premise it rests on, the case it does not cover. It reads round 1
   first, so it runs in round 2.
@@ -91,7 +94,8 @@ adversarial lane's findings are in the sample by construction.
 Assume the fork. Fifteen findings files at ≤300 lines are up to 4,500 lines; that is past the
 fallback threshold, so plan for a forked synthesis unless `context-guard` says the window is
 fresh. The fork's prompt is the brief path, the findings paths, `verification.md`, and
-`research` Step 9's list. Its output is `01-synthesis.md`; you read that, not the findings.
+`research` Step 9's list; its `model:` is the session's own tier, named, and it is recorded
+as a `synthesis` dispatch, as in `research` Step 9. Its output is `01-synthesis.md`; you read that, not the findings.
 
 The synthesis at this scale ends with two extra sections: **verification spikes** — the
 cheap measurements that would falsify the answer — and, when the question was "what should X
@@ -131,6 +135,7 @@ recorded; round 3 needs a gap condition, not a preset; the retro is still writte
 
 `research`'s, plus: the pacing reason (or its absence) is in the brief; empirical-local and
 toolkit lanes preceded mining lanes; every lane prompt carried a siblings line; at
-`exhaustive` an adversarial lane ran in round 2 on a stronger model; no toolkit number was
+`exhaustive` an adversarial lane ran in round 2 on `research-lane-deep` (or its recorded
+step-down); no toolkit number was
 carried into the synthesis without a sampling validation or an explicit unsampled mark; the
 synthesis ends with verification spikes; build work left the run as specs; a retro exists.
