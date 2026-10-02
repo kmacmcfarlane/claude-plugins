@@ -42,3 +42,7 @@ findings:
   12-14. [nit] "near the max"; compare like with like for 45x; sonnet ~0.70x opus at cited prices
 dispatch: planner opus high — resume (plan fix round 1)
 agent: planner af46608c4b7a2f7a2 round 2
+return: planner PLAN_READY — serial 01_review-fixes.md (1-15), evidence regenerated at cited prices
+baseline: a88831aa8df8 00_initial.md 98c18dec7ccd 01_review-fixes.md 
+dispatch: reviewer opus high — resume (plan review round 2)
+agent: reviewer aa75f970dc65e2c2e round 2

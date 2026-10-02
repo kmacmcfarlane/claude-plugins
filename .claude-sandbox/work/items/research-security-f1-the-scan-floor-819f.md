@@ -208,3 +208,4 @@ decision 144: The scan floor's seventh review confirmed every stall fixed, but f
   rec: (a) · basis strong — the reviewer verified the fix against every known form; the stop rule ends the one-bypass-per-round pattern
   unknown: how many more bypass forms a determined page could find; a pattern-based floor never closes all of them
   revised: 2026-10-02T17:10Z — decision 144's round cost: the cost-budget plan review (f65b) found the per-item dollars priced the 5.5 models too high (~1.7x); at cited prices a fix round on this item is about $3-4 list price, not $6; options and recommendation unchanged
+  revised: 2026-10-02T17:18Z — decision 144's round cost again: measured at cited prices, an 819f fix round is $3.57-5.21 (median $4.73), 8-30 minutes; about $4-5, about 0.2% of a week; options and recommendation unchanged
