@@ -3,10 +3,11 @@ id: research-security-f1-the-scan-floor-819f
 title: "research security F1: the scan floor"
 short_display_name: research scan floor
 type: feature
-status: doing
+status: blocked
 priority: 1
 owner: Kyle-McFarlane@401123cbad11
 claimed: 2026-09-30T22:27Z
+blocked: decision 144 (round 8)
 created: 2026-09-30
 updated: 2026-10-02
 refs:
@@ -184,3 +185,25 @@ agent: implementer a33ea65041c3dc364 round 7
 return: implementer DONE f818c50 (property test tests/test_scan_patterns.py; the suggested _ATTRS was itself quadratic, fixed with no < in values)
 dispatch: reviewer opus high — resume (round 7, checks round-6 fixes and the property test)
 agent: reviewer a0a35fdcad507b97f round 7
+verdict: NEEDS_CHANGES round 7 at f818c50
+findings:
+  round-6 1 FIXED (all linear 60 KB → 500 KB, measured), 2 FIXED for the forms named; a 5-token fuzz finds no stall on f818c50
+  1. [medium] scan-findings.py:110,119 — banning < from attribute values opens a 6-character control-tag bypass: <system-reminder a="<">, </system-reminder a="<">, data-x="1<2", a=<> all scan 0 hold (the joined view's _TAG too); fix: hold on a glued opener alone, full attribute parse only for the spaced form: <(?:/\s*)?TAGS(?![\w-])(?=[\s/>]|$) | <\s+(?:/\s*)?TAGS(?![\w-])_ATTRS\s*(?:/\s*)?> (checked: matches all bypasses, samples, bare attrs, a=b"c, unclosed at line end; rejects <path>, <systems> and finding 2's false positive; 500 KB ≤0.02 s)
+  2. [low] scan-findings.py:119 — the end-of-line alternative with <\s* false-HOLDs prose ("context < system prompt size", "the <instructions element"); fix 1 drops it
+  3. [low] tests/test_scan_patterns.py:21,35 — a fixed 1 s at 60 KB is too loose (small-constant quadratics pass) and close to flaky (0.24-0.30 s linear cases); test growth: time at N and 4N, fail when the ratio > ~8 and the larger time > ~50 ms; keep an absolute stall guard (~10 s)
+  4. [nit] the property test's "every compiled pattern" misses two inline trivially linear regexes; hoist or soften the wording
+decision 144: The scan floor's seventh review confirmed every stall fixed, but found a 6-character way past the control-tag hold that this round's stall fix opened; another round? — options: (a) one more fix round: the reviewer's checked tag rule (a bare tag opener holds on its own), a growth-rate check in the timing test, the two lows; then land, and file any further bypass the next review finds as a follow-up instead of another round [recommended] | (b) land now and file the bypass and the lows as a P1 follow-up | (c) leave it unlanded until you look | (z) decide later
+  raised: 2026-10-02T17:08Z
+  what: whether the research scan floor (819f) gets an eighth review round, and whether bypass-hunting stops gating the landing after it
+  why now: the round you granted (answer 143) ended with changes still needed; blocks: the deep-investigation parity build (1ffd), and through it the confinement hook (20d8)
+  why ask: cap — you asked me to ask for more rounds when I can justify them (answer 136)
+  context: you granted round 7 for three more stalls plus a timing test over every pattern; the stalls are fixed and the test caught a slow pattern on its first run · you decide whether one bypass gets one more round, and whether later bypass findings stop holding the landing — then: none
+  if left: an injected tag written <system-reminder a="<"> (6 extra characters) escapes the control-tag hold, so a hijacked page could carry instructions past the floor; also low: ordinary prose like "context < system prompt size" now holds a whole run, and the timing test could miss a slow pattern with a small constant
+  round costs: measured on this item — a fix round about $6 of list-price spend (about 0.16% of a week) and 10-20 minutes; my earlier cards' "about 1% of weekly, 30-40 minutes" overstated it; your attention again only if (a)'s round does not clear
+  stakes: reversible, narrow — research runs
+  (a) one more round, then land — the reviewer's tag rule (checked against every bypass, the samples and the false positive, linear at 500 KB), the test checks growth from 30 KB to 120 KB instead of a fixed time, and the two lows; every review so far found a new bypass, so after this round a further bypass is filed as a follow-up and does not hold the landing — undo: n/a — who: research runs
+  (b) land now, P1 follow-up — the stall fixes and the floor protect runs at once; until the follow-up, a 6-character tag escapes the hold and some ordinary prose holds a run
+  (c) leave it unlanded — the parity build and the hook keep waiting
+  (z) decide later — as (c)
+  rec: (a) · basis strong — the reviewer verified the fix against every known form; the stop rule ends the one-bypass-per-round pattern
+  unknown: how many more bypass forms a determined page could find; a pattern-based floor never closes all of them
