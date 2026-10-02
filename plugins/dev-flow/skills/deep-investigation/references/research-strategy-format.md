@@ -27,7 +27,7 @@ with a ledger entry marking it superseded — supersede, do not rewrite.
 Opening paragraph: when it was written, by which session, one sentence saying this document
 is the canonical brief and the rehydration point, and the run's item: `Item: <id>` or
 `Item: none — <reason>` (the `research` skill's `references/intensity-and-routing.md`
-§ The work item).
+§ The work item), and with an item its `wi:` and `item_file:` lines (§ Stored names there).
 
 ### `## Problem statement`
 
@@ -84,6 +84,14 @@ One line per thread deliberately not actioned in this run — an unfinished hand
 item, a rehydration hook you saw and skipped. Omitting this section makes a resuming session
 re-litigate decisions you already made. Write "none" rather than dropping the heading.
 
+### `## Record`
+
+The `## Record` of the `research` skill's `references/intensity-and-routing.md` § Stored
+names, placed just above the status ledger: the `dispatch:` and `agent:` lines of that file's
+§ Recording, when its § The work item sends them here. Lines go in by an edit at the end of
+this section, never a `>>` to the file, which would land them under the ledger. Lane
+paragraphs keep their `model` as before.
+
 ### `## Status ledger`
 
 Append-only, oldest first, updated **in place as things happen** — not reconstructed afterwards.
@@ -103,13 +111,6 @@ A `DONE` line carries the findings path plus the two or three results a reader w
 they read nothing else — this is what makes the ledger a usable rehydration point rather than a
 list of checkmarks. Mark any number that has not been validated by sampling as unsampled, right
 there in the line.
-
-### `## Record`
-
-The last section, used when the run records on no item: a sub-agent run, or no store
-(the `research` skill's `references/intensity-and-routing.md` § The work item). It holds the `dispatch:` and `agent:` lines of that file's
-§ Recording, one per line, in the orchestrator's words. Omitted when `Item:` names an item.
-Lane paragraphs keep their `model` as before.
 
 ## Anti-patterns
 

@@ -98,19 +98,21 @@ Before executing verifications, classify the prompt to determine the right subag
 
 Pass both the questions AND their how-to-check methods (from Step 2) to the subagent.
 
-**Routing and record.** Every batch goes to the `scout` agent with `model: "sonnet"` on the
-call (`model: "opus"` only when the invocation names a stronger model), as the `research` skill's `references/intensity-and-routing.md` § Profiles
-routes it; when `dev-flow:scout` is not loaded, that file's § Fallback. Before each call
-write its `dispatch:` line (`dispatch: scout sonnet medium — cove <mode> batch <n> of <m>`),
-and after it its `agent:` line (`agent: scout <id> round 1`), per that file's § Recording.
-This skill files no work item. Only when the invocation passes `--item <id>` and this run is
-on the main thread (not inside a sub-agent) do the lines go onto that item, appended with
-`Bash` under the session's own permissions; the item is never closed here. Otherwise they go
-in the Verification Summary's `Record:` line (Step 6).
+**Routing and record.** Every batch goes to the `scout` agent with `model: "<model>"` on the
+call — `sonnet`, or `opus` only when the invocation names a stronger model — as the
+`research` skill's `references/intensity-and-routing.md` § Profiles routes it; when
+`dev-flow:scout` is not loaded, that file's § Fallback. Before each call write its
+`dispatch:` line (`dispatch: scout <model> medium — cove <mode> batch <n> of <m>`), and after
+it its `agent:` line (`agent: scout <id> round 1`), per that file's § Recording. This skill
+files no work item. Only when the invocation passes `--item <id>`, this run is on the main
+thread (not inside a sub-agent), and the store resolves, do the lines go onto that item,
+appended with `Bash` under the session's own permissions; the item is never closed here.
+Otherwise they go in the Verification Summary's `Record:` line (Step 6), whose shape is that
+file's § Stored names.
 
 #### Codebase mode
 
-Spawn an `Agent` subagent with `subagent_type: "dev-flow:scout"`, `model: "sonnet"`:
+Spawn an `Agent` subagent with `subagent_type: "dev-flow:scout"`, `model: "<model>"`:
 
 ```
 You are a fact-checker verifying claims about a codebase. For each question below,
@@ -134,7 +136,7 @@ For each question, respond with:
 
 #### General knowledge mode
 
-Spawn an `Agent` subagent with `subagent_type: "dev-flow:scout"`, `model: "sonnet"`:
+Spawn an `Agent` subagent with `subagent_type: "dev-flow:scout"`, `model: "<model>"`:
 
 ```
 You are a fact-checker. For each question below, actually perform the check
@@ -212,7 +214,7 @@ Output format:
 - Checked: N claims
 - Consistent: X | Contradicted: Y | Unverified: Z
 - Result: VERIFIED | CORRECTED | PARTIAL
-- Record: item <id> | none — <the dispatch lines, one per batch, separated by "; ">
+- Record: <the Record: line of the research routing's § Stored names>
 
 ## Verified Response
 

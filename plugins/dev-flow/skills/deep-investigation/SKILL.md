@@ -145,10 +145,11 @@ Then launch, per the pacing decision from Step 1:
 - **Overrun rule, stated in the doc**: synthesis starts by time T with whatever findings exist;
   hard stop at T+1h.
 
-Before the first lane, open the record: decide the run's item by the `research` skill's `references/intensity-and-routing.md` § The work item (a
-sub-agent's run, or a run with no store, writes the strategy doc's `## Record`; `--item`
-adopts a named item; otherwise, with a store and `wi`, file one) and write `Item:` into the
-strategy doc's opening paragraph.
+Before the first lane, open the record: decide the run's item by the `research` skill's
+`references/intensity-and-routing.md` § The work item — its rules in order: a sub-agent's run
+records in the strategy doc's `## Record`, even under `--item`; a named item is adopted; with
+a store and `wi`, file one; otherwise `## Record` — and write `Item:` (with the `wi:` and
+`item_file:` lines when there is an item) into the strategy doc's opening paragraph.
 
 Launch each lane with `Agent` as that file's § Dispatches outside the profiles routes it —
 `general-purpose` until item 1ffd moves these lanes onto `research-lane` — with `model:` on
@@ -218,13 +219,14 @@ non-interactively** below.
    The retro is the raw material for the next improvement to this skill; route it per the repo's
    own conventions.
 4. **POC break-out.** Anything the synthesis says to *build* leaves this series as an
-   `investigate`/`implement`-format spec under `<series>/pocs/<poc-slug>/`, handed to subagents.
-   Pin a shared conventions file when several POCs must agree on a schema. Each POC is carried
-   by `dev-cycle` or `implement`, never dispatched from the research thread, and the run
-   records no dispatch for it. **Never build inline on the research thread** — the synthesis context is the wrong context to write code in, and
-   the build will consume it.
-5. **Close the run's item**, if the run filed one (the `research` skill's `references/intensity-and-routing.md` § Closing); a named item is never
-   closed.
+   `investigate`/`implement`-format spec under `<series>/pocs/<poc-slug>/`, handed to
+   `dev-cycle` or `implement`. Pin a shared conventions file when several POCs must agree on a
+   schema. Each POC is carried by `dev-cycle` or `implement`, never dispatched from the
+   research thread, and the run records no dispatch for it. **Never build inline on the
+   research thread** — the synthesis context is the wrong context to write code in, and the
+   build will consume it.
+5. **Close the run's item**, if the run filed one (the `research` skill's
+   `references/intensity-and-routing.md` § Closing); a named item is never closed.
 
 ---
 

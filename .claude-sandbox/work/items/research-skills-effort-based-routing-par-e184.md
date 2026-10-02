@@ -34,3 +34,58 @@ return: planner PLAN_READY .claude-sandbox/investigations/e184-research-routing/
 baseline: 978f34264739 00_initial.md 
 dispatch: reviewer opus high — plan review round 1
 agent: reviewer a20dd05df1987148f round 1
+verdict: NEEDS_CHANGES round 1 (plan)
+findings:
+  haiku evidence spot-checked and holds (7113 r2, r2-local-routing, initiative-layer, r4-control-plane; arXiv 2607.08700 F1/κ match, FP figures unverifiable from HTML, labelled approximate)
+  1. [high] 00:317-330 — rule order: --item before "nested" lets a nested run write onto the cycle's item (breaks single writer) and double-counts lane ids in the spend reader; fix: the sub-agent rule first; acceptance 9 and 14
+  2. [medium] 00:286,960-966 — OQ2's "runs that dispatch an agent" means every chain-of-verification call files an item; name CoVe and offer an option where it records only under --item or in its summary
+  3. [medium] 00:234-235,625-628,881-883 — CoVe on dev-cycle's scout: a88a F5 may strip scout's web tools; scout is outside F3's guard; test or F5 note, § Security line
+  4. [medium] 00:246,936-937; INDEX Risk — deep-investigation's interim general-purpose row may last long (1ffd waits on 819f); POC hand-off dispatch unrouted; name the partial delivery, add a § 3 row
+  5-8. [low] verifier cost ~0.4 lane not one; "at least 13 not grounded in an opened source"; the one sonnet run also broke header counts; 819f also touches research-refine/SKILL.md; acceptance gaps (--item hints, § 7/8 tables, scout description, CoVe Record: line, later waves); the deep pin set from the role (decided: line)
+  9-10. [nit] two quota signals; CoVe bare Bash
+dispatch: planner opus high — resume (plan fix round 1)
+agent: planner a755d6374fee501cb round 2
+return: planner PLAN_READY — serial 01_review-fixes.md (1-10)
+decided: 2026-10-02T22:21Z ruled-rule-case — research-lane-deep's pin is opus/high, set from the role (the exhaustive adversarial lane) because no exhaustive run has happened; revisit after the first exhaustive runs · authority: the operator's "4. approved a second file to control effort" (2026-10-02) · reopen: say so
+baseline: 978f34264739 00_initial.md 8592c7657d6b 01_review-fixes.md 
+dispatch: reviewer opus high — resume (plan review round 2)
+agent: reviewer a20dd05df1987148f round 2
+verdict: CLEAR round 2 (plan)
+findings:
+  prior 1-10 FIXED
+  11. [low] 00:767-768, 00:577 — acceptance 10 and the run-record.md outline still say ## Record is the no-store case only; say "used when the run records on no item: a sub-agent run, or no store"
+  12. [nit] 00:730-731 — § 14 cites "§ 5 rule 2" for nested runs, now 01 § 1 rule 1
+findings: carried — 11 [low], 12 [nit] above, verbatim; into this item's build
+decided: 2026-10-02T22:22Z narrowing — the verifier's procedure faults (OQ3 of the research-routing plan) go to a filed follow-up, research-verifier-fix-its-procedure-faul-2e75, landing after 819f; this build moves only the verifier's pin · authority: class narrowing (the plan's recommended option) · reopen: pull it back into this build
+decision 147: The research-routing build adds six stored names: the research-run tag, an item: field, a ## Record section, an --item argument, the synthesis role word, and chain-of-verification's Record: line; keep them as named? — options: (a) keep them as named [recommended] | (b) rename some (say which) | (z) decide later
+  raised: 2026-10-02T22:22Z
+  what: names stored in work items and briefs, or parsed by the spend reader (was OQ1 of the research-routing plan, e184)
+  why now: the build starts now with these names; renaming before it lands costs a search-and-replace, after it a migration of stored lines; blocks: the landing, not the build
+  why ask: api-name — new stored, parsed names are yours (answer 111 b)
+  context: you approved research routing in place, a work item per research run, and said plan it and land it · you approve the names it writes — then: none
+  stakes: reversible, narrow — research runs' records
+  (a) keep them as named — research-run (tag on the item each run files), item: (the run's item in its brief), ## Record (where a run with no item writes its lines), --item <id> (name an existing item), synthesis (role word on a dispatch line), Record: (chain-of-verification's summary line) — undo: a rename later migrates stored lines — who: research runs, the spend reader
+  (b) rename some — the build uses your names before it lands, no migration
+  (z) decide later — the build finishes with these names and waits to land
+  rec: (a) · basis partial — each follows an existing shape (tags, front-matter fields, dispatch role words); the reviewer found no clash
+  unknown: none
+decision 148: Which research runs should file a work item of their own? — options: (a) research-family and deep-investigation runs that dispatch an agent; chain-of-verification records on an item only when one is named, otherwise in its own summary [recommended] | (b) every run that dispatches an agent, chain-of-verification included | (c) every run, quick inline answers included | (z) decide later
+  raised: 2026-10-02T22:22Z
+  what: the reach of your "a work item for all research runs" (was OQ2 of the research-routing plan, e184)
+  why now: the build starts now with (a); blocks: the landing, not the build
+  why ask: trade-off — complete records against an item for every quick check
+  context: you said every research run should have a work item as its record · you decide where "every" stops — then: chain-of-verification always dispatches agents, and the model invokes it on its own ("verify this"), so under (b) each such check files an item; a run inside a sub-agent (e.g. research a planner runs) never files its own item under any option, because its spend is already on the parent's item and writing there would double-count it
+  stakes: reversible, narrow — the work-item stores of repos where research runs
+  (a) research and deep-investigation runs that dispatch — every real research run is on an item; chain-of-verification's quick checks stay out of the store unless you name an item, and their spend is not on any item — undo: an edit — who: research runs
+  (b) every run that dispatches — complete spend records; one item per chain-of-verification call, several a day in some sessions
+  (c) every run, inline answers too — most complete, noisiest
+  (z) decide later — the build finishes with (a) and waits to land
+  rec: (a) · basis partial — follows your intent for research runs without filing an item per quick check; chain-of-verification's spend is small
+  unknown: how often chain-of-verification runs across sessions
+target: full research-skills-effort-based-routing-par-e184 /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude/worktrees/research-skills-effort-based-routing-par-e184
+dispatch: implementer opus medium — build (plan CLEAR r2; prose, agent files, tests)
+agent: implementer a40f03413970add35 round 1
+return: implementer DONE_WITH_CONCERNS 296dd9b (deep-investigation partial until 1ffd; prose rules untested; store-lookup snippet restated from dev-cycle bindings.md by "keep them separate")
+librarian ruling: concerns accepted — the partial delivery is the plan's stated interim; the restated snippet follows the operator's "keep them separate"; the reviewer reads the prose criteria
+dispatch: reviewer opus high — review round 1
+agent: reviewer aeedf8a6c590ba4eb round 1

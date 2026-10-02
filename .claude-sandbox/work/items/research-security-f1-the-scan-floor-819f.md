@@ -3,12 +3,11 @@ id: research-security-f1-the-scan-floor-819f
 title: "research security F1: the scan floor"
 short_display_name: research scan floor
 type: feature
-status: doing
+status: done
 priority: 1
-owner: Kyle-McFarlane@401123cbad11
-claimed: 2026-09-30T22:27Z
 created: 2026-09-30
 updated: 2026-10-02
+closed: 2026-10-02
 refs:
   - .claude-sandbox/investigations/caef-research-security/05_second-opinion-closing.md
 ---
@@ -212,3 +211,27 @@ decision 144: The scan floor's seventh review confirmed every stall fixed, but f
 answer 144: a
 dispatch: implementer opus medium — resume (fix round 7, answer 144: round-7 1-4; after this round a further bypass is filed as a follow-up and does not hold the landing)
 agent: implementer a33ea65041c3dc364 round 8
+return: implementer DONE 84b5104 (markup vs plain-word tag names; plain-word opener with no > mid-line is a named residual)
+dispatch: reviewer opus high — resume (round 8, checks round-7 fixes; per answer 144 any further bypass is a follow-up)
+agent: reviewer a0a35fdcad507b97f round 8
+verdict: NEEDS_CHANGES round 8 at 84b5104
+findings:
+  round-7 1-4 CLOSED (measured; property test sound, ~4x growth everywhere, no flake expected; 106 tests in 37 s)
+  1. [medium, regression] scan-findings.py:125 — a glued plain-word opener needs a > within 300 chars, so '<system data="'+400x+'">' and '<system '+400x+'>' no longer hold (held through f818c50); fix: add the attribute parse back as a lookahead alternative: (?=[/>]|$|\s[^\n]{0,300}?>|_ATTRS\s*(?:/\s*)?>|\s+[\w:-]+\s*=[^<>\n]*$) (checked: holds the long forms and finding 2's; clean on <path>, <systems>, the two prose sentences, 'The ratio 3<instructions count is fine'; 500 KB repeats 0.07-0.11 s; fuzz linear)
+  2. [low, regression] scan-findings.py:125 — 'text <system a="b"' and similar at end of line held only at f818c50; finding 1's fix restores them
+  3-5. [follow-up] new false holds from the 300-char heuristic; the spaced opener's <-in-value bypass; markup name + punctuation — filed as research-scan-floor-bypass-and-false-hol-4c3d
+decided: 2026-10-02T22:29Z ruled-rule-case — one more fix round for the round-8 regression (a closed plain-word tag with 300+ characters of attributes stopped holding, held in every earlier round), with the reviewer's checked one-line fix, then land; the further bypass forms and false holds go to research-scan-floor-bypass-and-false-hol-4c3d · authority: answer 144 ("one more round, then land", bypasses as follow-ups) — a regression introduced by the granted round is part of finishing it, not a new bypass · reopen: say so and it comes back as a decision
+dispatch: implementer opus medium — resume (fix round 8: round-8 1 and 2 only)
+agent: implementer a33ea65041c3dc364 round 9
+return: implementer DONE 6cb7876
+dispatch: reviewer opus high — resume (round 9, checks the regression fix only)
+agent: reviewer a0a35fdcad507b97f round 9
+verdict: CLEAR round 9 at 6cb7876
+findings:
+  round-8 1, 2 CLOSED; no new regression, stall or false hold (24 control-tag inputs across f818c50/84b5104/6cb7876; 500 KB repeats 0.10-0.28 s); follow-ups unchanged in 4c3d
+landed: 66cc7ff
+closed 136: acted 66cc7ff
+closed 138: acted 66cc7ff
+closed 143: acted 66cc7ff
+closed 144: acted 66cc7ff
+- 2026-10-02 done: landed 66cc7ff (CLEAR r9; rounds past the cap on answers 136, 138, 143, 144)

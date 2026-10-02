@@ -182,7 +182,7 @@ says. `plugins/dev-flow/tests/test_agents.py` holds every row to its file.
 |---|---|---|
 | `research-lane` | sonnet / medium; `model: opus` on the call for a later-round lane that closes gap condition 4, or for a lane the invocation names a stronger model for; `model: opus` for the adversarial lane when § Below the quota reserve or § Fallback steps it down | every lane of `research`, `research-deep` and `research-refine`; every `deep-investigation` lane once item 1ffd launches them on this file (until then, § Dispatches outside the profiles) |
 | `research-lane-deep` | opus / high | the adversarial lane (`a<n>-…`) of an `exhaustive` run, in round 2 (`research-deep` Step 5) |
-| `research-verifier` | sonnet / low | every verification: a quick run written to disk (sample 4), `standard` (12), `deep` (20), `exhaustive` (30), and a re-verify after a clean-up |
+| `research-verifier` | sonnet / low | every verification: a quick run written to disk (sample 4), `standard` (12), `deep` (20), `exhaustive` (30), and a re-verify after a clean-up; and every script review at the toolkit gate (`run-record.md` § The toolkit gate) |
 | `scout` | sonnet / medium; `model: opus` on the call when the invocation names a stronger model | each `chain-of-verification` Step 4 batch: codebase, general knowledge, or one of each in mixed mode, at 5-8 questions a batch |
 
 - **Signals.** Every signal a row names is one the run can check: the preset, the round,
@@ -195,6 +195,10 @@ says. `plugins/dev-flow/tests/test_agents.py` holds every row to its file.
   disagree with their tables) and the published record (Haiku 4.5 is lenient on factual
   support, takes no effort parameter, and is the only Haiku, retiring not sooner than
   October 15, 2026). `low`, not `medium`: the verifier runs a fixed procedure over a sample.
+  The same holds for its two security jobs — judging the scanner's flags (`benign mention`
+  or `instruction-shaped`) and the toolkit gate's script review — since each is a checklist
+  with a hold-when-in-doubt default, and a false hold costs one mining round. Revisit the pin
+  if a script review or a flag verdict is found wrong.
   A fable session's synthesis fork is § Dispatches outside the profiles'.
 - **`research-lane-deep`'s pin is set from the role,** not from runs: breaking an answer is
   judgement, the kind dev-flow runs at opus high, and no `exhaustive` run has happened yet.
@@ -219,7 +223,7 @@ prompts: prompts get paraphrased, frontmatter does not.
 | Dispatch | Agent and model | Effort | Why |
 |---|---|---|---|
 | Orchestrator, recon, the quick-run answer | this session | the session's | no dispatch |
-| Synthesis fork (`research` Step 9; `research-deep` Step 9) | `general-purpose`, `model:` the session's own tier, named (`opus` or `fable`) | `inherit` | the orchestrator's own pass, moved to a fork only for context room; no file pins the orchestrator's effort, and the fork must keep it |
+| Synthesis fork (`research` Step 9; `research-deep` Step 9) | `general-purpose`, `model:` the session's own tier, named (`sonnet`, `opus` or `fable`) | `inherit` | the orchestrator's own pass, moved to a fork only for context room; no file pins the orchestrator's effort, and the fork must keep it |
 | `deep-investigation` lanes, until item 1ffd lands | `general-purpose`, `model:` the lane model from its Step 1 (default `sonnet`, the `research-lane` row) | `inherit` | `research-lane`'s body forbids the tracked `<series>/findings/` path these lanes write today; 1ffd moves them to staging and onto `research-lane`, and deletes this row. Until then these lanes are routed by model and recorded, but not effort-pinned |
 | POC break-out (`deep-investigation` Step 8.4) | not routed here | — | each POC is an `investigate`-format spec, which is build work: it leaves the run and is carried by `dev-cycle` or `implement`, under their own routing. The run records no dispatch for it; its record ends at the synthesis |
 | `research-prune` | — | — | dispatches nothing |
@@ -245,7 +249,8 @@ The first rule that matches wins:
    is always this rule.
 2. **The invocation names an item** — `--item <id>`, passed by the operator or a calling
    process — or a resumed run's state file names one. Record onto it, file nothing, and
-   never close it: its owner does.
+   never close it: its owner does. A named item with no store or no `wi` resolving (below)
+   falls to rule 4.
 3. **A store and `wi` resolve (below), and the skill files items.** File one (§ Filing). The
    skills that file are `research`, `research-deep`, `research-refine` and
    `deep-investigation`. `chain-of-verification` never files: it is often model-invoked
@@ -269,8 +274,8 @@ lines that quote it.
 | Name | What it is |
 |---|---|
 | `research-run` | the tag on every item a run files |
-| `item: <id> \| none — <reason>` | the brief's frontmatter field naming the run's item (`Item:` in a strategy doc's opening paragraph) |
-| `## Record` | the state file's last section, used when the run records on no item: a sub-agent run, or no store |
+| `item: <id> \| none — <reason>` | the brief's frontmatter field naming the run's item (`Item:` in a strategy doc's opening paragraph); beside it, `wi:` (the resolved command) and `item_file:` (the item's absolute path) when there is an item |
+| `## Record` | the state file's section just above its ledger, used when the run records on no item: a sub-agent run, or no store |
 | `--item <id>` | the argument that names an existing item (rule 2) |
 | `synthesis` | the role word on a synthesis fork's `dispatch:` line |
 | `Record:` | `chain-of-verification`'s Verification Summary line, `- Record: item <id> \| none — <dispatch lines>`, the lines one per batch and separated by `; ` |
@@ -290,22 +295,20 @@ $WI add "<research: … | deep investigation: …> <the question, in your words>
     --ref <brief, strategy doc or destination path> \
     --desc "<the decision it feeds; the preset; the destination>"
 $WI claim <id>
+$WI handoff <id> --doing "<run> running" --next "report and close"
 ```
 
-Then append to the item's body:
-
-```
-## Acceptance
-- [ ] the run reports its STATUS
-- [ ] a dispatch: and an agent: line for every Agent call
-```
+The handoff keeps `$WI lint` clean while the run is open.
 
 - **Type `spike`**: a research run produces knowledge, not code. **Tag `research-run`**
   keeps these items separable from plan spikes in any spend population. Priority is `wi`'s
   default.
 - **The id goes into the run's state file** — the brief's `item:` field, the strategy doc's
-  `Item:` line; `none — <reason>` when there is no item. A resumed run reads it and never
-  files a second.
+  `Item:` line; `none — <reason>` when there is no item. With an item (filed or named),
+  write beside it the resolved command, `wi: python3 <absolute wi.py> --root <absolute
+  WI_ROOT>`, and the file the record lines are appended to, `item_file: <WI_ROOT>/items/<id>.md`:
+  shell variables do not survive between Bash calls or into a wakeup or a resumed session,
+  and these lines do. A resumed run reads them and never files a second.
 - A `research-refine` run's item carries `--ref wi:<prior run's item>` when the prior brief
   names one.
 
@@ -325,7 +328,10 @@ test -f "$WI_PY" || WI_PY=$(ls -t "$P"/cache/kmacmcfarlane/work-items/*/skills/w
 WI="python3 $WI_PY"
 ```
 
-No `WI_ROOT`, or no `wi.py` found: rule 4. This snippet restates the `dev-cycle` skill's
+Rule 4's test is `test -n "$WI_ROOT" && test -f "$WI_PY"`: when it fails, rule 4. Run the
+snippet once, at the record's opening, and from then on use the `wi:` and `item_file:` lines
+the state file carries (with no state file — a quick run — re-run the snippet in each Bash
+call that needs `wi`). This snippet restates the `dev-cycle` skill's
 store resolution in research's own home; a change to `wi`'s install path touches both.
 
 ### Closing
@@ -347,8 +353,8 @@ the new one.
 
 ### What the item holds
 
-- **Only** the `dispatch:` and `agent:` lines (§ Recording), the closing note, and the
-  filing's title, description, tag and refs. The brief and its ledger stay the run's state
+- **Only** the `dispatch:` and `agent:` lines (§ Recording), appended to `item_file:`, the
+  handoff, the closing note, and the filing's title, description, tag and refs. The brief and its ledger stay the run's state
   and rehydration point; the findings, verification sheet and synthesis stay in staging and
   at the destination.
 - **Every word on the item is the orchestrator's** — ids, counts, models, efforts, paths,
@@ -362,8 +368,9 @@ the new one.
 
 ## Recording
 
-**Before each Agent call**, append one line to the record sink — the item (§ The work
-item), else the state file's `## Record`, else the report:
+**Before each Agent call**, write one line to the record sink — appended to the item's
+`item_file:` (§ The work item); else at the end of the state file's `## Record`, by an edit
+above the ledger, never a `>>` to the file; else in the report:
 
 ```
 dispatch: <role> <model> <effort> — <signal>
@@ -374,11 +381,12 @@ dispatch: <role> <model> <effort> — <signal>
 | `<role>` | `research-lane` (both lane files), `research-verifier`, `scout` or `synthesis` |
 | `<model>` | the per-call model |
 | `<effort>` | the dispatched file's pin, so `research-lane high` is `research-lane-deep`; or `inherit` for a `general-purpose` dispatch |
-| `<signal>` | the preset, round and lane id; or the gap condition, the sample, or the fallback or step-down reason |
+| `<signal>` | the preset, round and lane id; or the gap condition, the sample, `script review <toolkit lane id>`, or the fallback or step-down reason |
 
 **As each call returns its agent id**, append `agent: <role> <id> round <n>`, where `<n>` is
 a lane's run round (1-3), the verifier's pass (1, then 2 on a re-verify after a clean-up),
-1 for the fork, and 1 for a `chain-of-verification` batch. A round's lanes launch in one
+1 for the fork, 1 for a `chain-of-verification` batch, and for a script review at the
+toolkit gate the round of the toolkit lane it reviews. A round's lanes launch in one
 message: write all their `dispatch:` lines in one append before it, then their `agent:`
 lines as the ids come back.
 
@@ -388,6 +396,7 @@ agent: research-lane a1b2c3d4e5f60718 round 1
 dispatch: research-lane opus medium — round 2 gap 4 w6-pricing
 dispatch: research-lane opus high — adversarial (exhaustive) round 2 a1-break-answer
 dispatch: research-verifier sonnet low — verify sample 30
+dispatch: research-verifier sonnet low — script review l1-log-toolkit
 dispatch: synthesis opus inherit — fork (findings over 2,500 lines)
 dispatch: research-lane sonnet inherit — deep-investigation lane b2 wave 1; general-purpose until deep-investigation parity
 dispatch: scout sonnet medium — cove general batch 1 of 2

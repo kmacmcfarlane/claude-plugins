@@ -36,7 +36,9 @@ the design toward the two known weak spots.
 
 Two failure modes carry a **negative** mark on top of the axis score, because either one
 discredits the whole file: a fabricated source or number (any instance), and imperative text
-addressed to an agent inside a findings file (a security defect — see the lane contract).
+addressed to an agent inside a findings file (a security defect — see the lane contract). A
+HOLD from the scan floor (`run-record.md` § The scan floor) carries the security mark too,
+whatever the verifier found.
 
 ## Scoring
 

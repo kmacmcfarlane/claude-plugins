@@ -27,7 +27,7 @@ plugins/
     agents/            # scribe, scout, implementer, implementer-critical, implementer-deep, planner, planner-deep, reviewer, reviewer-light, cross-checker, cross-checker-deep (the dev cycle's role workers); research-lane, research-lane-deep, research-verifier (the research family's workers)
     skills/
       {investigate,implement,dev-cycle,deep-investigation,research,research-deep,research-refine,research-prune,chain-of-verification,librarian-mode}/
-      research/scripts/  # tool-preflight.sh (Step 5.1 tool check) + unit tests
+      research/scripts/  # tool-preflight.sh (Step 5.1 tool check), scan-findings.py (the scan floor under the verifier) + unit tests
       librarian-mode/scripts/  # quota_budget.py (the librarian's quota sense) + unit tests
     tests/             # test_agents.py: every agent file's model and effort pin, and its frontmatter shape
   kit-dev/             # Maintaining this kit itself
