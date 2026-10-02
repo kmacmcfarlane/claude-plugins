@@ -655,7 +655,8 @@ class ShippedPriceTableTests(unittest.TestCase):
         self.assertTrue(table.canonical(table.default_model))
         # every model id observed in the local transcripts, plus the tier
         # aliases the meta files use
-        for model in ("claude-opus-5", "claude-sonnet-5", "claude-fable-5-1",
+        for model in ("claude-opus-5-5", "claude-sonnet-5-5",
+                      "claude-opus-5", "claude-sonnet-5", "claude-fable-5-1",
                       "claude-fable-5", "claude-opus-4-7", "claude-opus-4-8",
                       "claude-haiku-4-5-20251001", "opus", "sonnet", "fable",
                       "haiku"):
@@ -663,6 +664,73 @@ class ShippedPriceTableTests(unittest.TestCase):
             self.assertTrue(known, model)
             for price_class in usage_report.PRICE_CLASSES:
                 self.assertGreater(prices[price_class], 0, (model, price_class))
+
+
+# The pricing page's own figures, per 1M tokens, as fetched 2026-10-02 from
+# https://platform.claude.com/docs/en/about-claude/pricing:
+# (input, output, cache_write_5m, cache_write_1h, cache_read).
+CITED_PRICES = {
+    "claude-opus-5-5": (4.0, 20.0, 5.0, 8.0, 0.2),
+    "claude-sonnet-5-5": (2.0, 10.0, 2.5, 4.0, 0.2),
+    "claude-fable-5-1": (10.0, 50.0, 12.5, 20.0, 0.25),
+    "claude-fable-5": (10.0, 50.0, 12.5, 20.0, 1.0),
+}
+
+
+class ShippedPriceRatesTests(unittest.TestCase):
+    """The shipped table prices the cited models at the page's rates."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.fixture = Fixture(self.tmp.name)
+        self.warnings = []
+        self.table = usage_report.PriceTable.load(SHIPPED_PRICES,
+                                                  warn=self.warnings.append)
+
+    def test_table_records_its_source(self):
+        self.assertEqual(self.table.data["source"],
+                         "https://platform.claude.com/docs/en/about-claude/pricing")
+        self.assertEqual(self.table.retrieved, "2026-10-02")
+
+    def test_cited_models_price_at_the_page_rates(self):
+        lines = [assistant_line("msg_%d" % i, model, "2026-10-01T00:00:%02d.000Z" % i,
+                                input_tokens=1000, output_tokens=2000,
+                                cache_5m=3000, cache_1h=4000, cache_read=5000)
+                 for i, model in enumerate(sorted(CITED_PRICES))]
+        session = usage_report.read_session(self.fixture.session("sess", lines),
+                                            table=self.table)
+        self.assertEqual(self.warnings, [])
+        by_model = {r.model: r for r in session.all_records()}
+        self.assertEqual(sorted(by_model), sorted(CITED_PRICES))
+        for model, (inp, out, w5m, w1h, read) in CITED_PRICES.items():
+            record = by_model[model]
+            self.assertTrue(record.model_known, model)
+            self.assertEqual(record.price_key, model)
+            expected = (1000 * inp + 2000 * out + 3000 * w5m + 4000 * w1h
+                        + 5000 * read) / 1e6
+            self.assertAlmostEqual(record.cost_usd, expected, msg=model)
+        data = usage_report.summarize([session], self.table)
+        self.assertEqual(sorted(data["by_model"]), sorted(CITED_PRICES))
+        self.assertEqual(data["warnings"], [])
+
+    def test_unknown_model_is_flagged_not_priced_as_a_known_one(self):
+        path = self.fixture.session("sess", [
+            assistant_line("msg_1", "claude-opus-9-9", "2026-10-01T00:00:01.000Z",
+                           input_tokens=1000),
+            assistant_line("msg_2", "claude-opus-5-5", "2026-10-01T00:00:02.000Z",
+                           input_tokens=1000)])
+        session = usage_report.read_session(path, table=self.table)
+        self.assertEqual(self.table.unknown_models, ["claude-opus-9-9"])
+        self.assertEqual(len(self.warnings), 1)
+        self.assertIn("claude-opus-9-9", self.warnings[0])
+        data = usage_report.summarize([session], self.table)
+        bucket = usage_report.UNKNOWN_PREFIX + "claude-opus-9-9"
+        self.assertEqual(sorted(data["by_model"]), ["claude-opus-5-5", bucket])
+        self.assertEqual(data["by_model"]["claude-opus-5-5"]["input"], 1000)
+        self.assertTrue(any("claude-opus-9-9" in w for w in data["warnings"]))
+        # the total still counts it, at the default model's price
+        self.assertGreater(data["by_model"][bucket]["cost_usd"], 0)
 
 
 if __name__ == "__main__":
