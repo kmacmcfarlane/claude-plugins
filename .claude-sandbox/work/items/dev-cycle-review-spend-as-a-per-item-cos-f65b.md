@@ -3,13 +3,12 @@ id: dev-cycle-review-spend-as-a-per-item-cos-f65b
 title: "dev-cycle: review spend as a per-item cost budget with justified increases, not a round count"
 short_display_name: review spend as a cost budget
 type: spike
-status: doing
+status: done
 priority: 1
 parent: dev-cycle-at-the-review-cap-the-orchestr-5bdd
-owner: Kyle-McFarlane@401123cbad11
-claimed: 2026-10-02T16:51Z
 created: 2026-10-02
 updated: 2026-10-02
+closed: 2026-10-02
 refs:
   - operator 2026-10-02, decision 141
 ---
@@ -59,3 +58,23 @@ return: planner PLAN_READY — serial 02_review-r2-fixes.md (16-19), evidence re
 baseline: a88831aa8df8 00_initial.md 98c18dec7ccd 01_review-fixes.md 85fb607d5d9e 02_review-r2-fixes.md 
 dispatch: reviewer opus high — resume (plan review round 3)
 agent: reviewer aa75f970dc65e2c2e round 3
+verdict: NEEDS_CHANGES round 3 (plan)
+findings:
+  prior 16-19 FIXED (evidence reproduces: 112 items; default tables ask on 12, 4, 3, 2 items); the spike/plan split is readable at phase start from type:
+  20. [medium] 02:266,268,315-319,338 — the convergence stop (Q4 (i)) was not simulated: caef's must-fix rose 4 → 5 from r3 to r4, so it asks before round 5 too; "three items ask" and "the spikes finish inside" count budget asks only, and the spikes' convergence asks are unknown; fix: simulate the stop over every phase that reached a 4th review (counts from findings blocks or series review files), state asks as budget plus convergence, or label counts "budget asks only" and add the known ones
+  21. [low] 02:228-236, item_cost.py:31-32,156-160 — nested sub-agent spend lands on the parent's first segment; place each by its own start; the cleanup shortcut relies on 00's quiescence rule and only for ids whose transcripts are gone
+  22. [nit] caef's spend before planner round 6 is $26.05 (the fable second opinion ran first), not $22.10
+  23. [nit] a plan phase with no type: (store-less standalone) takes the $18 plan default
+dispatch: planner opus high — resume (plan fix round 3)
+agent: planner af46608c4b7a2f7a2 round 4
+return: planner PLAN_READY — serial 03_convergence-simulated.md (20-23), new Q8
+baseline: a88831aa8df8 00_initial.md 98c18dec7ccd 01_review-fixes.md 85fb607d5d9e 02_review-r2-fixes.md 25a751beac23 03_convergence-simulated.md 
+dispatch: reviewer opus high — resume (plan review round 4, the cap)
+agent: reviewer aa75f970dc65e2c2e round 4
+verdict: CLEAR round 4 (plan)
+findings:
+  prior 20-23 FIXED (counts spot-checked against item records; 112 items reproduce)
+  24. [low] 03:130 — Q8 (i) "stop and carry, as today, decided alone" is true only under a librarian; standalone runs today raise every plan cap; name the standalone case or say standalone follows Q7 (under Q7 (iv) they keep raising)
+  25. [nit] 03:159-165 — Q1 (a)'s text should say the round count also stays as the plans' stop at the fourth review under Q8 (i)
+findings: carried — 24 [low], 25 [nit] above, verbatim; into the build of decision 145 (a), if chosen
+- 2026-10-02 done: closed on its series .claude-sandbox/investigations/f65b-review-cost-budget/ (00-03, plan CLEAR r4); result back as decision 145, replacing 141 and 142

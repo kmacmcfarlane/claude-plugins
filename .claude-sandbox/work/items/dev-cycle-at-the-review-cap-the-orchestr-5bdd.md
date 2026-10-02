@@ -9,9 +9,9 @@ deps:
   - review-caps-and-spend-plans-raise-only-o-5579
 owner: Kyle-McFarlane@401123cbad11
 claimed: 2026-10-01T07:22Z
-blocked: decisions 139-142 (the plan's operator questions)
+blocked: decision 145 (cost budget, replacing 141 and 142)
 created: 2026-10-01
-updated: 2026-10-01
+updated: 2026-10-02
 refs:
   - operator 2026-10-01, answer 137
 ---
@@ -163,3 +163,21 @@ decision 142: When may a finish round spend without asking — during your hold,
   basis: observed — the self-granted round's conditions (plugins/dev-flow/skills/librarian-mode/references/budget.md, § round budget; dev-cycle references/bindings.md § Decisions) · observed — the plan's traces 7, 10-12c (.claude-sandbox/investigations/5bdd-finish-trivial-at-cap/02_review-r2-fixes.md) · inferred — finish rounds stay small enough that a quota reading adds little
   unknown: the quota cost of finish rounds across a busy night
 note: operator 2026-10-02 on decision 141, verbatim: "141 - what I REALLY care about is cost, not number of rounds. Investigate how we could frame the threshold that way instead. A spend budget set when the research is created and authorization to increase budget with a justifacation for the budget increase matches the actual problem better" (read as: dig into — investigate framing the cap as a per-item spend budget set when the work starts, raised with a justified increase; covers 142 too; the result comes back on 141 and 142) — spike dev-cycle-review-spend-as-a-per-item-cos-f65b
+answer 141: reframed as decision 145 — "141 - what I REALLY care about is cost, not number of rounds. Investigate how we could frame the threshold that way instead. A spend budget set when the research is created and authorization to increase budget with a justifacation for the budget increase matches the actual problem better"
+answer 142: reframed as decision 145 — folded by the librarian into 141's dig into (both are about spend); the operator was told 2026-10-02 and did not object
+closed 141: superseded by 145
+closed 142: superseded by 145
+decision 145: Should a spend budget per item, set when each phase starts and raised only on a justified ask, replace the 4-round review cap? — options: (a) yes: a per-item spend budget replaces the round count as the trigger to ask, with the recommended settings [recommended] | (b) keep the cap; finish rounds past it spend from a small allowance (about $2) instead of a count | (c) keep counting rounds: round 4, then round 5 only with fewer leftovers; only your hold stops a finish round | (z) decide later
+  raised: 2026-10-02T17:35Z
+  what: how the review loop decides when to stop and ask you, in cost instead of rounds; replaces 141 and 142 (the result of your dig into on 141, spike f65b). (a)'s settings, each yours to change in the reply: unit — list-price dollars, shown with their share of a week (Q2); defaults by phase — spike plan $32, other plans $18, chore and bug builds $6, other builds $18, a fable pin doubles them, and a plan's own estimate sets its build's budget, put to you when over the default (Q3); the 4-round count stays only as a convergence stop (ask when the must-fix count stops falling) and the fallback when spend cannot be read (Q4); at the budget, one finish round of exact fixes (about $1) may still run (Q5); ask once spend reaches the budget, so at most one round goes over (Q6); past the 4th review your hold and the quota reserve still stop it, only the standing grant goes, and a standalone run past the 4th is a named loosening (Q7); a plan with no high left at its 4th review still stops and carries its findings, unasked under a librarian (Q8). New stored names: budget:, cost:, must-fix, Estimated cost:, the reviewer's MUST-FIX:
+  why now: the finish-at-cap build (5bdd) waits on it; the plan cleared review in 4 rounds
+  why ask: spend — it sets when quota is used without asking you, and (a) adds five stored names (api-name)
+  context: you said you care about cost, not rounds, and asked for a budget set when the work starts with justified increases · you decide whether a budget replaces the round cap, and its settings — then: measured over the last 14 days (112 items, cited list prices): a fix round costs about $4-5 (about 0.2% of a week); 1% of a week is about $22; spike plans median $24, build plans $9, features $9, chores $2; under (a) with these settings the scan floor (819f) asks at the same four points as tonight, caef once or twice (today once, at round 4), a $21 "chore" (dbfc) once (new), and a88a, a99c, ec4f and c79e stop and carry with no ask where today each asked once at round 4; my earlier cap cards overstated a round's cost (I wrote ~1% of a week, 30-40 min)
+  stakes: reversible, wide — every dev-cycle run, librarian or standalone
+  (a) a spend budget replaces the round count — asks come at real cost: a cheap loop finishes, an expensive one asks with what is left, what was spent, and what the next round buys; needs two context-guard items first (price the 5.5 models; a spend reader by agent id) and supersedes most of the finish-at-cap plan (its bound, its rule order, its spend and hold sections) — undo: edits to dev-cycle and librarian-mode rules; stored lines stay readable — who: every capped run; standalone runs past the 4th review loosen (Q7 offers keeping them as today)
+  (b) keep the cap with a small spend allowance for finish rounds — the smallest change to the finish-at-cap plan; cheap leftovers that are not exact fixes still ask at round 4 — undo: an edit — who: capped runs
+  (c) keep rounds — no spend reader needed; cap cards keep guessing the cost — undo: an edit — who: capped runs
+  (z) decide later — the finish-at-cap build keeps waiting; caps come to you as today
+  rec: (a) · basis partial — simulated on 112 real items with cited prices and reviewed 4 rounds; the defaults sit near each kind's maximum, so margins are thin, and the sample is one repo over two weeks
+  basis: observed — 112 items' spend at cited prices (.claude-sandbox/investigations/f65b-review-cost-budget/evidence/item-costs.md, item_cost.py) · observed — the asks simulated with the convergence stop (03_convergence-simulated.md § 1) · inferred — product repos likely cost more than this kit (an open question)
+  unknown: whether repos need their own defaults; whether effort xhigh should scale the budget; whether the research skills' cost line should show measured spend (all three non-blocking)
