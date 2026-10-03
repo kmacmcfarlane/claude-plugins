@@ -110,3 +110,16 @@ decision 146: Weekly usage is at 82%, 3 points from your 85% stop on new dispatc
   (z) decide later — as (a) by default: the 85% stop is the rule in force
   rec: (a) · basis strong — the rule is yours and the queued work loses nothing by waiting; this week's spend is already high
   unknown: how much the research-routing plan and its reviews will cost (planner runs this week were $13-40 each)
+decision 152: How should the agent-scope protocol you just described start? — options: (a) a plan-only spike here after Sunday's weekly reset, with the agents librarian asked now which parts its control plane already covers [recommended] | (b) the same spike now, past the weekly stop if needed | (c) hand it to the agents repo to own, with this repo implementing the librarian-mode side | (z) decide later
+  raised: 2026-10-03T05:05Z
+  what: the first step on agent scope of responsibility (): declared scope, the observability and credentialed access that come with it, advertising it, and escalating overlaps to you
+  why now: you just asked for it; blocks: nothing
+  why ask: placement — it spans this repo's librarian-mode (Scope, claims, forwarding 3460) and the agents repo's control plane (claims, ledger), and credentialed access is a trust question; where it is owned is yours
+  context: you described the protocol just now, after a day of peers relaying consent and stepping on blurry lines · you decide where it starts and when — then: none
+  stakes: reversible, narrow — planning only
+  (a) plan here after the reset, agents asked now — a cheap peer question now avoids planning what their back end already does; the plan comes back with placement and the credential questions for you — undo: n/a — who: this repo and agents
+  (b) plan now — starts today; a planner run is about 1-2% of a week, with weekly at 83% of your 85% stop
+  (c) the agents repo owns it — fits its control-plane role; this repo builds the librarian-mode half when their spec lands
+  (z) decide later — the item waits
+  rec: (a) · basis partial — the agents back end already has claims and a ledger, so asking first avoids duplicate design; quota is tight until Sunday
+  unknown: how much of this the agents control-plane plan already covers
