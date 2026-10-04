@@ -19,3 +19,4 @@ Operator 2026-10-04, answer 152 (verbatim on 1222): the short-term step of the a
 - next: —
 - blocked: —
 - learned: —
+note: agents' reading (2026-10-04, on 51df): the ## Librarian section stays the single authority for scope; credentials stay with the operator per session via claude-sandbox launch config — the interview should name needed credentials by path and key only, and point grants at the sandbox launch config
