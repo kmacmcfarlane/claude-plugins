@@ -123,3 +123,4 @@ decision 152: How should the agent-scope protocol you just described start? — 
   (z) decide later — the item waits
   rec: (a) · basis partial — the agents back end already has claims and a ledger, so asking first avoids duplicate design; quota is tight until Sunday
   unknown: how much of this the agents control-plane plan already covers
+answer 152: 152a - I'm imagining a simple skill change in the librarian skill in the short term (interview scope for the Librarian CLAUDE.md section, ask to fill it for repos that don't have it filled yet). Good to consider the long-term solution for this with the `agents` librarian too (read as: (a), shaped — short term, a librarian-mode skill change: the opt-in interviews the repo's scope of responsibility into the ## Librarian section, and a librarian whose repo's section lacks it asks to fill it at start; long term, worked out with the agents librarian, asked now)

@@ -18,3 +18,4 @@ Operator 2026-10-03, verbatim: "I think that there sound be a protocol where the
 - next: —
 - blocked: —
 - learned: —
+note: answer 152 (a), shaped by the operator: short term = librarian-mode-interview-the-repo-s-scop-5925 (librarian-mode interview); long term worked with the agents librarian, asked 2026-10-04
