@@ -44,3 +44,13 @@ return: implementer DONE 9ebed2f (checklist item + lint, create-skill, CLAUDE.md
 librarian ruling: the exemption sentence stays in the branch but the landing waits on 158; on (b) or (c) one sentence changes before landing
 dispatch: reviewer opus high — review round 1
 agent: reviewer aebf5a40fcf3c0f45 round 1
+verdict: NEEDS_CHANGES round 1 at 9ebed2f
+findings:
+  1. [medium] create-skill SKILL.md:139 — end-of-skill checklist still says no README; reword to match :107
+  2. [medium] dev-cycle agent-brief.md:80 — implementer briefs still say "No README.md inside a skill folder"; replace with the allowed-with-footer rule
+  3. [medium] CLAUDE.md:103-105 — "every README.md ends with the footer … root exempt" is false for the agent-facing .claude-sandbox/work/README.md that wi init seeds in every repo; word it as "every README.md written for humans …; a README agents are told to read carries no footer"
+  4. [low] review-checklist.md:104 — normalise trailing whitespace and CR before comparing, say "last non-blank line" at :91 (lint otherwise safe under set -euo pipefail)
+  5. [low] review-checklist.md:91-92 — the reviewer also confirms the README carries nothing the agent needs and no copy of SKILL.md
+  6. [nit] CLAUDE.md:103 rewrap
+dispatch: implementer sonnet medium — resume (fix round 1)
+agent: implementer a584d80ad91257072 round 2

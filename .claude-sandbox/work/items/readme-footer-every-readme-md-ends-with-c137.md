@@ -37,3 +37,17 @@ decision 158: This repo's root README.md is the marketplace doctrine that agents
   (z) decide later — the root README stays without the footer
   rec: (a) · basis partial — the footer marks human docs; a doctrine file agents must read is the one README it would mislabel
   unknown: whether other repos' READMEs also serve as agent-read doctrine
+decision 158: READMEs that agents are told to read (this repo's root README, the doctrine; the work-item store's README that wi init seeds in every repo) — should they get the "not agent instructions" footer anyway? — options: (a) no footer on a README whose job is agent-read; the rule reads "every README written for humans" [recommended] | (b) add it to every README and move the agent-facing content out (the doctrine to e.g. DOCTRINE.md; the store's README to another name), keeping README.md for humans | (c) add the footer anyway | (z) decide later
+  raised: 2026-10-05T23:12Z
+  revised: 2026-10-05T23:14Z — the README build's review found a second agent-facing README: .claude-sandbox/work/README.md, seeded by wi init in every repo ("Start with wi prime…"); options and recommendation unchanged, scope widened
+  what: how your footer rule (answer 157 a) applies to READMEs agents are told to read
+  why now: the README build is ready apart from this wording, and waits on it to land; blocks: that landing
+  why ask: your-call — the footer would call agent-read files "not agent instructions"
+  context: you confirmed the footer on every README (157 a) · you decide whether agent-read READMEs are an exception, or their content moves — then: none
+  stakes: reversible, narrow — this repo's root README, every repo's store README
+  (a) an exception for agent-read READMEs — the rule reads "every README written for humans"; both files keep their job, no footer — undo: an edit — who: this repo and every work-item store
+  (b) move the agent content out — README.md becomes human-only everywhere; the doctrine and the store guide move to other names, and every pointer follows (CLAUDE.md, librarian-mode, review-checklist, create-skill, wi init) — a larger change, its own items
+  (c) footer anyway — simplest; the footer is false on both files, and an agent obeying it could skip the doctrine
+  (z) decide later — the README build waits
+  rec: (a) · basis partial — the footer marks human docs; agent-read READMEs are exactly the ones it would mislabel
+  unknown: whether other repos keep agent-facing READMEs of their own
