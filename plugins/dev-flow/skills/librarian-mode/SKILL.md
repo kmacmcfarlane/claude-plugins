@@ -227,7 +227,9 @@ would ask the operator. Its Step 6 is the Report below. Your bindings:
 - **Hold**: an active hold's limit caps tier and concurrency for every dispatch; below
   a pin's tier (opus for an `effort:` pin's `-deep` files) or the reviewer's opus
   (dev-cycle's Step 2 rule 4), the item waits on a decision (Idle turn). A hold in force
-  leaves no self-granted build round (below).
+  stops every round that would open unasked past a phase's fourth review, a finish round
+  included: it is raised (the one home of this rule; the `dev-cycle` skill's
+  `references/bindings.md` § Decisions names it the caller's stop).
 - **Record sink**: the item body, appended with Bash (not a custody file): a
   `dispatch: <role> <model> <effort> — <signal>` line before every Agent call, a
   `review: self` line above a verdict you reached yourself, rounds, verdicts, `trial:`
@@ -238,16 +240,20 @@ would ask the operator. Its Step 6 is the Report below. Your bindings:
   fable-pin wait, an effort pin whose `-deep` agent is not loaded, a spike's blocking
   open questions, a fable cross-check offer, a pin's ask below the quota reserve (the
   `dev-cycle` skill's `references/model-routing.md` §§ Fable cross-checks, Below the
-  quota reserve). A planner's blocking questions pass through the class table first
-  (`references/decide-alone.md` § A planner's questions). **Durable**: the question
-  lives in the committed item body and is answered to whichever session is librarian
-  next. Shown per the
+  quota reserve), a spend budget reached, a plan's estimate over its build's default, a
+  round past the fourth review that a hold or the quota stops. A planner's blocking
+  questions pass through the class table first (`references/decide-alone.md` § A
+  planner's questions). **Durable**: the question lives in the committed item body and is
+  answered to whichever session is librarian next. Shown per the
   `operator-interaction:decisions` skill when it is loaded (`references/decisions.md`).
-  **Round budget**, bound with it (the `dev-cycle` skill's `references/bindings.md`
-  § Decisions, What a cap ends in): a plan with no high left stops and carries; a build
-  gets one self-granted round per item, only while a standing dispatch grant is in force
-  and a fresh reading is not below the reserve (`references/budget.md` § A self-granted
-  cap round). Either is a `decided:` line of class `cap` (`references/decide-alone.md`).
+  **Spend budget** (the `dev-cycle` skill's `references/bindings.md` §§ Spend budget,
+  Decisions): the cycle's own, as standalone — the `budget:` line you write with the
+  item's `target:` line, the defaults, an operator's `budget:` pin and the increase ask
+  are all there; the caller's stop you bind with the channel is the Hold above. What the
+  cycle decides alone is a `decided:` line of class `cap` (`references/decide-alone.md`),
+  written before the dispatch or carry it opens: a plan's stop and carry (authority
+  `answer 114`), and a finish round of exact-fix leftovers (authority `answer 145`), which
+  needs no grant and no reading of its own beyond the guard past the fourth review.
 - **Terminal action**: `git merge --no-ff` into local `main`; the push is yours, after
   the Report (Critical). An item naming another base merges into that base instead, with
   the main checkout on it, and is never pushed. First-start dirt never blocks a merge
@@ -278,7 +284,7 @@ To the operator, **exactly four lines per landed change**, in this order, no hea
 
 ```
 changed: <plain name> (<tag>) — <what, one clause>; <files>
-verified: review <CLEAR after N fix round(s)> (impl <final tier>, review <final tier>); <each check and its outcome>
+verified: review <CLEAR after N fix round(s)[, k finish]> (impl <final tier>, review <final tier>; $<spent> of $<budget>); <each check and its outcome>
 open questions: <list, or none>
 decisions needed: <numbered list, or none>
 ```

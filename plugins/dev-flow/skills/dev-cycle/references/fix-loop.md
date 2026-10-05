@@ -2,9 +2,10 @@
 
 One round of the loop in SKILL.md § Step 4: what each verdict means, who is resumed and
 who is re-dispatched, and exactly what the implementer and the re-review are told. The cap
-(4 review rounds), the rule that the orchestrator never fixes a finding itself, what goes
-to the decision channel, and recording the round in the record sink stay in SKILL.md; the
-tier and agent file per round are `model-routing.md` § Rounds.
+(SKILL.md § Step 4.3; its home `bindings.md` § Decisions, What a cap ends in), the rule
+that the orchestrator never fixes a finding itself, what goes to the decision channel,
+and recording the round in the record sink stay in SKILL.md; the tier and agent file per
+round are `model-routing.md` § Rounds.
 
 ## The verdicts
 
@@ -65,9 +66,8 @@ SKILL.md § Step 4.
   holds, dispatch a fresh opus reviewer with the full brief and the self-review's
   `findings:` pasted for verification.
 
-Then repeat until `CLEAR`, inside the cap: a fourth review that is not `CLEAR` ends as
-SKILL.md § Step 4.3 says — raised, stopped and carried, or one self-granted round
-(`bindings.md` § Decisions).
+Then repeat until `CLEAR`: a verdict that reaches the cap ends as SKILL.md § Step 4.3 says
+— stopped and carried, a finish round, or raised (`bindings.md` § Decisions).
 
 ## A merge conflict
 

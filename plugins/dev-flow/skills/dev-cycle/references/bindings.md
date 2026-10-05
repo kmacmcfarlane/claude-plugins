@@ -21,7 +21,7 @@ order given, and asks the user only where the table says so.
 | **Base** | The branch the worktree starts from and the merge lands on | Named by the item or plan (implement's recorded base, re-verified); otherwise the default branch, § Base |
 | **Model floor** | The lowest tier any role on this change may run; and its second pin kind, the **effort pin**: the lowest effort for planner and implementer dispatches (SKILL.md § Step 2 rule 8) | A `model: <tier>` line and/or an `effort: xhigh` line in the item body, or the invocation's own words ("at least opus", "at xhigh"); otherwise none |
 | **Record sink** | Where the run's record lines are appended (`record-lines.md`) | The item body when a store holds the target; otherwise always the scratchpad run record, `<scratchpad>/dev-cycle/<slug>/record.md`. Never a file in an investigation series: series files belong to `/implement` and are append-only. An item body is durable across sessions; **a scratchpad sink is session-scoped by contract**, so a store-less run's record cannot be read outside the session that wrote it (or one that inherits the same scratchpad) — Step 0's summary says so |
-| **Decision channel** | How a decision reaches a human, and the channel's **durability**: **durable** when the question outlives the session that raised it and a human answers it to whichever session reads it next (a caller's channel on a committed item), **ephemeral** when it exists only as a live prompt in this session. A caller states the durability with the channel; a channel supplied without it is a missing binding. A caller may also bind a **round budget** with it, which § Decisions' cap reads; none bound means none | AskUserQuestion, or § Decisions' numbered prose list for two or more or with an agent in flight — both **ephemeral**; written per the `operator-interaction:decisions` skill when the session lists it (§ Decisions) |
+| **Decision channel** | How a decision reaches a human, and the channel's **durability**: **durable** when the question outlives the session that raised it and a human answers it to whichever session reads it next (a caller's channel on a committed item), **ephemeral** when it exists only as a live prompt in this session. A caller states the durability with the channel; a channel supplied without it is a missing binding. A caller may also bind a **caller's stop** with it: what, besides § Decisions' guard, stops a round past the fourth review from opening unasked; none bound means none | AskUserQuestion, or § Decisions' numbered prose list for two or more or with an agent in flight — both **ephemeral**; written per the `operator-interaction:decisions` skill when the session lists it (§ Decisions) |
 | **Terminal action** | What Land does with a `CLEAR`, checked branch | Asked once at Land, § Landing |
 | **Series home** | Where the plan phase writes an investigation series | `$MAIN/.claude-sandbox/investigations/<slug>/`, the canonical path `/implement` reads |
 
@@ -42,7 +42,7 @@ For reference, the values `librarian-mode` supplies (its own SKILL.md is authori
 | Base | `main`, unless the item names another |
 | Model floor | A `model:` pin and/or an `effort:` pin in the item body |
 | Record sink | The item body |
-| Decision channel | `decision N:` appended to the item, carried under `decisions needed` in its Report — **durable**; round budget: plans stop and carry; one self-granted build round per item, inside a standing grant, on a fresh reading not below the reserve |
+| Decision channel | `decision N:` appended to the item, carried under `decisions needed` in its Report — **durable**; caller's stop: a hold in force (its SKILL.md § The cycle, Hold) |
 | Terminal action | `git merge --no-ff` into local `main`; the push is the librarian's, after its Report; an item naming another base merges into that base, never pushed |
 | Series home | `$MAIN/.claude-sandbox/investigations/<slug>/`, as standalone — tooling state like the store, written by the cycle, never a custody edit; agents write there only the series, and dispatched commits never include `.claude-sandbox/` |
 
@@ -207,55 +207,133 @@ marked `[recommended]`, so the line can be put to a human verbatim by a reader w
 there — and the reply as `answer: <decision> — <reply>` (`record-lines.md`) as soon as it
 arrives.
 
-**What a cap ends in** (SKILL.md § Step 4.3; answer 114 (b)). Read when the cap is reached,
-before anything is raised. **A high is left** when a finding still open is critical or high,
-its `Failure:` sentence names breakage outside the change (another item, the base, a shared
-contract, the operator's data or quota), or it is a must-fix with no severity whose fix the
-reviewer did not give verbatim.
+**What a cap ends in** (SKILL.md § Step 4.3; answers 114 (b), 137, 139 (a), 140 (a), 145
+(a)). Read at every verdict that is not `CLEAR`, after the spend check (§ Spend budget) and
+before a round opens or anything is raised. Every counted review here is a counted review
+**of this phase** (ROUNDS, `resume.md`, which counts from the phase's `target:` line).
 
-- **No round budget bound** (a standalone run): every cap is raised, plan or build, as
-  below, and the verdict of a round the operator granted tests the cap again.
-- **A high left** is raised, plan or build, at every cap but the end of a granted plan
-  path (below). A `SHOW_STOPPER`, a scope change and a reversed recorded decision are
-  raised at every cap, that path's end included.
-- **A plan** with no high left, under a bound budget, stops and carries: the open
-  findings, verbatim with their severities, are **carried** — written onto the plan item
-  as a `findings: carried — …` block, a rider no verdict carries (store-less: the record
-  sink and Step 6's `open questions:`). Every build dispatched from that series copies
-  them into its brief's Acceptance line. A series naming another repo's work raises its
-  carried findings to the operator as a `blocker` instead, until forwarding (item 3460)
-  lands. Then Step 1's tail runs, with no fable offer (the at-the-cap stage needs a high
-  left, and the plan stage is not offered at the cap: `model-routing.md` § Fable
-  cross-checks). A plan round past the cap is never spent unasked.
-- **A build** with no high left takes one more fix round unasked when the round budget
-  allows it — only at the item's first cap (exactly four counted review verdicts, the
-  ROUNDS count of `resume.md`; a fifth means the round is spent) and never under a
-  `model: fable` pin, whose extra round is asked. Its `dispatch:` signal names it a
-  self-granted cap round; it is routed and briefed as any fix round, and its review tests
-  the cap again. Otherwise — a budget that does not allow it, or the round spent — it is
-  raised, as below.
-- **A plan round the operator granted** at a cap, under a bound budget, ends on the path
-  the grant named: the cap rule does not re-apply after it, and whatever is still open at
-  its end, a high included, is carried as above (8dee E2). A build's granted round that
-  does not clear tests the cap again, and is raised.
-- **A stop or a self-granted round is decided, not asked**: recorded as the caller's
-  decided-alone record, with **if left** and **what the round costs** as below. A
-  self-granted round's reopen is "say stop: the round ends and its commits do not land".
+**The cap is reached** when any of these holds:
 
-A **round budget** is bound by a caller with its Decision channel, and answers, at a cap
-with no high left: may a plan stop and carry, and may this build take one more round unasked
-now? The caller states how it is read; the cycle never infers one.
+- **the budget**: the phase's last `cost:` line shows spent at or over the amount in force;
+- **the convergence stop**: from the fourth counted review on, this review's `must-fix` is
+  not lower than the previous counted review's (each review's last `cost:` line; a
+  comparison with `?` on either side is not lower) — a count that stops falling means
+  the brief or the target is wrong, not the code;
+- **the fallback**: no spend reading, and the fourth counted review or later.
 
-**An ask for another round** — a cap that is raised (above), or any ask to open one more
-round — carries its justification, with the skill or without it, so the user can weigh it:
-**if left**, each finding still open, with its severity and what it would break (the
-`Failure:` sentence of the last review's `findings:` block); and **what the round costs** —
-about how long a round has taken in this run, its quota share when a reading exists, and
-one more answer from the user if the round does not clear. The `decision:` line carries
-both after its question, so it can still be put verbatim — except under a caller that
-stores a card (librarian-mode), where the card's own lines carry them and the headline
-keeps the question alone. With the skill loaded, its floor for a round ask governs how
-this is written.
+The round count survives there and in a plan's stop (step 2), nowhere else.
+
+**A high is left** when a finding still open is critical or high, its `Failure:` sentence
+names breakage outside the change (another item, the base, a shared contract, the
+operator's data or quota), or it is a must-fix with no severity whose fix the reviewer did
+not give verbatim.
+
+**The leftovers** are the findings the verdict's `MUST-FIX:` counts: each new one at medium
+or above, and each earlier one at medium or above it marks PARTIAL or OPEN, counted once
+when a new one restates it. They are **exact-fix** (answer 139 (a)) when the verdict is
+`NEEDS_CHANGES`, no high is left, there are at most three, and each is medium and carries
+the reviewer's `Fix:` — written when `review-brief.md` § Report back's conditions hold. A
+`Fix:` that names more than one place, offers a menu, or targets anything but prose or
+skill text counts as none. A finding from before `Fix:` existed has none; a self-review
+writes none. Below the cap a `Fix:` is a suggestion: nothing grades, counts or routes on
+it.
+
+Then the first that applies:
+
+1. **An escalation** — a `SHOW_STOPPER`, a scope change, a reversed recorded decision — is
+   raised (SKILL.md § Step 4.4), at any round, the end of a granted plan path included.
+2. **A plan with no high left**, at a cap or at any counted review from its fourth on,
+   stops and carries: the open findings, verbatim with their severities, are **carried**
+   — written onto the plan item as a `findings: carried — …` block, a rider no verdict
+   carries (store-less: the record sink and Step 6's `open questions:`). Every build
+   dispatched from that series copies them into its brief's Acceptance line. A series
+   naming another repo's work raises its carried findings to the operator as a `blocker`
+   instead, until forwarding (item 3460) lands. Then Step 1's tail runs, with no fable
+   offer (the at-the-cap stage needs a high left, and the plan stage is not offered at the
+   cap: `model-routing.md` § Fable cross-checks). A plan round past its fourth review
+   opens unasked only with a high left (answer 145, Q8 (i)). A plan never takes a finish
+   round (step 3).
+   **Standalone, every plan cap is raised instead — a stop and a granted plan path's end included — as before answer 145 (decision 156).**
+3. **Exact-fix leftovers at a cap** get one **finish round** unasked, when the previous
+   counted verdict did not reach the cap, or the round after it was opened by the
+   operator — an `answer:` to its decision, or a `budget:` line whose source is
+   `operator` or names an answer (`answer N …`, `… (answer N)`), recorded after that
+   verdict; a `default … ×2 fable` line opens nothing — so never two in a row unasked.
+   The producer is resumed, or re-dispatched where `model-routing.md` § Rounds changes its
+   tier (never you: decided on item 5bdd, authority answer 137), with
+   `agent-brief.md`'s fix-round clause and its finish-round line; then the same reviewer
+   is resumed with the re-review variant, which grades each finding on its failure and
+   may still return findings that are not exact-fix: they meet this list at its verdict
+   (answer 140 (a)).
+4. **Otherwise, at a cap**: raised (an ask for another round, below) — at the budget as an
+   increase ask, at the convergence stop or the fallback as an ask for another round. A
+   plan with a high left is raised the same way; the at-the-cap fable offer is an option
+   of its decision (`model-routing.md` § Fable cross-checks).
+5. **No cap**: the next fix round opens unasked, whatever is left, a high included.
+
+**Past the fourth review** (answer 145 (a), Q7 (i)), a round that would open unasked after
+the fourth counted review — step 3's or step 5's — opens only when both hold, and is
+otherwise raised as an ask for another round:
+
+- the **caller's stop** does not stop it (§ The ten, Decision channel); standalone binds
+  none;
+- a **fresh weekly reading**, taken at that moment with the `librarian-mode` skill's
+  `scripts/quota_budget.py --read-only`, exists and is not below the reserve
+  (`model-routing.md` § Below the quota reserve). Here **no signal is a stop**, not a
+  pass: a round spent unasked needs evidence the quota is there.
+
+No standing grant is needed: the phase's budget is the grant. Before answer 145 a
+standalone run raised every cap, and a librarian took at most one extra build round, inside
+a standing grant; rounds past the fourth review running unasked, standalone too, is the
+loosening the answer named. A round an operator's answer opens is the operator's and
+passes no guard. Rounds up to the fourth review pass none.
+
+**A `model: fable` pin**: its rounds run inside its doubled budget under the same rules. A
+finish round on it is not raised as a cap; its producer and reviewer run at fable; the
+pin's own asks still apply before each dispatch (`model-routing.md` §§ Below the quota
+reserve, Fable unavailable), unless an earlier answer still covers the item. When the
+pin's below-the-reserve ask and the guard fall on one round, one decision carries both,
+and its answer is the pin's too.
+
+**A round the operator granted** on a plan at a cap ends on the path the grant named: the
+cap does not re-apply after it, and whatever is still open at its end, a high included, is
+carried as in step 2 (8dee E2). A build's granted round, and a round a raised budget
+opens, meet this list again at their verdict.
+
+**Decided, not asked**: a stop and carry and a finish round are recorded as the caller's
+decided-alone record (`librarian-mode`: a `decided:` line of class `cap` — a stop's
+authority `answer 114`, a finish round's `answer 145`), written before the dispatch or the
+carry, with **if left** and **what the round costs** as below. A finish round's reopen
+is "say stop: the round ends and its commits do not land". Its `dispatch:` signal reads
+`— finish round (exact-fix leftovers at the cap)`, or `— resume (finish round, exact-fix
+leftovers at the cap)`: informational, never read by resume. Standalone has no
+decided-alone record: a finish round is recorded by its `dispatch:` signal and shows on
+`verified:`, and a stop and carry, where one is taken, by its `findings: carried` block.
+Resume needs neither signal: an interrupted finish round re-enters at its dispatch or
+return (`resume.md` Groups B, C), and a `decided:` line or a `findings: carried` block
+after the last verdict means Step 4.3 ran. A round past the fourth review that the guard
+lets open is an ordinary round: no `decided:` line.
+
+**An ask for another round** — a cap that is raised (above), a round the guard stops, or
+any ask to open one more round — carries its justification, with the skill or without it,
+so the user can weigh it: **if left**, each finding still open, its severity, what it would
+break (the `Failure:` sentence of the last review's `findings:` block), and whether it
+carries a `Fix:`; any finish round spent since the last answer and any `Fix <n> not
+applied`. **What the round costs**, measured where a reading exists: **spent**, `$X of $Y`
+(dispatched agents) with its share of a week, and the weekly reading and whether it is
+below the reserve; **what more buys**: the next round's cost (the median of the
+differences between this phase's consecutive reviews' last `cost:` lines; with fewer than
+two, spent ÷ counted reviews), the must-fix trend (`4 → 2 → 2`), and the time between the
+last two `cost:` lines. With no reading, about how long a round has taken in this run and
+its quota share when a weekly reading exists. Either way, one more answer from the user if
+the round does not clear. A budget ask's first option names the new total, sized in rounds
+("raise to $34, about three rounds here"), recommended when the must-fix count is falling
+or every leftover is exact-fix; its answer is written as a `budget:` line with the new
+total, `answer N (was $<old>)`, before the round opens. The `decision:` line carries the
+justification after its question, so it can still be put verbatim — except under a caller
+that stores a card (librarian-mode), where the card's own lines carry them and the headline
+keeps the question alone. With the skill loaded, its floor for a round ask governs how this
+is written.
 
 A **pending** decision — a `decision:` with no `answer:` — never makes a run wait on a
 question this session is not asking: one whose prompt is gone, or one on a durable
@@ -283,6 +361,114 @@ answer to `review <branch>` mode's ask whether to dispatch an implementer for th
 findings, which stays in force wherever it sits in the record until a `spent:` line
 recorded after it names it. An answer out of force answers nothing: its question, when
 it comes up again, is raised as a new decision.
+
+## Spend budget
+
+Each phase of a target has a **spend budget** in list-price dollars, set when the phase
+opens (answer 145 (a)): the plan phase is a `plan`-mode run, the build phase every other
+run (SKILL.md § Step 0.3). Rounds run unasked inside it; reaching it is a cap (§ Decisions,
+What a cap ends in). No brief carries it, so no producer or reviewer trims its work to fit.
+
+**A phase opens at its `target:` line**, written with its `budget:` line before the
+phase's first dispatch (SKILL.md § Step 0.3; a caller writes both where it writes
+`target:`). A build on a planned item writes its own pair, so the plan's reviews never
+count in its build. A new plan run on a plan that already cleared, with no build since, is
+the same mode and ref: it continues the plan phase — its `target:` and `budget:` lines
+kept, its reviews counted on from them, its spend added to the phase's, as the reader
+keeps one plan phase per record. The reader keeps one phase per kind per record, opened at
+that kind's first `budget:` line, so two cases read as one phase: a re-plan after a build
+opened puts its plan spend into the build, and a new pair of the same phase with a
+different mode or ref resets the amount and ROUNDS while the reader keeps the earlier
+spend. The phase that absorbs the spend reads high and asks early; a re-plan after a build
+reads its own phase low, so only the fourth-review count and the convergence stop bound
+it until follow-up 7421 lands.
+
+**The amount** is the first of these that answers:
+
+1. the operator's own `budget: [plan|build] $<n>` in the item body — a pin, read like
+   `model:`, no phase word meaning every phase — or, a store-less run, the invocation's
+   own words ("a $30 budget"), as the Model floor reads them (§ The ten); source
+   `operator`;
+2. for a build, its plan's estimate, **when it is at or under the default, or an answer
+   set it** (below);
+3. the default:
+
+| Phase | Default |
+|---|---|
+| plan of a `spike` | $40 |
+| plan of any other type, or of none | $28 |
+| build of a `chore` | $10 |
+| build of a `bug` | $12 |
+| build of any other type, or of none | $22 |
+
+A `model: fable` pin doubles the default (Fable 5.1 runs about 2× Opus 5.5 on this
+estate's mix); an `effort:` pin does not scale it. One table serves every repo. The figures
+are list prices as of 2026-10-02; re-derive them when the price table changes, and revisit
+them from the `cost:` lines. The type is the item's `type:`, or the cycle brief's type
+(SKILL.md § Step 0.2).
+
+**The plan's estimate.** A plan for a build may state `Estimated cost: $<n> — <why>` (the
+`investigate` skill's `references/investigation-format.md`); the line in the highest serial
+carrying one is in force. After the plan's `CLEAR` (SKILL.md § Step 1's tail), an estimate
+over its build's default goes to the operator as a budget decision with the plan's
+blocking open questions — options: the estimate [recommended], the default, another
+amount — unless the build item carries the operator's pin. **At the build's Step 0.3** the
+estimate is read again:
+
+- at or under the default: it is the amount (`plan <slug> estimate`);
+- over it, with an answered budget decision on the plan item — the item whose
+  `target: plan` line ends in the series slug,
+  `grep -l "^target: plan .*/<series slug>/\?$" "$WI_ROOT"/items/*.md "$WI_ROOT"/archive/*/*.md`,
+  else the build item: the amount the answer chose (`plan <slug> estimate (answer N)`;
+  `default <kind>` for the default; another amount `answer N (was $<default>)`);
+- over it with no answer — a series written outside a dev-cycle plan run, a pending
+  decision, a store-less run: the **default** stands (`default <kind>`), and the budget
+  decision is raised now on the build item (or asked, standalone) — unless one is already
+  pending on the plan item, which is pointed to instead, never raised twice. Its answer
+  writes a new `budget:` line, which opens a round as any answer's does.
+
+The decision is found by reading the item's answered decisions — the one raised on that
+series' estimate — never by a tag: no new parsed name.
+
+**The `budget:` line**: `budget: <UTC> <phase> $<total> — <source>` (`record-lines.md`). A
+resumed run keeps the line it has; a phase with none — a record from before this rule —
+has no reading. A raise writes a new line with the new **total**, never a delta:
+`budget: <UTC> build $34 — answer 12 (was $22)`. The phase's last `budget:` line is the
+amount in force. A `model: fable` pin set after the phase opened writes a new line,
+`default <kind> ×2 fable`, before the next dispatch, unless the amount in force is the
+operator's or an answer's.
+
+**The reader** is context-guard's `usage-report` (soft), found as `wi` is (§ Store):
+
+```bash
+UR_PY=$(ls "$MAIN"/plugins/*/skills/usage-report/scripts/usage_report.py 2>/dev/null | head -1)
+P="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/plugins"
+test -n "$UR_PY" || UR_PY="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["plugins"]["context-guard@kmacmcfarlane"][0]["installPath"])' "$P/installed_plugins.json" 2>/dev/null)/skills/usage-report/scripts/usage_report.py"
+test -f "$UR_PY" || UR_PY=$(ls -t "$P"/cache/kmacmcfarlane/context-guard/*/skills/usage-report/scripts/usage_report.py 2>/dev/null | head -1)
+timeout 120 python3 "$UR_PY" item <record sink file> --json --no-week
+```
+
+The record sink file is the item's `$WI_ROOT/items/<id>.md`, or the scratchpad
+`record.md`. Phase spend is `phases.<phase>.usd` when that phase's `reading` is `read`.
+**No reading** is any of: no reader found; a reader too old (`item` exits 2 with an
+"invalid choice": an installed context-guard older than the reader — reason `reader too
+old (update context-guard)`); any other non-zero exit or a timeout; output that does not
+parse; the phase `unread` (a Claude model the price table does not know, with tokens; or a
+lost transcript no `cost:` line covers); or no `budget:` line in the phase. Another phase's
+`unread` does not matter. A `reader too old` reason is named once under Step 6's `open
+questions:`. A card's share of the week comes from one more run without
+`--no-week` (`share_of_week_percent`).
+
+**The spend check** reads spend and appends one `cost:` line (`record-lines.md`):
+`cost: <UTC> <phase> $<spent> of $<budget> after review <n> — must-fix <m> — prices <version>`,
+or with no reading `cost: <UTC> <phase> unread — <reason> — must-fix <m>`. `<m>` is the
+verdict's `MUST-FIX:` count (`review-brief.md` § Report back; a self-review's own count),
+`?` when the report has none. It runs at every counted verdict (SKILL.md § Step 4.5), and
+again before a round opens when any agent line was recorded after the last `cost:` line (a
+cross-check, a helper): spend is checked **when the round opens**. It runs only between
+rounds, with no agent of the phase running, so nothing is cut off. Everything recorded on
+the item counts — cross-checks and helpers included; an accepted cross-check raises nothing
+at its return, only at the next check.
 
 ## Resume
 

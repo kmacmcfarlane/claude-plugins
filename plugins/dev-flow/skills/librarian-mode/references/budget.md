@@ -9,7 +9,9 @@ integration has not landed yet. The reason is the librarian's decision on R1, re
 work item 9882: F2 owns the mode table and the N formula, and the agents policy is about to
 change the librarian count that formula divides by. Computing N here would bake in a
 formula that is about to change. Routing's reader of these numbers: the `dev-cycle`
-skill's `references/model-routing.md` § Below the quota reserve.
+skill's `references/model-routing.md` § Below the quota reserve; the review loop's, the
+`dev-cycle` skill's `references/bindings.md` § Decisions, Past the fourth review (§ Rounds
+past the fourth review, below).
 
 **Who owns what.** This file owns the mechanics: where the store lives, its schema, and how
 the numbers are computed. The **values** belong to the `agents` repo's
@@ -259,35 +261,22 @@ With no signal, `windows`, `binding`, `allowed` and `weekly_taper` are `null`. `
 `reserves` and `claims` are still filled in. Readers ignore keys they do not know. A change
 of meaning to an existing key bumps `v`.
 
-## A self-granted cap round
+## Rounds past the fourth review
 
-The reading behind the librarian's round budget (SKILL.md § The cycle, Decision channel):
-when a build reaches its first review cap with no high left, may it take one more round
-unasked (answer 114 (b); the rule itself is the `dev-cycle` skill's
-`references/bindings.md` § Decisions, What a cap ends in)? Yes only when all three hold:
+The guard on a round that would open unasked past a phase's fourth review is the
+`dev-cycle` skill's `references/bindings.md` § Decisions (answer 145 (a)): no hold in force
+(SKILL.md § The cycle, Hold) and a fresh weekly reading not below the reserve. It replaced
+the one self-granted build round of answer 114 (b): no standing grant is needed, the item's
+spend budget being the grant.
 
-- **A standing dispatch grant is in force**: an operator `answer N:` that lets the
-  librarian dispatch unasked for a stated span, stopping at a stated reserve. Answer 88 (b)
-  (item 1222) was the first: "for this week … stopping at the 15% weekly reserve". A span
-  of "this week" ends at the weekly window's first reset after the answer, and the
-  `decided:` line says so. An active `hold` item is not a grant: while one stands there is
-  no budget.
-- **Not below the reserve, on a fresh reading taken at the cap.** The librarian runs
-  `python3 scripts/quota_budget.py --read-only` itself at that moment; it never waits on
-  the idle-turn integration, which has not landed (the opening of this file). "Below the
-  reserve" is the `dev-cycle` skill's `references/model-routing.md` § Below the quota
-  reserve, read from that output. When the grant names a reserve of its own, `used` stays
-  under 100 minus it too. One difference from there: **no signal is a spent budget**, not
-  a pass, and the cap is asked. A step-down there only saves quota, so it may err toward
-  spending; a round spent unasked needs evidence that the quota is there.
-- **The item's round is unspent**: the cap is its first (the rule above).
-
-The round is recorded as a `decided:` line, class `cap`, authority `answer 114`, its what
-naming the grant, the reading, the findings left and the round's cost, its reopen "say
-stop: the round ends and its commits do not land". Answer 114 (b) supersedes 68's words
-for this round only; 68's hold on the F2 plan (item c79e) stands. Lifting a hold,
-crossing the reserve, a `model: fable` pin's round and an expensive one-off (a deeper
-research preset, live probes) stay raised (`decide-alone.md`, `spend`).
+The librarian's part: it takes that reading itself, `python3 scripts/quota_budget.py
+--read-only`, at that moment, never waiting on the idle-turn integration (the opening of
+this file), and reads no signal as a stop — a step-down only saves quota and may err
+toward spending; a round spent unasked needs evidence the quota is there. Answer 145 (a)
+supersedes 68's words for rounds inside an item's budget, as 114 (b) did for one round;
+68's hold on the F2 plan (item c79e) stands. Lifting a hold, crossing the reserve and an
+expensive one-off (a deeper research preset, live probes) stay raised (`decide-alone.md`,
+`spend`).
 
 ## Not here yet
 
