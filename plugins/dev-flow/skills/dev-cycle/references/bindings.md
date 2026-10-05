@@ -217,8 +217,8 @@ before a round opens or anything is raised. Every counted review here is a count
 - **the budget**: the phase's last `cost:` line shows spent at or over the amount in force;
 - **the convergence stop**: from the fourth counted review on, this review's `must-fix` is
   not lower than the previous counted review's (each review's last `cost:` line; a
-  comparison with `?` on either side is not lower) — a count that stops falling means the brief or the target is wrong, not
-  the code;
+  comparison with `?` on either side is not lower) — a count that stops falling means
+  the brief or the target is wrong, not the code;
 - **the fallback**: no spend reading, and the fourth counted review or later.
 
 The round count survives there and in a plan's stop (step 2), nowhere else.
@@ -379,7 +379,9 @@ keeps one plan phase per record. The reader keeps one phase per kind per record,
 that kind's first `budget:` line, so two cases read as one phase: a re-plan after a build
 opened puts its plan spend into the build, and a new pair of the same phase with a
 different mode or ref resets the amount and ROUNDS while the reader keeps the earlier
-spend. Either way the phase that absorbs the spend reads high, so it errs toward asking.
+spend. The phase that absorbs the spend reads high and asks early; a re-plan after a build
+reads its own phase low, so only the fourth-review count and the convergence stop bound
+it until follow-up 7421 lands.
 
 **The amount** is the first of these that answers:
 

@@ -653,8 +653,8 @@ implementer stays sonnet, resumed with the finding; the same reviewer is resumed
 Report (figures illustrative): `verified: review CLEAR after 1 fix round (impl sonnet,
 review opus; $6.10 of $22)`. Had review round 2 failed too, fix round 2 re-dispatches the
 implementer fresh at opus with the full brief and every findings list — a resumed agent
-keeps its model — and the opus reviewer is resumed as before. Had review round 1 carried a high, fix round 1 would already have
-gone to opus.
+keeps its model — and the opus reviewer is resumed as before. Had review round 1 carried
+a high, fix round 1 would already have gone to opus.
 
 **"Reflow the install section of `docs/overview.md`; no content change," in a product
 repo.** A doc, not skill text; every line wording and formatting, no command or path

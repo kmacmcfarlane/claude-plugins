@@ -149,9 +149,10 @@ and then say which finding and why on that file's CHANGED line. A `Fix:` you can
 apply as given (the line moved, the words contradict the file) nor replace goes under
 COULD NOT DO as `Fix <n> not applied — <why>`, STATUS DONE_WITH_CONCERNS, the other fixes
 committed. Fix as one or more NEW commits on top of <reviewed sha>; never amend, rebase,
-or squash — the reviewer diffs from that sha. Report every new sha under COMMIT. A finding against a commit subject or
-message is always low (the fix-loop rule): never rewrite history for it — no reset, amend
-or rebase; decline it under DECLINED with "carried in the merge message".
+or squash — the reviewer diffs from that sha. Report every new sha under COMMIT. A
+finding against a commit subject or message is always low (the fix-loop rule): never
+rewrite history for it — no reset, amend or rebase; decline it under DECLINED with
+"carried in the merge message".
 The one exception: a secret or credential in any committed content on this branch — a file
 in any commit, even one a later commit removed, or any message — is critical. Only then is
 the branch rebuilt: `git reset --soft <merge-base sha pasted here by the orchestrator>`,
@@ -230,11 +231,11 @@ findings overturned; regenerate `INDEX.md`. A finding with a `Fix:` is fixed by 
 carrying its words into the new serial, whose `Supersedes` names the statement it
 replaces; other words may remove the failure instead; one that cannot be applied goes
 under OPEN QUESTIONS as `Fix <n> not applied — <why>`, non-blocking. A round whose
-planner file and model are unchanged may resume the planner instead (`fix-loop.md` § A NEEDS_CHANGES round), with one
-exception: a trial unit's rounds are fresh in both arms, never a resume, from the round
-after its late high until `CLEAR` or its third plan review — this brief re-dispatched to
-`planner-deep` in the bump arm and to `planner` in the control arm (`model-routing.md`
-§ The xhigh trial).
+planner file and model are unchanged may resume the planner instead (`fix-loop.md` § A
+NEEDS_CHANGES round), with one exception: a trial unit's rounds are fresh in both arms,
+never a resume, from the round after its late high until `CLEAR` or its third plan
+review — this brief re-dispatched to `planner-deep` in the bump arm and to `planner` in
+the control arm (`model-routing.md` § The xhigh trial).
 
 ## Review-mode fix variant
 
