@@ -200,3 +200,7 @@ answer 145: a (read as: (a) a per-item spend budget replaces the round count as 
 dep note: build after ebbe (prices) and usage-report-read-an-item-s-spend-by-age-0865 (spend reader); e4ca (review caps follow-up lows) touches the same files — one at a time
 dispatch: planner opus high — build spec: consolidate the cost-budget series (f65b 00-06, answer 145 a) with what survives of the finish-at-cap series (5bdd 00-02; answers 139 a, 140 a) into one serial a build follows
 agent: planner a0e228e207574a68d round 1
+return: planner PLAN_READY — serial 03_budget-rule-build-spec.md (14 files, C1-C27, T0-T18; folds e4ca's lows; three readings for the librarian to record under answer 145)
+baseline: 4fc2a726583e 00_initial.md 6384700d074e 01_review-fixes.md e21d7438dc88 02_review-r2-fixes.md e061202eef72 03_budget-rule-build-spec.md 
+dispatch: reviewer opus high — plan review round 1 (serial 03)
+agent: reviewer adae8adce3ab7fb7b round 1
