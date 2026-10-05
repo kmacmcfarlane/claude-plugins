@@ -77,7 +77,9 @@ Rules that reviewers reject on sight:
   reference, kit-dev plugin); no key twice. The set is closed because undocumented keys
   are usually typos, and claude.ai / Skills API uploads hard-fail on unknown keys.
   allowed-tools only pre-approves tools; it never restricts them. Folder name equals
-  `name`. A README.md in a skill folder is allowed only for humans, ending with the line `*User-facing documentation, not agent instructions.*`; agent instructions stay in SKILL.md or references/.
+  `name`. A README.md in a skill folder is allowed only for humans, ending with the line
+  `*User-facing documentation, not agent instructions.*`; agent instructions stay in
+  SKILL.md or references/.
 - No angle brackets in `name` or `description` (fine in `argument-hint`); description under
   1024 characters, what + when + triggers.
 - `argument-hint`, when present, is always a double-quoted string, since unquoted a
