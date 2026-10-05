@@ -262,3 +262,11 @@ agent: implementer aaf057f145282066d round 1
 return: implementer DONE c1095e6 (C1-C28 met; T0 run, T1-T22 walked; the 156 switch is one ~136-char line; example spend figures in verified: examples are invented; base 044e4a8, main has only store commits since)
 dispatch: reviewer opus high — review round 1
 agent: reviewer a9b070bae126664b5 round 1
+verdict: NEEDS_CHANGES round 1 at c1095e6
+findings:
+  T0 run; T1 real run matches ($7.39 … $44.99; asks at r4 spend, r5/r6 convergence, r7 spend, r8); T2, T19-T21, a hold, C8, C2 (467 lines), C23, references, fail-safe, resume, e4ca lows and the five carried lows all pass
+  1. [medium] agent-brief.md:152-155 — the finish-round conditional marker sits mid-block, so filling an ordinary fix round can drop the new-commits/no-amend rule, COMMIT reporting, subject rule and secret exception; move the finish-round sentence to the end of the block on its own line
+  2-7. [low] producer resumed or re-dispatched where § Rounds changes tier; name "reader too old" once under open questions; reader phase cases (re-plan after a build; same-phase pair with a different mode/ref) named or a follow-up; ? on either side is not lower; SKILL.md 4.3/4.4 mention the guard; decide-alone cap row covers exact-fix leftovers after a finish round in a row
+  8-12. [nit] "a phase's fourth review"; fix-loop.md cap pointer; rewrap (librarian SKILL.md:244, agent-brief.md:233, model-routing.md:654, :671); worked figures marked illustrative, reflow "of $10"; investigation-format.md:154 wording
+dispatch: implementer opus medium — resume (fix round 1)
+agent: implementer aaf057f145282066d round 2
