@@ -40,3 +40,7 @@ answer 157: a
 target: full skills-allow-a-readme-md-in-a-skill-fold-48a8 /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude/worktrees/skills-allow-a-readme-md-in-a-skill-fold-48a8
 dispatch: implementer sonnet medium — build (rule text + README footers; canonical wording/docs kind in a kit repo; closes c137 too)
 agent: implementer a584d80ad91257072 round 1
+return: implementer DONE 9ebed2f (checklist item + lint, create-skill, CLAUDE.md footer bullet with a root-README exemption sentence that pre-states 158 (a); root README untouched; lint tested on 3 cases)
+librarian ruling: the exemption sentence stays in the branch but the landing waits on 158; on (b) or (c) one sentence changes before landing
+dispatch: reviewer opus high — review round 1
+agent: reviewer aebf5a40fcf3c0f45 round 1
