@@ -16,8 +16,8 @@ refs:
 Peer marketplace (librarian) 2026-10-05, relaying its operator's decision: per-skill human docs live as README.md beside SKILL.md (a page beside the skill stays current); bundled files cost no context until read, so the concern is clutter, not loading. Today three checks fail it: dev-cycle references/review-checklist.md's item 'No README.md inside the skill folder' (~:91) and its lint 'test -f $d/README.md && echo FAIL' (~:103), and kit-dev create-skill (~:107). Change: allow a skill-folder README.md whose last line is the footer (item: README footer); FAIL only when the footer is missing. Relayed operator decision: confirm with the operator here before building (decision 157).
 
 ## Handoff
-- doing: —
-- next: —
+- doing: CLEAR at 236f948, waiting to land
+- next: on 158: (a) merge as is; (b)/(c) one CLAUDE.md sentence changes first (resume implementer a584d80ad91257072, reviewer aebf5a40fcf3c0f45), then merge, Checks, push; tell marketplace it landed
 - blocked: —
 - learned: —
 decision 157: Confirm the relayed README decisions: allow README.md inside a skill folder when it ends with the footer, and end every README with "*User-facing documentation, not agent instructions.*"? — options: (a) confirm both, with that footer wording [recommended] | (b) confirm both with different wording (say it) | (c) not here | (z) decide later
@@ -54,3 +54,20 @@ findings:
   6. [nit] CLAUDE.md:103 rewrap
 dispatch: implementer sonnet medium — resume (fix round 1)
 agent: implementer a584d80ad91257072 round 2
+return: implementer DONE e18e72e (1-6 fixed; lint passes 5 cases incl CRLF and trailing spaces)
+dispatch: reviewer opus high — resume (round 2)
+agent: reviewer aebf5a40fcf3c0f45 round 2
+verdict: CLEAR round 2 at e18e72e
+findings:
+  1-6 fixed; no old no-README rule left; lint passes/fails 12 scratch cases correctly
+  1. [nit] create-skill SKILL.md:107 — "last non-blank line"
+  2. [nit] agent-brief.md:80 — rewrap
+decided: 2026-10-05T23:15Z ruled-rule-case — a finish round for the two nits while the landing waits on decision 158 · authority: answer 137 · reopen: say so
+dispatch: implementer sonnet medium — resume (finish round: nits 1, 2)
+agent: implementer a584d80ad91257072 round 3
+hold: landing waits on decision 158 (the CLAUDE.md bullet matches its option (a))
+return: implementer DONE 236f948 (two nits)
+dispatch: reviewer opus high — resume (round 3, finish round only)
+agent: reviewer aebf5a40fcf3c0f45 round 3
+verdict: CLEAR round 3 at 236f948
+findings: none
