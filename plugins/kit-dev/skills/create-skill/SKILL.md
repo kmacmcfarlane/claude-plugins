@@ -136,7 +136,7 @@ Before finalizing, verify:
 - [ ] Error handling included for likely failure modes
 - [ ] Examples provided for common scenarios
 - [ ] SKILL.md is under 5000 tokens; detailed reference moved to `references/`
-- [ ] No `README.md` inside the skill folder
+- [ ] Any `README.md` in the skill folder is for humans only (no agent instructions, no copy of SKILL.md) and its last non-blank line is exactly `*User-facing documentation, not agent instructions.*`
 
 ## Guidelines
 
