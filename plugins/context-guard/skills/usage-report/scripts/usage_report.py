@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """usage_report — read Claude Code transcripts and account for token spend.
 
-Library plus a thin CLI skeleton (`scan`, `summary`). The full report tables
+Library plus a thin CLI skeleton (`scan`, `summary`, and `item`, one work
+item's spend per phase by agent id, which lives in item_spend.py). The full report tables
 are deliberately not here yet; this file owns the parsing, the attribution and
 the arithmetic, and the printing stays small until the report feature lands.
 
@@ -838,7 +839,18 @@ def build_parser():
                    help="list the transcripts in scope and what was read")
     sub.add_parser("summary", parents=[common],
                    help="totals by model, tier and dispatch")
+    item = sub.add_parser("item", parents=[common],
+                          help="one work item's spend per phase, by the agent ids on "
+                               "its agent: lines (scripts/item_spend.py)")
+    _item_spend().add_arguments(item)
     return parser
+
+
+def _item_spend():
+    """The item reader, a sibling module (imported on use)."""
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    import item_spend
+    return item_spend
 
 
 def main(argv=None):
@@ -858,6 +870,8 @@ def main(argv=None):
     try:
         if args.command == "scan":
             return cmd_scan(args, table)
+        if args.command == "item":
+            return _item_spend().run(args, table)
         return cmd_summary(args, table)
     except ValueError as exc:
         print("usage_report: %s" % exc, file=sys.stderr)
