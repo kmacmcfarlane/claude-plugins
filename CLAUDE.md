@@ -19,7 +19,7 @@ plugins/
     skills/
       {checkpoint,usage-report}/
       checkpoint/scripts/  # context_forensics.py (where a session's context went, from its transcript)
-      usage-report/scripts/  # usage_report.py + prices.json (token-spend accounting)
+      usage-report/scripts/  # usage_report.py + item_spend.py (an item's spend by agent id) + prices.json (token-spend accounting)
   create-repo/         # Start a new repo for a thread of work, with a session launched on it
     skills/
       create-repo/     # references/launch-command.md
