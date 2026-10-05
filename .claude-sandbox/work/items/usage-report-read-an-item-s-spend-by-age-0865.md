@@ -28,3 +28,6 @@ Item 2 of the cost-budget build order (series .claude-sandbox/investigations/f65
 target: full usage-report-read-an-item-s-spend-by-age-0865 /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude/worktrees/usage-report-read-an-item-s-spend-by-age-0865
 dispatch: implementer opus medium — build (plan: the cost-budget series f65b 00-06, CLEAR; answer 145 a)
 agent: implementer a37cb9fe987c7fcb9 round 1
+return: implementer DONE 3ef7190 (218 of 220 items match the prototype to the cent; judgement calls: role from the first word, non-Claude left out and flagged, deleted transcripts by line order, a 10% floor for the week rate)
+dispatch: reviewer opus high — review round 1
+agent: reviewer af1fce518a42ec2c1 round 1
