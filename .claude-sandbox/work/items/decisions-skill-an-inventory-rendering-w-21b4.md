@@ -19,3 +19,4 @@ Finding 3: 'what are the open decisions?' on a long project returns ~15 items of
 - next: —
 - blocked: —
 - learned: —
+note: related — the marketplace operator's request for an index column on every work-item table (work-item-summary-tables-an-index-number-f568), message-local numbers, never stored

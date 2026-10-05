@@ -19,3 +19,4 @@ Finding 2 and the operator's quote 5 (parroting headings, mirroring list order).
 - next: —
 - blocked: —
 - learned: —
+note: related — the marketplace operator's request for an index column on every work-item table (work-item-summary-tables-an-index-number-f568), message-local numbers, never stored
