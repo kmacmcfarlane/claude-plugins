@@ -3,12 +3,14 @@ id: usage-report-read-an-item-s-spend-by-age-0865
 title: "usage-report: read an item's spend by agent id (the cost-budget spend reader)"
 short_display_name: spend reader by agent id
 type: feature
-status: todo
+status: doing
 priority: 1
 deps:
   - usage-report-price-the-5-5-models-opus-5-ebbe
+owner: Kyle-McFarlane@401123cbad11
+claimed: 2026-10-05T17:36Z
 created: 2026-10-02
-updated: 2026-10-02
+updated: 2026-10-05
 refs:
   - decision 145 a
 ---
@@ -20,3 +22,8 @@ Item 2 of the cost-budget build order (series .claude-sandbox/investigations/f65
 - next: —
 - blocked: —
 - learned: —
+
+## Notes
+- 2026-10-05 claimed by Kyle-McFarlane@401123cbad11
+target: full usage-report-read-an-item-s-spend-by-age-0865 /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude/worktrees/usage-report-read-an-item-s-spend-by-age-0865
+dispatch: implementer opus medium — build (plan: the cost-budget series f65b 00-06, CLEAR; answer 145 a)
