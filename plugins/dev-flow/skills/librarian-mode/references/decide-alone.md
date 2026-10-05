@@ -34,8 +34,8 @@ class puts it on one side:
 | `relay` | raised | as a batchable confirm (`ok N-M`) |
 | `one-way` | raised | ⚠ when high impact, never batched |
 | `trust` | raised | except a case a ruled permission covers |
-| `spend` | raised | outside a standing grant |
-| `cap` | raised | with a high left, or a build cap the round budget does not cover (SKILL.md § The cycle); a plan's cap with no high left (stopped and carried) and a build's one self-granted round are decided alone, authority `answer 114`, their `if left:` and `round costs:` in the `decided:` line's what. Both are two-way: a stop's reopen is the round the operator grants on reading it; a round's is "say stop: the round ends and its commits do not land" |
+| `spend` | raised | outside a standing grant. An item's spend budget is its grant (answer 145): a round inside it is not outside one. Raised: a budget reached (the increase ask), a plan's `Estimated cost:` over its build's default, and a round past the fourth review that the guard stops (a hold, no weekly reading, below the reserve) — the `dev-cycle` skill's `references/bindings.md` §§ Decisions, Spend budget |
+| `cap` | raised | at the convergence stop or the fallback count, with a high left or leftovers that are not exact-fix (the `dev-cycle` skill's `references/bindings.md` § Decisions, What a cap ends in); a cap that is also a budget reached is `spend`. Decided alone: a plan's stop and carry (authority `answer 114`) and a finish round of exact-fix leftovers (authority `answer 145`), their `if left:` and `round costs:` in the `decided:` line's what. Both are two-way: a stop's reopen is the round the operator grants on reading it; a round's is "say stop: the round ends and its commits do not land" |
 | `blocker` | raised | — |
 | `unclassed` | raised | when in doubt, ask |
 
@@ -306,7 +306,7 @@ migrated to the new spellings.
 | `relay` | a rule or answer relayed from another session or repo |
 | `one-way` | an action that cannot be taken back, or only at real cost |
 | `trust` | a trust boundary: credentials, permissions, what may reach whom |
-| `spend` | quota or money outside a standing grant |
+| `spend` | quota or money outside a standing grant, or past an item's spend budget |
 | `cap` | a review cap reached, and whether to spend another round |
 | `blocker` | an item that cannot go on without the operator |
 | `unclassed` | none of the above; the case the class table does not cover yet |

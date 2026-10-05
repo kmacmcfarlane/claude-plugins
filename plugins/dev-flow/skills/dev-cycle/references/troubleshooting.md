@@ -49,6 +49,11 @@ Pointed at from SKILL.md § Troubleshooting and from `fix-loop.md` for the permi
   `worktree-<name>` still exists, add the worktree on it (`git -C "$MAIN" worktree add
   .claude/worktrees/<name> worktree-<name>`, no `-b`): a fresh branch off the base would
   drop the commits already on it.
+- **`cost: … unread`.** No spend reading: no reader (install context-guard), a reader
+  too old (`item` exits 2: update context-guard and restart), a Claude model `prices.json`
+  does not know (update the price table), or a lost transcript no `cost:` line covers.
+  The fourth review of the phase is the cap meanwhile (`bindings.md` § Decisions);
+  nothing else changes.
 
 ## Resuming
 

@@ -144,18 +144,30 @@ $WORKTREE, in addition to the generic ones>
   `git -C $WORKTREE archive <rev>` unpacked under the scratchpad — never a checkout.
 - Do not run `wi claim`, `wi done`, `wi handoff` or any writing `wi` command.
 - Do not soften a severity because the fix is small, or raise one because the fix is
-  large. Grade the failure, not the effort.
+  large. Grade the failure, not the effort. A `Fix:` never changes a severity.
 - Do not ask the user anything; put the question under NOTES.
 
 ## Report back (this exact shape)
 
 VERDICT: CLEAR | NEEDS_CHANGES | SHOW_STOPPER | BLOCKED
+MUST-FIX: <n> — the findings at medium or above still open after this review: each new
+  one, and each earlier one you rule PARTIAL or OPEN, a new one restating an earlier one
+  counted once; 0 on CLEAR
 TESTS: each command and its outcome, verbatim; any claim you could not reproduce
 FINDINGS:
   1. [critical|high|medium|low|nit] <file>:<line> — <what is wrong>. Failure: <one
-     sentence: who does what, and what goes wrong>.
+     sentence: who does what, and what goes wrong>. [Fix: <file>:<line> — <the words to
+     write there, verbatim>]
   2. ...
   (or: none)
+  Fix: is optional. Write it only when you can write the whole fix; it is in one place;
+  it is at most one sentence of prose or one line of a doc or skill text — never code, a
+  script, a test, config, a hook or an agent file's frontmatter; and it makes no choice
+  the item, the plan or a recorded answer has not already made. It is one set of words,
+  never a menu (two or more to choose between, or an instruction to choose); the words
+  may themselves contain "or". It never adds or renames a name or shape something parses
+  or stores — writing down one that has already landed in a contract file is not adding
+  one. Leave it out when any of these fails.
 DOCTRINE: one line per principle, pass or fail with the diff line for any fail
 CROSS-CHECK: only when the brief pasted cross-check findings — one line each: stands
   (FINDINGS #<k>), or withdrawn — <reason>
@@ -212,8 +224,11 @@ OLD=$(git -C $WORKTREE merge-base <merge sha>^1 <merge sha>^2) and check both si
   kept the base's version) is a dropped change side.
 A resolution that drops either side's intent is a finding.
 
-1. For each finding in your previous report, verify by file:line whether it is fixed,
-   partly fixed, or untouched. For each declined finding: if it is low or nit and the
+1. For each finding in your previous report, verify by file:line and grade it on its
+   failure: FIXED when the failure is gone, by the words its `Fix:` gave or by another
+   edit; PARTIAL when it is reduced; OPEN when it remains. Another edit is never PARTIAL
+   or OPEN for not using the words: attack it under step 3 like any commit. For each
+   declined finding: if it is low or nit and the
    reason holds, record DECLINED (accepted); if the reason is insufficient, record OPEN
    with why. An OPEN low or nit stays in the report and the record but does not block
    `CLEAR` (§ Verdict: only medium and above do). When it matters more than its grade,
@@ -229,7 +244,9 @@ A resolution that drops either side's intent is a finding.
    validation gets What to do step 6's attack classes again, run against a fake.
 4. Report in the same shape. Under FINDINGS, list prior findings first with their status
    (FIXED / PARTIAL / OPEN / DECLINED / WITHDRAWN, each with the reason), then any new
-   ones numbered on.
+   ones numbered on. A PARTIAL or OPEN finding at medium or above carries a `Fix:` for
+   what is left when Report back's conditions hold, or names the new finding that
+   restates it.
 ```
 
 The round is `CLEAR` only when every prior medium-or-above is FIXED or WITHDRAWN and no
@@ -320,7 +337,8 @@ exactly: a written serial is never edited or deleted; the revision is a new seri
 next free number, opening with a `Supersedes` block that names each file, section and
 statement the findings overturned; and `INDEX.md` is regenerated wholesale. The re-review
 variant applies with "the new serial, and the regenerated INDEX.md" in place of fix
-commits.
+commits, and its step 1 grades a prior finding the same way against the new serial: is
+its failure gone from the series as the `Supersedes` composes it?
 
 **The baseline for "never edited".** Before every plan review, the orchestrator records
 the hashes of the written serials in the record sink (SKILL.md § Step 4):
@@ -342,8 +360,7 @@ changed or missing one is a finding at medium (the format's rule 1).
 | `SHOW_STOPPER` | Unfixable in scope, or changes scope / a user decision | `wi block` when there is an item; raise it through the decision channel; do not land |
 | `BLOCKED` | The reviewer could not start: worktree, branch, brief or permissions wrong | Fix the brief, re-dispatch — twice at most; not a round. A third `BLOCKED`, or a permission denial, is `wi block` (when there is an item) and a blocked change raised through the decision channel, not a show-stopper |
 
-A fourth review round without `CLEAR` is the cap — 4 review rounds, the first review plus
-three fix rounds. What it ends in (raised, stopped and carried, or one self-granted round)
-is SKILL.md § Step 4.3's (`bindings.md` § Decisions); a raise carries the round history
-from the record sink and the justification `bindings.md` § Decisions gives an ask for
-another round.
+What a verdict that is not `CLEAR` ends in at the cap (stopped and carried, a finish
+round, or raised) is SKILL.md § Step 4.3's (`bindings.md` § Decisions, What a cap ends
+in); a raise carries the round history from the record sink and the justification
+`bindings.md` § Decisions gives an ask for another round.

@@ -113,15 +113,16 @@ only on a `CLEAR` recorded against the current HEAD sha.
    `references/bindings.md` § Review target, and claims a named item here too (Step 3 is
    skipped): `$WI claim <id>` when it is not already yours.
 
-   Then record the run itself, before any dispatch, as one
-   `target: <mode> <ref> <workspace>` line — unless the record already carries one,
-   which a resumed run keeps. The mode is one bare word for the path this run takes:
-   `review` for `review <branch>`; otherwise `plan` when the run takes Step 1's
-   plan-agent bullet; otherwise `full`. The ref is the target as given; the workspace
-   is **absolute** — the path `references/bindings.md` § Review target resolved
-   (`review`), `"$MAIN"/.claude/worktrees/<name>` (`full`), or the series path (`plan`). Every later
-   step reads the workspace from this line, never rebuilding it
-   (`references/record-lines.md`, `target:`).
+   Then record the run itself, before any dispatch, as one `target: <mode> <ref>
+   <workspace>` line and with it this phase's `budget:` line (`references/bindings.md`
+   § Spend budget) — unless the record's last `target:` line is this run's, the same mode
+   and ref, which a resumed run keeps with its `budget:` line; a build on a planned item
+   writes its own pair. The mode is one bare word for the path this run takes: `review`
+   for `review <branch>`; otherwise `plan` when the run takes Step 1's plan-agent bullet;
+   otherwise `full`. The ref is the target as given; the workspace is **absolute** — the
+   path `references/bindings.md` § Review target resolved (`review`),
+   `"$MAIN"/.claude/worktrees/<name>` (`full`), or the series path (`plan`). Every later
+   step reads it from this line, never rebuilding it (`references/record-lines.md`).
 
 4. **Resume.** Reduce the record sink, as Step 0.3 found it before writing, to one
    state, then take the one action that state names: `references/resume.md`, the same
@@ -129,11 +130,12 @@ only on a `CLEAR` recorded against the current HEAD sha.
    state is an interrupted run taken up where its record stops — never re-planned,
    re-dispatched or re-landed past what the record says.
 
-Expected output: one short paragraph — target, mode, base, checks, record sink, and the
-resume state with the facts that selected it (`references/resume.md` § The resume
-summary). When the record sink is the scratchpad run record, say there too that the run
-is **not resumable outside this session**: a scratchpad sink is session-scoped by
-contract (`references/bindings.md` § The ten, Record sink).
+Expected output: one short paragraph — target, mode, base, checks, record sink, the
+phase's budget and its source, and the resume state with the facts that selected it
+(`references/resume.md` § The resume summary). When the record sink is the scratchpad run
+record, say there too that the run is **not resumable outside this session**: a
+scratchpad sink is session-scoped by contract (`references/bindings.md` § The ten,
+Record sink).
 
 ## Step 1: Plan (when needed)
 
@@ -158,13 +160,13 @@ the plan agent revises, by a new serial.
   `references/model-routing.md` § The xhigh trial, which may enrol it, writes its
   `trial:` lines and checks each of its window's planner and plan-review dispatches at
   their return — which revises by a new serial per the `investigate` skill's
-  `references/investigation-format.md`. After `CLEAR`, its
-  blocking open questions go to the decision channel, with any fable cross-check offer
+  `references/investigation-format.md`. After `CLEAR`, its blocking open questions — and
+  an `Estimated cost:` over its build's default (`references/bindings.md` § Spend
+  budget) — go to the decision channel, with any fable cross-check offer
   (`references/model-routing.md` § Fable cross-checks), which never holds the build;
-  then Step 6. With a work item:
-  `$WI claim <id>` before the plan dispatch (unless already yours); after `CLEAR`,
-  `$WI done <id> --note <series path>`, or `$WI handoff <id>` naming the series while
-  blocking questions are open.
+  then Step 6. With a work item: `$WI claim <id>` before the plan dispatch (unless
+  already yours); after `CLEAR`, `$WI done <id> --note <series path>`, or
+  `$WI handoff <id>` naming the series while blocking questions are open.
 - **A feature in full mode:** no separate dispatch; the implementer runs /investigate
   then /implement in its worktree, each in its orchestrated mode (each skill's § Running
   under an orchestrator), as the brief's dev-flow block directs
@@ -179,11 +181,10 @@ agents and when each runs: `references/model-routing.md` § Profiles, with the t
 worked examples. When the agent is not loaded, dispatch `general-purpose` with the same
 `model`, recorded `inherit` — asked first under an effort pin
 (`references/model-routing.md` § Fallback); below the quota reserve, its § Below the
-quota reserve. This
-step routes dev-cycle's own dispatches — planner, implementer, reviewer, and the fable
-cross-checks the operator accepts. The research skills
-route their lanes and verifiers by their own tables; nothing here governs them. Fix round
-n = the nth re-dispatch or resume with findings = review round n+1; cap 4 review rounds.
+quota reserve. This step routes dev-cycle's own dispatches — planner, implementer,
+reviewer, and the fable cross-checks the operator accepts. The research skills route
+their lanes and verifiers by their own tables; nothing here governs them. Fix round n =
+the nth re-dispatch or resume with findings = review round n+1; the cap: Step 4.3.
 
 1. **Implementer: sonnet for mechanical edits**, on `implementer`. In a kit repo only the
    canonical kinds — pointer, path, link, frontmatter, catalog row or layout line,
@@ -307,12 +308,12 @@ n = the nth re-dispatch or resume with findings = review round n+1; cap 4 review
    round) — with its `— resume` pair written first (rule 7); a re-dispatch writes a
    fresh `dispatch:` and `agent:` pair. A change of agent file or model is always a
    re-dispatch. Repeat until `CLEAR`.
-   **Cap: 4 review rounds** — the first review plus three fix rounds; a fourth without
-   `CLEAR` means the brief or the target is wrong, not the code. With no high left, a
-   caller's round budget may stop a plan, carrying its findings to the build, or allow a
-   build one more round; otherwise block it and raise it, with what the open findings
-   would break and what another round costs (`references/bindings.md` § Decisions, What
-   a cap ends in). Never argue a severity down.
+   **The cap.** Rounds run unasked inside the phase's spend budget; the cap is the budget
+   reached, the must-fix count not falling from the fourth review on (the brief or the
+   target is wrong, not the code), or, with no spend reading, the fourth review. It ends
+   in a plan's stop and carry, one finish round of exact fixes, or a raise with what the
+   open findings would break and what more costs (`references/bindings.md` § Decisions,
+   What a cap ends in). Never argue a severity down.
 4. **What escalates** through the decision channel is only a show-stopper with real
    impact: a `SHOW_STOPPER` verdict, a finding that changes the scope or reverses a
    recorded human decision, or a cap that is raised (rule 3) — and a fable cross-check
@@ -322,12 +323,13 @@ n = the nth re-dispatch or resume with findings = review round n+1; cap 4 review
 5. **Record the result** as `verdict: <V> round <n> at <sha>` — a self-review writes
    `review: self at <sha> — <why it qualifies>` directly above it — plus, on a
    `NEEDS_CHANGES` or `SHOW_STOPPER`, the reviewer's FINDINGS pasted verbatim as a
-   `findings:` block (`references/record-lines.md`) — what a fix dispatch reads. A `BLOCKED`
-   reviewer is not a round and carries its reason in place of a round number —
-   `verdict: BLOCKED at <token> — permission | setup`, the same closed set Step 3.5
-   writes. Also record: findings fixed, findings declined with reasons, and the reviewer
-   NOTES worth keeping. Reviewer questions you cannot settle go on Step 6's
-   `open questions:`.
+   `findings:` block (`references/record-lines.md`) — what a fix dispatch reads; after
+   every counted verdict, the spend check's `cost:` line with the report's `MUST-FIX:`
+   count (`references/bindings.md` § Spend budget). A `BLOCKED` reviewer is not a round
+   and carries its reason in place of a round number — `verdict: BLOCKED at <token> —
+   permission | setup`, the same closed set Step 3.5 writes. Also record: findings fixed,
+   findings declined with reasons, and the reviewer NOTES worth keeping. Reviewer
+   questions you cannot settle go on Step 6's `open questions:`.
 
 ## Step 5: Land
 
@@ -392,7 +394,7 @@ Four lines, no headings:
 
 ```
 changed: <plain name> (<tag>) — <what, one clause>; <files>
-verified: review <CLEAR after N fix round(s)> (impl <tier>, review <tier>); <each check and its outcome>; <landed: merge sha | branch left | pushed>
+verified: review <CLEAR after N fix round(s)[, k finish]> (impl <tier>, review <tier>; $<spent> of $<budget>); <each check and its outcome>; <landed: merge sha | branch left | pushed>
 open questions: <list, or none>
 decisions needed: <numbered list, or none>
 ```
@@ -404,7 +406,7 @@ file, a reviewed branch, a scratchpad record — has no tag, so its plain name s
 The full id stays where agents read it: the record sink and every `wi` call.
 
 A self-reviewed change (Step 2 rule 5) writes `self` in place of the reviewer's tier:
-`verified: review CLEAR after 0 fix rounds (impl sonnet, review self); …`.
+`verified: review CLEAR after 0 fix rounds (impl sonnet, review self; $1.40 of $12); …`.
 
 `verified:`'s merge sha comes from the `landed:` line Step 5.3 recorded
 (`references/record-lines.md`), never memory.
