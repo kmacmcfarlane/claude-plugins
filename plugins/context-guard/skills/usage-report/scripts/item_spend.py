@@ -19,7 +19,9 @@ The rules, each from the series:
 - **Segments.** Each id's transcript is split at its user-text turns (the
   brief, then each coordinator message). Every segment counts: an id with more
   segments than `agent:` lines is flagged `unrecorded` and its spend is still
-  summed; one with fewer is flagged `lost`.
+  summed; one with fewer is flagged `lost`. An id with transcripts in several
+  session directories (resumed from a later session) has every file read,
+  deduped together.
 - **Nested agents** (an agent's own sub-agents, by `parentAgentId` in their
   meta, recursively) are segments of their own, placed by their own start
   times. They count as spend and are never review boundaries.
@@ -55,8 +57,10 @@ The rules, each from the series:
   same way, divided by the weekly `used_percentage`. The reading comes from
   `--week-used`/`--week-resets-at`, else the newest status-line sensor record
   (`<config>/statusline/sensor/*.json`, written by statusline-hub; soft — with
-  none, dollars are shown alone). Below 10% used the rate is too coarse and is
-  not read. `--per-percent` gives the rate outright. The rate is measured, not
+  none, dollars are shown alone). Spend counts up to the reading's time. No
+  rate is read below 10% used (too coarse), from a stale reading (its window
+  already reset), with no local spend, or when an unknown Claude model has
+  tokens in the window. `--per-percent` gives the rate outright. The rate is measured, not
   a constant: the series saw $21-22 per 1% in two windows on one machine.
 
 Known limits: a coordinator message sent mid-round splits that round (an extra
@@ -75,11 +79,11 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import usage_report as ur  # noqa: E402
 
 ID_RE = re.compile(r"(?<![\w-])a(?:[a-z0-9]+(?:-[a-z0-9]+)*-)?[0-9a-f]{16}(?![\w-])")
-AGENT_RE = re.compile(r"^\s*agent:\s*(.*)$")
-BUDGET_RE = re.compile(r"^\s*budget:\s*(\S+)\s+(plan|build)\s+\$([0-9][0-9,]*(?:\.[0-9]+)?)(.*)$")
-COST_RE = re.compile(r"^\s*cost:\s*(\S+)\s+(plan|build)\s+"
+AGENT_RE = re.compile(r"^agent:\s*(.*)$")
+BUDGET_RE = re.compile(r"^budget:\s*(\S+)\s+(plan|build)\s+\$([0-9][0-9,]*(?:\.[0-9]+)?)(.*)$")
+COST_RE = re.compile(r"^cost:\s*(\S+)\s+(plan|build)\s+"
                      r"(?:\$([0-9][0-9,]*(?:\.[0-9]+)?)\s+of\s+\$([0-9][0-9,]*(?:\.[0-9]+)?)|(unread))(.*)$")
-RIDER_RE = re.compile(r"^\s*(budget|cost):")
+RIDER_RE = re.compile(r"^(budget|cost):")
 TYPE_RE = re.compile(r"^type:\s*(.*)$", re.M)
 # Substring -> role, first match wins (the evidence script's order).
 ROLES = (("fable second opinion", "cross-check"), ("cross-check", "cross-check"),
@@ -212,7 +216,9 @@ class TranscriptIndex:
         pattern = str(self.root / "*" / "*" / "subagents" / "agent-*.jsonl")
         for path in sorted(glob.glob(pattern)):
             aid = os.path.basename(path)[len("agent-"):-len(".jsonl")]
-            self.files.setdefault(aid, Path(path))
+            # One id can have a transcript in several session directories (an
+            # agent resumed from a later session): every file is read.
+            self.files.setdefault(aid, []).append(Path(path))
             meta = {}
             try:
                 with open(path[:-len(".jsonl")] + ".meta.json", encoding="utf-8") as handle:
@@ -231,8 +237,8 @@ class TranscriptIndex:
     def read(self, aid, table):
         """The AgentRead for an id, or None when it has no transcript."""
         if aid not in self._reads:
-            path = self.files.get(aid)
-            self._reads[aid] = read_agent(path, table) if path else None
+            paths = self.files.get(aid)
+            self._reads[aid] = read_agent(paths, table) if paths else None
         return self._reads[aid]
 
     def descendants(self, aid):
@@ -318,19 +324,29 @@ def iter_records(path):
                    ur.dedupe_key(message, obj), tokens, write_5m, write_1h)
 
 
-def read_agent(path, table):
-    """Split one agent transcript into priced segments."""
-    bounds, kept, keyless = [], {}, []
-    for event in iter_records(path):
-        if event[0] == "turn":
-            bounds.append(event[1])
-            continue
-        _, at, model, key, tokens, write_5m, write_1h = event
-        record = (at, model, tokens, write_5m, write_1h)
-        if key is None:
-            keyless.append(record)
-        elif key not in kept or tokens["output"] > kept[key][2]["output"]:
-            kept[key] = record
+def read_agent(paths, table):
+    """Split one agent's transcript files into priced segments.
+
+    `paths` is one file or several (the same agent id in several session
+    directories). Records are deduped across all of them by (message.id,
+    requestId), the most output kept; text-turn boundaries are merged in time
+    order, a boundary repeated in two files counted once."""
+    if isinstance(paths, (str, Path)):
+        paths = [paths]
+    stamps, kept, keyless = set(), {}, []
+    for path in paths:
+        for event in iter_records(path):
+            if event[0] == "turn":
+                if event[1] is not None:
+                    stamps.add(event[1])
+                continue
+            _, at, model, key, tokens, write_5m, write_1h = event
+            record = (at, model, tokens, write_5m, write_1h)
+            if key is None:
+                keyless.append(record)
+            elif key not in kept or tokens["output"] > kept[key][2]["output"]:
+                kept[key] = record
+    bounds = sorted(stamps)
     records = list(kept.values()) + keyless
     segments = [Segment(b) for b in bounds] or [Segment(None)]
     non_claude, synthetic = {}, 0
@@ -513,7 +529,10 @@ def read_item(item, index, table):
         costs = [c for c in item.costs if c["phase"] == phase_name]
         last = costs[-1] if costs else None
         if phase_name is None:
-            phase_name = "build" if "build" in phases else (names[0] if names else "build")
+            # Above every budget: line it is unbudgeted, as timed_phases places a
+            # segment; on an old record with no budget: line, the inferred build.
+            phase_name = UNBUDGETED if item.budgets else (
+                "build" if "build" in phases else (names[0] if names else "build"))
         phase = phases.setdefault(phase_name, dict(
             usd=0.0, budget=None, budget_source=None, opened=None, segments=0,
             cumulative_after_review=[], models={}, reading="read", unread=[],
@@ -533,6 +552,11 @@ def read_item(item, index, table):
                         if s.phase == name and s.start is not None and s.start > at)
             raw[name] = cover["spent"] + after
             phase["usd"] = round(raw[name], 2)
+            # The per-review series would leave out the lost agent's spend before
+            # the cost: line, so it is not shown for this phase.
+            phase["cumulative_after_review"] = []
+            phase["series_note"] = ("no per-review series: part of this phase's spend is "
+                                    "known only from the cost: line at %s" % cover["at"])
             flags.append(dict(flag="lost transcript", ids=phase["lost_transcripts"],
                               phase=name, note="read through the cost: line at %s"
                               % cover["at"]))
@@ -556,7 +580,8 @@ def read_item(item, index, table):
 
 
 def sensor_week(config):
-    """(used %, resets_at datetime) from the newest status-line sensor record, or None."""
+    """(used %, resets_at, reading time) from the newest status-line sensor
+    record, or None."""
     best = None
     for path in glob.glob(str(Path(config) / "statusline" / "sensor" / "*.json")):
         try:
@@ -572,13 +597,18 @@ def sensor_week(config):
             best = (at, used, resets)
     if best is None:
         return None
-    return best[1], ur.datetime.fromtimestamp(best[2], ur.timezone.utc)
+    utc = ur.timezone.utc
+    return (best[1], ur.datetime.fromtimestamp(best[2], utc),
+            ur.datetime.fromtimestamp(best[0], utc))
 
 
-def week_spend(root, start, table):
-    """Claude list-price spend of every record under `root` at or after `start`."""
+def week_spend(root, start, end, table):
+    """(Claude list-price spend of every record under `root` with start <= time
+    < end, {unknown Claude model: tokens}). Non-Claude models are left out; a
+    Claude model the table does not know is counted in the second value."""
     best = {}
     keyless = 0.0
+    unknown = {}
     floor = start.timestamp()
     for path in glob.glob(str(Path(root) / "**" / "*.jsonl"), recursive=True):
         try:
@@ -599,28 +629,36 @@ def week_spend(root, start, table):
                 if not isinstance(usage, dict):
                     continue
                 at = ur.parse_timestamp(obj.get("timestamp"))
-                if at is None or at < start:
-                    continue
-                key = table.canonical(message.get("model"))
-                if key is None:
+                if at is None or at < start or at >= end:
                     continue
                 tokens, write_5m, write_1h = ur.usage_tokens(usage)
+                model = message.get("model")
+                key = table.canonical(model)
+                if key is None:
+                    total = sum(tokens.values())
+                    if total and is_claude(model):
+                        unknown[model] = unknown.get(model, 0) + total
+                    continue
                 usd = price_tokens(table.models[key], tokens, write_5m, write_1h)
                 ident = ur.dedupe_key(message, obj)
                 if ident is None:
                     keyless += usd
                 elif ident not in best or tokens["output"] > best[ident][0]:
                     best[ident] = (tokens["output"], usd)
-    return keyless + sum(v[1] for v in best.values())
+    return keyless + sum(v[1] for v in best.values()), unknown
 
 
-def week_rate(args, table, root):
+def week_rate(args, table, root, now=None):
     """dict(per_percent, basis) or dict(per_percent=None, why)."""
+    now = now or ur.datetime.now(ur.timezone.utc)
     if args.per_percent:
         return dict(per_percent=float(args.per_percent), basis="given (--per-percent)")
     if args.no_week:
         return dict(per_percent=None, why="not asked (--no-week)")
-    if args.week_used is not None and args.week_resets_at:
+    if (args.week_used is None) != (not args.week_resets_at):
+        return dict(per_percent=None, why="--week-used and --week-resets-at go together; "
+                                          "give both")
+    if args.week_used is not None:
         used = float(args.week_used)
         resets = ur.parse_timestamp(args.week_resets_at)
         if resets is None:
@@ -628,22 +666,33 @@ def week_rate(args, table, root):
                 resets = ur.datetime.fromtimestamp(float(args.week_resets_at), ur.timezone.utc)
             except ValueError:
                 return dict(per_percent=None, why="--week-resets-at not understood")
-        source = "given"
+        read_at, source = now, "given"
     else:
         reading = sensor_week(ur.config_dir())
         if reading is None:
             return dict(per_percent=None, why="no weekly reading (no status-line sensor "
                                               "record; pass --week-used and --week-resets-at)")
-        used, resets = reading
+        used, resets, read_at = reading
         source = "sensor record"
+    if resets <= now:
+        return dict(per_percent=None, why="the weekly reading is stale: its window reset at "
+                                          "%s" % resets.isoformat())
     if used < MIN_WEEK_PERCENT:
         return dict(per_percent=None, why="only %g%% of the week used; under %d%% the rate "
                                           "is too coarse to read" % (used, MIN_WEEK_PERCENT))
     start = resets - WEEK
-    spend = week_spend(root, start, table)
-    return dict(per_percent=spend / used, basis="local Claude spend $%.2f since %s over %g%% "
-                                                "used (%s)" % (spend, start.isoformat(), used,
-                                                               source))
+    end = min(resets, read_at)
+    spend, unknown = week_spend(root, start, end, table)
+    if unknown:
+        return dict(per_percent=None, why="unknown Claude model(s) with tokens since %s: %s; "
+                                          "the week's spend cannot be priced"
+                    % (start.isoformat(), ", ".join("%s %d" % kv
+                                                    for kv in sorted(unknown.items()))))
+    if spend <= 0:
+        return dict(per_percent=None, why="no local Claude spend since %s" % start.isoformat())
+    return dict(per_percent=spend / used, basis="local Claude spend $%.2f from %s to %s over "
+                                                "%g%% used (%s)"
+                % (spend, start.isoformat(), end.isoformat(), used, source))
 
 
 # --------------------------------------------------------------------------
@@ -669,6 +718,11 @@ def render(data, week):
         budget = (" of $%.2f (%s)" % (phase["budget"], phase["budget_source"] or "budget:")
                   if phase["budget"] is not None else "")
         series = ", ".join("%.2f" % v for v in phase["cumulative_after_review"])
+        if phase.get("series_note"):
+            lines.append("%-10s $%.2f%s%s; %s" % (name, phase["usd"], budget,
+                                                 _share(phase["usd"], rate),
+                                                 phase["series_note"]))
+            continue
         lines.append("%-10s $%.2f%s%s; %d review(s)%s" % (
             name, phase["usd"], budget, _share(phase["usd"], rate),
             len(phase["cumulative_after_review"]),
@@ -680,7 +734,7 @@ def render(data, week):
     if rate:
         lines.append("week: $%.2f per 1%% — %s" % (rate, week["basis"]))
     else:
-        lines.append("week: no share shown — %s" % week["why"])
+        lines.append("week: no share shown — %s" % week.get("why", "no rate"))
     for flag in data["flags"]:
         detail = flag.get("id") or ", ".join(flag.get("ids") or []) or ""
         if flag.get("count"):
@@ -716,7 +770,7 @@ def run(args, table):
     data = read_item(item, TranscriptIndex(root), table)
     week = week_rate(args, table, root)
     data["week"] = week
-    for name, phase in data["phases"].items():
+    for phase in data["phases"].values():
         phase["share_of_week_percent"] = (round(phase["usd"] / week["per_percent"], 3)
                                           if week.get("per_percent") and
                                           phase["reading"] == "read" else None)

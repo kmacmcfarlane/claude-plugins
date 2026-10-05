@@ -154,6 +154,14 @@ class IdShapeTests(unittest.TestCase):
         self.assertEqual(roles[ID_C], "reviewer")
         self.assertEqual(roles[ID_NAMED], "research")
 
+    def test_record_lines_count_only_at_column_zero(self):
+        w = self.world
+        w.agent(ID_A, [turn("2026-10-01T10:00:00Z"), usage("2026-10-01T10:01:00Z", 1000)])
+        w.agent(ID_B, [turn("2026-10-01T11:00:00Z"), usage("2026-10-01T11:01:00Z", 2000)])
+        data = w.read("agent: implementer %s round 1\n  agent: reviewer %s round 1\n"
+                      "  budget: 2026-10-01T09:00Z build $1 — quoted" % (ID_A, ID_B))
+        self.assertEqual((data["ids"], data["usd"], data["phase_source"]), (1, 1.0, "inferred"))
+
     def test_role_comes_from_an_earlier_line_for_the_same_id(self):
         w = self.world
         w.agent(ID_A, [turn("2026-10-01T10:00:00Z"), usage("2026-10-01T10:01:00Z", 1000),
@@ -234,6 +242,38 @@ class SegmentTests(unittest.TestCase):
         w.agent(ID_A, [turn("2026-10-01T10:00:00Z"),
                        usage("2026-10-01T10:01:00Z", 1000, model="claude-sonnet-5-20260901")])
         self.assertEqual(w.read("agent: implementer %s round 1" % ID_A)["usd"], 0.5)
+
+
+class SplitTranscriptTests(unittest.TestCase):
+    """One id with transcripts in two session directories (a resume from a
+    later session), as agent a363290b7595fc80f has."""
+
+    def test_both_files_are_read_and_deduped(self):
+        root = Path(self.tmp.name) / "projects"
+        for session, lines in (
+                ("s1", [turn("2026-10-01T10:00:00Z"),
+                        usage("2026-10-01T10:01:00Z", 1000, message_id="m1"),
+                        usage("2026-10-01T10:02:00Z", 2000, message_id="m2")]),
+                ("s2", [turn("2026-10-01T10:00:00Z"),        # the copied brief
+                        usage("2026-10-01T10:01:00Z", 1000, message_id="m1"),  # shared
+                        turn("2026-10-01T12:00:00Z"),
+                        usage("2026-10-01T12:01:00Z", 4000, message_id="m3")])):
+            sub = root / "-proj" / session / "subagents"
+            sub.mkdir(parents=True)
+            (sub / ("agent-%s.jsonl" % ID_A)).write_text("\n".join(lines) + "\n")
+        item = Path(self.tmp.name) / "item.md"
+        item.write_text("---\ntype: bug\n---\nagent: implementer %s round 1\n"
+                        "agent: implementer %s round 2\n" % (ID_A, ID_A))
+        data = item_spend.read_item(item_spend.ItemRecord.load(item),
+                                    item_spend.TranscriptIndex(root),
+                                    ur.PriceTable(TEST_PRICES))
+        self.assertEqual(data["usd"], 7.0)
+        self.assertEqual([s["usd"] for s in data["segments"]], [3.0, 4.0])
+        self.assertFalse([f for f in data["flags"] if f["flag"] in ("lost", "unrecorded")])
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
 
 
 class PhaseTests(unittest.TestCase):
@@ -319,6 +359,26 @@ class CleanupTests(unittest.TestCase):
         self.assertEqual(build["lost_transcripts"], [ID_GONE])
         self.assertTrue(any(f["flag"] == "lost transcript" for f in data["flags"]))
 
+    def test_a_covered_phase_shows_no_review_series(self):
+        body = "\n".join([
+            "budget: 2026-10-01T09:00Z build $22 — default feature",
+            "agent: reviewer %s round 1" % ID_GONE,
+            "agent: implementer %s round 1" % ID_A,
+            "cost: 2026-10-01T11:00Z build $9.50 of $22 after review 1 — must-fix 1 — prices v2",
+            "agent: reviewer %s round 2" % ID_A])
+        build = self.world.read(body)["phases"]["build"]
+        self.assertEqual(build["cumulative_after_review"], [])
+        self.assertIn("cost: line", build["series_note"])
+
+    def test_lost_transcript_above_every_budget_line_is_unbudgeted(self):
+        body = "\n".join([
+            "agent: reviewer %s round 1" % ID_GONE,
+            "budget: 2026-10-01T09:00Z build $22 — default feature",
+            "agent: implementer %s round 1" % ID_A])
+        data = self.world.read(body)
+        self.assertEqual(data["phases"]["unbudgeted"]["reading"], "unread")
+        self.assertEqual(data["phases"]["build"]["reading"], "read")
+
     def test_lost_transcript_after_the_last_cost_line_is_no_reading(self):
         body = "\n".join([
             "budget: 2026-10-01T09:00Z build $22 — default feature",
@@ -348,28 +408,54 @@ class WeekTests(unittest.TestCase):
         base.update(kw)
         return SimpleNamespace(**base)
 
+    NOW = ur.parse_timestamp("2026-10-03T00:00:00Z")
+    RESETS = "2026-10-05T00:00Z"
+
+    def rate(self, **kw):
+        return item_spend.week_rate(self.args(**kw), self.table, self.world.root, now=self.NOW)
+
     def test_rate_is_local_spend_since_the_window_opened_over_used_percent(self):
         w = self.world
         (w.root / "-proj" / "sess.jsonl").write_text("\n".join([
             usage("2026-09-20T10:00:00Z", 50000),            # before the window: ignored
             usage("2026-10-01T10:00:00Z", 30000),
-            usage("2026-10-01T10:00:00Z", 30000, model="qwen3.8-27b")]) + "\n")
+            usage("2026-10-01T10:00:00Z", 30000, model="qwen3.8-27b"),  # not Claude
+            usage("2026-10-04T10:00:00Z", 70000)]) + "\n")  # after the reading: ignored
         w.agent(ID_A, [turn("2026-10-02T10:00:00Z"), usage("2026-10-02T10:01:00Z", 10000)])
-        week = item_spend.week_rate(self.args(week_used=20, week_resets_at="2026-10-05T00:00Z"),
-                                    self.table, w.root)
+        week = self.rate(week_used=20, week_resets_at=self.RESETS)
         self.assertAlmostEqual(week["per_percent"], 2.0)   # $40 over 20%
 
+    def test_no_local_spend_gives_no_rate(self):
+        week = self.rate(week_used=20, week_resets_at=self.RESETS)
+        self.assertIsNone(week["per_percent"])
+        self.assertIn("no local Claude spend", week["why"])
+
+    def test_a_stale_reading_gives_no_rate(self):
+        week = self.rate(week_used=50, week_resets_at="2026-10-02T00:00Z")
+        self.assertIsNone(week["per_percent"])
+        self.assertIn("stale", week["why"])
+
+    def test_unknown_claude_model_in_the_window_gives_no_rate(self):
+        (self.world.root / "-proj" / "sess.jsonl").write_text("\n".join([
+            usage("2026-10-01T10:00:00Z", 30000),
+            usage("2026-10-01T11:00:00Z", 30000, model="claude-opus-9")]) + "\n")
+        week = self.rate(week_used=20, week_resets_at=self.RESETS)
+        self.assertIsNone(week["per_percent"])
+        self.assertIn("claude-opus-9", week["why"])
+
+    def test_week_used_needs_resets_at(self):
+        week = self.rate(week_used=20)
+        self.assertIsNone(week["per_percent"])
+        self.assertIn("give both", week["why"])
+
     def test_a_coarse_reading_gives_no_rate(self):
-        week = item_spend.week_rate(self.args(week_used=1, week_resets_at="2026-10-05T00:00Z"),
-                                    self.table, self.world.root)
+        week = self.rate(week_used=1, week_resets_at=self.RESETS)
         self.assertIsNone(week["per_percent"])
         self.assertIn("too coarse", week["why"])
 
     def test_given_rate_and_no_week(self):
-        self.assertEqual(item_spend.week_rate(self.args(per_percent=22), self.table,
-                                              self.world.root)["per_percent"], 22.0)
-        self.assertIsNone(item_spend.week_rate(self.args(no_week=True), self.table,
-                                               self.world.root)["per_percent"])
+        self.assertEqual(self.rate(per_percent=22)["per_percent"], 22.0)
+        self.assertIsNone(self.rate(no_week=True)["per_percent"])
 
 
 class CliTests(unittest.TestCase):
@@ -410,6 +496,18 @@ class CliTests(unittest.TestCase):
         self.assertEqual(out.returncode, 0, out.stderr)
         self.assertIn("total      $11.00\n", out.stdout)
         self.assertIn("week: no share shown", out.stdout)
+
+    def test_week_reading_with_no_local_spend_does_not_crash(self):
+        # finding: per_percent 0.0 used to reach render() without a `why`
+        out = subprocess.run(
+            [sys.executable, str(SCRIPTS / "usage_report.py"), "item",
+             str(FIXTURES / "items" / "09f1.md"), "--projects-dir",
+             str(FIXTURES / "projects"), "--week-used", "20",
+             "--week-resets-at", "2999-01-01T00:00Z"],
+            capture_output=True, text=True, timeout=60)
+        self.assertEqual(out.returncode, 0, out.stderr)
+        self.assertIn("week: no share shown — no local Claude spend", out.stdout)
+        self.assertIn("total      $4.19\n", out.stdout)
 
     def test_missing_item_file(self):
         self.item = Path(self.tmp.name) / "nope.md"
