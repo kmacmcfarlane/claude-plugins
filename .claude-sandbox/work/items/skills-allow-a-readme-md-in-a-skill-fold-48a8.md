@@ -3,8 +3,10 @@ id: skills-allow-a-readme-md-in-a-skill-fold-48a8
 title: "skills: allow a README.md in a skill folder when it carries the user-facing footer"
 short_display_name: skill-folder README allowed
 type: feature
-status: todo
+status: doing
 priority: 2
+owner: Kyle-McFarlane@401123cbad11
+claimed: 2026-10-05T23:12Z
 created: 2026-10-05
 updated: 2026-10-05
 refs:
@@ -31,3 +33,9 @@ decision 157: Confirm the relayed README decisions: allow README.md inside a ski
   (z) decide later — kappa-dev keeps its exception
   rec: (a) · basis strong — your own decision, relayed with the evidence that bundled files cost no context until read
   unknown: none
+answer 157: a
+
+## Notes
+- 2026-10-05 claimed by Kyle-McFarlane@401123cbad11
+target: full skills-allow-a-readme-md-in-a-skill-fold-48a8 /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude/worktrees/skills-allow-a-readme-md-in-a-skill-fold-48a8
+dispatch: implementer sonnet medium — build (rule text + README footers; canonical wording/docs kind in a kit repo; closes c137 too)
