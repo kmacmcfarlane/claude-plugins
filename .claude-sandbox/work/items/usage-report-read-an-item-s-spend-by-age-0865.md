@@ -3,14 +3,13 @@ id: usage-report-read-an-item-s-spend-by-age-0865
 title: "usage-report: read an item's spend by agent id (the cost-budget spend reader)"
 short_display_name: spend reader by agent id
 type: feature
-status: doing
+status: done
 priority: 1
 deps:
   - usage-report-price-the-5-5-models-opus-5-ebbe
-owner: Kyle-McFarlane@401123cbad11
-claimed: 2026-10-05T17:36Z
 created: 2026-10-02
 updated: 2026-10-05
+closed: 2026-10-05
 refs:
   - decision 145 a
 ---
@@ -40,3 +39,13 @@ findings:
   7-9. [nit] README dev-flow row clause order and "(the coming spend budget)"; unused name at 719, --week-used without --week-resets-at; anchor AGENT/BUDGET/COST regexes at column 0
 dispatch: implementer opus medium — resume (fix round 1)
 agent: implementer a37cb9fe987c7fcb9 round 2
+return: implementer DONE 718abce (1-9 fixed; 71 tests)
+dispatch: reviewer opus high — resume (round 2)
+agent: reviewer af1fce518a42ec2c1 round 2
+verdict: CLEAR round 2 at 718abce
+findings:
+  1-9 fixed (a363290b7595fc80f merged $7.13 over 3 segments)
+  10. [nit] week_rate float(--week-resets-at) catches only ValueError; add OverflowError, OSError
+  11. [nit] a past --week-resets-at is refused, so a past window cannot be measured by hand
+landed: e959ae2
+- 2026-10-05 done: landed e959ae2 (CLEAR r2)
