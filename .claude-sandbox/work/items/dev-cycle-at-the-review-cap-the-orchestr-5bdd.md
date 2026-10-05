@@ -3,14 +3,13 @@ id: dev-cycle-at-the-review-cap-the-orchestr-5bdd
 title: "dev-cycle: at the review cap, the orchestrator finishes trivial leftover fixes by default instead of raising a decision"
 short_display_name: finish trivial fixes at the cap
 type: feature
-status: doing
+status: done
 priority: 1
 deps:
   - review-caps-and-spend-plans-raise-only-o-5579
-owner: Kyle-McFarlane@401123cbad11
-claimed: 2026-10-01T07:22Z
 created: 2026-10-01
 updated: 2026-10-05
+closed: 2026-10-05
 refs:
   - operator 2026-10-01, answer 137
 ---
@@ -270,3 +269,25 @@ findings:
   8-12. [nit] "a phase's fourth review"; fix-loop.md cap pointer; rewrap (librarian SKILL.md:244, agent-brief.md:233, model-routing.md:654, :671); worked figures marked illustrative, reflow "of $10"; investigation-format.md:154 wording
 dispatch: implementer opus medium — resume (fix round 1)
 agent: implementer aaf057f145282066d round 2
+return: implementer DONE 31dca8e (1-12 fixed; SKILL.md 467 lines)
+dispatch: reviewer opus high — resume (round 2)
+agent: reviewer a9b070bae126664b5 round 2
+verdict: CLEAR round 2 at 31dca8e
+findings:
+  1-9, 11, 12 fixed; 10 partly
+  13. [low] bindings.md:378-382 — "the phase that absorbs the spend reads high" is false for a re-plan's own plan phase (it reads low; only the fourth-review count and the convergence stop bound it until 7421); Fix: "The phase that absorbs the spend reads high and asks early; a re-plan after a build reads its own phase low, so only the fourth-review count and the convergence stop bound it until follow-up 7421 lands."
+  14. [nit] rewrap agent-brief.md:152, :233; bindings.md:220; model-routing.md:656
+decided: 2026-10-05T18:50Z ruled-rule-case — one finish round before landing for 13 (a false sentence in the rule, with the reviewer's exact words) and 14 (rewraps); same implementer, same reviewer checks · authority: answer 137 ("finish trivial changes") · reopen: say so
+dispatch: implementer opus medium — resume (finish round: 13, 14 as written)
+agent: implementer aaf057f145282066d round 3
+return: implementer DONE d29b117 (13, 14 as written)
+dispatch: reviewer opus high — resume (round 3, the finish round only)
+agent: reviewer a9b070bae126664b5 round 3
+verdict: CLEAR round 3 at d29b117
+findings:
+  13, 14 FIXED; no new findings
+landed: e92f0e3
+closed 139: acted e92f0e3
+closed 140: acted e92f0e3
+closed 145: acted e92f0e3
+- 2026-10-05 done: landed e92f0e3 (CLEAR r3 incl. one finish round under answer 137)

@@ -111,3 +111,4 @@ findings:
   16. [nit] chain-of-verification/SKILL.md:107-110 — under --item, re-run the store snippet per call or name $WI_ROOT/items/<id>.md
 findings: carried — 13 [low], 14-16 [nit] above, verbatim; folded into the pre-landing round if 147 or 148 changes anything, else filed as a follow-up at landing
 hold: landing waits on decisions 147 and 148 (blocks the landing, not the build); the branch is CLEAR at 7806e08
+note: main moved (the budget rule e92f0e3 edits dev-cycle resume.md, record-lines.md, model-routing.md, SKILL.md — files this branch also edits); before landing, merge main into the branch and re-review the merge
