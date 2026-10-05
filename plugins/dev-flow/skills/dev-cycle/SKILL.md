@@ -308,18 +308,18 @@ the nth re-dispatch or resume with findings = review round n+1; the cap: Step 4.
    round) — with its `— resume` pair written first (rule 7); a re-dispatch writes a
    fresh `dispatch:` and `agent:` pair. A change of agent file or model is always a
    re-dispatch. Repeat until `CLEAR`.
-   **The cap.** Rounds run unasked inside the phase's spend budget; the cap is the budget
-   reached, the must-fix count not falling from the fourth review on (the brief or the
-   target is wrong, not the code), or, with no spend reading, the fourth review. It ends
-   in a plan's stop and carry, one finish round of exact fixes, or a raise with what the
-   open findings would break and what more costs (`references/bindings.md` § Decisions,
-   What a cap ends in). Never argue a severity down.
+   **The cap.** Rounds run unasked inside the phase's spend budget, past the fourth review
+   through its guard; the cap is the budget reached, the must-fix count not falling from
+   the fourth review on (the brief or the target is wrong, not the code), or, with no
+   spend reading, the fourth review. It ends in a plan's stop and carry, one finish round
+   of exact fixes, or a raise with what the open findings would break and what more costs
+   (`references/bindings.md` § Decisions, What a cap ends in). Never argue a severity down.
 4. **What escalates** through the decision channel is only a show-stopper with real
    impact: a `SHOW_STOPPER` verdict, a finding that changes the scope or reverses a
-   recorded human decision, or a cap that is raised (rule 3) — and a fable cross-check
-   offer (rule 4). Everything else, critical included, is resolved inside the loop. The
-   one exception: `review <branch>` mode's ask, before any fix loop, whether to dispatch
-   an implementer at all (Usage) — a mode-entry decision, not a severity escalation.
+   recorded human decision, or a cap or a guard-stopped round that is raised (rule 3) —
+   and a fable cross-check offer (rule 4). Everything else, critical included, is
+   resolved inside the loop. The one exception: `review <branch>` mode's ask, before any
+   fix loop, whether to dispatch an implementer (Usage) — mode entry, not a severity.
 5. **Record the result** as `verdict: <V> round <n> at <sha>` — a self-review writes
    `review: self at <sha> — <why it qualifies>` directly above it — plus, on a
    `NEEDS_CHANGES` or `SHOW_STOPPER`, the reviewer's FINDINGS pasted verbatim as a
@@ -405,7 +405,7 @@ store nothing. The tag is the id's last four hex. A target with no item — a se
 file, a reviewed branch, a scratchpad record — has no tag, so its plain name stands alone.
 The full id stays where agents read it: the record sink and every `wi` call.
 
-A self-reviewed change (Step 2 rule 5) writes `self` in place of the reviewer's tier:
+A self-review (Step 2 rule 5) writes `self` for the reviewer's tier (figures illustrative):
 `verified: review CLEAR after 0 fix rounds (impl sonnet, review self; $1.40 of $12); …`.
 
 `verified:`'s merge sha comes from the `landed:` line Step 5.3 recorded

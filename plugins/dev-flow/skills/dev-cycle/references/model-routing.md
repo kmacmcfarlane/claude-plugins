@@ -650,11 +650,10 @@ dispatch: reviewer opus high — rule 4
 
 The reviewer returns `NEEDS_CHANGES` with one medium. Fix round 1 (review round 2):
 implementer stays sonnet, resumed with the finding; the same reviewer is resumed. `CLEAR`.
-Report: `verified: review CLEAR after 1 fix round (impl sonnet, review opus; $6.10 of
-$22)`. Had review
-round 2 failed too, fix round 2 re-dispatches the implementer fresh at opus with the full
-brief and every findings list — a resumed agent keeps its model — and the opus reviewer
-is resumed as before. Had review round 1 carried a high, fix round 1 would already have
+Report (figures illustrative): `verified: review CLEAR after 1 fix round (impl sonnet,
+review opus; $6.10 of $22)`. Had review round 2 failed too, fix round 2 re-dispatches the
+implementer fresh at opus with the full brief and every findings list — a resumed agent
+keeps its model — and the opus reviewer is resumed as before. Had review round 1 carried a high, fix round 1 would already have
 gone to opus.
 
 **"Reflow the install section of `docs/overview.md`; no content change," in a product
@@ -668,10 +667,9 @@ review: self at 4d5e6f — pure prose in docs/overview.md; no command, path or v
 verdict: CLEAR round 1 at 4d5e6f
 ```
 
-Report: `verified: review CLEAR after 0 fix rounds (impl sonnet, review self; $0.90 of
-$12)`. Had the
-reflow also corrected an install command, that line is an operational claim: a fresh
-opus reviewer.
+Report (figures illustrative): `verified: review CLEAR after 0 fix rounds (impl sonnet,
+review self; $0.90 of $10)`. Had the reflow also corrected an install command, that line
+is an operational claim: a fresh opus reviewer.
 
 **"Add a PreToolUse hook that blocks edits to the main checkout from a worktree
 session."** Executable logic: opus. Implementer opus; reviewer opus. That the hook

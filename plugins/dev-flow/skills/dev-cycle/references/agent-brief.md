@@ -148,13 +148,8 @@ adjusted only to the grammar around them; you may remove its failure another way
 and then say which finding and why on that file's CHANGED line. A `Fix:` you can neither
 apply as given (the line moved, the words contradict the file) nor replace goes under
 COULD NOT DO as `Fix <n> not applied — <why>`, STATUS DONE_WITH_CONCERNS, the other fixes
-committed.
-<finish round only (`bindings.md` § Decisions, What a cap ends in); the line only
-advises — a re-dispatch that lacks it (`resume.md` S3b) is re-reviewed like any commit:>
-This is a finish round: change nothing but what the `Fix:` lines fix; decline each low or
-nit without a `Fix:` under DECLINED with "outside the finish round". Fix as one or more NEW
-commits on top of <reviewed sha>; never amend, rebase, or squash — the reviewer diffs from
-that sha. Report every new sha under COMMIT. A finding against a commit subject or
+committed. Fix as one or more NEW commits on top of <reviewed sha>; never amend, rebase,
+or squash — the reviewer diffs from that sha. Report every new sha under COMMIT. A finding against a commit subject or
 message is always low (the fix-loop rule): never rewrite history for it — no reset, amend
 or rebase; decline it under DECLINED with "carried in the merge message".
 The one exception: a secret or credential in any committed content on this branch — a file
@@ -167,6 +162,10 @@ above; the no-rebase prohibition below still holds. Before reporting, confirm
 shape. Never write the secret's value anywhere — files, messages, commands, report: name
 it by commit sha, file and key only. Never call the credential safe; rotating it is the
 operator's call.
+<finish round only (`bindings.md` § Decisions, What a cap ends in); the line only
+advises — a re-dispatch that lacks it (`resume.md` S3b) is re-reviewed like any commit:>
+This is a finish round: change nothing but what the `Fix:` lines fix; decline each low or
+nit without a `Fix:` under DECLINED with "outside the finish round".
 
 <conditional — merge-conflict round only: include when Land's merge conflicted:>
 Your branch conflicts with <base> (the conflicting paths, from the aborted merge: <list>).
@@ -230,8 +229,8 @@ new serial at the next free number, opening with a `Supersedes` block that names
 findings overturned; regenerate `INDEX.md`. A finding with a `Fix:` is fixed by default by
 carrying its words into the new serial, whose `Supersedes` names the statement it
 replaces; other words may remove the failure instead; one that cannot be applied goes
-under OPEN QUESTIONS as `Fix <n> not applied — <why>`, non-blocking. A round whose planner file and model are
-unchanged may resume the planner instead (`fix-loop.md` § A NEEDS_CHANGES round), with one
+under OPEN QUESTIONS as `Fix <n> not applied — <why>`, non-blocking. A round whose
+planner file and model are unchanged may resume the planner instead (`fix-loop.md` § A NEEDS_CHANGES round), with one
 exception: a trial unit's rounds are fresh in both arms, never a resume, from the round
 after its late high until `CLEAR` or its third plan review — this brief re-dispatched to
 `planner-deep` in the bump arm and to `planner` in the control arm (`model-routing.md`

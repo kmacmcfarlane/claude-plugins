@@ -2,10 +2,10 @@
 
 One round of the loop in SKILL.md § Step 4: what each verdict means, who is resumed and
 who is re-dispatched, and exactly what the implementer and the re-review are told. The cap
-(`bindings.md` § Decisions, What a cap ends in), the rule that the orchestrator never
-fixes a finding itself, what goes to the decision channel, and recording the round in the
-record sink stay in SKILL.md; the tier and agent file per round are `model-routing.md`
-§ Rounds.
+(SKILL.md § Step 4.3; its home `bindings.md` § Decisions, What a cap ends in), the rule
+that the orchestrator never fixes a finding itself, what goes to the decision channel,
+and recording the round in the record sink stay in SKILL.md; the tier and agent file per
+round are `model-routing.md` § Rounds.
 
 ## The verdicts
 

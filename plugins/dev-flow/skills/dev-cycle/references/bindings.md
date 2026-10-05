@@ -216,8 +216,8 @@ before a round opens or anything is raised. Every counted review here is a count
 
 - **the budget**: the phase's last `cost:` line shows spent at or over the amount in force;
 - **the convergence stop**: from the fourth counted review on, this review's `must-fix` is
-  not lower than the previous counted review's (each review's last `cost:` line; `?` is
-  never lower) — a count that stops falling means the brief or the target is wrong, not
+  not lower than the previous counted review's (each review's last `cost:` line; a
+  comparison with `?` on either side is not lower) — a count that stops falling means the brief or the target is wrong, not
   the code;
 - **the fallback**: no spend reading, and the fourth counted review or later.
 
@@ -259,7 +259,8 @@ Then the first that applies:
    operator — an `answer:` to its decision, or a `budget:` line whose source is
    `operator` or names an answer (`answer N …`, `… (answer N)`), recorded after that
    verdict; a `default … ×2 fable` line opens nothing — so never two in a row unasked.
-   The producer is resumed (never you: decided on item 5bdd, authority answer 137) with
+   The producer is resumed, or re-dispatched where `model-routing.md` § Rounds changes its
+   tier (never you: decided on item 5bdd, authority answer 137), with
    `agent-brief.md`'s fix-round clause and its finish-round line; then the same reviewer
    is resumed with the re-review variant, which grades each finding on its failure and
    may still return findings that are not exact-fix: they meet this list at its verdict
@@ -374,7 +375,11 @@ phase's first dispatch (SKILL.md § Step 0.3; a caller writes both where it writ
 count in its build. A new plan run on a plan that already cleared, with no build since, is
 the same mode and ref: it continues the plan phase — its `target:` and `budget:` lines
 kept, its reviews counted on from them, its spend added to the phase's, as the reader
-keeps one plan phase per record.
+keeps one plan phase per record. The reader keeps one phase per kind per record, opened at
+that kind's first `budget:` line, so two cases read as one phase: a re-plan after a build
+opened puts its plan spend into the build, and a new pair of the same phase with a
+different mode or ref resets the amount and ROUNDS while the reader keeps the earlier
+spend. Either way the phase that absorbs the spend reads high, so it errs toward asking.
 
 **The amount** is the first of these that answers:
 
@@ -448,7 +453,8 @@ The record sink file is the item's `$WI_ROOT/items/<id>.md`, or the scratchpad
 old (update context-guard)`); any other non-zero exit or a timeout; output that does not
 parse; the phase `unread` (a Claude model the price table does not know, with tokens; or a
 lost transcript no `cost:` line covers); or no `budget:` line in the phase. Another phase's
-`unread` does not matter. A card's share of the week comes from one more run without
+`unread` does not matter. A `reader too old` reason is named once under Step 6's `open
+questions:`. A card's share of the week comes from one more run without
 `--no-week` (`share_of_week_percent`).
 
 **The spend check** reads spend and appends one `cost:` line (`record-lines.md`):

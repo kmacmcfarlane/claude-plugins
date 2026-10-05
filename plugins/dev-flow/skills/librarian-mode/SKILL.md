@@ -227,7 +227,7 @@ would ask the operator. Its Step 6 is the Report below. Your bindings:
 - **Hold**: an active hold's limit caps tier and concurrency for every dispatch; below
   a pin's tier (opus for an `effort:` pin's `-deep` files) or the reviewer's opus
   (dev-cycle's Step 2 rule 4), the item waits on a decision (Idle turn). A hold in force
-  stops every round that would open unasked past an item's fourth review, a finish round
+  stops every round that would open unasked past a phase's fourth review, a finish round
   included: it is raised (the one home of this rule; the `dev-cycle` skill's
   `references/bindings.md` § Decisions names it the caller's stop).
 - **Record sink**: the item body, appended with Bash (not a custody file): a
@@ -241,10 +241,10 @@ would ask the operator. Its Step 6 is the Report below. Your bindings:
   open questions, a fable cross-check offer, a pin's ask below the quota reserve (the
   `dev-cycle` skill's `references/model-routing.md` §§ Fable cross-checks, Below the
   quota reserve), a spend budget reached, a plan's estimate over its build's default, a
-  round past the fourth review that a hold or the quota stops. A planner's blocking questions pass through the class table first
-  (`references/decide-alone.md` § A planner's questions). **Durable**: the question
-  lives in the committed item body and is answered to whichever session is librarian
-  next. Shown per the
+  round past the fourth review that a hold or the quota stops. A planner's blocking
+  questions pass through the class table first (`references/decide-alone.md` § A
+  planner's questions). **Durable**: the question lives in the committed item body and is
+  answered to whichever session is librarian next. Shown per the
   `operator-interaction:decisions` skill when it is loaded (`references/decisions.md`).
   **Spend budget** (the `dev-cycle` skill's `references/bindings.md` §§ Spend budget,
   Decisions): the cycle's own, as standalone — the `budget:` line you write with the
