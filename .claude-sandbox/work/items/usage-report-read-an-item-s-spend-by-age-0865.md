@@ -31,3 +31,12 @@ agent: implementer a37cb9fe987c7fcb9 round 1
 return: implementer DONE 3ef7190 (218 of 220 items match the prototype to the cent; judgement calls: role from the first word, non-Claude left out and flagged, deleted transcripts by line order, a 10% floor for the week rate)
 dispatch: reviewer opus high — review round 1
 agent: reviewer af1fce518a42ec2c1 round 1
+verdict: NEEDS_CHANGES round 1 at 3ef7190
+findings:
+  judgement calls checked and sound; type-checker warnings not crash paths; fixtures clean (no conversation text); memory bounded (18 MB RSS)
+  1. [medium] item_spend.py:643-646,683 — text output crashes (KeyError 'why') when the week rate is $0 with >=10% used; week_rate returns per_percent=None with a why when spend <= 0; test
+  2. [medium] item_spend.py:213-215 — one agent id with transcripts in two session dirs: only the first is read (real case a363290b7595fc80f, nearly disjoint files), dropping spend; map ids to all paths, read all into one deduped kept; test
+  3-6. [low] week_spend: no upper time bound on a stale sensor reading, unknown Claude models skipped silently; a deleted transcript before any budget: line falls back to build, should be UNBUDGETED; covered phases' cumulative series contradicts usd; context-guard plugin.json and README soft-dependency paragraph should name the statusline-hub weekly reading (principle 4)
+  7-9. [nit] README dev-flow row clause order and "(the coming spend budget)"; unused name at 719, --week-used without --week-resets-at; anchor AGENT/BUDGET/COST regexes at column 0
+dispatch: implementer opus medium — resume (fix round 1)
+agent: implementer a37cb9fe987c7fcb9 round 2
