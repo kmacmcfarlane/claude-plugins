@@ -204,3 +204,29 @@ return: planner PLAN_READY — serial 03_budget-rule-build-spec.md (14 files, C1
 baseline: 4fc2a726583e 00_initial.md 6384700d074e 01_review-fixes.md e21d7438dc88 02_review-r2-fixes.md e061202eef72 03_budget-rule-build-spec.md 
 dispatch: reviewer opus high — plan review round 1 (serial 03)
 agent: reviewer adae8adce3ab7fb7b round 1
+verdict: NEEDS_CHANGES round 1 (plan, serial 03)
+findings:
+  fidelity to 145 a / 139 a / 140 a holds; T0 and T1 check out against the reader (819f asks at r4, r5, r6, r7 and the r8 ruling)
+  1. [medium] 03:770 vs 368-371 — T2 (caef) contradicts the granted-plan-path rule (8dee E2): r5 ends the path and carries; correct T2 (one ask) rather than change E2
+  2. [medium] 03:304-308,530-537,410-412 — counted reviews are record-wide but the budget is per phase; define per phase (after the phase's last target:/budget:), "this phase's budget:" in Step 0.3, a plan-then-build trace
+  3. [medium] 03:218-222,238-244 — a plan estimate can set a build's budget unasked (series written outside a dev-cycle plan run; build item differs from plan item); over-default estimate with no recorded answer is raised at the build's Step 0.3, default stands meanwhile; name where the answer is read
+  4. [medium] 03:126-131,823-825 — Reading 1 (standalone plans stop and carry) widens a ruled rule (Q8 (i) "as today" = librarian only); raise it to the operator, ship either side
+  5-12. [low] Group B preamble "round budget"; installed context-guard older than the reader → name "reader too old"; only answer-N/operator budget: lines open rounds; what a standalone run records when deciding alone; store-less pin from the invocation's words; resume short-circuit for a carried plan; README principle-4 note for statusline-hub; trace for a plan stopping at its budget before r4
+  13-17. [nit] T1 next-round figure .89; verified: worked examples; cross-skill reference form; C10/C14 coverage; gallery.md follow-up
+librarian ruling on 4: the build ships today's behaviour for standalone plans (every plan cap raised) and the widening goes to the operator as decision 156; readings 2 and 3 are recorded as decided under answer 145
+decided: 2026-10-05T18:29Z ruled-rule-case — "one finish round at the budget" means at most one unasked in a row; another may run after each operator answer at a cap · authority: answer 145 · reopen: say so
+decided: 2026-10-05T18:29Z ruled-rule-case — with no spend reading, the fourth review is the cap with no self-granted round (stricter than before) · authority: answer 145 · reopen: say so
+decision 156: Should standalone dev-cycle plans with nothing high-severity left stop and carry their findings at round 4 without asking, as librarian runs already do? — options: (a) yes, standalone like librarian [recommended] | (b) no, a standalone plan cap keeps asking, as today | (z) decide later
+  raised: 2026-10-05T18:29Z
+  what: whether the plan stop-and-carry (review caps and spend, 5579) extends from librarian runs to standalone /dev-cycle runs under the budget rule (was reading 1 of the budget-rule build spec, 5bdd)
+  why now: the budget rule's build is being specified; it ships (b) until you answer; blocks: nothing
+  why ask: rule-change — your Q8 answer kept the stop-and-carry "as today", which is librarian-only
+  context: you chose the spend budget with every recommended setting (145) · you decide whether standalone plan runs get the same quiet stop at round 4 — then: none
+  stakes: reversible, narrow — standalone plan runs
+  (a) standalone like librarian — a standalone plan with no high left stops and carries its findings to the build without a question; spends nothing — undo: an edit — who: standalone dev-cycle users
+  (b) keep asking — a standalone plan cap still comes to you at round 4
+  (z) decide later — the build ships (b)
+  rec: (a) · basis partial — stopping spends nothing and the findings reach the build either way
+  unknown: none
+dispatch: planner opus high — resume (plan fix round 1)
+agent: planner a0e228e207574a68d round 2
