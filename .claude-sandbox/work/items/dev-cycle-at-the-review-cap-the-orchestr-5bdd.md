@@ -10,7 +10,7 @@ deps:
 owner: Kyle-McFarlane@401123cbad11
 claimed: 2026-10-01T07:22Z
 created: 2026-10-01
-updated: 2026-10-02
+updated: 2026-10-05
 refs:
   - operator 2026-10-01, answer 137
 ---
@@ -230,3 +230,31 @@ decision 156: Should standalone dev-cycle plans with nothing high-severity left 
   unknown: none
 dispatch: planner opus high — resume (plan fix round 1)
 agent: planner a0e228e207574a68d round 2
+return: planner PLAN_READY — serial 04_review-fixes.md (1-17; C1-C28, T0-T22; the 156 switch line)
+baseline: 4fc2a726583e 00_initial.md 6384700d074e 01_review-fixes.md e21d7438dc88 02_review-r2-fixes.md e061202eef72 03_budget-rule-build-spec.md e24cf269a2b5 04_review-fixes.md 
+dispatch: reviewer opus high — resume (plan review round 2)
+agent: reviewer adae8adce3ab7fb7b round 2
+verdict: CLEAR round 2 (plan, serial 04)
+findings:
+  1-17 closed; the round-5+ reading for a standalone plan with a high left holds (Q7 (i) covers rounds past the fourth, librarian and standalone alike)
+  1. [low] 04:64-68,90-91 — standalone inversion: a plan with a high left continues past r4 unasked inside its budget, one with only mediums is raised at r4; put it on 156's card
+  2. [low] 04:101-103 — word the standalone recording sentence without the switch, so deleting the switch needs no other edit (C8)
+  3. [low] 04:155-157 — when the plan item holds a pending estimate decision, point to it instead of raising a second
+  4. [low] 04:110-115 — a new plan run after a plan CLEAR: new phase or the old one; say which and trace it beside T19
+  5. [nit] 04:152 — the target: plan grep needs the exact absolute path; say so or match the slug
+findings: carried — 1-5 above, verbatim; into this item's build (1 is on decision 156's revised card)
+decision 156: Should standalone dev-cycle plans with nothing high-severity left stop and carry their findings at round 4 without asking, as librarian runs already do? — options: (a) yes, standalone like librarian [recommended] | (b) no, a standalone plan cap keeps asking, as today | (z) decide later
+  raised: 2026-10-05T18:29Z
+  revised: 2026-10-05T18:34Z — the spec review found an inversion the card did not show; options and recommendation unchanged
+  what: whether the plan stop-and-carry extends from librarian runs to standalone /dev-cycle runs under the budget rule (was reading 1 of the budget-rule build spec, 5bdd)
+  why now: the budget rule is about to be built; it ships (b) until you answer, and (a) deletes one sentence; blocks: nothing
+  why ask: rule-change — your Q8 answer kept the stop-and-carry "as today", which is librarian-only
+  context: you chose the spend budget with every recommended setting (145) · you decide whether standalone plan runs get the same quiet stop at round 4 — then: until you answer, a standalone plan with a high-severity finding left keeps going past round 4 without asking (inside its budget, as 145's round-5+ setting allows), while one with only mediums left is asked at round 4 — the stricter treatment falls on the milder case
+  stakes: reversible, narrow — standalone plan runs
+  (a) standalone like librarian — a plan with no high left stops and carries its findings without a question; spends nothing; removes the inversion — undo: an edit — who: standalone dev-cycle users
+  (b) keep asking — a standalone plan with only mediums left is asked at round 4, while one with a high left continues
+  (z) decide later — the build ships (b)
+  rec: (a) · basis partial — stopping spends nothing, the findings reach the build either way, and it removes the inversion
+  unknown: none
+target: full dev-cycle-at-the-review-cap-the-orchestr-5bdd /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude/worktrees/dev-cycle-at-the-review-cap-the-orchestr-5bdd
+dispatch: implementer opus medium — build (spec: 5bdd serials 00-04, CLEAR r2; answers 139 a, 140 a, 145 a; closes e4ca)
