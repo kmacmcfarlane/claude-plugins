@@ -39,3 +39,4 @@ answer 157: a
 - 2026-10-05 claimed by Kyle-McFarlane@401123cbad11
 target: full skills-allow-a-readme-md-in-a-skill-fold-48a8 /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude/worktrees/skills-allow-a-readme-md-in-a-skill-fold-48a8
 dispatch: implementer sonnet medium — build (rule text + README footers; canonical wording/docs kind in a kit repo; closes c137 too)
+agent: implementer a584d80ad91257072 round 1
