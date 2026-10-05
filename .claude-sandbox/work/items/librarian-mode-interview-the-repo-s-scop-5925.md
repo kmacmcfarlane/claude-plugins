@@ -27,3 +27,4 @@ note: agents' reading (2026-10-04, on 51df): the ## Librarian section stays the 
 - 2026-10-05 claimed by Kyle-McFarlane@401123cbad11
 target: plan librarian-mode-interview-the-repo-s-scop-5925 /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude-sandbox/investigations/5925-librarian-scope-interview
 dispatch: planner opus high — plan (answer 152 a, short term)
+agent: planner a84db3183c674645f round 1
