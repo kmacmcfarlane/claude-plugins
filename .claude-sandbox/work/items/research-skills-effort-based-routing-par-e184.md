@@ -112,3 +112,30 @@ findings:
 findings: carried — 13 [low], 14-16 [nit] above, verbatim; folded into the pre-landing round if 147 or 148 changes anything, else filed as a follow-up at landing
 hold: landing waits on decisions 147 and 148 (blocks the landing, not the build); the branch is CLEAR at 7806e08
 note: main moved (the budget rule e92f0e3 edits dev-cycle resume.md, record-lines.md, model-routing.md, SKILL.md — files this branch also edits); before landing, merge main into the branch and re-review the merge
+decision 147: The research-routing build adds six stored names: the research-run tag, an item: field, a ## Record section, an --item argument, the synthesis role word, and chain-of-verification's Record: line; keep them as named? — options: (a) keep them as named [recommended] | (b) rename some (say which) | (z) decide later
+  raised: 2026-10-02T22:22Z
+  revised: 2026-10-06T01:50Z — why now stale (the build has finished); options and recommendation unchanged
+  what: names stored in work items and briefs, or parsed by the spend reader (was OQ1 of the research-routing plan, e184)
+  why now: the build is done and passed review (round 2); landing it needs these names settled; blocks: the research-routing landing
+  why ask: api-name — new stored, parsed names are yours (answer 111 b)
+  context: you approved research routing in place, a work item per research run, and said plan it and land it · you approve the names it writes — then: none
+  stakes: reversible, narrow — research runs' records
+  (a) keep them as named — research-run (tag on the item each run files), item: (the run's item in its brief), ## Record (where a run with no item writes its lines), --item <id> (name an existing item), synthesis (role word on a dispatch line), Record: (chain-of-verification's summary line) — undo: a rename later migrates stored lines — who: research runs, the spend reader
+  (b) rename some — the build uses your names before it lands, no migration
+  (z) decide later — the build finishes with these names and waits to land
+  rec: (a) · basis partial — each follows an existing shape (tags, front-matter fields, dispatch role words); the reviewer found no clash
+  unknown: none
+decision 148: Which research runs should file a work item of their own? — options: (a) research-family and deep-investigation runs that dispatch an agent; chain-of-verification records on an item only when one is named, otherwise in its own summary [recommended] | (b) every run that dispatches an agent, chain-of-verification included | (c) every run, quick inline answers included | (z) decide later
+  raised: 2026-10-02T22:22Z
+  revised: 2026-10-06T01:50Z — why now stale (the build has finished); options and recommendation unchanged
+  what: the reach of your "a work item for all research runs" (was OQ2 of the research-routing plan, e184)
+  why now: the build is done with (a) and passed review (round 2); blocks: the research-routing landing
+  why ask: trade-off — complete records against an item for every quick check
+  context: you said every research run should have a work item as its record · you decide where "every" stops — then: chain-of-verification always dispatches agents, and the model invokes it on its own ("verify this"), so under (b) each such check files an item; a run inside a sub-agent (e.g. research a planner runs) never files its own item under any option, because its spend is already on the parent's item and writing there would double-count it
+  stakes: reversible, narrow — the work-item stores of repos where research runs
+  (a) research and deep-investigation runs that dispatch — every real research run is on an item; chain-of-verification's quick checks stay out of the store unless you name an item, and their spend is not on any item — undo: an edit — who: research runs
+  (b) every run that dispatches — complete spend records; one item per chain-of-verification call, several a day in some sessions
+  (c) every run, inline answers too — most complete, noisiest
+  (z) decide later — the build finishes with (a) and waits to land
+  rec: (a) · basis partial — follows your intent for research runs without filing an item per quick check; chain-of-verification's spend is small
+  unknown: how often chain-of-verification runs across sessions

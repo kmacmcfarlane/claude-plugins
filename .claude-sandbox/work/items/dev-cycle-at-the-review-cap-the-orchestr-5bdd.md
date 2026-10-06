@@ -291,3 +291,16 @@ closed 139: acted e92f0e3
 closed 140: acted e92f0e3
 closed 145: acted e92f0e3
 - 2026-10-05 done: landed e92f0e3 (CLEAR r3 incl. one finish round under answer 137)
+decision 156: Should standalone dev-cycle plans with nothing high-severity left stop and carry their findings at round 4 without asking, as librarian runs already do? — options: (a) yes, standalone like librarian [recommended] | (b) no, a standalone plan cap keeps asking, as today | (z) decide later
+  raised: 2026-10-05T18:29Z
+  revised: 2026-10-06T01:50Z — why now stale (the budget rule has landed); options and recommendation unchanged
+  what: whether the plan stop-and-carry extends from librarian runs to standalone /dev-cycle runs under the budget rule (was reading 1 of the budget-rule build spec, 5bdd)
+  why now: the budget rule landed (e92f0e3) shipping (b) behind a one-line switch; (a) deletes that line; blocks: nothing
+  why ask: rule-change — your Q8 answer kept the stop-and-carry "as today", which is librarian-only
+  context: you chose the spend budget with every recommended setting (145) · you decide whether standalone plan runs get the same quiet stop at round 4 — then: until you answer, a standalone plan with a high-severity finding left keeps going past round 4 without asking (inside its budget, as 145's round-5+ setting allows), while one with only mediums left is asked at round 4 — the stricter treatment falls on the milder case
+  stakes: reversible, narrow — standalone plan runs
+  (a) standalone like librarian — a plan with no high left stops and carries its findings without a question; spends nothing; removes the inversion — undo: an edit — who: standalone dev-cycle users
+  (b) keep asking — a standalone plan with only mediums left is asked at round 4, while one with a high left continues
+  (z) decide later — the build ships (b)
+  rec: (a) · basis partial — stopping spends nothing, the findings reach the build either way, and it removes the inversion
+  unknown: none
