@@ -28,6 +28,8 @@ Opening paragraph: when it was written, by which session, one sentence saying th
 is the canonical brief and the rehydration point, and the run's item: `Item: <id>` or
 `Item: none — <reason>` (the `research` skill's `references/intensity-and-routing.md`
 § The work item), and with an item its `wi:` and `item_file:` lines (§ Stored names there).
+Then `Staging: <scratchpad>/research/<series-slug>/`, the absolute path where lanes and the
+verifier write; a resumed session finds the run's unlanded files there.
 
 ### `## Problem statement`
 
@@ -68,8 +70,8 @@ parallel" or a table:
 
 Followed by the two rules, stated explicitly:
 
-- **Idempotence** — a wave's lanes launch only if their findings files do not exist and the
-  ledger does not mark them launched.
+- **Idempotence** — a wave's lanes launch only if their findings files do not exist, in
+  staging or in the series, and the ledger does not mark them launched.
 - **Overrun** — synthesis starts no later than `<T>` with whatever findings exist; hard stop
   `<T+1h>`.
 
@@ -95,22 +97,33 @@ paragraphs keep their `model` as before.
 ### `## Status ledger`
 
 Append-only, oldest first, updated **in place as things happen** — not reconstructed afterwards.
+Every line is in your words: ids, counts, paths, status and confidence labels, never a lane's.
 
 ```
 - 2026-09-01 07:40Z — wave 1 LAUNCHED (a1, a4, a5 on sonnet). One-shot crons armed: wave 2 @09:03Z…
-- 2026-09-01 07:52Z — a1 DONE (findings/a1-log-toolkit.md + tools/{…}.py, validated on both
-  stores). Notable: <2–3 results, a clause each>. First numbers: <n> (unsampled).
+- 2026-09-01 07:52Z — a1 DONE (staging findings/a1-log-toolkit.md, 241 lines, 9 sources,
+  confidence well-supported; tools/ 3 files).
+- 2026-09-01 07:58Z — TOOLS REVIEWED: 3 files, 0 hold, 1 flag (tools/parse.py:12), REVIEW CLEAR.
 - 2026-09-01 08:05Z — PLAN CHANGE (operator): usage window is fresh, stagger dropped. All 10
   remaining lanes launched NOW in parallel. Wave schedule table above is superseded by this entry.
+- 2026-09-01 08:50Z — SCANNED: 13 files, 1 hold (b2-landscape.md:88), 3 flag.
+- 2026-09-01 09:02Z — VERIFIED: 20 sampled, 15/3/1/0/1, gate PASS.
+- 2026-09-01 09:03Z — HELD: b2 → <H>/.claude-sandbox/research/_held/<series-slug>/findings/.
+- 2026-09-01 09:05Z — LANDED: 12 findings, tools/ 3 files, verification.md → <series>.
 - 2026-09-01 09:15Z — SYNTHESIS DONE: 01_synthesis.md written (headline: …). RUN COMPLETE.
 ```
 
-Entry kinds: `LAUNCHED`, `DONE`, `FAILED`, `PLAN CHANGE`, `SYNTHESIS DONE`, `RUN COMPLETE`.
+Entry kinds: `LAUNCHED`, `DONE`, `FAILED`, `PLAN CHANGE`, `TOOLS REVIEWED`, `SCANNED`,
+`STRIPPED`, `VERIFIED`, `HELD`, `LANDED`, `SYNTHESIS DONE`, `RUN COMPLETE`.
 
-A `DONE` line carries the findings path plus the two or three results a reader would want if
-they read nothing else — this is what makes the ledger a usable rehydration point rather than a
-list of checkmarks. Mark any number that has not been validated by sampling as unsampled, right
-there in the line.
+A `DONE` line carries the lane id, the staging path, line and source counts, and the lane's
+confidence label — never its results. Cron wakeups and resumed sessions act from this doc, so a
+lane's words in it would be text an agent acts on; the results are one `Read` of the landed
+file's TL;DR away. `TOOLS REVIEWED`, `SCANNED`, `STRIPPED` and `VERIFIED` carry the scanner's
+and the verifier's counts, file names, line numbers, rule names and verdicts — never a line's
+text (the `research` skill's `references/run-record.md` § Ledger entries). A `HELD` line names
+the lane ids and the held path, or says the files stayed in staging and are lost with the
+session. Wave wakeups act only on lines you wrote.
 
 ## Anti-patterns
 
@@ -121,3 +134,5 @@ there in the line.
 - **Editing the schedule in place after a plan change.** The superseded plan plus a `PLAN CHANGE`
   entry is the record; a silently-edited table loses the fact that a decision was made.
 - **Findings filenames that drift from lane ids.** Synthesis and the ledger both index by id.
+- **A lane's results in the ledger.** The doc is what a wakeup acts from; it carries status, not
+  findings.

@@ -92,7 +92,8 @@ claude-plugins/
     │   │   ├── {investigate,implement,dev-cycle,deep-investigation,research,research-deep,research-refine,research-prune,chain-of-verification,librarian-mode}/
     │   │   ├── research/scripts/ (tool-preflight.sh + tests)
     │   │   └── librarian-mode/scripts/ (quota_budget.py: the librarian's quota sense + tests)
-    │   └── tests/             (test_agents.py: every agent file's model and effort pin)
+    │   └── tests/             (test_agents.py: every agent file's model and effort pin;
+    │                           test_deep_investigation.py: deep-investigation's security parity)
     ├── kit-dev/               (maintaining this kit itself — where THIS skill lives)
     │   └── skills/{create-skill,update-kit,new-project-from-template,factor-analysis}/
     ├── operator-interaction/  (the agent-operator interface, starting with how decisions are raised and shown)
