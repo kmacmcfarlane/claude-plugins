@@ -218,3 +218,30 @@ decision 174: How long should the history-scrub backups be kept? — options: (a
   unknown: none
 open question: which other machines hold a clone of claude-plugins or its marketplace (each needs a re-clone or reset after the history scrub) — owner: operator (B5)
 note: 2026-10-06T16:36Z operator on 167, verbatim: "167 - what rule bans quoted message text? Is this due to the not using internal source verbatim? The message text is obversable, so I don't think that would be a justification to ban the method in this case" (read as: tell me, and a challenge to the rule — answered: CLAUDE.md § Claude Code source material rule 2's last sentence; it came from the librarian's own ruling 4 during the 6a07 review, not from the operator's words, which named code and prompts; raised as decision 175)
+decision 167: When Claude Code reports the long-context credits error, should the window gate hard-stop at 200K or only warn? — options: (a) warn only | (b) keep the 200K hard stop [recommended] | (z) decide later
+  raised: 2026-10-06T05:40Z
+  revised: 2026-10-06T19:04Z — answer 175 a allows quoting externally observable text, so the error can be matched exactly (169 a) and the hard stop kept; recommendation moved from (a) to (b)
+  what: what the gate does after Claude Code's long-context credits error (A1 of the scrub plan, e347)
+  why now: blocks the scrub build
+  why ask: trade-off — a hard stop kept vs. a warning
+  context: you allowed quoting externally observable text (175 a) · you decide whether the gate keeps its 200K hard stop after the error
+  impact: → after that error, sessions above 200K keep today's hard stop at 200K, matching what Claude Code does · later: the scrub build waits · reach: context-guard users · undo: an edit
+  (a) warn only — sessions above 200K lose today's hard stop after the error — undo: an edit
+  (b) keep the 200K hard stop — today's behaviour; needs 169 (a) or (b), never (c) — undo: an edit
+  (z) decide later — the scrub build waits
+  rec: (b) · basis partial — with exact matching, the hard stop reflects Claude Code's documented fall-back to 200K
+  unknown: whether the transcript holds the rest of the message in full; the build checks before relying on it
+decision 169: How should the gate recognise the credits error in a transcript? — options: (a) the externally observable message text, cited and labelled [recommended] | (b) a short fragment of it | (c) observed machine values only, no text | (z) decide later
+  raised: 2026-10-06T05:40Z
+  revised: 2026-10-06T19:04Z — answer 175 a allows quoting externally observable text; recommendation moved from (c) to (a)
+  what: how the gate detects the credits error (A5)
+  why now: blocks the gate change and the history scrub
+  why ask: trade-off — exact matching vs. over-matching
+  context: you allowed quoting externally observable text (175 a) · you choose how the error is detected
+  impact: → the gate spots exactly that error from its transcript text, cited to the public errors page, with no false triggers on other rate limits · later: an internal string stays in the tree, blocking the history scrub · reach: context-guard users · undo: an edit
+  (a) the observable message text — the build first confirms the text in a real transcript line (the documented prefix is absent on 2.1.274); a miss under-warns, never blocks
+  (b) a short fragment — tolerant of wording drift, slightly looser
+  (c) machine values only — after any rate-limit error, sessions above 200K only warn for the rest of the process; safe only with 167 (a)
+  (z) decide later — the internal string stays; the history scrub is blocked
+  rec: (a) · basis partial — exact and now allowed by your rule
+  unknown: whether the transcript holds the message text in full
