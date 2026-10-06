@@ -75,3 +75,17 @@ return: planner DONE_WITH_CONCERNS /home/rt/work/src/github.com/kmacmcfarlane/cl
 baseline: 6a32e05643bf 00_inventory.md 5805bf0009fc 01_scrub-build.md e35451e07fc6 02_history-scrub.md 22bf553537f6 03_review-round-1.md 
 dispatch: reviewer opus high — resume (plan review round 2)
 agent: reviewer a1a6bdd4c2725f74c round 2
+verdict: NEEDS_CHANGES round 2 (plan)
+findings:
+  round 1: 1-4, 6-8, 10-21 FIXED; 5, 9 PARTIAL
+  1. [medium] 03:440-441, :386-387, :404-406 — short labels in the deny-list match inside ordinary words (grep -F, no boundaries); Step 3 would rewrite ordinary lines across history or V1 never passes. Fix: keep labels of four characters or fewer out of the deny-list; B keeps them as boundary regexes in $S/label-regexes.txt; V3 accepts a changed line only if it matched a deny-list entry or one of those regexes
+  2. [medium] 03:201, :347 — the SDK name in window_rules.py:395 is publicly documented (hooks, settings-reference, agent-sdk/typescript); keep, cited; delete the :347 bullet
+  3. [medium] 03:476 — 03 lacks a Risk Assessment section (A5 (c) lost hard stops, deny-list over-match, tar backup as the only copy of unreachable objects)
+  4. [low] 03:396-397 — V1's cc_scan must run from $R so the deny-list resolves
+  5. [low] 03:288-296 — A5 (c) impact omits that the credits event's category value is unobserved (under-warn, never block)
+  6. [low] 03:303-336 — behaviour list inaccuracies (change 2's Sonnet 4.0/4.5 already warn only; opening line wrong for 11, 12; change 8 unresolved 1M; change 12 peer case)
+  7. [low] 03:296, :481 — A5 (c) is safe only with A1 (a); couple them, with a test that a latch under (c) never yields a resolved window
+  8. [nit] 03:97-99; INDEX:8-9 — cite the landed rule (86a0227), not the branch
+cost: 2026-10-06T07:53Z plan $21.47 of $28 after review 2 — must-fix 3 — prices 2
+dispatch: planner opus high — resume (plan fix round 2)
+agent: planner a17bc769f2e8fbff8 round 3
