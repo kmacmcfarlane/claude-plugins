@@ -3,9 +3,105 @@
 Claude Code plugin marketplace. **The doctrine — the seven principles every plugin is
 measured against, plus naming practices and the catalog — lives in [README.md](README.md).**
 Read it before adding or moving anything. This file carries only the mechanics: where files
-go.
+go, and what may never be committed.
 
 Do not restate the principles here; restated rules drift.
+
+## Claude Code source material
+
+This repo is public. Read this before you write, commit, push or post anything that touches
+Claude Code's behaviour.
+
+1. **Never commit Claude Code's source.** From any copy of Claude Code's source, leaked or
+   installed (the bundle or binary included), none of the following goes into any tracked
+   file, test fixture, commit message, work-item text pushed with the repo, or issue or PR
+   text:
+   - verbatim code, or internal strings (quoted internal message or error text, internal
+     flag and event names);
+   - minified or internal identifiers (short mangled function names, internal variable and
+     constant names), including as a label in a comment that maps our code to theirs;
+   - extraction recipes, such as a grep of the bundle, a byte offset, or an anchor to
+     search for.
+
+   Verbatim prompt, system-prompt and system-reminder text is forbidden whatever its
+   source, the text in your own context included: seeing it is not observing behaviour.
+2. **State behaviour as observed or documented.** Observed: say how it was observed (a
+   status-line payload, a transcript, a hook's environment, a test run) and on which Claude
+   Code version. Documented: give the public URL. Never write "read from the binary", or
+   any other internals, as a source. A short machine value the code must match (an error
+   code, or a field or env-var name a user can see) may be written, labelled as observed
+   with the version. Quoted message text may not, observed or not.
+3. **A fact only the internals show is not written down.** In its place you may leave a
+   hint that it can be derived from Claude Code's internals, so agents know to consult the
+   source themselves. The hint's topic is a behaviour a user can see, such as when a
+   warning fires, never an internal mechanism, component or feature, and it is named in
+   plain words only: no location, identifier, value, file or search anchor. For example,
+   "when this warning fires can be derived from Claude Code's internals" is a hint; naming
+   the function that decides it, or its threshold, is not. No hint is left about an
+   unreleased feature.
+4. **Never describe an unreleased feature.** Unreleased means not in the public docs and
+   not observable in normal use on a public release. A feature that is present but switched
+   off is unreleased. When unsure, treat it as unreleased.
+5. **Check before every commit, every push, and every issue or PR text you post.** The
+   check has three parts, and the grep only surfaces candidates: whether a line is observed
+   or internal is decided by reading it.
+   - **Shape greps.** `cc_scan` below prints every line holding one of the five phrases
+     `bundle`, `binary`, `cli.js`, `minified`, `deobfusc`; a name of one to four
+     characters called like a function; a short mixed-case or dollar-bearing token (the
+     shape minified names take), the commonest of those only next to a provenance word; a
+     version number, since a version paired with a claim about behaviour is to be read,
+     not auto-removed; or a `CLAUDE_CODE_` env-var name, to confirm it is user-visible.
+   - **The deny-list.** `$(git rev-parse --git-common-dir)/info/claude-code-denylist` is a
+     local file, never committed or pushed: one exact internal string or name per line.
+     When you meet one, add it there. `cc_scan` greps for every entry, and says so on
+     stderr when the file is missing, holds no entries, or cannot be found (outside a
+     repo): a scan without it is not clean.
+   - **Reading.** Read the whole diff, the message and the post text yourself. It stays
+     required whatever the greps print.
+
+   ```bash
+   cc_scan() {  # bash; text on stdin; prints candidate lines to read, nothing when clean
+     local t gd deny=; t=$(cat)
+     if gd=$(git rev-parse --git-common-dir 2>/dev/null); then
+       deny="$gd/info/claude-code-denylist"
+     else
+       echo "cc_scan: not in a git repo; deny-list not consulted" >&2
+     fi
+     {
+       printf '%s\n' "$t" | grep -niE 'bundle|binary|cli\.js|minified|deobfusc'
+       printf '%s\n' "$t" | grep -nE '(^|[^A-Za-z0-9_.])[A-Za-z_][A-Za-z0-9$_]{0,3}\(|[0-9]+\.[0-9]+\.[0-9]+|CLAUDE_CODE_[A-Z0-9_]+'
+       printf '%s\n' "$t" | grep -nE '(^|[^A-Za-z0-9_$])([A-Za-z]+\$[A-Za-z0-9]*|[A-Za-z0-9]?[a-z][A-Z][A-Za-z0-9]?|[A-Za-z][0-9][A-Za-z][A-Za-z0-9]?)([^A-Za-z0-9_$]|$)'
+       printf '%s\n' "$t" | grep -nE '(^|[^A-Za-z0-9_$])([A-Z]{2}[a-z][A-Za-z0-9]?|[A-Z][a-z][A-Z][A-Za-z0-9]?)([^A-Za-z0-9_$]|$)' \
+         | grep -iE '\b(via|per|cop(y|ies|ied)|mirrors?|match(es)?|source|internal|chunk|derived|read from)\b'
+       if [ -n "$deny" ] && grep -q '[^[:space:]]' "$deny" 2>/dev/null; then
+         printf '%s\n' "$t" | grep -nF -f <(grep -v '^[[:space:]]*$' "$deny")
+       elif [ -n "$deny" ]; then
+         echo "cc_scan: deny-list missing or empty: $deny" >&2
+       fi
+     } | sort -t: -k1,1n -u
+   }
+   # before a commit: the staged lines and the message text
+   # (MSG=$(cat <-F file>), or MSG set to the -m string)
+   [ -n "$MSG" ] || echo "cc_scan: MSG is empty; the commit message was not scanned" >&2
+   { git diff --cached -U0 | grep '^+'; printf '%s\n' "$MSG"; } | cc_scan
+   # before a push: every commit of the ref you push (<ref>, e.g. main) not yet on any
+   # remote, merge resolutions included
+   git log -p --cc <ref> --not --remotes | cc_scan
+   # before posting an issue or PR: the text itself
+   cc_scan < body.md
+   ```
+
+   Every hit that is verbatim material, an internal identifier, a recipe, an internal
+   source or an unreleased feature is removed before the commit, never after. A hit in
+   prose that only names the rule, as this section does, may stay. Found while it is still
+   only on its own unmerged branch: rebuild that branch the way
+   `plugins/dev-flow/skills/dev-cycle/references/fix-loop.md` § A leaked secret does (its
+   step 1 reach check first, then a soft reset to the merge base and one clean recommit),
+   never a fix commit on top. Found once it is merged into another branch (local main
+   included) or pushed: stop and hand it to the operator. Scrubbing that history is the
+   operator's path, tracked as work item `history-scrub-purge-claude-code-bundle-d-4151`.
+6. **Why:** distributing verbatim code or prompts is copyright infringement; observed
+   behaviour is fact, and fact is ours to write down.
 
 ## Repository Layout
 
