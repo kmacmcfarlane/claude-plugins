@@ -56,3 +56,8 @@ findings:
 decided: one short round for low 1 and nit 2 before landing — a rule whose sentence points at the wrong antecedent gets misread; both are exact words; inside the $10 budget — class: cap
 dispatch: implementer opus medium — resume (fix round 2, exact words)
 agent: implementer a8bb4d53a834c426f round 3
+return: implementer DONE 26eb770 (two exact wording fixes; paragraphs rewrapped)
+changed:
+  CLAUDE.md — rule 1 prompt gloss, rule 2 coverage sentence
+dispatch: reviewer opus high — resume (review round 3)
+agent: reviewer a4f2e54720aae421d round 3
