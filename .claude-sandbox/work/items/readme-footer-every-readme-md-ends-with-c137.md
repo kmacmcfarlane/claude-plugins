@@ -51,3 +51,5 @@ decision 158: READMEs that agents are told to read (this repo's root README, the
   (z) decide later — the README build waits
   rec: (a) · basis partial — the footer marks human docs; agent-read READMEs are exactly the ones it would mislabel
   unknown: whether other repos keep agent-facing READMEs of their own
+answer 158: "158 - I think the footer should only apply to README files in skill directories" (read as: narrows answer 157's second half — the footer applies only to README.md files inside skill folders; no footer on the root README, a work-item store's README, or any other README; c137's estate-wide practice shrinks to the skill-folder rule 48a8 already builds)
+closed 158: acted skills-allow-a-readme-md-in-a-skill-fold-48a8

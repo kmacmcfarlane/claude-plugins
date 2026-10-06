@@ -71,3 +71,6 @@ dispatch: reviewer opus high — resume (round 3, finish round only)
 agent: reviewer aebf5a40fcf3c0f45 round 3
 verdict: CLEAR round 3 at 236f948
 findings: none
+note: answer 158 — the footer applies only to skill-folder READMEs; the CLAUDE.md bullet is reworded to that before landing
+dispatch: implementer sonnet medium — resume (answer 158: CLAUDE.md bullet to skill-folder READMEs only)
+agent: implementer a584d80ad91257072 round 4
