@@ -159,3 +159,11 @@ changed:
   plugins/dev-flow/skills/librarian-mode/references/opt-in.md — round 2 lows
 dispatch: reviewer opus high — resume (review round 3)
 agent: reviewer a83d30ab780e61e4c round 3
+verdict: NEEDS_CHANGES round 3 at 23520a3
+findings:
+  round 2: 1, 2, 3, 5, 6 FIXED; 4 PARTIAL
+  1. [medium] opt-in.md:253-256 — new state 1 fires on any Systems: line plus an open item, whatever the card's state; a hand-written Systems: line closes the item and writes closed N: acted <sha> over an unanswered card. Fix: opt-in.md:253 — "1. **A `Systems:` line already in CLAUDE.md, and the interview card answered `(a)` or `(b)`** — the write landed before the item closed:"
+  2. [low] opt-in.md:10-13, SKILL.md:87-88 — § When it runs and Rehydrate step 2 still skip everything once Systems: exists, so state 1 is unreachable. Fix: opt-in.md:10-11 — "**Section present, with a `Scope:` line and a `Systems:` line** — skip everything here, except `start`'s close of an open interview item (§ Picking up a reused item, state 1). Scope, Exclude, the responsibility lines, Checks, Push and Workflow are read as"; SKILL.md:87-88 needs a matching clause
+cost: 2026-10-06T02:26Z build $8.99 of $22 after review 3 — must-fix 1 — prices 2
+dispatch: implementer opus medium — resume (fix round 3)
+agent: implementer a43502b67a4ba3d10 round 4
