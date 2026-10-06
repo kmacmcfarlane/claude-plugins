@@ -19,3 +19,17 @@ peer operator-attention 2026-10-03, relaying the operator's answers to our 0c4d 
 - blocked: —
 - learned: —
 note: peer agents 2026-10-03 — the operator confirmed first-hand in the agents session (their answer 24) that the four relayed operator-attention answers stand (first/last shown, who writes shown, the turn log via our 3e8e, R49 streams); they are requirements on agents' 76bc; agents' spike d131 reads our 0999, 3e8e, 40f0 and 8c42 read-only; a peer report, not an approval here — decisions 150 and 151 stay open for the operator's word in this session
+decision 151: Confirm the relayed proposal for an operator turn log: a hook writing only ids and timestamps of your turns to a shared file? — options: (a) confirm: plan it when there's room [recommended] | (b) confirm and plan it now | (c) don't build it | (z) decide later
+  raised: 2026-10-03T00:30Z
+  revised: 2026-10-06T01:40Z — backfilled: the card was shown in the conversation but never stored; (b)'s quota note refreshed (5% weekly used now)
+  what: the operator turn log hook (3e8e): every turn you take appends {time, session id, repo}, no content, to one host-shared file that other tools read
+  why now: it is not scheduled; it is planned when you say; blocks: nothing
+  why ask: trust — a hook that runs on every turn in every session, recording when you are active, is yours to approve, even with no content in it
+  context: the idea came from you in operator-attention's session, relayed here · you confirm it before it is planned — then: none
+  stakes: reversible, narrow — a hook in every session; no content recorded
+  (a) confirm: plan it when there's room — where it lives comes back to you as a placement question in the plan
+  (b) confirm and plan it now — a plan costs roughly $20-30; the week is at 5%
+  (c) don't build it — the item is dropped
+  (z) decide later — the item waits
+  rec: (a) · basis partial — it removes transcript scraping for every reader of operator turn times; nothing waits on it yet
+  unknown: whether a config tree that exports its own config dir is used much

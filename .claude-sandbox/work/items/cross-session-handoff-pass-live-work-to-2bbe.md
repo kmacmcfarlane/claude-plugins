@@ -18,3 +18,16 @@ Peer clustertool (librarian), 2026-10-02, relaying the operator's request: a ski
 - next: —
 - blocked: —
 - learned: —
+decision 149: How do you want to start on the cross-session handoff skill? — options: (a) a planner drafts it first | (b) talk the shape through here first [recommended] | (z) decide later
+  raised: 2026-10-02T22:48Z
+  revised: 2026-10-06T01:40Z — backfilled: the card was shown in the conversation but never stored; (a)'s quota note refreshed (the weekly window reset 2026-10-05; 5% used now)
+  what: the first step on the cross-session handoff skill (2bbe), which you said you want to work through with me
+  why now: it has waited since 2026-10-02; blocks: nothing else
+  why ask: your-call — you said you want to shape it with me
+  context: you pre-approved clustertool's request and said you want to work the skill idea with me · you decide how we begin — then: none
+  stakes: reversible, narrow — the first step only
+  (a) a planner drafts it first — it reads clustertool's request file, the bookmarked span of their transcript and brainboy's lessons, and comes back with the shape, the home options (a checkpoint transfer mode, a new skill, or both) and questions for you; roughly $20-40 at list price
+  (b) talk the shape through here first — you tell me what matters most and I write it on the item; the planner then starts from your direction; costs only this conversation
+  (z) decide later — the item waits, filed, with its source file in clustertool's scratchpad
+  rec: (b) · basis partial — you said you want to work the idea with me, and a short conversation steers a long plan cheaply
+  unknown: how much of the 11 practised points you want in the first version
