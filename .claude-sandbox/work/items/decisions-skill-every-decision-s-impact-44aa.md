@@ -76,3 +76,18 @@ changed:
   plugins/operator-interaction/.claude-plugin/plugin.json, .claude-plugin/marketplace.json, README.md — one clause naming impact
 dispatch: reviewer opus high — review round 1
 agent: reviewer ae28144ce8f58ef99 round 1
+verdict: NEEDS_CHANGES round 1 at 892d9e1
+findings:
+  1. [medium] decision-page/assets/cards.example.json:131 — the ⚠ example card's impact.undo gives only the reversible option's undo; SKILL.md:178 and rendering.md:44-45 say a ⚠ decision's Undo states the one-way part, and nothing defines which option's undo the Impact line carries. Fix: cards.example.json:131 — "undo": "(a) remove the redirect lines; (b) none — once search engines drop the old URLs, redirects added later do not win the ranking back"
+  2. [low] index.html:220, cards-schema.md:88 — old cards.json (no impact) refused; no republish note says to add impact to old cards
+  3. [low] librarian decisions.md:57 — why now: still carries "blocks:", which Wait now carries; blocks shown twice
+  4. [low] work-items format.md:404 — says a store reader shows impact: beside the headline; not yet (follow-up 96cd)
+  5. [low] decisions/SKILL.md — ~5100 tokens, just past the guide
+  6. [low] test_impact.py:65 — page tests skipUnless(node); the Check passes silently without node
+  7. [low] branch shape — two commits before the first review (the second was orchestrator-directed)
+  8. [nit] gallery.md:174-175, 247 — option impacts label undo:/cost: but not reach:
+  9. [nit] replies.md:64 — still says a "one-way, narrow card"
+declined: 7 — the second commit was the orchestrator's directed addition before review; carried in the record
+cost: 2026-10-06T06:38Z build $9.91 of $22 after review 1 — must-fix 1 — prices 2
+dispatch: implementer opus high — resume (fix round 1)
+agent: implementer-critical abcdb2f429201bdfa round 2
