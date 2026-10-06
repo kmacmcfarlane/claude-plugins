@@ -93,3 +93,12 @@ return: planner DONE /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.
 baseline: 6a32e05643bf 00_inventory.md 5805bf0009fc 01_scrub-build.md e35451e07fc6 02_history-scrub.md 22bf553537f6 03_review-round-1.md fc9c1192c481 04_review-round-2.md 
 dispatch: reviewer opus high — resume (plan review round 3)
 agent: reviewer a1a6bdd4c2725f74c round 3
+verdict: NEEDS_CHANGES round 3 (plan)
+findings:
+  round 2: 2-8 FIXED; 1 PARTIAL
+  1. [medium] 04:76-88 — boundary label regexes still match ordinary prose (one-letter and English-word labels; hundreds of store lines), and replace-text runs over every blob. Fix: 04:79 — short labels never become free-standing regex: expressions; Step 3 harvests, from every historical version of the purge-list paths only, each distinct whole line holding a short label (non-identifier boundaries, plus the call parenthesis for function labels) as a whole-line literal; V3 accepts a changed line only if it is a harvested line or holds a deny-list entry; V1 counts label hits only within the purge-list paths
+  2. [low] 04:177-179, :232-241 — change 10's early-stop exception missing from A2's impact. Fix: 04:236 — add "Also: a model the build observes at 200K could hard-stop early if Claude Code's downloaded model list ever gives it more; unobserved, and only without a status line (change 10)."
+  3. [nit] 04:20-35 — Supersedes cites § numbers 04 does not have
+cost: 2026-10-06T07:58Z plan $24.77 of $28 after review 3 — must-fix 1 — prices 2
+dispatch: planner opus high — resume (plan fix round 3)
+agent: planner a17bc769f2e8fbff8 round 4
