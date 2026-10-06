@@ -16,26 +16,40 @@ Claude Code's behaviour.
    installed (the bundle or binary included), none of the following goes into any tracked
    file, test fixture, commit message, work-item text pushed with the repo, or issue or PR
    text:
-   - verbatim code, or internal strings (quoted internal message or error text, internal
-     flag and event names);
+   - verbatim code, or internal strings: message or error text, and flag and event names,
+     that the source holds and that are not externally observable. Text that is externally
+     observable is not internal; rule 2 says what that is and how to label it;
    - minified or internal identifiers (short mangled function names, internal variable and
      constant names), including as a label in a comment that maps our code to theirs;
    - extraction recipes, such as a grep of the bundle, a byte offset, or an anchor to
      search for.
 
    Verbatim prompt, system-prompt and system-reminder text is forbidden whatever its
-   source, the text in your own context included: seeing it is not observing behaviour.
+   source, observable or not, the text in your own context included: seeing it in your own
+   context is not external observation. Claude Code's own tool descriptions, built-in agent
+   and command instructions, and the text a built-in slash command expands to count as
+   prompts.
 2. **State behaviour as observed or documented.** Observed: say how it was observed (a
    status-line payload, a transcript, a hook's environment, a test run) and on which Claude
    Code version. Documented: give the public URL. Never write "read from the binary", or
-   any other internals, as a source. A short machine value the code must match (an error
-   code, or a field or env-var name a user can see) may be written, labelled as observed
-   with the version. Quoted message text may not, observed or not.
+   any other internals, as a source. Text and values that are externally observable may be
+   quoted or written. Externally observable means observable from outside Claude Code's
+   source: shown to users, written to transcripts, passed to hooks in their input or
+   environment, in status-line payloads, in API responses, or on a public doc page.
+   Inspecting the running program's code or memory (a debugger, a heap dump, an injected
+   script) is reading the source, not observing it. Externally observable text covers
+   message and error text as well as short machine values the code must match (an error
+   code, a field or env-var name). Each is labelled with how and on which Claude Code
+   version it was observed, or with the public doc URL. Prompts, verbatim code, minified or
+   internal identifiers and extraction recipes stay banned (rule 1), and an unreleased
+   feature is not described (rule 4), even where one shows up in one of those places, such
+   as a stack trace a user sees.
 3. **A fact only the internals show is not written down.** In its place you may leave a
    hint that it can be derived from Claude Code's internals, so agents know to consult the
    source themselves. The hint's topic is a behaviour a user can see, such as when a
    warning fires, never an internal mechanism, component or feature, and it is named in
-   plain words only: no location, identifier, value, file or search anchor. For example,
+   plain words only: no location, identifier, value, file or search anchor, and the hint
+   does not quote the text, even where rule 2 lets it be quoted elsewhere. For example,
    "when this warning fires can be derived from Claude Code's internals" is a hint; naming
    the function that decides it, or its threshold, is not. No hint is left about an
    unreleased feature.
@@ -91,10 +105,10 @@ Claude Code's behaviour.
    cc_scan < body.md
    ```
 
-   Every hit that is verbatim material, an internal identifier, a recipe, an internal
-   source or an unreleased feature is removed before the commit, never after. A hit in
-   prose that only names the rule, as this section does, may stay. Found while it is still
-   only on its own unmerged branch: rebuild that branch the way
+   Every hit that is verbatim material rule 1 bans, an internal identifier, a recipe, an
+   internal source or an unreleased feature is removed before the commit, never after. A
+   hit in prose that only names the rule, as this section does, may stay. Found while it is
+   still only on its own unmerged branch: rebuild that branch the way
    `plugins/dev-flow/skills/dev-cycle/references/fix-loop.md` § A leaked secret does (its
    step 1 reach check first, then a soft reset to the merge base and one clean recommit),
    never a fix commit on top. Found once it is merged into another branch (local main
