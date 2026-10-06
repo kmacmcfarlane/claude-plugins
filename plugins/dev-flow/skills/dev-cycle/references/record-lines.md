@@ -3,17 +3,17 @@
 Fixed shapes for the lines the steps append to the record sink; every step that writes
 one uses this exact shape, and each shape below names the step, or steps, that write it —
 **one writer per role**, so that no two steps can write the same line about the same
-thing. Five shapes have two writers, each for a different role: `return:` (SKILL.md
+thing. Five shapes have more than one writer, each for a different role: `return:` (SKILL.md
 § Step 3.5 for an implementer, § Step 1 for a planner), `answer:` (`bindings.md`
 § Decisions for a raised decision, SKILL.md § Step 3.5 for a `NEEDS_CONTEXT`),
 `dispatch:` and `agent:` (SKILL.md § Step 2 rule 7 for the cycle's own roles; the
-dispatching caller for a `scribe`, a `scout` or a cross-check, below), and `budget:`
-(SKILL.md § Step 0.3 opens the phase; `bindings.md` § Decisions and § Spend budget write
-a raise or a later fable pin). The
+dispatching caller for a `scribe`, a `scout` or a cross-check, below; a research skill's run
+for its own roles, below), and `budget:` (SKILL.md § Step 0.3 opens the phase; `bindings.md`
+§ Decisions and § Spend budget write a raise or a later fable pin). The
 record is a log, read in the order it was written, and what `resume.md` reads to take an
 interrupted run up again; a line that is missing reads there as not recorded:
 
-- `dispatch: <role> <model> <effort> — <signal>` — two writers, by role:
+- `dispatch: <role> <model> <effort> — <signal>` — three writers, by role:
   - **the cycle's roles** — `implementer`, `planner`, `reviewer` —
     SKILL.md § Step 2 rule 7, written before every dispatch, and before every SendMessage
     that resumes an agent for a new round, as `dispatch: <role> <model> <effort> —
@@ -30,10 +30,16 @@ interrupted run up again; a line that is missing reads there as not recorded:
     orchestrator that made it (`model-routing.md` § Fable cross-checks). A record written
     before cross-checks became riders may carry a `cross-checker` phase line
     (`resume.md` S3b).
+  - **a research run's line** — role `research-lane`, `research-verifier`, `scout` or
+    `synthesis` — a research skill's run recording onto an item it filed or was named
+    (`--item`), written before each Agent call (the `research` skill's
+    `references/intensity-and-routing.md` § Recording), with its `agent:` lines. Each is a
+    helper line: a **rider**, never a phase line (`resume.md` § Phase lines and riders).
 
   The fields:
   - `<role>` is one role word: `scribe`, `scout`, `implementer`, `planner`, `reviewer` or
-    `cross-checker`.
+    `cross-checker`; on a research run's line, `research-lane`, `research-verifier`,
+    `scout` or `synthesis`.
   - `<model>` is the per-call model: `sonnet`, `opus` or `fable`.
   - `<effort>` is the dispatched agent file's pin, `low` | `medium` | `high` | `xhigh`,
     or `inherit` when the fallback dispatched `general-purpose` at the session's effort
@@ -47,7 +53,9 @@ interrupted run up again; a line that is missing reads there as not recorded:
   call returns an id, directly under the `dispatch:` line it belongs to, with the same
   role word; under a `— resume` dispatch it repeats the resumed agent's id with the round
   it now serves. Under a helper line the caller writes `agent: <role> <id>`,
-  with no round: a rider too, never in a resume's generation.
+  with no round: a rider too, never in a resume's generation. A research run's `agent:`
+  line carries its own run round (the `research` skill's § Recording) and is a rider all
+  the same: its role word is never a cycle role.
   `<n>` is the
   round that dispatch serves (the first build or the first review is round 1). It is what
   SKILL.md § Step 4.3 resumes an agent by and what a caller copies into a handoff: an id

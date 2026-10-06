@@ -31,7 +31,10 @@ it.
 A **helper line** is a rider too, although it is a `dispatch:`: one whose role is `scribe`
 or `scout`, which a caller writes for its own helper or read-only question, or a
 cross-check on an accepted offer (`record-lines.md`), and the
-`agent:` line under it (`record-lines.md`). It never counts as a phase line, so a scribe
+`agent:` line under it (`record-lines.md`). A `dispatch:` whose role is `research-lane`,
+`research-verifier` or `synthesis` is a helper line too: a research skill's run recording
+onto the item (the `research` skill's `references/intensity-and-routing.md` § Recording),
+with its `agent:` lines. A helper line never counts as a phase line, so a scribe
 rendering a decision's card leaves that decision after the last phase line, and the GATE
 still reads it as pending. One rider check runs at every resume, outside the states: a
 cross-check helper line — signal `— cross-check (…)` or `— cross-check stand-in (…)`,

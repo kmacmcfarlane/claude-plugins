@@ -3,7 +3,7 @@ name: chain-of-verification
 description: Run Chain-of-Verification (CoVe) on a prompt to reduce hallucinations. Generates a baseline response, plans verification questions, answers them independently via subagent, then revises. Use when user says "cove", "chain of verification", "verify this", "fact-check this response", "reduce hallucinations", or wants a high-accuracy factual answer.
 disable-model-invocation: false
 allowed-tools: Agent, WebSearch, WebFetch, Read, Glob, Grep
-argument-hint: "[question or prompt to verify]"
+argument-hint: "[question or prompt to verify] [--item <id>]"
 ---
 
 # Chain-of-Verification (CoVe)
@@ -98,9 +98,25 @@ Before executing verifications, classify the prompt to determine the right subag
 
 Pass both the questions AND their how-to-check methods (from Step 2) to the subagent.
 
+**Routing and record.** Every batch goes to the `scout` agent with `model: "<model>"` on the
+call — `sonnet`, or `opus` only when the invocation names a stronger model — as the
+`research` skill's `references/intensity-and-routing.md` § Profiles routes it; when
+`dev-flow:scout` is not loaded, that file's § Fallback. Before each call write its
+`dispatch:` line (`dispatch: scout <model> medium — cove <mode> batch <n> of <m>`), and after
+it its `agent:` line (`agent: scout <id> round 1`), per that file's § Recording.
+
+Before the first batch, decide the run's item by that file's § The work item, its rules in
+order: a run inside a sub-agent files nothing and records in its `Record:` line, even under
+`--item`; a named item (`--item <id>`) is adopted and never closed here; with a store and
+`wi`, file one (§ Filing there: tag `research-run`) and claim it; otherwise, the `Record:`
+line. The `wi` calls and the appends to `<WI_ROOT>/items/<id>.md` run through `Bash` under
+the session's own permissions; re-run that file's store snippet in each Bash call that needs
+it. At Step 6, close a filed item per that file's § Closing. The Verification Summary's
+`Record:` line (Step 6) takes the shape that file's § Stored names gives it.
+
 #### Codebase mode
 
-Spawn an `Agent` subagent with `subagent_type: "general-purpose"`:
+Spawn an `Agent` subagent with `subagent_type: "dev-flow:scout"`, `model: "<model>"`:
 
 ```
 You are a fact-checker verifying claims about a codebase. For each question below,
@@ -124,7 +140,7 @@ For each question, respond with:
 
 #### General knowledge mode
 
-Spawn an `Agent` subagent with `subagent_type: "general-purpose"`:
+Spawn an `Agent` subagent with `subagent_type: "dev-flow:scout"`, `model: "<model>"`:
 
 ```
 You are a fact-checker. For each question below, actually perform the check
@@ -202,6 +218,7 @@ Output format:
 - Checked: N claims
 - Consistent: X | Contradicted: Y | Unverified: Z
 - Result: VERIFIED | CORRECTED | PARTIAL
+- Record: <the Record: line of the research routing's § Stored names>
 
 ## Verified Response
 
@@ -229,7 +246,7 @@ Pipeline produces: baseline explanation, verification questions about specific m
 **"Yes-Man" loop (confirmation bias)**
 The verification subagent answers questions in a way that supports the original draft rather than checking independently. Symptoms: ALL CONFIRMED on a response you'd expect to have errors, or verification answers that parrot phrasing from the baseline.
 Cause: The subagent prompt leaked baseline context, or the questions were leading rather than neutral.
-Solution: Ensure subagent prompt contains ONLY the verification questions and how-to-check methods — never the baseline text. Rewrite leading questions (bad: "Confirm that X is true" → good: "What is X?"). If the problem persists, consider using `model: haiku` for the verification subagent to get a different "opinion."
+Solution: Ensure subagent prompt contains ONLY the verification questions and how-to-check methods — never the baseline text. Rewrite leading questions (bad: "Confirm that X is true" → good: "What is X?"). If the problem persists, consider `model: opus` on the scout for a different tier's reading.
 
 **Verifier fallibility / false assurance**
 ALL CONFIRMED doesn't mean the response is correct — it means the verifier couldn't find errors. The verifier can fail if: (1) the model is uniformly ignorant on the topic (garbage in, garbage out), (2) the verification questions don't target the actual weak points, or (3) web sources themselves are wrong.

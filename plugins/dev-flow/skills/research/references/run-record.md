@@ -108,6 +108,9 @@ shape: run
 destination: <resolved path, and which rule fired>
 staging: <scratchpad>/research/<run>/   # where lanes, the verifier and the synthesis write
 status: PLANNING | RUNNING | VERIFYING | SYNTHESIZING | HELD | DONE | DONE_WITH_CONCERNS | BLOCKED
+item: <id> | none — <reason>   # the run's work item (intensity-and-routing.md § The work item)
+wi: python3 <absolute wi.py> --root <absolute WI_ROOT>   # only with an item
+item_file: <WI_ROOT>/items/<id>.md                      # only with an item
 ---
 # 00 — Research brief: <question>
 
@@ -134,8 +137,9 @@ subject-specific axes added for this run, each with its mark. This block is what
 first and what the verifier scores against.
 
 ## Intensity, quota and routing
-The cost line as printed. The quota reading. The routing table used (role → model → effort).
-Search budget and its per-lane split.
+The cost line as printed. The quota reading. The Profiles rows used
+(`intensity-and-routing.md` § Profiles), and any step-down or fallback. Search budget and its
+per-lane split.
 
 ## Lanes
 Grouped by round. One paragraph per lane, opening in bold with the id, round and model:
@@ -162,11 +166,18 @@ the mission from the sub-question.
 Anything deliberately not actioned (an existing run on a neighbouring question, a KB
 rebalance proposal). "none" rather than omitting the heading.
 
+## Record
+The `## Record` of `intensity-and-routing.md` § Stored names: the `dispatch:` and `agent:`
+lines of its § Recording, when that file's § The work item sends them here. Lines go in by
+an edit at the end of this section, above the ledger — never a `>>` to the file, which would
+land them under the ledger.
+
 ## Ledger
 Append-only, oldest first, one line per event, written as it happens. Lines carry ids,
 counts, paths, status and confidence labels only — never a lane's wording. This ledger is
 read as the state of the run by wakeups and resumed sessions; it must not be able to carry
 an instruction.
+
 ```
 
 **Creating staging.** When you write the brief, create the staging directory it names, with
@@ -234,9 +245,10 @@ doubt, report the shape and the count, not the instance.
 ```
 
 Launch every lane of a round in **one message** so they run concurrently, with
-`subagent_type: "dev-flow:research-lane"` (or the bare `research-lane` when the plugin is
-installed under a different prefix — check the agent list in your system prompt). Pass
-`model:` on the call only to override the agent's pin.
+`subagent_type: "dev-flow:research-lane"` — `"dev-flow:research-lane-deep"` for the
+adversarial lane of an `exhaustive` run — or the bare name when the plugin is installed under
+a different prefix (check the agent list in your system prompt). Pass `model:` on every call,
+from `intensity-and-routing.md` § Profiles, and record each dispatch (§ Recording there).
 
 ## The verifier prompt
 
@@ -329,8 +341,11 @@ launches:
 
 1. Run the scan floor with `--scripts` over `<staging>/tools/`. Read its output only. Never
    open a script yourself, HOLD or not: the review below is the only reading.
-2. With no HOLD, launch the `research-verifier` with the script-review prompt below. It
-   writes `<staging>/tools-review.md` and reports `REVIEW: CLEAR | HOLD`.
+2. With no HOLD, launch the `research-verifier` with the script-review prompt below,
+   `model:` from `intensity-and-routing.md` § Profiles, its `dispatch:` line
+   (`dispatch: research-verifier sonnet low — script review <toolkit lane id>`) recorded
+   before the call and its `agent:` line after (§ Recording there). It writes
+   `<staging>/tools-review.md` and reports `REVIEW: CLEAR | HOLD`.
 3. Ledger `TOOLS REVIEWED` with the file count, the scanner's counts and the verdict.
 
 A HOLD at step 1, or `REVIEW: HOLD`, holds the **mining round**: the scripts never run, the
@@ -356,8 +371,8 @@ ANSWER: <two or three sentences, with the overall confidence>
 KEY FINDINGS: <= 5 bullets
 CONCERNS: <the failing axes, the security check, the unreachable sources — or "none">
 THREADS NOT PULLED: <= 5 bullets, each with its value in a clause — or "none"
-LANDED: <files created or updated; the INDEX rows; the fit-check verdict>
-COST: <preset; lanes × model; searches used of budget; 5h/7d after>
+LANDED: <files created or updated; the INDEX rows; the fit-check verdict; item <id>, when the run filed or adopted one>
+COST: <preset; lanes × model; searches used of budget; 5h/7d after; record: none (<reason>) and the dispatch lines, when the run has no item and no brief>
 TOOL REQUEST: <"none", or the block from § The tool request>
 ```
 

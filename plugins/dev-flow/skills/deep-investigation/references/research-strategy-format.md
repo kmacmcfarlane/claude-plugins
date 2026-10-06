@@ -24,8 +24,10 @@ with a ledger entry marking it superseded — supersede, do not rewrite.
 
 ### `# 00 — Research strategy: <question>`
 
-Opening paragraph: when it was written, by which session, and one sentence saying this document
-is the canonical brief and the rehydration point.
+Opening paragraph: when it was written, by which session, one sentence saying this document
+is the canonical brief and the rehydration point, and the run's item: `Item: <id>` or
+`Item: none — <reason>` (the `research` skill's `references/intensity-and-routing.md`
+§ The work item), and with an item its `wi:` and `item_file:` lines (§ Stored names there).
 
 ### `## Problem statement`
 
@@ -81,6 +83,14 @@ path.
 One line per thread deliberately not actioned in this run — an unfinished handoff, a queued
 item, a rehydration hook you saw and skipped. Omitting this section makes a resuming session
 re-litigate decisions you already made. Write "none" rather than dropping the heading.
+
+### `## Record`
+
+The `## Record` of the `research` skill's `references/intensity-and-routing.md` § Stored
+names, placed just above the status ledger: the `dispatch:` and `agent:` lines of that file's
+§ Recording, when its § The work item sends them here. Lines go in by an edit at the end of
+this section, never a `>>` to the file, which would land them under the ledger. Lane
+paragraphs keep their `model` as before.
 
 ### `## Status ledger`
 

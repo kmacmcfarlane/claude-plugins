@@ -24,7 +24,7 @@ plugins/
     skills/
       create-repo/     # references/launch-command.md
   dev-flow/            # Plan before you code; research into findings or a knowledge base; the librarian that takes custody of a repo
-    agents/            # scribe, scout, implementer, implementer-critical, implementer-deep, planner, planner-deep, reviewer, reviewer-light, cross-checker, cross-checker-deep (the dev cycle's role workers); research-lane, research-verifier (the research family's workers)
+    agents/            # scribe, scout, implementer, implementer-critical, implementer-deep, planner, planner-deep, reviewer, reviewer-light, cross-checker, cross-checker-deep (the dev cycle's role workers); research-lane, research-lane-deep, research-verifier (the research family's workers)
     skills/
       {investigate,implement,dev-cycle,deep-investigation,research,research-deep,research-refine,research-prune,chain-of-verification,librarian-mode}/
       research/scripts/  # tool-preflight.sh (Step 5.1 tool check), scan-findings.py (the scan floor under the verifier) + unit tests
@@ -73,15 +73,17 @@ optional `references/`, `scripts/`, `assets/`.
   Agent `.md` files define role, tools, model and effort. Task-specific context is injected via
   the Agent prompt, not baked into the definition. One role per file and one effort per file: a
   role that needs a second effort gets a second file, and the per-call `model` moves a file
-  across models. `dev-flow` ships thirteen:
+  across models. `dev-flow` ships fourteen:
   - eleven role workers for the dev cycle — `scribe`, `scout`, `implementer`,
     `implementer-critical`, `implementer-deep`, `planner`, `planner-deep`, `reviewer`,
     `reviewer-light`, `cross-checker`, `cross-checker-deep` — whose frontmatter is `name`,
     `description`, `model` and `effort` only (`tools` left out: every tool);
-  - `research-lane` and `research-verifier`, the workers of the `research` skill family.
+  - `research-lane`, `research-lane-deep` (the same lane at a second effort) and
+    `research-verifier`, the workers of the `research` skill family, routed by the
+    `research` skill's `references/intensity-and-routing.md` § Profiles.
 
   Bodies come in three classes: minimal (the role only; the prompt is the brief) on ten of the
-  eleven; a short read-only evidence contract on `scout`; and the research pair's full contract
+  eleven; a short read-only evidence contract on `scout`; and the research trio's full contract
   (file shape, evidence and security rules), in the body so every lane loads it by
   construction. `plugins/dev-flow/tests/test_agents.py` keeps every file's model and effort
   pin in step with its table. (The three agents that served the deprecated plan-execution

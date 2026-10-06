@@ -7,7 +7,10 @@ YAML does not parse still loads, with every field ignored (so no pin), and the e
 only to the debug log. Every agent is named in CLAUDE.md, README.md and both manifests,
 and the dev-flow description is identical in the two manifests. Every role file is a row
 of dev-cycle's model-routing.md § Profiles, which its description points at, and the row
-carries the file's own pin.
+carries the file's own pin. Every research worker is a row of the research skill's
+intensity-and-routing.md § Profiles with its pin; the two lane files share one body and one
+tool set; and scout keeps the tools chain-of-verification's checks need while that skill
+dispatches it.
 
 Standard library only. Run from plugins/dev-flow:
 
@@ -22,6 +25,8 @@ PLUGIN = Path(__file__).resolve().parent.parent
 REPO = PLUGIN.parent.parent
 AGENTS = PLUGIN / "agents"
 ROUTING = PLUGIN / "skills" / "dev-cycle" / "references" / "model-routing.md"
+RESEARCH_ROUTING = PLUGIN / "skills" / "research" / "references" / "intensity-and-routing.md"
+COVE = PLUGIN / "skills" / "chain-of-verification" / "SKILL.md"
 
 # The keys a role file carries, and nothing else. `tools` stays out (every tool) until the
 # tool-limits change edits this table.
@@ -57,9 +62,8 @@ EXPECTED = {
     "cross-checker": ("fable", "high", ROLE_KEYS, "role"),
     "cross-checker-deep": ("fable", "xhigh", ROLE_KEYS, "role"),
     "research-lane": ("sonnet", "medium", None, "research"),
-    # Its effort pin is inert on haiku, and allowed as it stands: the test passes without
-    # touching research-verifier.md.
-    "research-verifier": ("haiku", "low", None, "research"),
+    "research-lane-deep": ("opus", "high", None, "research"),
+    "research-verifier": ("sonnet", "low", None, "research"),
     # The operator's reviewer-effort answer (126 b) added it: opus medium for fact and docs
     # changes in the home-network and product-docs repos.
     "reviewer-light": ("opus", "medium", ROLE_KEYS, "role"),
@@ -71,12 +75,12 @@ RULES = [
     ("effort medium", lambda m, e: e == "medium",
      {"implementer", "scout", "research-lane", "reviewer-light"}),
     ("opus at effort high", lambda m, e: m == "opus" and e == "high",
-     {"implementer-critical", "planner", "reviewer"}),
+     {"implementer-critical", "planner", "reviewer", "research-lane-deep"}),
     ("effort xhigh", lambda m, e: e == "xhigh",
      {"implementer-deep", "planner-deep", "cross-checker-deep"}),
     ("effort max", lambda m, e: e == "max", set()),
     ("model fable", lambda m, e: m == "fable", {"cross-checker", "cross-checker-deep"}),
-    ("model haiku", lambda m, e: m == "haiku", {"research-verifier"}),
+    ("model haiku", lambda m, e: m == "haiku", set()),
 ]
 
 
@@ -277,7 +281,7 @@ class TestAgentFiles(unittest.TestCase):
 
     def test_every_shipped_row_exists_on_disk(self):
         # Dormant files (dispatched only on a pin or a stage that may not arise) included.
-        self.assertEqual(len(EXPECTED), 13)
+        self.assertEqual(len(EXPECTED), 14)
         self.assertEqual(set(EXPECTED) - set(self.files), set())
 
     def test_every_file_on_disk_is_in_the_table(self):
@@ -382,6 +386,70 @@ class TestProfiles(unittest.TestCase):
                 "| `planner` | opus / high | x |\n\n## Next\n\n| `scout` | sonnet / low | y |\n")
         self.assertEqual(profile_rows(text), {"planner": "opus / high"})
         self.assertIsNone(profile_rows("## Other\n"))
+
+
+class TestResearchProfiles(unittest.TestCase):
+    """The research skill's routing keeps its own § Profiles: every research worker is a row
+    with its file's pin, and every row is an agent file with its pin (scout included)."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.rows = profile_rows(RESEARCH_ROUTING.read_text(encoding="utf-8"))
+
+    def test_section_exists(self):
+        self.assertIsNotNone(self.rows, f"{RESEARCH_ROUTING.name} has no ## Profiles section")
+
+    def test_every_research_file_is_a_row_with_its_pin(self):
+        research = sorted(s for s in agent_files() if s in EXPECTED and EXPECTED[s][3] == "research")
+        self.assertGreaterEqual(len(research), 3)
+        for stem in research:
+            model, effort, _, _ = EXPECTED[stem]
+            with self.subTest(agent=stem):
+                self.assertIn(stem, self.rows or {})
+                self.assertRegex(self.rows[stem], r"^%s / %s\b" % (model, effort))
+
+    def test_every_row_is_an_agent_file_with_its_pin(self):
+        rows = self.rows or {}
+        self.assertEqual(set(rows) - set(agent_files()), set())
+        for stem, cell in rows.items():
+            model, effort, _, _ = EXPECTED[stem]
+            with self.subTest(agent=stem):
+                self.assertRegex(cell, r"^%s / %s\b" % (model, effort))
+
+    def test_no_general_purpose_row(self):
+        m = re.search(r"^## Profiles\n(.*?)(?=^## |\Z)",
+                      RESEARCH_ROUTING.read_text(encoding="utf-8"), re.S | re.M)
+        self.assertIsNotNone(m)
+        self.assertNotIn("general-purpose", m.group(1))
+
+
+class TestLaneVariants(unittest.TestCase):
+    """research-lane-deep is research-lane at another effort: the contract body and the tool
+    set are byte-identical, so every lane loads the same contract by construction."""
+
+    def test_body_and_tools_match(self):
+        files = agent_files()
+        base_fields, base_body = parse_frontmatter(files["research-lane"].read_text(encoding="utf-8"))
+        deep_fields, deep_body = parse_frontmatter(
+            files["research-lane-deep"].read_text(encoding="utf-8"))
+        self.assertEqual(deep_body, base_body)
+        self.assertEqual(deep_fields["tools"], base_fields["tools"])
+
+
+class TestScoutServesCove(unittest.TestCase):
+    """While chain-of-verification dispatches scout, scout keeps the tools its codebase and
+    web checks use: no tools key (every tool), or one that includes them all."""
+
+    NEEDED = {"WebSearch", "WebFetch", "Read", "Glob", "Grep"}
+
+    def test_scout_keeps_coves_tools(self):
+        if "dev-flow:scout" not in COVE.read_text(encoding="utf-8"):
+            self.skipTest("chain-of-verification does not dispatch scout")
+        fields, _ = parse_frontmatter(agent_files()["scout"].read_text(encoding="utf-8"))
+        if "tools" not in fields:
+            return
+        tools = {t.strip() for t in fields["tools"][0].split(",")}
+        self.assertLessEqual(self.NEEDED, tools)
 
 
 class TestDocs(unittest.TestCase):
