@@ -26,23 +26,29 @@ Claude Code's behaviour.
 
    Verbatim prompt, system-prompt and system-reminder text is forbidden whatever its
    source, observable or not, the text in your own context included: seeing it in your own
-   context is not external observation.
+   context is not external observation. Tool descriptions, built-in agent and command
+   instructions, and expanded slash-command text count as prompts.
 2. **State behaviour as observed or documented.** Observed: say how it was observed (a
    status-line payload, a transcript, a hook's environment, a test run) and on which Claude
    Code version. Documented: give the public URL. Never write "read from the binary", or
    any other internals, as a source. Text and values that are externally observable may be
    quoted or written. Externally observable means observable from outside Claude Code's
    source: shown to users, written to transcripts, passed to hooks in their input or
-   environment, in status-line payloads, in API responses, or on a public doc page. That
-   covers message and error text as well as short machine values the code must match (an
-   error code, a field or env-var name). Each is labelled with how and on which Claude Code
-   version it was observed, or with the public doc URL. Prompts stay banned (rule 1), even
-   where one shows up in one of those places.
+   environment, in status-line payloads, in API responses, or on a public doc page.
+   Inspecting the running program's code or memory (a debugger, a heap dump, an injected
+   script) is reading the source, not observing it. That covers message and error text as
+   well as short machine values the code must match (an error code, a field or env-var
+   name). Each is labelled with how and on which Claude Code version it was observed, or
+   with the public doc URL. Prompts, verbatim code, minified or internal identifiers and
+   extraction recipes stay banned (rule 1), and an unreleased feature is not described
+   (rule 4), even where one shows up in one of those places, such as a stack trace a user
+   sees.
 3. **A fact only the internals show is not written down.** In its place you may leave a
    hint that it can be derived from Claude Code's internals, so agents know to consult the
    source themselves. The hint's topic is a behaviour a user can see, such as when a
    warning fires, never an internal mechanism, component or feature, and it is named in
-   plain words only: no location, identifier, value, file or search anchor. For example,
+   plain words only: no location, identifier, value, file or search anchor, and the hint
+   does not quote the text, even where rule 2 lets it be quoted elsewhere. For example,
    "when this warning fires can be derived from Claude Code's internals" is a hint; naming
    the function that decides it, or its threshold, is not. No hint is left about an
    unreleased feature.
@@ -98,10 +104,10 @@ Claude Code's behaviour.
    cc_scan < body.md
    ```
 
-   Every hit that is verbatim material, an internal identifier, a recipe, an internal
-   source or an unreleased feature is removed before the commit, never after. A hit in
-   prose that only names the rule, as this section does, may stay. Found while it is still
-   only on its own unmerged branch: rebuild that branch the way
+   Every hit that is verbatim material rule 1 bans, an internal identifier, a recipe, an
+   internal source or an unreleased feature is removed before the commit, never after. A
+   hit in prose that only names the rule, as this section does, may stay. Found while it is
+   still only on its own unmerged branch: rebuild that branch the way
    `plugins/dev-flow/skills/dev-cycle/references/fix-loop.md` § A leaked secret does (its
    step 1 reach check first, then a soft reset to the merge base and one clean recommit),
    never a fix commit on top. Found once it is merged into another branch (local main
