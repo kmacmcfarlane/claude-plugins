@@ -91,3 +91,8 @@ declined: 7 — the second commit was the orchestrator's directed addition befor
 cost: 2026-10-06T06:38Z build $9.91 of $22 after review 1 — must-fix 1 — prices 2
 dispatch: implementer opus high — resume (fix round 1)
 agent: implementer-critical abcdb2f429201bdfa round 2
+return: implementer-critical DONE d2ef515 (1-6, 8, 9 fixed; one-way undo rule in rendering.md § Impact and the librarian impact: rule; node absence warns, not fails; decisions SKILL.md ~4980 tokens)
+changed:
+  plugins/operator-interaction/skills/decisions/{SKILL.md, references/rendering.md, references/gallery.md, references/replies.md}, decision-page/{SKILL.md, assets/cards.example.json, references/cards-schema.md}, tests/test_impact.py; dev-flow librarian-mode references/decisions.md; work-items references/format.md — round 1 fixes
+dispatch: reviewer opus high — resume (review round 2)
+agent: reviewer ae28144ce8f58ef99 round 2
