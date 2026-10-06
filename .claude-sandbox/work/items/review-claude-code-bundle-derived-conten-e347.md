@@ -46,3 +46,6 @@ dispatch: planner opus high — plan (scrub per answer 164 a, plus the history s
 agent: planner a17bc769f2e8fbff8 round 1
 note: 2026-10-06 6a07 review: pushed work-item store items also hold bundle-derived material (this item's own body line 16; the context-guard exact-depth item line 61); the scrub and the history scrub cover .claude-sandbox/work too
 note: 2026-10-06 the scrub should seed the local deny-list (.git/info/claude-code-denylist, never committed) with the exact internal strings it removes, and cover the test fixtures' quoted message text (the new rule forbids it even when observed)
+return: planner DONE_WITH_CONCERNS /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude-sandbox/investigations/e347-bundle-derived-content (01_scrub-build.md part A, 02_history-scrub.md part B; open A1-A4, B1 ⚠, B2-B5)
+baseline: 6a32e05643bf 00_inventory.md 5805bf0009fc 01_scrub-build.md e35451e07fc6 02_history-scrub.md 
+dispatch: reviewer opus high — plan review round 1
