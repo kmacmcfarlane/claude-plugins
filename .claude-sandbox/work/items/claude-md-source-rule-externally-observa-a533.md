@@ -32,3 +32,14 @@ changed:
   CLAUDE.md — § Claude Code source material rules 1 and 2
 dispatch: reviewer opus high — review round 1
 agent: reviewer a4f2e54720aae421d round 1
+verdict: NEEDS_CHANGES round 1 at 9863a42
+findings:
+  1. [medium] CLAUDE.md:33-40 vs :19-25 — rule 2's permission names only prompts as an exception, so observable verbatim code, minified identifiers or recipes (a stack trace a user sees) and unreleased features (rule 4) read as allowed. Fix: CLAUDE.md:39-40 — "Prompts, verbatim code, minified or internal identifiers and extraction recipes stay banned (rule 1), and an unreleased feature is not described (rule 4), even where one shows up in one of those places, such as a stack trace a user sees."
+  2. [low] CLAUDE.md:34-37 — inspecting the running program (debugger, heap dump, injected script) could pass as observing. Fix: CLAUDE.md:35 — add "Inspecting the running program's code or memory (a debugger, a heap dump, an injected script) is reading the source, not observing it."
+  3. [low] CLAUDE.md:101 — rule 5's "verbatim material" removal would hit permitted quotes. Fix: "verbatim material" → "verbatim material rule 1 bans"
+  4. [low] CLAUDE.md:42-48 — a quote next to a hint hands the reader a search anchor; optional: "the hint does not quote the text, even where rule 2 lets it be quoted elsewhere"
+  5. [nit] "prompt" undefined (tool descriptions, built-in agent and command instructions, expanded slash-command prompts)
+  note: under the operator's wording, internal flag and event names observable outside the source (files Claude Code writes, debug logs) are now allowed — wider than the 175 card's "user-visible messages"
+cost: 2026-10-06T19:16Z build $1.49 of $10 after review 1 — must-fix 1 — prices 2
+dispatch: implementer opus medium — resume (fix round 1)
+agent: implementer a8bb4d53a834c426f round 2
