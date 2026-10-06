@@ -26,8 +26,9 @@ Claude Code's behaviour.
 
    Verbatim prompt, system-prompt and system-reminder text is forbidden whatever its
    source, observable or not, the text in your own context included: seeing it in your own
-   context is not external observation. Tool descriptions, built-in agent and command
-   instructions, and expanded slash-command text count as prompts.
+   context is not external observation. Claude Code's own tool descriptions, built-in agent
+   and command instructions, and the text a built-in slash command expands to count as
+   prompts.
 2. **State behaviour as observed or documented.** Observed: say how it was observed (a
    status-line payload, a transcript, a hook's environment, a test run) and on which Claude
    Code version. Documented: give the public URL. Never write "read from the binary", or
@@ -36,13 +37,13 @@ Claude Code's behaviour.
    source: shown to users, written to transcripts, passed to hooks in their input or
    environment, in status-line payloads, in API responses, or on a public doc page.
    Inspecting the running program's code or memory (a debugger, a heap dump, an injected
-   script) is reading the source, not observing it. That covers message and error text as
-   well as short machine values the code must match (an error code, a field or env-var
-   name). Each is labelled with how and on which Claude Code version it was observed, or
-   with the public doc URL. Prompts, verbatim code, minified or internal identifiers and
-   extraction recipes stay banned (rule 1), and an unreleased feature is not described
-   (rule 4), even where one shows up in one of those places, such as a stack trace a user
-   sees.
+   script) is reading the source, not observing it. Externally observable text covers
+   message and error text as well as short machine values the code must match (an error
+   code, a field or env-var name). Each is labelled with how and on which Claude Code
+   version it was observed, or with the public doc URL. Prompts, verbatim code, minified or
+   internal identifiers and extraction recipes stay banned (rule 1), and an unreleased
+   feature is not described (rule 4), even where one shows up in one of those places, such
+   as a stack trace a user sees.
 3. **A fact only the internals show is not written down.** In its place you may leave a
    hint that it can be derived from Claude Code's internals, so agents know to consult the
    source themselves. The hint's topic is a behaviour a user can see, such as when a
