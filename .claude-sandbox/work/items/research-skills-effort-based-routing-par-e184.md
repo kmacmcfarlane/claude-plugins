@@ -151,3 +151,4 @@ cost: 2026-10-06T01:50Z build $13.58 of $22 after review 3 — must-fix 0 — pr
 landed: 7bd41bc
 findings: carried — round 2 lows 13-15, round 3 lows 1-2 into research-routing-carried-review-lows; 16 fixed by 40cfe15
 - 2026-10-06 done: 7bd41bc
+correction: 2026-10-06 the e184 landing was pushed (da35c1a..2ba07c1) before its Report was printed; the Report follows in the same turn
