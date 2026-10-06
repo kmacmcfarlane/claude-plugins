@@ -101,3 +101,4 @@ decision 175: Should the copyright rule allow quoting a message Claude Code show
   (z) decide later — the scrub build waits
   rec: (a) · basis partial — your rule targets copying source; a message every user sees is behaviour, and the errors page documents it
   unknown: whether the transcript holds the message text in full (it lacks the documented prefix on 2.1.274; the rest is unobserved)
+answer 175: "175a - externally observable is how I would phrase it, not just literally displayed to users" (2026-10-06T19:03Z, chat; read as: (a), worded as externally observable — text or values observable from outside Claude Code's source (shown to users, written to transcripts, hook input or env, status-line payloads, API responses) may be quoted, labelled with how and on which version it was observed or the doc URL; strings only the source holds stay banned)
