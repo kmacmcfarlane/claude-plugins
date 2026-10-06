@@ -42,3 +42,16 @@ changed:
 librarian ruling: concerns go to the reviewer; the held-path split between research and deep-investigation until F3 is the series' own sequencing (A3.9 is F3 acceptance)
 dispatch: reviewer opus high — review round 1
 agent: reviewer a414ae0b52bf6263c round 1
+verdict: NEEDS_CHANGES round 1 at 421a989
+findings:
+  1. [medium] deep-investigation/SKILL.md:235-240 — landing copy is unconditional after the rescan and not limited to step-1-scanned files; a late lane or a HOLDing verification.md lands unscanned or held text. Fix: SKILL.md:237 — "Copy only files that step 1 scanned and in which this rescan finds no HOLD; anything else stays in staging, and a failed rescan holds every file it covered."
+  2. [medium] lane-contract.md:84-92 (SKILL.md:125-127, :158-161) — later-wave lanes get earlier lanes' unscanned staged findings as read-first, incl. the toolkit lane's mining plan whose commands a mining lane runs; research scans per round, deep-investigation only at 6.5
+  3. [medium] deep-investigation/SKILL.md:345-347 — the sensitive-data edge case ("fix the file in staging before 6.5 lands it") can't be followed (orchestrator first reads at Step 7, after landing; contradicts never-Read/never-clean). Fix: SKILL.md:345-347 — "**Sensitive data appears in a findings file** — the inline rule failed. Remove it from `<series>/findings/` before anything is committed, do not quote it onward, and record it in the retro as a prompt bug."
+  4. [low] SKILL.md:233 — "its category marked unexamined" wider than 00 § F2. Fix: SKILL.md:233 — "synthesize without it, the lane marked unexamined."
+  5. [low] test_deep_investigation.py:105-106 — test_nothing_unscanned_lands passes on the preamble alone
+  6. [low] deep-investigation SKILL.md ~5100 tokens by words; Step 6.5 could move to a reference
+  7. [nit] agents/research-verifier.md:3 — description still says "Dispatched by the research skills"
+  8. [nit] SKILL.md:221-222 — bare intensity-and-routing.md without the research skill prefix; "routed as Step 4's lanes are" reads as giving the verifier the lane model
+cost: 2026-10-06T02:18Z build $8.89 of $22 after review 1 — must-fix 3 — prices 2
+dispatch: implementer opus medium — resume (fix round 1)
+agent: implementer a4e5c61bb52b28988 round 2
