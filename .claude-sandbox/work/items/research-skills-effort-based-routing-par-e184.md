@@ -8,7 +8,7 @@ priority: 1
 owner: Kyle-McFarlane@401123cbad11
 claimed: 2026-10-02T21:57Z
 created: 2026-10-02
-updated: 2026-10-02
+updated: 2026-10-06
 refs:
   - operator 2026-10-02
 ---
@@ -16,8 +16,8 @@ refs:
 Operator 2026-10-02, verbatim: 'is the effort-based model routing agent persona stuff in the research skill entrypoints like it is for dev-cycle?' Answer at filing (librarian read): only partly. research, research-deep, research-refine, research-prune launch two pinned agents (research-lane sonnet/medium, research-verifier haiku/low), with model: on the call only to override; research-deep's exhaustive adversarial lane overrides to opus but keeps the lane's medium effort (effort cannot change per call); the synthesis forks on the session's own model. dev-cycle references/model-routing.md:8-11 says the research skills keep their own routing and nothing there governs them: no profiles or -deep effort variants, no dispatch: lines, no quota reserve, no fable offer. deep-investigation launches lanes with a 'cheap model from Step 1' on a plain Agent; chain-of-verification uses general-purpose. Spike: decide whether to bring research dispatches under model-routing.md's profiles (e.g. an opus/high or -deep lane file for adversarial and exhaustive lanes, routed verifier tiers, dispatch: records and the quota sense), and how that interacts with the cost-budget work (f65b, decision 145) and the research-security builds (819f, 1ffd).
 
 ## Handoff
-- doing: —
-- next: —
+- doing: CLEAR r2 at 7806e08 (worktree-research-skills-effort-based-routing-par-e184)
+- next: on 147/148: merge main into the branch (5bdd e92f0e3 touched resume.md/record-lines.md/model-routing.md/SKILL.md), re-review the merge (reviewer aeedf8a6c590ba4eb), then land; file carried 13-16 as a follow-up; if an answer changes a name/scope, implementer a40f03413970add35 applies it first
 - blocked: —
 - learned: —
 note: operator 2026-10-02, verbatim: "Since the skills are in the same plugin, we could just piggy-back on the dev-cycle's routing schema, right? Does the shape fit, or does it need some refactoring in that case?" Librarian's read (model-routing.md § Mechanism, § Profiles, § Below the quota reserve, § Fallback, § Recording): the mechanism fits as is (role file + per-call model, one effort per file, dispatch: lines, reserve, fallback, pins composing); a same-plugin pointer is allowed by CLAUDE.md's cross-skill rule. Refactor needed: (1) split model-routing.md into plugin-wide sections and cycle-only sections, and drop the "research keeps its own routing" carve-out (:8-11); (2) a research binding for the record sink (a run's brief/ledger, not an item body) and for which signals exist outside an item; (3) the mechanism puts haiku out of scope but research-verifier is pinned haiku/low — a real choice; (4) a second lane file for adversarial/exhaustive lanes, since effort cannot move per call; (5) research passes model: only to override, the mechanism wants it on every call; (6) research rows in Profiles and the below-reserve table; test_agents.py follows. deep-investigation and chain-of-verification are a scope question.
@@ -89,3 +89,53 @@ return: implementer DONE_WITH_CONCERNS 296dd9b (deep-investigation partial until
 librarian ruling: concerns accepted — the partial delivery is the plan's stated interim; the restated snippet follows the operator's "keep them separate"; the reviewer reads the prose criteria
 dispatch: reviewer opus high — review round 1
 agent: reviewer aeedf8a6c590ba4eb round 1
+verdict: NEEDS_CHANGES round 1 at 296dd9b
+findings:
+  acceptance 1-7, 11-13, 15, 17, 19 and carried 11, 12 hold; acceptance 14 walk: 4 of 7 pass; lane body test, test rows, principle 4, no dev-cycle dependency, snippet logic, security contract all fine
+  1. [medium] run-record.md:172, research-strategy-format.md:107 — ## Record placed after the append-only Ledger, so >> ledger lines land under ## Record; put ## Record above the Ledger; fix intensity-and-routing.md:273 "last section"
+  2. [medium] research/SKILL.md:111-118 — the quick-to-disk path files an item but never closes it; with no item, its record has no COST field to go in; close per § Closing in Step 4, name where record: none goes in the quick reply
+  3. [medium, merge] research/SKILL.md conflicts with the scan floor (now landed 66cc7ff) in Step 4, 6, 8 hunks — keep both sides; the scan floor's toolkit-gate script review is a new verifier dispatch missing from the Profiles row and § Recording; add its dispatched-when case, dispatch shape and round, the record step; check low effort still fits
+  4-8. [low] snippet results don't persist across shell calls — write the resolved command and item path into the brief, test -f as rule 4's test; $WI lint flags the open item — set a handoff at filing or say the warning is expected; Step 7's round N+1 routing/recording clause; ## Record when-rule and Record: format restated in 2 places each — point at § Stored names; deep-investigation paraphrase order and unresolved-store under --item falls to rule 4
+  9-12. [nit] ## Acceptance placement; CoVe template model placeholder; deep-investigation POC wording; "(sonnet, opus or fable)"
+dispatch: implementer opus medium — resume (fix round 1, plus merging main with the landed scan floor)
+agent: implementer a40f03413970add35 round 2
+return: implementer DONE 7806e08 (merged main with the scan floor; 1-12 fixed; record lines into the state file by edit, not >>; verifier low kept for script review and flag verdicts)
+dispatch: reviewer opus high — resume (round 2)
+agent: reviewer aeedf8a6c590ba4eb round 2
+verdict: CLEAR round 2 at 7806e08
+findings:
+  prior 1-12 FIXED; merge kept all of the scan floor (scan-findings.py, its tests, research-criteria.md, storage-and-knowledge-base.md byte-identical to main); acceptance 14's seven runs re-walked and pass; the low verifier pin for script review acceptable
+  13. [low] intensity-and-routing.md:198-201 — the pin rationale names only the cheap miss; name the false-CLEAR risk and what bounds it (the --scripts scanner's HOLD floor; sonnet/low is an upgrade over the haiku the gate was designed with); optionally a missed script-review hold as a revisit trigger
+  14. [nit] § Recording "one append" → "one write"
+  15. [nit] chain-of-verification/SKILL.md:217 — "- Record: item <id> | none — <dispatch lines> (§ Stored names)"
+  16. [nit] chain-of-verification/SKILL.md:107-110 — under --item, re-run the store snippet per call or name $WI_ROOT/items/<id>.md
+findings: carried — 13 [low], 14-16 [nit] above, verbatim; folded into the pre-landing round if 147 or 148 changes anything, else filed as a follow-up at landing
+hold: landing waits on decisions 147 and 148 (blocks the landing, not the build); the branch is CLEAR at 7806e08
+note: main moved (the budget rule e92f0e3 edits dev-cycle resume.md, record-lines.md, model-routing.md, SKILL.md — files this branch also edits); before landing, merge main into the branch and re-review the merge
+decision 147: The research-routing build adds six stored names: the research-run tag, an item: field, a ## Record section, an --item argument, the synthesis role word, and chain-of-verification's Record: line; keep them as named? — options: (a) keep them as named [recommended] | (b) rename some (say which) | (z) decide later
+  raised: 2026-10-02T22:22Z
+  revised: 2026-10-06T01:50Z — why now stale (the build has finished); options and recommendation unchanged
+  what: names stored in work items and briefs, or parsed by the spend reader (was OQ1 of the research-routing plan, e184)
+  why now: the build is done and passed review (round 2); landing it needs these names settled; blocks: the research-routing landing
+  why ask: api-name — new stored, parsed names are yours (answer 111 b)
+  context: you approved research routing in place, a work item per research run, and said plan it and land it · you approve the names it writes — then: none
+  stakes: reversible, narrow — research runs' records
+  (a) keep them as named — research-run (tag on the item each run files), item: (the run's item in its brief), ## Record (where a run with no item writes its lines), --item <id> (name an existing item), synthesis (role word on a dispatch line), Record: (chain-of-verification's summary line) — undo: a rename later migrates stored lines — who: research runs, the spend reader
+  (b) rename some — the build uses your names before it lands, no migration
+  (z) decide later — the build finishes with these names and waits to land
+  rec: (a) · basis partial — each follows an existing shape (tags, front-matter fields, dispatch role words); the reviewer found no clash
+  unknown: none
+decision 148: Which research runs should file a work item of their own? — options: (a) research-family and deep-investigation runs that dispatch an agent; chain-of-verification records on an item only when one is named, otherwise in its own summary [recommended] | (b) every run that dispatches an agent, chain-of-verification included | (c) every run, quick inline answers included | (z) decide later
+  raised: 2026-10-02T22:22Z
+  revised: 2026-10-06T01:50Z — why now stale (the build has finished); options and recommendation unchanged
+  what: the reach of your "a work item for all research runs" (was OQ2 of the research-routing plan, e184)
+  why now: the build is done with (a) and passed review (round 2); blocks: the research-routing landing
+  why ask: trade-off — complete records against an item for every quick check
+  context: you said every research run should have a work item as its record · you decide where "every" stops — then: chain-of-verification always dispatches agents, and the model invokes it on its own ("verify this"), so under (b) each such check files an item; a run inside a sub-agent (e.g. research a planner runs) never files its own item under any option, because its spend is already on the parent's item and writing there would double-count it
+  stakes: reversible, narrow — the work-item stores of repos where research runs
+  (a) research and deep-investigation runs that dispatch — every real research run is on an item; chain-of-verification's quick checks stay out of the store unless you name an item, and their spend is not on any item — undo: an edit — who: research runs
+  (b) every run that dispatches — complete spend records; one item per chain-of-verification call, several a day in some sessions
+  (c) every run, inline answers too — most complete, noisiest
+  (z) decide later — the build finishes with (a) and waits to land
+  rec: (a) · basis partial — follows your intent for research runs without filing an item per quick check; chain-of-verification's spend is small
+  unknown: how often chain-of-verification runs across sessions

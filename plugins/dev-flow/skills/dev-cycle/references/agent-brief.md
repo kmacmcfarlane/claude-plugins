@@ -45,11 +45,12 @@ Brief: <the cycle brief or the plan file, by absolute path — read it first, in
 Model: <sonnet|opus|fable> — <the routing signal that chose it: mechanical, an opus
        signal, a model: pin, or an effort: pin>
 Acceptance: <one or two lines, copied from the item, plan or brief; a build of a series
-            whose plan stopped at its cap, or ended a granted plan path, adds the plan
+            whose plan stopped and carried, or ended a granted plan path, adds the plan
             item's `findings: carried` lines (`bindings.md` § Decisions), whoever
-            dispatches it — a slug or plan path with a store finds that item by its
-            series path, the note Step 1's tail writes:
-            `grep -l "<series path>" "$WI_ROOT"/items/*.md`>
+            dispatches it — a slug or plan path with a store finds that item as the
+            series-path hit that carries them, archived or not:
+            `grep -l "<series path>" "$WI_ROOT"/items/*.md "$WI_ROOT"/archive/*/*.md
+            2>/dev/null | xargs -r grep -l '^findings: carried'`>
 Base branch: <the Base binding>
 Ground: <the Ground binding — the only ground you may touch>
 Files in scope: <explicit list, inside Ground; anything else is out of scope — or
@@ -76,7 +77,9 @@ Rules that reviewers reject on sight:
   reference, kit-dev plugin); no key twice. The set is closed because undocumented keys
   are usually typos, and claude.ai / Skills API uploads hard-fail on unknown keys.
   allowed-tools only pre-approves tools; it never restricts them. Folder name equals
-  `name`. No README.md inside a skill folder.
+  `name`. A README.md in a skill folder is allowed only for humans, ending with the line
+  `*User-facing documentation, not agent instructions.*`; agent instructions stay in
+  SKILL.md or references/.
 - No angle brackets in `name` or `description` (fine in `argument-hint`); description under
   1024 characters, what + when + triggers.
 - `argument-hint`, when present, is always a double-quoted string, since unquoted a
@@ -137,16 +140,21 @@ paths; never `git add .` or `git add -A`. Do not commit anything under .claude-s
 .claude/.
 
 <conditional — fix round only: include when resuming or re-dispatching with review findings:>
-Fix round <n> — the nth re-dispatch or resume with review findings, i.e. review round n+1
-of a 4-review-round cap. The Model line above is this round's tier (routing rule 6);
-when it, or the agent file, differs from the previous round's, this is a fresh dispatch,
-not a resume.
+Fix round <n> — the nth re-dispatch or resume with review findings, i.e. review round
+n+1. The Model line above is this round's tier (routing rule 6); when it, or the agent
+file, differs from the previous round's, this is a fresh dispatch, not a resume.
 Findings to fix are listed below, verbatim. Fix each finding at medium or
-above; each low/nit you decline, state under DECLINED with a reason. Fix as one or more NEW
-commits on top of <reviewed sha>; never amend, rebase, or squash — the reviewer diffs from
-that sha. Report every new sha under COMMIT. A finding against a commit subject or
-message is always low (the fix-loop rule): never rewrite history for it — no reset, amend
-or rebase; decline it under DECLINED with "carried in the merge message".
+above; each low/nit you decline, state under DECLINED with a reason. A finding that ends
+with `Fix: <file>:<line> — <words>` is fixed by default by writing those words there,
+adjusted only to the grammar around them; you may remove its failure another way instead,
+and then say which finding and why on that file's CHANGED line. A `Fix:` you can neither
+apply as given (the line moved, the words contradict the file) nor replace goes under
+COULD NOT DO as `Fix <n> not applied — <why>`, STATUS DONE_WITH_CONCERNS, the other fixes
+committed. Fix as one or more NEW commits on top of <reviewed sha>; never amend, rebase,
+or squash — the reviewer diffs from that sha. Report every new sha under COMMIT. A
+finding against a commit subject or message is always low (the fix-loop rule): never
+rewrite history for it — no reset, amend or rebase; decline it under DECLINED with
+"carried in the merge message".
 The one exception: a secret or credential in any committed content on this branch — a file
 in any commit, even one a later commit removed, or any message — is critical. Only then is
 the branch rebuilt: `git reset --soft <merge-base sha pasted here by the orchestrator>`,
@@ -157,6 +165,10 @@ above; the no-rebase prohibition below still holds. Before reporting, confirm
 shape. Never write the secret's value anywhere — files, messages, commands, report: name
 it by commit sha, file and key only. Never call the credential safe; rotating it is the
 operator's call.
+<finish round only (`bindings.md` § Decisions, What a cap ends in); the line only
+advises — a re-dispatch that lacks it (`resume.md` S3b) is re-reviewed like any commit:>
+This is a finish round: change nothing but what the `Fix:` lines fix; decline each low or
+nit without a `Fix:` under DECLINED with "outside the finish round".
 
 <conditional — merge-conflict round only: include when Land's merge conflicted:>
 Your branch conflicts with <base> (the conflicting paths, from the aborted merge: <list>).
@@ -217,12 +229,15 @@ marked blocking or not), DEVIATIONS. The series is gated like a change, by
 findings verbatim and the rules of the `investigate` skill's
 `references/investigation-format.md`: never edit a written serial; write the revision as a
 new serial at the next free number, opening with a `Supersedes` block that names what the
-findings overturned; regenerate `INDEX.md`. A round whose planner file and model are
-unchanged may resume the planner instead (`fix-loop.md` § A NEEDS_CHANGES round), with one
-exception: a trial unit's rounds are fresh in both arms, never a resume, from the round
-after its late high until `CLEAR` or its third plan review — this brief re-dispatched to
-`planner-deep` in the bump arm and to `planner` in the control arm (`model-routing.md`
-§ The xhigh trial).
+findings overturned; regenerate `INDEX.md`. A finding with a `Fix:` is fixed by default by
+carrying its words into the new serial, whose `Supersedes` names the statement it
+replaces; other words may remove the failure instead; one that cannot be applied goes
+under OPEN QUESTIONS as `Fix <n> not applied — <why>`, non-blocking. A round whose
+planner file and model are unchanged may resume the planner instead (`fix-loop.md` § A
+NEEDS_CHANGES round), with one exception: a trial unit's rounds are fresh in both arms,
+never a resume, from the round after its late high until `CLEAR` or its third plan
+review — this brief re-dispatched to `planner-deep` in the bump arm and to `planner` in
+the control arm (`model-routing.md` § The xhigh trial).
 
 ## Review-mode fix variant
 

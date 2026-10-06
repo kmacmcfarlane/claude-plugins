@@ -24,7 +24,7 @@ Four line kinds are **phase lines**: `dispatch:`, `return:`, `verdict:` and `lan
 They move the run, and only a phase line can be its last state. Every other line —
 `target:`, `checks:`, `intent:`, `agent:`, `review:`, `baseline:`, `findings:`, `changed:`,
 `decision:`, `answer:`, `spent:`, `subject-fix:`, `conflict:`, `blocked:`, `trial:`,
-`cross-check:`, `cross-check-rulings:` — is a
+`cross-check:`, `cross-check-rulings:`, `budget:`, `cost:` — is a
 **rider**: it never displaces a phase line, and it is read only where a fact below names
 it.
 
@@ -76,11 +76,19 @@ words. `<workspace>` below is that line's third field.
    - never asked of a `verdict: BLOCKED`, which judged nothing.
 
    **FRESH** = fresh(the last verdict), `CURRENT` | `STALE`, when PHASE is `VERDICT`.
-4. **ROUNDS** — **the one cap test.** Count the `verdict:` lines whose verdict is `CLEAR`,
-   `NEEDS_CHANGES` or `SHOW_STOPPER` (never `BLOCKED`), minus one when the most recent
-   `CLEAR` satisfies fresh(). Fewer than 4 → `UNDER`; 4 or more → `AT_CAP`. An answered
-   waiver never changes the count. ROUNDS answers one question — *may another review
-   round be opened?* — so only a row whose action opens one reads it.
+4. **ROUNDS** and **CAP** — CAP is **the one cap test.**
+   - **ROUNDS** — count, in the current phase — the lines after the record's last
+     `target:` line, or the whole record when it has none — the `verdict:` lines whose
+     verdict is `CLEAR`, `NEEDS_CHANGES` or `SHOW_STOPPER` (never `BLOCKED`), minus one
+     when the most recent `CLEAR` satisfies fresh(). A plan's verdicts never count in its
+     build. An answered waiver never changes the count.
+   - **CAP** — `UNDER` | `AT_CAP`: `AT_CAP` when ROUNDS ≥ 4, or when the phase's spend,
+     read now as `bindings.md` § Spend budget's check reads it (read-only: resume writes
+     no `cost:` or `budget:` line), is at or over the amount in force; `UNDER` otherwise,
+     a phase with no reading included. `AT_CAP` sends the row to SKILL.md § Step 4.3,
+     which decides what it ends in — a stop, a round it opens unasked, or a raise; it is
+     never by itself a raise. CAP answers one question — *may another review round be
+     opened without Step 4.3?* — so only a row whose action opens one reads it.
 5. **RETRIES** — the `BLOCKED` phase lines of one kind recorded since the last line of
    that kind that was not `BLOCKED`: `return:` lines for group C, `verdict:` lines for
    S12. Two retries are allowed, so a third `BLOCKED` stops (`fix-loop.md` § The
@@ -181,10 +189,10 @@ none matches nothing.
 | `NONE` | **S0** nothing recorded | Nothing to resume: go on to the mode's next step after Step 0. |
 | `RIDERS` | **S1** bindings only | GATE, the question being any decision the riders carry (the only live case: one raised before the first dispatch). `PENDING` → § The GATE. `ANSWERED` or `NONE` → as S0, with the recorded bindings and answers; nothing the record answers is asked again. |
 
-**Group B — PHASE `DISPATCH`.** ROUNDS is never read here: a dispatch a cap waiver opened
-is a dispatch, and its verdict tests the cap again — except a plan's under a caller's
-round budget, which ends on the path the waiver named (`bindings.md` § Decisions, What a
-cap ends in).
+**Group B — PHASE `DISPATCH`.** CAP is never read here: a dispatch an answer at a cap
+opened is a dispatch, and its verdict meets the cap again — except a plan round the
+operator granted, which ends on the path the grant named (`bindings.md` § Decisions, What
+a cap ends in).
 
 | LIVE | State | The single next action |
 |---|---|---|
@@ -203,16 +211,19 @@ cap ends in).
 | `BLOCKED` | `setup` | ≥ 3 | **S6b** retries spent | `$WI block` when there is an item, then GATE, the blocked change. |
 | `BLOCKED` | `permission`, or none recorded | — | **S6c** permission | `$WI block` when there is an item, then GATE, the permission. Never re-dispatched. |
 
-**Group D — PHASE `VERDICT`**, over verdict × FRESH × ROUNDS; `—` marks an axis the row
-does not read, because its action opens no round.
+**Group D — PHASE `VERDICT`**, over verdict × FRESH × CAP; `—` marks an axis the row
+does not read, because its action opens no round. Before S9 or S11 acts on a `CURRENT`
+verdict: a caller's decided-alone record of the cap (librarian-mode: a `decided:` line of
+class `cap`) or a `findings: carried` block recorded after the last verdict means Step 4.3
+already ran: take its action, write nothing new.
 
-| verdict | FRESH | ROUNDS | State | The single next action |
+| verdict | FRESH | CAP | State | The single next action |
 |---|---|---|---|---|
 | `BLOCKED` | — | — | **S12** | RETRIES < 3 and reason `setup` → re-dispatch the reviewer with the setup fixed and VARIANT; not a round. Otherwise `$WI block` when there is an item, then GATE, the blocked review. |
 | `CLEAR` | `CURRENT` | — | **S7** | `full`, `review`: SKILL.md § Step 5 (Land). `plan`: Step 1's after-`CLEAR` tail, its blocking open questions being the GATE's question, then Step 6. A fable offer is raised there too, never gated on (`model-routing.md` § Fable cross-checks). |
 | `CLEAR` | `STALE` | `UNDER` | **S8** | `spent:` first (§ The GATE); then Step 4 with VARIANT. |
 | `CLEAR` | `STALE` | `AT_CAP` | **S11** | `spent:` first; then GATE, the cap, naming the staleness. |
-| `NEEDS_CHANGES` | `CURRENT` | `UNDER` | **S9** | Open a fix round: resume the producer its `agent:` line names, or dispatch one, with the verdict's own `findings:` block verbatim — never a `findings: cross-check` rider, which goes to the next review brief (`fix-loop.md` § A NEEDS_CHANGES round). In `review` mode, GATE on the dispatch permission first (below). |
+| `NEEDS_CHANGES` | `CURRENT` | `UNDER` | **S9** | Open a fix round (its spend check first, `bindings.md` § Spend budget, which writes a `cost:` line a dead run left unwritten, `must-fix ?`): resume the producer its `agent:` line names, or dispatch one, with the verdict's own `findings:` block verbatim — never a `findings: cross-check` rider, which goes to the next review brief (`fix-loop.md` § A NEEDS_CHANGES round). In `review` mode, GATE on the dispatch permission first (below). |
 | `NEEDS_CHANGES` | `CURRENT` | `AT_CAP` | **S11** | GATE, the cap. |
 | `NEEDS_CHANGES` | `STALE` | `UNDER` | **S10** | `spent:` first. The findings are spent with the verdict — the tree they judged is gone. Step 4 with VARIANT, the findings pasted for verification only. |
 | `NEEDS_CHANGES` | `STALE` | `AT_CAP` | **S11** | `spent:` first; then GATE, the cap, naming the staleness. |
@@ -221,13 +232,12 @@ does not read, because its action opens no round.
 | `SHOW_STOPPER` | `STALE` | `AT_CAP` | **S11** | `spent:` first; then GATE, the cap, naming the staleness. |
 
 S11, `ANSWERED`: act exactly as SKILL.md § Step 4.4 would have — a waiver opens the round
-it grants; a park or a block stops. S11 at the cap on a `CURRENT` verdict, `NONE`: apply
-SKILL.md § Step 4.3 first — a stop it makes, a self-granted round it allows or, on a plan
-under a caller's round budget, the end of a path the operator granted is taken, not
-raised, unless the verdict is a `SHOW_STOPPER` or a finding changes the scope or reverses
-a recorded decision; only its raise goes to § The GATE. A caller's decided-alone record of
-the cap (librarian-mode: a `decided:` line of class `cap`) after the last verdict means
-Step 4.3 already ran: take its action, write nothing new.
+it grants (a budget increase writes its `budget:` line first); a park or a block stops.
+S11 at the cap on a `CURRENT` verdict, `NONE`: apply SKILL.md § Step 4.3 first — a stop
+and carry (a granted plan path's end included), a finish round, or a round it opens
+unasked past the fourth review is taken, not raised, unless the verdict is a
+`SHOW_STOPPER` or a finding changes the scope or reverses a recorded decision; only its
+raise goes to § The GATE.
 
 **The dispatch permission in `review` mode.** There, S9's question is the dispatch
 permission (SKILL.md § Usage), and so is the question of S11's current `SHOW_STOPPER` row
@@ -313,5 +323,5 @@ the old id stays in the generation, so a later resume probes both.
 
 Step 0's expected output names the state, the facts that selected it, and the action
 taken — e.g. `resumed at S10: verdict NEEDS_CHANGES round 2 at 1a2b3c is STALE (HEAD
-4d5e6f), ROUNDS UNDER; findings spent, re-review dispatched`. S0 says there was nothing
+4d5e6f), CAP UNDER; findings spent, re-review dispatched`. S0 says there was nothing
 to resume; S0b says what is not resumable and why; S2b names the merge sha it found.

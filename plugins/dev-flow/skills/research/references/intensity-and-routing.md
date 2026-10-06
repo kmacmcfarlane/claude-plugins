@@ -362,9 +362,12 @@ the new one.
 - **Every word on the item is the orchestrator's** — ids, counts, models, efforts, paths,
   status. Never a lane's or a source's words (the ledger's rule, `run-record.md`), and never
   a secret. Run `$WI lint` after a hand edit.
-- **No dev-cycle phase lines.** A research run writes no `return:`, `verdict:`, `target:`,
-  `decision:` or `answer:` line: those move a cycle, and an item named by `--item` may also
-  carry a cycle's record.
+- **No dev-cycle phase or budget lines.** A research run writes no `return:`, `verdict:`,
+  `target:`, `decision:`, `answer:`, `budget:` or `cost:` line, and reads no `budget:`:
+  those move or bound a cycle, and an item named by `--item` may also carry a cycle's record.
+  On such an item the run's `agent:` lines count in the open phase's spend, as every agent
+  line on an item does (the `dev-cycle` skill's spend check), so a named item's owner sees
+  the research it asked for in its next `cost:` line.
 - **The item file is the run's one tracked write besides its destination.** The run never
   commits it; the report's `LANDED` names it (`item <id>`; `chain-of-verification`: its
   `Record:` line).

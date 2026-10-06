@@ -18,3 +18,4 @@ Review lows on ebbe (landed 614b738): 1 CITED_PRICES in tests/test_usage_report.
 - next: —
 - blocked: —
 - learned: —
+note: two more nits from the spend reader's review (0865, landed e959ae2): item_spend.py week_rate — catch OverflowError/OSError on float(--week-resets-at); a past --week-resets-at is refused, so a past window cannot be measured by hand (decide whether to allow it with a flag)

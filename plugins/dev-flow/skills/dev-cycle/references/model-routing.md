@@ -301,8 +301,9 @@ A move to xhigh or a drop is said once, under the Report's `open questions:`.
   its file's effort, never the session's, and is never resumed.
 - **Plan, estate-wide and at-the-cap stages** review a plan, never a built diff; brief them
   with the plan-review variant (`review-brief.md`). Their accepted findings go to the build
-  as § An offer never holds the build says. The plan and estate-wide stages are not offered when the opus `CLEAR` was review
-  round 4: that is the cap, and only the at-the-cap stage runs there, as the operator's
+  as § An offer never holds the build says. The plan and estate-wide stages are not
+  offered when the opus `CLEAR` came at review round 4 or later: there only the at-the-cap
+  stage runs, as an option of a cap's decision (`bindings.md` § Decisions), the operator's
   grant; its verdict and findings go back to the operator with the cap's decision, stop or
   continue.
 - **Post-landing** reviews the base at the landing sha, recorded on the capability's
@@ -365,11 +366,10 @@ then, on `NEEDS_CHANGES`, the `findings:` block (`record-lines.md`). There is no
 
 ## Rounds
 
-Fix round n = the nth re-dispatch or resume with review findings = review round n+1. The
-cap is 4 review rounds — the first review plus three fix rounds; a fourth review without
-`CLEAR` means the brief or the item is wrong, not the code. What it ends in is SKILL.md
-§ Step 4.3's (`bindings.md` § Decisions); a self-granted round there is routed as any other
-fix round below.
+Fix round n = the nth re-dispatch or resume with review findings = review round n+1.
+Rounds stop at the cap, SKILL.md § Step 4.3's (`bindings.md` § Decisions, What a cap ends
+in, the one home). A finish round, and any round past the fourth review, is routed as any
+other fix round below.
 
 | Dispatch | Implementer tier |
 |---|---|
@@ -480,6 +480,10 @@ reserve excludes its unit, in either arm (§ Below the quota reserve).
   is a routing change made here, as a change of its own.
 - **Pause.** If the review cap changes so that fewer than three plan reviews can run, or
   changes what a round is, the trial pauses until this section is re-read against it.
+  Re-read against the spend budget (answer 145 (a)): it does not pause the trial, but a
+  unit whose plan stops before its third plan review — at its budget, or by the
+  operator's answer — is excluded:
+  `trial: xhigh-planner <arm> excluded — stopped before the third plan review`.
 
 ## Below the quota reserve
 
@@ -491,7 +495,9 @@ items still ask.**
 reserve: `headroom` ≤ 0 in the **weekly** (`seven_day`) window (the `librarian-mode`
 skill's `references/budget.md` § The numbers). The five-hour window never triggers it. A librarian uses its latest reading; a
 standalone run takes one with that skill's `scripts/quota_budget.py --read-only`. No
-signal reads as not below. Read it before each dispatch or offer the table names.
+signal reads as not below — except at the guard on a round past the fourth review, where
+no signal is a stop (`bindings.md` § Decisions). Read it before each dispatch or offer the
+table names.
 
 | What would run | Below the reserve |
 |---|---|
@@ -500,7 +506,8 @@ signal reads as not below. Read it before each dispatch or offer the table names
 | A fable cross-check offer (§ Fable cross-checks) | waits: not raised until a reading is above the reserve again, after the reset; the Report's `open questions:` names it waiting. The build never waits for it |
 | An accepted cross-check not yet dispatched | waits the same way; the operator's yes stands |
 | An item's `effort: xhigh` or `model: fable` pin | asks through the decision channel: run at the pin now, or wait for the reset. Once per item until the reset: the answer covers the item's later dispatches until then |
-| Reviewers, `implementer`, `implementer-critical`, `scribe`, `scout` | unchanged: no reviewer file runs above high, and a reviewer's file is set at its first review |
+| A fix round that would open unasked past the fourth review | raised, by `bindings.md` § Decisions' guard; a fable pin's ask on the same round rides in that one decision |
+| Reviewers, `implementer`, `implementer-critical`, `scribe`, `scout` | unchanged, for rounds up to the fourth review: no reviewer file runs above high, and a reviewer's file is set at its first review |
 
 A step-down is not a hold and not a quota block (the `librarian-mode` skill's
 `references/idle-turn.md`): dispatch goes on at high.
@@ -617,15 +624,17 @@ agree. A self-review writes its `review: self` line instead (§ Review waiver). 
 `verified:` line then names both:
 
 ```
-verified: review CLEAR after 1 fix round (impl sonnet, review opus); <checks>
-verified: review CLEAR after 0 fix rounds (impl sonnet, review self); <checks>
+verified: review CLEAR after 1 fix round (impl sonnet, review opus; $6.10 of $22); <checks>
+verified: review CLEAR after 0 fix rounds (impl sonnet, review self; $1.40 of $12); <checks>
 ```
 
 Name the final tiers; write `sonnet→opus` when a round bumped one, add `; fable
 cross-check` after the tiers when one ran on the item (`; fable cross-check dropped` when
 it was dropped), and mark
 a waived pin as § Fallback shows. N counts fix rounds (see Rounds), so a first-pass
-`CLEAR` is `after 0 fix rounds`.
+`CLEAR` is `after 0 fix rounds`; a finish round is one, and `, k finish` follows N when any
+ran. After the tiers, the phase's spend: `; $<spent> of $<budget>` from its last `cost:`
+line, or `; spend unread`.
 
 ## Worked examples
 
@@ -641,11 +650,11 @@ dispatch: reviewer opus high — rule 4
 
 The reviewer returns `NEEDS_CHANGES` with one medium. Fix round 1 (review round 2):
 implementer stays sonnet, resumed with the finding; the same reviewer is resumed. `CLEAR`.
-Report: `verified: review CLEAR after 1 fix round (impl sonnet, review opus)`. Had review
-round 2 failed too, fix round 2 re-dispatches the implementer fresh at opus with the full
-brief and every findings list — a resumed agent keeps its model — and the opus reviewer
-is resumed as before. Had review round 1 carried a high, fix round 1 would already have
-gone to opus.
+Report (figures illustrative): `verified: review CLEAR after 1 fix round (impl sonnet,
+review opus; $6.10 of $22)`. Had review round 2 failed too, fix round 2 re-dispatches the
+implementer fresh at opus with the full brief and every findings list — a resumed agent
+keeps its model — and the opus reviewer is resumed as before. Had review round 1 carried
+a high, fix round 1 would already have gone to opus.
 
 **"Reflow the install section of `docs/overview.md`; no content change," in a product
 repo.** A doc, not skill text; every line wording and formatting, no command or path
@@ -658,9 +667,9 @@ review: self at 4d5e6f — pure prose in docs/overview.md; no command, path or v
 verdict: CLEAR round 1 at 4d5e6f
 ```
 
-Report: `verified: review CLEAR after 0 fix rounds (impl sonnet, review self)`. Had the
-reflow also corrected an install command, that line is an operational claim: a fresh
-opus reviewer.
+Report (figures illustrative): `verified: review CLEAR after 0 fix rounds (impl sonnet,
+review self; $0.90 of $10)`. Had the reflow also corrected an install command, that line
+is an operational claim: a fresh opus reviewer.
 
 **"Add a PreToolUse hook that blocks edits to the main checkout from a worktree
 session."** Executable logic: opus. Implementer opus; reviewer opus. That the hook
@@ -766,4 +775,4 @@ dispatch: implementer opus medium — fable pin unavailable (resets in 5h); answ
 ```
 
 Report: `verified: review CLEAR after 2 fix rounds (impl fable→opus — pin waived, review
-fable→opus — pin waived); <checks>`.
+fable→opus — pin waived; $31.20 of $44); <checks>`.

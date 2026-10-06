@@ -3,10 +3,11 @@ id: review-caps-and-spend-follow-up-lows-fro-e4ca
 title: "review caps and spend: follow-up lows from round 6 (plan-item grep, E2 resume record, reflow)"
 short_display_name: review caps follow-up lows
 type: chore
-status: todo
+status: done
 priority: 3
 created: 2026-10-01
-updated: 2026-10-01
+updated: 2026-10-05
+closed: 2026-10-05
 refs:
   - review-caps-and-spend-plans-raise-only-o-5579
 ---
@@ -18,3 +19,7 @@ Round-6 review lows on 5579 (landed 2f071a8): 5 agent-brief.md:51-52 the series-
 - next: —
 - blocked: —
 - learned: —
+landed in e92f0e3 (the budget rule, 5bdd): lows 5, 6, 7 folded in and closed there
+
+## Notes
+- 2026-10-05 done: closed by 5bdd (e92f0e3)

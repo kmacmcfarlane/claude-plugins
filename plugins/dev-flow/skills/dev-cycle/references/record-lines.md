@@ -3,12 +3,13 @@
 Fixed shapes for the lines the steps append to the record sink; every step that writes
 one uses this exact shape, and each shape below names the step, or steps, that write it —
 **one writer per role**, so that no two steps can write the same line about the same
-thing. Four shapes have more than one writer, each for a different role: `return:` (SKILL.md
+thing. Five shapes have more than one writer, each for a different role: `return:` (SKILL.md
 § Step 3.5 for an implementer, § Step 1 for a planner), `answer:` (`bindings.md`
-§ Decisions for a raised decision, SKILL.md § Step 3.5 for a `NEEDS_CONTEXT`), and
+§ Decisions for a raised decision, SKILL.md § Step 3.5 for a `NEEDS_CONTEXT`),
 `dispatch:` and `agent:` (SKILL.md § Step 2 rule 7 for the cycle's own roles; the
 dispatching caller for a `scribe`, a `scout` or a cross-check, below; a research skill's run
-for its own roles, below). The
+for its own roles, below), and `budget:` (SKILL.md § Step 0.3 opens the phase; `bindings.md`
+§ Decisions and § Spend budget write a raise or a later fable pin). The
 record is a log, read in the order it was written, and what `resume.md` reads to take an
 interrupted run up again; a line that is missing reads there as not recorded:
 
@@ -125,13 +126,34 @@ interrupted run up again; a line that is missing reads there as not recorded:
   writer, a different role: the orchestrator that ran an accepted cross-check writes its
   accepted findings onto the build's item as `findings: cross-check (<stage>) — …`, a
   rider no verdict carries, which the build's next review brief pastes for that reviewer
-  to rule on (`model-routing.md` § Fable cross-checks).
+  to rule on (`model-routing.md` § Fable cross-checks). A finding's `Fix:` clause
+  (`review-brief.md` § Report back) rides inside it verbatim; only `bindings.md`
+  § Decisions, What a cap ends in, reads it.
 - `findings: carried — <finding, its severity, verbatim>` — `bindings.md` § Decisions,
-  What a cap ends in: written by the orchestrator onto the plan item when a plan under a
-  caller's round budget stops at its cap, or ends a granted plan path, one line per open
-  finding; a rider no verdict
-  carries, never read by the GATE. Every build of that series copies the lines into its
+  What a cap ends in: written by the orchestrator onto the plan item when a plan stops and
+  carries — at a cap or from its fourth review with no high left — or ends a granted plan
+  path, one line per open finding; a rider no verdict carries, never read by the GATE but
+  read by resume's S11 (`resume.md`). Every build of that series copies the lines into its
   brief's Acceptance (`agent-brief.md`).
+- `budget: <UTC> <phase> $<total> — <source>` — two writers, by role: SKILL.md § Step 0.3
+  opens the phase with it, beside the `target:` line; `bindings.md` § Decisions (a raise,
+  on an answer) and § Spend budget (a `model: fable` pin set later) write a new one. One
+  unindented line, since context-guard's `usage-report` reads it at column 0.
+  - `<UTC>` is `YYYY-MM-DDTHH:MMZ`, **truncated** to the minute (never rounded up), so the
+    line always precedes the phase's first dispatch in the reader's time split.
+  - `<phase>` is `plan` or `build`; `<total>` the amount in force, never a delta.
+  - `<source>` is one of `default <kind>`, `default <kind> ×2 fable`, `plan <series slug>
+    estimate`, `plan <series slug> estimate (answer N)`, `operator`, `answer N (was
+    $<old>)`. `<kind>` is `spike` or `plan` for a plan; for a build, its type word
+    (`chore`, `bug`, `feature`, …), or `build` with no type.
+  - The operator's pin `budget: [plan|build] $<n>` in the item body is not a record line:
+    `bindings.md` § Spend budget reads it (the reader flags it `ignored line`, harmlessly).
+- `cost: <UTC> <phase> $<spent> of $<budget> after review <n> — must-fix <m> — prices
+  <version>`, or `cost: <UTC> <phase> unread — <reason> — must-fix <m>` — the spend check
+  (`bindings.md` § Spend budget), run by SKILL.md § Step 4.5 and § Step 4.3; a rider, one
+  unindented line. Dollars to two decimals; `<m>` the verdict's `MUST-FIX:` count, an
+  integer or `?`; `<n>` the phase's counted review; `<version>` the price table's. Never
+  `spent:`, which is another line's.
 - `target: <mode> <ref> <workspace>` — SKILL.md § Step 0.3, **every mode**, written before
   any dispatch.
   - `<mode>` is one bare word, `full` | `plan` | `review` — **one token wide in every
@@ -155,7 +177,9 @@ interrupted run up again; a line that is missing reads there as not recorded:
     `git -C <workspace>` from a working directory this one cannot predict, so a
     repo-relative path here resolves against the wrong tree.
 
-  Every later step reads the workspace from this line instead of reconstructing it.
+  Every later step reads the workspace from this line instead of reconstructing it. The
+  line also opens a phase: the `budget:` line goes with it, and `resume.md`'s ROUNDS
+  counts from the last one.
 - `intent: <one line>` — `bindings.md` § Intent, `review <branch>` mode with no item or
   plan
 - `decision: <question> — options: <a> | <b> | <c>` — `bindings.md` § Decisions, written

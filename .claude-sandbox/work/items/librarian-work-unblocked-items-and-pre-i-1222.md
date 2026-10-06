@@ -7,7 +7,7 @@ priority: 0
 owner: unknown@360f41058e92
 claimed: 2026-09-22T02:36Z
 created: 2026-09-22
-updated: 2026-10-01
+updated: 2026-10-06
 refs:
   - operator 2026-09-22
 ---
@@ -15,8 +15,8 @@ refs:
 Operator 2026-09-22: an idle librarian should work new items as they arrive when no operator decision is needed (doc-only requests nearly always; skill changes often; implementation or complex skill changes warrant an investigation round). Investigations can run without waiting on the operator, so when the operator returns the decisions are ready to present. Today items queue up waiting for attention when many are unblocked or at least investigable. Question: how to achieve this without accidentally running the operator's quota into the ground. Acceptance: an investigation series with findings and a recommendation (routing rules for what proceeds unattended vs what waits; quota guards; how investigations pre-run and park their decisions), presented to the operator; decisions raised by number.
 
 ## Handoff
-- doing: waves 1-3 done as far as decisions allow
-- next: landed tonight: 58f4, fa73, 9ea7, 00ef, 6e8e, b6f7, 3716, plus operator-requested 158e decision-page (all pushed, origin 8f21ef4). Nothing in flight. Blocked on decisions: 819f (136), 5579 (137), ec4f (135); 20d8 needs 135 + PB-1; 1ffd after 819f; dabd after 5579. Open decisions 134-137. No wave 4 without the operator.
+- doing: nothing in flight; landed since the last checkpoint: ebbe 614b738, 819f 66cc7ff, 0865 e959ae2, 5bdd e92f0e3, 48a8 12de6eb (+ earlier 5579, dabd); all pushed
+- next: answers 134, 147-156; e184 lands on 147/148 after merging main + short re-review; 5925 builds on 153-155; 2bbe on 149; 0999/3e8e on 150/151; 1ffd after e184
 - blocked: —
 - learned: —
 
@@ -110,3 +110,18 @@ decision 146: Weekly usage is at 82%, 3 points from your 85% stop on new dispatc
   (z) decide later — as (a) by default: the 85% stop is the rule in force
   rec: (a) · basis strong — the rule is yours and the queued work loses nothing by waiting; this week's spend is already high
   unknown: how much the research-routing plan and its reviews will cost (planner runs this week were $13-40 each)
+decision 152: How should the agent-scope protocol you just described start? — options: (a) a plan-only spike here after Sunday's weekly reset, with the agents librarian asked now which parts its control plane already covers [recommended] | (b) the same spike now, past the weekly stop if needed | (c) hand it to the agents repo to own, with this repo implementing the librarian-mode side | (z) decide later
+  raised: 2026-10-03T05:05Z
+  what: the first step on agent scope of responsibility (agent-scope-protocol-declared-scope-the-51df): declared scope, the observability and credentialed access that come with it, advertising it, and escalating overlaps to you
+  why now: you just asked for it; blocks: nothing
+  why ask: placement — it spans this repo's librarian-mode (Scope, claims, forwarding 3460) and the agents repo's control plane (claims, ledger), and credentialed access is a trust question; where it is owned is yours
+  context: you described the protocol just now, after a day of peers relaying consent and stepping on blurry lines · you decide where it starts and when — then: none
+  stakes: reversible, narrow — planning only
+  (a) plan here after the reset, agents asked now — a cheap peer question now avoids planning what their back end already does; the plan comes back with placement and the credential questions for you — undo: n/a — who: this repo and agents
+  (b) plan now — starts today; a planner run is about 1-2% of a week, with weekly at 83% of your 85% stop
+  (c) the agents repo owns it — fits its control-plane role; this repo builds the librarian-mode half when their spec lands
+  (z) decide later — the item waits
+  rec: (a) · basis partial — the agents back end already has claims and a ledger, so asking first avoids duplicate design; quota is tight until Sunday
+  unknown: how much of this the agents control-plane plan already covers
+answer 152: 152a - I'm imagining a simple skill change in the librarian skill in the short term (interview scope for the Librarian CLAUDE.md section, ask to fill it for repos that don't have it filled yet). Good to consider the long-term solution for this with the `agents` librarian too (read as: (a), shaped — short term, a librarian-mode skill change: the opt-in interviews the repo's scope of responsibility into the ## Librarian section, and a librarian whose repo's section lacks it asks to fill it at start; long term, worked out with the agents librarian, asked now)
+note: 2026-10-05 17:36Z — moot: the weekly window reset (2026-10-05 11:00 UTC) before any queued work crossed 85%; the librarian withdraws decision 146 unless the operator objects; the queued work (spend reader 0865, the scope interview plan 5925) starts under the 85% stop as it stands

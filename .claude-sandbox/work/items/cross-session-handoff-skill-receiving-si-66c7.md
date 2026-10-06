@@ -19,3 +19,4 @@ Peer brainboy (librarian) 2026-10-02, after taking the 'tank write amplification
 - blocked: —
 - learned: —
 note: operator 2026-10-02, verbatim: "I approve the request you will get regarding the new migrate task from one agent session to another. If you don't know what I'm talking about, expect that request to come in after the brainboy and clustertool agents run a filesystem performance test." — a standing approval for the expected request (from clustertool, after the brainboy/clustertool filesystem performance test) to file and run the session-to-session migrate/handoff skill through the cycle without a separate go-ahead; the peer's message itself approves nothing; the cycle's own decisions (api-name, placement, caps) still come to the operator
+note: linked — the cross-session handoff request arrived from clustertool 2026-10-02 as cross-session-handoff-pass-live-work-to-2bbe; these receiving-side lessons are input to its plan
