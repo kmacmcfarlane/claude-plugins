@@ -76,3 +76,8 @@ cost: 2026-10-06T07:34Z build $4.22 of $10 after review 2 — must-fix 2 — pri
 decided: low 6 — a hint's topic names a behaviour a user can see (e.g. when a window warning fires), never an internal mechanism, component or feature; low 4 — the pre-push scan names the ref being pushed — class: reading
 dispatch: implementer opus medium — resume (fix round 2)
 agent: implementer a1898c49b84063cca round 3
+return: implementer DONE f593e40 (round-2 1-7 fixed; warnings on missing/blank deny-list, outside a repo, empty MSG; pre-push names the ref; hint topic is user-visible behaviour)
+changed:
+  CLAUDE.md — round-2 fixes
+dispatch: reviewer opus high — resume (review round 3)
+agent: reviewer a0544db499ede2489 round 3
