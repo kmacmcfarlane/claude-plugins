@@ -53,3 +53,14 @@ changed:
   plugins/dev-flow/skills/dev-cycle/{SKILL.md, references/bindings.md}, librarian-mode/references/decide-alone.md — round 1 fixes
 dispatch: reviewer opus high — resume (review round 2)
 agent: reviewer a0bb574eb94a8b64e round 2
+verdict: NEEDS_CHANGES round 2 at 718bedd
+findings:
+  round 1: 1-6 FIXED
+  A. [medium] resume.md:85-89 — "unless a fresh weekly reading … below 50%" can be read as waiving ROUNDS ≥ 4 too, skipping the convergence stop and guards. Fix: resume.md:87-89 — "is at or over the amount in force and no fresh weekly reading taken now is below 50% used (`bindings.md` § Spend budget, While the quota is plentiful; a stale verdict's rows read this too);"
+  B. [low] resume.md S8/S10 — a stale verdict below 50% re-reviews without a spend check, so no waiver decided: line is written
+  C. [low] record-lines.md does not list the decided: shape a standalone run now writes. Fix: add "`decided:` — the shape in the `librarian-mode` skill's `references/decide-alone.md` § The record; writers: the caller, or standalone `bindings.md` § Spend budget, The Done-alone line"
+  D. [nit] bindings.md:312 — "Standalone has no decided-alone record" clashes with :417
+decided: record-lines.md joins Files in scope (finding C) — class: scope
+cost: 2026-10-06T20:02Z build $6.14 of $22 after review 2 — must-fix 1 — prices 2
+dispatch: implementer opus medium — resume (fix round 2)
+agent: implementer ae29d67e84d400eb2 round 3
