@@ -167,3 +167,9 @@ findings:
 cost: 2026-10-06T02:26Z build $8.99 of $22 after review 3 — must-fix 1 — prices 2
 dispatch: implementer opus medium — resume (fix round 3)
 agent: implementer a43502b67a4ba3d10 round 4
+return: implementer DONE 00e4a3b (round 3: state 1 closes only on an answered card; with Systems: and the card in any other state pickup stops; states 2-8 run only without Systems:; § When it runs and SKILL.md Rehydrate step 2 reach state 1)
+changed:
+  plugins/dev-flow/skills/librarian-mode/references/opt-in.md — state 1 guard and stop rule; § When it runs exception
+  plugins/dev-flow/skills/librarian-mode/SKILL.md — Rehydrate step 2 reaches state 1
+dispatch: reviewer opus high — resume (review round 4)
+agent: reviewer a83d30ab780e61e4c round 4
