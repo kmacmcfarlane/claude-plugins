@@ -28,3 +28,7 @@ target: full claude-md-never-commit-verbatim-claude-c-6a07 /home/rt/work/src/git
 budget: 2026-10-06T07:04Z build $10 — default chore
 dispatch: implementer opus medium — build (a CLAUDE.md rule is an opus signal)
 agent: implementer a1898c49b84063cca round 1
+return: implementer DONE_WITH_CONCERNS dc0199d (40-line ## Claude Code source material section after the opening paragraph; self-check hits only rule prose; added deobfusc and internal flag/event names; identifier-shape grep noisy by design)
+changed:
+  CLAUDE.md — ## Claude Code source material
+dispatch: reviewer opus high — review round 1
