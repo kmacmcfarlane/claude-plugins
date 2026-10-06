@@ -31,7 +31,9 @@ out.
   never defaulted. Shown as a block the first time and whenever the reader is cold. On a ⚠
   decision, an answer that picks a **one-way option** is repeated back and acted on only once
   confirmed, and `you decide` never takes the one-way option.
-- **No timed defaults on actions.** Silence never turns into an action.
+- **No timed defaults on actions.** Silence never turns into an action. A **status-quo**
+  default, which changes nothing, may be stated on the card (`references/replies.md`
+  § Defaults).
 - **Never show a confidence percentage**, and never use one to order decisions.
 - **Options in letter order.** (a), (b), (c) …, with decide later last as (z). The
   recommended option keeps its letter and its place and is the one option in **bold**; it
@@ -137,7 +139,7 @@ Smallest to largest, each showing more of the impact in facet order (templates i
 `references/rendering.md`):
 
 - **Tag size** — `46 (→ effect)`, for a caller's tightest views (a row of open items, a
-  report line naming numbers, a page's summary list). It never stands in for a level.
+  report line naming numbers, a page's summary list); never in place of a level.
 - **List line** — every decision gets one: **bold number and title**, recommendation,
   `→` Effect, `later:` Wait, its class when the caller names classes, ⚠ one-way when it is,
   basis, its age and any deadline; a round ask, its justification; a line-only decision, its
@@ -145,8 +147,8 @@ Smallest to largest, each showing more of the impact in facet order (templates i
 - **Card** — an **Impact:** line under the title, then what is decided, why now, why ask
   (and a round ask's justification), the options with their impact in italics, decide
   later, then `Rec · basis — reason · unknown`. Its **Context:** cue (where you left it ·
-  what you decide now) is written when the decision is raised, and shown to a cold reader
-  (with nowhere to keep it, at the first showing too).
+  what you decide now) is written for every decision when it is raised, and shown to a cold
+  reader (with nowhere to keep it, at the first showing too).
 - **Block** — a card whose Impact line becomes a table (a row per option plus a Wait row),
   plus context the reader may have lost and the basis drill-down with evidence links.
 
@@ -242,11 +244,6 @@ known to fall before it, the echo warns and restates what happens at the deadlin
 carries a diff: *while it waited: …; options and recommendation unchanged | changed because …;
 impact unchanged | what changed in it*
 
-## Defaults
-
-No timed default on an action. A **status-quo** default may be stated on the card — *if
-unanswered: I leave X as it is and carry on with other work* — because it changes nothing.
-
 ## Evidence
 
 Show what the claims rest on as one word and a reason, `basis: strong | partial | thin |
@@ -296,8 +293,9 @@ argues for it.
   only on request.
 - **Impact in every view** (2026-10-06) — five facets in one order, the smallest view
   showing the effect, each larger view adding facets; the Impact line stored at raise and
-  read by every view. Not taken: lines with the effect only, no wait; no stored line, each
-  view deriving impact from the options each time.
+  read by every view; Undo replaces the stakes words, Wait the *blocks* slot. Not taken:
+  lines with the effect only, no wait; no stored line, each view deriving impact from the
+  options each time.
 
 Still provisional, marked where it appears: **paging** on a cold re-show.
 
