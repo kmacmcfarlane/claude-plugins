@@ -245,3 +245,5 @@ decision 169: How should the gate recognise the credits error in a transcript? �
   (z) decide later — the internal string stays; the history scrub is blocked
   rec: (a) · basis partial — exact and now allowed by your rule
   unknown: whether the transcript holds the message text in full
+correction: 2026-10-06T19:10Z my plan fix round 3 brief told the planner "the planning budget has about $3 left", and my round-4 review brief told the reviewer the budget was nearly spent; bindings.md § Spend budget says no brief carries the budget so no producer or reviewer trims its work to fit — the plan stopped by the convergence rule ($25.79 of $28), but the pressure should not have been in the briefs
+note: 2026-10-06T19:10Z operator asked whether the $28 plan budget was reasonable and from real research usage (answered: from 16 measured dev-cycle plan phases, median $8.93, p90 $21.69, max $29.93 — the caef research-security plan; dev-cycle only, the research skills carry no spend budget; reaching it asks, never stops; this plan stopped by convergence, not budget); raised decision 176

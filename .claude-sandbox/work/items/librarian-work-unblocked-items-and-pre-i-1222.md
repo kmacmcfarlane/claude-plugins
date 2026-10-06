@@ -125,3 +125,16 @@ decision 152: How should the agent-scope protocol you just described start? — 
   unknown: how much of this the agents control-plane plan already covers
 answer 152: 152a - I'm imagining a simple skill change in the librarian skill in the short term (interview scope for the Librarian CLAUDE.md section, ask to fill it for repos that don't have it filled yet). Good to consider the long-term solution for this with the `agents` librarian too (read as: (a), shaped — short term, a librarian-mode skill change: the opt-in interviews the repo's scope of responsibility into the ## Librarian section, and a librarian whose repo's section lacks it asks to fill it at start; long term, worked out with the agents librarian, asked now)
 note: 2026-10-05 17:36Z — moot: the weekly window reset (2026-10-05 11:00 UTC) before any queued work crossed 85%; the librarian withdraws decision 146 unless the operator objects; the queued work (spend reader 0865, the scope interview plan 5925) starts under the 85% stop as it stands
+decision 176: When the weekly quota is plentiful, should reaching an item's spend budget still stop and ask you, or just be noted while the rounds go on? — options: (a) below 50% weekly use, a reached budget is noted in the Report and rounds continue; at or above 50% it asks as today [recommended] | (b) double every default budget, asks unchanged | (c) keep the budgets as they are | (z) decide later
+  raised: 2026-10-06T19:10Z
+  what: how the per-item spend budget (answer 145 a) behaves while your subscription quota is cheap; the dollar figures are list-price equivalents, not money you pay
+  why now: you said you don't want good work cut off early to save quota that is cheap right now; blocks: nothing
+  why ask: rule-change — the budget rule is yours (145 a)
+  context: you replaced the round cap with a spend budget per item (145 a) · you decide whether plentiful quota should loosen it
+  impact: → while the week is under half used, no item stops to ask you about its budget; you see the overrun in the Report · later: budgets keep asking at today's amounts · reach: every dev-cycle item the librarian runs · undo: an edit
+  (a) quota-aware — the convergence stop (a review whose must-fix count stops falling) and the reserve guards stay; only the budget ask is waived under 50% weekly
+  (b) double the defaults — fewer asks at any quota level; still asks at the new amounts
+  (c) keep as is — asks at $10 chore, $12 bug, $22 build, $28 plan, $40 spike
+  (z) decide later — budgets stay as they are
+  rec: (a) · basis partial — it ties the ask to what is actually scarce, your quota, and keeps the stop that catches work going in circles
+  unknown: whether 50% is the right line for you
