@@ -57,13 +57,10 @@ Every decision carries, at any level:
 1. **What is decided**, in plain words. Gloss every id, hash, file or item name on first use —
    a bare `a3f9` or `7c41e0d` tells a cold reader nothing. Name items in plain words, the id
    at most a trailing tag: load the `plain-names` skill (same plugin) and follow it.
-2. **Its impact**, in five facets, always in this order: **Effect** (what changes if the
-   recommendation is taken), **Wait** (what waiting costs, and what it blocks), **Reach**
-   (who or what is affected: the operator, sessions, which repos, the public), **Undo** (how
-   it is reversed, or one-way), **Cost** (time, money, quota, the operator's attention).
-   Written when it is raised, as the Impact line (`references/rendering.md` § Impact), and
-   stored with the card where the caller keeps one.
-3. **Why now**, and what it blocks (shown as the Wait facet). When nothing forces it, say so —
+2. **Its impact**, in five facets in this order: **Effect**, **Wait**, **Reach**, **Undo**,
+   **Cost** (`references/rendering.md` § Impact). Written when it is raised, as the Impact
+   line, and stored with the card where the caller keeps one.
+3. **Why now**, and what it blocks (the Wait facet). When nothing forces it, say so —
    *why now: nothing forces it; raised because the audit turned it up* — and *blocks:
    nothing* is an honest answer.
 4. **Why ask** — why it comes to the operator instead of being decided and shown after: what
@@ -103,10 +100,9 @@ way it falls.
   decision whose options differ is not that template, and a caller that names none has
   none.
 
-Two labels mark things that are **not decisions yet**: an **Alert** (a time-critical fact, sent
-bare now because forming options would cost more than the alert is worth; the options follow)
-and an **Open question** (not defined yet; listed under *Open questions*, unnumbered, until it
-has options).
+Two labels mark things that are **not decisions yet**: an **Alert** (a time-critical fact,
+sent bare because forming options would cost more than it is worth; the options follow) and
+an **Open question** (listed under *Open questions*, unnumbered, until it has options).
 
 ## Before you write: the worksheet
 
@@ -132,32 +128,27 @@ class the caller's rules define). Never for ⚠, never when others rely on it. W
 ask.
 
 **Decided alone is recorded and shown.** Each choice made under the FYI rule gets a record
-where the caller keeps one (its authority and how to undo it) and a `Done:` line the next
-time you report, in a *Done alone* group (`references/rendering.md` § FYI after acting). The
-operator who objects says so in their own words; that reopens it as a numbered decision, or
-undoes it when that is what they asked.
+where the caller keeps one and a `Done:` line the next time you report, in a *Done alone*
+group; an objection reopens or undoes it (`references/rendering.md` § FYI after acting).
 
 ## Levels
 
-Views from smallest to largest; each shows more of the impact, in facet order (templates in
+Smallest to largest, each showing more of the impact in facet order (templates in
 `references/rendering.md`):
 
-- **Tag size** — the number and its Effect after an arrow, `46 (→ effect)`, under about 10
-  words: for a caller's tightest views (a row of open items, a report line naming numbers, a
-  page's summary list). Not a level: it never stands in for one.
+- **Tag size** — `46 (→ effect)`, for a caller's tightest views (a row of open items, a
+  report line naming numbers, a page's summary list). It never stands in for a level.
 - **List line** — every decision gets one: **bold number and title**, recommendation,
   `→` Effect, `later:` Wait, its class when the caller names classes, ⚠ one-way when it is,
-  basis, and its age and any deadline; a round ask, its justification too; a line-only
-  decision, its why ask too.
-- **Card** — an **Impact:** line under the title (Effect · Wait · Reach · Undo), then what is
-  decided, why now, why ask (and a round ask's justification), the options with their impact
-  in italics in the same facet order, decide later, then `Rec · basis — reason · unknown`.
-  Its **Context:** cue (where you left it · what you decide now) is written for every
-  decision when it is raised, and shown to a cold reader (with nowhere to keep it, at the
-  first showing too).
-- **Block** — a card whose Impact line becomes a table (a row per option plus a Wait row;
-  Effect, Reach, Undo, Cost), plus context the reader may have lost and the basis drill-down
-  with evidence links.
+  basis, its age and any deadline; a round ask, its justification; a line-only decision, its
+  why ask.
+- **Card** — an **Impact:** line under the title, then what is decided, why now, why ask
+  (and a round ask's justification), the options with their impact in italics, decide
+  later, then `Rec · basis — reason · unknown`. Its **Context:** cue (where you left it ·
+  what you decide now) is written when the decision is raised, and shown to a cold reader
+  (with nowhere to keep it, at the first showing too).
+- **Block** — a card whose Impact line becomes a table (a row per option plus a Wait row),
+  plus context the reader may have lost and the basis drill-down with evidence links.
 
 **The line-only rule.** A decision may stay a list line only when all of these hold: the
 reader is warm; the stakes are low (two-way and narrow); the basis is strong (for a
@@ -217,8 +208,8 @@ number and position and stays raised on later re-shows.
 **A cold re-show** — whenever the reader is cold on any open decision (§ Before you write) —
 shows each open decision the reader is cold on at card level or above, each opening with what
 changed while it waited, the impact included (`references/rendering.md` § Re-show with what
-changed, which also gives its heading). When the store carries the card, render the stored card, checked and
-repaired as that section says; do not compose it again. **Paging:** when more than five
+changed, which also gives its heading). When the store carries the card, render the stored
+card, checked and repaired as that section says; do not compose it again. **Paging:** when more than five
 would be shown, render in full whole groups, in list order, until at least three decisions
 are shown, plus every ⚠; the rest are lines ending *(expand for the card)*, and the heading
 says how many are shown in full. *(provisional — pending the operator's ruling)*
@@ -258,9 +249,9 @@ unanswered: I leave X as it is and carry on with other work* — because it chan
 
 ## Evidence
 
-Show what the claims rest on as one word and a reason — `basis: strong | partial | thin |
-none — reason` — derived from the provenance of the weakest load-bearing claim, never chosen
-freely, and never as a percentage (`references/evidence-basis.md`). A claim is *observed* only
+Show what the claims rest on as one word and a reason, `basis: strong | partial | thin |
+none — reason`, derived from the weakest load-bearing claim's provenance, never chosen
+freely, never as a percentage (`references/evidence-basis.md`). A claim is *observed* only
 when it points at a tool result you produced.
 
 ## Rulings
@@ -303,11 +294,10 @@ argues for it.
 - **Shown after** (2026-09-30) — what a caller's rules let you decide alone is recorded and
   shown as a `Done:` line in a *Done alone* group, never left unseen. Not taken: a record seen
   only on request.
-- **Impact in every view** (2026-10-06) — five facets (effect, wait, reach, undo, cost) in
-  one order, the smallest view showing the effect and each larger view adding facets; the
-  Impact line stored with the card at raise, read by every view. Undo replaces the stakes
-  words, Wait the *blocks* slot. Not taken: lines with the effect only, no wait; no stored
-  line, each view deriving impact from the options each time.
+- **Impact in every view** (2026-10-06) — five facets in one order, the smallest view
+  showing the effect, each larger view adding facets; the Impact line stored at raise and
+  read by every view. Not taken: lines with the effect only, no wait; no stored line, each
+  view deriving impact from the options each time.
 
 Still provisional, marked where it appears: **paging** on a cold re-show.
 

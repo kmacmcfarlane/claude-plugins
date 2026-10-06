@@ -401,7 +401,7 @@ match neither marker, and `wi` reads none of them except the first
 physical line: why the question came to the operator, opening with its
 class. `impact: → <effect> · later: <wait> · reach: <reach> · undo:
 <undo>` is one physical line too: what the decision changes, written when
-it is raised, which a reader of the store shows beside the headline.
+it is raised, for the views of the decision to read; `wi` reads none of it.
 
 `wi prime` also shows a `HOLD <n>: <id> (<title cell>) …` line, first under
 the header, for open items tagged `hold` — an operator hold gates what may

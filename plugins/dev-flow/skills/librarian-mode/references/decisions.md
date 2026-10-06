@@ -54,7 +54,7 @@ renders what the operator read instead of composing it again.
   decision N: <question, one line> — options: (a) … [recommended] | (b) … | (z) decide later
     raised: <UTC time, e.g. 2026-09-24T14:05Z>
     what: <what is decided>
-    why now: <why now; blocks: …>
+    why now: <why it is up now>
     why ask: <class> — <what would go wrong if the librarian took its recommendation alone>
     context: <where the operator left it · what they decide now> — then: <a block's lost-context facts, or none>
     impact: → <effect> · later: <wait> · reach: <reach> · undo: <undo>
@@ -104,7 +104,10 @@ renders what the operator read instead of composing it again.
   is raised: the skill's Impact line, its five facets in their order —
   Effect (the recommended option's; with no recommendation, each option's in a few words,
   `(a) …; (b) …`), Wait (what waiting costs, what it blocks), Reach, Undo — in the form
-  above; Cost stays on the option lines. It replaces the `stakes:` line, which a card stored
+  above; Cost stays on the option lines. Its Undo names the one-way option's undo
+  whenever any option is one-way, not only the recommended option's. What the decision
+  blocks is its `later:`, so `why now:` drops `blocks:` when the `impact:` line's `later:`
+  carries it. It replaces the `stakes:` line, which a card stored
   before it keeps as written. Every view reads it: the Report's `decisions needed:` and the
   Groom row (`idle-turn.md`) take its effect at tag size, the list line its effect and wait,
   the card the whole line, so the tightest view never opens the options. A card stored

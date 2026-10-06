@@ -43,6 +43,10 @@ The smallest view shows Effect; each larger view adds facets in that order:
   how, *undo: one edit*, or why not, *undo: none — a deleted snapshot is gone*. The
   ⚠ one-way label stays on a decision that is one-way *and* high impact; its Undo states the
   one-way part.
+- **The Impact line's Undo names the one-way option's undo whenever any option is one-way**,
+  not only the recommended option's: *undo: (a) remove the redirect lines; (b) none — the
+  lost ranking cannot be won back*. A line whose Undo reads fully reversible on a decision
+  with a one-way option misleads.
 - **Wait absorbs the old *what it blocks* slot**: *later: the docs build stays blocked*. At a
   deadline, it says what happens then.
 - **Cost** lives on the options and the block's table; the Impact line carries it only when
@@ -131,8 +135,8 @@ Example:
 **Why now:** why it is up now.
 **Why ask:** *class* — what would go wrong if I took the recommendation alone.
 **Context:** where you left it · what you decide now *(a cold reader only)*
-- (a) Option — *effect · reach · undo, as this option needs*
-- **(b) Option** — *effect · reach · undo*
+- (a) Option — *effect · reach: … · undo: …, as this option needs*
+- **(b) Option** — *effect · reach: … · undo: …*
 - (z) Decide later — *what waiting costs; at a deadline, what happens then*
 
 Rec **(b)** · basis **word** — *one-clause reason* · unknown: what isn't known, or none
@@ -145,7 +149,8 @@ Rec **(b)** · basis **word** — *one-clause reason* · unknown: what isn't kno
   be said twice.
 - One line per option, in letter order; its impact in italics after the dash, in facet
   order (effect, then reach and undo where that option needs them, and cost where it
-  matters). Only the recommended option is bold — (b) above, in its own place, not moved
+  matters), each facet after the first labelled (`reach:`, `undo:`, `cost:`) so Reach is
+  never read as more Effect. Only the recommended option is bold — (b) above, in its own place, not moved
   first (SKILL.md § Critical). With no recommendation, none is.
 - **Why ask:** opens with the class in italics when the caller names classes; otherwise it
   is the reason alone. With no recommendation it says why the call is not yours. On an ask

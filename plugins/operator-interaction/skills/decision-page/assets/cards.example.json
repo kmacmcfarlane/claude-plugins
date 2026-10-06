@@ -128,7 +128,7 @@
         "effect": "old links keep working through twelve redirects",
         "wait": "the first CI publish waits for this answer",
         "reach": "external readers and every site linking to the old pages",
-        "undo": "remove the redirect lines; nothing else changes"
+        "undo": "(a) remove the redirect lines; (b) none — once search engines drop the old URLs, redirects added later do not win the ranking back"
       },
       "tldr": [
         "The CI build changes some page URLs",

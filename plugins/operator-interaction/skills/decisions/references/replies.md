@@ -61,8 +61,9 @@ Example 25 in `references/gallery.md` shows one.
 
 **Choose — `N: letter`, or a choice in words.** Act on it. On a **⚠ one-way decision**, when
 the **chosen option** is one-way — its Undo (its cell in the block's Impact table) says it
-cannot be undone, or only at real cost — first repeat the choice back and act only once the operator confirms. A *one-way,
-narrow* card is answered like any card: its narrowness is why it is not ⚠.
+cannot be undone, or only at real cost — first repeat the choice back and act only once the
+operator confirms. A one-way decision with a narrow reach (no ⚠, its Undo saying it cannot be
+undone) is answered like any card: its narrow reach is why it is not ⚠.
 
 *Read as: 43 → (a) remove `/v1/export` on Thursday. That can't be undone for the partners who
 break — confirm and I'll go ahead, or change it.*

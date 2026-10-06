@@ -85,7 +85,12 @@ open card the Impact line, and its Options in full fold the Impact table (a row 
 then the Wait row; Effect, Reach, Undo, Cost). It shows the context cue on every card that
 has one: a page is read away from the conversation, so its reader is treated as cold. A
 `⚠ one-way` card is the decisions skill's block: the card's essentials plus its Impact table,
-unfolded. An older `stakes` field is ignored: Undo and Reach carry it. It gets no special
+unfolded. An older `stakes` field is ignored: Undo and Reach carry it.
+
+**Republishing older data.** A `cards.json` written before `impact` existed is refused by the
+current template. On a republish, add `impact` to each kept card (a `stakes` field may stay,
+ignored); the impact comes from the caller's stored Impact line, backfilled as the decisions
+skill's re-show says when the store has none. It gets no special
 control: the read-back of a one-way pick happens in chat, when the answers are read back.
 
 ## The answers collection

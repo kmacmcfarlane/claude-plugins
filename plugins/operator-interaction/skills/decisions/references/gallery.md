@@ -21,8 +21,8 @@ today.*
 **Why now:** the lease lapses at ~17:45 today (90 min from 16:15); after that the half-written snapshot is discarded and the backup starts over (about 3 hours).
 **Why ask:** aborting is a real choice too: the snapshot fills shared storage the reporting team also writes to, and whether tonight's backup outranks their jobs is yours to weigh.
 **Context:** you last saw the backup running normally last night · you decide whether it finishes tonight or starts again.
-- **(a) Resume now** — *the snapshot finishes in about 15 minutes · shared storage, 40% free · undo: delete the snapshot*
-- (b) Abort the backup — *releases the lease; no backup tonight unless it is started again · tonight's backup only · undo: start it again, about 3 hours*
+- **(a) Resume now** — *the snapshot finishes in about 15 minutes · reach: shared storage, 40% free · undo: delete the snapshot*
+- (b) Abort the backup — *releases the lease; no backup tonight unless it is started again · reach: tonight's backup only · undo: start it again, about 3 hours*
 - (z) Decide later — *it waits; at 17:45 the lease lapses and the snapshot is lost*
 
 Rec **(a)** · basis **strong** — *checked the storage quota: 40% free, enough to finish* · unknown: none
@@ -79,7 +79,7 @@ Rec **(b)** · basis **partial** — *observed: this week's access log shows 2 p
 **Why now:** the design review this afternoon needs the preview.
 **Why ask:** if the retry fails too, the review starts with no preview at all; you may prefer yesterday's build as the sure thing.
 - **(a) Retry now** — *the preview is up if it succeeds · cost: about 4 minutes*
-- (b) Deploy yesterday's build instead — *the review sees the old page · the design review*
+- (b) Deploy yesterday's build instead — *the review sees the old page · reach: the design review*
 - (z) Decide later — *it waits; no preview until someone deploys*
 
 Rec **(a)** · basis **strong** — *the deploy log shows a registry timeout, not a build error* · unknown: none
@@ -93,7 +93,7 @@ Rec **(a)** · basis **strong** — *the deploy log shows a registry timeout, no
 **What:** delete the staging database snapshot from August 14, which nothing restores from.
 **Why now:** staging storage is at 85% of its quota.
 **Why ask:** the snapshot cannot be recovered once it is deleted.
-- **(a) Delete it** — *frees 120 GB · staging only · undo: none, it cannot be recovered*
+- **(a) Delete it** — *frees 120 GB · reach: staging only · undo: none, it cannot be recovered*
 - (b) Keep it — *storage stays at 85%; a later snapshot may fail when it fills · undo: delete it later*
 - (z) Decide later — *it waits; storage keeps filling by about 2% a day*
 
@@ -137,7 +137,7 @@ session, a card:*
 **If left:** *one medium finding: after a restart the retry counter starts again from zero, so a job that fails on every run is retried forever instead of stopping after five tries.*
 **A round costs:** *about 20 minutes and roughly 3% of the 5-hour quota; one more answer from you if that round does not clear it.*
 - **(a) One more round** — *the fix goes back to the implementer, then a fresh review; it lands in about 20 minutes if it clears · cost: about 3% of the 5-hour quota*
-- (b) Ship as is — *it lands now, with the endless retry in it · every job that fails on every run · undo: a follow-up fix*
+- (b) Ship as is — *it lands now, with the endless retry in it · reach: every job that fails on every run · undo: a follow-up fix*
 - (c) Park it — *the change waits, unmerged, until someone takes it up · undo: pick it up again*
 - (z) Decide later — *it waits, unmerged; nothing lands*
 
@@ -170,7 +170,7 @@ their impacts, the label, and no recommendation.
 **Why now:** the release is scheduled for Friday.
 **Why ask:** shipping it puts output a reviewer waived in front of users, and nothing I can check says whether that is acceptable.
 **Why no recommendation:** whether users may see output a reviewer waived is a product call, not mine.
-- (a) Ship it — *users see the report on Friday, with the waived section as is · every user of the report*
+- (a) Ship it — *users see the report on Friday, with the waived section as is · reach: every user of the report*
 - (b) Hold it — *the release slips until the check passes · cost: about a day's work*
 - (c) Ship without the waived section — *users get a shorter report · cost: about an hour's work*
 - (z) Decide later — *it waits; the release slips past Friday if undecided by Thursday noon*
@@ -354,7 +354,7 @@ status page (a preference). The operator replies "ok 51-55".*
 **What:** the retry-policy change is ready; its benchmark run finishes in about 25 minutes.
 **Why now:** you asked for the change today.
 **Why ask:** opening it now starts the reviewers' time before the benchmark is known, against your wish to have it today.
-- (a) Open it now — *reviewers start today; the benchmark result arrives mid-review · the two reviewers*
+- (a) Open it now — *reviewers start today; the benchmark result arrives mid-review · reach: the two reviewers*
 - **(b) Wait for the benchmark** — *the reviewers see the result from the start · cost: about 25 minutes*
 - (z) Decide later — *it waits*
 
@@ -417,7 +417,7 @@ Rec **(b)** · basis **strong** — *checked the CDN's status history and loaded
 **Why now:** new code is being written against the loose setting, so each week adds more to fix later.
 **Why ask:** it changes how everyone writes new code in the repo, not just this task.
 **Context:** you left it at the review that flagged loose types in two packages · you decide whether the whole repo goes strict, not just those two.
-- **(a) Turn it on** — *31 existing warnings to fix · everyone writing code here · cost: about an hour of my time*
+- **(a) Turn it on** — *31 existing warnings to fix · reach: everyone writing code here · cost: about an hour of my time*
 - (b) Leave it off — *no work now; the loosely typed code keeps growing*
 - (z) Decide later — *it waits; the setting stays off*
 

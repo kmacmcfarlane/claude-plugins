@@ -90,10 +90,12 @@ an error. Report what you checked in one line, and that the page itself was not 
 
 **Republishing** (new or revised decisions, same page): call the Artifact tool with `url` set
 to the page's url, `file_path` the working copy of `index.html`, and `files` mapping
-`cards.json` to the new data; leave `capabilities` out to keep the rule. From another
-conversation, first `read` the artifact and read its published `cards.json` (`read` with
-`path` `cards.json`): the tool refuses to replace a published path this conversation has not
-seen, and reading the page alone does not count. A new path makes a new artifact with an
+`cards.json` to the new data; leave `capabilities` out to keep the rule. The current
+template refuses a card without `impact`: on a republish, add `impact` to each kept card (a
+`stakes` field may stay; it is ignored). From another conversation, first `read` the
+artifact and read its published `cards.json` (`read` with `path` `cards.json`): the tool
+refuses to replace a published path this conversation has not seen, and reading the page
+alone does not count. A new path makes a new artifact with an
 empty answers collection.
 
 ## Step 4: Hand it to the operator

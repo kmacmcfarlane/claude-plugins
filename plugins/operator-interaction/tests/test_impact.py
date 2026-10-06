@@ -17,6 +17,7 @@ import pathlib
 import re
 import shutil
 import subprocess
+import sys
 import unittest
 
 PLUGIN = pathlib.Path(__file__).resolve().parent.parent
@@ -26,6 +27,15 @@ DECISIONS = PLUGIN / "skills" / "decisions"
 END_MARK = "/* ---- end of the page-free part"
 
 NODE = shutil.which("node")
+
+
+def setUpModule():
+    # the page tests need node; without it they skip, and say so where the Check's
+    # output shows it rather than passing in silence
+    if not NODE:
+        print("WARNING: node is not installed: the decision page's impact tests "
+              "(DecisionPageImpact) are skipped, so the page's check and renderers "
+              "went untested", file=sys.stderr)
 
 HARNESS = r"""
 const d = JSON.parse(require("fs").readFileSync(0, "utf8"));
@@ -77,6 +87,9 @@ class DecisionPageImpact(unittest.TestCase):
             # tag size: under about 10 words
             self.assertLessEqual(len(imp["effect"].split()), 12, f"card {c['n']}")
             self.assertNotIn("stakes", c, f"card {c['n']}: stakes is replaced by impact")
+            # a decision with a one-way option names that option's undo, not only the rec's
+            if c.get("warn"):
+                self.assertIn("(b) none", imp["undo"], f"card {c['n']}")
 
     def assert_refused(self, data, needle):
         bad = run_page(data)["bad"]
