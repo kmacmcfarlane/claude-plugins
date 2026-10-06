@@ -138,3 +138,4 @@ decision 176: When the weekly quota is plentiful, should reaching an item's spen
   (z) decide later — budgets stay as they are
   rec: (a) · basis partial — it ties the ask to what is actually scarce, your quota, and keeps the stop that catches work going in circles
   unknown: whether 50% is the right line for you
+answer 176: 176a (2026-10-06T19:28Z, chat; read as: (a) quota-aware — below 50% weekly use a reached budget is noted in the Report and rounds continue; at or above 50% it asks as today; the convergence stop and the reserve guards stay)
