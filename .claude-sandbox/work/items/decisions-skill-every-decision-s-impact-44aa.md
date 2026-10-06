@@ -3,8 +3,10 @@ id: decisions-skill-every-decision-s-impact-44aa
 title: "decisions skill: every decision's impact is visible at every level, the one-line list included"
 short_display_name: impact on every decision line
 type: feature
-status: todo
+status: doing
 priority: 0
+owner: Kyle-McFarlane@401123cbad11
+claimed: 2026-10-06T06:10Z
 created: 2026-10-06
 updated: 2026-10-06
 refs:
@@ -48,3 +50,11 @@ decision 165: Should every view of a decision show its impact, in five facets (e
   (z) decide later — views stay as they are, and the held work stays held
   rec: (a) · basis partial — one vocabulary learned once, read at every size; storing it at raise means the tightest views (Groom row, headline) can show it without opening the card
   unknown: whether the tag-size effect stays clear in under 10 words for complex decisions
+answer 165: 165a do it now (2026-10-06T06:10Z, chat; read as: (a) as proposed — five facets in every view, a stored impact: line; build now, ahead of other work)
+
+## Notes
+- 2026-10-06 claimed by Kyle-McFarlane@401123cbad11
+target: full decisions-skill-every-decision-s-impact-44aa /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude/worktrees/decisions-skill-every-decision-s-impact-44aa
+budget: 2026-10-06T06:10Z build $22 — default other build
+dispatch: implementer opus high — build (implementer-critical: the operator called it "important" and the impact "critical"; spec = proposal r2 + answer 165 a)
+agent: implementer-critical abcdb2f429201bdfa round 1
