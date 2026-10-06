@@ -170,4 +170,5 @@ Checks:
 - (cd plugins/dev-flow/skills/librarian-mode/scripts && python3 -m unittest discover -s tests -q)
 - (cd plugins/dev-flow/skills/research/scripts && python3 -m unittest discover -s tests -q)
 - (cd plugins/dev-flow && python3 -m unittest discover -s tests -q)
+- (cd plugins/operator-interaction && python3 -m unittest discover -s tests -q)
 Push: main
