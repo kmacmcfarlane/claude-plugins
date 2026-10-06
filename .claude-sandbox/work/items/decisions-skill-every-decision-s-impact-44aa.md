@@ -105,3 +105,8 @@ findings:
 cost: 2026-10-06T06:49Z build $14.56 of $22 after review 2 — must-fix 1 — prices 2
 dispatch: implementer opus high — resume (fix round 2)
 agent: implementer-critical abcdb2f429201bdfa round 3
+return: implementer-critical DONE 36876c3 (1-3 fixed; ## Defaults folded into the Critical bullet to stay under ~5000 tokens)
+changed:
+  plugins/operator-interaction/skills/decisions/SKILL.md, decision-page/references/cards-schema.md — round 2 fixes
+dispatch: reviewer opus high — resume (review round 3)
+agent: reviewer ae28144ce8f58ef99 round 3
