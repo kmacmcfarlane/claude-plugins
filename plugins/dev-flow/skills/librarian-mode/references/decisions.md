@@ -19,8 +19,8 @@ The skill is available when the session's skill listing carries `operator-intera
   - a Groom row that needs the operator (`idle-turn.md`);
   - every decision a Report carries.
 
-  It covers the content floor, the list line / card / block, the order, the layout, the
-  hint, reading replies with an echo, the read-back on a one-way choice in a ⚠ decision, and
+  It covers the content floor, the impact every view shows (tag size, list line, card,
+  block), the order, the layout, the hint, reading replies with an echo, the read-back on a one-way choice in a ⚠ decision, and
   "decide later" with a wake.
 - **Never through AskUserQuestion.** That is the librarian's own rule (SKILL.md § Intake
   step 3), and the skill agrees. The opt-in dialog is the one exception (`opt-in.md`).
@@ -54,14 +54,14 @@ renders what the operator read instead of composing it again.
   decision N: <question, one line> — options: (a) … [recommended] | (b) … | (z) decide later
     raised: <UTC time, e.g. 2026-09-24T14:05Z>
     what: <what is decided>
-    why now: <why now; blocks: …>
+    why now: <why it is up now>
     why ask: <class> — <what would go wrong if the librarian took its recommendation alone>
     context: <where the operator left it · what they decide now> — then: <a block's lost-context facts, or none>
+    impact: → <effect> · later: <wait> · reach: <reach> · undo: <undo>
     if left: <a round ask only: each leftover finding — what it would break>
     round costs: <a round ask only: time, quota, the operator's attention>
-    stakes: <reversible | one-way>, <narrow | wide — who>
-    (a) <option> — <its impact> [— undo: <how, or cannot>] [— who: <who is affected>]
-    (b) <option> — <its impact>
+    (a) <option> — <its effect> [— reach: <who or what>] [— undo: <how, or cannot>] [— cost: <time, money, quota, attention>]
+    (b) <option> — <its effect>
     (z) decide later — <what waiting costs; the deadline, if any>
     rec: (a) · basis <word> — <reason>
     basis: <per load-bearing claim: provenance — claim (link or pointer)> · …
@@ -70,7 +70,8 @@ renders what the operator read instead of composing it again.
 
   The headline is as the `dev-cycle` skill's `references/record-lines.md` gives the
   `decision:` line, so `wi needs-input` and the counter grep (`^decision [0-9]`) read it
-  unchanged; the indented lines match neither `^decision` nor `^answer`. The question is a
+  unchanged; the indented lines, `impact:` included, match neither `^decision` nor
+  `^answer`. The question is a
   question, as the card's title shows it, and the question alone: a round ask's
   justification goes in `if left:` and `round costs:`, never in the headline. `raised:`
   carries the time, not a date alone (an existing date-only `raised:` is kept as
@@ -82,8 +83,10 @@ renders what the operator read instead of composing it again.
   The options are every option the source offered (a series, a dispatch's `decision:`
   line), one choice per letter: a compound choice gets its own letters, never `(a)+…`.
   When the decision is ⚠ one-way — or any decision shown as a block — write `⚠ one-way`
-  after the question (⚠ only), and every option line carries its `undo:` and `who:`, and
-  the `basis:` drill-down line is required. `why ask:` follows `why now:` on every card,
+  after the question (⚠ only), and every option line carries its `reach:` and `undo:` (a
+  card stored before this rule may carry `who:` in place of `reach:`, read as it), and
+  the `basis:` drill-down line is required: they fill the block's Impact table, with
+  `cost:` where the option has one. `why ask:` follows `why now:` on every card,
   one physical line, its class from `decide-alone.md` § Class names. `context:` follows
   `why ask:` on every card, one physical line, written when the decision is raised. Before
   its first ` — then: ` is the cue: where the operator left it (what they last saw or
@@ -93,18 +96,33 @@ renders what the operator read instead of composing it again.
   decision raised as a card. The separator is always written. A card shows the cue alone as
   its **Context:** for a cold reader; a block shows the cue, then the facts. An ask for
   another round — the dev-cycle cap, most often — requires the `if left:` and `round
-  costs:` lines, in that order after `why now:`, `why ask:` and `context:` (the skill's
-  floor), filled from the reviewer's `findings:` block and the run's record; any other
+  costs:` lines, in that order after `why now:`, `why ask:`, `context:` and `impact:` (the
+  skill's floor), filled from the reviewer's `findings:` block and the run's record; any other
   decision leaves both out. The options stay in letter order, `[recommended]` on the
   headline marking the recommended one.
+  `impact:` follows `context:` on every card, one physical line, written when the decision
+  is raised: the skill's Impact line, its five facets in their order —
+  Effect (the recommended option's; with no recommendation, each option's in a few words,
+  `(a) …; (b) …`), Wait (what waiting costs, what it blocks), Reach, Undo — in the form
+  above; Cost stays on the option lines. Its Undo names the one-way option's undo
+  whenever any option is one-way, not only the recommended option's. What the decision
+  blocks is its `later:`, so `why now:` drops `blocks:` when the `impact:` line's `later:`
+  carries it. It replaces the `stakes:` line, which a card stored
+  before it keeps as written. Every view reads it: the Report's `decisions needed:` and the
+  Groom row (`idle-turn.md`) take its effect at tag size, the list line its effect and wait,
+  the card the whole line, so the tightest view never opens the options. A card stored
+  without it is backfilled under the rule below, from its recommended option's line and its
+  `(z)` line (and an older `stakes:` line, for reach and undo), and written as a revised
+  card `revised: <time> — backfilled impact` before it renders anywhere, the Groom row
+  included; a facet no record holds is `not recorded`.
   **A card or block renders only from stored fields**: a field it needs that the store
   lacks — a headline-only entry, a block's missing `undo:`, a card stored before `why ask:`
   existed (in the one form `decide-alone.md` § Raised gives it), one stored before the cue
   existed (no `context:` line, or one with no ` — then: `, whose text is a block's facts
   and is kept as the part after it), a block whose facts read `none` (a decision raised as
   a card, rendered as a block by `expand` or as a wide one shown to a cold reader: `none`
-  counts as missing) — is backfilled from the durable record (the item, its series, its
-  commits) and written as a revised card with `revised: <time> — backfilled` before it
+  counts as missing), a card with no `impact:` line — is backfilled from the durable record
+  (the item, its series, its commits) and written as a revised card with `revised: <time> — backfilled` before it
   renders; a field no record holds is written and shown as `not recorded`, never
   invented at render time. A card with no `raised:` takes it from the record: the time the
   headline was committed — the commit time, not the ask time, the closest the record holds
@@ -221,7 +239,9 @@ renders what the operator read instead of composing it again.
 The four lines per landed change stay exactly as SKILL.md § Report gives them. With the
 skill, the decisions come **last in the turn**, where the operator's eye is when you stop:
 
-1. Each change's `decisions needed:` names that change's decision numbers, or `none`. An
+1. Each change's `decisions needed:` names that change's decision numbers, each with its
+   effect at tag size from its stored `impact:` line — `46 (→ preview up in about 4
+   minutes)` — or `none`. An
    item blocked or declined since the last Report — SKILL.md § Report's "goes under
    `decisions needed` of the next" — is raised as its own decision and carried in the
    block, not on another change's line.

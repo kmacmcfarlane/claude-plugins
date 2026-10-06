@@ -60,7 +60,31 @@ topic the floor exists to prevent.
   reversible; risk tiering follows blast radius.
 
 Hence ⚠ = one-way *and* high impact, answered on its own, and the higher the stakes, the more
-detail and the slower the answer.
+detail and the slower the answer. The two are judged by you, and shown to the operator as
+the Undo and Reach facets (§ Impact in every view), in words that say how and who rather
+than a stakes label.
+
+## Impact in every view
+
+The operator's ask (2026-10-06): "I want to ALWAYS see some form of impact that a decision
+has, even in the one-line version. The impact of the decision is critical for me, and it's
+not currently visible in a way I can understand it at all times." Then, on a first proposal
+that changed the list line only: "I want it to be in the other sizes of outputs too … Consider
+how to structure the impact as you get more space to work with." The ruling
+took five facets in one vocabulary, shown more fully as space grows.
+
+- **Why these five.** Effect and Wait are the two sides a decider weighs at a glance: what
+  happens on yes, what happens on waiting — the decision aids' "outcome of each option,
+  doing nothing included" (§ The floor). Reach and Undo are the stakes dimensions
+  (§ Stakes), told as who and how instead of as a label: *reversible, narrow* named a tier
+  without saying what reversing takes. Cost is what a round ask already had to justify
+  (§ Asks for another round), for every option.
+- **One order at every size.** The facets are learned once and read the same way in a
+  table row and a block, so a larger view adds to the smaller one and never re-sorts it.
+- **Stored at raise.** The tightest views (a caller's table row, a report's line of numbers)
+  have no room to open the options, and deriving the impact there from option text each
+  time reads less clearly; written once with the card, it is read the same way everywhere,
+  as the context cue is (§ Who is reading).
 
 ## Who is reading: events, not the clock
 

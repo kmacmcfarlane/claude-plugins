@@ -1,6 +1,6 @@
 ---
 name: decisions
-description: "Put a decision to the operator so they can understand and answer it where it is shown: a content floor every decision carries, detail that scales with the stakes and with how far the operator is from the work, a set order, natural-language replies with an echo, and 'decide later' with a wake. Use whenever you are about to ask the operator to decide, choose, approve or confirm something, list open decisions, re-show decisions after a break or a context reset, read the operator's reply to one, or judge whether an action may be taken and reported afterwards instead of asked about first. Not for progress updates that ask nothing."
+description: "Put a decision to the operator so they can understand and answer it where it is shown: a content floor every decision carries, its impact shown in every view, detail that scales with the stakes and with how far the operator is from the work, a set order, natural-language replies with an echo, and 'decide later' with a wake. Use whenever you are about to ask the operator to decide, choose, approve or confirm something, list open decisions, re-show decisions after a break or a context reset, read the operator's reply to one, or judge whether an action may be taken and reported afterwards instead of asked about first. Not for progress updates that ask nothing."
 ---
 
 # Decisions
@@ -25,11 +25,15 @@ out.
 
 - **Every decision meets the floor before it is raised** (below). Without options it is not
   a decision: it is an open question, labelled as one.
+- **Every view shows the decision's impact**, at its size (§ Levels): the effect on the
+  smallest, more facets as space grows. No list line, card, block or caller's row without it.
 - **⚠ one-way decisions** — one-way *and* high impact — are never ratified inside a batch and
   never defaulted. Shown as a block the first time and whenever the reader is cold. On a ⚠
   decision, an answer that picks a **one-way option** is repeated back and acted on only once
   confirmed, and `you decide` never takes the one-way option.
-- **No timed defaults on actions.** Silence never turns into an action.
+- **No timed defaults on actions.** Silence never turns into an action. A **status-quo**
+  default, which changes nothing, may be stated on the card (`references/replies.md`
+  § Defaults).
 - **Never show a confidence percentage**, and never use one to order decisions.
 - **Options in letter order.** (a), (b), (c) …, with decide later last as (z). The
   recommended option keeps its letter and its place and is the one option in **bold**; it
@@ -55,20 +59,24 @@ Every decision carries, at any level:
 1. **What is decided**, in plain words. Gloss every id, hash, file or item name on first use —
    a bare `a3f9` or `7c41e0d` tells a cold reader nothing. Name items in plain words, the id
    at most a trailing tag: load the `plain-names` skill (same plugin) and follow it.
-2. **Why now**, and what it blocks. When nothing forces it, say so — *why now: nothing forces
-   it; raised because the audit turned it up* — and *blocks: nothing* is an honest answer.
-3. **Why ask** — why it comes to the operator instead of being decided and shown after: what
+2. **Its impact**, in five facets in this order: **Effect**, **Wait**, **Reach**, **Undo**,
+   **Cost** (`references/rendering.md` § Impact). Written when it is raised, as the Impact
+   line, and stored with the card where the caller keeps one.
+3. **Why now**, and what it blocks (the Wait facet). When nothing forces it, say so —
+   *why now: nothing forces it; raised because the audit turned it up* — and *blocks:
+   nothing* is an honest answer.
+4. **Why ask** — why it comes to the operator instead of being decided and shown after: what
    would go wrong if you took your recommendation alone (with no recommendation, why the call
    is not yours). It opens with the decision's **class** when the caller names classes of
    decision. A question that cannot fill it is decided alone when the FYI rule (§ Before you
    write) allows; otherwise it is asked.
-4. **The options**, each with its consequence — what happens to the world if it is chosen.
+5. **The options**, each with its consequence — what happens to the world if it is chosen.
    Include "do nothing" when it is a real option.
-5. **Decide later**, always, as its own option (`(z)`), distinct from "do nothing": it says what
+6. **Decide later**, always, as its own option (`(z)`), distinct from "do nothing": it says what
    waiting costs, and when there is a deadline, what happens at the deadline.
-6. **The recommendation**, or the labelled reason there is none.
-7. **The basis** — what the claims rest on (§ Evidence).
-8. **What is unknown.**
+7. **The recommendation**, or the labelled reason there is none.
+8. **The basis** — what the claims rest on (§ Evidence).
+9. **What is unknown.**
 
 **An ask for another round** — a review-round cap waiver, or any ask for one more round of
 work, review or investigation — also carries its **justification**, or the operator has
@@ -94,10 +102,9 @@ way it falls.
   decision whose options differ is not that template, and a caller that names none has
   none.
 
-Two labels mark things that are **not decisions yet**: an **Alert** (a time-critical fact, sent
-bare now because forming options would cost more than the alert is worth; the options follow)
-and an **Open question** (not defined yet; listed under *Open questions*, unnumbered, until it
-has options).
+Two labels mark things that are **not decisions yet**: an **Alert** (a time-critical fact,
+sent bare because forming options would cost more than it is worth; the options follow) and
+an **Open question** (listed under *Open questions*, unnumbered, until it has options).
 
 ## Before you write: the worksheet
 
@@ -107,9 +114,9 @@ supply each):
 | Group | Question | It sets |
 |---|---|---|
 | A | Who is reading, and how warm are they? | how much to re-explain |
-| B | What is at stake if it is wrong? | how it is answered |
+| B | What is at stake if it is wrong? | how it is answered; the Undo and Reach facets |
 | C | How well is it understood? | what evidence is shown; whether to offer "investigate first" |
-| D | What does waiting cost? | its place in the order |
+| D | What does waiting cost? | its place in the order; the Wait facet |
 | E | What kind of ask is it? | the card's shape |
 
 **Warm or cold.** The reader is **cold** on a decision after any of: a context compaction or
@@ -123,25 +130,27 @@ class the caller's rules define). Never for ⚠, never when others rely on it. W
 ask.
 
 **Decided alone is recorded and shown.** Each choice made under the FYI rule gets a record
-where the caller keeps one (its authority and how to undo it) and a `Done:` line the next
-time you report, in a *Done alone* group (`references/rendering.md` § FYI after acting). The
-operator who objects says so in their own words; that reopens it as a numbered decision, or
-undoes it when that is what they asked.
+where the caller keeps one and a `Done:` line the next time you report, in a *Done alone*
+group; an objection reopens or undoes it (`references/rendering.md` § FYI after acting).
 
 ## Levels
 
-Three levels; the templates are in `references/rendering.md`:
+Smallest to largest, each showing more of the impact in facet order (templates in
+`references/rendering.md`):
 
-- **List line** — every decision gets one: **bold number and title**, recommendation, its
-  class when the caller names classes, stakes, basis, and its age, what it blocks and any
-  deadline; a round ask, its justification too; a line-only decision, its why ask too.
-- **Card** — what is decided, why now, why ask (and a round ask's justification), the options
-  with their impact in italics, decide later, then `Rec · basis — reason · unknown`. Its
-  **Context:** cue (where you left it · what you decide now) is written for every decision
-  when it is raised, and shown to a cold reader (with nowhere to keep it, at the first
-  showing too).
-- **Block** — a card plus: context the reader may have lost, a section per option (*what
-  happens*, *undo*, *who is affected*), and the basis drill-down with evidence links.
+- **Tag size** — `46 (→ effect)`, for a caller's tightest views (a row of open items, a
+  report line naming numbers, a page's summary list); never in place of a level.
+- **List line** — every decision gets one: **bold number and title**, recommendation,
+  `→` Effect, `later:` Wait, its class when the caller names classes, ⚠ one-way when it is,
+  basis, its age and any deadline; a round ask, its justification; a line-only decision, its
+  why ask.
+- **Card** — an **Impact:** line under the title, then what is decided, why now, why ask
+  (and a round ask's justification), the options with their impact in italics, decide
+  later, then `Rec · basis — reason · unknown`. Its **Context:** cue (where you left it ·
+  what you decide now) is written for every decision when it is raised, and shown to a cold
+  reader (with nowhere to keep it, at the first showing too).
+- **Block** — a card whose Impact line becomes a table (a row per option plus a Wait row),
+  plus context the reader may have lost and the basis drill-down with evidence links.
 
 **The line-only rule.** A decision may stay a list line only when all of these hold: the
 reader is warm; the stakes are low (two-way and narrow); the basis is strong (for a
@@ -159,8 +168,8 @@ This holds for ⚠ too — the line keeps its ⚠ label, and `expand` brings the
 The higher the stakes, the more information and the slower the decision.
 
 **⚠ one-way** marks a decision that is one-way *and* high impact. Write it `⚠ one-way`, with a
-space after the symbol. A narrow one-way decision is a card with *one-way, narrow* in its
-stakes slot and no ⚠.
+space after the symbol; its Undo states the one-way part. A narrow one-way decision is a card
+with no ⚠: its Undo says it cannot be undone.
 
 ## Order
 
@@ -200,9 +209,9 @@ number and position and stays raised on later re-shows.
 
 **A cold re-show** — whenever the reader is cold on any open decision (§ Before you write) —
 shows each open decision the reader is cold on at card level or above, each opening with what
-changed while it waited (`references/rendering.md` § Re-show with what changed, which also
-gives its heading). When the store carries the card, render the stored card, checked and
-repaired as that section says; do not compose it again. **Paging:** when more than five
+changed while it waited, the impact included (`references/rendering.md` § Re-show with what
+changed, which also gives its heading). When the store carries the card, render the stored
+card, checked and repaired as that section says; do not compose it again. **Paging:** when more than five
 would be shown, render in full whole groups, in list order, until at least three decisions
 are shown, plus every ⚠; the rest are lines ending *(expand for the card)*, and the heading
 says how many are shown in full. *(provisional — pending the operator's ruling)*
@@ -232,18 +241,14 @@ into (other callers in the access logs)* — so a misreading is caught in one tu
 of work and report — for a caller with a status report, that report; the echo says so and
 asks once whether another time suits. When the decision has a deadline and the wake is not
 known to fall before it, the echo warns and restates what happens at the deadline. A re-ask
-carries a diff: *while it waited: …; options and recommendation unchanged | changed because …*
-
-## Defaults
-
-No timed default on an action. A **status-quo** default may be stated on the card — *if
-unanswered: I leave X as it is and carry on with other work* — because it changes nothing.
+carries a diff: *while it waited: …; options and recommendation unchanged | changed because …;
+impact unchanged | what changed in it*
 
 ## Evidence
 
-Show what the claims rest on as one word and a reason — `basis: strong | partial | thin |
-none — reason` — derived from the provenance of the weakest load-bearing claim, never chosen
-freely, and never as a percentage (`references/evidence-basis.md`). A claim is *observed* only
+Show what the claims rest on as one word and a reason, `basis: strong | partial | thin |
+none — reason`, derived from the weakest load-bearing claim's provenance, never chosen
+freely, never as a percentage (`references/evidence-basis.md`). A claim is *observed* only
 when it points at a tool result you produced.
 
 ## Rulings
@@ -286,13 +291,18 @@ argues for it.
 - **Shown after** (2026-09-30) — what a caller's rules let you decide alone is recorded and
   shown as a `Done:` line in a *Done alone* group, never left unseen. Not taken: a record seen
   only on request.
+- **Impact in every view** (2026-10-06) — five facets in one order, the smallest view
+  showing the effect, each larger view adding facets; the Impact line stored at raise and
+  read by every view; Undo replaces the stakes words, Wait the *blocks* slot. Not taken:
+  lines with the effect only, no wait; no stored line, each view deriving impact from the
+  options each time.
 
 Still provisional, marked where it appears: **paging** on a cold re-show.
 
 ## References
 
 - `references/worksheet.md` — the five groups, their fields, who supplies each, the two clocks
-- `references/rendering.md` — the list line, card and block templates, the message layout, labels, the re-show
+- `references/rendering.md` — the impact facets and Impact line, the tag size, list line, card and block templates, the message layout, labels, the re-show
 - `references/replies.md` — reply parsing, echo, read-back, batch, later and re-ask, reframe
 - `references/evidence-basis.md` — the basis word, its tags and the rule
 - `references/rationale.md` — why each rule, with its sources

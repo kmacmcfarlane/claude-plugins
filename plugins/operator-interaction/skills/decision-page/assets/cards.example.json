@@ -59,6 +59,12 @@
       "L": "direction",
       "t": "Docs build home",
       "rev": "2026-01-12T09:30:00Z",
+      "impact": {
+        "effect": "publishing no longer depends on one laptop",
+        "wait": "the local build stays; [[42]] and [[43]] wait",
+        "reach": "every docs contributor, and anyone who publishes by hand",
+        "undo": "switch the pipeline off; one config change"
+      },
       "tldr": [
         "The docs build runs on a laptop today",
         "Move it to CI, or keep it local",
@@ -69,7 +75,6 @@
       "why": "Two broken publishes this month came from a local cache. Blocks [[42]] and [[43]].",
       "whyask": "Moving the build changes who can publish; the team may rely on publishing by hand.",
       "class": "wider scope",
-      "stakes": "Reversible (pipeline config); wide (every docs contributor).",
       "ifunanswered": "I leave the build on the laptop and carry on with other work.",
       "rec": "b",
       "o": [
@@ -95,6 +100,20 @@
           "[[42]] and [[43]] wait"
         ]
       ],
+      "blocks": {
+        "a": {
+          "happens": "Nothing changes; the maintainer publishes by hand.",
+          "undo": "Nothing to undo.",
+          "who": "The maintainer who publishes.",
+          "cost": "About two failed publishes a month."
+        },
+        "b": {
+          "happens": "Every merge to main builds and publishes the site from CI.",
+          "undo": "Switch the pipeline off; one config change.",
+          "who": "Every docs contributor.",
+          "cost": "About 4 minutes of CI per merge."
+        }
+      },
       "basis": "strong",
       "reason": "both failures were read in the build logs",
       "unknown": "whether anyone publishes from a fork",
@@ -105,6 +124,12 @@
       "L": "details",
       "t": "Old URLs after the move",
       "rev": "2026-01-12T09:30:00Z",
+      "impact": {
+        "effect": "old links keep working through twelve redirects",
+        "wait": "the first CI publish waits for this answer",
+        "reach": "external readers and every site linking to the old pages",
+        "undo": "(a) remove the redirect lines; (b) none — once search engines drop the old URLs, redirects added later do not win the ranking back"
+      },
       "tldr": [
         "The CI build changes some page URLs",
         "Redirect them, or let them break"
@@ -114,7 +139,6 @@
       "why": "Needed before the first CI publish. Blocks nothing else.",
       "whyask": "Breaking public links is a call about readers, not about the build.",
       "class": "a real trade-off",
-      "stakes": "One-way once search engines drop the old URLs; wide (external readers).",
       "warn": true,
       "rec": "a",
       "o": [
@@ -144,12 +168,14 @@
         "a": {
           "happens": "Twelve redirects are added to the site config before the first CI publish.",
           "undo": "Remove the redirect lines; nothing else changes.",
-          "who": "Readers following old links, who land on the new pages."
+          "who": "Readers following old links, who land on the new pages.",
+          "cost": "Twelve lines of redirect config to keep."
         },
         "b": {
           "happens": "The twelve old URLs return not found from the first CI publish.",
           "undo": "Cannot be fully undone: once search engines drop the old URLs, redirects added later do not win the ranking back.",
-          "who": "External readers and every site linking to the old pages."
+          "who": "External readers and every site linking to the old pages.",
+          "cost": "Nothing now."
         }
       },
       "dep": "[[41]] (b)",
@@ -162,6 +188,12 @@
       "L": "details",
       "t": "Theme colour",
       "rev": "2026-01-12T09:30:00Z",
+      "impact": {
+        "effect": "(a) no visual change; (b) the site matches the logo",
+        "wait": "the site keeps the blue meanwhile",
+        "reach": "readers of the docs site",
+        "undo": "one theme setting"
+      },
       "tldr": [
         "The CI build can apply a new theme",
         "Pick a colour, or keep the current one"
@@ -169,7 +201,6 @@
       "what": "Which accent colour the rebuilt site uses.",
       "why": "Nothing forces it; raised because the move touches the theme files anyway.",
       "whyask": "A taste call; no fact settles it.",
-      "stakes": "Reversible, narrow.",
       "rec": null,
       "norec": "your preference — no recommendation",
       "o": [
