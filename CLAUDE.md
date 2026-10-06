@@ -7,6 +7,46 @@ go.
 
 Do not restate the principles here; restated rules drift.
 
+## Claude Code source material
+
+This repo is public. Read this before you write, commit or push anything that touches
+Claude Code's behaviour.
+
+1. **Never commit Claude Code's source.** Whether it came from the leaked source checkout or
+   from the installed bundle or binary, none of the following goes into any tracked file,
+   test fixture, commit message, work-item text pushed with the repo, or issue or PR text:
+   - verbatim code, prompts or system-prompt text, or internal strings (quoted internal
+     error text, internal flag and event names);
+   - minified or internal identifiers (short mangled function names, internal variable and
+     constant names), including as a label in a comment that maps our code to theirs;
+   - extraction recipes, such as a grep of the bundle, a byte offset, or an anchor to
+     search for.
+2. **State behaviour as observed or documented.** Observed: say how it was observed (a
+   status-line payload, a transcript, a hook's environment, a test run) and on which Claude
+   Code version. Documented: give the public URL. Never write "read from the binary", or
+   any other internals, as a source.
+3. **A fact only the internals show is not written down.** In its place you may leave a
+   hint, with no content, that it can be derived from Claude Code's internals, so agents
+   know to consult the source themselves.
+4. **Never describe an unreleased feature**: one present in the internals but not in a
+   public release or the public docs.
+5. **Check before every commit and every push.** Run this over the staged diff and the
+   commit message, then read the whole diff yourself:
+
+   ```bash
+   { git diff --cached -U0 | grep '^+'; cat "$MSG_FILE"; } \
+     | grep -niE 'bundle|binary|cli\.js|minified|deobfusc|(^|[^A-Za-z0-9_.])[A-Za-z$][A-Za-z0-9$]{1,3}\('
+   ```
+
+   (`$MSG_FILE` is the file you pass to `git commit -F`; before a push, run the same grep
+   over `git log -p @{u}..` instead.) The pattern catches the four phrases and short names
+   called like functions, the shape minified identifiers take; it is noisy on purpose. Read
+   every hit: a hit that is verbatim material, an internal identifier, a recipe, an internal
+   source or an unreleased feature is removed before the commit, never after. A hit in prose
+   that only names the rule, as this section does, may stay.
+6. **Why:** distributing verbatim code or prompts is copyright infringement; observed
+   behaviour is fact, and fact is ours to write down.
+
 ## Repository Layout
 
 ```
