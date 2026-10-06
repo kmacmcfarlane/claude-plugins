@@ -154,3 +154,8 @@ cost: 2026-10-06T02:16Z build $7.07 of $22 after review 2 — must-fix 0 — pri
 decided: one more round for lows 1-6 before landing — CLEAR, but 2 drops a line the operator asked for and 1, 3, 4 stall or collide across a session end in every opted-in repo; a resumed round costs ~$3-4, inside the $22 budget, cheaper than a follow-up cycle — class: cap
 dispatch: implementer opus medium — resume (fix round 2, lows)
 agent: implementer a43502b67a4ba3d10 round 3
+return: implementer DONE 23520a3 (lows 1-6 + note fixed; one-append answer+block and reframe; new first pickup state closes an item whose block is already in CLAUDE.md; the reframe-unraised state removed as now impossible)
+changed:
+  plugins/dev-flow/skills/librarian-mode/references/opt-in.md — round 2 lows
+dispatch: reviewer opus high — resume (review round 3)
+agent: reviewer a83d30ab780e61e4c round 3
