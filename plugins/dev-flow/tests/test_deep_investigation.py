@@ -115,9 +115,11 @@ class TestGate(unittest.TestCase):
         """Review r1 finding 1: the copy is conditional on step 1's scan and the rescan."""
         land = flat(section(text(GATE), "Step 6.5 — scan, verify, hold, land") or "")
         self.assertIn("rescan what will land", land)
-        self.assertIn("Copy only files that step 1 scanned and in which this rescan finds no "
-                      "HOLD; anything else stays in staging, and a failed rescan holds every "
-                      "file it covered.", land)
+        self.assertIn("Copy only findings that step 1 scanned, and only files in which this "
+                      "rescan finds no HOLD; anything else stays in staging, and a failed "
+                      "rescan holds every file it covered.", land)
+        self.assertIn("`late, not landed`", land)
+        self.assertIn("`late, not landed`", text(STRATEGY))
         self.assertIn("Only files the scan saw and the rescan finds no HOLD in are copied",
                       flat(text(SKILL)))
 
@@ -137,6 +139,9 @@ class TestGate(unittest.TestCase):
         self.assertIn("mining plan", pre)
         self.assertIn("with `--scripts`", pre)
         self.assertIn("keeps the file out of every reading lane's prompt", pre)
+        self.assertIn("A held mining plan is never cleaned", pre)
+        self.assertIn("the mining plan also with `--scripts` and into the toolkit gate's "
+                      "script review", flat(text(SKILL)))
         self.assertIn("§ Before a lane reads another lane's file", flat(text(SKILL)))
 
 

@@ -117,7 +117,8 @@ Entry kinds: `LAUNCHED`, `DONE`, `FAILED`, `PLAN CHANGE`, `TOOLS REVIEWED`, `SCA
 `STRIPPED`, `VERIFIED`, `HELD`, `LANDED`, `SYNTHESIS DONE`, `RUN COMPLETE`.
 
 A `DONE` line carries the lane id, the staging path, line and source counts, and the lane's
-confidence label — never its results. The path is the one you assigned, the line count one you
+confidence label — never its results. A lane that finishes after Step 6.5's scan gets
+`late, not landed` on its `DONE` line, and its file stays in staging. The path is the one you assigned, the line count one you
 measured, and a confidence label goes in only when it is one of the four the lane's shape
 allows. Cron wakeups and resumed sessions act from this doc, so a
 lane's words in it would be text an agent acts on; the results are one `Read` of the landed

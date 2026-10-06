@@ -161,8 +161,9 @@ Then launch, per the pacing decision from Step 1:
   script yourself. A held toolkit ledgers those lanes `FAILED`; the run goes on without them.
 - **Scan before a lane reads a lane**: before you dispatch a lane whose prompt names a staged
   file to read first (an earlier lane's findings, the toolkit lane's mining plan), scan that
-  file as `references/security-gate.md` § Before a lane reads another lane's file says. A
-  HOLD keeps it out of the reading lane's prompt.
+  file as `references/security-gate.md` § Before a lane reads another lane's file says (the
+  mining plan also with `--scripts` and into the toolkit gate's script review). A HOLD keeps
+  it out of the reading lane's prompt.
 - **Overrun rule, stated in the doc**: synthesis starts by time T with whatever findings exist;
   hard stop at T+1h.
 

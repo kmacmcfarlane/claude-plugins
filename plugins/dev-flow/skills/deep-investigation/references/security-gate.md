@@ -21,8 +21,8 @@ lane citing an earlier one, a mining lane reading the toolkit lane's mining plan
    flags.
 2. A HOLD, or a scan that fails (a timeout, an exit other than 0, 1 or 3, no `SCAN` line),
    keeps the file out of every reading lane's prompt. Handle it as Step 6.5 step 3 handles a
-   held lane. A held mining plan holds the mining round, as a held toolkit does: the mining
-   lanes are ledgered `FAILED` and the run goes on without them.
+   held lane. A held mining plan is never cleaned: it holds the mining round, as a held
+   toolkit does: the mining lanes are ledgered `FAILED` and the run goes on without them.
 3. A FLAG holds nothing here. Its positions go on Step 6.5's verifier `Scanner flags:` line.
 
 ## Step 6.5 — scan, verify, hold, land
@@ -48,10 +48,10 @@ When the last wave is in, or at the overrun deadline, and before you open any fi
    axis below 1 holds nothing: name it in `01_synthesis.md`.
 4. **Land.** Just before the copy, rescan what will land: the kept findings,
    `verification.md`, `tools-review.md`, and `--scripts` over `tools/` (§ The scan floor says
-   what a FLAG there does). Copy only files that step 1 scanned and in which this rescan
-   finds no HOLD; anything else stays in staging, and a failed rescan holds every file it
-   covered. A lane that finished after step 1 is one of those: ledger it, and its file stays
-   in staging. The kept findings go to `<series>/findings/<lane-id>.md`, `tools/` to
+   what a FLAG there does). Copy only findings that step 1 scanned, and only files in which
+   this rescan finds no HOLD; anything else stays in staging, and a failed rescan holds every
+   file it covered. A lane that finished after step 1 is one of those: its `DONE` line says
+   `late, not landed`, and its file stays in staging. The kept findings go to `<series>/findings/<lane-id>.md`, `tools/` to
    `<series>/tools/` only after its toolkit gate passed, and `verification.md` (with
    `tools-review.md`) to the series root. `pdf/` stays in staging. Ledger `LANDED`. Nothing
    fetched-derived enters the series except this way.
