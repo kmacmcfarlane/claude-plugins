@@ -3,8 +3,10 @@ id: review-claude-code-bundle-derived-conten-e347
 title: Review Claude Code bundle-derived content in the public tree (context-guard window rules, minified identifiers)
 short_display_name: bundle-derived content review
 type: spike
-status: todo
+status: doing
 priority: 0
+owner: Kyle-McFarlane@401123cbad11
+claimed: 2026-10-06T07:04Z
 created: 2026-10-06
 updated: 2026-10-06
 refs:
@@ -35,3 +37,9 @@ decision 164: How should the bundle-derived passages in context-guard be handled
   basis: observed — scout inventory over tracked files at 514f88a (00_inventory.md)
   unknown: whether the tables' values are all publicly documented (no docs were fetched); whether you also want the history rewritten
 answer 164: "164a - exactly, only keep facts we can observe, we should not publish internals. We can and should instead hint that you could derive things we can't observe from internals so that my agents continue to reference the source when helpful. I want to perform the history scrub of this content to stay compliant with copyright." (2026-10-06T04:06Z, chat; read as: (a), narrowed — keep only facts observable at runtime; anything only internals show is removed and replaced by a hint that it can be derived from Claude Code's internals, with no content; plus a history scrub, filed as its own one-way item)
+
+## Notes
+- 2026-10-06 claimed by Kyle-McFarlane@401123cbad11
+target: plan review-claude-code-bundle-derived-conten-e347 /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude-sandbox/investigations/e347-bundle-derived-content
+budget: 2026-10-06T07:04Z plan $28 — default plan
+dispatch: planner opus high — plan (scrub per answer 164 a, plus the history scrub plan for item history-scrub-purge-claude-code-bundle-d-4151)
