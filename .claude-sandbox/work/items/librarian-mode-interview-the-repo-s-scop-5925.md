@@ -195,3 +195,5 @@ decision 159: The scope interview's review stopped converging (one must-fix left
   basis: observed — reviewer round 4 reproduced the double Systems: on a scratch store; observed — spend reader $10.63
   unknown: whether the reviewer finds a new edge in the superseded path
 answer 159: 159a (2026-10-06T04:06Z, chat; read as: (a) one more round with the fix specified)
+dispatch: implementer opus medium — resume (fix round 4, opened by answer 159 a)
+agent: implementer a43502b67a4ba3d10 round 5
