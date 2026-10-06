@@ -3,12 +3,11 @@ id: budget-rule-quota-aware-asks-answer-176-20f5
 title: "Budget rule: quota-aware asks (answer 176 a), and no budget or spend ever named in a brief"
 short_display_name: quota-aware budget, none in briefs
 type: feature
-status: doing
+status: done
 priority: 1
-owner: Kyle-McFarlane@401123cbad11
-claimed: 2026-10-06T19:28Z
 created: 2026-10-06
 updated: 2026-10-06
+closed: 2026-10-06
 refs:
   - operator 2026-10-06, answer 176
 ---
@@ -69,3 +68,11 @@ changed:
   plugins/dev-flow/skills/dev-cycle/references/{resume.md, record-lines.md, bindings.md} — round 2 fixes
 dispatch: reviewer opus high — resume (review round 3)
 agent: reviewer a0bb574eb94a8b64e round 3
+verdict: CLEAR round 3 at 19e3a05
+findings:
+  round 2: A-D FIXED
+  1. [low] record-lines.md:6 — header still says "Five shapes have more than one writer"; decided: makes six
+  2. [nit] bindings.md:313 — 97 characters
+cost: 2026-10-06T20:11Z build $7.5 of $22 after review 3 — must-fix 0 — prices 2
+landed: 5f28956
+- 2026-10-06 done: 5f28956
