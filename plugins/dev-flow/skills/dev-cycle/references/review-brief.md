@@ -143,6 +143,10 @@ $WORKTREE, in addition to the generic ones>
   $WORKTREE. To read another revision, `git -C $WORKTREE show <rev>:<path>`, or
   `git -C $WORKTREE archive <rev>` unpacked under the scratchpad — never a checkout.
 - Do not run `wi claim`, `wi done`, `wi handoff` or any writing `wi` command.
+- Never send a signal (kill, pkill, killall, a pattern or process-group kill) to a process
+  you did not start yourself; stop your own only by the PID you recorded when you started
+  it (`$!` after a background start), never by name or pattern — other agents' check runs
+  share this container.
 - Do not soften a severity because the fix is small, or raise one because the fix is
   large. Grade the failure, not the effort. A `Fix:` never changes a severity.
 - Do not ask the user anything; put the question under NOTES.

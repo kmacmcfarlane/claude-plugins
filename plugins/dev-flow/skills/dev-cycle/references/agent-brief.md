@@ -189,6 +189,10 @@ each resolution in one line under DEVIATIONS.
   acceptance needs, and justify every changed file under CHANGED. Nothing outside
   Ground is ever in scope.
 - Do not run `git stash` in any form (see Verification).
+- Never send a signal (kill, pkill, killall, a pattern or process-group kill) to a process
+  you did not start yourself; stop your own only by the PID you recorded when you started
+  it (`$!` after a background start), never by name or pattern — other agents' check runs
+  share this container.
 - Do not create README.md, CHANGELOG.md, or any documentation file the change did not ask
   for.
 - Do not run `wi done`, `wi claim` or `wi release`; the orchestrator owns the item's state.
