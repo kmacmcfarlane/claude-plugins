@@ -65,3 +65,15 @@ changed:
   plugins/dev-flow/tests/test_deep_investigation.py — landing condition, pre-read scan, verifier row, edge case tests
 dispatch: reviewer opus high — resume (review round 2)
 agent: reviewer a414ae0b52bf6263c round 2
+verdict: CLEAR round 2 at 70b5d80
+findings:
+  round 1: 1-5, 7, 8 FIXED; 6 PARTIAL, decline accepted (nit)
+  1. [low] security-gate.md:49-55 — "copy only files that step 1 scanned" excludes verification.md, tools-review.md, tools/. Fix: security-gate.md:51 — "Copy only findings that step 1 scanned, and only files in which this rescan finds no HOLD; anything else stays in staging, and a failed rescan holds every file it covered."
+  2. [low] security-gate.md:22-25 — a held mining plan can take the interactive clean path, whose recheck is a plain rescan that misses a curl line. Fix: security-gate.md:24 — "A held mining plan is never cleaned: it holds the mining round, as a held toolkit does: the mining lanes are ledgered `FAILED` and the run goes on without them."
+  3. [low] SKILL.md:162-165 — the mining plan's --scripts scan and script review live only in the reference. Fix: SKILL.md:164 — "file as `references/security-gate.md` § Before a lane reads another lane's file says (the mining plan also with `--scripts` and into the toolkit gate's script review). A"
+  4. [low] security-gate.md:24 — FLAGs on ordinary read-first files hold nothing (parity with research Step 7); family-wide follow-up
+  5. [nit] security-gate.md:53 — "ledger it" names no entry kind for a late lane
+cost: 2026-10-06T02:30Z build $13.66 of $22 after review 2 — must-fix 0 — prices 2
+decided: one more round for lows 1-3 and nit 5 before landing — CLEAR, but 2 and 3 leave a path where a mining lane runs an unflagged network command, the failure F2 exists to close; exact Fix: lines, a resumed round inside the $22 budget; low 4 goes to research-scan-a-round-s-findings-and-the-a012 — class: cap
+dispatch: implementer opus medium — resume (fix round 2, lows)
+agent: implementer a4e5c61bb52b28988 round 3

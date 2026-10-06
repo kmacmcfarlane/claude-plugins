@@ -18,3 +18,4 @@ refs:
 - next: —
 - blocked: —
 - learned: —
+note: 2026-10-06 from 1ffd review r2 low 4 — FLAG-tier hits on read-first files hold nothing before a later lane reads them (research Step 7, research-refine, and deep-investigation alike), and a plain scan gives no hit on a command line like 'curl … -o /tmp/x && sh /tmp/x' in findings prose; widen the acceptance: adjudicate FLAGs on read-first files, and consider --scripts-tier command detection on read-first prose
