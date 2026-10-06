@@ -194,3 +194,4 @@ decision 159: The scope interview's review stopped converging (one must-fix left
   rec: (a) · basis partial — the fix is now fully specified, so the convergence stop's "brief is wrong" no longer holds; it costs little and closes a corruption of the section the feature writes
   basis: observed — reviewer round 4 reproduced the double Systems: on a scratch store; observed — spend reader $10.63
   unknown: whether the reviewer finds a new edge in the superseded path
+answer 159: 159a (2026-10-06T04:06Z, chat; read as: (a) one more round with the fix specified)

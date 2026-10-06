@@ -49,3 +49,4 @@ decision 161: What should the new plugin that holds the research confinement hoo
   (z) decide later — the build waits
   rec: (a) · basis partial — it follows the existing guard naming and the plan's own placeholder
   unknown: none
+note: 2026-10-06 operator on decision 160, verbatim: "160 - decision skill feedback: you gave me a decision I can't act on. You haven't specified the location of paste.txt. That blocks me from doing the test now and makes me ask you where the file is in another turn. This is inefficient." (read as: not an answer — the card lacked paste.txt's absolute path and its text; the steps are re-shown complete; filed decisions-skill feedback)
