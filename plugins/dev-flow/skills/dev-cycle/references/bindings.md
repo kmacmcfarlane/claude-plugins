@@ -208,13 +208,16 @@ there — and the reply as `answer: <decision> — <reply>` (`record-lines.md`) 
 arrives.
 
 **What a cap ends in** (SKILL.md § Step 4.3; answers 114 (b), 137, 139 (a), 140 (a), 145
-(a)). Read at every verdict that is not `CLEAR`, after the spend check (§ Spend budget) and
-before a round opens or anything is raised. Every counted review here is a counted review
-**of this phase** (ROUNDS, `resume.md`, which counts from the phase's `target:` line).
+(a), 176 (a)). Read at every verdict that is not `CLEAR`, after the spend check (§ Spend
+budget) and before a round opens or anything is raised. Every counted review here is a
+counted review **of this phase** (ROUNDS, `resume.md`, which counts from the phase's
+`target:` line).
 
 **The cap is reached** when any of these holds:
 
-- **the budget**: the phase's last `cost:` line shows spent at or over the amount in force;
+- **the budget**: the phase's last `cost:` line shows spent at or over the amount in force,
+  unless the quota is plentiful (§ Spend budget, While the quota is plentiful): while a
+  fresh weekly reading is below 50% used, a reached budget is not a cap;
 - **the convergence stop**: from the fourth counted review on, this review's `must-fix` is
   not lower than the previous counted review's (each review's last `cost:` line; a
   comparison with `?` on either side is not lower) — a count that stops falling means
@@ -367,7 +370,49 @@ it comes up again, is raised as a new decision.
 Each phase of a target has a **spend budget** in list-price dollars, set when the phase
 opens (answer 145 (a)): the plan phase is a `plan`-mode run, the build phase every other
 run (SKILL.md § Step 0.3). Rounds run unasked inside it; reaching it is a cap (§ Decisions,
-What a cap ends in). No brief carries it, so no producer or reviewer trims its work to fit.
+What a cap ends in), except while the quota is plentiful (below). No brief carries it, so
+no producer or reviewer trims its work to fit.
+
+**Never in a brief.** Never tell a producer or reviewer the budget, the spend so far or
+left, or that money or quota is short, and never ask them to hurry or be brief to save
+cost, in a brief, a resume message or a fix-round message. Spend is the orchestrator's to
+read, never the agents'. The operator, after a planner was told "about $3 left" and a
+reviewer that the budget was nearly spent: "yea, let's update the skill guidance to
+prevent 'so nobody trims their work to fit. I won't do it again.'" A producer or reviewer
+that trims its work to a number it was shown spends a later round finding what it left
+out. The restatements: `agent-brief.md`, `review-brief.md`, `fix-loop.md` § A
+NEEDS_CHANGES round, and SKILL.md § Red flags.
+
+**While the quota is plentiful** (answer 176 (a)). At a verdict whose spend check shows the
+budget reached, take a fresh weekly reading at that moment with the `librarian-mode`
+skill's `scripts/quota_budget.py --read-only`, as the guard past the fourth review reads it
+(§ Decisions, Past the fourth review): its weekly `used` (`windows.seven_day.used`).
+
+- **Below 50% used**: reaching the budget does not stop the work to ask. The budget is not
+  a cap at that verdict, and the rest of § Decisions, What a cap ends in applies as
+  written — the convergence stop and the fallback still reach the cap, and a round past
+  the fourth review still opens only through its guard, which needs a fresh weekly reading
+  not below the reserve. The overrun is noted in the Report, as a Done-alone line with the
+  spend against the budget, and rounds continue.
+- **At or above 50% used, or no fresh reading** (no signal: `windows` is `null`, as it is
+  for a missing or stale reading): the budget is a cap and asks as before — the
+  increase ask (§ Decisions).
+
+The quota-reserve guards (§ Decisions, Past the fourth review; `model-routing.md` § Below
+the quota reserve) and the `model: fable` pin's rules are unchanged; a fable pin's doubled
+budget is waived the same way, the pin's own asks still applying before each dispatch.
+The reading is taken afresh at every verdict that reaches the budget; one taken for the
+guard at the same verdict serves both.
+
+**The Done-alone line.** Under a caller with a decided-alone record (`librarian-mode`), a
+`decided:` line of class `spend`, authority `answer 176`, written before the round it
+opens — once per phase, at the first verdict the waiver passes — its what naming the spend
+against the budget, the review and the weekly reading (`$<spent> of $<budget> after review
+<n>, weekly <u>% used`), its reopen "say stop: the next round asks first". The Report's
+Done alone group renders it (the `librarian-mode` skill's `references/decide-alone.md`
+§ The Report). Standalone has no decided-alone record: the Report adds one line after its
+four, `Done alone: budget passed below 50% weekly use (answer 176) — $<spent> of
+$<budget>, weekly <u>% used`, the spend from the phase's last `cost:` line.
 
 **A phase opens at its `target:` line**, written with its `budget:` line before the
 phase's first dispatch (SKILL.md § Step 0.3; a caller writes both where it writes

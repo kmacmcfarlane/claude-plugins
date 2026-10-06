@@ -21,6 +21,14 @@ The prohibitions and the return contract are fixed. The verification commands va
 the change touches — take them from `review-checklist.md`, plus every command in the Checks
 binding. The Workflow binding goes in verbatim.
 
+**Never in a brief** (`bindings.md` § Spend budget): never tell a producer or reviewer the
+budget, the spend so far or left, or that money or quota is short, and never ask them to
+hurry or be brief to save cost, in a brief, a resume message or a fix-round message. Spend
+is the orchestrator's to read, never the agents'. That holds for the template and every
+block and variant below — the fix-round, finish-round and merge-conflict clauses, the plan
+and review-mode fix variants, and a brief sharpened for re-dispatch. A finding to fix is
+pasted with no word on what fixing it costs.
+
 ---
 
 ```

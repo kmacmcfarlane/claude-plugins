@@ -311,7 +311,8 @@ resume with findings = review round n+1; the cap: Step 4.3.
    fresh `dispatch:` and `agent:` pair. A change of agent file or model is always a
    re-dispatch. Repeat until `CLEAR`.
    **The cap.** Rounds run unasked inside the phase's spend budget, past the fourth review
-   through its guard; the cap is the budget reached, the must-fix count not falling from
+   through its guard; the cap is the budget reached (not a cap while a fresh weekly reading
+   is below 50% used: noted, rounds continue), the must-fix count not falling from
    the fourth review on (the brief or the target is wrong, not the code), or, with no
    spend reading, the fourth review. It ends in a plan's stop and carry, one finish round
    of exact fixes, or a raise with what the open findings would break and what more costs
@@ -448,6 +449,9 @@ Stop when you catch yourself:
   rule-free wording, CLAUDE.md, an agent, a script, any operational claim).
 - **Pushing unasked**, writing CLAUDE.md to save the checks, or guessing a caller's
   missing binding.
+- **Naming spend to a producer or reviewer** — the budget, the spend so far or left, or
+  that money or quota is short, in a brief, a resume message or a fix-round message, or
+  asking them to hurry or be brief to save cost (`references/bindings.md` § Spend budget).
 
 ## Examples
 

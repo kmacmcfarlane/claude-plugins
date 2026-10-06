@@ -66,6 +66,14 @@ SKILL.md § Step 4.
   holds, dispatch a fresh opus reviewer with the full brief and the self-review's
   `findings:` pasted for verification.
 
+**What a round message never carries** (`bindings.md` § Spend budget): never tell a
+producer or reviewer the budget, the spend so far or left, or that money or quota is
+short, and never ask them to hurry or be brief to save cost, in a brief, a resume message
+or a fix-round message. Spend is the orchestrator's to read, never the agents'. The
+findings, the fix-round clause, the re-review variant and the shas are the whole message;
+how near the round is to the budget or the cap stays in the record sink and the decision
+channel.
+
 Then repeat until `CLEAR`: a verdict that reaches the cap ends as SKILL.md § Step 4.3 says
 — stopped and carried, a finish round, or raised (`bindings.md` § Decisions).
 

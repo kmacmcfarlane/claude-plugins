@@ -23,6 +23,13 @@ The prohibitions, the severity scale and the report shape are fixed. The check c
 with what the change touches — take them from `review-checklist.md`, the same list the
 orchestrator runs again at Land, including its section 4's Checks binding.
 
+**Never in a brief** (`bindings.md` § Spend budget): never tell a producer or reviewer the
+budget, the spend so far or left, or that money or quota is short, and never ask them to
+hurry or be brief to save cost, in a brief, a resume message or a fix-round message. Spend
+is the orchestrator's to read, never the agents'. That holds for the template and every
+variant below — the re-review, review-mode and plan-review variants, and a cross-checker's
+brief. A reviewer told the money is short grades to the money, not to the change.
+
 ---
 
 ```
