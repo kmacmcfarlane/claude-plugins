@@ -18,3 +18,4 @@ Operator 2026-10-06, verbatim: 'we need to be sure to avoid documenting any verb
 - next: —
 - blocked: —
 - learned: —
+correction: 2026-10-06 the relay went to the marketplace session, which is the Sussex marketplace librarian (scope plugins/kappa-dev), not mcfacehead-plugins'; it declined and filed nothing; no mcfacehead-plugins session is running (ListAgents: a mcfacehead.com session only), so the mcfacehead-plugins and leaked-checkout CLAUDE.md parts go back to the operator
