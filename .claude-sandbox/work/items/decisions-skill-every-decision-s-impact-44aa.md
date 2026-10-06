@@ -96,3 +96,12 @@ changed:
   plugins/operator-interaction/skills/decisions/{SKILL.md, references/rendering.md, references/gallery.md, references/replies.md}, decision-page/{SKILL.md, assets/cards.example.json, references/cards-schema.md}, tests/test_impact.py; dev-flow librarian-mode references/decisions.md; work-items references/format.md — round 1 fixes
 dispatch: reviewer opus high — resume (review round 2)
 agent: reviewer ae28144ce8f58ef99 round 2
+verdict: NEEDS_CHANGES round 2 at d2ef515
+findings:
+  round 1: 1-6, 8, 9 FIXED; 7 declined
+  1. [medium] decisions/SKILL.md:147-149 — the shortening dropped "for every decision" from the Context cue rule, so a line-only decision may get no cue and re-show as not recorded. Fix: SKILL.md:148 — "what you decide now) is written for every decision when it is raised, and shown to a cold reader"
+  2. [low] decision-page/references/cards-schema.md:91-93 — the republishing paragraph was inserted mid-thought; the ⚠-card sentence ("It gets no special control…") now ends the wrong paragraph
+  3. [low] decisions/SKILL.md:297-300 — the 2026-10-06 ruling lost "Undo replaces the stakes words, Wait the blocks slot"
+cost: 2026-10-06T06:49Z build $14.56 of $22 after review 2 — must-fix 1 — prices 2
+dispatch: implementer opus high — resume (fix round 2)
+agent: implementer-critical abcdb2f429201bdfa round 3
