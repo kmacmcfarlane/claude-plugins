@@ -57,3 +57,8 @@ decided: rulings for the fix round, each inside the operator's stated rule (verb
   store: the scrub (e347) and the history scrub (4151) cover pushed store items too
 dispatch: implementer opus medium — resume (fix round 1)
 agent: implementer a1898c49b84063cca round 2
+return: implementer DONE_WITH_CONCERNS 461bbee (1-10 fixed; cc_scan function with shape greps, local deny-list, reading; deny-list starts empty; internal event names caught only by the deny-list and reading)
+changed:
+  CLAUDE.md — section rewritten to the round-1 rulings; opening sentence amended
+dispatch: reviewer opus high — resume (review round 2)
+agent: reviewer a0544db499ede2489 round 2

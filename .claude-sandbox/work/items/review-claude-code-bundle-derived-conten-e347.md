@@ -45,3 +45,4 @@ budget: 2026-10-06T07:04Z plan $28 — default plan
 dispatch: planner opus high — plan (scrub per answer 164 a, plus the history scrub plan for item history-scrub-purge-claude-code-bundle-d-4151)
 agent: planner a17bc769f2e8fbff8 round 1
 note: 2026-10-06 6a07 review: pushed work-item store items also hold bundle-derived material (this item's own body line 16; the context-guard exact-depth item line 61); the scrub and the history scrub cover .claude-sandbox/work too
+note: 2026-10-06 the scrub should seed the local deny-list (.git/info/claude-code-denylist, never committed) with the exact internal strings it removes, and cover the test fixtures' quoted message text (the new rule forbids it even when observed)
