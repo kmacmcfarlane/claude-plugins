@@ -3,12 +3,11 @@ id: research-skills-effort-based-routing-par-e184
 title: "research skills: effort-based routing parity with dev-cycle's role profiles"
 short_display_name: research routing parity
 type: feature
-status: doing
+status: done
 priority: 1
-owner: Kyle-McFarlane@401123cbad11
-claimed: 2026-10-02T21:57Z
 created: 2026-10-02
 updated: 2026-10-06
+closed: 2026-10-06
 refs:
   - operator 2026-10-02
 ---
@@ -147,3 +146,8 @@ return: implementer DONE_WITH_CONCERNS 77a54d5 (40cfe15 answer 148 b; 77a54d5 me
 librarian ruling: concerns go to the reviewer; the allowed-tools one is weighed there against acceptance 17 and the house rule that leaving allowed-tools out is the default
 dispatch: reviewer opus high — resume (round 3: answer 148 b + merge of main)
 agent: reviewer aeedf8a6c590ba4eb round 3
+verdict: CLEAR round 3 at 77a54d5
+cost: 2026-10-06T01:50Z build $13.58 of $22 after review 3 — must-fix 0 — prices 2 (no budget: line: the phase opened before the budget rule; default other build)
+landed: 7bd41bc
+findings: carried — round 2 lows 13-15, round 3 lows 1-2 into research-routing-carried-review-lows; 16 fixed by 40cfe15
+- 2026-10-06 done: 7bd41bc
