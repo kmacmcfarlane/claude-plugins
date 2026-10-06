@@ -48,3 +48,11 @@ changed:
   CLAUDE.md — rules 1, 2, 3, 5 per review round 1
 dispatch: reviewer opus high — resume (review round 2)
 agent: reviewer a4f2e54720aae421d round 2
+verdict: CLEAR round 2 at b49229b
+findings:
+  round 1: 1-5 FIXED
+  1. [low] CLAUDE.md:37-39 — "That covers message and error text" now follows the inspection sentence and reads as referring to it. Fix: CLAUDE.md:38 — "That covers message and error text" → "Externally observable text covers message and error text"
+  2. [nit] CLAUDE.md:28-29 — "built-in" limits only agent and command instructions; optional words: "Claude Code's own tool descriptions, built-in agent and command instructions, and the text a built-in slash command expands to count as prompts."
+decided: one short round for low 1 and nit 2 before landing — a rule whose sentence points at the wrong antecedent gets misread; both are exact words; inside the $10 budget — class: cap
+dispatch: implementer opus medium — resume (fix round 2, exact words)
+agent: implementer a8bb4d53a834c426f round 3
