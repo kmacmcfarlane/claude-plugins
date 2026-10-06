@@ -402,6 +402,10 @@ open questions: <list, or none>
 decisions needed: <numbered list, or none>
 ```
 
+A budget passed while the weekly quota was below half used adds one `Done alone:` line
+after the four (`references/bindings.md` § Spend budget, The Done-alone line); under a
+caller, its own Done-alone group carries it.
+
 The plain name is the item's `short_display_name` when it is set; otherwise write one from
 its title at each mention (the `operator-interaction:plain-names` skill, when loaded), and
 store nothing. The tag is the id's last four hex. A target with no item — a series, a plan

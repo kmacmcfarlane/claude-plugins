@@ -376,20 +376,21 @@ no producer or reviewer trims its work to fit.
 **Never in a brief.** Never tell a producer or reviewer the budget, the spend so far or
 left, or that money or quota is short, and never ask them to hurry or be brief to save
 cost, in a brief, a resume message or a fix-round message. Spend is the orchestrator's to
-read, never the agents'. The operator, after a planner was told "about $3 left" and a
-reviewer that the budget was nearly spent: "yea, let's update the skill guidance to
-prevent 'so nobody trims their work to fit. I won't do it again.'" A producer or reviewer
-that trims its work to a number it was shown spends a later round finding what it left
-out. The restatements: `agent-brief.md`, `review-brief.md`, `fix-loop.md` § A
-NEEDS_CHANGES round, and SKILL.md § Red flags.
+read, never the agents'. After a planner was told "about $3 left" and a reviewer that the
+budget was nearly spent, the operator, quoting the librarian's own earlier promise back to
+it: "yea, let's update the skill guidance to prevent 'so nobody trims their work to fit. I
+won't do it again.'" A producer or reviewer that trims its work to a number it was shown
+spends a later round finding what it left out. The restatements: `agent-brief.md`,
+`review-brief.md`, `fix-loop.md` § A NEEDS_CHANGES round, and SKILL.md § Red flags.
 
-**While the quota is plentiful** (answer 176 (a)). At a verdict whose spend check shows the
-budget reached, take a fresh weekly reading at that moment with the `librarian-mode`
-skill's `scripts/quota_budget.py --read-only`, as the guard past the fourth review reads it
-(§ Decisions, Past the fourth review): its weekly `used` (`windows.seven_day.used`).
+**While the quota is plentiful** (answer 176 (a)). At a spend check that shows the budget
+reached (at a verdict, or before a round opens), take a fresh weekly reading at that
+moment with the `librarian-mode` skill's `scripts/quota_budget.py --read-only`, as the
+guard past the fourth review reads it (§ Decisions, Past the fourth review): its weekly
+`used` (`windows.seven_day.used`).
 
 - **Below 50% used**: reaching the budget does not stop the work to ask. The budget is not
-  a cap at that verdict, and the rest of § Decisions, What a cap ends in applies as
+  a cap at that check, and the rest of § Decisions, What a cap ends in applies as
   written — the convergence stop and the fallback still reach the cap, and a round past
   the fourth review still opens only through its guard, which needs a fresh weekly reading
   not below the reserve. The overrun is noted in the Report, as a Done-alone line with the
@@ -401,18 +402,21 @@ skill's `scripts/quota_budget.py --read-only`, as the guard past the fourth revi
 The quota-reserve guards (§ Decisions, Past the fourth review; `model-routing.md` § Below
 the quota reserve) and the `model: fable` pin's rules are unchanged; a fable pin's doubled
 budget is waived the same way, the pin's own asks still applying before each dispatch.
-The reading is taken afresh at every verdict that reaches the budget; one taken for the
-guard at the same verdict serves both.
+The reading is taken afresh at every spend check that shows the budget reached; one taken
+for the guard at the same moment serves both.
 
-**The Done-alone line.** Under a caller with a decided-alone record (`librarian-mode`), a
-`decided:` line of class `spend`, authority `answer 176`, written before the round it
-opens — once per phase, at the first verdict the waiver passes — its what naming the spend
-against the budget, the review and the weekly reading (`$<spent> of $<budget> after review
-<n>, weekly <u>% used`), its reopen "say stop: the next round asks first". The Report's
-Done alone group renders it (the `librarian-mode` skill's `references/decide-alone.md`
-§ The Report). Standalone has no decided-alone record: the Report adds one line after its
-four, `Done alone: budget passed below 50% weekly use (answer 176) — $<spent> of
-$<budget>, weekly <u>% used`, the spend from the phase's last `cost:` line.
+**The Done-alone line.** The waiver is written to the record sink before the round it
+opens — once per phase, at the first spend check it passes — as a `decided:` line of class
+`spend`, authority `answer 176` (the shape in the `librarian-mode` skill's
+`references/decide-alone.md` § The record): its what names the spend against the budget,
+the review and the weekly reading taken at the spend check that passed it (`$<spent> of
+$<budget> after review <n>, weekly <u>% used`), its reopen "say stop: the next round asks
+first". Under a caller it is the caller's decided-alone record (`librarian-mode`), and its
+Report's Done alone group renders it (that file's § The Report). Standalone it goes in the
+run's own record — the item body or the scratchpad `record.md` — so a resumed run finds
+it; it is the one `decided:` line a standalone run writes, and its Report adds one line
+after the four, read from it: `Done alone: budget passed below 50% weekly use (answer 176)
+— $<spent> of $<budget> after review <n>, weekly <u>% used`.
 
 **A phase opens at its `target:` line**, written with its `budget:` line before the
 phase's first dispatch (SKILL.md § Step 0.3; a caller writes both where it writes

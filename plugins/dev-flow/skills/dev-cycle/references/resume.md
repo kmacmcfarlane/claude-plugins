@@ -84,9 +84,11 @@ words. `<workspace>` below is that line's third field.
      build. An answered waiver never changes the count.
    - **CAP** — `UNDER` | `AT_CAP`: `AT_CAP` when ROUNDS ≥ 4, or when the phase's spend,
      read now as `bindings.md` § Spend budget's check reads it (read-only: resume writes
-     no `cost:` or `budget:` line), is at or over the amount in force; `UNDER` otherwise,
-     a phase with no reading included. `AT_CAP` sends the row to SKILL.md § Step 4.3,
-     which decides what it ends in — a stop, a round it opens unasked, or a raise; it is
+     no `cost:` or `budget:` line), is at or over the amount in force — unless a fresh
+     weekly reading taken now is below 50% used (`bindings.md` § Spend budget, While the
+     quota is plentiful), which a stale verdict's rows read too; `UNDER` otherwise, a
+     phase with no reading included. `AT_CAP` sends the row to SKILL.md § Step 4.3, which
+     decides what it ends in — a stop, a round it opens unasked, or a raise; it is
      never by itself a raise. CAP answers one question — *may another review round be
      opened without Step 4.3?* — so only a row whose action opens one reads it.
 5. **RETRIES** — the `BLOCKED` phase lines of one kind recorded since the last line of
@@ -213,9 +215,11 @@ a cap ends in).
 
 **Group D — PHASE `VERDICT`**, over verdict × FRESH × CAP; `—` marks an axis the row
 does not read, because its action opens no round. Before S9 or S11 acts on a `CURRENT`
-verdict: a caller's decided-alone record of the cap (librarian-mode: a `decided:` line of
-class `cap`) or a `findings: carried` block recorded after the last verdict means Step 4.3
-already ran: take its action, write nothing new.
+verdict: a decided-alone record of the cap (librarian-mode: a `decided:` line of class
+`cap`), a budget waiver's `decided:` line of class `spend` (authority `answer 176`,
+standalone too: `bindings.md` § Spend budget, The Done-alone line) or a `findings:
+carried` block recorded after the last verdict means Step 4.3 already ran: take its action
+— for the waiver, the round it opens — and write nothing new.
 
 | verdict | FRESH | CAP | State | The single next action |
 |---|---|---|---|---|
