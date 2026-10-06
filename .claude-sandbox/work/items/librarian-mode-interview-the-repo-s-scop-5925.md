@@ -109,3 +109,7 @@ decision 155: May the librarian write the scope block you confirm straight into 
 answer 153: 153a (2026-10-06T01:37Z, chat; read as: (a) Systems:, Observes:, Access:, Not owned:)
 answer 154: 154a (2026-10-06T01:37Z, chat; read as: (a) always one numbered decision on a drafted block, after the opt-in)
 answer 155: 155a (2026-10-06T01:37Z, chat; read as: (a) extend the transcription exception to the exact confirmed block, guarded)
+target: full librarian-mode-interview-the-repo-s-scop-5925 /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude/worktrees/librarian-mode-interview-the-repo-s-scop-5925
+budget: 2026-10-06T01:44Z build $22 — default other build
+dispatch: implementer opus medium — build (plan CLEAR r3, series 00-02; answers 153 a, 154 a, 155 a; carried 21, 22)
+agent: implementer a43502b67a4ba3d10 round 1
