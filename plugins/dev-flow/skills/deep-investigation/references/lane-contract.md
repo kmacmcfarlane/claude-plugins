@@ -4,15 +4,26 @@ Loaded from `deep-investigation` Step 4. The blocks below go **verbatim** into t
 and **verbatim** into every lane prompt. A lane cannot read the strategy doc's other sections and
 should not be asked to — paste, do not reference.
 
+Lanes run as the `research-lane` agent. Its body carries the findings-file shape, the evidence
+rules, and the security and privacy rules, so every lane loads them by construction; they are
+not pasted here. The blocks below add what is specific to a fan-out.
+
 ## The output contract (verbatim, every lane)
 
-> Write exactly one file: `<series>/findings/<lane-id>.md`, ≤300 lines, structured:
+> Write exactly one file: `<staging>/findings/<lane-id>.md` — the run's staging area in the
+> orchestrator's scratchpad, never a path in the series or any other tracked tree; the
+> orchestrator lands it after the scan and the verifier. ≤300 lines, in your agent's
+> findings-file shape:
 >
 > ```
+> ---
+> lane, run, date, sources, confidence   — frontmatter keys, as your agent body gives them
+> ---
 > # <lane title>
 > ## TL;DR            — ≤10 bullets, the findings that should survive even if nothing else is read
 > ## Findings         — the evidence; web lanes cite URLs, local lanes cite repo-relative paths
 > ## Implications     — concrete consequences for <the thing being designed>, ranked
+> ## Could not verify
 > ## Open questions
 > ## Sources
 > ```
@@ -28,7 +39,10 @@ should not be asked to — paste, do not reference.
 Why each clause is there:
 
 - **Exactly one file, fixed sections.** Thirteen files of one shape are synthesizable in a
-  single pass; thirteen shapes are not.
+  single pass; thirteen shapes are not. The shape is the `research-lane` agent's, so a lane
+  never sees two.
+- **Staging, not the series.** A findings file is drafted from fetched text. It reaches
+  `<series>/findings/` only through `deep-investigation` Step 6.5's scan and verifier.
 - **≤300 lines.** The cap is what makes the synthesis fit in one context. In the exemplar run
   nothing exceeded it badly and one file hit exactly 300 — the cap binds without truncating.
 - **Ranked implications.** Unranked findings push the ranking work onto the synthesis, which is
@@ -69,10 +83,15 @@ third lane was already researching.
 
 Where a lane's work rests on an earlier lane's, say so explicitly in the prompt:
 
-> Read `<series>/findings/a1-log-toolkit.md` first, and use the scripts in `<series>/tools/`
-> per its mining plan. Validate by sampling before quoting any of its raw counts onward:
-> hand-classify ~50 records, report per-signal precision, and give corrected figures with the
-> raw ones beside them.
+> Read `<staging>/findings/a1-log-toolkit.md` first, and use the scripts in
+> `<staging>/tools/` per its mining plan. Validate by sampling before quoting any of its raw
+> counts onward: hand-classify ~50 records, report per-signal precision, and give corrected
+> figures with the raw ones beside them.
+
+A toolkit lane's deliverables name `<staging>/tools/` as where its scripts go. A mining lane
+that runs them launches only after the toolkit gate has passed (`deep-investigation` Step 4),
+and no lane is given an earlier lane's file to read before the scan floor has run over it
+(`security-gate.md` § Before a lane reads another lane's file).
 
 This produced the exemplar run's best findings — including a later lane resolving an open
 question an earlier one had left standing — and its single most design-relevant empirical
@@ -92,12 +111,15 @@ Deliverables:
 
 Siblings: <territory line>
 
-<the output contract, verbatim>
+<the output contract, verbatim, with <staging> filled in>
+
+Write your file to: <staging>/findings/<lane-id>.md
+Run slug for your frontmatter: <series-slug>
 
 <the privacy rule, verbatim — only if the corpus is sensitive>
 ```
 
-Launch with `Agent` as the `research` skill's `references/intensity-and-routing.md`
-§ Dispatches outside the profiles routes these lanes, `model:` on every call set to the run's
-cheap lane model, each dispatch recorded per that file's § Recording, all of a wave's lanes in
-one message so they run concurrently.
+Launch with `Agent`, `subagent_type: "dev-flow:research-lane"` (the bare name under another
+prefix), as the `research` skill's `references/intensity-and-routing.md` § Profiles routes
+these lanes, `model:` on every call set to the run's cheap lane model, each dispatch recorded
+per that file's § Recording, all of a wave's lanes in one message so they run concurrently.

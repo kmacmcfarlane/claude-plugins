@@ -180,9 +180,9 @@ says. `plugins/dev-flow/tests/test_agents.py` holds every row to its file.
 
 | Agent | Pin: model / effort | Dispatched when |
 |---|---|---|
-| `research-lane` | sonnet / medium; `model: opus` on the call for a later-round lane that closes gap condition 4, or for a lane the invocation names a stronger model for; `model: opus` for the adversarial lane when § Below the quota reserve or § Fallback steps it down | every lane of `research`, `research-deep` and `research-refine`; every `deep-investigation` lane once item 1ffd launches them on this file (until then, § Dispatches outside the profiles) |
+| `research-lane` | sonnet / medium; `model: opus` on the call for a later-round lane that closes gap condition 4, or for a lane the invocation names a stronger model for; `model: opus` for the adversarial lane when § Below the quota reserve or § Fallback steps it down | every lane of `research`, `research-deep`, `research-refine` and `deep-investigation` |
 | `research-lane-deep` | opus / high | the adversarial lane (`a<n>-…`) of an `exhaustive` run, in round 2 (`research-deep` Step 5) |
-| `research-verifier` | sonnet / low | every verification: a quick run written to disk (sample 4), `standard` (12), `deep` (20), `exhaustive` (30), and a re-verify after a clean-up; and every script review at the toolkit gate (`run-record.md` § The toolkit gate) |
+| `research-verifier` | sonnet / low | every verification: a quick run written to disk (sample 4), `standard` (12), `deep` (20), `exhaustive` (30), a `deep-investigation` run (20), and a re-verify after a clean-up; and every script review at the toolkit gate (`run-record.md` § The toolkit gate) |
 | `scout` | sonnet / medium; `model: opus` on the call when the invocation names a stronger model | each `chain-of-verification` Step 4 batch: codebase, general knowledge, or one of each in mixed mode, at 5-8 questions a batch |
 
 - **Signals.** Every signal a row names is one the run can check: the preset, the round,
@@ -224,11 +224,10 @@ prompts: prompts get paraphrased, frontmatter does not.
 |---|---|---|---|
 | Orchestrator, recon, the quick-run answer | this session | the session's | no dispatch |
 | Synthesis fork (`research` Step 9; `research-deep` Step 9) | `general-purpose`, `model:` the session's own tier, named (`sonnet`, `opus` or `fable`) | `inherit` | the orchestrator's own pass, moved to a fork only for context room; no file pins the orchestrator's effort, and the fork must keep it |
-| `deep-investigation` lanes, until item 1ffd lands | `general-purpose`, `model:` the lane model from its Step 1 (default `sonnet`, the `research-lane` row) | `inherit` | `research-lane`'s body forbids the tracked `<series>/findings/` path these lanes write today; 1ffd moves them to staging and onto `research-lane`, and deletes this row. Until then these lanes are routed by model and recorded, but not effort-pinned |
 | POC break-out (`deep-investigation` Step 8.4) | not routed here | — | each POC is an `investigate`-format spec, which is build work: it leaves the run and is carried by `dev-cycle` or `implement`, under their own routing. The run records no dispatch for it; its record ends at the synthesis |
 | `research-prune` | — | — | dispatches nothing |
 
-Both `general-purpose` rows are recorded with effort `inherit` (§ Recording).
+The `general-purpose` row is recorded with effort `inherit` (§ Recording).
 
 ## The work item
 
@@ -345,7 +344,7 @@ At the run's report (`research` Step 11, `deep-investigation` Step 8,
 | `DONE` / `DONE_WITH_CONCERNS` | `$WI done <id> --note "<run> <STATUS>: <n> lanes, <n> rounds, verifier <gate> <supported>/<sampled>; <destination>"` |
 | `HELD` | `$WI block <id> "held: security concern; <held path>"` |
 | `BLOCKED` | `$WI block <id> "<the reason, in your words>"` |
-| `deep-investigation` done | `$WI done <id> --note "deep investigation: <n> lanes, <n> waves; <series path>"` |
+| `deep-investigation` done | `$WI done <id> --note "deep investigation: <n> lanes, <n> waves, verifier <gate> <supported>/<sampled>; <series path>"`, plus `; held <lane ids> at <held path>` when its Step 6.5 held any |
 | `chain-of-verification` done | `$WI done <id> --note "CoVe <VERIFIED\|CORRECTED\|PARTIAL>: <n> claims checked, <consistent>/<contradicted>/<unverified>; <n> batches"` |
 
 A run that stops mid-way leaves its item `doing`, and the stale claim shows in `wi next`. A
@@ -387,10 +386,10 @@ dispatch: <role> <model> <effort> — <signal>
 | `<role>` | `research-lane` (both lane files), `research-verifier`, `scout` or `synthesis` |
 | `<model>` | the per-call model |
 | `<effort>` | the dispatched file's pin, so `research-lane high` is `research-lane-deep`; or `inherit` for a `general-purpose` dispatch |
-| `<signal>` | the preset, round and lane id; or the gap condition, the sample, `script review <toolkit lane id>`, or the fallback or step-down reason |
+| `<signal>` | the preset, round and lane id (`deep-investigation`: its wave and lane id); or the gap condition, the sample, `script review <toolkit lane id>`, or the fallback or step-down reason |
 
 **As each call returns its agent id**, append `agent: <role> <id> round <n>`, where `<n>` is
-a lane's run round (1-3), the verifier's pass (1, then 2 on a re-verify after a clean-up),
+a lane's run round (1-3; a `deep-investigation` lane's wave), the verifier's pass (1, then 2 on a re-verify after a clean-up),
 1 for the fork, 1 for a `chain-of-verification` batch, and for a script review at the
 toolkit gate the round of the toolkit lane it reviews. A round's lanes launch in one
 message: write all their `dispatch:` lines in one append before it, then their `agent:`
@@ -404,7 +403,8 @@ dispatch: research-lane opus high — adversarial (exhaustive) round 2 a1-break-
 dispatch: research-verifier sonnet low — verify sample 30
 dispatch: research-verifier sonnet low — script review l1-log-toolkit
 dispatch: synthesis opus inherit — fork (findings over 2,500 lines)
-dispatch: research-lane sonnet inherit — deep-investigation lane b2 wave 1; general-purpose until deep-investigation parity
+dispatch: research-lane sonnet medium — deep-investigation wave 1 b2-landscape
+dispatch: research-verifier sonnet low — deep-investigation verify sample 20
 dispatch: scout sonnet medium — cove general batch 1 of 2
 dispatch: research-lane opus medium — adversarial (exhaustive) round 2 a1-break-answer; dev-flow:research-lane-deep not loaded
 ```
