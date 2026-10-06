@@ -27,3 +27,11 @@ target: full budget-rule-quota-aware-asks-answer-176-20f5 /home/rt/work/src/gith
 budget: 2026-10-06T19:28Z build $22 — default other build
 dispatch: implementer opus medium — build (a rule change in dev-cycle and librarian-mode)
 agent: implementer ae29d67e84d400eb2 round 1
+return: implementer DONE 2a742a2 (7 files; quota-aware rule in bindings.md § Spend budget; prohibition in bindings, agent-brief, review-brief, fix-loop, a SKILL red flag; open: standalone Step 6 pointer, fable-pin reading, resume.md CAP wording, standalone overrun record)
+changed:
+  plugins/dev-flow/skills/dev-cycle/references/bindings.md — below-50% exception; Never in a brief; Done-alone line
+  plugins/dev-flow/skills/dev-cycle/SKILL.md — Step 4.3 clause; Red flag
+  plugins/dev-flow/skills/dev-cycle/references/{agent-brief,review-brief,fix-loop}.md — the prohibition
+  plugins/dev-flow/skills/librarian-mode/SKILL.md, references/decide-alone.md — decision channel and spend row
+dispatch: reviewer opus high — review round 1
+agent: reviewer a0bb574eb94a8b64e round 1
