@@ -64,3 +64,8 @@ decided: record-lines.md joins Files in scope (finding C) — class: scope
 cost: 2026-10-06T20:02Z build $6.14 of $22 after review 2 — must-fix 1 — prices 2
 dispatch: implementer opus medium — resume (fix round 2)
 agent: implementer ae29d67e84d400eb2 round 3
+return: implementer DONE 19e3a05 (A-D fixed; record-lines.md decided: entry; resume rider list)
+changed:
+  plugins/dev-flow/skills/dev-cycle/references/{resume.md, record-lines.md, bindings.md} — round 2 fixes
+dispatch: reviewer opus high — resume (review round 3)
+agent: reviewer a0bb574eb94a8b64e round 3
