@@ -47,3 +47,9 @@ decided: resume.md joins Files in scope for this item — the change made its st
 cost: 2026-10-06T19:50Z build $3.62 of $22 after review 1 — must-fix 1 — prices 2
 dispatch: implementer opus medium — resume (fix round 1)
 agent: implementer ae29d67e84d400eb2 round 2
+return: implementer DONE 718bedd (1-6 fixed; resume.md CAP and Group D updated; standalone waiver recorded as a decided: line; open: record-lines.md does not list decided:)
+changed:
+  plugins/dev-flow/skills/dev-cycle/references/resume.md — CAP waiver, Group D spend line
+  plugins/dev-flow/skills/dev-cycle/{SKILL.md, references/bindings.md}, librarian-mode/references/decide-alone.md — round 1 fixes
+dispatch: reviewer opus high — resume (review round 2)
+agent: reviewer a0bb574eb94a8b64e round 2
