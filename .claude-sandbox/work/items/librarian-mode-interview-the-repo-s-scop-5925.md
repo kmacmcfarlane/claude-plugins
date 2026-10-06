@@ -113,3 +113,11 @@ target: full librarian-mode-interview-the-repo-s-scop-5925 /home/rt/work/src/git
 budget: 2026-10-06T01:44Z build $22 — default other build
 dispatch: implementer opus medium — build (plan CLEAR r3, series 00-02; answers 153 a, 154 a, 155 a; carried 21, 22)
 agent: implementer a43502b67a4ba3d10 round 1
+return: implementer DONE fb15146
+changed:
+  plugins/dev-flow/skills/librarian-mode/references/opt-in.md — § When it runs rows; § The responsibility lines; § The responsibility interview
+  plugins/dev-flow/skills/librarian-mode/SKILL.md — Critical 1 and 3, Usage status, Rehydrate step 2, expected output, Red flags carve-out
+  plugins/dev-flow/skills/librarian-mode/references/decisions.md — binding rendering the last responsibility draft: block beneath the card
+  plugins/dev-flow/skills/librarian-mode/references/first-start.md — interview follows a fresh opt-in in the same start's Idle turn
+dispatch: reviewer opus high — review round 1
+agent: reviewer a83d30ab780e61e4c round 1
