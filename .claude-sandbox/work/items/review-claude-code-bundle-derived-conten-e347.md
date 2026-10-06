@@ -102,3 +102,7 @@ findings:
 cost: 2026-10-06T07:58Z plan $24.77 of $28 after review 3 — must-fix 1 — prices 2
 dispatch: planner opus high — resume (plan fix round 3)
 agent: planner a17bc769f2e8fbff8 round 4
+return: planner DONE /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude-sandbox/investigations/e347-bundle-derived-content (05_review-round-3.md; 1-3 and notes applied)
+baseline: 6a32e05643bf 00_inventory.md 5805bf0009fc 01_scrub-build.md e35451e07fc6 02_history-scrub.md 22bf553537f6 03_review-round-1.md fc9c1192c481 04_review-round-2.md 04d42f9f9d2f 05_review-round-3.md 
+dispatch: reviewer opus high — resume (plan review round 4)
+agent: reviewer a1a6bdd4c2725f74c round 4
