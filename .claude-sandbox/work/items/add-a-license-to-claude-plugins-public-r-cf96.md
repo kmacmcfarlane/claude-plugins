@@ -32,3 +32,20 @@ decision 162: Which license should claude-plugins carry? — options: (a) MIT [r
   (z) decide later — the repo stays public with no license
   rec: (a) · basis partial — permissive and minimal for a plugin kit; a license grants only what you own, so it does not cover the Claude Code bundle-derived passages, which the separate review (e347) handles
   unknown: whether you want the repo to stay public at all (a GitHub setting, outside my reach)
+note: 2026-10-06T04:07Z operator on 162, verbatim: "162 - what license am I using for the other projects? What's the TLDR of just using that one I'm already comfortable with? Are the specific reasons not to use that for this particular repo?" (read as: tell me — answered: the operator's own repos claude-kit, claude-sandbox, claude-analytics, claude-templates, checkpoint-sampler, image-dataset-tool carry GPL-3.0; claude-plugins began as the claude-kit plugin, GPL-3.0 there)
+decision 162: Which license should claude-plugins carry? — options: (a) MIT | (b) Apache-2.0 | (c) all rights reserved (source visible, no reuse granted) | (d) another (say it) | (e) GPL-3.0, as your other projects [recommended] | (z) decide later
+  raised: 2026-10-06T02:58Z
+  revised: 2026-10-06T04:07Z — option (e) added and the recommendation moved from (a) to (e) after the operator's question: their own repos use GPL-3.0 and this repo began as the claude-kit plugin (GPL-3.0)
+  what: the LICENSE file for this public repo (no license today, so legally nobody may reuse the code), copyright Kyle McFarlane 2026; sole author (1517 of 1517 commits)
+  why now: you asked for a license immediately; blocks: the license landing, minutes after you choose
+  why ask: your-call — the license is yours to grant
+  context: you asked which license your other projects use · you pick this repo's
+  stakes: one-way for any copy taken under it; narrow otherwise
+  (a) MIT — anyone may reuse, even in closed projects, keeping the notice — undo: relicense future versions only — who: anyone who copies
+  (b) Apache-2.0 — like MIT plus a patent grant; longer — undo: future versions only — who: anyone who copies
+  (c) all rights reserved — readable, not reusable — undo: grant one later — who: nobody gains rights
+  (d) another — the build uses yours
+  (e) GPL-3.0 — anyone may use and change it; whoever distributes a changed copy must share it under GPL-3.0 too; matches claude-kit, claude-sandbox and the rest — undo: future versions only — who: anyone who redistributes changes
+  (z) decide later — the repo stays public with no license
+  rec: (e) · basis strong — your existing choice across your projects, and this code came out of claude-kit under it; the one cost is that anyone who pastes a changed skill into a project they distribute must license that under GPL too
+  unknown: none
