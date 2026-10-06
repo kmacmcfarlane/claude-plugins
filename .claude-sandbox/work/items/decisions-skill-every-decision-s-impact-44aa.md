@@ -113,3 +113,4 @@ verdict: CLEAR round 3 at 36876c3
 cost: 2026-10-06T06:57Z build $15.62 of $22 after review 3 — must-fix 0 — prices 2
 landed: 4f7d962
 - 2026-10-06 done: 4f7d962
+correction: 2026-10-06 the 44aa landing was pushed (514f88a..46b67e7) before its Report was printed — the second time today; from here the Report text is written before the push call in the same turn
