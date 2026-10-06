@@ -70,3 +70,9 @@ changed:
 decided: the new operator-interaction test suite joins the ## Librarian Checks in this change (a Check that never runs protects nothing; an edit to the section, done here as a work item through the cycle); the work-review impact display and the README/plugin.json wording are filed as follow-ups — class: scope
 dispatch: implementer opus high — resume (add the Check line before review)
 agent: implementer-critical abcdb2f429201bdfa round 1
+return: implementer-critical DONE 892d9e1 (Check line added; plugin.json/marketplace.json/README decisions row name impact)
+changed:
+  CLAUDE.md — ## Librarian Checks gains the operator-interaction suite
+  plugins/operator-interaction/.claude-plugin/plugin.json, .claude-plugin/marketplace.json, README.md — one clause naming impact
+dispatch: reviewer opus high — review round 1
+agent: reviewer ae28144ce8f58ef99 round 1
