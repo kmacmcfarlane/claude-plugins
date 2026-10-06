@@ -2,17 +2,19 @@
 
 The page (`assets/index.html`) renders whatever `cards.json` beside it holds, and writes one
 answer document per decision to the artifact's `db`. This file is the schema for both.
-`assets/cards.example.json` is a complete, invented example: three decisions, one ⚠
-one-way (with its per-option sections), one with no recommendation, one reference to a
-decision not on the page.
+`assets/cards.example.json` is a complete, invented example: three decisions, each with its
+impact, one ⚠ one-way (with its Impact table rows), one with no recommendation, one reference
+to a decision not on the page.
 
 **The page checks the data before it renders anything** and, when a check fails, shows *The
 decisions can't be shown: cards.json is not valid* with the first problems found, and renders
 nothing else. It refuses: an `n` that is not a whole number or is used twice; an option letter
 that is not a single `a`–`z`; options out of letter order or not ending in `z`; a `rec` that is
 not one of the card's letters (or null without `norec`); a missing required field; an empty
-`rev`; a `basis` word outside the four; a `follow` list other than the fixed
-six; a `refs` key that is not a number; a ⚠ card without its `blocks`. Every text field is
+`rev`; an `impact` without its effect, wait, reach and undo as text; a `basis` word outside
+the four; a `follow` list other than the fixed six; a `refs` key that is not a number; a ⚠
+card without its `blocks`; a `blocks` entry that is not an option letter other than `z`, or
+lacks its text. Every text field is
 escaped wherever it reaches the page, attributes and ids included.
 
 Text fields are plain text: the page escapes them. Two marks are rendered:
@@ -44,6 +46,7 @@ Each field maps to a part of the `decisions` skill's card (its `references/rende
 | `L` | string | yes | its group: a `layers` key | groups the map and the cards |
 | `t` | string | yes | the short name, 2–6 words, a noun phrase (it is what a slug shows) | title |
 | `rev` | string | yes | the card's revision: a label that changes whenever the card does (a `tell me` answer added, a re-ask, a reframe kept under its number). An ISO-8601 UTC time when you write it (`2026-01-12T09:30:00Z`) is the convention, but it is only ever compared for equality, never as a time | not shown; the page copies it into each answer, and it decides which answers count (below) |
+| `impact` | object | yes | the **Impact:** line (the `decisions` skill's `references/rendering.md` § Impact): `effect` (what changes if the recommendation is taken; with no recommendation, each option's in a few words), `wait` (what waiting costs, what it blocks), `reach` (who or what is affected), `undo` (how it is reversed, or one-way), each non-empty text; `cost` optional. Copied from the caller's stored Impact line where it keeps one, never composed again | `effect` at tag size (after an arrow) in the map, on the closed card and in the popup; the whole line flat at the top of the open card; `wait` as the Impact table's Wait row |
 | `tldr` | array of strings | yes | 2–3 fragment bullets: the decision at a glance | flat |
 | `context` | string | no | **Context:** where the operator left it · what they decide now | flat |
 | `ifleft` | string | no | **If left:** an ask for another round: each leftover finding and what it would break | flat |
@@ -53,10 +56,9 @@ Each field maps to a part of the `decisions` skill's card (its `references/rende
 | `why` | string | yes | **Why now:** and what it blocks | Background fold |
 | `whyask` | string | yes | **Why ask:** what would go wrong if the recommendation were taken alone | Background fold |
 | `class` | string | no | the class that opens Why ask, when the caller names classes | a pill, and the Background fold |
-| `stakes` | string | yes | reversibility and breadth, as the stakes slot | Stakes fold |
 | `warn` | boolean | no | `true` for ⚠ one-way (one-way and high impact) | a ⚠ pill |
-| `blocks` | object | when `warn` | the block's section per option: keyed by letter, every option but `z`, each `{happens, undo, who}` — *What happens*, *Undo* (plainly: it decides the read-back), *Who is affected* | under each option in Options in full, which opens unfolded on a ⚠ card |
-| `dep` | string | no | what it depends on, usually slugs with the answer that matters (`[[41]] (b)`) | summary line, Stakes fold |
+| `blocks` | object | when `warn`; optional otherwise | the block's Impact table row per option: keyed by letter, every option but `z` on a ⚠ card (any of them otherwise), each `{happens, undo, who, cost}` — the Effect, Undo (plainly: it decides the read-back) and Reach cells, and Cost, optional | the Impact table in Options in full, which opens unfolded on a ⚠ card; an option with no entry shows its `impact` as the Effect and `—` in the rest |
+| `dep` | string | no | what it depends on, usually slugs with the answer that matters (`[[41]] (b)`) | summary line, Dependencies fold |
 | `rec` | string or null | yes | the recommended option's letter; `null` with no recommendation | the one bold option, the rec line |
 | `norec` | string | when `rec` is null | the labelled exception: `your preference — no recommendation`, or `no recommendation — outside my authority` and why | in place of the rec |
 | `o` | array | yes | the options, in letter order, `(z)` decide later last: `[letter, full text, impact, title, one line]` each | see below |
@@ -74,12 +76,16 @@ An option `[letter, full, impact, title, oneLine]`:
 - `full` and `impact` — the option and its consequence as the card states them; shown in the
   Options in full fold.
 
-**Size.** The flat part of a card (title, TLDR, context, option titles and one-liners, rec
-line) stays near 150 words; the folds carry the rest.
+**Size.** The flat part of a card (title, Impact line, TLDR, context, option titles and
+one-liners, rec line) stays near 150 words; the folds carry the rest. The `effect` stays
+under about 10 words: it is shown alone, at tag size, in the map.
 
-**What the page adds.** It shows the context cue on every card that has one: a page is read
-away from the conversation, so its reader is treated as cold. A `⚠ one-way` card is the
-decisions skill's block: the card's essentials plus a section per option. It gets no special
+**What the page adds.** Every view shows the impact: the map and a closed card the effect, an
+open card the Impact line, and its Options in full fold the Impact table (a row per option,
+then the Wait row; Effect, Reach, Undo, Cost). It shows the context cue on every card that
+has one: a page is read away from the conversation, so its reader is treated as cold. A
+`⚠ one-way` card is the decisions skill's block: the card's essentials plus its Impact table,
+unfolded. An older `stakes` field is ignored: Undo and Reach carry it. It gets no special
 control: the read-back of a one-way pick happens in chat, when the answers are read back.
 
 ## The answers collection

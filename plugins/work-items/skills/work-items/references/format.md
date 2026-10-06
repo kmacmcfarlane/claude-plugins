@@ -394,11 +394,14 @@ cell><TAB>text`: the title cell is fourth, so the free text stays last;
 `grooming` and `decisions`. It exits 2 when nothing awaits the operator.
 
 **Card lines.** A caller may store the decision's card as indented lines
-under its headline (`raised:`, `what:`, `why now:`, `why ask:`, …; the
-librarian-mode convention). Indented, they match neither marker, and `wi`
-reads none of them except the first `raised:` per N (the decision's age).
-`why ask: <class> — <reason>` is one physical line: why the question came
-to the operator, opening with its class.
+under its headline (`raised:`, `what:`, `why now:`, `why ask:`,
+`context:`, `impact:`, …; the librarian-mode convention). Indented, they
+match neither marker, and `wi` reads none of them except the first
+`raised:` per N (the decision's age). `why ask: <class> — <reason>` is one
+physical line: why the question came to the operator, opening with its
+class. `impact: → <effect> · later: <wait> · reach: <reach> · undo:
+<undo>` is one physical line too: what the decision changes, written when
+it is raised, which a reader of the store shows beside the headline.
 
 `wi prime` also shows a `HOLD <n>: <id> (<title cell>) …` line, first under
 the header, for open items tagged `hold` — an operator hold gates what may

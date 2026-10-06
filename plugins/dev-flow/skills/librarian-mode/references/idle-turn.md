@@ -54,9 +54,9 @@ stack, since named rows no longer fit side by side:
 hold: <plain name> (<tag>) — <scope>, until <end condition> ("<operator's words>"); holds <plain names (tags)>
 
 Groom
-| item                       | why                                  |
-| flaky worktree test (ab12) | decision 46: <one line> — rec (b)    |
-| nightly export move (ef56) | blocked: operator review             |
+| item                       | why                                             |
+| flaky worktree test (ab12) | decision 46: <one line> — rec (b) → <effect>    |
+| nightly export move (ef56) | blocked: operator review                        |
 
 Work
 | item                      | P | next                              |
@@ -77,8 +77,13 @@ Work
   recommendation as the headline names it — `[recommended]` or an older mark, or a
   preference or authority label, read as the `work-items` skill's format reference,
   § Operator questions, lists them — one row per decision, never several folded into one
-  row. A deferred one also shows its last `wake N:`, and stays a Groom row until the wake
-  comes.
+  row. With the `operator-interaction:decisions` skill loaded, the row ends with the
+  decision's effect at that skill's tag size — `→ <effect>`, under about 10 words, each
+  option's in a few words when there is no recommendation — read from the `impact:` line
+  of the last card stored for N (`decisions.md` § What the store records), since
+  `wi needs-input` prints the headline only; a card without one is backfilled as that
+  section says before the row is printed. A deferred one also shows its last `wake N:`,
+  and stays a Groom row until the wake comes.
   With the `operator-interaction:decisions` skill loaded, a decision is put to the operator
   in full only when `decisions.md` § The Report's item 4 selects it (raised since the last
   Report, its wake come, not yet seen, after Rehydrate, a ⚠ one on first showing or to a

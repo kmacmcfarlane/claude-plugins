@@ -12,10 +12,14 @@ Follow that tool's own instructions for creating and filling it (load its skill 
 first); this file sets only the layout.
 
 - One heading per group, in list order; under it, one section per decision, headed with its
-  number and short name: `41 · Docs build home`.
-- In each section, the card's essentials as text: the TLDR bullets, **Context:** when there
-  is one, then **What:**, **Why now:**, **Why ask:** (class first), **Stakes:** (⚠ one-way
-  when it is), and the rec line `Rec (b) · basis strong — reason · unknown: …`.
+  number, short name and effect at tag size: `41 · Docs build home → publishing no longer
+  depends on one laptop`.
+- In each section, the card's essentials as text: the **Impact:** line first
+  (`→ effect · later: wait · reach: … · undo: …`, ⚠ one-way before it when it is), then the
+  TLDR bullets, **Context:** when there is one, **What:**, **Why now:**, **Why ask:** (class
+  first), and the rec line `Rec (b) · basis strong — reason · unknown: …`. A card with
+  `blocks` also gets the Impact table: a row per option, then the Wait row; Effect, Reach,
+  Undo, Cost.
 - Then a tick box per option, in letter order, the recommended one in bold, each with its
   impact: `☐ **(b) Publish from CI** — removes the one-machine dependency`.
 - Then a tick box per follow-up, with its placeholder: `☐ later [when]`, `☐ tell me [what]`,

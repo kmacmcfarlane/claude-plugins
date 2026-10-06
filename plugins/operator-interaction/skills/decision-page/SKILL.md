@@ -53,15 +53,20 @@ In a working directory (your scratchpad unless the caller names one): copy
   you change a card — an **Added:** line after `tell me`, a re-ask with what changed — give it
   a new `rev`: the page copies the `rev` into each answer, and answers given to the old one
   stop counting, on the page and in the read-back.
-- A ⚠ one-way decision carries `blocks`, its section per option (what happens, undo, who is
-  affected); a round ask carries `ifleft` and `roundcosts`; a status-quo default,
+- Every card carries `impact`, the decision's Impact line (effect, wait, reach, undo; the
+  `decisions` skill's `references/rendering.md` § Impact) — copied from the caller's stored
+  line where it keeps one — so every view on the page shows it: the effect in the map and on
+  a closed card, the line on an open one, the table in its Options in full.
+- A ⚠ one-way decision carries `blocks`, its Impact table row per option (effect, reach,
+  undo, and cost); a round ask carries `ifleft` and `roundcosts`; a status-quo default,
   `ifunanswered`.
 - Every mention of another decision is a slug, `[[N]]`; a decision not on the page that a
   slug names gets a `refs` entry.
 - `follow` is copied from `assets/cards.example.json` as it stands.
 - Check before publishing that the file passes every check the schema lists (the page
   refuses a file that fails one, and says which): whole-number `n`, single `a`–`z` letters in
-  order ending `z`, a `rec` among them or null with `norec`, a non-empty `rev`, the required fields.
+  order ending `z`, a `rec` among them or null with `norec`, a non-empty `rev`, an `impact`
+  with its four facets, the required fields.
 
 ## Step 3: Publish
 

@@ -319,9 +319,10 @@ The reply is `answer N: <reply>`; on re-entry continue from the highest N (Rehyd
 3), else 1.
 
 With the `operator-interaction:decisions` skill loaded, the four lines stay, and each
-`decisions needed:` names only its decision numbers. One decisions block, written per that
-skill, is the **last thing in the turn** — after the push outcome, its `incoming:` lines and
-the team summary below. The stored card, the store lines per reply, the default wake (the next
+`decisions needed:` names its decision numbers, each with its effect at that skill's tag
+size, read from the stored card's `impact:` line: `46 (→ preview up in about 4 minutes)`.
+One decisions block, written per that skill, is the **last thing in the turn** — after the
+push outcome, its `incoming:` lines and the team summary below. The stored card, the store lines per reply, the default wake (the next
 Report) and the re-show after Rehydrate are in `references/decisions.md`.
 
 What was decided alone since the last Report goes in a **Done alone** group of `Done:`

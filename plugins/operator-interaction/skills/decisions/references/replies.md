@@ -60,8 +60,8 @@ Example 25 in `references/gallery.md` shows one.
 ## Reply types
 
 **Choose — `N: letter`, or a choice in words.** Act on it. On a **⚠ one-way decision**, when
-the **chosen option** is one-way — its *Undo* line says it cannot be undone, or only at real
-cost — first repeat the choice back and act only once the operator confirms. A *one-way,
+the **chosen option** is one-way — its Undo (its cell in the block's Impact table) says it
+cannot be undone, or only at real cost — first repeat the choice back and act only once the operator confirms. A *one-way,
 narrow* card is answered like any card: its narrowness is why it is not ⚠.
 
 *Read as: 43 → (a) remove `/v1/export` on Thursday. That can't be undone for the partners who
@@ -96,8 +96,8 @@ restates what happens at the deadline:
 from 16:15); if the backup is still paused then, the half-written snapshot is lost and the
 backup starts over (about 3 hours). Keep that, or pick a time before 17:45?*
 
-When the wake fires, re-show the decision with what changed while it waited
-(`references/rendering.md` § Re-show with what changed). A deferral nobody wakes becomes a
+When the wake fires, re-show the decision with what changed while it waited, and whether its
+impact changed (`references/rendering.md` § Re-show with what changed). A deferral nobody wakes becomes a
 default by omission; every deferral has a wake. Something must evaluate that wake — anyone
 can check a time wake, but an event wake needs whoever watches for the event (your own
 session for your own work; for other sessions, a cross-session collector, when one exists) —
@@ -106,7 +106,8 @@ stays a list line showing its wake — except on a cold re-show, where it is a c
 with its wake (`references/rendering.md` § Re-show with what changed).
 
 **`tell me [what]` — more context.** Answer under the **same number** with an **Added:** line
-and only the lines the fact changes — an option's impact, the rec line when it moves. The card
+and only the lines the fact changes — the Impact line, an option's impact, the rec line when
+it moves. The card
 itself is one scroll up; do not send it again. Re-render the whole card only when the options
 or the recommendation change, and then say which and why. Near-zero cost when you already
 know the fact; if finding it needs real work, say so and offer `dig into` instead.

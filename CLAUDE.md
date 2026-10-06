@@ -38,6 +38,7 @@ plugins/
       decisions/       # references/{worksheet,rendering,replies,evidence-basis,rationale,gallery}.md
       plain-names/     # plain names for what agents mention, the id a trailing tag
       decision-page/   # a set of decisions as an answer page: assets/{index.html,cards.example.json}, references/{cards-schema,fallback}.md
+    tests/             # test_impact.py: the decision page's impact check and renderers (under node), and the decisions gallery's impact at every size
   ralph/               # Unattended agent loops over a backlog
     skills/
       {backlog-yaml,backlog-entry,backlog-grooming}/

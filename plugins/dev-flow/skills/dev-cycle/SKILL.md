@@ -420,7 +420,8 @@ When the session lists `operator-interaction:plain-names`, load it before writin
 Report; `changed:` names the item by it.
 
 With the `operator-interaction:decisions` skill in the session, `decisions needed:` names
-the numbers, and the decisions follow the four lines, written per that skill
+the numbers, each with its effect at that skill's tag size (`46 (→ preview up in about 4
+minutes)`), and the decisions follow the four lines, written per that skill
 (`references/bindings.md` § Decisions) — last in the message, after any push outcome and
 team summary.
 

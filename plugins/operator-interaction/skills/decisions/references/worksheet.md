@@ -1,8 +1,8 @@
 # The worksheet
 
 Fill this in for each decision before you write it. You juggle the dimensions; the operator
-sees only what they produce: a level, an answer mode, a place in the order, a basis word and a
-card shape. Each group answers one question and sets one thing — merging them into one vague
+sees only what they produce: a level, an answer mode, a place in the order, a basis word, a
+card shape and the Impact line (§ The Impact line). Each group answers one question and sets one thing — merging them into one vague
 "type" of decision is what loses information.
 
 ## A — Who is reading, and how warm are they? → how much to re-explain
@@ -38,8 +38,10 @@ observable measures it today; leave it alone rather than guess.
 Judge **reversibility and blast radius together**; never add them up as two scores. A
 decision is wide when any of its options is. A decision
 that is one-way *and* wide (or relied on) is **⚠ one-way**; how it is shown and answered is
-SKILL.md § Critical. One-way but narrow is a card marked *one-way, narrow*. Two-way and narrow
-is the fast tier: a card, or a line when the line-only rule holds.
+SKILL.md § Critical. One-way but narrow is a card with no ⚠, its Undo saying it cannot be
+undone. Two-way and narrow is the fast tier: a card, or a line when the line-only rule holds.
+The operator never sees these words as a label: reversibility is shown as the **Undo** facet
+(how, or why not) and blast radius as **Reach** (who or what), § The Impact line.
 
 ## C — How well is it understood? → what evidence is shown, and "investigate first"
 
@@ -74,6 +76,9 @@ Two clocks are in play, and each sets something different:
 
 Age — time since it was raised — is shown on the list line and breaks ties, nothing more.
 
+What it blocks and what waiting costs are shown as the **Wait** facet, on every list line and
+up (§ The Impact line).
+
 ## E — What kind of ask is it? → the card's shape
 
 | Kind | Shape |
@@ -106,3 +111,19 @@ after; otherwise it is asked.
 |---|---|---|
 | Class | one of the caller's class names, or none when the caller names none | the caller's rules; you pick at birth |
 | Why ask | what would go wrong if you took your recommendation alone; with no recommendation, why the call is not yours | you |
+
+## The Impact line — from the groups above
+
+Fill it last, from what the groups produced, in plain words for the operator. The facets and
+how each view shows them are in `references/rendering.md` § Impact.
+
+| Facet | From | Who can supply it |
+|---|---|---|
+| Effect | what the recommended option does to the world (with no recommendation, each option's, in a few words) | you |
+| Wait | group D: what waiting costs, what it blocks, what happens at a deadline | you; a collector for other sessions |
+| Reach | group B's blast radius, named: the operator, sessions, which repos, the public | you, from what the change touches |
+| Undo | group B's reversibility, as how: *one edit*, *a hotfix release*, or *none — why* | you — say how you know |
+| Cost | time, money, quota, the operator's attention, per option | you; the caller's budget, when it keeps one |
+
+Write it when the decision is raised, and store it with the card where the caller keeps one,
+so every later view reads it instead of composing it again.

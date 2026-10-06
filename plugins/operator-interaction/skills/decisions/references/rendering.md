@@ -1,8 +1,8 @@
 # Rendering decisions
 
-Templates for the three levels, how several decisions share one message, the order, and the
-labels. Markdown only: **bold** titles and the recommended option, *italic* impacts and hint,
-`code` for reply words.
+The impact every view carries, the templates for each view (tag size, list line, card,
+block), how several decisions share one message, the order, and the labels. Markdown only:
+**bold** titles and the recommended option, *italic* impacts and hint, `code` for reply words.
 Terminals give no colour control; italics and code spans are the quiet tools.
 
 The examples below are **illustrative**: invented, generic, not about any real project.
@@ -13,22 +13,86 @@ The line-only rule, when a block is due, and what counts as seen are in SKILL.md
 they are not restated here. `expand` on a line gives a card, on a card a block. Detail is
 bought by stakes, never spent by default.
 
+## Impact
+
+Every view of a decision shows its impact, in one vocabulary of five facets, always in this
+order:
+
+| Facet | What it says | Written |
+|---|---|---|
+| **Effect** | what changes if the recommendation is taken | `→ effect` |
+| **Wait** | what waiting costs, and what it blocks | `later: …` |
+| **Reach** | who or what is affected: the operator, sessions, which repos, the public | `reach: …` |
+| **Undo** | how it is reversed, or that it is one-way and why | `undo: …` |
+| **Cost** | time, money, quota, the operator's attention | `cost: …` |
+
+The smallest view shows Effect; each larger view adds facets in that order:
+
+| View | Impact shown |
+|---|---|
+| Tag size | Effect |
+| List line | Effect · Wait |
+| Card | an **Impact:** line, Effect · Wait · Reach · Undo; each option's impact in the same order (effect · reach · undo, as each option needs) |
+| Block | the Impact table: a row per option, then a Wait row; columns Effect, Reach, Undo, Cost |
+
+- Plain words, about the world, for the operator. Effect is the recommended option's: what
+  happens if they say yes. At tag size it stands alone in under about 10 words.
+- **No recommendation:** the Effect slot shows each option's effect in a few words,
+  `→ *(a) matches the OS tools; (b) matches the bill*`, at every size.
+- **Undo replaces the old stakes words** (*reversible, narrow*, *one-way, narrow*): it says
+  how, *undo: one edit*, or why not, *undo: none — a deleted snapshot is gone*. The
+  ⚠ one-way label stays on a decision that is one-way *and* high impact; its Undo states the
+  one-way part.
+- **Wait absorbs the old *what it blocks* slot**: *later: the docs build stays blocked*. At a
+  deadline, it says what happens then.
+- **Cost** lives on the options and the block's table; the Impact line carries it only when
+  it is what the operator weighs.
+- A facet no record holds reads `not recorded`; a facet that does not apply, `—`. Never
+  invent one at render time.
+
+**The Impact line** is written when the decision is raised, one line:
+
+```
+→ <effect> · later: <wait> · reach: <reach> · undo: <undo>
+```
+
+When the caller keeps the card in a store, the line is stored with it, and every view reads
+it from there, a caller's tag-size views included, so the tightest view never has to open the
+options. A stored card without one is revised before it renders (§ Re-show with what
+changed, From the store).
+
+## Tag size
+
+The number and the Effect alone, after an arrow, for a caller's tightest views: a table row
+of open items, a report line that names decision numbers, a page's summary list.
+
+```
+N (→ effect)
+```
+
+*46 (→ preview up in about 4 minutes)* · with no recommendation, *45 (→ (a) OS units; (b)
+bill units)*. Where the caller's row already shows the question and the recommendation, the
+arrow and effect follow the recommendation: *decision 46: Retry the failed preview deploy? —
+rec (a) → preview up in about 4 minutes*.
+
 ## List line
 
 ```
-- **N Title as a question?** — rec **(x) short label** · *class* · *stakes* · basis **word** · *age, what it blocks, deadline*
+- **N Title as a question?** — rec **(x) short label** → *effect* · *later: wait* · *class* · basis **word** · *age, deadline*
 ```
 
-For a decision with no recommendation, the label takes the rec slot; the stakes and basis
-slots stay, since the floor needs them:
+For a decision with no recommendation, the label takes the rec slot and each option's effect
+the effect slot; the wait and basis slots stay, since the floor needs them:
 
 ```
-- **N Title as a question?** — *your preference, no rec* · *class* · *stakes* · basis **word** · *age, what it blocks*
+- **N Title as a question?** — *your preference, no rec* → *(a) effect; (b) effect* · *later: wait* · *class* · basis **word** · *age*
 ```
 
 - The number and title are bold together.
 - One line per decision, its own recommendation in its own rec slot: never a range or a
   group on one line (SKILL.md § Critical).
+- Effect and Wait are on every line: *(line only)*, *(shown before)* and *(expand for the
+  card)* lines too.
 - A line for a named template may end with its fixed options, after the age slot (gallery
   example 5); they run in letter order and only the recommended one is bold.
 - An ask for another round carries its justification after the basis: *if left: what the
@@ -40,13 +104,15 @@ slots stay, since the floor needs them:
   after the basis: *why ask: what would go wrong if I took the recommendation alone*; on a
   round ask, its *if left* and *a round* stand in for it. A line whose card was shown carries
   the class alone; the card has the rest.
-- Stakes slot: *reversible, narrow* · *one-way, narrow* · ⚠ one-way (for Type 1; the ⚠ is
-  followed by a space). The preference and authority labels take the rec slot (above); a
-  template's label, *template: name*, has its own slot just before the class slot (just
-  before the stakes when there is no class).
-- A deadline is written as the absolute time in the operator's zone when you know it, with
-  the relative time and when you wrote it: *storage lease lapses ~17:45 (90 min from 16:15)*.
-  With the zone unknown, say which: *17:45 UTC*.
+- ⚠ slot: ⚠ one-way (one-way and high impact; the ⚠ is followed by a space), after the class
+  (after the wait when there is no class). A decision that is not ⚠ has no slot here; its
+  Undo, on the card, says how it is reversed. The preference and authority labels take the
+  rec slot (above); a template's label, *template: name*, has its own slot just before the
+  class slot (just before the ⚠ slot or the basis when there is no class).
+- A deadline stays on the line, in the age slot, written as the absolute time in the
+  operator's zone when you know it, with the relative time and when you wrote it: *storage
+  lease lapses ~17:45 (90 min from 16:15)*. With the zone unknown, say which: *17:45 UTC*.
+  The wait slot says what happens at it.
 - In a message where other decisions are rendered above the list, a line with nothing above
   it ends *(line only)*, so the operator knows `expand` exists for it. A line whose card was
   seen and is unchanged ends *(shown before)*; one held back by paging ends *(expand for the
@@ -54,26 +120,33 @@ slots stay, since the floor needs them:
 
 Example:
 
-- **42 Clear the docs build cache?** — rec **(a) clear it** · *template: cache reset* · *reversible, narrow* · basis **strong** · *why ask: clearing it drops the other branch's cached build too* · *10 min old, blocks the docs build* *(line only)*
+- **42 Clear the docs build cache?** — rec **(a) clear it** → *the docs build runs again* · *later: the docs build stays blocked* · *template: cache reset* · basis **strong** · *why ask: clearing it drops the other branch's cached build too* · *10 min old* *(line only)*
 
 ## Card
 
 ```
 **N — Title as a question?**
+**Impact:** → effect · later: wait · reach: who or what · undo: how, or one-way
 **What:** what is decided, in plain words; items by plain name, the id as a trailing tag; other ids glossed.
-**Why now:** why it is up, and what it blocks.
+**Why now:** why it is up now.
 **Why ask:** *class* — what would go wrong if I took the recommendation alone.
 **Context:** where you left it · what you decide now *(a cold reader only)*
-- (a) Option — *what happens if chosen*
-- **(b) Option** — *what happens if chosen*
+- (a) Option — *effect · reach · undo, as this option needs*
+- **(b) Option** — *effect · reach · undo*
 - (z) Decide later — *what waiting costs; at a deadline, what happens then*
 
 Rec **(b)** · basis **word** — *one-clause reason* · unknown: what isn't known, or none
 ```
 
-- One line per option, in letter order; its impact in italics after the dash. Only the
-  recommended option is bold — (b) above, in its own place, not moved first (SKILL.md
-  § Critical). With no recommendation, none is.
+- **Impact:** directly under the title, before **What:**, on every card: the Impact line
+  (§ Impact), read from the store when the caller keeps one. With no recommendation, its
+  arrow carries each option's effect in a few words.
+- **Why now:** says why it is up; what it blocks is the Impact line's *later:*, and need not
+  be said twice.
+- One line per option, in letter order; its impact in italics after the dash, in facet
+  order (effect, then reach and undo where that option needs them, and cost where it
+  matters). Only the recommended option is bold — (b) above, in its own place, not moved
+  first (SKILL.md § Critical). With no recommendation, none is.
 - **Why ask:** opens with the class in italics when the caller names classes; otherwise it
   is the reason alone. With no recommendation it says why the call is not yours. On an ask
   for another round it may point at the two lines below: *cap — the finding under If left*.
@@ -94,44 +167,41 @@ Rec **(b)** · basis **word** — *one-clause reason* · unknown: what isn't kno
 - When investigating could change the choice, add a priced option: (c) Investigate first —
   *about 15 minutes: read the access logs for other callers; could change the answer if …*
 - A small call gets a short card. Do not pad a two-way, narrow decision with sections it does
-  not need.
+  not need; its Impact line stays.
 
 ## Block
 
 ```
 **N — Title as a question?** ⚠ one-way
+
+| Impact | Effect | Reach | Undo | Cost |
+|---|---|---|---|---|
+| (a) Option | … | … | … (or: none, because …) | … |
+| **(b) Option** | … | … | … | … |
+| (c) Investigate first | what it would settle | — | nothing to undo | time and spend |
+| (z) Wait | what waiting costs; what it blocks; at the deadline, what happens | who waits | answer any time, or what a deadline loses for good | … |
+
 **What:** …
-**Why now:** … Blocks: …
+**Why now:** …
 **Why ask:** *class* — …
 **Context you may have lost:** the card's context cue, then the two or three facts a cold reader needs.
-
-(a) Option
-- *What happens:* …
-- *Undo:* … (or: cannot be undone, because …)
-- *Who is affected:* …
-
-**(b) Option**
-- *What happens:* …
-- *Undo:* …
-- *Who is affected:* …
-
-(c) Investigate first — *time and cost; what it would settle*
-
-(z) Decide later — *wake; what happens at the deadline if there is one*
 
 Rec **(b)** · basis **partial** — *reason*
 *Basis:* observed — … (link) · inferred — … · unknown — …
 *If you pick (a), I'll repeat it back and act only once you confirm: it can't be undone.*
 ```
 
-- The options follow the card's rule: letter order, and only the recommended option's
-  heading bold. The opening lines run **What:**, **Why now:**, **Why ask:**, **Context you
-  may have lost:**, then a round ask's **If left:** and **A round costs:**.
+- The card's Impact line becomes the **Impact table**, directly under the title: one row per
+  option, in letter order, then the **Wait row** — decide later's, labelled `(z) Wait` —
+  with the columns Effect, Reach, Undo and Cost. Only the recommended option's row label is
+  bold. The table takes the place of a section per option.
+- The opening lines under it run **What:**, **Why now:**, **Why ask:**, **Context you may
+  have lost:**, then a round ask's **If left:** and **A round costs:**.
 - A block **includes** the basis drill-down (the tags and links). `expand` on a block is
   answered: *already at full detail — `tell me [what]` for something specific?*
 - The read-back line (⚠ blocks only) names the one-way option(s). A block for a wide
   decision that is not ⚠ drops it.
-- Write every option's *Undo* line plainly — it is what decides whether an answer is read
+- Write every option's **Undo** cell plainly — it is what decides whether an answer is read
   back (`references/replies.md`).
 - Never use the words "answer alone" as a label; the ⚠ and the read-back line carry it.
 
@@ -178,8 +248,8 @@ sooner — both get answered — while one placed low can lose the lease.
 
 | Case | Label | Where it goes |
 |---|---|---|
-| One-way and high impact | ⚠ one-way | the stakes slot; after the title on a card or block |
-| One-way, narrow | *one-way, narrow* | the stakes slot; after the title on a card |
+| One-way and high impact | ⚠ one-way | the ⚠ slot on the list line (§ List line); after the title on a card or block |
+| One-way, narrow | no label: its Undo says so, *undo: none — …* | the Impact line's *undo:*, and the option's own impact |
 | No fact settles it | *your preference — no recommendation* | the rec slot (*your preference, no rec*); after the title on a card |
 | Not the agent's call | *no recommendation — outside my authority*, and a clause saying why | the rec slot; after the title on a card, the why on its own line |
 | A recurring decision with fixed options | *template: name* — shown as a card the first time the operator meets it | its own slot (§ List line) |
@@ -218,15 +288,19 @@ new numbered decision that names the line it reopens.
 ## Re-show with what changed
 
 When a decision comes back (a wake fired, a context reset, `tell me`, `dig into`), open it
-with what changed since the operator last saw it, then the card or block as usual:
+with what changed since the operator last saw it, then the card or block as usual — its
+Impact line, or table, right after the *while it waited* line:
 
 **62 — back, as you asked ("until the load test finishes"):** move the job queue to the new
 message broker?
 *While it waited (1 day): the load test finished with no lost messages; nothing else changed.
-Options and recommendation unchanged.*
+Options and recommendation unchanged; impact unchanged.*
+**Impact:** → every worker reads from the new broker today · later: the worker rollout stays paused · reach: every worker service and its on-call · undo: switch each config back within the week
 
-When the options or recommendation changed, say which and why: *Recommendation changed from
-(a) vendor the font to (b) fetch it, because the CDN outage ended.*
+*While it waited* always says whether the impact changed: *impact unchanged*, or what changed
+in it — *impact changed: waiting now also holds the release*. When the options or
+recommendation changed, say which and why: *Recommendation changed from (a) vendor the font
+to (b) fetch it, because the CDN outage ended.*
 
 **From the store.** When the caller's store keeps the card (the floor's fields under the
 decision's record, with its raised-at time), a re-show renders that stored card and adds
@@ -235,8 +309,12 @@ plain name (the `plain-names` skill) for any item, and a gloss for any other id,
 stored text left bare. Composing the card again from memory can shift
 the letters or the recommendation, and the operator would answer an (a) that is not the (a)
 they read. Before rendering, check the stored card against now: a floor field it lacks, or
-one events have made false — a *why now* that no longer holds, a basis word the rule
-(`references/evidence-basis.md`) no longer gives — is a revision. The caller stores the
+one events have made false — a *why now* that no longer holds, an Impact facet that no
+longer holds, a basis word the rule (`references/evidence-basis.md`) no longer gives — is a
+revision. **A stored card without an Impact line** is backfilled the same way, from its
+recommended option's impact and its (z) line (and any older stakes words, for reach and
+undo), each facet no record holds written *not recorded*, and stored as a revised card
+before it renders in any view. The caller stores the
 revised card (a missing field no record holds reads *not recorded*), and *while it waited*
 says what changed. When the options or recommendation really changed, say which and why, and
 the caller stores the new card.
@@ -244,8 +322,9 @@ the caller stores the new card.
 **A cold re-show** — whenever the reader is cold (SKILL.md § Before you write) — shows each
 open decision the reader is cold on at card level or above, never as a line only except as
 paged (SKILL.md § Levels, the line-only rule), each opening with what changed while it
-waited (*nothing changed* is worth saying). Under it the card runs **What:**, **Why now:**,
-**Why ask:**, then **Context:**, where the operator left it; a block's *Context you may have
+waited (*nothing changed* is worth saying, and so is *impact unchanged*). Under it the card
+runs **Impact:**, **What:**, **Why now:**, **Why ask:**, then **Context:**, where the operator
+left it; a block's *Context you may have
 lost* opens with the same cue. A stored card from before the cue existed is revised as above:
 backfilled from the record, *not recorded* when no record holds it. A deferred decision whose
 wake has not come is a card too, opening with its wake: *deferred until the release; no
