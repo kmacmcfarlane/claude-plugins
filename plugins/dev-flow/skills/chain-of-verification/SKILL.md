@@ -103,12 +103,16 @@ call — `sonnet`, or `opus` only when the invocation names a stronger model —
 `research` skill's `references/intensity-and-routing.md` § Profiles routes it; when
 `dev-flow:scout` is not loaded, that file's § Fallback. Before each call write its
 `dispatch:` line (`dispatch: scout <model> medium — cove <mode> batch <n> of <m>`), and after
-it its `agent:` line (`agent: scout <id> round 1`), per that file's § Recording. This skill
-files no work item. Only when the invocation passes `--item <id>`, this run is on the main
-thread (not inside a sub-agent), and the store resolves, do the lines go onto that item,
-appended with `Bash` under the session's own permissions; the item is never closed here.
-Otherwise they go in the Verification Summary's `Record:` line (Step 6), whose shape is that
-file's § Stored names.
+it its `agent:` line (`agent: scout <id> round 1`), per that file's § Recording.
+
+Before the first batch, decide the run's item by that file's § The work item, its rules in
+order: a run inside a sub-agent files nothing and records in its `Record:` line, even under
+`--item`; a named item (`--item <id>`) is adopted and never closed here; with a store and
+`wi`, file one (§ Filing there: tag `research-run`) and claim it; otherwise, the `Record:`
+line. The `wi` calls and the appends to `<WI_ROOT>/items/<id>.md` run through `Bash` under
+the session's own permissions; re-run that file's store snippet in each Bash call that needs
+it. At Step 6, close a filed item per that file's § Closing. The Verification Summary's
+`Record:` line (Step 6) takes the shape that file's § Stored names gives it.
 
 #### Codebase mode
 

@@ -251,16 +251,16 @@ The first rule that matches wins:
    process — or a resumed run's state file names one. Record onto it, file nothing, and
    never close it: its owner does. A named item with no store or no `wi` resolving (below)
    falls to rule 4.
-3. **A store and `wi` resolve (below), and the skill files items.** File one (§ Filing). The
-   skills that file are `research`, `research-deep`, `research-refine` and
-   `deep-investigation`. `chain-of-verification` never files: it is often model-invoked
-   ("verify this") for one or two scout calls, so it records on an item only under rule 2.
-4. **Otherwise** — no store, no `wi`, or a skill that files none. Write the state file's
-   `## Record`. Never run `wi init`; say once that the run has no work-item store.
+3. **A store and `wi` resolve (below).** File one (§ Filing). Every skill that dispatches
+   files: `research`, `research-deep`, `research-refine`, `deep-investigation` and
+   `chain-of-verification`, model-invoked runs included.
+4. **Otherwise** — no store, or no `wi`. Write the state file's `## Record`. Never run
+   `wi init`; say once that the run has no work-item store.
 
-Where a rule says `## Record` and the run has no state file (a quick run to disk;
-`chain-of-verification`), the lines go in the report instead: `research`'s `COST` field
-carries `record: none (<reason>)` followed by the lines, `; `-separated, and
+So a run records on no item in two cases only: inside a sub-agent (rule 1), or with no store
+or no `wi` (rule 4). Where a rule says `## Record` and the run has no state file (a quick
+run to disk; `chain-of-verification`), the lines go in the report instead: `research`'s
+`COST` field carries `record: none (<reason>)` followed by the lines, `; `-separated, and
 `chain-of-verification`'s Verification Summary carries its `Record:` line.
 
 A run that dispatches nothing (a quick answer in the reply, `research-prune`) records
@@ -278,7 +278,7 @@ lines that quote it.
 | `## Record` | the state file's section just above its ledger, used when the run records on no item: a sub-agent run, or no store |
 | `--item <id>` | the argument that names an existing item (rule 2) |
 | `synthesis` | the role word on a synthesis fork's `dispatch:` line |
-| `Record:` | `chain-of-verification`'s Verification Summary line, `- Record: item <id> \| none — <dispatch lines>`, the lines one per batch and separated by `; ` |
+| `Record:` | `chain-of-verification`'s Verification Summary line, `- Record: item <id>` when the run filed or named one, else `- Record: none (<reason>) — <dispatch lines>`, the lines one per batch and separated by `; ` |
 
 ### Filing
 
@@ -288,12 +288,13 @@ When:
 |---|---|
 | `research`, `research-deep`, `research-refine` | after `00-brief.md` is on disk (`research` Step 5.5), before Step 6; a quick run that writes to disk files at Step 4, before its verifier |
 | `deep-investigation` | after `00_research-strategy.md` is on disk (its Step 4), before the first lane |
+| `chain-of-verification` | after Step 3 classifies the mode, before the first Step 4 batch |
 
 ```bash
-$WI add "<research: … | deep investigation: …> <the question, in your words>" -t spike \
+$WI add "<research: … | deep investigation: … | chain-of-verification: …> <the question or subject, in your words>" -t spike \
     --tag research-run --short-display-name "<3-6 word noun phrase, ≤ 40 chars>" \
-    --ref <brief, strategy doc or destination path> \
-    --desc "<the decision it feeds; the preset; the destination>"
+    --ref <brief, strategy doc or destination path; none for chain-of-verification> \
+    --desc "<the decision it feeds; the preset; the destination — chain-of-verification: the subject and its mode>"
 $WI claim <id>
 $WI handoff <id> --doing "<run> running" --next "report and close"
 ```
@@ -330,14 +331,14 @@ WI="python3 $WI_PY"
 
 Rule 4's test is `test -n "$WI_ROOT" && test -f "$WI_PY"`: when it fails, rule 4. Run the
 snippet once, at the record's opening, and from then on use the `wi:` and `item_file:` lines
-the state file carries (with no state file — a quick run — re-run the snippet in each Bash
-call that needs `wi`). This snippet restates the `dev-cycle` skill's
+the state file carries (with no state file — a quick run, `chain-of-verification` — re-run
+the snippet in each Bash call that needs `wi`, and carry the item id in the conversation). This snippet restates the `dev-cycle` skill's
 store resolution in research's own home; a change to `wi`'s install path touches both.
 
 ### Closing
 
-At the run's report (`research` Step 11, `deep-investigation` Step 8), on an item the run
-filed only:
+At the run's report (`research` Step 11, `deep-investigation` Step 8,
+`chain-of-verification` Step 6), on an item the run filed only:
 
 | Status | Do |
 |---|---|
@@ -345,6 +346,7 @@ filed only:
 | `HELD` | `$WI block <id> "held: security concern; <held path>"` |
 | `BLOCKED` | `$WI block <id> "<the reason, in your words>"` |
 | `deep-investigation` done | `$WI done <id> --note "deep investigation: <n> lanes, <n> waves; <series path>"` |
+| `chain-of-verification` done | `$WI done <id> --note "CoVe <VERIFIED\|CORRECTED\|PARTIAL>: <n> claims checked, <consistent>/<contradicted>/<unverified>; <n> batches"` |
 
 A run that stops mid-way leaves its item `doing`, and the stale claim shows in `wi next`. A
 held run's item stays blocked until `research-refine` cleans the run; that refine run files
@@ -364,7 +366,8 @@ the new one.
   `decision:` or `answer:` line: those move a cycle, and an item named by `--item` may also
   carry a cycle's record.
 - **The item file is the run's one tracked write besides its destination.** The run never
-  commits it; the report's `LANDED` names it (`item <id>`).
+  commits it; the report's `LANDED` names it (`item <id>`; `chain-of-verification`: its
+  `Record:` line).
 
 ## Recording
 
