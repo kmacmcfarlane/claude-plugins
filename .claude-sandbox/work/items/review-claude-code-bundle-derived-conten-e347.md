@@ -217,3 +217,4 @@ decision 174: How long should the history-scrub backups be kept? — options: (a
   rec: (a) · basis partial — a short rollback window, then gone
   unknown: none
 open question: which other machines hold a clone of claude-plugins or its marketplace (each needs a re-clone or reset after the history scrub) — owner: operator (B5)
+note: 2026-10-06T16:36Z operator on 167, verbatim: "167 - what rule bans quoted message text? Is this due to the not using internal source verbatim? The message text is obversable, so I don't think that would be a justification to ban the method in this case" (read as: tell me, and a challenge to the rule — answered: CLAUDE.md § Claude Code source material rule 2's last sentence; it came from the librarian's own ruling 4 during the 6a07 review, not from the operator's words, which named code and prompts; raised as decision 175)

@@ -88,3 +88,16 @@ findings:
 cost: 2026-10-06T07:43Z build $5.55 of $10 after review 3 — must-fix 0 — prices 2
 landed: 86a0227
 - 2026-10-06 done: 86a0227
+correction: 2026-10-06T16:36Z the rule's "Quoted message text may not, observed or not" came from my ruling 4 in the round-1 fix, an over-reach of the operator's words ("verbatim code or prompts"); a message Claude Code shows the user is observable output, not source; the operator challenged it (on decision 167); raised as decision 175
+decision 175: Should the copyright rule allow quoting a message Claude Code shows to users (an error or warning), labelled as observed or documented, while still banning internal strings users never see? — options: (a) yes: user-visible message text may be quoted, labelled with its source and version [recommended] | (b) no: keep banning all quoted message text | (z) decide later
+  raised: 2026-10-06T16:36Z
+  what: the last sentence of CLAUDE.md § Claude Code source material rule 2 ("Quoted message text may not, observed or not")
+  why now: it decides two scrub-plan choices (167, 169); blocks: the scrub build's latch design
+  why ask: rule-change — it is your copyright rule, and I wrote that sentence by my own ruling, beyond your words
+  context: you asked why quoted message text is banned when it is observable · you decide whether the rule bans it
+  impact: → the gate may match the credits error by its user-visible text, cited to the public errors page, and keep today's 200K hard stop after it · later: the scrub build waits on 167 and 169 · reach: everything committed to this repo · undo: an edit to CLAUDE.md
+  (a) allow user-visible messages — internal strings never shown to users stay banned; a quoted message carries "observed on <version>" or the doc URL — reach: this repo's committed text — undo: an edit
+  (b) keep the ban — the gate recognises the error by machine values only and only warns after it (167 a, 169 c)
+  (z) decide later — the scrub build waits
+  rec: (a) · basis partial — your rule targets copying source; a message every user sees is behaviour, and the errors page documents it
+  unknown: whether the transcript holds the message text in full (it lacks the documented prefix on 2.1.274; the rest is unobserved)
