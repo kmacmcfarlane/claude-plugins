@@ -27,3 +27,8 @@ target: full claude-md-source-rule-externally-observa-a533 /home/rt/work/src/git
 budget: 2026-10-06T19:03Z build $10 — default chore
 dispatch: implementer opus medium — build (a CLAUDE.md rule)
 agent: implementer a8bb4d53a834c426f round 1
+return: implementer DONE 9863a42 (rules 1-2 amended; prompts stay banned; cc_scan unchanged)
+changed:
+  CLAUDE.md — § Claude Code source material rules 1 and 2
+dispatch: reviewer opus high — review round 1
+agent: reviewer a4f2e54720aae421d round 1
