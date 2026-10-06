@@ -173,3 +173,24 @@ changed:
   plugins/dev-flow/skills/librarian-mode/SKILL.md — Rehydrate step 2 reaches state 1
 dispatch: reviewer opus high — resume (review round 4)
 agent: reviewer a83d30ab780e61e4c round 4
+verdict: NEEDS_CHANGES round 4 at 00e4a3b
+findings:
+  round 3: 1, 2 FIXED
+  1. [medium] opt-in.md:361-364, :391-399 — the guarded write never checks that the section still has no Systems: line; with the stop rule keeping an open card beside a hand-written Systems: line, answering it (a) inserts a second, contradicting Systems: key and closes the item as recorded (reproduced); (b) inserts a second Systems: none. No one-line Fix: the answered card's ending once a hand-written line exists must be defined, and state 1's "the write landed" must tell this write from a hand edit.
+cost: 2026-10-06T02:35Z build $10.63 of $22 after review 4 — must-fix 1 — prices 2
+decided: the cap is reached — convergence stop (review 4 must-fix 1, not lower than review 3's 1); the one leftover has no Fix:, so no finish round; raised as an ask for another round (bindings.md § What a cap ends in, step 4) — class: cap
+decision 159: The scope interview's review stopped converging (one must-fix left after 4 reviews); run one more round with a fix I specify, or land now and carry it? — options: (a) one more round with the fix specified [recommended] | (b) land now; carry the leftover as a follow-up item | (z) decide later
+  raised: 2026-10-06T02:35Z
+  what: whether the scope-interview build (5925) gets a fifth review round; the cap stopped it because must-fix went 3, 0, 1, 1 across reviews 1-4
+  why now: the build is otherwise done and checks pass; blocks: the scope interview landing
+  why ask: cap — the convergence stop says the brief or the target may be wrong, and only you open a round past it
+  context: you answered 153-155 (a) and I sent the build; it passed review twice, then each round's fix exposed one more edge case · you decide whether to fix this last one before landing
+  if left: when someone hand-writes a Systems: line into CLAUDE.md while the interview card is open, and you then answer the card instead of dropping it, the librarian writes a second, contradicting Systems: line and closes the interview as recorded; narrow (a hand edit during an open card), but it corrupts the section it exists to write
+  round costs: about $3-4 and 10-15 minutes (one resumed builder, one resumed reviewer); $10.63 of the $22 budget spent so far; your attention for this answer, and another if the round does not settle it
+  stakes: reversible, narrow — the scope interview's text before it reaches any repo
+  (a) one more round with the fix specified — the write's guard also checks the section still has no Systems: line; if one appeared, the answered card is closed as superseded by the commit that added it, and your confirmed block is filed as an ordinary work item to reconcile (later edits to these lines are work items anyway); state 1 closes only on a write the librarian itself committed — undo: n/a — who: every librarian
+  (b) land now; carry it as a follow-up item — the scope interview ships today with the narrow race open until the follow-up lands — undo: the follow-up — who: any repo where someone hand-edits Systems: during an open card
+  (z) decide later — the build waits, unlanded
+  rec: (a) · basis partial — the fix is now fully specified, so the convergence stop's "brief is wrong" no longer holds; it costs little and closes a corruption of the section the feature writes
+  basis: observed — reviewer round 4 reproduced the double Systems: on a scratch store; observed — spend reader $10.63
+  unknown: whether the reviewer finds a new edge in the superseded path
