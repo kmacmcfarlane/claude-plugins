@@ -27,3 +27,9 @@ decided: files in scope are dev-cycle's agent-brief.md and review-brief.md (the 
 target: full dev-cycle-briefs-never-signal-processes-54fe /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude/worktrees/dev-cycle-briefs-never-signal-processes-54fe
 dispatch: implementer opus medium — build (bug; a rule change in skill briefs is an opus signal)
 agent: implementer ae90e6ef6c976e054 round 1
+return: implementer DONE d7c0b22
+changed:
+  plugins/dev-flow/skills/dev-cycle/references/agent-brief.md — prohibition bullet after the stash bullet
+  plugins/dev-flow/skills/dev-cycle/references/review-brief.md — same bullet after the wi bullet
+dispatch: reviewer opus high — review round 1
+agent: reviewer a835579d8152a3fc2 round 1
