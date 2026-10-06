@@ -33,3 +33,27 @@ changed:
   CLAUDE.md — ## Claude Code source material
 dispatch: reviewer opus high — review round 1
 agent: reviewer a0544db499ede2489 round 1
+verdict: NEEDS_CHANGES round 1 at dc0199d
+findings:
+  1. [high] CLAUDE.md:37-43 — the grep misses inventory rows: single-letter mangled names, internal event and env-var names (window_rules.py:122-130), quoted internal 429 text in fixtures and in window_rules.py:105-106, unparenthesised mangled constant labels (:56), and version-stamped provenance lines without the listed phrases (lib_context.py:37, 87, 1345-1346; design-rationale.md:117; operator-playbook.md:37-38; subagent_statusline.py:58-60)
+  2. [medium] CLAUDE.md:41-42 — pre-push form fails with no upstream and reads empty input as clean; hides merge resolutions. Fix: CLAUDE.md:41-42 — "before a push, run the same grep over `git log -p --cc HEAD --not --remotes` instead"
+  3. [medium] CLAUDE.md:44-45 — no procedure for a hit found after a commit exists
+  4. [medium] CLAUDE.md:15-17, 24-27 — scoped by source, so prompt or system text seen in context could be committed as "observed"; silent on observed strings the code must match
+  5. [medium] CLAUDE.md:31-32 — "unreleased" misses features shipped but switched off; no way to establish release status
+  6. [medium] CLAUDE.md:28-30 — the content-free hint has no example or edges
+  7. [low] CLAUDE.md:42 — "four phrases", the pattern has five. Fix: CLAUDE.md:42 — "catches the five phrases"
+  8. [low] CLAUDE.md:37,41 — the message check assumes git commit -F
+  9. [low] CLAUDE.md:17 vs 33 — issue and PR text unchecked
+  10. [low] CLAUDE.md:5 — "only the mechanics" no longer true
+  note: the section names a leaked source checkout in a public file; pushed store items already hold forbidden material (e347 item line 16; context-guard exact-depth item line 61)
+cost: 2026-10-06T07:17Z build $1.76 of $10 after review 1 — must-fix 6 — prices 2
+decided: rulings for the fix round, each inside the operator's stated rule (verbatim words, answers 163, 164) — class: reading
+  4: verbatim prompt, system-prompt and system-reminder text is forbidden whatever its source, context included; a short machine value the code must match (an error code, a field or env-var name a user sees) is allowed, labelled observed with version; quoted internal message text is not
+  5: unreleased = not in the public docs and not observable in normal use on a public release; a feature present but switched off counts as unreleased; when unsure, it is unreleased
+  6: a hint may name the topic in plain words only — no location, identifier, value, file or search anchor — and no hint is left about an unreleased feature; one example in the section
+  3: a hit found after a commit and before a push: the branch is rebuilt as dev-cycle's secret rule rebuilds it, never a fix commit on top; a hit already pushed goes to the history-scrub path (operator, 4151)
+  1: the check covers shapes it can (single-letter called names, unparenthesised short labels next to provenance words, version-stamp provenance lines for a read) and a local untracked deny-list file the agent maintains for exact internal strings, at a path outside every tracked tree; reading the diff stays required; provenance is decided by reading
+  public naming: the section says "any copy of Claude Code's source, leaked or installed" without naming a specific checkout
+  store: the scrub (e347) and the history scrub (4151) cover pushed store items too
+dispatch: implementer opus medium — resume (fix round 1)
+agent: implementer a1898c49b84063cca round 2
