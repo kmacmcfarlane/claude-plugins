@@ -89,7 +89,9 @@ Where a lane's work rests on an earlier lane's, say so explicitly in the prompt:
 > figures with the raw ones beside them.
 
 A toolkit lane's deliverables name `<staging>/tools/` as where its scripts go. A mining lane
-that runs them launches only after the toolkit gate has passed (`deep-investigation` Step 4).
+that runs them launches only after the toolkit gate has passed (`deep-investigation` Step 4),
+and no lane is given an earlier lane's file to read before the scan floor has run over it
+(`security-gate.md` § Before a lane reads another lane's file).
 
 This produced the exemplar run's best findings — including a later lane resolving an open
 question an earlier one had left standing — and its single most design-relevant empirical

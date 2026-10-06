@@ -7,8 +7,11 @@ The skill is prose, so most rules are held by what its files say:
 - lanes write to the run's staging area, never into the series;
 - the scan floor, the verifier and the toolkit gate stand between staging and the series;
 - the strategy doc's ledger carries no lane wording;
+- a lane's staged file is scanned before a later lane reads it, and only scanned files with
+  no HOLD at the landing rescan are copied into the series (review r1, findings 1 and 2);
 - a held lane goes to `H/.claude-sandbox/research/_held/<run>/`, where `H` is the parent of
   the git common dir of the session's primary working directory (05 A2.1, the A3.9 anchor).
+  The gate's procedure and the anchor live in `references/security-gate.md`.
 
 The anchor is also run: the skill's own snippet, executed against a worktree fixture whose
 Bash cwd is a nested sidecar repo, must give the main checkout.
@@ -30,6 +33,7 @@ SKILL_DIR = PLUGIN / "skills" / "deep-investigation"
 SKILL = SKILL_DIR / "SKILL.md"
 LANE_CONTRACT = SKILL_DIR / "references" / "lane-contract.md"
 STRATEGY = SKILL_DIR / "references" / "research-strategy-format.md"
+GATE = SKILL_DIR / "references" / "security-gate.md"
 ROUTING = PLUGIN / "skills" / "research" / "references" / "intensity-and-routing.md"
 
 PLACEHOLDER = "<project dir>"
@@ -46,9 +50,14 @@ def section(body, heading):
     return m.group(1) if m else None
 
 
+def flat(s):
+    """Whitespace runs folded to one space, so a rule wrapped across lines still matches."""
+    return re.sub(r"\s+", " ", s)
+
+
 def anchor_block():
-    """The fenced bash block in SKILL.md that computes H."""
-    blocks = re.findall(r"^```bash\n(.*?)^```", text(SKILL), re.S | re.M)
+    """The one fenced bash block in the skill (SKILL.md or its gate reference) computing H."""
+    blocks = re.findall(r"^```bash\n(.*?)^```", text(SKILL) + text(GATE), re.S | re.M)
     hits = [b for b in blocks if "--git-common-dir" in b]
     return hits[0] if len(hits) == 1 else None
 
@@ -97,13 +106,46 @@ class TestStaging(unittest.TestCase):
 
 class TestGate(unittest.TestCase):
     def test_scan_verify_and_toolkit_gate_named(self):
-        body = text(SKILL)
+        body = flat(text(SKILL) + text(GATE))
         for needle in ("§ The scan floor", "§ The toolkit gate", "§ The verifier prompt",
-                       "dev-flow:research-verifier", "--strip"):
+                       "dev-flow:research-verifier", "--strip", "references/security-gate.md"):
             self.assertIn(needle, body, needle)
 
-    def test_nothing_unscanned_lands(self):
-        self.assertRegex(text(SKILL), r"only (when|after)[^.]*scan")
+    def test_landing_copies_only_scanned_files_without_a_hold(self):
+        """Review r1 finding 1: the copy is conditional on step 1's scan and the rescan."""
+        land = flat(section(text(GATE), "Step 6.5 — scan, verify, hold, land") or "")
+        self.assertIn("rescan what will land", land)
+        self.assertIn("Copy only files that step 1 scanned and in which this rescan finds no "
+                      "HOLD; anything else stays in staging, and a failed rescan holds every "
+                      "file it covered.", land)
+        self.assertIn("Only files the scan saw and the rescan finds no HOLD in are copied",
+                      flat(text(SKILL)))
+
+    def test_verifier_routes_on_its_own_row(self):
+        """Review r1 finding 8: not the lane model from Step 1."""
+        verify = flat(section(text(GATE), "Step 6.5 — scan, verify, hold, land") or "")
+        self.assertIn("from its own row in the `research` skill's "
+                      "`references/intensity-and-routing.md` § Profiles (not the lane model",
+                      verify)
+
+    def test_a_lane_reads_another_lanes_file_only_after_a_scan(self):
+        """Review r1 finding 2: read-first files and the mining plan are scanned before the
+        reading lane is dispatched; a HOLD keeps the file out of its prompt."""
+        pre = flat(section(text(GATE), "Before a lane reads another lane's file") or "")
+        self.assertIn("Before you dispatch any lane whose prompt names a staged file to read "
+                      "first", pre)
+        self.assertIn("mining plan", pre)
+        self.assertIn("with `--scripts`", pre)
+        self.assertIn("keeps the file out of every reading lane's prompt", pre)
+        self.assertIn("§ Before a lane reads another lane's file", flat(text(SKILL)))
+
+
+class TestEdgeCases(unittest.TestCase):
+    def test_sensitive_data_is_removed_from_the_series(self):
+        """Review r1 finding 3: the orchestrator first reads findings after landing."""
+        body = flat(text(SKILL))
+        self.assertIn("Remove it from `<series>/findings/` before anything is committed", body)
+        self.assertNotIn("before Step 6.5 lands it", body)
 
 
 class TestLedger(unittest.TestCase):
@@ -137,10 +179,11 @@ class TestHeldAnchorText(unittest.TestCase):
                 self.assertIn("git -C ", line)
 
     def test_held_path_is_at_h(self):
-        body = text(SKILL)
-        self.assertIn(HELD, body)
-        self.assertIn("primary working directory", body)
-        self.assertNotRegex(body, r"(?<![$/H])\.claude-sandbox/research/_held/")
+        gate = text(GATE)
+        self.assertIn(HELD, gate)
+        self.assertIn("primary working directory", flat(gate))
+        for body in (text(SKILL), gate):
+            self.assertNotRegex(body, r"(?<![$/H])\.claude-sandbox/research/_held/")
 
 
 @unittest.skipUnless(shutil.which("git") and shutil.which("bash"), "git and bash needed")
