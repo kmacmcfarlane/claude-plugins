@@ -50,3 +50,24 @@ return: planner DONE_WITH_CONCERNS /home/rt/work/src/github.com/kmacmcfarlane/cl
 baseline: 6a32e05643bf 00_inventory.md 5805bf0009fc 01_scrub-build.md e35451e07fc6 02_history-scrub.md 
 dispatch: reviewer opus high — plan review round 1
 agent: reviewer a1a6bdd4c2725f74c round 1
+verdict: NEEDS_CHANGES round 1 (plan)
+findings: (summarised here without internal strings; verbatim in the fix dispatch)
+  1. [critical] 02:209-213, :330-334 — Step 8's reset --hard of the main checkout runs with tracked edits there; no backup
+  2. [high] 01:382-386 and related — false claims: env-vars § Variables documents the boolean spellings and numeric forms; build would rewrite tests to a misreading
+  3. [medium] 02:216-222 — mirror clone without --no-local hardlinks packs; filter-repo's fresh-clone check aborts
+  4. [medium] 02:338-340 — reflog expire / gc prune destroy reflogs and unreachable objects with no backup
+  5. [medium] 02:224-238, :260-279 — verification too weak (literal-only V1, unspecified class regexes, bare labels matching inside identifiers, V3 path-only)
+  6. [medium] 01:556-568; 02:119-161 — store passages missed (7647:11, d63e:86, 1f9d:29, and six binary-as-source lines in 9f90, c0cc, b23e, 8ab6, bace)
+  7. [medium] 01:378-428 — internal-only claims in window_rules.py (:95-97, :337-342, :374) and tests unclassified; one may be an unreleased feature
+  8. [medium] 01:308-316 — the credits message kept as quoted text against 6a07 rule 2; needs an operator call
+  9. [medium] 01:689-694 — Step 7 check: no deny-list seeding, no reading pass, impossible zero-hit bar
+  10. [medium] 01:202-204 — hint names no topic; no unreleased test
+  11. [medium] 01:851-859 — A3 offers non-compliant options
+  12. [medium] 01:838-850 — behaviour changes (lost hard stops) contradict decision 164's card ("no behaviour change"); A1, A2 must block
+  13. [medium] 02:297-305 — remap table would publicly index unpurged shas under B1(a)
+  14. [medium] 02:361-363, :458 — librarian writing into sibling repos' stores is outside Scope
+  15-21. [low/nit] branch count; transcript field for detection; test sub-cases; lib_context.py:40-41 repeat; statusline value lists; first changed commit; counts in prose
+correction: decision 164's card told the operator option (a) meant "the window gate keeps working as today… no behaviour change"; the plan shows the scrub does change behaviour (some hard stops become warnings, two models gain them); those changes go back to the operator as blocking A1/A2 before the build
+cost: 2026-10-06T07:40Z plan $15.56 of $28 after review 1 — must-fix 14 — prices 2
+dispatch: planner opus high — resume (plan fix round 1)
+agent: planner a17bc769f2e8fbff8 round 2
