@@ -58,3 +58,15 @@ target: full decisions-skill-every-decision-s-impact-44aa /home/rt/work/src/gith
 budget: 2026-10-06T06:10Z build $22 — default other build
 dispatch: implementer opus high — build (implementer-critical: the operator called it "important" and the impact "critical"; spec = proposal r2 + answer 165 a)
 agent: implementer-critical abcdb2f429201bdfa round 1
+return: implementer-critical DONE_WITH_CONCERNS b01c611 (18 files; stakes field/line removed in favour of reach/undo, who: read as reach; block per-option sections become the table; new plugins/operator-interaction/tests (14); open: Checks list, work-review impact, README/plugin.json wording, tag-size length unenforced)
+changed:
+  plugins/operator-interaction/skills/decisions/{SKILL.md, references/rendering.md, worksheet.md, replies.md, rationale.md, gallery.md} — the five facets in every view; ruling 2026-10-06
+  plugins/operator-interaction/skills/decision-page/{SKILL.md, assets/index.html, assets/cards.example.json, references/cards-schema.md, references/fallback.md} — impact on the page and in the schema
+  plugins/operator-interaction/tests/test_impact.py — new
+  plugins/dev-flow/skills/librarian-mode/{SKILL.md, references/decisions.md, references/idle-turn.md} — stored impact: line, Groom row, decisions needed
+  plugins/dev-flow/skills/dev-cycle/SKILL.md — decisions needed tag size
+  plugins/work-items/skills/work-items/references/format.md — card lines note
+  CLAUDE.md — layout line for the new tests folder
+decided: the new operator-interaction test suite joins the ## Librarian Checks in this change (a Check that never runs protects nothing; an edit to the section, done here as a work item through the cycle); the work-review impact display and the README/plugin.json wording are filed as follow-ups — class: scope
+dispatch: implementer opus high — resume (add the Check line before review)
+agent: implementer-critical abcdb2f429201bdfa round 1
