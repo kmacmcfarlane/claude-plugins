@@ -62,3 +62,17 @@ changed:
   CLAUDE.md — section rewritten to the round-1 rulings; opening sentence amended
 dispatch: reviewer opus high — resume (review round 2)
 agent: reviewer a0544db499ede2489 round 2
+verdict: NEEDS_CHANGES round 2 at 461bbee
+findings:
+  round 1: 1, 2, 4-10 FIXED; 3 PARTIAL
+  1. [high] CLAUDE.md:80-85 — the rebuild boundary is "after a commit, before a push" and omits the cited secret rule's step 1 reach check; the pre-push scan runs on shared main (9 unpushed commits from several items), so a literal reader would flatten main. Fix: CLAUDE.md:80-85 — "Found while it is still only on its own unmerged branch: rebuild that branch the way `plugins/dev-flow/skills/dev-cycle/references/fix-loop.md` § A leaked secret does (its step 1 reach check first, then a soft reset to the merge base and one clean recommit), never a fix commit on top; found once it is merged into another branch (local main included) or pushed: stop and hand it to the operator — scrubbing that history is the operator's path, tracked as work item `history-scrub-purge-claude-code-bundle-d-4151`."
+  2. [medium] CLAUDE.md:67, :60 — a missing deny-list (fresh clone, other machine, run outside the repo) is skipped silently. Fix: CLAUDE.md:67 — warn on stderr when missing or empty, and strip blank lines before grep -F -f
+  3. [low] CLAUDE.md:67 — a deny-list of only blank lines floods under the harness grep (ugrep)
+  4. [low] CLAUDE.md:73 — the pre-push scan reads HEAD, not the ref being pushed
+  5. [low] CLAUDE.md:70-71 — MSG unset: the message is silently not scanned
+  6. [low] CLAUDE.md:36-39 — the hint's topic is unbounded and can assert an internal-only fact
+  7. [nit] CLAUDE.md:83 over the wrap width
+cost: 2026-10-06T07:34Z build $4.22 of $10 after review 2 — must-fix 2 — prices 2
+decided: low 6 — a hint's topic names a behaviour a user can see (e.g. when a window warning fires), never an internal mechanism, component or feature; low 4 — the pre-push scan names the ref being pushed — class: reading
+dispatch: implementer opus medium — resume (fix round 2)
+agent: implementer a1898c49b84063cca round 3
