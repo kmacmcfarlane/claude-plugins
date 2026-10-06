@@ -3,12 +3,11 @@ id: claude-md-never-commit-verbatim-claude-c-6a07
 title: "CLAUDE.md: never commit verbatim Claude Code source, prompts or strings"
 short_display_name: no verbatim Claude Code source rule
 type: chore
-status: doing
+status: done
 priority: 0
-owner: Kyle-McFarlane@401123cbad11
-claimed: 2026-10-06T07:04Z
 created: 2026-10-06
 updated: 2026-10-06
+closed: 2026-10-06
 refs:
   - operator 2026-10-06
 ---
@@ -81,3 +80,11 @@ changed:
   CLAUDE.md — round-2 fixes
 dispatch: reviewer opus high — resume (review round 3)
 agent: reviewer a0544db499ede2489 round 3
+verdict: CLEAR round 3 at f593e40
+findings:
+  round 2: 1-7 FIXED
+  1. [low] CLAUDE.md:70 — a CRLF deny-list entry silently misses under GNU grep
+  2. [low] CLAUDE.md:84 — no pipefail: a failed git log feeds empty input and the scan looks clean
+cost: 2026-10-06T07:43Z build $5.55 of $10 after review 3 — must-fix 0 — prices 2
+landed: 86a0227
+- 2026-10-06 done: 86a0227
