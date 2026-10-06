@@ -141,3 +141,16 @@ changed:
   plugins/dev-flow/skills/librarian-mode/SKILL.md — responsibility clause states
 dispatch: reviewer opus high — resume (review round 2)
 agent: reviewer a83d30ab780e61e4c round 2
+verdict: CLEAR round 2 at 03c903c
+findings:
+  round 1 findings 1-8 FIXED
+  1. [low] opt-in.md:259-260 — state 5 raises the card on "the last stored block" without checking it postdates the last overlap answer (state 4 guards the same gap for a reframe)
+  2. [low] opt-in.md:291-294 — the pre-store evidence check (a tracked file) also hits operator-supplied lines from a reframe or overlap answer, which get reworded or dropped. Fix: opt-in.md:292 — "check every draft line against § The responsibility lines: its evidence is a tracked file of this repo or an answer the operator gave on this item, it carries no value, and no host detail that source does not state."
+  3. [low] opt-in.md:358-362 — answer N: reframed as decision M claims M before any decision M: line exists; the counter grep misses it, so a session ending in between can let another item take M
+  4. [low] opt-in.md:264, :194-195 — pickup runs only while no Systems: line exists; a CLAUDE.md commit followed by a session end before wi done leaves the item open and blocked forever
+  5. [nit] opt-in.md:396-397 — "closed M:" reuses the reframe letter. Fix: opt-in.md:396-397 — "Then  for the answered interview card, and the same line for each answered overlap decision (a superseded interview card keeps its ), per  § What the store records."
+  6. [nit] opt-in.md:212 — lookup grep warns on an empty store. Fix: opt-in.md:212 — for f in $(grep -lxF "responsibility interview: $REPO" "$WI_ROOT"/items/*.md 2>/dev/null); do
+cost: 2026-10-06T02:16Z build $7.07 of $22 after review 2 — must-fix 0 — prices 2
+decided: one more round for lows 1-6 before landing — CLEAR, but 2 drops a line the operator asked for and 1, 3, 4 stall or collide across a session end in every opted-in repo; a resumed round costs ~$3-4, inside the $22 budget, cheaper than a follow-up cycle — class: cap
+dispatch: implementer opus medium — resume (fix round 2, lows)
+agent: implementer a43502b67a4ba3d10 round 3
