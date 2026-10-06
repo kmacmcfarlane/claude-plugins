@@ -154,6 +154,9 @@ interrupted run up again; a line that is missing reads there as not recorded:
   unindented line. Dollars to two decimals; `<m>` the verdict's `MUST-FIX:` count, an
   integer or `?`; `<n>` the phase's counted review; `<version>` the price table's. Never
   `spent:`, which is another line's.
+- `decided:` — the shape in the `librarian-mode` skill's `references/decide-alone.md`
+  § The record; writers: the caller, or standalone `bindings.md` § Spend budget, The
+  Done-alone line.
 - `target: <mode> <ref> <workspace>` — SKILL.md § Step 0.3, **every mode**, written before
   any dispatch.
   - `<mode>` is one bare word, `full` | `plan` | `review` — **one token wide in every

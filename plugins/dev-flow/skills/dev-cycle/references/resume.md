@@ -24,7 +24,7 @@ Four line kinds are **phase lines**: `dispatch:`, `return:`, `verdict:` and `lan
 They move the run, and only a phase line can be its last state. Every other line —
 `target:`, `checks:`, `intent:`, `agent:`, `review:`, `baseline:`, `findings:`, `changed:`,
 `decision:`, `answer:`, `spent:`, `subject-fix:`, `conflict:`, `blocked:`, `trial:`,
-`cross-check:`, `cross-check-rulings:`, `budget:`, `cost:` — is a
+`cross-check:`, `cross-check-rulings:`, `budget:`, `cost:`, `decided:` — is a
 **rider**: it never displaces a phase line, and it is read only where a fact below names
 it.
 
@@ -84,9 +84,9 @@ words. `<workspace>` below is that line's third field.
      build. An answered waiver never changes the count.
    - **CAP** — `UNDER` | `AT_CAP`: `AT_CAP` when ROUNDS ≥ 4, or when the phase's spend,
      read now as `bindings.md` § Spend budget's check reads it (read-only: resume writes
-     no `cost:` or `budget:` line), is at or over the amount in force — unless a fresh
+     no `cost:` or `budget:` line), is at or over the amount in force and no fresh
      weekly reading taken now is below 50% used (`bindings.md` § Spend budget, While the
-     quota is plentiful), which a stale verdict's rows read too; `UNDER` otherwise, a
+     quota is plentiful; a stale verdict's rows read this too); `UNDER` otherwise, a
      phase with no reading included. `AT_CAP` sends the row to SKILL.md § Step 4.3, which
      decides what it ends in — a stop, a round it opens unasked, or a raise; it is
      never by itself a raise. CAP answers one question — *may another review round be
@@ -225,11 +225,11 @@ carried` block recorded after the last verdict means Step 4.3 already ran: take 
 |---|---|---|---|---|
 | `BLOCKED` | — | — | **S12** | RETRIES < 3 and reason `setup` → re-dispatch the reviewer with the setup fixed and VARIANT; not a round. Otherwise `$WI block` when there is an item, then GATE, the blocked review. |
 | `CLEAR` | `CURRENT` | — | **S7** | `full`, `review`: SKILL.md § Step 5 (Land). `plan`: Step 1's after-`CLEAR` tail, its blocking open questions being the GATE's question, then Step 6. A fable offer is raised there too, never gated on (`model-routing.md` § Fable cross-checks). |
-| `CLEAR` | `STALE` | `UNDER` | **S8** | `spent:` first (§ The GATE); then Step 4 with VARIANT. |
+| `CLEAR` | `STALE` | `UNDER` | **S8** | `spent:` first (§ The GATE); then Step 4 with VARIANT. When CAP is `UNDER` only because the reading is below 50% (spend at or over the amount in force), the round's spend check runs first, as S9's does, so the waiver's `decided:` line is written (`bindings.md` § Spend budget, The Done-alone line). |
 | `CLEAR` | `STALE` | `AT_CAP` | **S11** | `spent:` first; then GATE, the cap, naming the staleness. |
 | `NEEDS_CHANGES` | `CURRENT` | `UNDER` | **S9** | Open a fix round (its spend check first, `bindings.md` § Spend budget, which writes a `cost:` line a dead run left unwritten, `must-fix ?`): resume the producer its `agent:` line names, or dispatch one, with the verdict's own `findings:` block verbatim — never a `findings: cross-check` rider, which goes to the next review brief (`fix-loop.md` § A NEEDS_CHANGES round). In `review` mode, GATE on the dispatch permission first (below). |
 | `NEEDS_CHANGES` | `CURRENT` | `AT_CAP` | **S11** | GATE, the cap. |
-| `NEEDS_CHANGES` | `STALE` | `UNDER` | **S10** | `spent:` first. The findings are spent with the verdict — the tree they judged is gone. Step 4 with VARIANT, the findings pasted for verification only. |
+| `NEEDS_CHANGES` | `STALE` | `UNDER` | **S10** | `spent:` first. The findings are spent with the verdict — the tree they judged is gone. Step 4 with VARIANT, the findings pasted for verification only. When CAP is `UNDER` only because the reading is below 50% (spend at or over the amount in force), the round's spend check runs first, as S9's does, so the waiver's `decided:` line is written (`bindings.md` § Spend budget, The Done-alone line). |
 | `NEEDS_CHANGES` | `STALE` | `AT_CAP` | **S11** | `spent:` first; then GATE, the cap, naming the staleness. |
 | `SHOW_STOPPER` | `CURRENT` | — | **S11** | GATE, the show-stopper; never re-dispatched on the verdict alone. `review` mode: the question may be the dispatch permission instead (below). |
 | `SHOW_STOPPER` | `STALE` | `UNDER` | **S10** | As the `NEEDS_CHANGES` row above. |

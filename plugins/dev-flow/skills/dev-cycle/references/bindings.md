@@ -310,7 +310,7 @@ carry, with **if left** and **what the round costs** as below. A finish round's 
 is "say stop: the round ends and its commits do not land". Its `dispatch:` signal reads
 `— finish round (exact-fix leftovers at the cap)`, or `— resume (finish round, exact-fix
 leftovers at the cap)`: informational, never read by resume. Standalone has no
-decided-alone record: a finish round is recorded by its `dispatch:` signal and shows on
+decided-alone record for a cap: a finish round is recorded by its `dispatch:` signal and shows on
 `verified:`, and a stop and carry, where one is taken, by its `findings: carried` block.
 Resume needs neither signal: an interrupted finish round re-enters at its dispatch or
 return (`resume.md` Groups B, C), and a `decided:` line or a `findings: carried` block
