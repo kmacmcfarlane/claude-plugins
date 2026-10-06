@@ -35,3 +35,15 @@ changed:
   plugins/dev-flow/skills/librarian-mode/SKILL.md, references/decide-alone.md — decision channel and spend row
 dispatch: reviewer opus high — review round 1
 agent: reviewer a0bb574eb94a8b64e round 1
+verdict: NEEDS_CHANGES round 1 at 2a742a2
+findings:
+  1. [medium] dev-cycle SKILL.md:396 — Step 6 still says four lines; the standalone Done-alone overrun line is dropped. Fix: after the four-line block add "A budget passed while the weekly quota was below half used adds one `Done alone:` line after the four (`references/bindings.md` § Spend budget, The Done-alone line); under a caller, its own Done-alone group carries it."
+  2. [low] resume.md:85-90, :216-218, :225-232 — stale-verdict rows ask on the budget alone below 50%; Group D counts only class cap decided: lines, not the new spend line (out of Files in scope)
+  3. [low] bindings.md:386 — the waiver covers only a verdict's spend check, not the one before a round opens (:511-513). Fix: "At a spend check that shows the budget reached (at a verdict, or before a round opens)"
+  4. [low] bindings.md:407-415 — standalone, nothing records the waiver, so a resumed run cannot recover the reading for its Report line
+  5. [nit] bindings.md:381 — the quoted "I won't do it again" reads as the orchestrator speaking
+  6. [nit] decide-alone.md:38 — the class of a convergence stop on a budget already reached is unclear under the waiver
+decided: resume.md joins Files in scope for this item — the change made its stale rows and Group D class list wrong, and a follow-up would ship a known contradiction — class: scope
+cost: 2026-10-06T19:50Z build $3.62 of $22 after review 1 — must-fix 1 — prices 2
+dispatch: implementer opus medium — resume (fix round 1)
+agent: implementer ae29d67e84d400eb2 round 2
