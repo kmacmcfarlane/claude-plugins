@@ -135,3 +135,9 @@ cost: 2026-10-06T02:04Z build $3.96 of $22 after review 1 — must-fix 3 — pri
 decided: finding 2's fix follows the decisions skill's reframe rule — a draft-changing reply is recorded as answer N: (read as: reframe → decision M) and the revised block raised under a new number M pointing back; never a revised card under an answered N — class: design
 dispatch: implementer opus medium — resume (fix round 1)
 agent: implementer a43502b67a4ba3d10 round 2
+return: implementer DONE 03c903c (1-8 fixed, none declined; reframe stored in decisions.md's existing `answer N: reframed as decision M — "<reply>"` form)
+changed:
+  plugins/dev-flow/skills/librarian-mode/references/opt-in.md — round 1 fixes: <repo>#N, § Picking up a reused item, draft check before store, overlap headline, reframe, indent, guard retry
+  plugins/dev-flow/skills/librarian-mode/SKILL.md — responsibility clause states
+dispatch: reviewer opus high — resume (review round 2)
+agent: reviewer a83d30ab780e61e4c round 2
