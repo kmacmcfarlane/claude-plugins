@@ -3,12 +3,11 @@ id: claude-md-source-rule-externally-observa-a533
 title: "CLAUDE.md source rule: externally observable text may be quoted, labelled (answer 175 a)"
 short_display_name: allow quoting observable text
 type: chore
-status: doing
+status: done
 priority: 1
-owner: Kyle-McFarlane@401123cbad11
-claimed: 2026-10-06T19:03Z
 created: 2026-10-06
 updated: 2026-10-06
+closed: 2026-10-06
 refs:
   - operator 2026-10-06, answer 175
 ---
@@ -61,3 +60,7 @@ changed:
   CLAUDE.md — rule 1 prompt gloss, rule 2 coverage sentence
 dispatch: reviewer opus high — resume (review round 3)
 agent: reviewer a4f2e54720aae421d round 3
+verdict: CLEAR round 3 at 26eb770
+cost: 2026-10-06T19:34Z build $3.78 of $10 after review 3 — must-fix 0 — prices 2
+landed: 8a78580
+- 2026-10-06 done: 8a78580
