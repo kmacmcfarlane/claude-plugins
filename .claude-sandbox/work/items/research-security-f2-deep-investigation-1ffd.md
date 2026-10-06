@@ -77,3 +77,11 @@ cost: 2026-10-06T02:30Z build $13.66 of $22 after review 2 — must-fix 0 — pr
 decided: one more round for lows 1-3 and nit 5 before landing — CLEAR, but 2 and 3 leave a path where a mining lane runs an unflagged network command, the failure F2 exists to close; exact Fix: lines, a resumed round inside the $22 budget; low 4 goes to research-scan-a-round-s-findings-and-the-a012 — class: cap
 dispatch: implementer opus medium — resume (fix round 2, lows)
 agent: implementer a4e5c61bb52b28988 round 3
+return: implementer DONE bc94501 (lows 1-3 and nit 5 fixed with the given wording; late lane marked on its DONE line; tests pin each)
+changed:
+  plugins/dev-flow/skills/deep-investigation/references/security-gate.md — landing copy scope; held mining plan never cleaned; late-lane marker
+  plugins/dev-flow/skills/deep-investigation/SKILL.md — Step 4 bullet names the mining plan's --scripts scan and script review inline
+  plugins/dev-flow/skills/deep-investigation/references/research-strategy-format.md — late, not landed marker under DONE
+  plugins/dev-flow/tests/test_deep_investigation.py — pins moved and added
+dispatch: reviewer opus high — resume (review round 3)
+agent: reviewer a414ae0b52bf6263c round 3
