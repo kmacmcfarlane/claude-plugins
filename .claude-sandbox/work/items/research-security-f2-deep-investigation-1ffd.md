@@ -55,3 +55,13 @@ findings:
 cost: 2026-10-06T02:18Z build $8.89 of $22 after review 1 — must-fix 3 — prices 2
 dispatch: implementer opus medium — resume (fix round 1)
 agent: implementer a4e5c61bb52b28988 round 2
+return: implementer DONE_WITH_CONCERNS 70b5d80 (1-5, 7, 8 fixed; 6 partly: gate moved to references/security-gate.md, SKILL.md 3830→3533 words, still ~5500 tokens; mining plan gets a --scripts scan and joins the toolkit review)
+changed:
+  plugins/dev-flow/skills/deep-investigation/references/security-gate.md — new: pre-read scan, Step 6.5 scan/verify/hold/land with the conditional copy, held path and anchor (moved from SKILL.md)
+  plugins/dev-flow/skills/deep-investigation/SKILL.md — Step 6.5 summary pointer; Step 4 scan-before-a-lane-reads-a-lane; sensitive-data edge case
+  plugins/dev-flow/skills/deep-investigation/references/lane-contract.md — no lane reads an earlier lane's file before its scan
+  plugins/dev-flow/skills/deep-investigation/references/research-strategy-format.md — DONE line values are the orchestrator's own
+  plugins/dev-flow/agents/research-verifier.md — description names deep-investigation
+  plugins/dev-flow/tests/test_deep_investigation.py — landing condition, pre-read scan, verifier row, edge case tests
+dispatch: reviewer opus high — resume (review round 2)
+agent: reviewer a414ae0b52bf6263c round 2
