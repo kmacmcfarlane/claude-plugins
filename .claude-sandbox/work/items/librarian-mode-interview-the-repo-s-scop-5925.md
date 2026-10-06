@@ -121,3 +121,17 @@ changed:
   plugins/dev-flow/skills/librarian-mode/references/first-start.md — interview follows a fresh opt-in in the same start's Idle turn
 dispatch: reviewer opus high — review round 1
 agent: reviewer a83d30ab780e61e4c round 1
+verdict: NEEDS_CHANGES round 1 at fb15146
+findings:
+  1. [medium] opt-in.md:215-216, :299 — store-bound lines cite a bare "answer 152" in every opted-in repo; another repo's decision is <repo>#N (claude-plugins#152)
+  2. [medium] opt-in.md:309-317 — a draft-changing reply records answer N: then rewrites decision N: as a revised card; wi treats N as answered, the card leaves Groom, and the number is reused
+  3. [medium] opt-in.md:228-230 — reused item: no branch for (i) draft stored, card never raised; (ii) answered but the guarded write failed or never ran; (iii) drop answered but wi done --drop not run; the interview stalls silently across sessions
+  4. [low] opt-in.md:259-260 — scout draft and quoted sibling lines are committed to the store before any no-host-detail / never-a-value check
+  5. [low] opt-in.md:282, :286 — overlap headline carries a second sentence; no-rec overlap lacks the headline preference label
+  6. [low] opt-in.md:207-208 — reuse lookup gives no command; a dropped interview item is found by a plain grep
+  7. [low] opt-in.md:338, :259-268 — the write never says to remove the two-space store indent. Fix: opt-in.md:338 — "Then insert the block, its two-space store indent removed, at the placement in § The responsibility lines, change no other"
+  8. [nit] SKILL.md:128-129 status wording omits the worktree case; opt-in.md:222-223 blocked-tally wording vs idle-turn.md:88-89
+cost: 2026-10-06T02:04Z build $3.96 of $22 after review 1 — must-fix 3 — prices 2
+decided: finding 2's fix follows the decisions skill's reframe rule — a draft-changing reply is recorded as answer N: (read as: reframe → decision M) and the revised block raised under a new number M pointing back; never a revised card under an answered N — class: design
+dispatch: implementer opus medium — resume (fix round 1)
+agent: implementer a43502b67a4ba3d10 round 2
