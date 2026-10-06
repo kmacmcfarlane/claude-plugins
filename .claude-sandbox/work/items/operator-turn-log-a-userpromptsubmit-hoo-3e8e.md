@@ -33,3 +33,18 @@ decision 151: Confirm the relayed proposal for an operator turn log: a hook writ
   (z) decide later — the item waits
   rec: (a) · basis partial — it removes transcript scraping for every reader of operator turn times; nothing waits on it yet
   unknown: whether a config tree that exports its own config dir is used much
+decision 151: Confirm the relayed proposal for an operator turn log: a hook writing only ids and timestamps of your turns to a shared file? — options: (a) confirm: plan it when there's room [recommended] | (b) confirm and plan it now | (c) don't build it | (z) decide later
+  raised: 2026-10-03T00:30Z
+  revised: 2026-10-06T07:04Z — backfilled impact
+  what: the operator turn log hook (3e8e): every turn you take appends {time, session id, repo}, no content, to one host-shared file that other tools read
+  why now: it is not scheduled; it is planned when you say; blocks: nothing
+  why ask: trust — a hook that runs on every turn in every session, recording when you are active, is yours to approve, even with no content in it
+  context: the idea came from you in operator-attention's session, relayed here · you confirm it before it is planned — then: none
+  impact: → a hook may log the time, session and repo (no content) of each of your turns to one shared file, planned when there's room · later: other tools keep scraping transcripts for turn times · reach: every session on this host · undo: remove the hook
+  stakes: reversible, narrow — a hook in every session; no content recorded
+  (a) confirm: plan it when there's room — where it lives comes back to you as a placement question in the plan
+  (b) confirm and plan it now — a plan costs roughly $20-30; the week is at 5%
+  (c) don't build it — the item is dropped
+  (z) decide later — the item waits
+  rec: (a) · basis partial — it removes transcript scraping for every reader of operator turn times; nothing waits on it yet
+  unknown: whether a config tree that exports its own config dir is used much

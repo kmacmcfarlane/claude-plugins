@@ -42,3 +42,17 @@ decision 150: Confirm the relayed answers for the decision shown-at record: trac
   (z) decide later — the shown-at record waits
   rec: (a) · basis strong — your words, quoted in their serial (their commit c598050), and confirmed first-hand in the agents session (their answer 24)
   unknown: none
+decision 150: Confirm the relayed answers for the decision shown-at record: track first and last shown, and the displaying surface writes the record? — options: (a) confirm both [recommended] | (b) change one (say which) | (z) decide later
+  raised: 2026-10-03T00:30Z
+  revised: 2026-10-06T07:04Z — backfilled impact
+  what: two answers you gave in operator-attention's session, relayed here, on how the decision shown-at record (0999) records when a decision was shown
+  why now: nothing builds on them until you confirm; blocks: the decision shown-at record (0999)
+  why ask: your-call — these are your answers from another session, and a relayed answer is not one I can act on
+  context: operator-attention relayed your answers to my questions · you confirm them here so the shown-at record can build on them — then: none
+  impact: → the decision shown-at record (0999) can be built: first and last showing per decision, written by the showing session · later: that record waits · reach: every decision store · undo: an edit
+  stakes: reversible, narrow — the shown-at record's shape
+  (a) confirm both — the record keeps the first and the last time each decision was shown, and the session that displays a decision writes it
+  (b) change one (say which) — the record follows your correction
+  (z) decide later — the shown-at record waits
+  rec: (a) · basis strong — your words, quoted in their serial (their commit c598050), and confirmed first-hand in the agents session (their answer 24)
+  unknown: none

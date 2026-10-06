@@ -49,3 +49,20 @@ decision 162: Which license should claude-plugins carry? — options: (a) MIT | 
   (z) decide later — the repo stays public with no license
   rec: (e) · basis strong — your existing choice across your projects, and this code came out of claude-kit under it; the one cost is that anyone who pastes a changed skill into a project they distribute must license that under GPL too
   unknown: none
+decision 162: Which license should claude-plugins carry? — options: (a) MIT | (b) Apache-2.0 | (c) all rights reserved (source visible, no reuse granted) | (d) another (say it) | (e) GPL-3.0, as your other projects [recommended] | (z) decide later
+  raised: 2026-10-06T02:58Z
+  revised: 2026-10-06T07:04Z — backfilled impact
+  what: the LICENSE file for this public repo (no license today, so legally nobody may reuse the code), copyright Kyle McFarlane 2026; sole author (1517 of 1517 commits)
+  why now: you asked for a license immediately; blocks: the license landing, minutes after you choose
+  why ask: your-call — the license is yours to grant
+  context: you asked which license your other projects use · you pick this repo's
+  impact: → the code becomes legally reusable; anyone distributing changes shares them under GPL · later: nobody may legally reuse the public repo · reach: anyone who copies or redistributes it · undo: future versions only; copies already taken keep their license
+  stakes: one-way for any copy taken under it; narrow otherwise
+  (a) MIT — anyone may reuse, even in closed projects, keeping the notice — undo: relicense future versions only — who: anyone who copies
+  (b) Apache-2.0 — like MIT plus a patent grant; longer — undo: future versions only — who: anyone who copies
+  (c) all rights reserved — readable, not reusable — undo: grant one later — who: nobody gains rights
+  (d) another — the build uses yours
+  (e) GPL-3.0 — anyone may use and change it; whoever distributes a changed copy must share it under GPL-3.0 too; matches claude-kit, claude-sandbox and the rest — undo: future versions only — who: anyone who redistributes changes
+  (z) decide later — the repo stays public with no license
+  rec: (e) · basis strong — your existing choice across your projects, and this code came out of claude-kit under it; the one cost is that anyone who pastes a changed skill into a project they distribute must license that under GPL too
+  unknown: none

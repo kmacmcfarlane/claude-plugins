@@ -3,12 +3,11 @@ id: decisions-skill-every-decision-s-impact-44aa
 title: "decisions skill: every decision's impact is visible at every level, the one-line list included"
 short_display_name: impact on every decision line
 type: feature
-status: doing
+status: done
 priority: 0
-owner: Kyle-McFarlane@401123cbad11
-claimed: 2026-10-06T06:10Z
 created: 2026-10-06
 updated: 2026-10-06
+closed: 2026-10-06
 refs:
   - operator 2026-10-06
 ---
@@ -110,3 +109,7 @@ changed:
   plugins/operator-interaction/skills/decisions/SKILL.md, decision-page/references/cards-schema.md — round 2 fixes
 dispatch: reviewer opus high — resume (review round 3)
 agent: reviewer ae28144ce8f58ef99 round 3
+verdict: CLEAR round 3 at 36876c3
+cost: 2026-10-06T06:57Z build $15.62 of $22 after review 3 — must-fix 0 — prices 2
+landed: 4f7d962
+- 2026-10-06 done: 4f7d962
