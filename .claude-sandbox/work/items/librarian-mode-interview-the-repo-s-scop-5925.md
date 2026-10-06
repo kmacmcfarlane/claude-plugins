@@ -106,3 +106,6 @@ decision 155: May the librarian write the scope block you confirm straight into 
   (z) decide later — the build waits
   rec: (a) · basis partial — the block is your exact words and the guard is tighter than the opt-in's; a review would check a transcription
   unknown: none
+answer 153: 153a (2026-10-06T01:37Z, chat; read as: (a) Systems:, Observes:, Access:, Not owned:)
+answer 154: 154a (2026-10-06T01:37Z, chat; read as: (a) always one numbered decision on a drafted block, after the opt-in)
+answer 155: 155a (2026-10-06T01:37Z, chat; read as: (a) extend the transcription exception to the exact confirmed block, guarded)

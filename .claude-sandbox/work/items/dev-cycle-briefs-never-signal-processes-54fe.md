@@ -3,12 +3,11 @@ id: dev-cycle-briefs-never-signal-processes-54fe
 title: "dev-cycle briefs: never signal processes the agent did not start"
 short_display_name: agents must not kill others' processes
 type: bug
-status: doing
+status: done
 priority: 1
-owner: Kyle-McFarlane@401123cbad11
-claimed: 2026-10-06T01:27Z
 created: 2026-09-30
 updated: 2026-10-06
+closed: 2026-10-06
 refs:
   - 819f implementer fix round 1, 2026-09-30
 ---
@@ -33,3 +32,10 @@ changed:
   plugins/dev-flow/skills/dev-cycle/references/review-brief.md — same bullet after the wi bullet
 dispatch: reviewer opus high — review round 1
 agent: reviewer a835579d8152a3fc2 round 1
+verdict: CLEAR round 1 at d7c0b22
+correction: the build phase opened at dispatch without its budget: line (SKILL.md § Step 0.3); written now with the phase's opening minute
+budget: 2026-10-06T01:28Z build $12 — default bug
+cost: 2026-10-06T01:58Z build $1.32 of $12 after review 1 — must-fix 0 — prices 2
+landed: 10fbf27
+declined: none; low 1 (no named way to stop a harness background task, run_in_background gives a task id not a PID) filed as a follow-up; nit 2 (reason names a container, the rule binds without one) kept: the rule binds whatever its reason
+- 2026-10-06 done: 10fbf27

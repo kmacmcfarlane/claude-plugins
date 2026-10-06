@@ -139,3 +139,11 @@ decision 148: Which research runs should file a work item of their own? — opti
   (z) decide later — the build finishes with (a) and waits to land
   rec: (a) · basis partial — follows your intent for research runs without filing an item per quick check; chain-of-verification's spend is small
   unknown: how often chain-of-verification runs across sessions
+answer 147: 147a (2026-10-06T01:37Z, chat; read as: (a) keep the six names as named)
+answer 148: 148b (2026-10-06T01:37Z, chat; read as: (b) every run that dispatches an agent files or names a work item, chain-of-verification included; the build, which used (a), changes before landing)
+dispatch: implementer opus medium — resume (round 3: answer 148 b applied, main merged in)
+agent: implementer a40f03413970add35 round 3
+return: implementer DONE_WITH_CONCERNS 77a54d5 (40cfe15 answer 148 b; 77a54d5 merge of main; concerns: CoVe allowed-tools lacks Bash per acceptance 17, so a model-invoked CoVe prompts per wi call where Bash is not allowed; synthesis role word unmapped in the spend reader (falls back, as planned); deep-investigation partial until 1ffd)
+librarian ruling: concerns go to the reviewer; the allowed-tools one is weighed there against acceptance 17 and the house rule that leaving allowed-tools out is the default
+dispatch: reviewer opus high — resume (round 3: answer 148 b + merge of main)
+agent: reviewer aeedf8a6c590ba4eb round 3
