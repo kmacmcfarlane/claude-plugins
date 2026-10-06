@@ -123,3 +123,4 @@ decision 108: How should research over the operator's past conversations work? â
 answer 101: a (pyramid answer page, 2026-09-30T21:00Z)
 answer 108: a (pyramid answer page, 2026-09-30T21:01Z)
 2026-09-30 builds filed per serial 05 with answers 101 a, 102 a, 103 a, 108 a: F1 research-security-f1-the-scan-floor-819f, F2 research-security-f2-deep-investigation-1ffd, probes research-security-bounded-live-probes-fo-ec4f, F3 research-security-f3-the-confinement-hoo-20d8, F3b (108 a's conversation lane + the verifier split) research-a-conversation-research-lane-fo-5452, F4 research-security-f4-the-url-policy-a3b1. Card 5 (F5 quarantine) goes to the operator when F1 lands.
+note: 2026-10-06 F2 landed (1ffd, 3626e8b); next per the series' build order: cards 1-4, then the G-probe, then F3

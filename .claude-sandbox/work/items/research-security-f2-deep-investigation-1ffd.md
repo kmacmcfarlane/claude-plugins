@@ -3,14 +3,13 @@ id: research-security-f2-deep-investigation-1ffd
 title: "research security F2: deep-investigation parity"
 short_display_name: deep-investigation parity
 type: feature
-status: doing
+status: done
 priority: 2
 deps:
   - research-security-f1-the-scan-floor-819f
-owner: Kyle-McFarlane@401123cbad11
-claimed: 2026-10-06T01:53Z
 created: 2026-09-30
 updated: 2026-10-06
+closed: 2026-10-06
 refs:
   - .claude-sandbox/investigations/caef-research-security/05_second-opinion-closing.md
 ---
@@ -85,3 +84,11 @@ changed:
   plugins/dev-flow/tests/test_deep_investigation.py — pins moved and added
 dispatch: reviewer opus high — resume (review round 3)
 agent: reviewer a414ae0b52bf6263c round 3
+verdict: CLEAR round 3 at bc94501
+findings:
+  round 2: 1, 2, 3, 5 FIXED; 4 OPEN, filed family-wide (research-scan-a-round-s-findings-and-the-a012)
+  1. [nit] research-strategy-format.md:120-121, security-gate.md:53 — "finishes after the scan" judged by report arrival; a lane that wrote before step 1 and reported after lands while its DONE line says late, not landed (errs toward under-claiming)
+declined: nit 1 — errs safe; the ledger is append-only and a later LANDED line follows
+cost: 2026-10-06T02:38Z build $16.24 of $22 after review 3 — must-fix 0 — prices 2
+landed: 3626e8b
+- 2026-10-06 done: 3626e8b
