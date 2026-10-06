@@ -49,3 +49,4 @@ note: 2026-10-06 the scrub should seed the local deny-list (.git/info/claude-cod
 return: planner DONE_WITH_CONCERNS /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude-sandbox/investigations/e347-bundle-derived-content (01_scrub-build.md part A, 02_history-scrub.md part B; open A1-A4, B1 ⚠, B2-B5)
 baseline: 6a32e05643bf 00_inventory.md 5805bf0009fc 01_scrub-build.md e35451e07fc6 02_history-scrub.md 
 dispatch: reviewer opus high — plan review round 1
+agent: reviewer a1a6bdd4c2725f74c round 1
