@@ -197,3 +197,8 @@ decision 159: The scope interview's review stopped converging (one must-fix left
 answer 159: 159a (2026-10-06T04:06Z, chat; read as: (a) one more round with the fix specified)
 dispatch: implementer opus medium — resume (fix round 4, opened by answer 159 a)
 agent: implementer a43502b67a4ba3d10 round 5
+return: implementer DONE 4fbf099 (fifth guard; § A Systems: line written by someone else — closed N: superseded by <sha>, reconcile chore, item done; § Whose Systems: line; state 1 only on the librarian's own commit; end-to-end scratch run as expected; open: decisions.md's superseded by form names a decision, not a commit)
+changed:
+  plugins/dev-flow/skills/librarian-mode/references/opt-in.md — fifth guard, reconcile path, ownership check
+dispatch: reviewer opus high — resume (review round 5)
+agent: reviewer a83d30ab780e61e4c round 5
