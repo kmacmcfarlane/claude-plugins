@@ -3,12 +3,11 @@ id: readme-footer-every-readme-md-ends-with-c137
 title: "README footer: every README.md ends with one line saying it is user-facing documentation, not agent instructions"
 short_display_name: README user-facing footer
 type: chore
-status: doing
+status: done
 priority: 2
-owner: Kyle-McFarlane@401123cbad11
-claimed: 2026-10-05T23:12Z
 created: 2026-10-05
-updated: 2026-10-05
+updated: 2026-10-06
+closed: 2026-10-06
 refs:
   - peer marketplace 2026-10-05, relaying its operator
 ---
@@ -53,3 +52,5 @@ decision 158: READMEs that agents are told to read (this repo's root README, the
   unknown: whether other repos keep agent-facing READMEs of their own
 answer 158: "158 - I think the footer should only apply to README files in skill directories" (read as: narrows answer 157's second half — the footer applies only to README.md files inside skill folders; no footer on the root README, a work-item store's README, or any other README; c137's estate-wide practice shrinks to the skill-folder rule 48a8 already builds)
 closed 158: acted skills-allow-a-readme-md-in-a-skill-fold-48a8
+landed via 48a8 (12de6eb), narrowed by answer 158 to skill-folder READMEs only; nothing estate-wide remains
+- 2026-10-06 done: covered by 48a8 (12de6eb); narrowed by answer 158

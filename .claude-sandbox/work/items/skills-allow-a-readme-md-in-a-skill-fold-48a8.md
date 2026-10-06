@@ -3,12 +3,11 @@ id: skills-allow-a-readme-md-in-a-skill-fold-48a8
 title: "skills: allow a README.md in a skill folder when it carries the user-facing footer"
 short_display_name: skill-folder README allowed
 type: feature
-status: doing
+status: done
 priority: 2
-owner: Kyle-McFarlane@401123cbad11
-claimed: 2026-10-05T23:12Z
 created: 2026-10-05
-updated: 2026-10-05
+updated: 2026-10-06
+closed: 2026-10-06
 refs:
   - peer marketplace 2026-10-05, relaying its operator
 ---
@@ -74,3 +73,15 @@ findings: none
 note: answer 158 — the footer applies only to skill-folder READMEs; the CLAUDE.md bullet is reworded to that before landing
 dispatch: implementer sonnet medium — resume (answer 158: CLAUDE.md bullet to skill-folder READMEs only)
 agent: implementer a584d80ad91257072 round 4
+agent: implementer a584d80ad91257072 round 4
+return: implementer DONE ddc313c (CLAUDE.md bullet: skill-folder READMEs only)
+dispatch: reviewer opus high — resume (round 4, the 158 wording only)
+agent: reviewer aebf5a40fcf3c0f45 round 4
+verdict: CLEAR round 4 at ddc313c
+findings:
+  matches answer 158; nothing implies an estate-wide footer
+  1. [low] c137 item still says every README — closed below as covered by this item
+  2. [nit] bullet heading "README footer" — declined (the heading names the line it defines; the text scopes it)
+landed: 12de6eb
+closed 157: acted 12de6eb
+- 2026-10-06 done: landed 12de6eb (CLEAR r4)
