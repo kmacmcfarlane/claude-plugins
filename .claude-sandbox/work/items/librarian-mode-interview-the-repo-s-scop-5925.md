@@ -202,3 +202,27 @@ changed:
   plugins/dev-flow/skills/librarian-mode/references/opt-in.md — fifth guard, reconcile path, ownership check
 dispatch: reviewer opus high — resume (review round 5)
 agent: reviewer a83d30ab780e61e4c round 5
+verdict: NEEDS_CHANGES round 5 at 4fbf099
+findings:
+  round 4: FIXED (no second Systems: key; overtaken path; state 1 only on the librarian's own commit)
+  1. [medium] opt-in.md:441-442 — closed N: superseded by <sha> is outside the closed-line home format (work-items format.md § Closed: superseded by names a later decision); a reader can take an all-digit sha for decision M; doctrine 5 fail. Reviewer's preferred fix: no closed line when overtaken; when the reconcile item lands, closed N: acted <its merge sha> (existing form)
+  2. [low] opt-in.md:423-431 — the ownership test compares only the first added line (the bare Systems: header), so a hand commit with a copied subject passes as the librarian's; an amended or squashed own commit fails as someone else's
+  3. [low] opt-in.md:446-451 — the reconcile chore is filed todo (ready at once) and does not say the operator chooses which block stands
+  4. [nit] opt-in.md:403-406 — overlong line; which branch wins when a first-four guard and the fifth both fail
+cost: 2026-10-06T07:15Z build $14.04 of $22 after review 5 — must-fix 1 — prices 2
+decided: the round answer 159 (a) granted has ended with one medium left; raised again (bindings.md § What a cap ends in: a granted build round past the cap opens no further round unasked) — class: cap
+decision 166: The scope interview's granted round fixed the double scope line, but left one format problem and three small ones; give it one more round, or land with them carried? — options: (a) one more round: no closed line when your block is overtaken, closed as acted when the reconcile lands; the ownership check compares the whole block; the reconcile item waits for you to choose which block stands [recommended] | (b) land now; carry all four as a follow-up item | (z) decide later
+  raised: 2026-10-06T07:15Z
+  what: whether the scope-interview build (5925) gets a sixth review round; review 5 confirmed the double-scope-line fix but found the record line it writes for an overtaken card is outside the store's documented format, plus three small gaps
+  why now: the round your 159 (a) opened has ended; blocks: the scope interview landing
+  why ask: cap — only you open a round past the cap, and the fix changes the record line I described to you under 159 (a)
+  context: you chose one more round with the fix specified (159 a), and it fixed the double line · you decide whether the last format issue is fixed before landing
+  impact: → the interview lands writing only record lines the store already defines, and never mistakes a copied hand edit for your confirmed block · later: the scope interview stays unlanded; nothing else waits · reach: every librarian that runs the scope interview · undo: an edit before landing; after landing, a follow-up
+  if left: (1) the overtaken card's closing line names a commit where the format expects a decision number, so a reader can misread an all-digit commit id as a decision; (2) a hand edit that copies the librarian's commit subject is taken as your confirmed block, and your block is never written; (3) the reconcile item is picked up at once by an agent that must guess which block wins; (4) a wording gap
+  round costs: about $3-4 and 10-15 minutes (resumed builder and reviewer); $14.04 of the $22 budget spent; this answer, and another if the round does not settle it
+  (a) one more round — no closing line when your block is overtaken; when the reconcile lands, the card closes as acted on that commit (an existing form); the ownership check compares the whole block; the reconcile item waits on you to say which block stands — reach: every librarian — undo: an edit
+  (b) land now, carry all four — the interview ships today; finding 1 leaves a non-standard line in stores until the follow-up — reach: any repo where a scope line is hand-written during an open card — undo: the follow-up
+  (z) decide later — the build waits, unlanded
+  rec: (a) · basis partial — the fix is fully specified by the reviewer, uses only existing forms, and the round is cheap; landing (b) ships a line format the doctrine marks as a names-are-API failure
+  basis: observed — review round 5 at 4fbf099 (scratch repos: copied-subject case misclassified; format.md § Closed defines superseded by as a decision)
+  unknown: whether the reviewer finds anything new in the reconcile hand-off
