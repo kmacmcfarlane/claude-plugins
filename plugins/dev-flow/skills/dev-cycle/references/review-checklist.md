@@ -88,7 +88,10 @@ git -C $W log -E -i --grep="$P" --format='%h (message)' $BASE..HEAD
       report, not a pass.
 - [ ] Reference paths are bare relative paths: no dot-slash or dot-dot-slash prefix on
       a path into a skill, no skill-dir variable (what the lint below greps for).
-- [ ] No `README.md` inside the skill folder.
+- [ ] A `README.md` inside the skill folder is allowed only when its last non-blank line is
+      exactly `*User-facing documentation, not agent instructions.*` (what the lint below
+      checks). Confirm it carries nothing the agent needs to follow (that stays in SKILL.md
+      or `references/`) and no copy of SKILL.md.
 - [ ] SKILL.md under ~5000 tokens; detail lives in `references/`.
 - [ ] Every `references/*.md` the SKILL.md names exists: for a sibling pointer written
       `` `name` skill's `references/…` `` (CLAUDE.md's Cross-skill references convention),
@@ -100,7 +103,7 @@ for s in $(git -C $W -c core.quotePath=false diff --name-only $BASE...HEAD | gre
   d=$W/$s
   echo "== $s"
   test -f $d/SKILL.md || echo "FAIL: no SKILL.md"
-  test -f $d/README.md && echo "FAIL: README.md inside skill"
+  test -f "$d/README.md" && test "$(sed 's/[[:space:]]*$//' "$d/README.md" | grep -v '^$' | tail -n 1)" != '*User-facing documentation, not agent instructions.*' && echo "FAIL: README.md inside skill lacks the user-facing footer"
   name=$(sed -n 's/^name: *//p' $d/SKILL.md | head -1)
   test "$name" = "$(basename $s)" || echo "FAIL: name '$name' != folder"
   # every top-level key (indented lines, such as those under metadata:, do not count),
