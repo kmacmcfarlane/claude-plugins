@@ -71,3 +71,7 @@ correction: decision 164's card told the operator option (a) meant "the window g
 cost: 2026-10-06T07:40Z plan $15.56 of $28 after review 1 — must-fix 14 — prices 2
 dispatch: planner opus high — resume (plan fix round 1)
 agent: planner a17bc769f2e8fbff8 round 2
+return: planner DONE_WITH_CONCERNS /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude-sandbox/investigations/e347-bundle-derived-content (03_review-round-1.md; 21 findings applied; A5 (c) added; A1, A2, A5, B1-B3 blocking)
+baseline: 6a32e05643bf 00_inventory.md 5805bf0009fc 01_scrub-build.md e35451e07fc6 02_history-scrub.md 22bf553537f6 03_review-round-1.md 
+dispatch: reviewer opus high — resume (plan review round 2)
+agent: reviewer a1a6bdd4c2725f74c round 2
