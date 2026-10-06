@@ -16,8 +16,8 @@ refs:
 Relayed by peer claude-sandbox librarian 2026-10-06 with the license request: public code includes content derived from Claude Code's bundle — plugins/context-guard/hooks/window_rules.py (pushed c27cd37: a recipe for re-deriving its rules from the bundle, a transcribed model catalog, quoted 429 phrases, minified identifiers), lib_context.py:1300/1330 names e7r()/RLe(), context_warn.py:170 'read from the binary'. The operator noted leaked-source material 'muddies the waters'. Acceptance: an inventory of every such passage with path:line and what it is; options for each (rewrite from public docs/behaviour, remove, keep) for the operator; interacts with the license choice and whether the repo stays public.
 
 ## Handoff
-- doing: —
-- next: —
+- doing: plan stopped and carried (05, 4 reviews)
+- next: on 167-169: dispatch the scrub build with the carried findings; on 170-174: the history scrub (4151)
 - blocked: —
 - learned: —
 helper: scout sonnet medium — inventory of Claude Code bundle-derived passages in the tree (read-only) for decision 162 and this review
@@ -106,3 +106,114 @@ return: planner DONE /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.
 baseline: 6a32e05643bf 00_inventory.md 5805bf0009fc 01_scrub-build.md e35451e07fc6 02_history-scrub.md 22bf553537f6 03_review-round-1.md fc9c1192c481 04_review-round-2.md 04d42f9f9d2f 05_review-round-3.md 
 dispatch: reviewer opus high — resume (plan review round 4)
 agent: reviewer a1a6bdd4c2725f74c round 4
+verdict: NEEDS_CHANGES round 4 (plan)
+findings:
+  round 3: 1-3 FIXED
+  1. [medium] 05:6-74 — 05 has no Confirmed Assumptions section (format never-omit). Fix: 05:31 — insert "## Confirmed Assumptions" / "None new; 04 § Confirmed Assumptions stands, with main read as of the build (§ Supersedes)."
+  2. [low] 05:49-51 — no restart procedure after a V3 stop: on any V3 stop, add the path or line to the inputs, delete $S/rewrite.git, restart from Step 2's --no-local clone; never re-run filter-repo on the rewritten mirror
+  3. [low] 05:46-47 — only a manual read drops a wrongly harvested ordinary line; Step 3 prints each harvested line beside its label for the reviewer
+cost: 2026-10-06T08:01Z plan $25.79 of $28 after review 4 — must-fix 1 — prices 2
+decided: the plan stops and carries — convergence stop at the fourth review (must-fix 1, not lower than review 3's 1), no high left (bindings.md § What a cap ends in, step 2) — class: cap
+findings: carried — round 4 findings 1 [medium], 2 [low], 3 [low] above, verbatim; into the scrub build and the history-scrub build (4151)
+decision 167: When Claude Code reports the long-context credits error, should the window gate hard-stop at 200K or only warn? — options: (a) warn only [recommended] | (b) keep the 200K hard stop | (z) decide later
+  raised: 2026-10-06T08:01Z
+  what: what the gate does after the credits error (A1 of the scrub plan, e347)
+  why now: the scrub plan stopped and carried after 4 reviews; blocks the scrub build
+  why ask: trade-off — a hard stop you rely on today becomes a warning
+  context: you chose to scrub internals and rewrite history (164 a) · you settle the plan's open choices — then: none
+  impact: → after that error, sessions above 200K get a warning instead of a hard stop · later: the scrub build waits · reach: context-guard users · undo: an edit
+  (a) warn only — the only choice safe with 169 (c) — reach: context-guard users — undo: an edit
+  (b) keep the 200K hard stop — allowed only with 169 (a) or (b); with 169 (c) it would hard-stop a 1M session after any rate-limit error
+  (z) decide later — the scrub build waits
+  rec: (a) · basis partial — the error cannot be recognised without quoting internal text, and only warn-only is safe with the text-free recognition
+  unknown: none
+decision 168: What may make a context window 'resolved', so the gate can hard-stop on it? — options: (a) only the Claude Code docs or a window observed with claude -p [recommended] | (b) also the API's context-window table | (z) decide later
+  raised: 2026-10-06T08:01Z
+  what: the gate's sources of truth once the internal tables go (A2); decision 164 (a) was put to you as no behaviour change, and this is one of the changes it brings
+  why now: the scrub plan stopped and carried after 4 reviews; blocks the scrub build
+  why ask: trade-off — hard stops kept vs. sources Claude Code itself documents
+  context: you chose to scrub internals and rewrite history (164 a) · you settle the plan's open choices — then: none
+  impact: → without a status line, Mythos, Claude 3.x and Opus 4.0/4.1/4.5 only warn, Opus and Sonnet 5.5 gain a hard stop, and one never-observed case could stop early · later: the scrub build waits · reach: context-guard users without a status line · undo: an edit
+  (a) Claude Code docs or an observed window — reach: context-guard users without a status line — undo: an edit
+  (b) also the API table — those older models keep a hard stop, but the table disagrees with Claude Code on the 4.6 models
+  (z) decide later — the scrub build waits
+  rec: (a) · basis partial — only Claude Code's own docs and observations say what Claude Code does
+  unknown: none
+decision 169: How should the gate recognise the credits error in a transcript? — options: (a) the documented message text, cited | (b) a short documented fragment | (c) observed machine values only, no text [recommended] | (z) decide later
+  raised: 2026-10-06T08:01Z
+  what: how the latch is detected (A5)
+  why now: the scrub plan stopped and carried after 4 reviews; blocks the latch change and the history scrub
+  why ask: rule-change — (a) and (b) are in tension with the new CLAUDE.md rule against quoted message text
+  context: you chose to scrub internals and rewrite history (164 a) · you settle the plan's open choices — then: none
+  impact: → no quoted message text in the tree; after any rate-limit error, sessions above 200K only warn for the rest of that Claude Code process · later: an internal string stays in the tree, which also blocks the history scrub · reach: context-guard users · undo: an edit
+  (a) documented text, cited — conflicts with the rule; may never match, as the transcript lacks the documented prefix
+  (b) a short fragment — same problems, smaller quote
+  (c) observed machine values only — over-matches toward warn-only; a credits event with an unobserved category goes undetected (under-warns, never blocks); safe only with 167 (a)
+  (z) decide later — an internal string stays; the history scrub is blocked
+  rec: (c) · basis partial — the only option that quotes nothing; its errors all fall toward warning, never a false block
+  unknown: which category value the credits error itself carries
+decision 170: Where should git-filter-repo be installed for the one-time history rewrite? — options: (a) per-session pip in this sandbox [recommended] | (b) the child Dockerfile | (c) the host, with you running the rewrite there | (z) decide later
+  raised: 2026-10-06T08:01Z
+  what: the tool the history scrub needs (A4); it is not installed
+  why now: the scrub plan stopped and carried after 4 reviews; blocks the history scrub only
+  why ask: your-call — the sandbox image and the host are yours
+  context: you chose to scrub internals and rewrite history (164 a) · you settle the plan's open choices — then: none
+  impact: → installed in this sandbox for the one run, gone when the container exits · later: the history scrub cannot run · reach: this sandbox · undo: —
+  (a) per-session pip — nothing persists
+  (b) child Dockerfile — every future session has it
+  (c) host — you run the rewrite outside the sandbox
+  (z) decide later — the history scrub cannot run
+  rec: (a) · basis strong — a one-time run needs no permanent install
+  unknown: none
+decision 171: How should the public history be replaced? ⚠ one-way — options: (a) rewrite and force-push | (b) rewrite, delete and recreate the GitHub repo [recommended] | (c) no rewrite | (z) decide later
+  raised: 2026-10-06T08:01Z
+  what: B1 of the history scrub (4151)
+  why now: the scrub plan stopped and carried after 4 reviews; blocks the history scrub
+  why ask: one-way — publishing or deleting history cannot be undone
+  context: you chose to scrub internals and rewrite history (164 a) · you settle the plan's open choices — then: none
+  impact: → old commits stop resolving on GitHub at once; repo settings re-applied; same URL · later: the internals stay readable in public history · reach: the public repo and every clone · undo: (b) none — the deletion is permanent; (a) old commits stay reachable by id
+  (a) force-push — old commits stay reachable by id on GitHub, and Support may decline to purge them; every clone must reset; the remap table stays local
+  (b) delete and recreate — the repo has no forks, pull requests, issues or stars; only settings need re-applying
+  (c) no rewrite — the build (scrub) still lands; history keeps the internals
+  (z) decide later — the history scrub waits
+  rec: (b) · basis partial — only deleting the repo stops old commits resolving; nothing of value is lost
+  unknown: none
+decision 172: How much should the history scrub purge? — options: (a) tier 1: recipe, labels, internal strings and facts | (b) tier 1 plus wording that cites 'the binary' as a source [recommended] | (c) also version pins and tables | (z) decide later
+  raised: 2026-10-06T08:01Z
+  what: B2, the purge scope
+  why now: the scrub plan stopped and carried after 4 reviews; blocks the history scrub
+  why ask: your-call — how far a one-way rewrite reaches
+  context: you chose to scrub internals and rewrite history (164 a) · you settle the plan's open choices — then: none
+  impact: → the recipe, labels, internal strings and 'verified in the binary' wording leave all history since 2026-09-19 · later: the history scrub waits · reach: every commit since 2026-09-19 · undo: from the backup while it is kept
+  (a) tier 1 only
+  (b) tier 1 plus binary-as-source wording
+  (c) also version pins and tables — nothing copied, many blobs churned
+  (z) decide later — the history scrub waits
+  rec: (b) · basis partial — removes every internal source claim without rewriting harmless version data
+  unknown: none
+decision 173: Who runs the history scrub's force/recreate step and the in-place reset of this checkout? — options: (a) you, from commands I prepare [recommended] | (b) I do, under an explicit waiver of my no-force and no-reset rules for those two steps only | (z) decide later
+  raised: 2026-10-06T08:01Z
+  what: B3
+  why now: the scrub plan stopped and carried after 4 reviews; blocks the history scrub's last steps
+  why ask: rule-change — my rules forbid force-push and reset; only you can waive them
+  context: you chose to scrub internals and rewrite history (164 a) · you settle the plan's open choices — then: none
+  impact: → you run the two destructive steps; every session sharing this checkout stops first · later: the history scrub waits · reach: this checkout, its worktrees, every session on it · undo: from the .git tar backup
+  (a) you run them — my rules stand
+  (b) a waiver for two named steps only
+  (z) decide later — the history scrub waits
+  rec: (a) · basis strong — destructive one-way steps stay with you
+  unknown: none
+decision 174: How long should the history-scrub backups be kept? — options: (a) until the post-push checks pass, plus a week [recommended] | (b) delete right after the checks | (c) keep them offline indefinitely | (z) decide later
+  raised: 2026-10-06T08:01Z
+  what: B4
+  why now: the scrub plan stopped and carried after 4 reviews; blocks nothing
+  why ask: your-call — keeping the purged material is a copyright choice too
+  context: you chose to scrub internals and rewrite history (164 a) · you settle the plan's open choices — then: none
+  impact: → the only rollback, and the only copy of the purged material, is kept a week after the checks, then deleted · later: kept until you say · reach: local disk only · undo: deletion is final
+  (a) a week after the checks
+  (b) right after the checks — no rollback
+  (c) offline indefinitely — the purged material survives
+  (z) decide later — kept until you answer
+  rec: (a) · basis partial — a short rollback window, then gone
+  unknown: none
+open question: which other machines hold a clone of claude-plugins or its marketplace (each needs a re-clone or reset after the history scrub) — owner: operator (B5)
