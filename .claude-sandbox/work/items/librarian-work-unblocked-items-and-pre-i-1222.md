@@ -140,3 +140,4 @@ decision 176: When the weekly quota is plentiful, should reaching an item's spen
   unknown: whether 50% is the right line for you
 answer 176: 176a (2026-10-06T19:28Z, chat; read as: (a) quota-aware — below 50% weekly use a reached budget is noted in the Report and rounds continue; at or above 50% it asks as today; the convergence stop and the reserve guards stay)
 helper: scribe sonnet low — cards.json for the decision page (15 open decisions) — agent ae38c041c289219b5
+note: 2026-10-07T20:40Z decision page published https://claude.ai/artifact/7BXtgDngojdMHBr17K33zr (15 cards, rev 2026-10-07T07:00Z; answers owner-write); answers read back when the operator says done
