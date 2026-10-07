@@ -18,3 +18,15 @@ Relayed 2026-10-07 by peer kappa-3567 (sussex/communications/email), feedback fr
 - next: —
 - blocked: —
 - learned: —
+decision 179: Should checkpoint write conversation-only details into every open item the session touched before it writes the manifest (the operator's request, relayed from the kappa-3567 session)? — options: (a) yes, as relayed: audit each item in the manifest's items: set and append what only the conversation holds [recommended] | (b) no | (z) decide later
+  raised: 2026-10-07T18:14Z
+  what: a step in the context-guard checkpoint skill, before the manifest: for each open or doing item the session touched, append to the item what exists only in the conversation — open questions, unconfirmed operator statements, proposals and alternatives, refinements, file:line pointers
+  why now: relayed today; blocks: its build
+  why ask: your-call — you gave it in another session ("it should be SOP to add details like this to open work-items before checkpointing"), and a relayed answer is not one I can act on
+  context: you told the kappa-3567 session it should be standard procedure · you confirm it here
+  impact: → after any checkpoint, each open item carries what was said about it, so a fresh session or another agent picks it up whole · later: items stay as thin as each session leaves them · reach: every session that checkpoints · undo: an edit
+  (a) yes — one more step in every checkpoint; a little more writing at checkpoint time
+  (b) no — the manifest stays the only carrier of conversation residue
+  (z) decide later — the item waits
+  rec: (a) · basis strong — your words, relayed with the case that prompted them
+  unknown: none

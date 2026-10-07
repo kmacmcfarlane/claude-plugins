@@ -262,3 +262,4 @@ changed:
   plugins/context-guard/skills/checkpoint/references/{design-rationale,operator-playbook}.md; plugins/statusline/skills/install-statusline/references/sensor-contract.md; README.md — wording
   .claude-sandbox/work/items/ (X5 rows and the completeness-gate extras) — internals removed or relabelled
 dispatch: reviewer opus high — review round 1
+agent: reviewer ab95a8bfa07939c0f round 1
