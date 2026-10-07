@@ -283,3 +283,6 @@ changed:
 decided: rebuild the branch as one clean commit before review round 2 — CLAUDE.md rule 5: a deny-listed string found while only on its own unmerged branch (b7d9b35 re-adds the 8ab6 variable in its diff) is cleared by a rebuild per fix-loop.md § A leaked secret, never a fix commit on top; the older occurrence already on main since e122bdd stays for the history scrub (4151) — class: reading
 dispatch: implementer opus medium — resume (rebuild: reach check, soft reset to the merge base, one clean commit)
 agent: implementer a8b8d2db9e1889381 round 3
+return: implementer DONE e7029c0 (rebuilt as one commit; reach check: old commits on this branch only; tree diff vs 7f4bf04 empty; deny-list hits only on removed lines)
+dispatch: reviewer opus high — resume (review round 2, of the rebuilt branch)
+agent: reviewer ab95a8bfa07939c0f round 2
