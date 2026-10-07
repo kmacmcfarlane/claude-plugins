@@ -81,3 +81,10 @@ changed:
   plugins/create-repo/skills/create-repo/{references/gitignore.md, SKILL.md} — round 1 fixes
 dispatch: reviewer opus high — resume (review round 2)
 agent: reviewer a279dc825c3db9dc0 round 2
+verdict: NEEDS_CHANGES round 2 at 59a144f
+findings:
+  round 1: 1-6 FIXED
+  1. [medium] references/gitignore.md:86-89 — the check-ignore probe counts matches from .git/info/exclude and the global excludes file (Claude Code adds settings.local.json there on the host), so the repo line is silently dropped. Fix: gitignore.md:86 — append "Count only a match whose file field is `.gitignore`; a match from `.git/info/exclude` or a global excludes file is this machine's alone, so keep the candidate."
+  2. [low] gitignore.md:80-92 — one sample path per candidate can miss another owner's negation (e.g. !.claude/worktrees/ under .claude/*, or !.env.development)
+dispatch: implementer opus medium — resume (fix round 2)
+agent: implementer a025c1792c8b8ecb7 round 3
