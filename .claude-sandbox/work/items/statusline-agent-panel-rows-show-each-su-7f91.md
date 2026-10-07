@@ -25,3 +25,9 @@ target: full statusline-agent-panel-rows-show-each-su-7f91 /home/rt/work/src/git
 budget: 2026-10-07T20:36Z build $22 — default other build
 dispatch: implementer opus medium — build (status-line hook code)
 agent: implementer a4bd4861771a0bec2 round 1
+return: implementer DONE 56eedcb (model and effort from the documented subagent payload fields; tag dropped whole before the name; 7 tests; README and install-statusline SKILL.md row format updated)
+changed:
+  plugins/statusline/hooks/subagent_statusline.py and its test — model/effort tag
+  README.md, plugins/statusline/skills/install-statusline/SKILL.md — row format
+dispatch: reviewer opus high — review round 1
+agent: reviewer aa336218277396d92 round 1
