@@ -14,8 +14,8 @@ updated: 2026-10-07
 Operator 2026-10-07, verbatim: 'I'd like the status-line entries on sub-agents to show the model and effort too in addition to the context fill'. Acceptance: plugins/statusline/hooks/subagent_statusline.py renders each sub-agent row's model and effort alongside its context fill, from what the subagentStatusLine payload documents or what is observable (CLAUDE.md § Claude Code source material: observed with method and version, or the docs URL); where a field is absent, the row says nothing rather than guessing; tests.
 
 ## Handoff
-- doing: —
-- next: —
+- doing: fix round 1 (agent stopped mid-edit)
+- next: check the worktree for uncommitted edits; resume a4bd4861771a0bec2 with SendMessage or re-dispatch fix round 1; then review round 2 (reviewer aa336218277396d92)
 - blocked: —
 - learned: —
 
@@ -41,3 +41,4 @@ findings:
 decided: finding 1 — drop the description whenever a non-empty tag does not fit, so model and effort outlast the description as the docs say and the operator asked; finding 2 accepted into scope — class: design
 dispatch: implementer opus medium — resume (fix round 1)
 agent: implementer a4bd4861771a0bec2 round 2
+stopped: 2026-10-07T20:58Z implementer a4bd4861771a0bec2 round 2 stopped by the librarian before tmux restart (operator: 'spin down open tasks'); worktree state as found; resume with SendMessage, else re-dispatch fix round 1 from the record

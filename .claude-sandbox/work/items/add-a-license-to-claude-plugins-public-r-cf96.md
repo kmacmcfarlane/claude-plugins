@@ -16,8 +16,8 @@ refs:
 Operator request relayed by peer claude-sandbox librarian 2026-10-06 (operator's words: 'We absolutely need to get a license up on claude-plugins immediately'). GitHub reports the repo public with license:null; no LICENSE file in the tree. Which license is the operator's call (not asked by the peer). Acceptance: a LICENSE file at the repo root with the operator's chosen license, README names it, marketplace/plugin manifests carry a license field if the operator wants one; landed and pushed.
 
 ## Handoff
-- doing: —
-- next: —
+- doing: build (agent stopped)
+- next: check the worktree; resume ae56c9c628ad34f7d or re-dispatch the build; then a reviewer
 - blocked: —
 - learned: —
 decision 162: Which license should claude-plugins carry? — options: (a) MIT [recommended] | (b) Apache-2.0 | (c) all rights reserved (source visible, no reuse granted) | (d) another (say it) | (z) decide later
@@ -76,3 +76,4 @@ target: full add-a-license-to-claude-plugins-public-r-cf96 /home/rt/work/src/git
 budget: 2026-10-07T20:57Z build $10 — default chore
 dispatch: implementer opus medium — build (LICENSE GPL-3.0, answer 162 e)
 agent: implementer ae56c9c628ad34f7d round 1
+stopped: 2026-10-07T20:58Z implementer ae56c9c628ad34f7d round 1 stopped by the librarian before tmux restart; resume with SendMessage, else re-dispatch the build from the record
