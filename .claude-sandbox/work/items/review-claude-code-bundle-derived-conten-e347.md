@@ -251,3 +251,6 @@ answer 168: 168a (2026-10-06T19:28Z, chat; read as: (a) only the Claude Code doc
 note: 2026-10-06T19:28Z operator replied "167c"; 167 has no option (c) (its options are (a) warn only, (b) keep the 200K hard stop, (z) later) — not acted on; asked which was meant
 answer 167: 167a (2026-10-07T17:38Z, chat; read as: (a) warn only after the credits error — not the recommended (b); paired with 169 (a) this is a safe pair)
 answer 169: 169a (2026-10-07T17:38Z, chat; read as: (a) match the externally observable message text, cited and labelled; the build confirms it against a real transcript line first)
+target: full review-claude-code-bundle-derived-conten-e347 /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude/worktrees/review-claude-code-bundle-derived-conten-e347
+budget: 2026-10-07T17:38Z build $22 — default other build
+dispatch: implementer opus medium — build (series 01-05 part A; answers 164 a, 167 a, 168 a, 169 a, 175 a; carried round-4 findings 1-3)
