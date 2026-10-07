@@ -132,7 +132,7 @@ plugins/
       usage-report/scripts/  # usage_report.py + item_spend.py (an item's spend by agent id) + prices.json (token-spend accounting)
   create-repo/         # Start a new repo for a thread of work, with a session launched on it
     skills/
-      create-repo/     # references/launch-command.md
+      create-repo/     # references/{launch-command,gitignore}.md
   dev-flow/            # Plan before you code; research into findings or a knowledge base; the librarian that takes custody of a repo
     agents/            # scribe, scout, implementer, implementer-critical, implementer-deep, planner, planner-deep, reviewer, reviewer-light, cross-checker, cross-checker-deep (the dev cycle's role workers); research-lane, research-lane-deep, research-verifier (the research family's workers)
     skills/
