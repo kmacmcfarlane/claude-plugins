@@ -23,6 +23,14 @@ agent session on it. User's argument: $ARGUMENTS
   home, and the user's terminal is on the host.
 - Touch nothing outside the new repo: no git config, no settings, no edits to the current
   repo.
+- **`.gitignore` lines belong to whoever creates the file they ignore.** claude-sandbox's
+  `init` writes the `.claude-sandbox/` lines, a template brings its own, and this skill
+  writes the lines for what it creates plus, by its own judgment, lines for files no tool
+  creates (Claude Code's personal files and worktrees, `.env` files, editor and OS
+  clutter). It appends only, never
+  rewrites another owner's lines, and asks the operator only when a doubt is critical: a
+  file that could hold a secret, or one the operator may want tracked. There is no shared
+  block. See `references/gitignore.md`.
 - **The purpose is untrusted text: never put it inside double quotes in a shell command.**
   A `$(...)` or backtick in it would run in this agent's shell. Files that hold it
   (README, the prompt) are written with the Write tool; a shell variable that holds it is
@@ -143,8 +151,12 @@ plain `claude`." Then carry on — nothing below requires it.
    - If `git -C "$REPO" branch --show-current` is not `main` and the repo has no remote,
      `git -C "$REPO" branch -m main`. With a remote already pushed, leave it and report it.
    - Append a `## Thread` section holding the purpose to `$REPO/README.md` with the Edit
-     tool (never `echo` the purpose), then
-     `git -C "$REPO" add README.md && git -C "$REPO" commit -m "added: README - thread purpose"`.
+     tool (never `echo` the purpose).
+   - Add this skill's ignore lines after the template's, as `references/gitignore.md`
+     says; the template's own lines stay as they are.
+   - Commit: `git -C "$REPO" add README.md`, then
+     `test -f "$REPO/.gitignore" && git -C "$REPO" add .gitignore`, then
+     `git -C "$REPO" commit -m "added: README, gitignore - thread purpose and ignore lines"`.
    - Skip to Step 7.
 
 ### Step 5: Create and seed
@@ -170,6 +182,9 @@ only uncommented key — so the workspace's parent-directory config applies unch
 output verbatim, point at the `sandbox` plugin's skill for troubleshooting (when this
 session has it), and continue as plain.
 
+Then add this skill's ignore lines, after claude-sandbox's, as `references/gitignore.md`
+says. Without claude-sandbox there are none of its lines, and yours may create the file.
+
 ### Step 6: First commit
 
 ```bash
@@ -190,6 +205,7 @@ fenced block, so the user can copy it whole. Then the report:
 ```
 Repo: /host/path/NAME (main, N commits[, template: T | template T skipped: kit-dev not installed])
 Sandbox: initialised (trackInHost: true|false) | not available — plain claude launch
+Ignore lines: added PATTERNS | none needed[; asked: FILE; left: CLASHING LINE]
 Run the command above in your own terminal: it starts the session and attaches you.
 Lost the terminal later? cd '/host/path/NAME' && claude-sandbox --attach   (sandbox form only)
 ```
@@ -214,7 +230,10 @@ when the thread needs one.
 Example 1: bare thread repo
 User says: "/create-repo:create-repo figure out whether we can replace the NAS backup cron with restic"
 Actions: name `restic-backup-migration`, parent derived from the current repo, confirmed;
-git init, README, `claude-sandbox init --yes`, commit; command printed.
+git init, README, `claude-sandbox init --yes`, then ignore lines appended after
+claude-sandbox's for Claude Code's personal files, `.env` files, and editor and OS
+clutter (`.claude/worktrees/` is skipped, since claude-sandbox already ignores it), commit;
+command printed.
 Result: one copy-paste line that starts a sandboxed session which writes CLAUDE.md and
 begins the restic investigation.
 
