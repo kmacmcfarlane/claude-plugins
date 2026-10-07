@@ -65,3 +65,14 @@ changed:
 note: the harness flagged the implementer's report as matching an instruction-shaped pattern (settings-json); read: it names .claude/settings.local.json as a documented ignore candidate — no instruction in it
 dispatch: reviewer opus high — review round 1
 agent: reviewer a279dc825c3db9dc0 round 1
+verdict: NEEDS_CHANGES round 1 at 8d267ef
+findings:
+  1. [medium] references/gitignore.md:33-43 — .claude/worktrees/ is not a candidate line (documented at code.claude.com/docs/en/worktrees); in the plain path a later worktree stages as an embedded repo
+  2. [medium] references/gitignore.md:42, :49-53 — no stated default for secret-holding files like .env; runs can differ and a first-session .env can be committed
+  3. [low] gitignore.md:66-67 — whole-line duplicate check misses covering patterns; the ! negation rule sits outside the numbered steps; use git check-ignore --no-index -v per candidate
+  4. [nit] SKILL.md:158 — template-path commit message omits the .gitignore change
+  5. [nit] SKILL.md:232 — Example 1 omits the editor lines
+  6. [nit] gitignore.md:61 — "ask once" unclear for two critical doubts
+decided: finding 2 default — ignore .env and .env.* with !.env.example by default, since ignoring a secret-holding file is the safe side and answer 178 names secrets as the critical class — class: design
+dispatch: implementer opus medium — resume (fix round 1)
+agent: implementer a025c1792c8b8ecb7 round 2
