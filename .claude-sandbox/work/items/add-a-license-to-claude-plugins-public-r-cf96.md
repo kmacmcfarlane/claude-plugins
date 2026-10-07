@@ -3,10 +3,12 @@ id: add-a-license-to-claude-plugins-public-r-cf96
 title: Add a LICENSE to claude-plugins (public repo with no license)
 short_display_name: add a license
 type: chore
-status: todo
+status: doing
 priority: 0
+owner: Kyle-McFarlane@2d49f8460283
+claimed: 2026-10-07T20:57Z
 created: 2026-10-06
-updated: 2026-10-06
+updated: 2026-10-07
 refs:
   - peer claude-sandbox librarian 2026-10-06 (their item proposal-a-reusable-claude-code-knowledg-31bd)
 ---
@@ -67,3 +69,9 @@ decision 162: Which license should claude-plugins carry? — options: (a) MIT | 
   rec: (e) · basis strong — your existing choice across your projects, and this code came out of claude-kit under it; the one cost is that anyone who pastes a changed skill into a project they distribute must license that under GPL too
   unknown: none
 answer 162: e — "is this what I'm using for other repos in kmacmcfarlane too?" (answer page, rev 2026-10-07T07:00Z, 2026-10-07T20:44:29.732Z; read as: (e) GPL-3.0; the question answered yes: claude-kit, claude-sandbox, claude-analytics, claude-templates, checkpoint-sampler and image-dataset-tool carry GPL-3.0)
+
+## Notes
+- 2026-10-07 claimed by Kyle-McFarlane@2d49f8460283
+target: full add-a-license-to-claude-plugins-public-r-cf96 /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude/worktrees/add-a-license-to-claude-plugins-public-r-cf96
+budget: 2026-10-07T20:57Z build $10 — default chore
+dispatch: implementer opus medium — build (LICENSE GPL-3.0, answer 162 e)
