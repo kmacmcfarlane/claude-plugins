@@ -99,7 +99,8 @@ your recommendation.
    above it. When a candidate's pattern would match the path a `!` line names (for
    `.env.*`, any `.env.` name; for `.claude/worktrees/`, anything inside it), drop that
    candidate, since appending it after the `!` line would ignore that path again, and
-   name the `!` line in the report.
+   name the `!` line in the report. A `!.env.example` line does not count here, since
+   this skill appends its own `!.env.example` right after `.env.*`.
 4. Append the kept candidates at the end of the file under one comment line,
    `# create-repo: Claude Code personal files, secrets, editor and OS files`, with a
    blank line before it when the file is not empty. Write with the Edit or Write tool;
