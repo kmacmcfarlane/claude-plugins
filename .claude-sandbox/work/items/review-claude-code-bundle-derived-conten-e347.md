@@ -3,12 +3,11 @@ id: review-claude-code-bundle-derived-conten-e347
 title: Review Claude Code bundle-derived content in the public tree (context-guard window rules, minified identifiers)
 short_display_name: bundle-derived content review
 type: spike
-status: doing
+status: done
 priority: 0
-owner: Kyle-McFarlane@401123cbad11
-claimed: 2026-10-06T07:04Z
 created: 2026-10-06
-updated: 2026-10-06
+updated: 2026-10-07
+closed: 2026-10-07
 refs:
   - peer claude-sandbox librarian 2026-10-06
 ---
@@ -288,3 +287,5 @@ dispatch: reviewer opus high — resume (review round 2, of the rebuilt branch)
 agent: reviewer ab95a8bfa07939c0f round 2
 verdict: CLEAR round 2 at e7029c0
 cost: 2026-10-07T18:56Z build $23.33 of $22 after review 2 — must-fix 0 — prices 2
+landed: fbe2c0f
+- 2026-10-07 done: fbe2c0f

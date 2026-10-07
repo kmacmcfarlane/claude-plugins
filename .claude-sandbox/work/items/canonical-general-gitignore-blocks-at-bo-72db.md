@@ -100,3 +100,6 @@ findings:
 decided: one exact-words round for low 1 before landing — it lets a secret-holding .env.local go unignored, the class answer 178 names as critical — class: cap
 dispatch: implementer opus medium — resume (fix round 3, exact words)
 agent: implementer a025c1792c8b8ecb7 round 4
+return: implementer DONE e82a382 (the exact sentence at gitignore.md:102)
+dispatch: reviewer opus high — resume (review round 4, one sentence)
+agent: reviewer a279dc825c3db9dc0 round 4
