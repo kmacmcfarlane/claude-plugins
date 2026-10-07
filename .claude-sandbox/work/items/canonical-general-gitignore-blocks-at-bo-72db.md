@@ -3,12 +3,11 @@ id: canonical-general-gitignore-blocks-at-bo-72db
 title: Canonical general .gitignore blocks at both new-repo entry points (create-repo, new-project-from-template)
 short_display_name: gitignore ownership by creator
 type: feature
-status: doing
+status: done
 priority: 2
-owner: Kyle-McFarlane@2d49f8460283
-claimed: 2026-10-07T18:13Z
 created: 2026-10-06
 updated: 2026-10-07
+closed: 2026-10-07
 refs:
   - "peer claude-sandbox librarian 2026-10-06 (their e6a3; claude-sandbox#37, #38)"
 ---
@@ -103,3 +102,7 @@ agent: implementer a025c1792c8b8ecb7 round 4
 return: implementer DONE e82a382 (the exact sentence at gitignore.md:102)
 dispatch: reviewer opus high — resume (review round 4, one sentence)
 agent: reviewer a279dc825c3db9dc0 round 4
+verdict: CLEAR round 4 at e82a382
+cost: 2026-10-07T19:06Z build $8.11 of $22 after review 4 — must-fix 0 — prices 2
+landed: 7a21c85
+- 2026-10-07 done: 7a21c85
