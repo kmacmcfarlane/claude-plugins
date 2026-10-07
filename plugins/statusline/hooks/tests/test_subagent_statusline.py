@@ -448,7 +448,7 @@ class PluginDefault(unittest.TestCase):
     def test_command_reaches_the_renderer_through_current_hooks(self):
         with open(os.path.join(PLUGIN, "settings.json")) as f:
             cmd = json.load(f)["subagentStatusLine"]["command"]
-        self.assertNotIn("CLAUDE_PLUGIN_ROOT", cmd)  # not expanded in plugin settings
+        self.assertNotIn("CLAUDE_PLUGIN_ROOT", cmd)  # the current-hooks link, not a path variable
         m = re.fullmatch(r'python3 "\$\{CLAUDE_CONFIG_DIR:-\$HOME/\.claude\}'
                          r'/plugins/data/statusline-kmacmcfarlane/current-hooks/'
                          r'([a-z_]+\.py)"', cmd)

@@ -8,8 +8,8 @@ past. HARD blocks the prompt itself (exit 2 — Claude Code shows stderr to the
 user and ERASES the prompt) unless the prompt is /checkpoint, /compact or
 /clear, in the bare or the plugin-prefixed form (/context-guard:checkpoint).
 A HARD stop requires a depth source in L.BLOCKING_SOURCES: EXACT (a fresh
-status-line record) or DERIVED (the window mirrored from Claude Code's own
-selection logic, every input resolved; see window_rules.py). When the depth
+status-line record) or DERIVED (the window derived from documented and
+observed rules, every input resolved; see window_rules.py). When the depth
 is inferred from the transcript, or the derived window is unresolved, it is a
 guess, so under `hard` the hook emits the DUE-style advisory saying a hard
 stop was not applied and exits 0 (live-fired 2026-09-16: a 1M session was
@@ -141,8 +141,8 @@ def mark_checkpoint_command(sid):
 def derived_hatches(sid):
     """Escape hatches printed under a HARD STOP that a derived (mirrored)
     window caused, in case the mirror is wrong."""
-    return ("If this stop is wrong (its window came from context-guard's mirror of "
-            "Claude Code's window selection, not from the status line alone): set "
+    return ("If this stop is wrong (its window came from context-guard's window "
+            "rules, from documented and observed behaviour, not from the status line alone): set "
             "CONTEXT_GUARD_DERIVE=off in the environment Claude Code is launched "
             "from, or stand the gate down for this epoch with\n"
             f"  {mark_checkpoint_command(sid)}\n"
@@ -165,9 +165,9 @@ def fit_left(m, tok):
 
 
 # The advice when a checkpoint no longer fits. /clear first: it always works.
-# /compact is the alternative when the work is not on disk; in Claude Code
-# 2.1.278 a manual compaction that overflows retries up to 3 times with the
-# oldest messages dropped (read from the binary, not live-verified).
+# /compact is the alternative when the work is not on disk.
+# What `/compact` does when the conversation is too large to summarise can be
+# derived from Claude Code's internals; it is not recorded here.
 COMPACT_GUIDANCE = "/compact <what is in flight, what was decided, what was refused>"
 
 

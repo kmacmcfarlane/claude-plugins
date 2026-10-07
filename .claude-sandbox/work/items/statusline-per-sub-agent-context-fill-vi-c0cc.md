@@ -26,14 +26,14 @@ decision 50: the drafted upstream issue (tell the statusLine which sub-agent is 
 - 2026-09-21 done: e1b43b3
 
 ## Implementer result
-- round 1 DONE_WITH_CONCERNS ff555d2 (opus): subagent_statusline.py renderer (exact from sidechain, incremental 8 MiB/tick, approx fallback labelled); plugin settings.json default subagentStatusLine via current-hooks link (${CLAUDE_PLUGIN_ROOT} not expanded there; user value always wins; no user settings write); prune; 24 tests; docs + #76863 limitation. Verified docs + binary 2.1.278; hand-run on a 10 MB sidechain.
+- round 1 DONE_WITH_CONCERNS ff555d2 (opus): subagent_statusline.py renderer (exact from sidechain, incremental 8 MiB/tick, approx fallback labelled); plugin settings.json default subagentStatusLine via current-hooks link (the link, not a plugin path variable; user value always wins; no user settings write); prune; 24 tests; docs + #76863 limitation. Verified against the docs; hand-run on a 10 MB sidechain.
 - scope widened (librarian): CLAUDE.md layout line for statusline/hooks gets subagent_statusline + plugin settings.json (same-feature layout rule); catalog row left as is.
 - dispatch: implementer opus — widening (same agent resumed), then reviewer opus
 - widening DONE c1be970: CLAUDE.md layout lists subagent_statusline + plugin settings.json.
 - dispatch: reviewer opus — rule 4
 
 ## Review round 1 — CLEAR (opus) at c1be970
-- verified docs + 2.1.278 binary independently (plugin settings allowlist agent/subagentStatusLine; user value wins; no ${CLAUDE_PLUGIN_ROOT} expansion; fresh install fails quietly to default rows); injection/traversal neutralised; 128 MB sidechain ticks ≤0.24 s.
+- verified against the docs independently (a plugin's settings.json may ship subagentStatusLine; the user value wins); the rest not live-verified; injection/traversal neutralised; 128 MB sidechain ticks ≤0.24 s.
 - lows: single huge line bypasses the 8 MiB budget / later rows starve; cache drops rows not visible this tick; workflow agents' transcriptSubdir not searched; plugin.json 'plus' clause (principle 1), catalog/placement text; two commits; test reads marketplace.json by relative path; columns 0.
 ## Land stopped (librarian reading) — counts as review round 2
 - [medium] doctrine: plugin.json description changed but .claude-plugin/marketplace.json's statusline description was not — every other plugin mirrors word for word (main: all SAME). Mirror it, folding the sub-agent fill into the one clause (reviewer low, principle 1); CLAUDE.md placement rule 1 names subagentStatusLine for statusline.

@@ -17,10 +17,10 @@ Depth sources, in order of preference:
    a FIFO planted at the path cannot hang a hook), and an `exact.at` more than
    FUTURE_SKEW_S in the future is rejected, in either record: it would
    otherwise read as fresh, and gate as exact, until the clock caught up.
-2. DERIVED - the window mirrored from Claude Code's own selection logic
+2. DERIVED - the window derived from documented and observed rules
    (window_rules.py: the transcript's `attachment.type:"model"` line, the
-   native-1M table, `[1m]`, the CLAUDE_CODE_* window env vars, the credits
-   latch), the tokens from the transcript's post-boundary `usage` blocks
+   cited native-1M models, `[1m]`, the CLAUDE_CODE_* window env vars, the
+   credits error), the tokens from the transcript's post-boundary `usage` blocks
    (the same sum the status line reports). A RESOLVED derived depth (every
    input observed, the Claude Code version not distrusted) is source
    "derived" and may hard-block like "exact". An UNRESOLVED one never
@@ -30,16 +30,19 @@ Depth sources, in order of preference:
    (cross_check): a disagreement is logged to window-mismatch.jsonl and
    distrusts that Claude Code version, so its derived depth warns only.
    A derived window above 200K resolves only when this process's
-   long-context-credits latch is known absent: a SessionStart marker whose
-   pid key (pid and start time) is the running Claude Code process's, no
-   latch line after its offset in the transcript or in this process's
-   sidechain (subagent) transcripts, none in the process record. The latch
-   is matched on apiError "long_context_credits_required" only.
+   usage-credits error for 1M context is known absent: a SessionStart
+   marker whose pid key (pid and start time) is the running Claude Code
+   process's, no error line after its offset in the transcript or in this
+   process's sidechain (subagent) transcripts, none in the process record.
+   The error is matched on an API-error line (`isApiErrorMessage` true)
+   whose text holds the documented error title
+   (window_rules.CREDITS_MESSAGE, cited to the errors page); a seen error
+   gives a 200K window that only warns.
    The running Claude Code process is identified only when verified
    (proc_info: the FIRST claude ancestor, whose session-registry entry
    carries its own pid, start time and PID namespace, and whose pid is the
-   hook's CLAUDE_PID); a nested claude (unregistered, its own CLAUDE_PID)
-   is never matched to an outer one. Unverified, every input that depends on it is unresolved.
+   hook's CLAUDE_PID); a nested claude (its own registry entry, its own
+   CLAUDE_PID) is never matched to an outer one. Unverified, every input that depends on it is unresolved.
    CONTEXT_GUARD_DERIVE=off, or the operator's CONTEXT_GUARD_CONTEXT_WINDOW
    pin (deprecated alias CLAUDE_KIT_CONTEXT_WINDOW), turns the mirror off
    (and the auto-compact window below): the gate is then exactly the
@@ -69,23 +72,27 @@ Depth sources, in order of preference:
    The same rule holds for transcript counts (sources 2 and 3): a count
    whose usage line is stamped at or before `epoch_at` describes an earlier
    epoch and is dropped (_epoch_cur), so the depth reads unknown (0) until
-   the epoch's first response. Claude Code queues transcript lines and
-   drains the queue on a 100 ms timer, and PostCompact stamps the epoch
-   before the compact_boundary line is even queued, so a queued prompt's
-   hook can scan the transcript before the boundary is on disk. A usage
-   line with no `timestamp` is never dropped.
+   the epoch's first response. Observed in spike bace's transcripts on
+   Claude Code 2.1.284: the compact_boundary line reached disk after the
+   next prompt's hook had already read the transcript, so a hook can scan
+   it before the boundary is there.
+   When a compaction's boundary line reaches the transcript can be derived
+   from Claude Code's internals; it is not recorded here.
+   A usage line with no `timestamp` is never dropped.
 
 The GATE window (measure()'s `window`) is the model window above lowered to
 the auto-compact window when one is configured below it
 (window_rules.autocompact: CLAUDE_CODE_AUTO_COMPACT_WINDOW, the
-autoCompactWindow setting, the model defaults): Claude Code compacts there.
+autoCompactWindow setting): Claude Code compacts there.
 A resolved auto-compact window may bound a hard block; an unresolved one only
 warns, and a hard stop is then still measured against the model window. It
 resolves only when auto-compact is known on (autoCompactEnabled: true in a
 settings layer the hook reads), no flag layer can be in play (proc_info's
-`observable`), no policy tier is present and remote policy is ruled out -
-which a hook cannot do in Claude Code 2.1.277, so today it only ever warns
-(window_rules.REMOTE_POLICY_RULED_OUT, window_rules.autocompact).
+`observable`), no policy tier is present and server-managed settings are
+ruled out - which a hook can never do, since Claude Code fetches them from
+the server at startup and hourly (docs: server-managed-settings), so today
+it only ever warns (window_rules.REMOTE_POLICY_RULED_OUT,
+window_rules.autocompact).
 depth() returns the MODEL window: precompact_gate proves a compaction
 proactive against it.
 
@@ -95,7 +102,7 @@ the transcript, its pid key, when), `model_switch` (PostModelSwitch's
 to_model), `scan` (the resumable transcript scan, so a prompt reads only
 the bytes appended since the last one), `derived` (the last derived result, with the Claude Code version
 it was read on and RULES_CC_VERSION) and `window_mismatch`; the pseudo
-sessions `_proc-<pid>-<starttime>` (a credits latch seen in that process,
+sessions `_proc-<pid>-<starttime>` (a credits error seen in that process,
 which outlives a /clear) and `_window-rules` (the distrusted versions).
 
 State is per session under $CLAUDE_CONFIG_DIR/claude-kit/context-gate/, and is
@@ -916,13 +923,28 @@ def _tail_version(fh, size):
         return None
 
 
+def _message_text(obj):
+    """The text of a transcript line's message: `message.content` as a
+    string, or its `text` blocks joined. "" when there is none."""
+    msg = obj.get("message")
+    content = msg.get("content") if isinstance(msg, dict) else None
+    if isinstance(content, str):
+        return content
+    if isinstance(content, list):
+        return "".join(b.get("text") for b in content
+                       if isinstance(b, dict) and isinstance(b.get("text"), str))
+    return ""
+
+
 def _is_latch(obj, R):
-    """An API-error line from the one 429 branch that sets Claude Code's
-    long-context-credits latch: apiError "long_context_credits_required" is
-    returned only after `O && nue(message)` set it. The generic 429 path can
-    carry the same words in its text without latching, so the phrase alone
-    never counts."""
-    return obj.get("isApiErrorMessage") is True and obj.get("apiError") == R.LATCH_API_ERROR
+    """An API-error line reporting the usage-credits error for 1M context:
+    `isApiErrorMessage` is true (observed on API-error lines in transcripts,
+    Claude Code 2.1.233 to 2.1.285) and the message text holds the error's
+    documented title, window_rules.CREDITS_MESSAGE (doc: errors § Usage
+    credits required for 1M context). The same words in any other line -
+    a user prompt, an assistant reply, a tool result - never count."""
+    return obj.get("isApiErrorMessage") is True \
+        and R.CREDITS_MESSAGE in _message_text(obj)
 
 
 def _cache_start(fh, st_, cache, path):
@@ -966,7 +988,7 @@ def scan_transcript(transcript_path, cache=None):
     model_id, model_off, model_at - the last `attachment.type:"model"` line's
       identity.modelId, its byte offset and timestamp (epoch);
     cc_version - the `version` of the last line carrying one (a tail read);
-    latches - [(byte offset, epoch)] of the last LATCH_KEEP credits-latch
+    latches - [(byte offset, epoch)] of the last LATCH_KEEP credits-error
       API-error lines (_is_latch);
     size - bytes read; cache - the resumable state as of the last complete
       line (None when the file could not be read).
@@ -1220,7 +1242,7 @@ BLOCKING_SOURCES = ("exact", "derived")
 DERIVE_ENV = "CONTEXT_GUARD_DERIVE"
 # Pseudo session ids (a leading "_" never starts a Claude Code session id):
 # the Claude Code process record (keyed pid-starttime) that carries the
-# credits latch across /clear, and the mirror's distrust list.
+# credits error across /clear, and the mirror's distrust list.
 PROC_PREFIX = "_proc-"
 RULES_SID = "_window-rules"
 MISMATCH_LOG = "window-mismatch.jsonl"
@@ -1252,11 +1274,12 @@ def derive_off(environ=None):
 # Command-line flags that add, replace or narrow a settings layer the hook
 # cannot read (or hand Claude Code settings at runtime): with any of them the
 # settings a hook reads are not the whole story.
-SETTINGS_FLAGS = ("--settings", "--setting-sources", "--managed-settings",
-                  "--autocompact", "--project-config-root", "--sdk-url",
-                  "--input-format")
+# doc: cli-reference (https://code.claude.com/docs/en/cli-reference).
+SETTINGS_FLAGS = ("--settings", "--setting-sources", "--autocompact", "--input-format")
 
 
+# observed: `readlink /proc/$CLAUDE_PID/exe` gives
+# ~/.local/share/claude/versions/<version>, Claude Code 2.1.292.
 _CLAUDE_EXE = re.compile(r"/claude/versions/[^/]+$")
 
 
@@ -1297,8 +1320,10 @@ def _is_claude(pid):
 
 
 def _pid_domain():
-    """Claude Code's pidDomain for this PID namespace (e7r() in 2.1.277):
-    'linux:<machine-id>:<readlink /proc/self/ns/pid>', or None."""
+    """The `pidDomain` a session-registry entry carries for this PID
+    namespace: 'linux:<machine-id>:<readlink /proc/self/ns/pid>', or None.
+    observed: the registry entry's pidDomain equals this computation in the
+    same PID namespace, Claude Code 2.1.292."""
     try:
         try:
             with open("/etc/machine-id") as f:
@@ -1326,9 +1351,10 @@ def _registry_matches(entry, pid, start):
     return True
 
 
-# Claude Code 2.1.277 puts its own pid in every command hook's environment
-# (RLe(): CLAUDE_PID, next to CLAUDE_CODE_CHILD_SESSION=1, which is always set
-# and so says nothing about nesting).
+# doc: env-vars (https://code.claude.com/docs/en/env-vars) - Claude Code sets
+# CLAUDE_PID to its own process ID in hook commands, and
+# CLAUDE_CODE_CHILD_SESSION to 1 in hook commands too, so the latter says
+# nothing about nesting.
 CLAUDE_PID_ENV = "CLAUDE_PID"
 
 
@@ -1343,9 +1369,12 @@ def proc_info():
     command hook), and <config>/sessions/<pid>.json exists and was written
     by it (_registry_matches: pid, procStart, pidDomain). A first claude
     that is not verified is never skipped for an outer one: a claude started
-    from another's Bash tool does not register (2.1.277), and its hooks
-    carry its own CLAUDE_PID, so taking the outer claude's key - and with it
-    the outer session's latch and marker - cannot happen. CLAUDE_PID absent
+    from another's Bash tool writes its own registry entry (observed: a
+    `claude -p` started from the Bash tool wrote sessions/<its pid>.json
+    while it ran, Claude Code 2.1.286), and its hooks carry its own
+    CLAUDE_PID (documented), so it is verified as itself or not at all, and
+    taking the outer claude's key - and with it the outer session's credits
+    error and marker - cannot happen. CLAUDE_PID absent
     or naming another process: unverified. Non-claude ancestors (shells) are
     walked past, whatever the registry says about their pids: the registry
     is shared across sandboxes.
@@ -1404,8 +1433,8 @@ def distrusted_versions():
 def _sidechain_latch(transcript_path, since, cache=None):
     """(latch_at or None, readable, cache) over this session's subagent
     (sidechain) transcripts, <dir>/<session>/subagents/*.jsonl: a subagent's
-    429 sets the same process-wide latch but is written there, not to the
-    main transcript. Only files touched and lines stamped at or after
+    API error is written there, not to the main transcript, and counts for
+    the whole process. Only files touched and lines stamped at or after
     `since` (the process start) count; a matching line with no timestamp, or
     a file that cannot be read, makes the answer unknown (readable False).
     `cache` (the previous call's, from the session state) holds per file
@@ -1424,7 +1453,7 @@ def _sidechain_latch(transcript_path, since, cache=None):
     except Exception:
         return None, False, new
     found, readable = None, True
-    needle = R.LATCH_API_ERROR.encode()
+    needle = R.CREDITS_MESSAGE.encode()
     for p in sorted(paths)[:500]:
         try:
             st_ = os.stat(p)
@@ -1468,7 +1497,7 @@ def _sidechain_latch(transcript_path, since, cache=None):
 
 def _latch(scan, st, transcript_path, current_key, side_cache=None):
     """(latch, latch_known, latch_at): whether THIS Claude Code process has
-    its long-context-credits latch set.
+    reported the usage-credits error for 1M context (_is_latch).
 
     Known only with a SessionStart marker (state `proc`) whose key is this
     process's (pid and start time, proc_info): then only main-transcript
@@ -1536,13 +1565,12 @@ def derived_window(scan, st, environ=None, transcript_path=None, current_key=Non
     latch, known, latch_at = _latch(scan, st, transcript_path, current_key, side_cache)
     if latch and latch_at:
         changed = max(changed or 0.0, latch_at)
-    served = R.served_declared(_base_dir(), R.canonical(model), read_json_file)
-    d = R.derive(model, env, latch=latch, latch_known=known, served=served)
+    d = R.derive(model, env, latch=latch, latch_known=known)
     ver = scan.get("cc_version")
     proc = st.get("proc") if isinstance(st.get("proc"), dict) else {}
     d.update(model=model, cc_version=ver, rules_version=R.RULES_CC_VERSION,
              latch=latch, latch_known=known, changed_at=changed, distrusted=False,
-             served=served, side_cache=side_cache[0],
+             side_cache=side_cache[0],
              proc_ok=current_key is not None and proc.get("key") == current_key)
     if switched:
         d.update(resolved=False, rule="model_switch_pending")
@@ -1658,15 +1686,17 @@ def _epoch_cur(cur, cur_at, st):
     """(cur, stale): a transcript count belongs to the epoch its usage line was
     written in. When the state has an `epoch_at` and the line that set `cur`
     is stamped at or before it, the count describes an earlier epoch - the
-    compact_boundary line is still in Claude Code's write queue (it drains on
-    a 100 ms timer, after PostCompact has stamped the epoch) - and is dropped
+    compact_boundary line has not reached the transcript yet (observed in
+    spike bace's transcripts, Claude Code 2.1.284) - and is dropped
     (0, True): what the scan returns once the boundary is on disk. The same
     rule sensor() applies to the exact record, without its grace: the line's
     stamp is Claude Code's own, not a write time. A count with no stamp, or a
     state with no usable epoch_at (none, or one more than FUTURE_SKEW_S ahead
     of now: _epoch_cut), is kept. Ignoring a future cut here, unlike in
     sensor(), trades a gate silenced for the whole clock step for a stale
-    count that lives only until the boundary line lands (about 100 ms)."""
+    count that lives only until the boundary line lands.
+    When a compaction's boundary line reaches the transcript can be derived
+    from Claude Code's internals; it is not recorded here."""
     cut = _epoch_cut(st)
     at = _finite(cur_at)
     if cur and cut is not None and at is not None and at <= cut:
@@ -1774,9 +1804,8 @@ def measure(transcript_path, session_id=None, cwd=None, environ=None, mirror=Tru
             proj = environ.get("CLAUDE_PROJECT_DIR") or cwd
             res["acw"] = R.autocompact(
                 d.get("model") if d else None, res["model_window"], env,
-                R.settings_autocompact(_base_dir(), proj, read_json_file, environ=environ),
-                observable=pi["observable"], latch=bool(d and d.get("latch")),
-                served=d.get("served") if d else None)
+                R.settings_autocompact(_base_dir(), proj, read_json_file),
+                observable=pi["observable"])
         except Exception:
             pass
     return _gate(res, blocking)

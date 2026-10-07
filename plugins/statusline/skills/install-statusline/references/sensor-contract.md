@@ -60,7 +60,7 @@ No id can name a path outside its directory.
   render with neither block writes nothing.
 - How `context-guard` reads it (informative, not part of the contract): an `exact` block
   under 600 s old is its exact depth, which can hard-block. Without one it derives the window
-  from Claude Code's own selection logic; a derived window hard-blocks only when every input it
+  from documented and observed rules (`hooks/window_rules.py`); a derived window hard-blocks only when every input it
   depends on was observed, and warns otherwise, as a depth inferred from the transcript does.
   A fresh record also cross-checks the derived window (a disagreement is logged and makes that
   Claude Code version warn-only). `CONTEXT_GUARD_DERIVE=off` turns derivation off.

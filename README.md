@@ -404,11 +404,11 @@ the old layout (`.claude-sandbox/` or the repo root) is still read, never writte
 Soft dependency on `statusline-hub`: the sensor record it writes on every status-line render
 (as the `statusLine` command, or through its tee from another renderer; installing
 `statusline` brings the hub) gives the gate exact depth, and the weekly reading for
-`usage-report`'s share of a week (without it the item mode shows dollars alone). Without it the gate derives the window itself, mirroring Claude Code's own selection logic from the
+`usage-report`'s share of a week (without it the item mode shows dollars alone). Without it the gate derives the window itself, from documented and observed rules applied to the
 transcript's model line and the `CLAUDE_CODE_*` window variables (`hooks/window_rules.py`).
 A hard block needs an exact depth, or a derived one whose every input was observed; a derived
-window that depends on something a hook cannot see (SDK betas, a 3P provider or gateway, an
-unknown model, a pending model switch, a credits latch it cannot rule out for this process, an
+window that depends on something a hook cannot see (betas, a 3P provider or gateway, an
+unknown model, a pending model switch, a credits error it cannot rule out for this process, an
 auto-compact window a hidden settings layer could change) only warns, and so does a depth
 inferred from the transcript. With the status line present its reading wins and cross-checks
 the derived window. `CONTEXT_GUARD_DERIVE=off` turns derivation off. `context-guard`

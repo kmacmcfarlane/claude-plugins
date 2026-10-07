@@ -27,7 +27,7 @@ return: planner DONE /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.
 baseline: e63ed6146611d807ee18a82042b378435207557f4f8b9ab90bca690885936572  .claude-sandbox/investigations/bace-stale-depth-warning/00_initial.md 
 dispatch: reviewer opus — fresh, plan review (rule 4)
 agent: reviewer abf5b8ff982a87ffe round 1
-verdict: NEEDS_CHANGES round 1 at 00 e63ed614 (2 medium, 5 low; cause, cases, replay and binary claims all reproduced; band latch fixed by the same change)
+verdict: NEEDS_CHANGES round 1 at 00 e63ed614 (2 medium, 5 low; cause, cases and replay reproduced; its claims about Claude Code's internals were not observed and are not recorded here; band latch fixed by the same change)
 findings:
   [medium] 00:291-294 — precompact_gate claim reversed: 0 is falsy so never proactive; the compaction is allowed, never deferred
   [medium] 00:268-270,305-312 — no test for the observed S2 path: scan resumed from the persisted cache with no usage line after the offset; cur_at must be saved in _SCAN_KEYS / snap / _cache_start; plus malformed cur_at → None, no rescan

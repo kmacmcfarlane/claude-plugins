@@ -13,7 +13,7 @@ refs:
   - peer claude-sandbox librarian 2026-10-06
 ---
 
-Relayed by peer claude-sandbox librarian 2026-10-06 with the license request: public code includes content derived from Claude Code's bundle — plugins/context-guard/hooks/window_rules.py (pushed c27cd37: a recipe for re-deriving its rules from the bundle, a transcribed model catalog, quoted 429 phrases, minified identifiers), lib_context.py:1300/1330 names e7r()/RLe(), context_warn.py:170 'read from the binary'. The operator noted leaked-source material 'muddies the waters'. Acceptance: an inventory of every such passage with path:line and what it is; options for each (rewrite from public docs/behaviour, remove, keep) for the operator; interacts with the license choice and whether the repo stays public.
+Relayed by peer claude-sandbox librarian 2026-10-06 with the license request: public code includes content derived from Claude Code's bundle — plugins/context-guard/hooks/window_rules.py (pushed c27cd37: a recipe for re-deriving its rules from the bundle, a transcribed model catalog, quoted 429 phrases, minified identifiers), lib_context.py:1300/1330 name two minified functions, context_warn.py:170 'read from the binary'. The operator noted leaked-source material 'muddies the waters'. Acceptance: an inventory of every such passage with path:line and what it is; options for each (rewrite from public docs/behaviour, remove, keep) for the operator; interacts with the license choice and whether the repo stays public.
 
 ## Handoff
 - doing: plan stopped and carried (05, 4 reviews)

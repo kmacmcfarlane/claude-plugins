@@ -232,9 +232,9 @@ def _iso(t):
 
 class TestEpochRule(Base):
     """A transcript count belongs to the epoch its usage line was written in:
-    after PostCompact stamps epoch_at, the compact_boundary line can still be
-    in Claude Code's 100 ms write queue when the queued opener's hook scans
-    the transcript (spike bace, cases B0, S2, S3)."""
+    after PostCompact stamps epoch_at, the compact_boundary line may not have
+    reached the transcript when the queued opener's hook scans it (observed
+    in spike bace's transcripts, Claude Code 2.1.284, cases B0, S2, S3)."""
 
     def setUp(self):
         super().setUp()

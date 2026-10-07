@@ -22,8 +22,9 @@ operator never sees.** Fixing that is mostly about session *shape*, not about re
 **The gate thinks in remaining tokens, not percent.** Advisories at 60/75% used; **DUE** when
 ~150K tokens remain (1M window; 70K on 200K) — finish things, run `/checkpoint`; **HARD** at
 60K/40K left — on an *exact* depth (a fresh status-line reading) or a *derived* one (the
-window mirrored from Claude Code's own selection logic, every input observed — including,
-above 200K, that this Claude Code process has not hit the long-context credits limit) the gate blocks
+window derived from documented and observed rules (`hooks/window_rules.py`), every input
+observed — including, above 200K, that this Claude Code process has not reported the
+usage-credits error for 1M context) the gate blocks
 every prompt until a checkpoint records; on an *inferred* depth, or a derived one it could not
 fully resolve, it only warns, because the real window may be larger than the guess — and
 that warning keeps the DUE cadence (first time, then every 3 prompts or 25K tokens), so a
@@ -34,22 +35,22 @@ for `/clear` (the work is on disk) or `/compact <guidance>`, since a checkpoint 
 when the gate blocks does not change. All of it resets per epoch (each compaction or `/clear`). The gate also warns against the
 auto-compact window when one is set below the model window (`/autocompact`,
 `CLAUDE_CODE_AUTO_COMPACT_WINDOW`, a valid `autoCompactWindow` of 100000–1000000), because that
-is where Claude Code compacts. **The auto-compact window is advisory: the gate warns there but never hard-stops there on
-Claude Code 2.1.277.** A hard stop at it would need every settings layer that can set or
-cancel it to be read, and one of them never can be: server-managed (remote) policy. Whether an
-account gets it depends on account data the gate never reads, and it may be kept in Claude
-Code's storage backend rather than in `remote-settings.json`. The other conditions, all of
-which would also keep it advisory on their own: `"autoCompactEnabled": true` must be set in a
-settings file (without it Claude Code may take the value from its legacy global config); no
+is where Claude Code compacts. **The auto-compact window is advisory: the gate warns there but never hard-stops there.**
+A hard stop at it would need every settings layer that can set or cancel it to be read, and
+one of them never can be: server-managed settings, which Claude Code fetches from Anthropic's
+servers at startup and hourly (docs: server-managed-settings), so a hook cannot know what
+they will hold. The other conditions, all of which would also keep it advisory on their own:
+`"autoCompactEnabled": true` must be set in a settings file the gate reads (its documented
+default is `true`, but a managed layer may set it, so the gate asks for it explicitly); no
 policy tier may be present — a `managed-settings.json`, a `managed-settings.d/` drop-in, a
-`remote-settings.json`, an MDM profile (macOS, Windows), or `CLAUDE_CODE_MANAGED_SETTINGS_PATH`
-set; no `--settings`, `--setting-sources`, `--managed-settings`, `--autocompact` or similar
-flag on the `claude` command line and not an SDK session; and the `claude` process the hook
-runs under must be verified (its binary, and its own session-registry entry).
-The gate recognises its own `claude` by the `CLAUDE_PID` Claude Code gives every hook. A
-`claude` started from another session's Bash tool is never verified: it does not register,
-and it is never matched to the outer session. So in it any derived window above 200K and any
-auto-compact window only warn. The hard stop
+`remote-settings.json`, or an MDM profile (macOS, Windows); no `--settings`,
+`--setting-sources`, `--autocompact` or `--input-format` flag on the `claude` command line;
+and the `claude` process the hook runs under must be verified (its executable, and its own
+session-registry entry).
+The gate recognises its own `claude` by the `CLAUDE_PID` Claude Code gives every hook
+(docs: env-vars). A `claude` started from another session's Bash tool is never matched to
+the outer session: it writes its own registry entry (observed on Claude Code 2.1.286) and
+its hooks carry its own `CLAUDE_PID`, so it is verified as itself or not at all. The hard stop
 near the model window is unaffected. The compaction gate never uses the derived or
 auto-compact window: it defers only on the depth it used before the window mirror.
 
@@ -234,8 +235,8 @@ Code's launch environment turns derivation off.
 (Moved here from the installer skill when the status line became its own plugin,
 `statusline`: this is gate content.)
 
-A hard block needs a fresh exact reading or a resolved derived window (the mirror of Claude
-Code's own window selection); an inferred depth or an unresolved derived one only warns. So a
+A hard block needs a fresh exact reading or a resolved derived window (from the documented
+and observed window rules); an inferred depth or an unresolved derived one only warns. So a
 wrong block means a fresh-but-wrong record, e.g. one written just before a compaction, or a
 derived window that drifted from a newer Claude Code (the block message names the source:
 `derived`; with a sensor record from `statusline-hub` a drift is caught, logged to
@@ -300,4 +301,4 @@ python3 "$MC" <session_id>
 3. Turn the window mirror off: `CONTEXT_GUARD_DERIVE=off` in the environment Claude Code is
    launched from. The gate is then exactly what it was before the mirror: exact from the
    status line, else inferred (warn-only). Worth a note to the plugin maintainers: a derived
-   block that was wrong means the mirrored table needs a new Claude Code version.
+   block that was wrong means the window rules need re-checking against a newer Claude Code.

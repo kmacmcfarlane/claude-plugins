@@ -55,15 +55,18 @@ contextWindowSize. Claude Code's tokenCount adds the agent's cumulative
 output to its last input, so it overstates depth, more the longer the agent
 runs. A row with neither figure is left to the default rendering.
 
-In-process teammates. Claude Code 2.1.278 gives this command only local
-agent tasks (not the main session, not fork workers), so teammate rows never
-reach it; a task whose sidechain is missing would fall back to the payload
-figure anyway.
+Which rows arrive. The command "receives all visible subagent rows" as a
+`tasks` array (documented: https://code.claude.com/docs/en/statusline,
+subagentStatusLine). A task whose sidechain is missing falls back to the
+payload figure.
 
 How it is enabled: plugins/statusline/settings.json names this file through
 the plugin-data `current-hooks` link that the SessionStart hook keeps on this
-version's hooks dir (Claude Code does not expand plugin path variables in a
-plugin's settings.json). A plugin's settings are the lowest layer, so a
+version's hooks dir, not through a plugin path variable. Whether a plugin
+path variable works in a plugin's settings.json can be derived from Claude
+Code's internals; it is not recorded here. Plugin defaults are the lowest
+settings layer (documented:
+https://code.claude.com/docs/en/plugins/components#default-settings), so a
 `subagentStatusLine` the user sets in any settings file wins over it; this
 plugin never writes one.
 
