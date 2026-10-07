@@ -30,3 +30,18 @@ decision 177: Confirm the relayed answers: claude-plugins owns the general .giti
   (z) decide later — the item waits
   rec: (a) · basis strong — your answers, relayed with their numbers and the plan they come from
   unknown: none
+answer 177: reframed as decision 178 — "177 - I'm feeling like claude-sandbox should still manage rules for the .claude-sandbox/ dir and containing files, that previous decision was in error. The create-repo skill should manage .gitignore lines for things that skill creates, and the templates should own things in the template. Is that ownership split clear?" (2026-10-07T17:42Z, chat; read as: the relayed claude-sandbox#37/#38 are not confirmed; ownership follows whoever creates the file: claude-sandbox owns .claude-sandbox/ lines (the decrypted-copy pattern included), create-repo owns lines for what create-repo creates, each template owns lines for what it ships; reverses the operator's #37/#38 answers in claude-sandbox, to be relayed there)
+decision 178: Under that split, who writes ignore lines for files none of these create — Claude Code's own personal files (local settings, per-user state) and editor or OS noise? — options: (a) create-repo writes them, as the step that makes the repo [recommended] | (b) each template carries them | (c) nobody by default; each repo adds its own | (z) decide later
+  raised: 2026-10-07T17:42Z
+  what: the one gap in your ownership split (claude-sandbox owns .claude-sandbox/; create-repo owns what it creates; templates own what they ship)
+  why now: it decides what the canonical-blocks item (72db) builds; blocks: that item
+  why ask: your-call — you set the ownership split
+  context: you said the earlier claude-sandbox answers were in error and gave the split · you place the lines no tool creates
+  impact: → every repo create-repo makes ignores Claude Code's personal files and editor noise, whichever template it uses · later: 72db waits · reach: every new repo · undo: an edit
+  (a) create-repo — one place, applied to every new repo it makes; a template repo made without create-repo gets none
+  (b) each template — the lines live with the content, repeated per template; a repo made by create-repo with no template gets none
+  (c) nobody — the lines are added by hand per repo
+  (z) decide later — 72db waits
+  rec: (a) · basis partial — create-repo is the step every new repo passes through; its lines are about the repo, not the template's content
+  unknown: whether every new repo goes through create-repo, or some start from a template directly
+closed 177: superseded by 178
