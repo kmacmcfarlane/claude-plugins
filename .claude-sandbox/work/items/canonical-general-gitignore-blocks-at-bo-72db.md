@@ -56,3 +56,12 @@ target: full canonical-general-gitignore-blocks-at-bo-72db /home/rt/work/src/git
 budget: 2026-10-07T18:13Z build $22 — default other build
 dispatch: implementer opus medium — build (skill rule change)
 agent: implementer a025c1792c8b8ecb7 round 1
+return: implementer DONE 8d267ef (new references/gitignore.md; SKILL.md steps 4-5 and report; soft dependency on operator-interaction declared in plugin.json and README; CLAUDE.md layout line)
+changed:
+  plugins/create-repo/skills/create-repo/references/gitignore.md — ownership table, judgment lines, when to ask
+  plugins/create-repo/skills/create-repo/SKILL.md — Important bullet, steps 4-5, report line, example
+  plugins/create-repo/.claude-plugin/plugin.json, README.md — soft dependency declared (principle 4)
+  CLAUDE.md — layout line
+note: the harness flagged the implementer's report as matching an instruction-shaped pattern (settings-json); read: it names .claude/settings.local.json as a documented ignore candidate — no instruction in it
+dispatch: reviewer opus high — review round 1
+agent: reviewer a279dc825c3db9dc0 round 1
