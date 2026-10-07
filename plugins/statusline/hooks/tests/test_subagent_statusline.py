@@ -389,6 +389,60 @@ class Rows(Hermetic):
         row = ANSI.sub("", self.run_rows([self.task(name=None)])["a1"])
         self.assertEqual(row, "~75% ~150k/200k · Review the diff")
 
+    # -- model and effort -------------------------------------------------
+    # Per-task `model` and `effort` are documented in the subagentStatusLine
+    # input: https://code.claude.com/docs/en/statusline (Subagent status lines).
+
+    def test_model_and_effort_follow_the_fill(self):
+        row = ANSI.sub("", self.run_rows([self.task(model="claude-opus-5-5",
+                                                    effort="high")])["a1"])
+        self.assertEqual(row, "rev · ~75% ~150k/200k · opus-5-5·high · Review the diff")
+
+    def test_effort_absent_shows_the_model_alone(self):
+        row = ANSI.sub("", self.run_rows([self.task(model="claude-sonnet-4-6")])["a1"])
+        self.assertEqual(row, "rev · ~75% ~150k/200k · sonnet-4-6 · Review the diff")
+
+    def test_model_absent_shows_the_effort_alone(self):
+        row = ANSI.sub("", self.run_rows([self.task(effort="medium")])["a1"])
+        self.assertEqual(row, "rev · ~75% ~150k/200k · medium · Review the diff")
+
+    def test_neither_shows_no_tag(self):
+        row = ANSI.sub("", self.run_rows([self.task(model=None, effort="")])["a1"])
+        self.assertEqual(row, "rev · ~75% ~150k/200k · Review the diff")
+
+    def test_a_numeric_effort_is_a_token_budget(self):
+        row = ANSI.sub("", self.run_rows([self.task(model="claude-opus-5-5",
+                                                    effort=32_000)])["a1"])
+        self.assertIn(" · opus-5-5·32k · ", row)
+        for bad in (True, -5, [1], {"level": "high"}):
+            row = ANSI.sub("", self.run_rows([self.task(effort=bad)])["a1"])
+            self.assertEqual(row, "rev · ~75% ~150k/200k · Review the diff", bad)
+
+    def test_model_text_cannot_inject_escapes(self):
+        row = self.run_rows([self.task(model="claude-x\x1b[2J\ny", effort="hi\x1b]0;\x07")])["a1"]
+        self.assertNotIn("\x1b[2J", row)
+        self.assertNotIn("\x1b]", row)
+        self.assertIn(" · x [2J y·hi ]0; · ", ANSI.sub("", row))
+
+    def test_narrow_rows_drop_the_description_then_the_tag_then_the_name(self):
+        t = self.task(model="claude-opus-5-5", effort="high")
+        head = "rev · ~75% ~150k/200k · opus-5-5·high"       # 37 columns
+        self.assertEqual(ANSI.sub("", self.run_rows([t], columns=45)["a1"]),
+                         head + " · Revi…")
+        self.assertEqual(ANSI.sub("", self.run_rows([t], columns=38)["a1"]), head)
+        self.assertEqual(ANSI.sub("", self.run_rows([t], columns=37)["a1"]), head)
+        # One column short for the whole tag: it goes, never cut.
+        self.assertEqual(ANSI.sub("", self.run_rows([t], columns=36)["a1"]),
+                         "rev · ~75% ~150k/200k · Review the…")
+        self.assertEqual(ANSI.sub("", self.run_rows([t], columns=22)["a1"]),
+                         "rev · ~75% ~150k/200k")
+        self.assertEqual(ANSI.sub("", self.run_rows([t], columns=16)["a1"]),
+                         "~75% ~150k/200k")
+        for cols in range(1, 60):
+            got = self.run_rows([t], columns=cols).get("a1")
+            if got is not None:
+                self.assertLessEqual(len(ANSI.sub("", got)), cols, cols)
+
     # -- malformed input --------------------------------------------------
 
     def test_malformed_input_prints_nothing(self):

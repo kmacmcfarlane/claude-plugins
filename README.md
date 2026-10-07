@@ -443,9 +443,11 @@ until the hub takes it over, once, after the footer has registered: the footer d
 sides of the change, and nothing moves the slot back. The hook also prunes sensor files older
 than 30 days.
 
-It also draws the agent panel's sub-agent rows (`name · 43% 86k/200k · description`): each
-agent's context fill, exact from its sidechain transcript (`<session>/subagents/agent-<id>.jsonl`,
-read incrementally), else Claude Code's own token count marked `~`. That ships as the
+It also draws the agent panel's sub-agent rows (`name · 43% 86k/200k · opus-5-5·high ·
+description`): each agent's context fill, exact from its sidechain transcript
+(`<session>/subagents/agent-<id>.jsonl`, read incrementally), else Claude Code's own token
+count marked `~`, then the model and effort the row's payload gives (either left out when
+absent). That ships as the
 `subagentStatusLine` default in the plugin's own `settings.json`, the lowest settings layer,
 so no settings are written and a user-set `subagentStatusLine` always wins. Known limitation:
 the footer always shows the main session's context and does not follow a sub-agent opened

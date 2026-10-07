@@ -132,8 +132,11 @@ hand, turn on auto-update one of two ways:
 ### Sub-agent rows
 
 While sub-agents run, the agent panel below the prompt shows one row per sub-agent. This
-plugin draws each row as `name · 43% 86k/200k · description`: the agent's own context fill,
-coloured like the footer's gauge. The fill is exact, read from the agent's transcript
+plugin draws each row as `name · 43% 86k/200k · opus-5-5·high · description`: the agent's
+own context fill, coloured like the footer's gauge, then the model it runs on and the effort
+set for it (in its definition or on the call; Claude Code gives both in the row's input,
+and a row leaves out either one it does not have). On a narrow panel the description is cut
+first, then the model and effort go, then the name. The fill is exact, read from the agent's transcript
 (`SESSION/subagents/agent-ID.jsonl` beside the session's transcript); after the first read,
 each refresh reads only the lines added since the last one. A `~` marks an approximate figure (`~43% ~86k/200k`):
 Claude Code's own token count for the agent, shown until the transcript has a reading, for
