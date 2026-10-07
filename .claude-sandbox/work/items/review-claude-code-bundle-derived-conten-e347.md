@@ -249,3 +249,5 @@ correction: 2026-10-06T19:10Z my plan fix round 3 brief told the planner "the pl
 note: 2026-10-06T19:10Z operator asked whether the $28 plan budget was reasonable and from real research usage (answered: from 16 measured dev-cycle plan phases, median $8.93, p90 $21.69, max $29.93 — the caef research-security plan; dev-cycle only, the research skills carry no spend budget; reaching it asks, never stops; this plan stopped by convergence, not budget); raised decision 176
 answer 168: 168a (2026-10-06T19:28Z, chat; read as: (a) only the Claude Code docs or a window observed with claude -p make a window resolved)
 note: 2026-10-06T19:28Z operator replied "167c"; 167 has no option (c) (its options are (a) warn only, (b) keep the 200K hard stop, (z) later) — not acted on; asked which was meant
+answer 167: 167a (2026-10-07T17:38Z, chat; read as: (a) warn only after the credits error — not the recommended (b); paired with 169 (a) this is a safe pair)
+answer 169: 169a (2026-10-07T17:38Z, chat; read as: (a) match the externally observable message text, cited and labelled; the build confirms it against a real transcript line first)

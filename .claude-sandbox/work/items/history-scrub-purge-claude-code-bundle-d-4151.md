@@ -20,3 +20,4 @@ Operator 2026-10-06 on decision 164: 'I want to perform the history scrub of thi
 - next: —
 - blocked: —
 - learned: —
+wake 171: when the operator has time to oversee it closely — operator, verbatim: "171 - will need to be later when I have time to oversee closely" (2026-10-07T17:38Z, chat; read as: later, wake on the operator's say-so; the history scrub waits; 170, 172-174 wait with it)
