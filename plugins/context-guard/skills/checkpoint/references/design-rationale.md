@@ -102,24 +102,28 @@ Three layers, escalating; the first two are hooks, the third is a skill.
    exposes exact depth) and writes them to its neutral sensor record,
    `${CLAUDE_CONFIG_DIR:-~/.claude}/statusline/sensor/<session>.json` (`"v": 1`; any other `v`
    reads as absent). Hooks read that; they do not get the fields themselves. Without a fresh
-   record the gate derives the window itself (`hooks/window_rules.py`, the "window mirror"):
-   it duplicates Claude Code's own selection — the transcript's `attachment.type:"model"`
-   line, the native-1M model table, the `[1m]` suffix, `CLAUDE_CODE_DISABLE_1M_CONTEXT`,
-   `CLAUDE_CODE_MAX_CONTEXT_TOKENS` (first under `DISABLE_COMPACT`, last for custom models)
-   and the long-context-credits latch a 429 leaves in the transcript — and counts tokens from
-   the transcript's post-boundary `usage` blocks. A window whose every input was observed is
-   *resolved* and gates like an exact one; one that depends on something a hook cannot see
-   (SDK betas, the served catalog, a 3P provider or gateway, an unknown model, a pending model
-   switch, and — above 200K — a credits latch it cannot rule out for this very process) is
-   *unresolved* and only warns (a false hard block is never acceptable); the depth then
-   falls back to transcript `usage` inference as before. When the status line is present it
-   wins, and a disagreement is logged to `claude-kit/context-gate/window-mismatch.jsonl` and
-   demotes that Claude Code version to warn-only (the table is copied from 2.1.277,
-   `RULES_CC_VERSION`). The gate also warns against the auto-compact window when one is
+   record the gate derives the window itself (`hooks/window_rules.py`, the window rules):
+   it derives the window from documented and observed rules, each cited in that file — the
+   transcript's `attachment.type:"model"` line, the models the Claude Code docs list as
+   running at 1M, the `[1m]` suffix, `CLAUDE_CODE_DISABLE_1M_CONTEXT`,
+   `CLAUDE_CODE_MAX_CONTEXT_TOKENS` (under `DISABLE_COMPACT`, and for custom models) and the
+   documented usage-credits error for 1M context in the transcript — and counts tokens from
+   the transcript's post-boundary `usage` blocks. A window whose every input was observed,
+   under a cited rule, is *resolved* and gates like an exact one; one that depends on
+   something a hook cannot see or no cited rule covers (betas, a 3P provider or gateway, a
+   model no Claude Code doc or observation covers, a pending model switch, a value spelled
+   in a way the docs do not describe, the credits error itself, and — above 200K — a credits
+   error it cannot rule out for this very process) is *unresolved* and only warns (a false
+   hard block is never acceptable); the depth then falls back to transcript `usage`
+   inference as before. When the status line is present it wins, and a disagreement is
+   logged to `claude-kit/context-gate/window-mismatch.jsonl` and demotes that Claude Code
+   version to warn-only (`RULES_CC_VERSION` is the version the cited rules were last checked
+   against). The gate also warns against the auto-compact window when one is
    configured below the model window (`CLAUDE_CODE_AUTO_COMPACT_WINDOW`, the
    `autoCompactWindow` setting), and would hard-stop there only when every settings layer
-   that could set or cancel it was read; server-managed policy can never be ruled out from a
-   hook on 2.1.277, so in practice the auto-compact window only warns. The compaction gate keeps the
+   that could set or cancel it was read; server-managed settings, which Claude Code fetches
+   from the server at startup and hourly, can never be ruled out from a hook, so in practice
+   the auto-compact window only warns. The compaction gate keeps the
    pre-mirror depth: a derived window never defers a compaction. `CONTEXT_GUARD_DERIVE=off`,
    or a `CLAUDE_KIT_CONTEXT_WINDOW` pin, turns the mirror off. (That pin, and
    `CLAUDE_KIT_LEDGER_EVERY`, were later renamed `CONTEXT_GUARD_CONTEXT_WINDOW` and

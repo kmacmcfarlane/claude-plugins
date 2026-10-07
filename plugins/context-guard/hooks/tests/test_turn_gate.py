@@ -437,7 +437,7 @@ class TestGuessedDepthIsSilent(InProcess):
         self.sweep(build, CLAUDE_CODE_USE_BEDROCK=1)
 
     def test_derived_on_a_distrusted_version(self):
-        L.save_state(L.RULES_SID, {"distrust": {"2.1.277": {"at": 1}}})
+        L.save_state(L.RULES_SID, {"distrust": {"0.0.0-test": {"at": 1}}})
         def build(tok):
             for i in range(len(self.LEFTS)):
                 self.own(f"g{i}", tok)

@@ -1,7 +1,7 @@
-"""The window mirror wired into the gate: depth precedence (exact > derived >
-inferred), the credits latch and its process marker, the status-line cross
--check and its distrust list, the auto-compact window, the bookkeeping hook,
-and the account file that must never be opened."""
+"""The window rules wired into the gate: depth precedence (exact > derived >
+inferred), the usage-credits error and its process marker, the status-line
+cross-check and its distrust list, the auto-compact window, the bookkeeping
+hook, and the account file that must never be opened."""
 import builtins, io, json, os, shlex, subprocess, sys, tempfile, time, unittest
 from datetime import datetime, timezone
 from unittest import mock
@@ -11,30 +11,35 @@ sys.path.insert(0, HOOKS)
 
 SCRUB = ("CLAUDE_CODE_", "_CLAUDE_CODE_", "ANTHROPIC_", "DISABLE_", "CONTEXT_GUARD_",
          "CLAUDE_KIT_", "CLAUDE_PROJECT_DIR")
-CREDITS = "429 {\"error\":{\"message\":\"Usage credits are required for long context requests\"}}"
+# A synthetic Claude Code version for every fixture: no test pins a real one.
+TEST_VERSION = "0.0.0-test"
 
 
 def iso(t):
     return datetime.fromtimestamp(t, timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%fZ")
 
 
-def model_line(mid, t, version="2.1.277"):
+def model_line(mid, t, version=TEST_VERSION):
     return {"type": "attachment", "timestamp": iso(t), "version": version,
             "attachment": {"type": "model", "identity": {"modelId": mid,
                                                          "marketingName": "x"}}}
 
 
-def usage_line(tokens, version="2.1.277"):
+def usage_line(tokens, version=TEST_VERSION):
     return {"type": "assistant", "version": version, "message": {"usage": {
         "input_tokens": 2, "cache_read_input_tokens": tokens - 2,
         "cache_creation_input_tokens": 0}}}
 
 
 def credits_line(t):
-    return {"type": "assistant", "timestamp": iso(t), "version": "2.1.277",
-            "isApiErrorMessage": True, "apiError": "long_context_credits_required",
-            "error": "rate_limit", "errorDetails": CREDITS,
-            "message": {"content": [{"type": "text", "text": "Usage credits required for 1M context"}]}}
+    """An API-error line carrying the documented usage-credits error. The
+    text is built from window_rules.CREDITS_MESSAGE (doc: errors § Usage
+    credits required for 1M context), never repeated here."""
+    import window_rules
+    return {"type": "assistant", "timestamp": iso(t), "version": TEST_VERSION,
+            "isApiErrorMessage": True, "error": "rate_limit",
+            "message": {"content": [{"type": "text", "text":
+                f"API Error: {window_rules.CREDITS_MESSAGE} · (hint)"}]}}
 
 
 def own_key():
@@ -173,20 +178,53 @@ class TestPrecedence(Base):
         self.assertEqual((m["tokens"], m["source"]), (30_000, "derived"))
 
 
-def generic_429(t):
-    """The 429 path that does NOT latch (no apiError), carrying the same words."""
-    return {"type": "assistant", "timestamp": iso(t), "version": "2.1.277",
+def other_api_error(t):
+    """An API-error line without the documented message: a rate limit that
+    is not the credits error."""
+    return {"type": "assistant", "timestamp": iso(t), "version": TEST_VERSION,
             "isApiErrorMessage": True, "error": "rate_limit",
-            "errorDetails": CREDITS,
-            "message": {"content": [{"type": "text", "text":
-                "API Error: Request rejected (429) · Usage credits are required for long context requests"}]}}
+            "message": {"content": [{"type": "text", "text": "API Error: 429 (test)"}]}}
 
 
 class TestLatch(Base):
-    def test_latch_after_process_start_resolves_200k(self):
+    def test_latch_after_process_start_gives_200k_that_only_warns(self):
+        # Answer 167 (a): 200K after the credits error, warn only.
         self.session("claude-opus-5", 150_000, credits_line(self.t0 + 5))
-        d = self.measure()["derived"]
-        self.assertEqual((d["window"], d["resolved"], d["rule"]), (200_000, True, "credits_latch"))
+        m = self.measure()
+        d = m["derived"]
+        self.assertEqual((d["window"], d["resolved"], d["rule"]),
+                         (200_000, False, "credits_message"))
+        self.assertTrue(m["source"].startswith("inferred"))
+        self.assertIsNone(m["block_window"])
+
+    def test_latch_never_blocks_without_a_fresh_status_line(self):
+        # The A1/A5 coupling (plan 04 § 7, 05): no sensor record and no fresh
+        # exact block, so only the derived path could block - and it must not.
+        for model in ("claude-opus-5", "claude-opus-5[1m]", "claude-sonnet-4-6[1m]"):
+            with self.subTest(model=model):
+                self.session(model, 190_000, credits_line(self.t0 + 5))
+                m = self.measure()
+                self.assertNotEqual(m["source"], "exact")
+                self.assertEqual(m["derived"]["rule"], "credits_message")
+                self.assertIsNone(m["block_window"])
+        # Across /clear, through the process record.
+        self.write(model_line("claude-opus-5", self.t0 + 20), usage_line(190_000))
+        L.save_state("s2", {"proc": {"offset": 0, "key": self.key, "at": self.t0 + 20}})
+        m = L.measure(self.tpath, "s2", environ=self.environ())
+        self.assertNotEqual(m["source"], "exact")
+        self.assertEqual(m["derived"]["rule"], "credits_message")
+        self.assertIsNone(m["block_window"])
+
+    def test_the_documented_message_outside_an_api_error_line_is_not_a_latch(self):
+        # A user prompt or an assistant reply quoting the error never counts.
+        for line in ({"type": "user", "timestamp": iso(self.t0 + 5), "message": {
+                          "content": [{"type": "text", "text": R.CREDITS_MESSAGE}]}},
+                     dict(credits_line(self.t0 + 5), isApiErrorMessage=False)):
+            with self.subTest(type=line["type"]):
+                self.session("claude-opus-5", 185_000, line)
+                d = self.measure()["derived"]
+                self.assertEqual((d["window"], d["resolved"], d["rule"]),
+                                 (1_000_000, True, "native_1m"))
 
     def test_latch_before_process_start_is_ignored(self):
         self.write(model_line("claude-opus-5", self.t0), credits_line(self.t0 + 5))
@@ -203,9 +241,9 @@ class TestLatch(Base):
         self.assertEqual((m["derived"]["window"], m["derived"]["resolved"]), (200_000, False))
         self.assertTrue(m["source"].startswith("inferred"))
 
-    def test_generic_429_with_the_phrase_is_not_a_latch(self):
-        # Reviewer case 17: the !O 429 path says the same words but never latches.
-        self.session("claude-opus-5", 185_000, generic_429(self.t0 + 5))
+    def test_other_api_error_is_not_a_latch(self):
+        # A rate-limit error that is not the credits error never latches.
+        self.session("claude-opus-5", 185_000, other_api_error(self.t0 + 5))
         d = self.measure()["derived"]
         self.assertEqual((d["window"], d["resolved"], d["rule"]), (1_000_000, True, "native_1m"))
 
@@ -235,17 +273,18 @@ class TestLatch(Base):
 
     def test_latch_carries_across_clear_through_the_process_record(self):
         self.session("claude-opus-5", 150_000, credits_line(self.t0 + 5))
-        self.assertEqual(self.measure()["derived"]["rule"], "credits_latch")
+        self.assertEqual(self.measure()["derived"]["rule"], "credits_message")
         self.assertTrue(L.load_state(L.PROC_PREFIX + self.key).get("latch"))
         # /clear: a new transcript and session in the same process.
         self.write(model_line("claude-opus-5", self.t0 + 20), usage_line(10_000))
         L.save_state("s2", {"proc": {"offset": 0, "key": self.key, "at": self.t0 + 20}})
         d = L.measure(self.tpath, "s2", environ=self.environ())["derived"]
-        self.assertEqual((d["window"], d["resolved"], d["rule"]), (200_000, True, "credits_latch"))
+        self.assertEqual((d["window"], d["resolved"], d["rule"]),
+                         (200_000, False, "credits_message"))
 
-    def test_api_error_without_the_structured_field_is_not_a_latch(self):
+    def test_api_error_with_other_text_is_not_a_latch(self):
         other = credits_line(self.t0 + 5)
-        other.update(apiError="overloaded", errorDetails="529 overloaded")
+        other["message"] = {"content": [{"type": "text", "text": "API Error: 529 (test)"}]}
         self.session("claude-opus-5", 150_000, other)
         self.assertEqual(self.measure()["derived"]["window"], 1_000_000)
 
@@ -260,7 +299,8 @@ class TestLatch(Base):
         self.session("claude-opus-5", 185_000)
         self.sidechain(credits_line(time.time() - 5))
         d = self.measure()["derived"]
-        self.assertEqual((d["window"], d["resolved"], d["rule"]), (200_000, True, "credits_latch"))
+        self.assertEqual((d["window"], d["resolved"], d["rule"]),
+                         (200_000, False, "credits_message"))
 
     def test_sidechain_latch_before_this_process_is_ignored(self):
         self.session("claude-opus-5", 185_000)
@@ -285,7 +325,7 @@ class TestLatch(Base):
         with open(p, "a") as f:
             f.write(json.dumps(credits_line(time.time())) + "\n")
         d = self.measure()["derived"]
-        self.assertEqual((d["window"], d["rule"]), (200_000, "credits_latch"))
+        self.assertEqual((d["window"], d["rule"]), (200_000, "credits_message"))
         self.assertGreater(self.measure()["side_cache"]["files"]["agent-a1.jsonl"]["off"], size)
         # Another process (a new SessionStart time) drops the cache.
         self.assertEqual(L._sidechain_latch(self.tpath, time.time() + 5, c)[2]["files"], {})
@@ -345,8 +385,9 @@ QUEUED = ({"type": "queue-operation", "operation": "enqueue"},
 
 
 class TestEpochRule(Base):
-    """A derived count from before the epoch: the compact_boundary line is
-    still in Claude Code's write queue when the opener's hook scans."""
+    """A derived count from before the epoch: the compact_boundary line has
+    not reached the transcript when the opener's hook scans (observed in
+    spike bace's transcripts, Claude Code 2.1.284)."""
 
     def stale_session(self):
         self.write(model_line("claude-opus-5", self.t0), stamped(950_000, self.t0 + 2))
@@ -432,9 +473,9 @@ class TestCrossCheck(Base):
         self.assertEqual(len(log), 1)
         self.assertEqual({k: log[0][k] for k in ("cc_version", "rules_version", "model",
                                                   "derived", "exact")},
-                         {"cc_version": "2.1.277", "rules_version": R.RULES_CC_VERSION,
+                         {"cc_version": TEST_VERSION, "rules_version": R.RULES_CC_VERSION,
                           "model": "claude-haiku-4-5", "derived": 200_000, "exact": 1_000_000})
-        self.assertIn("2.1.277", L.distrusted_versions())
+        self.assertIn(TEST_VERSION, L.distrusted_versions())
         self.assertFalse(L.load_state("s")["window_mismatch"]["notified"])
         # Row 20: with the status line gone, this version's derived depth warns only.
         st = L.load_state("s")
@@ -488,7 +529,8 @@ class TestCrossCheck(Base):
 class TestAutoCompactGate(Base):
     def all_hidden_layers_ruled_out(self):
         """What the rule would do if every hidden layer could be ruled out -
-        the reader never reports that in 2.1.277 (remote policy)."""
+        the reader never reports that, since server-managed settings can never
+        be ruled out (REMOTE_POLICY_RULED_OUT)."""
         return mock.patch.object(R, "REMOTE_POLICY_RULED_OUT", True)
 
     def test_env_window_is_warn_only_in_this_version(self):
@@ -501,8 +543,9 @@ class TestAutoCompactGate(Base):
             self.assertEqual(self.measure(CLAUDE_CODE_AUTO_COMPACT_WINDOW=500000)
                              ["block_window"], 500_000)
 
-    def test_legacy_auto_compact_enabled_is_unobservable(self):
-        # No observable layer sets autoCompactEnabled: warn at the window, block on the model's.
+    def test_auto_compact_enabled_must_be_set_in_a_layer_the_hook_reads(self):
+        # No observable layer sets autoCompactEnabled (a managed layer may set
+        # it): warn at the window, block on the model's.
         self.session("claude-opus-5", 460_000)
         with self.all_hidden_layers_ruled_out():
             m = self.measure(CLAUDE_CODE_AUTO_COMPACT_WINDOW=500000)
@@ -522,8 +565,8 @@ class TestAutoCompactGate(Base):
         self.assertEqual((m["window"], m["block_window"]), (300_000, 1_000_000))
 
     def test_any_policy_tier_makes_settings_unresolved(self):
-        # First-wins between policy tiers is not modelled: presence alone
-        # (a managed file, a drop-in, the remote cache, the path env) is enough.
+        # Choosing between policy tiers is not modelled: presence alone
+        # (a managed file, a drop-in, the remote cache) is enough.
         self.session("claude-opus-5", 270_000)
         self.set_exact(270_000, 1_000_000)
         self.settings("project", autoCompactWindow=300000, autoCompactEnabled=True)
@@ -540,8 +583,6 @@ class TestAutoCompactGate(Base):
                     m = self.measure()
                     self.assertEqual(m["block_window"], 1_000_000)
                     os.unlink(path)
-            m = self.measure(CLAUDE_CODE_MANAGED_SETTINGS_PATH="/elsewhere")
-            self.assertEqual(m["block_window"], 1_000_000)
 
     def test_out_of_range_setting_is_ignored(self):
         # Reviewer cases 23/24: 50000 is not a window Claude Code accepts.
@@ -555,8 +596,10 @@ class TestAutoCompactGate(Base):
                           os.path.join(self.proj, ".claude", "settings.json"))
 
     def test_unresolved_window_warns_but_blocks_only_on_the_model_window(self):
+        # CLAUDE_CODE_AUTO_COMPACT_WINDOW without autoCompactEnabled in a
+        # readable layer: an unresolved auto-compact window.
         self.session("claude-sonnet-5", 460_000)
-        m = self.measure(CLAUDE_CODE_ENTRYPOINT="local-agent")
+        m = self.measure(CLAUDE_CODE_AUTO_COMPACT_WINDOW=500000)
         self.assertEqual((m["window"], m["block_window"]), (500_000, 1_000_000))
         self.assertIn("unresolved", m["note"])
 
@@ -631,7 +674,7 @@ print(subprocess.run(inner, capture_output=True, text=True).stdout)
         self.assertTrue(clean["key"])
         self.assertTrue(clean["observable"])
         for flag in ("--settings", "--setting-sources=user", "--autocompact",
-                     "--managed-settings", "--input-format"):
+                     "--input-format"):
             with self.subTest(flag=flag):
                 self.assertFalse(self.run_under(flag, "x")["observable"])
 
@@ -687,7 +730,7 @@ class TestNeverReadsTheAccountFile(Base):
         os.makedirs(home)
         poison = os.path.join(home, ".claude" + ".json")
         with open(poison, "w") as f:
-            json.dump({"s1mAccessCache": {"a": {"hasAccess": True}}, "apiKey": "sk-poison"}, f)
+            json.dump({"poisonField": {"a": {"poison": True}}, "apiKey": "sk-poison"}, f)
         opened = []
         real_open, real_osopen = builtins.open, os.open
 
@@ -733,19 +776,25 @@ if old:
             with open(p, "w") as f:
                 json.dump(st, f)
 cmd = [sys.executable, hook]
-# The env Claude Code gives every command hook (RLe()): its own pid, and
-# CLAUDE_CODE_CHILD_SESSION=1 always.
+# The env Claude Code gives every command hook (doc: env-vars): its own pid
+# as CLAUDE_PID, and CLAUDE_CODE_CHILD_SESSION=1 always.
 env = dict(os.environ, CLAUDE_PID=str(os.getpid()), CLAUDE_CODE_CHILD_SESSION="1")
 if "_TEST_PID_OVERRIDE" in env:
     env["CLAUDE_PID"] = env.pop("_TEST_PID_OVERRIDE")
     if not env["CLAUDE_PID"]:
         del env["CLAUDE_PID"]
 if os.environ.get("_TEST_NESTED"):
-    # A claude started from this one's Bash tool: same binary, NOT registered,
-    # and its hooks get ITS pid as CLAUDE_PID.
-    env.pop("_TEST_NESTED")
-    inner = ("import os,subprocess,sys;"
-             "e=dict(os.environ,CLAUDE_PID=str(os.getpid()),CLAUDE_CODE_CHILD_SESSION='1');"
+    # A claude started from this one's Bash tool: same binary, and its hooks
+    # get ITS pid as CLAUDE_PID. "register" also writes its own registry
+    # entry, as one was observed to on Claude Code 2.1.286; otherwise it is
+    # unregistered.
+    reg = env.pop("_TEST_NESTED") == "register"
+    inner = ("import json,os,subprocess,sys;"
+             + ("st=open(f'/proc/{os.getpid()}/stat').read().rsplit(')',1)[1].split()[19];"
+                "json.dump({'pid':os.getpid(),'procStart':st,'sessionId':'inner'},"
+                "open(os.path.join(os.environ['CLAUDE_CONFIG_DIR'],'sessions',"
+                "f'{os.getpid()}.json'),'w'));" if reg else "")
+             + "e=dict(os.environ,CLAUDE_PID=str(os.getpid()),CLAUDE_CODE_CHILD_SESSION='1');"
              "r=subprocess.run(sys.argv[1:],input=sys.stdin.read(),capture_output=True,text=True,env=e);"
              "sys.stdout.write(r.stdout);sys.stderr.write(r.stderr);sys.exit(r.returncode)")
     cmd = [os.path.join(cfg, "bin", "claude"), "-c", inner] + cmd
@@ -957,14 +1006,14 @@ class TestHooks(Base):
 
     def test_beta_model_on_vertex_only_warns(self):
         # Reviewer case 34.
-        self.session("claude-sonnet-4-5", 185_000)
+        self.session("claude-sonnet-4-6", 185_000)
         rc, out, _ = self.warn(CLAUDE_CODE_USE_VERTEX=1)
         self.assertEqual(rc, 0)
         self.assertIn("beta_unobservable", out["hookSpecificOutput"]["additionalContext"])
 
-    def test_generic_429_never_blocks(self):
+    def test_other_api_error_never_blocks(self):
         # Reviewer case 17.
-        self.session("claude-opus-5", 185_000, generic_429(self.t0 + 5))
+        self.session("claude-opus-5", 185_000, other_api_error(self.t0 + 5))
         self.assertEqual(self.warn(), (0, {}, ""))
 
     def test_stale_process_marker_never_blocks_a_1m_session_at_200k(self):
@@ -975,8 +1024,18 @@ class TestHooks(Base):
 
     def test_nested_claude_never_shares_the_outer_session_state(self):
         # Reviewer round 3: a claude run from the outer claude's Bash tool is
-        # the same binary but unregistered. Its hooks must not take the outer
-        # key; a latch in either session must not HARD-block the other.
+        # the same binary. Unregistered or registered (as observed on Claude
+        # Code 2.1.286), its hooks must not take the outer key; a credits
+        # error in either session must not HARD-block the other.
+        for mode in ("1", "register"):
+            with self.subTest(nested=mode):
+                self.nested_case(mode)
+
+    def nested_case(self, mode):
+        gate = os.path.join(self.cfg, "claude-kit", "context-gate")
+        for f in os.listdir(gate) if os.path.isdir(gate) else ():
+            if f.startswith(L.PROC_PREFIX) or f.startswith("inner"):
+                os.unlink(os.path.join(gate, f))
         self.session("claude-opus-5", 170_000)             # the outer session, marker keyed
         rc, out, err = self.warn()
         self.assertEqual((rc, err), (0, ""))
@@ -986,19 +1045,35 @@ class TestHooks(Base):
             for r in (model_line("claude-opus-5", time.time()), usage_line(170_000),
                       credits_line(time.time() + 1)):
                 f.write(json.dumps(r) + "\n")
-        env = self.environ(_TEST_NESTED=1)
+        env = self.environ(_TEST_NESTED=mode)
         run_hook("window_events.py", {"session_id": "inner", "hook_event_name": "SessionStart",
                                       "source": "startup", "transcript_path": inner},
                  dict(env))
-        self.assertIsNone(L.load_state("inner")["proc"]["key"])
+        key = L.load_state("inner")["proc"]["key"]
+        if mode == "register":
+            # Verified as itself: keyed to the inner process's own registry
+            # entry, never to the outer stand-in's.
+            sess = os.path.join(self.cfg, "sessions")
+            ents = [json.load(open(os.path.join(sess, f))) for f in os.listdir(sess)]
+            own = {str(e.get("pid")) for e in ents if e.get("sessionId") == "inner"}
+            self.assertTrue(key)
+            self.assertIn(key.split("-")[0], own)
+        else:
+            self.assertIsNone(key)
         rc, out, err = run_hook("context_warn.py", {"session_id": "inner", "prompt": "x",
                                                     "transcript_path": inner, "cwd": self.proj},
                                 dict(env))
-        self.assertEqual(rc, 0, err)                        # its own latch: a maybe, warn only
+        self.assertEqual(rc, 0, err)                        # its own credits error: warn only
         self.assertEqual(L.load_state("inner")["derived"]["resolved"], False)
-        self.assertFalse([f for f in os.listdir(os.path.join(self.cfg, "claude-kit",
-                                                             "context-gate"))
-                          if f.startswith(L.PROC_PREFIX)])
+        procs = [f for f in os.listdir(gate) if f.startswith(L.PROC_PREFIX)]
+        if mode == "register":
+            # Any process record is an inner claude's own, never an outer's.
+            ents = [json.load(open(os.path.join(sess, f))) for f in os.listdir(sess)]
+            own = {str(e.get("pid")) for e in ents if e.get("sessionId") == "inner"}
+            self.assertTrue(all(f[len(L.PROC_PREFIX):].split("-")[0] in own for f in procs),
+                            procs)
+        else:
+            self.assertFalse(procs)
         # The outer session after the nested run: still 1M, still silent.
         # (each run_hook is a new stand-in process: re-adopt the outer marker)
         L.update_state("s", lambda st: st["proc"].update(key=self.key))
@@ -1052,11 +1127,11 @@ class TestHooks(Base):
 
     def test_unresolved_auto_compact_window_warns_then_model_window_blocks(self):
         self.session("claude-sonnet-5", 470_000)
-        rc, out, _ = self.warn(CLAUDE_CODE_ENTRYPOINT="local-agent")
+        rc, out, _ = self.warn(CLAUDE_CODE_AUTO_COMPACT_WINDOW=500000)
         self.assertEqual(rc, 0)
         self.assertIn("UNRESOLVED", out["hookSpecificOutput"]["additionalContext"])
         self.session("claude-sonnet-5", 950_000)
-        rc, _, err = self.warn(CLAUDE_CODE_ENTRYPOINT="local-agent")
+        rc, _, err = self.warn(CLAUDE_CODE_AUTO_COMPACT_WINDOW=500000)
         self.assertEqual(rc, 2)
         self.assertIn("50,000 tokens left of 1,000,000", err)
 
@@ -1076,7 +1151,7 @@ class TestHooks(Base):
         # 10K left of the unresolved 480K gate window, 530K of the model's:
         # a checkpoint fits the window a hard stop is measured against.
         self.session("claude-sonnet-5", 470_000)
-        rc, out, _ = self.warn(CLAUDE_CODE_ENTRYPOINT="local-agent")
+        rc, out, _ = self.warn(CLAUDE_CODE_AUTO_COMPACT_WINDOW=500000)
         self.assertEqual(rc, 0)
         ctx = out["hookSpecificOutput"]["additionalContext"]
         self.assertIn("UNRESOLVED", ctx)
@@ -1088,7 +1163,7 @@ class TestHooks(Base):
         self.set_exact(100_000, 1_000_000)
         rc, out, _ = self.warn()
         self.assertEqual(rc, 0)
-        self.assertIn("disagreed with the status line on Claude Code 2.1.277",
+        self.assertIn(f"disagreed with the status line on Claude Code {TEST_VERSION}",
                       out.get("systemMessage", ""))
         self.set_exact(100_000, 1_000_000)
         self.assertEqual(self.warn()[1], {})

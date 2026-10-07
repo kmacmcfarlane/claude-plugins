@@ -673,7 +673,7 @@ class TestStatusline(Base):
             open(p, "w").write(body)
         else:
             entry = {"pid": pid, "sessionId": sid, "name": "beta",
-                     "nameSource": "peer"}
+                     "nameSource": "user"}
             entry.update(body)
             json.dump(entry, open(p, "w"))
 
@@ -725,9 +725,9 @@ class TestStatusline(Base):
             self.assertIn("42%  580k left", line)
 
     def test_registry_explicit_name_wins_over_payload_title(self):
-        # /rename and an agent naming itself land in the registry first; the
-        # payload lags (next render) or carries only the AI title.
-        for src in ("user", "peer", "hook", "collision"):
+        # /rename lands in the registry first; the payload lags (next render)
+        # or carries only the AI title. `user` is the observed value.
+        for src in ("user",):
             self.registry({"name": "set-by-" + src, "nameSource": src})
             rc, line, err = self.line({"session_name": "AI title"})
             self.assertEqual((rc, err), (0, ""), src)
@@ -748,7 +748,8 @@ class TestStatusline(Base):
         self.assertNotIn("(", line)
 
     def test_derived_and_auto_default_names_are_never_shown(self):
-        for src in ("derived", "auto", None, "bogus"):
+        # Only observed values count: any other falls through to the payload.
+        for src in ("derived", "auto", None, "bogus", "peer", "hook", "collision"):
             self.registry({"name": "hooks-3f", "nameSource": src})
             rc, line, err = self.line({})
             self.assertEqual((rc, err), (0, ""), src)

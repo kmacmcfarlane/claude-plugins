@@ -23,18 +23,18 @@ sessions never receive `rate_limits`, so they see none. The same windows are
 recorded in the sensor record under `rate_limits` (see limits_record), where a
 reader can find a window's reset time.
 
-The session name shown in parentheses comes from a documented fallback chain
-(Claude Code 2.1.273, docs/en/statusline). First Claude Code's local session
-registry, `$CLAUDE_CONFIG_DIR/sessions/<pid>.json` (keys `sessionId`, `name`,
-`nameSource` in user|peer|hook|collision|auto|derived), but only when the entry
-for this session carries an explicit nameSource -- user, peer, hook or
-collision: those are the names the operator sets (/rename, an agent naming
-itself through the peer channel), and the payload lags them or never carries
-them. Then the payload's `session_name` -- the custom name from `/rename` or
-`--name` when one exists, else the AI-generated title, absent otherwise --
-which covers the AI title and the window before the registry write. A
-`derived` or `auto` registry name (the my-app-3f default) is never shown, as
-the payload skips it too. The registry read is one small file per ancestor pid
+The session name shown in parentheses comes from a fallback chain. First
+Claude Code's local session registry, `$CLAUDE_CONFIG_DIR/sessions/<pid>.json`
+(keys `sessionId`, `name`, `nameSource`), but only when the entry for this
+session carries the nameSource `user`: the name the operator set (/rename),
+which the payload lags. The registry's fields are not documented; `user` and
+`derived` are the nameSource values observed in it (Claude Code 2.1.292), and
+a name with any other value falls through to the payload. Then the payload's
+`session_name` (documented: https://code.claude.com/docs/en/statusline) --
+the custom name from `/rename` or `--name` when one exists, else the
+AI-generated title, absent otherwise -- which covers the AI title and the
+window before the registry write. A `derived` registry name (the my-app-3f
+default) is never shown, as the payload skips the default display name too. The registry read is one small file per ancestor pid
 (the status line runs as a child of the session, possibly through a shell),
 walked lazily -- the direct parent's entry first, then one /proc read per
 further ancestor, stopping at the first entry for this session -- at most
@@ -172,7 +172,7 @@ def limits_record(rate_limits, now=None):
 
 REGISTRY_MAX_BYTES = 65536  # a registry entry is a few hundred bytes; cap the read
 ANCESTORS = 4  # python -> [hub ->] [sh ->] claude: how far up to look for the session pid
-EXPLICIT = ("user", "peer", "hook", "collision")  # nameSource values the operator set
+EXPLICIT = ("user",)  # the observed nameSource value the operator set (/rename)
 NAME_MAX = 60  # widest name shown, in terminal columns; wider ones end in an ellipsis
 SCAN_MAX = 8 * NAME_MAX  # code points kept from a name: a flood of combining marks ends here
 SCAN_HARD = 64 * NAME_MAX  # code points read while looking for them: format padding ends here
@@ -312,7 +312,7 @@ def registry_name(sid, base=None):
     first, and stops at the first entry whose `sessionId` is ours, so a reused
     pid or a sibling session never leaks a name and the common case (a direct
     child of the session) costs one open. Only a name with an EXPLICIT
-    nameSource counts; a derived/auto default yields "". Anything missing,
+    nameSource counts; a derived default, or any value not observed, yields "". Anything missing,
     oversized or malformed yields "".
     """
     if not sid:
