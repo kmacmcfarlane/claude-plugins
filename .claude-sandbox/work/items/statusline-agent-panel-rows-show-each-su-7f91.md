@@ -24,3 +24,4 @@ Operator 2026-10-07, verbatim: 'I'd like the status-line entries on sub-agents t
 target: full statusline-agent-panel-rows-show-each-su-7f91 /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude/worktrees/statusline-agent-panel-rows-show-each-su-7f91
 budget: 2026-10-07T20:36Z build $22 — default other build
 dispatch: implementer opus medium — build (status-line hook code)
+agent: implementer a4bd4861771a0bec2 round 1
