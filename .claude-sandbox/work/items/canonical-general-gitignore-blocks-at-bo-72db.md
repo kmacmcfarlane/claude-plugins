@@ -1,12 +1,14 @@
 ---
 id: canonical-general-gitignore-blocks-at-bo-72db
 title: Canonical general .gitignore blocks at both new-repo entry points (create-repo, new-project-from-template)
-short_display_name: canonical .gitignore blocks
+short_display_name: gitignore ownership by creator
 type: feature
-status: todo
+status: doing
 priority: 2
+owner: Kyle-McFarlane@2d49f8460283
+claimed: 2026-10-07T18:13Z
 created: 2026-10-06
-updated: 2026-10-06
+updated: 2026-10-07
 refs:
   - "peer claude-sandbox librarian 2026-10-06 (their e6a3; claude-sandbox#37, #38)"
 ---
@@ -45,3 +47,11 @@ decision 178: Under that split, who writes ignore lines for files none of these 
   rec: (a) · basis partial — create-repo is the step every new repo passes through; its lines are about the repo, not the template's content
   unknown: whether every new repo goes through create-repo, or some start from a template directly
 closed 177: superseded by 178
+answer 178: "178 - create repo should use it's best judgment in this case. If in doubt, as the user about something critical" (2026-10-07T18:13Z, chat; read as: create-repo judges which ignore lines a new repo needs for files no tool owns — Claude Code's personal files, editor and OS clutter — and asks the operator when in doubt about something critical; no canonical block)
+note: 2026-10-07T18:13Z acceptance reshaped by answers 177 (reframe) and 178: (1) create-repo's skill text gives it ownership of .gitignore lines for what it creates, plus judgment over lines for files no tool owns (Claude Code's personal files, editor/OS clutter), asking the operator when in doubt about something critical (e.g. anything that could hold a secret); (2) claude-sandbox keeps the .claude-sandbox/ lines (its init); (3) each template owns its own lines; new-project-from-template keeps respecting the template's .gitignore; no canonical shared block. Files: plugins/create-repo/skills/create-repo/SKILL.md (and its references if needed); new-project-from-template SKILL.md only if it claims otherwise
+
+## Notes
+- 2026-10-07 claimed by Kyle-McFarlane@2d49f8460283
+target: full canonical-general-gitignore-blocks-at-bo-72db /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude/worktrees/canonical-general-gitignore-blocks-at-bo-72db
+budget: 2026-10-07T18:13Z build $22 — default other build
+dispatch: implementer opus medium — build (skill rule change)
