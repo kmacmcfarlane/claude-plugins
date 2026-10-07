@@ -15,7 +15,7 @@ Relayed 2026-10-07 by peer kappa-3567 (sussex/communications/email), feedback fr
 
 ## Handoff
 - doing: —
-- next: —
+- next: answer 179 a: dispatch the build (context-guard checkpoint skill, a residue-audit step for every open item in the manifest's items: set before 4b)
 - blocked: —
 - learned: —
 decision 179: Should checkpoint write conversation-only details into every open item the session touched before it writes the manifest (the operator's request, relayed from the kappa-3567 session)? — options: (a) yes, as relayed: audit each item in the manifest's items: set and append what only the conversation holds [recommended] | (b) no | (z) decide later

@@ -6,7 +6,7 @@ type: feature
 status: todo
 priority: 2
 created: 2026-10-03
-updated: 2026-10-03
+updated: 2026-10-07
 refs:
   - peer operator-attention 2026-10-03 (their serial 09, R47)
 ---
@@ -15,7 +15,7 @@ peer operator-attention 2026-10-03, relaying the operator's answers to our 0c4d 
 
 ## Handoff
 - doing: —
-- next: —
+- next: answer 151 b: dispatch the plan now (placement comes back as a decision)
 - blocked: —
 - learned: —
 note: peer agents 2026-10-03 — the operator confirmed first-hand in the agents session (their answer 24) that the four relayed operator-attention answers stand (first/last shown, who writes shown, the turn log via our 3e8e, R49 streams); they are requirements on agents' 76bc; agents' spike d131 reads our 0999, 3e8e, 40f0 and 8c42 read-only; a peer report, not an approval here — decisions 150 and 151 stay open for the operator's word in this session

@@ -6,7 +6,7 @@ type: feature
 status: todo
 priority: 2
 created: 2026-09-29
-updated: 2026-09-29
+updated: 2026-10-07
 refs:
   - agents 76bc
   - operator-attention R47
@@ -16,7 +16,7 @@ Relayed 2026-09-29 from the agents librarian (76bc: the decision ledger records 
 
 ## Handoff
 - doing: —
-- next: —
+- next: answer 150 a: relayed answers confirmed; plan the shown-at record (first and last shown, written by the displaying session)
 - blocked: —
 - learned: —
 operator-attention requirements for the shape (their commit 591a428; they will not build their interim log):
