@@ -226,3 +226,4 @@ decision 166: The scope interview's granted round fixed the double scope line, b
   rec: (a) · basis partial — the fix is fully specified by the reviewer, uses only existing forms, and the round is cheap; landing (b) ships a line format the doctrine marks as a names-are-API failure
   basis: observed — review round 5 at 4fbf099 (scratch repos: copied-subject case misclassified; format.md § Closed defines superseded by as a decision)
   unknown: whether the reviewer finds anything new in the reconcile hand-off
+answer 166: later (answer page, rev 2026-10-07T07:00Z, 2026-10-07T20:44:34.348Z; read as: later, default wake — the next Report)

@@ -289,3 +289,7 @@ verdict: CLEAR round 2 at e7029c0
 cost: 2026-10-07T18:56Z build $23.33 of $22 after review 2 — must-fix 0 — prices 2
 landed: fbe2c0f
 - 2026-10-07 done: fbe2c0f
+answer 170: a (answer page, rev 2026-10-07T07:00Z, 2026-10-07T20:51:27.754Z; read as: (a) per-session pip, when the history scrub runs)
+answer 172: dig into — "This decision mentions details not in the decision card, so I'm blocked from answering. Before this decision was shown, it should have included what the tiers were and what \"plus wording\" means. How can the skill be updated to achieve this?" (answer page, rev 2026-10-07T07:00Z, 2026-10-07T20:54:04.477Z; read as: dig into — re-show 172 with each tier defined; and decisions-skill feedback, joined to decisions-skill-every-decision-carries-t-dcf8)
+answer 173: a (answer page, rev 2026-10-07T07:00Z, 2026-10-07T20:53:19.183Z; read as: (a) the operator runs the force or recreate and the reset, from prepared commands)
+answer 174: a — "create a work-item to follow-up on deleting the backups" (answer page, rev 2026-10-07T07:00Z, 2026-10-07T20:53:42.256Z; read as: (a) keep the backups a week after the checks; and a follow-up item to delete them)

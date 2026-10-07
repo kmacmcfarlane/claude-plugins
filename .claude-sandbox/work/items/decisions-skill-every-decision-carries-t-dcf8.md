@@ -18,3 +18,4 @@ Operator 2026-10-06 on decision 160, verbatim: 'decision skill feedback: you gav
 - next: —
 - blocked: —
 - learned: —
+note: 2026-10-07 operator on 172 (answer page): "This decision mentions details not in the decision card, so I'm blocked from answering. Before this decision was shown, it should have included what the tiers were and what 'plus wording' means. How can the skill be updated to achieve this?" — the same class as 160's missing paste.txt: a card names terms or artifacts it does not define or show; acceptance gains: every term a card's options use is defined on the card (or the card links what it summarises with the definitions inline)

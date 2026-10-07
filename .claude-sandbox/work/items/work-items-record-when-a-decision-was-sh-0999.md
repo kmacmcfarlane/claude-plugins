@@ -56,3 +56,4 @@ decision 150: Confirm the relayed answers for the decision shown-at record: trac
   (z) decide later — the shown-at record waits
   rec: (a) · basis strong — your words, quoted in their serial (their commit c598050), and confirmed first-hand in the agents session (their answer 24)
   unknown: none
+answer 150: a (answer page, rev 2026-10-07T07:00Z, 2026-10-07T20:46:04.350Z; read as: (a) confirm both relayed answers — first and last shown, written by the displaying session)

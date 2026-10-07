@@ -66,3 +66,4 @@ decision 162: Which license should claude-plugins carry? — options: (a) MIT | 
   (z) decide later — the repo stays public with no license
   rec: (e) · basis strong — your existing choice across your projects, and this code came out of claude-kit under it; the one cost is that anyone who pastes a changed skill into a project they distribute must license that under GPL too
   unknown: none
+answer 162: e — "is this what I'm using for other repos in kmacmcfarlane too?" (answer page, rev 2026-10-07T07:00Z, 2026-10-07T20:44:29.732Z; read as: (e) GPL-3.0; the question answered yes: claude-kit, claude-sandbox, claude-analytics, claude-templates, checkpoint-sampler and image-dataset-tool carry GPL-3.0)

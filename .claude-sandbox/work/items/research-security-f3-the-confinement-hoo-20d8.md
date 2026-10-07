@@ -78,3 +78,5 @@ decision 161: What should the new plugin that holds the research confinement hoo
   (z) decide later — the build waits
   rec: (a) · basis partial — it follows the existing guard naming and the plan's own placeholder
   unknown: none
+answer 160: later (answer page, rev 2026-10-07T07:00Z, 2026-10-07T20:44:46.475Z; read as: later, default wake — the next Report)
+answer 161: a (answer page, rev 2026-10-07T07:00Z, 2026-10-07T20:45:01.873Z; read as: (a) the plugin is named research-guard)

@@ -30,3 +30,4 @@ decision 179: Should checkpoint write conversation-only details into every open 
   (z) decide later — the item waits
   rec: (a) · basis strong — your words, relayed with the case that prompted them
   unknown: none
+answer 179: a (answer page, rev 2026-10-07T07:00Z, 2026-10-07T20:43:41.825Z; read as: (a) build it)

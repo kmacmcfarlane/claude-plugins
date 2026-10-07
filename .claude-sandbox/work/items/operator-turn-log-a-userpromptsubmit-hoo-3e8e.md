@@ -48,3 +48,4 @@ decision 151: Confirm the relayed proposal for an operator turn log: a hook writ
   (z) decide later — the item waits
   rec: (a) · basis partial — it removes transcript scraping for every reader of operator turn times; nothing waits on it yet
   unknown: whether a config tree that exports its own config dir is used much
+answer 151: b — "5% on wednesday is not very far into the quota, why is this a concern? Also, I'm getting a lot of budget decisions coming in, we should bump up the budget to really only flag big spends (based on real data)." (answer page, rev 2026-10-07T07:00Z, 2026-10-07T20:47:39.192Z; read as: (b) confirm and plan it now; the quota note was stale caution, not a concern; plus a new request filed: raise budgets from real data)

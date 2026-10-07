@@ -45,3 +45,4 @@ decision 149: How do you want to start on the cross-session handoff skill? — o
   (z) decide later — the item waits, filed, with its source file in clustertool's scratchpad
   rec: (b) · basis partial — you said you want to work the idea with me, and a short conversation steers a long plan cheaply
   unknown: how much of the 11 practised points you want in the first version
+answer 149: later (answer page, rev 2026-10-07T07:00Z, 2026-10-07T20:49:21.924Z; read as: later, default wake — the next Report)

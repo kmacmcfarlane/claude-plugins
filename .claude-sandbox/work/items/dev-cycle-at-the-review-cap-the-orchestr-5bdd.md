@@ -318,3 +318,4 @@ decision 156: Should standalone dev-cycle plans with nothing high-severity left 
   (z) decide later — the build ships (b)
   rec: (a) · basis partial — stopping spends nothing, the findings reach the build either way, and it removes the inversion
   unknown: none
+answer 156: b (answer page, rev 2026-10-07T07:00Z, 2026-10-07T20:50:52.391Z; read as: (b) standalone plan caps keep asking, as shipped)
