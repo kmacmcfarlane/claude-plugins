@@ -255,3 +255,10 @@ target: full review-claude-code-bundle-derived-conten-e347 /home/rt/work/src/git
 budget: 2026-10-07T17:38Z build $22 — default other build
 dispatch: implementer opus medium — build (series 01-05 part A; answers 164 a, 167 a, 168 a, 169 a, 175 a; carried round-4 findings 1-3)
 agent: implementer a8b8d2db9e1889381 round 1
+return: implementer DONE_WITH_CONCERNS b7d9b35 (part A built; 29 files incl. X5 store items; deny-list seeded with 22 long strings; credits text not found in any local transcript — matched by the documented title; three passages of unknown provenance left: lib_context.py write-queue timing claims, subagent_statusline.py:62 / c0cc:29)
+changed:
+  plugins/context-guard/hooks/{window_rules,lib_context,context_warn,statusline}.py and tests (incl. new test_no_internal_labels.py) — only documented and observed rules, hints elsewhere
+  plugins/statusline/hooks/{statusline,subagent_statusline}.py and test_statusline_render.py — observed name sources, documented tasks sentence
+  plugins/context-guard/skills/checkpoint/references/{design-rationale,operator-playbook}.md; plugins/statusline/skills/install-statusline/references/sensor-contract.md; README.md — wording
+  .claude-sandbox/work/items/ (X5 rows and the completeness-gate extras) — internals removed or relabelled
+dispatch: reviewer opus high — review round 1
