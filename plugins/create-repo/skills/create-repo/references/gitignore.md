@@ -12,7 +12,11 @@ every new repo gets.
 | `.claude-sandbox/` and the files inside it | claude-sandbox | its `init` (Step 5) or `init-ralph` (the template path) writes them |
 | what a template ships | the template | they arrive with the template's own `.gitignore` |
 | what this skill creates | this skill | this step |
-| files no tool creates: Claude Code's personal files, editor and OS clutter | this skill, by judgment | this step |
+| files no tool creates: Claude Code's personal files and worktrees, secret-holding files, editor and OS clutter | this skill, by judgment | this step |
+
+claude-sandbox's `init` also writes `.claude/worktrees/`. When it has, the check in
+Writing the lines finds it already ignored and this skill adds nothing for it; in the
+plain path (no claude-sandbox) this skill writes it.
 
 This skill creates only `README.md` (and `.gitignore` itself), and nothing it creates
 needs ignoring today. If a later version of this skill creates a file that should stay out
@@ -20,9 +24,8 @@ of git, its line is written here.
 
 **Never rewrite another owner's lines.** Do not remove, reorder, reword or comment out a
 line that claude-sandbox or the template wrote, even one that looks wrong or that your own
-judgment would not add. Append only. If one of their lines clashes with your judgment (a
-`!` negation that re-includes a file you would ignore, say), leave it, add nothing that
-fights it, and name it in the report.
+judgment would not add. Append only, and never append a line that undoes theirs (Writing
+the lines, step 2, says how to tell).
 
 ## Your judgment lines
 
@@ -34,8 +37,17 @@ usual candidates:
   `.claude/settings.local.json` (the local settings file,
   https://code.claude.com/docs/en/settings) and `CLAUDE.local.md` (personal project
   memory, https://code.claude.com/docs/en/memory).
+- **Claude Code's worktrees**: `.claude/worktrees/`, which the worktrees docs say to add
+  to `.gitignore` (https://code.claude.com/docs/en/worktrees). Without it, a worktree
+  created there is staged as an embedded repository by a later `git add -A`.
+- **Secret-holding files**, by default: `.env` and `.env.*`, with `!.env.example` after
+  them so a shared example stays tracked. Ignoring a file that could hold a secret is the
+  safe side; the next section says when to ask instead.
 - **OS clutter**: `.DS_Store`, `Thumbs.db`.
 - **Editor clutter** that is never shared: `*.swp`, `*~`.
+
+Without a reason in the purpose, the template or the conversation to leave one out, add
+every candidate above.
 
 Leave out what a repo often tracks on purpose, such as `.vscode/` or `.idea/` (shared
 editor settings) and `.claude/` as a whole (`.claude/settings.json` and project skills are
@@ -48,27 +60,41 @@ Decide and report. Ask the operator first only when the doubt is critical, which
 one of:
 
 - **A file that could hold a secret or credential**: an `.env`, a key, a token file, a
-  local config with passwords. Leaning towards ignoring it is safe and needs no question;
-  ask when something says it should be tracked instead, such as a template that ships one
-  with content in it or a purpose that names it as shared config.
+  local config with passwords. Ignoring it is the default and needs no question (the
+  `.env` lines above); ask when something says it should be tracked instead, such as a
+  template that ships one with content in it or a purpose that names it as shared config.
 - **A file the operator may want tracked**: a line that would hide something the template
   ships, or that the purpose suggests is shared.
 
 Anything else, decide and name it in the report.
 
-The question follows the `decisions` skill from the operator-interaction plugin when this
-session lists `operator-interaction:decisions`. Otherwise it is a plain question in one
-message: the file, why it is in doubt, and your recommendation. Ask once, before the
-commit that would carry the line.
+Put every critical doubt in one message, one numbered decision each, before the commit
+that would carry the lines. The message follows the `decisions` skill from the
+operator-interaction plugin when this session lists `operator-interaction:decisions`.
+Otherwise it is a plain message, each decision giving the file, why it is in doubt, and
+your recommendation.
 
 ## Writing the lines
 
-1. Read `$REPO/.gitignore` if it exists. Drop any of your lines that it already holds,
-   matched as whole lines.
-2. Append the rest at the end of the file under one comment line,
-   `# create-repo: personal and editor files`, with a blank line before it when the file
-   is not empty. Write with the Edit or Write tool; your lines are fixed patterns, never
-   the purpose.
-3. Nothing left to add: leave the file untouched and do not create one.
+1. Read `$REPO/.gitignore` if it exists.
+2. Test each candidate against the rules already in place, with one sample path for it
+   (`.claude/settings.local.json`, `CLAUDE.local.md`, `.claude/worktrees/w`, `.env`,
+   `.env.local`, `.DS_Store`, `Thumbs.db`, `a.swp`, `a~`):
+   ```bash
+   git -C "$REPO" check-ignore --no-index -v '.claude/settings.local.json'
+   ```
+   A match prints `file:line:pattern`, a tab, then the path; read the pattern field.
+   - No output (exit 1): nothing covers it; keep the candidate.
+   - A pattern not starting with `!`: already ignored, perhaps by a wider line such as
+     `.claude/*`; drop the candidate.
+   - A pattern starting with `!`: another owner un-ignores it on purpose. Drop the
+     candidate, append nothing that would re-ignore that path, and name the line in the
+     report.
+   `!.env.example` goes in only when `.env.*` does.
+3. Append the kept candidates at the end of the file under one comment line,
+   `# create-repo: Claude Code personal files, secrets, editor and OS files`, with a
+   blank line before it when the file is not empty. Write with the Edit or Write tool;
+   your lines are fixed patterns, never the purpose.
+4. Nothing left to add: leave the file untouched and do not create one.
 
 The commit that follows stages `.gitignore` by name with the rest of the step's files.

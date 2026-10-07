@@ -26,7 +26,8 @@ agent session on it. User's argument: $ARGUMENTS
 - **`.gitignore` lines belong to whoever creates the file they ignore.** claude-sandbox's
   `init` writes the `.claude-sandbox/` lines, a template brings its own, and this skill
   writes the lines for what it creates plus, by its own judgment, lines for files no tool
-  creates (Claude Code's personal files, editor and OS clutter). It appends only, never
+  creates (Claude Code's personal files and worktrees, `.env` files, editor and OS
+  clutter). It appends only, never
   rewrites another owner's lines, and asks the operator only when a doubt is critical: a
   file that could hold a secret, or one the operator may want tracked. There is no shared
   block. See `references/gitignore.md`.
@@ -155,7 +156,7 @@ plain `claude`." Then carry on — nothing below requires it.
      says; the template's own lines stay as they are.
    - Commit: `git -C "$REPO" add README.md`, then
      `test -f "$REPO/.gitignore" && git -C "$REPO" add .gitignore`, then
-     `git -C "$REPO" commit -m "added: README - thread purpose"`.
+     `git -C "$REPO" commit -m "added: README, gitignore - thread purpose and ignore lines"`.
    - Skip to Step 7.
 
 ### Step 5: Create and seed
@@ -229,8 +230,10 @@ when the thread needs one.
 Example 1: bare thread repo
 User says: "/create-repo:create-repo figure out whether we can replace the NAS backup cron with restic"
 Actions: name `restic-backup-migration`, parent derived from the current repo, confirmed;
-git init, README, `claude-sandbox init --yes`, ignore lines for Claude Code's personal
-files and OS clutter appended after claude-sandbox's, commit; command printed.
+git init, README, `claude-sandbox init --yes`, then ignore lines appended after
+claude-sandbox's for Claude Code's personal files, `.env` files, and editor and OS
+clutter (`.claude/worktrees/` is skipped, since claude-sandbox already ignores it), commit;
+command printed.
 Result: one copy-paste line that starts a sandboxed session which writes CLAUDE.md and
 begins the restic investigation.
 
