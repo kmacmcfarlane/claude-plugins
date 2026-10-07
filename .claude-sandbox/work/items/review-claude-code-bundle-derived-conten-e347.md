@@ -277,3 +277,9 @@ findings:
 cost: 2026-10-07T18:35Z build $15.38 of $22 after review 1 — must-fix 2 — prices 2
 dispatch: implementer opus medium — resume (fix round 1)
 agent: implementer a8b8d2db9e1889381 round 2
+return: implementer DONE 7f4bf04 (34e49b0 findings 1-7 + Haiku 5.5; 7f4bf04 store item 428e; deny-list 24 entries; one deny hit left in branch history: b7d9b35's edit of the 8ab6 line still carried the variable, removed by 34e49b0)
+changed:
+  plugins/context-guard/hooks/{lib_context,window_rules}.py and tests (incl. test_no_internal_labels.py widened); plugins/statusline/hooks/subagent_statusline.py and its test; store items bace, 428e, 8ab6, c0cc, d63e — round 1 fixes
+decided: rebuild the branch as one clean commit before review round 2 — CLAUDE.md rule 5: a deny-listed string found while only on its own unmerged branch (b7d9b35 re-adds the 8ab6 variable in its diff) is cleared by a rebuild per fix-loop.md § A leaked secret, never a fix commit on top; the older occurrence already on main since e122bdd stays for the history scrub (4151) — class: reading
+dispatch: implementer opus medium — resume (rebuild: reach check, soft reset to the merge base, one clean commit)
+agent: implementer a8b8d2db9e1889381 round 3

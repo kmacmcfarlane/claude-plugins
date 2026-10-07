@@ -22,3 +22,4 @@ Operator 2026-10-06 on decision 164: 'I want to perform the history scrub of thi
 - learned: —
 wake 171: when the operator has time to oversee it closely — operator, verbatim: "171 - will need to be later when I have time to oversee closely" (2026-10-07T17:38Z, chat; read as: later, wake on the operator's say-so; the history scrub waits; 170, 172-174 wait with it)
 note: 2026-10-07T18:35Z purge inputs to add (from the e347 build review): the transcript write-queue/interval/compaction-order passages at plugins/context-guard/hooks/lib_context.py (pre-scrub :73-78, :1662-1669 region), tests/test_window_mirror.py, tests/test_lib_context.py:236, and the bace series' executable-read text if any is tracked
+note: 2026-10-07T18:45Z purge inputs: the undocumented loop variable in store item 8ab6:26, on main since e122bdd (deny-listed locally)
