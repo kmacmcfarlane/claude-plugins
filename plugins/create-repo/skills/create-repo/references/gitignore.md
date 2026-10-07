@@ -25,7 +25,7 @@ of git, its line is written here.
 **Never rewrite another owner's lines.** Do not remove, reorder, reword or comment out a
 line that claude-sandbox or the template wrote, even one that looks wrong or that your own
 judgment would not add. Append only, and never append a line that undoes theirs (Writing
-the lines, step 2, says how to tell).
+the lines, steps 2 and 3, say how to tell).
 
 ## Your judgment lines
 
@@ -84,6 +84,8 @@ your recommendation.
    git -C "$REPO" check-ignore --no-index -v '.claude/settings.local.json'
    ```
    A match prints `file:line:pattern`, a tab, then the path; read the pattern field.
+   Count only a match whose file field is `.gitignore`; a match from `.git/info/exclude`
+   or a global excludes file is this machine's alone, so keep the candidate.
    - No output (exit 1): nothing covers it; keep the candidate.
    - A pattern not starting with `!`: already ignored, perhaps by a wider line such as
      `.claude/*`; drop the candidate.
@@ -91,10 +93,17 @@ your recommendation.
      candidate, append nothing that would re-ignore that path, and name the line in the
      report.
    `!.env.example` goes in only when `.env.*` does.
-3. Append the kept candidates at the end of the file under one comment line,
+3. Check the kept candidates against every `!` line already in `.gitignore`, since one
+   sample path can miss a negation for another path the candidate covers, such as
+   `!.claude/worktrees/` under `.claude/*`, or `!.env.development` with no `.env.*`
+   above it. When a candidate's pattern would match the path a `!` line names (for
+   `.env.*`, any `.env.` name; for `.claude/worktrees/`, anything inside it), drop that
+   candidate, since appending it after the `!` line would ignore that path again, and
+   name the `!` line in the report.
+4. Append the kept candidates at the end of the file under one comment line,
    `# create-repo: Claude Code personal files, secrets, editor and OS files`, with a
    blank line before it when the file is not empty. Write with the Edit or Write tool;
    your lines are fixed patterns, never the purpose.
-4. Nothing left to add: leave the file untouched and do not create one.
+5. Nothing left to add: leave the file untouched and do not create one.
 
 The commit that follows stages `.gitignore` by name with the rest of the step's files.
