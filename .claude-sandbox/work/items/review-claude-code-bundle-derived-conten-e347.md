@@ -263,3 +263,17 @@ changed:
   .claude-sandbox/work/items/ (X5 rows and the completeness-gate extras) — internals removed or relabelled
 dispatch: reviewer opus high — review round 1
 agent: reviewer ab95a8bfa07939c0f round 1
+verdict: NEEDS_CHANGES round 1 at b7d9b35
+findings:
+  1. [medium] lib_context.py:75-78, :1687-1688, :1695; test_window_mirror.py:389; test_lib_context.py:236 — an internal fact (how transcript lines are queued, the write interval, compaction stamping order) read from the installed executable per the bace series; keep only the observed (the boundary line reached disk after the next prompt's hook read the transcript, 2.1.284) and hint at the rest; add to 4151's purge inputs
+  2. [medium] store item 8ab6:26 — an undocumented CLAUDE_CODE_ variable name survives; reword to "a skill rule, not an environment variable" and add the name to the deny-list
+  3. [low] subagent_statusline.py:65-66, c0cc:29 — "documented" claim about plugin path variables in a plugin's settings.json is not in the docs; observe and label, or remove with a hint
+  4. [low] test_window_rules.py:215 — fixture passes an undocumented entrypoint variable no longer read; drop it
+  5. [low] test_window_rules.py:341-342 — credits settings-reference for a fall-through it does not state; say it is our handling
+  6. [low] d63e:41, :58 — a hint about an internal mechanism; give it a user-visible topic
+  7. [low] test_no_internal_labels.py — narrower than the plan's grep (misses unparenthesised constants)
+  note: model-config now lists Haiku 5.5 as native 1M; NATIVE_1M omits it (a Haiku 5.5 session only warns)
+  note: deviation 3 — Opus 4.5 now resolves at 200K from observation, though 168's card told the operator it would only warn; tell the operator
+cost: 2026-10-07T18:35Z build $15.38 of $22 after review 1 — must-fix 2 — prices 2
+dispatch: implementer opus medium — resume (fix round 1)
+agent: implementer a8b8d2db9e1889381 round 2
