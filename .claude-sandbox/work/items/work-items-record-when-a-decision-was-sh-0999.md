@@ -77,7 +77,7 @@ dispatch: reviewer opus high — plan review 2 (resume acc5597438f58d0ec)
 verdict: plan review 2 CLEAR (must-fix 0); lows carried into the build: hold seen N: writes until OQ2 is answered; the grep check pattern '^(shown|seen) [0-9]+:|shown N:|seen N:'; Step 3 shown hand-over reworded as number, publish time, surface word
 findings: carried — (1) until decision 180 is answered, writers write shown N: only, no seen N:; (2) use grep -rnE '^(shown|seen) [0-9]+:|shown N:|seen N:' plugins/operator-interaction (no hits now or after); (3) decision-page Step 3 hands over a number, a publish time and a surface word, never a line shape
 decision 180: May seen N: lines (the time of the operator's next turn after a decision was shown, no content) go into the tracked work-item store that is pushed to the public repo? — options: (a) yes, tracked as planned [recommended] | (b) no, keep them in an untracked local file (needs a new plan) | (z) decide later: writers hold seen N: lines back
-  raised: 2026-10-08T05:00Z
+  raised: 2026-10-08T04:05Z
   why ask: trust — what goes public about the operator's activity is the operator's call, and a pushed line takes a history scrub to remove
   impact: Effect → turn times appear in the public store from the build's first push · Wait: none, the build holds seen lines back until answered · reach: every repo whose librarian writes decisions · undo: one-way once pushed (needs a history scrub); free until then · cost: none
 target: full main /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude/worktrees/work-items-record-when-a-decision-was-sh-0999
@@ -89,7 +89,7 @@ dispatch: reviewer opus high — review round 1
 verdict: review 1 NEEDS_CHANGES at 1300ebc (must-fix 2: hold lifts on any answer to 180, not (a); librarian Held clause restates the lift condition; lows: calendar-impossible time read, dev-flow→decision-page soft dep undeclared, shipped rule names this repo's decision without a lookup, decisions SKILL.md over budget; nits: wrap, test count 8 not 9)
 correction: decisions 180-183 were stored with raised: above the headline and unindented card lines; repaired so each card sits indented under its decision line (wi needs-input now reads them)
 dispatch: implementer opus medium — fix round 1 (resume a1ce4ecde12903821)
-correction: no budget: line was written with this item's target: line on 2026-10-08; the build default ($22, other build) applies
+correction: no budget: line was written with this item's target: line on 2026-10-08; the defaults apply: plan $28, build $22 (bindings.md § Spend budget)
 return: DONE 7290ba1 fix round 1 (findings 1-7 as written; test count corrected to 10 new, 8 fail on base)
 changed: README.md (dev-flow row: decision-page hand-over, finding 4)
 dispatch: reviewer opus high — review round 2 (resume a2c9add003f36437c)

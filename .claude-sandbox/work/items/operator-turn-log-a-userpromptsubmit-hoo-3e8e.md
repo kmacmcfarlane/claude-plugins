@@ -16,8 +16,8 @@ refs:
 peer operator-attention 2026-10-03, relaying the operator's answers to our 0c4d delta 01 (their commit c598050; serial .claude-sandbox/investigations/decision-collector/09_operator-answers-10-03.md in their repo; spec R47, new R49). Relayed operator answers — re-confirmed with the operator before any build acts on them. (3) Operator turn timing, proposed to dissolve (the operator's idea, relayed): a UserPromptSubmit hook fires exactly when the operator takes a turn, in every session (hooks run from the shared config dir), and appends {ts, session_id, cwd/repo, estate} — ids and timestamps only, no content — to a host-shared file. Readers: the agents ledger, operator-attention's scheduler, claude-analytics; 'seen N' becomes computable as a turn in the raising session after shown N with none elsewhere between. Caveats: installed per config tree (a tree exporting its own config dir writes a second file, readers merge); no content. Precedent: statusline-hub's per-session sensor record. A live service is allowed but not needed. Placement is ours: README rule 1 puts hooks only in a plugin whose aim is that behaviour — context-guard already hooks UserPromptSubmit (the context gate); operator-interaction is knowledge-only today; or a small dedicated plugin. That placement is an operator decision when planned. Acceptance (draft): one hook, append-only, ids/timestamps only, safe under concurrent sessions, a documented file path and record shape, tests, a reader note in the decisions skill for computing seen N.
 
 ## Handoff
-- doing: —
-- next: answer 151 b: dispatch the plan now (placement comes back as a decision)
+- doing: plan stopped and carried at the convergence stop (review 4)
+- next: on answers 181 and 182 (183 defaults to 13 months): dispatch the build from the series with the carried findings
 - blocked: —
 - learned: —
 note: peer agents 2026-10-03 — the operator confirmed first-hand in the agents session (their answer 24) that the four relayed operator-attention answers stand (first/last shown, who writes shown, the turn log via our 3e8e, R49 streams); they are requirements on agents' 76bc; agents' spike d131 reads our 0999, 3e8e, 40f0 and 8c42 read-only; a peer report, not an approval here — decisions 150 and 151 stay open for the operator's word in this session
@@ -81,15 +81,16 @@ verdict: plan review 4 NEEDS_CHANGES (must-fix 1, not lower than review 3's 1: s
 decided: cap — plan stop and carry at the convergence stop (authority answer 114); if left: finding 1 (per-turn pending files, O_CREAT|O_EXCL|O_NOFOLLOW, unlinked after the origin line; no rewrite, no lock) and low 2 (prune lstat-unlinks non-regular entries) go into the build's acceptance; a round costs another planner and review pass for a one-sentence layout change the build can carry
 findings: carried — (1) make each pending turn its own file pending/<safe_sid>/<prompt_id> holding tx_at, created with O_CREAT|O_EXCL|O_NOFOLLOW (0600) and unlinked by the origin step only after that turn's origin line is written; no rewrite, no lock; the prune removes per-turn files over 24 h and empty session dirs; (2) the prune lstats each entry and unlinks any non-regular entry (symlink included, never followed) as well as regular ones over 24 h
 decision 181: Where should the operator turn log live? — options: (a) a new small plugin turn-log, off switch TURN_LOG_RECORD=off [recommended] | (b) inside context-guard, CONTEXT_GUARD_TURN_LOG | (c) inside operator-interaction, OPERATOR_INTERACTION_TURN_LOG | (z) decide later
-  raised: 2026-10-08T06:30Z
+  raised: 2026-10-08T04:35Z
   why ask: placement — a new plugin and its name are API (principle 5) and the operator's to name
   impact: Effect → the turn-log build can start · Wait: blocks the build · reach: the marketplace catalog, one new plugin · undo: renaming later breaks installs and the data path · cost: none now
 decision 182: May the turn-log hook read its own session's transcript, at Stop and SessionEnd only, to learn whether a turn was typed by the operator? — options: (a) yes, for the origin kind only [recommended] | (b) no: log every prompt with no origin | (z) decide later
-  raised: 2026-10-08T06:30Z
+  raised: 2026-10-08T04:35Z
   why ask: trust — the relayed design said "no transcript reading"; reversing it is the operator's call
   impact: Effect → the log can tell your turns from agent reports, peer messages and scheduled tasks · Wait: blocks the origin step of the build · reach: every session with the plugin on · undo: easy, drop the origin step · cost: none
 decision 183: How long should the turn log keep its lines? — options: (a) 13 months [recommended] | (b) 3 months | (c) no limit | (z) decide later: build with 13 months
-  raised: 2026-10-08T06:30Z
+  raised: 2026-10-08T04:35Z
   why ask: retention of a record of the operator's activity is the operator's call
   impact: Effect → sets the prune age, one constant · Wait: nothing, the build uses 13 months meanwhile · reach: the turn-log file on this host · undo: easy; shortening later loses nothing needed · cost: none
-correction: no budget: line was written with this item's target: line on 2026-10-08; the build default ($22, other build) applies
+correction: no budget: line was written with this item's target: line on 2026-10-08; the defaults apply: plan $28, build $22 (bindings.md § Spend budget)
+correction: decisions 180-183 raised: times were estimated ahead of the clock; set from the session's order of events
