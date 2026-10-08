@@ -61,3 +61,6 @@ return: DONE_WITH_CONCERNS series 00_initial.md (open: placement blocking, rec n
 dispatch: reviewer opus high — plan review 1
 baseline: plan review 1 — c50324f2a9b946435eac4f737b22252576eb947f14e83e1d05e802fa4fb4ce36 .claude-sandbox/investigations/operator-turn-log-a-userpromptsubmit-hoo-3e8e/00_initial.md; 
 agent: reviewer a5f686d69e11c3812
+verdict: plan review 1 NEEDS_CHANGES (must-fix 5: 00_initial.md is a misfiled 0999 draft, scratchpad collision; INDEX wrong; documented transcript lag; "no transcript reading" hidden as assumption; seen defined twice vs 0999; lows 6-8). Recovered draft: scratchpad/3e8e-review/00_reconstructed.md
+correction: my parallel planner briefs gave both planners the same session scratchpad with no per-agent subdirectory; both drafted scratchpad/00_initial.md and the 3e8e serial got 0999's draft. Every brief now names a per-item scratch subdirectory.
+dispatch: planner opus high — plan fix round 1 (resume a47a01aeb320c74e5)

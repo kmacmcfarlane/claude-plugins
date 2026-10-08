@@ -69,3 +69,17 @@ return: DONE series 00_initial.md (shown N: and seen N: appended lines; wi read-
 baseline: plan review 1 — 706d7a6a48c098643ed3111bcf088dcb35674cf59e251c8081a19c7e2b6308da .claude-sandbox/investigations/work-items-record-when-a-decision-was-sh-0999/00_initial.md; 
 dispatch: reviewer opus high — plan review 1
 agent: reviewer acc5597438f58d0ec
+verdict: plan review 1 NEEDS_CHANGES (must-fix 3 in this series: while-it-waited start, OQ2 blocks the first push of a seen N: line, decision-page names the store shape; finding 1 was the 3e8e misfile, handled on 3e8e; lows 5-7)
+dispatch: planner opus high — plan fix round 1 (resume aaa7d9f9dffe10eaa)
+return: DONE series 01_review-fixes.md (fixes 2-7; OQ2 now blocks the first push carrying a seen N: line, rec (a) tracked)
+baseline: plan review 2 — 706d7a6a48c098643ed3111bcf088dcb35674cf59e251c8081a19c7e2b6308da .claude-sandbox/investigations/work-items-record-when-a-decision-was-sh-0999/00_initial.md; 91249d2044a8f2ff09be8eac732602450e63ffb66075fa066c893562c8e54e22 .claude-sandbox/investigations/work-items-record-when-a-decision-was-sh-0999/01_review-fixes.md; 
+dispatch: reviewer opus high — plan review 2 (resume acc5597438f58d0ec)
+verdict: plan review 2 CLEAR (must-fix 0); lows carried into the build: hold seen N: writes until OQ2 is answered; the grep check pattern '^(shown|seen) [0-9]+:|shown N:|seen N:'; Step 3 shown hand-over reworded as number, publish time, surface word
+findings: carried — (1) until decision 180 is answered, writers write shown N: only, no seen N:; (2) use grep -rnE '^(shown|seen) [0-9]+:|shown N:|seen N:' plugins/operator-interaction (no hits now or after); (3) decision-page Step 3 hands over a number, a publish time and a surface word, never a line shape
+raised: 2026-10-08T05:00Z
+decision 180: May seen N: lines (the time of the operator's next turn after a decision was shown, no content) go into the tracked work-item store that is pushed to the public repo? — options: (a) yes, tracked as planned [recommended] | (b) no, keep them in an untracked local file (needs a new plan) | (z) decide later: writers hold seen N: lines back
+why ask: trust — what goes public about the operator's activity is the operator's call, and a pushed line takes a history scrub to remove
+impact: Effect → turn times appear in the public store from the build's first push · Wait: none, the build holds seen lines back until answered · reach: every repo whose librarian writes decisions · undo: one-way once pushed (needs a history scrub); free until then · cost: none
+target: full main /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude/worktrees/work-items-record-when-a-decision-was-sh-0999
+dispatch: implementer opus medium — build from the CLEAR series (contract and skill wording; not mechanical)
+agent: implementer a1ce4ecde12903821

@@ -43,3 +43,9 @@ return: DONE_WITH_CONCERNS 34279a4 (Step 4a½ open-items residue; Step 2 kind 6 
 changed: plugins/context-guard/skills/checkpoint/SKILL.md (Step 4a½ and its hooks into Steps 2, 3, 4a, 4b, lean and unattended paths), references/handoff-format.md (names 4a½), references/design-rationale.md (why)
 dispatch: reviewer opus high — review round 1
 agent: reviewer afc9882ab7a84380f
+verdict: review 1 NEEDS_CHANGES at 34279a4 (must-fix 6: decision line marker, wi handoff claim, cross-store items:, Bash not Edit, --brief omits Notes, undeclared work-items soft dep; medium 7 wi lint misses prefixed KEY=value, filed to work-items; lows 8-11)
+decided: wider-scope — finding 6 accepted into scope: README.md catalog row and plugins/context-guard/.claude-plugin/plugin.json declare the existing soft use of work-items (narrow, two-way, inside context-guard's aim)
+dispatch: implementer opus medium — fix round 1 (resume ab4e9dc2adb7e867f)
+return: DONE_WITH_CONCERNS 7209145 fix round 1 (F1-F7, F9, F11 fixed; F10 part; F8 and F10 trim declined)
+changed: README.md (context-guard row: work-items soft dep), plugins/context-guard/.claude-plugin/plugin.json and .claude-plugin/marketplace.json (description in step, F6)
+dispatch: reviewer opus high — review round 2 (resume afc9882ab7a84380f)
