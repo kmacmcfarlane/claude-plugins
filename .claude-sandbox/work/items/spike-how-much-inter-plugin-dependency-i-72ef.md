@@ -27,3 +27,4 @@ dispatch: planner opus high — spike plan
 ## Notes
 - 2026-10-08 claimed by Kyle-McFarlane@2d49f8460283
 agent: planner af420e468ce5cb8bb
+correction: pushed a store-only commit (answers 184/185, waiver, dispatches) before the Report again; store pushes now wait for the next Report
