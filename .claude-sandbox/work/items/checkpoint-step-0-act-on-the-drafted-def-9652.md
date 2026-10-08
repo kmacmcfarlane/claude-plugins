@@ -16,8 +16,8 @@ refs:
 Relayed 2026-10-08 by peer operator-attention at the operator's request, verbatim: 'what are we getting out of that AskUserQuestion gate? I almost always just select the defaults. Send that feedback to claude-plugins'. Datapoint: all three Step 0 questions (mode, in-flight inventory, window handling) answered with the drafted default. Suggested: act on the drafted defaults with a one-line echo the operator can override; ask only at a real fork (continue vs handoff unclear, agents in flight, an uncertain inventory line, guidance that would drop a REFUSED line or a hold); optionally measure default acceptance per question. Acceptance: context-guard checkpoint SKILL.md Step 0 rewritten to that shape, consistent with the decisions skill's FYI-after-acting test, the HARD-prompt rule (only /checkpoint, /compact, /clear pass) and the unattended path.
 
 ## Handoff
-- doing: plan review 1 running (reviewer acb87f13d5217d546); decision 196 open
-- next: on the verdict: fix round or CLEAR; build waits on answer 196 (a)
+- doing: plan CLEAR at review 2; build waits on decision 196
+- next: on answer 196 (a): dispatch the build from the series with the carried findings
 - blocked: —
 - learned: —
 target: plan main /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude-sandbox/investigations/checkpoint-step-0-act-on-the-drafted-def-9652
@@ -41,3 +41,5 @@ dispatch: planner opus high — plan fix round 1 (resume a13074c58b80d96b7)
 return: DONE_WITH_CONCERNS series 01_review-1-fixes.md (fixes 1-15; compact_deferred confirmed; consolidated Step 0 text in 01 § A)
 baseline: plan review 2 — 41740db45a4c405017eeb427fab2944a8dd50dd28aa157379bb1a82384ba1c3b .claude-sandbox/investigations/checkpoint-step-0-act-on-the-drafted-def-9652/00_initial.md; 04f6517087d207479ceb419a0b2cc13a25d7368b2f07ff876fc56ecfcaa37ec2 .claude-sandbox/investigations/checkpoint-step-0-act-on-the-drafted-def-9652/01_review-1-fixes.md; 
 dispatch: reviewer opus high — plan review 2 (resume acb87f13d5217d546)
+verdict: plan review 2 CLEAR (must-fix 0)
+findings: carried — (1) the deferred-compaction arm reads "or the gate state has compact_deferred set and the drafted mode is not one the operator's own words named:"; (2) an override "re-runs the checkpoint with only question 3 open, which it re-drafts"; (3) state "This trades lean-depth window for no duplicate notes; a re-run is rare."; (4) strip the argument's own " — 2:"/" — 3:" parts before building the override line
