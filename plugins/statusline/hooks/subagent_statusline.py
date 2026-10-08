@@ -8,13 +8,24 @@ every 5 s, killed at 5 s) it gets one JSON object on stdin: the base hook
 fields (`session_id`, `transcript_path` - the MAIN session's - and `cwd`),
 `columns` (the usable row width) and `tasks`, one entry per visible
 sub-agent row, each with `id`, `name`, `type`, `status`, `description`,
-`label`, `model`, `contextWindowSize` and `tokenCount` among others. For each
+`label`, `model`, `effort`, `contextWindowSize` and `tokenCount` among
+others. For each
 row it can draw, it prints one line `{"id": ..., "content": ...}`; a row it
 prints nothing for keeps Claude Code's default rendering.
 
-A row reads `name · 43% 86k/200k · description`, the fill coloured like the
-footer's gauge (green, yellow, red by tokens left, over the default
-thresholds for that window size).
+A row reads `name · 43% 86k/200k · opus-5-5·high · description`, the fill
+coloured like the footer's gauge (green, yellow, red by tokens left, over the
+default thresholds for that window size).
+
+Model and effort. Both come from the task itself: `model` is the resolved
+model ID the task runs on, omitted until it is resolved; `effort` is the
+effort set in the agent's definition frontmatter or on its invocation, a
+level string or a numeric token budget, as written, and absent when none is
+set (documented: https://code.claude.com/docs/en/statusline, Subagent
+status lines). The tag shows the model without its `claude-` prefix, then
+`·` and the effort; a field the task does not carry is left out, never
+guessed (no effort set means the session default applies, which the row
+cannot see). Neither: no tag.
 
 Depth. Exact when the agent's sidechain transcript can be read:
 <transcript stem>/subagents/agent-<id>.jsonl, the stem being the main
@@ -73,7 +84,10 @@ plugin never writes one.
 Text from the payload (name, description) is shown on one line: whitespace
 and control characters collapse to one space, format characters are
 dropped, and the row is cut to `columns` terminal columns (0 columns: no
-rows). Never raises;
+rows): the description is cut first, and goes whole once the model and
+effort tag no longer fits beside it; then the tag goes whole (never cut);
+then the name, leaving the fill alone. So a widening pane only ever adds to
+a row. Never raises;
 malformed input prints nothing, so every row keeps its default.
 """
 import json, os, re, sys, time, unicodedata
@@ -95,6 +109,7 @@ DEPTH_MAX = 512           # deeper nesting on a long line: treated as unparseabl
 _SAFE_ID = re.compile(r"[A-Za-z0-9][A-Za-z0-9_-]{0,127}")
 _UNSAFE = re.compile(r"[\s\x00-\x1f\x7f-\x9f]+")
 SEP = " · "
+EFFORT_MAX = 6            # a numeric effort (a token budget) longer than this is left out
 USAGE_KEYS = ("input_tokens", "cache_read_input_tokens", "cache_creation_input_tokens")
 
 
@@ -598,6 +613,22 @@ def fill(tokens, window, approx):
     return text, f"{color}{text}\033[0m"
 
 
+def tag(task):
+    """`model·effort` for one task, either half alone, or "" for neither:
+    the model ID without its `claude-` prefix, the effort as written (a
+    level string, or a token budget shown like the fill's figures: 1000
+    and up in k, left out past EFFORT_MAX characters)."""
+    model = one_line(task.get("model"))
+    if model.startswith("claude-") and len(model) > 7:
+        model = model[7:]
+    eff = task.get("effort")
+    eff = one_line(eff) if isinstance(eff, str) else \
+        k(num(eff)) if num(eff) is not None else ""
+    if not isinstance(task.get("effort"), str) and len(eff) > EFFORT_MAX:
+        eff = ""            # a budget too long to read at a glance
+    return "·".join(x for x in (model, eff) if x)
+
+
 def row(task, exact, cols):
     """The row body for one task, or None to keep Claude Code's default."""
     window = num(task.get("contextWindowSize")) or 0
@@ -617,6 +648,12 @@ def row(task, exact, cols):
         if name:        # too narrow for the name too: the fill alone
             return colored if sum(width(ch) for ch in plain) <= cols else None
         return colored if room == 0 else None
+    t = tag(task)
+    if t:
+        tw = len(SEP) + sum(width(ch) for ch in t)
+        if tw > room:       # whole or not at all (a cut model ID misleads),
+            return head     # and the description, cut first, is gone by now
+        head, room = head + SEP + t, room - tw
     if desc and room > len(SEP) + 1:
         return head + SEP + fit(desc, room - len(SEP))
     return head
