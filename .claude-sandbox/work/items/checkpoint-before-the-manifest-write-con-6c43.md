@@ -3,12 +3,11 @@ id: checkpoint-before-the-manifest-write-con-6c43
 title: "checkpoint: before the manifest, write conversation-only residue into every open item the session touched"
 short_display_name: checkpoint writes residue to items
 type: feature
-status: doing
+status: done
 priority: 1
-owner: Kyle-McFarlane@2d49f8460283
-claimed: 2026-10-08T03:35Z
 created: 2026-10-07
 updated: 2026-10-08
+closed: 2026-10-08
 refs:
   - peer kappa-3567 2026-10-07
 ---
@@ -56,3 +55,8 @@ return: DONE 8a43631 fix round 2 (low 1 fix text; low 2 python3 insert after the
 dispatch: reviewer opus high — review round 3 (resume afc9882ab7a84380f)
 verdict: review 3 NEEDS_CHANGES at 8a43631 (must-fix 1: the insert snippet reads fenced ## lines as headings; lows: CRLF rewritten to LF, in-place truncate without temp-and-rename)
 dispatch: implementer opus medium — fix round 3 (resume ab4e9dc2adb7e867f)
+return: DONE 2cc2e0a fix round 3 (fence-aware, CRLF-safe, atomic insert; 22-line snippet; 4145 words)
+dispatch: reviewer opus high — review round 4 (resume afc9882ab7a84380f)
+verdict: review 4 CLEAR at 2cc2e0a (must-fix 0; lows: no cross-section fence refusal, strict heading match, untested inline snippet; nits: splitlines, blank line) — carried to a wi note follow-up
+landed: c6dc5fd (merge --no-ff into main; Checks 10/10 OK; push scan read, clean)
+- 2026-10-08 done
