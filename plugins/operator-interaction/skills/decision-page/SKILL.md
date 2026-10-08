@@ -51,10 +51,30 @@ In a working directory (your scratchpad unless the caller names one): copy
 - One card per decision, in the `decisions` skill's order; groups (`layers`) as its
   groups. Short names (`t`) the operator would say; plain names for items (the
   `plain-names` skill).
-- Every card carries `rev`, a revision label (the UTC time you wrote it, by convention). When
-  you change a card — an **Added:** line after `tell me`, a re-ask with what changed — give it
-  a new `rev`: the page copies the `rev` into each answer, and answers given to the old one
-  stop counting, on the page and in the read-back.
+- Every card carries `rev`, a revision label (the UTC time you wrote it, by convention). Any
+  change to a card gets a new `rev`, Context included: an **Added:** line after `tell me`,
+  more detail after `expand`, a `dig into` finding, a corrected fact, a re-ask. Only the
+  one-time format migration keeps it: a card written before Context existed, whose own `what`
+  and resume cue move into `context`, and whose terms are glossed from its own folds alone. A
+  gloss drawn from anywhere outside the card is new information: a new `rev`. The page copies
+  the `rev` into each answer, and answers given to the old one stop counting, on the page and
+  in the read-back.
+- Every card carries `context`, first: written from the caller's stored What, its cue and the
+  terms the card uses. **Context introduces every specific thing the card names.** Two shapes
+  need it most:
+  - **A count** ("four changes", "the three"). Context says what the things are, or lists
+    them: *the review asked for four changes: X, Y, Z and W*.
+  - **A named mode, setting, review, plan or document** ("content mode", "the review").
+    Context gives it a one-line gloss: what it is, and where it comes from.
+
+  The same holds for an item, an id or a label: plain words first, the id after. Then run the
+  cold read on it (the `decisions` skill's `references/worksheet.md` § The cold read): list
+  each noun phrase in the card's Impact line, TLDR, option titles and one lines that refers to
+  a specific thing (a count, a named mode, setting, review, plan or document, an item, an id or
+  a label), and point to its gloss in `context`. A phrase with no gloss gets one before the
+  page goes out. Do not set `what`: it is older data only (`references/cards-schema.md`).
+- The TLDR names no recommendation: the options mark it. Say what is decided, and what rides
+  on it.
 - Every card carries `impact`, the decision's Impact line (effect, wait, reach, undo; the
   `decisions` skill's `references/rendering.md` § Impact) — copied from the caller's stored
   line where it keeps one — so every view on the page shows it: the effect in the map and on
@@ -69,9 +89,14 @@ In a working directory (your scratchpad unless the caller names one): copy
 - `follow` is copied from `assets/cards.example.json` as it stands.
 - Check before publishing that the file passes every check the schema lists (the page
   refuses a file that fails one, and says which): whole-number `n`, single `a`–`z` letters in
-  order ending `z`, a `rec` among them or null with `norec`, a non-empty `rev`, an `impact`
-  with its four facets, an `act` keyed by option letters other than `z`, each a non-empty
-  list of one-line steps with no fill-in placeholder, the required fields.
+  order ending `z`, a `rec` among them or null with `norec`, a non-empty `rev`, a non-empty
+  `context`, an `impact` with its four facets, no TLDR bullet that carries the
+  recommendation, an `act` keyed by option letters other than `z`, each a non-empty list of
+  one-line steps with no fill-in placeholder, the required fields.
+- With node present, run the skill's `scripts/check_cards.js` (under its base directory) on
+  the working copy's `cards.json`. Fix every refusal it prints. For each `lint:` line, add
+  the gloss to `context`, or leave the term knowingly. Without node, check by reading, and
+  run the cold read.
 
 ## Step 3: Publish
 
@@ -102,6 +127,17 @@ artifact and read its published `cards.json` (`read` with `path` `cards.json`): 
 refuses to replace a published path this conversation has not seen, and reading the page
 alone does not count. A new path makes a new artifact with an
 empty answers collection.
+
+A `cards.json` written before Context came first has either no `context` (refused) or a
+cue-only one, which passes and shows its `what` after the cue (`references/cards-schema.md` §
+A card, `what`). On a republish, give each kept card a `context`: the terms its Impact line,
+TLDR and options use, each glossed; then its `what`, moved in (delete `what`); then its cue.
+That is the format migration (the `rev` rule above). Any change to a card gets a new `rev`,
+Context included: an **Added:** line after `tell me`, more detail after `expand`, a `dig into`
+finding, a corrected fact, a re-ask. Only the one-time format migration keeps it: a card
+written before Context existed, whose own `what` and resume cue move into `context`, and whose
+terms are glossed from its own folds alone. A gloss drawn from anywhere outside the card is
+new information: a new `rev`.
 
 **Hand over what was shown.** After a publish or republish, for every card whose number and
 `rev` were not on the page before (on a first publish, every card), hand the caller the
@@ -164,6 +200,8 @@ answer to a card whose `rev` has not moved is a new answer and hands over one mo
 - *The page says the decisions didn't load*: `cards.json` was not published at that path, or
   it does not parse. Republish with the url.
 - *The page says cards.json is not valid*: it names the first problems; fix them, republish.
+  With node present, run the skill's `scripts/check_cards.js` (under its base directory) on
+  the working copy's `cards.json` first: it prints every refusal, then the lints.
 - *The page says it can't save answers*: the view has no db (signed out, or the capability
   was not declared). Republish with step 3's `capabilities`; meanwhile answers come in chat.
 - *The operator sees "Only the page's owner can answer here"*: they are not the account
@@ -180,3 +218,5 @@ answer to a card whose `rev` has not moved is a new answer and hands over one mo
 - `references/fallback.md` — the tick-box doc, and the plain decisions block
 - `assets/index.html` — the page template
 - `assets/cards.example.json` — invented example data
+- `scripts/check_cards.js` — the pre-publish check under node: the page's own refusals, then
+  lints for ids, counts and named things a card's Context does not introduce

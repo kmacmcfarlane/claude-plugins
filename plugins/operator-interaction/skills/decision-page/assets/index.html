@@ -2,9 +2,10 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@80..100,500..800&family=Public+Sans:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400;600&display=swap">
 <style>
 /* decision-page template (operator-interaction). One reading column: a compact heads-up map on
-   top, then collapsible answer cards by group. Every view shows the decision's impact: the map
-   and a closed card its effect, an open card its Impact line, the Options in full fold its
-   Impact table. Inside a card the essentials are flat (Impact line, TLDR, context, options,
+   top, then collapsible answer cards by group. An open card and the popup open on the card's
+   Context (the terms it uses, then what is decided). Every view shows the decision's impact: the
+   map and a closed card its effect, an open card its Impact line, the Options in full fold its
+   Impact table. Inside a card the essentials are flat (Context, Impact line, TLDR, options,
    follow-ups, words, recommendation); background, options in full, dependencies and evidence
    sit in folds. Decision references ([[N]]) are slugs that open the referenced
    decision in a popup. All content comes from cards.json beside this page; answers go to the
@@ -87,7 +88,9 @@ details.card>summary h3{font-size:1.08rem;font-weight:700}
 details.card>summary .meta{grid-column:2/-1;display:flex;flex-wrap:wrap;gap:6px 10px;font-size:.8rem;color:var(--muted)}
 .body{padding:0 14px 16px;display:flex;flex-direction:column;gap:12px}
 .what{max-width:70ch}
-.ask{border-left:3px solid var(--rec);background:var(--rec-soft);padding:8px 12px;border-radius:0 6px 6px 0;font-size:.92rem}
+.ctx{max-width:70ch;display:flex;flex-direction:column;gap:4px}
+.ctx .lbl{margin-bottom:-2px}
+.pop .ctx{font-size:.86rem;gap:3px}
 fieldset{border:0;margin:0;padding:0;min-width:0;display:flex;flex-direction:column;gap:12px}
 legend,.sublabel,.lbl{display:block;font-family:var(--f-mono);font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);padding:0}
 legend{margin-bottom:4px}
@@ -161,7 +164,7 @@ footer{color:var(--muted);font-size:.85rem;max-width:70ch}
   <header>
     <h1 id="title">Decision answers</h1>
     <p class="lede" id="lede"></p>
-    <p class="lede">For each decision, pick one option or one follow-up (the radio buttons allow only one), and add your words if you like. Each click saves at once; there is no submit button. Tell Claude in chat when you're done. A <span class="slug-t">number · name</span> is a decision: hover or click it to see that decision. Each line shows what the recommendation changes after an arrow (→); each card opens on its impact, a TLDR and one line per option; the folds under it go from compressed to full detail, the full impact table first.<span id="doclink"></span></p>
+    <p class="lede">For each decision, pick one option or one follow-up (the radio buttons allow only one), and add your words if you like. Each click saves at once; there is no submit button. Tell Claude in chat when you're done. A <span class="slug-t">number · name</span> is a decision: hover or click it to see that decision. Each line shows what the recommendation changes after an arrow (→); each card opens on its Context (the terms it uses and what is decided), then its impact, a TLDR and one line per option; the folds under it go from compressed to full detail, the full impact table first.<span id="doclink"></span></p>
     <div class="bar">
       <span class="count" id="count">loading decisions…</span>
       <span class="meter" aria-hidden="true"><i id="meterfill"></i></span>
@@ -230,6 +233,17 @@ const actList=(c,k)=>{const st=c&&c.act&&typeof c.act==="object"?c.act[k]:null;
 /* a fill-in placeholder: an angle-bracketed word with no spaces, such as <dir> or <path> */
 const PLACEHOLDER=/<[A-Za-z][\w-]*>/;
 
+/* the card's Context: first on the open card and in the popup (plain=true renders slugs as text, the popup's way).
+   An older card's what, when present, is shown at its end, after the cue, so nothing is lost */
+const contextBlock=(c,plain)=>{const f=plain?fmtPlain:fmt;
+  return '<div class="ctx"><span class="lbl">Context</span><p>'+f(c.context)+'</p>'
+    +(typeof c.what==="string"&&c.what.trim()?'<p>'+f(c.what)+'</p>':'')+'</div>'};
+/* a TLDR bullet that carries the recommendation (the options list marks it): only forms that cannot be anything else.
+   No lookbehind: one would stop the whole script in an older browser */
+const REC_OPEN=/^[^A-Za-z]*(rec|recs|recommend|recommended|recommendation)\b(?!\s*(\([a-y]\)\s*)?by\b)\s*(\.|:|—|–|-\s|\(|$)/i;
+const REC_ANY=/\brec\s*\(\s*[a-y]\s*\)|\b(i|we)(['’]d|\s+would)?\s+recommend\b|\b(my|our)\s+(rec|recommendation)\b|\(\s*rec(ommended)?\s*\)|\([a-y]\),?\s+(is\s+)?recommended\b(?!\s+by\b)/i;
+const recBullet=s=>REC_OPEN.test(s)||REC_ANY.test(s);
+
 /* the data is checked before anything renders: a card that fails is a refused file, not a half page */
 const FOLLOW_FIXED=["later","tell me","expand","dig into","you decide","drop"];
 function check(d){
@@ -247,10 +261,12 @@ function check(d){
     if(!c||!Number.isInteger(c.n)||c.n<0){bad.push(w+": n must be a whole number");continue}
     if(seen.has(c.n))bad.push(w+": number used twice");seen.add(c.n);
     if(!keys.has(c.L))bad.push(w+": L is not a layer key");
-    for(const k of ["t","what","why","whyask","basis","reason","unknown","rev"])if(!isStr(c[k]))bad.push(w+": "+k+" missing");
+    for(const k of ["t","why","whyask","basis","reason","unknown","rev"])if(!isStr(c[k]))bad.push(w+": "+k+" missing");
     if(isStr(c.rev)&&!c.rev.trim())bad.push(w+": rev is empty");
+    if(!isStr(c.context)||!c.context.trim())bad.push(w+": context missing: open the card with the terms, items and concepts the rest of it uses, then what is decided");
     if(!["strong","partial","thin","none"].includes(c.basis))bad.push(w+": basis must be strong, partial, thin or none");
     if(!Array.isArray(c.tldr)||!c.tldr.every(isStr))bad.push(w+": tldr must be a list of text");
+    else{const i=c.tldr.findIndex(recBullet);if(i>=0)bad.push(w+": tldr bullet "+(i+1)+" carries the recommendation: the options mark it; say what is decided instead")}
     if(!Array.isArray(c.o)||!c.o.length){bad.push(w+": no options");continue}
     const ls=[];
     for(const o of c.o){if(!Array.isArray(o)||o.length!==5||!o.every(isStr)||!/^[a-z]$/.test(o[0])){bad.push(w+": each option is [letter a-z, full, impact, title, one line]");break}ls.push(o[0])}
@@ -323,8 +339,7 @@ function renderCards(){
       const n=esc(c.n),g="d"+n;
       h+='<details class="card" id="card-'+n+'"><summary><span class="n">'+n+'</span><h3>'+esc(c.t)+'</h3>'
         +'<span class="meta">'+metaPills(c)+recPill(c)+tagEffect(c)+(c.dep?'<span>depends on: '+fmtPlain(c.dep)+'</span>':'')+'<span id="sum-'+n+'">'+ansLabel(c,answers[c.n])+'</span></span></summary>'
-        +'<div class="body">'+impactLine(c)+'<div><span class="lbl">TLDR</span><ul class="tldr">'+c.tldr.map(b=>'<li>'+fmt(b)+'</li>').join("")+'</ul></div>'
-        +(c.context?'<div class="ask"><strong>Context:</strong> '+fmt(c.context)+'</div>':'')
+        +'<div class="body">'+contextBlock(c)+impactLine(c)+'<div><span class="lbl">TLDR</span><ul class="tldr">'+c.tldr.map(b=>'<li>'+fmt(b)+'</li>').join("")+'</ul></div>'
         +line("If left:",c.ifleft)+line("A round costs:",c.roundcosts)+line("If unanswered:",c.ifunanswered)
         +'<fieldset><legend>Your answer: one option or one follow-up</legend><div class="opts">';
       for(const [k,full,imp,ttl,why] of c.o){
@@ -342,7 +357,7 @@ function renderCards(){
         +'<p class="recline">'+(c.rec?'Rec <strong>('+esc(c.rec)+')</strong>':'<em>'+esc(c.norec||"no recommendation")+'</em>')+' · basis <strong>'+esc(c.basis)+'</strong>'+(c.reason?' — <em>'+fmt(c.reason)+'</em>':'')+' · unknown: '+fmt(c.unknown||"none")+'</p>'
         +'<div class="cardfoot"><span class="lbl">Details, most compressed first</span><button class="btn" type="button" data-clear="'+n+'">Clear answer</button></div>'
         +'<div class="panes">'
-        +'<details class="pane"><summary>Background</summary><div><p><span class="lbl">What</span>'+fmt(c.what)+'</p><p><span class="lbl">Why now</span>'+fmt(c.why)+'</p><p><span class="lbl">Why ask</span>'+(c.class?'<em>'+esc(c.class)+'</em> — ':'')+fmt(c.whyask)+'</p></div></details>'
+        +'<details class="pane"><summary>Background</summary><div><p><span class="lbl">Why now</span>'+fmt(c.why)+'</p><p><span class="lbl">Why ask</span>'+(c.class?'<em>'+esc(c.class)+'</em> — ':'')+fmt(c.whyask)+'</p></div></details>'
         +'<details class="pane"'+(c.warn?' open':'')+'><summary>Options in full</summary><div>'+optionsInFull(c)+'</div></details>'
         +'<details class="pane"><summary>Dependencies</summary><div><p><span class="lbl">Depends on</span>'+fmt(c.dep||"nothing on this page")+'</p></div></details>'
         +'<details class="pane"><summary>Evidence and unknowns</summary><div><p><span class="lbl">Basis</span>'+esc(c.basis)+(c.reason?' — '+fmt(c.reason):'')+'</p>'+(c.evidence?'<p>'+fmt(c.evidence)+'</p>':'')+'<p><span class="lbl">Unknown</span>'+fmt(c.unknown||"none")+'</p></div></details>'
@@ -409,6 +424,7 @@ function fillPop(k){
     h='<div class="pop-h"><span class="n">'+esc(k)+'</span><span>'+esc(c.t)+'</span></div>'
      +'<p>'+metaPills(c)+recPill(c)+' '+recSub(c)+'</p><p>'+tagEffect(c)+'</p>'
      +'<p><span class="lbl">Your answer</span>'+ansLabel(c,answers[c.n])+'</p>'
+     +contextBlock(c,true)
      +'<ul class="tldr">'+c.tldr.map(b=>'<li>'+fmtPlain(b)+'</li>').join("")+'</ul>'
      +'<ol>'+c.o.map(o=>'<li'+(c.rec&&o[0]===c.rec?' class="isrec"':'')+'><span class="ol">('+esc(o[0])+')</span>'+esc(o[3])+'</li>').join("")+'</ol>'
      +'<div class="pop-f"><button class="btn" type="button" data-open="'+esc(c.n)+'">Open card</button>'+(c.rec&&!readonly?'<button class="btn" type="button" data-quick="rec" data-n="'+esc(c.n)+'">Use recommendation</button>':'')+'</div>';

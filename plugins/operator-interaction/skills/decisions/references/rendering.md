@@ -169,6 +169,9 @@ Rec **(b)** · basis **word** — *one-clause reason* · unknown: what isn't kno
   card, the cue is stored with it, and a block's lost-context facts with it. With no store,
   keep it with your notes on the decision; with nowhere to keep it, show it on the card at
   its first showing too, cold reader or not, so a re-show copies it from that message.
+  On an answer page the card opens instead on a flat **Context** that carries What, the terms
+  the card uses and this cue, above the Impact line, since the page folds Background (the
+  `decision-page` skill's `references/cards-schema.md`).
 - **To act on (x):** after the options and before the Rec line, on a card where an option
   asks the operator to act (SKILL.md § The floor, what it takes to act). This bullet is
   where its specifics live:

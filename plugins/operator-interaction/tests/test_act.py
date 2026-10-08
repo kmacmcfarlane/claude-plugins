@@ -10,8 +10,9 @@ Two halves:
   reader cannot resolve outside a "Not this" paragraph, and every path in a **To act on**
   part absolute.
 
-Undefined terms on a card are not decidable by a program; they stay the cold read's
-(`references/worksheet.md` § The cold read).
+Undefined plain-word terms are not decidable by a program. On a page card, ids, counts and
+named things missing from its context are linted by the decision-page runner
+(test_context.py); the rest stays the cold read's (`references/worksheet.md` § The cold read).
 
 Run from the plugin dir: python3 -m unittest discover -s tests -q
 """
