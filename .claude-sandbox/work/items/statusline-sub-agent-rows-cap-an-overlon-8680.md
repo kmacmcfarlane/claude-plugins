@@ -27,3 +27,7 @@ dispatch: implementer opus medium — renderer code change (not a canonical kind
 ## Notes
 - 2026-10-08 claimed by Kyle-McFarlane@2d49f8460283
 agent: implementer a467aafec85f7118b
+return: DONE 4e72c3f (MODEL_MAX 40 columns after the claude- prefix; EFFORT_MAX covers string efforts; a part past its cap drops whole; two tests; sweep extended)
+changed: subagent_statusline.py (caps), tests/test_subagent_statusline.py (two tests, sweep), install-statusline SKILL.md (narrow-panel paragraph)
+dispatch: reviewer opus high — review round 1
+agent: reviewer a3a18497b18089536
