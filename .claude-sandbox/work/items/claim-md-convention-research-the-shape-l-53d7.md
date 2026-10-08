@@ -48,3 +48,4 @@ decision 189: When a repo has both a CLAIM.md "Not ours" list and a librarian "N
   raised: 2026-10-08T06:41Z
   why ask: rule-change — it sets which file decides ownership estate-wide
   impact: Effect → one source of truth for "not ours" · Wait: blocks step 2's wording · reach: CLAIM.md and the librarian section in every repo · undo: easy before the scope-interview work lands · cost: none
+agent: reviewer a124f7bce7518dd69
