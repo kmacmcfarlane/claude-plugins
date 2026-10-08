@@ -49,3 +49,4 @@ dispatch: reviewer opus high — plan review 4 (resume a40143babb8d3fe90)
 verdict: plan review 4 CLEAR (must-fix 0; nit: INDEX base and word estimate stale, carried into the build)
 note: spike closed on its series .claude-sandbox/investigations/decisions-skill-every-decision-carries-t-dcf8/ (00-03); the build is filed as its own item and waits on decision 184
 - 2026-10-08 done
+correction: pushed a9b2ecc (store only: the spike's close and decision 184) before printing its Report; the Report followed in the same turn
