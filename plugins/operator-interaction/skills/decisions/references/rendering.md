@@ -311,9 +311,13 @@ to (b) fetch it, because the CDN outage ended.*
 decision's record, with its raised-at time), a re-show renders that stored card and adds
 only the *while it waited* line — read from the caller's record, never from memory — and a
 plain name (the `plain-names` skill) for any item, and a gloss for any other id, that the
-stored text left bare. Composing the card again from memory can shift
-the letters or the recommendation, and the operator would answer an (a) that is not the (a)
-they read. Before rendering, check the stored card against now: a floor field it lacks, or
+stored text left bare. *While it waited*, its window and its duration, counts from the last
+showing the record marks as seen, where the caller records shown and seen (SKILL.md § Before
+you write), else from the raising: what changed after the showing the operator read is in
+it, even when it came before the turn that saw it. Age and order still count from the
+raising, and the re-show is itself a showing the caller records. Composing the card again
+from memory can shift the letters or the recommendation, and the operator would answer an
+(a) that is not the (a) they read. Before rendering, check the stored card against now: a floor field it lacks, or
 one events have made false — a *why now* that no longer holds, an Impact facet that no
 longer holds, a basis word the rule (`references/evidence-basis.md`) no longer gives — is a
 revision. **A stored card without an Impact line** is backfilled the same way, from its

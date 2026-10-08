@@ -50,7 +50,8 @@ submodule are their own repos and are kept. Each list is capped per store; `omit
 what was left out. The JSON gives, per store: `counts`
 (`open`, `todo`, `doing`, `blocked`, `parked`, `grooming`, `ready`, `done`, `dropped`),
 the top `ready` items in `wi next` order, unanswered `decisions` (with `raised` and
-`age_days` when the stored card has a `raised:` line), `stale` doing claims (older than
+`age_days` when the stored card has a `raised:` line, and `first_shown`, `last_shown`,
+`last_seen` and `unseen` from the item's shown and seen lines, `null` when it has none), `stale` doing claims (older than
 `--stale`, default 24h), `security` items, and `problems`.
 
 `security` is a keyword hint (a security- or privacy-shaped tag, or a title naming a

@@ -41,6 +41,10 @@ section with every box unticked and say so in chat: ticks on the old text answer
 card. Keep what you last handed over for each decision (its ticks and words), and hand over
 only the decisions whose ticks or words differ from it; the rest are unchanged, not open.
 
+For a caller that records shown and seen, hand over each decision's number, the time (UTC,
+your clock) and the word *doc*: as shown, when the doc is shared and when a section is
+rewritten unticked; as seen, with each decision a read-back hands over, and with no other.
+
 Read the doc back with the same tool, then echo and hand over as SKILL.md's read-back step
 says. The doc is the record of what was ticked: quote it, do not paraphrase it.
 

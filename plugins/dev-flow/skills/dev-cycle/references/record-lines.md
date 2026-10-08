@@ -225,6 +225,14 @@ interrupted run up again; a line that is missing reads there as not recorded:
   it fires. A `decision:` with no matching `answer:` is **pending**
   (`bindings.md` § Decisions says what a run does with one), and an answered one is never
   raised again while its answer is in force (the same section).
+- `shown N: <UTC time> <chat | page | doc>` and `seen N: <UTC time> <turn | page | doc>` —
+  a caller's record of each showing of `decision N:` and of the operator's turn (or page
+  or doc answer) that saw it, appended by the session that displays the decision, never
+  by a dispatched agent (librarian-mode's `references/decisions.md` § What the store
+  records). The shape, how they are read (first and last by position; seen after the last
+  showing by file order), and the hold on `seen N:` lines are the `work-items` format
+  reference's § Shown and seen. The cycle itself writes neither, and neither is an answer:
+  `decision N:` stays pending.
 - `spent:` — written and read by `resume.md` (§ The GATE), and by nothing else.
 - `trial: xhigh-planner <bump | control>` and
   `trial: xhigh-planner <bump | control> excluded — <reason>` — both written by the trial

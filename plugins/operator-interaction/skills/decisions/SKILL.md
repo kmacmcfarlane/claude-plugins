@@ -123,6 +123,15 @@ supply each):
 clear; a different session or repo in between; a hand-off; or **no operator turn since it was
 last shown** — a card printed while the operator was away has not been seen. Otherwise warm.
 
+**Shown and seen, recorded.** Where the caller keeps a record, the session that displays a
+decision records each showing at card or block level as it goes out (the time and where:
+chat, page or doc), and the operator turn or page or doc answer that sees it. A list line, a
+tag-size mention or an echo is not a showing. The first and the last showing are kept, and
+the caller's rules give the record's shape and any hold on it. In your own session the
+transcript answers the warm-or-cold test; a reader without it (after a reset, another
+session, a collector) reads it from the record: no showing recorded, or none seen since the
+last showing, is cold.
+
 **FYI after acting** (nothing to answer) is allowed only for an action that is
 two-way, narrow, relied on by nobody before the operator reviews it, and inside authority the
 operator already gave (an answered decision, the task you were assigned, or a decide-alone
@@ -162,7 +171,8 @@ Anything else is at least a card.
 to a cold reader or on a thin basis; a card the operator asked to `expand`.
 
 **Seen.** A card or block counts as seen once the operator has taken a turn since it was
-shown. One seen, with nothing changed, is not rendered again: its line ends *(shown before)*.
+shown — the turn the caller's record of shown and seen stores, where it keeps one. One
+seen, with nothing changed, is not rendered again: its line ends *(shown before)*.
 This holds for ⚠ too — the line keeps its ⚠ label, and `expand` brings the block back.
 
 The higher the stakes, the more information and the slower the decision.
@@ -296,6 +306,9 @@ argues for it.
   read by every view; Undo replaces the stakes words, Wait the *blocks* slot. Not taken:
   lines with the effect only, no wait; no stored line, each view deriving impact from the
   options each time.
+- **Shown record** (2026-10-07) — the first and the last showing of each decision are
+  recorded, with the turn that sees each, written by the session that displays it. Not
+  taken: the last showing only (last-write-wins).
 
 Still provisional, marked where it appears: **paging** on a cold re-show.
 

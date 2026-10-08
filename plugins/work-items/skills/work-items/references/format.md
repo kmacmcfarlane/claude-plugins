@@ -391,7 +391,10 @@ being `[<name>] <title>` or the title alone (§ Short display name and tag).
 `--plain` prints `id<TAB>grooming|decision<TAB>N or -<TAB><title
 cell><TAB>text`: the title cell is fourth, so the free text stays last;
 `--json` one record per item with `title`, `short_display_name`,
-`grooming` and `decisions`. It exits 2 when nothing awaits the operator.
+`grooming` and `decisions`, each decision a record of `n`, `text`,
+`raised` and the four shown-and-seen fields (§ Shown and seen), `null`
+where the item has no such line. It exits 2 when nothing awaits the
+operator.
 
 **Card lines.** A caller may store the decision's card as indented lines
 under its headline (`raised:`, `what:`, `why now:`, `why ask:`,
@@ -433,6 +436,62 @@ question and answers none: `needs-input`, the decision counter and the
 estate sweep pass it by. The target is one token, never containing a
 space. `wi` does not parse it yet; a reader splits it with
 `^closed (\d+): (acted|rule|superseded by) (\S+)$`.
+
+## Shown and seen: `shown N:` / `seen N:`
+
+Each time decision N is put in front of the operator, the session that
+displays it appends a body line in the item that holds `decision N:`; at
+the operator's next turn in that session (or an answer found at a page or
+doc read-back), it appends a second. One physical line each, never wrapped:
+
+```
+shown N: <UTC time> <chat | page | doc>
+seen N: <UTC time> <turn | page | doc>
+```
+
+The time is `YYYY-MM-DDTHH:MM:SSZ`, UTC, on the writer's clock (`date -u
++%Y-%m-%dT%H:%M:%SZ`); `raised:`'s minute form also reads. A line whose
+first token after `N:` is not a time in one of those two forms is not read.
+
+- **What is a showing:** a render at card or block level (`chat`); a card
+  on an answer page at the publish that put its current `rev` there
+  (`page`); a decision's section in the tick-box doc, when shared or
+  rewritten unticked (`doc`). A list line, a tag-size mention, a Groom row,
+  an echo or a hint is not a showing and writes nothing.
+- **What sees it:** the operator's first turn after the showing, in the
+  session that showed it (`turn`); a new answer to the card's current
+  `rev` found at a page read-back (`page`); changed ticks or words for it
+  found at a doc read-back (`doc`). A chat turn never sees a page or doc
+  showing.
+- **Reading them:** first shown is the first `shown N:` line, last shown
+  the last one, last seen the last `seen N:` line. The last showing has
+  been seen when a `seen N:` line comes after the last `shown N:` line in
+  file order. File order decides, never a comparison of the two times:
+  writers' clocks differ. With no `shown N:` line the showing is not
+  recorded: the decision's age comes from `raised:`, and the operator
+  counts as cold to it. Lines written before this convention do not exist:
+  there is no backfill.
+- **Writing them:** always append, at column 0; never indent one (an
+  indented line is a card line) and never insert one between a
+  `decision N:` headline and its card, which ends the card and hides its
+  `raised:`. Never write `<repo>#N` here: a session records a showing only
+  in the store that holds the decision. `shown 40:` is about decision 40
+  only, and a line inside a fenced code block is text.
+- **Hold on `seen N:`:** until decision 180 in the claude-plugins work
+  store (whether `seen N:` lines may go into a tracked, pushed store) is
+  answered, writers append `shown N:` lines only and write no `seen N:`
+  line, so no push carries one. Its answer alone lifts or changes this
+  hold; every other rule here stands either way.
+
+Neither line is `decision N:` nor `answer N:`, so they open no question and
+answer none: `needs-input`, the decision counter and the estate sweep pass
+them by as questions. `wi` parses them, read-only and into the JSON views
+only (`needs-input --json`, `estate --json`): each decision record carries
+`first_shown`, `last_shown`, `last_seen` (each the time as written, or
+`null`) and `unseen` — `null` with no `shown N:` line, `true` when no
+`seen N:` line follows the last `shown N:` line, else `false`. Text and
+`--plain` output are unchanged. `wi` has no verb that writes them; append
+with Bash, as for every other record line.
 
 ## Decided alone: `decided:`
 

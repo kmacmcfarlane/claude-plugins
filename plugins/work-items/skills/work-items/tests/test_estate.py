@@ -403,6 +403,52 @@ class TestSummary(EstateCase):
         self.assertEqual([(x["n"], x["text"], x["raised"]) for x in d],
                          [(2, "revised ask", "2026-09-10T00:00Z")])
 
+    def test_decisions_carry_shown_and_seen(self):
+        s = self.store("alpha")
+        body = "\n".join([
+            "decision 1: shown and seen",
+            "  raised: 2026-09-20T10:00Z",
+            "decision 2: seen, never shown",
+            "decision 3: shown, not seen",
+            "shown 1: 2026-09-21T10:00:00Z chat",
+            "seen 1: 2026-09-21T10:05:00Z turn",
+            "shown 1: 2026-09-22T10:00:00Z chat",
+            "seen 1: 2026-09-22T10:05:00Z turn",
+            "seen 2: 2026-09-22T10:05:00Z turn",
+            "shown 3: 2026-09-23T10:00:00Z page",
+        ])
+        self.put(s, "shown-0001", body=body)
+        d = {x["n"]: x for x in self.repo(self.scan_one(), "alpha")["decisions"]}
+        keys = ("first_shown", "last_shown", "last_seen", "unseen")
+        self.assertEqual(tuple(d[1][k] for k in keys),
+                         ("2026-09-21T10:00:00Z", "2026-09-22T10:00:00Z",
+                          "2026-09-22T10:05:00Z", False))
+        self.assertEqual(tuple(d[2][k] for k in keys),
+                         (None, None, "2026-09-22T10:05:00Z", None))
+        self.assertEqual(tuple(d[3][k] for k in keys),
+                         ("2026-09-23T10:00:00Z", "2026-09-23T10:00:00Z",
+                          None, True))
+        self.assertEqual(d[1]["raised"], "2026-09-20T10:00Z")
+
+    def test_decision_text_row_unchanged_by_shown_lines(self):
+        s = self.store("alpha")
+        self.put(s, "rows-0001", title="Pick a store",
+                 body="decision 1: which store?\n  raised: 2026-09-20T10:00Z")
+        before = run(["estate", "--dir", str(self.scan)])
+        self.assertEqual(before.returncode, 0, before.stderr)
+        self.put(s, "rows-0001", title="Pick a store",
+                 body="decision 1: which store?\n  raised: 2026-09-20T10:00Z\n"
+                      "shown 1: 2026-09-21T10:00:00Z chat\n"
+                      "seen 1: 2026-09-21T10:05:00Z turn")
+        after = run(["estate", "--dir", str(self.scan)])
+        self.assertEqual(after.returncode, 0, after.stderr)
+        rows = [ln for ln in after.stdout.splitlines() if "DECISION" in ln]
+        self.assertEqual(rows, [ln for ln in before.stdout.splitlines()
+                                if "DECISION" in ln])
+        self.assertEqual(len(rows), 1)
+        self.assertTrue(rows[0].startswith(
+            "  DECISION  rows-0001  Pick a store  1: which store?"), rows)
+
     def test_ready_matches_wi_next_across_an_archived_dep(self):
         s = self.store("alpha")
         self.put(s, "after-done-0001", deps=["gone-0001"], priority=1)
@@ -529,7 +575,8 @@ class TestJsonShape(EstateCase):
                           "type", "tags"})
         self.assertEqual(set(r["decisions"][0]),
                          {"id", "title", "short_display_name", "n", "text",
-                          "raised", "age_days"})
+                          "raised", "age_days", "first_shown", "last_shown",
+                          "last_seen", "unseen"})
         self.assertIsInstance(r["decisions"][0]["age_days"], int)
         self.assertEqual(set(r["stale"][0]),
                          {"id", "title", "short_display_name", "owner",

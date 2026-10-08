@@ -121,3 +121,5 @@ reads the collection live, so an answer set in the owner's other tab shows at on
 **Already handed over.** The read-back compares a counting answer's `at` with the `at` it last
 handed over for that number. Equal: the same answer, unchanged. Different: the operator changed
 it since. Both values come from the operator's browser, so this too needs no shared clock.
+The `at` is the read-back's marker only: it is never handed over as the time a card was shown
+or seen (SKILL.md steps 3 and 6 use your clock for those).
