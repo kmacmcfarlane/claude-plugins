@@ -2,7 +2,7 @@
 name: research-prune
 description: Curate a research knowledge base — run the fit check against its charter, propose and on approval execute a rebalance (moves, merges, splits, a scheme change), archive notes whose every claim is superseded, mark runs superseded, and rewrite INDEX.md and directory indexes wholesale. Use when the user says "prune the knowledge base", "rebalance the KB", "the research KB is hard to navigate", "tidy up the research notes", "archive stale research", or when a research run's fit check returned STRAINED or REBALANCE FIRST. Not for gathering new research (research, research-refine).
 disable-model-invocation: true
-allowed-tools: Read, Glob, Grep, Bash, Write, Edit, AskUserQuestion
+allowed-tools: Read, Glob, Grep, Bash, Write, Edit
 argument-hint: "[kb root] [--fit-check-only | --execute]"
 ---
 
@@ -72,8 +72,11 @@ superseded and the successor is named; moves preserve history (`git mv` in a tra
 Then present the proposal to the operator as a numbered decision list — one row per number,
 its options in (a), (b), (c) order with the recommended action in bold, never moved first,
 and what each does to the access-pattern walk. Do not pair the list with the fit-check
-analysis in the same turn; show the analysis, then ask. Unattended, stop here with the
-proposal logged and `STATUS: BLOCKED — proposal awaits approval`.
+analysis in the same turn; show the analysis, then ask. When the session lists
+`operator-interaction:decisions`, the rows go per the `research` skill's
+`references/intensity-and-routing.md` § Putting an ask to the operator; without it, this
+numbered list is the fallback. Unattended, stop here with the proposal logged and `STATUS:
+BLOCKED — proposal awaits approval`.
 
 ### Step 4 — Execute (approved rows only)
 
@@ -125,7 +128,8 @@ nothing newer.
   removal; list it.
 - **The charter's access patterns are stale** (nobody asks those questions any more) — that
   is a key-juncture signal from the reference; ask about the charter before proposing moves
-  that optimise for the wrong questions.
+  that optimise for the wrong questions, per the `research` skill's
+  `references/intensity-and-routing.md` § Putting an ask to the operator.
 - **`_inbox/` has accumulated** from unattended landings — inbox triage is part of the
   proposal: each inbox note gets a move row.
 - **A run directory was edited after its synthesis** — a rule was broken upstream; note it

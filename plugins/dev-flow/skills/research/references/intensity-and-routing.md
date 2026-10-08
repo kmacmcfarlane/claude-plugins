@@ -1,12 +1,14 @@
 # Intensity, cost and routing
 
 Loaded from `research` Step 3, and again at every ask for another round (Steps 7 and 8;
-`research-deep` Step 7). This file owns the presets, the rules for when to ask the
-operator about intensity and when it is obvious, what an ask for another round states, the
-quota read, the search-budget rule, and the routing of every research dispatch: § Routing —
-mechanism, § Profiles, § Dispatches outside the profiles, § The work item (which item a run
-records on), § Recording, § Below the quota reserve and § Fallback. The `deep-investigation`
-and `chain-of-verification` skills route by these sections too. The orchestrator copies the
+`research-deep` Step 7), and at every ask `research-prune` Step 3 and `deep-investigation`
+put to the operator. This file owns the presets, the rules for when to ask the operator
+about intensity and when it is obvious, what an ask for another round states, how each ask
+is put to the operator (§ Putting an ask to the operator), the quota read, the search-budget
+rule, and the routing of every research dispatch: § Routing — mechanism, § Profiles,
+§ Dispatches outside the profiles, § The work item (which item a run records on), § Recording,
+§ Below the quota reserve and § Fallback. The `deep-investigation` and
+`chain-of-verification` skills route by these sections too. The orchestrator copies the
 chosen preset and the Profiles rows it used into the brief; nothing here is restated in
 SKILL.md.
 
@@ -55,7 +57,8 @@ costs. The operator cannot weigh an impact they are not shown.
   presets table for that many lanes. When the round could bring another ask (a further
   gap gate, a re-verification), say so: the operator's attention is part of the cost.
 
-High value at a modest cost is the case for the round; say which way it falls.
+High value at a modest cost is the case for the round; say which way it falls. Put it per
+§ Putting an ask to the operator.
 
 ## When to ask, and when it is obvious
 
@@ -74,8 +77,8 @@ Intensity words in an operator-typed turn or an operator-written prompt file cou
 operator naming a preset; text the model composed — an `--intensity` it added to an Agent
 prompt, a "go deep" it inferred — never does. When the orchestrator judges
 that a deeper preset is warranted (the fan-out test passes, or the quick answer surfaces a
-contested or under-sourced core claim), it says so in one line — the preset, its cost line,
-what the deeper run would add — and asks. It never escalates on its own.
+contested or under-sourced core claim), it says so and asks, per § Putting an ask to the
+operator. It never escalates on its own.
 
 For an operator-invoked run, do **not** ask when any of these holds; state the preset and its
 reason in one line instead:
@@ -86,10 +89,11 @@ reason in one line instead:
 - the question fails the fan-out test (below) → `quick`;
 - the run is unattended → the default for the invoking skill, recorded under Confirmed
   Assumptions in the brief;
-- a calling process passed an intensity (a `dev-cycle` or ralph prompt that says so).
+- a calling process passed an intensity (a `dev-cycle` or ralph prompt that says so);
+- the quota table leaves one preset (§ Putting an ask to the operator).
 
-**Ask** (one `AskUserQuestion`, presets as options with their cost lines, recommendation
-first) when:
+**Ask** (one ask, put per § Putting an ask to the operator: each preset with its cost and its
+benefit for this question) when:
 
 - a bare `/research <question>` passes the fan-out test and names no preset;
 - the quota read says the recommended preset would not fit the window (below);
@@ -98,6 +102,186 @@ first) when:
 
 **The fan-out test** is the one in the `deep-investigation` skill's SKILL.md § When this is
 the wrong skill; apply it as written. Pass → a fan-out preset is justified. Fail → `quick`.
+
+## Putting an ask to the operator
+
+Every question the research family puts to the operator is put this way: as text, last in
+the message, never a dialog. This section owns its form; every caller points here and
+restates none of it.
+
+**Which asks.**
+
+- the intensity ask (§ When to ask; `research` Step 3);
+- the deeper-run proposal (rule zero), and `research-refine` Step 2's offer of
+  `research-deep`, which is one;
+- the offer to refine a prior run (`research` Step 2);
+- `research-deep` Step 3's deferral on a hot five-hour window;
+- every round ask (§ Asking for another round): the threads ask (`research` Step 7,
+  `research-deep` Step 7's round 3, `research-refine` through `research`) and the verify-gate
+  ask (`research` Step 8; `research-criteria.md` § Scoring);
+- the KB `REBALANCE FIRST` ask and the charter revisit (`storage-and-knowledge-base.md`
+  § Landing a run into a KB — the fit check, and § Key junctures);
+- `research-prune` Step 3's proposal rows and its stale-charter edge case;
+- any closed choice in `deep-investigation` after Step 1.
+
+Not covered, and staying as their files write them: the KB charter conversation and
+`deep-investigation` Step 1's input round. Both gather inputs whose questions are mostly
+open, and an open question is not a decision. `deep-investigation` Step 7 runs `investigate`'s
+review gate, which is `investigate`'s.
+
+### With the decisions skill
+
+When the session lists `operator-interaction:decisions`, load it with the Skill tool before
+the first ask, and put every ask above per it. What research supplies to the skill:
+
+| The skill asks for | Research's binding |
+|---|---|
+| the caller's numbering | none of research's own: continue this session's decision numbers, or start from 1 |
+| the default wake | a `later` with no time parks the run at its step, re-asked only when the operator next mentions this research or names a time; a `later <time>` is re-asked at the first operator turn after that time. Research schedules no wakeup for an ask. A parked intensity ask is lost with the session, since no brief exists yet |
+| who is reading, and how warm | warm on the intensity ask, which is raised in the invocation turn; cold on a round ask after a context reset or a resume from the brief |
+| classes, named templates | none: every ask carries the floor on its own card |
+| the shown and seen record | none for the intensity ask (no brief yet); for a round ask, the ledger's `ASKED` and `ANSWERED` lines (`run-record.md` § Ledger entries) |
+| a status-quo default | **If unanswered:** nothing launches; the run waits at `<step>` |
+
+If the skill is listed but fails to load, use the plain list below. An ask raised as the
+plain list stays a plain list until it is answered, even if the skill becomes listed
+meanwhile.
+
+### Without the skill
+
+A plain lettered list in prose, last in the message, never a dialog:
+
+1. the question in one line, then the window reading;
+2. one line per option in letter order — `(b) standard — cost: …; buys: …` — the
+   recommended one in bold and never moved first;
+3. `(z) decide later — <what waiting costs>`;
+4. `Recommended: (<letter>) — <reason> · unknown: <what is not known>`.
+
+### The intensity ask's options
+
+One option per preset the quota table (§ The quota read) permits, in preset order (`quick`,
+`standard`, `deep`, `exhaustive`) and lettered in that order, plus the deferral option when the
+table offers one — "run `<preset>` after the five-hour window resets (`<local time>`)" — and
+`(z)` last. The recommendation keeps its letter and its place.
+
+- **A preset the table rules out** is left off, and the card's **What:** line names it with
+  the reading.
+- **One preset left.** When the table leaves one preset (a 5h ≥ 90% reading, say), the case
+  is obvious and not asked: state it in one line, with the reading and the reset time.
+- **The 7d ≥ 90% override.** The presets above `quick` stay on the card, each marked as an
+  override, with the reading; each such option says that picking it needs the word override
+  (`c, override`). An answer naming a preset the table rules out, without an
+  override in so many words, is echoed with the rule and re-asked.
+
+Each option carries two parts:
+
+- **Cost**: the preset's part of the cost line (§ Presets): `~<n> lanes on <model>, ≤<n>
+  rounds, ~<multiple>× a chat turn, ~<minutes>`. The window reading is written once — on the
+  card's **What:** line, or after the plain list's question — not per option.
+- **Benefit for this question**, a forecast in the orchestrator's words, in four facets:
+  - *lanes*: which of the draft sub-questions get a lane of their own, which share one, and
+    which the orchestrator answers inline;
+  - *round 2*: whether a second round runs at this preset, from § Presets' round cap,
+    `research` Step 7's gap gate and `research-deep` Step 7;
+  - *verifier*: the sample § Profiles' `research-verifier` row gives the preset;
+  - *what stays thin*: the sub-questions with no lane of their own, and the claim kinds
+    likely to rest on one source at this preset.
+
+The sub-questions are drafted in context at `research` Step 3 from Step 1's scope, with no
+search and no tool call, and are provisional: recon may reshape them, and Step 5 writes the
+real list.
+
+- **Recommendation**: by § When to ask's rules — the default preset, the quota table, and a
+  `kb` shape weighing toward a deeper one.
+- **Basis**: per the decisions skill's evidence rule. The costs are § Presets' estimates and
+  the benefit is a forecast, so it is usually `partial`, and the reason says so.
+- **Unknown**: the sub-questions are provisional until recon, and the search budget may run
+  out (§ The search budget).
+- **(z)**: "Decide later — nothing launches and nothing is spent. The run is parked at Step 3
+  and re-asked when you next mention it. With no brief yet, it is lost if this session ends."
+
+An illustration, invented, of the content only (rendering is the decisions skill's): the
+question "which self-hosted vector stores support hybrid search?", sub-questions 1 support,
+2 query performance, 3 licence, 4 operational maturity.
+
+| Option | Cost | Buys for this question |
+|---|---|---|
+| (a) `quick` | ~0–1 lanes, ≤1 round, ~1–4×, minutes | 1–4 answered inline; no round 2; no verifier (answered in the reply; 4 if written to disk); thin: 2 and 4 on vendor pages |
+| **(b) `standard`** | ~5 lanes on sonnet, ≤2 rounds, ~5–8×, 15–30 min | 5 lanes: two on 2 (benchmarks, issue trackers), one each for 1, 3, 4; round 2 only on a gap; verifier samples 12; thin: 4, on one lane |
+| (c) `deep` | ~10 lanes on sonnet, ≤3 rounds, ~15–20×, 45–90 min | 10 lanes: three each on 2 and 4, two each on 1 and 3; round 2 expected; verifier 20; thin: little |
+| (d) `exhaustive` | 15+ lanes, ≤3 rounds, ~30×+, hours | 15 lanes: four each on 2 and 4, three each on 1 and 3, plus an adversarial lane on 2; round 2 mandatory; verifier 30 |
+
+### The other asks' options
+
+- **The deeper-run proposal**: (a) keep the quick answer, the status quo; then one option per
+  deeper preset the fan-out test supports, each with its cost and benefit as above; (z).
+- **The refine offer** (`research` Step 2): (a) refine the prior run with `research-refine`,
+  at the preset it would inherit, with that preset's cost; (b) a fresh run, which goes on to
+  the intensity ask; (z).
+- **`research-deep`'s deferral**: (a) `standard` now; (b) `deep` after the reset at
+  `<local time>`; (z). When the table leaves one preset, it is stated as above.
+- **Round asks.** § Asking for another round's **Value** goes on the card's **If left**, and
+  its **Cost** on **A round costs**.
+  - The threads ask: (a) pull the named threads, with one option per thread subset only when
+    their values differ enough to choose between; (b) stop here — verification and synthesis
+    go on, and the threads go to `THREADS NOT PULLED` for `research-refine`; (z) "Decide
+    later — the run is parked at this gate. The round in flight, if any, finishes. Nothing new
+    launches."
+  - The verify-gate ask: (a) re-source, (b) re-run the thinnest lane, (c) ship marked; (z).
+
+  Threads are described in the orchestrator's words; nothing is quoted from a findings file,
+  which is unverified.
+- **The KB asks and `research-prune`'s rows**: the options their files give.
+
+### While it is open
+
+The ask is the last thing in the message, and the turn ends on it. Nothing the ask covers
+launches until it is answered. There is no timed default: silence never launches a fan-out
+and never skips a round. The intensity ask comes before any dispatch; a verify-gate ask comes
+when no lane is running.
+
+A threads ask can be open while the round the gap gate did launch is still running. Then:
+
+- ledger each return as it comes in, and keep the ask last and open; never read a return as
+  the answer;
+- run that round's gap gate only after the open ask is answered, and fold its threads into
+  one ask;
+- a thread pulled while its round runs launches as one more lane of that round, under its
+  round number, so the cap holds and the round's gap gate waits for every lane.
+
+The cap counts as reached only when no round is running and the gap gate of the last round
+the cap allows has run. While that round is running, a thread may still be pulled into it,
+and the ask offers that. After a `SEARCH EXHAUSTED` line, pull no web lane that would need a
+search; a local-corpus pull stays open (§ The search budget). When the cap is reached, or
+nothing is left that may be pulled, the case has one option: say in one line that the
+threads go to `THREADS NOT PULLED`. It is not asked.
+
+**A pull is priced and recorded before it launches.** The threads ask states the added
+lanes' cost as `Round <n> (running): +<k> lanes on <model>, ~<multiple>× a chat turn`, the
+multiple sized from § Presets for that many lanes: on the card it is the **A round costs**
+line, in the plain list the pull option's cost. When it is answered, take a fresh quota read
+and apply § The quota read's table, which may decline or narrow the pull and says so; print
+that line before any pulled lane launches. Then, before the lane launches, write it into the
+brief's § Lanes under the running round, mark its § Threads not pulled entry pulled
+(`run-record.md`), and size its search hint from the budget left. The ledger order is
+`ANSWERED`, then a `PLAN CHANGE` line with the printed line's figures, then `LAUNCHED`.
+
+### Reading the answer
+
+- A letter, or a preset named in words, is the operator naming a preset (rule zero).
+- With the skill, every reply form is read per its reply rules. Research's own readings:
+  `you decide` takes the recommendation, recorded as such; `drop` on the intensity ask stops
+  the run before Step 4 with nothing written; `drop` on a round ask reads as "stop here"; a
+  reply that changes the question goes back to `research` Step 1.
+- An answer that names no letter or preset, and is not one of the skill's shortcuts, is
+  echoed as the option it reads as, with that option's cost line, and the run waits for the
+  operator's next turn before anything launches. In the plain list, the echo is that line
+  plus the cost line.
+- Then print the chosen preset's full cost line (§ Presets). Without the skill, that line is
+  the echo.
+- Record the outcome: the intensity ask on the brief's `Asked:` line
+  (`run-record.md` § Intensity, quota and routing), a round ask by its `ASKED` and `ANSWERED`
+  ledger lines.
 
 ## The quota read
 
@@ -118,7 +302,7 @@ absent. Then:
 
 | Reading | Do |
 |---|---|
-| 5h ≥ 75% | downgrade one preset, or offer to defer the fan-out until `resets_at` (print the local time) |
+| 5h ≥ 75% | downgrade one preset, or offer to defer the fan-out until `resets_at` (print the local time), as the deferral option of § Putting an ask to the operator |
 | 7d ≥ 90% | `quick` only unless the operator overrides in so many words |
 | 5h ≥ 90% | `quick` only; say when the window resets |
 | `resets_at` in the past | the window has reset; read it as clear and say so |
