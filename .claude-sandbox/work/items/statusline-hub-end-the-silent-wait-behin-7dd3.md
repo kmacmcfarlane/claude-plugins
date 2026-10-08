@@ -28,3 +28,6 @@ dispatch: implementer opus medium — hook code fix with tests
 ## Notes
 - 2026-10-08 claimed by Kyle-McFarlane@2d49f8460283
 agent: implementer a6b6507ff123a6363
+return: DONE_WITH_CONCERNS 0354d97 (older-copy rule: dead copy taken, live copy said once, dangling link with record left alone, cannot-tell does nothing; SH-1 names statusline; 228 hub tests; open: recorded plugin, link resolves, script removed (the a95a removal) still waits silently)
+changed: statusline-hub hooks session_start.py, owner.py, tests (handover, session_start, owner), skills/statusline-hub/references/hook-contract.md
+dispatch: reviewer opus high — review round 1
