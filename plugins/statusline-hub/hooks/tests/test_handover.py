@@ -430,6 +430,26 @@ class Handover(helpers.Hermetic):
         self.assertEqual(len(self.messages), 1, self.messages)
         self.assertIn("older copy of the statusline footer", self.messages[0])
 
+    def test_a_recorded_plugin_that_no_longer_ships_the_copy_is_taken(self):
+        # context-guard installed, its current-hooks resolving to a version
+        # without statusline.py: not mid-update, the copy draws nothing
+        hooks = os.path.join(self.cfg, "cg-new", "hooks")
+        os.makedirs(hooks)
+        self.cg_copy(link=hooks)
+        self.plugin_records("statusline-hub", "context-guard")
+        self.session(sl=False)
+        self.assertEqual(len(self.messages), 1, self.messages)
+        msg = self.messages[0]
+        self.assertIn("took over the status line slot", msg)
+        self.assertIn("no longer ships it", msg)
+        self.assertIn(f"/plugin install statusline@{MKT}", msg)
+        self.assertEqual(self.kind(), "own")
+        self.assertEqual(self.hub_state(), "installed")
+        settled = self.raw()
+        self.assertEqual(self.session(sl=False), settled)
+        self.assertEqual(len(self.messages), 1, self.messages)
+        self.later_statusline_install_takes_over()
+
     def test_unreadable_install_records_change_nothing(self):
         self.cg_copy()
         for raw in ("{not json", None):

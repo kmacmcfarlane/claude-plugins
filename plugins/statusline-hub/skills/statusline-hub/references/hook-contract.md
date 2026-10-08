@@ -282,14 +282,16 @@ shows no health glyph. `order` and `disabled` name segment providers (§ 11) the
   If an older session writes its stale settings back over the hub's entry, putting the
   footer's earlier entry there again, the next session repoints it at the hub too. Once
   Claude Code's install records name the hub and no statusline install, nothing will
-  register, and the hub never yields to that entry for good. When the plugin whose data
-  dir the entry runs from (statusline, context-guard or claude-kit) has no install record
-  and the entry's `current-hooks/statusline.py` does not resolve, the entry draws nothing,
-  so the hub takes the slot and says so once. While the entry still resolves it draws: the
-  hub says once that installing statusline lets it take over, and takes over when it does.
-  A recorded plugin whose link dangles is mid-update (its own SessionStart re-links it), so
-  the hub waits; while it cannot be sure (records it cannot read, or that do not name the
-  hub), it waits.
+  register, and the hub never yields to that entry for good. The entry draws nothing, so
+  the hub takes the slot and says so once, when the plugin whose data dir it runs from
+  (statusline, context-guard or claude-kit) has no install record and the entry's
+  `current-hooks/statusline.py` does not resolve, or when that plugin is recorded and its
+  `current-hooks` link resolves to a directory without `statusline.py` (a version that no
+  longer ships the copy). While the entry still resolves it draws: the hub says once that
+  installing statusline lets it take over, and takes over when it does. A recorded plugin
+  whose `current-hooks` link dangles, or is missing, is mid-update (its own SessionStart
+  re-links it), so the hub waits; while it cannot be sure (records it cannot read, or that
+  do not name the hub), it waits.
 - A registry refused as a whole (§ 4: the config dir inside a git work tree, or the hub
   dirs not private) runs no hooks, so it would draw no footer either; the hub's
   SessionStart says so once, naming the directory and the reason.

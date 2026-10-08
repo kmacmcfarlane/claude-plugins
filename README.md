@@ -534,7 +534,8 @@ reads the `owner.json` marker an earlier `statusline` version left, its `enabled
 entry and its `statusLine` command, but only to leave the footer alone until it registers
 as a hub display hook, and then to take over its slot (or an older copy's, from
 `context-guard`'s or `claude-kit`'s data dir). Without `statusline` there is nothing to wait
-for, and the hub takes a free slot straight away, drawing only the hooks others register.
+for: the hub takes a free slot straight away, or an older copy's slot once that copy's
+plugin is gone or no longer ships it, drawing only the hooks others register.
 
 It carries `hooks/`, with its unit tests
 (`cd plugins/statusline-hub/hooks && python3 -m unittest discover -s tests -q`):

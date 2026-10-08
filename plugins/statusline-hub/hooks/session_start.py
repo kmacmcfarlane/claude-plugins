@@ -78,15 +78,17 @@ same (see owner.py):
   plugin's own, or context-guard's or claude-kit's older copy) in the slot,
   and the install records naming the hub and no statusline install, so no
   footer will register. The hub never yields to it for good. When the
-  copy's plugin is gone - no <plugin>@ install record and its
-  current-hooks/statusline.py not resolving - the copy draws nothing, and
-  the hub takes the slot, said once. A dangling link alone is not that: an
+  copy draws nothing - its plugin gone (no <plugin>@ install record and
+  its current-hooks/statusline.py not resolving), or its plugin recorded
+  with current-hooks resolving to a directory without statusline.py - the
+  hub takes the slot, said once. A dangling link alone is not that: an
   update leaves one until that plugin's own SessionStart re-links it, so a
-  recorded plugin means wait. A copy that still resolves draws: said once
-  (stamped in footer-copy-notice.json in the data dir) that installing
-  statusline lets the hub take over, then looked at again quietly each
-  session, so a later statusline install is still taken over. Records it
-  cannot read, or that do not name the hub: it cannot tell, so nothing.
+  recorded plugin whose link dangles means wait. A copy that still
+  resolves draws: said once (stamped in footer-copy-notice.json in the data
+  dir) that installing statusline lets the hub take over, then looked at
+  again quietly each session, so a later statusline install is still taken
+  over. Records it cannot read, or that do not name the hub: it cannot
+  tell, so nothing.
 
 A settings file it must use but cannot - not valid JSON, read-only,
 unwritable, a project settings.local.json git does not ignore - makes the
@@ -329,15 +331,17 @@ def _older_copy(owner, data, path, proj, entry, verb):
     (`entry`, from one of owner.FOOTER_HOMES) and the install records surely
     hold no statusline install, so no footer will ever register: the hub
     never yields to it for good.
-    - The copy's plugin is gone - no <plugin>@ install record, and its
-      current-hooks/statusline.py does not resolve: the copy draws nothing,
-      so the hub takes the slot.
+    - The copy draws nothing: its plugin is gone (no <plugin>@ install
+      record, and its current-hooks/statusline.py does not resolve), or its
+      plugin is recorded and current-hooks resolves to a directory that no
+      longer holds statusline.py (a version that dropped the copy). The hub
+      takes the slot.
     - The copy still resolves: it draws; said once (a stamp in the data dir,
       per settings file and entry) that installing statusline lets the hub
       take over; then the hub looks again each session, quietly.
-    - Its plugin is recorded but the script does not resolve (an update
-      leaves a dangling current-hooks link until that plugin's own
-      SessionStart re-links it): Wait."""
+    - Its plugin is recorded and current-hooks dangles or is absent (an
+      update leaves a dangling link until that plugin's own SessionStart
+      re-links it): Wait."""
     copy = owner.footer_copy(entry)
     recs = _install_records(owner)
     if copy is None or recs is None:
@@ -345,14 +349,16 @@ def _older_copy(owner, data, path, proj, entry, verb):
     home, script = copy
     if os.path.isfile(script):
         return _copy_notice(owner, data, path, entry, home)
-    if _has(recs, home):
-        raise Wait()
+    if _has(recs, home) and not os.path.isdir(os.path.dirname(script)):
+        raise Wait()  # mid-update: the link dangles until its plugin re-links it
     if not _script_ready(owner, data):
         raise Wait()
     _guard_local(path, proj)
     _put(owner, data, path, {"statusline"})
+    gone = ("whose version no longer ships it" if _has(recs, home) else
+            "which is no longer installed")
     return (f"{verb} the status line slot in {path}: it ran {_copy_name(owner, home)}, "
-            f"which is no longer installed, so it drew nothing. From your next session "
+            f"{gone}, so it drew nothing. From your next session "
             f"the hub records each render for the tools that read it and draws its "
             f"registered display hooks; for the footer, install the statusline plugin: "
             f"{_install_hint(owner)}. Undo: /install-statusline-hub{_flag(owner, path)} "
