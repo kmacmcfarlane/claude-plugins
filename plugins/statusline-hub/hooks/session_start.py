@@ -21,7 +21,7 @@ same (see owner.py):
     (until then it still draws the footer: look again next session - but
     only while it cannot be sure no statusline install exists: once Claude
     Code's install records name the hub and no statusline@ key, nothing will
-    register, and the hub yields to that entry, saying whose it is);
+    register, and the entry is handled as an older copy, below);
   - holds anything else: yield - state `yielded`, said once, never fought.
 - wrapping (the user ran /install-statusline-hub --wrap) - the marked file:
   - holds ours: nothing;
@@ -61,7 +61,9 @@ same (see owner.py):
      entry and a wrap record is adopted as `wrapping` only when the record
      is running; one the user had unwrapped gets their entry put back. The hub
      never wraps on its own (operator decision 40: ask once). The statusline footer's entry there (the statusline
-     plugin's, or an older copy's) is handled as in (a). An empty slot the
+     plugin's, or an older copy's) is handled as in (a), except that once the
+     install records surely hold no statusline install it is an older copy
+     (below). An empty slot the
      user emptied by removing the statusline footer (its marker says
      `removed` for that file) stays empty: state `removed`, said once. And
      while the statusline plugin is enabled there but not yet registered as
@@ -72,6 +74,19 @@ same (see owner.py):
      hooks/owner.py, which could not install itself: then nothing is
      coming, and the hub takes the slot on the first session.
   The entry is written only once the current-hooks link resolves.
+- an older copy: the footer's entry (owner.FOOTER_HOMES: the statusline
+  plugin's own, or context-guard's or claude-kit's older copy) in the slot,
+  and the install records naming the hub and no statusline install, so no
+  footer will register. The hub never yields to it for good. When the
+  copy's plugin is gone - no <plugin>@ install record and its
+  current-hooks/statusline.py not resolving - the copy draws nothing, and
+  the hub takes the slot, said once. A dangling link alone is not that: an
+  update leaves one until that plugin's own SessionStart re-links it, so a
+  recorded plugin means wait. A copy that still resolves draws: said once
+  (stamped in footer-copy-notice.json in the data dir) that installing
+  statusline lets the hub take over, then looked at again quietly each
+  session, so a later statusline install is still taken over. Records it
+  cannot read, or that do not name the hub: it cannot tell, so nothing.
 
 A settings file it must use but cannot - not valid JSON, read-only,
 unwritable, a project settings.local.json git does not ignore - makes the
@@ -266,21 +281,109 @@ def statusline_hooked():
     return bool(h and h["kind"] == "display")
 
 
-def _from_statusline(owner, data, path, proj):
-    """Take over the statusline plugin's entry in `path`, or Wait."""
-    if not statusline_hooked() or not _script_ready(owner, data):
+def _from_statusline(owner, data, path, proj, entry):
+    """Take over the statusline footer's entry `entry` in `path` once the
+    footer is a hub hook; with statusline surely uninstalled, an older copy
+    (_older_copy); else Wait."""
+    if statusline_hooked():
+        if not _script_ready(owner, data):
+            raise Wait()
+        _guard_local(path, proj)
+        _put(owner, data, path, {"statusline"})
+        return (f"took over the status line slot in {path}; the statusline footer now "
+                f"draws through the hub, as one of its display hooks.")
+    if not _statusline_uninstalled(owner):
+        raise Wait()  # installed (or unknown): it may yet register
+    return _older_copy(owner, data, path, proj, entry, "took over")
+
+
+COPY_NOTICE = "footer-copy-notice.json"
+
+
+def _install_hint(owner):
+    """The statusline plugin's install command, from the marketplace Claude
+    Code records this hub under (the kit's own when it records none)."""
+    mkt = next((k.split("@", 1)[1] for k in (_install_records(owner) or {})
+                if isinstance(k, str) and k.startswith(owner.PLUGIN + "@")
+                and k.split("@", 1)[1]), "kmacmcfarlane")
+    return f"/plugin install {owner.STATUSLINE}@{mkt}"
+
+
+def _copy_name(owner, home):
+    """What the footer entry in the slot is, for a message."""
+    if home == owner.STATUSLINE:
+        return "the statusline footer's entry, from the statusline plugin"
+    return f"an older copy of the statusline footer, from the {home} plugin"
+
+
+def _footer_hint(owner):
+    """The first-run line's pointer at the footer: enable the statusline
+    plugin when Claude Code records it installed, else its install command."""
+    if _has(_install_records(owner) or {}, owner.STATUSLINE):
+        return "enable the statusline plugin for its footer"
+    return f"the statusline plugin draws a footer there: {_install_hint(owner)}"
+
+
+def _older_copy(owner, data, path, proj, entry, verb):
+    """The slot in `path` holds an older copy of the statusline footer
+    (`entry`, from one of owner.FOOTER_HOMES) and the install records surely
+    hold no statusline install, so no footer will ever register: the hub
+    never yields to it for good.
+    - The copy's plugin is gone - no <plugin>@ install record, and its
+      current-hooks/statusline.py does not resolve: the copy draws nothing,
+      so the hub takes the slot.
+    - The copy still resolves: it draws; said once (a stamp in the data dir,
+      per settings file and entry) that installing statusline lets the hub
+      take over; then the hub looks again each session, quietly.
+    - Its plugin is recorded but the script does not resolve (an update
+      leaves a dangling current-hooks link until that plugin's own
+      SessionStart re-links it): Wait."""
+    copy = owner.footer_copy(entry)
+    recs = _install_records(owner)
+    if copy is None or recs is None:
+        raise Wait()
+    home, script = copy
+    if os.path.isfile(script):
+        return _copy_notice(owner, data, path, entry, home)
+    if _has(recs, home):
+        raise Wait()
+    if not _script_ready(owner, data):
         raise Wait()
     _guard_local(path, proj)
     _put(owner, data, path, {"statusline"})
-    return (f"took over the status line slot in {path}; the statusline footer now "
-            f"draws through the hub, as one of its display hooks.")
+    return (f"{verb} the status line slot in {path}: it ran {_copy_name(owner, home)}, "
+            f"which is no longer installed, so it drew nothing. From your next session "
+            f"the hub records each render for the tools that read it and draws its "
+            f"registered display hooks; for the footer, install the statusline plugin: "
+            f"{_install_hint(owner)}. Undo: /install-statusline-hub{_flag(owner, path)} "
+            f"--remove")
+
+
+def _copy_notice(owner, data, path, entry, home):
+    """Say once that installing statusline lets the hub take over a live
+    older copy; None when said already, or when the stamp cannot be kept
+    (a notice it cannot record is withheld, so it never repeats)."""
+    stamp = os.path.join(data, COPY_NOTICE)
+    key = {"v": 1, "settings": os.path.abspath(path), "command": entry.get("command")}
+    said = owner.sensor._load(stamp)
+    if isinstance(said, dict) and all(said.get(k) == v for k, v in key.items()):
+        raise Wait()
+    try:
+        owner.atomic_write_json(stamp, key, mode=0o600)
+    except OSError:
+        raise Wait()
+    return (f"the status line in {path} runs {_copy_name(owner, home)}; left alone "
+            f"while it draws. Install the statusline plugin ({_install_hint(owner)}) "
+            f"and the hub takes over the slot, drawing the footer as one of its display "
+            f"hooks.")
 
 
 def heal(owner, data, marker):
     path = marker.get("settings")
     if not isinstance(path, str) or not os.path.isfile(path):
         return None
-    kind = owner.classify(_read(owner, path).get("statusLine"))
+    cur = _read(owner, path).get("statusLine")
+    kind = owner.classify(cur)
     if kind == "own":
         return None
     if kind == "statusline":
@@ -291,10 +394,7 @@ def heal(owner, data, marker):
                     f"the hub).")
         if not _statusline_uninstalled(owner):
             raise Wait()  # installed (or unknown): it may yet register
-        owner.write_marker(data, "yielded", path, owner.command_for(data))
-        return (f"the statusLine in {path} is the statusline footer's entry, left "
-                f"behind by the statusline plugin, which is no longer installed; left "
-                f"alone. To have the hub own it again, {_replace_hint(owner, path)}")
+        return _older_copy(owner, data, path, None, cur, "took back")
     if kind != "absent":
         owner.write_marker(data, "yielded", path, owner.command_for(data))
         return (f"the statusLine in {path} was changed by something else; left "
@@ -324,7 +424,7 @@ def _takeover(owner, data, proj):
         except owner.SettingsError:
             continue
         if owner.classify(d.get("statusLine")) == "statusline":
-            return _from_statusline(owner, data, path, proj), True
+            return _from_statusline(owner, data, path, proj, d.get("statusLine")), True
     return None, False
 
 
@@ -440,7 +540,8 @@ def first_run(owner, data, proj):
         return None
     path, compete, proj = target
     for p in compete:
-        kind = owner.classify(_read(owner, p).get("statusLine"))
+        cur = _read(owner, p).get("statusLine")
+        kind = owner.classify(cur)
         if kind == "foreign":
             owner.write_marker(data, "deferred", path, owner.command_for(data))
             return _wrap_offer(owner, p)
@@ -461,7 +562,7 @@ def first_run(owner, data, proj):
                 owner.write_marker(data, "installed", p, owner.command_for(data))
             return None
         if kind == "statusline":
-            return _from_statusline(owner, data, p, proj)
+            return _from_statusline(owner, data, p, proj, cur)
     if _statusline_removed(owner, data, path):
         owner.write_marker(data, "removed", path, owner.command_for(data))
         return (f"the statusline footer was removed from {path} earlier, so the hub "
@@ -476,7 +577,8 @@ def first_run(owner, data, proj):
     what = ("the statusline footer, and any other display hooks registered"
             if statusline_hooked() or (_statusline_installs_only_hooks(owner) and
                                        _statusline_enabled(owner, compete)) else
-            "its registered display hooks (a blank line until one registers)")
+            f"its registered display hooks (a blank line until one registers; "
+            f"{_footer_hint(owner)})")
     return (f"status line slot taken in {path}: from your next session the hub records "
             f"each render for the tools that read it and draws {what}. Undo: "
             f"/install-statusline-hub{_flag(owner, path)} --remove")

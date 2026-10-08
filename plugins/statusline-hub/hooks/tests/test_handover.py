@@ -8,8 +8,12 @@ may finish first), and each "session" also renders whatever the settings'
 statusLine command is, through a shell, as Claude Code does. Scenarios: a
 fresh machine, an existing statusline install (the upgrade), a foreign
 status line, the hub removed, the statusline plugin disabled later, an older
-copy of the footer (context-guard's) in the slot, and an upgrade that left
-the hub uninstalled (`/plugin update` does not add a new dependency).
+copy of the footer (context-guard's) in the slot - taken over once the footer
+registers, and with statusline not installed taken when its plugin is gone,
+said once while it still draws, waited on while its plugin is recorded but
+its link dangles, left alone when the install records cannot be read - and
+an upgrade that left the hub uninstalled (`/plugin update` does not add a new
+dependency).
 
 Runs only in the source repo, where plugins/statusline/ sits beside this
 plugin; an installed copy skips it."""
@@ -334,6 +338,113 @@ class Handover(helpers.Hermetic):
         self.assertEqual(len(self.messages), 1, self.messages)
         self.assertIn("took over the status line slot", self.messages[0])
         self.assertFooterViaHub()
+
+    # -- an older copy, statusline not installed (no silent wait) ------------
+
+    HUB_ONLY = {"enabledPlugins": {f"statusline-hub@{MKT}": True}}
+
+    def cg_copy(self, link=None):
+        """context-guard's older footer copy in the slot, the hub alone
+        enabled; its data dir's current-hooks link to `link` (none: no data
+        dir, as an uninstall leaves it)."""
+        cg = os.path.join(self.cfg, "plugins", "data", f"context-guard-{MKT}")
+        if link:
+            os.makedirs(cg, exist_ok=True)
+            os.symlink(link, os.path.join(cg, "current-hooks"))
+        self.write_json(self.user, dict(self.HUB_ONLY, statusLine=self.sl_entry(cg)))
+        return cg
+
+    def plugin_records(self, *keys, raw=None):
+        """Claude Code's install records naming `keys` (raw text instead,
+        with `raw`)."""
+        path = os.path.join(self.cfg, "plugins", "installed_plugins.json")
+        self.write_json(path, {"version": 2, "plugins": {
+            f"{k}@{MKT}": [{"scope": "user", "installPath": f"/x/{k}"}] for k in keys}},
+            raw=raw)
+
+    def assertNeverYielded(self):
+        self.assertNotEqual(self.hub_state(), "yielded")
+
+    def later_statusline_install_takes_over(self):
+        self.records("statusline", "statusline-hub")
+        self.write_json(self.user, dict(self.load(), **BOTH_ON))
+        self.messages.clear()
+        self.session()
+        self.session()
+        self.assertFooterViaHub()
+        self.assertEqual(self.hub_state(), "installed")
+
+    def test_a_dead_older_copy_is_taken_when_statusline_is_not_installed(self):
+        # context-guard uninstalled (its data dir gone), statusline never installed
+        self.cg_copy()
+        self.plugin_records("statusline-hub")
+        self.session(sl=False)
+        self.assertEqual(len(self.messages), 1, self.messages)
+        msg = self.messages[0]
+        self.assertIn("took over the status line slot", msg)
+        self.assertIn("context-guard plugin, which is no longer installed", msg)
+        self.assertIn(f"/plugin install statusline@{MKT}", msg)
+        self.assertEqual(self.kind(), "own")
+        self.assertEqual(self.hub_state(), "installed")
+        settled = self.raw()
+        for _ in range(2):
+            self.assertEqual(self.session(sl=False), settled)
+        self.assertEqual(len(self.messages), 1, self.messages)
+        self.render()
+        self.assertEqual(self.read_sensor()["exact"]["pct"], 42.0)   # the tee writes
+        self.later_statusline_install_takes_over()
+
+    def test_a_live_older_copy_is_said_once_and_left_drawing(self):
+        # context-guard installed, its copy rendering; statusline never installed
+        self.cg_copy(link=SL_HOOKS)
+        self.plugin_records("statusline-hub", "context-guard")
+        before = self.raw()
+        for _ in range(3):
+            self.assertEqual(self.session(sl=False), before)
+            self.assertIn(FOOTER, self.render()[0])
+            self.assertNeverYielded()
+        self.assertEqual(len(self.messages), 1, self.messages)
+        msg = self.messages[0]
+        self.assertIn("older copy of the statusline footer", msg)
+        self.assertIn("context-guard", msg)
+        self.assertIn(f"/plugin install statusline@{MKT}", msg)
+        self.assertIsNone(self.hub_state())
+        self.assertTrue(os.path.isfile(os.path.join(self.hub_data,
+                                                    "footer-copy-notice.json")))
+        self.later_statusline_install_takes_over()
+        self.assertIn("took over the status line slot", " ".join(self.messages))
+
+    def test_a_dangling_link_while_its_plugin_is_recorded_is_not_taken(self):
+        # context-guard mid-update: recorded, its current-hooks link dangling
+        cg = self.cg_copy(link=os.path.join(self.cfg, "gone", "hooks"))
+        self.plugin_records("statusline-hub", "context-guard")
+        before = self.raw()
+        for _ in range(2):
+            self.assertEqual(self.session(sl=False), before)
+        self.assertEqual(self.messages, [])
+        self.assertIsNone(self.hub_state())
+        # its own SessionStart re-links it: a live copy, said once
+        os.remove(os.path.join(cg, "current-hooks"))
+        os.symlink(SL_HOOKS, os.path.join(cg, "current-hooks"))
+        self.assertEqual(self.session(sl=False), before)
+        self.assertEqual(len(self.messages), 1, self.messages)
+        self.assertIn("older copy of the statusline footer", self.messages[0])
+
+    def test_unreadable_install_records_change_nothing(self):
+        self.cg_copy()
+        for raw in ("{not json", None):
+            with self.subTest(records=raw):
+                p = os.path.join(self.cfg, "plugins", "installed_plugins.json")
+                if raw is None:
+                    if os.path.exists(p):
+                        os.remove(p)
+                else:
+                    self.plugin_records(raw=raw)
+                before = self.raw()
+                for _ in range(2):
+                    self.assertEqual(self.session(sl=False), before)
+                self.assertEqual(self.messages, [])
+                self.assertIsNone(self.hub_state())
 
     def test_a_removed_footer_stays_removed(self):
         self.write_json(self.user, BOTH_ON)

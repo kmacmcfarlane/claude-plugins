@@ -12,8 +12,9 @@ remove, replace). Both write settings only through write_settings().
   installed it; or the same under the claude-kit- or context-guard- data dir,
   where older copies of that footer lived): taken over only once the
   statusline plugin has registered itself as a hub display hook (a trusted
-  hooks.d/statusline.json of kind display), so the footer keeps drawing - see
-  session_start.py.
+  hooks.d/statusline.json of kind display), so the footer keeps drawing; or,
+  with no statusline install recorded, once the copy's own plugin is gone
+  (footer_copy names it) - see session_start.py.
 - Anything else is foreign: never modified without the user's explicit consent
   (the installer's --replace, or its --wrap).
 
@@ -87,6 +88,10 @@ _SHAPE = r'\s*python3\s+"?(?:[^"\\]|\\.)*/plugins/data/{}-[^/"]+/current-hooks/{
 OWN_RE = re.compile(_SHAPE.format(re.escape(PLUGIN), re.escape(SCRIPT)))
 STATUSLINE_RE = re.compile(_SHAPE.format(
     "(?:" + "|".join(map(re.escape, FOOTER_HOMES)) + ")", re.escape("statusline.py")))
+# The same shape, capturing the script's path and the plugin whose data dir it is in.
+_COPY_RE = re.compile(
+    r'\s*python3\s+"?((?:[^"\\]|\\.)*/plugins/data/('
+    + "|".join(map(re.escape, FOOTER_HOMES)) + r')-[^/"]+/current-hooks/statusline\.py)"?\s*')
 
 MARKER = "owner.json"
 MARKER_V = 1
@@ -679,6 +684,18 @@ def classify(entry):
     if STATUSLINE_RE.fullmatch(cmd):
         return "statusline"
     return "foreign"
+
+
+def footer_copy(entry):
+    """(owning plugin, script path) for a statusLine value classify() calls
+    'statusline': the FOOTER_HOMES plugin whose data dir the entry runs
+    from, and the current-hooks/statusline.py path it runs (shell escapes
+    undone). None for anything else."""
+    cmd = entry.get("command") if isinstance(entry, dict) else None
+    m = _COPY_RE.fullmatch(cmd) if isinstance(cmd, str) else None
+    if not m:
+        return None
+    return m.group(2), re.sub(r"\\(.)", r"\1", m.group(1))
 
 
 def enabled_for(settings, plugin):

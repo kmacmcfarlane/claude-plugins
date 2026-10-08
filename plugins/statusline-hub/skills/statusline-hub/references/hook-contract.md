@@ -281,9 +281,15 @@ shows no health glyph. `order` and `disabled` name segment providers (§ 11) the
   the footer keeps drawing through it. The slot changes hands once: nothing moves it back.
   If an older session writes its stale settings back over the hub's entry, putting the
   footer's earlier entry there again, the next session repoints it at the hub too. Once
-  Claude Code's install records name the hub and no statusline install (it was
-  uninstalled), nothing will register, so the hub yields to that entry and says once whose
-  it is; while it cannot be sure, it waits.
+  Claude Code's install records name the hub and no statusline install, nothing will
+  register, and the hub never yields to that entry for good. When the plugin whose data
+  dir the entry runs from (statusline, context-guard or claude-kit) has no install record
+  and the entry's `current-hooks/statusline.py` does not resolve, the entry draws nothing,
+  so the hub takes the slot and says so once. While the entry still resolves it draws: the
+  hub says once that installing statusline lets it take over, and takes over when it does.
+  A recorded plugin whose link dangles is mid-update (its own SessionStart re-links it), so
+  the hub waits; while it cannot be sure (records it cannot read, or that do not name the
+  hub), it waits.
 - A registry refused as a whole (§ 4: the config dir inside a git work tree, or the hub
   dirs not private) runs no hooks, so it would draw no footer either; the hub's
   SessionStart says so once, naming the directory and the reason.
