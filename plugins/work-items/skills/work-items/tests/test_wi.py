@@ -2762,6 +2762,13 @@ class TestLint(WiTestCase):
             "record line": "learned: set " + self.ASSIGN_FAKE + " on the host",
             "backticked": "run `" + self.ASSIGN_FAKE + "` first",
             "after a comma": "two vars,FAKE_ID=fakefakefakefake",
+            "bold": "- note **" + self.ASSIGN_FAKE + "**",
+            "italic": "- note *" + self.ASSIGN_FAKE + "*",
+            "unspaced em dash": "- 2026-10-08 fixed\u2014" + self.ASSIGN_FAKE,
+            "blockquote": ">" + self.ASSIGN_FAKE,
+            "heading": "#" + self.ASSIGN_FAKE,
+            "full-width colon": "note\uff1a" + self.ASSIGN_FAKE,
+            "after a slash": "env/" + self.ASSIGN_FAKE,
         }
         for name, line in shapes.items():
             with self.subTest(shape=name):

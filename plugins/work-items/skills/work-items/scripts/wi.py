@@ -3216,14 +3216,14 @@ def cmd_import(args):
 
 # ── lint, archive ───────────────────────────────────────────────────────────
 
-# KEY=value anywhere a token starts: at line start (an `export ` prefix
-# included) or after whitespace or opening punctuation, so a bullet, date or
-# tag prefix ("- 2026-10-08 checkpoint: KEY=...") no longer hides it. The
-# value rule is the bare form's, unchanged: 8+ non-space characters, not a
-# $VAR, <placeholder> or {template}. A KEY glued to a word or a URL's ?/&
-# (a query string) is not a token start and stays unmatched, as before.
+# KEY=value anywhere a token starts: at line start or after any character
+# but a letter, digit, underscore, ? or &, so a bullet, date, tag, bold
+# (**KEY=...**), em dash or other prefix ("- 2026-10-08 checkpoint: KEY=...")
+# no longer hides it. The value rule is the bare form's, unchanged: 8+
+# non-space characters, not a $VAR, <placeholder> or {template}. A KEY glued
+# to a word, or after a URL's ? or & (a query string), stays unmatched.
 SECRET_ASSIGN_RE = re.compile(
-    r"(?:^|[\s(\[,;:|'\"`])[A-Z][A-Z0-9_]{2,}=(?![$<{])\S{8,}")
+    r"(?:^|[^A-Za-z0-9_?&])[A-Z][A-Z0-9_]{2,}=(?![$<{])\S{8,}")
 SECRET_KV_RE = re.compile(
     r"(?i)\b(api[_-]?key|secret|token|password|passwd|credential|webhook[_-]?url)\b"
     r"['\"]?\s*[:=]\s*['\"]?(?![$<{*])([A-Za-z0-9+/_.-]{12,})")
