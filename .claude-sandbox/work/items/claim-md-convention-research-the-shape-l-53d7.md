@@ -52,3 +52,6 @@ agent: reviewer a124f7bce7518dd69
 verdict: plan review 1 NEEDS_CHANGES (must-fix 11 at medium: per-interface definers, substance-only approval, external owners, seed done-when, MOVED? column, undeclared dev-flow soft dep, unfair framing of 186, 187 and 189, the splitting question unanswered, consult triggers untested; lows 12-16)
 correction: decisions 186, 187 and 189 were shown before their plan review and are framed unfairly per the review (dev-flow's best case missing, a safe name option missing, the pointer option for 189 dropped); 188 lacks the substance-only approval option. They are held for revised cards after the fix round; answers given meanwhile are read against the revised cards.
 dispatch: planner opus high — plan fix round 1 (resume a73b066060c1a0ca7)
+return: DONE series 01_review-fixes.md (F1-F16; R10 splitting rule; OQ4 rec now (b) pointer; four revised cards at the end of 01)
+baseline: plan review 2 — a6db4276282b7ffa553a17890ec8d9cd1b3edaf4b42eed59dd73501ce4695e97 .claude-sandbox/investigations/claim-md-convention-research-the-shape-l-53d7/00_initial.md; 53ec501c3d2cebabbbcf1d828cbd97af2314cded367a7b9217e08341b00e5af5 .claude-sandbox/investigations/claim-md-convention-research-the-shape-l-53d7/01_review-fixes.md; 
+dispatch: reviewer opus high — plan review 2 (resume a124f7bce7518dd69)

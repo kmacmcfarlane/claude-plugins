@@ -28,3 +28,7 @@ dispatch: planner opus high — spike plan
 - 2026-10-08 claimed by Kyle-McFarlane@2d49f8460283
 agent: planner af420e468ce5cb8bb
 correction: pushed a store-only commit (answers 184/185, waiver, dispatches) before the Report again; store pushes now wait for the next Report
+return: DONE_WITH_CONCERNS series 00_initial.md (inventory; worst gap statusline-hub waits silently, must precede a95a; two-form hint pattern since ~/.claude writes prompt; 11 follow-ups F1-F11; OQ1 adopt pattern + amend principle 4, OQ2 hide-all switch, OQ3 statusline silent, OQ4 checks in kit-dev/tests)
+baseline: plan review 1 — 4ff51f7372ea1c4a687e75e2fbf697d655aeac46578655c28a47cd01fb817520 .claude-sandbox/investigations/spike-how-much-inter-plugin-dependency-i-72ef/00_initial.md; 
+dispatch: reviewer opus high — plan review 1
+agent: reviewer a86526c62ee89cf6b
