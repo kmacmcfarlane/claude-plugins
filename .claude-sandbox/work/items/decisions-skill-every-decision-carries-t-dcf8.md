@@ -3,12 +3,11 @@ id: decisions-skill-every-decision-carries-t-dcf8
 title: "decisions skill: every decision carries the inputs needed to act on it where shown"
 short_display_name: decisions carry every needed input
 type: spike
-status: doing
+status: done
 priority: 1
-owner: Kyle-McFarlane@2d49f8460283
-claimed: 2026-10-08T04:57Z
 created: 2026-10-06
 updated: 2026-10-08
+closed: 2026-10-08
 refs:
   - operator 2026-10-06, decision 160
 ---
@@ -47,3 +46,6 @@ dispatch: planner opus high — plan fix round 3 (resume aa442cae2c2859ccd)
 return: DONE series 03_generic-ruling-and-stub.md (date-cited ruling; stub with when to read; INDEX)
 baseline: plan review 4 — 67c3fb20872d5c39b02a284c7e7fc91643db3702dd75cbb64e32b7a9c1d3fabd .claude-sandbox/investigations/decisions-skill-every-decision-carries-t-dcf8/00_initial.md; 93fa365fc35a1b1b48f130a7e21e1923f16b14b1d8056307ca8baea67707ea4f .claude-sandbox/investigations/decisions-skill-every-decision-carries-t-dcf8/01_review-1-fixes.md; b7d1b8c732fbf9be6ea706f16720bd0487b6c273f9428b6bd79d7c55fd612114 .claude-sandbox/investigations/decisions-skill-every-decision-carries-t-dcf8/02_rulings-move.md; 79cc867e1b888cbfe3789769719c1aa4eaff1ffa4d2227dc4816d932aade61a7 .claude-sandbox/investigations/decisions-skill-every-decision-carries-t-dcf8/03_generic-ruling-and-stub.md; 
 dispatch: reviewer opus high — plan review 4 (resume a40143babb8d3fe90)
+verdict: plan review 4 CLEAR (must-fix 0; nit: INDEX base and word estimate stale, carried into the build)
+note: spike closed on its series .claude-sandbox/investigations/decisions-skill-every-decision-carries-t-dcf8/ (00-03); the build is filed as its own item and waits on decision 184
+- 2026-10-08 done
