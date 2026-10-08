@@ -38,3 +38,6 @@ baseline: plan review 2 — ef77493b63a68ee08bf7cf9e15675429bf5b0b0db8fb6b90cafb
 dispatch: reviewer opus high — plan review 2 (resume a3d9552bce742b04d)
 verdict: plan review 2 NEEDS_CHANGES (must-fix 1, down from 2: exit 1 also means a rejected front-matter value or a missing store, and the reword loop is unbounded; low: probe-127 Next wording)
 dispatch: planner opus high — plan fix round 2 (resume ab90561988a81d4b4)
+return: DONE series 02_exit-1-routing.md (text <n>: refusal prefix; one reword; other exit 1 routes to Aware of; probe Next wording)
+baseline: plan review 3 — ef77493b63a68ee08bf7cf9e15675429bf5b0b0db8fb6b90cafb8f0772da7c8a .claude-sandbox/investigations/wi-note-append-a-notes-line-under-lock-a-6cfb/00_initial.md; 55f8d3c7113066e5b04055b0e0f23c33b6a2d4f174a3ec26a87d45d3f25bd05f .claude-sandbox/investigations/wi-note-append-a-notes-line-under-lock-a-6cfb/01_plan-review-1-fixes.md; 5dec4ec4468dad2fdaa92bcb2e915326fc81e200b173a1d2b8fe17b2978b5c1a .claude-sandbox/investigations/wi-note-append-a-notes-line-under-lock-a-6cfb/02_exit-1-routing.md; 
+dispatch: reviewer opus high — plan review 3 (resume a3d9552bce742b04d)
