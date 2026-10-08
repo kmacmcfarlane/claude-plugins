@@ -27,3 +27,11 @@ dispatch: planner opus high — plan (6cfb landed; same checkpoint skill)
 ## Notes
 - 2026-10-08 claimed by Kyle-McFarlane@2d49f8460283
 agent: planner a13074c58b80d96b7
+return: DONE_WITH_CONCERNS series 00_initial.md (act on drafts, one echo line with an override reply, ask only at four forks, as text; transcript count: continue drafts accepted 7/7, handoff/land 2/5; counter recommended against; stop_relay.py:78 phrase)
+baseline: plan review 1 — 41740db45a4c405017eeb427fab2944a8dd50dd28aa157379bb1a82384ba1c3b .claude-sandbox/investigations/checkpoint-step-0-act-on-the-drafted-def-9652/00_initial.md; 
+dispatch: reviewer opus high — plan review 1
+decision 196: Should the checkpoint stop asking its three opening questions and act on its own drafts, telling you in one line what it did (with a reply that changes it), asking first only when there is a real choice? — options: (a) yes, as the operator-attention session relayed [recommended] | (b) no, keep asking every time | (z) decide later
+  raised: 2026-10-08T07:32Z
+  why ask: trust — the request reached here relayed, and it changes a default for every checkpoint you attend
+  what: today a checkpoint asks mode (continue or handoff), what is in flight, and how to handle the window, each with a drafted answer. Under (a) it acts on the drafts and its last message opens with "Acted on: <mode> · in flight: … · window: … — to change: /checkpoint <mode> — 2: … 3: …". It asks first only when continue vs handoff is unclear, agents are running, an in-flight line is uncertain, or the drafted guidance would drop a refusal or a hold. Your transcripts since 2026-08-31: continue drafts were accepted 7 of 7 times; handoff drafts 2 of 5 (each override was to continue)
+  impact: Effect → checkpoints stop interrupting you with three questions you almost always accept · Wait: blocks the build · reach: every checkpoint in every repo · undo: easy, restore the questions · cost: none
