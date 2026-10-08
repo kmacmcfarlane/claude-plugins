@@ -375,7 +375,7 @@
           "cost": "The guide screenshots look dated until they are retaken, about an hour."
         }
       },
-      "evidence": "Checked: nothing in the site's build or its pages reads the accent colour except the theme file, so a change is one line there (`theme/colors.toml`). Checked: both colours pass the contrast check against the light and the dark background. Not checked: what readers prefer; no survey of them exists.",
+      "evidence": "Checked: nothing in the site's build or its pages reads the accent colour except the theme file, so a change is one line there (`theme/colors.toml`). Checked: both colours pass the contrast check against the light and the dark background. Observed: the screenshots in the guides show the blue, so a switch to green leaves them dated until they are retaken, about an hour's work. Not checked: what readers prefer; no survey of them exists.",
       "detail": {
         "context": [
           "Building in CI ([[41]], option b) applies the site's theme afresh, so the accent colour (the colour of links and headings) can change at no extra cost. The site is blue today; the logo is green. Either colour is one theme setting, a single line in the site's theme file, so it is easy to change back, and both pass the contrast check in the light and dark themes. You pick which the site uses.",

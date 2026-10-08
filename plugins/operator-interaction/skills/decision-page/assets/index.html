@@ -7,8 +7,9 @@
    map and a closed card its effect, an open card its Impact line, the Options in full fold its
    Impact table. Inside a card the essentials are flat (Context, Impact line, TLDR, options,
    follow-ups, words, recommendation); background, options in full, dependencies and evidence
-   sit in folds. Click any part, above or inside a fold, for more detail and again for full
-   detail (each level replaces the part's text; a third click goes back to the summary); More
+   sit in folds. A part with a more-detail button, above or inside a fold, steps to more detail
+   on a click and again to full detail (each level replaces the part's text; the next click goes
+   back to the summary); the Impact table and the static lines do not step. More
    beside an option shows it in full. Decision references ([[N]]) are slugs that open the referenced
    decision in a popup. All content comes from cards.json beside this page; answers go to the
    db collection "answers", one document per decision number. */
@@ -191,7 +192,7 @@ footer{color:var(--muted);font-size:.85rem;max-width:70ch}
   <header>
     <h1 id="title">Decision answers</h1>
     <p class="lede" id="lede"></p>
-    <p class="lede">For each decision, pick one option or one follow-up (the radio buttons allow only one), and add your words if you like. Each click saves at once; there is no submit button. Tell Claude in chat when you're done. A <span class="slug-t">number · name</span> is a decision: hover or click it to see that decision. Each line shows what the recommendation changes after an arrow (→); each card opens on its Context (the terms it uses and what is decided), then its impact, a TLDR and one line per option; the folds under it go from compressed to full detail, the full impact table first. Click any part, above or inside a fold, for more detail, and again for full detail; <b>More</b> beside an option shows it in full.<span id="doclink"></span></p>
+    <p class="lede">For each decision, pick one option or one follow-up (the radio buttons allow only one), and add your words if you like. Each click saves at once; there is no submit button. Tell Claude in chat when you're done. A <span class="slug-t">number · name</span> is a decision: hover or click it to see that decision. Each line shows what the recommendation changes after an arrow (→); each card opens on its Context (the terms it uses and what is decided), then its impact, a TLDR and one line per option; the folds under it go from compressed to full detail, the full impact table first. A part with a <i>more detail</i> button, above or inside a fold, shows more detail when you click it or its text, and full detail on a second click; <b>More</b> beside an option shows it in full.<span id="doclink"></span></p>
     <div class="bar">
       <span class="count" id="count">loading decisions…</span>
       <span class="meter" aria-hidden="true"><i id="meterfill"></i></span>
@@ -353,7 +354,14 @@ function line(label,text){return text?'<p class="extra"><strong>'+esc(label)+'</
    text, so an entity other than &amp; ends it and a quote never reaches the href; trailing punctuation
    stays outside. A slug's button is left alone, so no link nests in it */
 const LINK=/https:\/\/(?:[^\s<&]|&amp;)+/g;
-const linkOne=h=>h.replace(LINK,m=>{const u=m.replace(/[.,;:!?)\]]+$/,"");return '<a href="'+u+'" target="_blank" rel="noopener">'+u+'</a>'+m.slice(u.length)});
+/* trailing punctuation off, one mark at a time; a closing bracket stays when the URL opened it (…/Foo_(bar)) */
+const nOf=(s,ch)=>s.split(ch).length-1;
+const trimUrl=u=>{for(;;){const ch=u.slice(-1);
+  if(!ch)return u;
+  if(ch===")"||ch==="]"){if(nOf(u,ch===")"?"(":"[")>=nOf(u,ch))return u}
+  else if(!".,;:!?".includes(ch))return u;
+  u=u.slice(0,-1)}};
+const linkOne=h=>h.replace(LINK,m=>{const u=trimUrl(m);return '<a href="'+u+'" target="_blank" rel="noopener">'+u+'</a>'+m.slice(u.length)});
 const linkify=h=>h.split(/(<button\b[^>]*>[\s\S]*?<\/button>)/).map((p,i)=>i%2?p:linkOne(p)).join("");
 const fmtD=s=>linkify(fmt(s));
 

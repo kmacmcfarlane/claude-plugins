@@ -21,11 +21,14 @@ first); this file sets only the layout.
   `Rec (b) · basis strong — reason · unknown: …`. A card with
   `blocks` (every card, now) also gets the Impact table: a row per option, then the Wait row;
   Effect, Reach, Undo, Cost.
-- A doc cannot toggle a level, so the visible parts above are at their summary, with Why now
-  and Why ask at their top level (their high in `detail` when they have one). After the rec
-  line, a **More detail** sub-heading carries the other fold parts at their top level: each
-  option in full with its Effect, Reach, Undo and Cost, Depends on, and the Evidence with its
-  paths and links. That is the card-in-all measure of `references/cards-schema.md` § Size.
+- A doc cannot toggle a level, so each part shows one rendition. **Context** is at its top
+  level, its high in `detail` when it has one: that high holds the facts a cold reader has
+  lost (`references/cards-schema.md` § A card, `detail`), and a doc reader has no click to
+  reach it. The Impact line, the TLDR and the rec line are at their summary; Why now and Why
+  ask at their top level. After the rec line, a **More detail** sub-heading carries the other
+  fold parts at their top level: each option in full with its Effect, Reach, Undo and Cost,
+  Depends on, and the Evidence with its paths and links. That is the card-in-all measure of
+  `references/cards-schema.md` § Size, with Context at its high.
 - Then a tick box per option, in letter order, the recommended one in bold, each with its
   impact: `☐ **(b) Publish from CI** — removes the one-machine dependency`.
 - When the card has `act`, after the option tick boxes: **To act on (x):** with its numbered

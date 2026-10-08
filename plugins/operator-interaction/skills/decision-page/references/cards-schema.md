@@ -117,7 +117,8 @@ and a part with no entry has no toggle. Every part opens at its summary.
   line, `act`, the popup or a slug.
 - `context`: Context at more detail, under the same label. Its high holds the facts a cold
   reader has lost (the decisions block's *Context you may have lost*: what was tried, what was
-  answered before, where a list or number came from).
+  answered before, where a list or number came from). The tick-box doc, which cannot toggle,
+  shows Context at its high (`references/fallback.md`).
 - `impact`: facet objects, shown one facet a line (→ effect, later, reach, undo, cost), in the
   decisions skill's one vocabulary; `effect` required, the rest optional text.
 - `tldr`: lists of bullets, with no recommendation at any level (the check refuses one, as it

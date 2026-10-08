@@ -6,7 +6,7 @@ description: "Put a set of decisions to the operator as an answer page: a publis
 # Decision page
 
 A set of decisions on one page the operator works through at their own pace: each card flat
-on its essentials with folds for the rest; a click on any part shows it in more detail, and
+on its essentials with folds for the rest; a click on a part with a more-detail button shows it in more detail, and
 **More** beside an option shows that option in full; one choice per card enforced by the radio buttons,
 answers saved as they click. You publish it, they answer, you read the answers back and hand
 them to your caller. The format first served a 24-decision set on how decisions are handled.

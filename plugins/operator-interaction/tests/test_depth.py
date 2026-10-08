@@ -386,6 +386,22 @@ class DecisionPageDepth(unittest.TestCase):
             self.assertNotIn("<a ", x["f"])
             self.assertNotIn("<a ", x["p"])
 
+    def test_a_closing_bracket_the_url_opened_stays_in_the_link(self):
+        probes = [
+            "see https://en.wikipedia.org/wiki/Foo_(bar).",
+            "(see https://en.wikipedia.org/wiki/Foo_(bar))",
+            "(https://a.example.com/p).",
+            "https://a.example.com/x[1]",
+            "[https://a.example.com/y]",
+        ]
+        r = node(LINK_HARNESS, probes)
+        a = lambda u: '<a href="%s" target="_blank" rel="noopener">%s</a>' % (u, u)
+        self.assertIn(a("https://en.wikipedia.org/wiki/Foo_(bar)") + ".", r[0]["d"])
+        self.assertIn(a("https://en.wikipedia.org/wiki/Foo_(bar)") + ")", r[1]["d"])
+        self.assertIn("(" + a("https://a.example.com/p") + ").", r[2]["d"])
+        self.assertIn(a("https://a.example.com/x[1]"), r[3]["d"])
+        self.assertIn("[" + a("https://a.example.com/y") + "]", r[4]["d"])
+
     def test_links_in_levels_and_folds_never_in_summaries_or_static_parts(self):
         url = "https://z.example.com/doc"
         d = example()
@@ -487,7 +503,7 @@ class DepthRunner(unittest.TestCase):
         for k in ("why", "whyask", "evidence", "o"):
             d["cards"][1]["detail"].pop(k)
         d["cards"][1]["why"] = d["cards"][1]["why"] + " " + " ".join(["more"] * 50)
-        d["cards"][1]["evidence"] = d["cards"][1]["evidence"] + " " + " ".join(["more"] * 30)
+        d["cards"][1]["evidence"] = d["cards"][1]["evidence"] + " " + " ".join(["more"] * 50)
         for o in d["cards"][1]["o"][:2]:
             o[1] += " " + " ".join(["more"] * 10)
         self.clean(d)

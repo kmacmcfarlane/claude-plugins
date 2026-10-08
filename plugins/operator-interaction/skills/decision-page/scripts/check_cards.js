@@ -112,7 +112,7 @@ function depth(c, say) {
     else if (ow > 180) say("opt " + k, "depth: (" + k + ")'s detail is " + ow + " words (its fullest text and its blocks row): keep it near 60–120");
   }
   const ev = words(topOf(c.evidence, levelsOf(c, "evidence")));
-  if (c.basis !== "none" && ev < 40) say("ev", "depth: evidence is " + ev + " words at its fullest: give the basis drill-down near 150, what was observed, inferred and assumed, with the paths and links behind each; or leave it knowingly");
+  if (c.basis !== "none" && ev < 60) say("ev", "depth: evidence is " + ev + " words at its fullest: give the basis drill-down near 150, what was observed, inferred and assumed, with the paths and links behind each; or leave it knowingly");
   else if (ev > 225) say("ev", "depth: evidence is " + ev + " words at its fullest: keep it near 150");
   /* the card in all: the flat part and Context at their summary, the fold parts at their top level, each option's impact; not act */
   const all = words(flat(c)) + words(c.context) + bg + ev + optWords;
