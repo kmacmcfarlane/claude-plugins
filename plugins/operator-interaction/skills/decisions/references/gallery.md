@@ -578,3 +578,61 @@ that closes the message still carries every list line, card and block.*
 *Not this: a row that reads "decision 47: Delete the snapshot? — rec (a)" with nothing after
 it. Whether (a) frees space or breaks a restore is what the operator weighs, and the row is
 the one place they may look.*
+
+---
+
+## 27. An option the operator carries out
+
+*Situation: a fix to the staging site's sign-in is merged. The automated tests sign in with a
+test account, which skips the real sign-in path, so one check needs a real account in the
+operator's own browser — something only they can do. Whatever (a) asks of them is on the
+card, in its **To act on (a):** part.*
+
+**86 — Run the staging sign-in check from your own browser?**
+**Impact:** → we know today whether sign-in works for a real account, and the fix can go out · later: the sign-in fix stays unreleased · reach: you, about 5 minutes; the staging site only · undo: nothing to undo — the check only reads
+**What:** a one-off check that the fixed sign-in works with a real account on the staging site. It needs the signed-in session in your everyday browser, which I cannot reach.
+**Why now:** the fix waits on this check before it is released.
+**Why ask:** only you can run it, and it takes your time.
+- **(a) Run it now** — *about 5 minutes of your time; the fix goes out today if it passes · reach: the staging site only*
+- (b) Release on the automated tests alone — *no time from you · reach: everyone who signs in, if the fix is wrong · undo: a revert release*
+- (z) Decide later — *it waits; the fix stays unreleased*
+
+**To act on (a):**
+1. Sign in at `https://staging.example.com/login` in the browser you use every day.
+2. In a terminal on the same machine, run `/opt/checks/staging-sign-in/run.sh --browser-profile default`. It reads that browser's session and opens each page behind sign-in.
+3. When it asks which pages to try, paste:
+
+   ```
+   account billing settings
+   ```
+
+4. Tell me the last line it prints: `3 of 3 pages signed in`, or which pages failed.
+
+Rec **(a)** · basis **strong** — *the automated tests' account skips the real sign-in path* · unknown: none
+
+*Not this: "(a) run it — from the check folder, paste the prompt, tell me; I'll give you the
+steps". The folder is never located, the prompt is never shown and the steps are deferred:
+the operator has to ask where the files are before they can start.*
+
+---
+
+## 28. A card that summarises a plan
+
+*Situation: a cleanup plan the operator has not read sorts its work into levels. The card
+says what each option removes, in words; the plan's label trails as a tag at most, for when
+the operator opens the plan.*
+
+**87 — How far should the docs cleanup reach this week?**
+**Impact:** → the docs build passes again; the pages that cite the retired guide stay as they are · later: the link checker keeps failing the docs build · reach: the docs site and its readers · undo: one revert
+**What:** how much of the docs cleanup to do now: only the broken links and the unused images, or also the pages that still cite the retired setup guide.
+**Why now:** the link checker fails the docs build on the broken links.
+**Why ask:** (b) rewrites pages three other teams own; whether that goes in this week is yours to weigh.
+- **(a) Remove the broken links and the unused images** (level 1 in the cleanup plan) — *the docs build passes again · reach: 40 pages, no wording changed · undo: one revert*
+- (b) Also rewrite the pages that cite the retired guide (level 2 in the plan) — *those 12 pages point at the current guide; about a day, and their owners review the wording · reach: three teams' pages · undo: one revert*
+- (z) Decide later — *it waits; the docs build keeps failing on the broken links*
+
+Rec **(a)** · basis **strong** — *ran the link checker: every failure is a broken link or a missing image* · unknown: none
+
+*Not this: What: "L2, the cleanup scope", with options "(a) level 1 only" and "(b) level 1
+plus wording". The operator never read the plan those labels come from, and neither option
+says what happens if it is chosen.*

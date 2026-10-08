@@ -16,7 +16,8 @@ Five traditions outside software converge on a minimum every decision carries, a
 
 - **Completed staff work** (military staff doctrine): the decider must be able to approve or
   disapprove from the document alone, with no further work
-  (en.wikipedia.org/wiki/Completed_staff_work). The doctrine states no exceptions.
+  (en.wikipedia.org/wiki/Completed_staff_work; *secondhand*, a reference page). The doctrine
+  states no exceptions.
 - **Informed-consent materiality** (*Canterbury v. Spence*, D.C. Cir. 1972, primary case
   text): a fact must be disclosed when a reasonable person in the decider's position would
   weigh it. Brevity does not excuse dropping it.
@@ -38,6 +39,48 @@ not answer.
 More detail is **not** shown to help in itself: the Cochrane review excluded the detailed-vs-
 simple comparisons for lack of a usual-care control, and no single decision-aid attribute
 reliably predicts effectiveness. Content completeness is the variable, not length.
+
+## Everything to act on, on the card
+
+The operator's asks, on two cards they could not act on from where they were shown: "A
+decision should have all the MUST-HAVE inputs the decider needs to make the decision"
+(2026-10-06), on a card that asked them to run a check without saying where its files were
+or what to paste; and "Before this decision was shown, it should have included …"
+(2026-10-07), on a card whose options were named by labels from a plan they had not read —
+what those labels stood for. The floor was written for understanding and answering a
+decision, not for carrying out an option the operator performs; its gloss rule covered ids
+and names, not terms or a source document's labels.
+
+- **Completed staff work, its second half.** The decider approves or disapproves from the
+  document alone, "with no further work" (§ The floor; *secondhand*, a reference page). The
+  floor had made a rule of the first half only. What it takes to act is the second, and the
+  cold read is the acceptance test the research behind this skill proposed for every card:
+  could a decider with no prior context approve or disapprove from this alone? It is
+  extended here from approving to carrying out.
+- **The decision memo encloses what is signed.** A U.S. Army decision memorandum states its
+  recommendation as the thing the principal signs, and tabs that item first among its
+  enclosures (AR 25-50, *Preparing and Managing Correspondence*, para 4-4,
+  https://armypubs.army.mil/epubs/DR_pubs/DR_a/ARN42124-AR_25-50-007-WEB-13.pdf;
+  *secondhand*, via an earlier research pass). The **To act on** part is its analogue: what
+  the operator acts on is on the card, not to be fetched. By analogy only: no source found
+  covers a decision whose option the decider performs, with paths, commands and text to
+  paste.
+- **Observed in practice.** Cards and the one-line digests of open decisions leaned on
+  labels a cold reader could not resolve: a plan's step and tier names, short ids, rules
+  named by a section number. One card promised its steps for a later turn, and its command
+  held a fill-in placeholder.
+- **Why inputs get a part and terms do not.** Inputs are long, structured and checkable
+  (steps, commands, text to paste): a part of their own keeps them out of the option line,
+  gives a store one line to keep them on, and gives an answer page one field to check. A
+  term is best said in its place, in the words it stands for; a glossary part would be one
+  more thing to store and render, and a pointer to the source is not a definition. These are
+  the reasons behind the two rulings (`references/rulings.md`, **Inputs to act** and
+  **Terms defined where shown**).
+- **Why a cold read and not a scanner.** Whether a reader knows a term is not decidable by a
+  program, and a card composed in chat would have to be written out to be scanned on every
+  raise. The decidable parts — a fill-in placeholder, an `act` field's shape on the page, the
+  worked examples staying free of both failures — are checked by the page and the tests; the
+  rest is the cold read.
 
 ## Exceptions
 

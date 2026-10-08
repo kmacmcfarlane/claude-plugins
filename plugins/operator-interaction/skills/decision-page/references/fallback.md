@@ -22,6 +22,8 @@ first); this file sets only the layout.
   Undo, Cost.
 - Then a tick box per option, in letter order, the recommended one in bold, each with its
   impact: `☐ **(b) Publish from CI** — removes the one-machine dependency`.
+- When the card has `act`, after the option tick boxes: **To act on (x):** with its numbered
+  steps, as the card gives them, per option that has them.
 - Then a tick box per follow-up, with its placeholder: `☐ later [when]`, `☐ tell me [what]`,
   `☐ expand`, `☐ dig into [what]`, `☐ you decide`, `☐ drop`.
 - Then a line for the operator's words: `Your words:` with space to write.

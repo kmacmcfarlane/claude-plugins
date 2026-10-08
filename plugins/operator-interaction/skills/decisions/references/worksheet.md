@@ -2,7 +2,7 @@
 
 Fill this in for each decision before you write it. You juggle the dimensions; the operator
 sees only what they produce: a level, an answer mode, a place in the order, a basis word, a
-card shape and the Impact line (§ The Impact line). Each group answers one question and sets one thing — merging them into one vague
+card shape, what it takes to act, and the Impact line (§ The Impact line). Each group answers one question and sets one thing — merging them into one vague
 "type" of decision is what loses information.
 
 ## A — Who is reading, and how warm are they? → how much to re-explain
@@ -114,6 +114,19 @@ after; otherwise it is asked.
 | Class | one of the caller's class names, or none when the caller names none | the caller's rules; you pick at birth |
 | Why ask | what would go wrong if you took your recommendation alone; with no recommendation, why the call is not yours | you |
 
+## F — What does the operator need in hand? → the card's terms and its To act on part
+
+| Field | Values | Who can supply it |
+|---|---|---|
+| Source | the document or session the decision comes from (a plan, a review, a run's record), and whether the operator has read it | you |
+| Terms | each label, number, acronym or term of art the card would use that the operator has not used themselves, and the words each stands for | you, from the source |
+| Operator actions | per option: what the operator must do to carry it out, or *answer only* | you |
+| Inputs | per such option, what SKILL.md § The floor, what it takes to act, requires (its specifics: `references/rendering.md` § Card, To act on) | you; the caller, where it keeps the files |
+
+Warm on the decision is not warm on its source's words: group A measures the first only. A
+reader who answered the decision before this one may never have read the plan whose labels
+its options would use.
+
 ## The Impact line — from the groups above
 
 Fill it last, from what the groups produced, in plain words for the operator. The facets and
@@ -129,3 +142,16 @@ how each view shows them are in `references/rendering.md` § Impact.
 
 Write it when the decision is raised, and store it with the card where the caller keeps one,
 so every later view reads it instead of composing it again.
+
+## The cold read
+
+The self-check, run on each card or block after it is written and before it goes out. Read
+only the card, as someone who has seen nothing else, and for each option ask:
+
+1. Can you say what it means and what happens if it is chosen, without opening anything?
+2. If the option is the operator's to carry out, does the card meet SKILL.md § The floor,
+   what it takes to act, from the card alone?
+
+Then check every label, number or acronym on it against SKILL.md § The floor, item 1: defined
+where it first appears, or replaced by its words. A card that fails is fixed before it is
+raised, not after the operator asks.

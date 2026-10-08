@@ -117,6 +117,8 @@ the effect slot; the wait and basis slots stay, since the floor needs them:
   operator's zone when you know it, with the relative time and when you wrote it: *storage
   lease lapses ~17:45 (90 min from 16:15)*. With the zone unknown, say which: *17:45 UTC*.
   The wait slot says what happens at it.
+- A line never stands in for a card with a **To act on** part: a decision whose option asks
+  the operator to act is at least a card (SKILL.md § Levels, the line-only rule).
 - In a message where other decisions are rendered above the list, a line with nothing above
   it ends *(line only)*, so the operator knows `expand` exists for it. A line whose card was
   seen and is unchanged ends *(shown before)*; one held back by paging ends *(expand for the
@@ -138,6 +140,10 @@ Example:
 - (a) Option — *effect · reach: … · undo: …, as this option needs*
 - **(b) Option** — *effect · reach: … · undo: …*
 - (z) Decide later — *what waiting costs; at a deadline, what happens then*
+
+**To act on (b):** *(only for an option that asks the operator to act)*
+1. step, with its `/…` path or whole command in `code`
+2. …
 
 Rec **(b)** · basis **word** — *one-clause reason* · unknown: what isn't known, or none
 ```
@@ -163,6 +169,27 @@ Rec **(b)** · basis **word** — *one-clause reason* · unknown: what isn't kno
   card, the cue is stored with it, and a block's lost-context facts with it. With no store,
   keep it with your notes on the decision; with nowhere to keep it, show it on the card at
   its first showing too, cold reader or not, so a re-show copies it from that message.
+- **To act on (x):** after the options and before the Rec line, on a card where an option
+  asks the operator to act (SKILL.md § The floor, what it takes to act). This bullet is
+  where its specifics live:
+  - one part per option that asks the operator to act, headed with its letter; numbered
+    steps;
+  - each file and directory by a `/…` path, reachable from where the operator will act for
+    as long as the decision is open (never a session's scratch space that goes away; a
+    `~/` path depends on the account they act from, so it does not count);
+  - each command whole, copyable as it stands, with nothing to fill in: no `<word>`
+    placeholder, no "your path here";
+  - the text to paste inline, in a fenced block, when it is short; when it is long, the
+    `/…` path of the file that holds it and what it does;
+  - each URL in full;
+  - a secret by where it is kept, never its value;
+  - never "I'll give you the steps": the steps are on the card.
+
+  **Stored with the card** where the caller keeps one, so a re-show renders it rather than
+  composing it again. A step's multi-line text is stored on one physical line, its line
+  breaks written ` / ` (as a store's answer lines write a reply's), or as the `/…` path of
+  a file that holds it — the file form whenever the text itself holds ` / `, since nothing
+  in a stored line is escaped. A re-show renders it back as a fenced block.
 - An ask for another round adds two lines after **Why ask:** and any **Context:** —
   **If left:** *each leftover finding, and what it would break* and **A round costs:** *the
   time, the quota, and your attention: this answer, and another if the round does not settle
@@ -191,6 +218,9 @@ Rec **(b)** · basis **word** — *one-clause reason* · unknown: what isn't kno
 **Why ask:** *class* — …
 **Context you may have lost:** the card's context cue, then the two or three facts a cold reader needs.
 
+**To act on (b):** *(only for an option that asks the operator to act, as on a card)*
+1. …
+
 Rec **(b)** · basis **partial** — *reason*
 *Basis:* observed — … (link) · inferred — … · unknown — …
 *If you pick (a), I'll repeat it back and act only once you confirm: it can't be undone.*
@@ -201,7 +231,8 @@ Rec **(b)** · basis **partial** — *reason*
   with the columns Effect, Reach, Undo and Cost. Only the recommended option's row label is
   bold. The table takes the place of a section per option.
 - The opening lines under it run **What:**, **Why now:**, **Why ask:**, **Context you may
-  have lost:**, then a round ask's **If left:** and **A round costs:**.
+  have lost:**, then a round ask's **If left:** and **A round costs:**, then any
+  **To act on (x):** part, before the Rec line (§ Card).
 - A block **includes** the basis drill-down (the tags and links). `expand` on a block is
   answered: *already at full detail — `tell me [what]` for something specific?*
 - The read-back line (⚠ blocks only) names the one-way option(s). A block for a wide
@@ -319,7 +350,7 @@ raising, and the re-show is itself a showing the caller records. Composing the c
 from memory can shift the letters or the recommendation, and the operator would answer an
 (a) that is not the (a) they read. Before rendering, check the stored card against now: a floor field it lacks, or
 one events have made false — a *why now* that no longer holds, an Impact facet that no
-longer holds, a basis word the rule (`references/evidence-basis.md`) no longer gives — is a
+longer holds, an input path that no longer resolves, a basis word the rule (`references/evidence-basis.md`) no longer gives — is a
 revision. **A stored card without an Impact line** is backfilled the same way, from its
 recommended option's impact and its (z) line (and any older stakes words, for reach and
 undo), each facet no record holds written *not recorded*, and stored as a revised card

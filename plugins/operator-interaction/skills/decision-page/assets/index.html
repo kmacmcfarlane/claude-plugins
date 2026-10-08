@@ -111,6 +111,8 @@ legend{margin-bottom:4px}
 .ot .pill{margin-left:.4em;font-weight:400}
 .oi{grid-column:2;font-size:.86rem;color:var(--muted)}
 details.more{margin:0 12px 9px 38px;font-size:.86rem}
+.act{margin:0 12px 9px 38px;font-size:.86rem;max-width:70ch;min-width:0}
+.act ol{margin:4px 0 0;padding-left:1.3em;display:flex;flex-direction:column;gap:3px}
 details.more>summary,details.pane>summary{cursor:pointer;color:var(--accent);font-size:.82rem;list-style:none}
 details.more>summary::before,details.pane>summary::before{content:"▸ ";display:inline-block;transition:transform .15s}
 details.more[open]>summary::before,details.pane[open]>summary::before{transform:rotate(90deg)}
@@ -220,6 +222,14 @@ const impactTable=c=>{
   h+='<tr><th scope="row">(z) Wait</th>'+cell(c.impact.wait)+cell()+cell()+cell()+'</tr>';
   return h+'</tbody></table></div>'};
 
+/* what it takes to act on option k (the decisions skill's To act on part): its numbered steps, flat
+   under the option, never folded; empty when the option asks nothing of the operator */
+const actList=(c,k)=>{const st=c&&c.act&&typeof c.act==="object"?c.act[k]:null;
+  if(!Array.isArray(st)||!st.length)return "";
+  return '<div class="act"><span class="lbl">To act on ('+esc(k)+'):</span><ol>'+st.map(x=>'<li>'+fmt(x)+'</li>').join("")+'</ol></div>'};
+/* a fill-in placeholder: an angle-bracketed word with no spaces, such as <dir> or <path> */
+const PLACEHOLDER=/<[A-Za-z][\w-]*>/;
+
 /* the data is checked before anything renders: a card that fails is a refused file, not a half page */
 const FOLLOW_FIXED=["later","tell me","expand","dig into","you decide","drop"];
 function check(d){
@@ -251,6 +261,13 @@ function check(d){
     const row=b=>!!b&&typeof b==="object"&&isStr(b.happens)&&isStr(b.undo)&&isStr(b.who)&&(!("cost" in b)||isStr(b.cost));
     if(c.warn&&(typeof c.blocks!=="object"||!c.blocks||!ls.every(k=>k==="z"||row(c.blocks[k]))))bad.push(w+": a ⚠ one-way card needs blocks {happens, undo, who} for every option but (z)");
     if(c.blocks!=null&&(typeof c.blocks!=="object"||Object.keys(c.blocks).some(k=>k==="z"||!ls.includes(k)||!row(c.blocks[k]))))bad.push(w+": blocks are keyed by option letter, not (z), each {happens, undo, who, cost?} as text");
+    if(c.act!=null){
+      if(typeof c.act!=="object"||Array.isArray(c.act)||Object.keys(c.act).some(k=>k==="z"||!ls.includes(k)||!Array.isArray(c.act[k])||!c.act[k].length||!c.act[k].every(x=>isStr(x)&&x.trim())))bad.push(w+": act is keyed by option letter, not (z), each a non-empty list of steps as text");
+      else for(const k in c.act)for(const x of c.act[k]){
+        /* the page renders no fenced block and folds line breaks: multi-line paste text goes in a file */
+        if(/[\r\n]/.test(x)){bad.push(w+": act ("+k+") has a line break in a step: put text of more than one line in a file named by its path");break}
+        const m=x.match(PLACEHOLDER);if(m){bad.push(w+": act ("+k+") has a fill-in placeholder "+m[0]+": write the value, or name the file that holds the text by its path");break}}
+    }
   }
   for(const k in (d.refs||{}))if(!/^[0-9]+$/.test(k))bad.push("refs: key "+k+" is not a number");
   return bad;
@@ -314,7 +331,7 @@ function renderCards(){
         const isRec=!!c.rec&&k===c.rec, lab=k==="z"?"if left:":(isRec?"because:":(c.rec?"not recommended because:":"if chosen:"));
         h+='<div class="opt'+(isRec?' isrec':'')+'"><label class="optl"><input type="radio" name="'+g+'" id="'+g+'-'+fid(k)+'" value="'+esc(k)+'">'
           +'<span class="ot"><span class="ol">('+esc(k)+')</span>'+esc(ttl)+(isRec?'<span class="pill rec">recommended</span>':'')+'</span>'
-          +'<span class="oi"><em>'+lab+'</em> '+fmt(why)+'</span></label></div>';
+          +'<span class="oi"><em>'+lab+'</em> '+fmt(why)+'</span></label>'+actList(c,k)+'</div>';
       }
       h+='</div><div class="follow"><div><span class="sublabel">Or a follow-up</span><div class="chips">';
       for(const [k,label,ph] of FOLLOW){

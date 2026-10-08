@@ -63,6 +63,7 @@ renders what the operator read instead of composing it again.
     (a) <option> — <its effect> [— reach: <who or what>] [— undo: <how, or cannot>] [— cost: <time, money, quota, attention>]
     (b) <option> — <its effect>
     (z) decide later — <what waiting costs; the deadline, if any>
+    to act (a): <an option that asks the operator to act only: 1. <step> 2. <step> …>
     rec: (a) · basis <word> — <reason>
     basis: <per load-bearing claim: provenance — claim (link or pointer)> · …
     unknown: <what isn't known, or none>
@@ -78,7 +79,8 @@ renders what the operator read instead of composing it again.
   written); every line names items by plain name with the tag trailing, and glosses any
   other id (no bare item id, sha, series or finding number).
   When the source numbered the question its own way (a series' OQ3, a gate's G5), the
-  label rides at the end of `what:`, with the source by plain name — *… (was OQ3 of the
+  label rides at the end of `what:`, after the words it stands for (the skill's floor),
+  with the source by plain name — *… (was OQ3 of the
   decision-lifecycle investigation, 5140)* — and is never a bare number.
   The options are every option the source offered (a series, a dispatch's `decision:`
   line), one choice per letter: a compound choice gets its own letters, never `(a)+…`.
@@ -100,6 +102,13 @@ renders what the operator read instead of composing it again.
   skill's floor), filled from the reviewer's `findings:` block and the run's record; any other
   decision leaves both out. The options stay in letter order, `[recommended]` on the
   headline marking the recommended one.
+  `to act (x):` follows the option lines, one physical line per option that asks the
+  operator to act, written when the decision is raised: the skill's **To act on (x):**
+  part, its steps numbered on the line (what each step holds is the skill's rendering
+  reference, § Card). A step's multi-line text keeps the one physical line,
+  its line breaks written ` / `, or names the `/…` path of a file that holds it — the file
+  whenever the text itself holds ` / `, since nothing on the line is escaped. Indented, it
+  matches neither `^decision` nor `^answer`, and `wi` ignores it.
   `impact:` follows `context:` on every card, one physical line, written when the decision
   is raised: the skill's Impact line, its five facets in their order —
   Effect (the recommended option's; with no recommendation, each option's in a few words,
@@ -121,7 +130,8 @@ renders what the operator read instead of composing it again.
   existed (no `context:` line, or one with no ` — then: `, whose text is a block's facts
   and is kept as the part after it), a block whose facts read `none` (a decision raised as
   a card, rendered as a block by `expand` or as a wide one shown to a cold reader: `none`
-  counts as missing), a card with no `impact:` line — is backfilled from the durable record
+  counts as missing), a card with no `impact:` line, a card with an option that asks the
+  operator to act and no `to act` line for it — is backfilled from the durable record
   (the item, its series, its commits) and written as a revised card with `revised: <time> — backfilled` before it
   renders; a field no record holds is written and shown as `not recorded`, never
   invented at render time. A card with no `raised:` takes it from the record: the time the
