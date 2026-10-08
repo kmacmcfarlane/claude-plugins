@@ -64,3 +64,12 @@ alternative not taken, in case practice argues for it.
   left to What in the Background fold; a Rec bullet in the TLDR. Background not
   auto-expanded; Context absorbs What (decision 197 (a), the operator's answer 2026-10-08).
   Not taken: Background open on load.
+- **Block depth on an answer page, by detail level** (2026-10-08, decision 198, the
+  operator's (a) with changes, and the operator's label **More** for the option button; the
+  field shape, the sizes for the visible parts' levels and the lints, designs made in
+  planning, not the operator's) — every page card carries the decisions block's content at
+  soft sizes, read at its full level (Background ~150 words, each option ~60–120, Evidence
+  ~150 with paths and links, a card ~600–900). The visible parts step summary → medium → full
+  on a click; a part inside an opened fold may step the same way; the folds stay folded;
+  **More** beside an option shows it in full. Not taken: the folds' content moved into the
+  visible parts; depth only on ⚠ and wide cards; no sizes.

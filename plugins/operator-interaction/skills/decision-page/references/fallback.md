@@ -19,8 +19,13 @@ first); this file sets only the layout.
   the **Impact:** line (`→ effect · later: wait · reach: … · undo: …`), the TLDR bullets,
   **Why now:**, **Why ask:** (class first), and the rec line
   `Rec (b) · basis strong — reason · unknown: …`. A card with
-  `blocks` also gets the Impact table: a row per option, then the Wait row; Effect, Reach,
-  Undo, Cost.
+  `blocks` (every card, now) also gets the Impact table: a row per option, then the Wait row;
+  Effect, Reach, Undo, Cost.
+- A doc cannot toggle a level, so the visible parts above are at their summary, with Why now
+  and Why ask at their top level (their high in `detail` when they have one). After the rec
+  line, a **More detail** sub-heading carries the other fold parts at their top level: each
+  option in full with its Effect, Reach, Undo and Cost, Depends on, and the Evidence with its
+  paths and links. That is the card-in-all measure of `references/cards-schema.md` § Size.
 - Then a tick box per option, in letter order, the recommended one in bold, each with its
   impact: `☐ **(b) Publish from CI** — removes the one-machine dependency`.
 - When the card has `act`, after the option tick boxes: **To act on (x):** with its numbered
