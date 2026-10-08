@@ -192,12 +192,12 @@ State the routing table before writing.
 ## Step 4 — Flush, manifest, mark
 
 **4a.** Commits first (the message is a compaction-proof summary you chose; include reasoning
-and retractions), then investigation/plan files; the work-item store's commit waits for
-Step 4a½, which makes it. Respect each repo's rules: pre-commit hooks, secret encryption,
-never `git add -A` where the tree carries unencrypted secrets. A repo not yours to commit
-to stays dirty with a written note. Then sweep the session scratchpad, which `/clear` leaves
-behind: copy every file a successor needs to a durable path, or list it under **Copy
-forward** (the format spec's scratchpad rule).
+and retractions), then investigation/plan files; the work-item store's commit waits for Step
+4a½, which makes it (with `items:` empty, commit the store here). Respect each repo's rules:
+pre-commit hooks, secret encryption, never `git add -A` where the tree carries unencrypted
+secrets. A repo not yours to commit to stays dirty with a written note. Then sweep the
+session scratchpad, which `/clear` leaves behind: copy every file a successor needs to a
+durable path, or list it under **Copy forward** (the format spec's scratchpad rule).
 
 **4a½ — Open items, before the manifest.** Fix the `items:` set now: the `wi` ids of the
 open or doing items the manifest will mention, checked against this repo's store. 4b writes
@@ -213,22 +213,41 @@ tags plus `REJECTED <alternative> — <why it lost>`:
 - <YYYY-MM-DD> checkpoint: BELIEF (unconfirmed) operator: "<their words>" — confirm before acting
 ```
 
-Append each line with Bash (`printf '%s\n' '<line>' >> <item file>`, a `'` inside written
-`'\''`), never Edit, which the checkout guards deny on a tracked store; when `## Notes`
-is not the file's last section, put the line after its last line instead (add `## Notes` at
-the end when absent). A question already put to the operator that has no `decision N:`
-line gets one now, written undated and unbulleted so the line starts `decision N:`, N one
-more than the store's highest (`grep -rhoE '^decision [0-9]+' <store> | sort -k2 -n | tail -1`); any other question is an
-`OPEN` line. Never carry residue with `wi handoff`: it holds one line per key, so the
-residue would displace the item's own Handoff. **Path and key, never value**: item files
-are tracked forever, and this rule is the guard, not `wi lint`. Run `wi lint`, then commit
-the store: this is 4a's work-item commit. Name each item written in the manifest's `Next`
-as `wi show <id>`, the full view, since `--brief` omits Notes. The writer is this session,
-or a fork under Step 2's dictate → fork rule, handed the tagged lines verbatim; the fork
-adds no recall of its own. **Lean form**: read only `wi show <id> --brief` (a duplicate
-line is cheaper than a lost one), write only corrections, refusals, unconfirmed operator
-statements and open questions, at most three lines an item, run `wi lint`, commit nothing,
-and name the uncommitted item files in an `OPEN` line of the manifest's `Aware of`.
+Append each line with this Bash, never Edit, which the checkout guards deny on a tracked
+store; it puts the line after the last non-blank line of `## Notes`, wherever that section
+sits, and adds the heading at the end when absent (a `'` inside the line written `'\''`):
+
+```bash
+python3 - '<item file>' '<line>' <<'PY'
+import sys
+p, add = sys.argv[1:]
+L = open(p).read().rstrip('\n').split('\n')
+h = [k for k, x in enumerate(L) if x.rstrip() == '## Notes'] or [len(L) + 1]
+if h[0] > len(L): L += ['', '## Notes']
+e = next((k for k in range(h[0] + 1, len(L)) if L[k].startswith('## ')), len(L))
+while e - 1 > h[0] and not L[e - 1].strip(): e -= 1
+L.insert(e, add)
+open(p, 'w').write('\n'.join(L) + '\n')
+PY
+```
+
+A question already put to the operator that has no `decision N:` line gets one now, written
+undated and unbulleted so the line starts `decision N:`, N one more than the store's highest:
+
+```bash
+grep -rhoE '^decision [0-9]+' <store> | sort -k2 -n | tail -1
+```
+
+Any other question is an `OPEN` line. Never carry residue with `wi handoff`: it holds one
+line per key, so the residue would displace the item's own Handoff. **Path and key, never
+value**: item files are tracked forever, and this rule is the guard, not `wi lint`. Run `wi
+lint`, then commit the store: this is 4a's work-item commit. Name each item written in the
+manifest's `Next` as `wi show <id>`, the full view, since `--brief` omits Notes. The writer
+is this session, or a fork under Step 2's dictate → fork rule, handed the tagged lines
+verbatim; the fork adds no recall of its own. **Lean form**: read only `wi show <id> --brief`
+(a duplicate line is cheaper than a lost one), write only corrections, refusals, unconfirmed
+operator statements and open questions, at most three lines an item, run `wi lint`, commit
+nothing, and name the uncommitted item files in an `OPEN` line of the manifest's `Aware of`.
 
 **4b.** Rewrite the **rehydration manifest** per `references/handoff-format.md`, in **both
 modes**. It lives at this session's own path — one file per session in the Claude config
