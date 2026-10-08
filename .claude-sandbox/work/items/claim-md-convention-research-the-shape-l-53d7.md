@@ -29,3 +29,22 @@ dispatch: planner opus high — research round and shape proposal (the research 
 - 2026-10-08 claimed by Kyle-McFarlane@2d49f8460283
 agent: planner a73b066060c1a0ca7
 note: 2026-10-08 peer claude-analytics: CLAIM.md stays at their repo root (local main 4c2207d); the attribution/1 event schema follows once their serial 02 clears plan review and their contracts feature lands, with a copyable stdlib emit function
+return: DONE_WITH_CONCERNS series 00_initial.md + research report (quick preset by the research skill's rule zero; 25 sources; verifier PASS 4/4); OQ1-4 block step 2, OQ6 blocks step 3
+baseline: plan review 1 — a6db4276282b7ffa553a17890ec8d9cd1b3edaf4b42eed59dd73501ce4695e97 .claude-sandbox/investigations/claim-md-convention-research-the-shape-l-53d7/00_initial.md; 
+dispatch: reviewer opus high — plan review 1
+decision 186: Where should the CLAIM.md skill live? — options: (a) a new plugin [recommended] | (b) work-items | (c) dev-flow | (d) kit-dev | (z) decide later
+  raised: 2026-10-08T06:41Z
+  why ask: placement — a new plugin and its catalog row are the operator's (principle 6; the operator asked to discuss it)
+  impact: Effect → step 2 (the skill build) can start in its home · Wait: blocks step 2 · reach: the marketplace catalog · undo: moving a plugin later renames installs · cost: none
+decision 187: What should the plugin and the skill be called? — options: (a) plugin ownership, skill claim-md, file CLAIM.md [recommended] | (b) plugin claims, skill claim | (z) decide later
+  raised: 2026-10-08T06:41Z
+  why ask: api-name — plugin and skill names are what users install and invoke (principle 5)
+  impact: Effect → fixes the names the build ships · Wait: blocks step 2 · reach: every repo that installs it · undo: a rename breaks installs · cost: none
+decision 188: Approve the proposed CLAIM.md shape (five required parts, optional sections, the defining side holds a boundary's text, every change approved by the operator, the CLAUDE.md pointer)? — options: (a) approve as drafted [recommended] | (b) approve with changes (say which) | (z) decide later
+  raised: 2026-10-08T06:41Z
+  why ask: your-call — the operator said the shape may need their input
+  impact: Effect → the shape the skill writes and checks in every repo · Wait: blocks step 2 · reach: every repo's CLAIM.md · undo: easy before step 3 seeds repos; costly after · cost: none
+decision 189: When a repo has both a CLAIM.md "Not ours" list and a librarian "Not owned:" line (from the unlanded scope-interview work), which wins? — options: (a) CLAIM.md is the authority; "Not owned:" must agree, and the check flags a mismatch [recommended] | (b) keep both independent | (z) decide later
+  raised: 2026-10-08T06:41Z
+  why ask: rule-change — it sets which file decides ownership estate-wide
+  impact: Effect → one source of truth for "not ours" · Wait: blocks step 2's wording · reach: CLAIM.md and the librarian section in every repo · undo: easy before the scope-interview work lands · cost: none
