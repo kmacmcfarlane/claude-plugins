@@ -71,7 +71,7 @@ In a working directory (your scratchpad unless the caller names one): copy
   refuses a file that fails one, and says which): whole-number `n`, single `a`–`z` letters in
   order ending `z`, a `rec` among them or null with `norec`, a non-empty `rev`, an `impact`
   with its four facets, an `act` keyed by option letters other than `z`, each a non-empty
-  list of steps with no fill-in placeholder, the required fields.
+  list of one-line steps with no fill-in placeholder, the required fields.
 
 ## Step 3: Publish
 

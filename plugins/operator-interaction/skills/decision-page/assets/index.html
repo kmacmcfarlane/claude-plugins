@@ -227,7 +227,7 @@ const impactTable=c=>{
 const actList=(c,k)=>{const st=c&&c.act&&typeof c.act==="object"?c.act[k]:null;
   if(!Array.isArray(st)||!st.length)return "";
   return '<div class="act"><span class="lbl">To act on ('+esc(k)+'):</span><ol>'+st.map(x=>'<li>'+fmt(x)+'</li>').join("")+'</ol></div>'};
-/* a fill-in placeholder: an angle-bracketed word with no spaces, such as <kit> or <path> */
+/* a fill-in placeholder: an angle-bracketed word with no spaces, such as <dir> or <path> */
 const PLACEHOLDER=/<[A-Za-z][\w-]*>/;
 
 /* the data is checked before anything renders: a card that fails is a refused file, not a half page */
@@ -263,7 +263,10 @@ function check(d){
     if(c.blocks!=null&&(typeof c.blocks!=="object"||Object.keys(c.blocks).some(k=>k==="z"||!ls.includes(k)||!row(c.blocks[k]))))bad.push(w+": blocks are keyed by option letter, not (z), each {happens, undo, who, cost?} as text");
     if(c.act!=null){
       if(typeof c.act!=="object"||Array.isArray(c.act)||Object.keys(c.act).some(k=>k==="z"||!ls.includes(k)||!Array.isArray(c.act[k])||!c.act[k].length||!c.act[k].every(x=>isStr(x)&&x.trim())))bad.push(w+": act is keyed by option letter, not (z), each a non-empty list of steps as text");
-      else for(const k in c.act)for(const x of c.act[k]){const m=x.match(PLACEHOLDER);if(m){bad.push(w+": act ("+k+") has a fill-in placeholder "+m[0]+": write the value, or name the file that holds the text by its path");break}}
+      else for(const k in c.act)for(const x of c.act[k]){
+        /* the page renders no fenced block and folds line breaks: multi-line paste text goes in a file */
+        if(/[\r\n]/.test(x)){bad.push(w+": act ("+k+") has a line break in a step: put text of more than one line in a file named by its path");break}
+        const m=x.match(PLACEHOLDER);if(m){bad.push(w+": act ("+k+") has a fill-in placeholder "+m[0]+": write the value, or name the file that holds the text by its path");break}}
     }
   }
   for(const k in (d.refs||{}))if(!/^[0-9]+$/.test(k))bad.push("refs: key "+k+" is not a number");

@@ -102,10 +102,16 @@ class DecisionPageAct(unittest.TestCase):
             self.assert_refused(d, "card 41: act is keyed by option letter")
 
     def test_a_fill_in_placeholder_is_refused(self):
-        for step in ("run it from <kit>/run.sh", "open <path>", "paste <br> as is"):
+        for step in ("run it from <dir>/run.sh", "open <path>", "paste <br> as is"):
             d = example()
             d["cards"][0]["act"]["b"] = ["first step", step]
             self.assert_refused(d, "card 41: act (b) has a fill-in placeholder")
+
+    def test_a_step_with_a_line_break_is_refused(self):
+        for step in ("paste:\nline one\nline two", "one\r\ntwo"):
+            d = example()
+            d["cards"][0]["act"]["b"] = ["first step", step]
+            self.assert_refused(d, "card 41: act (b) has a line break")
 
     def test_an_angle_bracket_with_a_space_is_not_a_placeholder(self):
         d = example()
@@ -221,9 +227,9 @@ class GalleryActsAndTerms(unittest.TestCase):
 
     def test_the_lints_catch_what_they_are_for(self):
         """Each lint fails on the failure it names, so a clean run means something."""
-        self.assertTrue(PLACEHOLDER.search("from <kit>/pb.settings.json"))
+        self.assertTrue(PLACEHOLDER.search("from <dir>/check.json"))
         self.assertTrue(LABEL.search("What: L2, the cleanup scope"))
-        self.assertTrue(LABEL.search("serial 08, step A3"))
+        self.assertTrue(LABEL.search("step B4 of the rollout"))
         self.assertFalse(LABEL.search("level 1 in the cleanup plan"))
         self.assertFalse(LABEL.search("3 of 3 pages signed in"))
         # the path lint's word cleanup keeps a relative path relative

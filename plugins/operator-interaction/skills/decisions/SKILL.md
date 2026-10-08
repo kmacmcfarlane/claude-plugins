@@ -162,7 +162,7 @@ Smallest to largest, each showing more of the impact in facet order (templates i
   why ask.
 - **Card** — an **Impact:** line under the title, then what is decided, why now, why ask
   (and a round ask's justification), the options with their impact in italics, decide
-  later, then `Rec · basis — reason · unknown`. Its **Context:** cue (where you left it ·
+  later, any **To act on (x):** part, then `Rec · basis — reason · unknown`. Its **Context:** cue (where you left it ·
   what you decide now) is written for every decision when it is raised, and shown to a cold
   reader (with nowhere to keep it, at the first showing too).
 - **Block** — a card whose Impact line becomes a table (a row per option plus a Wait row),

@@ -15,8 +15,9 @@ not one of the card's letters (or null without `norec`); a missing required fiel
 the four; a `follow` list other than the fixed six; a `refs` key that is not a number; a ⚠
 card without its `blocks`; a `blocks` entry that is not an option letter other than `z`, or
 lacks its text; an `act` that is not keyed by option letters other than `z`, a key whose list
-of steps is empty or holds anything but text, or a step holding a fill-in placeholder (an
-angle-bracketed word with no spaces, such as `<kit>` or `<path>`). Every text field is
+of steps is empty or holds anything but text, a step holding a fill-in placeholder (an
+angle-bracketed word with no spaces, such as `<dir>` or `<path>`), or a step holding a line
+break. Every text field is
 escaped wherever it reaches the page, attributes and ids included.
 
 Text fields are plain text: the page escapes them. Two marks are rendered:
@@ -60,7 +61,7 @@ Each field maps to a part of the `decisions` skill's card (its `references/rende
 | `class` | string | no | the class that opens Why ask, when the caller names classes | a pill, and the Background fold |
 | `warn` | boolean | no | `true` for ⚠ one-way (one-way and high impact) | a ⚠ pill |
 | `blocks` | object | when `warn`; optional otherwise | the block's Impact table row per option: keyed by letter, every option but `z` on a ⚠ card (any of them otherwise), each `{happens, undo, who, cost}` — the Effect, Undo (plainly: it decides the read-back) and Reach cells, and Cost, optional | the Impact table in Options in full, which opens unfolded on a ⚠ card; an option with no entry shows its `impact` as the Effect and `—` in the rest |
-| `act` | object | when an option asks the operator to act; optional otherwise | the **To act on (x):** part (the `decisions` skill's floor, what it takes to act; its specifics in that skill's `references/rendering.md` § Card): keyed by option letter other than `z`, each a non-empty array of steps as text, in order; backtick code renders as code. A step names where a secret goes, never its value. A paste text that legitimately holds an angle-bracketed word (`<br>`, a tag in an HTML snippet) goes in a file named by its `/…` path in the step: the check refuses it inline, as it refuses a fill-in placeholder | flat, as a numbered list under its option in the open card, never folded; not counted in the flat part's size (below) |
+| `act` | object | when an option asks the operator to act; optional otherwise | the **To act on (x):** part (the `decisions` skill's floor, what it takes to act; its specifics in that skill's `references/rendering.md` § Card): keyed by option letter other than `z`, each a non-empty array of steps as text, in order; backtick code renders as code. A step names where a secret goes, never its value. A paste text that legitimately holds an angle-bracketed word (`<br>`, a tag in an HTML snippet) goes in a file named by its `/…` path in the step: the check refuses it inline, as it refuses a fill-in placeholder. The page renders no fenced block and folds line breaks: a paste text of more than one line goes in a file named by its `/…` path in the step, never inline; the check refuses a step with a line break | flat, as a numbered list under its option in the open card, never folded; not counted in the flat part's size (below) |
 | `dep` | string | no | what it depends on, usually slugs with the answer that matters (`[[41]] (b)`) | summary line, Dependencies fold |
 | `rec` | string or null | yes | the recommended option's letter; `null` with no recommendation | the one bold option, the rec line |
 | `norec` | string | when `rec` is null | the labelled exception: `your preference — no recommendation`, or `no recommendation — outside my authority` and why | in place of the rec |
