@@ -135,7 +135,8 @@ While sub-agents run, the agent panel below the prompt shows one row per sub-age
 plugin draws each row as `name · 43% 86k/200k · opus-5-5·high · description`: the agent's
 own context fill, coloured like the footer's gauge, then the model it runs on and the
 effort set for it (in its definition or on the call; Claude Code gives both in the row's
-input, and a row leaves out either one it does not have). On a narrow panel the
+input, and a row leaves out either one it does not have, or one too long to read at a
+glance: a model ID over 40 columns, an effort over 6 characters). On a narrow panel the
 description is cut first and then goes, then the model and effort go, then the name. The
 fill is exact, read from the agent's transcript (`SESSION/subagents/agent-ID.jsonl` beside
 the session's transcript); after the first read, each refresh reads only the lines added

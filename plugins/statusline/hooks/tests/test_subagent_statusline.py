@@ -445,11 +445,44 @@ class Rows(Hermetic):
         self.assertEqual(ANSI.sub("", self.run_rows([t], columns=16)["a1"]),
                          "~75% ~150k/200k")
 
+    def test_an_overlong_model_or_string_effort_cannot_hide_the_description(self):
+        long_model = "claude-" + "x" * 90
+        for kw, want in (
+                ({"model": long_model, "effort": "high"}, "rev · ~75% ~150k/200k · high · Review the diff"),
+                ({"model": "claude-opus-5-5", "effort": "e" * 90},
+                 "rev · ~75% ~150k/200k · opus-5-5 · Review the diff"),
+                ({"model": long_model, "effort": "e" * 90}, "rev · ~75% ~150k/200k · Review the diff")):
+            row = ANSI.sub("", self.run_rows([self.task(**kw)], columns=80)["a1"])
+            self.assertEqual(row, want, kw)
+        # Every documented level fits the effort cap.
+        for level in ("low", "medium", "high", "xhigh", "max"):
+            row = ANSI.sub("", self.run_rows([self.task(effort=level)], columns=80)["a1"])
+            self.assertEqual(row, f"rev · ~75% ~150k/200k · {level} · Review the diff")
+
+    def test_the_widest_tag_under_the_caps_leaves_the_description_room_at_80(self):
+        import subagent_statusline as R
+        m = "m" * R.MODEL_MAX
+        row = ANSI.sub("", self.run_rows([self.task(model="claude-" + m, effort="medium")],
+                                         columns=80)["a1"])
+        self.assertEqual(row, f"rev · ~75% ~150k/200k · {m}·medium · Revie…")
+        # One column wider and the model goes, the effort and description stay.
+        row = ANSI.sub("", self.run_rows([self.task(model="claude-" + m + "m", effort="medium")],
+                                         columns=80)["a1"])
+        self.assertEqual(row, "rev · ~75% ~150k/200k · medium · Review the diff")
+        # The cap is in terminal columns: wide characters count double.
+        wide = "模" * (R.MODEL_MAX // 2 + 1)
+        row = ANSI.sub("", self.run_rows([self.task(model=wide)], columns=80)["a1"])
+        self.assertEqual(row, "rev · ~75% ~150k/200k · Review the diff")
+
     def test_a_widening_pane_never_loses_a_part_of_the_row(self):
-        for t in (self.task(model="claude-opus-5-5", effort="high"), self.task()):
-            parts = {"name": "rev", "tag": "opus-5-5·high", "desc": "Rev"}
+        cases = ((self.task(model="claude-opus-5-5", effort="high"), "opus-5-5·high"),
+                 (self.task(), "opus-5-5·high"),
+                 (self.task(model="claude-" + "x" * 90, effort="high"), "high"),
+                 (self.task(model="claude-opus-5-5", effort="e" * 90), "opus-5-5"))
+        for t, tagtxt in cases:
+            parts = {"name": "rev", "tag": tagtxt, "desc": "Rev"}
             prev = set()
-            for cols in range(1, 80):
+            for cols in range(1, 81):
                 got = self.run_rows([t], columns=cols).get("a1")
                 row = ANSI.sub("", got) if got is not None else ""
                 self.assertLessEqual(len(row), cols, cols)
