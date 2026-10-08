@@ -27,3 +27,7 @@ agent: implementer ad8e44c4c16a95bb7
 
 ## Notes
 - 2026-10-08 claimed by Kyle-McFarlane@2d49f8460283
+return: DONE_WITH_CONCERNS 01a17c1 (SECRET_ASSIGN_RE searched after whitespace, bracket, comma, colon, pipe, quote or backtick; tests both ways; one new real-store hit: a HOME path in item 8a67 line 21, reworded in the store)
+changed: wi.py (SECRET_ASSIGN_RE), tests/test_wi.py (two TestLint tests), references/format.md (the rule's wording)
+dispatch: reviewer opus high — review round 1
+agent: reviewer aed4304ee761faaaf

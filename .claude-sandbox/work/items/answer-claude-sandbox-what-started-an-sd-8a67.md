@@ -18,7 +18,7 @@ claude-sandbox - librarian asks what spawned a Claude Code 2.1.283 process via t
 - next: —
 - blocked: —
 - learned: —
-- 2026-09-27 answered: not from this session as far as its record and the repo show (in-process sub-agents; no git hooks; no SDK use; the test "claude" is a python symlink in a temp config dir); the start coincides with the implementer's commit ff8b274 at 17:28:08Z in that worktree; this session runs in a sandbox, HOME=/home/rt, CLAUDE_CONFIG_DIR unset, ~/.claude.json bind-mounted (presence only checked)
+- 2026-09-27 answered: not from this session as far as its record and the repo show (in-process sub-agents; no git hooks; no SDK use; the test "claude" is a python symlink in a temp config dir); the start coincides with the implementer's commit ff8b274 at 17:28:08Z in that worktree; this session runs in a sandbox, HOME is /home/rt, CLAUDE_CONFIG_DIR unset, ~/.claude.json bind-mounted (presence only checked)
 
 ## Notes
 - 2026-09-27 done
