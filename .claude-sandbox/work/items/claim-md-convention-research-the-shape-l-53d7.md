@@ -16,8 +16,8 @@ refs:
 Relayed 2026-10-08 by peer claude-analytics from the operator there: a CLAIM.md, when present, sets out a repo's ownership claim and explicit known boundaries with other repos' areas of responsibility, so ownership questions stop recurring (the analytics split prompted it). The operator asks for: (1) a research round on the best shape (sections, how boundaries with other repos are stated, how changes are proposed and approved, how agents read it), with claude-analytics' operator-approved CLAIM.md (repo root, local main 4c2207d, not pushed; rule 'a producer emits; claude-analytics defines, reads and reports') as the worked example; (2) land the skill with the operator in this session, since the shape may need their input; (3) file a low-priority item in every active kmacmcfarlane repo with a work-item store to establish its own CLAIM.md; (4) then tell claude-analytics how to reshape theirs. Placement (which plugin) is a decision. FYI from the approved claim, nothing to change yet: usage-report retires at parity; item_spend.py is replaced by an attribution-event spend report (dev-cycle would emit a dispatch event, schema to come); quota_budget.py stays a listed reader; statusline-hub's record hook stays here.
 
 ## Handoff
-- doing: —
-- next: —
+- doing: plan stopped and carried at review 4; revised cards 186-189 stored and shown
+- next: on answers 186-189: build step 2 (the skill) per 00-03; then OQ6 seeding
 - blocked: —
 - learned: —
 note: operator 2026-10-08 in this session: "I'm here for when you have decisions around the new claim skill (where should it land in our plugins system? Seems pretty stand-alone so maybe it's own plugin?). We can discuss when the research into how this sort of agentic codebase factoring/claim splitting strategy comes back." Placement lean: its own plugin, not yet decided; discussed after the research.

@@ -16,8 +16,8 @@ refs:
 Follow-up F2 from the plugin-dependency spike (72ef), 2026-10-08. Acceptance: as .claude-sandbox/investigations/spike-how-much-inter-plugin-dependency-i-72ef/00_initial.md § R3 F2 states, with 01_review-1-fixes.md and 02_review-2-fixes.md applied (Supersedes in order). Rank 1. Must land before the statusline compat removal (a95a).
 
 ## Handoff
-- doing: —
-- next: —
+- doing: build running (implementer a6b6507ff123a6363, waiting on its checks)
+- next: on return: dispatch a fresh opus reviewer; land; push
 - blocked: —
 - learned: —
 target: full main /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude/worktrees/statusline-hub-end-the-silent-wait-behin-7dd3

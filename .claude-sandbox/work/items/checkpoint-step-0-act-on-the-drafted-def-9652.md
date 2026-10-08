@@ -16,8 +16,8 @@ refs:
 Relayed 2026-10-08 by peer operator-attention at the operator's request, verbatim: 'what are we getting out of that AskUserQuestion gate? I almost always just select the defaults. Send that feedback to claude-plugins'. Datapoint: all three Step 0 questions (mode, in-flight inventory, window handling) answered with the drafted default. Suggested: act on the drafted defaults with a one-line echo the operator can override; ask only at a real fork (continue vs handoff unclear, agents in flight, an uncertain inventory line, guidance that would drop a REFUSED line or a hold); optionally measure default acceptance per question. Acceptance: context-guard checkpoint SKILL.md Step 0 rewritten to that shape, consistent with the decisions skill's FYI-after-acting test, the HARD-prompt rule (only /checkpoint, /compact, /clear pass) and the unattended path.
 
 ## Handoff
-- doing: —
-- next: —
+- doing: plan review 1 running (reviewer acb87f13d5217d546); decision 196 open
+- next: on the verdict: fix round or CLEAR; build waits on answer 196 (a)
 - blocked: —
 - learned: —
 target: plan main /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude-sandbox/investigations/checkpoint-step-0-act-on-the-drafted-def-9652
