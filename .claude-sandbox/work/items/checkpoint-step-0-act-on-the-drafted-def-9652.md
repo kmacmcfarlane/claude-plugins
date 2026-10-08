@@ -38,3 +38,6 @@ decision 196: Should the checkpoint stop asking its three opening questions and 
 agent: reviewer acb87f13d5217d546
 verdict: plan review 1 NEEDS_CHANGES (must-fix 6: a deferred auto-compaction is released before the echo is read (high); self-drafted handoff paths unasked; echo override drops then <next-skill>; forks must apply only to questions this step drafted; playbook sentence names the wrong questions; re-run duplicate-note guard; lows 7-15); counts reproduced exactly
 dispatch: planner opus high — plan fix round 1 (resume a13074c58b80d96b7)
+return: DONE_WITH_CONCERNS series 01_review-1-fixes.md (fixes 1-15; compact_deferred confirmed; consolidated Step 0 text in 01 § A)
+baseline: plan review 2 — 41740db45a4c405017eeb427fab2944a8dd50dd28aa157379bb1a82384ba1c3b .claude-sandbox/investigations/checkpoint-step-0-act-on-the-drafted-def-9652/00_initial.md; 04f6517087d207479ceb419a0b2cc13a25d7368b2f07ff876fc56ecfcaa37ec2 .claude-sandbox/investigations/checkpoint-step-0-act-on-the-drafted-def-9652/01_review-1-fixes.md; 
+dispatch: reviewer opus high — plan review 2 (resume acb87f13d5217d546)
