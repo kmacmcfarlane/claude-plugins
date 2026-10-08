@@ -22,10 +22,13 @@ model ID the task runs on, omitted until it is resolved; `effort` is the
 effort set in the agent's definition frontmatter or on its invocation, a
 level string or a numeric token budget, as written, and absent when none is
 set (documented: https://code.claude.com/docs/en/statusline, Subagent
-status lines). The tag shows the model without its `claude-` prefix, then
-`·` and the effort; a field the task does not carry is left out, never
-guessed (no effort set means the session default applies, which the row
-cannot see). Neither: no tag.
+status lines). The tag shows the model with everything through its first
+`claude-` dropped (so a provider-prefixed ID such as Bedrock's
+`us.anthropic.claude-sonnet-4-5-20250929-v1:0`, as the docs show it at
+https://code.claude.com/docs/en/amazon-bedrock, reads
+`sonnet-4-5-20250929-v1:0`), then `·` and the effort; a field the task
+does not carry is left out, never guessed (no effort set means the session
+default applies, which the row cannot see). Neither: no tag.
 
 Depth. Exact when the agent's sidechain transcript can be read:
 <transcript stem>/subagents/agent-<id>.jsonl, the stem being the main
@@ -87,7 +90,9 @@ dropped, and the row is cut to `columns` terminal columns (0 columns: no
 rows): the description is cut first, and goes whole once the model and
 effort tag no longer fits beside it; then the tag goes whole (never cut);
 then the name, leaving the fill alone. So a widening pane only ever adds to
-a row. Never raises;
+a row. The tag's halves are capped (MODEL_MAX columns for the model,
+EFFORT_MAX columns for the effort; a half past its cap is left out), so
+an overlong one cannot crowd the description out at every width. Never raises;
 malformed input prints nothing, so every row keeps its default.
 """
 import json, os, re, sys, time, unicodedata
@@ -109,7 +114,8 @@ DEPTH_MAX = 512           # deeper nesting on a long line: treated as unparseabl
 _SAFE_ID = re.compile(r"[A-Za-z0-9][A-Za-z0-9_-]{0,127}")
 _UNSAFE = re.compile(r"[\s\x00-\x1f\x7f-\x9f]+")
 SEP = " · "
-EFFORT_MAX = 6            # a numeric effort (a token budget) longer than this is left out
+EFFORT_MAX = 6            # an effort (a level, or a budget as shown) wider than this many columns is left out
+MODEL_MAX = 40            # a model (through its `claude-` gone) wider than this many columns is left out
 USAGE_KEYS = ("input_tokens", "cache_read_input_tokens", "cache_creation_input_tokens")
 
 
@@ -615,17 +621,28 @@ def fill(tokens, window, approx):
 
 def tag(task):
     """`model·effort` for one task, either half alone, or "" for neither:
-    the model ID without its `claude-` prefix, the effort as written (a
-    level string, or a token budget shown like the fill's figures: 1000
-    and up in k, left out past EFFORT_MAX characters)."""
+    the model ID with everything through its first `claude-` dropped
+    (a provider prefix such as Bedrock's `us.anthropic.` goes with it),
+    the effort as written (a level string, or a token budget shown like
+    the fill's figures: 1000 and up in k). Each half is capped and left out whole past its cap,
+    never cut (a cut model ID misleads): the model past MODEL_MAX columns,
+    the effort past EFFORT_MAX columns. Every documented level (`low`
+    to `max`) fits EFFORT_MAX. So the tag is never wider than
+    MODEL_MAX + 1 + EFFORT_MAX columns, and since a tag that does not fit
+    takes the description with it (see row), the caps keep an overlong
+    model or effort from hiding the description at every width: at 80
+    columns a row with a short name always has room for both."""
     model = one_line(task.get("model"))
-    if model.startswith("claude-") and len(model) > 7:
-        model = model[7:]
+    at = model.find("claude-")
+    if at >= 0 and len(model) > at + 7:
+        model = model[at + 7:]
+    if sum(width(ch) for ch in model) > MODEL_MAX:
+        model = ""          # too long to read at a glance; the description keeps its room
     eff = task.get("effort")
     eff = one_line(eff) if isinstance(eff, str) else \
         k(num(eff)) if num(eff) is not None else ""
-    if not isinstance(task.get("effort"), str) and len(eff) > EFFORT_MAX:
-        eff = ""            # a budget too long to read at a glance
+    if sum(width(ch) for ch in eff) > EFFORT_MAX:
+        eff = ""            # a level or budget too long to read at a glance
     return "·".join(x for x in (model, eff) if x)
 
 
