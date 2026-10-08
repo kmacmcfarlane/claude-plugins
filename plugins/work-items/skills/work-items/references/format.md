@@ -575,7 +575,9 @@ the Handoff's `next:` needs it. Never `cat` the items directory. Hand off with
 
 Item files are tracked forever in git: record **the path and the key, never
 the value**. Write `creds: clusterenv.yaml key DISCORD_WEBHOOK_BACKUPS`, not
-the webhook URL. `wi lint` flags PEM blocks, `KEY=value` assignments and
+the webhook URL. `wi lint` flags PEM blocks, `KEY=value` assignments (bare,
+or after a bullet, date, tag, bold or other leading text, unless the key is
+glued to a word or follows a URL's `?` or `&`) and
 `token/secret/password/webhook`-style pairs that look like live values.
 
 ## TODO.md deprecation notice
