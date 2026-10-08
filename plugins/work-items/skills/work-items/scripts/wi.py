@@ -197,6 +197,50 @@ def decision_raised(item):
     return raised
 
 
+# A showing of decision N and the operator's turn that saw it (the format
+# reference's § Shown and seen): column-0 lines appended by the session that
+# displays the decision. Only a line whose first token is a UTC time reads.
+_UTC = r"(\d{4}-\d\d-\d\dT\d\d:\d\d(?::\d\d)?Z)\b"
+SHOWN_RE = re.compile(r"^shown (\d+):\s*" + _UTC)
+SEEN_RE = re.compile(r"^seen (\d+):\s*" + _UTC)
+
+
+def decision_showings(item):
+    """{N: {"first_shown", "last_shown", "last_seen", "unseen"}} from the
+    `shown N:` and `seen N:` lines, times kept as written. First and last
+    are by position; `unseen` is None with no `shown N:` line, True when no
+    `seen N:` line follows the last `shown N:` line in file order (never by
+    comparing times), else False. Same fence rule as unanswered_decisions."""
+    lines = item.body.replace("\r\n", "\n").split("\n")
+    fenced = set()
+    for i, j in _fence_spans(lines):
+        fenced.update(range(i, j + 1))
+    out = {}
+    for i, line in enumerate(lines):
+        if i in fenced:
+            continue
+        m = SHOWN_RE.match(line)
+        if m:
+            rec = out.setdefault(int(m.group(1)), _no_showing())
+            if rec["first_shown"] is None:
+                rec["first_shown"] = m.group(2)
+            rec["last_shown"] = m.group(2)
+            rec["unseen"] = True
+            continue
+        m = SEEN_RE.match(line)
+        if m:
+            rec = out.setdefault(int(m.group(1)), _no_showing())
+            rec["last_seen"] = m.group(2)
+            if rec["unseen"] is not None:
+                rec["unseen"] = False
+    return out
+
+
+def _no_showing():
+    return {"first_shown": None, "last_shown": None, "last_seen": None,
+            "unseen": None}
+
+
 class WiError(Exception):
     def __init__(self, code, msg):
         super().__init__(msg)
@@ -2183,6 +2227,14 @@ def needs_input(items):
     return out
 
 
+def _json_decisions(it, asks):
+    """needs-input --json's decision records: text, raised and showings."""
+    raised, shown = decision_raised(it), decision_showings(it)
+    return [dict({"n": n, "text": text, "raised": raised.get(n)},
+                 **shown.get(n, _no_showing()))
+            for kind, n, text in asks if kind == "decision"]
+
+
 def cmd_needs_input(args):
     root = resolve_root(args.root)
     rows = needs_input(rank_ready(load_all(root)))
@@ -2192,9 +2244,7 @@ def cmd_needs_input(args):
                                it.meta.get("short_display_name"),
                            "status": it.get("status"),
                            "grooming": it.get("grooming"),
-                           "decisions": [{"n": n, "text": text}
-                                         for kind, n, text in asks
-                                         if kind == "decision"]}
+                           "decisions": _json_decisions(it, asks)}
                           for it, asks in rows], indent=1))
         return 0 if rows else 2
     for it, asks in rows:
@@ -2354,15 +2404,16 @@ def estate_store(store, base, top, stale_after, now, cap=ESTATE_CAP):
         open_items = [it for it in items
                       if it.get("status") not in ("done", "dropped")]
         for it in rank_ready(open_items):
-            raised = decision_raised(it)
+            raised, shown = decision_raised(it), decision_showings(it)
             for n, text in unanswered_decisions(it):
                 when = raised.get(n)
                 dt = _parse_when(when) if when else None
-                rec["decisions"].append({
+                rec["decisions"].append(dict({
                     "id": it.id, "title": it.get("title"),
                     "short_display_name": it.meta.get("short_display_name"),
                     "n": n, "text": text, "raised": when,
-                    "age_days": (now - dt).days if dt else None})
+                    "age_days": (now - dt).days if dt else None},
+                    **shown.get(n, _no_showing())))
             if estate_is_security(it):
                 rec["security"].append({
                     "id": it.id, "title": it.get("title"),

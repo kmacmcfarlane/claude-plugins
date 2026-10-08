@@ -21,7 +21,9 @@ and a publish.
 - **Every decision meets the `decisions` skill's floor first** — load that skill (same
   plugin). The page renders its card; it does not replace it. Keep the caller's numbers.
 - **The caller supplies the decisions and records the answers.** This skill holds no store;
-  it hands the answers over verbatim.
+  it hands the answers over verbatim, and with them when each card was shown (step 3) and
+  seen (step 6), for a caller that records shown and seen (the `decisions` skill's § Before
+  you write).
 - **No answer is acted on until it is echoed** in chat (step 6). A page click is a reply, read
   as the `decisions` skill's replies reference says; on a ⚠ one-way decision, a one-way pick
   is read back and waits for confirmation.
@@ -98,6 +100,12 @@ refuses to replace a published path this conversation has not seen, and reading 
 alone does not count. A new path makes a new artifact with an
 empty answers collection.
 
+**Hand over what was shown.** After a publish or republish, for every card whose number and
+`rev` were not on the page before (on a first publish, every card), hand the caller the
+card's number, the publish time (UTC, your clock) and the surface word *page*. A republish
+that keeps a card's `rev` hands over nothing for it. The caller records them in its own
+shape; a caller with no record drops them.
+
 ## Step 4: Hand it to the operator
 
 One short message: the link; how many decisions; *each click saves at once — there is no
@@ -142,6 +150,11 @@ Then give your caller each new answer verbatim for its record: number, choice, k
 quoted exactly, `rev`, `at` (the page's clock, kept as given), and the source (*answer
 page*), with your reading beside it, never in place of it. The caller acts on the echoed
 readings; you act on none yourself unless the caller is you.
+
+With each **new** answer, also hand over when it was seen: its number, the time of this
+hand-over (UTC, your clock, never the page's `at`) and the word *page*. An **unchanged** or
+**open** answer hands over nothing; the caller's record is never read for this. A changed
+answer to a card whose `rev` has not moved is a new answer and hands over one more.
 
 ## Troubleshooting
 

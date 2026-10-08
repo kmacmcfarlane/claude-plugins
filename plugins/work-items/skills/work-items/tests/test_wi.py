@@ -2630,7 +2630,10 @@ class TestGrooming(WiTestCase):
         data = json.loads(self.wi_ok(["needs-input", "--json"]))
         self.assertEqual([r["id"] for r in data],
                          ["groom-1111", "dec-2222", "parked-3333"])
-        self.assertEqual(data[1]["decisions"], [{"n": 4, "text": "keep the alias?"}])
+        self.assertEqual(data[1]["decisions"], [{
+            "n": 4, "text": "keep the alias?", "raised": None,
+            "first_shown": None, "last_shown": None, "last_seen": None,
+            "unseen": None}])
         self.assertEqual(data[0]["grooming"], "which store?")
         self.wi_ok(["lint"])
 
@@ -3759,9 +3762,11 @@ class TestB020Lows(WiTestCase):
             "## Notes\ndecision 4: first wording\ndecision 5: other\n"
             "decision 4: revised wording\n"))
         data = json.loads(self.wi_ok(["needs-input", "--json"]))
+        none = {"raised": None, "first_shown": None, "last_shown": None,
+                "last_seen": None, "unseen": None}
         self.assertEqual(data[0]["decisions"],
-                         [{"n": 4, "text": "revised wording"},
-                          {"n": 5, "text": "other"}])
+                         [dict({"n": 4, "text": "revised wording"}, **none),
+                          dict({"n": 5, "text": "other"}, **none)])
 
     # (3)
     def test_answer_40_does_not_answer_decision_4(self):
@@ -4194,6 +4199,109 @@ class TestLeadingPunctuationRoundTrip(WiTestCase):
         self.assertIn("owner: a@b\n", text)
         self.assertIsNone(self.show(recs["S-901"]["id"])["blocked"])
         self.wi_ok(["lint"])
+
+
+class TestShownAndSeen(WiTestCase):
+    """`shown N:` / `seen N:` lines (format.md § Shown and seen): read into
+    the JSON views only; they open and answer nothing."""
+
+    def decisions(self):
+        data = json.loads(self.wi_ok(["needs-input", "--json"]))
+        return {r["id"]: {d["n"]: d for d in r["decisions"]} for r in data}
+
+    def test_needs_input_json_carries_shown_and_seen(self):
+        self.write_item("sh-1111", sections=(
+            "## Notes\n"
+            "decision 1: twice shown, then seen\n"
+            "  raised: 2026-10-01T09:00Z\n"
+            "  what: the thing\n"
+            "decision 2: seen, then shown again\n"
+            "decision 3: never shown\n"
+            "shown 1: 2026-10-01T09:00:05Z chat\n"
+            "shown 2: 2026-10-01T09:00:05Z chat\n"
+            "seen 2: 2026-10-01T09:10:00Z turn\n"
+            "shown 1: 2026-10-02T08:00:00Z page\n"
+            "seen 1: 2026-10-02T08:30:00Z page\n"
+            "shown 2: 2026-10-02T08:00:00Z chat\n"))
+        d = self.decisions()["sh-1111"]
+        self.assertEqual(d[1], {
+            "n": 1, "text": "twice shown, then seen",
+            "raised": "2026-10-01T09:00Z",
+            "first_shown": "2026-10-01T09:00:05Z",
+            "last_shown": "2026-10-02T08:00:00Z",
+            "last_seen": "2026-10-02T08:30:00Z", "unseen": False})
+        self.assertEqual((d[2]["last_seen"], d[2]["unseen"]),
+                         ("2026-10-01T09:10:00Z", True))
+        self.assertEqual(
+            {k: d[3][k] for k in ("raised", "first_shown", "last_shown",
+                                  "last_seen", "unseen")},
+            dict.fromkeys(("raised", "first_shown", "last_shown",
+                           "last_seen", "unseen")))
+        self.assertIn("lint clean", self.wi_ok(["lint"]))
+
+    def test_shown_lines_open_and_answer_nothing(self):
+        self.write_item("sh-1111", "Lines only", sections=(
+            "## Notes\n"
+            "shown 5: 2026-10-01T09:00:00Z chat\n"
+            "seen 5: 2026-10-01T09:01:00Z turn\n"
+            "decision 6: still open\n"
+            "shown 6: 2026-10-01T09:00:00Z chat\n"
+            "seen 6: 2026-10-01T09:01:00Z turn\n"))
+        self.assertEqual(self.wi_ok(["needs-input"]).splitlines(),
+                         ["sh-1111  Lines only  decision 6: still open"])
+
+    def test_shown_40_is_not_shown_4(self):
+        self.write_item("sh-1111", sections=(
+            "## Notes\ndecision 4: open\ndecision 40: open too\n"
+            "shown 40: 2026-10-01T09:00:00Z chat\n"
+            "seen 40: 2026-10-01T09:01:00Z turn\n"))
+        d = self.decisions()["sh-1111"]
+        self.assertIsNone(d[4]["first_shown"])
+        self.assertIsNone(d[4]["unseen"])
+        self.assertEqual(d[40]["first_shown"], "2026-10-01T09:00:00Z")
+        self.assertIs(d[40]["unseen"], False)
+
+    def test_shown_in_a_fence_is_text(self):
+        self.write_item("sh-1111", sections=(
+            "## Notes\ndecision 1: open\n"
+            "```\nshown 1: 2026-10-01T09:00:00Z chat\n```\n"))
+        d = self.decisions()["sh-1111"][1]
+        self.assertEqual((d["first_shown"], d["unseen"]), (None, None))
+
+    def test_shown_seen_read_crlf(self):
+        self.write_item("sh-1111", sections=(
+            "## Notes\r\ndecision 1: open\r\n"
+            "shown 1: 2026-10-01T09:00:00Z chat\r\n"
+            "seen 1: 2026-10-01T09:01:00Z turn\r\n"))
+        d = self.decisions()["sh-1111"][1]
+        self.assertEqual((d["last_shown"], d["last_seen"], d["unseen"]),
+                         ("2026-10-01T09:00:00Z", "2026-10-01T09:01:00Z",
+                          False))
+
+    def test_shown_without_a_time_is_ignored(self):
+        self.write_item("sh-1111", sections=(
+            "## Notes\ndecision 5: open\n"
+            "shown 5: chat\nshown 5:\nseen 5: yesterday\n"))
+        d = self.decisions()["sh-1111"][5]
+        self.assertEqual((d["first_shown"], d["last_shown"], d["last_seen"],
+                          d["unseen"]), (None, None, None, None))
+
+    def test_shown_minute_form_reads(self):
+        self.write_item("sh-1111", sections=(
+            "## Notes\ndecision 5: open\n"
+            "shown 5: 2026-10-08T10:00Z chat\n"))
+        d = self.decisions()["sh-1111"][5]
+        self.assertEqual((d["first_shown"], d["unseen"]),
+                         ("2026-10-08T10:00Z", True))
+
+    def test_seen_follows_last_shown_by_file_order(self):
+        # the seen line's clock is behind the shown line's, but it sits
+        # below it: file order decides, never the times
+        self.write_item("sh-1111", sections=(
+            "## Notes\ndecision 5: open\n"
+            "shown 5: 2026-10-08T10:00:00Z chat\n"
+            "seen 5: 2026-10-08T09:59:00Z page\n"))
+        self.assertIs(self.decisions()["sh-1111"][5]["unseen"], False)
 
 
 if __name__ == "__main__":

@@ -36,7 +36,7 @@ the verbatim rule on every answer line (§ What the store records, **Answered**)
 | the caller's numbering | the store counter, the one counter for every question put to the operator (SKILL.md § Report): `decision N:` continues from the highest N (SKILL.md § Rehydrate step 3); a number is never reused. A source's own label (a series' OQ3, a gate's G5) rides in the card's `what:` line, never as a number |
 | the default wake ("the next time I finish a piece of work and report") | **the next Report**; a `later` with no time or event wakes there |
 | the operator's expected return | what the operator said ("back tomorrow morning"), in the item or the transcript; when they said nothing, the return is unknown and every stated deadline goes first |
-| who is reading, and how warm | after Rehydrate the operator is **cold** on every decision raised before the reset; the first Report after it re-shows them per the skill, with what changed since each was raised. Between resets: a decision shown in a Report written after the operator's last turn has **not been seen** — background returns can write several Reports while the operator is away — so the next Report shows it at its level again, not *(shown before)*. Your own transcript tells you: has the operator taken a turn since that Report? |
+| who is reading, and how warm | after Rehydrate the operator is **cold** on every decision raised before the reset; the first Report after it re-shows them per the skill, with what changed since each was raised. Between resets: a decision shown in a Report written after the operator's last turn has **not been seen** — background returns can write several Reports while the operator is away — so the next Report shows it at its level again, not *(shown before)*. Your own transcript tells you: has the operator taken a turn since that Report? The store records the same thing (§ What the store records, **Shown** and **Seen**): a reader without the transcript — after a reset, or another session — reads the last showing as unseen when no `seen N:` line follows the last `shown N:` line, and as not recorded (cold) when there is no `shown N:` line |
 | related decisions (groups) | decisions on one item, or on sibling items (one parent) about the same plugin; a decision with no item groups by plugin or files. Never transitive: two groups that share a file stay two groups |
 | named templates | none: the librarian names no template, so every decision carries the floor on its own card |
 | classes of decision (the class in *why ask* and on the list line) | the class names in `decide-alone.md` § Class names, picked when the decision is raised; `unclassed` when none fits |
@@ -135,12 +135,38 @@ renders what the operator read instead of composing it again.
 - **Revised:** when the options or the recommendation really change, or the skill's re-show
   check finds a stored field stale, write `decision N:` again with the new card and a
   `revised: <time> — <why>` line under it; the last one wins. A revised or backfilled card
-  keeps the first card's `raised:` (`wi` reads the first one per N), so its age, its order
-  and *while it waited* still count from the ask.
-- **Re-show:** render the last stored card, adding only what the skill allows. *While it
-  waited* is read from the record, never from memory: the item's lines written after the
-  card's `raised:` time, and `git -C "$MAIN" log --since=<that time>` over the files the
-  decision is about; nothing there is *nothing changed*.
+  keeps the first card's `raised:` (`wi` reads the first one per N), so its age and its
+  order still count from the ask.
+- **Shown:** right before a message goes out that renders decisions at card or block
+  level, append `shown N: <UTC time> chat` for each decision it renders that way, the time
+  from `date -u +%Y-%m-%dT%H:%M:%SZ`: a Report's decisions block, an Intake ask, a
+  decision raised between Reports, a re-show, a `tell me` or `dig into` re-render. A list
+  line, a tag-size mention or a Groom row writes none. For an answer page or a tick-box
+  doc, append `shown N: <time> page` (or `doc`) for each number and publish time the
+  `decision-page` skill hands over. Only this session, the one the operator reads, writes
+  it; a dispatched agent never does.
+- **Seen:** at the operator's next turn in this session, append `seen N: <UTC time> turn`
+  for every decision this session showed in chat since the operator's previous turn,
+  answered or not. For each new page or doc answer the `decision-page` skill hands over,
+  append `seen N: <time> page` (or `doc`) at the time it hands over; it hands over new
+  answers only, so an unchanged one writes nothing. A chat turn never sees a page or doc
+  card. **Held:** while the hold in the `work-items` skill's format reference, § Shown and
+  seen, stands, write no `seen N:` line; `shown N:` lines are written as above.
+
+  Both lines are column 0, appended, never inside a card, and ride the next store commit
+  like every other record line. Their shape and how they are read (first and last by
+  position; seen after the last showing by file order, never by the times) are the
+  `work-items` skill's format reference, § Shown and seen.
+- **Re-show:** render the last stored card, adding only what the skill allows, and append
+  its `shown N:` line (above). *While it waited* is read from the record, never from
+  memory. It opens at the last `shown N:` line that a `seen N:` line follows in file order —
+  the showing the operator read — at that line's time; with no such line (never seen, or
+  not recorded), at the card's `raised:` time. Find it with
+  `grep -n '^shown N:\|^seen N:' <item>` and take the last `shown` hit with a `seen` hit
+  below it. What changed is the item's lines written below that line (below the card, when
+  it opens at `raised:`), and `git -C "$MAIN" log --since=<that time>` over the files the
+  decision is about; nothing there is *nothing changed*. Age and order still count from
+  `raised:`.
 - **Open question:** `open question: <text>` in the item body. It closes with a later line:
   `open question: <text> → decision N` when it gains options and is raised as `decision N:`,
   or `open question dropped: <text> — <why>` when retired. The open ones are the `^open
@@ -257,7 +283,9 @@ skill, the decisions come **last in the turn**, where the operator's eye is when
 4. Shown in full, at the level the skill gives them:
    - those raised since the last Report;
    - those whose wake has come;
-   - those shown in a Report the operator has not had a turn since (not yet seen);
+   - those shown in a Report the operator has not had a turn since (not yet seen; after a
+     reset, readable from the store as a last `shown N:` line with no `seen N:` line below
+     it);
    - after Rehydrate, every open one (the cold re-show, paged as the skill says — paging is
      provisional);
    - a ⚠ one-way decision on its first showing and whenever the operator is cold on it;
