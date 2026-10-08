@@ -27,3 +27,7 @@ dispatch: planner opus high — plan
 ## Notes
 - 2026-10-08 claimed by Kyle-McFarlane@2d49f8460283
 agent: planner ab90561988a81d4b4
+return: DONE series 00_initial.md (wi note <id> <text>... [--raw], secret-lint refusal, 4a½ uses it after a --help probe else manifest; unattended unchanged; other appenders named)
+baseline: plan review 1 — ef77493b63a68ee08bf7cf9e15675429bf5b0b0db8fb6b90cafb8f0772da7c8a .claude-sandbox/investigations/wi-note-append-a-notes-line-under-lock-a-6cfb/00_initial.md; 
+dispatch: reviewer opus high — plan review 1
+agent: reviewer a3d9552bce742b04d
