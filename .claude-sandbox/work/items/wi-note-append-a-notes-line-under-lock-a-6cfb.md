@@ -51,3 +51,5 @@ return: DONE f3338d0 (cmd_note and _note_line; TestNote 16 tests; work-items SKI
 changed: wi.py, tests/test_wi.py, work-items SKILL.md, references/format.md, references/provider-interface.md, context-guard checkpoint SKILL.md
 dispatch: reviewer opus high — review round 1
 agent: reviewer a0225e6318d9a0491
+verdict: review 1 NEEDS_CHANGES at f3338d0 (must-fix 1: a twice-refused text would be carried into the manifest as written; lows: a bare -- text silently dropped, the decision line's own --raw call routing unstated; nit: PEM refusal hint)
+dispatch: implementer opus medium — fix round 1 (resume a4cea3b5b72b49074)

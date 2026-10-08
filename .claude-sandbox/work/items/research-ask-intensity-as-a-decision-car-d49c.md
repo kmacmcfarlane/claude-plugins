@@ -56,3 +56,6 @@ return: DONE_WITH_CONCERNS b3e0524 (owner section; five skills point to it; AskU
 changed: intensity-and-routing.md, research/research-deep/research-refine/research-prune/deep-investigation SKILL.md, run-record.md, storage-and-knowledge-base.md, research-criteria.md, dev-flow plugin.json, marketplace.json, README.md (:82, :346-352), tests/test_research_asks.py
 dispatch: reviewer opus high — review round 1
 agent: reviewer aae7b80794e63b960
+verdict: review 1 CLEAR at b3e0524 (must-fix 0; lows: CLAUDE.md layout lacks the new test, override pick wording, illustration lane counts and quick verifier, Step 3 quota read order; nits: dangling §, size)
+decided: wording — fix round 1 for lows 1-4 (an operator round trip and a misordered step are worth one sentence each; below the cap)
+dispatch: implementer opus medium — fix round 1, lows 1-4 (resume acfa41296fc254968)
