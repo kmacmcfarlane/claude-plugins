@@ -2743,6 +2743,53 @@ class TestLint(WiTestCase):
         self.assertIn("PEM private key", r.stdout)
         self.assertNotIn("clean-2222", r.stdout)
 
+    # obviously fake values; the KEY names hold none of the KV rule's words
+    # (token, secret, password, ...), so only the assignment rule can fire
+    ASSIGN_FAKE = "DB_PASS=hunter2hunter2hunterXYZ"
+
+    def lint_notes(self, *lines):
+        (self.root / "items" / "probe-3333.md").unlink(missing_ok=True)
+        self.write_item("probe-3333", sections="## Notes\n" + "\n".join(lines) + "\n")
+        return run(["lint"], self.root)
+
+    def test_assignment_secret_caught_bare_and_after_a_prefix(self):
+        shapes = {
+            "bare": self.ASSIGN_FAKE,
+            "indented export": "  export " + self.ASSIGN_FAKE,
+            "bullet": "- " + self.ASSIGN_FAKE,
+            "bullet and date": "- 2026-10-08 checkpoint: CORRECTION " + self.ASSIGN_FAKE,
+            "tag prefix": "[ops] " + self.ASSIGN_FAKE,
+            "record line": "learned: set " + self.ASSIGN_FAKE + " on the host",
+            "backticked": "run `" + self.ASSIGN_FAKE + "` first",
+            "after a comma": "two vars,FAKE_ID=fakefakefakefake",
+        }
+        for name, line in shapes.items():
+            with self.subTest(shape=name):
+                r = self.lint_notes(line)
+                self.assertEqual(r.returncode, 3, r.stdout)
+                self.assertIn("probe-3333.md:", r.stdout)
+                self.assertIn("likely secret value", r.stdout)
+
+    def test_assignment_look_alikes_stay_clean(self):
+        look_alikes = {
+            "placeholder": "- set KEY=<path> in the env file",
+            "bare placeholder": "KEY=<path>",
+            "shell var": "- 2026-10-08 note: DB_PASS=$DB_PASS from the env",
+            "template": "- render CONF_DIR={root}/conf",
+            "short value": "- 2026-10-08 FOO=bar",
+            "bare short value": "FOO=bar",
+            "url query": "- see https://example.invalid/p?a=bcdefghijklmnop&b=c",
+            "url upper query": "- see https://example.invalid/p?MODE=abcdefghijk",
+            "glued to a word": "- xFOO_BAR=abcdefghijk",
+            "two-letter key": "- 2026-10-08 AB=abcdefghijk",
+            "comparison": "- check X == Y and a=b",
+        }
+        for name, line in look_alikes.items():
+            with self.subTest(shape=name):
+                r = self.lint_notes(line)
+                self.assertNotIn("probe-3333", r.stdout)
+                self.assertEqual(r.returncode, 0, r.stdout)
+
     def test_conflict_markers_flagged(self):
         (self.root / "items" / "conflicted-0000.md").write_text(
             CANONICAL.replace("## Notes", "<<<<<<< HEAD\n## Notes"))

@@ -3216,7 +3216,14 @@ def cmd_import(args):
 
 # ── lint, archive ───────────────────────────────────────────────────────────
 
-SECRET_ASSIGN_RE = re.compile(r"^\s*(?:export\s+)?[A-Z][A-Z0-9_]{2,}=(?![$<{])\S{8,}")
+# KEY=value anywhere a token starts: at line start (an `export ` prefix
+# included) or after whitespace or opening punctuation, so a bullet, date or
+# tag prefix ("- 2026-10-08 checkpoint: KEY=...") no longer hides it. The
+# value rule is the bare form's, unchanged: 8+ non-space characters, not a
+# $VAR, <placeholder> or {template}. A KEY glued to a word or a URL's ?/&
+# (a query string) is not a token start and stays unmatched, as before.
+SECRET_ASSIGN_RE = re.compile(
+    r"(?:^|[\s(\[,;:|'\"`])[A-Z][A-Z0-9_]{2,}=(?![$<{])\S{8,}")
 SECRET_KV_RE = re.compile(
     r"(?i)\b(api[_-]?key|secret|token|password|passwd|credential|webhook[_-]?url)\b"
     r"['\"]?\s*[:=]\s*['\"]?(?![$<{*])([A-Za-z0-9+/_.-]{12,})")
@@ -3227,7 +3234,7 @@ def secret_findings(text):
     for n, line in enumerate(text.split("\n"), 1):
         if "PRIVATE KEY-----" in line:
             out.append((n, "PEM private key material"))
-        elif SECRET_ASSIGN_RE.match(line) or SECRET_KV_RE.search(line):
+        elif SECRET_ASSIGN_RE.search(line) or SECRET_KV_RE.search(line):
             out.append((n, "likely secret value (record the path and key, never the value)"))
     return out
 
