@@ -83,3 +83,6 @@ impact: Effect → turn times appear in the public store from the build's first 
 target: full main /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude/worktrees/work-items-record-when-a-decision-was-sh-0999
 dispatch: implementer opus medium — build from the CLEAR series (contract and skill wording; not mechanical)
 agent: implementer a1ce4ecde12903821
+return: DONE 1300ebc (shown N:/seen N: lines in format.md with the hold naming decision 180; wi JSON fields; writers and readers in decisions, decision-page, librarian decisions.md, record-lines.md; 287 work-items tests)
+changed: 14 files: wi.py, test_wi.py, test_estate.py, format.md, work-items SKILL.md, work-review SKILL.md, record-lines.md, librarian decisions.md, decisions SKILL.md, worksheet.md, rendering.md, decision-page SKILL.md, cards-schema.md, fallback.md
+dispatch: reviewer opus high — review round 1
