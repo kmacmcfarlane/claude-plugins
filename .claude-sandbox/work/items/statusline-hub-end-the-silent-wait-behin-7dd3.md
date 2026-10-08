@@ -32,3 +32,6 @@ return: DONE_WITH_CONCERNS 0354d97 (older-copy rule: dead copy taken, live copy 
 changed: statusline-hub hooks session_start.py, owner.py, tests (handover, session_start, owner), skills/statusline-hub/references/hook-contract.md
 dispatch: reviewer opus high — review round 1
 agent: reviewer a0d68362569272315
+verdict: review 1 NEEDS_CHANGES at 0354d97 (must-fix 1: a recorded plugin whose current-hooks resolves to a dir with no statusline.py still waits — the a95a state; lows: tracked .claude/settings.json can be written (follow-up), README soft-dep paragraph understates; nits)
+decided: wording — finding 1 is in scope: the series lands F2 before a95a precisely so a95a's state is not a silent wait; a resolving link with no script is not the mid-update state 02 guards (a dangling link)
+dispatch: implementer opus medium — fix round 1 (resume a6b6507ff123a6363)
