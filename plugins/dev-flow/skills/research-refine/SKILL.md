@@ -2,7 +2,7 @@
 name: research-refine
 description: Extend or correct an existing research run — read its brief, synthesis and threads not pulled, take a new sub-question, a challenged claim, a pulled thread or a changed scope, run only the lanes that gap needs through the research skill, and land a new run that names what it supersedes, re-promoting the knowledge-base notes it changes. Use when the user says "refine the research on", "follow up on", "pull that thread", "the research on X is out of date", "re-check the claim that", or names an existing run or note to build on. Not for a fresh question with no prior run (research), nor restructuring a knowledge base (research-prune).
 disable-model-invocation: true
-allowed-tools: Read, Glob, Grep, Bash, WebSearch, WebFetch, Agent, AskUserQuestion, Write
+allowed-tools: Read, Glob, Grep, Bash, WebSearch, WebFetch, Agent, Write
 argument-hint: "<run slug, note path, or question> [what to refine] [--intensity quick|standard|deep] [--item <id>]"
 ---
 
@@ -48,14 +48,15 @@ One of four kinds; say which, in one line:
 
 | Kind | Trigger | What the new run does |
 |---|---|---|
-| **pull a thread** | a `T<n>` entry in § Threads not pulled, or an open question | lanes for that thread only; the rest is inherited. The mission is **restated by you** from the sub-question the entry points at and the prior synthesis's verified text — never copied from the entry or a findings file |
+| **pull a thread** | a `T<n>` entry in § Threads not pulled not marked pulled, or an open question | lanes for that thread only; the rest is inherited. The mission is **restated by you** from the sub-question the entry points at and the prior synthesis's verified text — never copied from the entry or a findings file |
 | **re-check a claim** | a claim challenged, stale (`volatile: true`, past its shelf life), or `CONTRADICTED` by the verifier | one or two narrow lanes on primary sources for that claim; the verifier samples it |
 | **change scope** | a new boundary, version, region, or a distinction the prior did not draw | the sub-questions the change touches; the prior's other findings are inherited with a note that scope changed |
 | **extend** | a new sub-question on the same decision | lanes for the new sub-question; they read the prior synthesis first |
 
 Intensity defaults to `quick` for a single re-check and `standard` otherwise; the cost line
-and the quota read apply as in `research` Step 3. A refinement that wants `deep` is usually a
-new question; say so and offer `research-deep`.
+and the quota read apply as in `research` Step 3. A refinement that wants `deep` is usually
+a new question; say so and offer `research-deep`, put per the `research` skill's
+`references/intensity-and-routing.md` § Putting an ask to the operator.
 
 ### Step 3 — Inherit, then brief
 

@@ -2,7 +2,7 @@
 name: research-deep
 description: Run the research skill at deep or exhaustive intensity for a subject too broad for one round — two or three rounds of research lanes on a cheaper model, a gap gate between rounds, an adversarial lane at exhaustive, a larger verifier sample, and a synthesis that may run in a fork; lands as a run record or knowledge-base notes. Use when the user says "research this thoroughly", "exhaustive research on", "research this from every angle", "thorough sourced research", or when the research skill proposes it after a quick run finds its core claim contested or thin. Not for a fan-out that writes an investigation series' plan — "deep research", "map the landscape of", "research this overnight" for a build decision are deep-investigation — nor a bug or feature in this repo (investigate).
 disable-model-invocation: true
-allowed-tools: Read, Glob, Grep, Bash, WebSearch, WebFetch, Agent, AskUserQuestion, Write
+allowed-tools: Read, Glob, Grep, Bash, WebSearch, WebFetch, Agent, Write
 argument-hint: "<broad question> [--intensity deep|exhaustive] [--shape run|kb] [--to <path>] [--item <id>]"
 ---
 
@@ -36,7 +36,8 @@ its lanes in full parallel.
 ### Step 3 — Intensity
 
 `deep` unless the invocation says `exhaustive`. The quota table still applies: a hot
-five-hour window downgrades to `standard` or defers to `resets_at`, and says so. Print the
+five-hour window downgrades to `standard`, or offers the deferral, per the `research`
+skill's `references/intensity-and-routing.md` § Putting an ask to the operator. Print the
 cost line.
 
 ### Step 5 — Lanes
@@ -74,8 +75,9 @@ mandatory at `exhaustive` (the adversarial lane). Round 3 launches only on a gap
 and never on "it might find more". The threads-not-pulled turn runs after every round: in an
 interactive run the operator decides whether to spend round 3 on them, asked with its value
 and cost as the `research` skill's `references/intensity-and-routing.md` § Asking for
-another round gives them; in a chained or unattended run the run continues and the report
-carries them.
+another round gives them, and put per § Putting an ask to the operator in the same file,
+never a dialog. While it is open, the round in flight runs on, and its gap gate waits for the
+answer. In a chained or unattended run the run continues and the report carries them.
 
 Waves *within* a round exist only for the pacing reason from Step 1, fired from a one-shot
 wakeup whose prompt is "read `<brief>` and launch round N wave M" and nothing more — never a

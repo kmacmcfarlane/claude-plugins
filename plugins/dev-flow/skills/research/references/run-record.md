@@ -139,7 +139,9 @@ first and what the verifier scores against.
 ## Intensity, quota and routing
 The cost line as printed. The quota reading. The Profiles rows used
 (`intensity-and-routing.md` § Profiles), and any step-down or fallback. Search budget and its
-per-lane split.
+per-lane split. The intensity ask's outcome:
+`Asked: (<letter>) <preset> chosen, recommended (<letter>)`, or
+`Asked: not asked — <the § When to ask rule that applied>`.
 
 ## Lanes
 Grouped by round. One paragraph per lane, opening in bold with the id, round and model:
@@ -157,10 +159,12 @@ it.
 
 ## Threads not pulled
 Appended after each round, one line per thread, in the orchestrator's words only:
-`- T<n>: lane <id>, sub-question <n>, gap condition <n> — <value, one clause>`. Never a phrase
-copied from a findings file: this section is written before verification. The operator reads
-it to decide whether to continue; `research-refine` reads it for the pointer and restates
-the mission from the sub-question.
+`- T<n>: lane <id>, sub-question <n>, gap condition <n> — <value, one clause>`. A thread
+pulled into a running round gets a trailing `— pulled into round <n> as <lane id>`, ids
+only, and is not offered again (`intensity-and-routing.md` § Putting an ask to the
+operator). Never a phrase copied from a findings file: this section is written before
+verification. The operator reads it to decide whether to continue; `research-refine` reads
+it for the pointer and restates the mission from the sub-question.
 
 ## Parked
 Anything deliberately not actioned (an existing run on a neighbouring question, a KB
@@ -202,15 +206,21 @@ writes into.
   in notes/vendors) — proposal logged in KB.md. PROMOTED: 3 notes. RUN DONE_WITH_CONCERNS.
 ```
 
-Entry kinds: `TOOL GAP`, `PLANNED`, `LAUNCHED`, `DONE`, `FAILED`, `PLAN CHANGE`, `GAP
-GATE`, `SEARCH EXHAUSTED`, `TOOLS REVIEWED`, `SCANNED`, `STRIPPED`, `VERIFIED`, `SYNTHESIS
-DONE`, `FIT CHECK`, `PROMOTED`, `RUN <status>`. A `TOOL GAP` line names the missing tools
-only (`TOOL GAP: pdftotext, pdfinfo, pdftoppm missing; tool request in the report`).
-`SCANNED`, `STRIPPED` and `TOOLS REVIEWED` carry the scanner's counts, file names, line
-numbers, rule names and verdicts — never a line's text. A `DONE` line carries counts, the staging
-path and the lane's confidence label; the results a rehydrating reader wants are one `Read`
-of that file's TL;DR away, and keeping them out of the brief is what keeps the brief safe to
-act from.
+Entry kinds: `TOOL GAP`, `PLANNED`, `LAUNCHED`, `DONE`, `FAILED`, `PLAN CHANGE`, `GAP GATE`,
+`SEARCH EXHAUSTED`, `ASKED`, `ANSWERED`, `TOOLS REVIEWED`, `SCANNED`, `STRIPPED`,
+`VERIFIED`, `SYNTHESIS DONE`, `FIT CHECK`, `PROMOTED`, `RUN <status>`. An `ASKED` line
+records a round ask put to the operator (`ASKED: round <n> ask, threads T1, T2; waiting`, or
+`ASKED: verify gate ask; waiting`) and an `ANSWERED` line its answer (`ANSWERED: round <n> →
+(b)`): letters, ids and status only, never the operator's or a lane's prose. Lanes running
+while an ask is open write their `DONE` lines after the `ASKED` as usual. A resumed run that
+finds an `ASKED` with no `ANSWERED` after it re-raises the ask with the brief's threads, to
+a cold reader, before it runs any gap gate (`intensity-and-routing.md` § Putting an ask to
+the operator). A `TOOL GAP` line names the missing tools only (`TOOL GAP: pdftotext,
+pdfinfo, pdftoppm missing; tool request in the report`). `SCANNED`, `STRIPPED` and `TOOLS
+REVIEWED` carry the scanner's counts, file names, line numbers, rule names and verdicts —
+never a line's text. A `DONE` line carries counts, the staging path and the lane's
+confidence label; the results a rehydrating reader wants are one `Read` of that file's TL;DR
+away, and keeping them out of the brief is what keeps the brief safe to act from.
 
 ## The lane prompt
 

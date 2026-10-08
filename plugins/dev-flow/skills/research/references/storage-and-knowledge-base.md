@@ -235,10 +235,11 @@ reports its result in one block in the run's ledger and in `KB.md`'s `last_fit_c
    "should we…" question, or a by-question KB accumulating entity profiles, is a scheme drift,
    not a filing problem. Say which.
 4. **Verdict** — `FITS` (promote now), `STRAINED` (promote now, and file a rebalance
-   proposal in `KB.md`'s rebalance log with the counts), or `REBALANCE FIRST` (a threshold is
-   past by half again or an access pattern dead-ends: propose the rebalance, and in an
-   interactive run ask before promoting; unattended, promote to a `notes/_inbox/` directory
-   and record the proposal — nothing is lost, and the tree is not made worse).
+   proposal in `KB.md`'s rebalance log with the counts), or `REBALANCE FIRST` (a threshold
+   is past by half again or an access pattern dead-ends: propose the rebalance, and in an
+   interactive run ask before promoting, per `intensity-and-routing.md` § Putting an ask to
+   the operator; unattended, promote to a `notes/_inbox/` directory and record the proposal
+   — nothing is lost, and the tree is not made worse).
 
 ### Promotion
 
@@ -270,8 +271,9 @@ its brief's frontmatter and drops out of `INDEX.md`'s default view.
 
 ### Key junctures — when to revisit the charter
 
-The charter is re-read, and the operator asked whether it still holds, at these points and
-no others (asking on every run trains people to stop reading the question):
+The charter is re-read, and the operator asked whether it still holds (asked per
+`intensity-and-routing.md` § Putting an ask to the operator), at these points and no others
+(asking on every run trains people to stop reading the question):
 
 - the fit check returns `REBALANCE FIRST`;
 - a run's material does not fit the scheme (a scheme-drift verdict) for the second time;
