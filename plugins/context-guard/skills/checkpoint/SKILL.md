@@ -19,9 +19,10 @@ Operator tool guide: `references/operator-playbook.md`. Manifest spec:
 `references/handoff-format.md`.
 
 **Lean path:** if the state file shows fewer than ~60K tokens left, skip every optional read,
-do Steps 0, 2, 4b only, then Step 7's close (the manifest path, the opener, and for a
-handoff the continuation commands) — a lean checkpoint is when a handoff is likeliest and
-the next session has the least to go on. Keep the whole checkpoint under a screen.
+do Steps 0, 2, 4a½ in its lean form, and 4b only, then Step 7's close (the manifest path,
+the opener, and for a handoff the continuation commands) — a lean checkpoint is when a
+handoff is likeliest and the next session has the least to go on. Keep the whole checkpoint
+under a screen.
 
 **Once this checkpoint is going ahead** — after Step 0, or, under the
 mid-turn marker, after the `--check` below has confirmed it — tell the mid-turn check that
@@ -80,7 +81,10 @@ with `--checkpointing`, then:
   `BELIEF` lines, each marked unconfirmed (`BELIEF (unconfirmed: no operator) …`). The
   `Goal` line quotes the operator's last stated goal, as ever.
 - **Lean path**: Steps 2 and 4b (with the mark), then Step 5's one sentence and Step 7's
-  close as the turn's **final message**; end the turn there. Every command it runs is a
+  close as the turn's **final message**; end the turn there. Step 4a½ writes no item file
+  here (an edit could prompt): its lines go into the manifest's `Aware of`, each keeping
+  its tag first (the trim keeps CORRECTION and REFUSED by it) and naming its item id next,
+  and `Next` names writing them into those items. Every command it runs is a
   plugin Bash command (the manifest is drafted in the scratchpad), so it needs no prompt
   once the operator has allowed them (`references/operator-playbook.md` § Where the
   manifest lives). A custody skill's own remaining steps (librarian-mode: its
@@ -159,6 +163,11 @@ in the ledger yet gets written now, by you:
 4. **Unverified beliefs**, labelled.
 5. **Approvals and refusals** — a declined capability stays declined; never let a summary
    soften a refusal into an open question.
+6. **Pending points** — open questions, operator statements not yet confirmed, proposals
+   and alternatives not yet settled, refinements, file:line pointers.
+
+Tag each line with the work item it belongs to, when one does: Step 4a½ routes those lines
+into the items, so this list is the only recall either step makes.
 
 **Dictate → fork writes** is allowed for the file I/O: you list the residue in ≤30 visible
 lines; a **fork** (`Agent`, `subagent_type: "fork"` — inherits this whole conversation and its
@@ -173,19 +182,45 @@ non-fork subagent knows nothing, and even a fork's recall is not a substitute fo
 Name the repo that owns each item permanently (working in repo A on repo B's problem is
 normal; leaving the knowledge in A is the bug): reasoning → the owning repo's investigation
 series; decisions → the commit that carries them; deferred work → the owning repo's work-item
-store (`wi add`) or TODO; durable facts → that repo's `CLAUDE.md` or a skill. **Harness
-friction** (a skill that misled, an avoidable cost, a missing tool) routes to the harness
-meta-repo's retro notes — a session has two outputs, and the second improves the next session.
+store (`wi add`) or TODO; a line tagged with an open item → that item (Step 4a½); durable
+facts → that repo's `CLAUDE.md` or a skill. **Harness friction** (a skill that misled, an
+avoidable cost, a missing tool) routes to the harness meta-repo's retro notes — a session
+has two outputs, and the second improves the next session.
 State the routing table before writing.
 
 ## Step 4 — Flush, manifest, mark
 
 **4a.** Commits first (the message is a compaction-proof summary you chose; include reasoning
-and retractions), then investigation/plan files, then work items. Respect each repo's rules:
-pre-commit hooks, secret encryption, never `git add -A` where the tree carries unencrypted
-secrets. A repo not yours to commit to stays dirty with a written note. Then sweep the
-session scratchpad, which `/clear` leaves behind: copy every file a successor needs to a
-durable path, or list it under **Copy forward** (the format spec's scratchpad rule).
+and retractions), then investigation/plan files, then work items (Step 4a½'s writes go in
+before the store's commit). Respect each repo's rules: pre-commit hooks, secret encryption,
+never `git add -A` where the tree carries unencrypted secrets. A repo not yours to commit
+to stays dirty with a written note. Then sweep the session scratchpad, which `/clear` leaves
+behind: copy every file a successor needs to a durable path, or list it under **Copy
+forward** (the format spec's scratchpad rule).
+
+**4a½ — Open items, before the manifest.** Fix the `items:` set now: the `wi` ids of the
+open or doing items the manifest will mention, checked against the store that holds each.
+4b writes exactly this set. For each item, read it (`wi show <id>`) and append every Step 2
+line tagged with it that the file does not already hold: operator statements not yet
+confirmed, alternatives weighed and rejected, corrections, refusals, pending points. Nothing
+tagged, nothing written. Each goes on one physical line at the end of the item's `## Notes`
+(add the heading at the end when absent), dated like the lines `wi` appends, tagged with the
+manifest's `Aware of` tags plus `REJECTED <alternative> — <why it lost>`:
+
+```text
+- <YYYY-MM-DD> checkpoint: BELIEF (unconfirmed) operator: "<their words>" — confirm before acting
+```
+
+A question already put to the operator that has no `decision N:` line gets one now, N the
+store's next decision number; any other question is an `OPEN` line. Never carry
+residue with `wi handoff`: it rewrites its four bullets, so an earlier `learned:` is lost.
+Run `wi lint`, then commit the edits in 4a's work-item commit, where the repo commits its
+store. **Path and key, never value**: item files are tracked forever. The writer is this
+session, or a fork under Step 2's dictate → fork rule, handed the tagged lines verbatim;
+the fork adds no recall of its own. **Lean form**: read only `wi show <id> --brief` (a
+duplicate line is cheaper than a lost one), write only corrections, refusals, unconfirmed
+operator statements and open questions, at most three lines an item, run `wi lint`, commit
+nothing, and name the uncommitted item files in an `OPEN` line of the manifest's `Aware of`.
 
 **4b.** Rewrite the **rehydration manifest** per `references/handoff-format.md`, in **both
 modes**. It lives at this session's own path — one file per session in the Claude config
@@ -204,8 +239,8 @@ what the files do not hold (the format spec's stage-boundary rule). Write **Hold
 set (no push, keep dispatch small, pause a loop) with its end condition, per the format
 spec's hold rule; `None` when there are none. Write **In flight** from the dispatch notices or
 ListAgents, not memory, per the format spec's In flight rule. Fill the frontmatter
-`items:` with the `wi` ids of the open or doing items the manifest mentions, checked
-against the store (the hook names any since closed as a dead claim). If
+`items:` with the set Step 4a½ fixed: the `wi` ids of the open or doing items the manifest
+mentions, checked against the store (the hook names any since closed as a dead claim). If
 this session is running a standing mode (a skill that holds it in a role, entered by a
 command such as `/<plugin>:<mode> start`), set `mode_skill:` to that command exactly as the
 operator would type it; omit it otherwise. When the argument names `then <next-skill>`, set
@@ -315,7 +350,8 @@ gate or label, it is already set). Drop this line only when the mode isn't a sta
 
 - Measure from the state file; never assert depth from feel.
 - Never silently drop an inventory item — route it or say you are dropping it.
-- Step 2's recall is never delegated and never skipped; Step 4b is never skipped.
+- Step 2's recall is never delegated and never skipped; Step 4a½ runs before Step 4b
+  whenever `items:` is not empty; Step 4b is never skipped.
 - Path and key, never value.
 - Never run the checkpoint inside a sub-agent: it shares the parent's session id, so it
   would write the parent's `session:` and stand the parent's gate down. A sub-agent

@@ -165,7 +165,10 @@ Three layers, escalating; the first two are hooks, the third is a skill.
    every checkpoint prints it, and a handoff also prints the commands to continue. Step 2 writes reasoning residue
    from the live session (Finding 2). Step 3 routes twice — task knowledge to its owning repo,
    harness friction to the plugin repo — because a session has two outputs, and the second is
-   the one that improves the next session. Step 4 delegates the mechanical flush to a **fork**
+   the one that improves the next session. Step 4a½ writes what only the conversation held
+   about each open item into that item before the manifest (the operator's standing request,
+   decision 179 (a), 2026-10-07): the manifest lives in the config dir and is one session's,
+   while the item travels with the repo to whoever picks it up next. Step 4 delegates the mechanical flush to a **fork**
    (inherits history + cache; a fresh subagent starts empty and is the wrong primitive here).
 
 **Added later: the mid-turn check** (`PostToolUse`, `hooks/turn_gate.py`). The layers above
