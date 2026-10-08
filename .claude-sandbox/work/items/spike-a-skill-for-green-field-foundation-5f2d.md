@@ -3,12 +3,11 @@ id: spike-a-skill-for-green-field-foundation-5f2d
 title: "spike: a skill for green-field foundation sessions (requirements, research, claim, architecture, phased plan)"
 short_display_name: green-field foundation session skill
 type: spike
-status: doing
+status: done
 priority: 1
-owner: Kyle-McFarlane@2d49f8460283
-claimed: 2026-10-08T06:55Z
 created: 2026-10-08
 updated: 2026-10-08
+closed: 2026-10-08
 refs:
   - peer claude-analytics 2026-10-08T06:55Z (operator request there)
 ---
@@ -46,3 +45,18 @@ dispatch: planner opus high — plan fix round 3 (resume a5d2c918ad5eec7bd)
 return: DONE series 03_review-3-fixes.md (phase-1 reopen covers intent and the neighbours table; dev-cycle files G3 features)
 baseline: plan review 4 — 54fd015edc5f38b5e2facbb12b12880884397cabefa057e87198a4683d798abf .claude-sandbox/investigations/spike-a-skill-for-green-field-foundation-5f2d/00_initial.md; 770aadcdc767bfc34aea3d0ca3faa27ff3991aa9e57f3c0a1e4ea506b6b98400 .claude-sandbox/investigations/spike-a-skill-for-green-field-foundation-5f2d/01_review-fixes.md; 182c8f334c5d2a80ed6054c059480aba93589d5bf57aa8a2c0d1b797e13f4882 .claude-sandbox/investigations/spike-a-skill-for-green-field-foundation-5f2d/02_review-2-fixes.md; 4fc5355352c6559cb4ea31428e47bc16e575def63fefdc0aca3effe56ab018f6 .claude-sandbox/investigations/spike-a-skill-for-green-field-foundation-5f2d/03_review-3-fixes.md; 
 dispatch: reviewer opus high — plan review 4 (resume ae5914d0eefb54dbc)
+verdict: plan review 4 CLEAR (must-fix 0; low: 03 has no Risk Assessment section, 02's risks stand)
+note: spike closed on its series (00-03); build filed as foundation-skill-build-the-green-field-f-cc8a, waiting on decisions 193-195
+decision 193: Where should the foundation skill live? — options: (a) a new skill in dev-flow [recommended] | (b) a new plugin, foundation | (c) a mode of investigate | (d) inside create-repo | (e) inside kit-dev | (z) decide later
+  raised: 2026-10-08T07:50Z
+  why ask: placement — dev-flow's aim fits, but you may see a project's foundation as an aim of its own (a new plugin, a permanent name)
+  impact: Effect → a new skill inside dev-flow, one line in its tables · Wait: blocks the build · reach: everyone who installs dev-flow · undo: one edit before release; a cheap skill move after · cost: none now
+decision 194: What should the skill be called? — options: (a) foundation [recommended] | (b) greenfield | (c) project-foundation | (z) decide later
+  raised: 2026-10-08T07:50Z
+  why ask: api-name — both main candidates are your words
+  impact: Effect → /dev-flow:foundation · Wait: blocks the build · reach: README, install notes, what you type · undo: one edit before release; a cheap skill rename after, or a costly plugin rename if 193 is (b) · cost: none
+decision 195: At which phase gates must you approve before the next phase starts? — options: (a) requirements and the plan always; architecture only for hard-to-reverse decisions (ADRs) and CLAIM.md changes, the rest reported [recommended] | (b) all three always | (c) requirements only | (z) decide later
+  raised: 2026-10-08T07:50Z
+  why ask: rule-change — it sets how often every foundation run stops for you
+  impact: Effect → you approve requirements and plan every run; architecture only when hard to reverse · Wait: blocks the build · reach: every foundation run in every repo · undo: one rule edit · cost: usually two stops per run, three with a hard-to-reverse decision
+- 2026-10-08 done
