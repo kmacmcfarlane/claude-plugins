@@ -494,8 +494,9 @@ only (`needs-input --json`, `estate --json`): each decision record carries
 `first_shown`, `last_shown`, `last_seen` (each the time as written, or
 `null`) and `unseen` — `null` with no `shown N:` line, `true` when no
 `seen N:` line follows the last `shown N:` line, else `false`. Text and
-`--plain` output are unchanged. `wi` has no verb that writes them; append
-with Bash, as for every other record line.
+`--plain` output are unchanged. Append them with `wi note <id> --raw --
+'<line>'`, which puts the line at the end of `## Notes` under the store's
+lock, or with Bash, as for every other record line.
 
 ## Decided alone: `decided:`
 
@@ -526,8 +527,15 @@ with `^decided: (\S+) ([a-z-]+) — (.*?) · authority: (.*?) · reopen: (.*)$`.
   - learned:` (`—` when empty). `wi handoff` rewrites only those four lines
   (the first of each key) and inserts any that are missing; required by `lint`
   when `status: doing`. Each value is one line (see below).
-- `## Notes` — free text; the tool only appends dated lines, after the last
+- `## Notes` — free text; the tool only appends lines, after the last
   non-blank line of the section (it adds `## Notes` at the end when absent).
+  `wi note <id> -- '<text>' […]` is the free-text append: each text becomes a
+  dated line (`- <today> <text>`), or with `--raw` the line as written, all
+  in one write under the lock. It refuses (exit 1, nothing written) a line
+  break, an empty text, under `--raw` a line starting `## ` or opening a
+  fence, any line the secret rule below flags, and a text that is exactly
+  `--` after the separator `--` (argparse would drop it); each refusal reads
+  `wi: text <n>: …; nothing written` and never quotes the text.
 - any other `## …` section round-trips untouched.
 
 A section runs from its `## ` heading to the next `## ` heading, so unheaded
@@ -537,7 +545,7 @@ matching closer is not a fence: it does not hide the headings after it. An
 unclosed opener can still pair with a later block's fence and hide the
 headings between them. When `## Handoff` or `## Notes` then exists only
 inside such a fence, followed there by another `## ` line, `handoff`,
-`claim` and `done` exit 3 and write nothing rather than add a second
+`claim`, `done` and `note` exit 3 and write nothing rather than add a second
 section: add a real heading outside the fence, or close the unclosed one.
 A closed example holding only that heading is text; the section is added.
 Every rewriting command edits the body in place: bytes outside the lines it
@@ -579,6 +587,8 @@ the webhook URL. `wi lint` flags PEM blocks, `KEY=value` assignments (bare,
 or after a bullet, date, tag, bold or other leading text, unless the key is
 glued to a word or follows a URL's `?` or `&`) and
 `token/secret/password/webhook`-style pairs that look like live values.
+`wi note` refuses, writing nothing, a line lint would flag. Lint's shapes
+are a floor, not every secret: the path-and-key rule is the guard.
 
 ## TODO.md deprecation notice
 

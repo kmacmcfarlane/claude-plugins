@@ -213,41 +213,37 @@ tags plus `REJECTED <alternative> — <why it lost>`:
 - <YYYY-MM-DD> checkpoint: BELIEF (unconfirmed) operator: "<their words>" — confirm before acting
 ```
 
-Append each line with this Bash, never Edit, which the checkout guards deny on a tracked
-store; it puts the line after the last non-blank line of `## Notes`, wherever that section
-sits, and adds the heading at the end when absent. Like `wi`, it reads no line inside a
-fence as a heading, keeps the file's line endings, and replaces the file through a temp
-file. A `'` inside the line is written `'\''`:
+Append with `wi note`, never Edit, which the checkout guards deny on a tracked store. Before
+the first item, probe the verb once, with the same `wi` that ran `wi show`:
 
 ```bash
-python3 - '<item file>' '<line>' <<'PY'
-import os, re, sys, tempfile
-p, add = sys.argv[1:]
-L = open(p, newline='').read().splitlines(True)
-eol = '\r\n' if L and L[0].endswith('\r\n') else '\n'
-F, code, i = re.compile(r' {0,3}(`{3,}|~{3,})'), set(), 0
-while i < len(L):  # fenced lines are text, as wi reads them; an unclosed opener is no fence
-    m = F.match(L[i]); r = m and m.group(1)
-    if r and not (r[0] == '`' and '`' in L[i][m.end():]):
-        j = next((j for j in range(i + 1, len(L)) if (c := F.match(L[j])) and c.group(1)[0]
-                  == r[0] and len(c.group(1)) >= len(r) and not L[j][c.end():].strip()), 0)
-        if j: code.update(range(i, j + 1)); i = j
-    i += 1
-H = [k for k, x in enumerate(L) if k not in code and x.startswith('## ')]
-n = next((k for k in H if L[k].rstrip() == '## Notes'), None)
-if L and not L[-1].endswith('\n'): L[-1] += eol
-if n is None: L += [eol, '## Notes' + eol, add + eol]
-else:
-    e = next((k for k in H if k > n), len(L))
-    L.insert(max(k for k in range(n, e) if L[k].strip()) + 1, add + eol)
-fd, t = tempfile.mkstemp(dir=os.path.dirname(os.path.abspath(p)))
-with os.fdopen(fd, 'w', newline='') as f: f.write(''.join(L))
-os.chmod(t, os.stat(p).st_mode & 0o777); os.replace(t, p)
-PY
+wi note --help >/dev/null 2>&1
 ```
 
+Exit 0: go on. Exit 2: this `wi` predates `note`. Write no item file, carry the lines in
+`Aware of` as `<TAG> <item id>: <line>`, as the unattended path does, and name in `Next`
+updating `work-items`, then writing them. Any other exit (127, say): `wi` did not run; route
+the lines the same way, with `Next` naming how it failed to run instead. Then one call per
+item, its texts in order (a `decision N:` line takes its own `--raw` call, routed the same
+way):
+
+```bash
+wi note <id> -- '<text>' ['<text>' …]
+```
+
+A text is the line without its `- <YYYY-MM-DD> ` prefix, which `wi` adds; single-quote each,
+`'` written `'\''`. `wi` puts them at the end of `## Notes` under the store's lock, all or
+none. Exit 1 with stderr starting `wi: text <n>:` means text n was refused (a line break, or
+a shape `wi lint` flags as a secret): reword that text once, as path and key for a secret,
+and re-run the call (a refusal naming a text not yet reworded is that text's first). A
+second refusal of one text, an exit 1 without that prefix, or any other non-zero exit has
+written nothing for that item: carry its lines in `Aware of` as above, naming the error;
+carry each accepted line as written, and a text refused twice only as its path and key in
+words, never either refused value; name the item in `Next`. The other items go ahead.
+
 A question already put to the operator that has no `decision N:` line gets one now, written
-undated and unbulleted so the line starts `decision N:`, N one more than the store's highest:
+undated and unbulleted so the line starts `decision N:`, N one more than the store's highest,
+with `wi note <id> --raw -- 'decision N: …'`:
 
 ```bash
 grep -rhoE '^decision [0-9]+' <store> | sort -k2 -n | tail -1
@@ -255,14 +251,15 @@ grep -rhoE '^decision [0-9]+' <store> | sort -k2 -n | tail -1
 
 Any other question is an `OPEN` line. Never carry residue with `wi handoff`: it holds one
 line per key, so the residue would displace the item's own Handoff. **Path and key, never
-value**: item files are tracked forever, and this rule is the guard, not `wi lint`. Run `wi
-lint`, then commit the store: this is 4a's work-item commit. Name each item written in the
-manifest's `Next` as `wi show <id>`, the full view, since `--brief` omits Notes. The writer
-is this session, or a fork under Step 2's dictate → fork rule, handed the tagged lines
-verbatim; the fork adds no recall of its own. **Lean form**: read only `wi show <id> --brief`
-(a duplicate line is cheaper than a lost one), write only corrections, refusals, unconfirmed
-operator statements and open questions, at most three lines an item, run `wi lint`, commit
-nothing, and name the uncommitted item files in an `OPEN` line of the manifest's `Aware of`.
+value**: item files are tracked forever, and this rule is the guard: `wi note` refuses lint's
+shapes, and lint's shapes are not every secret. Run `wi lint`, then commit the store: this
+is 4a's work-item commit. Name each item written in the manifest's `Next` as `wi show <id>`,
+the full view, since `--brief` omits Notes. The writer is this session, or a fork under Step
+2's dictate → fork rule, handed the tagged lines verbatim; the fork adds no recall of its
+own. **Lean form**: read only `wi show <id> --brief` (a duplicate line is cheaper than a
+lost one), write only corrections, refusals, unconfirmed operator statements and open
+questions, at most three lines an item, with the same probe, calls and routing, run `wi
+lint`, commit nothing, and name the uncommitted item files in an `OPEN` line of the manifest's `Aware of`.
 
 **4b.** Rewrite the **rehydration manifest** per `references/handoff-format.md`, in **both
 modes**. It lives at this session's own path — one file per session in the Claude config
