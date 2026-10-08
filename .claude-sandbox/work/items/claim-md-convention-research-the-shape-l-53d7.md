@@ -28,3 +28,4 @@ dispatch: planner opus high — research round and shape proposal (the research 
 ## Notes
 - 2026-10-08 claimed by Kyle-McFarlane@2d49f8460283
 agent: planner a73b066060c1a0ca7
+note: 2026-10-08 peer claude-analytics: CLAIM.md stays at their repo root (local main 4c2207d); the attribution/1 event schema follows once their serial 02 clears plan review and their contracts feature lands, with a copyable stdlib emit function
