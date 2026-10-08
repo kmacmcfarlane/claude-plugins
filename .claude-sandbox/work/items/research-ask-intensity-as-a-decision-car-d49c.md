@@ -16,8 +16,8 @@ refs:
 Relayed 2026-10-08 by peer claude-analytics from the operator there, verbatim: 'When deciding about the intensity of research, it would be better to have some understanding of the costs and benefits. The research skill should present those costs and benefits for each option instead of using AskUserQuestion for that.' Today research Step 3 (references/intensity-and-routing.md § When to ask) asks one AskUserQuestion with only cost lines. Acceptance: the intensity ask is rendered per the operator-interaction decisions skill when loaded (a card, one option per preset, each with its cost line and its benefit for this question: sub-question coverage, round-2 gap closing, verifier sample, what stays thin; recommendation, basis, unknown, decide later), with a plain-prose fallback when that skill is absent; research-deep's round-3 ask moves off the dialog form too.
 
 ## Handoff
-- doing: —
-- next: —
+- doing: plan CLEAR at review 3; build waits on decision 185
+- next: on answer 185 (a): dispatch the build from the series with the carried findings
 - blocked: —
 - learned: —
 target: plan main /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude-sandbox/investigations/research-ask-intensity-as-a-decision-car-d49c
@@ -45,3 +45,5 @@ dispatch: planner opus high — plan fix round 2 (resume a01c78fd1feecde49)
 return: DONE_WITH_CONCERNS series 02_review-2-fixes.md (assumptions 16, 17; ledger order on a pull; test 8 five substrings)
 baseline: plan review 3 — 5e27a7f129b2ff28a4b30b64c4c0fa28943a4dabae578af750e197e3941808e0 .claude-sandbox/investigations/research-ask-intensity-as-a-decision-car-d49c/00_initial.md; e63e5c5acab50663b437500ccc6ba91ed328cba7f6f2466a0448e32c425f9d07 .claude-sandbox/investigations/research-ask-intensity-as-a-decision-car-d49c/01_review-1-fixes.md; d1e76b5f2bc83acbe7d70628abb62e7174f78f445c9d228e447562df1fcc03ae .claude-sandbox/investigations/research-ask-intensity-as-a-decision-car-d49c/02_review-2-fixes.md; 
 dispatch: reviewer opus high — plan review 3 (resume a740e9298c69f0c0b)
+verdict: plan review 3 CLEAR (must-fix 0)
+findings: carried — (1) research-refine/SKILL.md:51: a T<n> entry marked pulled is not offered as a thread to pull; (2) pull no web lane that would need a search after a SEARCH EXHAUSTED line; local-corpus pulls stay open; keep 00's hand-rendered card and fallback list as the build's check
