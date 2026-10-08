@@ -126,7 +126,8 @@ last shown** — a card printed while the operator was away has not been seen. O
 **Shown and seen, recorded.** Where the caller keeps a record, the session that displays a
 decision records each showing at card or block level as it goes out (the time and where:
 chat, page or doc), and the operator turn or page or doc answer that sees it. A list line, a
-tag-size mention or an echo is not a showing.
+tag-size mention or an echo is not a showing. The caller's rules give the record's shape and
+any hold on it.
 
 **FYI after acting** (nothing to answer) is allowed only for an action that is
 two-way, narrow, relied on by nobody before the operator reviews it, and inside authority the
