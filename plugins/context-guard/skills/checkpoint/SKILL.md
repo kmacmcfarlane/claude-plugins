@@ -224,7 +224,8 @@ Exit 0: go on. Exit 2: this `wi` predates `note`. Write no item file, carry the 
 `Aware of` as `<TAG> <item id>: <line>`, as the unattended path does, and name in `Next`
 updating `work-items`, then writing them. Any other exit (127, say): `wi` did not run; route
 the lines the same way, with `Next` naming how it failed to run instead. Then one call per
-item, its texts in order:
+item, its texts in order (a `decision N:` line takes its own `--raw` call, routed the same
+way):
 
 ```bash
 wi note <id> -- '<text>' ['<text>' …]
@@ -236,9 +237,9 @@ none. Exit 1 with stderr starting `wi: text <n>:` means text n was refused (a li
 a shape `wi lint` flags as a secret): reword that text once, as path and key for a secret,
 and re-run the call (a refusal naming a text not yet reworded is that text's first). A
 second refusal of one text, an exit 1 without that prefix, or any other non-zero exit has
-written nothing for that item: carry its lines in `Aware of` as above, naming the error,
-the reworded line and never the refused value, and name the item in `Next`. The other items
-go ahead.
+written nothing for that item: carry its lines in `Aware of` as above, naming the error;
+carry each accepted line as written, and a text refused twice only as its path and key in
+words, never either refused value; name the item in `Next`. The other items go ahead.
 
 A question already put to the operator that has no `decision N:` line gets one now, written
 undated and unbulleted so the line starts `decision N:`, N one more than the store's highest,

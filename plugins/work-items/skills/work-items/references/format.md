@@ -533,7 +533,8 @@ with `^decided: (\S+) ([a-z-]+) — (.*?) · authority: (.*?) · reopen: (.*)$`.
   dated line (`- <today> <text>`), or with `--raw` the line as written, all
   in one write under the lock. It refuses (exit 1, nothing written) a line
   break, an empty text, under `--raw` a line starting `## ` or opening a
-  fence, and any line the secret rule below flags; each refusal reads
+  fence, any line the secret rule below flags, and a text that is exactly
+  `--` after the separator `--` (argparse would drop it); each refusal reads
   `wi: text <n>: …; nothing written` and never quotes the text.
 - any other `## …` section round-trips untouched.
 

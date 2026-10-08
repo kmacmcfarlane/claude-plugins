@@ -1699,7 +1699,30 @@ def _note_line(n, text, raw):
     return line
 
 
+def _stray_separator(argv):
+    """1-based position of the first text that is exactly `--`, judged from
+    the raw argv, else None. argparse takes the first `--` as the end of
+    options, and may silently drop a later one rather than hand it over as
+    a text (it varies by Python version), so a note would lose a text."""
+    toks, i = list(argv or ()), 0
+    while i < len(toks) and toks[i] != "note":  # the subcommand, past --root
+        i += 2 if toks[i] == "--root" else 1
+    toks = toks[i + 1:]
+    if "--" not in toks:
+        return None
+    sep = toks.index("--")
+    after = toks[sep + 1:]
+    if "--" not in after:
+        return None
+    before = [t for t in toks[:sep] if not t.startswith("-")][1:]  # minus the id
+    return len(before) + after.index("--") + 1
+
+
 def cmd_note(args):
+    n = _stray_separator(getattr(args, "argv", None))
+    if n:
+        raise WiError(1, f"text {n}: is exactly '--', which the command line "
+                         "cannot carry as a text; nothing written")
     lines = [_note_line(n, t, args.raw) for n, t in enumerate(args.lines, 1)]
     root = resolve_root(args.root)
     with Lock(root):
@@ -3493,6 +3516,7 @@ def build_parser():
 
 def main(argv=None):
     args = build_parser().parse_args(argv)
+    args.argv = list(sys.argv[1:] if argv is None else argv)
     try:
         return args.func(args) or 0
     except WiError as e:

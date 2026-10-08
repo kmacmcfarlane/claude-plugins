@@ -1746,6 +1746,24 @@ class TestNote(WiTestCase):
                         r.stderr, "wi: text 2: likely secret value (record the "
                         "path and key, never the value); nothing written\n")
 
+    def test_a_text_that_is_exactly_the_separator_is_refused(self):
+        path = self.item()
+        before = path.read_bytes()
+        for argv, n in ((["--", "a", "--", "b"], 2),
+                        (["--", "--", "a"], 1),
+                        (["--raw", "--", "a", "--", "--", "b"], 2),
+                        (["x", "--", "y", "--"], 3)):
+            with self.subTest(argv=argv):
+                r = run(["note", self.IID] + argv, self.root)
+                self.assertEqual(r.returncode, 1, r.stdout + r.stderr)
+                self.assertTrue(r.stderr.startswith(f"wi: text {n}: is exactly '--'"),
+                                r.stderr)
+                self.assertEqual(path.read_bytes(), before)
+        # a `--` inside a text, and the one separator, are fine
+        self.wi_ok(["note", self.IID, "--", "a -- b", "-- c"])
+        self.assertIn(f"- {wi.today()} a -- b\n- {wi.today()} -- c\n",
+                      path.read_text())
+
     def test_refusal_runs_before_the_store_is_read(self):
         r = run(["note", "no-such-0000", "--", "x\ny"], self.tmp / "nowhere")
         self.assertEqual(r.returncode, 1)
