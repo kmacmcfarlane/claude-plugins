@@ -36,3 +36,5 @@ dispatch: planner opus high — plan fix round 1 (resume a5d2c918ad5eec7bd)
 return: DONE series 01_review-fixes.md (all 15; BMAD correct-course confirmed and adapted; three reopen tiers; dev-cycle wiring entries; cards as decisions 193-195)
 baseline: plan review 2 — 54fd015edc5f38b5e2facbb12b12880884397cabefa057e87198a4683d798abf .claude-sandbox/investigations/spike-a-skill-for-green-field-foundation-5f2d/00_initial.md; 770aadcdc767bfc34aea3d0ca3faa27ff3991aa9e57f3c0a1e4ea506b6b98400 .claude-sandbox/investigations/spike-a-skill-for-green-field-foundation-5f2d/01_review-fixes.md; 
 dispatch: reviewer opus high — plan review 2 (resume ae5914d0eefb54dbc)
+verdict: plan review 2 NEEDS_CHANGES (must-fix 1, down from 7: answer rows leave other phase-2 artifacts unrouted; lows 2-8, nit 9)
+dispatch: planner opus high — plan fix round 2 (resume a5d2c918ad5eec7bd)
