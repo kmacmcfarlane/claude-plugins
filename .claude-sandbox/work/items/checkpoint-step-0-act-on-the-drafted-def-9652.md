@@ -3,8 +3,10 @@ id: checkpoint-step-0-act-on-the-drafted-def-9652
 title: "checkpoint Step 0: act on the drafted defaults and echo them; ask only at a real fork"
 short_display_name: checkpoint asks only at a real fork
 type: feature
-status: todo
+status: doing
 priority: 1
+owner: Kyle-McFarlane@2d49f8460283
+claimed: 2026-10-08T07:12Z
 created: 2026-10-08
 updated: 2026-10-08
 refs:
@@ -18,3 +20,9 @@ Relayed 2026-10-08 by peer operator-attention at the operator's request, verbati
 - next: —
 - blocked: —
 - learned: —
+target: plan main /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude-sandbox/investigations/checkpoint-step-0-act-on-the-drafted-def-9652
+budget: 2026-10-08T07:12Z plan waived — operator waiver (spend still measured)
+dispatch: planner opus high — plan (6cfb landed; same checkpoint skill)
+
+## Notes
+- 2026-10-08 claimed by Kyle-McFarlane@2d49f8460283

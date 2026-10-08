@@ -42,3 +42,5 @@ dispatch: reviewer opus high — review round 1
 agent: reviewer a503a9fb3220443de
 verdict: review 1 NEEDS_CHANGES at a6e76d0 (must-fix 1: the page folds multi-line paste text; lows: test strings echo estate labels, Levels card bullet lacks the part; low 4 repo-map out of scope)
 dispatch: implementer opus medium — fix round 1 (resume a29f52488dc1ec5ae)
+return: DONE a6d2967 fix round 1 (page check refuses a line break in an act step; schema row; test strings invented; Levels card bullet)
+dispatch: reviewer opus high — review round 2 (resume a503a9fb3220443de)

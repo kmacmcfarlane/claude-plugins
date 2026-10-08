@@ -3,12 +3,11 @@ id: wi-note-append-a-notes-line-under-lock-a-6cfb
 title: "wi note: append a Notes line under lock, and have checkpoint 4a½ use it in place of its inline snippet"
 short_display_name: wi note command for residue
 type: feature
-status: doing
+status: done
 priority: 2
-owner: Kyle-McFarlane@2d49f8460283
-claimed: 2026-10-08T05:43Z
 created: 2026-10-08
 updated: 2026-10-08
+closed: 2026-10-08
 refs:
   - checkpoint-before-the-manifest-write-con-6c43 review 4
 ---
@@ -55,3 +54,6 @@ verdict: review 1 NEEDS_CHANGES at f3338d0 (must-fix 1: a twice-refused text wou
 dispatch: implementer opus medium — fix round 1 (resume a4cea3b5b72b49074)
 return: DONE 3e9a0bb fix round 1 (twice-refused text carried only as path and key in words; a bare -- text refused via raw argv; decision line's own --raw call routed the same)
 dispatch: reviewer opus high — review round 2 (resume a0225e6318d9a0491)
+verdict: review 2 CLEAR at 3e9a0bb (must-fix 0; low: _stray_separator numbers the text wrong after an abbreviated --root note or a dash-shaped text before --, off 4a½'s path — filed)
+landed: 1b86910 (merge --no-ff into main; Checks 10/10 OK; push scan read, clean)
+- 2026-10-08 done

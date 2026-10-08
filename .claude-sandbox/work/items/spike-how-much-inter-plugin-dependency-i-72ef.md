@@ -32,3 +32,5 @@ return: DONE_WITH_CONCERNS series 00_initial.md (inventory; worst gap statusline
 baseline: plan review 1 — 4ff51f7372ea1c4a687e75e2fbf697d655aeac46578655c28a47cd01fb817520 .claude-sandbox/investigations/spike-how-much-inter-plugin-dependency-i-72ef/00_initial.md; 
 dispatch: reviewer opus high — plan review 1
 agent: reviewer a86526c62ee89cf6b
+verdict: plan review 1 NEEDS_CHANGES (must-fix 3: hub-wait gap overstated for the live copy and missed for a dead copy; F2 conflates take and yield; prose hints can read the off-switch with echo; lows 4-8, nits 9-11)
+dispatch: planner opus high — plan fix round 1 (resume af420e468ce5cb8bb)
