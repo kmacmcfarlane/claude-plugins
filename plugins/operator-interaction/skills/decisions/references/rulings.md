@@ -61,4 +61,6 @@ alternative not taken, in case practice argues for it.
   shape, a design made in planning, not the operator's) — every page card opens on a flat
   Context introducing the terms, items and concepts its Impact line, TLDR and options use,
   and its TLDR carries no recommendation, which the options mark. Not taken: definitions
-  left to What in the Background fold; a Rec bullet in the TLDR.
+  left to What in the Background fold; a Rec bullet in the TLDR. Background not
+  auto-expanded; Context absorbs What (decision 197 (a), the operator's answer 2026-10-08).
+  Not taken: Background open on load.

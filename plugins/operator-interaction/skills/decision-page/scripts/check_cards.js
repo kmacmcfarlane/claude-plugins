@@ -48,8 +48,9 @@ const counts = s => [...strip(s).replace(ID_TOKEN, "").matchAll(COUNT)].map(m =>
 const DET = new Set(["the","this","that","these","those","each","every","a","an","its","our","your","their","any","no","one","which","whose","same","new","old"]);
 const NAMED = /\b([a-z][a-z-]*)\s+(mode|setting|review|plan|document|doc|spec|policy|flag|profile|template|track|phase|stage)\b/gi;
 const named = s => [...strip(s).matchAll(NAMED)].map(m => { const w = m[1].toLowerCase(); return DET.has(w) || W[w] ? m[2].toLowerCase() : (m[1] + " " + m[2]).toLowerCase(); });
-/* the broad recommendation forms the page lets through: they may be someone else's */
-const REC_BROAD = /^[^A-Za-z]*(rec\w*|suggest\w*)\b|\bwe\s+suggest\b/i;
+/* the broad recommendation forms the page lets through: they may be someone else's. Rec as a
+   whole word and recommend…, never Recent or Records */
+const REC_BROAD = /^[^A-Za-z]*(rec|recommend\w*|suggest\w*)\b|\bwe\s+suggest\b/i;
 
 /* the flat part a cold reader reads first: what context must introduce. Not the folds, act,
    the page lede or the layer notes */

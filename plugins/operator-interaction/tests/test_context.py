@@ -393,6 +393,11 @@ class DecisionPageRunner(unittest.TestCase):
                 self.assert_lint(with_tldr(b), "lint: card 41: tldr bullet 2 may carry the "
                                                "recommendation")
 
+    def test_the_broad_tldr_lint_leaves_ordinary_rec_words_alone(self):
+        for b in ("Recent failures", "Records stay"):
+            with self.subTest(bullet=b):
+                self.assert_clean(with_tldr(b))
+
     def test_a_leftover_what_is_linted(self):
         d = example()
         d["cards"][0]["what"] = "Where the documentation site is built and published from."

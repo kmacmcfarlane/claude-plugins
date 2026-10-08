@@ -13,9 +13,10 @@ nothing else. It refuses: an `n` that is not a whole number or is used twice; an
 that is not a single `a`–`z`; options out of letter order or not ending in `z`; a `rec` that is
 not one of the card's letters (or null without `norec`); a missing required field; an empty
 `rev`; a missing or blank `context`; a TLDR bullet that carries the recommendation (one that
-opens with Rec, Recs, Recommend, Recommended or Recommendation followed by a colon, a dash and
-a space, a full stop, a bracket or nothing, unless *by* follows; or one that says `rec (b)`, I
-or we recommend, my or our recommendation, `(recommended)`, or `(b) is recommended`); an
+opens with Rec, Recs, Recommend, Recommended or Recommendation followed by a colon, a dash (a
+hyphen only with a space after it), a full stop, a bracket or nothing, unless *by* follows;
+or one that says `rec (b)`, I or we recommend, my or our recommendation, `(recommended)`, or
+`(b) is recommended`); an
 `impact` without its effect, wait, reach and undo as text; a `basis` word outside
 the four; a `follow` list other than the fixed six; a `refs` key that is not a number; a ⚠
 card without its `blocks`; a `blocks` entry that is not an option letter other than `z`, or
