@@ -5,8 +5,8 @@ Loaded from `research` Step 3, and again at every ask for another round (Steps 7
 put to the operator. This file owns the presets, the rules for when to ask the operator
 about intensity and when it is obvious, what an ask for another round states, how each ask
 is put to the operator (§ Putting an ask to the operator), the quota read, the search-budget
-rule, and the routing of every research dispatch: § Routing — mechanism, § Profiles, §
-Dispatches outside the profiles, § The work item (which item a run records on), § Recording,
+rule, and the routing of every research dispatch: § Routing — mechanism, § Profiles,
+§ Dispatches outside the profiles, § The work item (which item a run records on), § Recording,
 § Below the quota reserve and § Fallback. The `deep-investigation` and
 `chain-of-verification` skills route by these sections too. The orchestrator copies the
 chosen preset and the Profiles rows it used into the brief; nothing here is restated in
@@ -169,7 +169,8 @@ table offers one — "run `<preset>` after the five-hour window resets (`<local 
 - **One preset left.** When the table leaves one preset (a 5h ≥ 90% reading, say), the case
   is obvious and not asked: state it in one line, with the reading and the reset time.
 - **The 7d ≥ 90% override.** The presets above `quick` stay on the card, each marked as an
-  override, with the reading. An answer naming a preset the table rules out, without an
+  override, with the reading; each such option says that picking it needs the word override
+  (`c, override`). An answer naming a preset the table rules out, without an
   override in so many words, is echoed with the rule and re-asked.
 
 Each option carries two parts:
@@ -205,10 +206,10 @@ question "which self-hosted vector stores support hybrid search?", sub-questions
 
 | Option | Cost | Buys for this question |
 |---|---|---|
-| (a) `quick` | ~0–1 lanes, ≤1 round, ~1–4×, minutes | 1–4 answered inline; no round 2; no verifier; thin: 2 and 4 on vendor pages |
-| **(b) `standard`** | ~5 lanes on sonnet, ≤2 rounds, ~5–8×, 15–30 min | a lane each for 1–3, 4 shares 3's; round 2 only on a gap; verifier samples 12; thin: 4 |
-| (c) `deep` | ~10 lanes on sonnet, ≤3 rounds, ~15–20×, 45–90 min | two lanes on 2 (benchmarks, issue trackers), one each for 1, 3, 4; round 2 expected; verifier 20; thin: little |
-| (d) `exhaustive` | 15+ lanes, ≤3 rounds, ~30×+, hours | as `deep`, plus an adversarial lane on 2; round 2 mandatory; verifier 30 |
+| (a) `quick` | ~0–1 lanes, ≤1 round, ~1–4×, minutes | 1–4 answered inline; no round 2; no verifier (answered in the reply; 4 if written to disk); thin: 2 and 4 on vendor pages |
+| **(b) `standard`** | ~5 lanes on sonnet, ≤2 rounds, ~5–8×, 15–30 min | 5 lanes: two on 2 (benchmarks, issue trackers), one each for 1, 3, 4; round 2 only on a gap; verifier samples 12; thin: 4, on one lane |
+| (c) `deep` | ~10 lanes on sonnet, ≤3 rounds, ~15–20×, 45–90 min | 10 lanes: three each on 2 and 4, two each on 1 and 3; round 2 expected; verifier 20; thin: little |
+| (d) `exhaustive` | 15+ lanes, ≤3 rounds, ~30×+, hours | 15 lanes: four each on 2 and 4, three each on 1 and 3, plus an adversarial lane on 2; round 2 mandatory; verifier 30 |
 
 ### The other asks' options
 

@@ -56,8 +56,8 @@ One round, with a recommendation on each. The gate blocks on the user's answer, 
 widget: while the question itself is still open — the usual state here — ask it as a
 **numbered list in your reply** that the user answers free-form, since "none of these, and
 here is why" is a common and useful answer that fixed options fight. A closed choice later
-in the run goes as text, per the `research` skill's `references/intensity-and-routing.md` §
-Putting an ask to the operator — never a dialog, and never in the same turn as heavy
+in the run goes as text, per the `research` skill's `references/intensity-and-routing.md`
+§ Putting an ask to the operator — never a dialog, and never in the same turn as heavy
 analysis. **End the turn on the list**: your recommendation is not the answer. You need:
 
 1. **The question**, and what decision it feeds. A fan-out with no downstream decision produces

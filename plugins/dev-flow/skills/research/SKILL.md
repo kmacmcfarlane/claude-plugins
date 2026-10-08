@@ -88,10 +88,10 @@ refine, do not restart. Nothing found → say "no prior run" and continue.
 ## Step 3 — Set the intensity
 
 Read `references/intensity-and-routing.md`. Decide the preset by its rules: obvious cases
-are stated in one line. Before an ask, draft the sub-questions in context from Step 1's
-scope, with no search, as provisional. The ask cases get one ask, put per § Putting an ask to
-the operator, and it ends the turn: nothing launches until it is answered. Read the quota
-record when it exists and apply its table. Size the lane count to the search budget.
+are stated in one line. Read the quota record when it exists and apply its table. Before an
+ask, draft the sub-questions in context from Step 1's scope, with no search, as provisional.
+The ask cases get one ask, put per § Putting an ask to the operator, and it ends the turn:
+nothing launches until it is answered. Size the lane count to the search budget.
 
 Print the cost line. Always, whether or not you asked.
 
@@ -207,8 +207,8 @@ lane that closes gap condition 4), each dispatch recorded.
 
 **Then, on every preset above `quick`, the threads-not-pulled turn.** List the follow-ups
 the gate did *not* launch and ask the operator whether to continue into any of them, with
-each thread's value and the round's cost line (`references/intensity-and-routing.md` §
-Asking for another round), put per § Putting an ask to the operator. The round the gate
+each thread's value and the round's cost line (`references/intensity-and-routing.md`
+§ Asking for another round), put per § Putting an ask to the operator. The round the gate
 launched keeps running while the ask is open, and its gap gate waits for the answer. In the
 brief's § Threads not pulled each entry is **structured, in your words only**: the lane id
 that surfaced it, the sub-question number it belongs to, the gap-condition number it would
