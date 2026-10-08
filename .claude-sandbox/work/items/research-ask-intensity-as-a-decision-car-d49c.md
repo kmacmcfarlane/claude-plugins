@@ -42,3 +42,6 @@ baseline: plan review 2 — 5e27a7f129b2ff28a4b30b64c4c0fa28943a4dabae578af750e1
 dispatch: reviewer opus high — plan review 2 (resume a740e9298c69f0c0b)
 verdict: plan review 2 NEEDS_CHANGES (must-fix 2, down from 5: assumptions 13 and 14 clash when the launched round is the last the cap allows; pulled lanes need a stated cost and a fresh quota read at answer time; lows: brief § Lanes and search budget for pulled lanes, Supersedes misses 00 § C research-deep, INDEX numbering)
 dispatch: planner opus high — plan fix round 2 (resume a01c78fd1feecde49)
+return: DONE_WITH_CONCERNS series 02_review-2-fixes.md (assumptions 16, 17; ledger order on a pull; test 8 five substrings)
+baseline: plan review 3 — 5e27a7f129b2ff28a4b30b64c4c0fa28943a4dabae578af750e197e3941808e0 .claude-sandbox/investigations/research-ask-intensity-as-a-decision-car-d49c/00_initial.md; e63e5c5acab50663b437500ccc6ba91ed328cba7f6f2466a0448e32c425f9d07 .claude-sandbox/investigations/research-ask-intensity-as-a-decision-car-d49c/01_review-1-fixes.md; d1e76b5f2bc83acbe7d70628abb62e7174f78f445c9d228e447562df1fcc03ae .claude-sandbox/investigations/research-ask-intensity-as-a-decision-car-d49c/02_review-2-fixes.md; 
+dispatch: reviewer opus high — plan review 3 (resume a740e9298c69f0c0b)

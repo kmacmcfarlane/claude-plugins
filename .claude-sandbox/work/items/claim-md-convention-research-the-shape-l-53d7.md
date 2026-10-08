@@ -3,8 +3,10 @@ id: claim-md-convention-research-the-shape-l-53d7
 title: "CLAIM.md convention: research the shape, land a skill, seed one item per repo"
 short_display_name: CLAIM.md convention skill
 type: feature
-status: todo
+status: doing
 priority: 2
+owner: Kyle-McFarlane@2d49f8460283
+claimed: 2026-10-08T06:20Z
 created: 2026-10-08
 updated: 2026-10-08
 refs:
@@ -18,3 +20,10 @@ Relayed 2026-10-08 by peer claude-analytics from the operator there: a CLAIM.md,
 - next: —
 - blocked: —
 - learned: —
+note: operator 2026-10-08 in this session: "I'm here for when you have decisions around the new claim skill (where should it land in our plugins system? Seems pretty stand-alone so maybe it's own plugin?). We can discuss when the research into how this sort of agentic codebase factoring/claim splitting strategy comes back." Placement lean: its own plugin, not yet decided; discussed after the research.
+target: plan main /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude-sandbox/investigations/claim-md-convention-research-the-shape-l-53d7
+budget: 2026-10-08T06:20Z plan $28 — default plan
+dispatch: planner opus high — research round and shape proposal (the research skill run unattended inside the plan)
+
+## Notes
+- 2026-10-08 claimed by Kyle-McFarlane@2d49f8460283
