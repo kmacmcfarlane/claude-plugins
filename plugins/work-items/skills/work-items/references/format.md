@@ -451,7 +451,8 @@ seen N: <UTC time> <turn | page | doc>
 
 The time is `YYYY-MM-DDTHH:MM:SSZ`, UTC, on the writer's clock (`date -u
 +%Y-%m-%dT%H:%M:%SZ`); `raised:`'s minute form also reads. A line whose
-first token after `N:` is not a time in one of those two forms is not read.
+first token after `N:` is not written in one of those two forms is not read
+(`wi` checks the form, not the calendar, and keeps the time as written).
 
 - **What is a showing:** a render at card or block level (`chat`); a card
   on an answer page at the publish that put its current `rev` there
@@ -477,11 +478,14 @@ first token after `N:` is not a time in one of those two forms is not read.
   `raised:`. Never write `<repo>#N` here: a session records a showing only
   in the store that holds the decision. `shown 40:` is about decision 40
   only, and a line inside a fenced code block is text.
-- **Hold on `seen N:`:** until decision 180 in the claude-plugins work
-  store (whether `seen N:` lines may go into a tracked, pushed store) is
-  answered, writers append `shown N:` lines only and write no `seen N:`
-  line, so no push carries one. Its answer alone lifts or changes this
-  hold; every other rule here stands either way.
+- **Hold on `seen N:`:** writers append `shown N:` lines only and write no
+  `seen N:` line, so no push carries one, until an `answer 180:` line in
+  the claude-plugins work store chooses (a) (decision 180 asks whether
+  `seen N:` lines may go into a tracked, pushed store; read it with
+  `wi --root <that store> show` on the item holding `decision 180:`; a
+  store that cannot reach it keeps the hold); any other answer, a
+  `wake 180:` or no answer keeps this hold, and every other rule here
+  stands either way.
 
 Neither line is `decision N:` nor `answer N:`, so they open no question and
 answer none: `needs-input`, the decision counter and the estate sweep pass

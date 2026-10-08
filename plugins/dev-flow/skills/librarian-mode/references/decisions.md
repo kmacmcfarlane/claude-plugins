@@ -151,8 +151,7 @@ renders what the operator read instead of composing it again.
   append `seen N: <time> page` (or `doc`) at the time it hands over; it hands over new
   answers only, so an unchanged one writes nothing. A chat turn never sees a page or doc
   card. **Held:** while the hold in the `work-items` skill's format reference, § Shown and
-  seen, stands — until decision 180 in the claude-plugins work store is answered — write
-  no `seen N:` line; `shown N:` lines are written as above.
+  seen, stands, write no `seen N:` line; `shown N:` lines are written as above.
 
   Both lines are column 0, appended, never inside a card, and ride the next store commit
   like every other record line. Their shape and how they are read (first and last by
