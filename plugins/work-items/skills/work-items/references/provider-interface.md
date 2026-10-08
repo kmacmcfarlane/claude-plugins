@@ -28,7 +28,7 @@ a consumer may assume.
 | `status` | `set <id> status <v>` / `set <id> stage <v>` (open states only — see `close`) | `set <id> status <v>` (open states only — see `close`) |
 | `close` | `done <id> [--note <ref>]` / `done <id> --drop` | *policy, not a verb*: agents never set `status: done` — closure belongs to grooming (`/backlog-grooming`); `archive` then moves closed rows |
 | `create` | `add "<title>" [-t -p --dep --parent --desc --short-display-name]` | `add` (heredoc), with `next-id <prefix>` |
-| `handoff` / comment | `handoff <id> --doing --next [--blocked] [--learned]` | `set-text <id> <field>` (approximate) |
+| `handoff` / comment | `handoff <id> --doing --next [--blocked] [--learned]`; `note <id> [--raw] -- "<text>" […]` appends to Notes | `set-text <id> <field>` (approximate) |
 | `query` | `ls [--status --type --tag --owner --dep --ready --json]`; `next --json`; `needs-input --json` | `query --status … --fields …` |
 
 ### Per-verb semantics

@@ -9,6 +9,7 @@ falls back to a structural assertion otherwise.
 import contextlib
 import difflib
 import errno
+import fcntl
 import hashlib
 import importlib.util
 import io
@@ -1627,6 +1628,173 @@ class TestHandoffDoneArchive(WiTestCase):
         self.wi_ok(["show", "same-prefix-1"])
 
 
+class TestNote(WiTestCase):
+    """6cfb: `wi note` appends to ## Notes through Item.append_note, under
+    the lock, one write for every text or none; every refusal of a text
+    starts `text <n>:` and never quotes the text."""
+
+    IID = "note-1111"
+
+    def path(self):
+        return self.root / "items" / f"{self.IID}.md"
+
+    def item(self, sections="## Notes\n- 2026-08-01 first\n\n## Later\nlater body\n"):
+        self.write_item(self.IID, sections=sections)
+        return self.path()
+
+    def test_dated_default_lands_after_the_last_notes_line(self):
+        path = self.item()
+        out = self.wi_ok(["note", self.IID, "--", "second"])
+        self.assertEqual(out, f"noted {self.IID}\n")
+        self.assertIn(f"- 2026-08-01 first\n- {wi.today()} second\n\n## Later\n",
+                      path.read_text())
+
+    def test_text_is_stripped_and_a_leading_dash_is_text(self):
+        path = self.item()
+        self.wi_ok(["note", self.IID, "--", "  - leading dash  "])
+        self.assertIn(f"- {wi.today()} - leading dash\n", path.read_text())
+
+    def test_raw_writes_verbatim_and_needs_input_reads_it(self):
+        path = self.item()
+        self.wi_ok(["note", self.IID, "--raw", "--", "decision 7: which store?"])
+        self.assertIn("- 2026-08-01 first\ndecision 7: which store?\n\n## Later",
+                      path.read_text())
+        data = json.loads(self.wi_ok(["needs-input", "--json"]))
+        self.assertIn(self.IID, json.dumps(data))
+        self.assertIn("which store?", json.dumps(data))
+
+    def test_several_texts_land_in_order_in_one_write(self):
+        path = self.item()
+        out = self.wi_ok(["note", self.IID, "--", "a", "b", "c"])
+        self.assertEqual(out, f"noted {self.IID} (3 lines)\n")
+        d = wi.today()
+        self.assertIn(f"- 2026-08-01 first\n- {d} a\n- {d} b\n- {d} c\n\n## Later",
+                      path.read_text())
+
+    def test_no_notes_section_is_added_at_the_end(self):
+        path = self.item(sections="")
+        self.wi_ok(["note", self.IID, "--", "x"])
+        self.assertTrue(path.read_text().endswith(f"## Notes\n- {wi.today()} x\n"))
+
+    def test_padded_notes_heading_is_the_section(self):
+        path = self.write_raw_item(
+            "\nDesc.\n\n##  Notes \n- 2026-08-01 first\n\n## Later\nz\n")
+        self.wi_ok(["note", self.IID, "--", "x"])
+        text = path.read_text()
+        self.assertIn(f"- 2026-08-01 first\n- {wi.today()} x\n\n## Later", text)
+        self.assertEqual(text.count("Notes"), 1)
+
+    def write_raw_item(self, body, eol="\n", front_extra="status: todo\n"):
+        front = (f"id: {self.IID}\ntitle: note body\ntype: task\npriority: 2\n"
+                 f"{front_extra}created: 2026-08-01\nupdated: 2026-08-01\n")
+        path = self.path()
+        path.write_bytes(("---\n" + front + "---\n" + body)
+                         .replace("\n", eol).encode())
+        return path
+
+    def test_crlf_is_kept(self):
+        path = self.write_raw_item(
+            "\nDesc.\n\n## Notes\n- 2026-08-01 first\n", eol="\r\n")
+        self.wi_ok(["note", self.IID, "--", "x", "y"])
+        raw = path.read_bytes().decode()
+        self.assertNotIn("\n", raw.replace("\r\n", ""))
+        self.assertTrue(raw.endswith(
+            f"- 2026-08-01 first\r\n- {wi.today()} x\r\n- {wi.today()} y\r\n"))
+
+    def test_notes_hidden_by_a_cross_section_fence_exits_3(self):
+        body = TestBodyPreservation.CROSS_SECTION.replace(
+            "## Notes\n- 2026-09-01 n1\n```sh\nmake\n\n## Handoff",
+            "```sh\nmake\n\n## Notes\n- 2026-09-01 n1\n\n## Handoff")
+        for eol in ("\n", "\r\n"):
+            with self.subTest(eol=repr(eol)):
+                path = self.write_raw_item(body, eol)
+                raw = path.read_bytes()
+                r = run(["note", self.IID, "--", "x"], self.root)
+                self.assertEqual(r.returncode, 3, r.stdout + r.stderr)
+                self.assertIn("'## Notes' is inside a fenced code block", r.stderr)
+                self.assertEqual(path.read_bytes(), raw)
+
+    def test_each_refusal_names_its_text_and_writes_nothing(self):
+        fake = TestLint.ASSIGN_FAKE
+        cases = {
+            "line feed": ([], "a\nb", "must be one line"),
+            "U+2028": ([], "a b", "(U+2028)"),
+            "empty": ([], "   ", "empty"),
+            "raw heading": (["--raw"], "## x", "starts '## '"),
+            "raw fence": (["--raw"], "```sh", "opens a code fence"),
+            "raw tilde fence": (["--raw"], "~~~", "opens a code fence"),
+            "dated secret": ([], "set " + fake, "likely secret value"),
+            "raw secret": (["--raw"], fake, "likely secret value"),
+            "PEM line": ([], "-----BEGIN RSA PRIVATE KEY-----",
+                         "PEM private key material"),
+        }
+        path = self.item()
+        before = path.read_bytes()
+        for name, (flags, text, why) in cases.items():
+            with self.subTest(case=name):
+                r = run(["note", self.IID] + flags + ["--", "fine", text],
+                        self.root)
+                self.assertEqual(r.returncode, 1, r.stdout + r.stderr)
+                self.assertTrue(r.stderr.startswith("wi: text 2: "), r.stderr)
+                self.assertTrue(r.stderr.endswith("; nothing written\n"), r.stderr)
+                self.assertIn(why, r.stderr)
+                self.assertEqual(r.stdout, "")
+                self.assertEqual(path.read_bytes(), before)
+                if "secret" in name:
+                    self.assertNotIn(fake.split("=", 1)[1], r.stderr)
+                    self.assertEqual(
+                        r.stderr, "wi: text 2: likely secret value (record the "
+                        "path and key, never the value); nothing written\n")
+
+    def test_refusal_runs_before_the_store_is_read(self):
+        r = run(["note", "no-such-0000", "--", "x\ny"], self.tmp / "nowhere")
+        self.assertEqual(r.returncode, 1)
+        self.assertTrue(r.stderr.startswith("wi: text 1: "), r.stderr)
+
+    def test_a_look_alike_is_written(self):
+        path = self.item()
+        self.wi_ok(["note", self.IID, "--", "set KEY=<path> in the env file"])
+        self.assertIn(f"- {wi.today()} set KEY=<path> in the env file\n",
+                      path.read_text())
+
+    def test_missing_id_exits_2(self):
+        self.item()
+        r = run(["note", "nope-0000", "--", "x"], self.root)
+        self.assertEqual(r.returncode, 2, r.stdout + r.stderr)
+        self.assertIn("no item matching 'nope-0000'", r.stderr)
+
+    def test_missing_store_exits_1_without_the_text_prefix(self):
+        empty = self.tmp / "empty"
+        empty.mkdir()
+        r = run(["note", self.IID, "--", "x"], empty)
+        self.assertEqual(r.returncode, 1, r.stdout + r.stderr)
+        self.assertFalse(r.stderr.startswith("wi: text "), r.stderr)
+
+    def test_rejected_front_matter_exits_1_without_the_text_prefix(self):
+        path = self.write_raw_item("\nDesc.\n\n## Notes\n- 2026-08-01 first\n",
+                                   front_extra="status: todo\nstage: a\tb\n")
+        raw = path.read_bytes()
+        r = run(["note", self.IID, "--", "x"], self.root)
+        self.assertEqual(r.returncode, 1, r.stdout + r.stderr)
+        self.assertFalse(r.stderr.startswith("wi: text "), r.stderr)
+        self.assertIn("control character", r.stderr)
+        self.assertEqual(path.read_bytes(), raw)
+
+    def test_held_lock_exits_4_and_writes_nothing(self):
+        path = self.item()
+        raw = path.read_bytes()
+        err = io.StringIO()
+        with open(self.root / ".lock", "a") as held:
+            fcntl.flock(held, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            with mock.patch.object(wi.Lock.__init__, "__defaults__", (0.2,)), \
+                    contextlib.redirect_stderr(err):
+                code = wi.main(["--root", str(self.root), "note", self.IID,
+                                "--", "x"])
+        self.assertEqual(code, 4)
+        self.assertIn("lock timeout", err.getvalue())
+        self.assertEqual(path.read_bytes(), raw)
+
+
 # Body shapes a hand-edited item can take. Every rewriting command must keep
 # every body byte outside the lines it owns: the four Handoff bullets (handoff),
 # dated lines appended under ## Notes (claim, done, handoff --learned), and a
@@ -1782,6 +1950,9 @@ class TestBodyPreservation(WiTestCase):
                        ["set", IID, "status", "todo"], "insert"),
         "done": ("status: doing\n", ["done", IID, "--note", "shipped"], "insert"),
         "drop": ("status: todo\n", ["done", IID, "--drop"], "insert"),
+        "note": ("status: todo\n", ["note", IID, "--", "x", "y"], "insert"),
+        "note-raw": ("status: todo\n",
+                     ["note", IID, "--raw", "--", "- 2026-10-08 raw"], "insert"),
         "export": ("status: todo\n", ["export", "OUT", "--format", "backlog-yaml",
                                       "--project", "t"], "same"),
         "import-update": ("status: todo\nalias: S-001\n",
@@ -1852,6 +2023,9 @@ class TestBodyPreservation(WiTestCase):
 
     def test_done_and_drop_keep_body(self):
         self.run_matrix(["done", "drop"])
+
+    def test_note_keeps_body(self):
+        self.run_matrix(["note", "note-raw"])
 
     def test_export_alias_writeback_keeps_body(self):
         self.run_matrix(["export"])
@@ -3377,6 +3551,7 @@ class TestHostGitignoreUntouched(WiTestCase):
             ["import-todo", str(todo)],
             ["export", str(repo / "backlog.yaml"), "--format", "backlog-yaml"],
             ["import", str(repo / "backlog.yaml"), "--format", "backlog-yaml"],
+            ["note", iid, "--", "x"],
             ["done", dep], ["archive", "--older-than", "0d"],
         ]
         choices = set(next(a for a in wi.build_parser()._actions

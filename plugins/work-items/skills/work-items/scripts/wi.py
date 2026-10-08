@@ -1677,6 +1677,41 @@ def cmd_done(args):
     return 0
 
 
+def _note_line(n, text, raw):
+    """The Notes line for text `n` (1-based), or WiError(1). Every refusal
+    starts `text <n>:` (the prefix a caller matches to reword that text) and
+    never quotes the text, so a refused secret never reaches stderr."""
+    def refuse(why):
+        return WiError(1, f"text {n}: {why}; nothing written")
+    try:
+        _one_line("the text", text)
+    except WiError as e:
+        raise refuse(str(e)) from None
+    if not text.strip():
+        raise refuse("empty")
+    line = text if raw else f"- {today()} {text.strip()}"
+    if raw and line.startswith("## "):
+        raise refuse("starts '## ', which would add a section")
+    if raw and _fence_open(line):
+        raise refuse("opens a code fence")
+    for _, why in secret_findings(line):
+        raise refuse(why)
+    return line
+
+
+def cmd_note(args):
+    lines = [_note_line(n, t, args.raw) for n, t in enumerate(args.lines, 1)]
+    root = resolve_root(args.root)
+    with Lock(root):
+        item = load_item_anywhere(root, args.id)
+        for line in lines:
+            item.append_note(line)
+        item.touch()
+        save_item(root, item)
+    print(f"noted {item.id}" + (f" ({len(lines)} lines)" if len(lines) > 1 else ""))
+    return 0
+
+
 def cmd_block(args):
     _one_line("reason", args.reason)
     _one_line("--on", args.on)
@@ -3397,6 +3432,10 @@ def build_parser():
             ("--learned", {})],
         ("done", cmd_done, "close an item"): [
             ("id", {}), ("--drop",), ("--note", {})],
+        ("note", cmd_note, "append dated lines (or --raw lines) to an "
+         "item's Notes, under the lock; texts go after --"): [
+            ("id", {}), ("lines", dict(nargs="+", metavar="text")),
+            ("--raw",)],
         ("block", cmd_block, "block on a reason or another item"): [
             ("id", {}), ("reason", dict(nargs="?")), ("--on", {})],
         ("unblock", cmd_unblock, "clear a block"): [("id", {}), ("--dep", {})],
