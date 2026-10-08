@@ -92,3 +92,4 @@ decision 183: How long should the turn log keep its lines? — options: (a) 13 m
   raised: 2026-10-08T06:30Z
   why ask: retention of a record of the operator's activity is the operator's call
   impact: Effect → sets the prune age, one constant · Wait: nothing, the build uses 13 months meanwhile · reach: the turn-log file on this host · undo: easy; shortening later loses nothing needed · cost: none
+correction: no budget: line was written with this item's target: line on 2026-10-08; the build default ($22, other build) applies

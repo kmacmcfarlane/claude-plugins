@@ -89,3 +89,4 @@ dispatch: reviewer opus high — review round 1
 verdict: review 1 NEEDS_CHANGES at 1300ebc (must-fix 2: hold lifts on any answer to 180, not (a); librarian Held clause restates the lift condition; lows: calendar-impossible time read, dev-flow→decision-page soft dep undeclared, shipped rule names this repo's decision without a lookup, decisions SKILL.md over budget; nits: wrap, test count 8 not 9)
 correction: decisions 180-183 were stored with raised: above the headline and unindented card lines; repaired so each card sits indented under its decision line (wi needs-input now reads them)
 dispatch: implementer opus medium — fix round 1 (resume a1ce4ecde12903821)
+correction: no budget: line was written with this item's target: line on 2026-10-08; the build default ($22, other build) applies
