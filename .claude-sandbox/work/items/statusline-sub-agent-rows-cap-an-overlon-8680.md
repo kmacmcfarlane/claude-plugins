@@ -31,3 +31,5 @@ return: DONE 4e72c3f (MODEL_MAX 40 columns after the claude- prefix; EFFORT_MAX 
 changed: subagent_statusline.py (caps), tests/test_subagent_statusline.py (two tests, sweep), install-statusline SKILL.md (narrow-panel paragraph)
 dispatch: reviewer opus high — review round 1
 agent: reviewer a3a18497b18089536
+verdict: review 1 NEEDS_CHANGES at 4e72c3f (must-fix 2: MODEL_MAX 40 drops documented Bedrock ids since only a leading claude- is stripped; effort cap counts characters not columns; lows: SKILL threshold wording, name uncapped -> follow-up)
+dispatch: implementer opus medium — fix round 1 (resume a467aafec85f7118b)
