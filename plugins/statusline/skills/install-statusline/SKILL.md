@@ -147,9 +147,11 @@ teammates get no row from this plugin; Claude Code does not pass them to it.
 
 It is on by default, with nothing written to your settings: the plugin's own
 `settings.json` ships a default `subagentStatusLine` (Claude Code 2.1.205 or later for the
-percentages, and for the model; 2.1.214 or later for the effort). Plugin defaults are the
-lowest settings layer, so a `subagentStatusLine` you set in any settings file wins over it
-and is never touched. To keep Claude Code's default rows, set one that prints nothing:
+percentages, and for the model; 2.1.214 or later for the effort (documented:
+https://code.claude.com/docs/en/statusline, Subagent status lines)). Plugin defaults are
+the lowest settings layer, so a `subagentStatusLine` you set in any settings file wins
+over it and is never touched. To keep Claude Code's default rows, set one that prints
+nothing:
 
 ```json
 { "subagentStatusLine": { "type": "command", "command": "true" } }
