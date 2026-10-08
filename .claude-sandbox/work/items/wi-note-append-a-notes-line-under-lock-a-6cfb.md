@@ -53,3 +53,5 @@ dispatch: reviewer opus high — review round 1
 agent: reviewer a0225e6318d9a0491
 verdict: review 1 NEEDS_CHANGES at f3338d0 (must-fix 1: a twice-refused text would be carried into the manifest as written; lows: a bare -- text silently dropped, the decision line's own --raw call routing unstated; nit: PEM refusal hint)
 dispatch: implementer opus medium — fix round 1 (resume a4cea3b5b72b49074)
+return: DONE 3e9a0bb fix round 1 (twice-refused text carried only as path and key in words; a bare -- text refused via raw argv; decision line's own --raw call routed the same)
+dispatch: reviewer opus high — review round 2 (resume a0225e6318d9a0491)

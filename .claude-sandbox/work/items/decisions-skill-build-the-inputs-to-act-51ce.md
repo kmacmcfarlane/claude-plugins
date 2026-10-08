@@ -40,3 +40,5 @@ return: DONE a6e76d0 (floor item 10, widened gloss, line-only condition, cold re
 changed: decisions SKILL.md, references/{rulings (new), worksheet, rendering, gallery, rationale}.md, decision-page assets/{index.html, cards.example.json}, references/{cards-schema, fallback}.md, SKILL.md, tests/test_act.py (new), librarian-mode references/decisions.md, README.md:647-651, CLAUDE.md
 dispatch: reviewer opus high — review round 1
 agent: reviewer a503a9fb3220443de
+verdict: review 1 NEEDS_CHANGES at a6e76d0 (must-fix 1: the page folds multi-line paste text; lows: test strings echo estate labels, Levels card bullet lacks the part; low 4 repo-map out of scope)
+dispatch: implementer opus medium — fix round 1 (resume a29f52488dc1ec5ae)
