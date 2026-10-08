@@ -60,3 +60,6 @@ decision 195: At which phase gates must you approve before the next phase starts
   why ask: rule-change — it sets how often every foundation run stops for you
   impact: Effect → you approve requirements and plan every run; architecture only when hard to reverse · Wait: blocks the build · reach: every foundation run in every repo · undo: one rule edit · cost: usually two stops per run, three with a hard-to-reverse decision
 - 2026-10-08 done
+shown 193: 2026-10-08T20:02Z chat
+shown 194: 2026-10-08T20:02Z chat
+shown 195: 2026-10-08T20:02Z chat

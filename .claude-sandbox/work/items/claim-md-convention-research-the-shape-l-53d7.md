@@ -79,3 +79,7 @@ decision 188: Do you approve the CLAIM.md shape, and which changes to a claim mu
 decision 189: Where a repo has both a CLAIM.md and a librarian "Not owned" line, should that line keep its own list, or point to CLAIM.md? — options: (a) withdrawn (CLAIM.md as the authority) | (b) keep them independent | (c) point the Not owned line at CLAIM.md | (d) keep both; the claim check compares them by name [recommended] | (z) decide later
   revised: 2026-10-08T07:24:40Z — retitled from "which wins?"; (a) "CLAIM.md is the authority" withdrawn, an answer of (a) is re-asked; (b) keeps letter and meaning; added (c) pointer and (d) keep both and compare; rec moved from (a) to (d); impact changed: effect was "one source of truth", now two lists compared by name
   impact: Effect → both lists stay; the check compares them by name when it runs · Wait: step 2's wording on the librarian list waits · reach: every repo with a librarian and a claim · undo: one edit to the check; nothing in the scope interview
+shown 186: 2026-10-08T20:02Z chat
+shown 187: 2026-10-08T20:02Z chat
+shown 188: 2026-10-08T20:02Z chat
+shown 189: 2026-10-08T20:02Z chat

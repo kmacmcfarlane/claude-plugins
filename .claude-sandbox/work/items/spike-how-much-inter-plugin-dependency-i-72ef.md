@@ -57,3 +57,6 @@ decision 192: Where should the new checks live (each plugin's tests run alone; e
   why ask: placement — it adds a Librarian Check, which is the operator's opt-in config
   impact: Effect → the standalone test becomes mechanical on every landing · Wait: blocks F8 (193f) · reach: this repo's Checks · undo: easy · cost: a few seconds per landing
 - 2026-10-08 done
+shown 190: 2026-10-08T20:02Z chat
+shown 191: 2026-10-08T20:02Z chat
+shown 192: 2026-10-08T20:02Z chat

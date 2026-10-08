@@ -43,3 +43,4 @@ baseline: plan review 2 — 41740db45a4c405017eeb427fab2944a8dd50dd28aa157379bb1
 dispatch: reviewer opus high — plan review 2 (resume acb87f13d5217d546)
 verdict: plan review 2 CLEAR (must-fix 0)
 findings: carried — (1) the deferred-compaction arm reads "or the gate state has compact_deferred set and the drafted mode is not one the operator's own words named:"; (2) an override "re-runs the checkpoint with only question 3 open, which it re-drafts"; (3) state "This trades lean-depth window for no duplicate notes; a re-run is rare."; (4) strip the argument's own " — 2:"/" — 3:" parts before building the override line
+shown 196: 2026-10-08T20:02Z chat

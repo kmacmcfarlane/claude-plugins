@@ -94,3 +94,6 @@ decision 183: How long should the turn log keep its lines? — options: (a) 13 m
   impact: Effect → sets the prune age, one constant · Wait: nothing, the build uses 13 months meanwhile · reach: the turn-log file on this host · undo: easy; shortening later loses nothing needed · cost: none
 correction: no budget: line was written with this item's target: line on 2026-10-08; the defaults apply: plan $28, build $22 (bindings.md § Spend budget)
 correction: decisions 180-183 raised: times were estimated ahead of the clock; set from the session's order of events
+shown 181: 2026-10-08T20:02Z chat
+shown 182: 2026-10-08T20:02Z chat
+shown 183: 2026-10-08T20:02Z chat

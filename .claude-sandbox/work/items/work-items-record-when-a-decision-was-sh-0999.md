@@ -101,3 +101,4 @@ dispatch: reviewer opus high — review round 3 (resume a2c9add003f36437c)
 verdict: review 3 CLEAR at b0e69af (must-fix 0)
 landed: 8ea8a3c (merge --no-ff into main; Checks 10/10 OK; push scan read, clean)
 agent: reviewer a2c9add003f36437c (build reviews 1-3; line added late)
+shown 180: 2026-10-08T20:02Z chat
