@@ -32,3 +32,18 @@ return: DONE series 00_initial.md (floor widens to terms; new 'what it takes to 
 baseline: plan review 1 — 67c3fb20872d5c39b02a284c7e7fc91643db3702dd75cbb64e32b7a9c1d3fabd .claude-sandbox/investigations/decisions-skill-every-decision-carries-t-dcf8/00_initial.md; 
 dispatch: reviewer opus high — plan review 1
 agent: reviewer a40143babb8d3fe90
+verdict: plan review 1 NEEDS_CHANGES (must-fix 3: SKILL.md size not planned; act / to act (x): / To act on names decided alone (api-name, principle 5); Rulings intro and README claim operator rulings only; lows 4-7 restatement, lint spec, shipped 172 labels, multi-line store; nit citation)
+dispatch: planner opus high — plan fix round 1 (resume aa442cae2c2859ccd)
+return: DONE series 01_review-1-fixes.md (findings 1-8; OQ3 names blocking; floor item appended as 10; rebases on 18c4)
+baseline: plan review 2 — 67c3fb20872d5c39b02a284c7e7fc91643db3702dd75cbb64e32b7a9c1d3fabd .claude-sandbox/investigations/decisions-skill-every-decision-carries-t-dcf8/00_initial.md; 93fa365fc35a1b1b48f130a7e21e1923f16b14b1d8056307ca8baea67707ea4f .claude-sandbox/investigations/decisions-skill-every-decision-carries-t-dcf8/01_review-1-fixes.md; 
+dispatch: reviewer opus high — plan review 2 (resume a40143babb8d3fe90)
+verdict: plan review 2 NEEDS_CHANGES (must-fix 1, down from 3: rebased onto 18c4's 3515 words, the plan's additions break its 3600-word cap; low: Inputs ruling marked not-the-operator's though OQ3 sends it to the operator; nit: path lint fails prose slashes)
+dispatch: planner opus high — plan fix round 2 (resume aa442cae2c2859ccd)
+return: DONE series 02_rulings-move.md (Rulings move whole to references/rulings.md, about 3100 words expected; Inputs ruling cites OQ3; path lint on code spans)
+baseline: plan review 3 — 67c3fb20872d5c39b02a284c7e7fc91643db3702dd75cbb64e32b7a9c1d3fabd .claude-sandbox/investigations/decisions-skill-every-decision-carries-t-dcf8/00_initial.md; 93fa365fc35a1b1b48f130a7e21e1923f16b14b1d8056307ca8baea67707ea4f .claude-sandbox/investigations/decisions-skill-every-decision-carries-t-dcf8/01_review-1-fixes.md; b7d1b8c732fbf9be6ea706f16720bd0487b6c273f9428b6bd79d7c55fd612114 .claude-sandbox/investigations/decisions-skill-every-decision-carries-t-dcf8/02_rulings-move.md; 
+dispatch: reviewer opus high — plan review 3 (resume a40143babb8d3fe90)
+verdict: plan review 3 NEEDS_CHANGES (must-fix 1: the shipped Inputs ruling would cite this store's decision number; low: the Rulings stub names no moment to read the file; nit: INDEX lags)
+dispatch: planner opus high — plan fix round 3 (resume aa442cae2c2859ccd)
+return: DONE series 03_generic-ruling-and-stub.md (date-cited ruling; stub with when to read; INDEX)
+baseline: plan review 4 — 67c3fb20872d5c39b02a284c7e7fc91643db3702dd75cbb64e32b7a9c1d3fabd .claude-sandbox/investigations/decisions-skill-every-decision-carries-t-dcf8/00_initial.md; 93fa365fc35a1b1b48f130a7e21e1923f16b14b1d8056307ca8baea67707ea4f .claude-sandbox/investigations/decisions-skill-every-decision-carries-t-dcf8/01_review-1-fixes.md; b7d1b8c732fbf9be6ea706f16720bd0487b6c273f9428b6bd79d7c55fd612114 .claude-sandbox/investigations/decisions-skill-every-decision-carries-t-dcf8/02_rulings-move.md; 79cc867e1b888cbfe3789769719c1aa4eaff1ffa4d2227dc4816d932aade61a7 .claude-sandbox/investigations/decisions-skill-every-decision-carries-t-dcf8/03_generic-ruling-and-stub.md; 
+dispatch: reviewer opus high — plan review 4 (resume a40143babb8d3fe90)

@@ -3,12 +3,11 @@ id: wi-lint-catch-key-value-secrets-after-a-d8a5
 title: "wi lint: catch KEY=value secrets after a bullet or date prefix"
 short_display_name: lint misses prefixed secrets
 type: bug
-status: doing
+status: done
 priority: 2
-owner: Kyle-McFarlane@2d49f8460283
-claimed: 2026-10-08T04:57Z
 created: 2026-10-08
 updated: 2026-10-08
+closed: 2026-10-08
 refs:
   - checkpoint-before-the-manifest-write-con-6c43 review 1
 ---
@@ -33,3 +32,8 @@ dispatch: reviewer opus high — review round 1
 agent: reviewer aed4304ee761faaaf
 verdict: review 1 NEEDS_CHANGES at 01a17c1 (must-fix 2: the allowed prefix list misses **bold**, >, #, unspaced em dash and other punctuation; format.md overclaims; low: mid-prose path assignments now flagged)
 dispatch: implementer opus medium — fix round 1 (resume ad8e44c4c16a95bb7)
+return: DONE 3108e00 fix round 1 (prefix: any non-word character but ? or &; 7 new shapes; format.md wording; low 3 declined: a path exemption would widen what passes)
+dispatch: reviewer opus high — review round 2 (resume aed4304ee761faaaf)
+verdict: review 2 CLEAR at 3108e00 (must-fix 0; low: compiler-define and path shapes now flagged, accepted with the decline; nit: non-ASCII word glue)
+landed: b4e4533 (merge --no-ff into main; Checks 10/10 OK; push scan read, clean)
+- 2026-10-08 done
