@@ -47,3 +47,7 @@ target: full main /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.cla
 budget: 2026-10-08T06:22Z build $22 — default other build
 dispatch: implementer opus medium — build from the CLEAR series (CLI code, tests, skill wording)
 agent: implementer a4cea3b5b72b49074
+return: DONE f3338d0 (cmd_note and _note_line; TestNote 16 tests; work-items SKILL, format.md, provider-interface; checkpoint 4a½ probe and wi note calls in place of the inline snippet)
+changed: wi.py, tests/test_wi.py, work-items SKILL.md, references/format.md, references/provider-interface.md, context-guard checkpoint SKILL.md
+dispatch: reviewer opus high — review round 1
+agent: reviewer a0225e6318d9a0491
