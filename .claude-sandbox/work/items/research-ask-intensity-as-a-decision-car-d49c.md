@@ -35,3 +35,10 @@ decision 185: Do you want the research skills to put their intensity and round q
   why ask: trust — a relayed request changes an interactive default, and relayed answers bind nothing until you confirm here
   impact: Effect → the research build can start; research asks show cost and benefit per preset and wait for your reply · Wait: blocks the build · reach: research, research-deep, research-refine, research-prune, deep-investigation in every repo · undo: easy, restore the dialog · cost: none
 agent: reviewer a740e9298c69f0c0b
+verdict: plan review 1 NEEDS_CHANGES (must-fix 5: threads ask open while the next round runs; one-preset and 7d override cards; unparsed word answers in the fallback; decide-later wake contradicts; manifest clause misstates the plain-names edge; lows 6-10, nit 11)
+dispatch: planner opus high — plan fix round 1 (resume a01c78fd1feecde49)
+return: DONE_WITH_CONCERNS series 01_review-1-fixes.md (findings 1-11; assumptions 13-15; test 8)
+baseline: plan review 2 — 5e27a7f129b2ff28a4b30b64c4c0fa28943a4dabae578af750e197e3941808e0 .claude-sandbox/investigations/research-ask-intensity-as-a-decision-car-d49c/00_initial.md; e63e5c5acab50663b437500ccc6ba91ed328cba7f6f2466a0448e32c425f9d07 .claude-sandbox/investigations/research-ask-intensity-as-a-decision-car-d49c/01_review-1-fixes.md; 
+dispatch: reviewer opus high — plan review 2 (resume a740e9298c69f0c0b)
+verdict: plan review 2 NEEDS_CHANGES (must-fix 2, down from 5: assumptions 13 and 14 clash when the launched round is the last the cap allows; pulled lanes need a stated cost and a fresh quota read at answer time; lows: brief § Lanes and search budget for pulled lanes, Supersedes misses 00 § C research-deep, INDEX numbering)
+dispatch: planner opus high — plan fix round 2 (resume a01c78fd1feecde49)

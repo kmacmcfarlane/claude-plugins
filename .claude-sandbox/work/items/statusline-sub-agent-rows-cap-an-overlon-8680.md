@@ -3,12 +3,11 @@ id: statusline-sub-agent-rows-cap-an-overlon-8680
 title: "statusline sub-agent rows: cap an overlong model or string effort so it cannot suppress the description"
 short_display_name: long tag hides sub-agent description
 type: bug
-status: doing
+status: done
 priority: 3
-owner: Kyle-McFarlane@2d49f8460283
-claimed: 2026-10-08T05:43Z
 created: 2026-10-08
 updated: 2026-10-08
+closed: 2026-10-08
 refs:
   - statusline-agent-panel-rows-show-each-su-7f91 review 2
 ---
@@ -33,3 +32,8 @@ dispatch: reviewer opus high — review round 1
 agent: reviewer a3a18497b18089536
 verdict: review 1 NEEDS_CHANGES at 4e72c3f (must-fix 2: MODEL_MAX 40 drops documented Bedrock ids since only a leading claude- is stripped; effort cap counts characters not columns; lows: SKILL threshold wording, name uncapped -> follow-up)
 dispatch: implementer opus medium — fix round 1 (resume a467aafec85f7118b)
+return: DONE_WITH_CONCERNS c462b83, c5e2bda fix round 1 (strip through the first claude-; effort cap in columns; tests; c5e2bda corrects a test comment and c462b83's message claim about global.)
+dispatch: reviewer opus high — review round 2 (resume a3a18497b18089536)
+verdict: review 2 CLEAR at c5e2bda (must-fix 0; low 1 mid-word claude- match declined: only made-up names; low 2 c462b83 message carried in the merge message)
+landed: f016e48 (merge --no-ff into main; Checks 10/10 OK; push scan read, clean)
+- 2026-10-08 done
