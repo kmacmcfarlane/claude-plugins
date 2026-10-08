@@ -482,8 +482,9 @@ class Rows(Hermetic):
         self.assertEqual(row, f"rev · ~75% ~150k/200k · {half} · Review the diff")
 
     def test_a_provider_prefixed_model_drops_everything_through_claude(self):
-        # A Bedrock inference-profile ID, as the docs show it:
-        # https://code.claude.com/docs/en/amazon-bedrock
+        # A Bedrock inference-profile ID, the us. one as the docs show it
+        # (https://code.claude.com/docs/en/amazon-bedrock); the global. one
+        # is the same ID with a longer prefix, made up for this test.
         for mid in ("us.anthropic.claude-sonnet-4-5-20250929-v1:0",
                     "global.anthropic.claude-sonnet-4-5-20250929-v1:0"):
             row = ANSI.sub("", self.run_rows([self.task(model=mid, effort="high")],
