@@ -2,16 +2,22 @@
 
 The page (`assets/index.html`) renders whatever `cards.json` beside it holds, and writes one
 answer document per decision to the artifact's `db`. This file is the schema for both.
-`assets/cards.example.json` is a complete, invented example: three decisions, each with its
-impact, one ⚠ one-way (with its Impact table rows), one with no recommendation, one option with
-the steps the operator takes to act on it, one reference to a decision not on the page.
+`assets/cards.example.json` is a complete, invented example: three decisions, each opening on
+its Context and carrying its impact, one ⚠ one-way (with its Impact table rows), one with no
+recommendation, one option with the steps the operator takes to act on it, one reference to a
+decision not on the page.
 
 **The page checks the data before it renders anything** and, when a check fails, shows *The
 decisions can't be shown: cards.json is not valid* with the first problems found, and renders
 nothing else. It refuses: an `n` that is not a whole number or is used twice; an option letter
 that is not a single `a`–`z`; options out of letter order or not ending in `z`; a `rec` that is
 not one of the card's letters (or null without `norec`); a missing required field; an empty
-`rev`; an `impact` without its effect, wait, reach and undo as text; a `basis` word outside
+`rev`; a missing or blank `context`; a TLDR bullet that carries the recommendation (one that
+opens with Rec, Recs, Recommend, Recommended or Recommendation followed by a colon, a dash (a
+hyphen only with a space after it), a full stop, a bracket or nothing, unless *by* follows;
+or one that says `rec (b)`, I or we recommend, my or our recommendation, `(recommended)`, or
+`(b) is recommended`); an
+`impact` without its effect, wait, reach and undo as text; a `basis` word outside
 the four; a `follow` list other than the fixed six; a `refs` key that is not a number; a ⚠
 card without its `blocks`; a `blocks` entry that is not an option letter other than `z`, or
 lacks its text; an `act` that is not keyed by option letters other than `z`, a key whose list
@@ -48,14 +54,14 @@ Each field maps to a part of the `decisions` skill's card (its `references/rende
 | `n` | integer | yes | the decision number, the caller's own, never reused | everywhere |
 | `L` | string | yes | its group: a `layers` key | groups the map and the cards |
 | `t` | string | yes | the short name, 2–6 words, a noun phrase (it is what a slug shows) | title |
-| `rev` | string | yes | the card's revision: a label that changes whenever the card does (a `tell me` answer added, a re-ask, a reframe kept under its number). An ISO-8601 UTC time when you write it (`2026-01-12T09:30:00Z`) is the convention, but it is only ever compared for equality, never as a time | not shown; the page copies it into each answer, and it decides which answers count (below) |
-| `impact` | object | yes | the **Impact:** line (the `decisions` skill's `references/rendering.md` § Impact): `effect` (what changes if the recommendation is taken; with no recommendation, each option's in a few words), `wait` (what waiting costs, what it blocks), `reach` (who or what is affected), `undo` (how it is reversed, or one-way), each non-empty text; `cost` optional. Copied from the caller's stored Impact line where it keeps one, never composed again | `effect` at tag size (after an arrow) in the map, on the closed card and in the popup; the whole line flat at the top of the open card; `wait` as the Impact table's Wait row |
-| `tldr` | array of strings | yes | 2–3 fragment bullets: the decision at a glance | flat |
-| `context` | string | no | **Context:** where the operator left it · what they decide now | flat |
+| `rev` | string | yes | the card's revision: a label that changes whenever the card does. Any change to a card gets a new `rev`, Context included: an **Added:** line after `tell me`, more detail after `expand`, a `dig into` finding, a corrected fact, a re-ask. Only the one-time format migration keeps it: a card written before Context existed, whose own `what` and resume cue move into `context`, and whose terms are glossed from its own folds alone. A gloss drawn from anywhere outside the card is new information: a new `rev`. An ISO-8601 UTC time when you write it (`2026-01-12T09:30:00Z`) is the convention, but it is only ever compared for equality, never as a time | not shown; the page copies it into each answer, and it decides which answers count (below) |
+| `context` | string | yes | **Context:** first; the terms, items and concepts the rest of the card uses, each introduced in plain words (an id or label only after the words it stands for); then what is decided; then where the operator left it (the `decisions` cue), when there is one. Context introduces every specific thing the card names. Two shapes need it most: a count ("four changes", "the three"), for which Context says what the things are, or lists them; and a named mode, setting, review, plan or document ("content mode", "the review"), which Context gives a one-line gloss: what it is, and where it comes from. The same holds for an item, an id or a label: plain words first, the id after. Written from the caller's stored What, its cue and the card's terms, with the cold read (below) run on it | first and flat on the open card, above the Impact line, and above the TLDR in the popup; not counted in the flat part's size (below) |
+| `impact` | object | yes | the **Impact:** line (the `decisions` skill's `references/rendering.md` § Impact): `effect` (what changes if the recommendation is taken; with no recommendation, each option's in a few words), `wait` (what waiting costs, what it blocks), `reach` (who or what is affected), `undo` (how it is reversed, or one-way), each non-empty text; `cost` optional. Copied from the caller's stored Impact line where it keeps one, never composed again | `effect` at tag size (after an arrow) in the map, on the closed card and in the popup; the whole line flat on the open card, right under Context; `wait` as the Impact table's Wait row |
+| `tldr` | array of strings | yes | 2–3 fragment bullets: the choice and what rides on it, no recommendation: the options mark it; the check refuses a bullet that opens with Rec or Recommend…, or says I or we recommend | flat |
 | `ifleft` | string | no | **If left:** an ask for another round: each leftover finding and what it would break | flat |
 | `roundcosts` | string | no | **A round costs:** an ask for another round: time, quota, the operator's attention | flat |
 | `ifunanswered` | string | no | **If unanswered:** a status-quo default (`I leave X as it is …`) | flat |
-| `what` | string | yes | **What:** in plain words, items by plain name | Background fold |
+| `what` | string | no | Older data only. Shown at the end of the Context block, after the resume cue: the reverse of the new order (terms, then what is decided, then the cue). That is accepted for older data, since nothing is lost. On a republish, move it into `context` and delete it; a new card does not set it | at the end of the Context block |
 | `why` | string | yes | **Why now:** and what it blocks | Background fold |
 | `whyask` | string | yes | **Why ask:** what would go wrong if the recommendation were taken alone | Background fold |
 | `class` | string | no | the class that opens Why ask, when the caller names classes | a pill, and the Background fold |
@@ -80,19 +86,37 @@ An option `[letter, full, impact, title, oneLine]`:
 - `full` and `impact` — the option and its consequence as the card states them; shown in the
   Options in full fold.
 
-A label, number or acronym first used in the flat part (`t`, `title`, `oneLine`, `tldr`,
-`context`) is defined there, as the `decisions` floor requires: the flat part is what the
-operator reads, and `full` sits in a fold.
+**Context introduces every specific thing the card names.** Every label, number, acronym,
+term of art or item that the flat part (`t`, `impact`, `tldr`, `title`, `oneLine`, the rec
+line) uses is introduced in `context`, as the `decisions` floor requires: the flat part is what
+the operator reads, and `full` sits in a fold. Two shapes need it most:
 
-**Size.** The flat part of a card (title, Impact line, TLDR, context, option titles and
-one-liners, rec line) stays near 150 words; the folds carry the rest. An `act` list is
-outside that budget: what the operator needs to act is never folded away. The `effect` stays
+- **A count** ("four changes", "the three"). Context says what the things are, or lists them:
+  *the review asked for four changes: X, Y, Z and W*.
+- **A named mode, setting, review, plan or document** ("content mode", "the review"). Context
+  gives it a one-line gloss: what it is, and where it comes from.
+
+The same holds for an item, an id or a label: plain words first, the id after.
+
+**The cold read** (the `decisions` skill's `references/worksheet.md` § The cold read, applied
+to the flat part). Before publishing, list each noun phrase in the card's Impact line, TLDR,
+option titles and one lines that refers to a specific thing: a count, a named mode, setting,
+review, plan or document, an item, an id or a label. For each one, point to its gloss in
+`context`. A phrase with no gloss gets one before the page goes out. The pre-publish runner
+(SKILL.md step 2) lints ids, counts and named things missing from `context`; those lints are
+proxies, and plain-word terms stay the cold read's.
+
+**Size.** The flat part of a card (title, Impact line, TLDR, option titles and one-liners, rec
+line) stays near 150 words; the folds carry the rest. `context` and an `act` list are outside
+that budget: what the operator needs to read the card, and to act on it, is never folded away.
+Context aims for what its terms need, typically 30–80 words; a term that needs a paragraph has
+its detail in a fold, with its one-line gloss kept in Context. The `effect` stays
 under about 10 words: it is shown alone, at tag size, in the map.
 
 **What the page adds.** Every view shows the impact: the map and a closed card the effect, an
 open card the Impact line, and its Options in full fold the Impact table (a row per option,
-then the Wait row; Effect, Reach, Undo, Cost). It shows the context cue on every card that
-has one: a page is read away from the conversation, so its reader is treated as cold. A
+then the Wait row; Effect, Reach, Undo, Cost). It opens every card on its Context: a page is
+read away from the conversation, so its reader is treated as cold. A
 `⚠ one-way` card is the decisions skill's block: the card's essentials plus its Impact table,
 unfolded. It gets no special control: the read-back of a one-way pick happens in chat, when
 the answers are read back. An older `stakes` field is ignored: Undo and Reach carry it.
@@ -101,6 +125,17 @@ the answers are read back. An older `stakes` field is ignored: Undo and Reach ca
 current template. On a republish, add `impact` to each kept card (a `stakes` field may stay,
 ignored); the impact comes from the caller's stored Impact line, backfilled as the decisions
 skill's re-show says when the store has none.
+
+A `cards.json` written before Context came first has either no `context` (refused) or a
+cue-only one, which passes and shows its `what` after the cue (§ A card, `what`). On a
+republish, give each kept card a `context`: the terms its Impact line, TLDR and options use,
+each glossed; then its `what`, moved in (delete `what`); then its cue. That is the format
+migration (the `rev` rule above). Any change to a card gets a new `rev`, Context included: an
+**Added:** line after `tell me`, more detail after `expand`, a `dig into` finding, a corrected
+fact, a re-ask. Only the one-time format migration keeps it: a card written before Context
+existed, whose own `what` and resume cue move into `context`, and whose terms are glossed from
+its own folds alone. A gloss drawn from anywhere outside the card is new information: a new
+`rev`.
 
 ## The answers collection
 

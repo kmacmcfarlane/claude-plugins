@@ -67,11 +67,9 @@
       },
       "tldr": [
         "The docs build runs on a laptop today",
-        "Move it to CI, or keep it local",
-        "Rec: move it to CI"
+        "Move it to CI, or keep it local"
       ],
-      "context": "You last saw the build fail twice on a stale cache ([[38]]) · now you pick where it runs.",
-      "what": "Where the documentation site is built and published from: a maintainer's laptop, as today, or the CI pipeline.",
+      "context": "The docs site is built and published from one maintainer's laptop today. CI is the shared build service that runs on every merge to `main`. A stale cache is a leftover copy of an old build that the laptop reused by mistake; you last saw it break two publishes ([[38]]). You decide where the build runs from now on.",
       "why": "Two broken publishes this month came from a local cache. Blocks [[42]] and [[43]].",
       "whyask": "Moving the build changes who can publish; the team may rely on publishing by hand.",
       "class": "wider scope",
@@ -140,8 +138,7 @@
         "The CI build changes some page URLs",
         "Redirect them, or let them break"
       ],
-      "context": "Only matters if [[41]] is (b) · you pick how old links behave.",
-      "what": "What happens to the twelve page URLs that change shape when the site is built in CI.",
+      "context": "Building in CI ([[41]], option b) gives twelve pages a new web address (URL): the ten how-to guides and the two pages that list the site's configuration options, all of which move under a new /docs/ folder. A redirect is one config line that sends a reader from an old URL to its new one. Only matters if [[41]] is (b). You decide what happens to links that point at the old addresses.",
       "why": "Needed before the first CI publish. Blocks nothing else.",
       "whyask": "Breaking public links is a call about readers, not about the build.",
       "class": "a real trade-off",
@@ -204,7 +201,7 @@
         "The CI build can apply a new theme",
         "Pick a colour, or keep the current one"
       ],
-      "what": "Which accent colour the rebuilt site uses.",
+      "context": "Building in CI ([[41]], option b) applies the site's theme afresh, so the accent colour (the colour of links and headings) can change at no extra cost. The site is blue today; the logo is green. Either colour is one theme setting, a single line in the site's theme file, so it is easy to change back. You pick which the site uses.",
       "why": "Nothing forces it; raised because the move touches the theme files anyway.",
       "whyask": "A taste call; no fact settles it.",
       "rec": null,
