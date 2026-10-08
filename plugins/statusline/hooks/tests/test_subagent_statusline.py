@@ -469,10 +469,32 @@ class Rows(Hermetic):
         row = ANSI.sub("", self.run_rows([self.task(model="claude-" + m + "m", effort="medium")],
                                          columns=80)["a1"])
         self.assertEqual(row, "rev · ~75% ~150k/200k · medium · Review the diff")
-        # The cap is in terminal columns: wide characters count double.
+        # The caps are in terminal columns: wide characters count double.
         wide = "模" * (R.MODEL_MAX // 2 + 1)
         row = ANSI.sub("", self.run_rows([self.task(model=wide)], columns=80)["a1"])
         self.assertEqual(row, "rev · ~75% ~150k/200k · Review the diff")
+        wide_eff = "高" * R.EFFORT_MAX          # EFFORT_MAX characters, twice the columns
+        row = ANSI.sub("", self.run_rows([self.task(model="claude-" + m, effort=wide_eff)],
+                                         columns=80)["a1"])
+        self.assertEqual(row, f"rev · ~75% ~150k/200k · {m} · Review the d…")
+        half = "高" * (R.EFFORT_MAX // 2)        # exactly EFFORT_MAX columns: kept
+        row = ANSI.sub("", self.run_rows([self.task(effort=half)], columns=80)["a1"])
+        self.assertEqual(row, f"rev · ~75% ~150k/200k · {half} · Review the diff")
+
+    def test_a_provider_prefixed_model_drops_everything_through_claude(self):
+        # A Bedrock inference-profile ID, as the docs show it:
+        # https://code.claude.com/docs/en/amazon-bedrock
+        for mid in ("us.anthropic.claude-sonnet-4-5-20250929-v1:0",
+                    "global.anthropic.claude-sonnet-4-5-20250929-v1:0"):
+            row = ANSI.sub("", self.run_rows([self.task(model=mid, effort="high")],
+                                             columns=80)["a1"])
+            self.assertEqual(row, "rev · ~75% ~150k/200k · sonnet-4-5-20250929-v1:0·high"
+                                  " · Review the diff", mid)
+        # No `claude-` anywhere: shown as it is; `claude-` with nothing after: kept.
+        row = ANSI.sub("", self.run_rows([self.task(model="other-model")])["a1"])
+        self.assertIn(" · other-model · ", row)
+        row = ANSI.sub("", self.run_rows([self.task(model="x.claude-")])["a1"])
+        self.assertIn(" · x.claude- · ", row)
 
     def test_a_widening_pane_never_loses_a_part_of_the_row(self):
         cases = ((self.task(model="claude-opus-5-5", effort="high"), "opus-5-5·high"),
