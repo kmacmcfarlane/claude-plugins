@@ -65,3 +65,7 @@ agent: planner aaa7d9f9dffe10eaa
 
 ## Notes
 - 2026-10-08 claimed by Kyle-McFarlane@2d49f8460283
+return: DONE series 00_initial.md (shown N: and seen N: appended lines; wi read-only parsing; open: 3e8e overlap on Warm or cold/Seen, non-blocking; seen times in the public store, non-blocking)
+baseline: plan review 1 — 706d7a6a48c098643ed3111bcf088dcb35674cf59e251c8081a19c7e2b6308da .claude-sandbox/investigations/work-items-record-when-a-decision-was-sh-0999/00_initial.md; 
+dispatch: reviewer opus high — plan review 1
+agent: reviewer acc5597438f58d0ec

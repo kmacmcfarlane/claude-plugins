@@ -39,3 +39,7 @@ agent: implementer ab4e9dc2adb7e867f
 
 ## Notes
 - 2026-10-08 claimed by Kyle-McFarlane@2d49f8460283
+return: DONE_WITH_CONCERNS 34279a4 (Step 4a½ open-items residue; Step 2 kind 6 pending points; lean and unattended forms; series 00_initial.md)
+changed: plugins/context-guard/skills/checkpoint/SKILL.md (Step 4a½ and its hooks into Steps 2, 3, 4a, 4b, lean and unattended paths), references/handoff-format.md (names 4a½), references/design-rationale.md (why)
+dispatch: reviewer opus high — review round 1
+agent: reviewer afc9882ab7a84380f

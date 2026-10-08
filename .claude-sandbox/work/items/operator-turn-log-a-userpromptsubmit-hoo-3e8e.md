@@ -57,3 +57,7 @@ agent: planner a47a01aeb320c74e5
 
 ## Notes
 - 2026-10-08 claimed by Kyle-McFarlane@2d49f8460283
+return: DONE_WITH_CONCERNS series 00_initial.md (open: placement blocking, rec new turn-log plugin; retention 13 months; seen rule via 0999; probe P1 on undocumented transcript fields gates the origin step)
+dispatch: reviewer opus high — plan review 1
+baseline: plan review 1 — c50324f2a9b946435eac4f737b22252576eb947f14e83e1d05e802fa4fb4ce36 .claude-sandbox/investigations/operator-turn-log-a-userpromptsubmit-hoo-3e8e/00_initial.md; 
+agent: reviewer a5f686d69e11c3812
