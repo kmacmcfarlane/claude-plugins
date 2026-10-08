@@ -215,19 +215,34 @@ tags plus `REJECTED <alternative> — <why it lost>`:
 
 Append each line with this Bash, never Edit, which the checkout guards deny on a tracked
 store; it puts the line after the last non-blank line of `## Notes`, wherever that section
-sits, and adds the heading at the end when absent (a `'` inside the line written `'\''`):
+sits, and adds the heading at the end when absent. Like `wi`, it reads no line inside a
+fence as a heading, keeps the file's line endings, and replaces the file through a temp
+file. A `'` inside the line is written `'\''`:
 
 ```bash
 python3 - '<item file>' '<line>' <<'PY'
-import sys
+import os, re, sys, tempfile
 p, add = sys.argv[1:]
-L = open(p).read().rstrip('\n').split('\n')
-h = [k for k, x in enumerate(L) if x.rstrip() == '## Notes'] or [len(L) + 1]
-if h[0] > len(L): L += ['', '## Notes']
-e = next((k for k in range(h[0] + 1, len(L)) if L[k].startswith('## ')), len(L))
-while e - 1 > h[0] and not L[e - 1].strip(): e -= 1
-L.insert(e, add)
-open(p, 'w').write('\n'.join(L) + '\n')
+L = open(p, newline='').read().splitlines(True)
+eol = '\r\n' if L and L[0].endswith('\r\n') else '\n'
+F, code, i = re.compile(r' {0,3}(`{3,}|~{3,})'), set(), 0
+while i < len(L):  # fenced lines are text, as wi reads them; an unclosed opener is no fence
+    m = F.match(L[i]); r = m and m.group(1)
+    if r and not (r[0] == '`' and '`' in L[i][m.end():]):
+        j = next((j for j in range(i + 1, len(L)) if (c := F.match(L[j])) and c.group(1)[0]
+                  == r[0] and len(c.group(1)) >= len(r) and not L[j][c.end():].strip()), 0)
+        if j: code.update(range(i, j + 1)); i = j
+    i += 1
+H = [k for k, x in enumerate(L) if k not in code and x.startswith('## ')]
+n = next((k for k in H if L[k].rstrip() == '## Notes'), None)
+if L and not L[-1].endswith('\n'): L[-1] += eol
+if n is None: L += [eol, '## Notes' + eol, add + eol]
+else:
+    e = next((k for k in H if k > n), len(L))
+    L.insert(max(k for k in range(n, e) if L[k].strip()) + 1, add + eol)
+fd, t = tempfile.mkstemp(dir=os.path.dirname(os.path.abspath(p)))
+with os.fdopen(fd, 'w', newline='') as f: f.write(''.join(L))
+os.chmod(t, os.stat(p).st_mode & 0o777); os.replace(t, p)
 PY
 ```
 
