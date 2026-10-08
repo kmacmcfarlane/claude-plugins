@@ -47,3 +47,8 @@ baseline: plan review 3 — 5e27a7f129b2ff28a4b30b64c4c0fa28943a4dabae578af750e1
 dispatch: reviewer opus high — plan review 3 (resume a740e9298c69f0c0b)
 verdict: plan review 3 CLEAR (must-fix 0)
 findings: carried — (1) research-refine/SKILL.md:51: a T<n> entry marked pulled is not offered as a thread to pull; (2) pull no web lane that would need a search after a SEARCH EXHAUSTED line; local-corpus pulls stay open; keep 00's hand-rendered card and fallback list as the build's check
+answer 185: a — "What's the fallback if the decisions plugin isn't installed?" (chat, 2026-10-08T06:28Z; read as: (a) build it; question answered in chat: the plan's fallback is a lettered prose list in text, never a dialog; dependency spike filed separately)
+target: full main /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude/worktrees/research-ask-intensity-as-a-decision-car-d49c
+budget: 2026-10-08T06:28Z build waived — operator waiver 2026-10-08T06:28Z (spend still measured)
+dispatch: implementer opus medium — build from the CLEAR series (skill rules and tests)
+agent: implementer acfa41296fc254968

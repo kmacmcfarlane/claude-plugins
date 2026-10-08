@@ -16,3 +16,4 @@ Operator 2026-10-07 on 151: 'I'm getting a lot of budget decisions coming in, we
 - next: —
 - blocked: —
 - learned: —
+note: operator 2026-10-08T06:28Z in the claude-plugins librarian session: "waive the budgets for plan/implement/review/research for now, those thresholds are under review and the strategy doesn't feel right as it is." Standing waiver: no budget stops, asks or decided: spend lines until the operator lifts it; spend is still measured and reported.
