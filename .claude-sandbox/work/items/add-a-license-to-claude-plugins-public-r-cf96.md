@@ -77,3 +77,7 @@ budget: 2026-10-07T20:57Z build $10 — default chore
 dispatch: implementer opus medium — build (LICENSE GPL-3.0, answer 162 e)
 agent: implementer ae56c9c628ad34f7d round 1
 stopped: 2026-10-07T20:58Z implementer ae56c9c628ad34f7d round 1 stopped by the librarian before tmux restart; resume with SendMessage, else re-dispatch the build from the record
+resume: 2026-10-08 SendMessage resumed implementer ae56c9c628ad34f7d (build) after the tmux restart
+return: DONE c591784 (LICENSE byte-identical to claude-kit's; README License section; license GPL-3.0-only in all 11 plugin.json; marketplace.json unchanged: no documented top-level field)
+dispatch: reviewer opus high — review round 1
+agent: reviewer a2a9d316004923542

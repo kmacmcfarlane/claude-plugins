@@ -3,10 +3,12 @@ id: operator-turn-log-a-userpromptsubmit-hoo-3e8e
 title: "operator turn log: a UserPromptSubmit hook appends ids and timestamps of each operator turn to a host-shared file"
 short_display_name: operator turn log hook
 type: feature
-status: todo
+status: doing
 priority: 2
+owner: Kyle-McFarlane@2d49f8460283
+claimed: 2026-10-08T03:35Z
 created: 2026-10-03
-updated: 2026-10-07
+updated: 2026-10-08
 refs:
   - peer operator-attention 2026-10-03 (their serial 09, R47)
 ---
@@ -49,3 +51,9 @@ decision 151: Confirm the relayed proposal for an operator turn log: a hook writ
   rec: (a) · basis partial — it removes transcript scraping for every reader of operator turn times; nothing waits on it yet
   unknown: whether a config tree that exports its own config dir is used much
 answer 151: b — "5% on wednesday is not very far into the quota, why is this a concern? Also, I'm getting a lot of budget decisions coming in, we should bump up the budget to really only flag big spends (based on real data)." (answer page, rev 2026-10-07T07:00Z, 2026-10-07T20:47:39.192Z; read as: (b) confirm and plan it now; the quota note was stale caution, not a concern; plus a new request filed: raise budgets from real data)
+dispatch: planner opus high — plan, answer 151 b
+target: plan main /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude-sandbox/investigations/operator-turn-log-a-userpromptsubmit-hoo-3e8e
+agent: planner a47a01aeb320c74e5
+
+## Notes
+- 2026-10-08 claimed by Kyle-McFarlane@2d49f8460283

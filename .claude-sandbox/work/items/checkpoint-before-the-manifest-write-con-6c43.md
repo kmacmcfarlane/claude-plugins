@@ -3,10 +3,12 @@ id: checkpoint-before-the-manifest-write-con-6c43
 title: "checkpoint: before the manifest, write conversation-only residue into every open item the session touched"
 short_display_name: checkpoint writes residue to items
 type: feature
-status: todo
+status: doing
 priority: 1
+owner: Kyle-McFarlane@2d49f8460283
+claimed: 2026-10-08T03:35Z
 created: 2026-10-07
-updated: 2026-10-07
+updated: 2026-10-08
 refs:
   - peer kappa-3567 2026-10-07
 ---
@@ -31,3 +33,9 @@ decision 179: Should checkpoint write conversation-only details into every open 
   rec: (a) · basis strong — your words, relayed with the case that prompted them
   unknown: none
 answer 179: a (answer page, rev 2026-10-07T07:00Z, 2026-10-07T20:43:41.825Z; read as: (a) build it)
+dispatch: implementer opus medium — build, answer 179 a (skill wording, not mechanical)
+target: full main /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude/worktrees/checkpoint-before-the-manifest-write-con-6c43
+agent: implementer ab4e9dc2adb7e867f
+
+## Notes
+- 2026-10-08 claimed by Kyle-McFarlane@2d49f8460283

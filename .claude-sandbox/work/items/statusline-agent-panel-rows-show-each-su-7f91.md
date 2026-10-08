@@ -42,3 +42,7 @@ decided: finding 1 — drop the description whenever a non-empty tag does not fi
 dispatch: implementer opus medium — resume (fix round 1)
 agent: implementer a4bd4861771a0bec2 round 2
 stopped: 2026-10-07T20:58Z implementer a4bd4861771a0bec2 round 2 stopped by the librarian before tmux restart (operator: 'spin down open tasks'); worktree state as found; resume with SendMessage, else re-dispatch fix round 1 from the record
+resume: 2026-10-08 SendMessage resumed implementer a4bd4861771a0bec2 (fix round 1) after the tmux restart
+return: DONE 34a2802 fix round 1 (all six findings; effort over 6 chars drops only the effort, model kept)
+changed: plugins/statusline/hooks/subagent_statusline.py, tests/test_subagent_statusline.py, skills/install-statusline/SKILL.md (round 1 fixes)
+dispatch: reviewer opus high — review round 2 (resume aa336218277396d92)

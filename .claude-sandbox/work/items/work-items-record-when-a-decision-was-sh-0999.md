@@ -3,10 +3,12 @@ id: work-items-record-when-a-decision-was-sh-0999
 title: "work-items: record when a decision was shown to the operator (a shown timestamp on decision lines)"
 short_display_name: decision shown-at record
 type: feature
-status: todo
+status: doing
 priority: 2
+owner: Kyle-McFarlane@2d49f8460283
+claimed: 2026-10-08T03:35Z
 created: 2026-09-29
-updated: 2026-10-07
+updated: 2026-10-08
 refs:
   - agents 76bc
   - operator-attention R47
@@ -57,3 +59,9 @@ decision 150: Confirm the relayed answers for the decision shown-at record: trac
   rec: (a) · basis strong — your words, quoted in their serial (their commit c598050), and confirmed first-hand in the agents session (their answer 24)
   unknown: none
 answer 150: a (answer page, rev 2026-10-07T07:00Z, 2026-10-07T20:46:04.350Z; read as: (a) confirm both relayed answers — first and last shown, written by the displaying session)
+dispatch: planner opus high — plan, answer 150 a
+target: plan main /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude-sandbox/investigations/work-items-record-when-a-decision-was-sh-0999
+agent: planner aaa7d9f9dffe10eaa
+
+## Notes
+- 2026-10-08 claimed by Kyle-McFarlane@2d49f8460283
