@@ -3,12 +3,11 @@ id: add-a-license-to-claude-plugins-public-r-cf96
 title: Add a LICENSE to claude-plugins (public repo with no license)
 short_display_name: add a license
 type: chore
-status: doing
+status: done
 priority: 0
-owner: Kyle-McFarlane@2d49f8460283
-claimed: 2026-10-07T20:57Z
 created: 2026-10-06
-updated: 2026-10-07
+updated: 2026-10-08
+closed: 2026-10-08
 refs:
   - peer claude-sandbox librarian 2026-10-06 (their item proposal-a-reusable-claude-code-knowledg-31bd)
 ---
@@ -81,3 +80,6 @@ resume: 2026-10-08 SendMessage resumed implementer ae56c9c628ad34f7d (build) aft
 return: DONE c591784 (LICENSE byte-identical to claude-kit's; README License section; license GPL-3.0-only in all 11 plugin.json; marketplace.json unchanged: no documented top-level field)
 dispatch: reviewer opus high — review round 1
 agent: reviewer a2a9d316004923542
+verdict: review 1 CLEAR at c591784 (must-fix 0; low 1 repo-map tree lacks LICENSE, out of scope, filed; low 2 docs URL moved, message only, declined)
+landed: eaf9171 (merge --no-ff into main; Checks 10/10 OK; push scan clean)
+- 2026-10-08 done

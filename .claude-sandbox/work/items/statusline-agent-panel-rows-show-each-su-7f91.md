@@ -3,12 +3,11 @@ id: statusline-agent-panel-rows-show-each-su-7f91
 title: "statusline agent-panel rows: show each sub-agent's model and effort beside its context fill"
 short_display_name: sub-agent rows show model and effort
 type: feature
-status: doing
+status: done
 priority: 1
-owner: Kyle-McFarlane@2d49f8460283
-claimed: 2026-10-07T20:36Z
 created: 2026-10-07
-updated: 2026-10-07
+updated: 2026-10-08
+closed: 2026-10-08
 ---
 
 Operator 2026-10-07, verbatim: 'I'd like the status-line entries on sub-agents to show the model and effort too in addition to the context fill'. Acceptance: plugins/statusline/hooks/subagent_statusline.py renders each sub-agent row's model and effort alongside its context fill, from what the subagentStatusLine payload documents or what is observable (CLAUDE.md § Claude Code source material: observed with method and version, or the docs URL); where a field is absent, the row says nothing rather than guessing; tests.
@@ -46,3 +45,12 @@ resume: 2026-10-08 SendMessage resumed implementer a4bd4861771a0bec2 (fix round 
 return: DONE 34a2802 fix round 1 (all six findings; effort over 6 chars drops only the effort, model kept)
 changed: plugins/statusline/hooks/subagent_statusline.py, tests/test_subagent_statusline.py, skills/install-statusline/SKILL.md (round 1 fixes)
 dispatch: reviewer opus high — review round 2 (resume aa336218277396d92)
+verdict: review 2 CLEAR at 34a2802 (must-fix 0); lows 7 (long tag suppresses description) and 8 (version claim lacks its doc URL in the file, with Fix:)
+decided: wording — fix round 2 for finding 8's exact Fix: (CLAUDE.md source-material rule 2 wants the doc URL in the file; review 2 is below the cap, so no cap rule applies); finding 7 filed as a follow-up, not this change
+subject-fix: 56eedcb added: statusline sub-agent rows - show each agent's model and effort beside its context fill
+dispatch: implementer opus medium — fix round 2, finding 8 only (resume a4bd4861771a0bec2)
+return: DONE 2962c2a fix round 2 (finding 8 Fix applied; paragraph rewrapped; nested parenthesis)
+dispatch: reviewer opus high — review round 3 (resume aa336218277396d92)
+verdict: review 3 CLEAR at 2962c2a (must-fix 0; nit 9 nested parenthesis declined: reads correctly)
+landed: d27ce61 (merge --no-ff into main; Checks 10/10 OK; push scan clean)
+- 2026-10-08 done
