@@ -414,6 +414,12 @@ class Rows(Hermetic):
         row = ANSI.sub("", self.run_rows([self.task(model="claude-opus-5-5",
                                                     effort=32_000)])["a1"])
         self.assertIn(" · opus-5-5·32k · ", row)
+        row = ANSI.sub("", self.run_rows([self.task(effort=500)])["a1"])
+        self.assertIn(" · 500 · ", row)
+        # A budget too long to read at a glance goes; the model stays.
+        row = ANSI.sub("", self.run_rows([self.task(model="claude-opus-5-5",
+                                                    effort=10 ** 10)])["a1"])
+        self.assertEqual(row, "rev · ~75% ~150k/200k · opus-5-5 · Review the diff")
         for bad in (True, -5, [1], {"level": "high"}):
             row = ANSI.sub("", self.run_rows([self.task(effort=bad)])["a1"])
             self.assertEqual(row, "rev · ~75% ~150k/200k · Review the diff", bad)
@@ -424,24 +430,34 @@ class Rows(Hermetic):
         self.assertNotIn("\x1b]", row)
         self.assertIn(" · x [2J y·hi ]0; · ", ANSI.sub("", row))
 
-    def test_narrow_rows_drop_the_description_then_the_tag_then_the_name(self):
+    def test_narrow_rows_lose_the_description_before_the_tag_and_the_tag_before_the_name(self):
         t = self.task(model="claude-opus-5-5", effort="high")
         head = "rev · ~75% ~150k/200k · opus-5-5·high"       # 37 columns
         self.assertEqual(ANSI.sub("", self.run_rows([t], columns=45)["a1"]),
                          head + " · Revi…")
         self.assertEqual(ANSI.sub("", self.run_rows([t], columns=38)["a1"]), head)
         self.assertEqual(ANSI.sub("", self.run_rows([t], columns=37)["a1"]), head)
-        # One column short for the whole tag: it goes, never cut.
-        self.assertEqual(ANSI.sub("", self.run_rows([t], columns=36)["a1"]),
-                         "rev · ~75% ~150k/200k · Review the…")
-        self.assertEqual(ANSI.sub("", self.run_rows([t], columns=22)["a1"]),
-                         "rev · ~75% ~150k/200k")
+        # One column short for the whole tag: it goes, never cut, and the
+        # description does not take its room - it went first.
+        for cols in (36, 30, 26, 22):
+            self.assertEqual(ANSI.sub("", self.run_rows([t], columns=cols)["a1"]),
+                             "rev · ~75% ~150k/200k", cols)
         self.assertEqual(ANSI.sub("", self.run_rows([t], columns=16)["a1"]),
                          "~75% ~150k/200k")
-        for cols in range(1, 60):
-            got = self.run_rows([t], columns=cols).get("a1")
-            if got is not None:
-                self.assertLessEqual(len(ANSI.sub("", got)), cols, cols)
+
+    def test_a_widening_pane_never_loses_a_part_of_the_row(self):
+        for t in (self.task(model="claude-opus-5-5", effort="high"), self.task()):
+            parts = {"name": "rev", "tag": "opus-5-5·high", "desc": "Rev"}
+            prev = set()
+            for cols in range(1, 80):
+                got = self.run_rows([t], columns=cols).get("a1")
+                row = ANSI.sub("", got) if got is not None else ""
+                self.assertLessEqual(len(row), cols, cols)
+                segs = row.split(" · ")
+                have = {p for p, txt in parts.items()
+                        if any(seg.startswith(txt) for seg in segs)}
+                self.assertLessEqual(prev, have, (cols, row))
+                prev = have
 
     # -- malformed input --------------------------------------------------
 
