@@ -28,3 +28,7 @@ agent: planner aa442cae2c2859ccd
 
 ## Notes
 - 2026-10-08 claimed by Kyle-McFarlane@2d49f8460283
+return: DONE series 00_initial.md (floor widens to terms; new 'what it takes to act' floor item; worksheet group F cold read; To act on card part; gallery 27-28; page act field + test_act.py; open: scanner not now, re-check stored cards at next re-show)
+baseline: plan review 1 — 67c3fb20872d5c39b02a284c7e7fc91643db3702dd75cbb64e32b7a9c1d3fabd .claude-sandbox/investigations/decisions-skill-every-decision-carries-t-dcf8/00_initial.md; 
+dispatch: reviewer opus high — plan review 1
+agent: reviewer a40143babb8d3fe90
