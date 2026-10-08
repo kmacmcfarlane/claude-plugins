@@ -13,7 +13,7 @@
     {
       "name": "context-guard",
       "source": "./plugins/context-guard",
-      "description": "Context survival for long sessions — depth gate, checkpoint workflow, session rehydration, and token-spend reporting from the local transcripts (soft dependency: statusline-hub, for exact depth from the sensor record it writes, and the weekly reading for usage-report's share of a week; installing statusline brings it)."
+      "description": "Context survival for long sessions — depth gate, checkpoint workflow, session rehydration, and token-spend reporting from the local transcripts (soft dependency: statusline-hub, for exact depth from the sensor record it writes, and the weekly reading for usage-report's share of a week; installing statusline brings it; soft dependency: work-items, whose wi the checkpoint uses to fill items: and write open-item residue when a store exists, skipping both with none)."
     },
     {
       "name": "statusline",
