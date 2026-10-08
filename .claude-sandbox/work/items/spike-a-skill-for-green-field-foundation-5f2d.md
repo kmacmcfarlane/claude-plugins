@@ -41,3 +41,5 @@ dispatch: planner opus high — plan fix round 2 (resume a5d2c918ad5eec7bd)
 return: DONE series 02_review-2-fixes.md (all 9; any phase-2 artifact reopens architecture; resume.md entry; build-time reopens a follow-up)
 baseline: plan review 3 — 54fd015edc5f38b5e2facbb12b12880884397cabefa057e87198a4683d798abf .claude-sandbox/investigations/spike-a-skill-for-green-field-foundation-5f2d/00_initial.md; 770aadcdc767bfc34aea3d0ca3faa27ff3991aa9e57f3c0a1e4ea506b6b98400 .claude-sandbox/investigations/spike-a-skill-for-green-field-foundation-5f2d/01_review-fixes.md; 182c8f334c5d2a80ed6054c059480aba93589d5bf57aa8a2c0d1b797e13f4882 .claude-sandbox/investigations/spike-a-skill-for-green-field-foundation-5f2d/02_review-2-fixes.md; 
 dispatch: reviewer opus high — plan review 3 (resume ae5914d0eefb54dbc)
+verdict: plan review 3 NEEDS_CHANGES (must-fix 1: intent and the neighbours table have no reopen path; low: dev-cycle files G3's features; nit provenance); cards 193-195 graded clean
+dispatch: planner opus high — plan fix round 3 (resume a5d2c918ad5eec7bd)
