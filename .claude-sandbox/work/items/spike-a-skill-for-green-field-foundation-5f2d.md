@@ -31,3 +31,5 @@ return: DONE_WITH_CONCERNS series 00_initial.md + research report (quick; verifi
 baseline: plan review 1 — 54fd015edc5f38b5e2facbb12b12880884397cabefa057e87198a4683d798abf .claude-sandbox/investigations/spike-a-skill-for-green-field-foundation-5f2d/00_initial.md; 
 dispatch: reviewer opus high — plan review 1
 agent: reviewer ae5914d0eefb54dbc
+verdict: plan review 1 NEEDS_CHANGES (must-fix 7: BMAD correct-course refutes the stated gap (high); no architecture reopen path; dev-cycle wiring missing; card 1 (b) best case; card 3 undefined G1-G3/ADR; cards 1-2 undefined rule labels; card 2 unfair on 'green-field'; lows 8-14)
+dispatch: planner opus high — plan fix round 1 (resume a5d2c918ad5eec7bd)
