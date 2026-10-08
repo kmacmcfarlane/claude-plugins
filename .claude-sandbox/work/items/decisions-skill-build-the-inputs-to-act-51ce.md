@@ -36,3 +36,7 @@ dispatch: implementer opus medium — build from the CLEAR series (skill rules a
 ## Notes
 - 2026-10-08 claimed by Kyle-McFarlane@2d49f8460283
 agent: implementer a29f52488dc1ec5ae
+return: DONE a6e76d0 (floor item 10, widened gloss, line-only condition, cold read; rulings.md move; To act on in rendering; gallery 27-28; rationale; page act field and check; test_act.py 15 tests; librarian store line; README, CLAUDE.md; SKILL.md 3515 -> 3152 words)
+changed: decisions SKILL.md, references/{rulings (new), worksheet, rendering, gallery, rationale}.md, decision-page assets/{index.html, cards.example.json}, references/{cards-schema, fallback}.md, SKILL.md, tests/test_act.py (new), librarian-mode references/decisions.md, README.md:647-651, CLAUDE.md
+dispatch: reviewer opus high — review round 1
+agent: reviewer a503a9fb3220443de

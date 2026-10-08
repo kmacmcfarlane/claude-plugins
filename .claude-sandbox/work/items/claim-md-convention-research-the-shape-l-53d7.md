@@ -49,3 +49,6 @@ decision 189: When a repo has both a CLAIM.md "Not ours" list and a librarian "N
   why ask: rule-change — it sets which file decides ownership estate-wide
   impact: Effect → one source of truth for "not ours" · Wait: blocks step 2's wording · reach: CLAIM.md and the librarian section in every repo · undo: easy before the scope-interview work lands · cost: none
 agent: reviewer a124f7bce7518dd69
+verdict: plan review 1 NEEDS_CHANGES (must-fix 11 at medium: per-interface definers, substance-only approval, external owners, seed done-when, MOVED? column, undeclared dev-flow soft dep, unfair framing of 186, 187 and 189, the splitting question unanswered, consult triggers untested; lows 12-16)
+correction: decisions 186, 187 and 189 were shown before their plan review and are framed unfairly per the review (dev-flow's best case missing, a safe name option missing, the pointer option for 189 dropped); 188 lacks the substance-only approval option. They are held for revised cards after the fix round; answers given meanwhile are read against the revised cards.
+dispatch: planner opus high — plan fix round 1 (resume a73b066060c1a0ca7)
