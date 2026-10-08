@@ -178,6 +178,17 @@ class FirstRun(Base):
         msg = self.said()
         self.assertIn("status line slot taken", msg)
         self.assertIn("blank line until one registers", msg)
+        self.assertIn("enable the statusline plugin", msg)
+
+    def test_a_hub_only_install_names_the_statusline_plugin_once(self):
+        self.write_json(self.user, HUB_ON)
+        self.write_json(os.path.join(self.cfg, "plugins", "installed_plugins.json"),
+                        {"version": 2, "plugins": {"statusline-hub@other-mkt": [
+                            {"scope": "user", "installPath": "/x/hub"}]}})
+        msg = self.said()
+        self.assertIn("blank line until one registers", msg)
+        self.assertIn("/plugin install statusline@other-mkt", msg)   # its marketplace
+        self.quiet()
 
     def test_waits_while_an_installed_statusline_can_install_itself(self):
         self.write_json(self.user, BOTH_ON)
@@ -292,18 +303,38 @@ class Heal(Base):
         self.write_json(self.user, dict(HUB_ON, statusLine=self.sl_entry()))
         return self.raw()
 
-    def test_the_footers_entry_yields_once_statusline_is_uninstalled(self):
-        # a stale footer entry, the records name the hub and no statusline:
-        # nothing will ever register, so waiting would be silent forever
-        before = self.footer_entry_back(dict(self.HUB_REC))
+    def test_the_footers_entry_is_taken_back_once_statusline_is_gone(self):
+        # a stale footer entry, the records name the hub and no statusline, and
+        # its data dir is gone: nothing will ever register and the entry draws
+        # nothing, so the hub takes the slot back rather than wait or yield
+        self.footer_entry_back(dict(self.HUB_REC))
         msg = self.said()
+        self.assertIn("took back the status line slot", msg)
         self.assertIn("footer's entry", msg)
         self.assertIn("no longer installed", msg)
+        self.assertIn("/plugin install statusline@kmacmcfarlane", msg)
         self.assertIn(self.user, msg)
         self.assertNotIn(self.sl_entry()["command"], msg)   # a path, never the value
-        self.assertEqual(self.raw(), before)
-        self.assertEqual(self.marker()["state"], "yielded")
+        self.assertEqual(self.load()["statusLine"], self.own())
+        self.assertEqual(self.marker()["state"], "installed")
         self.quiet()
+
+    def test_the_footers_entry_still_drawing_is_said_once_never_yielded(self):
+        # statusline uninstalled with its data kept: the entry still draws
+        os.makedirs(os.path.join(self.sl_data, "current-hooks"))
+        self.write_json(os.path.join(self.sl_data, "current-hooks", "statusline.py"), raw="")
+        before = self.footer_entry_back(dict(self.HUB_REC))
+        msg = self.said()
+        self.assertIn("left alone while it draws", msg)
+        self.assertIn("/plugin install statusline@kmacmcfarlane", msg)
+        self.assertNotIn(self.sl_entry()["command"], msg)
+        for _ in range(2):
+            self.assertEqual(self.raw(), before)
+            self.assertEqual(self.marker()["state"], "installed")
+            self.quiet()
+        self.sl_hooked()                     # statusline installed again: taken back
+        self.assertIn("restored the status line", self.said())
+        self.assertEqual(self.load()["statusLine"], self.own())
 
     def waits(self, plugins):
         """Unsure whether statusline is uninstalled: the footer's entry waits."""

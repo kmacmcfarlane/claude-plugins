@@ -436,6 +436,22 @@ class Classify(unittest.TestCase):
         for v in ("x", [], {}, {"command": 7}):
             self.assertEqual(owner.classify(v), "foreign", v)
 
+    def test_footer_copy_names_the_owning_plugin_and_script(self):
+        cases = {
+            'python3 "/h/plugins/data/statusline-kmacmcfarlane/current-hooks/statusline.py"':
+                ("statusline", "/h/plugins/data/statusline-kmacmcfarlane/current-hooks/statusline.py"),
+            "python3 /h/plugins/data/claude-kit-m/current-hooks/statusline.py":
+                ("claude-kit", "/h/plugins/data/claude-kit-m/current-hooks/statusline.py"),
+            r'python3 "/a \$b/plugins/data/context-guard-m/current-hooks/statusline.py"':
+                ("context-guard", "/a $b/plugins/data/context-guard-m/current-hooks/statusline.py"),
+        }
+        for c, want in cases.items():
+            self.assertEqual(owner.classify({"command": c}), "statusline", c)
+            self.assertEqual(owner.footer_copy({"command": c}), want, c)
+        for v in (None, {"command": "bash ~/x.sh"}, {"command": 7},
+                  {"command": owner.command_for("/h/plugins/data/statusline-hub-m")}):
+            self.assertIsNone(owner.footer_copy(v), v)
+
 
 class AtomicWrite(helpers.Hermetic):
     def test_failed_replace_keeps_original(self):
