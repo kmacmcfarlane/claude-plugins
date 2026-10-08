@@ -8,5 +8,6 @@
     "name": "Kyle McFarlane"
   },
   "homepage": "https://github.com/kmacmcfarlane/claude-plugins",
-  "repository": "https://github.com/kmacmcfarlane/claude-plugins"
+  "repository": "https://github.com/kmacmcfarlane/claude-plugins",
+  "license": "GPL-3.0-only"
 }

@@ -763,9 +763,16 @@ claude-plugins/
 │   ├── statusline-hub/
 │   └── work-items/
 ├── CLAUDE.md                    # Placement rules for contributors and agents
+├── LICENSE                      # GPL-3.0
 └── README.md                    # This file — doctrine and catalog
 ```
 
 Plugin internals are deliberately not listed here; the catalog above is the front door, and
 per-directory trees go stale. Skills are authored in place under
 `plugins/<plugin>/skills/<skill>/`.
+
+## License
+
+This project is licensed under the [GPL-3.0](LICENSE).
+
+Copyright (C) 2026 Kyle McFarlane
