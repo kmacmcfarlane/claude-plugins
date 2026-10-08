@@ -3,12 +3,11 @@ id: statusline-hub-end-the-silent-wait-behin-7dd3
 title: "statusline-hub: end the silent wait behind an older footer copy; name the footer"
 short_display_name: hub silent wait behind old footer
 type: bug
-status: doing
+status: done
 priority: 1
-owner: Kyle-McFarlane@2d49f8460283
-claimed: 2026-10-08T07:26Z
 created: 2026-10-08
 updated: 2026-10-08
+closed: 2026-10-08
 refs:
   - spike-how-much-inter-plugin-dependency-i-72ef
 ---
@@ -38,3 +37,6 @@ dispatch: implementer opus medium — fix round 1 (resume a6b6507ff123a6363)
 return: DONE 7cf366d fix round 1 (recorded plugin whose resolving link lacks statusline.py is taken; test; hook-contract; README :537)
 changed: README.md (:537, soft-dep sentence)
 dispatch: reviewer opus high — review round 2 (resume a0d68362569272315)
+verdict: review 2 CLEAR at 7cf366d (must-fix 0; lows: a local-path git rewrite window, a recorded-but-disabled context-guard still waits once its orphaned folder is pruned — noted on a95a)
+landed: ea740bd (merge --no-ff into main; Checks 10/10 OK; push scan read, clean)
+- 2026-10-08 done
