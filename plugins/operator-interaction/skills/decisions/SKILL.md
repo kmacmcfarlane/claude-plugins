@@ -49,7 +49,10 @@ out.
   any follow-up in the same turn — the list and the hint at the very end, where the
   operator's eye is when you stop.
 - **Keep the caller's numbering** when it has a counter; otherwise number from 1 in this
-  session. Never reuse a number.
+  session. Never reuse a number. Every decision, sub-decisions and follow-ups included, takes
+  its own plain integer: never `8b` or `8.1`, since `8b` reads as option (b) of 8, as in
+  `72: a`; option letters stay the only lettered thing, and a dependent follow-up says so in
+  words (*only if 9 is (a)*).
 - **Scale the card to the decision.** A small call gets a short card; stakes buy detail.
 
 ## The floor
@@ -306,6 +309,9 @@ argues for it.
 - **Shown record** (2026-10-07) — the first and the last showing of each decision are
   recorded, with the turn that sees each, written by the session that displays it. Not
   taken: the last showing only (last-write-wins).
+- **Plain integers** (2026-10-08) — every decision, follow-ups included, its own number,
+  requested by the operator via the claude-analytics session. Not taken: lettered
+  sub-numbers (`8b`).
 
 Still provisional, marked where it appears: **paging** on a cold re-show.
 
