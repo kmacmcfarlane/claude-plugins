@@ -17,8 +17,8 @@ refs:
 Relayed 2026-09-29 from the agents librarian (76bc: the decision ledger records timestamped lifecycle events: raised, shown, answered, deferred with wake, swept/dropped) and operator-attention (R47 recency, warm/cold test, arrival-vs-clearance throughput; their 07_ledger-split.md). Our 5140 found the same gap: no shown-at time, so 'while it waited' has no source. Acceptance: a store line or field recording each showing of decision N (shown N: <UTC time>), written by the raising session when it renders the decision, read by wi needs-input/estate; shaped by the pyramid decision turn (69ee) together with decisions 98/99 (one counter, closed N: lines), and by 76bc's ledger when it lands. Peer relays are requests, not approvals.
 
 ## Handoff
-- doing: —
-- next: answer 150 a: relayed answers confirmed; plan the shown-at record (first and last shown, written by the displaying session)
+- doing: landed 8ea8a3c; seen N: hold stands
+- next: on answer 180: (a) lift nothing in code (the hold lifts by the answer); (b) plan an untracked sink; then close
 - blocked: —
 - learned: —
 operator-attention requirements for the shape (their commit 591a428; they will not build their interim log):
@@ -90,3 +90,13 @@ verdict: review 1 NEEDS_CHANGES at 1300ebc (must-fix 2: hold lifts on any answer
 correction: decisions 180-183 were stored with raised: above the headline and unindented card lines; repaired so each card sits indented under its decision line (wi needs-input now reads them)
 dispatch: implementer opus medium — fix round 1 (resume a1ce4ecde12903821)
 correction: no budget: line was written with this item's target: line on 2026-10-08; the build default ($22, other build) applies
+return: DONE 7290ba1 fix round 1 (findings 1-7 as written; test count corrected to 10 new, 8 fail on base)
+changed: README.md (dev-flow row: decision-page hand-over, finding 4)
+dispatch: reviewer opus high — review round 2 (resume a2c9add003f36437c)
+verdict: review 2 CLEAR at 7290ba1 (must-fix 0; low 1: the F6 cut dropped the clause pointing to the caller's record shape and hold; merges cleanly with 96e66bc)
+decided: wording — fix round 2 for low 1's exact Fix: (restores a planned clause the F6 cut removed; review 2 is below the cap)
+dispatch: implementer opus medium — fix round 2, low 1 only (resume a1ce4ecde12903821)
+return: DONE b0e69af fix round 2 (low 1 Fix sentence appended)
+dispatch: reviewer opus high — review round 3 (resume a2c9add003f36437c)
+verdict: review 3 CLEAR at b0e69af (must-fix 0)
+landed: 8ea8a3c (merge --no-ff into main; Checks 10/10 OK; push scan read, clean)
