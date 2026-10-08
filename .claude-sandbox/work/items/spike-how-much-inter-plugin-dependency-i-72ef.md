@@ -34,3 +34,6 @@ dispatch: reviewer opus high — plan review 1
 agent: reviewer a86526c62ee89cf6b
 verdict: plan review 1 NEEDS_CHANGES (must-fix 3: hub-wait gap overstated for the live copy and missed for a dead copy; F2 conflates take and yield; prose hints can read the off-switch with echo; lows 4-8, nits 9-11)
 dispatch: planner opus high — plan fix round 1 (resume af420e468ce5cb8bb)
+return: DONE series 01_review-1-fixes.md (all ten; dead-copy wait now rank 1 high; F2 take vs yield; prose off-switch via echo; CG-5, DF-16 updated)
+baseline: plan review 2 — 4ff51f7372ea1c4a687e75e2fbf697d655aeac46578655c28a47cd01fb817520 .claude-sandbox/investigations/spike-how-much-inter-plugin-dependency-i-72ef/00_initial.md; eead84f940de0073a99b1a699970aaf1f450595264aa9ee4c0bd9f79db87e339 .claude-sandbox/investigations/spike-how-much-inter-plugin-dependency-i-72ef/01_review-1-fixes.md; 
+dispatch: reviewer opus high — plan review 2 (resume a86526c62ee89cf6b)
