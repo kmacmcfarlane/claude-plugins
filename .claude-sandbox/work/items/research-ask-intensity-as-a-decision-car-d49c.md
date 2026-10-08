@@ -52,3 +52,7 @@ target: full main /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.cla
 budget: 2026-10-08T06:28Z build waived — operator waiver 2026-10-08T06:28Z (spend still measured)
 dispatch: implementer opus medium — build from the CLEAR series (skill rules and tests)
 agent: implementer acfa41296fc254968
+return: DONE_WITH_CONCERNS b3e0524 (owner section; five skills point to it; AskUserQuestion off allowed-tools; run-record ASKED/ANSWERED; manifests and README clause; test_research_asks.py 10 tests; sample card and fallback rendered from the section)
+changed: intensity-and-routing.md, research/research-deep/research-refine/research-prune/deep-investigation SKILL.md, run-record.md, storage-and-knowledge-base.md, research-criteria.md, dev-flow plugin.json, marketplace.json, README.md (:82, :346-352), tests/test_research_asks.py
+dispatch: reviewer opus high — review round 1
+agent: reviewer aae7b80794e63b960
