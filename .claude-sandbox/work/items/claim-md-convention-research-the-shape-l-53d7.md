@@ -62,3 +62,6 @@ baseline: plan review 3 — a6db4276282b7ffa553a17890ec8d9cd1b3edaf4b42eed59dd73
 dispatch: reviewer opus high — plan review 3 (resume a124f7bce7518dd69)
 verdict: plan review 3 NEEDS_CHANGES (must-fix 2, down from 4: revised-since lines compare against unshown 01 cards; widened MISMATCH omission rule contradicts 188; lows: 189 check cadence, (b) best case, later line; undefined terms)
 dispatch: planner opus high — plan fix round 3 (resume a73b066060c1a0ca7)
+return: DONE series 03_final-cards.md (H1-H4; shown letters kept: 188 rec moves to a new (c), 189 (a) keeps its letter with a new meaning)
+baseline: plan review 4 — a6db4276282b7ffa553a17890ec8d9cd1b3edaf4b42eed59dd73501ce4695e97 .claude-sandbox/investigations/claim-md-convention-research-the-shape-l-53d7/00_initial.md; 53ec501c3d2cebabbbcf1d828cbd97af2314cded367a7b9217e08341b00e5af5 .claude-sandbox/investigations/claim-md-convention-research-the-shape-l-53d7/01_review-fixes.md; d80965bd1e7a1abd2938f6b2191f64c45cbaf89908e82a0197659dd918ac6a86 .claude-sandbox/investigations/claim-md-convention-research-the-shape-l-53d7/02_cards-and-pointers.md; 994dbc898e8171cbadc6876375b33e4c7740528994c4ab9d2ca9c43f6d173a2d .claude-sandbox/investigations/claim-md-convention-research-the-shape-l-53d7/03_final-cards.md; 
+dispatch: reviewer opus high — plan review 4 (resume a124f7bce7518dd69)

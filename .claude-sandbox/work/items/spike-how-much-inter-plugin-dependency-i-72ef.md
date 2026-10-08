@@ -37,3 +37,8 @@ dispatch: planner opus high — plan fix round 1 (resume af420e468ce5cb8bb)
 return: DONE series 01_review-1-fixes.md (all ten; dead-copy wait now rank 1 high; F2 take vs yield; prose off-switch via echo; CG-5, DF-16 updated)
 baseline: plan review 2 — 4ff51f7372ea1c4a687e75e2fbf697d655aeac46578655c28a47cd01fb817520 .claude-sandbox/investigations/spike-how-much-inter-plugin-dependency-i-72ef/00_initial.md; eead84f940de0073a99b1a699970aaf1f450595264aa9ee4c0bd9f79db87e339 .claude-sandbox/investigations/spike-how-much-inter-plugin-dependency-i-72ef/01_review-1-fixes.md; 
 dispatch: reviewer opus high — plan review 2 (resume a86526c62ee89cf6b)
+verdict: plan review 2 NEEDS_CHANGES (must-fix 1, down from 3: the dead-copy signal is backwards — a dangling current-hooks link is what an update leaves; nits)
+dispatch: planner opus high — plan fix round 2 (resume af420e468ce5cb8bb)
+return: DONE series 02_review-2-fixes.md (dead-copy signal is the owning plugin's absence; F10 echo check; DF line numbers)
+baseline: plan review 3 — 4ff51f7372ea1c4a687e75e2fbf697d655aeac46578655c28a47cd01fb817520 .claude-sandbox/investigations/spike-how-much-inter-plugin-dependency-i-72ef/00_initial.md; eead84f940de0073a99b1a699970aaf1f450595264aa9ee4c0bd9f79db87e339 .claude-sandbox/investigations/spike-how-much-inter-plugin-dependency-i-72ef/01_review-1-fixes.md; e3535bf42c099a88de4a3580e0a5749f1b38ea1eb4d367f22b351457e82af572 .claude-sandbox/investigations/spike-how-much-inter-plugin-dependency-i-72ef/02_review-2-fixes.md; 
+dispatch: reviewer opus high — plan review 3 (resume a86526c62ee89cf6b)
