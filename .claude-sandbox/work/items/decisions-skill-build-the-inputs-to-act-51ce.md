@@ -3,14 +3,13 @@ id: decisions-skill-build-the-inputs-to-act-51ce
 title: "decisions skill: build the inputs-to-act floor item, card part and checks from the dcf8 series"
 short_display_name: build decisions carry needed inputs
 type: feature
-status: doing
+status: done
 priority: 1
 deps:
   - decisions-skill-every-decision-carries-t-dcf8
-owner: Kyle-McFarlane@2d49f8460283
-claimed: 2026-10-08T06:28Z
 created: 2026-10-08
 updated: 2026-10-08
+closed: 2026-10-08
 refs:
   - decisions-skill-every-decision-carries-t-dcf8
 ---
@@ -44,3 +43,6 @@ verdict: review 1 NEEDS_CHANGES at a6e76d0 (must-fix 1: the page folds multi-lin
 dispatch: implementer opus medium — fix round 1 (resume a29f52488dc1ec5ae)
 return: DONE a6d2967 fix round 1 (page check refuses a line break in an act step; schema row; test strings invented; Levels card bullet)
 dispatch: reviewer opus high — review round 2 (resume a503a9fb3220443de)
+verdict: review 2 CLEAR at a6d2967 (must-fix 0; low repo-map out of scope; nits)
+landed: 94c9688 (merge --no-ff into main; Checks 10/10 OK; push scan read, clean)
+- 2026-10-08 done
