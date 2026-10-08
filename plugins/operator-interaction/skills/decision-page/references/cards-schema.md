@@ -3,8 +3,8 @@
 The page (`assets/index.html`) renders whatever `cards.json` beside it holds, and writes one
 answer document per decision to the artifact's `db`. This file is the schema for both.
 `assets/cards.example.json` is a complete, invented example: three decisions, each with its
-impact, one ⚠ one-way (with its Impact table rows), one with no recommendation, one reference
-to a decision not on the page.
+impact, one ⚠ one-way (with its Impact table rows), one with no recommendation, one option with
+the steps the operator takes to act on it, one reference to a decision not on the page.
 
 **The page checks the data before it renders anything** and, when a check fails, shows *The
 decisions can't be shown: cards.json is not valid* with the first problems found, and renders
@@ -14,7 +14,9 @@ not one of the card's letters (or null without `norec`); a missing required fiel
 `rev`; an `impact` without its effect, wait, reach and undo as text; a `basis` word outside
 the four; a `follow` list other than the fixed six; a `refs` key that is not a number; a ⚠
 card without its `blocks`; a `blocks` entry that is not an option letter other than `z`, or
-lacks its text. Every text field is
+lacks its text; an `act` that is not keyed by option letters other than `z`, a key whose list
+of steps is empty or holds anything but text, or a step holding a fill-in placeholder (an
+angle-bracketed word with no spaces, such as `<kit>` or `<path>`). Every text field is
 escaped wherever it reaches the page, attributes and ids included.
 
 Text fields are plain text: the page escapes them. Two marks are rendered:
@@ -58,6 +60,7 @@ Each field maps to a part of the `decisions` skill's card (its `references/rende
 | `class` | string | no | the class that opens Why ask, when the caller names classes | a pill, and the Background fold |
 | `warn` | boolean | no | `true` for ⚠ one-way (one-way and high impact) | a ⚠ pill |
 | `blocks` | object | when `warn`; optional otherwise | the block's Impact table row per option: keyed by letter, every option but `z` on a ⚠ card (any of them otherwise), each `{happens, undo, who, cost}` — the Effect, Undo (plainly: it decides the read-back) and Reach cells, and Cost, optional | the Impact table in Options in full, which opens unfolded on a ⚠ card; an option with no entry shows its `impact` as the Effect and `—` in the rest |
+| `act` | object | when an option asks the operator to act; optional otherwise | the **To act on (x):** part (the `decisions` skill's floor, what it takes to act; its specifics in that skill's `references/rendering.md` § Card): keyed by option letter other than `z`, each a non-empty array of steps as text, in order; backtick code renders as code. A step names where a secret goes, never its value. A paste text that legitimately holds an angle-bracketed word (`<br>`, a tag in an HTML snippet) goes in a file named by its `/…` path in the step: the check refuses it inline, as it refuses a fill-in placeholder | flat, as a numbered list under its option in the open card, never folded; not counted in the flat part's size (below) |
 | `dep` | string | no | what it depends on, usually slugs with the answer that matters (`[[41]] (b)`) | summary line, Dependencies fold |
 | `rec` | string or null | yes | the recommended option's letter; `null` with no recommendation | the one bold option, the rec line |
 | `norec` | string | when `rec` is null | the labelled exception: `your preference — no recommendation`, or `no recommendation — outside my authority` and why | in place of the rec |
@@ -76,8 +79,13 @@ An option `[letter, full, impact, title, oneLine]`:
 - `full` and `impact` — the option and its consequence as the card states them; shown in the
   Options in full fold.
 
+A label, number or acronym first used in the flat part (`t`, `title`, `oneLine`, `tldr`,
+`context`) is defined there, as the `decisions` floor requires: the flat part is what the
+operator reads, and `full` sits in a fold.
+
 **Size.** The flat part of a card (title, Impact line, TLDR, context, option titles and
-one-liners, rec line) stays near 150 words; the folds carry the rest. The `effect` stays
+one-liners, rec line) stays near 150 words; the folds carry the rest. An `act` list is
+outside that budget: what the operator needs to act is never folded away. The `effect` stays
 under about 10 words: it is shown alone, at tag size, in the map.
 
 **What the page adds.** Every view shows the impact: the map and a closed card the effect, an

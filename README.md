@@ -644,9 +644,11 @@ publishes the page with the Artifact tool and the artifact's `db` capability, so
 live in that artifact's database, writable by you alone, read back with ArtifactData; without those it falls back to
 a doc with tick boxes, or to the decisions in chat. The caller supplies the decisions and
 records the answers. `decisions`' `references/gallery.md` renders every case.
-The `## Rulings` sections of `decisions` and `plain-names` list what you have ruled, each with the alternative not
-taken: `decisions` names what is still provisional (paging a large cold re-show), and
-`plain-names` marks the two calls that were not yours (one delegated, one made in review).
+`decisions` and `plain-names` each list what you have ruled, with the alternative not taken
+— `decisions` in its `references/rulings.md`, `plain-names` in its SKILL.md's `## Rulings`: `decisions` names
+what is still provisional (paging a large cold re-show) and marks the parts of its rulings
+that were designs made in review, and `plain-names` marks the two calls that were not yours
+(one delegated, one made in review).
 The plugin names no other plugin and needs nothing else here (`decision-page` needs
 claude.ai Artifacts, outside this marketplace, and degrades without them); skills that raise decisions or
 write to you can adopt it.

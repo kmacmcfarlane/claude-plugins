@@ -114,6 +114,12 @@
           "cost": "About 4 minutes of CI per merge."
         }
       },
+      "act": {
+        "b": [
+          "Open `https://ci.example.com/docs-site/settings/secrets` and add a secret named `DOCS_DEPLOY_TOKEN`, holding the deploy token from the docs host's account page. The token goes there only, never into chat or this page.",
+          "Pick (b) here and write done in your words, or say done in chat: I switch publishing to CI and tell you when the first CI publish is live."
+        ]
+      },
       "basis": "strong",
       "reason": "both failures were read in the build logs",
       "unknown": "whether anyone publishes from a fork",

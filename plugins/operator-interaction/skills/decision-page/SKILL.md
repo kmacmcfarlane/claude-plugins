@@ -62,13 +62,16 @@ In a working directory (your scratchpad unless the caller names one): copy
 - A ⚠ one-way decision carries `blocks`, its Impact table row per option (effect, reach,
   undo, and cost); a round ask carries `ifleft` and `roundcosts`; a status-quo default,
   `ifunanswered`.
+- A card whose option asks the operator to act carries `act`: its steps, as the **To act
+  on** part in the `decisions` skill's `references/rendering.md` § Card gives them.
 - Every mention of another decision is a slug, `[[N]]`; a decision not on the page that a
   slug names gets a `refs` entry.
 - `follow` is copied from `assets/cards.example.json` as it stands.
 - Check before publishing that the file passes every check the schema lists (the page
   refuses a file that fails one, and says which): whole-number `n`, single `a`–`z` letters in
   order ending `z`, a `rec` among them or null with `norec`, a non-empty `rev`, an `impact`
-  with its four facets, the required fields.
+  with its four facets, an `act` keyed by option letters other than `z`, each a non-empty
+  list of steps with no fill-in placeholder, the required fields.
 
 ## Step 3: Publish
 

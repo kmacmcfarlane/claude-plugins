@@ -19,7 +19,7 @@ project.*
 
 **Per decision, before you write:** meet the floor → fill the worksheet → pick the level →
 place it in the order. Then write the message as § Several decisions in one message lays it
-out.
+out → read it cold (`references/worksheet.md` § The cold read) before it goes out.
 
 ## Critical
 
@@ -60,8 +60,11 @@ out.
 Every decision carries, at any level:
 
 1. **What is decided**, in plain words. Gloss every id, hash, file or item name on first use —
-   a bare `a3f9` or `7c41e0d` tells a cold reader nothing. Name items in plain words, the id
-   at most a trailing tag: load the `plain-names` skill (same plugin) and follow it.
+   a bare `a3f9` or `7c41e0d` tells a cold reader nothing. Define every term the operator may
+   not know (a source document's label or number, an acronym, a term of art) where it first
+   appears in each view, preferring the words it stands for; the label trails as a tag at
+   most. Name items in plain words, the id at most a trailing tag: load the `plain-names`
+   skill (same plugin) and follow it.
 2. **Its impact**, in five facets in this order: **Effect**, **Wait**, **Reach**, **Undo**,
    **Cost** (`references/rendering.md` § Impact). Written when it is raised, as the Impact
    line, and stored with the card where the caller keeps one.
@@ -80,6 +83,9 @@ Every decision carries, at any level:
 7. **The recommendation**, or the labelled reason there is none.
 8. **The basis** — what the claims rest on (§ Evidence).
 9. **What is unknown.**
+10. **What it takes to act**: when an option asks the operator to do something beyond
+    answering, the card carries everything they need to do it now, as its **To act on (x):**
+    part (`references/rendering.md` § Card).
 
 **An ask for another round** — a review-round cap waiver, or any ask for one more round of
 work, review or investigation — also carries its **justification**, or the operator has
@@ -111,7 +117,7 @@ an **Open question** (listed under *Open questions*, unnumbered, until it has op
 
 ## Before you write: the worksheet
 
-Answer five questions for each decision (`references/worksheet.md` has the fields and who can
+Answer six questions for each decision (`references/worksheet.md` has the fields and who can
 supply each):
 
 | Group | Question | It sets |
@@ -121,6 +127,7 @@ supply each):
 | C | How well is it understood? | what evidence is shown; whether to offer "investigate first" |
 | D | What does waiting cost? | its place in the order; the Wait facet |
 | E | What kind of ask is it? | the card's shape |
+| F | What does the operator need in hand? | its terms and its **To act on** part |
 
 **Warm or cold.** The reader is **cold** on a decision after any of: a context compaction or
 clear; a different session or repo in between; a hand-off; or **no operator turn since it was
@@ -164,8 +171,8 @@ Smallest to largest, each showing more of the impact in facet order (templates i
 **The line-only rule.** A decision may stay a list line only when all of these hold: the
 reader is warm; the stakes are low (two-way and narrow); the basis is strong (for a
 preference: you checked that nothing depends on the choice); and either a template the
-operator has already seen carries the floor, or the options converge (any of them would do).
-Anything else is at least a card.
+operator has already seen carries the floor, or the options converge (any of them would do);
+and no option asks the operator to act. Anything else is at least a card.
 
 **A block** for: a ⚠ decision on first show and whenever the reader is cold; a wide one shown
 to a cold reader or on a thin basis; a card the operator asked to `expand`.
@@ -263,62 +270,17 @@ when it points at a tool result you produced.
 
 ## Rulings
 
-The operator has ruled on these; each keeps the alternative not taken, in case practice
-argues for it.
-
-- **Labelled exceptions** (2026-09-24) — the labels above. Not taken: no exceptions at all.
-- **Basis word** (2026-09-24) — `strong | partial | thin | none` from the weakest load-bearing
-  claim. Not taken: a confidence bucket; a step-down arithmetic over every tag.
-- **No confidence percentage** (2026-09-24), shown or used for ordering. Not taken: a
-  calibrated number used internally.
-- **Defaults** (2026-09-24) — status-quo only; no timed action defaults. Not taken: timed
-  defaults for reversible, narrow decisions.
-- **Default wake** (2026-09-24) — the next time you finish a piece of work and report. Not
-  taken: the next operator turn after one other exchange; events only.
-- **Deadlines first** (2026-09-24) — before the operator's known return, else every stated
-  deadline. Not taken: a 4-hour "likely back" window.
-- **Read-back scope** (2026-09-24) — only when the chosen option is one-way. Not taken: every
-  answer on a ⚠ decision.
-- **⚠ blocks** (2026-09-24) — on first show and when cold. Not taken: a block in every message.
-- **Placement** (2026-09-24) — decisions last, the list and hint at the tail. Not taken: the
-  list first.
-- **Seen** (2026-09-24) — the operator has taken a turn since it was shown. Not taken: rendered
-  once.
-- **Hint scope** — messages with two or more decisions. Not taken: every message that asks
-  for a decision.
-- **Option order** (2026-09-29) — (a), (b), (c) … (z), the recommended option in bold in
-  its own place. Not taken: the recommended option moved first, as a modal dialog lists it.
-- **A recommendation on every decision** (2026-09-29) — shown on the decision's own line
-  and card, never folded into a line or card shared with others. Not taken: one grouped
-  entry for related decisions, listing their recommendations together.
-- **Round asks justify themselves** (2026-09-29) — what the leftover findings would break,
-  and what the round costs in time, quota and attention. Not taken: a bare waiver ask whose
-  template carries the floor by reference.
-- **Every ask justifies itself** (2026-09-30) — *why ask* on every decision, opening with its
-  class when the caller names classes. Not taken: the justification on round asks only.
-- **Resume cue** (2026-09-30) — a **Context:** cue stored when raised, shown to a cold reader
-  under *while it waited*. Not taken: every cold decision as a block.
-- **Shown after** (2026-09-30) — what a caller's rules let you decide alone is recorded and
-  shown as a `Done:` line in a *Done alone* group, never left unseen. Not taken: a record seen
-  only on request.
-- **Impact in every view** (2026-10-06) — five facets in one order, the smallest view
-  showing the effect, each larger view adding facets; the Impact line stored at raise and
-  read by every view; Undo replaces the stakes words, Wait the *blocks* slot. Not taken:
-  lines with the effect only, no wait; no stored line, each view deriving impact from the
-  options each time.
-- **Shown record** (2026-10-07) — the first and the last showing of each decision are
-  recorded, with the turn that sees each, written by the session that displays it. Not
-  taken: the last showing only (last-write-wins).
-- **Plain integers** (2026-10-08) — every decision, sub-decisions and follow-up decisions
-  included, its own plain integer. Not taken: lettered or dotted sub-numbers (`8b`, `8.1`).
-
-Still provisional, marked where it appears: **paging** on a cold re-show.
+What the operator has ruled, each with the alternative not taken, and the parts that were
+designs made in review: `references/rulings.md` — read it before proposing a change to any
+rule here or offering an alternative a ruling did not take. Still provisional, marked where
+it appears: **paging** on a cold re-show.
 
 ## References
 
-- `references/worksheet.md` — the five groups, their fields, who supplies each, the two clocks
+- `references/worksheet.md` — the six groups, their fields, who supplies each, the two clocks, the cold read
 - `references/rendering.md` — the impact facets and Impact line, the tag size, list line, card and block templates, the message layout, labels, the re-show
 - `references/replies.md` — reply parsing, echo, read-back, batch, later and re-ask, reframe
 - `references/evidence-basis.md` — the basis word, its tags and the rule
 - `references/rationale.md` — why each rule, with its sources
+- `references/rulings.md` — what the operator has ruled, each with the alternative not taken; designs made in review marked
 - `references/gallery.md` — worked examples of every case (illustrative)
