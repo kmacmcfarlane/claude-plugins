@@ -215,6 +215,9 @@ their impacts, the label, and no recommendation.
 
 Rec **(a)** · basis **partial** — *observed: the query takes 1.8 s in the profile; inferred: an index would fix it* · unknown: write load
 
+*Not this: numbering it 79b, which reads as option (b) of 79. A new decision takes the next
+plain number; a follow-up that hangs on 81 says so in words ("only if 81 is (a)").*
+
 ---
 
 ## 11. `tell me`
