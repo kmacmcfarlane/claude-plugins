@@ -3,8 +3,10 @@ id: statusline-sub-agent-rows-cap-an-overlon-8680
 title: "statusline sub-agent rows: cap an overlong model or string effort so it cannot suppress the description"
 short_display_name: long tag hides sub-agent description
 type: bug
-status: todo
+status: doing
 priority: 3
+owner: Kyle-McFarlane@2d49f8460283
+claimed: 2026-10-08T05:43Z
 created: 2026-10-08
 updated: 2026-10-08
 refs:
@@ -18,3 +20,10 @@ Found by the 7f91 review 2 (finding 7, low), 2026-10-08. After 7f91, a non-empty
 - next: —
 - blocked: —
 - learned: —
+target: full main /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude/worktrees/statusline-sub-agent-rows-cap-an-overlon-8680
+budget: 2026-10-08T05:43Z build $12 — default bug
+dispatch: implementer opus medium — renderer code change (not a canonical kind in a kit repo)
+
+## Notes
+- 2026-10-08 claimed by Kyle-McFarlane@2d49f8460283
+agent: implementer a467aafec85f7118b

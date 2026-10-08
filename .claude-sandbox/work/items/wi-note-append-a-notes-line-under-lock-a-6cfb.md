@@ -3,8 +3,10 @@ id: wi-note-append-a-notes-line-under-lock-a-6cfb
 title: "wi note: append a Notes line under lock, and have checkpoint 4a½ use it in place of its inline snippet"
 short_display_name: wi note command for residue
 type: feature
-status: todo
+status: doing
 priority: 2
+owner: Kyle-McFarlane@2d49f8460283
+claimed: 2026-10-08T05:43Z
 created: 2026-10-08
 updated: 2026-10-08
 refs:
@@ -18,3 +20,10 @@ From the 6c43 review 4 (lows 1-3, nits 4-5) and implementer open questions, 2026
 - next: —
 - blocked: —
 - learned: —
+target: plan main /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude-sandbox/investigations/wi-note-append-a-notes-line-under-lock-a-6cfb
+budget: 2026-10-08T05:43Z plan $28 — default plan
+dispatch: planner opus high — plan
+
+## Notes
+- 2026-10-08 claimed by Kyle-McFarlane@2d49f8460283
+agent: planner ab90561988a81d4b4
