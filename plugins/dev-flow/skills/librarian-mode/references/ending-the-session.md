@@ -70,6 +70,9 @@ rehydrates from `wi prime` and git.
 
 ## At 75% or DUE — checkpoint, then continue
 
+Without context-guard none of these advisories arrives; what stands in is SKILL.md §
+Rehydrate step 5.
+
 The trigger is the first of these context-gate advisories to arrive, matched by its
 body, not its bracketed prefix (the prefix names the owning plugin, today
 `[context-guard context gate]`, and has changed before): the "…% of the window is used"
