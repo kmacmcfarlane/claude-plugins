@@ -586,7 +586,55 @@ the value**. Write `creds: clusterenv.yaml key DISCORD_WEBHOOK_BACKUPS`, not
 the webhook URL. `wi lint` flags PEM blocks, `KEY=value` assignments (bare,
 or after a bullet, date, tag, bold or other leading text, unless the key is
 glued to a word or follows a URL's `?` or `&`) and
-`token/secret/password/webhook`-style pairs that look like live values.
+`token/secret/password/webhook`-style pairs that look like live values. It
+also flags the looser shapes: a lowercase, mixed-case or dotted `key=value`
+(`app.db_pass=…`), `KEY = value`, `key => value`, `key := value`,
+`KEY: value` or `KEY :value` (an env-style or snake_case key), a JSON
+`"key": "value"` pair and `--flag=value`, with the value bare or quoted, and
+every pair on a line (`dsn=host=db;db_pass=…`, compact JSON).
+
+- **Secret-word keys.** A key is one when a segment of it, split on `_`,
+  `-`, `.` and camelCase, is a secret word (`pass`, `password`, `pw`,
+  `secret`, `token`, `auth`, `cred`, `key`, `apikey`, `webhook` and the
+  like) or ends with `password`, `passwd`, `secret`, `token` or `apikey`
+  (`dbpassword`, `clientsecret`, `accesstoken`); `key` and `pass` count only
+  as a whole segment, and a plural such as `tokens` or `keys` is no secret
+  word. Under such a key any value of 8+ non-space characters counts,
+  symbols, hex, letters-only and UUIDs included. A quoted value skips
+  nothing; an unquoted one skips only code, a count or a path a note may
+  quote: a call `f(…)` or subscript `x[…]` with nothing after the closing
+  bracket and nothing inside it that would flag on its own; a dotted
+  attribute of letters and `_` only (`config.api_key`); a number with
+  separators (`1,234,567`), or a bare number when another key segment is a
+  count word (`count`, `len`, `max`, `min`, `budget`, `total`, `size`,
+  `limit`, `num`); or a path starting `~/`, `./` or `/` of two or more
+  harmless segments (below).
+- **Other keys** (`sha`, `commit`, `*_id`, …) count only a value that looks
+  live: 12+ characters holding a letter and a digit, not all hex (a sha),
+  not a date, and not two or more segments split on `-`, `_`, `.`, `/` or
+  `~` that are each harmless (letters and digits only, so a `+` or `=`
+  makes a segment live; all letters, all digits or all hex at any length,
+  or 12 characters or fewer that do not mix upper case, lower case and
+  digits), so a work-item id, path, version or UUID stays clean.
+- **Placeholders.** A value is a placeholder only as `$VAR`, `{template}`,
+  all `*` (masked), or `<…>` holding lowercase words, spaces, `_` or `-` with
+  its closing `>` (`<value>`, `<your key>`).
+- **Raw and cleaned.** Every rule runs on the line as written and on a
+  cleaned copy: NFKC-normalised (a fullwidth equals sign, U+FF1D, is `=`),
+  Unicode format characters such as a zero-width space dropped, and
+  markdown `` ` ``, `**`, `*` and `__` removed. Either one flagging flags
+  the line. Look-alike letters (confusables, such as a Cyrillic a, U+0430,
+  in a key) are out of scope for this floor.
+- **Known strictness**, kept on purpose: a letters-only value under a
+  secret-word key (`auth_mode: interactive`), a comma list
+  (`KEY_ORDER: priority,status`), a bare name (`self.dedupe_key =
+  dedupe_key`), a number with a unit (`pass_rate = 97.5%`), and under other
+  keys a single mixed value (`checkpoint_id: ckpt20261009T1104Z`) or a path
+  segment over 12 characters that mixes letters and digits. Reword such a
+  line, or record the path and key. **Known gaps**: a separated number
+  under a secret-word key, a `$`- or `{`-led value, and a key glued to
+  `pass` (`dbpass`) pass.
+
 `wi note` refuses, writing nothing, a line lint would flag. Lint's shapes
 are a floor, not every secret: the path-and-key rule is the guard.
 

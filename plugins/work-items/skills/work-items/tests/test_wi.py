@@ -1769,6 +1769,21 @@ class TestNote(WiTestCase):
                         r.stderr, "wi: text 2: likely secret value (record the "
                         "path and key, never the value); nothing written\n")
 
+    def test_looser_secret_shapes_refused(self):
+        fake = TestLint.SHAPE_FAKE
+        path = self.item()
+        before = path.read_bytes()
+        for text in ("db_pass = " + fake, "DB_PASS: " + fake,
+                     '{"db_pass": "' + fake + '"}', "--auth=" + fake,
+                     'db_pass="' + fake + '"', "app.db_pass => " + fake):
+            with self.subTest(text=text):
+                r = run(["note", self.IID, "--", text], self.root)
+                self.assertEqual(r.returncode, 1, r.stdout + r.stderr)
+                self.assertEqual(
+                    r.stderr, "wi: text 1: likely secret value (record the "
+                    "path and key, never the value); nothing written\n")
+                self.assertEqual(path.read_bytes(), before)
+
     def test_a_text_that_is_exactly_the_separator_is_refused(self):
         path = self.item()
         before = path.read_bytes()
@@ -3030,6 +3045,211 @@ class TestLint(WiTestCase):
                 r = self.lint_notes(line)
                 self.assertNotIn("probe-3333", r.stdout)
                 self.assertEqual(r.returncode, 0, r.stdout)
+
+    # obviously fake, letters and digits, no hex-only run, one long segment;
+    # the keys hold none of the KV rule's whole words (db_pass, not
+    # password), so only the b9fb shape rule can fire. Every fake below is
+    # built here from "fake" and "dead/beef" runs, never stored as a token.
+    SHAPE_FAKE = "fake0fake1fake2fakeXYZ"
+    FAKE_B64 = "Fake+Base64/Value0Only" + "=="
+    FAKE_JWT = ".".join(("fakeHeader0Abc", "fakePayload1Xyz", "fakeSig2Qrs"))
+    FAKE_UUID = "-".join(("deadbeef", "dead", "beef", "dead", "beefdeadbeef"))
+    FAKE_HEX = "deadbeef" * 5
+
+    def test_looser_secret_shapes_caught(self):
+        v = self.SHAPE_FAKE
+        shapes = {
+            "lowercase key": "db_pass=" + v,
+            "mixed-case key": "- 2026-10-09 set dbPass=" + v,
+            "spaces around =": "KEY = " + v,
+            "lowercase spaced": "- db_pass = " + v,
+            "env key colon": "DB_PASS: " + v,
+            "snake key colon": "- learned: db_pass: " + v,
+            "json pair": '{"db_pass":"' + v + '"}',
+            "json pair spaced": "- body {\"dbPass\": \"" + v + "\"}",
+            "json single quotes": "{'user_pw': '" + v + "'}",
+            "flag": "ran `tool --auth=" + v + "` once",
+            "bare flag": "--auth=" + v,
+            "with an underscore": "conn_str=fake_" + v,
+            "trailing period": "set db_pass=" + v + ".",
+            # quoted values, every key form
+            "double-quoted": 'db_pass="' + v + '"',
+            "single-quoted": "db_pass='" + v + "'",
+            "quoted spaced": 'db_pass = "' + v + '"',
+            "env quoted spaced": 'DB_PASS = "' + v + '"',
+            "env colon quoted": 'DB_PASS: "' + v + '"',
+            "snake colon quoted": 'db_pass: "' + v + '"',
+            "api_secret quoted": 'api_secret = "' + v + '"',
+            "client_secret colon quoted": 'client_secret: "' + v + '"',
+            "flag quoted": '--auth="' + v + '"',
+            # other forms
+            "dotted key": "app.db_pass=" + v,
+            "space before colon": "DB_PASS :" + v,
+            "fat arrow": "db_pass => " + v,
+            "walrus": "db_pass := " + v,
+            # a key with no secret word: the value must look live
+            "plain key, base64": "blob_data=" + self.FAKE_B64,
+            "plain key, quoted base64": '"blob_data": "' + self.FAKE_B64 + '"',
+            "plain key, jwt-like": "--session=" + self.FAKE_JWT,
+            "plain key, mixed long segment": "conn_str: " + v,
+            # a secret-word key: any 8+ non-space characters
+            "secret key, base64": "db_pass=" + self.FAKE_B64,
+            "secret key, jwt-like": "auth_header: " + self.FAKE_JWT,
+            "secret key, letters only": "db_pass=abcdefghijklmnopqrst",
+            "secret key, hex": "api_secret=" + self.FAKE_HEX,
+            "secret key, uuid": "db_pass: " + self.FAKE_UUID,
+            "secret key, symbols": "user_pw=fake!pw@" + "123",
+            "secret key, slug": "--token=" + "-".join(("fake", "slug", "value")),
+            "secret key, base64 from /": "db_pass=/" + self.FAKE_B64,
+            "secret key, camelCase": "accessToken := " + v,
+            "secret key, all-caps camel": "APIKey=" + v,
+            "secret key, masked prefix only": "db_pass=*" + v,
+            # a later pair on the same line is still examined
+            "compact json": '{"name":"x","db_pass":"' + v + '"}',
+            "joined pairs ;": "dsn=host=db;user=app;db_pass=" + v,
+            "joined pairs ,": "opts=fast,db_pass=" + v,
+            "joined flags": "args=--x,--auth=" + v,
+            # markdown around keys and values
+            "bold key": "**password**: " + v,
+            "code key": "`API_TOKEN` = " + v,
+            "bold value": "password: **" + v + "**",
+            "code value": "db_pass=`" + v + "`",
+            "split by emphasis": "db_pass=" + v[:8] + "*" + v[8:],
+            "url in angle brackets": "webhook_url: <https://hooks.example.invalid/" + v + ">",
+            # NFKC and format characters
+            "zero-width space in key": "db\u200b_pass=" + v,
+            "fullwidth equals": "db_pass\uff1d" + v,
+            # the raw line is read too, so the cleanup never hides an old hit
+            "glued markdown key": "*my*password: " + v,
+            "a value holding *": "DB_PASS=" + "Fa1k" + "**" + "e2X",
+            "fullwidth dollar": "DB_PASS=\uff04" + v,
+            # secrets dressed as code, a number or a path
+            "quoted dotted words": 'db_pass = "' + ".".join(("fakea", "fakeb", "fakec")) + '"',
+            "dotted words, a digit": "db_pass: " + ".".join(("fakea", "fakeb", "fakec1")),
+            "quoted number": 'db_pass = "' + "1234" * 3 + '"',
+            "bare number": "user_pw=" + "1234" * 3,
+            "quoted path": 'db_pass = "/' + "/".join(("fakea", "fakeb", "fakec")) + '"',
+            "home path, one segment": "db_pass=~/fakea9fakeb",
+            "call holding a token": "db_pass=fakef(" + "fake0Fake1" + ")",
+            "subscript holding a token": "db_pass=fakes[" + "fake0Fake1fake2Fake3" + "]",
+            "dotted call holding a token": "db_pass=fake.fake(" + v + ")",
+            "unclosed call": "db_pass=a(" + v,
+            "text after a subscript": "db_pass=x[0]" + v,
+            "angle brackets, not words": "db_pass=<" + v + ">",
+            "angle brackets, colon": "api_token: <" + v + ">",
+            "angle bracket, unclosed": "db_pass=<" + v,
+            # a compound lowercase key ending with a secret word
+            "dbpassword": "dbpassword=" + self.FAKE_HEX,
+            "secretkey": "secretkey=" + self.FAKE_HEX,
+            "apitoken": "apitoken=" + self.FAKE_HEX,
+            "accesstoken": "accesstoken=" + self.FAKE_HEX,
+            "privatekey": "privatekey=" + self.FAKE_HEX,
+            "authtoken": "authtoken=" + self.FAKE_HEX,
+            "clientsecret": "clientsecret=" + self.FAKE_HEX,
+            "compound key, letters": "dbpassword_x: abcdefghijklmnopqrst",
+            # a + makes a path segment live, so this is no harmless path
+            "path of + segments": "db_pass=/" + "/".join(("abc+def", "ghi+jkl")),
+        }
+        for name, line in shapes.items():
+            with self.subTest(shape=name):
+                r = self.lint_notes(line)
+                self.assertEqual(r.returncode, 3, r.stdout)
+                self.assertIn("probe-3333.md:", r.stdout)
+                self.assertIn("likely secret value", r.stdout)
+                self.assertNotIn(v, r.stdout + r.stderr)
+                self.assertNotIn(self.FAKE_B64, r.stdout + r.stderr)
+
+    def test_looser_shape_look_alikes_stay_clean(self):
+        look_alikes = {
+            "prose": "- 2026-10-09 next: run the checks and land the change",
+            "record line": "learned: lint now flags spaced KEY = value pairs",
+            "prose colon": "verifier gate CONCERNS: grounding/S2 at 1 from tooling",
+            "shell var spaced": "KEY = $DB_PASS",
+            "placeholder colon": "DB_PASS: <value>",
+            "placeholder json": '{"db_pass": "<value>"}',
+            "template flag": "--auth={token_file}",
+            "masked": "db_pass: ****************",
+            "short sha": "- 2026-10-09 merged sha=01dda41 into main",
+            "full sha": "commit_sha: 01dda4101dda4101dda4101dda4101dda41aaaa",
+            "upper hex": "BUILD_ID = 01DDA4101DDA4101DDA41",
+            "work-item id": "refs_item: wi-lint-secret-shapes-the-assignment-and-b9fb",
+            "id flag": "--item=wi-lint-secret-shapes-the-assignment-and-b9fb",
+            "model flag": "dispatch --model=claude-opus-5-5 --effort=medium",
+            "path": "SKILL_DIR: plugins/work-items/skills/work-items/scripts2",
+            "path flag": "--root=.claude-sandbox/work/items2",
+            "date": "claimed_at: 2026-10-09T11:04Z",
+            "frontmatter key": "short_display_name: lint misses other secret shapes",
+            "owner": "owner: Kyle-McFarlane@2d49f8460283",
+            "letters only": "name_tag=abcdefghijklmnopqrst",
+            "digits only": "build_number=123456789012345",
+            "short value": "db_pass=fake1",
+            "comparison": "- check count == 3 and len_value != 12345678abcdefgh",
+            "url query": "- see https://example.invalid/p?db_pass=" + self.SHAPE_FAKE,
+            # a key with no secret word keeps the hex, letters-only and
+            # UUID exemptions
+            "hex under sha": "sha=" + self.FAKE_HEX,
+            "hex under commit": "commit: " + self.FAKE_HEX,
+            "uuid under an id": "request_id: " + self.FAKE_UUID,
+            "uuid quoted under an id": '"session_id": "' + self.FAKE_UUID + '"',
+            "a call": "result = compute_something2(arg)",
+            # long path segments: all letters, all digits or all hex
+            "worktree branch": "branch=worktree-agent-a7035ad4054cec38e",
+            "worktree flag": "--worktree=.claude/worktrees/agent-a7035ad4054cec38e",
+            "worktree colon": "WORKTREE: .claude/worktrees/agent-a7035ad4054cec38e",
+            "json file_path": '{"file_path": "/r/.claude-sandbox/investigations/b9fb/01_plan.md"}',
+            "investigations flag": "--out=.claude-sandbox/investigations/b9fb-plan/01_plan.md",
+            "series dir": "SERIES_DIR: .claude-sandbox/investigations/statusline2",
+            "py path": "see file=plugins/statusline-hub/hooks/tests/test_housekeeping.py",
+            "spaced arrow, short": "map => fake1",
+            # code and counts a note may quote under a secret-word key
+            "a call": "key = get_key()",
+            "an attribute": "token = self.token",
+            "a dotted attribute": "key = config.api_key",
+            "a subscript": "key = os.environ['API_KEY']",
+            "a count call": "token_count = len(tokens)",
+            "a class call": "monkey = MonkeyPatch()",
+            "author": "author=KyleMcFarlane",
+            "keyboard": "keyboard=us-international",
+            "a plural key, count": "max_tokens = 100000000",
+            "a plural key, colon count": "cache_read_input_tokens: 12345678",
+            "a count with separators": "token_budget=1,234,567",
+            "a home path": "ssh_key: ~/.ssh/id_ed25519.pub",
+            "a relative path": "key_file=./conf/dev/keys.yaml",
+            "markdown placeholder": "**password**: <value>",
+            "markdown masked": "`API_TOKEN` = `********`",
+            "code-quoted call": "- 2026-10-09 fixed `key = get_key()` in wi.py",
+            "a count word, bare number": "token_count=12345678",
+            "a limit word, bare number": "key_limit = 123456789",
+            "a spaced placeholder": "db_pass=<your password here>",
+            "a placeholder with _": "DB_PASS: <db_pass_value>",
+            # key and pass count only as a whole segment, and a plural or a
+            # longer word is no secret word, so hex keeps its exemption
+            "monkey": "monkey=" + self.FAKE_HEX,
+            "keyboard": "keyboard=" + self.FAKE_HEX,
+            "turnkey": "turnkey=" + self.FAKE_HEX,
+            "bypass": "bypass=" + self.FAKE_HEX,
+            "compass": "compass: " + self.FAKE_HEX,
+            "passes": "test_passes=" + self.FAKE_HEX,
+            "tokens": "tokens=" + self.FAKE_HEX,
+            "tokenizer": "tokenizer_sha=" + self.FAKE_HEX,
+            "secrets plural": "secrets_dir=" + self.FAKE_HEX,
+        }
+        for name, line in look_alikes.items():
+            with self.subTest(shape=name):
+                r = self.lint_notes(line)
+                self.assertNotIn("probe-3333", r.stdout)
+                self.assertEqual(r.returncode, 0, r.stdout)
+
+    def test_secret_scan_of_a_long_line_of_pairs_is_linear(self):
+        # a 1M-character line of repeated aaa= is 250000 pairs; each pair
+        # reads a bounded slice of the line, so this takes about a second
+        # (it took tens of seconds while each pair copied the rest of the
+        # line); the bound leaves room for a loaded machine
+        for line in ("aaa=" * 250000, "aaa=*" * 200000):
+            with self.subTest(line=line[:5]):
+                start = time.perf_counter()
+                self.assertEqual(wi.secret_findings(line), [])
+                self.assertLess(time.perf_counter() - start, 5.0)
 
     def test_conflict_markers_flagged(self):
         (self.root / "items" / "conflicted-0000.md").write_text(
