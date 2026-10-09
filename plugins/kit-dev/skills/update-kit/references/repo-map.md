@@ -95,7 +95,8 @@ claude-plugins/
     │   └── tests/             (test_agents.py: every agent file's model and effort pin;
     │                           test_deep_investigation.py: deep-investigation's security parity)
     ├── kit-dev/               (maintaining this kit itself — where THIS skill lives)
-    │   └── skills/{create-skill,update-kit,new-project-from-template,factor-analysis}/
+    │   ├── skills/{create-skill,update-kit,new-project-from-template,factor-analysis}/
+    │   └── tests/             (test_standalone.py: each plugin's suites alone; test_declared_edges.py: cross-plugin references declared)
     ├── operator-interaction/  (the agent-operator interface, starting with how decisions are raised and shown)
     │   └── skills/
     │       ├── decisions/     (references/{worksheet,rendering,replies,evidence-basis,rationale,gallery}.md)

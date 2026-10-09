@@ -71,6 +71,14 @@ def scanned():
     return sorted(out)
 
 
+# The scan reads the repo's README, CLAUDE.md, marketplace.json and sibling plugins, which
+# sit around this plugin only in the source repo; a copy of this plugin alone has none
+# (kit-dev's standalone check runs it that way).
+IN_REPO = all(os.path.isfile(os.path.join(REPO, f))
+              for f in (".claude-plugin/marketplace.json", "CLAUDE.md", "README.md"))
+
+
+@unittest.skipUnless(IN_REPO, "not in the source repo: no marketplace.json, CLAUDE.md or README.md")
 class CheckpointNamespacedTest(unittest.TestCase):
     def test_no_bare_checkpoint_outside_the_gate_whitelist_text(self):
         bad, used = [], set()
