@@ -49,9 +49,10 @@ const d = JSON.parse(require("fs").readFileSync(0, "utf8"));
 const bad = check(d);
 let acts = [];
 if (!bad.length) {
-  CARDS = d.cards; REFS = d.refs || {};
-  byN = new Map(CARDS.map(c => [String(c.n), c]));
-  acts = CARDS.map(c => ({n: c.n, html: Object.fromEntries(c.o.map(o => [o[0], actList(c, o[0])]))}));
+  CARDS = d.cards; REFS = d.refs || {}; FOLLOW = d.follow;
+  byN = new Map(CARDS.map(c => [String(c.n), c])); FOLLOW_KEYS = new Set(FOLLOW.map(f => f[0]));
+  acts = CARDS.map(c => ({n: c.n, html: Object.fromEntries(c.o.map(o => [o[0], actList(c, o[0])])),
+                          card: cardHtml(c)}));
 }
 process.stdout.write(JSON.stringify({bad, acts}));
 """
@@ -143,12 +144,16 @@ class DecisionPageAct(unittest.TestCase):
         self.assertIn("&lt;img", b)
 
     def test_the_page_renders_act_under_each_option(self):
-        html = PAGE.read_text()
-        cards = html[html.index("function renderCards"):html.index("function placeholderFor")]
-        self.assertIn("actList(c,k)", cards)
-        # inside the option, never in a fold: before the follow-ups and the panes
-        self.assertLess(cards.index("actList(c,k)"), cards.index('class="follow"'))
-        self.assertLess(cards.index("actList(c,k)"), cards.index('class="panes"'))
+        res = run_page(example())
+        card, act = res["acts"][0]["card"], res["acts"][0]["html"]["b"]
+        self.assertEqual(card.count(act), 1)
+        at = card.index(act)
+        # inside option (b), never in a fold: after its label and before the follow-ups
+        b = card.index('id="d41-b"')
+        self.assertLess(card.index("</label>", b), at)
+        self.assertLess(at, card.index('class="follow"'))
+        for m in re.finditer(r'<details class="pane".*?</details>', card, re.S):
+            self.assertNotIn('class="act"', m.group(0))
 
 
 def gallery_blocks():

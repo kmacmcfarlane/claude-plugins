@@ -42,9 +42,10 @@ const d = JSON.parse(require("fs").readFileSync(0, "utf8"));
 const bad = check(d);
 let views = [];
 if (!bad.length) {
-  CARDS = d.cards; REFS = d.refs || {};
-  byN = new Map(CARDS.map(c => [String(c.n), c]));
-  views = CARDS.map(c => ({n: c.n, tag: tagEffect(c), line: impactLine(c), table: impactTable(c)}));
+  CARDS = d.cards; REFS = d.refs || {}; FOLLOW = d.follow;
+  byN = new Map(CARDS.map(c => [String(c.n), c])); FOLLOW_KEYS = new Set(FOLLOW.map(f => f[0]));
+  views = CARDS.map(c => ({n: c.n, tag: tagEffect(c), line: impactLine(c), table: impactTable(c),
+                           card: cardHtml(c)}));
 }
 process.stdout.write(JSON.stringify({bad, views}));
 """
@@ -134,7 +135,7 @@ class DecisionPageImpact(unittest.TestCase):
 
     def test_a_card_without_blocks_still_renders_its_table(self):
         d = example()
-        self.assertNotIn("blocks", d["cards"][2])
+        del d["cards"][2]["blocks"]  # older data: blocks is required on a ⚠ card only
         res = run_page(d)
         self.assertEqual(res["bad"], [])
         table = res["views"][2]["table"]
@@ -181,13 +182,19 @@ class DecisionPageImpact(unittest.TestCase):
 
     def test_the_page_renders_impact_in_every_view(self):
         html = PAGE.read_text()
-        hud = html[html.index("function renderHud"):html.index("function line(")]
+        hud = html[html.index("function renderHud"):html.index("function renderCards")]
         self.assertIn("tagEffect(c)", hud)
-        cards = html[html.index("function renderCards"):html.index("function placeholderFor")]
-        self.assertIn("impactLine(c)", cards)
-        self.assertIn("tagEffect(c)", cards)
-        full = html[html.index("function optionsInFull"):html.index("function renderCards")]
-        self.assertIn("impactTable(c)", full)
+        # the open card, rendered: its Impact line, the effect on its summary line, and the
+        # Impact table in its Options in full fold
+        for v in run_page(example())["views"]:
+            card = v["card"]
+            self.assertIn('class="impline"', card, v["n"])
+            self.assertIn(v["line"], card, v["n"])
+            summary = card[:card.index("</summary>")]
+            self.assertIn('class="eff"', summary, v["n"])
+            full = card[card.index("<summary>Options in full</summary>"):]
+            full = full[:full.index("</details>")]
+            self.assertIn('<table class="imp">', full, v["n"])
         pop = html[html.index("function fillPop"):html.index("function place(")]
         self.assertIn("tagEffect(c)", pop)
 

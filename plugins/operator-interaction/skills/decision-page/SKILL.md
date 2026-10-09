@@ -6,7 +6,8 @@ description: "Put a set of decisions to the operator as an answer page: a publis
 # Decision page
 
 A set of decisions on one page the operator works through at their own pace: each card flat
-on its essentials with folds for the rest, one choice per card enforced by the radio buttons,
+on its essentials with folds for the rest; a click on a part with a more-detail button shows it in more detail, and
+**More** beside an option shows that option in full; one choice per card enforced by the radio buttons,
 answers saved as they click. You publish it, they answer, you read the answers back and hand
 them to your caller. The format first served a 24-decision set on how decisions are handled.
 
@@ -79,9 +80,28 @@ In a working directory (your scratchpad unless the caller names one): copy
   `decisions` skill's `references/rendering.md` § Impact) — copied from the caller's stored
   line where it keeps one — so every view on the page shows it: the effect in the map and on
   a closed card, the line on an open one, the table in its Options in full.
-- A ⚠ one-way decision carries `blocks`, its Impact table row per option (effect, reach,
-  undo, and cost); a round ask carries `ifleft` and `roundcosts`; a status-quo default,
-  `ifunanswered`.
+- Every card carries `blocks`, its Impact table row per option but (z) (effect, reach, undo,
+  and cost); a ⚠ one-way card is refused without them. A round ask carries `ifleft` and
+  `roundcosts`; a status-quo default, `ifunanswered`.
+- Every card carries the depth the decisions skill's block holds, scaled to the decision, up
+  to the soft sizes (`references/cards-schema.md` § Size): Why now and Why ask in full, a
+  `blocks` row and a full text for every option but (z), and the basis drill-down in
+  `evidence` with its paths and links. **Levels scale with the decision** and are optional on
+  every part: a small call may carry none; a wide or one-way decision carries the most, a
+  medium and a high in `detail` for its visible parts (Context, the Impact line, the TLDR, the
+  rec line) and for the fold items with depth to give. Context's high, when there is one,
+  holds the facts a cold reader has lost. Where a part has levels, its depth meets its size at
+  its top level. Write it from the sources, not from the stored card alone:
+  - the caller's record of the decision: a stored card's lost-context facts, each option's
+    reach, undo and cost, and its basis drill-down;
+  - the work that raised it: the investigation series or plan, the work item's notes, and the
+    files, logs and pages its evidence names.
+
+  The caller supplies them, or the paths to them. Read each source once per page, not once per
+  card. What no source holds goes under `unknown`, never into the depth. A small call keeps a
+  short card. Each level is more writing, on the cards that carry one (§ Size gives the
+  figures): when a page's cards draw on many sources, say the cost to the caller before
+  writing, and write the depth of the open cards first.
 - A card whose option asks the operator to act carries `act`: its steps, as the **To act
   on** part in the `decisions` skill's `references/rendering.md` § Card gives them.
 - Every mention of another decision is a slug, `[[N]]`; a decision not on the page that a
@@ -95,8 +115,11 @@ In a working directory (your scratchpad unless the caller names one): copy
   one-line steps with no fill-in placeholder, the required fields.
 - With node present, run the skill's `scripts/check_cards.js` (under its base directory) on
   the working copy's `cards.json`. Fix every refusal it prints. For each `lint:` line, add
-  the gloss to `context`, or leave the term knowingly. Without node, check by reading, and
-  run the cold read.
+  the gloss to `context`, or leave the term knowingly. For each `depth:` line, fix the depth
+  or the level from the sources, or leave it knowingly, never padded.
+  On a republish, the depth lines on a card the operator has answered are left knowingly: that
+  card keeps its depth as it stands (step 3). Without node, check by reading, and run the cold
+  read.
 
 ## Step 3: Publish
 
@@ -138,6 +161,13 @@ finding, a corrected fact, a re-ask. Only the one-time format migration keeps it
 written before Context existed, whose own `what` and resume cue move into `context`, and whose
 terms are glossed from its own folds alone. A gloss drawn from anywhere outside the card is
 new information: a new `rev`.
+
+A `cards.json` written before `detail` existed renders as it did, with **More** buttons and no
+toggles. On a republish, write the depth and the `detail` levels its decision calls for
+(step 2) into each card with no counting answer, and into each card revised anyway, each with a new `rev`; leave a card the
+operator has answered as it is, unless it is revised for another reason. A card that gets
+`detail` gets a new `rev`, so the republish hands it over as shown again (§ Hand over what was
+shown), with the publish time.
 
 **Hand over what was shown.** After a publish or republish, for every card whose number and
 `rev` were not on the page before (on a first publish, every card), hand the caller the
@@ -219,4 +249,6 @@ answer to a card whose `rev` has not moved is a new answer and hands over one mo
 - `assets/index.html` — the page template
 - `assets/cards.example.json` — invented example data
 - `scripts/check_cards.js` — the pre-publish check under node: the page's own refusals, then
-  lints for ids, counts and named things a card's Context does not introduce
+  lints for ids, counts and named things a card's Context does not introduce, and the depth
+  lints (a visible part without its levels, a level not longer than the one below, thin or long
+  depth, a missing `blocks` row)

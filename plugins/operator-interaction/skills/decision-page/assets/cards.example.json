@@ -121,7 +121,75 @@
       "basis": "strong",
       "reason": "both failures were read in the build logs",
       "unknown": "whether anyone publishes from a fork",
-      "evidence": "Build logs for both failed publishes show the same stale cache directory."
+      "evidence": "Build logs for both failed publishes show the same stale cache directory.",
+      "detail": {
+        "context": [
+          "The docs site is built and published from one maintainer's laptop today; CI is the shared build service that runs on every merge to `main`. A stale cache is a leftover copy of an old build that the laptop reused by mistake: it broke two publishes this month, and clearing it once ([[38]]) held for a week. CI already builds the site on every merge as a check, then throws the result away. You decide where the build runs from now on.",
+          "The docs site is built and published from one maintainer's laptop today; CI is the shared build service that runs on every merge to `main`. A stale cache is a leftover copy of an old build that the laptop reused by mistake: it broke two publishes this month, and clearing it once ([[38]], answered: clear it) held for a week. CI already builds the site on every merge as a check, then throws the result away; publishing from it adds one deploy step, the same command the maintainer runs by hand, and one secret, the deploy token. The maintainer is away from the 20th for two weeks, and until the build moves nobody else can publish. You decide where the build runs from now on; [[42]] and [[43]] arise only if it moves."
+        ],
+        "impact": [
+          {
+            "effect": "publishing no longer depends on one laptop: any merge to `main` publishes, whoever made it",
+            "wait": "the laptop build stays, with its cache failures; [[42]] and [[43]] wait on this answer",
+            "reach": "every docs contributor, and the maintainer who publishes by hand today",
+            "undo": "switch the CI pipeline off; one config change, and the laptop build works as before"
+          },
+          {
+            "effect": "publishing no longer depends on one laptop: any merge to `main` publishes within about 4 minutes, whoever made it, and a failed build stops the publish instead of shipping a broken page",
+            "wait": "the laptop build stays, with about two cache failures a month; while the maintainer is away from the 20th nobody can publish; [[42]] and [[43]] wait on this answer",
+            "reach": "every docs contributor, the maintainer who publishes by hand today, and readers, who see a merged change within minutes",
+            "undo": "switch the CI pipeline off; one config change. Nothing is migrated, so the laptop build works as before",
+            "cost": "about 4 minutes of CI per merge, and one secret to keep in CI's settings"
+          }
+        ],
+        "tldr": [
+          [
+            "The docs site builds and publishes from one maintainer's laptop, whose stale cache broke two publishes this month",
+            "Move building and publishing to CI on every merge, or keep the laptop build"
+          ],
+          [
+            "The docs site builds and publishes from one maintainer's laptop, whose stale cache broke two publishes this month",
+            "Nobody else can publish while it lives there, and the maintainer is away from the 20th",
+            "Move building and publishing to CI on every merge, or keep the laptop build",
+            "Moving changes who can publish: every merge goes live, not only when the maintainer chooses"
+          ]
+        ],
+        "rec": [
+          "both failures were read in the build logs: the same stale cache both times, while CI's builds of the same commits passed · unknown: whether anyone publishes from a fork",
+          "both failures were read in the build logs: the same stale cache both times, while CI's builds of the same commits passed, and CI starts every build from a clean checkout · unknown: whether anyone publishes from a fork; the repo settings do not show it, and no fork has opened a docs change this year"
+        ],
+        "why": [
+          "Two publishes broke this month, both from the laptop's stale cache; clearing it once ([[38]]) held for a week. The maintainer is away from the 20th. Blocks [[42]] and [[43]].",
+          "Two publishes broke this month, both from the laptop's stale cache; clearing it once ([[38]]) held for a week. The maintainer who publishes is away from the 20th for two weeks, and nobody else can publish while the build lives on that laptop. Blocks [[42]] and [[43]], which arise only if the build moves."
+        ],
+        "whyask": [
+          "Moving the build changes who can publish: from CI, every merge to `main` goes live within minutes, so a change can no longer be held back after merging.",
+          "Moving the build changes who can publish. Today one person publishes by hand, when they choose; from CI, every merge to `main` goes live within minutes. If the team relies on holding a change back after merging (a release-day page, say), that habit breaks, and the repo does not show whether it does."
+        ],
+        "evidence": [
+          [
+            "Observed: both failed publishes reused the same stale `.cache/build` directory; CI's builds of the same commits passed (`https://ci.example.com/docs-site/builds`).",
+            "Inferred: CI publishes would not hit the cache failure, since every CI build starts clean."
+          ],
+          [
+            "Observed: the build logs of both failed publishes show the same stale `.cache/build` directory, reused from an older build; CI's check builds of the same commits passed (`https://ci.example.com/docs-site/builds`).",
+            "Observed: CI already runs the full build on every merge, in about 4 minutes (the same builds page).",
+            "Inferred: CI publishes would not hit the cache failure, since every CI build starts from a clean checkout.",
+            "Observed: the deploy step CI would need is the same command the maintainer runs by hand (`scripts/publish.sh`); it reads the deploy token from the environment, so CI needs only the secret.",
+            "Assumed: nobody publishes from a fork; the repo settings do not show it either way, and no fork has opened a docs change this year."
+          ]
+        ],
+        "o": {
+          "a": [
+            "Keep building on the maintainer's laptop and publishing by hand. The stale-cache failures stay at about two a month.",
+            "Keep building on the maintainer's laptop. Nothing changes: they build, check the preview and publish by hand when they choose. The stale-cache failures stay at about two a month, each found when a reader reports a broken page and fixed by clearing the cache and publishing again."
+          ],
+          "b": [
+            "Build and publish from CI on every merge to `main`; the laptop build stays for previews. Each merge publishes within about 4 minutes.",
+            "Build and publish from CI on every merge to `main`; the laptop build stays for previews only. The first CI publish replaces the live site, and each later merge publishes within about 4 minutes. Publishing no longer waits for one person, and a failed build stops the publish instead of shipping a broken page."
+          ]
+        }
+      }
     },
     {
       "n": 42,
@@ -184,7 +252,67 @@
       "dep": "[[41]] (b)",
       "basis": "partial",
       "reason": "the URL list is observed; the traffic to them is estimated",
-      "unknown": "how many external sites link to the old URLs"
+      "unknown": "how many external sites link to the old URLs",
+      "evidence": "Observed: the trial CI build lists the twelve pages whose paths change (`build/moved-pages.txt` from that run).",
+      "detail": {
+        "context": [
+          "Building in CI ([[41]], option b) gives twelve pages a new web address (URL): the ten how-to guides and the two pages that list the site's configuration options, all of which move under a new /docs/ folder. A redirect is one config line that sends a reader from an old URL to its new one, so a link to the old address keeps working. Only matters if [[41]] is (b). You decide what happens to links that point at the old addresses.",
+          "Building in CI ([[41]], option b) gives twelve pages a new web address (URL): the ten how-to guides and the two pages that list the site's configuration options, all of which move under a new /docs/ folder. You have not seen this list before: a trial CI build last week printed every page whose address changes. A redirect is one config line that sends a reader from an old URL to its new one, the old path then the new one, so a link to the old address keeps working. Only matters if [[41]] is (b). You decide what happens to links that point at the old addresses."
+        ],
+        "impact": [
+          {
+            "effect": "old links keep working through twelve redirects, one config line each",
+            "wait": "the first CI publish waits for this answer; nothing else does",
+            "reach": "external readers, and every site and bookmark linking to the old pages",
+            "undo": "(a) remove the redirect lines; (b) none — once search engines drop the old URLs, redirects added later do not win the ranking back"
+          },
+          {
+            "effect": "old links keep working through twelve redirects, one config line each, added before the first CI publish; a reader lands on the new page without noticing",
+            "wait": "the first CI publish waits for this answer; nothing else does, and if [[41]] is (a) the pages do not move",
+            "reach": "external readers, other sites, old forum answers and bookmarks that point at the old pages; about a fifth of the visits to those pages arrive from other sites",
+            "undo": "(a) remove the redirect lines, and nothing else changes; (b) none — search engines drop the old URLs within weeks, and redirects added later do not win the ranking back",
+            "cost": "(a) twelve lines of redirect config to keep; (b) nothing now"
+          }
+        ],
+        "tldr": [
+          [
+            "The CI build moves twelve pages to new URLs",
+            "Redirect the old URLs, or let them return not found"
+          ],
+          [
+            "The CI build moves twelve pages to new URLs: the ten how-to guides and the two configuration pages",
+            "Other sites and bookmarks link to them, and a lost link cannot be won back later",
+            "Redirect the old URLs, or let them return not found",
+            "A redirect is one config line per page"
+          ]
+        ],
+        "rec": [
+          "the URL list is observed in a trial CI build; the traffic to those pages is estimated from a referrer report · unknown: how many external sites link to the old URLs",
+          "the URL list is observed: a trial CI build printed every page whose address changes; the traffic is estimated: about a fifth of the visits to those pages arrive from other sites, by last month's referrer report · unknown: how many external sites link to the old URLs, since the report counts visits, not links; and whether the redirects work as the site generator's documentation says, which the first CI publish would show"
+        ],
+        "why": [
+          "Needed before the first CI publish, which moves the twelve pages and breaks their old addresses unless the redirects are already in the config.",
+          "Needed before the first CI publish: that publish moves the twelve pages, and their old addresses break the moment it goes live unless the redirects are already in the config. Nothing else waits on it. If [[41]] is (a), the pages do not move and this card no longer applies."
+        ],
+        "whyask": [
+          "Breaking public links is a call about readers, not about the build: other sites and bookmarks point at these pages, and a lost link cannot be won back.",
+          "Breaking public links is a call about readers, not about the build. Other sites, old forum answers and bookmarks point at these pages; whether those readers are worth twelve config lines is a judgement about the audience, and a lost link cannot be won back later."
+        ],
+        "evidence": [
+          "Observed: the trial CI build lists the twelve pages whose paths change (`build/moved-pages.txt` from that run). Estimated: about a fifth of the visits to those pages arrive from other sites, from last month's referrer report (`https://analytics.example.com/docs-site/referrers`).",
+          "Observed: the trial CI build lists the twelve pages whose paths change (`build/moved-pages.txt` from that run). Estimated: about a fifth of the visits to those pages arrive from other sites, read from last month's referrer report (`https://analytics.example.com/docs-site/referrers`). Unknown: how many sites link to them; the report counts visits, not links. Observed: the site generator reads redirects from its config file, one line each (`https://docs.example.com/generator/redirects`). Assumed: those redirects work as its documentation says; not tried here, and the first CI publish would show it."
+        ],
+        "o": {
+          "a": [
+            "Add a redirect for each of the twelve old URLs before the first CI publish, one line per page in the site config.",
+            "Add a redirect for each of the twelve old URLs before the first CI publish, one line per page in the site config. A reader following an old link lands on the new page without noticing. The twelve lines stay in the config, and need changing only if those pages move again."
+          ],
+          "b": [
+            "Let the twelve old URLs return not found from the first CI publish; a reader following an old link sees an error page.",
+            "Let the twelve old URLs return not found from the first CI publish. A reader following an old link sees an error page and has to search for the new one. Search engines drop the old addresses within weeks, and redirects added after that do not win the ranking back."
+          ]
+        }
+      }
     },
     {
       "n": 43,
@@ -202,21 +330,21 @@
         "Pick a colour, or keep the current one"
       ],
       "context": "Building in CI ([[41]], option b) applies the site's theme afresh, so the accent colour (the colour of links and headings) can change at no extra cost. The site is blue today; the logo is green. Either colour is one theme setting, a single line in the site's theme file, so it is easy to change back. You pick which the site uses.",
-      "why": "Nothing forces it; raised because the move touches the theme files anyway.",
-      "whyask": "A taste call; no fact settles it.",
+      "why": "Nothing forces it. It is raised because the move to CI rebuilds the theme from its source files, so a change made now costs nothing extra; made later, it is a separate theme build and a check of every page's contrast.",
+      "whyask": "A taste call: no fact settles it. The blue has been the site's colour since launch, and readers know it; the green matches the logo and the product's other sites. Both read well in the light and dark themes (checked), so the choice is only how the site should look.",
       "rec": null,
       "norec": "your preference — no recommendation",
       "o": [
         [
           "a",
-          "Keep the current blue.",
+          "Keep the current blue for links and headings. Nothing changes for readers, and the screenshots in the guides stay accurate. The site stays a different colour from the logo, as it has been since launch.",
           "No visual change.",
           "Keep the blue",
           "no visual change"
         ],
         [
           "b",
-          "Switch to the green from the logo.",
+          "Switch links and headings to the logo's green at the first CI publish. The site matches the logo and the product's other sites. The screenshots in the guides still show the blue until they are retaken, which reads as dated to a careful reader.",
           "The site matches the logo; screenshots in the guides look dated until refreshed.",
           "Switch to logo green",
           "matches the logo"
@@ -232,7 +360,59 @@
       "dep": "[[41]] (b)",
       "basis": "strong",
       "reason": "nothing depends on the choice (checked)",
-      "unknown": "none"
+      "unknown": "none",
+      "blocks": {
+        "a": {
+          "happens": "No visual change; the site stays blue.",
+          "undo": "Nothing to undo.",
+          "who": "Readers of the docs site.",
+          "cost": "Nothing."
+        },
+        "b": {
+          "happens": "Links and headings turn the logo's green from the first CI publish.",
+          "undo": "One theme setting: change it back in one line.",
+          "who": "Readers of the docs site, and the guide screenshots.",
+          "cost": "The guide screenshots look dated until they are retaken, about an hour."
+        }
+      },
+      "evidence": "Checked: nothing in the site's build or its pages reads the accent colour except the theme file, so a change is one line there (`theme/colors.toml`). Checked: both colours pass the contrast check against the light and the dark background. Observed: the screenshots in the guides show the blue, so a switch to green leaves them dated until they are retaken, about an hour's work. Not checked: what readers prefer; no survey of them exists.",
+      "detail": {
+        "context": [
+          "Building in CI ([[41]], option b) applies the site's theme afresh, so the accent colour (the colour of links and headings) can change at no extra cost. The site is blue today; the logo is green. Either colour is one theme setting, a single line in the site's theme file, so it is easy to change back, and both pass the contrast check in the light and dark themes. You pick which the site uses.",
+          "Building in CI ([[41]], option b) applies the site's theme afresh, so the accent colour (the colour of links and headings) can change at no extra cost; made later, a change is a separate theme build and a fresh contrast check of every page. The site is blue today; the logo is green. Either colour is one theme setting, a single line in the site's theme file, so it is easy to change back, and both pass the contrast check in the light and dark themes. The screenshots in the guides show the blue, so green leaves them looking dated until they are retaken. You pick which the site uses."
+        ],
+        "impact": [
+          {
+            "effect": "(a) no visual change; (b) links and headings turn the logo's green, matching the logo",
+            "wait": "the site keeps the blue until you answer; nothing else waits",
+            "reach": "readers of the docs site, and the screenshots in the guides",
+            "undo": "one theme setting: a single line in the theme file changes it back"
+          },
+          {
+            "effect": "(a) no visual change, and the guide screenshots stay accurate; (b) links and headings turn the logo's green from the first CI publish, matching the logo and the product's other sites",
+            "wait": "the site keeps the blue meanwhile; nothing else waits, but a change made after the move needs its own theme build and contrast check",
+            "reach": "readers of the docs site, and the screenshots in the guides, which show the blue",
+            "undo": "one theme setting: a single line in the theme file changes it back, at any time",
+            "cost": "(a) nothing; (b) about an hour to retake the guide screenshots"
+          }
+        ],
+        "tldr": [
+          [
+            "The move to CI rebuilds the site's theme, so its accent colour can change at no extra cost",
+            "Keep the current blue, or switch to the logo's green"
+          ],
+          [
+            "The move to CI rebuilds the site's theme, so its accent colour can change at no extra cost",
+            "Both colours pass the contrast check in the light and dark themes",
+            "Keep the current blue, or switch to the logo's green",
+            "Green leaves the guide screenshots looking dated until they are retaken"
+          ]
+        ],
+        "rec": [
+          "nothing depends on the choice (checked): only the theme file reads the accent colour · unknown: none",
+          "nothing depends on the choice (checked): only the theme file reads the accent colour, and both colours pass the contrast check against the light and the dark background · unknown: none for the choice itself; what readers prefer is not surveyed, and is yours to judge"
+        ]
+      }
     }
   ],
   "refs": {

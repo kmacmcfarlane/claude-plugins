@@ -47,16 +47,18 @@ def setUpModule():
               file=sys.stderr)
 
 
-# a list of data files in, each one's check() result and its cards' Context blocks out
+# a list of data files in, each one's check() result and its cards' Context blocks, rendered
+# Why now and rendered card out
 HARNESS = r"""
 const ds = JSON.parse(require("fs").readFileSync(0, "utf8"));
 const out = ds.map(d => {
   const bad = check(d);
   let blocks = [];
   if (!bad.length) {
-    CARDS = d.cards; REFS = d.refs || {};
-    byN = new Map(CARDS.map(c => [String(c.n), c]));
-    blocks = CARDS.map(c => ({n: c.n, open: contextBlock(c), pop: contextBlock(c, true)}));
+    CARDS = d.cards; REFS = d.refs || {}; FOLLOW = d.follow;
+    byN = new Map(CARDS.map(c => [String(c.n), c])); FOLLOW_KEYS = new Set(FOLLOW.map(f => f[0]));
+    blocks = CARDS.map(c => ({n: c.n, open: contextBlock(c), pop: contextBlock(c, true),
+                              why: fmtD(c.why), what: fmt(c.what || ""), card: cardHtml(c)}));
   }
   return {bad, blocks};
 });
@@ -217,14 +219,21 @@ class DecisionPageContext(unittest.TestCase):
         self.assertNotIn("<button", blk["pop"])
 
     def test_the_open_card_and_the_popup_open_on_context(self):
+        d = example()
+        d["cards"][1]["what"] = "Where the old links lead after the move."
+        for blk in run_page(d)["blocks"]:
+            card = blk["card"]
+            self.assertLess(card.index('class="ctx"'), card.index('class="impline"'), blk["n"])
+            self.assertLess(card.index('class="impline"'), card.index('class="tldr"'), blk["n"])
+            # Context's summary rendition, once; its levels repeat the labelled wrapper only
+            self.assertEqual(card.count(blk["open"]), 1, blk["n"])
+            # under decision 197 (a) the Background fold holds Why now and Why ask only
+            bg = card[card.index("<summary>Background</summary>"):card.index("<summary>Options in full</summary>")]
+            self.assertIn(blk["why"], bg, blk["n"])
+            if blk["n"] == 42:
+                self.assertNotIn(blk["what"], bg)
+                self.assertIn(blk["what"], blk["open"])
         html = PAGE.read_text()
-        cards = html[html.index("function renderCards"):html.index("function placeholderFor")]
-        self.assertLess(cards.index("contextBlock(c)"), cards.index("impactLine(c)"))
-        self.assertLess(cards.index("impactLine(c)"), cards.index('class="tldr"'))
-        # under decision 197 (a) the Background fold holds Why now and Why ask only
-        bg = cards[cards.index("<summary>Background</summary>"):cards.index("Options in full")]
-        self.assertNotIn("c.what", bg)
-        self.assertNotIn("c.context", cards.replace("contextBlock(c)", ""))
         pop = html[html.index("function fillPop"):html.index("function place(")]
         self.assertLess(pop.index("contextBlock(c,true)"), pop.index('class="tldr"'))
 
@@ -332,9 +341,13 @@ class DecisionPageRunner(unittest.TestCase):
                 d["cards"][0]["context"] += " KAPPA-3570 is the docs team's ticket for the move."
                 self.assert_clean(d)
 
-    def test_the_folds_act_lede_and_layer_notes_are_not_linted(self):
+    def test_the_folds_their_levels_act_lede_and_layer_notes_are_not_linted(self):
         for put in (lambda d: d["cards"][0]["o"][0].__setitem__(1, "see KAPPA-3570"),
                     lambda d: d["cards"][0].__setitem__("evidence", "see KAPPA-3570"),
+                    lambda d: d["cards"][0]["detail"]["why"].__setitem__(
+                        1, d["cards"][0]["detail"]["why"][1] + " See KAPPA-3570."),
+                    lambda d: d["cards"][0]["detail"]["o"]["b"].__setitem__(
+                        1, d["cards"][0]["detail"]["o"]["b"][1] + " See KAPPA-3570."),
                     lambda d: d["cards"][0]["act"]["b"].append("Close KAPPA-3570."),
                     lambda d: d["page"].__setitem__("lede", "From KAPPA-3570."),
                     lambda d: d["layers"][0].__setitem__(2, "From KAPPA-3570.")):

@@ -5,8 +5,14 @@
    1. the page's own check(): the template's page-free part, loaded from ../assets/index.html,
       so this refuses exactly what the page refuses;
    2. on a file that passes, lints: a card's flat part naming an id, a count or a named thing its
-      context does not introduce; a TLDR bullet that may carry the recommendation; a leftover
-      what. Lints are proxies: each line says how to fix it, or the term may be left knowingly.
+      context does not introduce, in the flat part and in the medium and high levels of the
+      Impact line, the TLDR and the rec line (checked against Context's summary only); a TLDR
+      bullet that may carry the recommendation; a leftover what. Then the depth lints (decision
+      198, the sizes in references/cards-schema.md § Size, read at each part's top level; levels
+      are optional on every part, decision 201): a level not longer than the one below it;
+      Background, an option's detail or the evidence thin where it carries levels, or long; an
+      option but (z) with no blocks row; a card long in all; a detail key the page does not show.
+      Lints are proxies: each line says how to fix it, or the thing may be left knowingly.
 
    Prints one line per problem. Exit 0 clean; 1 on a refusal, or on a file or template that
    cannot be read; 2 on lint lines only. Node built-ins only; no stack trace reaches the output. */
@@ -63,6 +69,57 @@ function flat(c) {
   return out.filter(s => typeof s === "string");
 }
 
+/* ---- the depth lints (decision 198): sizes read at each part's top level, words split on whitespace ---- */
+const words = x => x == null ? 0 : Array.isArray(x) ? x.reduce((n, s) => n + words(s), 0)
+  : typeof x === "object" ? Object.values(x).reduce((n, s) => n + words(s), 0)
+  : String(x).split(/\s+/).filter(Boolean).length;
+const LEVEL = ["summary", "medium", "high"], DETAIL_NAME = ["more detail", "full detail"];
+/* the parts a card shows, by their detail key; the first four are always visible */
+const PART = {context: "Context", impact: "the Impact line", tldr: "the TLDR", rec: "the rec line",
+  why: "Why now", whyask: "Why ask", dep: "Depends on", evidence: "the Evidence"};
+const levelsOf = (c, k) => c.detail && typeof c.detail === "object" && Array.isArray(c.detail[k]) ? c.detail[k] : [];
+const optLevels = (c, k) => { const o = c.detail && typeof c.detail === "object" ? c.detail.o : null; return o && typeof o === "object" && Array.isArray(o[k]) ? o[k] : []; };
+const topOf = (sum, ls) => ls.length ? ls[ls.length - 1] : sum;
+const row = (c, k) => c.blocks && typeof c.blocks === "object" ? c.blocks[k] || null : null;
+
+function depth(c, say) {
+  const imp = c.impact;
+  const summary = {context: c.context, impact: [imp.effect, imp.wait, imp.reach, imp.undo, imp.cost], tldr: c.tldr,
+    rec: [c.reason, c.unknown], why: c.why, whyask: c.whyask, dep: c.dep, evidence: c.evidence};
+  /* a level replaces the one below it, so it says more */
+  const grow = (name, key, sum, ls) => { const ws = [words(sum), ...ls.map(words)];
+    for (let i = 1; i < ws.length; i++) if (ws[i] <= ws[i - 1])
+      say("grow " + key + i, "depth: " + name + " " + LEVEL[i] + " is not longer than its " + LEVEL[i - 1] + " (" + ws[i] + " words against " + ws[i - 1] + "): each level is a fuller rendition of the one below it"); };
+  for (const k in PART) grow(PART[k], k, summary[k], levelsOf(c, k));
+  for (const o of c.o) grow("(" + o[0] + ")'s text", "o" + o[0], o[1], optLevels(c, o[0]));
+  /* the 198 sizes, at the top level: Background ~150, each option ~60-120, Evidence ~150, a card ~600-900.
+     Levels scale with the decision (201): a part with none may stay short, so thin is linted only where
+     the writer gave levels; long is linted everywhere */
+  const bg = words(topOf(c.why, levelsOf(c, "why"))) + words(topOf(c.whyask, levelsOf(c, "whyask")));
+  const bgLv = levelsOf(c, "why").length + levelsOf(c, "whyask").length > 0;
+  if (bgLv && bg < 60) say("bg", "depth: Background is " + bg + " words at its fullest: write Why now and Why ask near 150 together, from the record and the work behind it, or leave it knowingly; never pad");
+  else if (bg > 225) say("bg", "depth: Background is " + bg + " words at its fullest: keep Why now and Why ask near 150 together");
+  let optWords = 0;
+  for (const o of c.o) {
+    const k = o[0], top = words(topOf(o[1], optLevels(c, k))), r = row(c, k);
+    if (k === "z") { optWords += top + words(o[2]); continue; }
+    if (!r && !c.warn) say("row " + k, "depth: (" + k + ") has no blocks row: give it happens, who, undo and cost");
+    const ow = top + (r ? words([r.happens, r.who, r.undo, r.cost]) : 0);
+    optWords += ow + words(o[2]);
+    if (optLevels(c, k).length && ow < 30) say("opt " + k, "depth: (" + k + ")'s detail is " + ow + " words (its fullest text and its blocks row): write it near 60–120, what happens, undo, who and cost, from the sources; or leave it knowingly");
+    else if (ow > 180) say("opt " + k, "depth: (" + k + ")'s detail is " + ow + " words (its fullest text and its blocks row): keep it near 60–120");
+  }
+  const ev = words(topOf(c.evidence, levelsOf(c, "evidence")));
+  if (levelsOf(c, "evidence").length && c.basis !== "none" && ev < 60) say("ev", "depth: evidence is " + ev + " words at its fullest: give the basis drill-down near 150, what was observed, inferred and assumed, with the paths and links behind each; or leave it knowingly");
+  else if (ev > 225) say("ev", "depth: evidence is " + ev + " words at its fullest: keep it near 150");
+  /* the card in all: the flat part and Context at their summary, the fold parts at their top level, each option's impact; not act */
+  const all = words(flat(c)) + words(c.context) + bg + ev + optWords;
+  if (all > 1350) say("all", "depth: the card is " + all + " words in all: keep it near 600–900; a small call gets a short card");
+  if (c.detail && typeof c.detail === "object")
+    for (const k of Object.keys(c.detail)) if (!(k in PART) && k !== "o")
+      say("key " + k, "depth: detail." + k + " is not a part the page shows, so it is ignored: the parts are " + Object.keys(PART).join(", ") + " and o");
+}
+
 function lint(d) {
   const out = [];
   for (const c of d.cards) {
@@ -71,16 +128,25 @@ function lint(d) {
     const ctx = c.context + (hasWhat ? " " + c.what : "");
     const ctxIds = new Set(ids(ctx)), ctxNums = new Set(counts(ctx).map(x => x.n)), ctxLow = ctx.toLowerCase();
     const seen = new Set(), say = (key, line) => { if (!seen.has(key)) { seen.add(key); out.push(w + line); } };
-    const fields = flat(c);
-    for (const s of fields) for (const t of ids(s)) if (!ctxIds.has(t))
-      say("id " + t, t + " is not introduced in its context: say in plain words what it is, the id after the words; or leave it if a reader of this page knows it");
-    for (const s of fields) for (const x of counts(s)) if (!ctxNums.has(x.n))
-      say("count " + x.n, "\"" + x.word + "\" counts things its context does not name: say what the " + x.word + " things are, or list them, in context");
-    for (const s of fields) for (const t of named(s)) if (!ctxLow.includes(t))
-      say("named " + t, "\"" + t + "\" is not glossed in its context: give it a one-line gloss in context, what it is and where it comes from");
+    /* the terms a text uses, against Context's summary; at is "" for the flat part, or " (part, level)" */
+    const terms = (fields, at) => {
+      for (const s of fields) for (const t of ids(s)) if (!ctxIds.has(t))
+        say("id " + t, t + at + " is not introduced in its context: say in plain words what it is, the id after the words; or leave it if a reader of this page knows it");
+      for (const s of fields) for (const x of counts(s)) if (!ctxNums.has(x.n))
+        say("count " + x.n, "\"" + x.word + "\"" + at + " counts things its context does not name: say what the " + x.word + " things are, or list them, in context");
+      for (const s of fields) for (const t of named(s)) if (!ctxLow.includes(t))
+        say("named " + t, "\"" + t + "\"" + at + " is not glossed in its context: give it a one-line gloss in context, what it is and where it comes from");
+    };
+    terms(flat(c), "");
     c.tldr.forEach((b, i) => { if (REC_BROAD.test(b))
       say("tldr " + i, "tldr bullet " + (i + 1) + " may carry the recommendation: the options mark it; say what is decided instead, or leave it if it reports someone else's"); });
+    /* the visible parts' medium and high: each steps alone, so the Context beside them may be its summary */
+    const flatText = x => Array.isArray(x) ? x.flatMap(flatText) : x && typeof x === "object" ? Object.values(x).flatMap(flatText) : typeof x === "string" ? [x] : [];
+    for (const k of ["impact", "tldr", "rec"]) levelsOf(c, k).forEach((r, i) => terms(flatText(r), " (" + PART[k] + ", " + DETAIL_NAME[i] + ")"));
+    levelsOf(c, "tldr").forEach((bs, m) => Array.isArray(bs) && bs.forEach((b, i) => { if (REC_BROAD.test(b))
+      say("tldr " + m + "." + i, "tldr bullet " + (i + 1) + " (" + DETAIL_NAME[m] + ") may carry the recommendation: the options mark it; say what is decided instead, or leave it if it reports someone else's"); }));
     if (hasWhat) say("what", "what present: move it into context (after the terms, before the cue) and delete it");
+    depth(c, say);
   }
   return out;
 }
