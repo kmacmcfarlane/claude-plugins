@@ -77,6 +77,13 @@ ALLOWED = {
      "re-enter it first with `/dev-flow:librarian-mode start`"): "fixture skill name",
     ("context-guard/hooks/tests/test_window_mirror.py", "dev-flow",
      'self.warn("/dev-flow:librarian-mode")'): "fixture skill name",
+    # context-guard: the bare-/checkpoint scan's list of files it must see (item aebc).
+    ("context-guard/hooks/tests/test_checkpoint_namespaced.py", "dev-flow",
+     '"plugins/dev-flow/skills/librarian-mode/SKILL.md",'):
+        "a repo scan's list of files it guards, not a use",
+    ("context-guard/hooks/tests/test_checkpoint_namespaced.py", "statusline",
+     '"plugins/statusline/settings.json",'):
+        "a repo scan's list of files it guards, not a use",
     # kit-dev: install advice and a who-calls credit, needed by nothing (72ef KD-4, KD-6).
     ("kit-dev/skills/new-project-from-template/SKILL.md", "work-items",
      "usually means `dev-flow`, `work-items`, `sandbox`"): "install advice",
@@ -285,8 +292,13 @@ def tables(source, names):
 
 
 def line_refs(source, rel, n, line, table):
-    return [(source, target, rel, n, kind, line.strip())
-            for target, kind, rx in table if rx.search(line)]
+    """One finding per target on the line (the first marker kind that hits), so a line
+    naming a target twice, or by two markers, is reported once."""
+    out = {}
+    for target, kind, rx in table:
+        if target not in out and rx.search(line):
+            out[target] = (source, target, rel, n, kind, line.strip())
+    return list(out.values())
 
 
 def references():
@@ -372,31 +384,47 @@ class DeclaredEdges(unittest.TestCase):
             with self.subTest(key=key):
                 self.assertIn(key, live, f"{key} matches nothing now; remove its entry")
 
-    def failing(self, rel, line):
+    # The probes write from sandbox, which declares no plugin edge (only the external
+    # claude-sandbox repo), so a later declaration elsewhere cannot make them pass vacuously.
+    PROBE = "sandbox/skills/sandbox/SKILL.md"
+    PROBE_EXCUSES = {**EXCUSES, (PROBE, "dev-flow", "an excused `/dev-cycle` line"): "probe"}
+
+    def failing(self, rel, line, table=None):
         """The targets a new line in plugins/<rel> would fail the lint for."""
         source = rel.split("/", 1)[0]
         refs = line_refs(source, rel, 0, line, tables(source, plugin_names())[is_code(rel)])
-        return sorted({f[1] for f in undeclared(refs) if not excused(f, EXCUSES)})
+        table = EXCUSES if table is None else table
+        return sorted({f[1] for f in undeclared(refs) if not excused(f, table)})
 
-    def test_probe_a_slash_skill_in_a_kit_dev_skill_fails(self):
-        self.assertEqual(self.failing("kit-dev/skills/create-skill/SKILL.md",
-                                      "then run `/dev-cycle` on it"), ["dev-flow"])
+    def test_the_probe_plugin_declares_no_edge(self):
+        cells, cache = catalog_cells(), {}
+        for target in plugin_names():
+            if target != "sandbox":
+                self.assertEqual(declared("sandbox", target, cache, cells), (False, False),
+                                 f"sandbox now declares {target}; move the probes")
 
-    def test_probe_a_new_line_in_an_allowed_file_fails(self):
-        # update-kit/SKILL.md has an ALLOWED dev-flow line; it does not cover a new one.
-        self.assertEqual(self.failing("kit-dev/skills/update-kit/SKILL.md",
-                                      "then run `/dev-flow:dev-cycle` on it"), ["dev-flow"])
+    def test_probe_a_slash_skill_fails(self):
+        self.assertEqual(self.failing(self.PROBE, "then run `/dev-cycle` on it"), ["dev-flow"])
+        self.assertEqual(self.failing(self.PROBE, "then run /dev-cycle on it"), ["dev-flow"])
 
-    def test_probe_the_allowed_line_itself_passes(self):
-        self.assertEqual(self.failing(
-            "kit-dev/skills/update-kit/SKILL.md",
-            "or the retrospective step of `investigate` / `implement`. Do all of it"), [])
+    def test_probe_a_new_line_in_an_excused_file_fails(self):
+        # The file has an excused dev-flow line; it does not cover a new one.
+        self.assertEqual(self.failing(self.PROBE, "then run `/dev-flow:dev-cycle` on it",
+                                      self.PROBE_EXCUSES), ["dev-flow"])
+
+    def test_probe_the_excused_line_itself_passes(self):
+        self.assertEqual(self.failing(self.PROBE, "see an excused `/dev-cycle` line here",
+                                      self.PROBE_EXCUSES), [])
 
     def test_probe_a_path_built_in_code_fails(self):
-        self.assertEqual(self.failing("kit-dev/skills/update-kit/scripts/x.py",
-                                      'HOMES = ("work-items-",)'), ["work-items"])
-        self.assertEqual(self.failing("kit-dev/tests/test_x.py",
+        self.assertEqual(self.failing("sandbox/hooks/x.py", 'HOMES = ("work-items-",)'),
+                         ["work-items"])
+        self.assertEqual(self.failing("sandbox/hooks/tests/test_x.py",
                                       'HOMES = ("work-items-",)'), [])
+
+    def test_findings_are_unique_by_file_line_and_target(self):
+        keys = [(f[2], f[3], f[1]) for f in self.found]
+        self.assertEqual(len(keys), len(set(keys)))
 
 
 class Markers(unittest.TestCase):
