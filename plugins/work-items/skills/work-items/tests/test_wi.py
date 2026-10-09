@@ -3240,16 +3240,167 @@ class TestLint(WiTestCase):
                 self.assertNotIn("probe-3333", r.stdout)
                 self.assertEqual(r.returncode, 0, r.stdout)
 
+    def test_camel_compound_and_header_secrets_caught(self):
+        # ac83: camelCase colon keys, a secret word inside a longer key in
+        # colon forms, an Authorization header, $-led values that are no
+        # whole-value placeholder, the pass suffix, a spaced call argument
+        v = self.SHAPE_FAKE
+        shapes = {
+            "camel colon secret": "clientSecret: " + v,
+            "camel colon password": "- 2026-10-09 dbPassword: " + v,
+            "pascal colon": "ClientSecret: " + v,
+            "camel colon quoted": 'apiKey: "' + v + '"',
+            "camel assignment": "apiToken=" + v,
+            "snake colon api_secret": "api_secret: " + v,
+            "snake colon secret_key": "secret_key: " + v,
+            "snake colon db_password": "db_password: " + v,
+            "bearer header": "Authorization: Bearer " + v,
+            "bearer lowercase": "authorization: bearer " + v,
+            "bearer in curl": '-H "Authorization: Bearer ' + self.FAKE_JWT + '"',
+            "basic header": "Authorization: Basic " + self.FAKE_B64,
+            "bcrypt-like": "db_pass=$2b$12$" + "fakefake" * 3,
+            "dollar inside": "DB_PASS: $FAKE" + "+" + v,
+            "brace-led json": "db_pass={" + v + "}x",
+            "pass suffix": "dbpass=" + self.FAKE_HEX,
+            "passphrase camel": "userPassphrase: " + v,
+            "passcode": "passcode=" + "fakefake12",
+            "spaced second argument": "api_token: auth(user, " + v + ")",
+            "spaced, two spaces": "db_pass = mk(u,  " + v + ")",
+            # fix round 1: nested calls are read to the matching bracket
+            "nested call, quoted literal":
+                'api_key = client(region, cfg(x), "' + v + '")',
+            "nested call, middle": "token = f(a, g(b), " + v + ")",
+            "nested call, first": "token = f(g(a), " + v + ")",
+            # a meta key holding a secret word still flags a hex or symbol value
+            "meta ref, hex": "secret_ref: " + self.FAKE_HEX,
+            "meta var, symbols": "password_var: fake!pw@" + "123x",
+            "meta env var, symbols": "API_TOKEN_VAR: fake!pw@" + "123x",
+            "meta json, hex": '{"secret_name": "' + self.FAKE_HEX + '"}',
+            "meta flag, hex": "--token-type=" + self.FAKE_HEX,
+            "meta file, hex": "auth_token_file = " + self.FAKE_HEX,
+            # acronym-led PascalCase colon keys
+            "acronym JWTSecret": "JWTSecret: " + v,
+            "acronym AWSSecretKey": "AWSSecretKey: " + v,
+            "acronym HTTPAuthToken": "HTTPAuthToken: " + v,
+            # fix round 2: digit-bearing camelCase keys
+            "camel db2Password": "db2Password: " + v,
+            "camel s3SecretKey": "s3SecretKey: " + v,
+            "camel oauth2Token": "oauth2Token: " + v,
+            "camel k8sToken": "k8sToken: " + v,
+            # fix round 2: credential-shaped values under a meta key
+            "meta ref, uuid": "secret_ref: " + "-".join(
+                ("fa4e1234", "5678", "9abc", "def0", "123456789abc")),
+            "meta ref, digit run": "secret_ref: " + "12341234123412",
+            "meta hint, short alnum": "password_hint: " + "fake12ab",
+            "meta type, mixed-case letters": "token_type: " + "FakeXyzAbcQweRtyUioP",
+            "meta name, alnum": "api_key_name: " + "fake1fake2x",
+            "meta file, long lowercase run": "token_file: " + "fake" * 5,
+            # finish round: a UUID whose first group reads as a word, and
+            # 16+ capitals, are no names
+            "meta ref, uuid led by letters": "secret_ref: " + "-".join(
+                ("deadbeef", "1234", "4abc", "8def", "0123456789ab")),
+            "meta name, long capitals": "aws_key_name: AKIA" + "QWERTYUIOPASDFGH",
+            # $-led values under a bare lowercase key (the KV rule)
+            "bare key, bcrypt-like": "password: $2b$12$" + "fakefake" * 3,
+            "bare key, $ then more": "secret: $FAKEabc+1" + "xyz",
+            # Authorization after = or =>, the credential quoted
+            "auth assignment quoted": 'authorization = "Bearer ' + v + '"',
+            "auth fat arrow": '"authorization" => "Bearer ' + v + '"',
+            "auth colon, quoted scheme": 'Authorization: "Bearer ' + v + '"',
+        }
+        for name, line in shapes.items():
+            with self.subTest(shape=name):
+                self.assertTrue(wi.secret_findings(line), line)
+        r = self.lint_notes("clientSecret: " + v,
+                            "Authorization: Bearer " + v)
+        self.assertEqual(r.returncode, 3, r.stdout)
+        self.assertIn("likely secret value", r.stdout)
+        self.assertNotIn(v, r.stdout + r.stderr)
+
+    def test_camel_compound_and_header_look_alikes_stay_clean(self):
+        look_alikes = {
+            "bearer placeholder": "Authorization: Bearer <token>",
+            "bearer var": "Authorization: Bearer $TOKEN",
+            "bearer braced var": "Authorization: Bearer ${TOKEN}",
+            "bearer ellipsis": "Authorization: Bearer …",
+            "bearer dots": 'curl -H "Authorization: Bearer ..."',
+            "bearer masked": "Authorization: Bearer ****************",
+            "bearer x run": "Authorization: Bearer XXXXXXXXXXXXXXXXXXXX",
+            "bearer prose": "Authorization: Bearer authentication is used",
+            "bearer short": "Authorization: Bearer abc",
+            "bearer prose quoted": '(see "Authorization: Bearer authentication").',
+            "call of spaced strings": 'auth_note = fmt("needs a", "reviewer here")',
+            "spaced call of short names": "key = dedupe_key(message, obj)",
+            "camel prose key": "GitHub: the remote holds the mirror2026",
+            "camel no secret word": "nextStep: fake0fake1fake2fakeXYZ",
+            "whole $NAME": "db_pass=$DB_PASS",
+            "whole ${NAME}": "db_pass=${DB_PASS}",
+            "whole {name}": "db_pass={db_pass}",
+            "actions template": "api_token: ${{ secrets.API_TOKEN }}",
+            "jinja template": "db_password: {{ vault_db_password }}",
+            "command substitution": "db_pass=$(pass show db)",
+            "passthrough": "passthrough=" + self.FAKE_HEX,
+            "bypass camel": "cacheBypass: " + self.FAKE_HEX,
+            "trespass": "trespass=" + self.FAKE_HEX,
+            "password policy": "password_policy: strict-length-rules",
+            # fix round 2: names, words and paths a meta key holds
+            "meta urn": "token_type: urn:ietf:params:oauth:token-type:jwt",
+            "meta identifier": "token_type: ClientCredentials",
+            "meta env-var name": "TOKEN_VAR: GITHUB_TOKEN",
+            "meta long env-var name": "TOKEN_VAR: MY_SERVICE_API_TOKEN_V2",
+            "meta $HOME path": "token_file: $HOME/.config/gh/token",
+            "meta home path": "token_file: ~/.config/gh/hosts.yml",
+            "meta k8s-style name": "secret_name: default-token-x7k2m",
+            "meta attribute": "token_file: cfg.token",
+            "token file": "token_file: fake-secrets-store",
+            "secret name": "secret_name: prod-db-creds",
+            "call of short names": "api_token = get_token(user, scope)",
+            "call of a subscript": "api_token: f(user, os.environ['API_KEY'])",
+            # fix round 1
+            "nested call of short names": "token = f(a, g(b), c)",
+            "meta type, a word": "token_type: bearer",
+            "meta mode, a word": "auth_mode: interactive",
+            "meta hint, prose": "password_hint: the usual one",
+            "OAuth prose": "OAuth: " + self.SHAPE_FAKE,
+            "Token prose": "Token: unavailable",
+            "GitHub prose": "GitHub: " + self.SHAPE_FAKE,
+            "nextStep prose": "nextStep: " + self.SHAPE_FAKE,
+            "bare key, $NAME": "password: $DB_PASSWORD_VALUE",
+            "bare key, ${NAME}": "token: ${API_TOKEN}",
+            "bare key, $(command)": "secret: $(cat /run/fake)",
+            "bare key, <value>": "password: <value>",
+            "bare key, $NAME.": "token: $GITHUB_TOKEN.",
+            "auth comparison": "authorization == Bearer " + self.SHAPE_FAKE,
+            "multipass": "multipass=" + self.FAKE_HEX,
+            "renderpass": "renderpass=" + self.FAKE_HEX,
+            "subpass": "subpass: " + self.FAKE_HEX,
+        }
+        for name, line in look_alikes.items():
+            with self.subTest(shape=name):
+                self.assertEqual(wi.secret_findings(line), [], line)
+
     def test_secret_scan_of_a_long_line_of_pairs_is_linear(self):
         # a 1M-character line of repeated aaa= is 250000 pairs; each pair
         # reads a bounded slice of the line, so this takes about a second
         # (it took tens of seconds while each pair copied the rest of the
-        # line); the bound leaves room for a loaded machine
-        for line in ("aaa=" * 250000, "aaa=*" * 200000):
+        # line); the bound leaves room for a loaded machine. The camel
+        # colon keys, unclosed calls and Authorization headers (ac83) read
+        # the same bounded slice.
+        for line in ("aaa=" * 250000, "aaa=*" * 200000,
+                     "dbPassword: f(a, " * 60000,
+                     "Authorization: Bearer x " * 40000,
+                     "aB:" * 300000,
+                     "token = f(" + "g(a)," * 200000):
             with self.subTest(line=line[:5]):
                 start = time.perf_counter()
                 self.assertEqual(wi.secret_findings(line), [])
                 self.assertLess(time.perf_counter() - start, 5.0)
+        # an unclosed nest of calls flags (an unclosed call under a
+        # secret-word key is no code), and the bracket match stays inside
+        # the bounded slice, so it is as fast
+        start = time.perf_counter()
+        self.assertTrue(wi.secret_findings("token = " + "f(" * 1000000))
+        self.assertLess(time.perf_counter() - start, 5.0)
 
     def test_conflict_markers_flagged(self):
         (self.root / "items" / "conflicted-0000.md").write_text(
