@@ -30,3 +30,4 @@ dispatch: implementer opus medium — build
 agent: implementer aac8fa75aac1fadce
 return: DONE ec38341; 12/12 Checks OK; judgement: claim approved inside G1, F0 writes it; Scope line drops none; a G3 re-read line added beyond acceptance; hint shaped like claim-md and factor-analysis
 dispatch: reviewer opus high — review round 1 of ec38341
+agent: reviewer ae00bc0c31c8b8e3e
