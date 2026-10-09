@@ -77,7 +77,9 @@ Who approves which gate (operator decision 195, answered (a) on 2026-10-09):
 | G3 the plan | always, since it files work | — |
 
 A G2 with no one-way ADR and no claim change passes on the reviewer's `CLEAR` and is
-reported to the operator in the Report, not asked.
+reported to the operator in the Report, not asked. The G3 decision then carries a short
+architecture summary (the strategy bullets, the ADRs and the H risks, a few lines), so the
+operator has read the architecture before approving the plan built on it.
 
 **The decision**, one per gate, put to the operator per the `operator-interaction:decisions`
 skill when the session lists it, else as a plain lettered list in prose:
@@ -95,7 +97,9 @@ Assumptions ("Gate G1 approved by the operator <YYYY-MM-DD>"), and in `INDEX.md`
 Foundation block (`references/state.md`). G3 has no next serial: its approval is the
 item's `answer N:` line, and a standalone run also writes it into the Foundation block when
 it regenerates `INDEX.md`. Under an orchestrator, which writes nothing in the series, the
-block keeps the gate's `CLEAR` and the item's line is the record.
+block keeps the gate's `CLEAR` and the item's line is the record: a done foundation item,
+or that `answer N:` line, marks gate G3 passed (`references/state.md` § The Foundation
+block).
 
 **Unattended runs.** Requirements belong to the operator, so an unattended run drafts phase 1
 with every question held and stops at gate G1. It never approves a gate itself.

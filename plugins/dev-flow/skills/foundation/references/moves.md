@@ -48,7 +48,9 @@ of how big the change feels.
    re-ran (`references/state.md`).
 
 A reopen after gate G3, once features are filed, is the same procedure; the features its
-impact list names are the ones to revise, and `F0` re-runs so the living docs follow.
+impact list names are the ones to revise, and `F0`'s re-run is filed as a new item under
+the foundation item, by `dev-cycle` or the standalone session, so the living docs follow
+(`references/state.md` § The work item).
 Raising one from inside a feature's build is done by hand, by the operator or a session
 that sees the finding; dev-cycle's build does not raise it on its own.
 

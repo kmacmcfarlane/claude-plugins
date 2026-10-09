@@ -91,21 +91,23 @@ Draft the phase-2 artifacts: context and containers, solution strategy, traceabi
 contracts and the threat and privacy model (or their one-line skips), an ADR for each one-way
 decision, risks with a spike for each H risk the design cannot retire. Research for a vendor
 or protocol fact; a probe-ahead spike for a risk only building answers. Write
-`01_architecture.md`, regenerate the index, then **gate G2**.
+the architecture serial at the next free number (`NN_architecture.md`, `references/state.md`
+§ The series), regenerate the index, then **gate G2**.
 
 ## Step 3 — Phased plan
 
 Features with acceptance traced to ids, a test plan and deps: `F0` (land the view) first,
 then a walking skeleton. A roadmap when there is more than one horizon; the factored-out
-table. Write `02_plan.md` with an **Implementation Approach** holding the Features table, so
-`implement` and `dev-cycle` accept the series. Regenerate the index, then **gate G3**.
+table. Write the plan serial (`NN_plan.md`) with an **Implementation Approach** holding the
+Features table, so `implement` and `dev-cycle` accept the series. Regenerate the index, then
+**gate G3**.
 
 ## Step 4 — File the work
 
-After the operator approves gate G3, with a store: file each feature as an item under the
-foundation item, with its deps; a feature a hold blocks goes to `wi groom`; then close the
-foundation item (`references/state.md` § The work item). Without a store, the Report lists
-the features to file.
+After the operator approves gate G3, with a store: file the features, groom the ones a hold
+blocks, file the factored-out aspects still unfiled, and close the foundation item, exactly
+as `references/state.md` § The work item says. Without a store, the Report lists the
+features to file.
 
 ## Step 5 — Report
 
@@ -137,7 +139,8 @@ Every gate has three parts, in order (`references/gates.md`):
    stated requirements). The fix loop and its cap are the `dev-cycle` skill's
    `references/fix-loop.md` and its SKILL.md § Step 4.3; each revision is a new serial.
 3. **The operator's approval**: gate G1 always; gate G2 only for a one-way ADR or a change
-   to the repo's `CLAIM.md`, the rest reported; gate G3 always. One decision per gate:
+   to the repo's `CLAIM.md`, the rest reported; gate G3 always, with a short architecture
+   summary when G2 was reported. One decision per gate:
    approve, approve with holds, revise, reopen an earlier phase, or decide later.
 
 A gate after a reopen runs on the delta only. The lite size runs one gate: G3's checklist,
@@ -166,8 +169,10 @@ says, with these changes:
   plan review is the gate's review).
 - Ask nothing. Each question you would ask is an Open Question marked blocking or not;
   the prompt list still runs, its unanswered prompts held.
-- The brief carries the operator's answer to the previous gate; record it in the serial's
-  Confirmed Assumptions and in the Foundation block's Approved cell.
+- From the second phase on, the brief carries the previous gate's verdict, its `CLEAR`
+  round, and whether it was approved (with the answer) or reported; record them in the
+  serial's Confirmed Assumptions and in that gate's row of the Foundation block
+  (`references/state.md` § The Foundation block).
 - Fill the Foundation block's Operator cell for this gate (`references/gates.md` § 3), so
   the orchestrator knows whether to ask.
 - A fix round, or a reopen the brief names, is a new serial with a `Supersedes` block.

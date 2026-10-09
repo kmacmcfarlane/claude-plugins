@@ -262,21 +262,23 @@ Series home binding and the Base:
 Run /dev-flow:foundation <slug> <phase> in its orchestrated mode — <phase> is
 requirements, architecture, plan, or all for a lite run. One phase only: write its serial
 and regenerate INDEX.md with its Foundation block, at the Series home.
-<from the second phase on:> The operator's answer to gate <G1|G2>: <the recorded answer,
-verbatim, with its date>. Record it in the serial's Confirmed Assumptions and in the
-Foundation block's Approved cell.
+<from the second phase on:> The previous gate, <G1|G2>: verdict CLEAR at review round
+<n>; <approved by the operator <YYYY-MM-DD>: <the recorded answer, verbatim> | reported,
+not asked (no one-way ADR, no claim change)>. Record it in the serial's Confirmed
+Assumptions and in the Foundation block's row for that gate: its Gate cell
+(CLEAR round <n>), Operator cell and Approved cell.
 <a revise or reopen answer:> The operator asked to <revise | reopen <phase>>: <their words,
 verbatim>. Write it as the next serial (a reopen as NN_reopen-<what>.md, with its impact
 list) per that skill's references/moves.md.
 ```
 
 The dispatch that opens a gate's phase — each phase's first dispatch, and the one an
-operator's revise or reopen answer opens — carries the signal `foundation <phase>`
-(`dispatch: planner opus high — foundation architecture`); a fix round inside the gate
-writes its usual line (`— resume`, or its routing signal on a fresh re-dispatch), never
-that signal. ROUNDS counts each gate's reviews from that line (`resume.md` § The
-reduction). The report shape, the prohibitions and the fix-round rules are the Plan
-variant's, unchanged.
+operator's revise or reopen answer opens — adds `foundation <phase>` to its signal,
+combined with any routing signal and never replacing one (`dispatch: planner opus xhigh —
+foundation architecture; effort pin`); a fix round inside the gate writes its usual line
+(`— resume`, or its routing signal on a fresh re-dispatch). The reviews of every phase
+count toward the run's one cap (`resume.md` § The reduction, ROUNDS). The report shape,
+the prohibitions and the fix-round rules are the Plan variant's, unchanged.
 
 ## Review-mode fix variant
 

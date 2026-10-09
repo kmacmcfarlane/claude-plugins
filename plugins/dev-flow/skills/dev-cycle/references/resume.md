@@ -81,10 +81,7 @@ words. `<workspace>` below is that line's third field.
      `target:` line, or the whole record when it has none — the `verdict:` lines whose
      verdict is `CLEAR`, `NEEDS_CHANGES` or `SHOW_STOPPER` (never `BLOCKED`), minus one
      when the most recent `CLEAR` satisfies fresh(). A plan's verdicts never count in its
-     build. An answered waiver never changes the count. A foundation run counts each
-     gate's reviews on their own: from the last `dispatch: planner … — foundation <phase>`
-     line when it comes after that `target:` line (`agent-brief.md` § Foundation plan
-     variant).
+     build. An answered waiver never changes the count.
    - **CAP** — `UNDER` | `AT_CAP`: `AT_CAP` when ROUNDS ≥ 4, or when the phase's spend,
      read now as `bindings.md` § Spend budget's check reads it (read-only: resume writes
      no `cost:` or `budget:` line), is at or over the amount in force and no fresh
@@ -227,7 +224,7 @@ carried` block recorded after the last verdict means Step 4.3 already ran: take 
 | verdict | FRESH | CAP | State | The single next action |
 |---|---|---|---|---|
 | `BLOCKED` | — | — | **S12** | RETRIES < 3 and reason `setup` → re-dispatch the reviewer with the setup fixed and VARIANT; not a round. Otherwise `$WI block` when there is an item, then GATE, the blocked review. |
-| `CLEAR` | `CURRENT` | — | **S7** | `full`, `review`: SKILL.md § Step 5 (Land). `plan`: Step 1's after-`CLEAR` tail, its blocking open questions being the GATE's question, then Step 6. A foundation series (its `INDEX.md` carries a `## Foundation` block) at gate G1 or G2 takes Step 1's foundation bullet instead: the GATE's question is the gate decision, with the series' blocking open questions, when the block's Operator cell says `needed`, and those questions alone when it says `reported`; once it is `ANSWERED` (or `NONE` with nothing to ask), `$WI handoff <id>` when there is an item, and dispatch the next phase — never Step 6, and never `$WI done`. At gate G3 the GATE's question is the plan decision; `ANSWERED` with approval → file the features and close the item, then Step 6. A fable offer is raised there too, never gated on (`model-routing.md` § Fable cross-checks). |
+| `CLEAR` | `CURRENT` | — | **S7** | `full`, `review`: SKILL.md § Step 5 (Land). `plan`: Step 1's after-`CLEAR` tail, its blocking open questions being the GATE's question, then Step 6. A foundation series (its `INDEX.md` carries a `## Foundation` block) takes SKILL.md § Step 1's foundation bullet instead, the GATE's question being that bullet's gate decision: at gate G1 or G2 it never reaches Step 6 or `$WI done`; at gate G3 it ends as that bullet says. A done foundation item, or its G3 approval's `answer N:` line, means gate G3 has passed: nothing is reopened or re-filed. A fable offer is raised there too, never gated on (`model-routing.md` § Fable cross-checks). |
 | `CLEAR` | `STALE` | `UNDER` | **S8** | `spent:` first (§ The GATE); then Step 4 with VARIANT. When CAP is `UNDER` only because the reading is below 50% (spend at or over the amount in force), the round's spend check runs first, as S9's does, so the waiver's `decided:` line is written (`bindings.md` § Spend budget, The Done-alone line). |
 | `CLEAR` | `STALE` | `AT_CAP` | **S11** | `spent:` first; then GATE, the cap, naming the staleness. |
 | `NEEDS_CHANGES` | `CURRENT` | `UNDER` | **S9** | Open a fix round (its spend check first, `bindings.md` § Spend budget, which writes a `cost:` line a dead run left unwritten, `must-fix ?`): resume the producer its `agent:` line names, or dispatch one, with the verdict's own `findings:` block verbatim — never a `findings: cross-check` rider, which goes to the next review brief (`fix-loop.md` § A NEEDS_CHANGES round). In `review` mode, GATE on the dispatch permission first (below). |

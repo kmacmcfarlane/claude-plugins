@@ -83,7 +83,7 @@ Claim: CLAIM.md — <approved <date> | proposed | none (no claim skill installed
 |---|---|---|---|
 ```
 
-Phase 2, in `01_architecture.md`:
+Phase 2, in the architecture serial (`NN_architecture.md`):
 
 ```markdown
 ## Context and containers
@@ -111,14 +111,14 @@ Status: proposed | accepted <YYYY-MM-DD> | superseded by ADR-<nnnn>
 ## Consequences
 ```
 
-Phase 3, in `02_plan.md`, under its `Implementation Approach`:
+Phase 3, in the plan serial (`NN_plan.md`), under its `Implementation Approach`:
 
 ```markdown
 ## Features
 | Id | Feature | Serves | Acceptance | Test plan | Deps | Horizon |
 |---|---|---|---|---|---|---|
 | F0 | land the view: regenerate the living docs from the series | — | the docs match the approved serials | read against the series | — | now |
-| F1 | walking skeleton: <thinnest end-to-end slice> | R1, Q1 | … | … | F0 | now |
+| F1 | walking skeleton: <thinnest end-to-end slice> | R1, Q1 | … | … | — | now |
 ## Factored out
 | Aspect | Went to | Seam kept |
 |---|---|---|
