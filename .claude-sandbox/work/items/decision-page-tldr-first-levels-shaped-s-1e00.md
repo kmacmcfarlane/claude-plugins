@@ -31,3 +31,4 @@ agent: planner a6e96152cb104f1de
 return: DONE series 00_initial.md (TLDR/Context/Impact order; structured levels {t,sub}/{h,b}; shape lints; id lint everywhere; Impact one facet per line and across all options, rec-only-effect lint; carried findings; example 41/42 levelled, 43 none; OQ1-4 non-blocking)
 baseline: plan review 1 — 1ba05b50d8652ed812f7aad44aa5dc81e90c23a080b80976cb3964a7479796b4 .claude-sandbox/investigations/decision-page-tldr-first-levels-shaped-s-1e00/00_initial.md; a7a4b28579293fa2557b66167257d16f9bbed37580fc1eef99ef613e3671f721 .claude-sandbox/investigations/decision-page-tldr-first-levels-shaped-s-1e00/INDEX.md;
 dispatch: reviewer opus high — plan review 1, scratch scratchpad/1e00-review/
+agent: reviewer a5b03a613f38fa51a
