@@ -33,3 +33,4 @@ note: also from b9fb review 4: tighten placeholders to $NAME, ${NAME}, {name} (c
 return: DONE 8ca9a19 on worktree-agent-a15cd24ab91b0fc91; work-items 315 OK; real-store lint no secret findings; old vs new over ~198k lines: no new findings, two false positives gone; judgement calls: meta-word key suffixes (policy, file, name…), spaced call args never secret; not built: the note extras (YAML continuation, table rows, kebab keys, URL passwords, --password v)
 dispatch: reviewer opus high — review round 1 of 8ca9a19
 agent: reviewer a65548473809d61f9
+note: 2026-10-09 background security review flagged a possible secret-scanner bypass in wi.py (no details given); relayed to review round 1 as a bypass hunt; nothing lands until it is resolved
