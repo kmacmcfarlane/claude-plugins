@@ -57,8 +57,10 @@ In a working directory (your scratchpad unless the caller names one): copy
 text, so by default:
 
 - **One writer per page.** Write the page yourself, or hand it to one writer; a page too large
-  for one goes to one writer per large group of cards (a `layers` group or more), never one
-  per few cards. The shared reading (this step, the digest, the `decisions` floor) is then
+  for one goes to one writer per large group of cards (a `layers` group or more), never one per
+  few cards. A page is too large for one writer when its sources and its card text will not fit
+  in one writer's context beside the shared reading; card text alone is small (22 cards came to
+  about 27k tokens). The shared reading (this step, the digest, the `decisions` floor) is then
   paid once, or once per group.
 - **The digest, not the schema.** A writer reads `references/writer-digest.md` in place of the
   schema and `assets/cards.example.json`; the caller may paste the digest into the brief.
@@ -116,17 +118,17 @@ The rules below are what the digest condenses:
 - Every card carries `blocks`, its Impact table row per option but (z) (effect, reach, undo,
   and cost); a ⚠ one-way card is refused without them. A round ask carries `ifleft` and
   `roundcosts`; a status-quo default, `ifunanswered`.
-- Every card carries the depth the decisions skill's block holds, scaled to the decision, up
-  to the soft sizes (`references/cards-schema.md` § Size): Why now and Why ask in full, a
-  `blocks` row and a full text for every option but (z), and the basis drill-down in
+- Every card carries the depth the decisions skill's block holds, scaled to the decision, up to
+  the soft sizes (`references/writer-digest.md` § Levels and their shapes): Why now and Why ask
+  in full, a `blocks` row and a full text for every option but (z), and the basis drill-down in
   `evidence` with its paths and links. **Levels scale with the decision** and are optional on
   every part: a small call may carry none; a wide or one-way decision carries the most, a
   medium and a high in `detail` for its visible parts (Context, the Impact line, the TLDR, the
   rec line) and for the fold items with depth to give. **Each level has its shape**, each
-  clearly sparser than the next (`references/cards-schema.md` § A card, `detail`): a summary
-  is one or two sentences (the TLDR one or two bullets, the Impact one facet a line); medium
-  is terse fragment bullets with a sub-bullet or two, the Impact's one bullet per facet with
-  the options in its sub-bullets; high is headed sections with bullets and sub-bullets.
+  clearly sparser than the next (`references/writer-digest.md` § Levels and their shapes): a
+  summary is one or two sentences (the TLDR one or two bullets, the Impact one facet a line);
+  medium is terse fragment bullets with a sub-bullet or two, the Impact's one bullet per facet
+  with the options in its sub-bullets; high is headed sections with bullets and sub-bullets.
   Context's high, when there is one, holds the facts a cold reader has lost. Where a part has
   levels, its depth meets its size at its top level. Write it from the sources, not from the
   stored card alone:
@@ -144,13 +146,13 @@ The rules below are what the digest condenses:
   on** part in the `decisions` skill's `references/rendering.md` § Card gives them.
 - Every mention of another decision is a slug, `[[N]]`; a decision not on the page that a
   slug names gets a `refs` entry.
-- `follow` is copied from `assets/cards.example.json` as it stands.
-- Check before publishing that the file passes every check the schema lists (the page
-  refuses a file that fails one, and says which): whole-number `n`, single `a`–`z` letters in
-  order ending `z`, a `rec` among them or null with `norec`, a non-empty `rev`, a non-empty
-  `context`, an `impact` with its four facets, no TLDR bullet that carries the
-  recommendation, an `act` keyed by option letters other than `z`, each a non-empty list of
-  one-line steps with no fill-in placeholder, the required fields.
+- `follow` is copied from `references/writer-digest.md` § Top level as it stands.
+- Check before publishing that the file passes every refusal `references/writer-digest.md` §
+  The checks lists (the page refuses a file that fails one, and says which): whole-number `n`,
+  single `a`–`z` letters in order ending `z`, a `rec` among them or null with `norec`, a
+  non-empty `rev`, a non-empty `context`, an `impact` with its four facets, no TLDR bullet that
+  carries the recommendation, an `act` keyed by option letters other than `z`, each a non-empty
+  list of one-line steps with no fill-in placeholder, the required fields.
 - With node present, run the skill's `scripts/check_cards.js` (under its base directory) on
   the working copy's `cards.json`. Fix every refusal it prints. For an id, name the thing;
   for a count or a named thing, add the gloss to `context`; or leave the term knowingly. For
