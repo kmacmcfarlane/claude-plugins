@@ -1602,6 +1602,18 @@ class TestHandoffDoneArchive(WiTestCase):
         self.assertEqual((self.root / "items" / "ho-1111.md").read_text(), first)
         self.assertEqual(first.count("learned: SOURCE parses zero"), 2)  # handoff + note
 
+    def test_handoff_learned_dedupe_is_whole_line(self):
+        # A learned line that is a prefix of an existing one is still new.
+        self.write_item("ho-2222", status="doing", owner="tester@local",
+                        claimed="2026-08-30T10:00Z")
+        self.wi_ok(["handoff", "ho-2222", "--learned", "L10"])
+        self.wi_ok(["handoff", "ho-2222", "--learned", "L1"])
+        self.wi_ok(["handoff", "ho-2222", "--learned", "L1"])
+        notes = wi.load_item_anywhere(self.root, "ho-2222").section("Notes")
+        lines = notes.splitlines()
+        self.assertEqual(lines.count(f"- {wi.today()} learned: L10"), 1)
+        self.assertEqual(lines.count(f"- {wi.today()} learned: L1"), 1)
+
     def test_done_unblocks_dependents_and_archive_resolves(self):
         self.write_item("dep-1111")
         self.write_item("child-2222", deps=["dep-1111"])
