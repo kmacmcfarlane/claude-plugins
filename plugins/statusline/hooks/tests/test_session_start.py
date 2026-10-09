@@ -203,16 +203,17 @@ class HubMissing(Base):
         self.assertIn("/plugin install statusline@my-fork", self.said())
 
     def test_quiet_whenever_the_hub_may_be_there(self):
-        # The sibling statusline-hub plugin sits beside this one only in the source repo.
-        sibling = os.path.join(os.path.dirname(helpers.PLUGIN), "statusline-hub", "hooks")
-
         def live_hub():
-            if not os.path.isfile(os.path.join(sibling, "hub.py")):
-                self.skipTest("statusline-hub is not beside this plugin (not the source repo)")
+            # A stub hub.py stands in for the hub's hooks dir, so this runs with no sibling
+            # statusline-hub plugin present (kit-dev's standalone check runs it alone).
             self.records("statusline@k")
+            hooks = os.path.join(self.cfg, "stub-hub-hooks")
+            os.makedirs(hooks)
+            with open(os.path.join(hooks, "hub.py"), "w") as f:
+                f.write("")
             d = os.path.join(self.cfg, "plugins", "data", "statusline-hub-kmacmcfarlane")
             os.makedirs(d)
-            os.symlink(sibling, os.path.join(d, "current-hooks"))
+            os.symlink(hooks, os.path.join(d, "current-hooks"))
 
         cases = {
             "no install records": lambda: None,
