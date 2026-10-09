@@ -33,3 +33,4 @@ decided: 2026-10-09T10:07Z design — heal is guarded the same way as takeover o
 dispatch: implementer opus medium — fix round 1 (resume a428d65ba07fb6f87)
 return: DONE 71c8e7f (heal guarded on both restores; --project records scope and is told to rerun --project; message leads with --local and removing the dead entry; git timeout waits; GIT_* stripped in tests; docs; tracked checked first; 11/11 Checks)
 dispatch: reviewer opus high — review round 2 (resume a327c87bd6419153b)
+agent: reviewer a327c87bd6419153b (round 2)
