@@ -25,6 +25,8 @@ class Base(helpers.Hermetic):
         self.proj = os.path.join(self.cfg, "proj")
         os.makedirs(self.proj)
         self.env["CLAUDE_PROJECT_DIR"] = self.proj
+        for k in [k for k in self.env if k.startswith("GIT_")]:
+            self.env.pop(k)   # an outer repo's GIT_DIR would answer for the temp repos
         self.user = os.path.join(self.cfg, "settings.json")
 
     def hook(self, sid="s1"):
@@ -218,7 +220,8 @@ class FirstRun(Base):
         self.assertNotIn("statusLine", self.load(shared))
 
     def test_project_local_not_ignored_by_git_is_blocked(self):
-        subprocess.run(["git", "init", "-q", self.proj], check=True)
+        subprocess.run(["git", "init", "-q", self.proj], check=True, env=self.env,
+                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         self.write_json(self.user, {})
         self.write_json(os.path.join(self.proj, ".claude", "settings.json"), HUB_ON)
         self.assertIn("is not git-ignored", self.said())
@@ -242,6 +245,148 @@ class FirstRun(Base):
         os.chmod(self.user, 0o444)
         self.assertIn("is read-only", self.said())
         self.assertNotIn("statusLine", self.load())
+
+
+class TrackedProjectSettings(Base):
+    """A footer entry in a project's .claude/settings.json (the old
+    installer's --project): when git tracks that file the hub refuses to put
+    its machine-specific absolute path there and leaves the file as it is;
+    an untracked one, and the user settings file even when tracked, are
+    taken as before."""
+    HUB_ONLY_RECORDS = {"version": 2, "plugins": {"statusline-hub@kmacmcfarlane": [
+        {"scope": "user", "installPath": "/x/statusline-hub"}]}}
+
+    def setUp(self):
+        super().setUp()
+        self.shared = os.path.join(self.proj, ".claude", "settings.json")
+        self.write_json(self.user, {})
+        self.write_json(os.path.join(self.cfg, "plugins", "installed_plugins.json"),
+                        self.HUB_ONLY_RECORDS)
+
+    def dead_copy(self):
+        """context-guard's older footer copy, its plugin gone (no data dir)."""
+        cg = os.path.join(self.cfg, "plugins", "data", "context-guard-kmacmcfarlane")
+        return {"type": "command",
+                "command": 'python3 "%s/current-hooks/statusline.py"' % cg}
+
+    def git(self, *args, repo=None):
+        subprocess.run(["git", "-C", repo or self.proj] + list(args), check=True,
+                       env=self.env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+    def taken_then_tracked(self):
+        """The hub's entry in the project's shared file (taken over while it
+        was untracked), and then the file committed."""
+        self.write_json(self.shared, dict(HUB_ON, statusLine=self.dead_copy()))
+        self.git("init", "-q")
+        self.assertIn("took over the status line slot", self.said())
+        self.git("add", ".claude/settings.json")
+
+    def test_a_dead_copy_in_a_tracked_project_file_is_refused(self):
+        self.write_json(self.shared, dict(HUB_ON, statusLine=self.dead_copy()))
+        self.git("init", "-q")
+        self.git("add", ".claude/settings.json")
+        before = self.raw(self.shared)
+        msg = self.said()
+        self.assertIn("is tracked by git", msg)
+        self.assertIn(self.shared, msg)
+        self.assertEqual(self.raw(self.shared), before)
+        self.assertEqual(self.marker()["state"], "blocked")
+        self.assertEqual(self.marker()["reason"], "tracked")
+        self.quiet()  # said once; retried quietly
+        self.assertEqual(self.raw(self.shared), before)
+
+    def test_a_footer_entry_in_a_tracked_project_file_is_not_taken_over(self):
+        self.write_json(self.shared, dict(HUB_ON, statusLine=self.sl_entry()))
+        self.sl_marker("installed", settings=self.shared)
+        self.sl_hooked()
+        self.git("init", "-q")
+        self.git("add", ".claude/settings.json")
+        before = self.raw(self.shared)
+        msg = self.said()
+        self.assertIn("is tracked by git", msg)
+        self.assertIn("/install-statusline-hub --local", msg)
+        self.assertEqual(self.raw(self.shared), before)
+        self.assertEqual(self.marker()["reason"], "tracked")
+        self.quiet()
+        self.assertEqual(self.raw(self.shared), before)
+
+    def test_a_force_added_local_file_is_named_as_tracked(self):
+        local = os.path.join(self.proj, ".claude", "settings.local.json")
+        self.write_json(self.shared, HUB_ON)
+        self.write_json(local, {})
+        self.git("init", "-q")
+        self.write_json(os.path.join(self.proj, ".gitignore"),
+                        raw=".claude/settings.local.json\n")
+        self.git("add", "-f", ".claude/settings.local.json")
+        before = self.raw(local)
+        self.assertIn("is tracked by git", self.said())
+        self.assertEqual(self.raw(local), before)
+        self.assertEqual(self.marker()["reason"], "tracked")
+
+    def test_heal_does_not_replace_a_committed_footer_entry_git_brings_back(self):
+        self.taken_then_tracked()
+        self.sl_hooked()
+        # e.g. a checkout of the team's commit puts the footer's entry back
+        self.write_json(self.shared, dict(HUB_ON, statusLine=self.sl_entry()))
+        before = self.raw(self.shared)
+        msg = self.said()
+        self.assertIn("is tracked by git", msg)
+        self.assertIn("not restored", msg)
+        self.assertEqual(self.raw(self.shared), before)
+        self.assertEqual(self.marker()["reason"], "tracked")
+        self.quiet()
+        self.assertEqual(self.raw(self.shared), before)
+
+    def test_heal_does_not_fight_a_git_revert_that_drops_the_entry(self):
+        self.taken_then_tracked()
+        self.write_json(self.shared, HUB_ON)   # the revert: no statusLine
+        before = self.raw(self.shared)
+        self.assertIn("is tracked by git", self.said())
+        for _ in range(2):
+            self.assertEqual(self.raw(self.shared), before)
+            self.quiet()
+        self.assertNotIn("statusLine", self.load(self.shared))
+
+    def test_heal_of_an_explicit_project_install_names_project(self):
+        self.write_json(self.shared, HUB_ON)
+        self.git("init", "-q")
+        self.git("add", ".claude/settings.json")
+        owner.write_marker(self.data, "installed", self.shared,
+                           owner.command_for(self.data), scope="project")
+        before = self.raw(self.shared)
+        msg = self.said()
+        self.assertIn("is tracked by git", msg)
+        self.assertIn("/install-statusline-hub --project again", msg)
+        self.assertEqual(self.raw(self.shared), before)
+
+    def test_a_git_timeout_waits_for_the_next_session(self):
+        fake = os.path.join(self.cfg, "bin")
+        os.makedirs(fake)
+        with open(os.path.join(fake, "git"), "w") as f:
+            f.write("#!/bin/sh\nsleep 10\n")
+        os.chmod(os.path.join(fake, "git"), 0o755)
+        self.write_json(self.shared, dict(HUB_ON, statusLine=self.dead_copy()))
+        before = self.raw(self.shared)
+        self.env["PATH"] = fake + os.pathsep + self.env.get("PATH", "")
+        self.quiet()
+        self.assertEqual(self.raw(self.shared), before)
+        self.assertIsNone(self.marker())
+
+    def test_a_dead_copy_in_an_untracked_project_file_is_taken(self):
+        self.write_json(self.shared, dict(HUB_ON, statusLine=self.dead_copy()))
+        self.git("init", "-q")  # a repo, the file not added
+        msg = self.said()
+        self.assertIn("took over the status line slot", msg)
+        self.assertEqual(self.load(self.shared)["statusLine"], self.own())
+        self.assertEqual(self.marker()["state"], "installed")
+
+    def test_a_dead_copy_in_a_tracked_user_settings_file_is_taken(self):
+        self.write_json(self.user, dict(HUB_ON, statusLine=self.dead_copy()))
+        self.git("init", "-q", repo=self.cfg)
+        self.git("add", "settings.json", repo=self.cfg)
+        msg = self.said()
+        self.assertIn("took over the status line slot", msg)
+        self.assertEqual(self.load()["statusLine"], self.own())
 
 
 class Heal(Base):

@@ -92,7 +92,17 @@ same (see owner.py):
 
 A settings file it must use but cannot - not valid JSON, read-only,
 unwritable, a project settings.local.json git does not ignore - makes the
-state `blocked`, said once with the fix; later sessions retry quietly.
+state `blocked`, said once with the fix; later sessions retry quietly. So
+does a project settings file git tracks (a team-shared .claude/settings.json,
+where the old installer's --project put a footer entry): taking over the
+footer's entry there would commit the hub's absolute path on this machine,
+so the hub refuses and leaves the file as it is. A heal is refused there
+too: a committed footer entry git brings back is not replaced, and a git
+revert that drops the hub's entry is not fought (an entry the user put
+there with the installer's --project is put back only by running it
+again). A git that times out answering means wait for the next session.
+The user settings file is never refused for being tracked (a dotfiles
+repo is the user's own).
 
 Then the prune pass (housekeeping.py): sensor records untouched for 30
 days (the hub's tee writes them too), dead hooks.d manifests, stale last-good
@@ -117,7 +127,7 @@ GIT_TIMEOUT_S = 2
 
 class Blocked(Exception):
     """A settings file that must be used and cannot be: `reason` is one of
-    invalid, read-only, unwritable, not-ignored."""
+    invalid, read-only, unwritable, not-ignored, tracked."""
 
     def __init__(self, path, reason):
         super().__init__(path)
@@ -170,7 +180,30 @@ def _git_would_track(proj, path):
     return r.returncode == 1
 
 
-def _guard_local(p, proj):
+def _git_tracks(path):
+    """True when git tracks the file at `path` (it is in the index of the
+    work tree that holds it). No git, or not a repo, means False; a
+    timeout raises Wait, so nothing is written until a session can tell."""
+    try:
+        r = subprocess.run(["git", "-C", os.path.dirname(os.path.abspath(path)),
+                            "ls-files", "--error-unmatch", "--", os.path.basename(path)],
+                           stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
+                           stderr=subprocess.DEVNULL, timeout=GIT_TIMEOUT_S)
+    except subprocess.TimeoutExpired:
+        raise Wait()
+    except (OSError, subprocess.SubprocessError, ValueError):
+        return False
+    return r.returncode == 0
+
+
+def _guard_local(owner, p, proj):
+    """Refuse to put the hub's machine-specific entry where git would share
+    it: a project settings.local.json git does not ignore, or any settings
+    file other than the user's that git tracks. Tracked is checked first,
+    so a force-added settings.local.json is named as tracked."""
+    user = os.path.join(owner.sensor.base_dir(), "settings.json")
+    if not owner._same_path(p, user) and _git_tracks(p):
+        raise Blocked(p, "tracked")
     if proj and os.path.basename(p) == "settings.local.json" and _git_would_track(proj, p):
         raise Blocked(p, "not-ignored")
 
@@ -290,7 +323,7 @@ def _from_statusline(owner, data, path, proj, entry):
     if statusline_hooked():
         if not _script_ready(owner, data):
             raise Wait()
-        _guard_local(path, proj)
+        _guard_local(owner, path, proj)
         _put(owner, data, path, {"statusline"})
         return (f"took over the status line slot in {path}; the statusline footer now "
                 f"draws through the hub, as one of its display hooks.")
@@ -353,7 +386,7 @@ def _older_copy(owner, data, path, proj, entry, verb):
         raise Wait()  # mid-update: the link dangles until its plugin re-links it
     if not _script_ready(owner, data):
         raise Wait()
-    _guard_local(path, proj)
+    _guard_local(owner, path, proj)
     _put(owner, data, path, {"statusline"})
     gone = ("whose version no longer ships it" if _has(recs, home) else
             "which is no longer installed")
@@ -394,6 +427,7 @@ def heal(owner, data, marker):
         return None
     if kind == "statusline":
         if statusline_hooked() and _script_ready(owner, data):
+            _guard_local(owner, path, None)
             _put(owner, data, path, {"statusline"})
             return (f"restored the status line in {path} (an older session's settings "
                     f"write had put the footer's earlier entry back; it draws through "
@@ -407,6 +441,7 @@ def heal(owner, data, marker):
                 f"alone. To have the hub own it again, {_replace_hint(owner, path)}")
     if not _script_ready(owner, data):
         return None
+    _guard_local(owner, path, None)
     _put(owner, data, path, {"absent"})
     return (f"restored the status line in {path} (an older session's settings "
             f"write had dropped it; /install-statusline-hub{_flag(owner, path)} --remove "
@@ -578,7 +613,7 @@ def first_run(owner, data, proj):
         raise Wait()
     if not _script_ready(owner, data):
         return None
-    _guard_local(path, proj)
+    _guard_local(owner, path, proj)
     _put(owner, data, path, {"absent"})
     what = ("the statusline footer, and any other display hooks registered"
             if statusline_hooked() or (_statusline_installs_only_hooks(owner) and
@@ -590,8 +625,25 @@ def first_run(owner, data, proj):
             f"/install-statusline-hub{_flag(owner, path)} --remove")
 
 
-def _blocked_message(owner, path, reason, verb):
+def _blocked_message(owner, path, reason, verb, project=False):
+    """The once-only line for a Blocked. `project`: the marker it resumes was
+    set by an explicit /install-statusline-hub --project."""
     retry = "start a new session"
+    if reason == "tracked" and project:
+        return (f"{path} is tracked by git, so the hub does not write its entry there on "
+                f"its own (it is an absolute path on this machine); left as it is, not "
+                f"{verb}. To put it back there, run /install-statusline-hub --project "
+                f"again; or /install-statusline-hub --local for this machine only.")
+    if reason == "tracked":
+        # A project's local settings outrank its shared ones, which outrank the
+        # user's (documented: https://code.claude.com/docs/en/settings), so the
+        # fix that wins over the team's file is --local.
+        return (f"{path} is tracked by git, and the status line entry is an absolute "
+                f"path on this machine; left as it is, not {verb} there. To have the "
+                f"hub own the slot in this project, run /install-statusline-hub --local "
+                f"(a git-ignored .claude/settings.local.json, which outranks the shared "
+                f"file), and remove any dead statusLine entry from the team's shared "
+                f"file.")
     if reason == "not-ignored":
         return (f"{path} is not git-ignored, and the status line entry is an absolute "
                 f"path on this machine; not installed there. Add "
@@ -639,7 +691,8 @@ def run(inp):
         except Exception:
             return None
         return _blocked_message(owner, b.path, b.reason,
-                                "installed" if resume == "new" else "restored")
+                                "installed" if resume == "new" else "restored",
+                                project=bool(marker and marker.get("scope") == "project"))
 
 
 NOTICE = "refusal-notice.json"
