@@ -161,8 +161,12 @@ Three layers, escalating; the first two are hooks, the third is a skill.
    through; and the Stop relay asked for a checkpoint after any deferral, even at 28% fill,
    which unlocked the next idle attempt. The operator expects compaction only when the window
    is really full. So the gate now defers every proactive automatic attempt while more than
-   DUE remains, checkpoint or not, and releases at or under DUE only after a checkpoint this
-   epoch; HARD still always releases. `compact_deferred` is set only for a deferral at or
+   DUE remains: always before a checkpoint this epoch, and after one while the session is
+   idle at its last measured fill (no `type: user` line, a prompt or tool result, after the
+   last assistant line with usage; an unreadable transcript counts as not idle). Input since
+   that fill may have overflowed it unseen, and holding a recovery compaction then would
+   leave only a manual `/compact` to free the session. At or under DUE it releases only
+   after a checkpoint this epoch; HARD still always releases. `compact_deferred` is set only for a deferral at or
    under DUE, the one a checkpoint would release. The Stop relay asks for a checkpoint only
    at or under DUE, once per epoch; a deferral above DUE relays nothing.
 4. **Checkpoint skill** — Step 0 settles the goal (*continue / handoff*)

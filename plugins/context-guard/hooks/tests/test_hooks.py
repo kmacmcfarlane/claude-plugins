@@ -276,11 +276,34 @@ class TestContextWarn(Base):
 
 
 class TestPrecompactGate(Base):
-    def gate(self, sid, trigger, ci=None):
-        p = {"session_id": sid, "trigger": trigger, "transcript_path": "/nonexistent"}
+    def gate(self, sid, trigger, ci=None, transcript="/nonexistent"):
+        p = {"session_id": sid, "trigger": trigger, "transcript_path": transcript}
         if ci is not None:
             p["custom_instructions"] = ci
         return run_hook("precompact_gate.py", p, self.env)
+
+    def lines(self, *recs):
+        p = os.path.join(self.tmp.name, "t.jsonl")
+        with open(p, "w") as f:
+            f.write("".join(json.dumps(r) + "\n" for r in recs))
+        return p
+
+    @staticmethod
+    def usage(tokens):
+        return {"type": "assistant", "message": {"role": "assistant", "usage": {
+            "input_tokens": 2, "cache_read_input_tokens": tokens - 2,
+            "cache_creation_input_tokens": 0}}}
+
+    SYSTEM = {"type": "system", "subtype": "turn_duration"}
+    TOOL_RESULT = {"type": "user", "message": {"role": "user", "content": [
+        {"type": "tool_result", "tool_use_id": "t1", "content": "x" * 100}]}}
+
+    def idle(self, tokens):
+        """A transcript idle at `tokens`: its last usage line is followed
+        only by system lines."""
+        return self.lines({"type": "user", "message": {"role": "user",
+                                                       "content": "go"}},
+                          self.usage(tokens), self.SYSTEM, self.SYSTEM)
 
     def test_manual_never_blocked_and_records_instructions(self):
         rc, out, _ = self.gate("s", "manual", ci="keep the auth thread")
@@ -313,13 +336,65 @@ class TestPrecompactGate(Base):
                 L.mark_checkpoint("s")
             for tokens in (280_000, 849_999):
                 self.set_exact("s", tokens, 1_000_000)
-                rc, out, err = self.gate("s", "auto")
+                rc, out, err = self.gate("s", "auto",
+                                         transcript=self.idle(tokens))
                 self.assertEqual(rc, 2, (checkpointed, tokens))
                 self.assertIn("deferred", err)
                 self.assertIn("above the due line of 150,000", err)
                 self.assertNotIn("Run the checkpoint skill", err)
                 # not a deferral a checkpoint would release
                 self.assertFalse(L.load_state("s").get("compact_deferred"))
+
+    def test_after_checkpoint_input_since_usage_releases_above_due(self):
+        # A tool result after the last measured fill may have overflowed it
+        # unseen: after a checkpoint the above-due hold does not apply.
+        L.mark_checkpoint("s")
+        self.set_exact("s", 800_000, 1_000_000)
+        t = self.lines(self.usage(800_000), self.SYSTEM, self.TOOL_RESULT)
+        rc, out, _ = self.gate("s", "auto", transcript=t)
+        self.assertEqual((rc, out), (0, {}))
+        self.assertFalse(L.load_state("s").get("compact_deferred"))
+
+    def test_after_checkpoint_unreadable_transcript_releases_above_due(self):
+        L.mark_checkpoint("s")
+        self.set_exact("s", 280_000, 1_000_000)
+        rc, out, _ = self.gate("s", "auto")      # /nonexistent: pending
+        self.assertEqual(rc, 0)
+
+    def test_without_checkpoint_input_pending_still_holds_above_due(self):
+        self.set_exact("s", 800_000, 1_000_000)
+        t = self.lines(self.usage(800_000), self.TOOL_RESULT)
+        rc, out, err = self.gate("s", "auto", transcript=t)
+        self.assertEqual(rc, 2)
+        self.assertIn("above the due line", err)
+        self.assertFalse(L.load_state("s").get("compact_deferred"))
+
+    def inferred(self, transcript, **extra):
+        return run_hook("precompact_gate.py",
+                        {"session_id": "s", "trigger": "auto",
+                         "transcript_path": transcript},
+                        dict(self.env, CONTEXT_GUARD_DERIVE="off", **extra))
+
+    def test_inferred_stale_sensor_window_holds_idle_after_checkpoint(self):
+        L.save_state("s", {})
+        L.mark_checkpoint("s")
+        self.put_exact("s", {"pct": 28.0, "tokens": 280_000,
+                             "window": 1_000_000, "at": time.time() - 3300})
+        rc, out, err = self.inferred(self.idle(280_000))
+        self.assertEqual(rc, 2, err)
+        self.assertFalse(L.load_state("s").get("compact_deferred"))
+        self.assertIn("window from status line", err)
+
+    def test_inferred_200k_guess_at_due_defers_until_checkpoint(self):
+        # No sensor: 150K on a guessed 200K window leaves 50K, under due 70K
+        # and above hard 40K.
+        rc, out, err = self.inferred(self.idle(150_000))
+        self.assertEqual(rc, 2, err)
+        self.assertTrue(L.load_state("s").get("compact_deferred"))
+        L.mark_checkpoint("s")
+        rc, out, err = self.inferred(self.idle(150_000))
+        self.assertEqual(rc, 0, err)
+        self.assertFalse(L.load_state("s").get("compact_deferred"))
 
     def test_auto_defers_at_or_under_due_until_checkpoint(self):
         self.set_exact("s", 850_000, 1_000_000)
