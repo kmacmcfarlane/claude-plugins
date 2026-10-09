@@ -35,3 +35,4 @@ answer 209: a (operator, in chat, 2026-10-09)
 decided: 2026-10-09T13:40Z scope — fbc3 (retire the dying reset-time source) folds into this item, as the 72ef spike's F11 allows; one change deletes the copy and stops citing its state record
 target: context-guard's deprecated status-line copy, its old-path read and its notice are gone; dev-cycle's model-routing, the catalog and README stop citing the older state record; all Checks green
 dispatch: implementer opus medium — build (removes a compat path users may hit; not a canonical mechanical kind)
+agent: implementer a194aaaecfdf57eb4
