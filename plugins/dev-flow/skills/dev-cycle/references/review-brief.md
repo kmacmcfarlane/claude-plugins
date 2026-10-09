@@ -76,8 +76,9 @@ union of every round's CHANGED, one file per line with its one-line reason>
 - $WORKTREE/CLAUDE.md — layout and conventions
 - A change outside Ground is a finding at medium; a change that ignores the Workflow
   notes above is a finding at medium
-- <when the change adds or edits a skill:> $WORKTREE/plugins/*/skills/create-skill/SKILL.md
-  and its references/ — the authoring rules
+- <when the change adds or edits a skill:> <the create-skill SKILL.md path,
+  bindings.md § Authoring rules> and its references/ — the authoring rules <or, when
+  none is found, that section's no-create-skill line>
 - <any other skill or reference the change names, by absolute path>
 
 ## What to do

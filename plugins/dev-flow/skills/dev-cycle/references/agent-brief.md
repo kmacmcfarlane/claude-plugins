@@ -69,9 +69,9 @@ Files in scope: <explicit list, inside Ground; anything else is out of scope —
 - $WORKTREE/README.md — its doctrine, catalog and placement sections when present,
   otherwise its plugin tables; on a repo with no plugins/ tree, in full
 - $WORKTREE/CLAUDE.md — layout and conventions
-- <when the change adds or edits a skill:> the create-skill skill at
-  $WORKTREE/plugins/*/skills/create-skill/SKILL.md and its references/ — follow it as the
-  authoring procedure.
+- <when the change adds or edits a skill:> the create-skill skill at <its absolute
+  SKILL.md path, bindings.md § Authoring rules> and its references/ — follow it as the
+  authoring procedure. <Or, when none is found, that section's no-create-skill line.>
 - <any other skill or reference the change names, by absolute path>
 
 Rules that reviewers reject on sight:
@@ -81,9 +81,10 @@ Rules that reviewers reject on sight:
 - Frontmatter keys follow the house rule: every skill declares name and description; any
   other key is optional (leaving out disable-model-invocation, allowed-tools and
   argument-hint is the desired default) but must be a field the Claude Code skills docs
-  define (the list is in the create-skill skill's frontmatter
-  reference, kit-dev plugin); no key twice. The set is closed because undocumented keys
-  are usually typos, and claude.ai / Skills API uploads hard-fail on unknown keys.
+  define (the list is in the create-skill skill's frontmatter reference, kit-dev plugin,
+  and the review checklist's section 2 copies it); no key twice. The set is closed
+  because undocumented keys are usually typos, and claude.ai / Skills API uploads
+  hard-fail on unknown keys.
   allowed-tools only pre-approves tools; it never restricts them. Folder name equals
   `name`. A README.md in a skill folder is allowed only for humans, ending with the line
   `*User-facing documentation, not agent instructions.*`; agent instructions stay in

@@ -417,6 +417,8 @@ open questions: <list, or none>
 decisions needed: <numbered list, or none>
 ```
 
+No spend reader: `references/bindings.md` § Spend budget, The reader, words `verified:`.
+
 A budget passed while the weekly quota was below half used adds one `Done alone:` line
 after the four (`references/bindings.md` § Spend budget, The Done-alone line); under a
 caller, its own Done-alone group carries it.
