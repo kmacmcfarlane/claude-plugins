@@ -82,19 +82,16 @@ the operator has nothing left to add, or holds the rest.
 propose the scope through it. Ask its answer mode who owns each aspect at the edge. Ask its
 write mode for a shape-checked draft of the repo's `CLAIM.md`, built from the scope: the
 areas, the `## Not ours` lines, a `## Boundaries` entry for each row of the neighbours
-table, and `## Interfaces` naming each contract the repo will define, with its location and
-defining side. Ask it to classify the draft as substance or upkeep. The draft goes in the
-Scope and context section, whole for a new claim, as its changed lines for a revision. A
-new claim, or a substance change, is approved with gate G1 (in a lite run, with its one
-gate): the decision shows the draft as the write mode shows it, and nothing is written
-before that answer. An upkeep change is reported at G1, not asked, and `F0` lands it with
-its `(upkeep, reported)` Amendments line. Feature `F0` writes the file through the write
-mode, landing the draft that gate G1 (or a reopen's G1 re-run) approved, with no second
-decision: its Status line and Amendments line name that approval's date and its
-`decision N:` line on the foundation item (`references/state.md` § Living docs). Under an
-orchestrator, ask only for the checked draft; the approval is the gate's. Without the
-skill, read `CLAIM.md` as a file and propose the claim in the series, unchecked
-(§ Composition says what the result discloses).
+table, and `## Interfaces` naming each contract the repo will define, with its location.
+Ask it to classify the draft as substance or upkeep. The draft goes in the Scope and context
+section, whole for a new claim, as its changed lines for a revision. A new claim, or a
+substance change, is approved with gate G1 (in a lite run, with its one gate): the decision
+shows the draft as the write mode shows it, and nothing is written before that answer. An
+upkeep change is reported at G1, not asked, and `F0` lands it with its `(upkeep, reported)`
+Amendments line. Feature `F0` writes the file through the write mode, with no second
+decision (`references/state.md` § Living docs). Under an orchestrator, ask only for the
+checked draft; the approval is the gate's. Without the skill, read `CLAIM.md` as a file and
+propose the claim in the series, unchecked (§ Composition says what the result discloses).
 
 **Research is optional per phase**: the `research` skill (quick by default) for a fact a
 requirement rests on, landing in `<series>/research/`; `deep-investigation` when the
