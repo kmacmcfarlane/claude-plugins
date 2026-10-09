@@ -73,14 +73,16 @@ one fails the request in flight. An unknown depth always lets it through. Manual
 to checkpoint, fires only at or under DUE, once per epoch: a deferral above DUE relays
 nothing.
 
-Two caveats. Without a fresh status-line reading the depth is inferred from the transcript,
-and its window guess can be 200K on a 1M model: DUE and HARD are then measured against
-200K, so an idle compaction at ~15% of the real window is held until a checkpoint and let
-through after one. With the `statusline-hub` plugin recording the status line, the gate
-measures against the real window. And when the auto-compact window is lowered
-(`/autocompact 900k`), Claude Code's own attempt at that window is measured against the
-model window like any other: at 900K of 1M, 100K remains, which is at or under DUE, so it
-is deferred until a checkpoint records, and the HARD release stays provably proactive.
+Two caveats. Without any status-line reading for the session, the depth is inferred from
+the transcript, and the window is guessed at 200K until the session passes ~190K. On a 1M
+model DUE and HARD are then measured against 200K: an idle attempt at ~130K–160K is held
+until a checkpoint and let through after one, and one at ~160K–190K is let through with or
+without one. A stale reading still sets the real window. With the `statusline-hub` plugin
+recording the status line, the gate measures against the real window. And when the
+auto-compact window is lowered (`/autocompact 900k`), Claude Code's own attempt at that
+window is measured against the model window like any other: at 900K of 1M, 100K remains,
+which is at or under DUE, so it is deferred until a checkpoint records, and an attempt past
+HARD, the only place a recovery can arrive, is still let through.
 
 **Inside a turn** the prompt gate cannot speak, so a check runs after every tool call
 (main thread only; a subagent's calls are skipped). It never blocks, and it is **silent

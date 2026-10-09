@@ -166,9 +166,10 @@ Three layers, escalating; the first two are hooks, the third is a skill.
    last assistant line with usage; an unreadable transcript counts as not idle). Input since
    that fill may have overflowed it unseen, and holding a recovery compaction then would
    leave only a manual `/compact` to free the session. At or under DUE it releases only
-   after a checkpoint this epoch; HARD still always releases. `compact_deferred` is set only for a deferral at or
-   under DUE, the one a checkpoint would release. The Stop relay asks for a checkpoint only
-   at or under DUE, once per epoch; a deferral above DUE relays nothing.
+   after a checkpoint this epoch; HARD still always releases. `compact_deferred` is set
+   only for a deferral at or under DUE, the one a checkpoint would release. The Stop relay
+   asks for a checkpoint only at or under DUE, once per epoch; a deferral above DUE relays
+   nothing.
 4. **Checkpoint skill** — Step 0 settles the goal (*continue / handoff*)
    because that is the one input nobody else holds and it changes everything downstream:
    *continue* means residue then `/compact` with drafted guidance; *handoff* means a brief

@@ -5,8 +5,9 @@ Run by the checkpoint skill (Step 4b), right after it drafts the manifest:
     python3 mark_checkpoint.py --from <draft> "$CLAUDE_CODE_SESSION_ID"
     python3 mark_checkpoint.py "$CLAUDE_CODE_SESSION_ID"   (no draft: stamp only)
 DUE stops re-firing, HARD stops blocking, and a deferral at or under DUE is
-allowed to proceed on its next attempt; one above DUE waits for the window to
-fill while the session is idle. Refuses (exit 1, nothing written)
+allowed to proceed on its next attempt. One above DUE is still held while the
+session is idle at its last measured fill, and proceeds once a prompt or tool
+result follows it. Refuses (exit 1, nothing written)
 when the session has no state file: a live session always has one, so that
 means a mistyped id, not a session to create.
 

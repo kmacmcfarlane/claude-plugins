@@ -80,7 +80,8 @@ def main():
         why = (f"the window is not full: {win - tok:,} tokens remain ({src}), "
                f"above the due line of {th['due']:,}. Nothing to do; it proceeds "
                f"once headroom is at or under {th['due']:,} and a checkpoint has "
-               f"run this epoch, or when headroom drops to {th['hard']:,} or below")
+               f"run this epoch, or after a checkpoint once input follows the "
+               f"last response, or when headroom drops to {th['hard']:,} or below")
     else:
         why = (f"no checkpoint has run this epoch and {win - tok:,} tokens "
                f"remain ({src}), at or under the due line of {th['due']:,}. "
