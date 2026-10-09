@@ -18,6 +18,7 @@ From the 5f2d series 00 § Files to Modify, follow-ups, filed 2026-10-09 (f3d1).
 
 target: create-repo's bootstrap prompt names /dev-flow:foundation for a green-field thread when listed, degrades and discloses when not; edges declared in plugin.json, marketplace.json, catalog and README section
 dispatch: implementer sonnet medium — build (prose wiring plus declarations: a canonical mechanical kind)
+agent: implementer aa50343d0d2bd89d7
 
 ## Handoff
 - doing: —
