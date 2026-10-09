@@ -38,3 +38,4 @@ verdict: review round 1 NEEDS_CHANGES (must-fix 3: medium 1 a nested call closes
 dispatch: implementer opus medium — fix round 1 (resume a15cd24ab91b0fc91)
 return: DONE 8e7fdfe (fix round 1); work-items 315 OK, kit-dev 18 OK; corpus: 0 main-only misses outside the nine meta keys; 11,285 main-only under meta keys (letters-only, short alnum, digits, paths, UUIDs); 15,533 newly caught; real store clean
 dispatch: reviewer opus high — review round 2 of 8e7fdfe (resume a65548473809d61f9)
+note: 2026-10-09 a second background security flag: a secret-detection regression in wi.py on the fix-round commit (no details); relayed to review round 2 with the meta-key residue; nothing lands until it is resolved
