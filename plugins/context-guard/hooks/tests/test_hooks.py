@@ -133,7 +133,9 @@ class TestContextWarn(Base):
         self.assertEqual(rc, 0)  # checkpoint stands the gate down
 
     def test_hard_whitelist_accepts_plugin_prefixed_form(self):
-        for prompt in ("/checkpoint", "/claude-kit:checkpoint",
+        for prompt in ("/checkpoint", "/context-guard:checkpoint",
+                       "/context-guard:checkpoint continue — 2: nothing more 3: ok",
+                       "/claude-kit:checkpoint",
                        "/claude-kit:checkpoint land", "/compact keep auth",
                        "/my-plugin:compact", "/clear", "/x:clear"):
             self.set_exact("s", 950_000, 1_000_000)
@@ -881,7 +883,7 @@ class TestHardAdvice(Base):
                 rc, out, err = self.exact_hard(left)
                 self.assertEqual(rc, 2)
                 self.assertIn(f"HARD STOP: {left:,} tokens left of 1,000,000 (exact)", err)
-                self.assertIn("Run /checkpoint (or /context-guard:checkpoint", err)
+                self.assertIn("Run /context-guard:checkpoint first", err)
                 self.assertNotIn("no longer fits", err)
                 self.assertIn("please do more work", err)
 
@@ -891,7 +893,7 @@ class TestHardAdvice(Base):
                 rc, out, err = self.exact_hard(left)
                 self.assertEqual(rc, 2)  # the block itself is unchanged
                 self.assertIn(f"A checkpoint no longer fits in {left:,} tokens", err)
-                self.assertNotIn("Run /checkpoint", err)
+                self.assertNotIn("Run /context-guard:checkpoint", err)
                 self.assertLess(err.index("/clear"), err.index("/compact <"))
                 self.assertIn("the guidance steers what the summary keeps", err)
                 self.assertIn("then re-send:\n  please do more work", err)

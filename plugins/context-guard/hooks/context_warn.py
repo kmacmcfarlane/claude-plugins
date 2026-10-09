@@ -23,7 +23,7 @@ input to it resolved, else the model window - so an unresolved auto-compact
 window warns but never blocks.
 Under L.CHECKPOINT_MIN_TOKENS left (against that window) a checkpoint no
 longer fits, so the HARD and not-blocked advice points at /clear or /compact
-instead of /checkpoint. That is advice text only: when the gate blocks is
+instead of /context-guard:checkpoint. That is advice text only: when the gate blocks is
 decided by decide() alone.
 A HARD STOP caused by a derived window prints its escape hatches
 (CONTEXT_GUARD_DERIVE=off, mark_checkpoint.py <session>). The operator's
@@ -271,8 +271,9 @@ def main():
         bw = m["block_window"] or win
         left = max(bw - tok, 0)
         if left >= L.CHECKPOINT_MIN_TOKENS:
-            advice = ("Run /checkpoint (or /context-guard:checkpoint - both forms are "
-                      "whitelisted) first")
+            # Namespaced: the bare name can resolve to a built-in command
+            # of the same name instead of the skill (operator, 2026-10-09).
+            advice = "Run /context-guard:checkpoint first"
         else:
             # Live-fired 2026-09-03 at 1,062 left: a checkpoint needs a turn of
             # its own, so pointing at it there wedges the session.

@@ -20,7 +20,7 @@ operator never sees.** Fixing that is mostly about session *shape*, not about re
 | Harness attachments per fill (hooks, diffs, listings) | ~105K tokens | as much as all tool output; audit with `context_forensics.py` |
 
 **The gate thinks in remaining tokens, not percent.** Advisories at 60/75% used; **DUE** when
-~150K tokens remain (1M window; 70K on 200K) — finish things, run `/checkpoint`; **HARD** at
+~150K tokens remain (1M window; 70K on 200K) — finish things, run `/context-guard:checkpoint`; **HARD** at
 60K/40K left — on an *exact* depth (a fresh status-line reading) or a *derived* one (the
 window derived from documented and observed rules (`hooks/window_rules.py`), every input
 observed — including, above 200K, that this Claude Code process has not reported the
@@ -30,7 +30,7 @@ fully resolve, it only warns, because the real window may be larger than the gue
 that warning keeps the DUE cadence (first time, then every 3 prompts or 25K tokens), so a
 quiet stretch is not an all-clear. The whitelist that passes a blocked prompt through is
 `/checkpoint`, `/compact` and `/clear`, bare or plugin-prefixed (`/context-guard:checkpoint`).
-Under ~20K left (`CHECKPOINT_MIN_TOKENS`) the HARD advice, blocking or not, drops `/checkpoint`
+Under ~20K left (`CHECKPOINT_MIN_TOKENS`) the HARD advice, blocking or not, drops `/context-guard:checkpoint`
 for `/clear` (the work is on disk) or `/compact <guidance>`, since a checkpoint no longer fits;
 when the gate blocks does not change. All of it resets per epoch (each compaction or `/clear`). The gate also warns against the
 auto-compact window when one is set below the model window (`/autocompact`,
@@ -93,7 +93,7 @@ reads as 900, which Claude Code raises to its 100K floor, and the gate then scor
 
 1. **One workstream per session — one stage, in a skill chain.** Investigate in one session,
    write the result to disk, implement in a fresh one; whenever the next skill reads its
-   inputs from files this session already published, `/checkpoint handoff` at that boundary
+   inputs from files this session already published, `/context-guard:checkpoint handoff` at that boundary
    regardless of window health. A session that spans two repos will accumulate two repos'
    worth of context.
 2. **Rename at the start, clear at the end.** Named sessions are branches; `--resume` is
@@ -125,7 +125,8 @@ The checkpoint drafts its own Step 0 answers (mode, what is in flight, the windo
 them and echoes them in one line of its close; change any with the reply line it prints; it
 asks first only at a fork.
 
-Then `/checkpoint <mode>`. The ledger (`~/.claude/claude-kit/ledger/<session>.md` — a
+Then `/context-guard:checkpoint <mode>` (namespaced: the bare name can resolve to a built-in
+command of the same name instead of this skill). The ledger (`~/.claude/claude-kit/ledger/<session>.md` — a
 historical directory name, kept across the move into `context-guard`) has been collecting decisions as you worked — the checkpoint is a delta, and after compaction the
 ledger, and the manifest when this session owns it (the format spec's "Whose memory it is"
 in `references/handoff-format.md`), are re-injected and outrank the machine summary (current repo state — git
@@ -253,7 +254,7 @@ escape hatches:
    underscores); a malformed new name never switches off a valid old-name pin — the old one
    then applies, since a pin can only remove derived blocks.
 2. Emergency stand-down: record a checkpoint for the current epoch — exactly what
-   `/checkpoint` records — with the plugin's own `mark_checkpoint.py`. It writes through the
+   `/context-guard:checkpoint` records — with the plugin's own `mark_checkpoint.py`. It writes through the
    same locked read-modify-write as every hook, so a hook firing at the same moment cannot
    drop the change (a hand-edit of the state file can). The session id names the state file
    under `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/claude-kit/context-gate/` (the newest `.json`

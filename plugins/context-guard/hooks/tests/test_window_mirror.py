@@ -1143,7 +1143,7 @@ class TestHooks(Base):
                 rc, out, err = self.warn()
                 self.assertEqual(rc, 2, (out, err))
                 self.assertIn(f"{left:,} tokens left of 1,000,000 (derived)", err)
-                self.assertEqual("Run /checkpoint" in err, fits)
+                self.assertEqual("Run /context-guard:checkpoint" in err, fits)
                 self.assertEqual("checkpoint no longer fits" in err, not fits)
                 self.assertIn("CONTEXT_GUARD_DERIVE=off", err)  # hatches kept
 
