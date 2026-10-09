@@ -32,3 +32,5 @@ agent: reviewer af1922219a541a7ad
 verdict: review round 1 NEEDS_CHANGES (medium 1: Step 2 still points the writer at the schema and example; medium 2: the digest's act row lacks the secret rule and the non-empty rule; medium 3: the same-page before/after measurement is not done; minors 4-10: digest gaps, impact effect rule, rev reason, printed lint prefixes, test reach, path wording, page-size test; nits 11-12)
 decided: 2026-10-09T09:14Z scope — finding 3: no extra page is written just to measure; the change lands, and the item stays open until the next page written under it records turns and peak context against the 22-card baseline (same writer setup, a comparable page)
 dispatch: implementer opus medium — fix round 1 (resume a5aa638c006bd182a)
+return: DONE 8f65102 on merge 366b1fa (Step 2 points at the digest; act secret rule; digest gaps; line-start column; test_digest pins keys, Required cells, thresholds, follow, with mutations; 11/11 Checks, operator-interaction 127; its scan used the shared scratchpad scan.sh, which another agent had overwritten, so the reviewer reruns cc_scan)
+dispatch: reviewer opus high — review round 2 (resume af1922219a541a7ad)
