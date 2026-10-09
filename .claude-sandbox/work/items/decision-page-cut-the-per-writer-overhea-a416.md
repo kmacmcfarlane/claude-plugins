@@ -29,3 +29,6 @@ dispatch: implementer opus medium — build, worktree (chore; no plan)
 return: DONE worktree-agent-a5aa638c006bd182a b12ad40 (Step 2 'Write it cheaply'; new references/writer-digest.md with test_digest.py pinning fields, lint keys both ways and follow; carried rewraps; operator-interaction 123; reported 10 Checks, kit-dev's not listed)
 dispatch: reviewer opus high — review round 1 of b12ad40
 agent: reviewer af1922219a541a7ad
+verdict: review round 1 NEEDS_CHANGES (medium 1: Step 2 still points the writer at the schema and example; medium 2: the digest's act row lacks the secret rule and the non-empty rule; medium 3: the same-page before/after measurement is not done; minors 4-10: digest gaps, impact effect rule, rev reason, printed lint prefixes, test reach, path wording, page-size test; nits 11-12)
+decided: 2026-10-09T09:14Z scope — finding 3: no extra page is written just to measure; the change lands, and the item stays open until the next page written under it records turns and peak context against the 22-card baseline (same writer setup, a comparable page)
+dispatch: implementer opus medium — fix round 1 (resume a5aa638c006bd182a)

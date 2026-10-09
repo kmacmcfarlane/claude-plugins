@@ -3,12 +3,11 @@ id: factor-analysis-declare-its-work-items-a-d0b0
 title: "factor-analysis: declare its work-items and dev-flow needs and degrade without them"
 short_display_name: factor-analysis declare and degrade
 type: bug
-status: doing
+status: done
 priority: 2
-owner: Kyle-McFarlane@2d49f8460283
-claimed: 2026-10-09T08:35Z
 created: 2026-10-08
 updated: 2026-10-09
+closed: 2026-10-09
 refs:
   - spike-how-much-inter-plugin-dependency-i-72ef
 ---
@@ -37,3 +36,9 @@ dispatch: reviewer opus high — review round 2 (resume ab4397e3c484bd9a0)
 verdict: review round 2 NEEDS_CHANGES (low 1: the tip's prefix must be the plugin, kit-dev:, not the skill; low 2: the tip must take the place of the disclosure, not repeat it — exact line given)
 decided: 2026-10-09T09:12Z cap — finish round of the two exact fixes (authority answer 145)
 dispatch: implementer opus medium — finish round (resume a8b71c236d66dc1af)
+return: DONE c2916c9 on merge b996933 (kit-dev: prefix; tip in place of the clause; beyond brief: switch set gives the clause alone, so disclosure is never switched off; earlier scans rerun with private copies after a shared scan script was overwritten)
+review: self
+verdict: finish round CLEAR — diff read: the two fixes and the switch-set wording, which keeps disclosure on as CLAUDE.md requires
+correction: parallel agents also shared a scan script in the scratchpad (one overwrote another's); briefs name per-item scan files too from now on
+landed: 57a5fc2 (merge of cdcb523..c2916c9); Checks 11/11 OK
+- 2026-10-09 done
