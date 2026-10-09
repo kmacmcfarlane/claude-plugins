@@ -28,3 +28,5 @@ agent: implementer a7035ad4054cec38e
 return: DONE worktree-agent-a7035ad4054cec38e f526872 (third rule SECRET_SHAPE_RE for five looser shapes, value gated: 12+ chars, letter and digit, not hex, not date-led, not short-segment id/path; placeholders ignored; 13 caught, 25 clean, 4 refused tests; store scan 0 hits over 461 files after two false positives fixed; reported 10 Checks)
 dispatch: reviewer opus high — review round 1 of f526872
 agent: reviewer ae593bcd6eb1d1d1a
+verdict: review round 1 NEEDS_CHANGES (high 1: quoted values missed in every new shape but JSON; medium 2: short-segment exemption misses ~17% of 22-char url-safe tokens and flags long path segments; medium 3: hex/letters/UUID exemptions ignore the key — a 40-hex value under a secret-word key passes; lows: symbol passwords, a dot before the key, => and := forms, test gaps; low 6 (camelCase, Bearer) for a follow-up)
+dispatch: implementer opus medium — fix round 1 (resume a7035ad4054cec38e)
