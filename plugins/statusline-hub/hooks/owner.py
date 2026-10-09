@@ -52,8 +52,10 @@ takeover reads):
    "settings": "<abs path>", "command": "<our command>", "at": <epoch s>}
 - installed: the entry in `settings` is ours; SessionStart restores it when a
   stale session's settings write drops it (never in a project file git
-  tracks). Extra field "scope": "project" when the installer's --project
-  wrote it, so a refused restore names --project as the way back.
+  tracks). Extra field "scope": "project" when the installer wrote it into
+  a project's shared settings file (--project, or --settings naming a
+  project's .claude/settings.json); SessionStart keeps it through each
+  heal, so a refused restore names --project as the way back.
 - removed: the user ran --remove (or had removed the statusline footer from
   that file before the hub arrived); nothing re-adds it until they install
   again.
@@ -63,7 +65,8 @@ takeover reads):
   unwritable, a project file git does not ignore, or one git tracks); said
   once, retried quietly every session. Extra fields: "reason", and
   "resume" - the state whose work is retried ("installed" or "wrapping"
-  or "unwrapped" for a heal, "new" for a first run).
+  or "unwrapped" for a heal, "new" for a first run); "scope" too when the
+  marker it replaced carried one, so the heal it resumes keeps it.
 - wrapping: the entry in `settings` is ours, running the wrapped entry the
   wrap record keeps; SessionStart restores it when a stale session's write
   drops it or puts the wrapped entry back, and yields to anything else.

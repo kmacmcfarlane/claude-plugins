@@ -484,6 +484,30 @@ class Heal(Base):
         self.assertEqual(self.marker()["state"], "installed")
         self.quiet()
 
+    def project_scoped(self):
+        """The scope the installer records for a project's shared file, here
+        on the user file: heal carries the field whatever the path."""
+        owner.write_marker(self.data, "installed", self.user,
+                           owner.command_for(self.data), scope="project")
+
+    def test_repointing_the_footers_entry_keeps_the_project_scope(self):
+        self.install()
+        self.project_scoped()
+        self.sl_hooked()
+        self.write_json(self.user, dict(BOTH_ON, statusLine=self.sl_entry()))
+        self.assertIn("restored the status line", self.said())
+        self.assertEqual(self.load()["statusLine"], self.own())
+        self.assertEqual(self.marker()["state"], "installed")
+        self.assertEqual(self.marker()["scope"], "project")
+
+    def test_taking_back_an_older_copy_keeps_the_project_scope(self):
+        self.footer_entry_back(dict(self.HUB_REC))
+        self.project_scoped()
+        self.assertIn("took back the status line slot", self.said())
+        self.assertEqual(self.load()["statusLine"], self.own())
+        self.assertEqual(self.marker()["state"], "installed")
+        self.assertEqual(self.marker()["scope"], "project")
+
     def test_the_footers_entry_still_drawing_is_said_once_never_yielded(self):
         # statusline uninstalled with its data kept: the entry still draws
         os.makedirs(os.path.join(self.sl_data, "current-hooks"))

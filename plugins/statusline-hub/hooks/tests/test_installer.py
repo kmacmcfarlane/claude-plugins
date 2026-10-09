@@ -54,6 +54,13 @@ class Installer(helpers.Hermetic):
         shared = os.path.join(self.cfg, "proj", ".claude", "settings.json")
         self.assertEqual(self.scope_after("--settings", shared), "project")
 
+    def test_settings_naming_a_project_shared_file_warns_not_to_commit_it(self):
+        shared = self.write_json(os.path.join(self.cfg, "proj", ".claude", "settings.json"), {})
+        rc, out = self.run_it("--settings", shared)
+        self.assertEqual(rc, 0, out)
+        self.assertIn("WARNING: .claude/settings.json is shared", out)
+        self.assertIn("do not commit it", out)
+
     def test_settings_naming_other_files_records_no_scope(self):
         local = os.path.join(self.cfg, "proj", ".claude", "settings.local.json")
         self.assertIsNone(self.scope_after("--settings", local))
