@@ -1702,14 +1702,25 @@ def _note_line(n, text, raw):
     return line
 
 
+def _abbrev(tok, name):
+    """True when `tok` names the long option `name` as argparse reads it:
+    the full name or any unambiguous prefix of it, bare or with `=value`."""
+    head = tok.split("=", 1)[0]
+    return len(head) > 2 and name.startswith(head)
+
+
 def _stray_separator(argv):
     """1-based position of the first text that is exactly `--`, judged from
     the raw argv, else None. argparse takes the first `--` as the end of
     options, and may silently drop a later one rather than hand it over as
-    a text (it varies by Python version), so a note would lose a text."""
+    a text (it varies by Python version), so a note would lose a text.
+    Texts are counted as argparse counts them: only the id and note's own
+    options (--raw, -h, --help, or a prefix argparse accepts) are not
+    texts; a token such as `-5` is one."""
     toks, i = list(argv or ()), 0
     while i < len(toks) and toks[i] != "note":  # the subcommand, past --root
-        i += 2 if toks[i] == "--root" else 1
+        root_opt = _abbrev(toks[i], "--root")
+        i += 2 if root_opt and "=" not in toks[i] else 1
     toks = toks[i + 1:]
     if "--" not in toks:
         return None
@@ -1717,8 +1728,9 @@ def _stray_separator(argv):
     after = toks[sep + 1:]
     if "--" not in after:
         return None
-    before = [t for t in toks[:sep] if not t.startswith("-")][1:]  # minus the id
-    return len(before) + after.index("--") + 1
+    before = [t for t in toks[:sep]  # the id, then texts
+              if not (t == "-h" or _abbrev(t, "--raw") or _abbrev(t, "--help"))]
+    return (len(before) + after.index("--")) or None
 
 
 def cmd_note(args):

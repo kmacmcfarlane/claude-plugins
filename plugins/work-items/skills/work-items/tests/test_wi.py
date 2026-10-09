@@ -1787,6 +1787,22 @@ class TestNote(WiTestCase):
         self.assertIn(f"- {wi.today()} a -- b\n- {wi.today()} -- c\n",
                       path.read_text())
 
+    def test_the_separator_refusal_counts_texts_as_argparse_does(self):
+        """An abbreviated --root whose value is `note`, and a text that looks
+        like an option (`-5`), still name the right text."""
+        path = self.item()
+        before = path.read_bytes()
+        for argv, n in ((["--roo", "note", "note", self.IID, "--", "a", "--", "b"], 2),
+                        (["--root=note", "note", self.IID, "--", "a", "--", "b"], 2),
+                        (["note", self.IID, "-5", "--", "a", "--", "b"], 3),
+                        (["note", self.IID, "--ra", "-5", "--", "--", "b"], 2)):
+            with self.subTest(argv=argv):
+                r = run(argv, self.root)
+                self.assertEqual(r.returncode, 1, r.stdout + r.stderr)
+                self.assertTrue(r.stderr.startswith(f"wi: text {n}: is exactly '--'"),
+                                r.stderr)
+                self.assertEqual(path.read_bytes(), before)
+
     def test_refusal_runs_before_the_store_is_read(self):
         r = run(["note", "no-such-0000", "--", "x\ny"], self.tmp / "nowhere")
         self.assertEqual(r.returncode, 1)
