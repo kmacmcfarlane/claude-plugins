@@ -13,9 +13,9 @@ Pointed at from SKILL.md § Troubleshooting and from `fix-loop.md` for the permi
   `<scratchpad>/dev-cycle/<slug>/record.md` — never a file in an investigation series;
   nothing is filed and nothing is claimed.
   Never `wi init` from a cycle.
-- **A store, but no `wi`.** Resolve it with the lines in `bindings.md` § Store; an empty
-  result after all three sources means `work-items` is not installed. Say so once and run
-  on the scratchpad record.
+- **A store, but no `wi`.** Resolve it with the snippet in `bindings.md` § Store; `no wi
+  found` after all three sources means `work-items` is not installed. Run no `wi` command,
+  say so once, and run on the scratchpad record.
 - **`wi claim` exits 4.** Another session holds the item. Do not force; stop and report
   who holds it.
 - **The target is ambiguous.** An argument that is both an item id and a series slug: take

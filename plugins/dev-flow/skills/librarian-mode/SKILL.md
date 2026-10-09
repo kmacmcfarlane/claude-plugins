@@ -65,18 +65,14 @@ serialization, so it does little itself: it files, factors, runs each item throu
 
 Do this at session start and after any `/clear` or compaction. Never `ls` the whole store.
 
-1. **Locate the main checkout and the store.**
-
-   ```bash
-   MAIN=$(git rev-parse --path-format=absolute --git-common-dir | sed 's#/\.git$##')
-   export WI_ROOT="$MAIN/.claude-sandbox/work"
-   WI="python3 $(ls "$MAIN"/plugins/*/skills/work-items/scripts/wi.py 2>/dev/null | head -1)"
-   ```
-
-   An empty glob means the repo does not carry the plugin: use the installed
-   copy (`references/troubleshooting.md` § Installing `wi`). When neither finds `wi`,
-   `work-items` is not installed, and the librarian cannot run without it — its whole
-   queue is the store. Stop there: say "librarian-mode needs work-items, which is not
+1. **Locate the main checkout and the store.** Run the `dev-cycle` skill's
+   `references/bindings.md` § Store snippet, dev-flow's one copy of the lookup: it sets
+   `MAIN`, exports `WI_ROOT` for the store it finds, and prints the `wi` command, from the
+   repo's own tree or else the installed plugin's copy. The librarian's store is
+   `$MAIN/.claude-sandbox/work`, or an existing `.work/` one, which the snippet finds
+   too. When it prints `no wi found`, `work-items` is not
+   installed, and the librarian cannot run without it — its whole queue is the store.
+   Stop there: say "librarian-mode needs work-items, which is not
    installed: /plugin install work-items@kmacmcfarlane", and touch nothing else (no
    opt-in, no store, no dispatch). This is a repair notice, not a peer hint, so the
    hint switch never hides it. No store yet, or a `.work/` one:

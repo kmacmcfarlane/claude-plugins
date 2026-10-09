@@ -342,10 +342,12 @@ def unverified_reason(top):
     return "head unverified"
 
 
-def head_moved(hs):
+def head_moved(hs, store=False):
     """None when the recorded head still describes the repo; else the one line
     that replaces the `## Next` body. Store-only commits (librarian chores under
-    .claude-sandbox/work) do not count as movement."""
+    .claude-sandbox/work) do not count as movement. The line names `wi prime`
+    only when the repo has a work-item store (`store`): with none there is no
+    queue to prime, and `wi` may not be installed at all."""
     if not hs:
         return None
     why, n = divergence(hs), hs["n"]
@@ -355,7 +357,8 @@ def head_moved(hs):
     if why and hs["known"] and n is not None and hs.get("behind") is not None:
         moved += f" ahead, {hs['behind']} behind"   # rewound or diverged
     return (f"Next withheld: head moved {moved} since this manifest ({hs['rec']}.."
-            f"{hs['cur']}{', ' + why if why else ''}); run wi prime and git log.")
+            f"{hs['cur']}{', ' + why if why else ''}); run "
+            f"{'wi prime and ' if store else ''}git log.")
 
 
 _UNSET = object()
@@ -369,7 +372,8 @@ def stale_checks(fm, top, live, hs=_UNSET):
     try:
         if hs is _UNSET:
             hs = head_state(fm, top)
-        return (head_moved(hs),) + dead_claims(fm, top)
+        store = bool(hs) and bool(top) and store_root(top) is not None
+        return (head_moved(hs, store),) + dead_claims(fm, top)
     except Exception:
         return None, [], []
 

@@ -438,7 +438,8 @@ The first rule that matches wins:
    files: `research`, `research-deep`, `research-refine`, `deep-investigation` and
    `chain-of-verification`, model-invoked runs included.
 4. **Otherwise** — no store, or no `wi`. Write the state file's `## Record`. Never run
-   `wi init`; say once that the run has no work-item store.
+   `wi init`; say once that the run has no work-item store, or, with a store and `no wi
+   found`, that `work-items` is not installed, so no item was filed or updated.
 
 So a run records on no item in two cases only: inside a sub-agent (rule 1), or with no store
 or no `wi` (rule 4). Where a rule says `## Record` and the run has no state file (a quick
@@ -500,23 +501,16 @@ The handoff keeps `$WI lint` clean while the run is open.
 
 From the working directory, the main checkout's `.claude-sandbox/work/`, then `.work/`; the
 first that exists is the store. `wi` comes from the repo's own tree when it carries the
-`work-items` plugin, else from the installed plugin:
+`work-items` plugin, else from the installed plugin. Both are found by dev-flow's one copy
+of the lookup, the `dev-cycle` skill's `references/bindings.md` § Store snippet, run as it
+stands: it exports `WI_ROOT` when a store exists and prints the resolved command, or `no wi
+found`.
 
-```bash
-MAIN=$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null) && MAIN=$(dirname "$MAIN") || MAIN=$PWD
-for d in "$MAIN/.claude-sandbox/work" "$MAIN/.work"; do test -d "$d" && { export WI_ROOT="$d"; break; }; done
-WI_PY=$(ls "$MAIN"/plugins/*/skills/work-items/scripts/wi.py 2>/dev/null | head -1)
-P="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/plugins"
-test -n "$WI_PY" || WI_PY="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["plugins"]["work-items@kmacmcfarlane"][0]["installPath"])' "$P/installed_plugins.json" 2>/dev/null)/skills/work-items/scripts/wi.py"
-test -f "$WI_PY" || WI_PY=$(ls -t "$P"/cache/kmacmcfarlane/work-items/*/skills/work-items/scripts/wi.py 2>/dev/null | head -1)
-WI="python3 $WI_PY"
-```
-
-Rule 4's test is `test -n "$WI_ROOT" && test -f "$WI_PY"`: when it fails, rule 4. Run the
-snippet once, at the record's opening, and from then on use the `wi:` and `item_file:` lines
-the state file carries (with no state file — a quick run, `chain-of-verification` — re-run
-the snippet in each Bash call that needs `wi`, and carry the item id in the conversation). This snippet restates the `dev-cycle` skill's
-store resolution in research's own home; a change to `wi`'s install path touches both.
+Rule 4's test is `test -n "$WI_ROOT" && test -f "$WI_PY"` after the snippet (`no wi found`
+fails it): when it fails, rule 4, and no `wi` command runs. Run the snippet once, at the
+record's opening, and from then on use the `wi:` and `item_file:` lines the state file
+carries (with no state file — a quick run, `chain-of-verification` — re-run the snippet in
+each Bash call that needs `wi`, and carry the item id in the conversation).
 
 ### Closing
 

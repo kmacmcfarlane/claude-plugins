@@ -162,9 +162,27 @@ class TestRehydrateStale(unittest.TestCase):
         c = self.hook()
         self.assertNotIn("wi show build-the-widget-aaaa", c)
         self.assertIn(f"Next withheld: head moved 2 commits since this manifest "
-                      f"({self.head}..{self.rev()}); run wi prime and git log.", c)
+                      f"({self.head}..{self.rev()}); run git log.", c)
         for keep in ("## Doing", "## Aware of", "REFUSED sudo", "## Scrolls"):
             self.assertIn(keep, c)
+        self.assertNotIn("wi prime", c)     # no store: nothing to prime
+
+    def test_withheld_line_names_wi_prime_only_with_a_store(self):
+        self.manifest()
+        self.commit("code", "src/a.txt")
+        self.item("build-the-widget-aaaa", "doing")          # untracked store file
+        c = self.hook()
+        self.assertIn(f"Next withheld: head moved 1 commit since this manifest "
+                      f"({self.head}..{self.rev()}); run wi prime and git log.", c)
+
+    def test_withheld_line_names_wi_prime_with_a_wi_root_store(self):
+        other = tempfile.TemporaryDirectory()
+        self.addCleanup(other.cleanup)
+        os.makedirs(os.path.join(other.name, "items"))
+        self.manifest()
+        self.commit("code", "src/a.txt")
+        c = self.hook(env=dict(self.env, WI_ROOT=other.name))
+        self.assertIn("; run wi prime and git log.", c)
 
     def test_withheld_line_once_in_full_and_in_header_tier(self):
         self.manifest()
@@ -318,7 +336,7 @@ class TestRehydrateStale(unittest.TestCase):
         self.assertNotIn("FRESH", self.header(c))
         self.assertIn(f"Next withheld: head moved 0 commits ahead, 1 behind since this "
                       f"manifest ({ahead}..{self.head}, recorded head is not an "
-                      f"ancestor); run wi prime and git log.", c)
+                      f"ancestor); run git log.", c)
         self.assertNotIn("wi show build-the-widget-aaaa", c)
 
     def diverge(self, n_main=1):
@@ -338,7 +356,7 @@ class TestRehydrateStale(unittest.TestCase):
         self.assertIn("AGED (recorded head is not an ancestor) manifest", self.header(c))
         self.assertIn(f"Next withheld: head moved 2 commits ahead, 1 behind since this "
                       f"manifest ({side}..{self.rev()}, recorded head is not an "
-                      f"ancestor); run wi prime and git log.", c)
+                      f"ancestor); run git log.", c)
 
     def test_diverged_one_commit_singular(self):
         side = self.diverge(1)
@@ -578,7 +596,7 @@ class TestRehydrateStale(unittest.TestCase):
         c = self.hook()
         self.assertIn("AGED manifest", self.header(c))
         self.assertIn(f"Next withheld: head moved 2 commits since this manifest "
-                      f"({side}..{self.rev()}); run wi prime and git log.", c)
+                      f"({side}..{self.rev()}); run git log.", c)
         self.assertNotIn("not an ancestor", c)
 
     def test_code_rewind_still_withheld(self):

@@ -628,19 +628,30 @@ run record, and nothing is filed. Never run `wi init` from a
 cycle.
 
 `wi` itself comes from the repo's own tree when it carries the `work-items` plugin, else
-from the installed plugin:
+from the installed plugin. This is dev-flow's one copy of the lookup: every dev-flow skill
+that drives `wi` (`investigate`, `implement`, `librarian-mode`, the research family) runs
+this snippet and names it rather than restating it:
 
 ```bash
-export WI_ROOT="$MAIN/.claude-sandbox/work"   # or "$MAIN/.work"
+MAIN=$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null) && MAIN=${MAIN%/.git} || MAIN=$PWD
+for d in "$MAIN/.claude-sandbox/work" "$MAIN/.work"; do test -d "$d" && { export WI_ROOT="$d"; break; }; done
 WI_PY=$(ls "$MAIN"/plugins/*/skills/work-items/scripts/wi.py 2>/dev/null | head -1)
 P="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/plugins"
 test -n "$WI_PY" || WI_PY="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["plugins"]["work-items@kmacmcfarlane"][0]["installPath"])' "$P/installed_plugins.json" 2>/dev/null)/skills/work-items/scripts/wi.py"
 test -f "$WI_PY" || WI_PY=$(ls -t "$P"/cache/kmacmcfarlane/work-items/*/skills/work-items/scripts/wi.py 2>/dev/null | head -1)
-WI="python3 $WI_PY"
+if test -f "$WI_PY"; then WI="python3 $WI_PY"; echo "$WI"; else WI=no-wi-found; echo "no wi found"; fi
 ```
 
-`${CLAUDE_PLUGIN_ROOT}` is dev-flow's root and carries no `wi`. A store with no `wi`
-anywhere: say once that `work-items` is not installed, and run with the scratchpad record
-as the sink.
+The last line binds `WI` only to a file that exists: with none, every lookup leaves
+`WI_PY` empty or a path that does not exist, and `python3` on it would fail, or, with no
+name at all, take the verb as a script to run from the working directory, or read one from
+stdin. So `no wi found` binds `WI` to a name that is no command, and a `$WI` call run by
+mistake fails with exit 127 instead of running anything. `${CLAUDE_PLUGIN_ROOT}` is
+dev-flow's root and carries no `wi`. Shell state does not outlive one Bash call, so a later
+call uses the command the snippet printed, with its absolute path, or runs the snippet
+again.
+
+A store with `no wi found`: run no `wi` command; say once that `work-items` is not
+installed, and run with the scratchpad record as the sink.
 
 The same resolved line, with absolute paths, is what the briefs' `CLI:` line carries.

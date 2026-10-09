@@ -33,7 +33,9 @@ re-investigates; with no argument the problem comes from the conversation, or is
 Resolve the argument per `references/resolving-the-issue.md`: a **work-item** id or title
 fragment (in a repo with a `.work/` or `.claude-sandbox/work/` store) → `wi show` or `wi ls
 --plain`, start from its description and `## Handoff` block, and `wi claim` it once the
-investigation begins — with no argument in such a repo, offer `wi next --plain` first; a
+investigation begins — with no argument in such a repo, offer `wi next --plain` first
+(`wi` found as the reference says; when it is not installed, the item is read but not
+claimed, and the report says so); a
 **TODO.md** item only when no store exists — a `TODO.md` carrying the work-items deprecation
 notice means use `wi`, a missing one means treat the argument as ad hoc text, and `TODO.md` is
 never created; an **existing slug** → Step 1a; **ad hoc text** as given; **no argument** → the
