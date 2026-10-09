@@ -5,8 +5,10 @@ short_display_name: retire dying reset-time source
 type: chore
 status: todo
 priority: 3
+deps:
+  - statusline-split-f5-remove-compat-one-re-a95a
 created: 2026-10-08
-updated: 2026-10-08
+updated: 2026-10-09
 refs:
   - spike-how-much-inter-plugin-dependency-i-72ef
 ---
