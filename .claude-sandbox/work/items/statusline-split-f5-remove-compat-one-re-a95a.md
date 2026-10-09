@@ -2,13 +2,12 @@
 id: statusline-split-f5-remove-compat-one-re-a95a
 title: "statusline split F5: remove compat one release later"
 type: chore
-status: doing
+status: done
 priority: 3
 parent: status-line-its-own-independently-instal-3c48
-owner: Kyle-McFarlane@2d49f8460283
-claimed: 2026-10-09T14:09Z
 created: 2026-09-18
 updated: 2026-10-09
+closed: 2026-10-09
 ---
 
 3c48 plan §F5: delete context-guard's deprecated copy, old-path read and notice. Size S; opus.
@@ -42,3 +41,6 @@ agent: reviewer aa9e083fc127070cd
 verdict: review round 1 CLEAR (must-fix 0; 21 old/new depth cases compared, changes only where an old in-state writer still runs; 115 deleted tests matched; lows: L1 sensor `at` non-finite/bool/text and skewed epoch_end have no test now; L2 the recorded-but-disabled question — already on 7dd3 (note added there), no decision needed here; nits: README.md:359 unwrapped, an extra blank line, a lib_context.py:157 comment, a heal() test from the reviewer's probe)
 decided: 2026-10-09T15:10Z cap — a finish round of L1 and N1-N4, exact fixes (authority answer 145)
 dispatch: implementer opus medium — finish round (resume a194aaaecfdf57eb4)
+verdict: finish round CLEAR — diff read: L1 tests added, README rewrap, comment, blank line, two heal() cases
+landed: aac7fb0 (merge of c2998a2..f2bd018); Checks 12/12 OK; cc_scan clean (Python builtins only on added lines)
+- 2026-10-09 done
