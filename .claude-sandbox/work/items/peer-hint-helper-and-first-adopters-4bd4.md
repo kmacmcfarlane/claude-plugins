@@ -17,7 +17,7 @@ Follow-up F10 from the plugin-dependency spike (72ef), 2026-10-08. Acceptance: a
 
 ## Handoff
 - doing: —
-- next: —
+- next: build waits on decision 207 (probe runs with the operator present); OQ1 blocks only if O5 can't separate -p runs
 - blocked: —
 - learned: —
 

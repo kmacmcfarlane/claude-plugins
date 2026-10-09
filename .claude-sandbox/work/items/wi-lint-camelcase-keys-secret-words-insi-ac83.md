@@ -18,3 +18,7 @@ From b9fb review 1, finding 6, outside b9fb: camelCase colon keys (clientSecret:
 - next: —
 - blocked: —
 - learned: —
+
+## Notes
+note: also from b9fb review 2 low 5: a value on the next line (YAML |, \ continuation), a Markdown table row | db_pass | v |, kebab-case db-pass=, a password inside a URL (scheme://user:v@host), --password v with a space
+note: also from b9fb review 4: tighten placeholders to $NAME, ${NAME}, {name} (catches bcrypt-style $2b$…); a pass suffix as a secret word with a deny-list (bypass, compass, surpass, trespass, overpass, underpass, encompass); a secret as a spaced second call argument
