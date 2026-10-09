@@ -32,3 +32,5 @@ decided: 2026-10-09T17:25Z design — the operator's stated expectation settles 
 target: no auto compaction passes above the due line (850K on 1M); the relay never fires above it; manual /compact untouched; tests for each path, including checkpointed-at-low-fill and the relay
 dispatch: implementer opus medium — build (gate behaviour; not a canonical mechanical kind)
 agent: implementer a5c4b28f7b81cabbd
+return: DONE 2634f72; 12/12 Checks OK (context-guard 718); judgement: inferred depth still defers (the brief misstated the existing rule; kept, since making it allow would let idle compactions through without a status-line reading); compact_deferred set only at or under due; relay on mirrored depth, gate on pre-mirror, as before
+dispatch: reviewer opus high — review round 1 of 2634f72
