@@ -3,12 +3,11 @@ id: wi-lint-camelcase-keys-secret-words-insi-ac83
 title: "wi lint: camelCase keys, secret words inside longer keys, and Authorization: Bearer"
 short_display_name: wi lint more secret keys
 type: bug
-status: doing
+status: done
 priority: 3
-owner: Kyle-McFarlane@2d49f8460283
-claimed: 2026-10-09T13:56Z
 created: 2026-10-09
 updated: 2026-10-09
+closed: 2026-10-09
 refs:
   - wi-lint-secret-shapes-the-assignment-and-b9fb
 ---
@@ -46,3 +45,6 @@ dispatch: reviewer opus high — review round 3 of 2df5df2 (resume a65548473809d
 verdict: review round 3 NEEDS_CHANGES (must-fix 1, down from 2: low — under a meta key a UUID with an a-f-only first group and an all-caps run of 16+ (AKIA… without digits) read as names; exact patch at scratchpad/ac83-review/wi_r3fix.py; rulings: exclude UUIDs outright; the 38 letters-only draws acceptable; follow-ups filed as wi-lint-bare-lowercase-pass-keys-pw-more-dc23)
 decided: 2026-10-09T16:05Z cap — must-fix fell 2 → 1 and the leftover is an exact patch: a finish round (authority answer 145), no review 4
 dispatch: implementer opus medium — finish round (resume a15cd24ab91b0fc91)
+verdict: finish round CLEAR — diff read: _META_NAME_RE capped at 15 per run, _UUID_RE checked first, two flag tests and one clean test, format.md wording
+landed: 5de4d04 (merge of d0d82c1..f0289f2); Checks 12/12 OK; real-store lint: no secret findings; cc_scan clean; both background security flags answered (review 1 findings 1-2, review 2 finding 1, review 3 finding 1)
+- 2026-10-09 done

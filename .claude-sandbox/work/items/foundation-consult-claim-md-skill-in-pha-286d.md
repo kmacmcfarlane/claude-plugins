@@ -28,3 +28,5 @@ decided: 2026-10-09T15:40Z scope — no separate plan: the 5f2d series (00 § Fi
 target: foundation phase 1 writes or proposes scope through ownership:claim-md when listed; G2 checks contracts against its Boundaries and Interfaces; without it the plain fallback, disclosed; edges declared; all Checks green
 dispatch: implementer opus medium — build
 agent: implementer aac8fa75aac1fadce
+return: DONE ec38341; 12/12 Checks OK; judgement: claim approved inside G1, F0 writes it; Scope line drops none; a G3 re-read line added beyond acceptance; hint shaped like claim-md and factor-analysis
+dispatch: reviewer opus high — review round 1 of ec38341
