@@ -62,8 +62,8 @@ alternative not taken, in case practice argues for it.
   every page card opens on a flat Context introducing the terms, items and concepts its
   Impact line, TLDR and options use, and its TLDR carries no recommendation, which the options
   mark. Not taken: definitions left to What in the Background fold; a Rec bullet in the TLDR.
-  Background not auto-expanded; Context absorbs What (decision 197 (a), the operator's answer 2026-10-08).
-  Not taken: Background open on load.
+  Background not auto-expanded; Context absorbs What (decision 197 (a), the operator's answer
+  2026-10-08). Not taken: Background open on load.
 - **Block depth on an answer page, by detail level** (levels optional since 201) (2026-10-08,
   decision 198, the operator's (a) with changes, and the operator's label **More** for the
   option button; the field shape, the sizes for the visible parts' levels and the lints,

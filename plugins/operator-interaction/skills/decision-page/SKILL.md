@@ -49,7 +49,28 @@ the decisions in chat. Say which you took and why.
 ## Step 2: Write cards.json
 
 In a working directory (your scratchpad unless the caller names one): copy
-`assets/index.html` there unchanged, and write `cards.json` per `references/cards-schema.md`.
+`assets/index.html` there unchanged, and write `cards.json` from `references/writer-digest.md`
+(the fields, the level shapes, the floor's must-haves and the lints, in one read), opening
+`references/cards-schema.md` only for a case the digest does not settle.
+
+**Write it cheaply.** Most of a page's cost is the reading each writer repeats, not the card
+text, so by default:
+
+- **One writer per page.** Write the page yourself, or hand it to one writer; a page too large
+  for one goes to one writer per large group of cards (a `layers` group or more), never one
+  per few cards. The shared reading (this step, the digest, the `decisions` floor) is then
+  paid once, or once per group.
+- **The digest, not the schema.** A writer reads `references/writer-digest.md` in place of the
+  schema and `assets/cards.example.json`; the caller may paste the digest into the brief.
+- **Approved text, passed in.** Where the caller already holds approved card text (a series'
+  cards, a stored decision's lines), it passes that text, with the source paths for the depth,
+  rather than having the writer re-read whole plans to rebuild it.
+- **Few turns.** Batch the reads into one or two turns; write `cards.json` once; run the check;
+  then edit the lines it names rather than rewriting the file.
+- **The writer's own route.** A delegated writer runs at the model and effort the caller's
+  routing sets for it; this skill names none.
+
+The rules below are what the digest condenses:
 
 - One card per decision, in the `decisions` skill's order; groups (`layers`) as its
   groups. Short names (`t`) the operator would say; plain names for items (the
@@ -272,6 +293,8 @@ answer to a card whose `rev` has not moved is a new answer and hands over one mo
 ## References
 
 - `references/cards-schema.md` — the cards.json fields, each mapped to the card, and the answers document
+- `references/writer-digest.md` — what a writer needs in one read: fields, level shapes,
+  the floor's must-haves, the refusals and the lint keys
 - `references/fallback.md` — the tick-box doc, and the plain decisions block
 - `assets/index.html` — the page template
 - `assets/cards.example.json` — invented example data
