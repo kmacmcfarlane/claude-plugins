@@ -245,17 +245,17 @@ only on a part that carries levels, long (1.5 times) on any.
 card the effect, beside the rec pill (the map also beside the recommended option's title),
 which mark the recommendation; an open card the Impact, one facet a line; and its Options in
 full fold the Impact table (a row per option, each option's own effect, then the Wait row;
-Effect, Reach, Undo, Cost). It opens every card on its TLDR, then its Context, then its Impact: a page is
-read away from the conversation, so its reader is treated as cold. Any part with `detail`
-toggles its level on a click, on its button or on its text (never on a link or a control, nor
-while text is selected, so it can be copied); the folds keep their order and stay closed, with
-Options in full open on a ⚠ card; each option but `z` has a **More** button at its right,
-outside its label, which shows the option in full. The Impact table, each option's `impact`
-line, the Basis and Unknown lines, the titles, the one lines, `act`, and the round and default
-lines are static. A
-`⚠ one-way` card is the decisions skill's block: the card's essentials plus its Impact table,
-unfolded. It gets no special control: the read-back of a one-way pick happens in chat, when
-the answers are read back. An older `stakes` field is ignored: Undo and Reach carry it.
+Effect, Reach, Undo, Cost). It opens every card on its TLDR, then its Context, then its Impact:
+a page is read away from the conversation, so its reader is treated as cold. Any part with
+`detail` toggles its level on a click, on its button or on its text (never on a link or a
+control, nor while text is selected, so it can be copied); the folds keep their order and stay
+closed, with Options in full open on a ⚠ card; each option but `z` has a **More** button at its
+right, outside its label, which shows the option in full. The Impact table, each option's
+`impact` line, the Basis and Unknown lines, the titles, the one lines, `act`, and the round and
+default lines are static. A `⚠ one-way` card is the decisions skill's block: the card's
+essentials plus its Impact table, unfolded. It gets no special control: the read-back of a
+one-way pick happens in chat, when the answers are read back. An older `stakes` field is
+ignored: Undo and Reach carry it.
 
 **Republishing older data.** A `cards.json` written before `impact` existed is refused by the
 current template. On a republish, add `impact` to each kept card (a `stakes` field may stay,
