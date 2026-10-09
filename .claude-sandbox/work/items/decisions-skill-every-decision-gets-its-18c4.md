@@ -19,7 +19,7 @@ Relayed 2026-10-08 by peer claude-analytics from the operator there: a follow-up
 - next: —
 - blocked: —
 - learned: —
-decided: wording — adopt the peer's suggested rule as written; the operator asked for it in their session, and it extends "never reuse a number" without changing any answer
+decided: words — adopt the peer's suggested rule as written; the operator asked for it in their session, and it extends "never reuse a number" without changing any answer
 target: full main /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude/worktrees/decisions-skill-every-decision-gets-its-18c4
 budget: 2026-10-08T05:21Z build $22 — default other build
 dispatch: implementer opus medium — skill rule wording
@@ -32,7 +32,7 @@ changed: decisions SKILL.md (rule + ruling), references/gallery.md (Not this)
 dispatch: reviewer opus high — review round 1
 agent: reviewer aa5f510bd78c812af
 verdict: review 1 CLEAR at b7b2336 (must-fix 0; lows: ruling names this setup's session in a shipped skill, "follow-ups" collides with decision-page's reply shortcuts; nit: gallery follow-up points at the withdrawn 79)
-decided: wording — fix round 1 for the three exact Fix: lines (a shipped skill should not name this setup's session; review 1 is below the cap)
+decided: words — fix round 1 for the three exact Fix: lines (a shipped skill should not name this setup's session; review 1 is below the cap)
 dispatch: implementer opus medium — fix round 1, lows 1-3 (resume a12e3ca2d8538e3a5)
 return: DONE 71dce90 fix round 1 (three Fix: lines as given)
 dispatch: reviewer opus high — review round 2 (resume aa5f510bd78c812af)

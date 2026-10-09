@@ -56,7 +56,7 @@ changed: intensity-and-routing.md, research/research-deep/research-refine/resear
 dispatch: reviewer opus high — review round 1
 agent: reviewer aae7b80794e63b960
 verdict: review 1 CLEAR at b3e0524 (must-fix 0; lows: CLAUDE.md layout lacks the new test, override pick wording, illustration lane counts and quick verifier, Step 3 quota read order; nits: dangling §, size)
-decided: wording — fix round 1 for lows 1-4 (an operator round trip and a misordered step are worth one sentence each; below the cap)
+decided: words — fix round 1 for lows 1-4 (an operator round trip and a misordered step are worth one sentence each; below the cap)
 dispatch: implementer opus medium — fix round 1, lows 1-4 (resume acfa41296fc254968)
 return: DONE d532534 fix round 1 (lows 1-4 and the nit)
 changed: CLAUDE.md (dev-flow tests line, low 1)

@@ -41,7 +41,7 @@ decision 161: What should the new plugin that holds the research confinement hoo
   raised: 2026-10-06T02:46Z
   what: the name of the new hook-owning plugin F3 creates (the plan chose a new plugin over extending sandbox, name provisional, e.g. research-guard, serial 05 Q1)
   why now: the build creates the plugin directory, catalog row and data directory under this name; blocks: the confinement hook build
-  why ask: api-name — a plugin name is API (it names the plugin's data directory and every install), and plugin names are yours
+  why ask: contract — a plugin name is API (it names the plugin's data directory and every install), and plugin names are yours
   context: the plan left the name provisional for you · you name the plugin
   stakes: reversible, narrow before release — a rename later moves the plugin's data directory and every install
   (a) research-guard — says what it does (guards research agents) and pairs with context-guard
@@ -69,7 +69,7 @@ decision 161: What should the new plugin that holds the research confinement hoo
   revised: 2026-10-06T07:04Z — backfilled impact
   what: the name of the new hook-owning plugin F3 creates (the plan chose a new plugin over extending sandbox, name provisional, e.g. research-guard, serial 05 Q1)
   why now: the build creates the plugin directory, catalog row and data directory under this name; blocks: the confinement hook build
-  why ask: api-name — a plugin name is API (it names the plugin's data directory and every install), and plugin names are yours
+  why ask: contract — a plugin name is API (it names the plugin's data directory and every install), and plugin names are yours
   context: the plan left the name provisional for you · you name the plugin
   impact: → the new plugin, its catalog row and its data folder are named research-guard · later: the confinement hook build waits · reach: every install of the plugin · undo: a rename later moves its data folder
   stakes: reversible, narrow before release — a rename later moves the plugin's data directory and every install

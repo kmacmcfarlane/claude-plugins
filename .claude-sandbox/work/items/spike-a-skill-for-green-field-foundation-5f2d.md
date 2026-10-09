@@ -49,15 +49,15 @@ verdict: plan review 4 CLEAR (must-fix 0; low: 03 has no Risk Assessment section
 note: spike closed on its series (00-03); build filed as foundation-skill-build-the-green-field-f-cc8a, waiting on decisions 193-195
 decision 193: Where should the foundation skill live? — options: (a) a new skill in dev-flow [recommended] | (b) a new plugin, foundation | (c) a mode of investigate | (d) inside create-repo | (e) inside kit-dev | (z) decide later
   raised: 2026-10-08T07:50Z
-  why ask: placement — dev-flow's aim fits, but you may see a project's foundation as an aim of its own (a new plugin, a permanent name)
+  why ask: precedent — dev-flow's aim fits, but you may see a project's foundation as an aim of its own (a new plugin, a permanent name)
   impact: Effect → a new skill inside dev-flow, one line in its tables · Wait: blocks the build · reach: everyone who installs dev-flow · undo: one edit before release; a cheap skill move after · cost: none now
 decision 194: What should the skill be called? — options: (a) foundation [recommended] | (b) greenfield | (c) project-foundation | (z) decide later
   raised: 2026-10-08T07:50Z
-  why ask: api-name — both main candidates are your words
+  why ask: contract — both main candidates are your words
   impact: Effect → /dev-flow:foundation · Wait: blocks the build · reach: README, install notes, what you type · undo: one edit before release; a cheap skill rename after, or a costly plugin rename if 193 is (b) · cost: none
 decision 195: At which phase gates must you approve before the next phase starts? — options: (a) requirements and the plan always; architecture only for hard-to-reverse decisions (ADRs) and CLAIM.md changes, the rest reported [recommended] | (b) all three always | (c) requirements only | (z) decide later
   raised: 2026-10-08T07:50Z
-  why ask: rule-change — it sets how often every foundation run stops for you
+  why ask: precedent — it sets how often every foundation run stops for you
   impact: Effect → you approve requirements and plan every run; architecture only when hard to reverse · Wait: blocks the build · reach: every foundation run in every repo · undo: one rule edit · cost: usually two stops per run, three with a hard-to-reverse decision
 - 2026-10-08 done
 shown 193: 2026-10-08T20:02Z chat

@@ -142,7 +142,7 @@ decision 169: How should the gate recognise the credits error in a transcript? �
   raised: 2026-10-06T08:01Z
   what: how the latch is detected (A5)
   why now: the scrub plan stopped and carried after 4 reviews; blocks the latch change and the history scrub
-  why ask: rule-change — (a) and (b) are in tension with the new CLAUDE.md rule against quoted message text
+  why ask: precedent — (a) and (b) are in tension with the new CLAUDE.md rule against quoted message text
   context: you chose to scrub internals and rewrite history (164 a) · you settle the plan's open choices — then: none
   impact: → no quoted message text in the tree; after any rate-limit error, sessions above 200K only warn for the rest of that Claude Code process · later: an internal string stays in the tree, which also blocks the history scrub · reach: context-guard users · undo: an edit
   (a) documented text, cited — conflicts with the rule; may never match, as the transcript lacks the documented prefix
@@ -194,7 +194,7 @@ decision 173: Who runs the history scrub's force/recreate step and the in-place 
   raised: 2026-10-06T08:01Z
   what: B3
   why now: the scrub plan stopped and carried after 4 reviews; blocks the history scrub's last steps
-  why ask: rule-change — my rules forbid force-push and reset; only you can waive them
+  why ask: precedent — my rules forbid force-push and reset; only you can waive them
   context: you chose to scrub internals and rewrite history (164 a) · you settle the plan's open choices — then: none
   impact: → you run the two destructive steps; every session sharing this checkout stops first · later: the history scrub waits · reach: this checkout, its worktrees, every session on it · undo: from the .git tar backup
   (a) you run them — my rules stand

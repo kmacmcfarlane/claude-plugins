@@ -94,7 +94,7 @@ return: DONE 7290ba1 fix round 1 (findings 1-7 as written; test count corrected 
 changed: README.md (dev-flow row: decision-page hand-over, finding 4)
 dispatch: reviewer opus high — review round 2 (resume a2c9add003f36437c)
 verdict: review 2 CLEAR at 7290ba1 (must-fix 0; low 1: the F6 cut dropped the clause pointing to the caller's record shape and hold; merges cleanly with 96e66bc)
-decided: wording — fix round 2 for low 1's exact Fix: (restores a planned clause the F6 cut removed; review 2 is below the cap)
+decided: words — fix round 2 for low 1's exact Fix: (restores a planned clause the F6 cut removed; review 2 is below the cap)
 dispatch: implementer opus medium — fix round 2, low 1 only (resume a1ce4ecde12903821)
 return: DONE b0e69af fix round 2 (low 1 Fix sentence appended)
 dispatch: reviewer opus high — review round 3 (resume a2c9add003f36437c)

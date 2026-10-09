@@ -24,8 +24,8 @@ note: operator 2026-10-02, verbatim: "Since the skills are in the same plugin, w
 ## Notes
 - 2026-10-02 claimed by Kyle-McFarlane@401123cbad11
 note: operator 2026-10-02, verbatim: "let's just update the research skills' routing to be shaped along the lines of how dev-cycle was updated in-place instead of depnding on the dev-cycle skills. That seems cleaner. / 1. keep them separate / 2. we should have a work item for all research runs, then we can adopt that as the place to store that similarly / 3. it's okay for us to use haiku for this task if evidence supports that decision / 4. approved a second file to control effort / 5. let's have it for every call in research skills too / 6. you decide / bring along deep-investigation and chain-of-verification / go ahead and plan it and land it" (read as: plan and land; research gets its own routing reference shaped like dev-cycle's model-routing.md, in place, not a pointer into dev-cycle; every research run files a work item, which becomes its record sink for dispatch: lines; the verifier stays on haiku only if evidence supports it, else sonnet low; a second lane file at a higher effort is approved; model: on every research dispatch; deep-investigation and chain-of-verification are in scope)
-decided: 2026-10-02T21:57Z ruled-rule-case — tests: plugins/dev-flow/tests/test_agents.py keeps every research agent file's model and effort pin in step with the research routing table, as it does for dev-cycle's Profiles · authority: the operator's "6. you decide" (2026-10-02) · reopen: say so
-decided: 2026-10-02T21:57Z ruled-rule-case — the second lane file is named research-lane-deep, after planner-deep and implementer-deep; its effort is the plan's to set from evidence · authority: the operator's "4. approved a second file to control effort" (2026-10-02) · reopen: rename in the reply
+decided: 2026-10-02T21:57Z design — tests: plugins/dev-flow/tests/test_agents.py keeps every research agent file's model and effort pin in step with the research routing table, as it does for dev-cycle's Profiles · authority: the operator's "6. you decide" (2026-10-02) · reopen: say so
+decided: 2026-10-02T21:57Z contract — the second lane file is named research-lane-deep, after planner-deep and implementer-deep; its effort is the plan's to set from evidence · authority: the operator's "4. approved a second file to control effort" (2026-10-02) · reopen: rename in the reply
 dispatch: planner opus high — plan (operator: plan it and land it)
 target: plan research-skills-effort-based-routing-par-e184 /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude-sandbox/investigations/e184-research-routing
 agent: planner a755d6374fee501cb round 1
@@ -45,7 +45,7 @@ findings:
 dispatch: planner opus high — resume (plan fix round 1)
 agent: planner a755d6374fee501cb round 2
 return: planner PLAN_READY — serial 01_review-fixes.md (1-10)
-decided: 2026-10-02T22:21Z ruled-rule-case — research-lane-deep's pin is opus/high, set from the role (the exhaustive adversarial lane) because no exhaustive run has happened; revisit after the first exhaustive runs · authority: the operator's "4. approved a second file to control effort" (2026-10-02) · reopen: say so
+decided: 2026-10-02T22:21Z design — research-lane-deep's pin is opus/high, set from the role (the exhaustive adversarial lane) because no exhaustive run has happened; revisit after the first exhaustive runs · authority: the operator's "4. approved a second file to control effort" (2026-10-02) · reopen: say so
 baseline: 978f34264739 00_initial.md 8592c7657d6b 01_review-fixes.md 
 dispatch: reviewer opus high — resume (plan review round 2)
 agent: reviewer a20dd05df1987148f round 2
@@ -55,12 +55,12 @@ findings:
   11. [low] 00:767-768, 00:577 — acceptance 10 and the run-record.md outline still say ## Record is the no-store case only; say "used when the run records on no item: a sub-agent run, or no store"
   12. [nit] 00:730-731 — § 14 cites "§ 5 rule 2" for nested runs, now 01 § 1 rule 1
 findings: carried — 11 [low], 12 [nit] above, verbatim; into this item's build
-decided: 2026-10-02T22:22Z narrowing — the verifier's procedure faults (OQ3 of the research-routing plan) go to a filed follow-up, research-verifier-fix-its-procedure-faul-2e75, landing after 819f; this build moves only the verifier's pin · authority: class narrowing (the plan's recommended option) · reopen: pull it back into this build
+decided: 2026-10-02T22:22Z scope — the verifier's procedure faults (OQ3 of the research-routing plan) go to a filed follow-up, research-verifier-fix-its-procedure-faul-2e75, landing after 819f; this build moves only the verifier's pin · authority: class narrowing (the plan's recommended option) · reopen: pull it back into this build
 decision 147: The research-routing build adds six stored names: the research-run tag, an item: field, a ## Record section, an --item argument, the synthesis role word, and chain-of-verification's Record: line; keep them as named? — options: (a) keep them as named [recommended] | (b) rename some (say which) | (z) decide later
   raised: 2026-10-02T22:22Z
   what: names stored in work items and briefs, or parsed by the spend reader (was OQ1 of the research-routing plan, e184)
   why now: the build starts now with these names; renaming before it lands costs a search-and-replace, after it a migration of stored lines; blocks: the landing, not the build
-  why ask: api-name — new stored, parsed names are yours (answer 111 b)
+  why ask: contract — new stored, parsed names are yours (answer 111 b)
   context: you approved research routing in place, a work item per research run, and said plan it and land it · you approve the names it writes — then: none
   stakes: reversible, narrow — research runs' records
   (a) keep them as named — research-run (tag on the item each run files), item: (the run's item in its brief), ## Record (where a run with no item writes its lines), --item <id> (name an existing item), synthesis (role word on a dispatch line), Record: (chain-of-verification's summary line) — undo: a rename later migrates stored lines — who: research runs, the spend reader
@@ -116,7 +116,7 @@ decision 147: The research-routing build adds six stored names: the research-run
   revised: 2026-10-06T01:50Z — why now stale (the build has finished); options and recommendation unchanged
   what: names stored in work items and briefs, or parsed by the spend reader (was OQ1 of the research-routing plan, e184)
   why now: the build is done and passed review (round 2); landing it needs these names settled; blocks: the research-routing landing
-  why ask: api-name — new stored, parsed names are yours (answer 111 b)
+  why ask: contract — new stored, parsed names are yours (answer 111 b)
   context: you approved research routing in place, a work item per research run, and said plan it and land it · you approve the names it writes — then: none
   stakes: reversible, narrow — research runs' records
   (a) keep them as named — research-run (tag on the item each run files), item: (the run's item in its brief), ## Record (where a run with no item writes its lines), --item <id> (name an existing item), synthesis (role word on a dispatch line), Record: (chain-of-verification's summary line) — undo: a rename later migrates stored lines — who: research runs, the spend reader

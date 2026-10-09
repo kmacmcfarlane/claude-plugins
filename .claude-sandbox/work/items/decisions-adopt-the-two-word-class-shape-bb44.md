@@ -3,12 +3,11 @@ id: decisions-adopt-the-two-word-class-shape-bb44
 title: "decisions: adopt the two-word class shape (answer 134 a) and migrate stored tags"
 short_display_name: two-word decision classes
 type: feature
-status: doing
+status: done
 priority: 2
-owner: Kyle-McFarlane@2d49f8460283
-claimed: 2026-10-09T06:55Z
 created: 2026-10-09
 updated: 2026-10-09
+closed: 2026-10-09
 refs:
   - decisions-a-general-shape-for-decision-c-90bc
 ---
@@ -36,3 +35,5 @@ return: DONE da4ed4f (finish round: precedent in walkthroughs; fenced-tag test w
 review: self
 verdict: finish round CLEAR — diff read: the five fixes, three files
 landed: 2b59dba (merge of b88938f, da4ed4f); Checks 10/10 OK
+store: migration applied 2026-10-09T07:30Z with --owner Kyle-McFarlane@2d49f8460283 — 65 lines in 24 files, tag tokens only; 4 old tags left in two items other owners hold; removal item decide-alone-remove-the-retired-spelling-0130 filed; 86e1 closed as covered
+- 2026-10-09 done

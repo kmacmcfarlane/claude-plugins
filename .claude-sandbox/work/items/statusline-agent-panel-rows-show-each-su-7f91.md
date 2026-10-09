@@ -46,7 +46,7 @@ return: DONE 34a2802 fix round 1 (all six findings; effort over 6 chars drops on
 changed: plugins/statusline/hooks/subagent_statusline.py, tests/test_subagent_statusline.py, skills/install-statusline/SKILL.md (round 1 fixes)
 dispatch: reviewer opus high — review round 2 (resume aa336218277396d92)
 verdict: review 2 CLEAR at 34a2802 (must-fix 0); lows 7 (long tag suppresses description) and 8 (version claim lacks its doc URL in the file, with Fix:)
-decided: wording — fix round 2 for finding 8's exact Fix: (CLAUDE.md source-material rule 2 wants the doc URL in the file; review 2 is below the cap, so no cap rule applies); finding 7 filed as a follow-up, not this change
+decided: words — fix round 2 for finding 8's exact Fix: (CLAUDE.md source-material rule 2 wants the doc URL in the file; review 2 is below the cap, so no cap rule applies); finding 7 filed as a follow-up, not this change
 subject-fix: 56eedcb added: statusline sub-agent rows - show each agent's model and effort beside its context fill
 dispatch: implementer opus medium — fix round 2, finding 8 only (resume a4bd4861771a0bec2)
 return: DONE 2962c2a fix round 2 (finding 8 Fix applied; paragraph rewrapped; nested parenthesis)

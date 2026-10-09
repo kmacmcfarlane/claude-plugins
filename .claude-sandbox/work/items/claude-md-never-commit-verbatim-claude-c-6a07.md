@@ -93,7 +93,7 @@ decision 175: Should the copyright rule allow quoting a message Claude Code show
   raised: 2026-10-06T16:36Z
   what: the last sentence of CLAUDE.md § Claude Code source material rule 2 ("Quoted message text may not, observed or not")
   why now: it decides two scrub-plan choices (167, 169); blocks: the scrub build's latch design
-  why ask: rule-change — it is your copyright rule, and I wrote that sentence by my own ruling, beyond your words
+  why ask: precedent — it is your copyright rule, and I wrote that sentence by my own ruling, beyond your words
   context: you asked why quoted message text is banned when it is observable · you decide whether the rule bans it
   impact: → the gate may match the credits error by its user-visible text, cited to the public errors page, and keep today's 200K hard stop after it · later: the scrub build waits on 167 and 169 · reach: everything committed to this repo · undo: an edit to CLAUDE.md
   (a) allow user-visible messages — internal strings never shown to users stay banned; a quoted message carries "observed on <version>" or the doc URL — reach: this repo's committed text — undo: an edit

@@ -82,7 +82,7 @@ decided: cap — plan stop and carry at the convergence stop (authority answer 1
 findings: carried — (1) make each pending turn its own file pending/<safe_sid>/<prompt_id> holding tx_at, created with O_CREAT|O_EXCL|O_NOFOLLOW (0600) and unlinked by the origin step only after that turn's origin line is written; no rewrite, no lock; the prune removes per-turn files over 24 h and empty session dirs; (2) the prune lstats each entry and unlinks any non-regular entry (symlink included, never followed) as well as regular ones over 24 h
 decision 181: Where should the operator turn log live? — options: (a) a new small plugin turn-log, off switch TURN_LOG_RECORD=off [recommended] | (b) inside context-guard, CONTEXT_GUARD_TURN_LOG | (c) inside operator-interaction, OPERATOR_INTERACTION_TURN_LOG | (z) decide later
   raised: 2026-10-08T04:35Z
-  why ask: placement — a new plugin and its name are API (principle 5) and the operator's to name
+  why ask: precedent — a new plugin and its name are API (principle 5) and the operator's to name
   impact: Effect → the turn-log build can start · Wait: blocks the build · reach: the marketplace catalog, one new plugin · undo: renaming later breaks installs and the data path · cost: none now
 decision 182: May the turn-log hook read its own session's transcript, at Stop and SessionEnd only, to learn whether a turn was typed by the operator? — options: (a) yes, for the origin kind only [recommended] | (b) no: log every prompt with no origin | (z) decide later
   raised: 2026-10-08T04:35Z

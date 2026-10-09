@@ -21,7 +21,7 @@ Operator 2026-10-08, looking at another session's answer page (card 67, a KAPPA-
 - learned: —
 
 ## Notes
-decided: wording — the operator's points 1-3 are direction, not a question: Context becomes a required first section defining every term the flat part uses, and the TLDR carries no recommendation; authority the operator's message 2026-10-08
+decided: words — the operator's points 1-3 are direction, not a question: Context becomes a required first section defining every term the flat part uses, and the TLDR carries no recommendation; authority the operator's message 2026-10-08
 decision 197: Should the page auto-expand the Background fold, or move the substance a cold reader needs into the new flat Context? — options: (a) no auto-expand; Context (flat, first) absorbs What, and is counted outside the ~150-word flat budget [recommended] | (b) auto-expand Background on every card at publish | (c) both | (z) decide later
   raised: 2026-10-08T20:15Z
   why ask: your-call — you asked what I think; it sets how much every card shows unfolded
@@ -46,7 +46,7 @@ baseline: plan review 3 — 2164952866460e8432c1174ef8a3528f06f26c723cfbe219a11c
 dispatch: reviewer opus high — plan review 3 (resume ab0d87af0996dbbec)
 verdict: plan review 3 CLEAR (lows carried: 1 rev rule opens 'any change', a re-ask named; 2 % exclusion \b; 3 'Rec -b'/'Rec-(b)' accepted misses + tests; 4 probe5 path arg; 5 Fix G fixture contradictory; 6 runner exit-1 also on template unreadable or marker missing)
 findings: carried — plan review 3 lows 1-6, into the build's acceptance
-decided: placement — build now under 197 (a); the merge waits on the operator's answer to 197, since (a) is the substance of the change and they asked for my view; authority: the operator's request, decision 197 open
+decided: place — build now under 197 (a); the merge waits on the operator's answer to 197, since (a) is the substance of the change and they asked for my view; authority: the operator's request, decision 197 open
 dispatch: implementer opus medium — build, worktree
 - 2026-10-08 claimed by Kyle-McFarlane@2d49f8460283
 agent: implementer a14da422f7db4d314

@@ -61,7 +61,7 @@ findings:
   1-6 fixed; no old no-README rule left; lint passes/fails 12 scratch cases correctly
   1. [nit] create-skill SKILL.md:107 — "last non-blank line"
   2. [nit] agent-brief.md:80 — rewrap
-decided: 2026-10-05T23:15Z ruled-rule-case — a finish round for the two nits while the landing waits on decision 158 · authority: answer 137 · reopen: say so
+decided: 2026-10-05T23:15Z cap — a finish round for the two nits while the landing waits on decision 158 · authority: answer 137 · reopen: say so
 dispatch: implementer sonnet medium — resume (finish round: nits 1, 2)
 agent: implementer a584d80ad91257072 round 3
 hold: landing waits on decision 158 (the CLAUDE.md bullet matches its option (a))
