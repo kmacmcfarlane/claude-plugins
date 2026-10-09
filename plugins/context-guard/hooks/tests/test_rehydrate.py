@@ -371,6 +371,7 @@ class TestStep0ActsOnDrafts(unittest.TestCase):
         self.fm = self.skill.split("\n---", 1)[0]
         body = self.skill.split("## Step 0", 1)[1]
         self.step0 = body.split("\n## Step 1", 1)[0]
+        self.flat = " ".join(self.step0.split())  # line breaks fall anywhere
         self.step7 = self.skill.split("## Step 7", 1)[1].split("\n## Rules", 1)[0]
 
     def test_reply_line_is_namespaced(self):
@@ -388,8 +389,9 @@ class TestStep0ActsOnDrafts(unittest.TestCase):
                   "an inventory line is uncertain",
                   "REFUSED line or a hold",
                   "a stage boundary, a finished thread",
-                  "`compact_deferred` set"):
-            self.assertIn(s, self.step0, s)
+                  "`compact_deferred` set with no checkpoint recorded this epoch",
+                  "is not one the operator's own words named"):
+            self.assertIn(s, self.flat, s)
 
     def test_echo_line(self):
         self.assertIn("Acted on:", self.step0)
@@ -397,6 +399,11 @@ class TestStep0ActsOnDrafts(unittest.TestCase):
         self.assertIn("argument as given", self.step0)
         self.assertIn("run your own /compact", self.step0)
         self.assertIn("only question 3 open, which it re-drafts", self.step0)
+        self.assertIn("Or, for the window: run your own /compact", self.step0)
+        # the argument's own answers are stripped before a line is built,
+        # at a fork and in the echo's override
+        self.assertGreaterEqual(
+            self.flat.count("its own ` — 2:` / ` — 3:` parts stripped"), 2)
 
 
 class TestLegacyArmMatchesPreStore(unittest.TestCase):

@@ -1,6 +1,6 @@
 ---
 name: checkpoint
-description: Land the state of a long session before context is compacted or cleared — settle the goal from here (continue / handoff), drafted, acted on and echoed, asked first only at a real fork, write the reasoning that exists only in this conversation as a delta over the session ledger, route every finding to the repo that owns it, write this session's own HANDOFF.md rehydration manifest (one per session, in the Claude config dir, never in a repo), record the checkpoint so the context gate stands down, then print the manifest's absolute path and hand the operator the decision. Use when the gate warns (DUE/HARD), when an auto-compaction is deferred, when the user says "checkpoint", "we're running out of context", "wrap this up", or before switching topics after a long thread. Also use at a stage boundary in a skill chain — the next skill reads its inputs from files this session already published — regardless of window health.
+description: Land the state of a long session before context is compacted or cleared — settle the goal from here (continue / handoff) (drafted, acted on and echoed, asked first only at a real fork), write the reasoning that exists only in this conversation as a delta over the session ledger, route every finding to the repo that owns it, write this session's own HANDOFF.md rehydration manifest (one per session, in the Claude config dir, never in a repo), record the checkpoint so the context gate stands down, then print the manifest's absolute path and hand the operator the decision. Use when the gate warns (DUE/HARD), when an auto-compaction is deferred, when the user says "checkpoint", "we're running out of context", "wrap this up", or before switching topics after a long thread. Also use at a stage boundary in a skill chain — the next skill reads its inputs from files this session already published — regardless of window health.
 disable-model-invocation: false
 allowed-tools: Read, Write, Edit, Glob, Grep, Bash, Agent, ListAgents
 argument-hint: "[continue | handoff] [then /next-skill] [optional focus]"
@@ -21,8 +21,8 @@ Operator tool guide: `references/operator-playbook.md`. Manifest spec:
 **Lean path:** if the state file shows fewer than ~60K tokens left, skip every optional read,
 do Steps 0, 2, 4a½ in its lean form, and 4b only, then Step 7's close (the echo line when
 Step 0 acted, the manifest path, the opener, and for a handoff the continuation commands) —
-a lean checkpoint is when a handoff is likeliest and the next session has the least to go on. Keep the whole checkpoint
-under a screen.
+a lean checkpoint is when a handoff is likeliest and the next session has the least to go
+on. Keep the whole checkpoint under a screen.
 
 **Once this checkpoint is going ahead** — after Step 0, or, under the
 mid-turn marker, after the `--check` below has confirmed it — tell the mid-turn check that
@@ -74,11 +74,11 @@ with `--checkpointing`, then:
 - **Mode**: the mode a custody skill in charge of this session has named for its
   checkpoints (librarian-mode names `continue`); otherwise `handoff`.
 - **Step 0 is skipped entirely** — questions 1, 2 and 3: nothing drafted is echoed and
-  nothing is asked. Step 4b is not reduced with it: `Holds` and `In flight` come from the session's own evidence (the
-  operator's standing holds, the dispatch notices or ListAgents), never from question 2, so
-  they are written as always. What is lost is only what the operator would have added, so
-  anything this session merely assumes goes into the manifest's `Doing` and `Aware of` as
-  `BELIEF` lines, each marked unconfirmed (`BELIEF (unconfirmed: no operator) …`). The
+  nothing is asked. Step 4b is not reduced with it: `Holds` and `In flight` come from the
+  session's own evidence (the operator's standing holds, the dispatch notices or
+  ListAgents), never from question 2, so they are written as always. What is lost is only
+  what the operator would have added, so anything this session merely assumes goes into
+  the manifest's `Doing` and `Aware of` as `BELIEF` lines, each marked unconfirmed (`BELIEF (unconfirmed: no operator) …`). The
   `Goal` line quotes the operator's last stated goal, as ever.
 - **Lean path**: Steps 2 and 4b (with the mark), then Step 5's one sentence and Step 7's
   close as the turn's **final message**; end the turn there. Step 4a½ writes no item file
@@ -103,7 +103,7 @@ in their next prompt. An answer already given stands and is not drafted: the mod
 the argument settles question 1, and with `then <next-skill>` question 3 too; any `2:` /
 `3:` answers after it (the reply line below) settle those; and a calling custody skill that
 answers 2 and 3 itself (librarian-mode) settles them. Before drafting, read the gate state
-(Step 1's first file) for `compact_deferred`.
+(Step 1's first file) for `compact_deferred`, `checkpoint_epoch` and `epoch`.
 
 1. **The goal from here** — *continue* / *handoff*: *continue* keeps pulling this thread
    in this session (compact, then go on); *handoff* parks it, or moves it to a fresh session
@@ -121,11 +121,13 @@ answers 2 and 3 itself (librarian-mode) settles them. Before drafting, read the 
 **A fork** — only on a question this step drafted (never one the argument or a calling
 custody skill answered), ask that question first, and only it, when:
 
-- *(1)* the drafted mode is *handoff* and neither the argument nor the operator's own words
-  named it (a stage boundary, a finished thread, a next step that is not this session's,
-  one last thing that will not fit), or the evidence points both ways; or the gate state
-  has `compact_deferred` set and the drafted mode is not one the operator's own words named:
-  the mark releases that compaction, which re-injects the manifest before the echo is read.
+- *(1)* the drafted mode is *handoff* and the operator's own words did not name it (a stage
+  boundary, a finished thread, a next step that is not this session's, one last thing that
+  will not fit), or the evidence points both ways; or the gate state has `compact_deferred`
+  set with no checkpoint recorded this epoch (`checkpoint_epoch` is not `epoch`), and the
+  drafted mode is not one the operator's own words named: the mark releases that
+  compaction, which re-injects the manifest before the echo is read. A `compact_deferred`
+  left over after a mark this epoch is no fork.
 - *(2)* an agent of this session is in flight (ListAgents, or a dispatch with no completion
   notice yet): the roster goes in the inventory; or an inventory line is uncertain — it
   rests on belief, not evidence (whether a change was pushed, whether an operator statement
@@ -133,10 +135,10 @@ custody skill answered), ask that question first, and only it, when:
 - *(3)* the drafted guidance would drop a REFUSED line or a hold — one looks lifted,
   expired or superseded. Never drop one silently.
 
-**Asking at a fork.** As text, never a dialog: a dialog blocks every agent's return while
-it is open and holds no answer outside its options. Put the open questions as a numbered
-list, last in the message, each with its draft as the recommendation and the inventory
-inside question 2. End it with one pasteable reply line pre-filled with every answer, asked
+**Asking at a fork.** Ask in text, not a dialog, while an agent of this session may be
+running, and in text when none is, so an answer outside the drafts has room. Put the open
+questions as a numbered list, last in the message, each with its draft as the
+recommendation and the inventory inside question 2. End it with one pasteable reply line pre-filled with every answer, asked
 or not — the argument as given (`then <next-skill>` and any focus kept, its own ` — 2:` /
 ` — 3:` parts stripped), your drafted mode first when it named none, then the answers,
 given or drafted:
@@ -151,15 +153,17 @@ before this turn ends.
 (a DUE advisory, the stop relay) acts the same way. Step 7's close opens with the echo, one
 line, whenever this step drafted any answer (none when the argument or a caller gave all
 three). Build its override from the argument as given, its own ` — 2:` / ` — 3:` parts
-stripped first, with your drafted mode first when it named none:
+stripped first, with your drafted mode first when it named none. The window override is a
+separate sentence after the command, so the command never carries it when pasted:
 
 ```text
-Acted on: <mode> · in flight: <inventory heads in plain words, `; `-separated, +N more in the manifest> · window: <the guidance, or "as recommended above"> — to change: /context-guard:checkpoint <argument as given, drafted mode first when it named none> — 2: <what I missed> — window: run your own /compact <guidance>
+Acted on: <mode> · in flight: <inventory heads in plain words, `; `-separated, +N more in the manifest> · window: <the guidance, or "as recommended above"> — to change: /context-guard:checkpoint <argument as given, drafted mode first when it named none> — 2: <nothing more | what I missed>. Or, for the window: run your own /compact <guidance>
 ```
 
 A changed mode or inventory comes back as that reply line and re-runs the checkpoint with
-only question 3 open, which it re-drafts. Its Step 2 is a delta over the first run's
-outputs: the manifest it installed, and each tagged item's full `wi show` (never `--brief`,
+only question 3 open, which it re-drafts. When only the mode changes, keep
+`— 2: nothing more` in the line, so question 2 stays settled and only question 3 reopens.
+Its Step 2 is a delta over the first run's outputs: the manifest it installed, and each tagged item's full `wi show` (never `--brief`,
 lean form included; on a re-run this overrides 4a½'s lean-form read). This trades
 lean-depth window for no duplicate notes; a re-run is rare. So 4a½ writes only the lines
 the change itself brings, and nothing when it brings none. 4b rewrites the scratchpad draft
@@ -430,8 +434,8 @@ gate or label, it is already set). Drop this line only when the mode isn't a sta
 
 - Measure from the state file; never assert depth from feel.
 - Never silently drop an inventory item — route it or say you are dropping it.
-- Never drop a REFUSED line or a hold from the window guidance without asking (Step 0,
-  fork 3).
+- Never drop a REFUSED line or a hold from the window guidance it drafted without asking
+  (Step 0, fork 3).
 - Step 2's recall is never delegated and never skipped; Step 4a½ runs before Step 4b
   whenever `items:` is not empty; Step 4b is never skipped.
 - Path and key, never value.
