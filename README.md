@@ -364,7 +364,10 @@ each phase of an item to its spend budget; without it the review loop falls back
 fourth-review cap.
 Without it none of the others fire. Soft dependency on `kit-dev`: the `investigate` and
 `implement` retrospectives hand their findings to its user-invoked `update-kit`; without
-it the findings stand as the record. Soft dependency on `create-repo`: `investigate`'s
+it the findings stand as the record. `dev-cycle`'s briefs point a skill change's builder
+and reviewer at its `create-skill`, from the repo tree or the installed plugin; without
+it they state the authoring rules are the brief's, the repo's and the review checklist's
+own. Soft dependency on `create-repo`: `investigate`'s
 scoping gate and `foundation`'s Frame point the user at it when the target repo does not
 exist yet; without it they name the need and the user creates the repo.
 Soft dependency on `sandbox`: `investigate` and `deep-investigation` point to its skill

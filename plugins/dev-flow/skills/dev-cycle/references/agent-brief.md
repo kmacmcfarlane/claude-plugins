@@ -71,7 +71,8 @@ Files in scope: <explicit list, inside Ground; anything else is out of scope —
 - $WORKTREE/CLAUDE.md — layout and conventions
 - <when the change adds or edits a skill:> the create-skill skill at <its absolute
   SKILL.md path, bindings.md § Authoring rules> and its references/ — follow it as the
-  authoring procedure. <Or, when none is found, that section's no-create-skill line.>
+  authoring procedure. <When none is found, this whole line is replaced by that
+  section's no-create-skill line.>
 - <any other skill or reference the change names, by absolute path>
 
 Rules that reviewers reject on sight:

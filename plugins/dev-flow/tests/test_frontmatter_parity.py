@@ -61,7 +61,8 @@ class ChecklistCounts(unittest.TestCase):
         self.assertEqual(len(set(keys)), len(keys), "a key is listed twice")
         self.assertEqual(keys[:2], ["name", "description"])
         prose = re.sub(r"\s+", " ", CHECKLIST.read_text("utf-8"))
-        self.assertIn(f"{total} keys, the {required} required plus the {other} other", prose)
+        needle = f"{total} keys, the {required} required plus the {other} other"
+        self.assertTrue(needle in prose, f"the checklist prose does not say {needle!r}")
 
 
 @unittest.skipUnless(HOUSE.is_file(), "kit-dev is not beside dev-flow: nothing to compare")

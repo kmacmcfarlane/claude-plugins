@@ -77,8 +77,8 @@ union of every round's CHANGED, one file per line with its one-line reason>
 - A change outside Ground is a finding at medium; a change that ignores the Workflow
   notes above is a finding at medium
 - <when the change adds or edits a skill:> <the create-skill SKILL.md path,
-  bindings.md § Authoring rules> and its references/ — the authoring rules <or, when
-  none is found, that section's no-create-skill line>
+  bindings.md § Authoring rules> and its references/ — the authoring rules <when none
+  is found, this whole line is replaced by that section's no-create-skill line>
 - <any other skill or reference the change names, by absolute path>
 
 ## What to do

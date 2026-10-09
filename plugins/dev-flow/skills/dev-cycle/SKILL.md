@@ -417,7 +417,9 @@ open questions: <list, or none>
 decisions needed: <numbered list, or none>
 ```
 
-No spend reader: `references/bindings.md` § Spend budget, The reader, words `verified:`.
+No spend reader: `verified:` carries the disclosure in place of the spend figure, and at
+the top level the context-guard tip folds into it (`references/bindings.md` § Spend
+budget, The reader).
 
 A budget passed while the weekly quota was below half used adds one `Done alone:` line
 after the four (`references/bindings.md` § Spend budget, The Done-alone line); under a
