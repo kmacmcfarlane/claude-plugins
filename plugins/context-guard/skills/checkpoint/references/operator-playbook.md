@@ -224,9 +224,8 @@ The gate state gives the epoch and a depth, but **stores no source label** — t
 derived when the gate reads the file. The status line writes an `exact` block (`pct`,
 `tokens`, `window`, `at`) to its sensor file, `statusline/sensor/<session>.json` (written
 by the `statusline-hub` plugin, which installing `statusline` brings; absent when it is not
-installed). An older install whose status line
-still runs context-guard's deprecated copy writes the block into the gate state instead; the
-gate reads both and takes the one with the larger `at`. That block counts as *exact* only
+installed). The gate reads only that file; an `exact` block an older status line left in
+the gate state is ignored. The sensor file's block counts as *exact* only
 while `now - at` is under 600s, and once it goes stale the depth is re-derived from the
 transcript and is *inferred* (or
 `inferred, window from status line`, the literal the gate messages print when a stale block

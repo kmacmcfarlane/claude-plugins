@@ -6,16 +6,14 @@ Depth sources, in order of preference:
    which receives
    context_window.used_percentage and context_window_size from Claude Code on
    every render. Hooks never get those fields in their own input, so the status
-   line doubles as the sensor. Two records are read (sensor()): the statusline
+   line doubles as the sensor. One record is read (sensor()): the statusline
    plugin's neutral sensor file,
    ${CLAUDE_CONFIG_DIR:-~/.claude}/statusline/sensor/<safe_sid>.json (v1:
-   `exact`, `rate_limits`; a record whose `v` is not 1 is treated as absent),
-   and the legacy `exact` block in this plugin's own state file (written by
-   context-guard's deprecated statusline.py until the compat release). The
-   one with the larger `exact.at` wins; ties go to the sensor file. The
-   sensor file is read only when it is a regular file (opened O_NONBLOCK, so
-   a FIFO planted at the path cannot hang a hook), and an `exact.at` more than
-   FUTURE_SKEW_S in the future is rejected, in either record: it would
+   `exact`, `rate_limits`; a record whose `v` is not 1 is treated as absent).
+   An `exact` block left in this plugin's own state file by an older status
+   line is ignored. The sensor file is read only when it is a regular file
+   (opened O_NONBLOCK, so a FIFO planted at the path cannot hang a hook), and
+   an `exact.at` more than FUTURE_SKEW_S in the future is rejected: it would
    otherwise read as fresh, and gate as exact, until the clock caught up.
 2. DERIVED - the window derived from documented and observed rules
    (window_rules.py: the transcript's `attachment.type:"model"` line, the
@@ -62,8 +60,8 @@ Depth sources, in order of preference:
    a compaction or /clear describes the OLD fill and must not gate the new
    epoch, and the status line may not have re-rendered yet. context-guard
    never writes the sensor file: _reset stamps `epoch_at` in its own state,
-   and any record with `at <= epoch_at + EPOCH_GRACE_S` (from either path)
-   is read as window-only. The tee stamps `at` when it runs, not when Claude
+   and any record with `at <= epoch_at + EPOCH_GRACE_S` is read as
+   window-only. The tee stamps `at` when it runs, not when Claude
    Code built the payload, so the grace is what covers a payload built before
    the compaction but read by the status line just after it. The exact-record
    rule applies whatever the clock does: after a step back past `epoch_at`
@@ -156,9 +154,9 @@ CHECKPOINT_MIN_TOKENS = CHECKPOINT_LEAN_COST + CHECKPOINT_MARGIN
 GAUGE_LABELS = {"due": "checkpoint DUE", "hard": "HARD gate"}
 GAUGE_V = 1
 SENSOR_V = 1
-# A stamp (an exact block's `at`, from either writer, or a scored depth's
-# `tokens_at`) further ahead of now than this is a bad clock or a bad record,
-# never a fresh reading. _future_skewed() is the one check.
+# A stamp (the sensor record's exact `at`, or a scored depth's `tokens_at`)
+# further ahead of now than this is a bad clock or a bad record, never a
+# fresh reading. _future_skewed() is the one check.
 FUTURE_SKEW_S = 60
 # The tee stamps an exact record's `at` when it runs, not when Claude Code
 # built the render's payload: a render that began before PostCompact stamped
@@ -584,11 +582,11 @@ def reset_epoch(session_id, compact_summary=None):
 
 
 def _reset(st, compact_summary, session_id=None):
-    # The fill the ending epoch reached, read under the lock before the demote
-    # below drops it (postcompact_epoch logs it in the ledger's epoch header).
-    # Read before epoch_at moves, which would demote it.
+    # The fill the ending epoch reached, read under the lock
+    # (postcompact_epoch logs it in the ledger's epoch header). Read before
+    # epoch_at moves, which would demote it.
     try:
-        end = sensor(session_id, st) if session_id else (st.get("exact") or {})
+        end = sensor(session_id, st) if session_id else {}
         st["epoch_end_tokens"] = _epoch_end_tokens(end, st)
     except (TypeError, ValueError, AttributeError):
         st["epoch_end_tokens"] = 0
@@ -597,30 +595,22 @@ def _reset(st, compact_summary, session_id=None):
     st.pop("due", None)
     st["prompt_n"] = 0
     # Any exact record stamped at or before this instant (plus EPOCH_GRACE_S)
-    # describes the old epoch (sensor() demotes it): the sensor file, which
-    # context-guard never writes, and a legacy block written back by a render
-    # that raced this reset.
+    # describes the old epoch, and sensor() demotes it to window-only: its
+    # tokens/pct describe the epoch that just ended, so a still-fresh one
+    # would HARD-block a 3% session until the status line re-renders. The
+    # window survives as the floor (a compaction never shrinks the model's
+    # window) and the count comes from the post-boundary transcript alone,
+    # boundary line or not (/clear starts a transcript with no
+    # compact_boundary). context-guard never writes the sensor file.
     st["epoch_at"] = time.time()
-    ex = st.get("exact") or {}
-    if ex.get("window"):
-        # Demote, don't stamp: the record's tokens/pct describe the epoch that
-        # just ended, so a still-fresh one would HARD-block a 3% session until
-        # the status line re-renders. With `at` zeroed and the tokens dropped,
-        # depth() takes its existing stale path - the window survives as the
-        # floor (a compaction never shrinks the model's window) and the count
-        # comes from the post-boundary transcript alone, boundary line or not
-        # (/clear starts a transcript with no compact_boundary). The next
-        # status-line render overwrites the block with a fresh exact record.
-        st["exact"] = {"window": int(ex["window"]), "at": 0}
     if compact_summary is not None:
         st["compact_summary"] = compact_summary[:20000]
 
 
 def _epoch_end_tokens(end, st):
     """The ending epoch's fill, from two writers: the status line's exact
-    record `end` (the fresher of the sensor file and the legacy in-state
-    block, dated by `at`) and the top-level `tokens` that
-    context_warn.decide() stores on every prompt (the depth it last scored,
+    record `end` (the sensor file's, dated by `at`) and the top-level
+    `tokens` that context_warn.decide() stores on every prompt (the depth it last scored,
     exact or inferred, dated by `tokens_at`). The fresher wins; a tie goes to
     the exact record. A top-level count stamped at or before the state's
     `epoch_at` (_epoch_cut) scored an earlier epoch and is not used, nor is
@@ -1201,34 +1191,23 @@ def _sensor_exact(session_id):
 
 
 def sensor(session_id, state=None):
-    """The exact block depth() uses: the fresher (larger `at`; a tie goes to the
-    sensor file) of the statusline plugin's sensor record and the legacy
-    `exact` in this session's state (`state`, else loaded). Either block is
-    rejected, as if absent, when its `at` is more than FUTURE_SKEW_S ahead of
-    now (for the legacy block, also when `at` is present but not a finite
-    number): the same rule for both writers, so a clock-skewed legacy block
-    can neither read as fresh nor out-date the sensor file. A block stamped
-    at or before the state's `epoch_at` plus EPOCH_GRACE_S describes an
-    earlier epoch and is demoted to window-only ({"window", "at": 0}); an
-    `epoch_at` ahead of the clock still applies (unlike _epoch_cut): a
-    stale record lives up to EXACT_MAX_AGE_S, and after a clock step back it
-    cannot be told from a new render, so both read window-only - which only
-    silences the gate until the clock passes `epoch_at`, never blocks.
-    Returns {} when neither exists. Never raises."""
+    """The exact block depth() uses: the statusline plugin's sensor record's
+    (_sensor_exact: rejected, as if absent, when its `at` is more than
+    FUTURE_SKEW_S ahead of now). An `exact` block in this session's state
+    (`state`, else loaded), left there by an older status line, is ignored.
+    A block stamped at or before the state's `epoch_at` plus EPOCH_GRACE_S
+    describes an earlier epoch and is demoted to window-only
+    ({"window", "at": 0}); an `epoch_at` ahead of the clock still applies
+    (unlike _epoch_cut): a stale record lives up to EXACT_MAX_AGE_S, and
+    after a clock step back it cannot be told from a new render, so both
+    read window-only - which only silences the gate until the clock passes
+    `epoch_at`, never blocks. Returns {} when there is no usable record.
+    Never raises."""
     try:
+        ex = _sensor_exact(session_id)
+        if not ex:
+            return {}
         st = state if state is not None else load_state(session_id)
-        legacy = st.get("exact") or {}
-        if not isinstance(legacy, dict):
-            legacy = {}
-        if legacy.get("at") is not None:
-            lat = _finite(legacy["at"])
-            if lat is None or _future_skewed(lat):
-                legacy = {}
-        new = _sensor_exact(session_id)
-        if new and (not legacy or new["at"] >= (_finite(legacy.get("at")) or 0.0)):
-            ex = new
-        else:
-            ex = legacy
         cut = _finite(st.get("epoch_at"))
         at = _finite(ex.get("at"))
         if cut is not None and at and at <= cut + EPOCH_GRACE_S and ex.get("window"):

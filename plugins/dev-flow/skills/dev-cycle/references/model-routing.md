@@ -565,10 +565,10 @@ question; take the first source that has one:
 
 1. the error text, when it carries a reset time;
 2. the status line's `rate_limits` in its sensor record,
-   `${CLAUDE_CONFIG_DIR:-~/.claude}/statusline/sensor/<session>.json` (the `statusline`
-   plugin), else in the older context-guard state record,
-   `${CLAUDE_CONFIG_DIR:-~/.claude}/claude-kit/context-gate/<session>.json`, when present:
-   the exhausted window's `resets_at` (epoch seconds). The record keeps its last
+   `${CLAUDE_CONFIG_DIR:-~/.claude}/statusline/sensor/<session>.json` (written on every
+   status-line render by the `statusline-hub` plugin, which installing `statusline` brings;
+   its contract is the `statusline` plugin's), when present: the exhausted window's
+   `resets_at` (epoch seconds). The record keeps its last
    `rate_limits` block when a later payload carries none, so check it before trusting
    it: a `resets_at` already in the past is stale and counts as no reset time; otherwise
    read the block's `at` (epoch seconds when its payload was read) and name its age in

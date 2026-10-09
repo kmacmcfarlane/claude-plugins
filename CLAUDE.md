@@ -125,7 +125,7 @@ plugins/
     skills/
       product-research/
   context-guard/       # Surviving the context window (hook-owning)
-    hooks/             # Gate, ledger, rehydrate, gauge.json publish (+ deprecated statusline copy) + hooks.json + unit tests
+    hooks/             # Gate, ledger, rehydrate, gauge.json publish + hooks.json + unit tests
     skills/
       {checkpoint,usage-report}/
       checkpoint/scripts/  # context_forensics.py (where a session's context went, from its transcript)

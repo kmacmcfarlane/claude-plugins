@@ -26,6 +26,13 @@ class Base(unittest.TestCase):
         self.tmp.cleanup()
         os.environ.pop("CLAUDE_CONFIG_DIR", None)
 
+    def put_exact(self, sid, block):
+        """The status line's exact block for `sid`, as its sensor record."""
+        p = L.sensor_path(sid)
+        os.makedirs(os.path.dirname(p), exist_ok=True)
+        with open(p, "w") as f:
+            json.dump({"v": 1, "exact": block}, f)
+
 
 class TestThresholds(Base):
     def test_anchors(self):
@@ -65,11 +72,12 @@ class TestEpoch(Base):
         # A record written seconds before the boundary is still fresh after
         # it; the new epoch must not inherit its tokens, only its window.
         import time
-        L.save_state("s", {"exact": {"pct": 95.0, "tokens": 950_000,
-                                     "window": 1_000_000, "at": time.time() - 300}})
+        self.put_exact("s", {"pct": 95.0, "tokens": 950_000,
+                             "window": 1_000_000, "at": time.time() - 300})
         st = L.reset_epoch("s")
-        self.assertEqual(st["exact"], {"window": 1_000_000, "at": 0})
-        self.assertEqual(L.load_state("s")["exact"], {"window": 1_000_000, "at": 0})
+        self.assertEqual(L.sensor("s", st), {"window": 1_000_000, "at": 0})
+        self.assertEqual(L.sensor("s"), {"window": 1_000_000, "at": 0})
+        self.assertNotIn("exact", L.load_state("s"))   # demoted on read, not written
         # No transcript yet (status line not re-rendered): unknown, not 950K.
         tok, win, pct, src = L.depth("/nonexistent", "s")
         self.assertEqual((tok, win), (0, 1_000_000))
@@ -91,16 +99,16 @@ class TestDepth(Base):
 
     def test_exact_preferred_over_inference(self):
         import time
-        L.save_state("s", {"exact": {"pct": 50.0, "tokens": 500_000,
-                                     "window": 1_000_000, "at": time.time()}})
+        self.put_exact("s", {"pct": 50.0, "tokens": 500_000,
+                             "window": 1_000_000, "at": time.time()})
         tok, win, pct, src = L.depth(self._transcript(100_000), "s")
         self.assertEqual((tok, src), (500_000, "exact"))
 
     def test_stale_exact_keeps_window_and_token_floor(self):
         # Live-fired 2026-09-16: exact {186454 of 1M} older than EXACT_MAX_AGE_S
         # was discarded; inference guessed 200K and HARD-blocked a 1M session.
-        L.save_state("s", {"exact": {"pct": 18.6, "tokens": 186_454,
-                                     "window": 1_000_000, "at": 0}})
+        self.put_exact("s", {"pct": 18.6, "tokens": 186_454,
+                             "window": 1_000_000, "at": 0})
         tok, win, pct, src = L.depth(self._transcript(186_454), "s")
         self.assertTrue(src.startswith("inferred"))
         self.assertEqual(win, 1_000_000)          # window never shrinks
@@ -112,8 +120,8 @@ class TestDepth(Base):
         self.assertEqual(L.depth(self._transcript(100_000), "s")[0], 186_454)
 
     def test_stale_exact_token_floor_dropped_after_boundary(self):
-        L.save_state("s", {"exact": {"pct": 95.0, "tokens": 950_000,
-                                     "window": 1_000_000, "at": 0}})
+        self.put_exact("s", {"pct": 95.0, "tokens": 950_000,
+                             "window": 1_000_000, "at": 0})
         p = os.path.join(self.tmp.name, "b.jsonl")
         rec = lambda tok: json.dumps({"type": "assistant", "message": {"usage": {
             "input_tokens": 2, "cache_read_input_tokens": tok - 2,
@@ -131,21 +139,22 @@ class TestDepth(Base):
         # /clear starts a transcript with no compact_boundary line: the
         # demoted record must not floor the count even without a boundary.
         import time
-        L.save_state("s", {"exact": {"pct": 95.0, "tokens": 950_000,
-                                     "window": 1_000_000, "at": time.time() - 300}})
+        self.put_exact("s", {"pct": 95.0, "tokens": 950_000,
+                             "window": 1_000_000, "at": time.time() - 300})
         L.reset_epoch("s")
         tok, win, pct, src = L.depth(self._transcript(30_000), "s")
         self.assertEqual((tok, win), (30_000, 1_000_000))
         self.assertLess(pct, 5)
         self.assertEqual(src, "inferred, window from status line")
-        # A record written after the boundary is exact again.
-        L.save_state("s", {"exact": {"pct": 3.0, "tokens": 30_000,
-                                     "window": 1_000_000, "at": time.time()}})
+        # A record written after the boundary (past the grace) is exact again.
+        at = L.load_state("s")["epoch_at"] + L.EPOCH_GRACE_S + 1
+        self.put_exact("s", {"pct": 3.0, "tokens": 30_000,
+                             "window": 1_000_000, "at": at})
         self.assertEqual(L.depth(self._transcript(30_000), "s")[3], "exact")
 
     def test_stale_exact_missing_transcript_still_reports(self):
-        L.save_state("s", {"exact": {"pct": 50.0, "tokens": 500_000,
-                                     "window": 1_000_000, "at": 0}})
+        self.put_exact("s", {"pct": 50.0, "tokens": 500_000,
+                             "window": 1_000_000, "at": 0})
         tok, win, pct, src = L.depth("/nonexistent", "s")
         self.assertEqual((tok, win), (500_000, 1_000_000))
         self.assertTrue(src.startswith("inferred"))

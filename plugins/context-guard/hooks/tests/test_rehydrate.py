@@ -909,7 +909,10 @@ def snapshot(path):
 
 class TestStatuslineHandover(TestRehydrate):
     """3c48 F4: context-guard never writes settings.json. The old heal and
-    legacy migration are gone; a read-only "moved" notice replaces them."""
+    legacy migration are gone. a95a: so are its deprecated status-line copy
+    and the "moved" notice that pointed at the statusline plugin; the
+    statusline-hub plugin's SessionStart takes an entry that still names the
+    copy over (its own tests)."""
 
     def setUp(self):
         super().setUp()
@@ -939,10 +942,6 @@ class TestStatuslineHandover(TestRehydrate):
         rc, out = self.hook(source, sid)
         self.assertEqual(rc, 0)
         return out.get("systemMessage", "")
-
-    def stamp(self):
-        return os.path.join(self.cfg.name, "claude-kit", "context-gate",
-                            ".statusline-moved-notice")
 
     # -- no settings write, in every state the old heal or migration acted on --
 
@@ -989,133 +988,37 @@ class TestStatuslineHandover(TestRehydrate):
                         "_migrate_legacy_statusline"):
                 self.assertNotIn(bad, src, f)
 
-    # -- the notice --
+    def test_the_deleted_copy_is_gone(self):
+        self.assertFalse(os.path.exists(os.path.join(HOOKS, "statusline.py")))
 
-    def test_notice_when_deprecated_copy_is_active(self):
-        self.settings({"statusLine": {"type": "command",
-                                      "command": self.cmd("context-guard-x")}})
-        before = snapshot(self.sp)
-        msg = self.start()
-        self.assertIn("moved to the `statusline` plugin", msg)
-        self.assertIn("/plugin install statusline@kmacmcfarlane", msg)
-        self.assertEqual(snapshot(self.sp), before)
+    # -- no notice: SessionStart is silent on every statusLine entry --
 
-    def test_notice_for_a_claude_kit_entry_too(self):
-        self.settings({"statusLine": {"type": "command", "command": self.cmd("claude-kit-y")}})
-        self.assertIn("moved to the `statusline` plugin", self.start())
+    def test_silent_for_any_entry(self):
+        entries = [{"type": "command", "command": self.cmd("context-guard-x")},
+                   {"type": "command", "command": self.cmd("claude-kit-y")},
+                   {"type": "command", "command": self.cmd("statusline-kmacmcfarlane")},
+                   {"type": "command", "command": "my-own-line.sh"}, None]
+        for i, entry in enumerate(entries):
+            with self.subTest(entry=entry):
+                self.settings({"model": "m"} if entry is None
+                              else {"statusLine": entry})
+                before = snapshot(self.sp)
+                self.assertEqual(self.start("startup", f"s{i}"), "")
+                self.assertEqual(snapshot(self.sp), before)
 
-    def test_notice_cadence_once_per_week(self):
-        self.settings({"statusLine": {"type": "command",
-                                      "command": self.cmd("context-guard-x")}})
-        self.assertIn("moved", self.start("startup", "a"))
-        for source, sid in (("startup", "b"), ("resume", "a"), ("clear", "c"),
-                            ("compact", "a"), ("startup", "d")):
-            self.assertNotIn("moved", self.start(source, sid), (source, sid))
-        six_days = time.time() - 6 * 86400
-        os.utime(self.stamp(), (six_days, six_days))
-        self.assertNotIn("moved", self.start("startup", "e"))
-        eight_days = time.time() - 8 * 86400
-        os.utime(self.stamp(), (eight_days, eight_days))
-        self.assertIn("moved", self.start("startup", "f"))
-        self.assertNotIn("moved", self.start("startup", "g"))
-
-    def test_notice_never_on_the_prompt_path(self):
-        self.settings({"statusLine": {"type": "command",
-                                      "command": self.cmd("context-guard-x")}})
-        t = os.path.join(self.tmp.name, "t.jsonl")
-        open(t, "w").close()
-        for _ in range(3):
-            p = subprocess.run([sys.executable, os.path.join(HOOKS, "context_warn.py")],
-                               input=json.dumps({"session_id": "s", "prompt": "hi",
-                                                 "transcript_path": t}),
-                               capture_output=True, text=True, env=self.env, timeout=30)
-            self.assertNotIn("moved", p.stdout)
-        self.assertFalse(os.path.exists(self.stamp()))
-
-    def test_future_stamp_does_not_silence_forever(self):
-        self.settings({"statusLine": {"type": "command",
-                                      "command": self.cmd("context-guard-x")}})
-        os.makedirs(os.path.dirname(self.stamp()), exist_ok=True)
-        open(self.stamp(), "w").close()
-        future = time.time() + 365 * 86400
-        os.utime(self.stamp(), (future, future))
-        self.assertIn("moved", self.start())
-
-    def test_unwritable_stamp_withholds_the_notice(self):
-        # a stamp that cannot be dated (here a dangling symlink, which
-        # O_NOFOLLOW refuses) must not turn into a notice every session
-        self.settings({"statusLine": {"type": "command",
-                                      "command": self.cmd("context-guard-x")}})
-        os.makedirs(os.path.dirname(self.stamp()), exist_ok=True)
-        os.symlink(os.path.join(self.tmp.name, "nowhere"), self.stamp())
-        old = time.time() - 30 * 86400
-        os.utime(self.stamp(), (old, old), follow_symlinks=False)
-        for sid in ("a", "b"):
-            self.assertNotIn("moved", self.start("startup", sid))
-
-    def test_silent_when_statusline_plugin_is_installed(self):
-        self.settings({"statusLine": {"type": "command",
-                                      "command": self.cmd("context-guard-x")}})
-        d = self.data_dir("statusline-kmacmcfarlane")
-        with open(os.path.join(d, "owner.json"), "w") as f:
-            json.dump({"v": 1, "state": "installed", "settings": self.sp,
-                       "command": self.cmd("statusline-kmacmcfarlane")}, f)
-        before = snapshot(self.sp)
-        self.assertEqual(self.start(), "")
-        self.assertEqual(snapshot(self.sp), before)
-        self.assertFalse(os.path.exists(self.stamp()))
-
-    def test_the_hub_alone_does_not_silence_the_notice(self):
-        # statusline-hub takes a predecessor entry over only once the
-        # statusline footer registers, so its data dir alone changes nothing
-        self.settings({"statusLine": {"type": "command",
-                                      "command": self.cmd("context-guard-x")}})
-        self.data_dir("statusline-hub-kmacmcfarlane")
-        self.assertIn("moved to the `statusline` plugin", self.start())
-
-    def test_silent_when_statusline_owns_the_entry(self):
-        self.settings({"statusLine": {"type": "command",
-                                      "command": self.cmd("statusline-kmacmcfarlane")}})
-        self.assertEqual(self.start(), "")
-
-    def test_silent_for_a_foreign_entry_or_none(self):
-        self.settings({"statusLine": {"type": "command", "command": "my-own-line.sh"}})
-        self.assertEqual(self.start("startup", "a"), "")
-        self.settings({"model": "m"})
-        self.assertEqual(self.start("startup", "b"), "")
-        os.remove(self.sp)
-        self.assertEqual(self.start("startup", "c"), "")
-        self.assertFalse(os.path.exists(self.stamp()))
-
-    def test_notice_for_a_settings_file_a_marker_names(self):
-        local = os.path.join(self.tmp.name, "settings.local.json")
-        self.settings({"statusLine": {"type": "command",
-                                      "command": self.cmd("context-guard-x")}}, local)
-        self.marker("context-guard-x", local)
-        before = snapshot(local)
-        self.assertIn("moved", self.start())
-        self.assertEqual(snapshot(local), before)
-
-    def test_notice_joins_the_rehydration_message(self):
+    def test_the_rehydration_message_carries_no_notice(self):
         self.settings({"statusLine": {"type": "command",
                                       "command": self.cmd("context-guard-x")}})
         self.write_manifest()
         msg = self.start("compact")
         self.assertIn("Rehydrated from", msg)
-        self.assertIn("moved to the `statusline` plugin", msg)
+        self.assertNotIn("/plugin install statusline", msg)
+        self.assertNotIn("moved to the", msg)
 
     @unittest.skipUnless(hasattr(os, "mkfifo"), "no FIFOs on this platform")
-    def test_fifo_settings_neither_hangs_nor_notices(self):
+    def test_fifo_settings_never_hang(self):
         os.mkfifo(self.sp)
         self.assertEqual(self.start(), "")
-
-    def test_garbage_settings_are_silent(self):
-        for raw in ("{", "[]", json.dumps({"statusLine": "x"}),
-                    json.dumps({"statusLine": {"command": 5}})):
-            with open(self.sp, "w") as f:
-                f.write(raw)
-            self.assertEqual(self.start(), "", raw)
-
 
 if __name__ == "__main__":
     unittest.main()

@@ -79,7 +79,7 @@ claude-plugins/
     ├── chat/                  (web-UI chat-session skills)
     │   └── skills/product-research/
     ├── context-guard/         (surviving the context window — a hook-owning plugin)
-    │   ├── hooks/             (gate, ledger, rehydrate, gauge.json publish, deprecated statusline copy + hooks.json + tests)
+    │   ├── hooks/             (gate, ledger, rehydrate, gauge.json publish + hooks.json + tests)
     │   └── skills/
     │       ├── {checkpoint,usage-report}/
     │       ├── checkpoint/scripts/  (context_forensics.py: where a session's context went, from its transcript)
