@@ -139,7 +139,7 @@ plugins/
       {investigate,implement,dev-cycle,deep-investigation,research,research-deep,research-refine,research-prune,chain-of-verification,librarian-mode}/
       research/scripts/  # tool-preflight.sh (Step 5.1 tool check), scan-findings.py (the scan floor under the verifier) + unit tests
       librarian-mode/scripts/  # quota_budget.py (the librarian's quota sense) + unit tests
-    tests/             # test_agents.py: every agent file's model and effort pin, and its frontmatter shape; test_deep_investigation.py: deep-investigation's research-family security parity; test_research_asks.py: the research family's asks as text, the owner section, its pointers, the ledger kinds and the manifest edge
+    tests/             # test_agents.py: every agent file's model and effort pin, and its frontmatter shape; test_deep_investigation.py: deep-investigation's research-family security parity; test_research_asks.py: the research family's asks as text, the owner section, its pointers, the ledger kinds and the manifest edge; test_decision_tags.py: the librarian's two-word decision tags, their order, the retired spellings and no residue of them
   kit-dev/             # Maintaining this kit itself
     skills/
       {create-skill,update-kit,new-project-from-template,factor-analysis}/

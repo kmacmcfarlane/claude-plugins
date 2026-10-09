@@ -39,8 +39,8 @@ the verbatim rule on every answer line (§ What the store records, **Answered**)
 | who is reading, and how warm | after Rehydrate the operator is **cold** on every decision raised before the reset; the first Report after it re-shows them per the skill, with what changed since each was raised. Between resets: a decision shown in a Report written after the operator's last turn has **not been seen** — background returns can write several Reports while the operator is away — so the next Report shows it at its level again, not *(shown before)*. Your own transcript tells you: has the operator taken a turn since that Report? The store records the same thing (§ What the store records, **Shown** and **Seen**): a reader without the transcript — after a reset, or another session — reads the last showing as unseen when no `seen N:` line follows the last `shown N:` line, and as not recorded (cold) when there is no `shown N:` line |
 | related decisions (groups) | decisions on one item, or on sibling items (one parent) about the same plugin; a decision with no item groups by plugin or files. Never transitive: two groups that share a file stay two groups |
 | named templates | none: the librarian names no template, so every decision carries the floor on its own card |
-| classes of decision (the class in *why ask* and on the list line) | the class names in `decide-alone.md` § Class names, picked when the decision is raised; `unclassed` when none fits |
-| a decide-alone class the caller's rules define (the FYI rule's authority) | the classes `decide-alone.md` § The line marks decided alone, cited as `class <class>` on the `decided:` line; beside them, the FYI authority is an answered decision or the task the item carries |
+| classes of decision (the class in *why ask* and on the list line) | the reasons in `decide-alone.md` § Class names, the first that applies in § The line's order, picked when the decision is raised; `unclassed` when in doubt whether one applies, which raises |
+| a decide-alone class the caller's rules define (the FYI rule's authority) | the kinds `decide-alone.md` § The line lets be decided alone once no reason applies, cited as `class <kind>` on the `decided:` line; beside them, the FYI authority is an answered decision or the task the item carries |
 | the record of what was decided alone | the `decided:` line and the Report's **Done alone** group (`decide-alone.md`) |
 
 ## What the store records
@@ -55,7 +55,7 @@ renders what the operator read instead of composing it again.
     raised: <UTC time, e.g. 2026-09-24T14:05Z>
     what: <what is decided>
     why now: <why it is up now>
-    why ask: <class> — <what would go wrong if the librarian took its recommendation alone>
+    why ask: <reason> — <what would go wrong if the librarian took its recommendation alone>
     context: <where the operator left it · what they decide now> — then: <a block's lost-context facts, or none>
     impact: → <effect> · later: <wait> · reach: <reach> · undo: <undo>
     if left: <a round ask only: each leftover finding — what it would break>
@@ -89,7 +89,7 @@ renders what the operator read instead of composing it again.
   card stored before this rule may carry `who:` in place of `reach:`, read as it), and
   the `basis:` drill-down line is required: they fill the block's Impact table, with
   `cost:` where the option has one. `why ask:` follows `why now:` on every card,
-  one physical line, its class from `decide-alone.md` § Class names. `context:` follows
+  one physical line, its reason from `decide-alone.md` § Class names. `context:` follows
   `why ask:` on every card, one physical line, written when the decision is raised. Before
   its first ` — then: ` is the cue: where the operator left it (what they last saw or
   decided on this subject) · what they decide now — never what changed since, which *while
