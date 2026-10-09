@@ -155,11 +155,13 @@ Three layers, escalating; the first two are hooks, the third is a skill.
    compaction is free; blocking one that fired to recover from a context-limit error already
    returned makes the in-flight request fail, and the hook cannot tell the two apart. No wedged
    session, bounded by depth rather than by a count. Manual `/compact` is never touched.
-4. **Checkpoint skill** — Step 0 asks the operator the goal (*continue / handoff*)
+4. **Checkpoint skill** — Step 0 settles the goal (*continue / handoff*)
    because that is the one input nobody else holds and it changes everything downstream:
    *continue* means residue then `/compact` with drafted guidance; *handoff* means a brief
    for a fresh session or the owning repo. (A third mode, `land`, was dropped on
-   2026-09-22: a finished thread is a handoff whose goal says so.) The brief is one
+   2026-09-22: a finished thread is a handoff whose goal says so.) Since 2026-10-09 it
+   drafts all three of its answers, acts on them and echoes them, asking first only at a
+   fork (below). The brief is one
    manifest per session, in the config dir rather than the repo, so concurrent sessions in
    one checkout cannot overwrite each other's; since its path can no longer be guessed,
    every checkpoint prints it, and a handoff also prints the commands to continue. Step 2 writes reasoning residue
@@ -170,6 +172,39 @@ Three layers, escalating; the first two are hooks, the third is a skill.
    decision 179 (a), 2026-10-07): the manifest lives in the config dir and is one session's,
    while the item travels with the repo to whoever picks it up next. Step 4 delegates the mechanical flush to a **fork**
    (inherits history + cache; a fresh subagent starts empty and is the wrong primitive here).
+
+**Added later: Step 0 acts on its drafts** (the operator's request, decision 196 (a),
+2026-10-09). Step 0 used to ask its three questions (mode, what is in flight, the window)
+on every attended checkpoint, as a dialog when nothing was running, and the operator
+reported taking the drafted answer almost every time. Observed in a one-off count over the
+operator's local transcripts, of the Step 0 dialog records and their answers (Claude Code
+2.1.251 to 2.1.293 by the records' `version` field, 2026-08-31 to 2026-10-08): *continue*
+drafts were taken every time they were answered (7 of 7); *handoff* drafts were mostly
+overridden, each time to *continue* (taken 2 of 5); and some dialogs were interrupted so
+the operator could say something the options did not hold. So Step 0 now drafts all three,
+acts on them, and opens Step 7's close with one `Acted on:` echo line whose reply line
+changes them; it asks first, as text, only at a fork: a *handoff* nobody named, a deferred
+automatic compaction, an agent in flight or an uncertain inventory line, or guidance that
+would drop a REFUSED line or a hold. Acting passes the FYI-after-acting test (act, then
+report, only for what is two-way, narrow, relied on by nobody before review, and inside
+authority already given): the reply line re-runs the checkpoint and rewrites the manifest,
+and the checkpoint compacts and clears nothing; it touches one session's manifest and
+close; the manifest is read only after the operator's own `/clear`, `/compact` or pasted
+opener, each after the echo is on screen; and the authority is the checkpoint being run,
+typed by the operator or started by the gate they installed. The one exception is a
+deferred automatic compaction: the mark releases it, so the manifest can be re-injected
+before the echo is read, and question 1 is a fork there unless the operator's words named
+the mode. Each other fork is where a condition fails: an unclear mode is the operator's
+call, an agent in flight relies on the roster, an uncertain line is not a fact to act on,
+and a REFUSED line or a hold is the operator's ruling. The echo stands in for the decisions
+skill's `Done:` line without loading that skill: it carries the same parts (what was done,
+the authority, the undo) in a shape that fits a close which must stay short and end on the
+opener. A standing counter of default acceptance per question was weighed and not built:
+the one-off count answered it; after this change Step 0 asks only at forks, whose rare "no"
+is what they exist for, so acceptance alone would mislead; the overrides already sit in
+the transcripts as reply-line prompts; and a counter would write new state on the
+every-prompt path or spend window on every checkpoint. If the count is ever repeated, keep
+it metadata-only: read the records' fields, never their content.
 
 **Added later: the mid-turn check** (`PostToolUse`, `hooks/turn_gate.py`). The layers above
 see only turn boundaries, and an unattended turn has none: one 53-minute tool loop filled a

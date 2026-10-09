@@ -121,6 +121,10 @@ When the depth warning fires, answer these before touching anything:
 3. **Which repo owns each of those?** Working in one repo on another repo's problem is fine;
    leaving the knowledge there is not.
 
+The checkpoint drafts its own Step 0 answers (mode, what is in flight, the window), acts on
+them and echoes them in one line of its close; change any with the reply line it prints; it
+asks first only at a fork.
+
 Then `/checkpoint <mode>`. The ledger (`~/.claude/claude-kit/ledger/<session>.md` — a
 historical directory name, kept across the move into `context-guard`) has been collecting decisions as you worked — the checkpoint is a delta, and after compaction the
 ledger, and the manifest when this session owns it (the format spec's "Whose memory it is"
