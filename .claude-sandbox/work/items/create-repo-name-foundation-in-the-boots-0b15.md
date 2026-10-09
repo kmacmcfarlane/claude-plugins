@@ -3,13 +3,12 @@ id: create-repo-name-foundation-in-the-boots-0b15
 title: "create-repo: name foundation in the bootstrap prompt"
 short_display_name: create-repo names foundation
 type: feature
-status: doing
+status: done
 priority: 3
 parent: foundation-follow-ups-build-time-reopens-f3d1
-owner: Kyle-McFarlane@2d49f8460283
-claimed: 2026-10-09T13:58Z
 created: 2026-10-09
 updated: 2026-10-09
+closed: 2026-10-09
 refs:
   - spike-a-skill-for-green-field-foundation-5f2d
 ---
@@ -34,3 +33,6 @@ verdict: review round 1 NEEDS_CHANGES (must-fix 1: medium, the prompt never asks
 dispatch: implementer sonnet medium — fix round 1 (resume aa50343d0d2bd89d7)
 return: DONE 80a4525 (fix round 1); kit-dev 18 OK
 dispatch: reviewer opus high — review round 2 of 80a4525 (resume a1e5463bee2ac8afd)
+verdict: review round 2 CLEAR (must-fix 0; nit declined: "says so" covers the both-missing case only, judged accurate enough for a one-line declaration by the reviewer)
+landed: f81ad6e (merge of 00ad183..80a4525); Checks 12/12 OK; cc_scan clean
+- 2026-10-09 done
