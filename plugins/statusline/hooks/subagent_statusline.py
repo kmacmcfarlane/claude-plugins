@@ -94,9 +94,14 @@ a row. A long name gives way before the tag, and before the description is
 cut below DESC_MIN columns: when the whole row does not fit, the name is
 shortened to leave the tag whole and the description that much, first by
 dropping a `plugin:` prefix (`dev-flow:implementer-critical` reads
-`implementer-critical`), then by cutting it with an ellipsis, never below
-NAME_MIN columns. Its share only grows with the pane, so a widening pane
-still only adds. The tag's halves are capped (MODEL_MAX columns for the model,
+`implementer-critical`; only a name that is two lowercase name-shaped
+halves around one colon has one), then by cutting it from the middle, both
+ends kept (`impleme…critical`), never below NAME_MIN columns (8 columns,
+or 7 where a wide character would straddle it). A shortened name counts
+for its whole share, so the description gets no more than DESC_MIN
+columns until the name is whole: the name's share and the description's
+room both only grow with the pane, and a widening pane still only adds.
+The tag's halves are capped (MODEL_MAX columns for the model,
 EFFORT_MAX columns for the effort; a half past its cap is left out), so
 an overlong one cannot crowd the description out at every width. Never raises;
 malformed input prints nothing, so every row keeps its default.
@@ -124,7 +129,7 @@ EFFORT_MAX = 6            # an effort (a level, or a budget as shown) wider than
 MODEL_MAX = 40            # a model (through its `claude-` gone) wider than this many columns is left out
 NAME_MIN = 8              # a long name is shortened no further than this many columns
 DESC_MIN = 10             # the description's columns a long name gives way to
-_PREFIX = re.compile(r"[A-Za-z0-9_.-]+:(?=\S)")
+_PREFIX = re.compile(r"[a-z0-9][a-z0-9-]*:([a-z0-9][a-z0-9-]*)")   # plugin:agent, both halves name-shaped
 USAGE_KEYS = ("input_tokens", "cache_read_input_tokens", "cache_creation_input_tokens")
 
 
@@ -659,17 +664,42 @@ def cols_of(s):
     return sum(width(ch) for ch in s)
 
 
+def fit_middle(s, cols):
+    """`s` cut to at most `cols` terminal columns from the middle, both ends
+    kept and joined by an ellipsis (the end gets the odd column), so names
+    that differ only at the end (`implementer-critical`, `implementer-deep`)
+    still differ when cut."""
+    ws = [width(ch) for ch in s]
+    if sum(ws) <= cols:
+        return s
+    if cols < 1:
+        return ""
+    avail = cols - 1
+    tail_room, used, start = (avail + 1) // 2, 0, len(s)
+    while start > 0 and used + ws[start - 1] <= tail_room:
+        start -= 1
+        used += ws[start]
+    head_room, hused, end = avail - used, 0, 0
+    while end < start and hused + ws[end] <= head_room:
+        hused += ws[end]
+        end += 1
+    return s[:end].rstrip() + "…" + s[start:].lstrip()
+
+
 def short_name(name, share):
-    """`name` within `share` columns (never fewer than NAME_MIN): whole when
-    it fits; else with a `plugin:` prefix dropped; else that cut with an
-    ellipsis. A wider share never gives a narrower name."""
+    """(text, columns it counts for): `name` within `share` columns (never
+    fewer than NAME_MIN). Whole when it fits, counting its own width; else
+    with a `plugin:` prefix dropped, and that cut from the middle when still
+    too wide, counting the whole share, so the columns a shortened name
+    leaves unused never pass to the description (which would then shrink
+    as the pane widens and the name grows back)."""
     share = max(share, NAME_MIN)
     if cols_of(name) <= share:
-        return name
-    m = _PREFIX.match(name)
+        return name, cols_of(name)
+    m = _PREFIX.fullmatch(name)
     if m:
-        name = name[m.end():]
-    return fit(name, share)
+        name = m.group(1)
+    return fit_middle(name, share), share
 
 
 def row(task, exact, cols):
@@ -691,10 +721,9 @@ def row(task, exact, cols):
             rest += len(SEP) + cols_of(t)
         if desc:
             rest += len(SEP) + min(cols_of(desc), DESC_MIN)
-        name = short_name(name, cols - rest)
-    head_plain = (name + SEP if name else "") + plain
+        name, name_cols = short_name(name, cols - rest)
     head = (name + SEP if name else "") + colored
-    room = cols - sum(width(ch) for ch in head_plain)
+    room = cols - cols_of(plain) - (name_cols + len(SEP) if name else 0)
     if room < 1:
         if name:        # too narrow for the name too: the fill alone
             return colored if sum(width(ch) for ch in plain) <= cols else None

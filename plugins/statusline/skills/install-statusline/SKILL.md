@@ -141,8 +141,11 @@ effort over 6 columns). On a narrow panel the
 description is cut first and then goes, then the model and effort go, then the name. A
 long name gives way before the model and effort, and before the description is cut below
 10 columns: a `plugin:` prefix is dropped (`dev-flow:implementer-critical` reads
-`implementer-critical`), then the name is cut, to no fewer than 8 columns. The fill is
-exact, read from the agent's transcript (`SESSION/subagents/agent-ID.jsonl` beside
+`implementer-critical`; only a lowercase `plugin:agent` name has one), then the name is
+cut from the middle, both ends kept (`impleme…critical`), to no fewer than 8 columns, or 7
+where a wide character would straddle it. Until the name is whole again the description
+keeps those 10 columns, so neither shrinks as the panel widens. The fill is exact, read
+from the agent's transcript (`SESSION/subagents/agent-ID.jsonl` beside
 the session's transcript); after the first read, each refresh reads only the lines added
 since the last one. A `~` marks an approximate figure (`~43% ~86k/200k`): Claude Code's
 own token count for the agent, shown until the transcript has a reading, for example in
