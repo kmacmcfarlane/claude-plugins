@@ -3,10 +3,12 @@ id: statusline-hub-refuse-to-write-its-entry-fe79
 title: "statusline-hub: refuse to write its entry into a project's tracked .claude/settings.json"
 short_display_name: hub writes tracked project settings
 type: bug
-status: todo
+status: doing
 priority: 3
+owner: Kyle-McFarlane@2d49f8460283
+claimed: 2026-10-09T09:47Z
 created: 2026-10-08
-updated: 2026-10-08
+updated: 2026-10-09
 refs:
   - statusline-hub-end-the-silent-wait-behin-7dd3 review 1
 ---
@@ -18,3 +20,8 @@ From the 7dd3 review 1 (low 2), 2026-10-08: the dead-copy take path guards only 
 - next: —
 - blocked: —
 - learned: —
+
+## Notes
+dispatch: implementer opus medium — build, worktree (bug)
+- 2026-10-09 claimed by Kyle-McFarlane@2d49f8460283
+agent: implementer a428d65ba07fb6f87
