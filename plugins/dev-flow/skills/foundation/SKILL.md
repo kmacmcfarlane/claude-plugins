@@ -78,6 +78,21 @@ asked per the `operator-interaction:decisions` skill when the session lists it, 
 numbered list. Run the prompt list (`references/prompt-list.md`): it always runs. Loop until
 the operator has nothing left to add, or holds the rest.
 
+**Scope is the claim.** When `ownership:claim-md` is in the session's skill list, write or
+propose the scope through it. Ask its answer mode who owns each aspect at the edge. Ask its
+write mode for a shape-checked draft of the repo's `CLAIM.md`, built from the scope: the
+areas, the `## Not ours` lines, a `## Boundaries` entry for each row of the neighbours
+table, and `## Interfaces` naming each contract the repo will define, with its location.
+Ask it to classify the draft as substance or upkeep. The draft goes in the Scope and context
+section, whole for a new claim, as its changed lines for a revision. A new claim, or a
+substance change, is approved with gate G1 (in a lite run, with its one gate): the decision
+shows the draft as the write mode shows it, and nothing is written before that answer. An
+upkeep change is reported at G1, not asked, and `F0` lands it with its `(upkeep, reported)`
+Amendments line. Feature `F0` writes the file through the write mode, with no second
+decision (`references/state.md` § Living docs). Under an orchestrator, ask only for the
+checked draft; the approval is the gate's. Without the skill, read `CLAIM.md` as a file and
+propose the claim in the series, unchecked (§ Composition says what the result discloses).
+
 **Research is optional per phase**: the `research` skill (quick by default) for a fact a
 requirement rests on, landing in `<series>/research/`; `deep-investigation` when the
 landscape itself is the question.
@@ -186,5 +201,19 @@ Return `STATUS`, `SERIES` (absolute path), `OPEN QUESTIONS` (each blocking or no
 `deep-investigation` feed a phase; `dev-cycle` reviews each gate under an orchestrator and
 builds each feature; the `operator-interaction:decisions` skill, when loaded, shapes every
 question and gate decision; the `work-items` skill carries the item, holds and features.
-Each is used by pointer, nothing copied. A repo's `CLAIM.md` is read and proposed as a
-file; no claim skill is required.
+Each is used by pointer, nothing copied. The `ownership:claim-md` skill, when listed,
+writes or proposes the scope and answers who owns what (§ Step 1); gate G2 checks the
+contracts against the claim's `## Boundaries` and `## Interfaces`.
+
+**Without claim-md.** No claim skill is required: `CLAIM.md` is read and proposed as a
+file, in the series. When a run wrote or proposed a claim that way, its result says so in
+one clause: "claim not checked: no claim tool". In place of that clause, a top-level run
+gives this line once per session, never in a sub-agent or under an orchestrator's brief
+(there, the clause alone, in `DEVIATIONS`), and never when
+`echo "${KMACMCFARLANE_NO_PEER_HINTS-}"` prints `1` or a comma list naming `ownership`:
+
+```text
+dev-flow: the claim is proposed in the series, unchecked. ownership adds a shape-checked claim and who-owns-what answers from it: /plugin install ownership@kmacmcfarlane (one-time tip; KMACMCFARLANE_NO_PEER_HINTS=1 hides these)
+```
+
+No marker is kept.

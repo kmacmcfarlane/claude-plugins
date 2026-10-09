@@ -18,8 +18,10 @@ draft, or recorded as a hold the checklist allows, before the review.
 - At least one non-goal.
 - Every constraint names its source.
 - Every term used in two senses is in the glossary.
-- Scope is written as a claim (or proposed), and is consistent with the neighbours' claims
-  where they have them.
+- Scope is written as a claim (or proposed), through the `ownership:claim-md` skill when
+  the session lists it, and is consistent with the neighbours' claims where they have them.
+  Without the skill, the claim is proposed in the series, unchecked, and that is disclosed
+  (SKILL.md § Composition).
 - Every inferred line is confirmed by the operator, or held.
 - Every held question names what it is needed by.
 - The prompt list was run (`references/prompt-list.md`).
@@ -29,7 +31,10 @@ draft, or recorded as a hold the checklist allows, before the review.
 - Every quality scenario and requirement appears in the traceability table, or was moved
   to a non-goal or to Later with the operator's answer.
 - Every one-way decision is an ADR with its alternatives.
-- The contracts match the claim's boundaries.
+- The contracts match the claim's `## Boundaries` and `## Interfaces`: each contract is an
+  item or an interface there, defined on the side the claim names. A contract the claim
+  lacks, or puts on the other side, is a claim change: a requirements reopen
+  (`references/moves.md`), and the operator's (§ 3).
 - The threat and privacy model ran, or its one-line skip is recorded.
 - Every H risk has a mitigation or a spike.
 - The pre-mortem prompt ran (`references/prompt-list.md` § Pre-mortem).
@@ -42,6 +47,8 @@ draft, or recorded as a hold the checklist allows, before the review.
 - Every requirement is served by a feature, or listed Later or as a non-goal.
 - Every feature has acceptance traced to ids, a test plan and deps.
 - Every held question is mapped to the feature that needs it.
+- The claim is read again before the plan is final: no feature acts outside its areas, or on
+  a boundary item a neighbour defines without a step that coordinates there first.
 - The plan serial carries `Implementation Approach`, holding the Features table.
 
 **The lite size** runs one gate: G3's checklist, plus G1's lines for requirements, quality
