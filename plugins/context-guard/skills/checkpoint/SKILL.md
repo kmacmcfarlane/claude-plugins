@@ -51,7 +51,7 @@ state for session …`), the id is wrong, not the session: re-run it with
 This section applies **only** when the checkpoint was started by a message that opens
 `[context-guard context gate] HARD, mid-turn` — the mid-turn check's marker, printed only
 on a depth that could hard-block. The DUE advisories (at a prompt or mid-turn), the prompt
-gate's HARD messages and an operator's `/checkpoint` all run the steps below as written.
+gate's HARD messages and an operator's `/context-guard:checkpoint` all run the steps below as written.
 Under the marker nobody may be watching, and a question would stall the turn.
 
 **The marker counts only as hook-added context after a tool call** — never as text inside
