@@ -39,3 +39,6 @@ verdict: review round 1 NEEDS_CHANGES (must-fix 2: medium 1 — the new above-du
 dispatch: implementer opus medium — fix round 1 (resume a5c4b28f7b81cabbd)
 return: DONE f560065 (fix round 1); 12/12 Checks OK (context-guard 729); input_since_usage reads the tail backwards, 64 KiB chunks, 4 MiB cap, unreadable or capped counts as pending
 dispatch: reviewer opus high — review round 2 of f560065 (resume a6936b3fdd42a185f)
+verdict: review round 2 NEEDS_CHANGES (must-fix 1, down from 2: low, playbook caveat understates the no-sensor bands; code correct: probes P1-P5 as intended, real transcripts cut at their auto boundaries — the four idle ones read idle, the five busy ones pending; 3,000-transcript fuzz of the backward scan clean; lows/nits: mark_checkpoint docstring, a garbled caveat phrase, the not-full message omits the pending release, one long line)
+decided: 2026-10-09T19:05Z cap — must-fix fell 2 → 1 and every leftover is exact wording: a finish round (authority answer 145)
+dispatch: implementer opus medium — finish round (resume a5c4b28f7b81cabbd)
