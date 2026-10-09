@@ -167,6 +167,21 @@ the plan agent revises, by a new serial.
   then Step 6. With a work item: `$WI claim <id>` before the plan dispatch (unless
   already yours); after `CLEAR`, `$WI done <id> --note <series path>`, or
   `$WI handoff <id>` naming the series while blocking questions are open.
+- **A foundation run** — a `plan` target whose item or brief asks for the `foundation`
+  skill, or whose series' `INDEX.md` carries a `## Foundation` block — takes the bullet
+  above with three changes. **One phase per plan dispatch**, with
+  `references/agent-brief.md` § Foundation plan variant: requirements, then architecture,
+  then the plan (`all` once for a lite run), each reviewed with the plan-review variant's
+  foundation checklist, all inside the run's one cap. **At a `CLEAR` on gate G1 or G2**
+  the item is handed off, never closed, whether or not blocking questions are open: put
+  the gate decision to the operator when the Foundation block's Operator cell says
+  `needed` (gate G1 always), record its answer, run `$WI handoff <id>` naming the series
+  and the next phase, and dispatch that phase — the next phase of the same run, not
+  Step 6. An answer to revise or reopen dispatches the planner with the operator's words
+  instead, and the gate re-runs. **At gate G3** the plan decision always goes to the
+  operator, carrying a short architecture summary when gate G2 was reported rather than
+  approved; after they approve it, file the work and close the item exactly as the
+  `foundation` skill's `references/state.md` § The work item says, then Step 6.
 - **A feature in full mode:** no separate dispatch; the implementer runs /investigate
   then /implement in its worktree, each in its orchestrated mode (each skill's § Running
   under an orchestrator), as the brief's dev-flow block directs

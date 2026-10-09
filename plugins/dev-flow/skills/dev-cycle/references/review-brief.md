@@ -343,6 +343,27 @@ The series follows the investigate skill's investigation-format reference (path 
 Fill the path as the absolute path of the `investigate` skill's
 `references/investigation-format.md`, the sibling of this skill in the dev-flow plugin.
 
+**A foundation series** (its `INDEX.md` carries a `## Foundation` block; SKILL.md § Step 1,
+the foundation bullet) is reviewed one gate at a time. Add to What to do:
+
+```
+7. Gate: this is gate <G1 | G2 | G3> of a foundation series; review the serial(s) this
+   phase wrote against the gate's exit checklist, pasted below from the foundation
+   skill's gates reference. A checklist line that does not hold is a finding at medium.
+   The bar: flag only what affects correctness or the stated requirements; style,
+   wording and preference are not findings. A gate passes with holds only when nothing
+   it approves depends on one; a hold something depends on is a finding at medium.
+   After a reopen, review the reopen serial and what its impact list names, not the
+   whole phase.
+<the gate's checklist, verbatim>
+```
+
+Before gate G3 a foundation series has no Implementation Approach by design (the format's
+§ Foundation series): item 1's missing-approach finding does not apply, and item 2's
+acceptance is the gate's checklist, not the item's build acceptance. At gate G3 item 1
+applies in full. Fill the checklist from the `foundation` skill's `references/gates.md`
+§ 1, the sibling of this skill in the dev-flow plugin.
+
 A `NEEDS_CHANGES` goes back to the plan agent, which follows that format's two rules
 exactly: a written serial is never edited or deleted; the revision is a new serial at the
 next free number, opening with a `Supersedes` block that names each file, section and
