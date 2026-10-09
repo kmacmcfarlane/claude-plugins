@@ -554,7 +554,8 @@ project's git-ignored `.claude/settings.local.json`) and says so in one line. It
 over a status line another tool set: it says so once, in a line that asks whether to wrap
 it and points at embed mode and the installer; it never wraps on its own. It restores its
 entry when a stale session's settings write drops it (or, while wrapping, writes back the
-pre-wrap entry), and never
+pre-wrap entry), except in a project settings file git tracks, which it never writes on its
+own, and never
 re-adds one the user removed, including a `statusline` footer removed before the hub
 arrived. It leaves the `statusline` plugin's footer in place until that plugin registers as
 a hub display hook (its first session start), then takes the slot over once, with the footer

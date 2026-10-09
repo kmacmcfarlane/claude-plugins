@@ -278,7 +278,9 @@ shows no health glyph. `order` and `disabled` name segment providers (§ 11) the
   version without `hooks/owner.py`: such a version never installs an entry of its own, so
   there is nothing to wait for.) Once the manifest exists, the hub's SessionStart repoints
   a slot the statusline plugin (or an older copy of its footer) installed at the hub, and
-  the footer keeps drawing through it. The slot changes hands once: nothing moves it back.
+  the footer keeps drawing through it, except in a project settings file git tracks,
+  which the hub never writes on its own (it says so once and leaves the file). The slot
+  changes hands once: nothing moves it back.
   If an older session writes its stale settings back over the hub's entry, putting the
   footer's earlier entry there again, the next session repoints it at the hub too. Once
   Claude Code's install records name the hub and no statusline install, nothing will

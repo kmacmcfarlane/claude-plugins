@@ -51,7 +51,9 @@ takeover reads):
                     | "wrapping" | "unwrapped",
    "settings": "<abs path>", "command": "<our command>", "at": <epoch s>}
 - installed: the entry in `settings` is ours; SessionStart restores it when a
-  stale session's settings write drops it.
+  stale session's settings write drops it (never in a project file git
+  tracks). Extra field "scope": "project" when the installer's --project
+  wrote it, so a refused restore names --project as the way back.
 - removed: the user ran --remove (or had removed the statusline footer from
   that file before the hub arrived); nothing re-adds it until they install
   again.

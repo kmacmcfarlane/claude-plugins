@@ -297,7 +297,8 @@ def install(path, replace, read_only, project):
     cmd = owner.command_for(data)
     owner.write_settings(path, {"type": "command", "command": cmd}, read_only,
                          expect=None if replace else allowed)
-    owner.write_marker(data, "installed", path, cmd)
+    owner.write_marker(data, "installed", path, cmd,
+                       **({"scope": "project"} if project else {}))
     forget_kept(path)
     verb = {"absent": "installed", "own": "updated"}.get(kind, "replaced")
     print(f"{verb} statusLine in {path}\n  -> {script}")
