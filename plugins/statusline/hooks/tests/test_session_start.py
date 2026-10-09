@@ -204,11 +204,16 @@ class HubMissing(Base):
 
     def test_quiet_whenever_the_hub_may_be_there(self):
         def live_hub():
+            # A stub hub.py stands in for the hub's hooks dir, so this runs with no sibling
+            # statusline-hub plugin present (kit-dev's standalone check runs it alone).
             self.records("statusline@k")
+            hooks = os.path.join(self.cfg, "stub-hub-hooks")
+            os.makedirs(hooks)
+            with open(os.path.join(hooks, "hub.py"), "w") as f:
+                f.write("")
             d = os.path.join(self.cfg, "plugins", "data", "statusline-hub-kmacmcfarlane")
             os.makedirs(d)
-            os.symlink(os.path.join(os.path.dirname(helpers.PLUGIN), "statusline-hub", "hooks"),
-                       os.path.join(d, "current-hooks"))
+            os.symlink(hooks, os.path.join(d, "current-hooks"))
 
         cases = {
             "no install records": lambda: None,

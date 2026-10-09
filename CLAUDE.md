@@ -143,6 +143,7 @@ plugins/
   kit-dev/             # Maintaining this kit itself
     skills/
       {create-skill,update-kit,new-project-from-template,factor-analysis}/
+    tests/             # test_standalone.py: each plugin's suites pass from a copy of that plugin alone; test_declared_edges.py: every cross-plugin skill, CLI or data-path reference is declared in plugin.json and the catalog
   operator-interaction/ # The agent-operator interface, starting with how decisions are raised and shown
     skills/
       decisions/       # references/{worksheet,rendering,replies,evidence-basis,rationale,rulings,gallery}.md
@@ -336,4 +337,5 @@ Checks:
 - (cd plugins/dev-flow/skills/research/scripts && python3 -m unittest discover -s tests -q)
 - (cd plugins/dev-flow && python3 -m unittest discover -s tests -q)
 - (cd plugins/operator-interaction && python3 -m unittest discover -s tests -q)
+- (cd plugins/kit-dev && python3 -m unittest discover -s tests -q)
 Push: main
