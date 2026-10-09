@@ -27,3 +27,4 @@ From the 5f2d series 00 § Files to Modify, follow-ups, filed 2026-10-09 (f3d1);
 decided: 2026-10-09T15:40Z scope — no separate plan: the 5f2d series (00 § Files to Modify follow-ups, 00:107-110, 00:380) is the plan for this wiring
 target: foundation phase 1 writes or proposes scope through ownership:claim-md when listed; G2 checks contracts against its Boundaries and Interfaces; without it the plain fallback, disclosed; edges declared; all Checks green
 dispatch: implementer opus medium — build
+agent: implementer aac8fa75aac1fadce

@@ -26,3 +26,4 @@ note: from 9385's build — dev-cycle bindings.md § Store's wi lookup ends with
 - 2026-10-09 claimed by Kyle-McFarlane@2d49f8460283
 target: as 72ef F5 (with 01, 02 applied); also the `WI="python3 "` fallback noted on it; all Checks green
 dispatch: implementer opus medium — build (cross-plugin refactor of a lookup snippet; not a canonical mechanical kind)
+agent: implementer af358fa9b3916d4ee
