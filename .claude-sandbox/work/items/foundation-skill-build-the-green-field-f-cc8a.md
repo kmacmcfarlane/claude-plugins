@@ -52,3 +52,4 @@ review: self
 verdict: finish round CLEAR — diff read: the two wording fixes
 landed: 91cb494 (merge of 86194d3, c3389e5, 9b8fe93); Checks 10/10 OK
 - 2026-10-09 done
+shown 205: 2026-10-09T08:57Z page

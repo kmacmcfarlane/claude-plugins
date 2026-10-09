@@ -36,7 +36,10 @@ The smallest view shows Effect; each larger view adds facets in that order:
 | Block | the Impact table: a row per option, then a Wait row; columns Effect, Reach, Undo, Cost |
 
 - Plain words, about the world, for the operator. Effect is the recommended option's: what
-  happens if they say yes. At tag size it stands alone in under about 10 words.
+  happens if they say yes. At tag size it stands alone in under about 10 words. On an answer
+  page the card's Effect, at tag size and on the card, covers the decision across all its
+  options instead, written from the options' own effects rather than copied from a stored line
+  (the `decision-page` skill's `references/cards-schema.md`, `impact`).
 - **No recommendation:** the Effect slot shows each option's effect in a few words,
   `→ *(a) matches the OS tools; (b) matches the bill*`, at every size.
 - **Undo replaces the old stakes words** (*reversible, narrow*, *one-way, narrow*): it says
@@ -169,9 +172,9 @@ Rec **(b)** · basis **word** — *one-clause reason* · unknown: what isn't kno
   card, the cue is stored with it, and a block's lost-context facts with it. With no store,
   keep it with your notes on the decision; with nowhere to keep it, show it on the card at
   its first showing too, cold reader or not, so a re-show copies it from that message.
-  On an answer page the card opens instead on a flat **Context** that carries What, the terms
-  the card uses and this cue, above the Impact line, since the page folds Background (the
-  `decision-page` skill's `references/cards-schema.md`).
+  On an answer page the card opens instead on its TLDR, then a flat **Context** that carries
+  the terms the card uses and this cue, then its Impact, across all its options, since the
+  page folds Background (the `decision-page` skill's `references/cards-schema.md`).
 - **To act on (x):** after the options and before the Rec line, on a card where an option
   asks the operator to act (SKILL.md § The floor, what it takes to act). This bullet is
   where its specifics live:

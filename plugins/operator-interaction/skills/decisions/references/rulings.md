@@ -57,24 +57,43 @@ alternative not taken, in case practice argues for it.
 - **Terms defined where shown** (2026-10-07, the operator's ask; words over labels is a
   design made in review, not the operator's) — every term the operator may not know,
   defined where it first appears. Not taken: a pointer to the source.
-- **Context first on an answer page** (2026-10-08, the operator's direction; the checks'
-  shape, a design made in planning, not the operator's) — every page card opens on a flat
-  Context introducing the terms, items and concepts its Impact line, TLDR and options use,
-  and its TLDR carries no recommendation, which the options mark. Not taken: definitions
-  left to What in the Background fold; a Rec bullet in the TLDR. Background not
-  auto-expanded; Context absorbs What (decision 197 (a), the operator's answer 2026-10-08).
+- **Context first on an answer page** (order since 2026-10-09: TLDR first) (2026-10-08, the
+  operator's direction; the checks' shape, a design made in planning, not the operator's) —
+  every page card opens on a flat Context introducing the terms, items and concepts its
+  Impact line, TLDR and options use, and its TLDR carries no recommendation, which the options
+  mark. Not taken: definitions left to What in the Background fold; a Rec bullet in the TLDR.
+  Background not auto-expanded; Context absorbs What (decision 197 (a), the operator's answer 2026-10-08).
   Not taken: Background open on load.
-- **Block depth on an answer page, by detail level** (2026-10-08, decision 198, the
-  operator's (a) with changes, and the operator's label **More** for the option button; the
-  field shape, the sizes for the visible parts' levels and the lints, designs made in
-  planning, not the operator's) — every page card carries the decisions block's content at
-  soft sizes, read at its full level (Background ~150 words, each option ~60–120, Evidence
-  ~150 with paths and links, a card ~600–900). The visible parts step summary → medium → full
-  on a click; a part inside an opened fold may step the same way; the folds stay folded;
-  **More** beside an option shows it in full. Not taken: the folds' content moved into the
-  visible parts; depth only on ⚠ and wide cards; no sizes.
+- **Block depth on an answer page, by detail level** (levels optional since 201) (2026-10-08,
+  decision 198, the operator's (a) with changes, and the operator's label **More** for the
+  option button; the field shape, the sizes for the visible parts' levels and the lints,
+  designs made in planning, not the operator's) — every page card carries the decisions
+  block's content at soft sizes, read at its full level (Background ~150 words, each option
+  ~60–120, Evidence ~150 with paths and links, a card ~600–900). The visible parts step
+  summary → medium → full on a click; a part inside an opened fold may step the same way; the
+  folds stay folded; **More** beside an option shows it in full. Not taken: the folds'
+  content moved into the visible parts; depth only on ⚠ and wide cards; no sizes.
 - **Detail levels scale with the decision** (2026-10-09, decision 201 (c), the operator's
   answer: "I want the levels to scale a bit with the size of the decision") — levels are
   optional on every part of a page card: a small call may carry none; a wide or one-way
   decision carries the most. The pre-publish runner lints thin depth only where a part has
   levels. Not taken: visible levels expected on every card; small calls exempt by a mark.
+- **TLDR first on an answer page** (2026-10-09, the operator's direction) — the open card and
+  the popup show the TLDR, then Context, then the Impact. Context still introduces the terms
+  the card uses, and no longer restates what the TLDR decides. Not taken: Context first
+  (2026-10-08).
+- **Level shapes on an answer page** (2026-10-09, the operator's direction; the data shape,
+  the lint thresholds and the cap of two sub-bullets a bullet, grouping the options where a
+  facet differs across more than two, are designs made in planning, not the operator's) —
+  each level clearly sparser than the next: a summary one or two sentences (the TLDR one or
+  two bullets); medium a list of bullets with an optional sub-bullet or two; high headed
+  sections with bullets and sub-bullets; terse sentence fragments at summary and medium. Not
+  taken: levels as fuller renditions in the same prose shape (198, as built).
+- **No ids on an answer page** (2026-10-09, the operator's direction) — short names, titles and
+  slugs only, page and layer titles included: the page is the reader's only context. Not
+  taken: plain words first, the id after (the page's rule from 2026-10-08). The plain-names
+  skill's chat rule stands.
+- **Impact across the options on an answer page** (2026-10-09, the operator's direction) — the
+  card-level Impact covers the decision across all its options, each facet on its own line;
+  each option's effect lives in its own detail. Not taken: Effect as the recommended option's
+  on a page.

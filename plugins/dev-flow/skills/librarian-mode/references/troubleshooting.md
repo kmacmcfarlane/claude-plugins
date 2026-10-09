@@ -124,4 +124,5 @@ WI="python3 $WI_PY"
 ```
 
 An empty `WI_PY` after both means `work-items` is not installed on this machine — install
-it (`/plugin install work-items@kmacmcfarlane`) before continuing.
+it (`/plugin install work-items@kmacmcfarlane`) before continuing; Rehydrate step 1 stops
+there and touches nothing else.

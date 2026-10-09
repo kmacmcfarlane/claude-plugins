@@ -114,3 +114,4 @@ decision 180: Where should the work-item store live, now that most of it is book
   impact: Effect → (a) the public repo stops carrying the work record, sessions keep it in a private repo; (b) only seen times stay local; (c) seen times go public · Wait: none, seen lines stay held · reach: every librarian session and any second machine · undo: (a) move back by re-tracking; (b)/(c) easy until pushed · cost: (a) a private remote to create, one move
   unknown: whether you want the published decision rationale kept public somewhere (380c's ./specs idea)
 shown 180: 2026-10-09T06:59Z chat
+shown 180: 2026-10-09T08:57Z page

@@ -3,14 +3,13 @@ id: decision-page-tldr-first-levels-shaped-s-1e00
 title: "decision-page: TLDR first; levels shaped sentence, bullets, sections; impact one field per line, across all options"
 short_display_name: decision card format v2
 type: feature
-status: doing
+status: done
 priority: 1
 deps:
   - decision-page-folds-written-at-block-dep-eda1
-owner: Kyle-McFarlane@2d49f8460283
-claimed: 2026-10-09T07:11Z
 created: 2026-10-09
 updated: 2026-10-09
+closed: 2026-10-09
 refs:
   - operator message 2026-10-09
 ---
@@ -53,3 +52,16 @@ agent: implementer a5b91673abb322595
 return: DONE worktree-agent-a5b91673abb322595 844b806 (TLDR/Context/Impact order; shaped levels; id lint on titles; Impact facets per line, across options; classes 41 trust / 42 one-way; sub-bullets capped at 2; 10/10 Checks, operator-interaction 117; runner exit 0 on the example; on the live page: 455 lint lines; tests only, no render)
 dispatch: reviewer opus high — review round 1 of 844b806
 agent: reviewer a9c6313902e894792
+verdict: review round 1 NEEDS_CHANGES (medium 3: cards-schema.md:245 says the closed card shows the rec's option title, it doesn't; the 360px both-theme preview not run; the older string detail.rec render lost its only test; lows: rulings.md:60 order not marked superseded, empty sub refuses the page, duplicate id lint lines; nits: wraps, 'layer details's', bracketed port numbers); live page renders under jsdom with 455 lint lines and no refusal
+decided: 2026-10-09T08:31Z scope — finding 2 (the visual preview) can't be done in this sandbox (no browser); the change lands on tests plus jsdom renders, the gap stated in its Report, and the operator sees the layout on the fresh open-decisions page published on it; a broken layout is a quick follow-up fix
+dispatch: implementer opus medium — fix round 1 (resume a5b91673abb322595)
+return: DONE 4497048 on merge a9adf02 (schema sentence; string rec-level test restored; rulings marked; empty sub accepted; id dedupe by longest match; nits; 11/11 Checks, operator-interaction 119; cc_scan run as an equivalent Python script after the shell guard refused the function)
+dispatch: reviewer opus high — review round 2 (resume a9c6313902e894792)
+verdict: review round 2 CLEAR (nit: two long lines, rulings.md:65 and cards-schema.md:248 — carried to a416, which edits the same files)
+landed: f8ea87e (merge of 844b806, a9adf02, 4497048); Checks 11/11 OK; runner exit 0 on the example
+verified: tests and jsdom renders of the example and live cards (order, structure, escaping); layout at 360px and in dark mode not seen (no browser here) — the operator sees it on the fresh open-decisions page
+- 2026-10-09 done
+helper: card writer opus — one writer for the 7 open decisions (172, 180, 204-208) on the landed template, per a416's lesson; scratch scratchpad/open-page/
+agent: card writer a84b51c880f28ff51
+page: open-decisions page https://claude.ai/artifact/YXBW5U31wCnd2jPAWyJF1F (landed template, 7 cards, rev 2026-10-09T10:00:00Z; runner exit 0, deny 0; answers empty at publish; one writer, 10 turns, 132k peak — against last night's five writers at 143-201k each)
+shown 206: 2026-10-09T08:57Z page
