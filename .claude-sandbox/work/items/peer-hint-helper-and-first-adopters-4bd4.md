@@ -56,3 +56,4 @@ shown 207: 2026-10-09T08:34Z chat
 shown 208: 2026-10-09T08:34Z chat
 shown 207: 2026-10-09T08:57Z page
 shown 208: 2026-10-09T08:57Z page
+note: 2026-10-09T08:59Z DF-9 returns to this item's stage 2 (not 64c7): the librarian-mode hint points at dev-cycle references/bindings.md § Peer hint, which this item adds; text per 00 § DF-9 ('context-guard adds the context gate and checkpoints'). KD-2 stays with d0b0 (inline, no pointer needed)

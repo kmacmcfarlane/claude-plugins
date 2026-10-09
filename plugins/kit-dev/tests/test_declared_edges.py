@@ -84,31 +84,18 @@ ALLOWED = {
     ("context-guard/hooks/tests/test_checkpoint_namespaced.py", "statusline",
      '"plugins/statusline/settings.json",'):
         "a repo scan's list of files it guards, not a use",
-    # kit-dev: install advice and a who-calls credit, needed by nothing (72ef KD-4, KD-6).
-    ("kit-dev/skills/new-project-from-template/SKILL.md", "work-items",
-     "usually means `dev-flow`, `work-items`, `sandbox`"): "install advice",
+    # kit-dev: install advice, needed by nothing (72ef KD-6). Its work-items and dev-flow
+    # mentions, here and below, are covered by kit-dev's declared soft edges since F3.
     ("kit-dev/skills/new-project-from-template/SKILL.md", "sandbox",
      "usually means `dev-flow`, `work-items`, `sandbox`"): "install advice",
-    ("kit-dev/skills/update-kit/SKILL.md", "dev-flow",
-     "the retrospective step of `investigate` / `implement`"): "names who calls update-kit",
     # kit-dev: update-kit's map of the claude-plugins checkout it syncs (an external repo to
     # kit-dev, declared as such), not a use of the plugins it lists (72ef KD-5).
     ("kit-dev/skills/update-kit/references/repo-map.md", "context-guard",
      "checkpoint/scripts/  (context_forensics.py"): "repo map",
     ("kit-dev/skills/update-kit/references/repo-map.md", "context-guard",
      "usage-report/scripts/ (usage_report.py"): "repo map",
-    ("kit-dev/skills/update-kit/references/repo-map.md", "dev-flow",
-     "research/scripts/ (tool-preflight.sh"): "repo map",
-    ("kit-dev/skills/update-kit/references/repo-map.md", "dev-flow",
-     "librarian-mode/scripts/ (quota_budget.py"): "repo map",
     ("kit-dev/skills/update-kit/references/repo-map.md", "statusline-hub",
      "install-statusline-hub/scripts/ (install_hub.py"): "repo map",
-    ("kit-dev/skills/update-kit/references/repo-map.md", "work-items",
-     "work-items/    (wi CLI incl. `wi estate`"): "repo map",
-    ("kit-dev/skills/update-kit/references/repo-map.md", "work-items",
-     "work-items/scripts/ (wi.py, the wi CLI)"): "repo map",
-    ("kit-dev/skills/update-kit/references/repo-map.md", "work-items",
-     "work-review/   (the on-demand cross-repo review, written from `wi estate`)"): "repo map",
     # work-items: a credit to the step that closes items on landing (72ef WI-5); the other
     # provider of the interface and its grooming skill, declared from ralph's side (WI-1);
     # and `implement` as an item stage name, not the skill.
@@ -125,8 +112,8 @@ ALLOWED = {
 
 # (source file relative to plugins/, target plugin, a substring of the referencing line)
 # -> the follow-up that declares it. Real dependencies that are not yet declared: each is a
-# finding for the declaration sweep (spike 72ef F7) or factor-analysis's declare-and-degrade
-# (F3), which remove their entries as they land. Listed so the lint passes meanwhile.
+# finding for the declaration sweep (spike 72ef F7), which removes its entries as they land.
+# Listed so the lint passes meanwhile.
 UNDECLARED = {
     # context-guard's moved notice reads statusline's data dir to stay quiet when it is
     # installed (72ef CG-3): named in plugin.json ("installing statusline brings it"), not a
@@ -139,16 +126,6 @@ UNDECLARED = {
     # safe_sid rules (72ef DF-7); F7 moves the pointer to the hub's hook-contract.md.
     ("dev-flow/skills/research/references/intensity-and-routing.md", "statusline",
      "`safe_sid` rules are in `statusline`'s `install-statusline` references"): "F7 (DF-7)",
-    # factor-analysis's Step 7 files work items and writes an investigate-format series
-    # (72ef KD-2, KD-3). F3 declares both and adds the fallbacks.
-    ("kit-dev/skills/factor-analysis/SKILL.md", "work-items", "(`work-items` skill)"):
-        "F3 (KD-2)",
-    ("kit-dev/skills/factor-analysis/SKILL.md", "dev-flow", "migration is planned by `implement`"):
-        "F3 (KD-3)",
-    ("kit-dev/skills/factor-analysis/SKILL.md", "dev-flow", "(`investigate` format)"):
-        "F3 (KD-3)",
-    ("kit-dev/skills/factor-analysis/SKILL.md", "dev-flow", "for `implement` to consume"):
-        "F3 (KD-3)",
     # The hub treats context-guard's deprecated footer copy as the footer's entry (72ef
     # SH-3): owner.py names that copy's data-dir home, and the tests fingerprint its path.
     # F7 declares it, or it goes with the copy (a95a).

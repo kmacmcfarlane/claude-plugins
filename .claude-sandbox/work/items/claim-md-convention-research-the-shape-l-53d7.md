@@ -112,3 +112,7 @@ incident: 2026-10-09T08:50Z the tier-3 check ran 13 nested claude -p runs (2.1.2
 correction: my step 2 brief told the builder to run the tier-3 nested sessions unattended; the isolation gap surfaced in the 4bd4 review later, and my stop came too late. Nested headless runs against this host now wait for the operator (decision 207's class)
 dispatch: reviewer opus high — step 2 review round 1 of 8b66e2c/0bb73ef
 agent: reviewer a81a043e328779aa9
+verdict: step 2 review round 1 NEEDS_CHANGES (medium 1: tier-3 outcome serial missing; Run B never invoked the skill, so answer mode is unexercised, and B lacked the Read allow; lows: CLAUDE.md conflicts with main's 1e00 layout line; example.md orphaned; repo names not escaped; nits: --literal-pathspecs, write step 1 retry with --dir, the incident line's version label); sentinel probe across 13 runs found no leak; read-only confirmed by hash; the format changes are within the plan or 188 (c) upkeep
+dispatch: implementer opus medium — fix round 1 (resume aa90361669ba918cc)
+return: DONE 534ffe0 on merge 3725883 (06_build-outcome.md written, INDEX updated: 13 runs, observed 2.1.293, 28/29 plugins loaded, answer mode not exercised, rerun waits on the operator; printable repo names; --literal-pathspecs; example pointer; --dir retry; 12/12 Checks, ownership 71)
+dispatch: reviewer opus high — step 2 review round 2 (resume a81a043e328779aa9)
