@@ -68,7 +68,9 @@ git -C $W log -E -i --grep="$P" --format='%h (message)' $BASE..HEAD
 - [ ] Frontmatter keys follow the house rule, whose allowed list lives in the create-skill
       skill's frontmatter reference, in the kit-dev plugin. The code below copies that
       list — 20 keys, the 2 required plus the 18 other documented fields — and must be
-      kept in step with it: count both when either changes. The two required keys
+      kept in step with it: count both when either changes (dev-flow's
+      `tests/test_frontmatter_parity.py` compares the two whenever both are in the repo).
+      Without kit-dev, this copy is the rule. The two required keys
       `name` and `description` are present; every other key is optional but must be a
       field the Claude Code skills docs define; no key appears twice; keys match exactly
       (`Model` fails). Leaving out `disable-model-invocation`, `allowed-tools` and
