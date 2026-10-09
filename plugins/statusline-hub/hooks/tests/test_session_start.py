@@ -359,6 +359,26 @@ class TrackedProjectSettings(Base):
         self.assertIn("/install-statusline-hub --project again", msg)
         self.assertEqual(self.raw(self.shared), before)
 
+    def test_an_explicit_project_install_keeps_its_scope_through_a_heal(self):
+        self.write_json(self.shared, dict(HUB_ON, statusLine=self.own()))
+        self.git("init", "-q")   # a repo, the file not yet added
+        owner.write_marker(self.data, "installed", self.shared,
+                           owner.command_for(self.data), scope="project")
+        self.write_json(self.shared, HUB_ON)   # a stale write drops the entry
+        self.assertIn("restored the status line", self.said())
+        self.assertEqual(self.load(self.shared)["statusLine"], self.own())
+        self.assertEqual(self.marker()["scope"], "project")
+        self.git("add", ".claude/settings.json")
+        self.write_json(self.shared, HUB_ON)   # dropped again, the file now tracked
+        before = self.raw(self.shared)
+        msg = self.said()
+        self.assertIn("is tracked by git", msg)
+        self.assertIn("/install-statusline-hub --project again", msg)
+        self.assertEqual(self.raw(self.shared), before)
+        self.assertEqual(self.marker()["state"], "blocked")
+        self.assertEqual(self.marker()["scope"], "project")
+        self.quiet()
+
     def test_a_git_timeout_waits_for_the_next_session(self):
         fake = os.path.join(self.cfg, "bin")
         os.makedirs(fake)

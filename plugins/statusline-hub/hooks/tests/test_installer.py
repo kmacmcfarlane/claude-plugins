@@ -43,6 +43,30 @@ class Installer(helpers.Hermetic):
         with open(os.path.join(self.data, "owner.json")) as f:
             self.assertEqual(json.load(f)["state"], "removed")
 
+    def scope_after(self, *args):
+        self.write_json(args[-1], {})
+        rc, out = self.run_it(*args)
+        self.assertEqual(rc, 0, out)
+        with open(os.path.join(self.data, "owner.json")) as f:
+            return json.load(f).get("scope")
+
+    def test_settings_naming_a_project_shared_file_records_project_scope(self):
+        shared = os.path.join(self.cfg, "proj", ".claude", "settings.json")
+        self.assertEqual(self.scope_after("--settings", shared), "project")
+
+    def test_settings_naming_other_files_records_no_scope(self):
+        local = os.path.join(self.cfg, "proj", ".claude", "settings.local.json")
+        self.assertIsNone(self.scope_after("--settings", local))
+        self.assertIsNone(self.scope_after("--settings", self.user))
+        self.assertIsNone(self.scope_after("--settings", os.path.join(self.cfg, "x.json")))
+
+    def test_settings_naming_the_user_file_in_a_dot_claude_dir_records_no_scope(self):
+        home = os.path.join(self.cfg, "home", ".claude")   # the usual ~/.claude
+        self.env["CLAUDE_CONFIG_DIR"] = home
+        self.data = os.path.join(home, "plugins", "data", "statusline-hub-kmacmcfarlane")
+        self.env["CLAUDE_PLUGIN_DATA"] = self.data
+        self.assertIsNone(self.scope_after("--settings", os.path.join(home, "settings.json")))
+
     def test_foreign_needs_consent(self):
         self.write_json(self.user, {"statusLine": FOREIGN})
         rc, out = self.run_it()
