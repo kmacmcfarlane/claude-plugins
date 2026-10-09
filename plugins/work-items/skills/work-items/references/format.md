@@ -590,15 +590,27 @@ glued to a word or follows a URL's `?` or `&`) and
 also flags a lowercase, mixed-case or dotted `key=value` (`app.db_pass=…`),
 `KEY = value`, `key => value`, `key := value`, `KEY: value` or `KEY :value`
 (an env-style or snake_case key), a JSON `"key": "value"` pair and
-`--flag=value`, with the value bare or quoted. When the key holds a secret
-word (`pass`, `pw`, `secret`, `token`, `auth`, `cred`, `key`), any value of 8+
-non-space characters counts, symbols, hex and UUIDs included. Any other key
+`--flag=value`, with the value bare or quoted, and every pair on a line
+(`dsn=host=db;db_pass=…`, compact JSON). When one segment of the key, split
+on `_`, `-`, `.` and camelCase, is a secret word (`pass`, `password`, `pw`,
+`secret`, `token`, `auth`, `cred`, `key`, `apikey`, `webhook` and the like;
+a plural such as `tokens` or `keys` is not), any value of 8+ non-space
+characters counts, symbols, hex and UUIDs included, except quoted code or a
+count: a call `f(…)`, a subscript, a dotted attribute (`config.api_key`), a
+bare number with or without separators, or a path starting `~/`, `./` or
+`/`, each made of harmless segments (below), so a dotted token or a base64
+value that starts with `/` still counts. A value is a placeholder only as `$VAR`, `{template}`, all `*`, or
+exactly `<word>` with no `://`. Any other key
 (`sha`, `commit`, `*_id`, …) counts only a value that looks live: 12+
 characters holding a letter and a digit, not all hex (a sha), not a date,
 and not two or more segments split on `-`, `_`, `.`, `/` or `~` that are each
 harmless (all letters, all digits or all hex at any length, or 12 characters
 or fewer that do not mix upper case, lower case and digits), so a work-item
-id, path, version or UUID stays clean.
+id, path, version or UUID stays clean. Every rule reads the line
+NFKC-normalised (a fullwidth equals sign, U+FF1D, is `=`), with Unicode format characters
+such as a zero-width space dropped and markdown `` ` ``, `**`, `*` and `__`
+removed. Look-alike letters (confusables, such as a Cyrillic a, U+0430, in a key)
+are out of scope for this floor.
 `wi note` refuses, writing nothing, a line lint would flag. Lint's shapes
 are a floor, not every secret: the path-and-key rule is the guard.
 

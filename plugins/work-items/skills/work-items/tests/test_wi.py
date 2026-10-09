@@ -3100,6 +3100,25 @@ class TestLint(WiTestCase):
             "secret key, uuid": "db_pass: " + self.FAKE_UUID,
             "secret key, symbols": "user_pw=fake!pw@" + "123",
             "secret key, slug": "--token=" + "-".join(("fake", "slug", "value")),
+            "secret key, base64 from /": "db_pass=/" + self.FAKE_B64,
+            "secret key, camelCase": "accessToken := " + v,
+            "secret key, all-caps camel": "APIKey=" + v,
+            "secret key, masked prefix only": "db_pass=*" + v,
+            # a later pair on the same line is still examined
+            "compact json": '{"name":"x","db_pass":"' + v + '"}',
+            "joined pairs ;": "dsn=host=db;user=app;db_pass=" + v,
+            "joined pairs ,": "opts=fast,db_pass=" + v,
+            "joined flags": "args=--x,--auth=" + v,
+            # markdown around keys and values
+            "bold key": "**password**: " + v,
+            "code key": "`API_TOKEN` = " + v,
+            "bold value": "password: **" + v + "**",
+            "code value": "db_pass=`" + v + "`",
+            "split by emphasis": "db_pass=" + v[:8] + "*" + v[8:],
+            "url in angle brackets": "webhook_url: <https://hooks.example.invalid/" + v + ">",
+            # NFKC and format characters
+            "zero-width space in key": "db\u200b_pass=" + v,
+            "fullwidth equals": "db_pass\uff1d" + v,
         }
         for name, line in shapes.items():
             with self.subTest(shape=name):
@@ -3152,6 +3171,23 @@ class TestLint(WiTestCase):
             "series dir": "SERIES_DIR: .claude-sandbox/investigations/statusline2",
             "py path": "see file=plugins/statusline-hub/hooks/tests/test_housekeeping.py",
             "spaced arrow, short": "map => fake1",
+            # code and counts a note may quote under a secret-word key
+            "a call": "key = get_key()",
+            "an attribute": "token = self.token",
+            "a dotted attribute": "key = config.api_key",
+            "a subscript": "key = os.environ['API_KEY']",
+            "a count call": "token_count = len(tokens)",
+            "a class call": "monkey = MonkeyPatch()",
+            "author": "author=KyleMcFarlane",
+            "keyboard": "keyboard=us-international",
+            "a plural key, count": "max_tokens = 100000000",
+            "a plural key, colon count": "cache_read_input_tokens: 12345678",
+            "a count with separators": "token_budget=1,234,567",
+            "a home path": "ssh_key: ~/.ssh/id_ed25519.pub",
+            "a relative path": "key_file=./conf/dev/keys.yaml",
+            "markdown placeholder": "**password**: <value>",
+            "markdown masked": "`API_TOKEN` = `********`",
+            "code-quoted call": "- 2026-10-09 fixed `key = get_key()` in wi.py",
         }
         for name, line in look_alikes.items():
             with self.subTest(shape=name):
