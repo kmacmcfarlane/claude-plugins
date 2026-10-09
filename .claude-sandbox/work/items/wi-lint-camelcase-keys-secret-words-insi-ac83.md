@@ -43,3 +43,6 @@ verdict: review round 2 NEEDS_CHANGES (must-fix 2, down from 3: medium 1 the met
 dispatch: implementer opus medium — fix round 2 (resume a15cd24ab91b0fc91); review 3 next
 return: DONE 2df5df2 (fix round 2); work-items 315 OK, kit-dev 18 OK; main-only 2,252, all meta keys: 1,107 dotted attributes, 1,107 harmless paths, 38 8-letter letters-only draws; 15,675 newly caught; real store clean; judgement: an a-f-only first UUID group reads as a name under a meta key (~1 in 2,600), undocumented
 dispatch: reviewer opus high — review round 3 of 2df5df2 (resume a65548473809d61f9)
+verdict: review round 3 NEEDS_CHANGES (must-fix 1, down from 2: low — under a meta key a UUID with an a-f-only first group and an all-caps run of 16+ (AKIA… without digits) read as names; exact patch at scratchpad/ac83-review/wi_r3fix.py; rulings: exclude UUIDs outright; the 38 letters-only draws acceptable; follow-ups filed as wi-lint-bare-lowercase-pass-keys-pw-more-dc23)
+decided: 2026-10-09T16:05Z cap — must-fix fell 2 → 1 and the leftover is an exact patch: a finish round (authority answer 145), no review 4
+dispatch: implementer opus medium — finish round (resume a15cd24ab91b0fc91)
