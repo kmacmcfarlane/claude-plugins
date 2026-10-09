@@ -92,6 +92,7 @@ dependency is marked (hard) here.
 | …unattended agent loops over a backlog ("ralph") | `ralph` | **current** | claude-sandbox repo (external; its `init-ralph` seeds `backlog.py`, and the loops run in its containers), `sandbox` (soft; its skill bootstraps and troubleshoots those containers), `work-items` (soft; the `wi` ↔ `backlog.yaml` bridge, `wi export/import --format backlog-yaml`, two explicit `wi` commands run on demand) |
 | …to start a new repo for a thread of work, with an agent session launched on it | `create-repo` | **current** | claude-sandbox repo (external; `init` bootstraps the repo's `.claude-sandbox/` and the launch command runs the session in its container; without it the repo is created all the same and the command is plain `claude`), `kit-dev` (soft; `new-project-from-template` scaffolds a claude-templates template as the goal), `sandbox` (soft; its skill troubleshoots an `init` or launch that fails), `dev-flow` (soft; the launched session runs the first investigation with its `investigate` skill when installed, and investigates directly without it), `operator-interaction` (soft; a critical doubt over a `.gitignore` line is put to the operator per its `decisions` skill when loaded; without it, a plain question) |
 | …your agents to put what they need from you in a form you can act on where it appears | `operator-interaction` | **current** | claude.ai Artifacts (external, soft; `decision-page` publishes its answer page there with the `db` capability, and a docs connector serves its tick-box fallback; without either it puts the decisions in chat), node (external, soft; `decision-page`'s pre-publish check; without it the check is by reading) |
+| …each repo to declare its ownership claim — what it owns, what next to it is not ours and whose it is — so ownership questions stop recurring | `ownership` | **current** | `work-items` (soft; `wi` files a claim change with its decision and the fix items a check finds; without it the change is put in chat with its text, the findings are listed, and the result says what was not filed), `kit-dev` (soft; `write` points a split not yet made at its `factor-analysis`; without it the splitting rule is applied in the session and an unclear split goes to the operator), `dev-flow` (soft; the check compares a repo's `## Librarian` `Not owned:` lines with `## Not ours` by name when the repo has both, and in a librarian session a claim change runs through its librarian cycle; the check keys on the lines in the file, so without the plugin nothing is lost), `operator-interaction` (soft; a claim change is put to the operator per its `decisions` skill when loaded; without it, a plain lettered question) |
 | …to maintain this kit itself (skill authoring, upstream sync, templates) | `kit-dev` | **current** | claude-templates repo (external; `new-project-from-template` scaffolds from it, `update-kit` syncs to it), claude-sandbox repo (external; `new-project-from-template` bootstraps with its `init-ralph`, `update-kit` syncs to it), claude-expertise repo (external; `update-kit` syncs to it), `create-repo` (soft; `new-project-from-template` points at it for a bare repo with a session launched on it) |
 | …to make Claude good at a specific stack (Goa, Playwright, musubi-tuner, …) | one plugin per stack | **moved** to the expertise marketplace (local scaffold, remote pending) | — |
 
@@ -203,6 +204,10 @@ settings path). Its first skill's name, `decisions`, is **confirmed** by the ope
 Its second skill's name, `plain-names`, is **confirmed** by the operator (2026-09-29).
 Its third skill's name, `decision-page`, is the operator's (2026-10-01, in place of
 decision-pyramid).
+
+`ownership` is **confirmed** by the operator (2026-10-09, decision 187), and so is its skill's
+name, `claim-md`. `CLAIM.md`, the file each repo writes, is the operator's term. The plugin
+ships no state: no data dir, no settings path.
 
 ## Plugins today
 
@@ -680,6 +685,33 @@ claude.ai Artifacts, outside this marketplace, and degrades without them; its pr
 check runs under node when present, and is done by reading without it); skills that raise decisions or
 write to you can adopt it.
 
+### ownership
+
+Each repo's ownership claim. A `CLAIM.md` at a repo's root states what the repo owns, what
+next to it is not ours and whose it is, and, for each boundary with a neighbour, which side
+defines it; the other side points to it rather than copying it. A five-line `## Ownership`
+section in the repo's CLAUDE.md tells agents when to read it: before filing or forwarding
+work that may belong elsewhere, before changing what another repo reads, when a peer says
+something is ours or theirs, at a plan's scoping gate, and before starting something next to
+another repo's area. A claim declares; it enforces nothing, and each repo writes only its own.
+Substance changes come to you for approval first; upkeep lands and is reported.
+
+| Skill | Description |
+|---|---|
+| `claim-md` | Write, check and answer from a repo's CLAIM.md — the approved shape, a read-only claim check across your repos, and who-owns-what answers that cite the claim |
+
+Soft dependencies, each optional. With `work-items`, a claim change is filed as a work item
+with its decision, and the check's fix items are filed too; without it the change is put to
+you in chat and the fixes are listed. With `kit-dev`, a split not yet made goes to its
+`factor-analysis`; without it the splitting rule is applied in the session and an unclear
+split comes to you. With `dev-flow`, a librarian session lands a claim change through its
+cycle; the check compares the librarian section's `Not owned:` lines with `## Not ours` by
+name whenever a repo's files hold both, so nothing is lost without the plugin. With
+`operator-interaction`, the approval is put to you per its `decisions` skill; without it, a
+plain lettered question.
+
+No hooks, settings, agents or state. The script reads and never writes.
+
 ### chat
 
 Skills for LLM chat sessions in web UIs. Family home under review.
@@ -786,6 +818,7 @@ claude-plugins/
 │   ├── dev-flow/
 │   ├── kit-dev/
 │   ├── operator-interaction/
+│   ├── ownership/
 │   ├── ralph/
 │   ├── sandbox/
 │   ├── statusline/
