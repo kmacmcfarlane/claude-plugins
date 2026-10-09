@@ -70,11 +70,15 @@ Do this at session start and after any `/clear` or compaction. Never `ls` the wh
    ```bash
    MAIN=$(git rev-parse --path-format=absolute --git-common-dir | sed 's#/\.git$##')
    export WI_ROOT="$MAIN/.claude-sandbox/work"
-   WI="python3 $(ls "$MAIN"/plugins/*/skills/work-items/scripts/wi.py | head -1)"
+   WI="python3 $(ls "$MAIN"/plugins/*/skills/work-items/scripts/wi.py 2>/dev/null | head -1)"
    ```
 
    An empty glob means the repo does not carry the plugin: use the installed
-   copy (`references/troubleshooting.md`). No store yet, or a `.work/` one:
+   copy (`references/troubleshooting.md` § Installing `wi`). When neither finds `wi`,
+   `work-items` is not installed, and the librarian cannot run without it — its whole
+   queue is the store. Stop there: say "librarian-mode needs work-items, which is not
+   installed: /plugin install work-items@kmacmcfarlane", and touch nothing else (no
+   opt-in, no store, no dispatch). No store yet, or a `.work/` one:
    `references/first-start.md`. `MAIN` is not this session's cwd: a worktree session —
    say so and route every edit through dispatch (Red flags).
 
@@ -120,9 +124,21 @@ Do this at session start and after any `/clear` or compaction. Never `ls` the wh
    A worktree with no live agent (step 3's probes; ListAgents for any agent no item records)
    and no `doing` item is an orphan — see Troubleshooting.
 
+5. **Context-guard.** When the session's skill list has no `context-guard:checkpoint`,
+   nothing watches this session's context: no gate advisory will arrive, so the 75%/DUE
+   sequence never fires, and there is no checkpoint and no manifest to rehydrate from.
+   Say so once, at `start`, as a clause of the expected-output paragraph: "no
+   context-guard: no checkpoint, no context gate; handoffs kept every idle turn". From
+   then on keep the state the checkpoint would have carried in the store yourself: at
+   every Idle turn, and before any `/clear` or `/compact` the operator names, run the
+   handoffs of `references/ending-the-session.md` on every open item, the dispatched
+   ones naming each live role's agent id and round (the in-flight roster), and keep every
+   standing hold as a `hold` item. A Rehydrate after `/clear` or compaction does not
+   repeat the clause; the handoffs go on.
+
 Expected output: one short paragraph — items in flight, items ready, worktrees and agents
 alive, anything awaiting the operator, any active hold; after an init, one clause more
-(first-start).
+(first-start); without context-guard, step 5's clause.
 
 ## Intake
 
@@ -280,7 +296,8 @@ it: print a **Groom** table (for the operator) and a **Work** table (ready, not 
 or held), then dispatch the top Work items through The cycle — by dependency group,
 same-file items one at a time. Only an operator **hold** (a `hold` item, named above
 the tables) stops or caps it, and `start`'s rename gate stops it while it waits; a
-rate limit does not.
+rate limit does not. Without context-guard, every Idle turn first refreshes the
+handoffs (Rehydrate step 5).
 `references/idle-turn.md`; the quota sense and its store: `references/budget.md`.
 
 ## Report
@@ -375,7 +392,8 @@ Stop when you catch yourself doing any of these:
 ## Ending the session
 
 Before the session ends, compacts, or is cleared: `references/ending-the-session.md`.
-At 75% or DUE: its § At 75%.
+At 75% or DUE: its § At 75%. Without context-guard no 75% or DUE arrives: Rehydrate
+step 5's idle-turn handoffs stand in for it.
 
 ## Examples
 

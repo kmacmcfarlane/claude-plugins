@@ -70,6 +70,13 @@ rehydrates from `wi prime` and git.
 
 ## At 75% or DUE — checkpoint, then continue
 
+Without context-guard (no `context-guard:checkpoint` in the session's skill list) none of
+these advisories arrives and there is no checkpoint to run: the librarian said so at
+start and keeps the handoffs above current at every Idle turn instead (SKILL.md §
+Rehydrate step 5). When the operator says they will compact or clear, run the handoffs
+and step 3's push, then send the closing Report; the store and the repo history carry
+the rest.
+
 The trigger is the first of these context-gate advisories to arrive, matched by its
 body, not its bracketed prefix (the prefix names the owning plugin, today
 `[context-guard context gate]`, and has changed before): the "…% of the window is used"
