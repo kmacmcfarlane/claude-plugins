@@ -119,8 +119,10 @@ validation (`validate --strict`) is enforceable in a loop. Provider-local verbs:
 
 `wi export/import --format backlog-yaml` syncs the two stores. It is a **sync mechanism, not
 a contract verb** — a consumer never calls it as part of doing work. It is also the model for
-principle 4 cooperation: it activates only when both stores are present and degrades silently
-otherwise.
+principle 4 coupling: two explicit commands, run on demand, with no runtime link to `ralph`.
+They do not degrade, they fail loudly: either exits non-zero with a message when there is no
+`wi` store, and `import` exits 3 when its input file is missing or neither ruamel.yaml nor
+PyYAML is installed.
 
 ## Capability table
 

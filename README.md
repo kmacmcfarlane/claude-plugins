@@ -40,11 +40,18 @@ repo; link here.
    plugin whose stated aim *is* that behavior. Knowledge skills never carry hooks as
    passengers.
 4. **Dependencies: soft by default, declared, directional — hard only when it cannot be
-   otherwise.** A dependency degrades gracefully when the other side is absent (the
-   work-items ↔ backlog bridge is the model), is declared in the plugin description and the
-   catalog, and points at a named support plugin or an external repo. The one exception is
-   a **hard** dependency, which the framework installs with the dependent and without which
-   it disables the dependent. A plugin may declare one only when it has no function at all
+   otherwise.** A soft dependency **degrades, discloses, and hints once** when the other
+   side is absent. *Degrade:* the plugin keeps doing its job without the peer. *Disclose:*
+   when that changes what the user gets, the run's result says what was skipped, in one plain
+   clause; a run whose result is unchanged says nothing. *Hint once:* the first time the loss
+   happens in an attended, top-level session, the plugin names the peer, what it adds and its
+   install command, in one line: once per install from a hook, at most once per session from
+   a skill. Never at install, never because a peer is merely absent, never a question or a
+   dialog, never mid-flow, and never when the user has switched hints off. The mechanics are
+   in [CLAUDE.md](CLAUDE.md) § Conventions. A dependency is declared in the plugin
+   description and the catalog, and points at a named support plugin or an external repo.
+   The one exception is a **hard** dependency, which the framework installs with the
+   dependent and without which it disables the dependent. A plugin may declare one only when it has no function at all
    without the other, the edge stays within this marketplace, the declaration is in its
    `plugin.json` `dependencies` (never its `marketplace.json` entry, which the framework
    also reads), and the catalog marks it (hard). A plugin that merely reads another's data
@@ -122,8 +129,10 @@ Every plugin in the aim→home table now exists on disk, so the home the table n
 home you write to. If a future phase ever plans a move again, write to the **current** home
 until that phase lands — a planned destination is never a place to put files today.
 
-Cross-plugin cooperation follows principle 4. The work-items ↔ backlog bridge (activates
-only when both stores are present, degrades silently otherwise) is the pattern to copy.
+Cross-plugin cooperation follows principle 4. The work-items ↔ backlog bridge is the pattern
+to copy for its coupling: it is two explicit commands (`wi export/import --format
+backlog-yaml`) with no runtime link to `ralph`, and they fail loudly on missing input rather
+than degrade.
 
 ## Naming practices
 
@@ -371,8 +380,9 @@ document itself is the registry — there is no machine-readable descriptor, by 
 
 The `backlog.yaml` provider's own skills (`backlog-yaml`, `backlog-entry`,
 `backlog-grooming`) live in the `ralph` plugin; the bridge
-(`wi export/import --format backlog-yaml`) works regardless, and degrades silently when only
-one store is present.
+(`wi export/import --format backlog-yaml`) works without that plugin: two explicit commands
+with no runtime link to `ralph`, which fail loudly, never silently, when there is no `wi`
+store or when `import`'s input file or YAML parser is missing.
 
 Tests: `cd plugins/work-items/skills/work-items && python3 -m unittest discover -s tests -q`.
 
@@ -591,7 +601,7 @@ claude-sandbox repo, not shipped here). Soft dependency on `sandbox`: its skill 
 and troubleshoots those containers, but ralph's skills never call it, so it is not declared
 in `plugin.json`. Soft dependency on a work source through the **work-source interface**
 documented in `work-items` — `backlog.yaml` is the default provider for unattended runs, and
-the `wi` bridge activates only when both stores are present.
+the `wi` bridge is two explicit `wi` commands, run on demand, with no runtime link from ralph.
 
 ### create-repo
 

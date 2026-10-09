@@ -223,6 +223,38 @@ optional `references/`, `scripts/`, `assets/`.
   Never `../`, never a path into another plugin (there, README principle 4 applies).
 - **Catalog upkeep**: any change to the shape of the marketplace updates the README catalog
   in the same commit.
+- **Peer hints** (the mechanics of README principle 4's degrade, disclose, hint once):
+  - *Disclosure* is part of the run's result whenever a degraded path changed it: one plain
+    clause naming what was skipped ("items not filed: no work-item store tool"), no install
+    command after the first time. A run whose result is unchanged says nothing.
+  - *The hint* is shown only in an attended, top-level session: never in a sub-agent, under
+    an orchestrator's brief (the skill returns the disclosure; the top-level session may add
+    the hint once), at install, or because a peer is merely absent. One line, prefixed by the
+    source plugin's name, naming the benefit rather than the mechanism, never a question:
+    `<source>: <what you got instead>. <peer> adds <what it adds>: /plugin install
+    <peer>@<marketplace> (one-time tip; KMACMCFARLANE_NO_PEER_HINTS=1 hides these)`.
+  - *Hooks* show it once per (source plugin, peer) per install of the source plugin, at most
+    one per source plugin per session (the highest-ranked missing peer), and never once the
+    peer is detected. "Shown" is a marker at `${CLAUDE_PLUGIN_DATA}/peer-hints/<peer>` in the
+    **source** plugin's data dir, created atomically (create-if-absent; only the creator
+    shows the hint); a marker that cannot be created withholds the hint, never repeats it.
+    The hint goes out as `systemMessage` with exit 0, never `additionalContext` or plain
+    stdout, which reach the model. Detection fails quiet: anything unreadable counts as
+    present. The marketplace comes from the install record.
+  - *Prose skills* keep no marker (background state belongs only in a hook-owning plugin,
+    principle 3). The hint folds into the disclosure line in the run's final result, only
+    when the degraded path changed it, at most once per session (the conversation is the
+    record), with the frozen marketplace name `kmacmcfarlane`. Presence is read from the
+    session's skill list.
+  - *The switch*: `KMACMCFARLANE_NO_PEER_HINTS=1` hides every hint; a comma list of peer
+    names (`KMACMCFARLANE_NO_PEER_HINTS=work-items,context-guard`) hides only those. Set in
+    the shell or a settings `env` block. Hooks read it from their environment; a prose skill
+    reads it before showing a hint with one read-only `echo "${KMACMCFARLANE_NO_PEER_HINTS-}"`,
+    in the set that runs without a permission prompt
+    (https://code.claude.com/docs/en/permissions § Read-only commands). Disclosure is never
+    switched off.
+  - Not peer hints: hard-dependency repair notices and migration warnings, which warn of
+    breakage and may repeat.
 
 ## Placement rules
 
