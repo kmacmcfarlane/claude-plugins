@@ -28,3 +28,5 @@ agent: implementer a0ec08ea6adf9f9a7
 return: DONE worktree-agent-a0ec08ea6adf9f9a7 1c9b52d (principle 4 degrade/disclose/hint once; three bridge sentences + provider-interface fixed to match wi export/import; CLAUDE.md Peer hints convention incl. 191 a switch; added 'disclosure is never switched off'; 10/10 Checks)
 dispatch: reviewer opus high — review round 1 of 1c9b52d
 agent: reviewer aa6047d54d942a58c
+verdict: review round 1 NEEDS_CHANGES (medium 1: Claude Code behaviour in the Peer hints convention unlabelled — cite plugins-reference and hooks docs; lows 2-5: stdout reach too broad, ralph catalog cell, disclosure vs switch wording, bridge-as-pattern clause; nits 6-9)
+dispatch: implementer opus medium — fix round 1 (resume a0ec08ea6adf9f9a7)
