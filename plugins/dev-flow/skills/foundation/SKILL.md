@@ -79,16 +79,21 @@ numbered list. Run the prompt list (`references/prompt-list.md`): it always runs
 the operator has nothing left to add, or holds the rest.
 
 **Scope is the claim.** When `ownership:claim-md` is in the session's skill list, write or
-propose the scope through it. Ask its write mode for a shape-checked draft of the repo's
-`CLAIM.md`, built from the scope: the areas, the `## Not ours` lines, a `## Boundaries`
-entry for each row of the neighbours table, and `## Interfaces` for each contract the repo
-will publish. Ask it to classify the draft as substance or upkeep. Ask its answer mode who
-owns each aspect at the edge. The draft goes in the Scope and context section, whole for a
-new claim, as its changed lines for a revision. A new claim, or a substance change, is
-approved with gate G1 (the one gate, in a lite run): the decision shows the draft as the write mode shows it, and nothing
-is written before that answer. Feature `F0` writes the file (`references/state.md` § Living
-docs). Under an orchestrator, ask only for the checked draft; the approval is the gate's.
-Without the skill, read `CLAIM.md` as a file and propose the claim in the series, unchecked
+propose the scope through it. Ask its answer mode who owns each aspect at the edge. Ask its
+write mode for a shape-checked draft of the repo's `CLAIM.md`, built from the scope: the
+areas, the `## Not ours` lines, a `## Boundaries` entry for each row of the neighbours
+table, and `## Interfaces` naming each contract the repo will define, with its location and
+defining side. Ask it to classify the draft as substance or upkeep. The draft goes in the
+Scope and context section, whole for a new claim, as its changed lines for a revision. A
+new claim, or a substance change, is approved with gate G1 (in a lite run, with its one
+gate): the decision shows the draft as the write mode shows it, and nothing is written
+before that answer. An upkeep change is reported at G1, not asked, and `F0` lands it with
+its `(upkeep, reported)` Amendments line. Feature `F0` writes the file through the write
+mode, landing the draft that gate G1 (or a reopen's G1 re-run) approved, with no second
+decision: its Status line and Amendments line name that approval's date and its
+`decision N:` line on the foundation item (`references/state.md` § Living docs). Under an
+orchestrator, ask only for the checked draft; the approval is the gate's. Without the
+skill, read `CLAIM.md` as a file and propose the claim in the series, unchecked
 (§ Composition says what the result discloses).
 
 **Research is optional per phase**: the `research` skill (quick by default) for a fact a
@@ -211,7 +216,7 @@ gives this line once per session, never in a sub-agent or under an orchestrator'
 `echo "${KMACMCFARLANE_NO_PEER_HINTS-}"` prints `1` or a comma list naming `ownership`:
 
 ```text
-dev-flow: the claim is proposed in the series, unchecked. ownership adds a shape-checked claim, written on your approval, and who-owns-what answers from it: /plugin install ownership@kmacmcfarlane (one-time tip; KMACMCFARLANE_NO_PEER_HINTS=1 hides these)
+dev-flow: the claim is proposed in the series, unchecked. ownership adds a shape-checked claim and who-owns-what answers from it: /plugin install ownership@kmacmcfarlane (one-time tip; KMACMCFARLANE_NO_PEER_HINTS=1 hides these)
 ```
 
 No marker is kept.

@@ -126,9 +126,11 @@ Feature `F0` regenerates the current view from the series: `docs/requirements.md
 phase-1 artifacts), `docs/architecture.md` (the phase-2 artifacts), `docs/adr/NNNN-<title>.md`
 (one per ADR, append-only: a superseded ADR keeps its file and gains its Status line), and
 the repo's `CLAIM.md`, through the `ownership:claim-md` skill's write mode when the
-session lists it, else as the file the series approved. After every reopen that
-passes its gates, `F0`'s re-run is filed as a new item under the foundation item (§ The
-work item) and built like any feature.
+session lists it, landing the draft that gate G1 (or a reopen's G1 re-run) approved, with
+no second decision: its Status line and Amendments line name that approval's date and its
+`decision N:` line on the foundation item; else as the file the series approved. After
+every reopen that passes its gates, `F0`'s re-run is filed as a new item under the
+foundation item (§ The work item) and built like any feature.
 
 Where the docs live is asked once per repo, at the first run's Frame, and recorded in
 Confirmed Assumptions; the recommendation is tracked `docs/` and `docs/adr/`. In a public
