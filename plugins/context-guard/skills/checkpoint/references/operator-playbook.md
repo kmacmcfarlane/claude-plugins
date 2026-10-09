@@ -55,6 +55,35 @@ its hooks carry its own `CLAUDE_PID`, so it is verified as itself or not at all.
 near the model window is unaffected. The compaction gate never uses the derived or
 auto-compact window: it defers only on the depth it used before the window mirror.
 
+**Automatic compaction waits for a full window.** Claude Code also starts an automatic
+compaction when a session sits idle, at any fill: observed from transcripts on Claude Code
+2.1.292, the idle attempts arrived about 54 minutes after the last turn ended. The
+compaction gate defers every automatic attempt while more than the DUE line remains
+(~150K on 1M, 70K on 200K), so an idle session is not compacted at 30% or 80% fill. Before
+a checkpoint this epoch it always does; after one, only while the session is idle at its
+last measured fill — no prompt or tool result in the transcript since the last response
+that reported usage. Input since then may have overflowed a fill the gate never saw (a
+batch of large reads, or a model switch that leaves a 1M guess on a 200K model), so after
+a checkpoint that attempt goes through; an unreadable transcript counts as input pending.
+At or under DUE it defers until a checkpoint records this epoch, then lets the next attempt
+through. At or under HARD it always lets it through, checkpoint or not, because a
+compaction that late may be Claude Code recovering from a full window, and blocking that
+one fails the request in flight. An unknown depth always lets it through. Manual
+`/compact` is never touched. The stop relay, the end-of-turn message that asks the model
+to checkpoint, fires only at or under DUE, once per epoch: a deferral above DUE relays
+nothing.
+
+Two caveats. Without any status-line reading for the session, the depth is inferred from
+the transcript, and the window is guessed at 200K until the session passes ~190K. On a 1M
+model DUE and HARD are then measured against 200K: an idle attempt at ~130K–160K is held
+until a checkpoint and let through after one, and one at ~160K–190K is let through with or
+without one. A stale reading still sets the real window. With the `statusline-hub` plugin
+recording the status line, the gate measures against the real window. And when the
+auto-compact window is lowered (`/autocompact 900k`), Claude Code's own attempt at that
+window is measured against the model window like any other: at 900K of 1M, 100K remains,
+which is at or under DUE, so it is deferred until a checkpoint records, and an attempt past
+HARD, the only place a recovery can arrive, is still let through.
+
 **Inside a turn** the prompt gate cannot speak, so a check runs after every tool call
 (main thread only; a subagent's calls are skipped). It never blocks, and it is **silent
 unless the depth could hard-block** — exact or resolved-derived; an inferred depth waits

@@ -149,11 +149,27 @@ Three layers, escalating; the first two are hooks, the third is a skill.
    decide.
 3. **Gate** (`PreCompact`, hook itself ignores manual triggers) — corrected by agents decision 0007: re-defers on
    every automatic attempt, not just the first, while no checkpoint has run this epoch and
-   depth is provably proactive (`precompact_gate.py:46-60`); it ends when a checkpoint records
+   depth is provably proactive (`precompact_gate.py`); it ends when a checkpoint records
    or depth crosses HARD, whichever comes first. Per the hooks reference, blocking a proactive
    compaction is free; blocking one that fired to recover from a context-limit error already
    returned makes the in-flight request fail, and the hook cannot tell the two apart. No wedged
    session, bounded by depth rather than by a count. Manual `/compact` is never touched.
+   **Corrected 2026-10-09 (work item 22b2):** Claude Code also starts automatic compactions
+   on an idle session, at any fill (observed from transcripts on Claude Code 2.1.292: the
+   attempts arrived about 54 minutes after the last turn end). With a checkpoint recorded, the
+   gate used to let any automatic attempt through, so idle compactions at 72–82% fill went
+   through; and the Stop relay asked for a checkpoint after any deferral, even at 28% fill,
+   which unlocked the next idle attempt. The operator expects compaction only when the window
+   is really full. So the gate now defers every proactive automatic attempt while more than
+   DUE remains: always before a checkpoint this epoch, and after one while the session is
+   idle at its last measured fill (no `type: user` line, a prompt or tool result, after the
+   last assistant line with usage; an unreadable transcript counts as not idle). Input since
+   that fill may have overflowed it unseen, and holding a recovery compaction then would
+   leave only a manual `/compact` to free the session. At or under DUE it releases only
+   after a checkpoint this epoch; HARD still always releases. `compact_deferred` is set
+   only for a deferral at or under DUE, the one a checkpoint would release. The Stop relay
+   asks for a checkpoint only at or under DUE, once per epoch; a deferral above DUE relays
+   nothing.
 4. **Checkpoint skill** — Step 0 settles the goal (*continue / handoff*)
    because that is the one input nobody else holds and it changes everything downstream:
    *continue* means residue then `/compact` with drafted guidance; *handoff* means a brief
