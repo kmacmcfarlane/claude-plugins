@@ -32,3 +32,8 @@ agent: reviewer ab4397e3c484bd9a0
 verdict: review round 1 NEEDS_CHANGES (medium 1: the KD-2 peer hint was left out on a wrong reason — prose hints need no helper (CLAUDE.md Peer hints, Prose skills); the four steps and the KD-2 text are in the 4bd4 series 00:350-370, 01:219; lows: marketplace.json's kit-dev description out of step with plugin.json; the dev-flow fallback path borrows .claude-sandbox/investigations; nits 4-6)
 correction: my d0b0 and 64c7 briefs told the builders to leave the peer-hint step out because 'the helper isn't built yet'; prose hints use no helper, so the step belongs in these items, as the 4bd4 OQ2 decision said
 dispatch: implementer opus medium — fix round 1 (resume a8b71c236d66dc1af)
+return: DONE 5570b9c (KD-2 tip inline in Step 7 with the four prose steps and the switch echo; marketplace.json in step; neutral docs/ default; nits; 11/11 Checks)
+dispatch: reviewer opus high — review round 2 (resume ab4397e3c484bd9a0)
+verdict: review round 2 NEEDS_CHANGES (low 1: the tip's prefix must be the plugin, kit-dev:, not the skill; low 2: the tip must take the place of the disclosure, not repeat it — exact line given)
+decided: 2026-10-09T09:12Z cap — finish round of the two exact fixes (authority answer 145)
+dispatch: implementer opus medium — finish round (resume a8b71c236d66dc1af)

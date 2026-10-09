@@ -3,12 +3,11 @@ id: librarian-mode-say-so-without-context-gu-64c7
 title: "librarian-mode: say so without context-guard; its work-items stop"
 short_display_name: librarian degrade without context-guard
 type: bug
-status: doing
+status: done
 priority: 3
-owner: Kyle-McFarlane@2d49f8460283
-claimed: 2026-10-09T08:35Z
 created: 2026-10-08
 updated: 2026-10-09
+closed: 2026-10-09
 refs:
   - spike-how-much-inter-plugin-dependency-i-72ef
 ---
@@ -34,3 +33,6 @@ decided: 2026-10-09T08:59Z scope — DF-9 (librarian-mode's peer hint) stays wit
 dispatch: implementer opus medium — fix round 1 (resume a08fd24241b7e085f)
 return: DONE 2554393 (roster = agent: lines; refresh only changed doing items, after dispatch and at each Report or landing; disclosure first paragraph of each conversation; one home in step 5 with pointers; nits; message corrects DF-9's ownership)
 dispatch: reviewer opus high — review round 2 (resume abd2cf9b58581e2ca)
+verdict: review round 2 CLEAR (nits: an announced compact or clear runs step 5's narrow refresh while ending-the-session.md says every open item — harmless, the broader one wins; intake's first paragraph reads correctly)
+landed: 8e5c7d7 (merge of 7c97d18, 2554393); Checks 11/11 OK
+- 2026-10-09 done
