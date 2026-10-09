@@ -3549,7 +3549,8 @@ def _meta_secret_flagged(key, raw, quote, rest):
 
 
 _META_NAME_RE = re.compile(
-    r"[a-z]{1,15}(?:[-_.:][a-z0-9]{1,15})*|[A-Z]+(?:_[A-Z0-9]+)*")
+    r"[a-z]{1,15}(?:[-_.:][a-z0-9]{1,15})*|[A-Z]{1,15}(?:_[A-Z0-9]{1,15})*")
+_UUID_RE = re.compile(r"(?i)[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}")
 
 
 def _meta_name(value):
@@ -3559,7 +3560,10 @@ def _meta_name(value):
     identifier whose case segments are 3 to 15 letters (Bearer,
     ClientCredentials), a dotted attribute, or a ~/ ./ / or $NAME/ path of
     harmless segments. A run of 16+ lowercase letters, digits mixed into a
-    word, a digit run or a UUID is none of these."""
+    word, a digit run, a UUID (even one whose groups read as words) or a
+    run of 16+ capitals is none of these."""
+    if _UUID_RE.fullmatch(value):
+        return False
     if _META_NAME_RE.fullmatch(value) or _ATTR_RE.fullmatch(value):
         return True
     if (re.fullmatch(r"[A-Za-z]+", value)

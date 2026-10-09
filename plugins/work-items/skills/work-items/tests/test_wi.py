@@ -3295,6 +3295,11 @@ class TestLint(WiTestCase):
             "meta type, mixed-case letters": "token_type: " + "FakeXyzAbcQweRtyUioP",
             "meta name, alnum": "api_key_name: " + "fake1fake2x",
             "meta file, long lowercase run": "token_file: " + "fake" * 5,
+            # finish round: a UUID whose first group reads as a word, and
+            # 16+ capitals, are no names
+            "meta ref, uuid led by letters": "secret_ref: " + "-".join(
+                ("deadbeef", "1234", "4abc", "8def", "0123456789ab")),
+            "meta name, long capitals": "aws_key_name: AKIA" + "QWERTYUIOPASDFGH",
             # $-led values under a bare lowercase key (the KV rule)
             "bare key, bcrypt-like": "password: $2b$12$" + "fakefake" * 3,
             "bare key, $ then more": "secret: $FAKEabc+1" + "xyz",
@@ -3342,6 +3347,7 @@ class TestLint(WiTestCase):
             "meta urn": "token_type: urn:ietf:params:oauth:token-type:jwt",
             "meta identifier": "token_type: ClientCredentials",
             "meta env-var name": "TOKEN_VAR: GITHUB_TOKEN",
+            "meta long env-var name": "TOKEN_VAR: MY_SERVICE_API_TOKEN_V2",
             "meta $HOME path": "token_file: $HOME/.config/gh/token",
             "meta home path": "token_file: ~/.config/gh/hosts.yml",
             "meta k8s-style name": "secret_name: default-token-x7k2m",

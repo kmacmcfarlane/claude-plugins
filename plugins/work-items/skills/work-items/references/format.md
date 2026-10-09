@@ -614,14 +614,15 @@ placeholder, one or two repeated characters (`XXXX…`) or a plain word.
   `prompt`, `field`, `label`, `name`, `type`, `mode`, `file`, `path`, `var`,
   `ref`: `password_policy`, `token_file`) is a meta key. When another of
   its segments holds a secret word, only these pass under it: a
-  placeholder; a lowercase name of runs of 15 or fewer letters joined by
+  placeholder; a lowercase name of a first run of 15 or fewer letters,
+  the later runs letters or digits, joined by
   `-`, `_`, `.` or `:` (`prod-db-creds`, `default-token-x7k2m`,
-  `urn:ietf:params:oauth:token-type:jwt`); an env-var name
-  (`GITHUB_TOKEN`); a letters-only word or identifier whose case segments
+  `urn:ietf:params:oauth:token-type:jwt`); an env-var name of runs of
+  15 or fewer (`GITHUB_TOKEN`); a letters-only word or identifier whose case segments
   are 3 to 15 letters (`bearer`, `ClientCredentials`); a dotted attribute
   (`cfg.token`); or a path starting `~/`, `./`, `/` or `$NAME/` of two or
   more harmless segments (`$HOME/.config/gh/token`). Everything else is
-  judged as under a secret-word key (below), so a digit run, a UUID, a
+  judged as under a secret-word key (below), so a digit run, any UUID, a
   word with digits mixed in or 16+ lowercase letters in one run flags. A
   meta key with no other secret word is judged as other keys. Under a
   secret-word key any value of 8+ non-space characters counts,
