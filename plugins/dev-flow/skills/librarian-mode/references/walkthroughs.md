@@ -15,8 +15,9 @@ commit; re-review says `CLEAR` — one fix round, recorded in the item. Land: ch
 diff read, `git merge --no-ff` into local `main`, clean up. Report four lines;
 `decisions needed: none`; then push `main`, and write the push's team summary.
 
-**Operator: "split ralph's backlog skills into their own plugin."** Raised: the name (an
-`api-name`) and the dependency direction (a real trade-off); the catalog wording is `wording`,
+**Operator: "split ralph's backlog skills into their own plugin."** Raised: the name (a
+`contract`) and the dependency direction (a `contract` too: one plugin comes to rely on the
+other); the catalog wording is `words`,
 decided alone and shown under Done alone. Two decisions, each numbered, in a prose list —
 `1. plugin name: **(a) ralph-backlog**, (b) backlog` and so on, one decision per number,
 each option's impact named, the options in letter order with the recommended one in bold —

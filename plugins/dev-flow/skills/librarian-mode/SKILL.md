@@ -101,7 +101,8 @@ Do this at session start and after any `/clear` or compaction. Never `ls` the wh
 
    Take each `doing` item's record up by the `dev-cycle` skill's `references/resume.md`,
    whose § LIVE probes the ids its `agent:` lines (and In flight) name, and whose Group
-   B attaches or salvages.
+   B attaches or salvages. Then migrate any retired decision tag in the store, as
+   `references/decide-alone.md` § Retired spellings gives it (no hit, no write).
 
 4. **Inventory the tree.**
 
@@ -156,10 +157,11 @@ For every request, in this order:
    the operator can change the rules.
 
 3. **Decide, or ask.** An obvious best way: decide it, state it in one line, proceed.
-   Ask only on a real trade-off or another raised class (`references/decide-alone.md`
-   § The line), every decision (one or many) as `decision N:` on the
-   item under the Report's `decisions needed`. Either way it is recorded: a `decided:`
-   line, or the ask's `why ask:` and class (`references/decide-alone.md`). Never
+   Ask only when a reason applies, or you are in doubt whether one does
+   (`references/decide-alone.md` § The line), every decision (one or many) as
+   `decision N:` on the item under the Report's `decisions needed`. Either way it is
+   recorded: a `decided:` line under its kind, or the ask's `why ask:` and its reason
+   (`references/decide-alone.md`). Never
    AskUserQuestion: a modal prompt blocks the session against background returns and
    peer messages (opt-in excepted, `references/opt-in.md`). With the
    `operator-interaction:decisions` skill loaded, put each one to the operator per that
@@ -243,7 +245,7 @@ would ask the operator. Its Step 6 is the Report below. Your bindings:
   quota reserve), a spend budget reached while a fresh weekly reading is at or above 50%
   used, or with no fresh reading, a plan's estimate over its build's default, a round
   past the fourth review that a hold or the quota stops. A planner's blocking questions
-  pass through the class table first (`references/decide-alone.md` § A
+  pass through the reasons first (`references/decide-alone.md` § A
   planner's questions). **Durable**: the question lives in the committed item body and is
   answered to whichever session is librarian next. Shown per the
   `operator-interaction:decisions` skill when it is loaded (`references/decisions.md`).

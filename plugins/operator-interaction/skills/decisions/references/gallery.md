@@ -481,14 +481,15 @@ they cannot answer from it.*
 ## 24. Decided alone, shown after — and a class on every ask
 
 *Situation: the caller names classes of decision and keeps a store. Its rules let the agent
-decide wording and narrowing alone; a trade-off is asked. Since its last report the agent
-renamed a heading and left one part of the work for a filed follow-up, and it has one question.
+decide changes to words and splits of scope alone; a trade-off is asked. Since its last
+report the agent renamed a heading and left one part of the work for a filed follow-up, and it
+has one question.
 Each thing decided alone was recorded in the store when the agent acted; the report renders
 those records. The decisions block stays last.*
 
 **Done alone** — *2 since my last report · say so in your own words to undo or reopen any*
-- **Done: renamed the "Setup" heading to "Install" in the command-line guide, to match the other four guides** — *wording · two-way (one edit), nothing links to the heading · inside the task you gave me · undo: one edit*
-- **Done: left the Windows install steps to a follow-up item, "Windows install steps"** — *narrowing · two-way (pull it back in any time), nobody waits on it · the class "narrowing", which your rules let me decide · undo: say "pull it back in"*
+- **Done: renamed the "Setup" heading to "Install" in the command-line guide, to match the other four guides** — *words · two-way (one edit), nothing links to the heading · inside the task you gave me · undo: one edit*
+- **Done: left the Windows install steps to a follow-up item, "Windows install steps"** — *scope · two-way (pull it back in any time), nobody waits on it · the class "scope", which your rules let me decide · undo: say "pull it back in"*
 
 **85 — Ship the install script as one file or as a package?**
 **Impact:** → users download one file and run it; each update is a new download · later: the install section says "coming soon" · reach: everyone installing the command-line tool · undo: publish a package later, about a day
@@ -504,8 +505,8 @@ Rec **(a)** · basis **partial** — *observed: the other four tools ship one fi
 *What the caller's store holds, one physical line each — a record line for each thing decided alone, and the ask's card line, indented under its headline, that carries its class. The exact lines are the caller's format; these are this invented caller's:*
 
 ```
-decided: 2026-10-02T14:05Z wording — renamed the "Setup" heading to "Install" in the command-line guide, to match the other four guides; safe alone: one edit undoes it and nothing links to the heading · authority: task · reopen: one edit to the heading
-decided: 2026-10-02T14:12Z narrowing — left the Windows install steps to the follow-up item "Windows install steps"; safe alone: it can be pulled back in any time and nobody waits on it · authority: class narrowing · reopen: say "pull it back in"
+decided: 2026-10-02T14:05Z words — renamed the "Setup" heading to "Install" in the command-line guide, to match the other four guides; safe alone: one edit undoes it and nothing links to the heading · authority: task · reopen: one edit to the heading
+decided: 2026-10-02T14:12Z scope — left the Windows install steps to the follow-up item "Windows install steps"; safe alone: it can be pulled back in any time and nobody waits on it · authority: class scope · reopen: say "pull it back in"
 decision 85: Ship the install script as one file or as a package? — options: (a) one file [recommended] | (b) a package | (z) decide later
   raised: 2026-10-02T14:20Z
   what: how users get the new install script: one file, or a package from the package manager
