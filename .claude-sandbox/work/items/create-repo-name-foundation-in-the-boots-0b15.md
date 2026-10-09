@@ -32,3 +32,5 @@ dispatch: reviewer opus high — review round 1 of 00ad183
 agent: reviewer a1e5463bee2ac8afd
 verdict: review round 1 NEEDS_CHANGES (must-fix 1: medium, the prompt never asks the session to disclose a missing skill; low 2: a moved foundation series is extended by investigate, filed as create-repo-a-moved-foundation-series-re-7b85; low 3: marketplace.json lacks the operator-interaction edge, older than this commit; nit 4: README.md:658 not reflowed)
 dispatch: implementer sonnet medium — fix round 1 (resume aa50343d0d2bd89d7)
+return: DONE 80a4525 (fix round 1); kit-dev 18 OK
+dispatch: reviewer opus high — review round 2 of 80a4525 (resume a1e5463bee2ac8afd)
