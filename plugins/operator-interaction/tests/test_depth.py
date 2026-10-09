@@ -8,8 +8,9 @@ Two parts:
   `assets/index.html` and run under node against `assets/cards.example.json` and copies of it;
 - the pre-publish runner's depth lints, `scripts/check_cards.js`: levels optional on every
   part (decision 201), each level longer than the one below, the sizes read at the top
-  level with thin depth linted only where a part has levels, the missing `blocks` rows, the long card, an unknown `detail` key, and the term lints on the
-  visible parts' levels, against Context's summary.
+  level with thin depth linted only where a part has levels, the missing `blocks` rows, the
+  long card, an unknown `detail` key, and the term lints on the visible parts' levels,
+  against Context's summary.
 
 Run from the plugin dir: python3 -m unittest discover -s tests -q
 """
@@ -126,21 +127,26 @@ class DecisionPageDepth(unittest.TestCase):
 
     # ---- the data
 
-    def test_the_example_passes_with_blocks_on_every_option_and_detail_on_every_card(self):
+    def test_the_example_passes_with_blocks_on_every_option_and_levels_scaled_to_each_card(self):
         d = example()
         self.assertEqual(run_page(d)["bad"], [])
         for c in d["cards"]:
             for o in c["o"][:-1]:
                 self.assertIn(o[0], c["blocks"], c["n"])
+            if c["n"] == 43:
+                # the small call carries no levels (decision 201)
+                self.assertNotIn("detail", c)
+                continue
             for k in ("context", "impact", "tldr", "rec"):
                 self.assertEqual(len(c["detail"][k]), 2, (c["n"], k))
         self.assertIsInstance(d["cards"][0]["evidence"], str)
-        self.assertIsInstance(d["cards"][0]["detail"]["evidence"][1], list)
+        high = d["cards"][0]["detail"]["evidence"][1]
+        self.assertTrue(all(isinstance(x, dict) and "h" in x for x in high), high)
 
     def test_older_data_renders_as_today_with_more_buttons(self):
         d = example()
         for c in d["cards"]:
-            c.pop("detail")
+            c.pop("detail", None)
             if not c.get("warn"):
                 c.pop("blocks", None)
         res = run_page(d)
@@ -176,6 +182,17 @@ class DecisionPageDepth(unittest.TestCase):
             (lambda c: c["detail"]["o"].__setitem__("q", ["x"]), "card 41: detail.o is keyed by option letter"),
             (lambda c: c["detail"].__setitem__("o", ["x"]), "card 41: detail.o is keyed by option letter"),
             (lambda c: c["detail"]["o"].__setitem__("a", "x"), "card 41: detail.o.a must be"),
+            # the shapes: a bullet {t, sub}, a section {h, b}; nothing deeper, nothing mixed
+            (lambda c: c["detail"].__setitem__("why", [[{"t": 3}]]), "card 41: detail.why must be"),
+            (lambda c: c["detail"].__setitem__("why", [[{"t": "x", "sub": [3]}]]), "card 41: detail.why must be"),
+            (lambda c: c["detail"].__setitem__("why", [[{"t": "x", "sub": [{"t": "y"}]}]]), "card 41: detail.why must be"),
+            (lambda c: c["detail"].__setitem__("why", [[{"h": "", "b": ["x"]}]]), "card 41: detail.why must be"),
+            (lambda c: c["detail"].__setitem__("why", [[{"h": "x", "b": []}]]), "card 41: detail.why must be"),
+            (lambda c: c["detail"].__setitem__("why", [["x", {"h": "y", "b": ["z"]}]]), "card 41: detail.why must be"),
+            (lambda c: c["detail"].__setitem__("why", [[{"t": "x", "h": "y", "b": ["z"]}]]), "card 41: detail.why must be"),
+            (lambda c: c["detail"].__setitem__("impact", [{"effect": [3]}]), "card 41: detail.impact must be"),
+            (lambda c: c["detail"].__setitem__("impact", [{"effect": {"t": "x", "h": "y"}}]), "card 41: detail.impact must be"),
+            (lambda c: c["detail"].__setitem__("tldr", ["a bullet", "b"]), "card 41: detail.tldr must be"),
         ]
         datasets = []
         for put, _ in cases:
@@ -186,13 +203,17 @@ class DecisionPageDepth(unittest.TestCase):
             self.assertTrue(any(needle in b for b in res["bad"]), (needle, res["bad"]))
 
     def test_a_rec_bullet_in_a_detail_tldr_is_refused_naming_its_level_and_bullet(self):
+        # numbered in reading order: each heading, then each bullet and its sub-bullets
         d = example()
-        d["cards"][0]["detail"]["tldr"][1][2] = "Rec: move it to CI"
-        self.assert_refused(d, "card 41: detail.tldr high bullet 3 carries the recommendation: "
+        d["cards"][0]["detail"]["tldr"][1][1]["b"][0] = "Rec: move it to CI"
+        self.assert_refused(d, "card 41: detail.tldr high bullet 5 carries the recommendation: "
                                "the options mark it; say what is decided instead")
         d = example()
-        d["cards"][0]["detail"]["tldr"][0][0] = "I recommend CI"
-        self.assert_refused(d, "card 41: detail.tldr medium bullet 1 carries the recommendation")
+        d["cards"][0]["detail"]["tldr"][0][1]["sub"][0] = "I recommend CI"
+        self.assert_refused(d, "card 41: detail.tldr medium bullet 4 carries the recommendation")
+        d = example()
+        d["cards"][0]["detail"]["tldr"][1][0]["h"] = "Recommended: (b)"
+        self.assert_refused(d, "card 41: detail.tldr high bullet 1 carries the recommendation")
 
     def test_evidence_is_text_or_a_non_empty_list_of_text(self):
         for bad in (3, [], [1], [""], {"a": "b"}):
@@ -221,10 +242,9 @@ class DecisionPageDepth(unittest.TestCase):
                 self.assertEqual(rs[0][1], c["parts"][key][0], (c["n"], key))
                 seen.add(key)
         self.assertTrue({"ctx", "imp", "tldr", "rec", "why", "whyask", "ev", "opt-a"} <= seen, seen)
-        # a part with only its summary has no toggle: card 43's fold items, any card's Depends on
-        h43 = card(res, 43)["html"]
-        for key in ("why", "whyask", "ev", "opt-a", "dep"):
-            self.assertNotIn('data-sec="%s"' % key, h43)
+        # a part with only its summary has no toggle: every part of card 43, any card's Depends on
+        self.assertNotIn('class="sec"', card(res, 43)["html"])
+        self.assertNotIn('data-sec="dep"', card(res, 42)["html"])
         self.assertNotIn('data-sec="opt-z"', card(res, 41)["html"])
 
     def test_each_toggle_is_a_button_naming_its_part_and_next_step(self):
@@ -250,19 +270,40 @@ class DecisionPageDepth(unittest.TestCase):
         ctx = c["parts"]["ctx"]
         for r in ctx:
             self.assertTrue(r.startswith('<div class="ctx"><span class="lbl">Context</span>'), r[:60])
+        # more detail is bullets, full detail headed sections
+        self.assertIn('<ul class="lvl">', ctx[1])
+        self.assertNotIn('<h4 class="lvh">', ctx[1])
+        self.assertIn('<h4 class="lvh">', ctx[2])
         self.assertIn("answered: clear it", ctx[2])
         self.assertNotIn("answered: clear it", ctx[1])
-        # the impact levels are facet lines in the one vocabulary
-        imp = c["parts"]["imp"][2]
-        pos = [imp.index(t) for t in ("<b>→</b>", "<i>later:</i>", "<i>reach:</i>", "<i>undo:</i>", "<i>cost:</i>")]
+        # the Impact: medium one bullet per facet, high a section per facet, in the one vocabulary
+        med = c["parts"]["imp"][1]
+        pos = [med.index(t) for t in ("<li><b>→</b>", "<li><i>later:</i>", "<li><i>reach:</i>", "<li><i>undo:</i>", "<li><i>cost:</i>")]
         self.assertEqual(pos, sorted(pos))
-        # the rec line keeps its head, and shows the merged unknown as the summary does
+        self.assertIn('<ul class="lvl sub">', med)
+        high = c["parts"]["imp"][2]
+        pos = [high.index('<h4 class="lvh">%s</h4>' % t) for t in ("Effect", "Wait", "Reach", "Undo", "Cost")]
+        self.assertEqual(pos, sorted(pos))
+        # the rec line keeps its head, then its bullets
         rec = c["parts"]["rec"][1]
-        self.assertIn("Rec <strong>(b)</strong> · basis <strong>strong</strong> — <em>", rec)
-        self.assertIn("</em> · unknown: whether anyone publishes from a fork", rec)
+        self.assertTrue(rec.startswith('<div class="recline">Rec <strong>(b)</strong> · basis '
+                                       '<strong>strong</strong> —<ul class="lvl">'), rec[:120])
+        self.assertIn("<li>unknown: whether anyone publishes from a fork</li>", rec)
+        # an older rec level, one string: the reason and the unknown split as the summary shows them
+        d = example()
+        d["cards"][0]["detail"]["rec"] = ["both failures read in the build logs · unknown: forks",
+                                          "both failures read in the build logs, the same cache "
+                                          "both times · unknown: whether anyone publishes from a fork"]
+        old = card(run_page(d), 41)["parts"]["rec"]
+        self.assertEqual(old[1], '<p class="recline">Rec <strong>(b)</strong> · basis <strong>strong'
+                                 '</strong> — <em>both failures read in the build logs</em> · '
+                                 'unknown: forks</p>')
+        self.assertIn("</em> · unknown: whether anyone publishes from a fork</p>", old[2])
         # Why ask keeps its class first at every level
         for r in c["parts"]["whyask"]:
-            self.assertIn("<em>wider scope</em> — ", r)
+            self.assertIn("<em>trust</em>", r)
+            self.assertLess(r.index("<em>trust</em>"), r.index("Moving the build") if "Moving the build" in r
+                            else r.index("Today one person"))
 
     def test_the_folds_stay_in_order_closed_but_options_in_full_on_a_warn_card(self):
         res = run_page(example())
@@ -276,7 +317,7 @@ class DecisionPageDepth(unittest.TestCase):
     def test_the_rendered_order_of_a_card(self):
         res = run_page(example())
         h = card(res, 41)["html"]
-        marks = ['data-sec="ctx"', 'data-sec="imp"', 'data-sec="tldr"', "If unanswered:", "<fieldset>",
+        marks = ['data-sec="tldr"', 'data-sec="ctx"', 'data-sec="imp"', "If unanswered:", "<fieldset>",
                  'id="d41-a"', 'data-omore="a"', 'id="d41-a-more"', 'id="d41-b"', 'data-omore="b"',
                  'class="act"', 'id="d41-b-more"', 'class="follow"', 'data-sec="rec"',
                  "<summary>Background</summary>", 'data-sec="why"', 'data-sec="whyask"',
@@ -329,8 +370,9 @@ class DecisionPageDepth(unittest.TestCase):
         del d["cards"][0]["blocks"]["a"]["cost"]
         res = run_page(d)
         more = card(res, 41)["more"]
-        self.assertTrue(more["b"].startswith("<p>Build and publish from CI on every merge to <code>main</code>; "
-                                             "the laptop build stays for previews only."), more["b"][:90])
+        self.assertTrue(more["b"].startswith('<div class="lvs"><h4 class="lvh">What happens</h4><ul class="lvl">'
+                                             "<li>Build and publish from CI on every merge to <code>main</code>; "
+                                             "the laptop build stays for previews only."), more["b"][:140])
         pos = [more["b"].index('<span class="lbl">' + f + "</span>") for f in ("Effect", "Reach", "Undo", "Cost")]
         self.assertEqual(pos, sorted(pos))
         self.assertNotIn(">Cost<", more["a"])
@@ -345,20 +387,23 @@ class DecisionPageDepth(unittest.TestCase):
         x = '<img src=x onerror="alert(1)">'
         d = example()
         c = d["cards"][0]
-        c["detail"]["context"][1] += x
-        c["detail"]["impact"][1]["reach"] += x
-        c["detail"]["tldr"][0][0] += x
-        c["detail"]["rec"][1] += x
-        c["detail"]["why"][1] += x
-        c["detail"]["o"]["a"][1] += x
-        c["detail"]["evidence"][1][0] += x
+        dt = c["detail"]
+        dt["context"][0][1]["sub"][0] += x          # a sub-bullet
+        dt["context"][1][0]["h"] += x               # a section heading
+        dt["why"][1][0]["b"][0] += x                # a section bullet
+        dt["impact"][1]["reach"][0] += x            # an impact facet's list item
+        dt["impact"][0]["effect"]["sub"][0] += x    # an impact facet's sub-bullet
+        dt["tldr"][0][0]["t"] += x
+        dt["rec"][1][0]["b"][0] += x
+        dt["o"]["a"][1][0]["b"][0] += x
+        dt["evidence"][1][0]["b"][0] += x
         c["blocks"]["a"]["who"] += x
         c["evidence"] = ["one " + x]
         res = run_page(d)
         self.assertEqual(res["bad"], [])
         h = card(res, 41)["html"]
         self.assertNotIn("<img", h)
-        self.assertGreaterEqual(h.count("&lt;img"), 9)
+        self.assertGreaterEqual(h.count("&lt;img"), 11)
 
     def test_links_are_https_only_and_stay_clean(self):
         probes = [
@@ -411,10 +456,17 @@ class DecisionPageDepth(unittest.TestCase):
         c["o"][0][2] += " " + url          # o[2], static
         c["blocks"]["a"]["who"] += " " + url  # a table cell, static
         c["act"]["b"].append("Read " + url)
-        c["detail"]["tldr"][0][0] += " " + url
+        c["detail"]["tldr"][0][0]["t"] += " " + url
+        c["detail"]["context"][1][0]["h"] += " " + url        # a heading never links
+        c["detail"]["context"][1][1]["b"][0] += " " + url     # a section bullet links
         c["why"] += " " + url               # a fold part's summary links
         res = run_page(d)
         p = card(res, 41)["parts"]
+        head = re.search(r'<h4 class="lvh">.*?</h4>', p["ctx"][2]).group(0)
+        self.assertIn(url, head)
+        self.assertNotIn("<a ", head)
+        sec2 = p["ctx"][2][p["ctx"][2].index("What CI changes"):]
+        self.assertIn('<a href="%s"' % url, sec2)
         self.assertNotIn("<a ", p["tldr"][0])
         self.assertNotIn("<a ", p["imp"][0])
         self.assertIn('<a href="%s"' % url, p["tldr"][1])
@@ -478,7 +530,8 @@ class DepthRunner(unittest.TestCase):
         code, out, err = runner(d)
         self.assertEqual(code, 2, out + err)
         self.assertTrue(out.splitlines())
-        self.assertTrue(all(x.startswith("lint: card ") for x in out.splitlines()), out)
+        self.assertTrue(all(x.startswith(("lint: card ", "lint: page: ")) for x in out.splitlines()),
+                        out)
         for n in needles:
             self.assertIn(n, out)
         return out
@@ -494,17 +547,17 @@ class DepthRunner(unittest.TestCase):
         # decision 201 (c): levels scale with the decision; a card may carry none, or some
         d = example()
         for c in d["cards"]:
-            c.pop("detail")
+            c.pop("detail", None)
         self.clean(d)
         d = example()
         d["cards"][0]["detail"]["context"].pop()
-        d["cards"][2]["detail"].pop("rec")
+        d["cards"][1]["detail"].pop("rec")
         self.clean(d)
 
     def test_thin_depth_is_linted_only_where_levels_exist(self):
         d = example()
         for c in d["cards"]:
-            c.pop("detail")
+            c.pop("detail", None)
             c.pop("evidence", None)
         d["cards"][0]["why"] = "Two broken publishes."
         d["cards"][0]["whyask"] = "Who can publish changes."
@@ -557,7 +610,8 @@ class DepthRunner(unittest.TestCase):
         c = d["cards"][0]
         c["basis"] = "none"
         c["evidence"] = "Not observed."
-        c["detail"]["evidence"] = ["Not observed: nothing was read.", "Not observed: nothing was read or run."]
+        c["detail"]["evidence"] = [["Not observed: nothing was read"],
+                                   [{"h": "Not observed", "b": ["Nothing was read or run."]}]]
         self.clean(d)
         c["basis"] = "partial"
         self.lint(d, "lint: card 41: depth: evidence is 7 words")
@@ -569,29 +623,32 @@ class DepthRunner(unittest.TestCase):
 
     def test_terms_in_the_visible_levels_are_checked_against_contexts_summary(self):
         d = example()
-        d["cards"][0]["detail"]["tldr"][1].append("Closes KAPPA-3570")
-        self.lint(d, "lint: card 41: KAPPA-3570 (the TLDR, full detail) is not introduced in its context")
+        d["cards"][0]["detail"]["tldr"][1][-1]["b"].append("The three reviewers agree.")
+        self.lint(d, 'lint: card 41: "three" (the TLDR, full detail) counts things its context does not name')
         # glossed in Context's summary: clean
         g = copy.deepcopy(d)
-        g["cards"][0]["context"] += " KAPPA-3570 is the docs team's ticket for the move."
-        for k in (0, 1):
-            g["cards"][0]["detail"]["context"][k] += " KAPPA-3570 is the docs team's ticket for the move."
+        g["cards"][0]["context"] = g["cards"][0]["context"][:-1] + "; three reviewers check it."
         self.clean(g)
         # glossed only in Context's high: a reader may see the TLDR at high beside Context's summary
         h = copy.deepcopy(d)
-        h["cards"][0]["detail"]["context"][1] += " KAPPA-3570 is the docs team's ticket for the move."
-        self.lint(h, "KAPPA-3570 (the TLDR, full detail) is not introduced")
+        h["cards"][0]["detail"]["context"][1][-1]["b"].append("Three reviewers check it.")
+        self.lint(h, '"three" (the TLDR, full detail) counts things')
+        # an id is linted in a level, never cleared by a gloss (test_context covers Context)
+        i = copy.deepcopy(g)
+        i["cards"][0]["detail"]["tldr"][1][-1]["b"].append("Closes KAPPA-3570.")
+        self.lint(i, "lint: card 41: KAPPA-3570 looks like an id (detail.tldr)")
         # the Impact line and the rec line too, and counts and named things
         d = example()
-        d["cards"][0]["detail"]["impact"][0]["reach"] += ", and the three reviewers"
-        d["cards"][0]["detail"]["rec"][0] += "; the content mode is off"
+        d["cards"][0]["detail"]["impact"][0]["reach"]["t"] += ", and three reviewers"
+        d["cards"][0]["detail"]["rec"][0].append("the content mode is off")
         self.lint(d, '"three" (the Impact line, more detail) counts things its context does not name',
                   '"content mode" (the rec line, more detail) is not glossed in its context')
 
     def test_the_broad_tldr_lint_reaches_the_tldr_levels(self):
         d = example()
-        d["cards"][0]["detail"]["tldr"][0][1] = "Suggest moving to CI on every merge, or keeping the laptop build"
-        self.lint(d, "lint: card 41: tldr bullet 2 (more detail) may carry the recommendation")
+        d["cards"][0]["detail"]["tldr"][0][1] = "Suggest moving to CI on every merge"
+        # numbered in reading order: the first bullet, its sub-bullet, then this one
+        self.lint(d, "lint: card 41: tldr bullet 3 (more detail) may carry the recommendation")
 
 
 if __name__ == "__main__":

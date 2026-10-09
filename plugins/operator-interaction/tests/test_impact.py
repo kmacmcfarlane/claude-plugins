@@ -150,6 +150,10 @@ class DecisionPageImpact(unittest.TestCase):
             line = v["line"]
             pos = [line.index(t) for t in ("→", "later:", "reach:", "undo:")]
             self.assertEqual(pos, sorted(pos), line)
+            # one facet a line: a paragraph per facet given, no separator between them
+            given = sum(1 for k in ("effect", "wait", "reach", "undo", "cost") if c["impact"].get(k))
+            self.assertEqual(line.count("<p>"), given, line)
+            self.assertNotIn(" · <i>", line)
             self.assertIn("→", v["tag"])
             self.assertNotIn("later:", v["tag"])
             # the tag shows the effect only; slugs render as plain text there
