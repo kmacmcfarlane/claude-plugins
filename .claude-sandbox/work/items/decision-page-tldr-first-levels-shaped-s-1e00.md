@@ -3,10 +3,12 @@ id: decision-page-tldr-first-levels-shaped-s-1e00
 title: "decision-page: TLDR first; levels shaped sentence, bullets, sections; impact one field per line, across all options"
 short_display_name: decision card format v2
 type: feature
-status: todo
+status: doing
 priority: 1
 deps:
   - decision-page-folds-written-at-block-dep-eda1
+owner: Kyle-McFarlane@2d49f8460283
+claimed: 2026-10-09T07:11Z
 created: 2026-10-09
 updated: 2026-10-09
 refs:
@@ -23,3 +25,6 @@ Operator 2026-10-09 after using the live page: (1) TLDR at the top, then Context
 
 ## Notes
 findings: carried — from eda1 review 2: mark the rulings 198 entry '(levels optional since 201)'; rewrap SKILL.md:167, cards-schema.md:228, test_depth.py:11; let the example's small card (43) carry no levels and update the § Size cost figures
+dispatch: planner opus high — plan, scratch scratchpad/1e00-plan/
+- 2026-10-09 claimed by Kyle-McFarlane@2d49f8460283
+agent: planner a6e96152cb104f1de

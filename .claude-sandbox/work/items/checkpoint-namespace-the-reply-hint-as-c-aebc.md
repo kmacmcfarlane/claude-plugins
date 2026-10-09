@@ -18,3 +18,6 @@ Operator 2026-10-09: the pasteable reply line the checkpoint skill drafts (Step 
 - next: —
 - blocked: —
 - learned: —
+
+## Notes
+note: Step 0's reply and override lines are namespaced by 9652 (86970e6); this item covers the remaining bare /checkpoint printouts, e.g. references/operator-playbook.md:128

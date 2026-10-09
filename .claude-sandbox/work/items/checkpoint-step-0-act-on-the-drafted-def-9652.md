@@ -3,12 +3,11 @@ id: checkpoint-step-0-act-on-the-drafted-def-9652
 title: "checkpoint Step 0: act on the drafted defaults and echo them; ask only at a real fork"
 short_display_name: checkpoint asks only at a real fork
 type: feature
-status: doing
+status: done
 priority: 1
-owner: Kyle-McFarlane@2d49f8460283
-claimed: 2026-10-08T07:12Z
 created: 2026-10-08
 updated: 2026-10-09
+closed: 2026-10-09
 refs:
   - peer operator-attention 2026-10-08 (operator request there)
 ---
@@ -52,3 +51,11 @@ return: DONE worktree-agent-a7097ab038e8998f7 86970e6 (Step 0 acts on drafts, Ac
 correction: parallel implementers shared one commit-message file in the scratchpad and one overwrote another's; the 9652 implementer caught it and rescanned. Briefs name a per-item message file from now on
 dispatch: reviewer opus high — review round 1 of 86970e6
 agent: reviewer a7950c79bd6b7861f
+verdict: review round 1 CLEAR (lows: 1 reply lines namespaced beyond the plan, right per aebc; 2 stale compact_deferred after a mark; 3 mode-only override reopens question 2; 4 echo line's two window: labels; 5 unlabelled claim that a dialog blocks agent returns; 6 two carried findings untested; nits 7-9)
+decided: cap — finish round of exact-fix leftovers 2-9 (authority answer 145); 1 is noted on aebc
+dispatch: implementer opus medium — finish round (resume a7097ab038e8998f7)
+return: DONE ef37881 (finish round: stale-flag guard, mode-only override keeps 2:, window override its own sentence, dialog claim reduced, two pins, nits)
+review: self
+verdict: finish round CLEAR — diff read: the six fixes, two files
+landed: f2f1b28 (merge of 86970e6, ef37881); Checks 10/10 OK
+- 2026-10-09 done
