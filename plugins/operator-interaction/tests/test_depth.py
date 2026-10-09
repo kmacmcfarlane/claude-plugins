@@ -184,7 +184,7 @@ class DecisionPageDepth(unittest.TestCase):
             (lambda c: c["detail"]["o"].__setitem__("a", "x"), "card 41: detail.o.a must be"),
             # the shapes: a bullet {t, sub}, a section {h, b}; nothing deeper, nothing mixed
             (lambda c: c["detail"].__setitem__("why", [[{"t": 3}]]), "card 41: detail.why must be"),
-            (lambda c: c["detail"].__setitem__("why", [[{"t": "x", "sub": []}]]), "card 41: detail.why must be"),
+            (lambda c: c["detail"].__setitem__("why", [[{"t": "x", "sub": [3]}]]), "card 41: detail.why must be"),
             (lambda c: c["detail"].__setitem__("why", [[{"t": "x", "sub": [{"t": "y"}]}]]), "card 41: detail.why must be"),
             (lambda c: c["detail"].__setitem__("why", [[{"h": "", "b": ["x"]}]]), "card 41: detail.why must be"),
             (lambda c: c["detail"].__setitem__("why", [[{"h": "x", "b": []}]]), "card 41: detail.why must be"),
@@ -289,6 +289,16 @@ class DecisionPageDepth(unittest.TestCase):
         self.assertTrue(rec.startswith('<div class="recline">Rec <strong>(b)</strong> · basis '
                                        '<strong>strong</strong> —<ul class="lvl">'), rec[:120])
         self.assertIn("<li>unknown: whether anyone publishes from a fork</li>", rec)
+        # an older rec level, one string: the reason and the unknown split as the summary shows them
+        d = example()
+        d["cards"][0]["detail"]["rec"] = ["both failures read in the build logs · unknown: forks",
+                                          "both failures read in the build logs, the same cache "
+                                          "both times · unknown: whether anyone publishes from a fork"]
+        old = card(run_page(d), 41)["parts"]["rec"]
+        self.assertEqual(old[1], '<p class="recline">Rec <strong>(b)</strong> · basis <strong>strong'
+                                 '</strong> — <em>both failures read in the build logs</em> · '
+                                 'unknown: forks</p>')
+        self.assertIn("</em> · unknown: whether anyone publishes from a fork</p>", old[2])
         # Why ask keeps its class first at every level
         for r in c["parts"]["whyask"]:
             self.assertIn("<em>trust</em>", r)

@@ -282,12 +282,12 @@ const REC_OPEN=/^[^A-Za-z]*(rec|recs|recommend|recommended|recommendation)\b(?!\
 const REC_ANY=/\brec\s*\(\s*[a-y]\s*\)|\b(i|we)(['’]d|\s+would)?\s+recommend\b|\b(my|our)\s+(rec|recommendation)\b|\(\s*rec(ommended)?\s*\)|\([a-y]\),?\s+(is\s+)?recommended\b(?!\s+by\b)/i;
 const recBullet=s=>REC_OPEN.test(s)||REC_ANY.test(s);
 /* the shapes. Flat: text, or a non-empty list of text (the evidence summary). A bullet: text, or {t, sub}
-   with sub a non-empty list of text. A section: {h, b}, b a non-empty list of bullets. A rendition: text, a
+   with sub a list of text (an empty or null sub is no sub-list). A section: {h, b}, b a non-empty list of bullets. A rendition: text, a
    list of bullets, or a list of sections. An object holding both t and h is neither */
 const isTxt=v=>typeof v==="string"&&!!v.trim();
 const isFlat=v=>isTxt(v)||(Array.isArray(v)&&v.length>0&&v.every(isTxt));
 const isObj=v=>!!v&&typeof v==="object"&&!Array.isArray(v);
-const isItem=v=>isTxt(v)||(isObj(v)&&!("h" in v)&&isTxt(v.t)&&(!("sub" in v)||(Array.isArray(v.sub)&&v.sub.length>0&&v.sub.every(isTxt))));
+const isItem=v=>isTxt(v)||(isObj(v)&&!("h" in v)&&isTxt(v.t)&&(v.sub==null||(Array.isArray(v.sub)&&v.sub.every(isTxt))));
 const isList=v=>Array.isArray(v)&&v.length>0&&v.every(isItem);
 const isSecs=v=>Array.isArray(v)&&v.length>0&&v.every(x=>isObj(x)&&!("t" in x)&&isTxt(x.h)&&isList(x.b));
 const isRend=v=>isTxt(v)||isList(v)||isSecs(v);
@@ -397,7 +397,7 @@ const lvText=(lvl,max)=>lvl>=max?"less detail":(lvl===0?"more detail":"full deta
 /* text as a paragraph; a list as bullets, each {t, sub} with its sub-bullets nested; sections as a heading
    (escaped, never linked) over their bullets */
 const itemHtml=(b,f)=>typeof b==="string"?'<li>'+f(b)+'</li>'
-  :'<li>'+f(b.t)+(Array.isArray(b.sub)?'<ul class="lvl sub">'+b.sub.map(x=>'<li>'+f(x)+'</li>').join("")+'</ul>':'')+'</li>';
+  :'<li>'+f(b.t)+(Array.isArray(b.sub)&&b.sub.length?'<ul class="lvl sub">'+b.sub.map(x=>'<li>'+f(x)+'</li>').join("")+'</ul>':'')+'</li>';
 const listHtml=(xs,f,cls)=>'<ul class="'+(cls||"lvl")+'">'+xs.map(b=>itemHtml(b,f)).join("")+'</ul>';
 const isSecRow=x=>isObj(x)&&"h" in x;
 const secsHtml=(xs,f)=>xs.map(x=>'<div class="lvs"><h4 class="lvh">'+fmt(x.h)+'</h4>'+listHtml(x.b,f)+'</div>').join("");

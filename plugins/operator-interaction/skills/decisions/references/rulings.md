@@ -57,12 +57,12 @@ alternative not taken, in case practice argues for it.
 - **Terms defined where shown** (2026-10-07, the operator's ask; words over labels is a
   design made in review, not the operator's) — every term the operator may not know,
   defined where it first appears. Not taken: a pointer to the source.
-- **Context first on an answer page** (2026-10-08, the operator's direction; the checks'
-  shape, a design made in planning, not the operator's) — every page card opens on a flat
-  Context introducing the terms, items and concepts its Impact line, TLDR and options use,
-  and its TLDR carries no recommendation, which the options mark. Not taken: definitions
-  left to What in the Background fold; a Rec bullet in the TLDR. Background not
-  auto-expanded; Context absorbs What (decision 197 (a), the operator's answer 2026-10-08).
+- **Context first on an answer page** (order since 2026-10-09: TLDR first) (2026-10-08, the
+  operator's direction; the checks' shape, a design made in planning, not the operator's) —
+  every page card opens on a flat Context introducing the terms, items and concepts its
+  Impact line, TLDR and options use, and its TLDR carries no recommendation, which the options
+  mark. Not taken: definitions left to What in the Background fold; a Rec bullet in the TLDR.
+  Background not auto-expanded; Context absorbs What (decision 197 (a), the operator's answer 2026-10-08).
   Not taken: Background open on load.
 - **Block depth on an answer page, by detail level** (levels optional since 201) (2026-10-08,
   decision 198, the operator's (a) with changes, and the operator's label **More** for the
@@ -71,8 +71,8 @@ alternative not taken, in case practice argues for it.
   block's content at soft sizes, read at its full level (Background ~150 words, each option
   ~60–120, Evidence ~150 with paths and links, a card ~600–900). The visible parts step
   summary → medium → full on a click; a part inside an opened fold may step the same way; the
-  folds stay folded; **More** beside an option shows it in full. Not taken: the folds' content moved into the
-  visible parts; depth only on ⚠ and wide cards; no sizes.
+  folds stay folded; **More** beside an option shows it in full. Not taken: the folds'
+  content moved into the visible parts; depth only on ⚠ and wide cards; no sizes.
 - **Detail levels scale with the decision** (2026-10-09, decision 201 (c), the operator's
   answer: "I want the levels to scale a bit with the size of the decision") — levels are
   optional on every part of a page card: a small call may carry none; a wide or one-way

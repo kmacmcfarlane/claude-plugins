@@ -66,25 +66,32 @@ const NOUN_ID = /\b(?:work item|item|commit|ticket)s?\s+#?((?=[0-9a-f]*[0-9])[0-
 const UNIT = "(?:seconds?|minutes?|mins?|hours?|days?|weeks?|months?|years?|percent|ms|s|kb|mb|gb|tb)";
 const DECISION_ID = new RegExp("\\b(decision|answer|card)s?\\s+#?(\\d+)\\b(?!\\s+of\\s+\\d)(?!\\s*" + UNIT + "\\b)(\\s+[a-z]+)?", "gi");
 const YEAR = /^(19|20)\d\d$/;
-/* every id in a text: [token, a decision number or null] */
+/* every id in a text, one per mention: [token, a decision number or null]. Where two patterns match
+   the same words (commit abc123 is a noun id and a hex tag), the longest match stands */
 function ids(s) {
-  const t = strip(s), out = [];
-  for (const m of t.matchAll(ID_TOKEN)) out.push([m[0], null]);
-  for (const m of t.matchAll(KEBAB_ID)) out.push([m[0], null]);
-  for (const m of t.matchAll(NOUN_ID)) if (!(/^\d+$/.test(m[1]) && YEAR.test(m[1]))) out.push([m[0].replace(/\s+/g, " "), null]);
+  const t = strip(s), found = [];
+  const add = (tok, n, at, len) => found.push({tok, n, at, end: at + len});
+  for (const m of t.matchAll(ID_TOKEN)) add(m[0], null, m.index, m[0].length);
+  for (const m of t.matchAll(KEBAB_ID)) add(m[0], null, m.index, m[0].length);
+  for (const m of t.matchAll(NOUN_ID)) if (!(/^\d+$/.test(m[1]) && YEAR.test(m[1]))) add(m[0].replace(/\s+/g, " "), null, m.index, m[0].length);
   for (const m of t.matchAll(DECISION_ID)) {
     /* "answer" followed by a word is the verb: answer 2 questions */
     if (m[1].toLowerCase() === "answer" && m[3]) continue;
-    out.push([(m[0].slice(0, m[0].length - (m[3] || "").length)).replace(/\s+/g, " "), m[2]]);
+    const len = m[0].length - (m[3] || "").length;
+    add(m[0].slice(0, len).replace(/\s+/g, " "), m[2], m.index, len);
   }
   /* a bracketed tag: a four-digit token in ( … ) that is not a year, nor a number before a unit (1500 ms) */
   for (const m of t.matchAll(/\(([^()]{1,60})\)/g)) {
-    const toks = m[1].split(/[\s,;]+/).filter(Boolean);
-    toks.forEach((tok, i) => { if (/^\d{4}$/.test(tok) && !YEAR.test(tok) && !new RegExp("^" + UNIT + "$", "i").test(toks[i + 1] || ""))
-      out.push(["(" + tok + ")", null]); });
+    const toks = [...m[1].matchAll(/[^\s,;]+/g)];
+    toks.forEach((x, i) => { const tok = x[0];
+      if (/^\d{4}$/.test(tok) && !YEAR.test(tok) && !new RegExp("^" + UNIT + "$", "i").test(toks[i + 1] ? toks[i + 1][0] : ""))
+        add("(" + tok + ")", null, m.index + 1 + x.index, tok.length); });
   }
+  const kept = [];
+  for (const f of found.sort((x, y) => (y.end - y.at) - (x.end - x.at)))
+    if (!kept.some(k => f.at < k.end && k.at < f.end)) kept.push(f);
   const seen = new Set();
-  return out.filter(([x]) => !seen.has(x) && seen.add(x));
+  return kept.sort((x, y) => x.at - y.at).filter(f => !seen.has(f.tok) && seen.add(f.tok)).map(f => [f.tok, f.n]);
 }
 const ID_ALL = [ID_TOKEN, KEBAB_ID, NOUN_ID, new RegExp(DECISION_ID.source.replace("(\\s+[a-z]+)?", ""), "gi")];
 const unId = s => ID_ALL.reduce((t, r) => t.replace(r, " "), strip(s));
@@ -261,7 +268,7 @@ function pageIds(d, out) {
   const look = (at, s) => { if (typeof s === "string") for (const x of ids(s)) if (!seen.has(at + x[0])) { seen.add(at + x[0]); say(idLine(x, at)); } };
   const pg = d.page && typeof d.page === "object" ? d.page : {};
   look("the page title", pg.title); look("the lede", pg.lede);
-  for (const l of d.layers) { look("layer " + l[0] + "'s title", l[1]); look("layer " + l[0] + "'s note", l[2]); }
+  for (const l of d.layers) { look("the title of layer " + l[0], l[1]); look("the note of layer " + l[0], l[2]); }
   for (const k in (d.refs || {})) { const r = d.refs[k] || {};
     look("refs " + k + " short", r.short); look("refs " + k + " q", r.q);
     if (typeof r.a === "string") for (const x of ids(r.a))

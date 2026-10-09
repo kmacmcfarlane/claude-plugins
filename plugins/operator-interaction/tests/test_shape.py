@@ -73,6 +73,21 @@ class DecisionPageShapes(unittest.TestCase):
         for res in run_pages(datasets)["out"]:
             self.assertEqual(res["bad"], [])
 
+    def test_an_empty_or_null_sub_is_accepted_and_renders_no_sub_list(self):
+        for sub in ([], None):
+            d = example()
+            c41(d)["detail"]["why"][0] = [{"t": "Two publishes broke", "sub": sub}, "Blocks two cards"]
+            res = run_page(d)
+            self.assertEqual(res["bad"], [], sub)
+            self.assertIn("<li>Two publishes broke</li>", card(res, 41)["parts"]["why"][1])
+
+    def test_one_mention_draws_one_id_line(self):
+        d = example()
+        c43(d)["why"] = "see commit abc123"
+        lines = [x for x in runner(d)[1].splitlines() if "looks like an id" in x]
+        self.assertEqual(len(lines), 1, lines)
+        self.assertIn("commit abc123 looks like an id", lines[0])
+
     def test_the_evidence_summary_refuses_sections_and_bullets_with_sub_bullets(self):
         for v in ([{"h": "H", "b": ["a"]}], [{"t": "a", "sub": ["b"]}]):
             d = example()
@@ -315,7 +330,7 @@ class IdRunner(unittest.TestCase):
                 code, out, _ = runner(d)
                 self.assertEqual(code, 2, out)
                 self.assertIn("looks like an id (the page title)", out)
-                self.assertIn("looks like an id (layer details's title)", out)
+                self.assertIn("looks like an id (the title of layer details)", out)
                 self.assertTrue(all(x.startswith("lint: page: ") for x in out.splitlines()), out)
 
     def test_a_decision_by_number_is_told_its_slug(self):

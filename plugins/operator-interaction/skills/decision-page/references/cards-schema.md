@@ -194,9 +194,9 @@ review, plan or document, an item or a label. For each one, point to its gloss i
 (SKILL.md step 2) lints counts and named things missing from `context`, and ids wherever they
 are; those lints are proxies, and plain-word terms stay the cold read's. The same holds for
 the medium and high renditions of the Impact line, the TLDR and the rec line, checked against
-Context's **summary** only: each part steps alone, so the Context beside a TLDR at full detail may be at
-its summary. A term a level introduces needs its gloss in Context's summary, or in the level
-itself.
+Context's **summary** only: each part steps alone, so the Context beside a TLDR at full
+detail may be at its summary. A term a level introduces needs its gloss in Context's summary,
+or in the level itself.
 
 **Size.** The flat part of a card (title, Impact line, TLDR, option titles and one-liners, rec
 line) stays near 150 words; the folds carry the rest. `context` and an `act` list are outside
@@ -238,15 +238,14 @@ depth to fill a size. **The cost** falls on the cards that carry levels: the exa
 call (card 43) carries none, so it costs nothing extra: about 424 words in its flat part,
 Context and folds; a card with every part levelled (card 41) writes about 1134 words of
 levels, about 674 of them for its visible parts, against its fold depth alone of about 386,
-about 2.9 times. The pre-publish
-runner lints only clear misses: thin (about 40% of a size) only on a part that carries levels,
-long (1.5 times) on any.
+about 2.9 times. The pre-publish runner lints only clear misses: thin (about 40% of a size)
+only on a part that carries levels, long (1.5 times) on any.
 
 **What the page adds.** Every view shows the impact across the options: the map and a closed
-card the effect, beside the rec pill and the recommended option's title, which mark the
-recommendation; an open card the Impact, one facet a line; and its Options in full fold the
-Impact table (a row per option, each option's own effect, then the Wait row; Effect, Reach,
-Undo, Cost). It opens every card on its TLDR, then its Context, then its Impact: a page is
+card the effect, beside the rec pill (the map also beside the recommended option's title),
+which mark the recommendation; an open card the Impact, one facet a line; and its Options in
+full fold the Impact table (a row per option, each option's own effect, then the Wait row;
+Effect, Reach, Undo, Cost). It opens every card on its TLDR, then its Context, then its Impact: a page is
 read away from the conversation, so its reader is treated as cold. Any part with `detail`
 toggles its level on a click, on its button or on its text (never on a link or a control, nor
 while text is selected, so it can be copied); the folds keep their order and stay closed, with
