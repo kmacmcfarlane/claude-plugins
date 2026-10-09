@@ -92,7 +92,7 @@ dependency is marked (hard) here.
 | …unattended agent loops over a backlog ("ralph") | `ralph` | **current** | claude-sandbox repo (external; its `init-ralph` seeds `backlog.py`, and the loops run in its containers), `sandbox` (soft; its skill bootstraps and troubleshoots those containers), `work-items` (soft; the `wi` ↔ `backlog.yaml` bridge, `wi export/import --format backlog-yaml`, two explicit `wi` commands run on demand) |
 | …to start a new repo for a thread of work, with an agent session launched on it | `create-repo` | **current** | claude-sandbox repo (external; `init` bootstraps the repo's `.claude-sandbox/` and the launch command runs the session in its container; without it the repo is created all the same and the command is plain `claude`), `kit-dev` (soft; `new-project-from-template` scaffolds a claude-templates template as the goal), `sandbox` (soft; its skill troubleshoots an `init` or launch that fails), `dev-flow` (soft; the launched session runs the first investigation with its `investigate` skill when installed, and investigates directly without it), `operator-interaction` (soft; a critical doubt over a `.gitignore` line is put to the operator per its `decisions` skill when loaded; without it, a plain question) |
 | …your agents to put what they need from you in a form you can act on where it appears | `operator-interaction` | **current** | claude.ai Artifacts (external, soft; `decision-page` publishes its answer page there with the `db` capability, and a docs connector serves its tick-box fallback; without either it puts the decisions in chat), node (external, soft; `decision-page`'s pre-publish check; without it the check is by reading) |
-| …to maintain this kit itself (skill authoring, upstream sync, templates) | `kit-dev` | **current** | claude-templates repo (external; `new-project-from-template` scaffolds from it, `update-kit` syncs to it), claude-sandbox repo (external; `new-project-from-template` bootstraps with its `init-ralph`, `update-kit` syncs to it), claude-expertise repo (external; `update-kit` syncs to it), `create-repo` (soft; `new-project-from-template` points at it for a bare repo with a session launched on it) |
+| …to maintain this kit itself (skill authoring, upstream sync, templates) | `kit-dev` | **current** | claude-templates repo (external; `new-project-from-template` scaffolds from it, `update-kit` syncs to it), claude-sandbox repo (external; `new-project-from-template` bootstraps with its `init-ralph`, `update-kit` syncs to it), claude-expertise repo (external; `update-kit` syncs to it), `create-repo` (soft; `new-project-from-template` points at it for a bare repo with a session launched on it), `work-items` (soft; `factor-analysis` files the agreed shape as work items with its skill; without it the items land as a markdown checklist in the analysis, and the result says so), `dev-flow` (soft; `factor-analysis` writes its plan as an `investigate`-format series for `implement` to consume; without it the plan is a plain plan file, and the result says so) |
 | …to make Claude good at a specific stack (Goa, Playwright, musubi-tuner, …) | one plugin per stack | **moved** to the expertise marketplace (local scaffold, remote pending) | — |
 
 Retired: the deprecated plan-execution skill and the three sub-agent definitions used only by
@@ -221,10 +221,15 @@ it to use the kit.
 | `new-project-from-template` | Create a new project from a claude-templates template |
 | `update-kit` | Sync skills and workflow files upstream to claude-templates / claude-plugins / claude-expertise / claude-sandbox |
 
-The four skills need nothing else here. (`librarian-mode` lived here until it moved to
-`dev-flow`, whose aim it serves.) `new-project-from-template` points at the `create-repo`
-plugin for a bare repo with a session launched on it; `create-repo` uses it, when present,
-to scaffold a template.
+`create-skill`, `new-project-from-template` and `update-kit` need nothing else here.
+(`librarian-mode` lived here until it moved to `dev-flow`, whose aim it serves.)
+`new-project-from-template` points at the `create-repo` plugin for a bare repo with a
+session launched on it; `create-repo` uses it, when present, to scaffold a template.
+`factor-analysis` lands its result through two soft dependencies: it files the agreed shape
+as work items with the `work-items` plugin's skill, and writes its plan as an
+`investigate`-format series (`dev-flow`) for `implement` to consume. Without `work-items`
+the items land as a markdown checklist in the analysis; without `dev-flow` the plan is a
+plain plan file; either way the result says which fallback ran.
 
 `plugins/kit-dev/` is what remains of the old kitchen-sink plugin after the factoring: its
 `hooks/`, `checkpoint` and `install-statusline` went to `context-guard` (except the checkout
