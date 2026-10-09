@@ -8,7 +8,7 @@ priority: 2
 owner: Kyle-McFarlane@2d49f8460283
 claimed: 2026-10-08T06:20Z
 created: 2026-10-08
-updated: 2026-10-08
+updated: 2026-10-09
 refs:
   - peer claude-analytics 2026-10-08 (operator request there)
 ---
@@ -83,3 +83,11 @@ shown 186: 2026-10-08T20:02Z chat
 shown 187: 2026-10-08T20:02Z chat
 shown 188: 2026-10-08T20:02Z chat
 shown 189: 2026-10-08T20:02Z chat
+shown 186: 2026-10-09T06:11Z page
+shown 187: 2026-10-09T06:11Z page
+shown 188: 2026-10-09T06:11Z page
+shown 189: 2026-10-09T06:11Z page
+answer 186: a (answer page HvKDfFHjrqNtygDKziv7ta, rev 2026-10-09T06:00:00Z, at 2026-10-09T06:31:51.110Z)
+answer 187: a (answer page HvKDfFHjrqNtygDKziv7ta, rev 2026-10-09T06:00:00Z, at 2026-10-09T06:33:53.354Z)
+answer 188: c (answer page HvKDfFHjrqNtygDKziv7ta, rev 2026-10-09T06:00:00Z, at 2026-10-09T06:34:12.181Z)
+answer 189: d — "You aren't necessarily going to use both plugins together, although I do, so they should stay separate" (answer page HvKDfFHjrqNtygDKziv7ta, rev 2026-10-09T06:00:00Z, at 2026-10-09T06:39:15.123Z; read as: (d) keep both lists and compare by name, because the plugins are installed independently)

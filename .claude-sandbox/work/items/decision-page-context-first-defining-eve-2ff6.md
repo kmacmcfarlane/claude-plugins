@@ -64,3 +64,4 @@ verdict: finish round CLEAR — diff read: exactly the three fixes plus one test
 landed: 7932512 (merge of 9573ed1, c2748db); Checks 10/10 OK
 follow-up: note on 729e that Context now opens the card; the session owning decision 67's page needs context on every card, no Rec bullet, and a new rev on 67 — relay via the operator (that page's session is not known here)
 - 2026-10-08 done
+correction: 2026-10-08 pushed a7dae3e..3fa8e10 before printing the Report (rule: push right after the Report); content unaffected, Checks and scan read first

@@ -8,7 +8,7 @@ priority: 2
 owner: Kyle-McFarlane@2d49f8460283
 claimed: 2026-10-08T03:35Z
 created: 2026-10-03
-updated: 2026-10-08
+updated: 2026-10-09
 refs:
   - peer operator-attention 2026-10-03 (their serial 09, R47)
 ---
@@ -97,3 +97,16 @@ correction: decisions 180-183 raised: times were estimated ahead of the clock; s
 shown 181: 2026-10-08T20:02Z chat
 shown 182: 2026-10-08T20:02Z chat
 shown 183: 2026-10-08T20:02Z chat
+shown 181: 2026-10-09T06:11Z page
+shown 182: 2026-10-09T06:11Z page
+shown 183: 2026-10-09T06:11Z page
+answer 181: a — "Isn't the turn-log really part of a larger planned plugin shape that would instrument many things about the agent potentially? I think `claude-analytics` would be a better plugin shape, because you install the plugin, and you get the instrumentation without a bunch of fine-grained dependencies with the work that the agent-analytics repo is doing. This becomes the de facto place for specifically claude integrations to get telemetry" (answer page HvKDfFHjrqNtygDKziv7ta, rev 2026-10-09T06:00:00Z, at 2026-10-09T06:29:16.024Z; read as: a reframe — a new plugin, but named claude-analytics and scoped as the home for Claude Code telemetry, the turn log its first instrument; raised again as decision 204 since the name and scope change)
+answer 182: a — "use the term `operator` in place of human" (answer page HvKDfFHjrqNtygDKziv7ta, rev 2026-10-09T06:00:00Z, at 2026-10-09T06:30:52.113Z; read as: (a), and the log and its docs say operator, never human)
+answer 183: c — "we can establish retention limits later as needed" (answer page HvKDfFHjrqNtygDKziv7ta, rev 2026-10-09T06:00:00Z, at 2026-10-09T06:31:29.581Z; read as: (c) no limit for now)
+decision 204: Should the turn log ship as the first instrument of a new plugin claude-analytics, the home for Claude Code telemetry in this marketplace? — options: (a) yes: plugin claude-analytics, turn log its first instrument, off switch CLAUDE_ANALYTICS_TURN_LOG=off, later instruments added there [recommended] | (b) a small turn-log plugin now, renamed into claude-analytics later | (z) decide later
+  raised: 2026-10-09T06:55Z
+  why ask: reframe of 181 — the operator named a broader plugin; its name and scope are API and theirs, and the name matches a repo and a peer session already called claude-analytics
+  what: your words on 181: the turn log is part of a larger instrumentation shape; install one plugin and get the instrumentation, without fine-grained dependencies on the agent-analytics repo's work; the de facto place for Claude-specific telemetry
+  impact: Effect → one plugin named claude-analytics holds the turn log now and future instruments · Wait: blocks the turn-log build · reach: the catalog, install commands, the data folder name · undo: before release one edit; after, the rename procedure and a data move · cost: none
+  unknown: whether claude-analytics as a plugin name collides with the claude-analytics repo's own artifacts; whether it should read the agent-analytics repo's schema
+dispatch: none — turn-log build waits on decision 204

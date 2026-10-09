@@ -6,7 +6,7 @@ type: spike
 status: done
 priority: 0
 created: 2026-10-06
-updated: 2026-10-08
+updated: 2026-10-09
 closed: 2026-10-07
 refs:
   - peer claude-sandbox librarian 2026-10-06
@@ -296,3 +296,5 @@ answer 174: a — "create a work-item to follow-up on deleting the backups" (ans
 decision 172 re-shown 2026-10-08 (dig into answered): tier 1 = text that says how to pull content out of Claude Code's internals, comments that label our code with Claude Code's internal names, internal strings, and facts only the internals show; tier 2 = tier 1 plus sentences that name the program file itself as where a fact came from, even when the fact is public; tier 3 = tier 2 plus version pins and model/window tables, which are documented or observed facts. Options unchanged; (b) recommended.
 impact 172: Effect → sets the purge list the history scrub runs on · Wait: nothing, the scrub waits on 171 · reach: the 4151 scrub of origin history · undo: free until the scrub runs; one-way after
 shown 172: 2026-10-08T20:02Z chat
+shown 172: 2026-10-09T06:11Z page
+answer 172: later (answer page HvKDfFHjrqNtygDKziv7ta, rev 2026-10-09T06:00:00Z, at 2026-10-09T06:51:41.984Z; read as: later, default wake = the next Report; the scrub waits, and runs only with the operator watching)

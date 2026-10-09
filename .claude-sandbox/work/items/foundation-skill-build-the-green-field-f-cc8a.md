@@ -3,12 +3,14 @@ id: foundation-skill-build-the-green-field-f-cc8a
 title: "foundation skill: build the green-field foundation session from the 5f2d series"
 short_display_name: build green-field foundation skill
 type: feature
-status: todo
+status: doing
 priority: 1
 deps:
   - spike-a-skill-for-green-field-foundation-5f2d
+owner: Kyle-McFarlane@2d49f8460283
+claimed: 2026-10-09T06:55Z
 created: 2026-10-08
-updated: 2026-10-08
+updated: 2026-10-09
 refs:
   - spike-a-skill-for-green-field-foundation-5f2d
 ---
@@ -20,3 +22,8 @@ Build the CLEAR spike series .claude-sandbox/investigations/spike-a-skill-for-gr
 - next: —
 - blocked: —
 - learned: —
+
+## Notes
+dispatch: implementer opus medium — build, worktree (budget waived; spend measured)
+- 2026-10-09 claimed by Kyle-McFarlane@2d49f8460283
+agent: implementer a6bfeccdd56f09458

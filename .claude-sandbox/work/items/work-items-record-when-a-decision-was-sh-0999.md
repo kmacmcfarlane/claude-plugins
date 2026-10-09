@@ -8,7 +8,7 @@ priority: 2
 owner: Kyle-McFarlane@2d49f8460283
 claimed: 2026-10-08T03:35Z
 created: 2026-09-29
-updated: 2026-10-08
+updated: 2026-10-09
 refs:
   - agents 76bc
   - operator-attention R47
@@ -102,3 +102,7 @@ verdict: review 3 CLEAR at b0e69af (must-fix 0)
 landed: 8ea8a3c (merge --no-ff into main; Checks 10/10 OK; push scan read, clean)
 agent: reviewer a2c9add003f36437c (build reviews 1-3; line added late)
 shown 180: 2026-10-08T20:02Z chat
+shown 180: 2026-10-09T06:11Z page
+answer 180: dig into — "it brings up the question of \"should this even be in the repo\". I want it tracked, but does it need to be in the git history for the thing we are building? Reminds me of the backstage idea that was floating around" (answer page HvKDfFHjrqNtygDKziv7ta, rev 2026-10-09T06:00:00Z, at 2026-10-09T06:51:35.130Z; read as: dig into where seen/turn records should live — tracked but outside git history — and what the backstage idea proposed)
+dispatch: scout opus medium — dig into 180: where seen/turn records should live, tracked but outside git history; what the backstage idea proposed; scratch scratchpad/180-dig/
+agent: scout a38faf7b787d5d8a4

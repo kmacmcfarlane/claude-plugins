@@ -6,7 +6,7 @@ type: spike
 status: done
 priority: 1
 created: 2026-10-08
-updated: 2026-10-08
+updated: 2026-10-09
 closed: 2026-10-08
 refs:
   - operator 2026-10-08
@@ -60,3 +60,9 @@ decision 192: Where should the new checks live (each plugin's tests run alone; e
 shown 190: 2026-10-08T20:02Z chat
 shown 191: 2026-10-08T20:02Z chat
 shown 192: 2026-10-08T20:02Z chat
+shown 190: 2026-10-09T06:11Z page
+shown 191: 2026-10-09T06:11Z page
+shown 192: 2026-10-09T06:11Z page
+answer 190: a (answer page HvKDfFHjrqNtygDKziv7ta, rev 2026-10-09T06:00:00Z, at 2026-10-09T06:41:27.058Z)
+answer 191: a (answer page HvKDfFHjrqNtygDKziv7ta, rev 2026-10-09T06:00:00Z, at 2026-10-09T06:41:47.534Z)
+answer 192: a (answer page HvKDfFHjrqNtygDKziv7ta, rev 2026-10-09T06:00:00Z, at 2026-10-09T06:42:48.210Z)
