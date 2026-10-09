@@ -6,9 +6,9 @@ Two parts:
   `evidence` shapes, each part's detail levels and its toggle, the **More** button and its
   option detail, links in the levels only, and the folds kept; loaded from
   `assets/index.html` and run under node against `assets/cards.example.json` and copies of it;
-- the pre-publish runner's depth lints, `scripts/check_cards.js`: the visible levels
-  expected, each level longer than the one below, the sizes read at the top level, the
-  missing `blocks` rows, the long card, an unknown `detail` key, and the term lints on the
+- the pre-publish runner's depth lints, `scripts/check_cards.js`: levels optional on every
+  part (decision 201), each level longer than the one below, the sizes read at the top
+  level with thin depth linted only where a part has levels, the missing `blocks` rows, the long card, an unknown `detail` key, and the term lints on the
   visible parts' levels, against Context's summary.
 
 Run from the plugin dir: python3 -m unittest discover -s tests -q
@@ -490,25 +490,18 @@ class DepthRunner(unittest.TestCase):
     def test_the_example_is_clean(self):
         self.clean(example())
 
-    def test_the_visible_levels_are_expected_on_every_card(self):
-        self.lint(without(example(), 43, "detail", "rec"),
-                  "lint: card 43: depth: the rec line has no medium or high level: write them from the "
-                  "sources (the operator asked for every visible part to toggle), or leave it knowingly")
+    def test_levels_are_optional_on_every_part(self):
+        # decision 201 (c): levels scale with the decision; a card may carry none, or some
+        d = example()
+        for c in d["cards"]:
+            c.pop("detail")
+        self.clean(d)
         d = example()
         d["cards"][0]["detail"]["context"].pop()
-        out = self.lint(d, "lint: card 41: depth: Context has no high level")
-        self.assertEqual(len(out.splitlines()), 1, out)
-        # fold items carry levels where there is depth to give: none expected
-        d = example()
-        for k in ("why", "whyask", "evidence", "o"):
-            d["cards"][1]["detail"].pop(k)
-        d["cards"][1]["why"] = d["cards"][1]["why"] + " " + " ".join(["more"] * 50)
-        d["cards"][1]["evidence"] = d["cards"][1]["evidence"] + " " + " ".join(["more"] * 50)
-        for o in d["cards"][1]["o"][:2]:
-            o[1] += " " + " ".join(["more"] * 10)
+        d["cards"][2]["detail"].pop("rec")
         self.clean(d)
 
-    def test_the_main_example_lints_thin_folds_and_missing_rows(self):
+    def test_thin_depth_is_linted_only_where_levels_exist(self):
         d = example()
         for c in d["cards"]:
             c.pop("detail")
@@ -517,13 +510,21 @@ class DepthRunner(unittest.TestCase):
         d["cards"][0]["whyask"] = "Who can publish changes."
         d["cards"][2].pop("blocks")
         d["cards"][2]["o"][0][1] = "Keep the blue."
-        out = self.lint(d, "lint: card 41: depth: Background is 7 words at its fullest",
-                        "lint: card 41: depth: evidence is 0 words",
-                        "lint: card 43: depth: (a) has no blocks row: give it happens, who, undo and cost",
-                        "lint: card 43: depth: (b) has no blocks row",
-                        "lint: card 43: depth: (a)'s detail is 3 words")
+        out = self.lint(d, "lint: card 43: depth: (a) has no blocks row: give it happens, who, undo and cost",
+                        "lint: card 43: depth: (b) has no blocks row")
+        # a short part with no levels is a small call's, never thin
+        self.assertNotIn("Background is", out)
+        self.assertNotIn("evidence is", out)
+        self.assertNotIn("'s detail is", out)
         # the ⚠ card's rows are the page's to refuse, never a lint
         self.assertNotIn("card 42: depth: (a) has no blocks row", out)
+        # once a part carries levels, its depth is sized at its top level
+        d["cards"][0]["detail"] = {"why": ["Two broken publishes this month."],
+                                   "evidence": ["Observed: both failures in the build logs."]}
+        d["cards"][2]["detail"] = {"o": {"a": ["Keep the current blue."]}}
+        self.lint(d, "lint: card 41: depth: Background is 9 words at its fullest",
+                  "lint: card 41: depth: evidence is 7 words",
+                  "lint: card 43: depth: (a)'s detail is 4 words")
 
     def test_a_level_not_longer_than_the_one_below(self):
         d = example()
@@ -553,12 +554,13 @@ class DepthRunner(unittest.TestCase):
 
     def test_basis_none_waives_the_evidence_floor(self):
         d = example()
-        c = d["cards"][2]
+        c = d["cards"][0]
         c["basis"] = "none"
-        c.pop("evidence")
+        c["evidence"] = "Not observed."
+        c["detail"]["evidence"] = ["Not observed: nothing was read.", "Not observed: nothing was read or run."]
         self.clean(d)
         c["basis"] = "partial"
-        self.lint(d, "lint: card 43: depth: evidence is 0 words")
+        self.lint(d, "lint: card 41: depth: evidence is 7 words")
 
     def test_an_unknown_detail_key_is_linted(self):
         d = example()

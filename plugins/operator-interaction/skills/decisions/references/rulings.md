@@ -73,3 +73,8 @@ alternative not taken, in case practice argues for it.
   on a click; a part inside an opened fold may step the same way; the folds stay folded;
   **More** beside an option shows it in full. Not taken: the folds' content moved into the
   visible parts; depth only on ⚠ and wide cards; no sizes.
+- **Detail levels scale with the decision** (2026-10-09, decision 201 (c), the operator's
+  answer: "I want the levels to scale a bit with the size of the decision") — levels are
+  optional on every part of a page card: a small call may carry none; a wide or one-way
+  decision carries the most. The pre-publish runner lints thin depth only where a part has
+  levels. Not taken: visible levels expected on every card; small calls exempt by a mark.

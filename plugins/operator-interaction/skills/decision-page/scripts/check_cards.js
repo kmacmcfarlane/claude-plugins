@@ -8,12 +8,11 @@
       context does not introduce, in the flat part and in the medium and high levels of the
       Impact line, the TLDR and the rec line (checked against Context's summary only); a TLDR
       bullet that may carry the recommendation; a leftover what. Then the depth lints (decision
-      198, the sizes in references/cards-schema.md § Size, read at each part's top level): a
-      visible part (Context, the Impact line, the TLDR, the rec line) without its medium or high
-      level; a level not longer than the one below it; Background, an option's detail or the
-      evidence thin or long; an option but (z) with no blocks row; a card long in all; a detail
-      key the page does not show. Lints are proxies: each line says how to fix it, or the thing
-      may be left knowingly.
+      198, the sizes in references/cards-schema.md § Size, read at each part's top level; levels
+      are optional on every part, decision 201): a level not longer than the one below it;
+      Background, an option's detail or the evidence thin where it carries levels, or long; an
+      option but (z) with no blocks row; a card long in all; a detail key the page does not show.
+      Lints are proxies: each line says how to fix it, or the thing may be left knowingly.
 
    Prints one line per problem. Exit 0 clean; 1 on a refusal, or on a file or template that
    cannot be read; 2 on lint lines only. Node built-ins only; no stack trace reaches the output. */
@@ -78,7 +77,6 @@ const LEVEL = ["summary", "medium", "high"], DETAIL_NAME = ["more detail", "full
 /* the parts a card shows, by their detail key; the first four are always visible */
 const PART = {context: "Context", impact: "the Impact line", tldr: "the TLDR", rec: "the rec line",
   why: "Why now", whyask: "Why ask", dep: "Depends on", evidence: "the Evidence"};
-const VISIBLE = ["context", "impact", "tldr", "rec"];
 const levelsOf = (c, k) => c.detail && typeof c.detail === "object" && Array.isArray(c.detail[k]) ? c.detail[k] : [];
 const optLevels = (c, k) => { const o = c.detail && typeof c.detail === "object" ? c.detail.o : null; return o && typeof o === "object" && Array.isArray(o[k]) ? o[k] : []; };
 const topOf = (sum, ls) => ls.length ? ls[ls.length - 1] : sum;
@@ -88,18 +86,18 @@ function depth(c, say) {
   const imp = c.impact;
   const summary = {context: c.context, impact: [imp.effect, imp.wait, imp.reach, imp.undo, imp.cost], tldr: c.tldr,
     rec: [c.reason, c.unknown], why: c.why, whyask: c.whyask, dep: c.dep, evidence: c.evidence};
-  /* the visible parts toggle on every card (the operator's ask), so each carries a medium and a high */
-  for (const k of VISIBLE) { const n = levelsOf(c, k).length;
-    if (n < 2) say("level " + k, "depth: " + PART[k] + " has no " + (n ? "high level" : "medium or high level") + ": write " + (n ? "it" : "them") + " from the sources (the operator asked for every visible part to toggle), or leave it knowingly"); }
   /* a level replaces the one below it, so it says more */
   const grow = (name, key, sum, ls) => { const ws = [words(sum), ...ls.map(words)];
     for (let i = 1; i < ws.length; i++) if (ws[i] <= ws[i - 1])
       say("grow " + key + i, "depth: " + name + " " + LEVEL[i] + " is not longer than its " + LEVEL[i - 1] + " (" + ws[i] + " words against " + ws[i - 1] + "): each level is a fuller rendition of the one below it"); };
   for (const k in PART) grow(PART[k], k, summary[k], levelsOf(c, k));
   for (const o of c.o) grow("(" + o[0] + ")'s text", "o" + o[0], o[1], optLevels(c, o[0]));
-  /* the 198 sizes, at the top level: Background ~150, each option ~60-120, Evidence ~150, a card ~600-900 */
+  /* the 198 sizes, at the top level: Background ~150, each option ~60-120, Evidence ~150, a card ~600-900.
+     Levels scale with the decision (201): a part with none may stay short, so thin is linted only where
+     the writer gave levels; long is linted everywhere */
   const bg = words(topOf(c.why, levelsOf(c, "why"))) + words(topOf(c.whyask, levelsOf(c, "whyask")));
-  if (bg < 60) say("bg", "depth: Background is " + bg + " words at its fullest: write Why now and Why ask near 150 together, from the record and the work behind it, or leave it knowingly on a small call; never pad");
+  const bgLv = levelsOf(c, "why").length + levelsOf(c, "whyask").length > 0;
+  if (bgLv && bg < 60) say("bg", "depth: Background is " + bg + " words at its fullest: write Why now and Why ask near 150 together, from the record and the work behind it, or leave it knowingly; never pad");
   else if (bg > 225) say("bg", "depth: Background is " + bg + " words at its fullest: keep Why now and Why ask near 150 together");
   let optWords = 0;
   for (const o of c.o) {
@@ -108,11 +106,11 @@ function depth(c, say) {
     if (!r && !c.warn) say("row " + k, "depth: (" + k + ") has no blocks row: give it happens, who, undo and cost");
     const ow = top + (r ? words([r.happens, r.who, r.undo, r.cost]) : 0);
     optWords += ow + words(o[2]);
-    if (ow < 30) say("opt " + k, "depth: (" + k + ")'s detail is " + ow + " words (its fullest text and its blocks row): write it near 60–120, what happens, undo, who and cost, from the sources; or leave it knowingly");
+    if (optLevels(c, k).length && ow < 30) say("opt " + k, "depth: (" + k + ")'s detail is " + ow + " words (its fullest text and its blocks row): write it near 60–120, what happens, undo, who and cost, from the sources; or leave it knowingly");
     else if (ow > 180) say("opt " + k, "depth: (" + k + ")'s detail is " + ow + " words (its fullest text and its blocks row): keep it near 60–120");
   }
   const ev = words(topOf(c.evidence, levelsOf(c, "evidence")));
-  if (c.basis !== "none" && ev < 60) say("ev", "depth: evidence is " + ev + " words at its fullest: give the basis drill-down near 150, what was observed, inferred and assumed, with the paths and links behind each; or leave it knowingly");
+  if (levelsOf(c, "evidence").length && c.basis !== "none" && ev < 60) say("ev", "depth: evidence is " + ev + " words at its fullest: give the basis drill-down near 150, what was observed, inferred and assumed, with the paths and links behind each; or leave it knowingly");
   else if (ev > 225) say("ev", "depth: evidence is " + ev + " words at its fullest: keep it near 150");
   /* the card in all: the flat part and Context at their summary, the fold parts at their top level, each option's impact; not act */
   const all = words(flat(c)) + words(c.context) + bg + ev + optWords;

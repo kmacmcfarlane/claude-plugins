@@ -79,7 +79,7 @@ Each field maps to a part of the `decisions` skill's card (its `references/rende
 | `reason` | string | yes | the one-clause reason for the rec (or for the basis word, with no rec) | rec line; its medium and high in `detail.rec` |
 | `unknown` | string | yes | what is not known, or `none` | rec line, Evidence fold; its medium and high in `detail.rec` |
 | `evidence` | string, or array of strings | no | the basis drill-down: what was observed, inferred, assumed, with the paths (in backticks) and `https://` links behind each claim; a list holds one tagged claim per item (*Observed: … (path or link)*) | the Evidence part in the Evidence and unknowns fold, a list as bullets; its medium and high in `detail.evidence` |
-| `detail` | object | no; its visible parts expected | each part's **medium and high renditions** (below); `null` is absent | in place of the part's text, a click away |
+| `detail` | object | no; its levels scale with the decision | each part's **medium and high renditions** (below); `null` is absent | in place of the part's text, a click away |
 
 An option `[letter, full, impact, title, oneLine]`:
 
@@ -129,11 +129,10 @@ and a part with no entry has no toggle. Every part opens at its summary.
 - `o`: keyed by option letters other than `z`: each option's paragraph in Options in full, at
   more detail. **More** shows its high (else its medium, else `full`), then its Effect, Reach,
   Undo and Cost from `blocks`.
-- **Which parts carry levels.** The visible parts (`context`, `impact`, `tldr`, `rec`) carry a
-  medium and a high on every card: the operator asked for every visible part to toggle. The
-  runner lints a missing one, so a writer can leave it knowingly. The fold items carry levels
-  where there is depth to give; their depth is sized at its top level, whether that is the
-  summary or a high (§ Size).
+- **Which parts carry levels.** Levels are optional on every part, and scale with the
+  decision: a small call may carry none; a wide or one-way decision carries the most, a medium
+  and a high for its visible parts (`context`, `impact`, `tldr`, `rec`) and for the fold items
+  with depth to give. A part with levels has its depth sized at its top level (§ Size).
 - The page ignores a `detail` key it does not know; the runner lints it.
 
 **Context introduces every specific thing the card names.** Every label, number, acronym,
@@ -167,7 +166,8 @@ Context aims for what its terms need, typically 30–80 words; a term that needs
 its detail in a fold, with its one-line gloss kept in Context. The `effect` stays
 under about 10 words: it is shown alone, at tag size, in the map.
 
-Every card carries the decisions block's depth (decision 198). Each size is read at the
+Every card carries the decisions block's depth (decision 198), scaled to the decision, with
+levels where the decision calls for them (decision 201). Each size is read at the
 part's top level, its high when it has one, else its summary; words are counted as
 whitespace-split:
 
@@ -185,11 +185,12 @@ whitespace-split:
 
 The sizes are soft. A small call gets a short card: do not pad. Depth is written from the
 sources (SKILL.md step 2), and a fact no source holds goes under `unknown`, never into the
-depth to fill a size. **The cost.** The visible parts' levels are words on every card: on the
-example's small call (card 43) they are about 474 words of levels on a card of about 438
-words. Levelling the fold items too costs about 2.8 times the fold depth alone (card 41: about
-1026 words written against 365). The pre-publish runner lints only clear misses: about 40% of
-a size for thin, 1.5 times for long.
+depth to fill a size. **The cost** falls on the cards that carry levels: on the example's small
+call (card 43), its visible parts' levels are about 474 words on a card of about 438 words; a
+card with every part levelled (card 41) costs about 2.8 times the fold depth alone (about 1026
+words written against 365). A card with no levels costs nothing extra. The pre-publish runner
+lints only clear misses: thin (about 40% of a size) only on a part that carries levels, long
+(1.5 times) on any.
 
 **What the page adds.** Every view shows the impact: the map and a closed card the effect, an
 open card the Impact line, and its Options in full fold the Impact table (a row per option,
@@ -223,8 +224,8 @@ its own folds alone. A gloss drawn from anywhere outside the card is new informa
 
 A `cards.json` written before `detail` existed renders as it did, with **More** buttons added
 and no toggles; it is thin until rewritten. On a republish, write the depth (§ Size) and the
-`detail` levels into each card with no counting answer, and into each card revised anyway,
-each with a new `rev`. A card the operator has answered keeps its depth as it stands, unless
+`detail` levels its decision calls for into each card with no counting answer, and into each
+card revised anyway, each with a new `rev`. A card the operator has answered keeps its depth as it stands, unless
 it is revised for another reason. A card that gets `detail` gets a new `rev`, so the republish
 hands it over as shown again (SKILL.md § Hand over what was shown), with the publish time.
 
