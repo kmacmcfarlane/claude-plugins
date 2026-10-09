@@ -31,3 +31,5 @@ agent: reviewer a327c87bd6419153b
 verdict: review round 1 NEEDS_CHANGES (medium 1: heal's two unguarded restores still write into tracked project files, rewriting a team's committed footer entry; medium 2: the message's 'install in your user settings' fix doesn't work there, shared outranks user — lead with --local; lows: _git_tracks lets writes through on timeout; tests leak GIT_* env into another repo's index; three docs state takeover without the exception; nits)
 decided: 2026-10-09T10:07Z design — heal is guarded the same way as takeover on both restores; an explicit --project install is told to rerun --project to restore it there
 dispatch: implementer opus medium — fix round 1 (resume a428d65ba07fb6f87)
+return: DONE 71c8e7f (heal guarded on both restores; --project records scope and is told to rerun --project; message leads with --local and removing the dead entry; git timeout waits; GIT_* stripped in tests; docs; tracked checked first; 11/11 Checks)
+dispatch: reviewer opus high — review round 2 (resume a327c87bd6419153b)
