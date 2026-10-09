@@ -223,6 +223,61 @@ optional `references/`, `scripts/`, `assets/`.
   Never `../`, never a path into another plugin (there, README principle 4 applies).
 - **Catalog upkeep**: any change to the shape of the marketplace updates the README catalog
   in the same commit.
+- **Peer hints** (the mechanics of README principle 4's degrade, disclose, hint once; when a
+  hint may never show is principle 4's list, not restated here):
+  - *Disclosure* is part of the run's result whenever a degraded path changed it: one plain
+    clause naming what was skipped ("items not filed: no work-item store tool"). It never
+    carries the install command; the hint, when shown, adds it. A run whose result is
+    unchanged says nothing.
+  - *The hint* is one line, prefixed by the source plugin's name, naming the benefit rather
+    than the mechanism: `<source>: <what you got instead>. <peer> adds <what it adds>:
+    /plugin install <peer>@<marketplace> (one-time tip; KMACMCFARLANE_NO_PEER_HINTS=1 hides
+    these)`. In a sub-agent or under an orchestrator's brief the skill returns only the
+    disclosure, and the top-level session that reports to the user may add the hint once.
+  - *Hooks* show it once per (source plugin, peer) per install of the source plugin, at most
+    one per source plugin per session, and never once the peer is detected. When several
+    peers are missing, the one shown is the peer whose absence costs the user most, in the
+    source plugin's own order. The hook that shows it is the one that takes the degraded
+    path: SessionStart with matcher `startup` when the state is known at start, otherwise
+    the hook that runs the degraded branch. "Shown" is a marker at
+    `${CLAUDE_PLUGIN_DATA}/peer-hints/<peer>` in the **source** plugin's data dir, created
+    atomically (create-if-absent; only the creator shows the hint); a marker that cannot be
+    created withholds the hint, never repeats it. That dir is one per plugin, kept across
+    plugin updates, and deleted on uninstall from the last place the plugin is installed
+    unless `--keep-data`, so the marker lives exactly as long as the install
+    (https://code.claude.com/docs/en/plugins-reference § Environment variables).
+  - *Hook output*: the hint goes out as `systemMessage` with exit 0, which is shown to the
+    user in the transcript; some events discard `systemMessage`, so a hint is emitted only
+    from an event that shows it, and only from a synchronous hook (an async hook's
+    `systemMessage` goes to Claude on the next turn, not to the user;
+    https://code.claude.com/docs/en/hooks § How async hooks execute). Never
+    `additionalContext`, which goes into the model's context, and never plain stdout, which
+    on SessionStart, the prompt hooks (UserPromptSubmit, UserPromptExpansion) and
+    PostModelSwitch is added to the model's context and on most other events goes only to
+    the debug log, unseen
+    (https://code.claude.com/docs/en/hooks).
+  - *Detection (hooks)* prefers evidence of the peer's effect (a fresh sensor record for the
+    hub, a `hooks.d` registration for statusline) over install records, and fails quiet:
+    anything unreadable counts as present. The marketplace in the install command comes from
+    the install record, as statusline's `_marketplace` does
+    (`plugins/statusline/hooks/session_start.py`).
+  - *Prose skills* keep no marker (background state belongs only in a hook-owning plugin,
+    principle 3). The hint folds into the disclosure line in the run's final result, only
+    when the degraded path changed it, at most once per session (the conversation is the
+    record), with the frozen marketplace name `kmacmcfarlane`. Presence is read from the
+    session's skill list.
+  - *The switch*: `KMACMCFARLANE_NO_PEER_HINTS=1` hides every hint; a comma list of peer
+    names (`KMACMCFARLANE_NO_PEER_HINTS=work-items,context-guard`) hides only those. The
+    user sets it in the shell or in a settings `env` block, which sets variables for every
+    session and its subprocesses (https://code.claude.com/docs/en/settings-reference § env);
+    that a value set either way reaches a hook's environment and the Bash tool's is for the
+    helper item (4bd4) to observe. Hooks read it from their environment; a prose skill reads
+    it before showing a hint with one `echo "${KMACMCFARLANE_NO_PEER_HINTS-}"`, which is in
+    the built-in read-only set that runs without a permission prompt in every mode
+    (https://code.claude.com/docs/en/permissions § Read-only commands). Disclosure is never
+    switched off.
+  - Not peer hints: hard-dependency repair notices and migration warnings, which warn of
+    breakage and may repeat.
 
 ## Placement rules
 
