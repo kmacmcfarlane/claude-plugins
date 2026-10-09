@@ -110,3 +110,4 @@ decision 204: Should the turn log ship as the first instrument of a new plugin c
   impact: Effect → one plugin named claude-analytics holds the turn log now and future instruments · Wait: blocks the turn-log build · reach: the catalog, install commands, the data folder name · undo: before release one edit; after, the rename procedure and a data move · cost: none
   unknown: whether claude-analytics as a plugin name collides with the claude-analytics repo's own artifacts; whether it should read the agent-analytics repo's schema
 dispatch: none — turn-log build waits on decision 204
+shown 204: 2026-10-09T08:57Z page

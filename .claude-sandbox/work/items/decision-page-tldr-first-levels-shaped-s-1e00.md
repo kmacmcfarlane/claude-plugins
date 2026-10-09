@@ -61,3 +61,7 @@ verdict: review round 2 CLEAR (nit: two long lines, rulings.md:65 and cards-sche
 landed: f8ea87e (merge of 844b806, a9adf02, 4497048); Checks 11/11 OK; runner exit 0 on the example
 verified: tests and jsdom renders of the example and live cards (order, structure, escaping); layout at 360px and in dark mode not seen (no browser here) — the operator sees it on the fresh open-decisions page
 - 2026-10-09 done
+helper: card writer opus — one writer for the 7 open decisions (172, 180, 204-208) on the landed template, per a416's lesson; scratch scratchpad/open-page/
+agent: card writer a84b51c880f28ff51
+page: open-decisions page https://claude.ai/artifact/YXBW5U31wCnd2jPAWyJF1F (landed template, 7 cards, rev 2026-10-09T10:00:00Z; runner exit 0, deny 0; answers empty at publish; one writer, 10 turns, 132k peak — against last night's five writers at 143-201k each)
+shown 206: 2026-10-09T08:57Z page
