@@ -3321,25 +3321,39 @@ SECRET_SHAPE_RE = re.compile(
     r"[\"'](?P<json>[A-Za-z_][A-Za-z0-9_.-]*)[\"']\s*:\s*|"
     r"(?P<kv>[A-Za-z][A-Za-z0-9_]{2,})\s*(?:=>|:=|=(?!=))\s*|"
     r"(?P<colon>[A-Z][A-Z0-9_]{2,}|[A-Za-z][A-Za-z0-9]*_[A-Za-z0-9_]+)\s*:\s*"
-    r")[\"']?(?P<value>\S{1,256})")
+    r")(?P<quote>[\"']?)(?P<value>\S{1,256})")
 # A key is a secret-word key when one of its segments (split on _ - . and
-# camelCase) is one of these whole words; a plural (tokens, keys) is not.
+# camelCase) is one of these whole words, or ends with one of the suffixes
+# (dbpassword, apitoken, clientsecret); a plural (tokens, keys) is not, and
+# key and pass count only as a whole segment (monkey, bypass stay clean).
 _SECRET_WORDS = frozenset((
     "pass", "passwd", "password", "passphrase", "pw", "pwd", "secret",
     "token", "auth", "cred", "creds", "credential", "credentials", "key",
-    "apikey", "webhook"))
+    "apikey", "webhook", "secretkey", "privatekey"))
+_SECRET_SUFFIXES = ("password", "passwd", "secret", "token", "apikey")
+# a bare number under a secret-word key is a count only beside one of these
+_COUNT_WORDS = frozenset((
+    "count", "len", "max", "min", "budget", "total", "size", "limit", "num"))
 _KEY_SEG_RE = re.compile(r"[A-Z]+(?![a-z])|[A-Z]?[a-z]+|[0-9]+")
 _VALUE_TOKEN_RE = re.compile(r"[A-Za-z0-9+/_.=~-]+")
 _HEX_RE = re.compile(r"(?i)[0-9a-f]+")
 _DATE_RE = re.compile(r"\d{4}-\d{2}-\d{2}")
 _SEG_SPLIT_RE = re.compile(r"[-_./~]+")
 _CODE_RE = re.compile(r"([A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)*)([(\[]?)")
+_ATTR_RE = re.compile(r"[A-Za-z_]+(?:\.[A-Za-z_]+)+")
 _COUNT_RE = re.compile(r"[0-9][0-9,._]*")
+_PLACEHOLDER_RE = re.compile(r"<[a-z][a-z _-]*>")
+_CLOSE = {"(": ")", "[": "]"}
 _MARKDOWN_RE = re.compile(r"`|\*|__")
 
 
+def _key_segments(key):
+    return [seg.lower() for seg in _KEY_SEG_RE.findall(key)]
+
+
 def _secret_key(key):
-    return any(seg.lower() in _SECRET_WORDS for seg in _KEY_SEG_RE.findall(key))
+    return any(seg in _SECRET_WORDS or seg.endswith(_SECRET_SUFFIXES)
+               for seg in _key_segments(key))
 
 
 def _harmless_segment(seg):
@@ -3371,41 +3385,67 @@ def _looks_live(value):
     return not (len(segs) >= 2 and all(_harmless_segment(seg) for seg in segs))
 
 
-def _quoted_code(raw, value):
-    """True when a secret-word key's value is code or a count a note may
-    quote, not a secret: a call f(...) or subscript x[...] on a name, a
-    dotted attribute access (config.api_key), a bare number with or without
-    separators, or a path starting ~/, ./ or /. The name, attribute or path
-    must be harmless segments, so a dotted JWT-like token or a base64 value
-    that starts with / still counts."""
+def _quoted_code(key, raw, value):
+    """True when an unquoted value under a secret-word key is code, a count
+    or a path a note may quote, not a secret:
+    - a call f(...) or subscript x[...] on a name of harmless segments, when
+      nothing follows the closing bracket and what is inside would not
+      itself flag (len(tokens), os.environ['API_KEY']);
+    - a dotted attribute of letters and _ only (config.api_key, self.token);
+    - a number with separators (1,234,567), or a bare number when another
+      key segment is a count word (token_count, key_limit);
+    - a path starting ~/, ./ or / of two or more harmless segments.
+    So a dotted JWT-like token, a base64 value that starts with /, words
+    with a digit (abc.def.ghi1) and a bare 12-digit PIN still count."""
     m = _CODE_RE.match(raw)
-    if m and _harmless_segments(m.group(1)):
-        if m.group(2) or ("." in m.group(1) and m.end(1) == len(value)):
-            return True
-    if _COUNT_RE.fullmatch(value):
+    if m and m.group(2) and _harmless_segments(m.group(1)):
+        body = raw.rstrip("\"'`,;")
+        if body.endswith(_CLOSE[m.group(2)]):
+            inner = body[m.end():-1].strip("\"'")
+            if not inner or not _secret_value_flagged(key, inner, "", inner):
+                return True
+    if _ATTR_RE.fullmatch(value):
         return True
-    return value.startswith(("~/", "./", "/")) and _harmless_segments(value)
+    if _COUNT_RE.fullmatch(value):
+        if re.search(r"[,._]", value):
+            return True
+        return any(seg in _COUNT_WORDS for seg in _key_segments(key))
+    if value.startswith(("~/", "./", "/")):
+        segs = [seg for seg in _SEG_SPLIT_RE.split(value) if seg]
+        return len(segs) >= 2 and all(_harmless_segment(seg) for seg in segs)
+    return False
 
 
-def _placeholder(value):
-    """$VAR, {template}, all * (masked), or exactly <word> with no ://."""
+def _placeholder(value, rest):
+    """$VAR, {template}, all * (masked), or <words>: lowercase words,
+    spaces, _ or - inside, with the closing > (rest is the line from the
+    value's start, so <your key> counts)."""
     if value[:1] in "${" or not value.strip("*"):
         return True
-    return (value.startswith("<") and "://" not in value
-            and re.fullmatch(r"<[^<>]*>?", value) is not None)
+    return _PLACEHOLDER_RE.match(rest) is not None
 
 
-def _shape_value_flagged(key, raw):
-    """A key holding a secret word (see _secret_key) flags any 8+ non-space
-    characters, symbols included, as the KEY=value rule does, with no hex,
-    letters-only or UUID exemption; it skips only quoted code, a count or
-    a path (_quoted_code). Any other key (sha, commit, *_id, ...) flags only
-    a value _looks_live passes, and never a call like name(...)."""
+def _secret_value_flagged(key, raw, quote, rest):
+    """Under a secret-word key: any 8+ non-space characters, symbols, hex,
+    letters-only and UUIDs included, unless the value is unquoted code, a
+    count or a path (_quoted_code). A quoted value skips nothing."""
     value = raw.rstrip("\"'`,;)]}")
-    if not value or _placeholder(value):
+    if not value or _placeholder(value, rest) or len(value) < 8:
         return False
+    return bool(quote) or not _quoted_code(key, raw, value)
+
+
+def _shape_value_flagged(key, raw, quote="", rest=None):
+    """A key holding a secret word (see _secret_key) flags as
+    _secret_value_flagged says, as strictly as the KEY=value rule. Any other
+    key (sha, commit, *_id, ...) flags only a value _looks_live passes, and
+    never a call like name(...)."""
+    rest = raw if rest is None else rest
     if _secret_key(key):
-        return len(value) >= 8 and not _quoted_code(raw, value)
+        return _secret_value_flagged(key, raw, quote, rest)
+    value = raw.rstrip("\"'`,;)]}")
+    if not value or _placeholder(value, rest):
+        return False
     tok = _VALUE_TOKEN_RE.match(raw)
     if not tok or raw[tok.end():tok.end() + 1] == "(":
         return False
@@ -3419,30 +3459,44 @@ def _shape_secret(line):
         if not m:
             return False
         key = m.group("flag") or m.group("json") or m.group("kv") or m.group("colon")
-        if _shape_value_flagged(key, m.group("value")):
+        if _shape_value_flagged(key, m.group("value"), m.group("quote"),
+                                line[m.start("value"):]):
             return True
         pos = m.start("value")
 
 
 def _secret_line(line):
-    """The line every secret rule reads: NFKC-normalised (a fullwidth equals
-    sign, U+FF1D, is =), Unicode format characters (category Cf, such as a zero-width space)
-    dropped, and the markdown ` * ** __ around keys and values removed.
-    Look-alike letters (confusables) are out of scope."""
+    """The cleaned line: NFKC-normalised (a fullwidth equals sign, U+FF1D,
+    is =), Unicode format characters (category Cf, such as a zero-width
+    space) dropped, and the markdown ` * ** __ around keys and values
+    removed. Look-alike letters (confusables) are out of scope."""
     line = "".join(c for c in unicodedata.normalize("NFKC", line)
                    if unicodedata.category(c) != "Cf")
     return _MARKDOWN_RE.sub("", line)
 
 
+def _secret_hit(line):
+    if "PRIVATE KEY-----" in line:
+        return "PEM private key material"
+    if (SECRET_ASSIGN_RE.search(line) or SECRET_KV_RE.search(line)
+            or _shape_secret(line)):
+        return "likely secret value (record the path and key, never the value)"
+    return None
+
+
 def secret_findings(text):
+    """Every rule runs on the raw line and on the cleaned line
+    (_secret_line), and either one flagging flags the line, so the cleanup
+    never hides what the raw line shows (*my*password:, a value with * in
+    it, a fullwidth $ before a value)."""
     out = []
     for n, line in enumerate(text.split("\n"), 1):
-        line = _secret_line(line)
-        if "PRIVATE KEY-----" in line:
-            out.append((n, "PEM private key material"))
-        elif (SECRET_ASSIGN_RE.search(line) or SECRET_KV_RE.search(line)
-              or _shape_secret(line)):
-            out.append((n, "likely secret value (record the path and key, never the value)"))
+        raw_why, clean_why = _secret_hit(line), _secret_hit(_secret_line(line))
+        why = ("PEM private key material"
+               if "PEM private key material" in (raw_why, clean_why)
+               else raw_why or clean_why)
+        if why:
+            out.append((n, why))
     return out
 
 

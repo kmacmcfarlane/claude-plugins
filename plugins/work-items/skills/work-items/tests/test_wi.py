@@ -3119,6 +3119,34 @@ class TestLint(WiTestCase):
             # NFKC and format characters
             "zero-width space in key": "db\u200b_pass=" + v,
             "fullwidth equals": "db_pass\uff1d" + v,
+            # the raw line is read too, so the cleanup never hides an old hit
+            "glued markdown key": "*my*password: " + v,
+            "a value holding *": "DB_PASS=" + "Fa1k" + "**" + "e2X",
+            "fullwidth dollar": "DB_PASS=\uff04" + v,
+            # secrets dressed as code, a number or a path
+            "quoted dotted words": 'db_pass = "' + ".".join(("fakea", "fakeb", "fakec")) + '"',
+            "dotted words, a digit": "db_pass: " + ".".join(("fakea", "fakeb", "fakec1")),
+            "quoted number": 'db_pass = "' + "1234" * 3 + '"',
+            "bare number": "user_pw=" + "1234" * 3,
+            "quoted path": 'db_pass = "/' + "/".join(("fakea", "fakeb", "fakec")) + '"',
+            "home path, one segment": "db_pass=~/fakea9fakeb",
+            "call holding a token": "db_pass=fakef(" + "fake0Fake1" + ")",
+            "subscript holding a token": "db_pass=fakes[" + "fake0Fake1fake2Fake3" + "]",
+            "dotted call holding a token": "db_pass=fake.fake(" + v + ")",
+            "unclosed call": "db_pass=a(" + v,
+            "text after a subscript": "db_pass=x[0]" + v,
+            "angle brackets, not words": "db_pass=<" + v + ">",
+            "angle brackets, colon": "api_token: <" + v + ">",
+            "angle bracket, unclosed": "db_pass=<" + v,
+            # a compound lowercase key ending with a secret word
+            "dbpassword": "dbpassword=" + self.FAKE_HEX,
+            "secretkey": "secretkey=" + self.FAKE_HEX,
+            "apitoken": "apitoken=" + self.FAKE_HEX,
+            "accesstoken": "accesstoken=" + self.FAKE_HEX,
+            "privatekey": "privatekey=" + self.FAKE_HEX,
+            "authtoken": "authtoken=" + self.FAKE_HEX,
+            "clientsecret": "clientsecret=" + self.FAKE_HEX,
+            "compound key, letters": "dbpassword_x: abcdefghijklmnopqrst",
         }
         for name, line in shapes.items():
             with self.subTest(shape=name):
@@ -3188,6 +3216,21 @@ class TestLint(WiTestCase):
             "markdown placeholder": "**password**: <value>",
             "markdown masked": "`API_TOKEN` = `********`",
             "code-quoted call": "- 2026-10-09 fixed `key = get_key()` in wi.py",
+            "a count word, bare number": "token_count=12345678",
+            "a limit word, bare number": "key_limit = 123456789",
+            "a spaced placeholder": "db_pass=<your password here>",
+            "a placeholder with _": "DB_PASS: <db_pass_value>",
+            # key and pass count only as a whole segment, and a plural or a
+            # longer word is no secret word, so hex keeps its exemption
+            "monkey": "monkey=" + self.FAKE_HEX,
+            "keyboard": "keyboard=" + self.FAKE_HEX,
+            "turnkey": "turnkey=" + self.FAKE_HEX,
+            "bypass": "bypass=" + self.FAKE_HEX,
+            "compass": "compass: " + self.FAKE_HEX,
+            "passes": "test_passes=" + self.FAKE_HEX,
+            "tokens": "tokens=" + self.FAKE_HEX,
+            "tokenizer": "tokenizer_sha=" + self.FAKE_HEX,
+            "secrets plural": "secrets_dir=" + self.FAKE_HEX,
         }
         for name, line in look_alikes.items():
             with self.subTest(shape=name):
