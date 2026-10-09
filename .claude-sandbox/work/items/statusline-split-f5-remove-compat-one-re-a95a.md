@@ -26,3 +26,4 @@ note: 2026-10-08 from the 7dd3 review 2: with context-guard recorded but disable
 decision 209: Remove context-guard's deprecated status-line copy now? It was kept "one release later" (3c48 plan F5, 2026-09-18); this repo has no version numbers, many updates have shipped since, and the hub's heal repoints a stale footer entry — options: (a) remove it now, with its old-path read and notice, then retire the old reset-time source (fbc3) [recommended] | (b) keep it one more stated update, announced in the notice first | (z) decide later
   why ask: reach — anyone still pointed at the old path without the hub loses their status line at the update; the trigger "one release later" has no release to count by
   impact: (a) → old-path status lines stop at the next update, fbc3 unblocks; (b) → nothing changes now, fbc3 waits; (z) → fbc3 stays blocked
+answer 209: a (operator, in chat, 2026-10-09)
