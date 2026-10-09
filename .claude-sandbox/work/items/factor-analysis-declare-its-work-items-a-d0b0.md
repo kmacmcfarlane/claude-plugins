@@ -28,3 +28,4 @@ dispatch: implementer opus medium — build, worktree (bug; acceptance from the 
 agent: implementer a8b71c236d66dc1af
 return: DONE worktree-agent-a8b71c236d66dc1af cdcb523 (kit-dev declares work-items and dev-flow; factor-analysis Step 7 fallbacks with one-clause disclosure; KD-2/KD-3 UNDECLARED and seven stale ALLOWED excuses removed; 11/11 Checks; peer-hint step left for 4bd4)
 dispatch: reviewer opus high — review round 1
+agent: reviewer ab4397e3c484bd9a0

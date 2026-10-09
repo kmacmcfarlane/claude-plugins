@@ -28,3 +28,4 @@ dispatch: implementer opus medium — build, worktree (bug; acceptance from the 
 agent: implementer a08fd24241b7e085f
 return: DONE worktree-agent-a08fd24241b7e085f 7c97d18 (Rehydrate step 5 without context-guard: one clause, handoffs every idle turn; stops cleanly without wi; edges declared in plugin.json, marketplace.json, README; 11/11 Checks; peer-hint step left for 4bd4)
 dispatch: reviewer opus high — review round 1
+agent: reviewer abd2cf9b58581e2ca
