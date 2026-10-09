@@ -75,7 +75,8 @@ Size: full | lite · Mode: new | retrofit · Item: <wi id | none>
   planner fills that gate's Gate, Operator and Approved cells from it.
 - **Gate G3** has no later phase to record it, so the block keeps its `CLEAR` under an
   orchestrator. **A done foundation item, or its G3 approval's `answer N:` line, marks gate
-  G3 passed**, whatever the block says: a resume never reopens or re-files it.
+  G3 passed**, whatever the block says: a resume never re-runs G3 or re-files its
+  features; a deliberate reopen is a move (`references/moves.md`).
 
 **A lite run** has one row:
 
