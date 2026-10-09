@@ -191,7 +191,10 @@ class TestSensorRead(Base):
                                              "window": 1000}}),
                '{"v": 1, "exact": {"pct": NaN, "tokens": 5, "window": 1000, "at": 1e12}}',
                json.dumps({"v": 1, "exact": {"pct": 5, "tokens": True,
-                                             "window": 1000, "at": time.time()}})]
+                                             "window": 1000, "at": time.time()}}),
+               '{"v": 1, "exact": {"pct": 5, "tokens": 5, "window": 1000, "at": Infinity}}',
+               '{"v": 1, "exact": {"pct": 5, "tokens": 5, "window": 1000, "at": "soon"}}',
+               '{"v": 1, "exact": {"pct": 5, "tokens": 5, "window": 1000, "at": true}}']
         for raw in bad:
             self.write_sensor("s", raw=raw)
             self.assertEqual(L.depth("/nonexistent", "s")[::3], (0, "inferred"), raw)
@@ -233,6 +236,10 @@ class TestSensorHardening(Base):
         self.write_legacy("s", 300_000, 1_000_000)
         self.write_sensor("s", 500_000, 1_000_000, at=time.time() + 3600)
         self.assertEqual(L.sensor("s"), {})
+
+    def test_epoch_end_ignores_a_skewed_sensor_record(self):
+        self.write_sensor("s", 900_000, 1_000_000, at=time.time() + 3600)
+        self.assertEqual(L.reset_epoch("s")["epoch_end_tokens"], 0)
 
     def test_small_clock_skew_is_accepted(self):
         self.write_sensor("s", 500_000, 1_000_000, at=time.time() + 30)

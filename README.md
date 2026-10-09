@@ -357,9 +357,9 @@ is in the session; `librarian-mode` answers the context gate's advisories with a
 checkpoint and weighs its manifest and ledger when it rehydrates, and without it says so
 in each conversation's first summary (no checkpoint, no context gate) and keeps the
 store's handoffs current at each idle turn and landing; its `usage-report` skill reads
-an item's list-price spend per phase from the agent ids on the item's record (`usage_report.py item`), which `dev-cycle` reads at every review to hold
-each phase of an item to its spend budget; without it the review loop falls back to its
-fourth-review cap.
+an item's list-price spend per phase from the agent ids on the item's record
+(`usage_report.py item`), which `dev-cycle` reads at every review to hold each phase of an
+item to its spend budget; without it the review loop falls back to its fourth-review cap.
 Without it none of the others fire. Soft dependency on `kit-dev`: the `investigate` and
 `implement` retrospectives hand their findings to its user-invoked `update-kit`; without
 it the findings stand as the record. `dev-cycle`'s briefs point a skill change's builder

@@ -142,7 +142,6 @@ class SessionIdConfinement(Base):
         self.assertTrue(L.safe_sid(123).startswith("sid-"))
 
 
-
 class FailOpen(Base):
     @unittest.skipIf(fcntl is None, "fcntl.flock is POSIX-only")
     def test_lock_timeout_fails_open_and_bounded(self):

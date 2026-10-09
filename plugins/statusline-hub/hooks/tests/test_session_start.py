@@ -484,6 +484,37 @@ class Heal(Base):
         self.assertEqual(self.marker()["state"], "installed")
         self.quiet()
 
+    def cg_entry(self):
+        """context-guard's old footer entry, its current-hooks resolving to a
+        version that no longer ships statusline.py (a95a removed the copy)."""
+        cg = os.path.join(self.cfg, "plugins", "data", "context-guard-kmacmcfarlane")
+        hooks = os.path.join(self.cfg, "cg-new", "hooks")
+        os.makedirs(hooks)
+        os.makedirs(cg, exist_ok=True)
+        os.symlink(hooks, os.path.join(cg, "current-hooks"))
+        return {"type": "command",
+                "command": 'python3 "%s/current-hooks/statusline.py"' % cg}
+
+    def test_a_context_guard_entry_without_its_copy_is_taken_back(self):
+        # the footer is not registered: heal takes the slot back
+        self.install()
+        self.plugin_records(dict(self.HUB_REC, **{
+            "context-guard@kmacmcfarlane": [{"scope": "user", "installPath": "/x/cg"}]}))
+        self.write_json(self.user, dict(HUB_ON, statusLine=self.cg_entry()))
+        msg = self.said()
+        self.assertIn("took back the status line slot", msg)
+        self.assertIn("no longer ships it", msg)
+        self.assertEqual(self.load()["statusLine"], self.own())
+        self.quiet()
+
+    def test_a_context_guard_entry_is_repointed_once_the_footer_is_hooked(self):
+        # the footer is registered: heal restores the hub's entry
+        self.install()
+        self.sl_hooked()
+        self.write_json(self.user, dict(BOTH_ON, statusLine=self.cg_entry()))
+        self.assertIn("restored the status line", self.said())
+        self.assertEqual(self.load()["statusLine"], self.own())
+
     def project_scoped(self):
         """The scope the installer records for a project's shared file, here
         on the user file: heal carries the field whatever the path."""

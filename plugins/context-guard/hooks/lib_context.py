@@ -154,9 +154,9 @@ CHECKPOINT_MIN_TOKENS = CHECKPOINT_LEAN_COST + CHECKPOINT_MARGIN
 GAUGE_LABELS = {"due": "checkpoint DUE", "hard": "HARD gate"}
 GAUGE_V = 1
 SENSOR_V = 1
-# A stamp (an exact block's `at`, from either writer, or a scored depth's
-# `tokens_at`) further ahead of now than this is a bad clock or a bad record,
-# never a fresh reading. _future_skewed() is the one check.
+# A stamp (the sensor record's exact `at`, or a scored depth's `tokens_at`)
+# further ahead of now than this is a bad clock or a bad record, never a
+# fresh reading. _future_skewed() is the one check.
 FUTURE_SKEW_S = 60
 # The tee stamps an exact record's `at` when it runs, not when Claude Code
 # built the render's payload: a render that began before PostCompact stamped
