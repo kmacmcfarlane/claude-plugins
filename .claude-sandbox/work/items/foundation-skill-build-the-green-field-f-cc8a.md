@@ -3,14 +3,13 @@ id: foundation-skill-build-the-green-field-f-cc8a
 title: "foundation skill: build the green-field foundation session from the 5f2d series"
 short_display_name: build green-field foundation skill
 type: feature
-status: doing
+status: done
 priority: 1
 deps:
   - spike-a-skill-for-green-field-foundation-5f2d
-owner: Kyle-McFarlane@2d49f8460283
-claimed: 2026-10-09T06:55Z
 created: 2026-10-08
 updated: 2026-10-09
+closed: 2026-10-09
 refs:
   - spike-a-skill-for-green-field-foundation-5f2d
 ---
@@ -41,3 +40,15 @@ dispatch: implementer opus medium — fix round 1 (resume a6bfeccdd56f09458)
 shown 205: 2026-10-09T07:21Z chat
 return: DONE c3389e5 (fix round 1: G3 filing one home in state.md with groom + factored-out; gate rows carried in briefs; run-wide count restored; F0 fixes; signals combine; architecture summary on G3 when G2 reported; NN_ serials, lite-run block)
 dispatch: reviewer opus high — review round 2 (resume a0f8ba4721687edd1)
+verdict: review round 2 CLEAR (lows: 1 S7 row should say a reported G2's blocking open questions are the question; 2 'never reopened or re-filed' should not forbid the deliberate reopen move)
+decided: 2026-10-09T07:30Z cap — finish round of exact-fix leftovers 1-2 (authority answer 145)
+decision 205: Should a foundation run count review rounds per gate (each of requirements, architecture and plan gets its own four reviews before the stop), rather than across the whole run? — options: (a) keep one count across the run, as today [recommended] | (b) count per gate, and give each gate its own share of the plan budget | (z) decide later (the run-wide count stays)
+  revised: 2026-10-09T07:30Z — added what (a) costs, from review round 2
+  what: with one count, a run needing two reviews per gate reaches its fourth review partway through architecture; from there a plan with no high finding left stops and carries its findings, so the plan gate's review usually comes to you rather than running unasked
+  impact: Effect → (a) the three gates share four counted reviews, and the plan gate usually lands on you; (b) up to twelve reviews run unasked · Wait: none, the build ships (a) · reach: every foundation run · undo: one rule edit · cost: (a) more of your attention per run; (b) more review rounds and spend per run
+dispatch: implementer opus medium — finish round (resume a6bfeccdd56f09458)
+return: DONE 9b8fe93 (finish round: S7 reported-G2 wording; deliberate reopen is a move)
+review: self
+verdict: finish round CLEAR — diff read: the two wording fixes
+landed: 91cb494 (merge of 86194d3, c3389e5, 9b8fe93); Checks 10/10 OK
+- 2026-10-09 done

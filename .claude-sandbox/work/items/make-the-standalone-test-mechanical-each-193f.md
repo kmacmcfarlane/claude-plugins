@@ -25,3 +25,5 @@ Follow-up F8 from the plugin-dependency spike (72ef), 2026-10-08. Acceptance: as
 dispatch: implementer opus medium — build, worktree (chore; acceptance from the 72ef series; answers 190 a / 192 a)
 - 2026-10-09 claimed by Kyle-McFarlane@2d49f8460283
 agent: implementer a5654365709ad831d
+return: DONE worktree-agent-a5654365709ad831d a4d383f (kit-dev/tests: test_standalone.py runs each plugin's suites alone, test_declared_edges.py lints cross-plugin references with shrink-only ALLOWED/UNDECLARED lists; two skips added: statusline live-hub subtest (F8), dev-flow TestDocs (beyond F8); Librarian Check added; 5 undeclared edges listed for F7/F3)
+dispatch: reviewer opus high — review round 1 of a4d383f
