@@ -1788,14 +1788,17 @@ class TestNote(WiTestCase):
                       path.read_text())
 
     def test_the_separator_refusal_counts_texts_as_argparse_does(self):
-        """An abbreviated --root whose value is `note`, and a text that looks
-        like an option (`-5`), still name the right text."""
+        """An abbreviated --root whose value is `note`, a text that looks
+        like an option (`-5`), an id after the separator, and an id that is
+        itself `--` still name the right text."""
         path = self.item()
         before = path.read_bytes()
         for argv, n in ((["--roo", "note", "note", self.IID, "--", "a", "--", "b"], 2),
                         (["--root=note", "note", self.IID, "--", "a", "--", "b"], 2),
                         (["note", self.IID, "-5", "--", "a", "--", "b"], 3),
-                        (["note", self.IID, "--ra", "-5", "--", "--", "b"], 2)):
+                        (["note", self.IID, "--ra", "-5", "--", "--", "b"], 2),
+                        (["note", "--", self.IID, "a", "--", "b"], 2),
+                        (["note", "--", "--", "a", "--", "b"], 2)):
             with self.subTest(argv=argv):
                 r = run(argv, self.root)
                 self.assertEqual(r.returncode, 1, r.stdout + r.stderr)

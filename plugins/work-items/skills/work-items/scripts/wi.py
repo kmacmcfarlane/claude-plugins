@@ -1703,8 +1703,10 @@ def _note_line(n, text, raw):
 
 
 def _abbrev(tok, name):
-    """True when `tok` names the long option `name` as argparse reads it:
-    the full name or any unambiguous prefix of it, bare or with `=value`."""
+    """True when `tok` is the long option `name` or a prefix of it (at least
+    `--` and one letter), bare or with `=value`. It does not check that the
+    prefix is unambiguous: the caller names only options whose prefixes
+    argparse accepts."""
     head = tok.split("=", 1)[0]
     return len(head) > 2 and name.startswith(head)
 
@@ -1726,11 +1728,13 @@ def _stray_separator(argv):
         return None
     sep = toks.index("--")
     after = toks[sep + 1:]
-    if "--" not in after:
-        return None
+    # these option names must follow note's parser spec in build_parser
     before = [t for t in toks[:sep]  # the id, then texts
               if not (t == "-h" or _abbrev(t, "--raw") or _abbrev(t, "--help"))]
-    return (len(before) + after.index("--")) or None
+    start = 0 if before else 1  # no id before the separator: after[0] is it
+    if "--" not in after[start:]:
+        return None
+    return len(before) + after.index("--", start)
 
 
 def cmd_note(args):
