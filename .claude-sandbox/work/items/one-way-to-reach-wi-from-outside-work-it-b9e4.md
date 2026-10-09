@@ -29,3 +29,4 @@ dispatch: implementer opus medium — build (cross-plugin refactor of a lookup s
 agent: implementer af358fa9b3916d4ee
 return: DONE cedc039, then merge of main ec83083 (README, marketplace.json, dev-flow plugin.json resolved keep-both); 12/12 Checks OK; judgement: dev-flow research and librarian-mode copies replaced by pointers to bindings § Store; WI=no-wi-found when nothing resolves (exit 127, never a bare python3); disclosure only, no install tip
 dispatch: reviewer opus high — review round 1 of ec83083
+agent: reviewer a4d208aa5ffbc9603
