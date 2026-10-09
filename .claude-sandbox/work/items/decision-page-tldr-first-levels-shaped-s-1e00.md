@@ -32,3 +32,6 @@ return: DONE series 00_initial.md (TLDR/Context/Impact order; structured levels 
 baseline: plan review 1 — 1ba05b50d8652ed812f7aad44aa5dc81e90c23a080b80976cb3964a7479796b4 .claude-sandbox/investigations/decision-page-tldr-first-levels-shaped-s-1e00/00_initial.md; a7a4b28579293fa2557b66167257d16f9bbed37580fc1eef99ef613e3671f721 .claude-sandbox/investigations/decision-page-tldr-first-levels-shaped-s-1e00/INDEX.md;
 dispatch: reviewer opus high — plan review 1, scratch scratchpad/1e00-review/
 agent: reviewer a5b03a613f38fa51a
+verdict: plan review 1 NEEDS_CHANGES (medium 4: id lint misses layer titles/page title and bracketed tags like (9652), which the live page's layer titles carry; runner TLDR rec lint stops working on structured levels; decisions skill § Impact will contradict the page's decision-wide effect; Impact medium's shape lints unclear; lows 5-7: bb44 status and example classes, id patterns flag ordinary words, two test details; nits 8-9)
+correction: the live page's layer titles I wrote carried ids, e.g. 'History scrub (4151)', which the operator's rule now forbids on a page
+dispatch: planner opus high — plan fix round 1 (resume a6e96152cb104f1de)

@@ -26,3 +26,9 @@ note: Step 0's reply and override lines are namespaced by 9652 (86970e6); this i
 dispatch: implementer opus medium — build, worktree (bug; no plan)
 - 2026-10-09 claimed by Kyle-McFarlane@2d49f8460283
 agent: implementer aca6389fa9d43c977
+return: DONE worktree-agent-aca6389fa9d43c977 54f07f7 (HARD STOP text and playbook namespaced; gate-whitelist lines left bare by design; whitelist test covers the namespaced form; new test_checkpoint_namespaced.py with allowlist; 10/10 Checks)
+dispatch: reviewer opus high — review round 1 of 54f07f7
+agent: reviewer a9502a1807ab75325
+verdict: review round 1 CLEAR (lows: 1 allowed line can carry a bare instruction; 2 allowlist can grow to hide a regression; nits 3 manifests unscanned, 4 test location acceptable, 5 long lines)
+decided: 2026-10-09T07:50Z cap — finish round of exact-fix leftovers 1-3 and 5 (authority answer 145); 4 accepted as is
+dispatch: implementer opus medium — finish round (resume aca6389fa9d43c977)

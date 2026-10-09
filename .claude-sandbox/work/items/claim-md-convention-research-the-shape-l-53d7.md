@@ -93,3 +93,8 @@ answer 188: c (answer page HvKDfFHjrqNtygDKziv7ta, rev 2026-10-09T06:00:00Z, at 
 answer 189: d — "You aren't necessarily going to use both plugins together, although I do, so they should stay separate" (answer page HvKDfFHjrqNtygDKziv7ta, rev 2026-10-09T06:00:00Z, at 2026-10-09T06:39:15.123Z; read as: (d) keep both lists and compare by name, because the plugins are installed independently)
 dispatch: planner opus high — step 2 build plan (04) on answers 186 a, 187 a, 188 c, 189 d; scratch scratchpad/53d7-build-plan/
 agent: planner a514507009f7c1aa2
+return: DONE 04_build-plan.md (plugin ownership, skill claim-md: write/check/answer; format.md single home; claim_check.py read-only with 12 flags, MISMATCH by name keyed on files; sentinel and hash tests; tier-3 consult check headless with --plugin-dir; no hooks; estimate $30)
+decided: 2026-10-09T07:50Z spend — the $30 estimate over the $22 build default asks nothing: budgets are waived by the operator (2026-10-08); spend still measured
+baseline: step 2 plan review 1 — 9b3b8785e25ac61c1d0b1bab009021f19a96762c35f6b3ac1d518c78572c0630 .claude-sandbox/investigations/claim-md-convention-research-the-shape-l-53d7/04_build-plan.md; 6f4dc99d7cd5616059ed42b4feb4b09d90d233afcd707db8d3642b3c518b740e .claude-sandbox/investigations/claim-md-convention-research-the-shape-l-53d7/INDEX.md;
+dispatch: reviewer opus high — step 2 plan review 1, scratch scratchpad/53d7-build-review/
+agent: reviewer adab6626492e41022
