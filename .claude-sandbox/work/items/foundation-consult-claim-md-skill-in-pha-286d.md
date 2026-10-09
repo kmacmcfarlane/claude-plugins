@@ -31,3 +31,5 @@ agent: implementer aac8fa75aac1fadce
 return: DONE ec38341; 12/12 Checks OK; judgement: claim approved inside G1, F0 writes it; Scope line drops none; a G3 re-read line added beyond acceptance; hint shaped like claim-md and factor-analysis
 dispatch: reviewer opus high — review round 1 of ec38341
 agent: reviewer ae00bc0c31c8b8e3e
+verdict: review round 1 NEEDS_CHANGES (must-fix 1: medium — F0 writes through claim-md's write mode with no way to use G1's approval, so a build sub-agent blocks or writes proposed; lows: upkeep draft path unstated; Interfaces asked before contracts exist (narrow fix here, the reopen question filed as foundation-is-filling-a-claim-interfaces-8ee2); hint claims "written on your approval" which the fallback also gives; nits: a 121-char line with an ambiguous aside, answer-mode step out of order; G3 re-read line ruled justified)
+dispatch: implementer opus medium — fix round 1 (resume aac8fa75aac1fadce)
