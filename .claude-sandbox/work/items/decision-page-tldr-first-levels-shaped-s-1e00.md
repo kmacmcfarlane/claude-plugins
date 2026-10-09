@@ -20,3 +20,6 @@ Operator 2026-10-09 after using the live page: (1) TLDR at the top, then Context
 - next: —
 - blocked: —
 - learned: —
+
+## Notes
+findings: carried — from eda1 review 2: mark the rulings 198 entry '(levels optional since 201)'; rewrap SKILL.md:167, cards-schema.md:228, test_depth.py:11; let the example's small card (43) carry no levels and update the § Size cost figures

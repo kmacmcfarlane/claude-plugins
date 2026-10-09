@@ -3,14 +3,13 @@ id: decision-page-folds-written-at-block-dep-eda1
 title: "decision-page: folds written at block depth, so the page never needs an expand round"
 short_display_name: decision page rich folds
 type: feature
-status: doing
+status: done
 priority: 1
 deps:
   - decision-page-context-first-defining-eve-2ff6
-owner: Kyle-McFarlane@2d49f8460283
-claimed: 2026-10-08T21:09Z
 created: 2026-10-08
 updated: 2026-10-09
+closed: 2026-10-09
 refs:
   - operator message 2026-10-08
 ---
@@ -116,3 +115,10 @@ answer 202: a (answer page HvKDfFHjrqNtygDKziv7ta, rev 2026-10-09T06:00:00Z, at 
 answer 203: a (answer page HvKDfFHjrqNtygDKziv7ta, rev 2026-10-09T06:00:00Z, at 2026-10-09T06:49:22.153Z)
 answer 201: c — "I want the levels to scale a bit with the size of the decision, so this fits that." (answer page HvKDfFHjrqNtygDKziv7ta, rev 2026-10-09T06:00:00Z, at 2026-10-09T06:47:26.594Z; read as: (c) levels optional everywhere, scaled to the decision's size; the built visible-level lint goes)
 dispatch: implementer opus medium — finish round for answer 201 (c) (resume ac2c18bf80bc80586)
+return: DONE e6b69ea (201 c: visible-level lint removed; thin-depth only where levels exist; guidance scales with the decision; rulings records 201 c; 92 tests OK; runner exit 0)
+dispatch: reviewer opus high — review round 2 of e6b69ea (the 201 c round changes rules, so not self-reviewed)
+agent: reviewer a4aa671106d88cf86
+verdict: review round 2 CLEAR (lows: 1 rulings 198 entry not marked amended by 201; 2 three long lines; 3 example shows no level-less small card) — carried into decision card format v2 (1e00), which rewrites the same files and the example
+landed: 50be595 (merge of dad58b6, c42cb90, e6b69ea); Checks 10/10 OK; runner exit 0 on the example
+verified: tests and jsdom-driven clicks (review 1); a private preview published; the operator used the live page built on this template and gave format feedback, no breakage reported; light/dark and 360px not separately confirmed
+- 2026-10-09 done
