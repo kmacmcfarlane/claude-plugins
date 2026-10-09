@@ -612,9 +612,10 @@ every pair on a line (`dsn=host=db;db_pass=…`, compact JSON).
 - **Other keys** (`sha`, `commit`, `*_id`, …) count only a value that looks
   live: 12+ characters holding a letter and a digit, not all hex (a sha),
   not a date, and not two or more segments split on `-`, `_`, `.`, `/` or
-  `~` that are each harmless (all letters, all digits or all hex at any
-  length, or 12 characters or fewer that do not mix upper case, lower case
-  and digits), so a work-item id, path, version or UUID stays clean.
+  `~` that are each harmless (letters and digits only, so a `+` or `=`
+  makes a segment live; all letters, all digits or all hex at any length,
+  or 12 characters or fewer that do not mix upper case, lower case and
+  digits), so a work-item id, path, version or UUID stays clean.
 - **Placeholders.** A value is a placeholder only as `$VAR`, `{template}`,
   all `*` (masked), or `<…>` holding lowercase words, spaces, `_` or `-` with
   its closing `>` (`<value>`, `<your key>`).

@@ -3147,6 +3147,8 @@ class TestLint(WiTestCase):
             "authtoken": "authtoken=" + self.FAKE_HEX,
             "clientsecret": "clientsecret=" + self.FAKE_HEX,
             "compound key, letters": "dbpassword_x: abcdefghijklmnopqrst",
+            # a + makes a path segment live, so this is no harmless path
+            "path of + segments": "db_pass=/" + "/".join(("abc+def", "ghi+jkl")),
         }
         for name, line in shapes.items():
             with self.subTest(shape=name):
@@ -3237,6 +3239,17 @@ class TestLint(WiTestCase):
                 r = self.lint_notes(line)
                 self.assertNotIn("probe-3333", r.stdout)
                 self.assertEqual(r.returncode, 0, r.stdout)
+
+    def test_secret_scan_of_a_long_line_of_pairs_is_linear(self):
+        # a 1M-character line of repeated aaa= is 250000 pairs; each pair
+        # reads a bounded slice of the line, so this takes about a second
+        # (it took tens of seconds while each pair copied the rest of the
+        # line); the bound leaves room for a loaded machine
+        for line in ("aaa=" * 250000, "aaa=*" * 200000):
+            with self.subTest(line=line[:5]):
+                start = time.perf_counter()
+                self.assertEqual(wi.secret_findings(line), [])
+                self.assertLess(time.perf_counter() - start, 5.0)
 
     def test_conflict_markers_flagged(self):
         (self.root / "items" / "conflicted-0000.md").write_text(

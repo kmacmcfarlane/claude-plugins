@@ -3357,8 +3357,11 @@ def _secret_key(key):
 
 
 def _harmless_segment(seg):
-    """All letters, all digits or all hex at any length; otherwise 12
-    characters or fewer that do not mix upper case, lower case and digits."""
+    """Letters and digits only (a + or = makes a segment live): all letters,
+    all digits or all hex at any length; otherwise 12 characters or fewer
+    that do not mix upper case, lower case and digits."""
+    if not re.fullmatch(r"[A-Za-z0-9]+", seg):
+        return False
     if re.fullmatch(r"[A-Za-z]+|[0-9]+|(?i:[0-9a-f]+)", seg):
         return True
     return len(seg) <= 12 and not (re.search(r"[a-z]", seg)
@@ -3418,8 +3421,8 @@ def _quoted_code(key, raw, value):
 
 def _placeholder(value, rest):
     """$VAR, {template}, all * (masked), or <words>: lowercase words,
-    spaces, _ or - inside, with the closing > (rest is the line from the
-    value's start, so <your key> counts)."""
+    spaces, _ or - inside, with the closing > (rest is the next 300
+    characters of the line from the value's start, so <your key> counts)."""
     if value[:1] in "${" or not value.strip("*"):
         return True
     return _PLACEHOLDER_RE.match(rest) is not None
@@ -3453,6 +3456,8 @@ def _shape_value_flagged(key, raw, quote="", rest=None):
 
 
 def _shape_secret(line):
+    # rest is bounded (the value is at most 256 characters), so each pair
+    # costs a constant and a long line of pairs stays linear
     pos = 0
     while True:
         m = SECRET_SHAPE_RE.search(line, pos)
@@ -3460,7 +3465,7 @@ def _shape_secret(line):
             return False
         key = m.group("flag") or m.group("json") or m.group("kv") or m.group("colon")
         if _shape_value_flagged(key, m.group("value"), m.group("quote"),
-                                line[m.start("value"):]):
+                                line[m.start("value"):m.start("value") + 300]):
             return True
         pos = m.start("value")
 
@@ -3491,7 +3496,9 @@ def secret_findings(text):
     it, a fullwidth $ before a value)."""
     out = []
     for n, line in enumerate(text.split("\n"), 1):
-        raw_why, clean_why = _secret_hit(line), _secret_hit(_secret_line(line))
+        clean = _secret_line(line)
+        raw_why = _secret_hit(line)
+        clean_why = raw_why if clean == line else _secret_hit(clean)
         why = ("PEM private key material"
                if "PEM private key material" in (raw_why, clean_why)
                else raw_why or clean_why)
