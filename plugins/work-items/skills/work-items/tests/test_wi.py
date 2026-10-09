@@ -1769,6 +1769,20 @@ class TestNote(WiTestCase):
                         r.stderr, "wi: text 2: likely secret value (record the "
                         "path and key, never the value); nothing written\n")
 
+    def test_looser_secret_shapes_refused(self):
+        fake = TestLint.SHAPE_FAKE
+        path = self.item()
+        before = path.read_bytes()
+        for text in ("db_pass = " + fake, "DB_PASS: " + fake,
+                     '{"db_pass": "' + fake + '"}', "--auth=" + fake):
+            with self.subTest(text=text):
+                r = run(["note", self.IID, "--", text], self.root)
+                self.assertEqual(r.returncode, 1, r.stdout + r.stderr)
+                self.assertEqual(
+                    r.stderr, "wi: text 1: likely secret value (record the "
+                    "path and key, never the value); nothing written\n")
+                self.assertEqual(path.read_bytes(), before)
+
     def test_a_text_that_is_exactly_the_separator_is_refused(self):
         path = self.item()
         before = path.read_bytes()
@@ -3024,6 +3038,70 @@ class TestLint(WiTestCase):
             "glued to a word": "- xFOO_BAR=abcdefghijk",
             "two-letter key": "- 2026-10-08 AB=abcdefghijk",
             "comparison": "- check X == Y and a=b",
+        }
+        for name, line in look_alikes.items():
+            with self.subTest(shape=name):
+                r = self.lint_notes(line)
+                self.assertNotIn("probe-3333", r.stdout)
+                self.assertEqual(r.returncode, 0, r.stdout)
+
+    # obviously fake, letters and digits, no hex-only run, one long segment;
+    # the keys hold none of the KV rule's words, so only the b9fb shape rule
+    # can fire on the lowercase, spaced, colon, JSON and flag forms
+    SHAPE_FAKE = "fake0fake1fake2fakeXYZ"
+
+    def test_looser_secret_shapes_caught(self):
+        v = self.SHAPE_FAKE
+        shapes = {
+            "lowercase key": "db_pass=" + v,
+            "mixed-case key": "- 2026-10-09 set dbPass=" + v,
+            "spaces around =": "KEY = " + v,
+            "lowercase spaced": "- db_pass = " + v,
+            "env key colon": "DB_PASS: " + v,
+            "snake key colon": "- learned: db_pass: " + v,
+            "json pair": '{"db_pass":"' + v + '"}',
+            "json pair spaced": "- body {\"dbPass\": \"" + v + "\"}",
+            "json single quotes": "{'user_pw': '" + v + "'}",
+            "flag": "ran `tool --auth=" + v + "` once",
+            "bare flag": "--auth=" + v,
+            "with an underscore": "conn_str=fake_" + v,
+            "trailing period": "set db_pass=" + v + ".",
+        }
+        for name, line in shapes.items():
+            with self.subTest(shape=name):
+                r = self.lint_notes(line)
+                self.assertEqual(r.returncode, 3, r.stdout)
+                self.assertIn("probe-3333.md:", r.stdout)
+                self.assertIn("likely secret value", r.stdout)
+                self.assertNotIn(v, r.stdout + r.stderr)
+
+    def test_looser_shape_look_alikes_stay_clean(self):
+        look_alikes = {
+            "prose": "- 2026-10-09 next: run the checks and land the change",
+            "record line": "learned: lint now flags spaced KEY = value pairs",
+            "prose colon": "verifier gate CONCERNS: grounding/S2 at 1 from tooling",
+            "shell var spaced": "KEY = $DB_PASS",
+            "placeholder colon": "DB_PASS: <value>",
+            "placeholder json": '{"db_pass": "<value>"}',
+            "template flag": "--auth={token_file}",
+            "masked": "db_pass: ****************",
+            "short sha": "- 2026-10-09 merged sha=01dda41 into main",
+            "full sha": "commit_sha: 01dda4101dda4101dda4101dda4101dda41aaaa",
+            "upper hex": "BUILD_ID = 01DDA4101DDA4101DDA41",
+            "work-item id": "refs_item: wi-lint-secret-shapes-the-assignment-and-b9fb",
+            "id flag": "--item=wi-lint-secret-shapes-the-assignment-and-b9fb",
+            "model flag": "dispatch --model=claude-opus-5-5 --effort=medium",
+            "path": "SKILL_DIR: plugins/work-items/skills/work-items/scripts2",
+            "path flag": "--root=.claude-sandbox/work/items2",
+            "date": "claimed_at: 2026-10-09T11:04Z",
+            "frontmatter key": "short_display_name: lint misses other secret shapes",
+            "owner": "owner: Kyle-McFarlane@2d49f8460283",
+            "letters only": "db_pass=abcdefghijklmnopqrst",
+            "digits only": "build_number=123456789012345",
+            "short value": "db_pass=fake1",
+            "comparison": "- check count == 3 and len_value != 12345678abcdefgh",
+            "url query": "- see https://example.invalid/p?db_pass=fake0fake1fake2fakeXYZ",
+            "glued to a word": "- x.db_pass=fake0fake1fake2fakeXYZ",
         }
         for name, line in look_alikes.items():
             with self.subTest(shape=name):

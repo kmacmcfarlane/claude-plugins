@@ -3305,13 +3305,48 @@ SECRET_KV_RE = re.compile(
     r"(?i)\b(api[_-]?key|secret|token|password|passwd|credential|webhook[_-]?url)\b"
     r"['\"]?\s*[:=]\s*['\"]?(?![$<{*])([A-Za-z0-9+/_.-]{12,})")
 
+# The looser shapes the two rules above miss (b9fb): a lowercase or
+# mixed-case key (db_pass=...), spaces around = (KEY = value), KEY: value
+# (an env-style or snake_case key, so a prose "next:" never qualifies), a
+# JSON "key": "value" pair and --flag=value. A looser key needs a stricter
+# value, so the value must look live: see _looks_live.
+SECRET_SHAPE_RE = re.compile(
+    r"(?:^|[^A-Za-z0-9_?&.-])(?:"
+    r"--[A-Za-z][A-Za-z0-9-]*=|"
+    r"[\"'][A-Za-z_][A-Za-z0-9_.-]*[\"']\s*:\s*[\"']|"
+    r"[A-Za-z][A-Za-z0-9_]{2,}\s*=(?!=)\s*|"
+    r"(?:[A-Z][A-Z0-9_]{2,}|[A-Za-z][A-Za-z0-9]*_[A-Za-z0-9_]+):\s*"
+    r")(?![$<{*])([A-Za-z0-9+/_.=~-]{12,})")
+_HEX_RE = re.compile(r"(?i)[0-9a-f]+")
+_DATE_RE = re.compile(r"\d{4}-\d{2}-\d{2}")
+_SLUG_RE = re.compile(r"[-_./~]*[A-Za-z0-9]{1,12}(?:[-_./][A-Za-z0-9]{1,12})+")
+
+
+def _looks_live(value):
+    """True when `value` looks like a live secret rather than a word, a hex
+    sha, a date, or an id, slug, path or version: 12+ characters holding
+    both a letter and a digit, not all hex, no date at its start and not
+    short segments (12 or fewer characters each) joined by - _ . or /."""
+    value = value.rstrip(".")
+    return (len(value) >= 12
+            and re.search(r"[A-Za-z]", value) is not None
+            and re.search(r"[0-9]", value) is not None
+            and not _HEX_RE.fullmatch(value)
+            and not _DATE_RE.match(value)
+            and not _SLUG_RE.fullmatch(value))
+
+
+def _shape_secret(line):
+    return any(_looks_live(m.group(1)) for m in SECRET_SHAPE_RE.finditer(line))
+
 
 def secret_findings(text):
     out = []
     for n, line in enumerate(text.split("\n"), 1):
         if "PRIVATE KEY-----" in line:
             out.append((n, "PEM private key material"))
-        elif SECRET_ASSIGN_RE.search(line) or SECRET_KV_RE.search(line):
+        elif (SECRET_ASSIGN_RE.search(line) or SECRET_KV_RE.search(line)
+              or _shape_secret(line)):
             out.append((n, "likely secret value (record the path and key, never the value)"))
     return out
 

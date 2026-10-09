@@ -586,7 +586,12 @@ the value**. Write `creds: clusterenv.yaml key DISCORD_WEBHOOK_BACKUPS`, not
 the webhook URL. `wi lint` flags PEM blocks, `KEY=value` assignments (bare,
 or after a bullet, date, tag, bold or other leading text, unless the key is
 glued to a word or follows a URL's `?` or `&`) and
-`token/secret/password/webhook`-style pairs that look like live values.
+`token/secret/password/webhook`-style pairs that look like live values. It
+also flags a lowercase or mixed-case `key=value`, `KEY = value`, `KEY: value`
+(an env-style or snake_case key), a JSON `"key": "value"` pair and
+`--flag=value`, but only when the value looks live: 12+ characters holding a
+letter and a digit, not all hex (a sha), not a date, and not short segments
+joined by `-`, `_`, `.` or `/` (a work-item id, path or version).
 `wi note` refuses, writing nothing, a line lint would flag. Lint's shapes
 are a floor, not every secret: the path-and-key rule is the guard.
 
