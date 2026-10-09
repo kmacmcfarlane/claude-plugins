@@ -56,7 +56,7 @@ findings:
   21-22. [low] hold rule as a caller binding in bindings.md, librarian SKILL.md the home, add to B1; Q2 decided in the plan needs a decided: line (librarian writes it)
   23-24. [nit] "would be expected to"; "when the four conditions hold"
 librarian ruling on 18: take the first fix (grade the failure, not the words) — it keeps review-brief.md's "grade the failure" rule and keeps rounds 1-3 out of scope; no new operator question
-decided: 2026-10-01T07:45Z minor-design — who makes a finish round's edit: the producer (implementer or planner) resumed, never the orchestrator; changes no rule, and the alternative (the librarian edits itself) was declined at decision 113 (c) · authority: answer 137 · reopen: say so and it goes back to the operator as a question on this item
+decided: 2026-10-01T07:45Z design — who makes a finish round's edit: the producer (implementer or planner) resumed, never the orchestrator; changes no rule, and the alternative (the librarian edits itself) was declined at decision 113 (c) · authority: answer 137 · reopen: say so and it goes back to the operator as a question on this item
 dispatch: planner opus high — resume (plan fix round 2)
 agent: planner ab1a5ac379668d226 round 3
 return: planner PLAN_READY — serial 02_review-r2-fixes.md (18-24)
@@ -71,14 +71,14 @@ findings:
   28. [nit] trace 12b — "the pin's ask, unless an earlier answer still covers the item"
   29. [nit] 02:11-12 — drop "01's lines were reflowed after it was written"
 findings: carried — 25 [low], 26 [low], 27 [low], 28 [nit], 29 [nit] above, verbatim; into this item's build
-decided: 2026-10-01T07:49Z ruled-rule-case — who makes a finish round's edit: the producer (implementer or planner) resumed, never the orchestrator; changes no rule, and the alternative (the librarian edits itself) was declined at decision 113 (c) · authority: answer 137 · reopen: say so and it goes back to the operator as a question on this item
+decided: 2026-10-01T07:49Z design — who makes a finish round's edit: the producer (implementer or planner) resumed, never the orchestrator; changes no rule, and the alternative (the librarian edits itself) was declined at decision 113 (c) · authority: answer 137 · reopen: say so and it goes back to the operator as a question on this item
 note: corrects the class on the decided: line above it (minor-design → ruled-rule-case), per plan review finding 26
 C: I skipped dev-cycle Step 4.1's baseline: line (sha256 of the series serials) before each plan review on this item and on 90bc; no harm found (the reviewer checked 00/01 unchanged by size and mtime), but write it before every plan review from now on
 decision 139: For finishing trivial fixes at the cap, what counts as a trivial leftover? — options: (a) the reviewer certifies each with a Fix: clause, and the orchestrator checks only its shape [recommended] | (b) the orchestrator applies a checklist to the reviewer's free-text findings | (c) the reviewer adds one whole-report EXACT-FIX yes/no line | (z) decide later
   raised: 2026-10-01T07:49Z
   what: the test that lets a finish round run without asking you (was OQ1 of the finish-at-cap plan, 5bdd); two sub-choices ride with (a): at most 3 leftovers (or 2), and prose and skill text only (or code too) — say them in your reply to change them
   why now: the plan cleared review in 3 rounds; blocks: the build of finishing trivial fixes at the cap
-  why ask: api-name — (a) makes Fix: a stored, parsed name, and the test sets what runs without you
+  why ask: contract — (a) makes Fix: a stored, parsed name, and the test sets what runs without you
   context: you asked for trivial leftovers at the cap to be finished by default (answer 137) · you decide what counts as trivial — then: none
   stakes: reversible, wide — every dev-cycle run at a review cap, librarian or standalone
   (a) reviewer certifies — a Fix: is one set of words for one place, at most one sentence or one line, no new choice; the orchestrator checks: changes needed, no high left, every leftover a medium with a Fix:, at most 3; tonight's review-caps rounds would have finished unasked, the scan floor's code fixes still come to you — undo: an edit to review-brief.md and bindings.md — who: every capped run
@@ -213,13 +213,13 @@ findings:
   5-12. [low] Group B preamble "round budget"; installed context-guard older than the reader → name "reader too old"; only answer-N/operator budget: lines open rounds; what a standalone run records when deciding alone; store-less pin from the invocation's words; resume short-circuit for a carried plan; README principle-4 note for statusline-hub; trace for a plan stopping at its budget before r4
   13-17. [nit] T1 next-round figure .89; verified: worked examples; cross-skill reference form; C10/C14 coverage; gallery.md follow-up
 librarian ruling on 4: the build ships today's behaviour for standalone plans (every plan cap raised) and the widening goes to the operator as decision 156; readings 2 and 3 are recorded as decided under answer 145
-decided: 2026-10-05T18:29Z ruled-rule-case — "one finish round at the budget" means at most one unasked in a row; another may run after each operator answer at a cap · authority: answer 145 · reopen: say so
-decided: 2026-10-05T18:29Z ruled-rule-case — with no spend reading, the fourth review is the cap with no self-granted round (stricter than before) · authority: answer 145 · reopen: say so
+decided: 2026-10-05T18:29Z reading — "one finish round at the budget" means at most one unasked in a row; another may run after each operator answer at a cap · authority: answer 145 · reopen: say so
+decided: 2026-10-05T18:29Z reading — with no spend reading, the fourth review is the cap with no self-granted round (stricter than before) · authority: answer 145 · reopen: say so
 decision 156: Should standalone dev-cycle plans with nothing high-severity left stop and carry their findings at round 4 without asking, as librarian runs already do? — options: (a) yes, standalone like librarian [recommended] | (b) no, a standalone plan cap keeps asking, as today | (z) decide later
   raised: 2026-10-05T18:29Z
   what: whether the plan stop-and-carry (review caps and spend, 5579) extends from librarian runs to standalone /dev-cycle runs under the budget rule (was reading 1 of the budget-rule build spec, 5bdd)
   why now: the budget rule's build is being specified; it ships (b) until you answer; blocks: nothing
-  why ask: rule-change — your Q8 answer kept the stop-and-carry "as today", which is librarian-only
+  why ask: precedent — your Q8 answer kept the stop-and-carry "as today", which is librarian-only
   context: you chose the spend budget with every recommended setting (145) · you decide whether standalone plan runs get the same quiet stop at round 4 — then: none
   stakes: reversible, narrow — standalone plan runs
   (a) standalone like librarian — a standalone plan with no high left stops and carries its findings to the build without a question; spends nothing — undo: an edit — who: standalone dev-cycle users
@@ -247,7 +247,7 @@ decision 156: Should standalone dev-cycle plans with nothing high-severity left 
   revised: 2026-10-05T18:34Z — the spec review found an inversion the card did not show; options and recommendation unchanged
   what: whether the plan stop-and-carry extends from librarian runs to standalone /dev-cycle runs under the budget rule (was reading 1 of the budget-rule build spec, 5bdd)
   why now: the budget rule is about to be built; it ships (b) until you answer, and (a) deletes one sentence; blocks: nothing
-  why ask: rule-change — your Q8 answer kept the stop-and-carry "as today", which is librarian-only
+  why ask: precedent — your Q8 answer kept the stop-and-carry "as today", which is librarian-only
   context: you chose the spend budget with every recommended setting (145) · you decide whether standalone plan runs get the same quiet stop at round 4 — then: until you answer, a standalone plan with a high-severity finding left keeps going past round 4 without asking (inside its budget, as 145's round-5+ setting allows), while one with only mediums left is asked at round 4 — the stricter treatment falls on the milder case
   stakes: reversible, narrow — standalone plan runs
   (a) standalone like librarian — a plan with no high left stops and carries its findings without a question; spends nothing; removes the inversion — undo: an edit — who: standalone dev-cycle users
@@ -277,7 +277,7 @@ findings:
   1-9, 11, 12 fixed; 10 partly
   13. [low] bindings.md:378-382 — "the phase that absorbs the spend reads high" is false for a re-plan's own plan phase (it reads low; only the fourth-review count and the convergence stop bound it until 7421); Fix: "The phase that absorbs the spend reads high and asks early; a re-plan after a build reads its own phase low, so only the fourth-review count and the convergence stop bound it until follow-up 7421 lands."
   14. [nit] rewrap agent-brief.md:152, :233; bindings.md:220; model-routing.md:656
-decided: 2026-10-05T18:50Z ruled-rule-case — one finish round before landing for 13 (a false sentence in the rule, with the reviewer's exact words) and 14 (rewraps); same implementer, same reviewer checks · authority: answer 137 ("finish trivial changes") · reopen: say so
+decided: 2026-10-05T18:50Z cap — one finish round before landing for 13 (a false sentence in the rule, with the reviewer's exact words) and 14 (rewraps); same implementer, same reviewer checks · authority: answer 137 ("finish trivial changes") · reopen: say so
 dispatch: implementer opus medium — resume (finish round: 13, 14 as written)
 agent: implementer aaf057f145282066d round 3
 return: implementer DONE d29b117 (13, 14 as written)
@@ -296,7 +296,7 @@ decision 156: Should standalone dev-cycle plans with nothing high-severity left 
   revised: 2026-10-06T01:50Z — why now stale (the budget rule has landed); options and recommendation unchanged
   what: whether the plan stop-and-carry extends from librarian runs to standalone /dev-cycle runs under the budget rule (was reading 1 of the budget-rule build spec, 5bdd)
   why now: the budget rule landed (e92f0e3) shipping (b) behind a one-line switch; (a) deletes that line; blocks: nothing
-  why ask: rule-change — your Q8 answer kept the stop-and-carry "as today", which is librarian-only
+  why ask: precedent — your Q8 answer kept the stop-and-carry "as today", which is librarian-only
   context: you chose the spend budget with every recommended setting (145) · you decide whether standalone plan runs get the same quiet stop at round 4 — then: until you answer, a standalone plan with a high-severity finding left keeps going past round 4 without asking (inside its budget, as 145's round-5+ setting allows), while one with only mediums left is asked at round 4 — the stricter treatment falls on the milder case
   stakes: reversible, narrow — standalone plan runs
   (a) standalone like librarian — a plan with no high left stops and carries its findings without a question; spends nothing; removes the inversion — undo: an edit — who: standalone dev-cycle users
@@ -309,7 +309,7 @@ decision 156: Should standalone dev-cycle plans with nothing high-severity left 
   revised: 2026-10-06T07:04Z — backfilled impact
   what: whether the plan stop-and-carry extends from librarian runs to standalone /dev-cycle runs under the budget rule (was reading 1 of the budget-rule build spec, 5bdd)
   why now: the budget rule landed (e92f0e3) shipping (b) behind a one-line switch; (a) deletes that line; blocks: nothing
-  why ask: rule-change — your Q8 answer kept the stop-and-carry "as today", which is librarian-only
+  why ask: precedent — your Q8 answer kept the stop-and-carry "as today", which is librarian-only
   context: you chose the spend budget with every recommended setting (145) · you decide whether standalone plan runs get the same quiet stop at round 4 — then: until you answer, a standalone plan with a high-severity finding left keeps going past round 4 without asking (inside its budget, as 145's round-5+ setting allows), while one with only mediums left is asked at round 4 — the stricter treatment falls on the milder case
   impact: → a standalone dev-cycle plan with only medium findings left stops at round 4 and carries them without asking · later: such plans keep asking at round 4 · reach: standalone dev-cycle users · undo: restore one line
   stakes: reversible, narrow — standalone plan runs

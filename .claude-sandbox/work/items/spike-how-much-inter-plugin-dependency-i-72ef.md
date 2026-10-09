@@ -45,16 +45,16 @@ verdict: plan review 3 CLEAR (must-fix 0; nits carried into F10 and F2)
 note: spike closed on its series (00-02); follow-ups filed: bdff F1, 7dd3 F2, d0b0 F3, 64c7 F4, b9e4 F5, d492 F6, eef5 F7, 193f F8, 9385 F9, 4bd4 F10, fbc3 F11
 decision 190: Adopt the "degrade, disclose, hint once" pattern and amend README principle 4 to say it? — options: (a) adopt as the spike drafts it [recommended] | (b) adopt with changes (say which) | (c) no: plugins stay silent about peers | (z) decide later
   raised: 2026-10-08T07:26Z
-  why ask: rule-change — principle 4 is doctrine every plugin is measured against
+  why ask: precedent — principle 4 is doctrine every plugin is measured against
   what: when a plugin runs without a peer that would improve the result, it still works, says in its own "what was skipped" line what it could not do, and names the peer once. Hook plugins record "shown" once per install in their data folder; prose skills keep no record and mention it at most once per session, only when the run actually lost something, never from a sub-agent
   impact: Effect → every plugin may name a missing peer once, only when it mattered · Wait: blocks F1 (bdff) and F10 (4bd4) · reach: all plugins' doctrine · undo: easy, revert the principle text · cost: none
 decision 191: What should the one switch that hides all peer hints be? — options: (a) KMACMCFARLANE_NO_PEER_HINTS=1 hides all; a comma list of peer names hides only those [recommended] | (b) one setting per plugin in its own config | (z) decide later
   raised: 2026-10-08T07:26Z
-  why ask: api-name — an environment variable users set is API (principle 5)
+  why ask: contract — an environment variable users set is API (principle 5)
   impact: Effect → one variable, read by hooks and by prose skills with a single read-only echo, silences hints · Wait: blocks F10 (4bd4) · reach: every user who wants hints off · undo: a rename later breaks set variables · cost: none
 decision 192: Where should the new checks live (each plugin's tests run alone; every cross-plugin reference declared)? — options: (a) plugins/kit-dev/tests/, run from CLAUDE.md's Librarian Checks [recommended] | (b) a script under the repo root | (z) decide later
   raised: 2026-10-08T07:26Z
-  why ask: placement — it adds a Librarian Check, which is the operator's opt-in config
+  why ask: precedent — it adds a Librarian Check, which is the operator's opt-in config
   impact: Effect → the standalone test becomes mechanical on every landing · Wait: blocks F8 (193f) · reach: this repo's Checks · undo: easy · cost: a few seconds per landing
 - 2026-10-08 done
 shown 190: 2026-10-08T20:02Z chat

@@ -1,8 +1,8 @@
 # Investigation record format
 
-**This file is the single owner of the on-disk investigation format.** The `investigate` and
-`implement` skills both defer to it. Do not restate these rules in a SKILL.md body — restated
-rules drift.
+**This file is the single owner of the on-disk investigation format.** The `investigate`,
+`implement` and `foundation` skills all defer to it. Do not restate these rules in a SKILL.md
+body — restated rules drift.
 
 ## Layout
 
@@ -244,6 +244,28 @@ Maintained by `implement`:
 | `superseded by NN` | A later serial invalidated it. |
 
 Leave existing rows' Status and Branches alone except the ones this pass genuinely changes.
+
+## Foundation series
+
+A series written by the `foundation` skill (dev-flow) follows every rule above, and adds
+names and one index block; it amends nothing.
+
+- **Serial names.** `00_initial.md` is the first pass as always: the frame and the
+  requirements (in a lite run, all three phases). Then `NN_architecture.md`, `NN_plan.md`,
+  `NN_reopen-<what>.md` for a reopen, and `NN_retrofit.md` for a retrofit, each at the next
+  free serial. A gate's fix round is an ordinary next serial with its `Supersedes` block.
+- **The Foundation block.** `INDEX.md` carries a `## Foundation` section after the TOC: the
+  size, the mode and the item; a phase table (phase, serial, gate status, whether the
+  operator approves or it is reported, the approved date); the held questions; the
+  factored-out aspects. Its shape is the `foundation` skill's `references/state.md`
+  § The Foundation block. Its presence is what marks a foundation series.
+- **Implementation Approach before gate G3.** The approach section is required per series,
+  not per serial, and a foundation series has none until its plan serial. `implement`
+  refuses it before then, which is the guard wanted; no phase-1 or phase-2 serial carries
+  a placeholder, and a plan review does not raise the missing section before gate G3.
+- **The artifacts** (intent, requirements, quality scenarios, ADRs and the rest) are
+  sections inside the standard outline, after Existing Architecture, or after Summary when
+  nothing exists yet.
 
 ## Verification tiers
 

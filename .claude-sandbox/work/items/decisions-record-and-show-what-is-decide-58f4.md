@@ -56,7 +56,7 @@ decision 134: The decided-alone record introduces 19 class tags stored on decisi
   raised: 2026-09-30
   what: the tag names every stored decision will carry; wi and other repos' tools will parse them
   why now: the build lands with them marked provisional; nothing writes a tag until you answer
-  why ask: api-name — new stored names are yours (111 b)
+  why ask: contract — new stored names are yours (111 b)
   (a): tags go live with the next plugin update — undo: a rename later means migrating stored lines — who: every librarian store
   (b): renamed in a small follow-up before first use; no migration
   (z): they stay provisional; librarians keep raising and recording without class tags
@@ -101,7 +101,7 @@ decision 134: The decided-alone record uses 19 class tags on stored decision lin
   revised: 2026-10-01T07:06Z — backfilled: context:, stakes:; why now and options restated as one card (the interim no-tags rule was withdrawn in fix round 3)
   what: the class names written on every decided: and why ask: line; wi and other repos' tools may parse them
   why now: the decided-alone record landed (0c2757b, pushed) with the names marked provisional, and they are already written as spelled, so each new decision adds a line a rename must migrate; blocks: nothing
-  why ask: api-name — a parsed tag's name is yours before it ships (answer 111 b)
+  why ask: contract — a parsed tag's name is yours before it ships (answer 111 b)
   context: you last saw this card on 2026-09-30 while the decided-alone record was in review · you decide now whether its 19 tag names stand — then: none
   stakes: reversible, wide — every librarian store
   (a) keep them as written — the tags stop being provisional; nothing to migrate — undo: a later rename migrates the stored lines — who: every librarian store
@@ -115,7 +115,7 @@ decision 134: What shape should decision classes take, now that the 19 tags turn
   revised: 2026-10-01T07:38Z — dig into came back (spike 90bc, plan CLEAR after 3 review rounds): the question changes from "keep the 19 spellings?" to "which shape?"; options and recommendation replaced
   what: the shape of the class written on every decided: and why ask: line, which also decides what is raised and what is decided alone; the spellings (OQ1 of the decision-class plan) ride with the answer
   why now: you asked for a better shape (dig into on 134); the 19 keep being written meanwhile, so the migration grows; blocks: nothing
-  why ask: api-name — names stored on every decision line are yours (answer 111 b), and (a) also moves rules you ruled (OQ3 of the plan)
+  why ask: contract — names stored on every decision line are yours (answer 111 b), and (a) also moves rules you ruled (OQ3 of the plan)
   context: you said the 19 tags looked fitted to the data I happened to analyze and asked me to investigate a better shape · you pick the shape, and may rename any word in your reply — then: the 19 each sit on one of four axes (kind of change, stakes, authority, how it came up) and were picked where this store's decisions fell; tested on decisions from other repos, half did not fit; none meant "affects people or services outside the repo", "behaviour others rely on" or "this is your own call", so live changes like a DHCP range fell into a class decided alone
   stakes: reversible, wide — every librarian store, and what every librarian asks you
   (a) two words — a raised line says why it is yours: blocker, one-way, trust, contract (a name, format, interface or behaviour something outside this work relies on), reach (people or services beyond the repo), spend, precedent (a new standing rule, or where something lives with no rule to settle it), your-call, then an open catch-all trade-off; checked in that order, doubt raises as unclassed. A decided line says what changed: words, design, place, scope, reading, cap. 16 words (19 today). It also changes, unless you split them off: promotion keyed on word plus answer; scope merging narrowing with forwarding; design covering config values and dependency bumps — undo: rename back via the same retired-spellings table — who: every librarian store; one sed here, each other librarian rewrites its own tags at Rehydrate
@@ -130,7 +130,7 @@ decision 134: What shape should decision classes take, now that the 19 tags turn
   revised: 2026-10-02T16:46Z — expanded to a block on the operator's word ("144: expand", read as 134): backfilled undo/who on every option
   what: the shape of the class written on every decided: and why ask: line, which also decides what is raised and what is decided alone; the spellings (OQ1 of the decision-class plan) ride with the answer
   why now: you asked for a better shape (dig into on 134); the 19 keep being written meanwhile, so the migration grows; blocks: nothing
-  why ask: api-name — names stored on every decision line are yours (answer 111 b), and (a) also moves rules you ruled (OQ3 of the plan)
+  why ask: contract — names stored on every decision line are yours (answer 111 b), and (a) also moves rules you ruled (OQ3 of the plan)
   context: you said the 19 tags looked fitted to the data I happened to analyze and asked me to investigate a better shape · you pick the shape, and may rename any word in your reply — then: the 19 each sit on one of four axes (kind of change, stakes, authority, how it came up) and were picked where this store's decisions fell; tested on decisions from other repos, half did not fit; none meant "affects people or services outside the repo", "behaviour others rely on" or "this is your own call", so live changes like a DHCP range fell into a class decided alone
   stakes: reversible, wide — every librarian store, and what every librarian asks you
   (a) two words — a raised line says why it is yours: blocker, one-way, trust, contract (a name, format, interface or behaviour something outside this work relies on), reach (people or services beyond the repo), spend, precedent (a new standing rule, or where something lives with no rule to settle it), your-call, then an open catch-all trade-off; checked in that order, doubt raises as unclassed. A decided line says what changed: words, design, place, scope, reading, cap. 16 words (19 today). It also changes, unless you split them off: promotion keyed on word plus answer; scope merging narrowing with forwarding; design covering config values and dependency bumps — undo: rename back via the same retired-spellings table — who: every librarian store; one sed here, each other librarian rewrites its own tags at Rehydrate
@@ -147,7 +147,7 @@ decision 134: What shape should decision classes take, now that the 19 tags turn
   revised: 2026-10-06T07:04Z — backfilled impact
   what: the shape of the class written on every decided: and why ask: line, which also decides what is raised and what is decided alone; the spellings (OQ1 of the decision-class plan) ride with the answer
   why now: you asked for a better shape (dig into on 134); the 19 keep being written meanwhile, so the migration grows; blocks: nothing
-  why ask: api-name — names stored on every decision line are yours (answer 111 b), and (a) also moves rules you ruled (OQ3 of the plan)
+  why ask: contract — names stored on every decision line are yours (answer 111 b), and (a) also moves rules you ruled (OQ3 of the plan)
   context: you said the 19 tags looked fitted to the data I happened to analyze and asked me to investigate a better shape · you pick the shape, and may rename any word in your reply — then: the 19 each sit on one of four axes (kind of change, stakes, authority, how it came up) and were picked where this store's decisions fell; tested on decisions from other repos, half did not fit; none meant "affects people or services outside the repo", "behaviour others rely on" or "this is your own call", so live changes like a DHCP range fell into a class decided alone
   impact: → each decision line names why it is yours and each decided-alone line what changed, 16 words in place of 19 · later: the 19 tags keep being written, so the migration grows · reach: every librarian store and what librarians ask you · undo: rename back via the retired-spellings table
   stakes: reversible, wide — every librarian store, and what every librarian asks you
@@ -163,3 +163,4 @@ decision 134 confirm 2026-10-08: answer 134 was (a) on condition that it fits mo
 shown 134: 2026-10-08T20:02Z chat
 shown 134: 2026-10-09T06:11Z page
 answer 134: a (answer page HvKDfFHjrqNtygDKziv7ta, rev 2026-10-09T06:00:00Z, at 2026-10-09T06:49:46.595Z; read as: (a) the two-word shape, confirming the conditional answer)
+closed 134: rule plugins/dev-flow/skills/librarian-mode/references/decide-alone.md

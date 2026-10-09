@@ -85,7 +85,7 @@ decision 137: Review caps and spend (the build of your 114 answer) hit the 4-rou
   raised: 2026-10-01
   what: whether review caps and spend lands after one more small round or as is
   why now: the review cap; the trivial-docs build (dabd) waits on it (same file)
-  why ask: cap — another round past the cap is yours to grant
+  why ask: spend — another round past the cap is yours to grant
   (a): about 20 minutes and under 1% of weekly quota; lands with no known medium
   (b): lands now; until the follow-up lands, a standalone build of a capped series can miss carried mediums
   (c): nothing lands; dabd keeps waiting
@@ -97,7 +97,7 @@ decision 137: Review caps and spend hit the 4-round review cap with two medium g
   revised: 2026-10-01T07:06Z — backfilled: context:, if left:, round costs:, stakes:; headline trimmed to the question
   what: whether review caps and spend (the build of your answer 114) lands after one more small round or as is
   why now: the review cap; blocks: the trivial-docs build (dabd), which edits the same file
-  why ask: cap — another round past the cap is yours to grant
+  why ask: spend — another round past the cap is yours to grant
   context: you saw this card on 2026-10-01 during the unattended run · you decide whether review caps and spend gets one more round — then: none
   if left: (1) carried findings reach a build only through the librarian's factoring, so a standalone dev-cycle build of a capped series can miss carried mediums (fix: one clause in agent-brief.md's Acceptance); (2) the record-line contract (record-lines.md) does not list the new findings: carried line (fix: one sentence)
   round costs: about 20 minutes and under 1% of weekly quota; another answer from you if it does not settle
@@ -121,7 +121,7 @@ findings:
   2. [low] librarian-mode SKILL.md:228-229 — "a hold in force leaves no round budget" also removes a plan's stop-and-carry during a hold; narrow to "leaves no self-granted build round"
   3. [low] record-lines.md:119-120, agent-brief.md:48 — name only the stop at the cap; bindings.md:237-239 also writes carried findings at the end of a granted plan path; fix: "stops at its cap, or ends a granted plan path"
   4. [low] resume.md:221-225 — S11 NONE re-applies Step 4.3 on resume and can write decided:/findings: carried twice; fix: a decided: line of class cap after the last verdict means 4.3 already ran — take its action, write nothing new
-decided: 2026-10-01T07:17Z ruled-rule-case — one more fix round (6) for the medium the round-5 review left, a one-sentence fix the reviewer states exactly, plus the three one-clause lows, same reviewer resumed to check them; safe: prose in one item's files, under 1% weekly, nothing lands without CLEAR · authority: answer 137 ("the orchestrator should just finish trivial changes when the cap is reached") · reopen: say so and it goes back to a decision
+decided: 2026-10-01T07:17Z cap — one more fix round (6) for the medium the round-5 review left, a one-sentence fix the reviewer states exactly, plus the three one-clause lows, same reviewer resumed to check them; safe: prose in one item's files, under 1% weekly, nothing lands without CLEAR · authority: answer 137 ("the orchestrator should just finish trivial changes when the cap is reached") · reopen: say so and it goes back to a decision
 dispatch: implementer opus medium — resume (fix round 5, under answer 137)
 agent: implementer ae4df26f8668a3cac round 6
 return: implementer DONE 2077da9

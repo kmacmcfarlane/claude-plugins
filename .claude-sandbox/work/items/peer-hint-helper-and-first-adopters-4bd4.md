@@ -3,10 +3,12 @@ id: peer-hint-helper-and-first-adopters-4bd4
 title: peer-hint helper and first adopters
 short_display_name: peer-hint helper
 type: feature
-status: todo
+status: doing
 priority: 2
+owner: Kyle-McFarlane@2d49f8460283
+claimed: 2026-10-09T07:47Z
 created: 2026-10-08
-updated: 2026-10-08
+updated: 2026-10-09
 refs:
   - spike-how-much-inter-plugin-dependency-i-72ef
 ---
@@ -18,3 +20,8 @@ Follow-up F10 from the plugin-dependency spike (72ef), 2026-10-08. Acceptance: a
 - next: —
 - blocked: —
 - learned: —
+
+## Notes
+dispatch: planner opus high — plan (feature; F10 of the 72ef spike; answers 190 a, 191 a; doctrine landed with bdff), scratch scratchpad/4bd4-plan/
+- 2026-10-09 claimed by Kyle-McFarlane@2d49f8460283
+agent: planner a6717d91dad7541ab

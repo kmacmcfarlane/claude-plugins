@@ -40,16 +40,23 @@ repo; link here.
    plugin whose stated aim *is* that behavior. Knowledge skills never carry hooks as
    passengers.
 4. **Dependencies: soft by default, declared, directional — hard only when it cannot be
-   otherwise.** A dependency degrades gracefully when the other side is absent (the
-   work-items ↔ backlog bridge is the model), is declared in the plugin description and the
-   catalog, and points at a named support plugin or an external repo. The one exception is
-   a **hard** dependency, which the framework installs with the dependent and without which
-   it disables the dependent. A plugin may declare one only when it has no function at all
-   without the other, the edge stays within this marketplace, the declaration is in its
-   `plugin.json` `dependencies` (never its `marketplace.json` entry, which the framework
-   also reads), and the catalog marks it (hard). A plugin that merely reads another's data
-   is never hard: it keeps a fallback, because a hard edge would switch it off whenever the
-   support plugin is off. Never undocumented peer prose-coupling.
+   otherwise.** A soft dependency **degrades, discloses, and hints once** when the other side
+   is absent. *Degrade:* the plugin keeps doing its job without the peer. *Disclose:* when
+   that changes what the user gets, the run's result says what was skipped, in one plain
+   clause; a run whose result is unchanged says nothing. *Hint once:* the first time the loss
+   happens in an attended, top-level session, the plugin names the peer, what it adds and its
+   install command, in one line: once per install from a hook, at most once per session from
+   a skill. Never at install, never because a peer is merely absent, never a question or a
+   dialog, never mid-flow, and never when the user has switched hints off. The mechanics are
+   in [CLAUDE.md](CLAUDE.md) § Conventions. A dependency is declared in the plugin
+   description and the catalog, and points at a named support plugin or an external repo.
+   The one exception is a **hard** dependency, which the framework installs with the
+   dependent and without which it disables the dependent. A plugin may declare one only when
+   it has no function at all without the other, the edge stays within this marketplace, the
+   declaration is in its `plugin.json` `dependencies` (never its `marketplace.json` entry,
+   which the framework also reads), and the catalog marks it (hard). A plugin that merely
+   reads another's data is never hard: it keeps a fallback, because a hard edge would switch
+   it off whenever the support plugin is off. Never undocumented peer prose-coupling.
 5. **Names are API.** Names end up in plugin data dirs, absolute paths inside `settings.json`,
    hook state dirs, and muscle memory. Choose for decades. See *Naming practices* below.
 6. **New aim → new plugin.** Never stretch an existing description to cover something new.
@@ -79,10 +86,10 @@ dependency is marked (hard) here.
 | …to survive the finite context window (gate, checkpoint, rehydration, token-spend report) | `context-guard` | **current** | `statusline-hub` (soft; exact depth from the sensor record it writes, when it owns the status-line slot or tees from another renderer, and the weekly reading `usage-report`'s item mode shows a share of the week from; installing `statusline` brings it), `work-items` (soft; the checkpoint fills `items:` and writes open-item residue with `wi` when a store exists; with none, both are skipped) |
 | …an always-on status line (context left — the session's and each sub-agent's, in the agent panel — plan usage, model, session name) | `statusline` | **current** | `statusline-hub` (hard; the hub owns the status-line slot, and the footer draws as one of its display hooks), `context-guard` (soft; epoch and checkpoint thresholds in the gauge when installed) |
 | …to share the status-line slot, so the data Claude Code hands the status line reaches the tools that read it whatever renders the line (the hub owns the slot and runs the hooks other plugins register, or its `tee` feeds the record from another renderer) | `statusline-hub` | **current** | `statusline` (soft; its footer is the hub's first display hook, and the hub takes over a slot an earlier `statusline` version installed once that footer has registered) |
-| …a plan before you code: investigate → reviewed plan → verified implementation, research that lands as sourced findings or a curated knowledge base, and a standing librarian that takes custody of a repo's work (files, dispatches, reviews, lands) | `dev-flow` | **current** | `work-items` (soft; `librarian-mode` and `dev-cycle` find `wi` via the repo tree, or the installed plugin's copy; `dev-cycle` runs without it on a scratchpad record; research, `deep-investigation` and `chain-of-verification` runs record their dispatches on a work item, and without a store in their brief, strategy doc or report), `statusline-hub` (soft; when a `model: fable` pin cannot run, `librarian-mode` and `dev-cycle` name the rate-limit reset time in the question to the operator, `librarian-mode`'s quota sense reads its five-hour and weekly usage, `dev-cycle`'s guard on a round past the fourth review reads the same weekly usage through the quota sense (without a reading those rounds are asked), and the `research` skills read its usage windows to size a run, from the sensor record it writes; without it the quota sense has a reading only from a live `claude-analytics` sink, and otherwise reports no signal; installing `statusline` brings it), `claude-analytics` (external, soft; the quota sense reads its sampler's sink, `${CLAUDE_CONFIG_DIR}/claude-analytics/samples/`, as usage history when it is live, and samples the sensor record itself into `${CLAUDE_CONFIG_DIR}/claude-kit/librarian/` without it), `context-guard` (soft; `investigate` offers a checkpoint-then-implement path when its checkpoint skill is present; the `research` skills checkpoint before synthesis when it is; `librarian-mode` answers its gate advisories with a checkpoint and weighs its manifest and ledger when it rehydrates; that pin question reads reset times from its older state record; `dev-cycle` reads its `usage-report`'s item spend at every review to hold each phase to its spend budget; without it the fourth review is the cap), `kit-dev` (soft; the `investigate` and `implement` retrospectives hand findings to its user-invoked `update-kit`; without it the findings stand as the record), `create-repo` (soft; `investigate`'s scoping gate points the user at it when the target repo does not exist yet), `sandbox` (soft; `investigate` and `deep-investigation` point to its skill for container mounts, and `investigate`'s series move follows its sidecar commit rule), `operator-interaction` (soft; `librarian-mode` and `dev-cycle` put their decision-channel decisions to the operator per its `decisions` skill, the research skills put their intensity and round asks per its `decisions` skill, and `librarian-mode` and `dev-cycle` name items in their Reports per its `plain-names` skill, and `librarian-mode` records the shown and seen times its `decision-page` skill hands over, when it is installed; without it, the librarian's numbered `decisions needed:` list, dev-cycle's own channel and the research skills' plain lettered ask stand, and their templates' `<plain name> (<tag>)` stands as the naming rule) |
+| …a plan before you code: investigate → reviewed plan → verified implementation, a foundation session for a new project (requirements, architecture and a phased plan behind review gates), research that lands as sourced findings or a curated knowledge base, and a standing librarian that takes custody of a repo's work (files, dispatches, reviews, lands) | `dev-flow` | **current** | `work-items` (soft; `librarian-mode` and `dev-cycle` find `wi` via the repo tree, or the installed plugin's copy; `dev-cycle` runs without it on a scratchpad record; `foundation` keeps its run, holds and filed features on one, and without a store keeps them in the series and lists the features to file; research, `deep-investigation` and `chain-of-verification` runs record their dispatches on a work item, and without a store in their brief, strategy doc or report), `statusline-hub` (soft; when a `model: fable` pin cannot run, `librarian-mode` and `dev-cycle` name the rate-limit reset time in the question to the operator, `librarian-mode`'s quota sense reads its five-hour and weekly usage, `dev-cycle`'s guard on a round past the fourth review reads the same weekly usage through the quota sense (without a reading those rounds are asked), and the `research` skills read its usage windows to size a run, from the sensor record it writes; without it the quota sense has a reading only from a live `claude-analytics` sink, and otherwise reports no signal; installing `statusline` brings it), `claude-analytics` (external, soft; the quota sense reads its sampler's sink, `${CLAUDE_CONFIG_DIR}/claude-analytics/samples/`, as usage history when it is live, and samples the sensor record itself into `${CLAUDE_CONFIG_DIR}/claude-kit/librarian/` without it), `context-guard` (soft; `investigate` offers a checkpoint-then-implement path when its checkpoint skill is present; the `research` skills checkpoint before synthesis when it is; `librarian-mode` answers its gate advisories with a checkpoint and weighs its manifest and ledger when it rehydrates; that pin question reads reset times from its older state record; `dev-cycle` reads its `usage-report`'s item spend at every review to hold each phase to its spend budget; without it the fourth review is the cap), `kit-dev` (soft; the `investigate` and `implement` retrospectives hand findings to its user-invoked `update-kit`; without it the findings stand as the record), `create-repo` (soft; `investigate`'s scoping gate and `foundation`'s Frame point the user at it when the target repo does not exist yet), `sandbox` (soft; `investigate` and `deep-investigation` point to its skill for container mounts, and `investigate`'s series move follows its sidecar commit rule), `operator-interaction` (soft; `librarian-mode` and `dev-cycle` put their decision-channel decisions to the operator per its `decisions` skill, the research skills put their intensity and round asks per its `decisions` skill, `foundation` puts its questions and gate decisions per its `decisions` skill, and `librarian-mode` and `dev-cycle` name items in their Reports per its `plain-names` skill, and `librarian-mode` records the shown and seen times its `decision-page` skill hands over, when it is installed; without it, the librarian's numbered `decisions needed:` list, dev-cycle's own channel and the research skills' plain lettered ask stand, and their templates' `<plain name> (<tag>)` stands as the naming rule) |
 | …repo-durable work items and a pluggable work source | `work-items` | **current** | `statusline-hub` (soft; `work-review` adds a quota line and weighs its advice by the five-hour and weekly usage in the sensor record it writes; without it the review says it has no quota reading), `operator-interaction` (soft; a decision `work-review` puts to the operator follows its `decisions` skill, and its overview names items per its `plain-names` skill, when loaded; without it, a numbered list, and the review's own plain-words rule) |
 | …isolated execution for agent sessions (containers, and the checkout/worktree convention) | `sandbox` | **current** | claude-sandbox repo (external) |
-| …unattended agent loops over a backlog ("ralph") | `ralph` | **current** | claude-sandbox repo (external; its `init-ralph` seeds `backlog.py`, and the loops run in its containers), `sandbox` (soft; its skill bootstraps and troubleshoots those containers), `work-items` (soft; the `wi` ↔ `backlog.yaml` bridge, when both stores are present) |
+| …unattended agent loops over a backlog ("ralph") | `ralph` | **current** | claude-sandbox repo (external; its `init-ralph` seeds `backlog.py`, and the loops run in its containers), `sandbox` (soft; its skill bootstraps and troubleshoots those containers), `work-items` (soft; the `wi` ↔ `backlog.yaml` bridge, `wi export/import --format backlog-yaml`, two explicit `wi` commands run on demand) |
 | …to start a new repo for a thread of work, with an agent session launched on it | `create-repo` | **current** | claude-sandbox repo (external; `init` bootstraps the repo's `.claude-sandbox/` and the launch command runs the session in its container; without it the repo is created all the same and the command is plain `claude`), `kit-dev` (soft; `new-project-from-template` scaffolds a claude-templates template as the goal), `sandbox` (soft; its skill troubleshoots an `init` or launch that fails), `dev-flow` (soft; the launched session runs the first investigation with its `investigate` skill when installed, and investigates directly without it), `operator-interaction` (soft; a critical doubt over a `.gitignore` line is put to the operator per its `decisions` skill when loaded; without it, a plain question) |
 | …your agents to put what they need from you in a form you can act on where it appears | `operator-interaction` | **current** | claude.ai Artifacts (external, soft; `decision-page` publishes its answer page there with the `db` capability, and a docs connector serves its tick-box fallback; without either it puts the decisions in chat), node (external, soft; `decision-page`'s pre-publish check; without it the check is by reading) |
 | …to maintain this kit itself (skill authoring, upstream sync, templates) | `kit-dev` | **current** | claude-templates repo (external; `new-project-from-template` scaffolds from it, `update-kit` syncs to it), claude-sandbox repo (external; `new-project-from-template` bootstraps with its `init-ralph`, `update-kit` syncs to it), claude-expertise repo (external; `update-kit` syncs to it), `create-repo` (soft; `new-project-from-template` points at it for a bare repo with a session launched on it) |
@@ -122,8 +129,11 @@ Every plugin in the aim→home table now exists on disk, so the home the table n
 home you write to. If a future phase ever plans a move again, write to the **current** home
 until that phase lands — a planned destination is never a place to put files today.
 
-Cross-plugin cooperation follows principle 4. The work-items ↔ backlog bridge (activates
-only when both stores are present, degrades silently otherwise) is the pattern to copy.
+Cross-plugin cooperation follows principle 4. The work-items ↔ backlog bridge is the pattern
+to copy for its coupling: it is two explicit commands (`wi export/import --format
+backlog-yaml`) with no runtime link to `ralph`, and they fail loudly on missing input rather
+than degrade. That is no conflict with principle 4: an explicit command the user ran is not a
+degraded path, so its loud failure is the honest answer, not a lost result.
 
 ## Naming practices
 
@@ -232,7 +242,9 @@ A plan before you code. Investigate a problem into a reviewed plan series under
 `.claude-sandbox/investigations/<slug>/`, then carry that series to verified code — by hand,
 or through `dev-cycle`, which takes one change from plan to merge through sub-agents (a
 routed implementer in its own worktree, a review gate with a capped fix loop, the repo's
-checks, a local merge on the user's say-so). Plus the research and verification techniques
+checks, a local merge on the user's say-so). For a new project or a large new aim,
+`foundation` comes first: requirements, architecture and a phased plan, each behind a review
+gate, whose features `dev-cycle` then builds. Plus the research and verification techniques
 that feed it — including a `research` family that turns any question into sourced, verified
 findings and, where a repo keeps one, a curated knowledge base — and a standing librarian that takes custody of a repo's work: it files every
 request, factors it, and dispatches each piece through `dev-cycle` with its own bindings
@@ -243,6 +255,7 @@ request, factors it, and dispatches each piece through `dev-cycle` with its own 
 | `investigate` | Research a problem and write a reviewed plan to an investigation series |
 | `implement` | Carry out an investigation series — plan, build, verify, record the outcome |
 | `dev-cycle` | Carry one change — a work item, a plan, or the conversation — from plan to merge through sub-agents: route by model tier, build in a worktree, review with a capped fix loop, run the checks, land |
+| `foundation` | Lay a new project's or a large new aim's foundation before its first feature — requirements, architecture and a phased plan, each phase ending in a review gate, with named moves to reopen a phase, hold a question, factor an aspect out or probe ahead |
 | `deep-investigation` | Multi-agent research fan-out — strategy doc, lanes on a cheap model, one-pass synthesis |
 | `research` | Research a question into sourced, verified findings — intensity with its cost stated, lanes on a cheap model, a verifier that is not the author, one synthesis, landed as a reply, report, run record or knowledge-base note |
 | `research-deep` | The research skill at deep or exhaustive intensity — rounds, a gap gate, an adversarial lane, a forked synthesis |
@@ -256,6 +269,7 @@ Which dev-flow skill:
 | Skill | Use it when… | Not when… |
 |---|---|---|
 | `investigate` | a scoped bug or feature needs a plan: one session reads the code, settles requirements with you, writes the series | the question is a broad landscape (`deep-investigation`) |
+| `foundation` | a new project, or a large new aim, has no requirements yet: requirements, architecture and a phased plan, each gated by a checklist, a fresh reviewer and your approval where it is yours | the work is a scoped bug or feature (`investigate`), or could be described in one sentence |
 | `deep-investigation` | a broad, open-ended question needs many sources: recon, a strategy doc, cheap-model lanes against a fixed contract, one synthesis | the problem is a scoped bug or feature (`investigate`) |
 | `research` | a question needs a sourced answer, kept or not: quick on its own, or lanes at a stated cost, verified and landed where the repo says | it is a bug or feature in this repo (`investigate`), or a fan-out writing a series' plan (`deep-investigation`) |
 | `research-deep` | the question is too broad for one round and the operator has said so | the question is narrow (`research`), or the fan-out feeds an investigation series (`deep-investigation`) |
@@ -289,7 +303,8 @@ model moves a file across models. Eleven are the dev cycle's role workers:
 | `cross-checker-deep` | fable, xhigh | the same at xhigh, at the stages routing names |
 
 `dev-cycle` and `librarian-mode` dispatch them by the `dev-cycle` skill's model routing, with
-the model passed on every call; none is for direct use. A session that has not loaded an agent
+the model passed on every call, and a standalone `foundation` run dispatches `reviewer`
+at each phase gate; none is for direct use. A session that has not loaded an agent
 file yet (it needs a plugin update and a restart) falls back to `general-purpose` with the
 routed model, at the session's own effort. A dispatch under an operator's effort pin asks
 first; one under a model pin alone falls back the same way, since the routed model keeps
@@ -313,7 +328,11 @@ present, and degrades to plain investigation series when it is not; `dev-cycle` 
 its record in the session scratchpad. A research, `deep-investigation` or
 `chain-of-verification` run that dispatches an agent files a `spike` item tagged
 `research-run` (or adopts one named by `--item`) and records its dispatches on it; without a
-store, or inside a sub-agent, the lines go in the run's brief, strategy doc or report. `librarian-mode` drives `wi` throughout, found through
+store, or inside a sub-agent, the lines go in the run's brief, strategy doc or report.
+A `foundation` run keeps one item for the run, its gate decisions and holds as `decision N:`
+lines, and files the plan's features under it after the plan gate; without a store, the
+series' Foundation block holds the holds and the Report lists the features to file.
+`librarian-mode` drives `wi` throughout, found through
 the repo's own `plugins/*/skills/work-items` tree or the installed plugin's copy; without
 either it stops at start and says to install `work-items`. Soft dependency on
 `statusline-hub`: when `librarian-mode` or `dev-cycle` cannot dispatch a `model: fable`
@@ -334,8 +353,8 @@ fourth-review cap.
 Without it none of these fire. Soft dependency on `kit-dev`: the `investigate` and
 `implement` retrospectives hand their findings to its user-invoked `update-kit`; without
 it the findings stand as the record. Soft dependency on `create-repo`: `investigate`'s
-scoping gate points the user at it when the target repo does not exist yet; without it
-the gate names the need and the user creates the repo.
+scoping gate and `foundation`'s Frame point the user at it when the target repo does not
+exist yet; without it they name the need and the user creates the repo.
 Soft dependency on `sandbox`: `investigate` and `deep-investigation` point to its skill
 for the container `mounts:` cascade, and `investigate`'s series move follows its sidecar
 commit rule; without it the steps stand as written. Soft dependency on `operator-interaction`:
@@ -350,6 +369,8 @@ line and in the librarian's tables. Without it, the librarian keeps its numbered
 `research-deep`, `research-refine`, `research-prune`, `deep-investigation`) load its
 `decisions` skill the same way and put their intensity, round and other asks per it, as
 text, never a dialog; without it, they put each ask as a plain lettered list in prose.
+`foundation` loads its `decisions` skill the same way for its question rounds and gate
+decisions; without it, a numbered list for questions and a plain lettered list for a gate.
 
 ### work-items
 
@@ -371,8 +392,9 @@ document itself is the registry — there is no machine-readable descriptor, by 
 
 The `backlog.yaml` provider's own skills (`backlog-yaml`, `backlog-entry`,
 `backlog-grooming`) live in the `ralph` plugin; the bridge
-(`wi export/import --format backlog-yaml`) works regardless, and degrades silently when only
-one store is present.
+(`wi export/import --format backlog-yaml`) works without that plugin: two explicit commands
+with no runtime link to `ralph`, which fail loudly, never silently, when there is no `wi`
+store or when `import`'s input file or YAML parser is missing.
 
 Tests: `cd plugins/work-items/skills/work-items && python3 -m unittest discover -s tests -q`.
 
@@ -591,7 +613,7 @@ claude-sandbox repo, not shipped here). Soft dependency on `sandbox`: its skill 
 and troubleshoots those containers, but ralph's skills never call it, so it is not declared
 in `plugin.json`. Soft dependency on a work source through the **work-source interface**
 documented in `work-items` — `backlog.yaml` is the default provider for unattended runs, and
-the `wi` bridge activates only when both stores are present.
+the `wi` bridge is two explicit `wi` commands, run on demand, with no runtime link from ralph.
 
 ### create-repo
 

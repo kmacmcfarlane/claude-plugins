@@ -358,6 +358,54 @@ class TestModeListAgrees(unittest.TestCase):
                       self.read("skills/checkpoint/references/handoff-format.md"))
 
 
+class TestStep0ActsOnDrafts(unittest.TestCase):
+    """9652 (decision 196 (a)): Step 0 drafts its three answers, acts on them
+    and echoes them in one line of the close, asking first, as text and never
+    as a dialog, only at a fork on a question it drafted."""
+
+    SKILL = os.path.join(os.path.dirname(HOOKS), "skills/checkpoint/SKILL.md")
+
+    def setUp(self):
+        with open(self.SKILL, encoding="utf-8") as fh:
+            self.skill = fh.read()
+        self.fm = self.skill.split("\n---", 1)[0]
+        body = self.skill.split("## Step 0", 1)[1]
+        self.step0 = body.split("\n## Step 1", 1)[0]
+        self.flat = " ".join(self.step0.split())  # line breaks fall anywhere
+        self.step7 = self.skill.split("## Step 7", 1)[1].split("\n## Rules", 1)[0]
+
+    def test_reply_line_is_namespaced(self):
+        self.assertIn("/context-guard:checkpoint <argument> — 2:", self.step0)
+        self.assertNotIn("`/checkpoint <argument>", self.step0)
+
+    def test_no_dialog(self):
+        self.assertNotIn("AskUserQuestion", self.step0)
+        allowed = self.fm.split("allowed-tools:", 1)[1].split("\n")[0]
+        self.assertNotIn("AskUserQuestion", allowed)
+
+    def test_forks_named(self):
+        for s in ("only on a question this step drafted",
+                  "an agent of this session is in flight",
+                  "an inventory line is uncertain",
+                  "REFUSED line or a hold",
+                  "a stage boundary, a finished thread",
+                  "`compact_deferred` set with no checkpoint recorded this epoch",
+                  "is not one the operator's own words named"):
+            self.assertIn(s, self.flat, s)
+
+    def test_echo_line(self):
+        self.assertIn("Acted on:", self.step0)
+        self.assertIn("Acted on:", self.step7)
+        self.assertIn("argument as given", self.step0)
+        self.assertIn("run your own /compact", self.step0)
+        self.assertIn("only question 3 open, which it re-drafts", self.step0)
+        self.assertIn("Or, for the window: run your own /compact", self.step0)
+        # the argument's own answers are stripped before a line is built,
+        # at a fork and in the echo's override
+        self.assertGreaterEqual(
+            self.flat.count("its own ` — 2:` / ` — 3:` parts stripped"), 2)
+
+
 class TestLegacyArmMatchesPreStore(unittest.TestCase):
     """8cc2-F3b-1's regression guard (06 § Acceptance scoping): for an
     UNMIGRATED repo — a repo HANDOFF.md and no store manifest anywhere — the

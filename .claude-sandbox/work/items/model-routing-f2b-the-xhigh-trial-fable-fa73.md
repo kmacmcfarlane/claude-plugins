@@ -47,8 +47,8 @@ findings:
   11. [nit] review-brief.md:10 — cross-checker-deep lacks dev-flow: prefix
   12. [nit] model-routing.md:650 — example decision line lacks per-option impact
   13. [nit] model-routing.md:468 — below the reserve only bump units excluded; selection bias
-decided: 2026-09-30 reply-reading — finding 1: an offer never holds the build; 127 a's card said deep items keep moving. The plan's build proceeds while an offer is open or deferred; an accepted plan-stage check runs when headroom allows and its findings enter the build's fix loop before landing, or become a follow-up item after it · authority: answer 127 · reopen: say "hold builds on open offers"
-decided: 2026-09-30 reply-reading — the five-hour window's reserve does not trigger the step-down; "below the reserve" is the weekly window (127 a's grant stops at the 15% weekly reserve; the five-hour default reserve would trip it constantly) · authority: answers 88, 127 · reopen: say "both windows"
+decided: 2026-09-30 reading — finding 1: an offer never holds the build; 127 a's card said deep items keep moving. The plan's build proceeds while an offer is open or deferred; an accepted plan-stage check runs when headroom allows and its findings enter the build's fix loop before landing, or become a follow-up item after it · authority: answer 127 · reopen: say "hold builds on open offers"
+decided: 2026-09-30 reading — the five-hour window's reserve does not trigger the step-down; "below the reserve" is the weekly window (127 a's grant stops at the 15% weekly reserve; the five-hour default reserve would trip it constantly) · authority: answers 88, 127 · reopen: say "both windows"
 dispatch: implementer opus medium — resume
 agent: implementer a61d37fcc4f73c086 round 2
 return: implementer DONE 12ee2cc
@@ -62,7 +62,7 @@ findings:
   2. [medium] model-routing.md:248-250, 289-293 — accepted plan-stage/estate-wide findings "enter the build's next fix round" but nothing hands them to the build's record; no state opens a fix round from a fresh CLEAR; CLEARed-not-merged and not-started cases open
   3. [low] fix-loop.md:45-51 — "the last agent: reviewer line" can pick the author-rule opus stand-in rider on a fable-pinned item
   4. [low] resume.md:108-112 with :179 — a lost cross-check rider is never probed or reported on resume
-decided: 2026-09-30 reply-reading — finding 2: an accepted check's findings that arrive before the build's CLEAR are written onto the build item as a findings: block and open its next fix round (counted toward the cap); any that arrive after the build's CLEAR — merged or not, or before the build starts on a plan already closed — become a follow-up item; no new resume state · authority: answer 127, ruling A · reopen: say "hold the landing for late findings"
+decided: 2026-09-30 reading — finding 2: an accepted check's findings that arrive before the build's CLEAR are written onto the build item as a findings: block and open its next fix round (counted toward the cap); any that arrive after the build's CLEAR — merged or not, or before the build starts on a plan already closed — become a follow-up item; no new resume state · authority: answer 127, ruling A · reopen: say "hold the landing for late findings"
 dispatch: implementer opus medium — resume
 agent: implementer a61d37fcc4f73c086 round 3
 return: implementer DONE be5b465

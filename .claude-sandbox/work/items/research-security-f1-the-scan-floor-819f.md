@@ -99,7 +99,7 @@ decision 136: The research scan floor (the first research-security build) hit th
   raised: 2026-10-01
   what: whether the scan floor lands after one more small round or as is
   why now: the review cap; the deep-investigation parity build (1ffd) waits on it
-  why ask: cap — another round past the cap is yours to grant
+  why ask: spend — another round past the cap is yours to grant
   (a): about 20-30 minutes and roughly 1% of weekly quota; lands clean — undo: n/a — who: research runs
   (b): lands tonight; a hostile lane can still force a slow scan that holds the run (fail-safe) until the follow-up lands
   (c): nothing lands; 1ffd keeps waiting
@@ -111,7 +111,7 @@ decision 136: The research scan floor hit the 4-round review cap with one medium
   revised: 2026-10-01T07:06Z — backfilled: context:, if left:, round costs:, stakes:; headline trimmed to the question
   what: whether the scan floor (the first research-security build) lands after one more small round or as is
   why now: the review cap; blocks: the deep-investigation parity build (1ffd)
-  why ask: cap — another round past the cap is yours to grant
+  why ask: spend — another round past the cap is yours to grant
   context: you saw this card on 2026-10-01 during the unattended run · you decide whether the scan floor gets one more round — then: none
   if left: two markup patterns (comment and link) go quadratic on a hostile file of unclosed openers, so the docs' "every pass is linear" is false; it fails safe (a timeout holds the run, nothing leaks); all else left is low
   round costs: about 20-30 minutes and roughly 1% of weekly quota; another answer from you if it does not settle
@@ -138,7 +138,7 @@ decision 138: The research scan floor's granted round fixed the slow comment and
   raised: 2026-10-01T07:22Z
   what: whether the scan floor (the first research-security build) gets a sixth review round to close a newly found stall
   why now: the granted round 5 ended NEEDS_CHANGES; blocks: the deep-investigation parity build (1ffd), and through it the confinement hook (20d8)
-  why ask: cap — you said to ask for more rounds when I can justify them (answer 136)
+  why ask: spend — you said to ask for more rounds when I can justify them (answer 136)
   context: you granted one round past the cap on 2026-10-01 to bound two slow patterns · you decide whether a newly found stall in three other patterns gets one more round — then: none
   if left: a 247-byte string in any fetched page can make the scan run for minutes to hours, and the research run's scan commands carry no timeout, so the run stalls instead of failing closed; nothing leaks. Also low: the new bounds let a split phrase hide behind a nested comment opener or 1000+ characters of comment or link text (the linear comment loop closes the comment half)
   round costs: about 30-40 minutes and roughly 1% of weekly quota (weekly at 58%); your attention again only if this round does not clear
@@ -166,7 +166,7 @@ decision 143: The scan floor's sixth review found two more mediums — three mor
   raised: 2026-10-02T07:46Z
   what: whether the research scan floor (819f) gets a seventh review round
   why now: the round you granted (answer 138) ended with changes still needed; blocks: the deep-investigation parity build (1ffd), and through it the confinement hook (20d8)
-  why ask: cap — you asked me to ask for more rounds when I can justify them (answer 136)
+  why ask: spend — you asked me to ask for more rounds when I can justify them (answer 136)
   context: you granted round 6 to fix three stalling patterns; they are fixed · you decide whether the two new mediums get one more round — then: none
   if left: (1) three more patterns stall on a 22-120 KB hostile string; the run now fails closed under the 2-minute timeout, but the whole run is held instead of stripping the bad lines; (2) a tag like <system-reminder foo> with one bare word inside slips past the control-tag hold (true in every round so far), and this round's change also let a quoted value slip through
   round costs: about 40 minutes and roughly 1% of weekly quota; your attention again if this round does not clear — each fresh pass so far has found new slow patterns, which is why (a) adds a test over every pattern instead of fixing them one at a time
@@ -194,7 +194,7 @@ decision 144: The scan floor's seventh review confirmed every stall fixed, but f
   raised: 2026-10-02T17:08Z
   what: whether the research scan floor (819f) gets an eighth review round, and whether bypass-hunting stops gating the landing after it
   why now: the round you granted (answer 143) ended with changes still needed; blocks: the deep-investigation parity build (1ffd), and through it the confinement hook (20d8)
-  why ask: cap — you asked me to ask for more rounds when I can justify them (answer 136)
+  why ask: spend — you asked me to ask for more rounds when I can justify them (answer 136)
   context: you granted round 7 for three more stalls plus a timing test over every pattern; the stalls are fixed and the test caught a slow pattern on its first run · you decide whether one bypass gets one more round, and whether later bypass findings stop holding the landing — then: none
   if left: an injected tag written <system-reminder a="<"> (6 extra characters) escapes the control-tag hold, so a hijacked page could carry instructions past the floor; also low: ordinary prose like "context < system prompt size" now holds a whole run, and the timing test could miss a slow pattern with a small constant
   round costs: measured on this item — a fix round about $6 of list-price spend (about 0.16% of a week) and 10-20 minutes; my earlier cards' "about 1% of weekly, 30-40 minutes" overstated it; your attention again only if (a)'s round does not clear
@@ -220,7 +220,7 @@ findings:
   1. [medium, regression] scan-findings.py:125 — a glued plain-word opener needs a > within 300 chars, so '<system data="'+400x+'">' and '<system '+400x+'>' no longer hold (held through f818c50); fix: add the attribute parse back as a lookahead alternative: (?=[/>]|$|\s[^\n]{0,300}?>|_ATTRS\s*(?:/\s*)?>|\s+[\w:-]+\s*=[^<>\n]*$) (checked: holds the long forms and finding 2's; clean on <path>, <systems>, the two prose sentences, 'The ratio 3<instructions count is fine'; 500 KB repeats 0.07-0.11 s; fuzz linear)
   2. [low, regression] scan-findings.py:125 — 'text <system a="b"' and similar at end of line held only at f818c50; finding 1's fix restores them
   3-5. [follow-up] new false holds from the 300-char heuristic; the spaced opener's <-in-value bypass; markup name + punctuation — filed as research-scan-floor-bypass-and-false-hol-4c3d
-decided: 2026-10-02T22:29Z ruled-rule-case — one more fix round for the round-8 regression (a closed plain-word tag with 300+ characters of attributes stopped holding, held in every earlier round), with the reviewer's checked one-line fix, then land; the further bypass forms and false holds go to research-scan-floor-bypass-and-false-hol-4c3d · authority: answer 144 ("one more round, then land", bypasses as follow-ups) — a regression introduced by the granted round is part of finishing it, not a new bypass · reopen: say so and it comes back as a decision
+decided: 2026-10-02T22:29Z cap — one more fix round for the round-8 regression (a closed plain-word tag with 300+ characters of attributes stopped holding, held in every earlier round), with the reviewer's checked one-line fix, then land; the further bypass forms and false holds go to research-scan-floor-bypass-and-false-hol-4c3d · authority: answer 144 ("one more round, then land", bypasses as follow-ups) — a regression introduced by the granted round is part of finishing it, not a new bypass · reopen: say so and it comes back as a decision
 dispatch: implementer opus medium — resume (fix round 8: round-8 1 and 2 only)
 agent: implementer a33ea65041c3dc364 round 9
 return: implementer DONE 6cb7876

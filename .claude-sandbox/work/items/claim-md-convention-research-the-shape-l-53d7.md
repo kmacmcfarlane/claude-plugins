@@ -34,11 +34,11 @@ baseline: plan review 1 — a6db4276282b7ffa553a17890ec8d9cd1b3edaf4b42eed59dd73
 dispatch: reviewer opus high — plan review 1
 decision 186: Where should the CLAIM.md skill live? — options: (a) a new plugin [recommended] | (b) work-items | (c) dev-flow | (d) kit-dev | (z) decide later
   raised: 2026-10-08T06:41Z
-  why ask: placement — a new plugin and its catalog row are the operator's (principle 6; the operator asked to discuss it)
+  why ask: precedent — a new plugin and its catalog row are the operator's (principle 6; the operator asked to discuss it)
   impact: Effect → step 2 (the skill build) can start in its home · Wait: blocks step 2 · reach: the marketplace catalog · undo: moving a plugin later renames installs · cost: none
 decision 187: What should the plugin and the skill be called? — options: (a) plugin ownership, skill claim-md, file CLAIM.md [recommended] | (b) plugin claims, skill claim | (z) decide later
   raised: 2026-10-08T06:41Z
-  why ask: api-name — plugin and skill names are what users install and invoke (principle 5)
+  why ask: contract — plugin and skill names are what users install and invoke (principle 5)
   impact: Effect → fixes the names the build ships · Wait: blocks step 2 · reach: every repo that installs it · undo: a rename breaks installs · cost: none
 decision 188: Approve the proposed CLAIM.md shape (five required parts, optional sections, the defining side holds a boundary's text, every change approved by the operator, the CLAUDE.md pointer)? — options: (a) approve as drafted [recommended] | (b) approve with changes (say which) | (z) decide later
   raised: 2026-10-08T06:41Z
@@ -46,7 +46,7 @@ decision 188: Approve the proposed CLAIM.md shape (five required parts, optional
   impact: Effect → the shape the skill writes and checks in every repo · Wait: blocks step 2 · reach: every repo's CLAIM.md · undo: easy before step 3 seeds repos; costly after · cost: none
 decision 189: When a repo has both a CLAIM.md "Not ours" list and a librarian "Not owned:" line (from the unlanded scope-interview work), which wins? — options: (a) CLAIM.md is the authority; "Not owned:" must agree, and the check flags a mismatch [recommended] | (b) keep both independent | (z) decide later
   raised: 2026-10-08T06:41Z
-  why ask: rule-change — it sets which file decides ownership estate-wide
+  why ask: precedent — it sets which file decides ownership estate-wide
   impact: Effect → one source of truth for "not ours" · Wait: blocks step 2's wording · reach: CLAIM.md and the librarian section in every repo · undo: easy before the scope-interview work lands · cost: none
 agent: reviewer a124f7bce7518dd69
 verdict: plan review 1 NEEDS_CHANGES (must-fix 11 at medium: per-interface definers, substance-only approval, external owners, seed done-when, MOVED? column, undeclared dev-flow soft dep, unfair framing of 186, 187 and 189, the splitting question unanswered, consult triggers untested; lows 12-16)
@@ -91,3 +91,10 @@ answer 186: a (answer page HvKDfFHjrqNtygDKziv7ta, rev 2026-10-09T06:00:00Z, at 
 answer 187: a (answer page HvKDfFHjrqNtygDKziv7ta, rev 2026-10-09T06:00:00Z, at 2026-10-09T06:33:53.354Z)
 answer 188: c (answer page HvKDfFHjrqNtygDKziv7ta, rev 2026-10-09T06:00:00Z, at 2026-10-09T06:34:12.181Z)
 answer 189: d — "You aren't necessarily going to use both plugins together, although I do, so they should stay separate" (answer page HvKDfFHjrqNtygDKziv7ta, rev 2026-10-09T06:00:00Z, at 2026-10-09T06:39:15.123Z; read as: (d) keep both lists and compare by name, because the plugins are installed independently)
+dispatch: planner opus high — step 2 build plan (04) on answers 186 a, 187 a, 188 c, 189 d; scratch scratchpad/53d7-build-plan/
+agent: planner a514507009f7c1aa2
+return: DONE 04_build-plan.md (plugin ownership, skill claim-md: write/check/answer; format.md single home; claim_check.py read-only with 12 flags, MISMATCH by name keyed on files; sentinel and hash tests; tier-3 consult check headless with --plugin-dir; no hooks; estimate $30)
+decided: 2026-10-09T07:50Z spend — the $30 estimate over the $22 build default asks nothing: budgets are waived by the operator (2026-10-08); spend still measured
+baseline: step 2 plan review 1 — 9b3b8785e25ac61c1d0b1bab009021f19a96762c35f6b3ac1d518c78572c0630 .claude-sandbox/investigations/claim-md-convention-research-the-shape-l-53d7/04_build-plan.md; 6f4dc99d7cd5616059ed42b4feb4b09d90d233afcd707db8d3642b3c518b740e .claude-sandbox/investigations/claim-md-convention-research-the-shape-l-53d7/INDEX.md;
+dispatch: reviewer opus high — step 2 plan review 1, scratch scratchpad/53d7-build-review/
+agent: reviewer adab6626492e41022

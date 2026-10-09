@@ -110,6 +110,11 @@ only what you cannot answer yourself and what changes *where you look*:
 - What does "done" look like, roughly?
 - Is anything explicitly out of scope?
 
+A green-field request — a new project, or a large new aim, with no requirements yet — is a
+foundation session, not an investigation: point to the `foundation` skill (it runs
+requirements, architecture and a phased plan, each with a gate) and stop unless the user
+wants a scoped plan anyway.
+
 One round of 2–4 questions, per **Asking at a gate** — scope is open, so a numbered list. Then
 **wait**. **Skip it only when the description already answers all of it**, saying why. Never
 ask what the code will tell you — that is Step 6.

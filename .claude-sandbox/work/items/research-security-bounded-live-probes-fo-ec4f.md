@@ -94,7 +94,7 @@ decision 135: The research-security probe write-up (caef serials 06-09) hit the 
   raised: 2026-09-30
   what: how to finish the probe write-up that the confinement hook builds on
   why now: the review cap; the hook build (20d8) cannot start without a closed plan
-  why ask: cap — the loop cannot go past 4 rounds without you
+  why ask: spend — the loop cannot go past 4 rounds without you
   (a): series closes; the hook's build must carry one extra rule and test, and its own opus review checks it — undo: none needed — who: the hook build
   (b): about 15-20 minutes and roughly 0.5-1% of weekly quota; none of your time
   (c): cheapest; the plan stops claiming a protection the hook cannot give, and mining-lane script review rests on the freeze step and the OS user
@@ -106,7 +106,7 @@ decision 135: The research-security probe write-up hit the 4-round review cap wi
   revised: 2026-10-01T07:06Z — backfilled: context:, if left:, round costs:, stakes:; headline trimmed to the question
   what: how to finish the probe write-up (serials 06-09 of the research-security series) that the confinement hook builds on
   why now: the review cap; blocks: the confinement-hook build (20d8), which cannot start without a closed plan
-  why ask: cap — the loop cannot go past 4 rounds without you
+  why ask: spend — the loop cannot go past 4 rounds without you
   context: you saw this card on 2026-09-30 during the unattended run · you decide how the probe write-up closes — then: none
   if left: after the scripts freeze, a hijacked mining lane can still write a tools/ script and run it; the plan says the hook stops that, which is false (fix: run tools/ scripts only before the freeze, deny tools/ writes after it, plus a post-freeze test)
   round costs: (b) about 15-20 minutes and roughly 0.5-1% of weekly quota; another answer from you if it does not settle

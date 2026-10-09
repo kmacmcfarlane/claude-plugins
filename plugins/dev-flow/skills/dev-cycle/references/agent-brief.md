@@ -251,6 +251,35 @@ never a resume, from the round after its late high until `CLEAR` or its third pl
 review — this brief re-dispatched to `planner-deep` in the bump arm and to `planner` in
 the control arm (`model-routing.md` § The xhigh trial).
 
+## Foundation plan variant
+
+For a foundation run (SKILL.md § Step 1, its foundation bullet): the Plan variant above,
+routed and recorded the same way, with What to do set to one phase of the `foundation`
+skill in its orchestrated mode (that skill's § Running under an orchestrator), with the
+Series home binding and the Base:
+
+```
+Run /dev-flow:foundation <slug> <phase> in its orchestrated mode — <phase> is
+requirements, architecture, plan, or all for a lite run. One phase only: write its serial
+and regenerate INDEX.md with its Foundation block, at the Series home.
+<from the second phase on:> The previous gate, <G1|G2>: verdict CLEAR at review round
+<n>; <approved by the operator <YYYY-MM-DD>: <the recorded answer, verbatim> | reported,
+not asked (no one-way ADR, no claim change)>. Record it in the serial's Confirmed
+Assumptions and in the Foundation block's row for that gate: its Gate cell
+(CLEAR round <n>), Operator cell and Approved cell.
+<a revise or reopen answer:> The operator asked to <revise | reopen <phase>>: <their words,
+verbatim>. Write it as the next serial (a reopen as NN_reopen-<what>.md, with its impact
+list) per that skill's references/moves.md.
+```
+
+The dispatch that opens a gate's phase — each phase's first dispatch, and the one an
+operator's revise or reopen answer opens — adds `foundation <phase>` to its signal,
+combined with any routing signal and never replacing one (`dispatch: planner opus xhigh —
+foundation architecture; effort pin`); a fix round inside the gate writes its usual line
+(`— resume`, or its routing signal on a fresh re-dispatch). The reviews of every phase
+count toward the run's one cap (`resume.md` § The reduction, ROUNDS). The report shape,
+the prohibitions and the fix-round rules are the Plan variant's, unchanged.
+
 ## Review-mode fix variant
 
 For `review <branch>` mode (SKILL.md § Usage), after the decision channel accepts
