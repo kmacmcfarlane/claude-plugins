@@ -515,6 +515,70 @@ class Rows(Hermetic):
                 self.assertLessEqual(prev, have, (cols, row))
                 prev = have
 
+    def test_a_long_name_gives_way_to_the_tag_and_description(self):
+        # The 8680 review's case: a plugin agent's name and a model at the
+        # cap, at 80 columns, used to render the name and fill only.
+        import subagent_statusline as R
+        m = "m" * R.MODEL_MAX
+        name = "dev-flow:implementer-critical"
+        t = self.task(name=name, model="claude-" + m)
+        row = ANSI.sub("", self.run_rows([t], columns=80)["a1"])
+        self.assertEqual(row, f"impleme… · ~75% ~150k/200k · {m} · Review…")
+        # A usual model: the whole name keeps its prefix at 81 columns, the
+        # description cut first below that.
+        t = self.task(name=name, model="claude-opus-5-5", effort="high")
+        tail = " · ~75% ~150k/200k · opus-5-5·high · "
+        for cols, want in (
+                (81, name + tail + "Review the diff"),
+                (80, name + tail + "Review the di…"),
+                # then the prefix goes, then the rest is cut, the tag whole
+                # and DESC_MIN columns of description kept
+                (66, "implementer-critic…" + tail + "Review th…"),
+                (60, "implementer-…" + tail + "Review th…"),
+                # never below NAME_MIN columns: from there the description
+                # and then the tag go, as for a short name
+                (52, "impleme…" + tail + "Review…"),
+                (40, "impleme… · ~75% ~150k/200k"),
+                (20, "~75% ~150k/200k")):
+            row = ANSI.sub("", self.run_rows([t], columns=cols)["a1"])
+            self.assertEqual(row, want, cols)
+        # A short name is never touched, however narrow.
+        row = ANSI.sub("", self.run_rows([self.task(name="reviewer")], columns=30)["a1"])
+        self.assertTrue(row.startswith("reviewer · "), row)
+
+    def test_a_long_name_never_shrinks_as_the_pane_widens(self):
+        import subagent_statusline as R
+        m = "m" * R.MODEL_MAX
+        names = ("dev-flow:implementer-critical", "x" * 70, "plugin:" + "模" * 20)
+        tags = ((m, "high"), ("opus-5-5", "high"), (None, None))
+        for name in names:
+            for model, eff in tags:
+                t = self.task(name=name, model=model and "claude-" + model, effort=eff)
+                tagtxt = "·".join(x for x in (model, eff) if x)
+                prev, prev_name = set(), 0
+                for cols in range(1, 141):
+                    got = self.run_rows([t], columns=cols).get("a1")
+                    row = ANSI.sub("", got) if got is not None else ""
+                    self.assertLessEqual(R.cols_of(row), cols, (name, cols, row))
+                    segs = row.split(" · ") if row else []
+                    fill_at = next((i for i, g in enumerate(segs) if "%" in g), None)
+                    have = set()
+                    if fill_at:
+                        have.add("name")
+                        w = R.cols_of(segs[0])
+                        # (a wide character that would straddle the floor goes whole)
+                        self.assertGreaterEqual(w, min(R.NAME_MIN - 1, R.cols_of(name)))
+                        self.assertGreaterEqual(w, prev_name, (name, cols, row))
+                        prev_name = w
+                    if tagtxt and tagtxt in segs:
+                        have.add("tag")
+                    if segs and segs[-1].startswith("Re"):
+                        have.add("desc")
+                    self.assertLessEqual(prev, have, (name, cols, row))
+                    prev = have
+                self.assertEqual(prev, {"name", "desc"} | ({"tag"} if tagtxt else set()),
+                                 (name, model))
+
     # -- malformed input --------------------------------------------------
 
     def test_malformed_input_prints_nothing(self):

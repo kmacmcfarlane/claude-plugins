@@ -138,8 +138,11 @@ effort set for it (in its definition or on the call; Claude Code gives both in t
 input, and a row leaves out either one it does not have, or one too long to read at a
 glance: a model ID over 40 columns once everything through its `claude-` is dropped, an
 effort over 6 columns). On a narrow panel the
-description is cut first and then goes, then the model and effort go, then the name. The
-fill is exact, read from the agent's transcript (`SESSION/subagents/agent-ID.jsonl` beside
+description is cut first and then goes, then the model and effort go, then the name. A
+long name gives way before the model and effort, and before the description is cut below
+10 columns: a `plugin:` prefix is dropped (`dev-flow:implementer-critical` reads
+`implementer-critical`), then the name is cut, to no fewer than 8 columns. The fill is
+exact, read from the agent's transcript (`SESSION/subagents/agent-ID.jsonl` beside
 the session's transcript); after the first read, each refresh reads only the lines added
 since the last one. A `~` marks an approximate figure (`~43% ~86k/200k`): Claude Code's
 own token count for the agent, shown until the transcript has a reading, for example in

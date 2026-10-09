@@ -90,7 +90,13 @@ dropped, and the row is cut to `columns` terminal columns (0 columns: no
 rows): the description is cut first, and goes whole once the model and
 effort tag no longer fits beside it; then the tag goes whole (never cut);
 then the name, leaving the fill alone. So a widening pane only ever adds to
-a row. The tag's halves are capped (MODEL_MAX columns for the model,
+a row. A long name gives way before the tag, and before the description is
+cut below DESC_MIN columns: when the whole row does not fit, the name is
+shortened to leave the tag whole and the description that much, first by
+dropping a `plugin:` prefix (`dev-flow:implementer-critical` reads
+`implementer-critical`), then by cutting it with an ellipsis, never below
+NAME_MIN columns. Its share only grows with the pane, so a widening pane
+still only adds. The tag's halves are capped (MODEL_MAX columns for the model,
 EFFORT_MAX columns for the effort; a half past its cap is left out), so
 an overlong one cannot crowd the description out at every width. Never raises;
 malformed input prints nothing, so every row keeps its default.
@@ -116,6 +122,9 @@ _UNSAFE = re.compile(r"[\s\x00-\x1f\x7f-\x9f]+")
 SEP = " · "
 EFFORT_MAX = 6            # an effort (a level, or a budget as shown) wider than this many columns is left out
 MODEL_MAX = 40            # a model (through its `claude-` gone) wider than this many columns is left out
+NAME_MIN = 8              # a long name is shortened no further than this many columns
+DESC_MIN = 10             # the description's columns a long name gives way to
+_PREFIX = re.compile(r"[A-Za-z0-9_.-]+:(?=\S)")
 USAGE_KEYS = ("input_tokens", "cache_read_input_tokens", "cache_creation_input_tokens")
 
 
@@ -646,6 +655,23 @@ def tag(task):
     return "·".join(x for x in (model, eff) if x)
 
 
+def cols_of(s):
+    return sum(width(ch) for ch in s)
+
+
+def short_name(name, share):
+    """`name` within `share` columns (never fewer than NAME_MIN): whole when
+    it fits; else with a `plugin:` prefix dropped; else that cut with an
+    ellipsis. A wider share never gives a narrower name."""
+    share = max(share, NAME_MIN)
+    if cols_of(name) <= share:
+        return name
+    m = _PREFIX.match(name)
+    if m:
+        name = name[m.end():]
+    return fit(name, share)
+
+
 def row(task, exact, cols):
     """The row body for one task, or None to keep Claude Code's default."""
     window = num(task.get("contextWindowSize")) or 0
@@ -658,6 +684,14 @@ def row(task, exact, cols):
     plain, colored = fill(tokens, window, approx)
     name = one_line(task.get("name"))
     desc = one_line(task.get("description")) or one_line(task.get("label"))
+    t = tag(task)
+    if name:            # the name's share: what the fill, tag and some description leave
+        rest = len(SEP) + cols_of(plain)
+        if t:
+            rest += len(SEP) + cols_of(t)
+        if desc:
+            rest += len(SEP) + min(cols_of(desc), DESC_MIN)
+        name = short_name(name, cols - rest)
     head_plain = (name + SEP if name else "") + plain
     head = (name + SEP if name else "") + colored
     room = cols - sum(width(ch) for ch in head_plain)
@@ -665,7 +699,6 @@ def row(task, exact, cols):
         if name:        # too narrow for the name too: the fill alone
             return colored if sum(width(ch) for ch in plain) <= cols else None
         return colored if room == 0 else None
-    t = tag(task)
     if t:
         tw = len(SEP) + sum(width(ch) for ch in t)
         if tw > room:       # whole or not at all (a cut model ID misleads),
