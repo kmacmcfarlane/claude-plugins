@@ -29,3 +29,6 @@ agent: implementer a8b71c236d66dc1af
 return: DONE worktree-agent-a8b71c236d66dc1af cdcb523 (kit-dev declares work-items and dev-flow; factor-analysis Step 7 fallbacks with one-clause disclosure; KD-2/KD-3 UNDECLARED and seven stale ALLOWED excuses removed; 11/11 Checks; peer-hint step left for 4bd4)
 dispatch: reviewer opus high — review round 1
 agent: reviewer ab4397e3c484bd9a0
+verdict: review round 1 NEEDS_CHANGES (medium 1: the KD-2 peer hint was left out on a wrong reason — prose hints need no helper (CLAUDE.md Peer hints, Prose skills); the four steps and the KD-2 text are in the 4bd4 series 00:350-370, 01:219; lows: marketplace.json's kit-dev description out of step with plugin.json; the dev-flow fallback path borrows .claude-sandbox/investigations; nits 4-6)
+correction: my d0b0 and 64c7 briefs told the builders to leave the peer-hint step out because 'the helper isn't built yet'; prose hints use no helper, so the step belongs in these items, as the 4bd4 OQ2 decision said
+dispatch: implementer opus medium — fix round 1 (resume a8b71c236d66dc1af)

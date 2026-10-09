@@ -29,3 +29,8 @@ agent: implementer a08fd24241b7e085f
 return: DONE worktree-agent-a08fd24241b7e085f 7c97d18 (Rehydrate step 5 without context-guard: one clause, handoffs every idle turn; stops cleanly without wi; edges declared in plugin.json, marketplace.json, README; 11/11 Checks; peer-hint step left for 4bd4)
 dispatch: reviewer opus high — review round 1
 agent: reviewer abd2cf9b58581e2ca
+verdict: review round 1 NEEDS_CHANGES (medium 1: idle-turn handoff refresh misses the in-flight roster and 'every open item' is 136 writes — roster's home is the agent: lines; refresh only changed doing items, after dispatch and at each Report or landing; lows: disclose once per conversation whatever the argument, drop 'after /clear' from no-repeat; DF-9 deferral unrecorded; rule stated in four places; nits)
+decided: 2026-10-09T08:59Z scope — DF-9 (librarian-mode's peer hint) stays with 4bd4's stage 2: its pointer target, the dev-cycle skill's references/bindings.md § Peer hint, is planned there and not on main; recorded on 4bd4 with its text
+dispatch: implementer opus medium — fix round 1 (resume a08fd24241b7e085f)
+return: DONE 2554393 (roster = agent: lines; refresh only changed doing items, after dispatch and at each Report or landing; disclosure first paragraph of each conversation; one home in step 5 with pointers; nits; message corrects DF-9's ownership)
+dispatch: reviewer opus high — review round 2 (resume abd2cf9b58581e2ca)
