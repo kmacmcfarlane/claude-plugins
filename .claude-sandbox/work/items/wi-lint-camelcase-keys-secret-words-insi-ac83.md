@@ -18,6 +18,7 @@ From b9fb review 1, finding 6, outside b9fb: camelCase colon keys (clientSecret:
 Also carried from b9fb review 4's follow-ups: tighter $/{} placeholders; a pass suffix (passphrase, passcode) with a deny-list for harmless words (passthrough, compass, bypass); a spaced second call argument.
 target: wi lint flags camelCase and compound secret keys in colon and assignment forms, and an Authorization: Bearer header, with tests; no new finding over the real store; lint stays linear on long lines.
 dispatch: implementer opus medium — build (security-relevant lint; not a canonical mechanical kind)
+agent: a15cd24ab91b0fc91 (implementer, build)
 
 ## Handoff
 - doing: —
