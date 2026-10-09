@@ -14,7 +14,9 @@ from a live session that refactored a plugin marketplace; each step below earned
 there.
 
 **The deliverable is a target shape + a factoring doctrine + filed work items.** State
-migration is planned by `implement` later; this skill decides *where the lines are*.
+migration is planned by `implement` (the `dev-flow` plugin) later; this skill decides
+*where the lines are*. Filing and the plan's format lean on two soft dependencies,
+`work-items` and `dev-flow`; Step 7 says what happens without each.
 
 ## Step 1 — Find the taxonomy axis
 
@@ -100,3 +102,19 @@ An agreed shape that lives only in conversation is lost. Before ending:
    per-phase steps, switchover checklist, and open questions — for `implement` to consume.
 3. Sequence extractions independent-after-doctrine, each leaving the project consistent, so
    the owner can stop after any phase.
+
+**Without the peers.** Look in this session's skill list before steps 1 and 2; each
+fallback keeps the landing, so the shape is never left only in conversation.
+
+- **`work-items:work-items` not listed**: the items go in the analysis output as a markdown
+  checklist, in filing order, one line per item: its title, what it depends on, and the
+  settled decisions with dates. The epic heads the list.
+- **`dev-flow:investigate` not listed**: write the same content (evidence, target shape,
+  per-phase steps, switchover checklist, open questions) as one plain markdown plan file,
+  `.claude-sandbox/investigations/<slug>.md` in the analysed repo, or where the owner says,
+  and give its path.
+
+The final result names each fallback that ran, in one plain clause, and says nothing when
+neither did: "items not filed: no work-item store tool; the checklist is in the analysis
+instead", "plan not in `investigate` format: dev-flow is not installed; written as a plain
+plan file at <path>".
