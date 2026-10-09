@@ -491,7 +491,7 @@ def librarian_not_owned(text):
 
 class Repo:
     def __init__(self, name, path, is_self=False, claim_override=None):
-        self.name = name                  # directory listing spelling
+        self.name = printable(name)       # directory listing spelling, escaped once
         self.path = Path(path)            # the tree read: a worktree for this repo
         self.base = Path(os.path.realpath(path))
         self.is_self = is_self
@@ -666,7 +666,8 @@ class Check:
         if text is None:
             return "file"
         if not stand_in:
-            code, _ = git(t.path, "ls-files", "--error-unmatch", "--", str(rel))
+            code, _ = git(t.path, "--literal-pathspecs", "ls-files", "--error-unmatch",
+                          "--", str(rel))
             if code != 0:
                 return "file"
         if not has_heading(text, head):
@@ -886,7 +887,8 @@ def build(args):
     for real, name in found.items():
         if me is not None and real == main_real:
             continue  # this repo is read from --repo's tree, never also from main
-        repos[N(name)] = Repo(name, real)
+        r = Repo(name, real)
+        repos[N(r.name)] = r
     if me is not None:
         in_dir = main_real is not None and d is not None and main_real.parent == d
         if args.estate and not in_dir:

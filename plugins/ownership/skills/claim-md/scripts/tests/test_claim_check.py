@@ -373,6 +373,16 @@ class Pointer(Base):
         self.e.repo("a", {"CLAIM.md": pointer_claim("a", "Defined in b LINK.md § Boundaries")})
         self.assertIn(("DANGLING", "outside", "a"), self.flags_of("a"))
 
+    def test_pathspec_is_literal(self):
+        # A pointer to a file literally named *.md: the tracked check matches that name only,
+        # never a glob over other tracked files.
+        d = self.b_with(untracked={"*.md": "## Boundaries\n"})  # CLAIM.md is tracked
+        self.e.repo("a", {"CLAIM.md": pointer_claim("a", "Defined in b *.md § Boundaries")})
+        self.assertIn(("DANGLING", "file", "a"), self.flags_of("a"))  # untracked, not globbed
+        git(d, "add", "--", ":(literal)*.md")
+        git(d, "commit", "-q", "-m", "star")
+        self.assertEqual([f for f in self.flags_of("a") if f[0] == "DANGLING"], [])
+
     def test_pointer_into_a_charter(self):
         self.b_with({"CLAIM.md": claim("b"), "CHARTER.md": "# Charter\n\n## Boundary tests\n"})
         self.e.repo("a", {"CLAIM.md": pointer_claim("a", "Defined in b CHARTER.md § Boundary tests")})
@@ -616,6 +626,21 @@ class Discovery(Base):
         git(git_b, "init", "-q")
         code, doc, _ = self.check("a", "--dir", str(other))
         self.assertNotIn(("UNRESOLVED", "owner", "a"), kinds(doc))
+
+    def test_non_utf8_directory_name_is_escaped(self):
+        raw = os.fsdecode(b"r\xff")
+        d = self.e.dir / raw
+        d.mkdir()
+        git(d, "init", "-q")
+        (d / ".work" / "items").mkdir(parents=True)
+        self.e.repo("a", {"CLAIM.md": claim("a")})
+        code, out, err = run("--estate", "--dir", str(self.e.dir))
+        self.assertEqual(code, 1, err)
+        out.encode("utf-8")  # encodable: no lone surrogate reaches the output
+        self.assertIn("UNCLAIMED - r\\xff:CLAIM.md:0 file", out)
+        code, doc, _ = run_json("--estate", "--dir", str(self.e.dir))
+        self.assertIn("r\\xff", [r["repo"] for r in doc["repos"]])
+        self.assertIn(("UNCLAIMED", None, "r\\xff"), kinds(doc))
 
     def test_git_file_child_and_symlink_out_are_skipped(self):
         a = self.e.repo("a", {"CLAIM.md": claim("a")})

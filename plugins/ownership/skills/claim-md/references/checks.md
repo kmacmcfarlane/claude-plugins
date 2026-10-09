@@ -35,7 +35,7 @@ claim_check.py [--repo DIR] [--claim PATH] [--estate] [--dir DIR] [--today YYYY-
 - **Read only.** The script never writes and never opens the network. It runs git with fixed
   arguments, drops git's stderr, reads git's stdout only for the paths `rev-parse` prints
   (the top level and the common git dir), and judges `ls-files` (is a pointed-to file
-  tracked?) by its exit code alone.
+  tracked?, with literal pathspecs, so a name is never a glob) by its exit code alone.
 
 The thresholds are two named constants in the script: `STALE_DAYS = 180` and
 `PENDING_DAYS = 30`.
