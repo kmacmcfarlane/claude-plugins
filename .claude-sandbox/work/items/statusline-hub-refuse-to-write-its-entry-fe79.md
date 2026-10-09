@@ -25,3 +25,9 @@ From the 7dd3 review 1 (low 2), 2026-10-08: the dead-copy take path guards only 
 dispatch: implementer opus medium — build, worktree (bug)
 - 2026-10-09 claimed by Kyle-McFarlane@2d49f8460283
 agent: implementer a428d65ba07fb6f87
+return: DONE worktree-agent-a428d65ba07fb6f87 6a74752 (guard extended: a git-tracked non-user settings file is refused with reason tracked on every take-the-slot path; tells the user once; installer untouched; heal's plain restore of its own entry not guarded; tests in temp dirs; 11/11 Checks)
+dispatch: reviewer opus high — review round 1 of 6a74752
+agent: reviewer a327c87bd6419153b
+verdict: review round 1 NEEDS_CHANGES (medium 1: heal's two unguarded restores still write into tracked project files, rewriting a team's committed footer entry; medium 2: the message's 'install in your user settings' fix doesn't work there, shared outranks user — lead with --local; lows: _git_tracks lets writes through on timeout; tests leak GIT_* env into another repo's index; three docs state takeover without the exception; nits)
+decided: 2026-10-09T10:07Z design — heal is guarded the same way as takeover on both restores; an explicit --project install is told to rerun --project to restore it there
+dispatch: implementer opus medium — fix round 1 (resume a428d65ba07fb6f87)
