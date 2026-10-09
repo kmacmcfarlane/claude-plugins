@@ -7,7 +7,10 @@ The one exception is text that describes what the HARD prompt gate lets
 through: the gate passes the bare form as well as the plugin-prefixed one,
 since the operator may type either, and saying so is not telling anyone to
 type it. Those lines are listed in ALLOWED by file and an exact fragment of
-the line, so a new bare mention fails until it is namespaced or listed.
+the line, so a new bare mention fails until it is namespaced or listed. Every
+bare match on an allowed line must fall inside its fragment, so an instruction
+appended to a whitelist line still fails; and every fragment names `/compact`
+and `/clear` too, so the allowlist holds whitelist text and nothing else.
 """
 import glob, os, re, unittest
 
@@ -20,11 +23,11 @@ BARE = re.compile(r"(?<![\w:/-])/checkpoint(?![\w/-])")
 # (path relative to the repo, fragment of the line) - gate-whitelist text only.
 ALLOWED = {
     ("plugins/context-guard/hooks/context_warn.py",
-     "unless the prompt is /checkpoint, /compact or"),
+     "/checkpoint, /compact or /clear, in the bare or the plugin-prefixed form"),
     ("plugins/context-guard/hooks/context_warn.py",
      "# /checkpoint, /compact, /clear - bare or plugin-qualified"),
     ("plugins/context-guard/hooks/read_list.py",
-     "the next UserPromptSubmit that is not /checkpoint, /compact or"),
+     "/checkpoint, /compact or /clear and is not hard-stopped"),
     ("plugins/context-guard/skills/checkpoint/SKILL.md",
      "the prompt gate erases every prompt except `/checkpoint`, `/compact` and `/clear`"),
     ("plugins/context-guard/skills/checkpoint/references/operator-playbook.md",
@@ -32,11 +35,32 @@ ALLOWED = {
 }
 
 
+def bare_outside(rel, line):
+    """The bare matches on `line` not covered by an ALLOWED fragment of `rel`,
+    and the ALLOWED entries that covered one."""
+    spans, used = [], set()
+    for a in ALLOWED:
+        if a[0] == rel:
+            i = line.find(a[1])
+            while i >= 0:
+                spans.append((i, i + len(a[1]), a))
+                i = line.find(a[1], i + 1)
+    out = []
+    for m in BARE.finditer(line):
+        cover = next((sp for sp in spans if sp[0] <= m.start() and m.end() <= sp[1]), None)
+        if cover:
+            used.add(cover[2])
+        else:
+            out.append(m.group())
+    return out, used
+
+
 def scanned():
     """Every skill, agent and hook text in the marketplace, plus the root docs.
     Tests are left out: they feed the gate the bare form on purpose."""
     pats = ("plugins/*/skills/**/*", "plugins/*/agents/**/*", "plugins/*/hooks/*.py",
-            "plugins/*/hooks/*.json")
+            "plugins/*/hooks/*.json", "plugins/*/.claude-plugin/plugin.json",
+            "plugins/*/settings.json", ".claude-plugin/marketplace.json")
     out = {os.path.join(REPO, "README.md"), os.path.join(REPO, "CLAUDE.md")}
     for pat in pats:
         for p in glob.glob(os.path.join(REPO, pat), recursive=True):
@@ -58,16 +82,28 @@ class CheckpointNamespacedTest(unittest.TestCase):
             except UnicodeDecodeError:
                 continue
             for n, line in enumerate(lines, 1):
-                if not BARE.search(line):
-                    continue
-                hit = next((a for a in ALLOWED if a[0] == rel and a[1] in line), None)
-                if hit:
-                    used.add(hit)
-                else:
+                out, hits = bare_outside(rel, line)
+                used |= hits
+                if out:
                     bad.append(f"{rel}:{n}: {line.strip()}")
         self.assertEqual(bad, [], "bare /checkpoint - namespace it as "
                          "/context-guard:checkpoint, or list gate-whitelist text in ALLOWED")
         self.assertEqual(sorted(ALLOWED - used), [], "stale ALLOWED entries")
+
+    def test_an_instruction_appended_to_an_allowed_line_still_fails(self):
+        for rel, frag in sorted(ALLOWED):
+            with self.subTest(rel=rel):
+                self.assertEqual(bare_outside(rel, frag)[0], [])
+                self.assertEqual(bare_outside(rel, frag + " Type `/checkpoint` now.")[0],
+                                 ["/checkpoint"])
+                self.assertEqual(bare_outside("README.md", frag)[0], ["/checkpoint"])
+
+    def test_every_allowed_fragment_is_whitelist_text(self):
+        for rel, frag in sorted(ALLOWED):
+            with self.subTest(rel=rel, frag=frag):
+                self.assertTrue(BARE.search(frag))
+                self.assertIn("/compact", frag)
+                self.assertIn("/clear", frag)
 
     def test_the_scan_sees_the_files_it_guards(self):
         rels = {os.path.relpath(p, REPO) for p in scanned()}
@@ -78,7 +114,10 @@ class CheckpointNamespacedTest(unittest.TestCase):
                     "plugins/context-guard/hooks/turn_gate.py",
                     "plugins/context-guard/hooks/stop_relay.py",
                     "plugins/context-guard/hooks/rehydrate.py",
-                    "plugins/dev-flow/skills/librarian-mode/SKILL.md"):
+                    "plugins/dev-flow/skills/librarian-mode/SKILL.md",
+                    "plugins/context-guard/.claude-plugin/plugin.json",
+                    "plugins/statusline/settings.json",
+                    ".claude-plugin/marketplace.json"):
             self.assertIn(rel, rels)
 
     def test_the_pattern(self):

@@ -20,18 +20,19 @@ operator never sees.** Fixing that is mostly about session *shape*, not about re
 | Harness attachments per fill (hooks, diffs, listings) | ~105K tokens | as much as all tool output; audit with `context_forensics.py` |
 
 **The gate thinks in remaining tokens, not percent.** Advisories at 60/75% used; **DUE** when
-~150K tokens remain (1M window; 70K on 200K) — finish things, run `/context-guard:checkpoint`; **HARD** at
-60K/40K left — on an *exact* depth (a fresh status-line reading) or a *derived* one (the
-window derived from documented and observed rules (`hooks/window_rules.py`), every input
-observed — including, above 200K, that this Claude Code process has not reported the
-usage-credits error for 1M context) the gate blocks
+~150K tokens remain (1M window; 70K on 200K) — finish things, run
+`/context-guard:checkpoint`; **HARD** at 60K/40K left — on an *exact* depth (a fresh
+status-line reading) or a *derived* one (the window derived from documented and observed
+rules (`hooks/window_rules.py`), every input observed — including, above 200K, that this
+Claude Code process has not reported the usage-credits error for 1M context) the gate blocks
 every prompt until a checkpoint records; on an *inferred* depth, or a derived one it could not
 fully resolve, it only warns, because the real window may be larger than the guess — and
 that warning keeps the DUE cadence (first time, then every 3 prompts or 25K tokens), so a
 quiet stretch is not an all-clear. The whitelist that passes a blocked prompt through is
 `/checkpoint`, `/compact` and `/clear`, bare or plugin-prefixed (`/context-guard:checkpoint`).
-Under ~20K left (`CHECKPOINT_MIN_TOKENS`) the HARD advice, blocking or not, drops `/context-guard:checkpoint`
-for `/clear` (the work is on disk) or `/compact <guidance>`, since a checkpoint no longer fits;
+Under ~20K left (`CHECKPOINT_MIN_TOKENS`) the HARD advice, blocking or not, drops
+`/context-guard:checkpoint` for `/clear` (the work is on disk) or `/compact <guidance>`, since
+a checkpoint no longer fits;
 when the gate blocks does not change. All of it resets per epoch (each compaction or `/clear`). The gate also warns against the
 auto-compact window when one is set below the model window (`/autocompact`,
 `CLAUDE_CODE_AUTO_COMPACT_WINDOW`, a valid `autoCompactWindow` of 100000–1000000), because that
@@ -126,11 +127,13 @@ them and echoes them in one line of its close; change any with the reply line it
 asks first only at a fork.
 
 Then `/context-guard:checkpoint <mode>` (namespaced: the bare name can resolve to a built-in
-command of the same name instead of this skill). The ledger (`~/.claude/claude-kit/ledger/<session>.md` — a
-historical directory name, kept across the move into `context-guard`) has been collecting decisions as you worked — the checkpoint is a delta, and after compaction the
-ledger, and the manifest when this session owns it (the format spec's "Whose memory it is"
-in `references/handoff-format.md`), are re-injected and outrank the machine summary (current repo state — git
-log, the work-item store — outranks the manifest).
+command of the same name instead of this skill). The ledger
+(`~/.claude/claude-kit/ledger/<session>.md` — a historical directory name, kept across the
+move into `context-guard`) has been collecting decisions as you worked — the checkpoint is a
+delta, and after compaction the ledger, and the manifest when this session owns it (the
+format spec's "Whose memory it is" in `references/handoff-format.md`), are re-injected and
+outrank the machine summary (current repo state — git log, the work-item store — outranks
+the manifest).
 
 ## Where the manifest lives
 
