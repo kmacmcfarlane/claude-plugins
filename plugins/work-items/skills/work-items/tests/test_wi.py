@@ -1614,6 +1614,17 @@ class TestHandoffDoneArchive(WiTestCase):
         self.assertEqual(lines.count(f"- {wi.today()} learned: L10"), 1)
         self.assertEqual(lines.count(f"- {wi.today()} learned: L1"), 1)
 
+    def test_handoff_learned_trailing_space_added_once(self):
+        # section() strips the last Notes line, so trailing space must not
+        # defeat the dedupe.
+        self.write_item("ho-3333", status="doing", owner="tester@local",
+                        claimed="2026-08-30T10:00Z")
+        self.wi_ok(["handoff", "ho-3333", "--learned", "T2 "])
+        self.wi_ok(["handoff", "ho-3333", "--learned", "T2 "])
+        notes = wi.load_item_anywhere(self.root, "ho-3333").section("Notes")
+        lines = [n.rstrip() for n in notes.splitlines()]
+        self.assertEqual(lines.count(f"- {wi.today()} learned: T2"), 1)
+
     def test_done_unblocks_dependents_and_archive_resolves(self):
         self.write_item("dep-1111")
         self.write_item("child-2222", deps=["dep-1111"])

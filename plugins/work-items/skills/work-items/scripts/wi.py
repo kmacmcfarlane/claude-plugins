@@ -1652,10 +1652,11 @@ def cmd_handoff(args):
                 h[key] = val
         item.set_handoff(h)
         if args.learned:
-            line = f"- {today()} learned: {args.learned}"
-            # Whole lines, not a substring: `L1` is new beside `L10`.
+            line = f"- {today()} learned: {args.learned.strip()}"
+            # Whole lines, not a substring: `L1` is new beside `L10`. Trailing
+            # whitespace is ignored: section() strips the last Notes line.
             notes = (item.section("Notes") or "").split("\n")
-            if line not in (n.rstrip("\r") for n in notes):
+            if line.rstrip() not in (n.rstrip() for n in notes):
                 item.append_note(line)
         item.touch()
         save_item(root, item)
