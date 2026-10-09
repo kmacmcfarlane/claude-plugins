@@ -18,3 +18,6 @@ Operator 2026-10-09 asked why the 22-card page cost so much. Measured (subagent 
 - next: —
 - blocked: —
 - learned: —
+
+## Notes
+findings: carried — from 1e00 review 2: rewrap rulings.md:65 and cards-schema.md:248

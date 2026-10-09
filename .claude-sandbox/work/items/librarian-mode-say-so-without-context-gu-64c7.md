@@ -25,3 +25,6 @@ Follow-up F4 from the plugin-dependency spike (72ef), 2026-10-08. Acceptance: as
 note: from 4bd4 OQ2 (2026-10-09T08:34Z): this item also carries its peer hint step (KD-2 for factor-analysis / DF-9 for librarian-mode), per .claude-sandbox/investigations/peer-hint-helper-and-first-adopters-4bd4/ INDEX.md
 dispatch: implementer opus medium — build, worktree (bug; acceptance from the 72ef series; doctrine and kit-dev lint on main)
 - 2026-10-09 claimed by Kyle-McFarlane@2d49f8460283
+agent: implementer a08fd24241b7e085f
+return: DONE worktree-agent-a08fd24241b7e085f 7c97d18 (Rehydrate step 5 without context-guard: one clause, handoffs every idle turn; stops cleanly without wi; edges declared in plugin.json, marketplace.json, README; 11/11 Checks; peer-hint step left for 4bd4)
+dispatch: reviewer opus high — review round 1
