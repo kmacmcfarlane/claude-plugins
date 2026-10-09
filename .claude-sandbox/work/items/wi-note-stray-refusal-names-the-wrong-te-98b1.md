@@ -25,3 +25,6 @@ From the 6cfb review 2 (low 1), 2026-10-08: _stray_separator reports text 3 for 
 dispatch: implementer opus medium — build, worktree
 - 2026-10-09 claimed by Kyle-McFarlane@2d49f8460283
 agent: implementer a9822fcef7cddd25f
+return: DONE worktree-agent-a9822fcef7cddd25f 8de11d9 (refusal counts texts as argparse does: --root in any accepted prefix or =value, note's own options excluded; test with four cases, three fail on old code; reported 10 Checks)
+dispatch: reviewer opus high — review round 1 of 8de11d9
+agent: reviewer a73be5f650ca9e7b2

@@ -25,3 +25,6 @@ From fe79 review 2: heal's _put (session_start.py:216) and the blocked marker (:
 dispatch: implementer opus medium — build, worktree
 - 2026-10-09 claimed by Kyle-McFarlane@2d49f8460283
 agent: implementer ab06ebc39752e7ec6
+return: DONE worktree-agent-ab06ebc39752e7ec6 a44a0ea (scope kept on heal's three paths and the blocked marker; --settings to a project's shared file records project scope and now also prints the do-not-commit warning; tests fail on old code; reported 10 Checks)
+dispatch: reviewer opus high — review round 1 of a44a0ea
+agent: reviewer a8e7048fd866ffdb6

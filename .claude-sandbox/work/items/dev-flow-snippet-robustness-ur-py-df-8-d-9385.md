@@ -25,3 +25,6 @@ Follow-up F9 from the plugin-dependency spike (72ef), 2026-10-08. Acceptance: as
 dispatch: implementer opus medium — build, worktree
 - 2026-10-09 claimed by Kyle-McFarlane@2d49f8460283
 agent: implementer a2612a58ec3e235a7
+return: DONE worktree-agent-a2612a58ec3e235a7 11236a6 (DF-8: spend reader no longer runs python3 "", 'no reader found' plus the context-guard tip under the hint rules; DF-13: create-skill lookup worktree → installed → cache, else a fallback line; checklist key-list parity test; declarations synced; 12/12 Checks)
+dispatch: reviewer opus high — review round 1 of 11236a6
+agent: reviewer a000d96456cf992b3
