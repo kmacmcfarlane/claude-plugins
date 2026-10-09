@@ -83,6 +83,20 @@ def settings_path(a):
     return os.path.join(owner.sensor.base_dir(), "settings.json")
 
 
+def is_project_shared(a, path):
+    """True for a project's shared .claude/settings.json: --project, or a
+    --settings path naming one (never the user settings file, which also
+    sits in a .claude folder)."""
+    if a.project:
+        return True
+    if not a.settings:
+        return False
+    user = os.path.join(owner.sensor.base_dir(), "settings.json")
+    return (os.path.basename(path) == "settings.json" and
+            os.path.basename(os.path.dirname(os.path.abspath(path))) == ".claude" and
+            not owner._same_path(path, user))
+
+
 def active_wrap():
     """The wrap record when the hub is running a wrapped entry, else None."""
     rec, _ = registry.read_wrap()
@@ -346,7 +360,7 @@ def main():
             return wrap(path, a.write_read_only)
         if a.remove:
             return remove(path, a.replace, a.write_read_only)
-        return install(path, a.replace, a.write_read_only, a.project)
+        return install(path, a.replace, a.write_read_only, is_project_shared(a, path))
     except owner.Changed as e:
         print(f"{e}; left unchanged - run this again.", file=sys.stderr)
         return 1

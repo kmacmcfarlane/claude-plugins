@@ -208,9 +208,18 @@ def _guard_local(owner, p, proj):
         raise Blocked(p, "not-ignored")
 
 
-def _put(owner, data, path, expect):
+def _scope(marker):
+    """The marker fields to carry into the next one it is replaced by: the
+    `scope` the installer records for a project's shared settings file
+    (--project, or --settings naming one)."""
+    s = marker.get("scope") if marker else None
+    return {"scope": s} if s == "project" else {}
+
+
+def _put(owner, data, path, expect, keep=None):
     """Set our entry in the settings file at path (only if its statusLine is
-    still one of `expect`) and record the install."""
+    still one of `expect`) and record the install, keeping the fields
+    `keep` holds (see _scope)."""
     try:
         owner.write_settings(path, {"type": "command", "command": owner.command_for(data)},
                              expect=expect)
@@ -220,7 +229,7 @@ def _put(owner, data, path, expect):
         raise
     except OSError:
         raise Blocked(path, "unwritable")
-    owner.write_marker(data, "installed", path, owner.command_for(data))
+    owner.write_marker(data, "installed", path, owner.command_for(data), **(keep or {}))
 
 
 def _replace_hint(owner, path):
@@ -359,7 +368,7 @@ def _footer_hint(owner):
     return f"the statusline plugin draws a footer there: {_install_hint(owner)}"
 
 
-def _older_copy(owner, data, path, proj, entry, verb):
+def _older_copy(owner, data, path, proj, entry, verb, keep=None):
     """The slot in `path` holds an older copy of the statusline footer
     (`entry`, from one of owner.FOOTER_HOMES) and the install records surely
     hold no statusline install, so no footer will ever register: the hub
@@ -387,7 +396,7 @@ def _older_copy(owner, data, path, proj, entry, verb):
     if not _script_ready(owner, data):
         raise Wait()
     _guard_local(owner, path, proj)
-    _put(owner, data, path, {"statusline"})
+    _put(owner, data, path, {"statusline"}, keep)
     gone = ("whose version no longer ships it" if _has(recs, home) else
             "which is no longer installed")
     return (f"{verb} the status line slot in {path}: it ran {_copy_name(owner, home)}, "
@@ -428,13 +437,13 @@ def heal(owner, data, marker):
     if kind == "statusline":
         if statusline_hooked() and _script_ready(owner, data):
             _guard_local(owner, path, None)
-            _put(owner, data, path, {"statusline"})
+            _put(owner, data, path, {"statusline"}, _scope(marker))
             return (f"restored the status line in {path} (an older session's settings "
                     f"write had put the footer's earlier entry back; it draws through "
                     f"the hub).")
         if not _statusline_uninstalled(owner):
             raise Wait()  # installed (or unknown): it may yet register
-        return _older_copy(owner, data, path, None, cur, "took back")
+        return _older_copy(owner, data, path, None, cur, "took back", _scope(marker))
     if kind != "absent":
         owner.write_marker(data, "yielded", path, owner.command_for(data))
         return (f"the statusLine in {path} was changed by something else; left "
@@ -442,7 +451,7 @@ def heal(owner, data, marker):
     if not _script_ready(owner, data):
         return None
     _guard_local(owner, path, None)
-    _put(owner, data, path, {"absent"})
+    _put(owner, data, path, {"absent"}, _scope(marker))
     return (f"restored the status line in {path} (an older session's settings "
             f"write had dropped it; /install-statusline-hub{_flag(owner, path)} --remove "
             f"turns it off).")
@@ -687,12 +696,12 @@ def run(inp):
             return None  # said once already; retried quietly
         try:
             owner.write_marker(data, "blocked", b.path, owner.command_for(data),
-                               reason=b.reason, resume=resume)
+                               reason=b.reason, resume=resume, **_scope(marker))
         except Exception:
             return None
         return _blocked_message(owner, b.path, b.reason,
                                 "installed" if resume == "new" else "restored",
-                                project=bool(marker and marker.get("scope") == "project"))
+                                project=bool(_scope(marker)))
 
 
 NOTICE = "refusal-notice.json"
