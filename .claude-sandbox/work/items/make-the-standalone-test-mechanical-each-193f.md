@@ -3,12 +3,11 @@ id: make-the-standalone-test-mechanical-each-193f
 title: "make the standalone test mechanical: each plugin's tests run alone, every edge declared"
 short_display_name: mechanical standalone test
 type: chore
-status: doing
+status: done
 priority: 2
-owner: Kyle-McFarlane@2d49f8460283
-claimed: 2026-10-09T07:11Z
 created: 2026-10-08
 updated: 2026-10-09
+closed: 2026-10-09
 refs:
   - spike-how-much-inter-plugin-dependency-i-72ef
 ---
@@ -36,3 +35,6 @@ verdict: review round 2 NEEDS_CHANGES (high 1: with current main merged, aebc's 
 dispatch: implementer opus medium — fix round 2 (resume a5654365709ad831d)
 return: DONE d752180 on merge 96add79 (aebc's scan skips outside the source repo, two ALLOWED entries keyed on line text; probes from sandbox with a no-edge guard test; findings deduped; 11 suites OK, kit-dev 18 ~125 s)
 dispatch: reviewer opus high — review round 3 (resume a58bf62f2fe13b988)
+verdict: review round 3 CLEAR (all three round-2 findings fixed; nit: IN_REPO guard skips silently if a root doc goes missing, accepted as for TestDocs)
+landed: b08cf12 (merge of a4d383f..d752180); Checks 11/11 OK incl. the new kit-dev Check
+- 2026-10-09 done
