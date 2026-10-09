@@ -37,3 +37,5 @@ dispatch: reviewer opus high — review round 1 of 2634f72
 agent: reviewer a6936b3fdd42a185f
 verdict: review round 1 NEEDS_CHANGES (must-fix 2: medium 1 — the new above-due hold after a checkpoint can block a recovery compaction (model switch leaves a 1M guess on a 200K model; a batch of reads overflows past the last measured fill) and only a manual /compact ends it; fix: hold above due after a checkpoint only when no user line follows the last usage line (idle); medium 2 — no test on inferred depth, which the idle case runs on; lows: mark_checkpoint docstring, playbook overstates (200K guess, lowered auto-compact window); nits: "at or under hard" wording, a lingering flag); judgement call 1 (inferred still defers) ruled right; call 2 sound
 dispatch: implementer opus medium — fix round 1 (resume a5c4b28f7b81cabbd)
+return: DONE f560065 (fix round 1); 12/12 Checks OK (context-guard 729); input_since_usage reads the tail backwards, 64 KiB chunks, 4 MiB cap, unreadable or capped counts as pending
+dispatch: reviewer opus high — review round 2 of f560065 (resume a6936b3fdd42a185f)
