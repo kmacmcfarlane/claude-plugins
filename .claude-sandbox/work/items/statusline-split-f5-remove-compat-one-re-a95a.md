@@ -2,11 +2,13 @@
 id: statusline-split-f5-remove-compat-one-re-a95a
 title: "statusline split F5: remove compat one release later"
 type: chore
-status: todo
+status: doing
 priority: 3
 parent: status-line-its-own-independently-instal-3c48
+owner: Kyle-McFarlane@2d49f8460283
+claimed: 2026-10-09T14:09Z
 created: 2026-09-18
-updated: 2026-09-18
+updated: 2026-10-09
 ---
 
 3c48 plan §F5: delete context-guard's deprecated copy, old-path read and notice. Size S; opus.
@@ -27,3 +29,9 @@ decision 209: Remove context-guard's deprecated status-line copy now? It was kep
   why ask: reach — anyone still pointed at the old path without the hub loses their status line at the update; the trigger "one release later" has no release to count by
   impact: (a) → old-path status lines stop at the next update, fbc3 unblocks; (b) → nothing changes now, fbc3 waits; (z) → fbc3 stays blocked
 answer 209: a (operator, in chat, 2026-10-09)
+
+## Notes
+- 2026-10-09 claimed by Kyle-McFarlane@2d49f8460283
+decided: 2026-10-09T13:40Z scope — fbc3 (retire the dying reset-time source) folds into this item, as the 72ef spike's F11 allows; one change deletes the copy and stops citing its state record
+target: context-guard's deprecated status-line copy, its old-path read and its notice are gone; dev-cycle's model-routing, the catalog and README stop citing the older state record; all Checks green
+dispatch: implementer opus medium — build (removes a compat path users may hit; not a canonical mechanical kind)
