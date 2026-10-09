@@ -3282,6 +3282,19 @@ class TestLint(WiTestCase):
             "acronym JWTSecret": "JWTSecret: " + v,
             "acronym AWSSecretKey": "AWSSecretKey: " + v,
             "acronym HTTPAuthToken": "HTTPAuthToken: " + v,
+            # fix round 2: digit-bearing camelCase keys
+            "camel db2Password": "db2Password: " + v,
+            "camel s3SecretKey": "s3SecretKey: " + v,
+            "camel oauth2Token": "oauth2Token: " + v,
+            "camel k8sToken": "k8sToken: " + v,
+            # fix round 2: credential-shaped values under a meta key
+            "meta ref, uuid": "secret_ref: " + "-".join(
+                ("fa4e1234", "5678", "9abc", "def0", "123456789abc")),
+            "meta ref, digit run": "secret_ref: " + "12341234123412",
+            "meta hint, short alnum": "password_hint: " + "fake12ab",
+            "meta type, mixed-case letters": "token_type: " + "FakeXyzAbcQweRtyUioP",
+            "meta name, alnum": "api_key_name: " + "fake1fake2x",
+            "meta file, long lowercase run": "token_file: " + "fake" * 5,
             # $-led values under a bare lowercase key (the KV rule)
             "bare key, bcrypt-like": "password: $2b$12$" + "fakefake" * 3,
             "bare key, $ then more": "secret: $FAKEabc+1" + "xyz",
@@ -3324,7 +3337,15 @@ class TestLint(WiTestCase):
             "passthrough": "passthrough=" + self.FAKE_HEX,
             "bypass camel": "cacheBypass: " + self.FAKE_HEX,
             "trespass": "trespass=" + self.FAKE_HEX,
-            "password policy": "password_policy: strictlengthrules",
+            "password policy": "password_policy: strict-length-rules",
+            # fix round 2: names, words and paths a meta key holds
+            "meta urn": "token_type: urn:ietf:params:oauth:token-type:jwt",
+            "meta identifier": "token_type: ClientCredentials",
+            "meta env-var name": "TOKEN_VAR: GITHUB_TOKEN",
+            "meta $HOME path": "token_file: $HOME/.config/gh/token",
+            "meta home path": "token_file: ~/.config/gh/hosts.yml",
+            "meta k8s-style name": "secret_name: default-token-x7k2m",
+            "meta attribute": "token_file: cfg.token",
             "token file": "token_file: fake-secrets-store",
             "secret name": "secret_name: prod-db-creds",
             "call of short names": "api_token = get_token(user, scope)",

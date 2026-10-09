@@ -590,8 +590,9 @@ glued to a word or follows a URL's `?` or `&`) and
 also flags the looser shapes: a lowercase, mixed-case or dotted `key=value`
 (`app.db_pass=…`), `KEY = value`, `key => value`, `key := value`,
 `KEY: value` or `KEY :value` (an env-style or snake_case key, or a
-mixed-case key of two or more segments of two or more characters that
-holds a secret word, `clientSecret: …`, `JWTSecret: …`; not `OAuth:`), a
+mixed-case key of two or more segments that holds a secret word and does
+not open with one capital before a capitalised word: `clientSecret: …`,
+`JWTSecret: …`, `db2Password: …`, `k8sToken: …`; not `OAuth:`), a
 JSON `"key": "value"` pair and `--flag=value`, with the value bare or
 quoted, and every pair on a line (`dsn=host=db;db_pass=…`, compact JSON).
 It flags an `Authorization: Bearer …` header, any case, after `:`, `=` or
@@ -611,12 +612,18 @@ placeholder, one or two repeated characters (`XXXX…`) or a plain word.
   such as `tokens` or `keys` (`passthrough` holds none). A key whose last
   segment names something about a secret (`policy`, `rotation`, `hint`,
   `prompt`, `field`, `label`, `name`, `type`, `mode`, `file`, `path`, `var`,
-  `ref`: `password_policy`, `token_file`) is judged as other keys, so a
-  letters-only value under it passes (`token_type: bearer`); but when
-  another of its segments holds a secret word it still flags a value that
-  is no placeholder and is all hex of 20+ characters, or 8+ characters
-  holding one outside letters, digits and `_ . / ~ , : -`
-  (`secret_ref: <40 hex>`, `password_var: <symbols>`). Under a
+  `ref`: `password_policy`, `token_file`) is a meta key. When another of
+  its segments holds a secret word, only these pass under it: a
+  placeholder; a lowercase name of runs of 15 or fewer letters joined by
+  `-`, `_`, `.` or `:` (`prod-db-creds`, `default-token-x7k2m`,
+  `urn:ietf:params:oauth:token-type:jwt`); an env-var name
+  (`GITHUB_TOKEN`); a letters-only word or identifier whose case segments
+  are 3 to 15 letters (`bearer`, `ClientCredentials`); a dotted attribute
+  (`cfg.token`); or a path starting `~/`, `./`, `/` or `$NAME/` of two or
+  more harmless segments (`$HOME/.config/gh/token`). Everything else is
+  judged as under a secret-word key (below), so a digit run, a UUID, a
+  word with digits mixed in or 16+ lowercase letters in one run flags. A
+  meta key with no other secret word is judged as other keys. Under a
   secret-word key any value of 8+ non-space characters counts,
   symbols, hex, letters-only and UUIDs included. A quoted value skips
   nothing; an unquoted one skips only code, a count or a path a note may
@@ -641,9 +648,11 @@ placeholder, one or two repeated characters (`XXXX…`) or a plain word.
   `${NAME}`, `${{ name }}`, `$(command)`, `{name}` or `{{ name }}`; all `*`
   (masked) or all `.` (elided, `…` included); or `<…>` holding lowercase
   words, spaces, `_` or `-` with its closing `>` (`<value>`, `<your key>`).
-  A value that only starts with `$` or `{` is no placeholder (`$2b$12$…`),
-  under any key form, a bare lowercase `password: …` included; a `.` may
-  end a placeholder only at the end of a word (`$GITHUB_TOKEN.`).
+  A value that only starts with `$` or `{` is no placeholder (`$2b$12$…`).
+  Under a bare lowercase key (`password: …`) a `$`-led value flags unless
+  it starts with `${` or `$(` or is a whole `$NAME`; a `{`-led one does
+  not flag there. A `.` may end a placeholder only at the end of a word
+  (`$GITHUB_TOKEN.`).
 - **Raw and cleaned.** Every rule runs on the line as written and on a
   cleaned copy: NFKC-normalised (a fullwidth equals sign, U+FF1D, is `=`),
   Unicode format characters such as a zero-width space dropped, and

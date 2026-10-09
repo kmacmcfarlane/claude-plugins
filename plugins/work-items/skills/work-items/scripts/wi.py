@@ -3305,7 +3305,7 @@ SECRET_ASSIGN_RE = re.compile(
 SECRET_KV_RE = re.compile(
     r"(?i)\b(api[_-]?key|secret|token|password|passwd|credential|webhook[_-]?url)\b"
     r"['\"]?\s*[:=]\s*['\"]?"
-    r"(?!\$\{|\$\(|\$[A-Za-z_][A-Za-z0-9_]*(?:[\s\"'`,;)}\].]|$)|[<{*])"
+    r"(?!\$\{|\$\(|\$[A-Za-z_][A-Za-z0-9_]*(?:[\s\"'`,;)}\]]|\.(?=\s|$)|$)|[<{*])"
     r"(\$?[A-Za-z0-9+/_.$=-]{12,})")
 
 # The looser shapes the two rules above miss (b9fb): a lowercase or
@@ -3315,9 +3315,10 @@ SECRET_KV_RE = re.compile(
 # JSON "key": "value" pair and --flag=value, each with the value bare or
 # quoted. Which value counts is the key's call: see _shape_value_flagged.
 # A camelCase or PascalCase colon key (clientSecret: ..., JWTSecret: ...)
-# counts only when it mixes case, splits into 2+ segments of 2+ characters
-# and holds a secret word (ac83, see _shape_secret), so prose such as
-# "GitHub: ...", "OAuth: ..." or "Token: ..." never qualifies.
+# counts only when it mixes case, splits into 2+ segments, does not open
+# with one capital before a capitalised word (OAuth) and holds a secret
+# word (ac83, see _shape_secret; db2Password and k8sToken count), so prose
+# such as "GitHub: ...", "OAuth: ..." or "Token: ..." never qualifies.
 # The lookbehind lets _shape_secret resume at a value's start, so a later
 # pair joined to it (a=b;db_pass=..., {"a":"b","db_pass":...}) is still
 # examined; the value is capped so the scan stays linear.
@@ -3530,12 +3531,11 @@ def _secret_value_flagged(key, raw, quote, rest):
     return bool(quote) or not _quoted_code(key, raw, value)
 
 
-def _meta_secret_flagged(key, raw, rest):
+def _meta_secret_flagged(key, raw, quote, rest):
     """Under a meta key (last segment in _META_WORDS) whose other segments
-    hold a secret word (secret_ref, password_var, auth_token_file): a value
-    that is no placeholder and is all hex of 20+ characters, or 8+
-    characters holding one outside [A-Za-z0-9_./~,:-]. So a letters-only
-    word (token_type: bearer) or a plain name or path still passes."""
+    hold a secret word (secret_ref, password_var, auth_token_file): any
+    value that is no placeholder and no name, word, attribute or path such
+    a key holds (_meta_name) is judged as under a secret-word key."""
     segs = _key_segments(key)
     if not (len(segs) >= 2 and segs[-1] in _META_WORDS
             and any(_secret_word(seg) for seg in segs[:-1])):
@@ -3543,9 +3543,33 @@ def _meta_secret_flagged(key, raw, rest):
     value = raw.rstrip("\"'`,;)]}")
     if not value or _placeholder(value, rest):
         return False
-    return bool((len(value) >= 20 and _HEX_RE.fullmatch(value))
-                or (len(value) >= 8
-                    and re.search(r"[^A-Za-z0-9_./~,:-]", value)))
+    if _meta_name(value):
+        return False
+    return _secret_value_flagged(key, raw, quote, rest)
+
+
+_META_NAME_RE = re.compile(
+    r"[a-z]{1,15}(?:[-_.:][a-z0-9]{1,15})*|[A-Z]+(?:_[A-Z0-9]+)*")
+
+
+def _meta_name(value):
+    """A name, word, attribute or path a meta key may hold: a lowercase
+    name of runs of 15 or fewer letters (prod-db-creds,
+    urn:ietf:params:oauth), an env-var name (GITHUB_TOKEN), a letters-only
+    identifier whose case segments are 3 to 15 letters (Bearer,
+    ClientCredentials), a dotted attribute, or a ~/ ./ / or $NAME/ path of
+    harmless segments. A run of 16+ lowercase letters, digits mixed into a
+    word, a digit run or a UUID is none of these."""
+    if _META_NAME_RE.fullmatch(value) or _ATTR_RE.fullmatch(value):
+        return True
+    if (re.fullmatch(r"[A-Za-z]+", value)
+            and all(3 <= len(seg) <= 15 for seg in _KEY_SEG_RE.findall(value))):
+        return True
+    path = re.sub(r"^\$[A-Za-z_][A-Za-z0-9_]*(?=/)", "", value)
+    if path.startswith(("~/", "./", "/")):
+        segs = [seg for seg in _SEG_SPLIT_RE.split(path) if seg]
+        return len(segs) >= 2 and all(_harmless_segment(seg) for seg in segs)
+    return False
 
 
 def _shape_value_flagged(key, raw, quote="", rest=None):
@@ -3554,7 +3578,7 @@ def _shape_value_flagged(key, raw, quote="", rest=None):
     key (sha, commit, *_id, ...) flags only a value _looks_live passes, and
     never a call like name(...)."""
     rest = raw if rest is None else rest
-    if _meta_secret_flagged(key, raw, rest):
+    if _meta_secret_flagged(key, raw, quote, rest):
         return True
     if _secret_key(key):
         return _secret_value_flagged(key, raw, quote, rest)
@@ -3577,12 +3601,14 @@ def _shape_secret(line):
             return False
         key = m.group("flag") or m.group("json") or m.group("kv") or m.group("colon")
         if m.group("camel"):
-            # mixed case, 2+ segments of 2+ characters, a secret word:
-            # JWTSecret, AWSSecretKey, clientSecret; not OAuth, Token, GitHub
+            # mixed case, 2+ segments, no lone capital before a capitalised
+            # word, a secret word: JWTSecret, AWSSecretKey, clientSecret,
+            # db2Password, k8sToken; not OAuth, Token, GitHub
             key = m.group("camel")
             segs = _KEY_SEG_RE.findall(key)
             if not (re.search(r"[a-z]", key) and re.search(r"[A-Z]", key)
-                    and len(segs) >= 2 and min(map(len, segs)) >= 2
+                    and len(segs) >= 2
+                    and not re.match(r"[A-Z][A-Z][a-z]", key)
                     and _secret_key(key)):
                 pos = m.start("value")
                 continue
