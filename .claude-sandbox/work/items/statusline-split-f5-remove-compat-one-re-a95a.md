@@ -39,3 +39,6 @@ agent: implementer a194aaaecfdf57eb4
 return: DONE c2998a2 on worktree-agent-a194aaaecfdf57eb4; 12/12 Checks OK (context-guard 808 → 708); old in-state exact read and its reset demotion removed, sensor record only; moved notice removed; F11 citations moved to the sensor record; hub heal never depended on the copy (path match; existing test covers it); 7dd3 recorded-but-disabled question left open (statusline-hub, outside the brief)
 dispatch: reviewer opus high — review round 1 of c2998a2
 agent: reviewer aa9e083fc127070cd
+verdict: review round 1 CLEAR (must-fix 0; 21 old/new depth cases compared, changes only where an old in-state writer still runs; 115 deleted tests matched; lows: L1 sensor `at` non-finite/bool/text and skewed epoch_end have no test now; L2 the recorded-but-disabled question — already on 7dd3 (note added there), no decision needed here; nits: README.md:359 unwrapped, an extra blank line, a lib_context.py:157 comment, a heal() test from the reviewer's probe)
+decided: 2026-10-09T15:10Z cap — a finish round of L1 and N1-N4, exact fixes (authority answer 145)
+dispatch: implementer opus medium — finish round (resume a194aaaecfdf57eb4)
