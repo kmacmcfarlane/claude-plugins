@@ -98,3 +98,5 @@ decided: 2026-10-09T07:50Z spend — the $30 estimate over the $22 build default
 baseline: step 2 plan review 1 — 9b3b8785e25ac61c1d0b1bab009021f19a96762c35f6b3ac1d518c78572c0630 .claude-sandbox/investigations/claim-md-convention-research-the-shape-l-53d7/04_build-plan.md; 6f4dc99d7cd5616059ed42b4feb4b09d90d233afcd707db8d3642b3c518b740e .claude-sandbox/investigations/claim-md-convention-research-the-shape-l-53d7/INDEX.md;
 dispatch: reviewer opus high — step 2 plan review 1, scratch scratchpad/53d7-build-review/
 agent: reviewer adab6626492e41022
+verdict: step 2 plan review 1 NEEDS_CHANGES (medium 5: draft can't be checked before writing — add --claim PATH; linked worktree gets the wrong repo name; no-content contract gaps (other paths, error text, sentinel test, json claim key); headless check doesn't pin the permission mode; Run A judged on skill-only behaviour; lows 6-12: Boundaries with no neighbours, tier-4 flags, routing per flag, parse details, external owners vs Not owned grammar, 193f lint interaction, #N authority; nits)
+dispatch: planner opus high — step 2 plan fix round 1 (resume a514507009f7c1aa2)
