@@ -118,8 +118,8 @@ neither did: "items not filed: no work-item store tool; the checklist is in the 
 instead", "plan not in `investigate` format: dev-flow's `investigate` is not available;
 written as a plain plan file at <path>".
 
-**The work-items tip.** After the "items not filed" clause, add one tip line, only when all
-of these hold:
+**The work-items tip.** In place of the "items not filed" clause, give one line, only when
+all of these hold:
 
 1. It is the run's final result, in a result the operator reads, never in a peer or relay
    message; the work-items fallback actually ran; and this is the top level (in a sub-agent
@@ -128,9 +128,9 @@ of these hold:
    has not already shown a tip for work-items (any skill's: the conversation is the record),
    so it shows at most once per conversation.
 3. Run `echo "${KMACMCFARLANE_NO_PEER_HINTS-}"`; if it prints `1`, or a comma list naming
-   `work-items`, show nothing more.
-4. Append the line, exactly:
+   `work-items`, give the clause alone.
+4. Give this line in the clause's place, exactly:
 
    ```text
-   factor-analysis: the work items are a checklist in the analysis. work-items adds the shape filed as work items: /plugin install work-items@kmacmcfarlane (one-time tip; KMACMCFARLANE_NO_PEER_HINTS=1 hides these)
+   kit-dev: items not filed, so the work items are a checklist in the analysis. work-items adds the shape filed as work items: /plugin install work-items@kmacmcfarlane (one-time tip; KMACMCFARLANE_NO_PEER_HINTS=1 hides these)
    ```
