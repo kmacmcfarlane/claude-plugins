@@ -50,3 +50,6 @@ decision 206: Should the chat decision cards follow the page and define Effect a
 dispatch: implementer opus medium — build, worktree (plan CLEAR at review 2)
 shown 206: 2026-10-09T07:57Z chat
 agent: implementer a5b91673abb322595
+return: DONE worktree-agent-a5b91673abb322595 844b806 (TLDR/Context/Impact order; shaped levels; id lint on titles; Impact facets per line, across options; classes 41 trust / 42 one-way; sub-bullets capped at 2; 10/10 Checks, operator-interaction 117; runner exit 0 on the example; on the live page: 455 lint lines; tests only, no render)
+dispatch: reviewer opus high — review round 1 of 844b806
+agent: reviewer a9c6313902e894792

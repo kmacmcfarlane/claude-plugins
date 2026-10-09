@@ -32,3 +32,7 @@ verdict: review round 1 NEEDS_CHANGES (medium 3: slash-command skill form unmatc
 dispatch: implementer opus medium — fix round 1 (resume a5654365709ad831d)
 return: DONE 1d59639 on merge a995a44 (slash forms; code-built paths in .py, tests excluded by measurement; ALLOWED/UNDECLARED keyed by line substring in one table; synthetic self-test; co-owned paths skipped; stub hub.py so the live-hub subtest runs alone; kit-dev 16 tests ~124 s)
 dispatch: reviewer opus high — review round 2 (resume a58bf62f2fe13b988)
+verdict: review round 2 NEEDS_CHANGES (high 1: with current main merged, aebc's repo-wide test_checkpoint_namespaced fails the standalone run (needs CLAUDE.md) and the lint (two lines naming dev-flow and statusline paths); low 2: probe tests assume kit-dev declares no edges, F3 will break them; nits 3 duplicate findings, 4 substring excuse accepted); fix round 1 itself sound, test-file exclusion and ralph entries judged right
+dispatch: implementer opus medium — fix round 2 (resume a5654365709ad831d)
+return: DONE d752180 on merge 96add79 (aebc's scan skips outside the source repo, two ALLOWED entries keyed on line text; probes from sandbox with a no-edge guard test; findings deduped; 11 suites OK, kit-dev 18 ~125 s)
+dispatch: reviewer opus high — review round 3 (resume a58bf62f2fe13b988)
