@@ -30,3 +30,5 @@ dispatch: reviewer opus high — review round 1 of a4d383f
 agent: reviewer a58bf62f2fe13b988
 verdict: review round 1 NEEDS_CHANGES (medium 3: slash-command skill form unmatched; data paths built in code missed, two UNDECLARED entries anchored on incidental text; ALLOWED keyed by (file, target) exempts the whole file; lows 4-5: self-test breaks when F3 lands, co-owned path checked against the other owner; nit 6 stub hub.py)
 dispatch: implementer opus medium — fix round 1 (resume a5654365709ad831d)
+return: DONE 1d59639 on merge a995a44 (slash forms; code-built paths in .py, tests excluded by measurement; ALLOWED/UNDECLARED keyed by line substring in one table; synthetic self-test; co-owned paths skipped; stub hub.py so the live-hub subtest runs alone; kit-dev 16 tests ~124 s)
+dispatch: reviewer opus high — review round 2 (resume a58bf62f2fe13b988)
