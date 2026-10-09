@@ -3,13 +3,12 @@ id: foundation-consult-claim-md-skill-in-pha-286d
 title: "foundation: consult CLAIM.md skill in phase 1"
 short_display_name: foundation consults claim-md
 type: feature
-status: doing
+status: done
 priority: 3
 parent: foundation-follow-ups-build-time-reopens-f3d1
-owner: Kyle-McFarlane@2d49f8460283
-claimed: 2026-10-09T14:59Z
 created: 2026-10-09
 updated: 2026-10-09
+closed: 2026-10-09
 refs:
   - spike-a-skill-for-green-field-foundation-5f2d
 ---
@@ -38,3 +37,6 @@ dispatch: reviewer opus high — review round 2 of 7ef5ce2 (resume ae00bc0c31c8b
 verdict: review round 2 CLEAR (must-fix 0; lows: the no-store case names a decision line that does not exist; SKILL.md restates state.md; nit: "and defining side" redundant)
 decided: 2026-10-09T17:00Z cap — a finish round of the three exact fixes (authority answer 145)
 dispatch: implementer opus medium — finish round (resume aac8fa75aac1fadce)
+verdict: finish round CLEAR — diff read: no-store clause, SKILL.md points at state.md, "and defining side" dropped
+landed: c37a3a7 (merge of ec38341..34df253); Checks 12/12 OK; cc_scan clean
+- 2026-10-09 done
