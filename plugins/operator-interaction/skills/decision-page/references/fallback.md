@@ -12,12 +12,12 @@ Follow that tool's own instructions for creating and filling it (load its skill 
 first); this file sets only the layout.
 
 - One heading per group, in list order; under it, one section per decision, headed with its
-  number, short name and effect at tag size: `41 · Docs build home → publishing no longer
-  depends on one laptop`.
-- In each section, the card's essentials as text: **Context:** first (the terms the card
-  uses, then what is decided, then where the operator left it), then ⚠ one-way when it is and
-  the **Impact:** line (`→ effect · later: wait · reach: … · undo: …`), the TLDR bullets,
-  **Why now:**, **Why ask:** (class first), and the rec line
+  number, short name and effect at tag size: `41 · Docs build home → sets where the docs build
+  runs, and who can publish`.
+- In each section, the card's essentials as text: the TLDR bullets first, then **Context:**
+  (the terms the card uses, then where the operator left it), then ⚠ one-way when it is and
+  **Impact:**, across all the options, one facet a line (`→ effect`, `later: …`, `reach: …`,
+  `undo: …`, each on its own line), **Why now:**, **Why ask:** (class first), and the rec line
   `Rec (b) · basis strong — reason · unknown: …`. A card with
   `blocks` (every card, now) also gets the Impact table: a row per option, then the Wait row;
   Effect, Reach, Undo, Cost.
@@ -28,9 +28,13 @@ first); this file sets only the layout.
   ask at their top level. After the rec line, a **More detail** sub-heading carries the other
   fold parts at their top level: each option in full with its Effect, Reach, Undo and Cost,
   Depends on, and the Evidence with its paths and links. That is the card-in-all measure of
-  `references/cards-schema.md` § Size, with Context at its high.
-- Then a tick box per option, in letter order, the recommended one in bold, each with its
-  impact: `☐ **(b) Publish from CI** — removes the one-machine dependency`.
+  `references/cards-schema.md` § Size, with Context at its high. A level in sections shows
+  each heading as a bold line, its bullets under it.
+- No ids: items, commits and series by their short names or titles, as on the page
+  (`references/cards-schema.md` § No ids on the page).
+- Then a tick box per option, in letter order, the recommended one in bold, each with its own
+  effect, its `impact`: `☐ **(b) Publish from CI** — publishing no longer depends on one
+  machine; about 4 minutes of CI per merge`.
 - When the card has `act`, after the option tick boxes: **To act on (x):** with its numbered
   steps, as the card gives them, per option that has them.
 - Then a tick box per follow-up, with its placeholder: `☐ later [when]`, `☐ tell me [what]`,

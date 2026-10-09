@@ -2,17 +2,18 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@80..100,500..800&family=Public+Sans:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400;600&display=swap">
 <style>
 /* decision-page template (operator-interaction). One reading column: a compact heads-up map on
-   top, then collapsible answer cards by group. An open card and the popup open on the card's
-   Context (the terms it uses, then what is decided). Every view shows the decision's impact: the
-   map and a closed card its effect, an open card its Impact line, the Options in full fold its
-   Impact table. Inside a card the essentials are flat (Context, Impact line, TLDR, options,
+   top, then collapsible answer cards by group. An open card opens on its TLDR, then its Context
+   (the terms it uses), then its Impact, one facet a line; the popup the same, with the Impact at
+   tag size. Every view shows the decision's impact across all its options: the map and a closed
+   card its effect, an open card its Impact lines, the Options in full fold its Impact table (each
+   option's own effect). Inside a card the essentials are flat (TLDR, Context, Impact, options,
    follow-ups, words, recommendation); background, options in full, dependencies and evidence
    sit in folds. A part with a more-detail button, above or inside a fold, steps to more detail
-   on a click and again to full detail (each level replaces the part's text; the next click goes
-   back to the summary); the Impact table and the static lines do not step. More
-   beside an option shows it in full. Decision references ([[N]]) are slugs that open the referenced
-   decision in a popup. All content comes from cards.json beside this page; answers go to the
-   db collection "answers", one document per decision number. */
+   on a click (terse bullets) and again to full detail (headed sections); each level replaces the
+   part's text, and the next click goes back to the summary. The Impact table and the static
+   lines do not step. More beside an option shows it in full. Decision references ([[N]]) are
+   slugs that open the referenced decision in a popup. All content comes from cards.json beside
+   this page; answers go to the db collection "answers", one document per decision number. */
 :root{
   --bg:#f3f5f8; --surface:#ffffff; --sunk:#e9edf3; --ink:#1a2130; --muted:#5b6578; --line:#d5dbe5;
   --accent:#2d56c8; --accent-soft:#e3eafb; --rec:#9a6412; --rec-soft:#f7ecd9; --ok:#23704f; --ok-soft:#dcf0e6; --warn:#a33a2c;
@@ -137,8 +138,13 @@ details.more{margin:0 12px 9px 38px;font-size:.86rem}
 .lvb{font-size:.74rem;padding:3px 8px;min-height:26px;color:var(--accent);font-family:var(--f-mono)}
 .lvb[aria-expanded="true"]{background:var(--accent-soft);border-color:var(--accent)}
 .evph{color:var(--muted);font-style:italic}
-.impfull{display:flex;flex-direction:column;gap:2px}
-.impline.impfull .lbl{display:block}
+/* a level's shapes: bullets with sub-bullets at more detail, headed sections at full detail */
+.lv ul.lvl.sub,.odet ul.lvl.sub{margin-top:2px;gap:2px;font-size:.95em;color:var(--muted)}
+.lvs{display:flex;flex-direction:column;gap:3px}
+.lvs+.lvs{margin-top:6px}
+.lvh{margin:0;font-family:var(--f-display);font-stretch:88%;font-size:.86rem;font-weight:700;letter-spacing:.01em;color:var(--ink)}
+.impline ul.lvl{margin:2px 0 0}
+.impline .lvs .lvh{font-size:.8rem}
 @media (max-width:640px){
   .omore{grid-column:1/-1;grid-row:auto;justify-self:end;margin:0 10px 8px}
   .sec{grid-template-columns:minmax(0,1fr)}
@@ -166,8 +172,9 @@ details.pane>div{padding:6px 0 2px;font-size:.92rem;max-width:70ch;display:flex;
 .recline em{color:var(--muted)}
 .eff{color:var(--muted)}
 .eff b{font-family:var(--f-mono);font-weight:600;color:var(--ink);margin-right:.25em}
-.impline{font-size:.92rem;max-width:70ch;border-left:3px solid var(--accent);padding:6px 12px;background:var(--sunk);border-radius:0 6px 6px 0}
-.impline .lbl{display:inline;margin-right:.4em}
+/* the Impact: one facet a line, at every level */
+.impline{font-size:.92rem;max-width:70ch;border-left:3px solid var(--accent);padding:6px 12px;background:var(--sunk);border-radius:0 6px 6px 0;display:flex;flex-direction:column;gap:2px;min-width:0}
+.impline .lbl{display:block;margin-bottom:1px}
 .impline i{font-style:normal;font-family:var(--f-mono);font-size:.8rem;color:var(--muted)}
 .tw{overflow-x:auto;max-width:100%}
 table.imp{border-collapse:collapse;font-size:.86rem;min-width:520px;width:100%}
@@ -192,7 +199,7 @@ footer{color:var(--muted);font-size:.85rem;max-width:70ch}
   <header>
     <h1 id="title">Decision answers</h1>
     <p class="lede" id="lede"></p>
-    <p class="lede">For each decision, pick one option or one follow-up (the radio buttons allow only one), and add your words if you like. Each click saves at once; there is no submit button. Tell Claude in chat when you're done. A <span class="slug-t">number · name</span> is a decision: hover or click it to see that decision. Each line shows what the recommendation changes after an arrow (→); each card opens on its Context (the terms it uses and what is decided), then its impact, a TLDR and one line per option; the folds under it go from compressed to full detail, the full impact table first. A part with a <i>more detail</i> button, above or inside a fold, shows more detail when you click it or its text, and full detail on a second click; <b>More</b> beside an option shows it in full.<span id="doclink"></span></p>
+    <p class="lede">For each decision, pick one option or one follow-up (the radio buttons allow only one), and add your words if you like. Each click saves at once; there is no submit button. Tell Claude in chat when you're done. A <span class="slug-t">number · name</span> is a decision: hover or click it to see that decision. Each line shows, after an arrow (→), what the decision changes across its options; each card opens on a TLDR, then its Context (the terms it uses), then its impact, one facet a line, then one line per option; the folds under it go from compressed to full detail, the full impact table first, with each option's own effect. A part with a <i>more detail</i> button, above or inside a fold, shows more detail as short bullets when you click it or its text, and full detail in headed sections on a second click; <b>More</b> beside an option shows it in full.<span id="doclink"></span></p>
     <div class="bar">
       <span class="count" id="count">loading decisions…</span>
       <span class="meter" aria-hidden="true"><i id="meterfill"></i></span>
@@ -236,9 +243,12 @@ const fid=k=>esc(k.replace(/\s/g,"_"));
 /* impact, one vocabulary at every size (the decisions skill): Effect, Wait, Reach, Undo, Cost */
 /* tag size: the effect alone, after an arrow (the map, a closed card, the popup) */
 const tagEffect=c=>'<span class="eff"><b>→</b>'+fmtPlain(c.impact.effect)+'</span>';
-/* the card's Impact line: → effect · later: wait · reach: … · undo: … (cost only when given) */
+/* the facets in their one order: key, the label a line opens with, the heading at full detail */
+const IMP_FACETS=[["effect","→","Effect"],["wait","later:","Wait"],["reach","reach:","Reach"],["undo","undo:","Undo"],["cost","cost:","Cost"]];
+const impLabel=(k,l)=>k==="effect"?'<b>→</b>':'<i>'+l+'</i>';
+/* the card's Impact, across all its options: one facet a line, → effect, later:, reach:, undo:, and cost: when given */
 const impactLine=c=>{const i=c.impact;
-  return '<p class="impline"><span class="lbl">Impact</span><b>→</b> '+fmt(i.effect)+' · <i>later:</i> '+fmt(i.wait)+' · <i>reach:</i> '+fmt(i.reach)+' · <i>undo:</i> '+fmt(i.undo)+(typeof i.cost==="string"&&i.cost?' · <i>cost:</i> '+fmt(i.cost):'')+'</p>'};
+  return '<div class="impline"><span class="lbl">Impact</span>'+IMP_FACETS.map(([k,l])=>isTxt(i[k])?'<p>'+impLabel(k,l)+' '+fmt(i[k])+'</p>':'').join("")+'</div>'};
 /* the block's Impact table: a row per option, then the Wait row (decide later's); Effect, Reach, Undo, Cost.
    An option with no blocks entry shows its impact as the effect, and — for facets the card does not state;
    the Wait row is the card's impact.wait, its other facets — */
@@ -261,7 +271,7 @@ const actList=(c,k)=>{const st=c&&c.act&&typeof c.act==="object"?c.act[k]:null;
 /* a fill-in placeholder: an angle-bracketed word with no spaces, such as <dir> or <path> */
 const PLACEHOLDER=/<[A-Za-z][\w-]*>/;
 
-/* the card's Context: first on the open card and in the popup (plain=true renders slugs as text, the popup's way).
+/* the card's Context: under the TLDR on the open card and in the popup (plain=true renders slugs as text, the popup's way).
    An older card's what, when present, is shown at its end, after the cue, so nothing is lost */
 const contextBlock=(c,plain)=>{const f=plain?fmtPlain:fmt;
   return '<div class="ctx"><span class="lbl">Context</span><p>'+f(c.context)+'</p>'
@@ -271,9 +281,21 @@ const contextBlock=(c,plain)=>{const f=plain?fmtPlain:fmt;
 const REC_OPEN=/^[^A-Za-z]*(rec|recs|recommend|recommended|recommendation)\b(?!\s*(\([a-y]\)\s*)?by\b)\s*(\.|:|—|–|-\s|\(|$)/i;
 const REC_ANY=/\brec\s*\(\s*[a-y]\s*\)|\b(i|we)(['’]d|\s+would)?\s+recommend\b|\b(my|our)\s+(rec|recommendation)\b|\(\s*rec(ommended)?\s*\)|\([a-y]\),?\s+(is\s+)?recommended\b(?!\s+by\b)/i;
 const recBullet=s=>REC_OPEN.test(s)||REC_ANY.test(s);
-/* a rendition: text, or a non-empty list of text (shown as bullets) */
+/* the shapes. Flat: text, or a non-empty list of text (the evidence summary). A bullet: text, or {t, sub}
+   with sub a non-empty list of text. A section: {h, b}, b a non-empty list of bullets. A rendition: text, a
+   list of bullets, or a list of sections. An object holding both t and h is neither */
 const isTxt=v=>typeof v==="string"&&!!v.trim();
-const isRend=v=>isTxt(v)||(Array.isArray(v)&&v.length>0&&v.every(isTxt));
+const isFlat=v=>isTxt(v)||(Array.isArray(v)&&v.length>0&&v.every(isTxt));
+const isObj=v=>!!v&&typeof v==="object"&&!Array.isArray(v);
+const isItem=v=>isTxt(v)||(isObj(v)&&!("h" in v)&&isTxt(v.t)&&(!("sub" in v)||(Array.isArray(v.sub)&&v.sub.length>0&&v.sub.every(isTxt))));
+const isList=v=>Array.isArray(v)&&v.length>0&&v.every(isItem);
+const isSecs=v=>Array.isArray(v)&&v.length>0&&v.every(x=>isObj(x)&&!("t" in x)&&isTxt(x.h)&&isList(x.b));
+const isRend=v=>isTxt(v)||isList(v)||isSecs(v);
+/* every text of a rendition in reading order: a heading, then each bullet and its sub-bullets */
+const textsOf=x=>typeof x==="string"?[x]:Array.isArray(x)?x.reduce((a,y)=>a.concat(textsOf(y)),[])
+  :isObj(x)?("h" in x?[x.h].concat(textsOf(x.b)):[x.t].concat(textsOf(x.sub||[]))):[];
+/* an Impact level's facet value: text, one bullet, or a list of bullets */
+const isFacet=v=>isItem(v)||isList(v);
 /* the detail keys whose renditions are text or a list (impact, tldr and o have their own shapes) */
 const DETAIL_TEXT=["context","rec","why","whyask","dep","evidence"];
 
@@ -296,7 +318,7 @@ function check(d){
     if(!keys.has(c.L))bad.push(w+": L is not a layer key");
     for(const k of ["t","why","whyask","basis","reason","unknown","rev"])if(!isStr(c[k]))bad.push(w+": "+k+" missing");
     if(isStr(c.rev)&&!c.rev.trim())bad.push(w+": rev is empty");
-    if(!isStr(c.context)||!c.context.trim())bad.push(w+": context missing: open the card with the terms, items and concepts the rest of it uses, then what is decided");
+    if(!isStr(c.context)||!c.context.trim())bad.push(w+": context missing: give the card a Context that introduces the terms, items and concepts the rest of it uses");
     if(!["strong","partial","thin","none"].includes(c.basis))bad.push(w+": basis must be strong, partial, thin or none");
     if(!Array.isArray(c.tldr)||!c.tldr.every(isStr))bad.push(w+": tldr must be a list of text");
     else{const i=c.tldr.findIndex(recBullet);if(i>=0)bad.push(w+": tldr bullet "+(i+1)+" carries the recommendation: the options mark it; say what is decided instead")}
@@ -317,20 +339,20 @@ function check(d){
         if(/[\r\n]/.test(x)){bad.push(w+": act ("+k+") has a line break in a step: put text of more than one line in a file named by its path");break}
         const m=x.match(PLACEHOLDER);if(m){bad.push(w+": act ("+k+") has a fill-in placeholder "+m[0]+": write the value, or name the file that holds the text by its path");break}}
     }
-    if(c.evidence!=null&&!isStr(c.evidence)&&!isRend(c.evidence))bad.push(w+": evidence must be text or a non-empty list of text");
+    if(c.evidence!=null&&!isStr(c.evidence)&&!isFlat(c.evidence))bad.push(w+": evidence must be text or a non-empty list of text");
     /* detail: [medium, high] per part (null is absent); a key a later template adds is not refused, the runner lints it */
     if(c.detail!=null){const dt=c.detail,lv=(v,ok)=>Array.isArray(v)&&v.length>=1&&v.length<=2&&v.every(ok);
       if(typeof dt!=="object"||Array.isArray(dt))bad.push(w+": detail must be an object holding [medium, high] per part");
       else{
-        for(const k of DETAIL_TEXT)if(k in dt&&!lv(dt[k],isRend))bad.push(w+": detail."+k+" must be [medium, high], each text or a list of text");
-        if("impact" in dt&&!lv(dt.impact,i=>!!i&&typeof i==="object"&&!Array.isArray(i)&&isTxt(i.effect)&&["wait","reach","undo","cost"].every(f=>!(f in i)||isStr(i[f]))))bad.push(w+": detail.impact must be [medium, high], each {effect, wait, reach, undo, cost} as text, effect required");
+        for(const k of DETAIL_TEXT)if(k in dt&&!lv(dt[k],isRend))bad.push(w+": detail."+k+" must be [medium, high], each text, bullets or sections");
+        if("impact" in dt&&!lv(dt.impact,i=>isObj(i)&&isFacet(i.effect)&&["wait","reach","undo","cost"].every(f=>!(f in i)||isStr(i[f])||isFacet(i[f]))))bad.push(w+": detail.impact must be [medium, high], each {effect, wait, reach, undo, cost} with each facet text, a bullet or a list of bullets, effect required");
         if("tldr" in dt){
-          if(!lv(dt.tldr,b=>Array.isArray(b)&&b.length>0&&b.every(isTxt)))bad.push(w+": detail.tldr must be [medium, high], each a list of bullets as text");
-          else dt.tldr.forEach((b,m)=>{const i=b.findIndex(recBullet);if(i>=0)bad.push(w+": detail.tldr "+["medium","high"][m]+" bullet "+(i+1)+" carries the recommendation: the options mark it; say what is decided instead")});
+          if(!lv(dt.tldr,b=>isList(b)||isSecs(b)))bad.push(w+": detail.tldr must be [medium, high], each bullets or sections");
+          else dt.tldr.forEach((b,m)=>{const i=textsOf(b).findIndex(recBullet);if(i>=0)bad.push(w+": detail.tldr "+["medium","high"][m]+" bullet "+(i+1)+" carries the recommendation: the options mark it; say what is decided instead")});
         }
         if("o" in dt){
-          if(!dt.o||typeof dt.o!=="object"||Array.isArray(dt.o)||Object.keys(dt.o).some(k=>k==="z"||!ls.includes(k)))bad.push(w+": detail.o is keyed by option letter, not (z), each [medium, high] as text or a list of text");
-          else for(const k in dt.o)if(!lv(dt.o[k],isRend)){bad.push(w+": detail.o."+k+" must be [medium, high], each text or a list of text");break}
+          if(!isObj(dt.o)||Object.keys(dt.o).some(k=>k==="z"||!ls.includes(k)))bad.push(w+": detail.o is keyed by option letter, not (z), each [medium, high] as text, bullets or sections");
+          else for(const k in dt.o)if(!lv(dt.o[k],isRend)){bad.push(w+": detail.o."+k+" must be [medium, high], each text, bullets or sections");break}
         }
       }
     }
@@ -365,22 +387,39 @@ const linkOne=h=>h.replace(LINK,m=>{const u=trimUrl(m);return '<a href="'+u+'" t
 const linkify=h=>h.split(/(<button\b[^>]*>[\s\S]*?<\/button>)/).map((p,i)=>i%2?p:linkOne(p)).join("");
 const fmtD=s=>linkify(fmt(s));
 
-/* detail levels (decision 198): every part opens at its summary; a click steps it to its medium, then its
-   high, then back. A level replaces the part's text. A part with only its summary has no toggle */
+/* detail levels (decision 198): every part opens at its summary; a click steps it to its medium (bullets),
+   then its high (sections), then back. A level replaces the part's text. A part with only its summary has
+   no toggle */
 const detOf=(c,k)=>{const d=c.detail;return d&&typeof d==="object"&&Array.isArray(d[k])?d[k]:[]};
 const detOpt=(c,k)=>{const d=c.detail,o=d&&typeof d==="object"?d.o:null;return o&&typeof o==="object"&&Array.isArray(o[k])?o[k]:[]};
 const nextLevel=(cur,max)=>(cur+1)%(max+1);
 const lvText=(lvl,max)=>lvl>=max?"less detail":(lvl===0?"more detail":"full detail");
-/* text as a paragraph, a list as bullets */
-const rend=(x,f)=>Array.isArray(x)?'<ul class="lvl">'+x.map(s=>'<li>'+f(s)+'</li>').join("")+'</ul>':'<p>'+f(x)+'</p>';
+/* text as a paragraph; a list as bullets, each {t, sub} with its sub-bullets nested; sections as a heading
+   (escaped, never linked) over their bullets */
+const itemHtml=(b,f)=>typeof b==="string"?'<li>'+f(b)+'</li>'
+  :'<li>'+f(b.t)+(Array.isArray(b.sub)?'<ul class="lvl sub">'+b.sub.map(x=>'<li>'+f(x)+'</li>').join("")+'</ul>':'')+'</li>';
+const listHtml=(xs,f,cls)=>'<ul class="'+(cls||"lvl")+'">'+xs.map(b=>itemHtml(b,f)).join("")+'</ul>';
+const isSecRow=x=>isObj(x)&&"h" in x;
+const secsHtml=(xs,f)=>xs.map(x=>'<div class="lvs"><h4 class="lvh">'+fmt(x.h)+'</h4>'+listHtml(x.b,f)+'</div>').join("");
+const rend=(x,f)=>Array.isArray(x)?(x.length&&isSecRow(x[0])?secsHtml(x,f):listHtml(x,f)):'<p>'+f(x)+'</p>';
 /* a labelled fold part (Why now, Why ask, Depends on); pre opens it at every level (Why ask's class) */
 const labelled=(lbl,x,pre)=>Array.isArray(x)
   ?'<div><span class="lbl">'+esc(lbl)+'</span>'+(pre?'<p>'+pre+'</p>':'')+rend(x,fmtD)+'</div>'
   :'<p><span class="lbl">'+esc(lbl)+'</span>'+(pre?pre+' — ':'')+fmtD(x)+'</p>';
-/* the Impact line at more detail: the same label, one facet a line, in the one vocabulary */
-const impactFull=i=>'<div class="impline impfull"><span class="lbl">Impact</span><p><b>→</b> '+fmtD(i.effect)+'</p>'
-  +[["later","wait"],["reach","reach"],["undo","undo"],["cost","cost"]].map(([l,k])=>isTxt(i[k])?'<p><i>'+l+':</i> '+fmtD(i[k])+'</p>':'').join("")+'</div>';
+/* the Impact at more detail: one bullet per facet, its label first, the options in its sub-bullets
+   (a list value, which the runner lints, shows as sub-bullets too) */
+const impactMedium=i=>'<div class="impline"><span class="lbl">Impact</span><ul class="lvl">'
+  +IMP_FACETS.map(([k,l])=>{const v=i[k];if(!isFacet(v))return "";const lab=impLabel(k,l)+' ';
+    if(Array.isArray(v))return '<li>'+lab+listHtml(v,fmtD,"lvl sub")+'</li>';
+    return typeof v==="string"?'<li>'+lab+fmtD(v)+'</li>':'<li>'+lab+itemHtml(v,fmtD).slice(4)}).join("")+'</ul></div>';
+/* the Impact at full detail: a section per facet, headed Effect, Wait, Reach, Undo, Cost */
+const impactHigh=i=>'<div class="impline"><span class="lbl">Impact</span>'
+  +IMP_FACETS.map(([k,,h])=>{const v=i[k];if(!isFacet(v))return "";
+    return '<div class="lvs"><h4 class="lvh">'+h+'</h4>'+(typeof v==="string"?'<p>'+fmtD(v)+'</p>':listHtml(Array.isArray(v)?v:[v],fmtD))+'</div>'}).join("")+'</div>';
+/* detail.impact's first level is its medium, its second its high */
+const impactLevel=(i,m)=>m===0?impactMedium(i):impactHigh(i);
 const tldrHtml=(bs,f)=>'<div><span class="lbl">TLDR</span><ul class="tldr">'+bs.map(b=>'<li>'+f(b)+'</li>').join("")+'</ul></div>';
+const tldrLevel=x=>'<div><span class="lbl">TLDR</span>'+rend(x,fmtD)+'</div>';
 /* the rec line: its summary is the reason and the unknown; a level replaces both with one string */
 const recHeadHtml=c=>(c.rec?'Rec <strong>('+esc(c.rec)+')</strong>':'<em>'+esc(c.norec||"no recommendation")+'</em>')+' · basis <strong>'+esc(c.basis)+'</strong>';
 const recLine=(c,x)=>x==null
@@ -397,8 +436,8 @@ function parts(c){
   const ev=detOf(c,"evidence");
   const P={
     ctx:[contextBlock(c)].concat(detOf(c,"context").map(x=>'<div class="ctx"><span class="lbl">Context</span>'+rend(x,fmtD)+'</div>')),
-    imp:[impactLine(c)].concat(detOf(c,"impact").map(impactFull)),
-    tldr:[tldrHtml(c.tldr,fmt)].concat(detOf(c,"tldr").map(b=>tldrHtml(b,fmtD))),
+    imp:[impactLine(c)].concat(detOf(c,"impact").map(impactLevel)),
+    tldr:[tldrHtml(c.tldr,fmt)].concat(detOf(c,"tldr").map(tldrLevel)),
     rec:[recLine(c,null)].concat(detOf(c,"rec").map(x=>recLine(c,x))),
     why:[labelled("Why now",c.why)].concat(detOf(c,"why").map(x=>labelled("Why now",x))),
     whyask:[labelled("Why ask",c.whyask,cls)].concat(detOf(c,"whyask").map(x=>labelled("Why ask",x,cls))),
@@ -436,7 +475,7 @@ function cardHtml(c){
   const n=esc(c.n),g="d"+n,P=parts(c);
   let h='<details class="card" id="card-'+n+'"><summary><span class="n">'+n+'</span><h3>'+esc(c.t)+'</h3>'
     +'<span class="meta">'+metaPills(c)+recPill(c)+tagEffect(c)+(c.dep?'<span>depends on: '+fmtPlain(c.dep)+'</span>':'')+'<span id="sum-'+n+'">'+ansLabel(c,answers[c.n])+'</span></span></summary>'
-    +'<div class="body">'+secHtml(c,"ctx","Context",P.ctx)+secHtml(c,"imp","Impact",P.imp)+secHtml(c,"tldr","TLDR",P.tldr)
+    +'<div class="body">'+secHtml(c,"tldr","TLDR",P.tldr)+secHtml(c,"ctx","Context",P.ctx)+secHtml(c,"imp","Impact",P.imp)
     +line("If left:",c.ifleft)+line("A round costs:",c.roundcosts)+line("If unanswered:",c.ifunanswered)
     +'<fieldset><legend>Your answer: one option or one follow-up</legend><div class="opts">';
   for(const [k,full,imp,ttl,why] of c.o){
@@ -572,10 +611,11 @@ function fillPop(k){
   const c=byN.get(k),r=REFS[k];let h="";
   if(c){
     h='<div class="pop-h"><span class="n">'+esc(k)+'</span><span>'+esc(c.t)+'</span></div>'
-     +'<p>'+metaPills(c)+recPill(c)+' '+recSub(c)+'</p><p>'+tagEffect(c)+'</p>'
+     +'<p>'+metaPills(c)+recPill(c)+' '+recSub(c)+'</p>'
      +'<p><span class="lbl">Your answer</span>'+ansLabel(c,answers[c.n])+'</p>'
-     +contextBlock(c,true)
      +'<ul class="tldr">'+c.tldr.map(b=>'<li>'+fmtPlain(b)+'</li>').join("")+'</ul>'
+     +contextBlock(c,true)
+     +'<p><span class="lbl">Impact</span>'+tagEffect(c)+'</p>'
      +'<ol>'+c.o.map(o=>'<li'+(c.rec&&o[0]===c.rec?' class="isrec"':'')+'><span class="ol">('+esc(o[0])+')</span>'+esc(o[3])+'</li>').join("")+'</ol>'
      +'<div class="pop-f"><button class="btn" type="button" data-open="'+esc(c.n)+'">Open card</button>'+(c.rec&&!readonly?'<button class="btn" type="button" data-quick="rec" data-n="'+esc(c.n)+'">Use recommendation</button>':'')+'</div>';
   }else if(r){

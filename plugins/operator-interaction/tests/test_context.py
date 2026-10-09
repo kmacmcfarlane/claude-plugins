@@ -1,13 +1,15 @@
-"""Every page card opens on a Context that introduces what the rest of it names.
+"""Every page card carries a Context that introduces what the rest of it names.
 
 Three parts:
 
 - the decision page (`decision-page` skill): its required `context` field, the refusal of a
   TLDR bullet that carries the recommendation, `contextBlock` (which renders Context, and an
-  older card's `what` after it) and the render order, loaded from `assets/index.html` and run
-  under node against `assets/cards.example.json` and broken copies of it;
-- the pre-publish runner, `scripts/check_cards.js`: its exits and one-line errors, and its
-  lints for ids, counts and named things a card's context does not introduce;
+  older card's `what` after it) and the render order (TLDR, then Context, then Impact), loaded
+  from `assets/index.html` and run under node against `assets/cards.example.json` and broken
+  copies of it;
+- the pre-publish runner, `scripts/check_cards.js`: its exits and one-line errors, its lint
+  for ids anywhere the page shows text, and its lints for counts and named things a card's
+  context does not introduce;
 - the `rev` rule, in identical words in the four places it is written.
 
 Run from the plugin dir: python3 -m unittest discover -s tests -q
@@ -218,13 +220,13 @@ class DecisionPageContext(unittest.TestCase):
         self.assertIn('<span class="slug-t">38', blk["pop"])
         self.assertNotIn("<button", blk["pop"])
 
-    def test_the_open_card_and_the_popup_open_on_context(self):
+    def test_the_open_card_and_the_popup_open_on_the_tldr_then_context_then_impact(self):
         d = example()
         d["cards"][1]["what"] = "Where the old links lead after the move."
         for blk in run_page(d)["blocks"]:
             card = blk["card"]
+            self.assertLess(card.index('class="tldr"'), card.index('class="ctx"'), blk["n"])
             self.assertLess(card.index('class="ctx"'), card.index('class="impline"'), blk["n"])
-            self.assertLess(card.index('class="impline"'), card.index('class="tldr"'), blk["n"])
             # Context's summary rendition, once; its levels repeat the labelled wrapper only
             self.assertEqual(card.count(blk["open"]), 1, blk["n"])
             # under decision 197 (a) the Background fold holds Why now and Why ask only
@@ -235,7 +237,9 @@ class DecisionPageContext(unittest.TestCase):
                 self.assertIn(blk["what"], blk["open"])
         html = PAGE.read_text()
         pop = html[html.index("function fillPop"):html.index("function place(")]
-        self.assertLess(pop.index("contextBlock(c,true)"), pop.index('class="tldr"'))
+        self.assertLess(pop.index('class="tldr"'), pop.index("contextBlock(c,true)"))
+        self.assertLess(pop.index("contextBlock(c,true)"), pop.index("tagEffect(c)"))
+        self.assertEqual(pop.count("tagEffect(c)"), 1)
 
     def test_the_page_free_part_holds_no_lookbehind(self):
         # a lookbehind is a syntax error in an older browser, and stops the whole script
@@ -265,7 +269,8 @@ class DecisionPageRunner(unittest.TestCase):
     def assert_lint(self, d, needle):
         code, out, err = runner(d)
         self.assertEqual(code, 2, out + err)
-        self.assertTrue(all(x.startswith("lint: card ") for x in out.splitlines()), out)
+        self.assertTrue(all(x.startswith(("lint: card ", "lint: page: ")) for x in out.splitlines()),
+                        out)
         self.assertIn(needle, out)
         return out
 
@@ -322,7 +327,7 @@ class DecisionPageRunner(unittest.TestCase):
         self.assertIn("card 41: context missing", out)
         self.assertNotIn("lint:", out)
 
-    def test_the_id_lint_covers_every_flat_field(self):
+    def test_the_id_lint_covers_every_flat_field_whatever_context_says(self):
         setters = {
             "t": lambda c: c.__setitem__("t", "Docs build KAPPA-3570"),
             "tldr": lambda c: c["tldr"].append("KAPPA-3570 asks for it"),
@@ -337,20 +342,44 @@ class DecisionPageRunner(unittest.TestCase):
             with self.subTest(field=name):
                 d = example()
                 put(d["cards"][0])
-                self.assert_lint(d, "lint: card 41: KAPPA-3570 is not introduced in its context")
-                d["cards"][0]["context"] += " KAPPA-3570 is the docs team's ticket for the move."
-                self.assert_clean(d)
+                self.assert_lint(d, "lint: card 41: KAPPA-3570 looks like an id")
+                # a gloss in Context no longer clears an id: the page names things instead
+                d["cards"][0]["context"] = d["cards"][0]["context"][:-1] + "; KAPPA-3570 is its ticket."
+                self.assert_lint(d, "lint: card 41: KAPPA-3570 looks like an id")
 
-    def test_the_folds_their_levels_act_lede_and_layer_notes_are_not_linted(self):
-        for put in (lambda d: d["cards"][0]["o"][0].__setitem__(1, "see KAPPA-3570"),
-                    lambda d: d["cards"][0].__setitem__("evidence", "see KAPPA-3570"),
-                    lambda d: d["cards"][0]["detail"]["why"].__setitem__(
-                        1, d["cards"][0]["detail"]["why"][1] + " See KAPPA-3570."),
-                    lambda d: d["cards"][0]["detail"]["o"]["b"].__setitem__(
-                        1, d["cards"][0]["detail"]["o"]["b"][1] + " See KAPPA-3570."),
-                    lambda d: d["cards"][0]["act"]["b"].append("Close KAPPA-3570."),
-                    lambda d: d["page"].__setitem__("lede", "From KAPPA-3570."),
-                    lambda d: d["layers"][0].__setitem__(2, "From KAPPA-3570.")):
+    def test_ids_in_the_folds_levels_act_lede_layers_and_refs_are_linted(self):
+        last_b = lambda lv: lv[-1]["b"]
+        for put, needle in (
+                (lambda d: d["cards"][0]["o"][0].__setitem__(1, "see KAPPA-3570"), "lint: card 41: "),
+                (lambda d: d["cards"][0].__setitem__("evidence", "see KAPPA-3570"), "lint: card 41: "),
+                (lambda d: last_b(d["cards"][0]["detail"]["why"][1]).append("See KAPPA-3570."),
+                 "lint: card 41: "),
+                (lambda d: last_b(d["cards"][0]["detail"]["o"]["b"][1]).append("See KAPPA-3570."),
+                 "lint: card 41: "),
+                (lambda d: d["cards"][0]["blocks"]["a"].__setitem__("who", "per KAPPA-3570"),
+                 "lint: card 41: "),
+                (lambda d: d["cards"][0]["act"]["b"].append("Close KAPPA-3570."), "lint: card 41: "),
+                (lambda d: d["page"].__setitem__("lede", "From KAPPA-3570."), "lint: page: "),
+                (lambda d: d["layers"][0].__setitem__(2, "From KAPPA-3570."), "lint: page: "),
+                (lambda d: d["refs"]["38"].__setitem__("q", "Clear KAPPA-3570?"), "lint: page: ")):
+            with self.subTest(needle=needle):
+                d = example()
+                put(d)
+                self.assert_lint(d, needle + "KAPPA-3570 looks like an id")
+        # in backticks it is something the operator types: clean
+        d = example()
+        d["cards"][0]["act"]["b"].append("Run `close KAPPA-3570` in the tracker.")
+        self.assert_clean(d)
+
+    def test_counts_and_named_things_in_the_folds_act_lede_and_layers_are_not_linted(self):
+        last_b = lambda lv: lv[-1]["b"]
+        t = "The three reviewers, in content mode."
+        for put in (lambda d: d["cards"][0].__setitem__("evidence", "Observed: " + t),
+                    lambda d: last_b(d["cards"][0]["detail"]["why"][1]).append(t),
+                    lambda d: d["cards"][0]["blocks"]["a"].__setitem__("who", t),
+                    lambda d: d["cards"][0]["act"]["b"].append("Ask " + t),
+                    lambda d: d["page"].__setitem__("lede", t),
+                    lambda d: d["layers"][0].__setitem__(2, t)):
             d = example()
             put(d)
             self.assert_clean(d)
@@ -365,26 +394,28 @@ class DecisionPageRunner(unittest.TestCase):
             with self.subTest(term=t):
                 d = example()
                 d["cards"][0]["tldr"].append("Uses " + t)
-                self.assert_lint(d, "lint: card 41: " + t + " is not introduced")
+                self.assert_lint(d, "lint: card 41: " + t + " looks like an id")
 
     def test_a_count_its_context_does_not_name_is_linted(self):
         d = with_tldr("Start the three now")
         self.assert_lint(d, '"three" counts things its context does not name: say what the '
                             "three things are, or list them")
-        d["cards"][0]["context"] += " The three are the build, the cache and the publish step."
+        # spliced in as a clause: Context's summary stays two sentences
+        d["cards"][0]["context"] = (d["cards"][0]["context"][:-1]
+                                    + "; the three are the build, the cache and the publish step.")
         self.assert_clean(d)
 
     def test_numbers_that_are_not_counts_are_not_linted(self):
         d = example()
         d["cards"][1]["o"][0][4] = "12 redirects keep old links working"  # twelve, in context
-        d["cards"][0]["tldr"] = ["Takes about 4 minutes, from 2026-10-08",
-                                 "v1.2.3 ships at 14:05, a two-way door",
-                                 "Reaches 50% of readers in 2 weeks"]
+        d["cards"][0]["tldr"] = [
+            "Takes about 4 minutes, from 2026-10-08, reaching 50% of readers in 2 weeks",
+            "v1.2.3 ships at 14:05, a two-way door"]
         self.assert_clean(d)
 
     def test_an_ids_digits_are_not_a_count(self):
         d = with_tldr("Fixes KAPPA-3570")
-        out = self.assert_lint(d, "KAPPA-3570 is not introduced")
+        out = self.assert_lint(d, "KAPPA-3570 looks like an id")
         self.assertEqual(len(out.splitlines()), 1, out)
 
     def test_a_named_thing_its_context_does_not_gloss_is_linted(self):
@@ -392,7 +423,7 @@ class DecisionPageRunner(unittest.TestCase):
         d["cards"][0]["o"][0][3] = "Turn on content mode"
         self.assert_lint(d, '"content mode" is not glossed in its context: give it a one-line '
                             "gloss in context")
-        d["cards"][0]["context"] += " Content mode is the host's setting that serves pages as text."
+        d["cards"][0]["context"] = d["cards"][0]["context"][:-1] + "; content mode serves pages as text."
         self.assert_clean(d)
 
     def test_a_named_thing_drops_its_determiner(self):

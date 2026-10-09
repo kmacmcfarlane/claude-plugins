@@ -148,7 +148,7 @@ plugins/
       decisions/       # references/{worksheet,rendering,replies,evidence-basis,rationale,rulings,gallery}.md
       plain-names/     # plain names for what agents mention, the id a trailing tag
       decision-page/   # a set of decisions as an answer page: assets/{index.html,cards.example.json}, references/{cards-schema,fallback}.md, scripts/check_cards.js (the pre-publish check; node optional)
-    tests/             # test_impact.py: the decision page's impact check and renderers (under node), and the decisions gallery's impact at every size; test_act.py: the page's act field and its check (under node), and the gallery's To act on parts, placeholders and labels; test_context.py: the page's context field, its TLDR check and render order, and the pre-publish runner (under node); test_depth.py: the page's detail levels, the More button's option detail, links and the runner's depth lints (under node)
+    tests/             # test_impact.py: the decision page's impact check and renderers (under node), and the decisions gallery's impact at every size; test_act.py: the page's act field and its check (under node), and the gallery's To act on parts, placeholders and labels; test_context.py: the page's context field, its TLDR check and render order, and the pre-publish runner (under node); test_depth.py: the page's detail levels, the More button's option detail, links and the runner's depth lints (under node); test_shape.py: the page's level shapes and their render, the Impact one facet a line, and the runner's shape, rec-only effect and id lints (under node)
   ralph/               # Unattended agent loops over a backlog
     skills/
       {backlog-yaml,backlog-entry,backlog-grooming}/

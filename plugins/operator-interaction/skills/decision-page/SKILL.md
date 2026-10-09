@@ -6,10 +6,12 @@ description: "Put a set of decisions to the operator as an answer page: a publis
 # Decision page
 
 A set of decisions on one page the operator works through at their own pace: each card flat
-on its essentials with folds for the rest; a click on a part with a more-detail button shows it in more detail, and
-**More** beside an option shows that option in full; one choice per card enforced by the radio buttons,
-answers saved as they click. You publish it, they answer, you read the answers back and hand
-them to your caller. The format first served a 24-decision set on how decisions are handled.
+on its essentials (its TLDR, then its Context, then its Impact) with folds for the rest; a
+click on a part with a more-detail button shows it as terse bullets, then in headed sections,
+and **More** beside an option shows that option in full; one choice per card enforced by the
+radio buttons, answers saved as they click. You publish it, they answer, you read the answers
+back and hand them to your caller. The format first served a 24-decision set on how decisions
+are handled.
 
 The page is `assets/index.html`, a fixed template; the decisions are `cards.json` beside it
 (`references/cards-schema.md`). Generation time does not limit use: a new set is a data file
@@ -60,26 +62,36 @@ In a working directory (your scratchpad unless the caller names one): copy
   gloss drawn from anywhere outside the card is new information: a new `rev`. The page copies
   the `rev` into each answer, and answers given to the old one stop counting, on the page and
   in the read-back.
-- Every card carries `context`, first: written from the caller's stored What, its cue and the
-  terms the card uses. **Context introduces every specific thing the card names.** Two shapes
-  need it most:
+- Every card carries `context`, under its TLDR: one or two sentences, written from the
+  caller's stored What, its cue and the terms the card uses. The TLDR says what is decided, so
+  Context does not repeat it. **Context introduces every specific thing the card names.** Two
+  shapes need it most:
   - **A count** ("four changes", "the three"). Context says what the things are, or lists
     them: *the review asked for four changes: X, Y, Z and W*.
   - **A named mode, setting, review, plan or document** ("content mode", "the review").
     Context gives it a one-line gloss: what it is, and where it comes from.
 
-  The same holds for an item, an id or a label: plain words first, the id after. Then run the
-  cold read on it (the `decisions` skill's `references/worksheet.md` § The cold read): list
-  each noun phrase in the card's Impact line, TLDR, option titles and one lines that refers to
-  a specific thing (a count, a named mode, setting, review, plan or document, an item, an id or
-  a label), and point to its gloss in `context`. A phrase with no gloss gets one before the
+  Then run the cold read on it (the `decisions` skill's `references/worksheet.md` § The cold
+  read): list each noun phrase in the card's Impact, TLDR, option titles and one lines that
+  refers to a specific thing (a count, a named mode, setting, review, plan or document, an item
+  or a label), and point to its gloss in `context`. A phrase with no gloss gets one before the
   page goes out. Do not set `what`: it is older data only (`references/cards-schema.md`).
-- The TLDR names no recommendation: the options mark it. Say what is decided, and what rides
-  on it.
-- Every card carries `impact`, the decision's Impact line (effect, wait, reach, undo; the
-  `decisions` skill's `references/rendering.md` § Impact) — copied from the caller's stored
-  line where it keeps one — so every view on the page shows it: the effect in the map and on
-  a closed card, the line on an open one, the table in its Options in full.
+- **No ids on the page.** The page is the operator's only context: refer to another decision
+  by its slug, and to an item, a series, a branch or a commit by its short name or title, with
+  no id after it, in every field, the page and layer titles included. A fact only an id
+  carries goes in backticks in `act` or `evidence`, as something to type or open. The caller
+  passes an id → plain-name map where it has one (its items' short names); otherwise look each
+  one up once per page.
+- The TLDR comes first on the card: one or two terse fragment bullets. It names no
+  recommendation: the options mark it. Say what is decided, and what rides on it.
+- Every card carries `impact`, the decision's Impact across all its options (effect, wait,
+  reach, undo; the `decisions` skill's `references/rendering.md` § Impact), so every view on
+  the page shows it: the effect in the map and on a closed card, the facets one a line on an
+  open one, the table in its Options in full. Its `effect` says what the decision changes and
+  settles, favouring no option, written from the card's own option effects (`blocks`, each
+  option's `impact`); never copy a stored line's Effect, which is the recommendation's. Its
+  `wait`, `reach` and `undo` are copied from the caller's stored line where it keeps one and
+  they hold across the options. Each option's own effect lives in its `blocks` row.
 - Every card carries `blocks`, its Impact table row per option but (z) (effect, reach, undo,
   and cost); a ⚠ one-way card is refused without them. A round ask carries `ifleft` and
   `roundcosts`; a status-quo default, `ifunanswered`.
@@ -89,9 +101,14 @@ In a working directory (your scratchpad unless the caller names one): copy
   `evidence` with its paths and links. **Levels scale with the decision** and are optional on
   every part: a small call may carry none; a wide or one-way decision carries the most, a
   medium and a high in `detail` for its visible parts (Context, the Impact line, the TLDR, the
-  rec line) and for the fold items with depth to give. Context's high, when there is one,
-  holds the facts a cold reader has lost. Where a part has levels, its depth meets its size at
-  its top level. Write it from the sources, not from the stored card alone:
+  rec line) and for the fold items with depth to give. **Each level has its shape**, each
+  clearly sparser than the next (`references/cards-schema.md` § A card, `detail`): a summary
+  is one or two sentences (the TLDR one or two bullets, the Impact one facet a line); medium
+  is terse fragment bullets with a sub-bullet or two, the Impact's one bullet per facet with
+  the options in its sub-bullets; high is headed sections with bullets and sub-bullets.
+  Context's high, when there is one, holds the facts a cold reader has lost. Where a part has
+  levels, its depth meets its size at its top level. Write it from the sources, not from the
+  stored card alone:
   - the caller's record of the decision: a stored card's lost-context facts, each option's
     reach, undo and cost, and its basis drill-down;
   - the work that raised it: the investigation series or plan, the work item's notes, and the
@@ -114,9 +131,11 @@ In a working directory (your scratchpad unless the caller names one): copy
   recommendation, an `act` keyed by option letters other than `z`, each a non-empty list of
   one-line steps with no fill-in placeholder, the required fields.
 - With node present, run the skill's `scripts/check_cards.js` (under its base directory) on
-  the working copy's `cards.json`. Fix every refusal it prints. For each `lint:` line, add
-  the gloss to `context`, or leave the term knowingly. For each `depth:` line, fix the depth
-  or the level from the sources, or leave it knowingly, never padded.
+  the working copy's `cards.json`. Fix every refusal it prints. For an id, name the thing;
+  for a count or a named thing, add the gloss to `context`; or leave the term knowingly. For
+  each `shape:` line, reshape the level; for an `impact:` line, write the effect across the
+  options. For each `depth:` line, fix the depth or the level from the sources, or leave it
+  knowingly, never padded.
   On a republish, the depth lines on a card the operator has answered are left knowingly: that
   card keeps its depth as it stands (step 3). Without node, check by reading, and run the cold
   read.
@@ -164,10 +183,18 @@ new information: a new `rev`.
 
 A `cards.json` written before `detail` existed renders as it did, with **More** buttons and no
 toggles. On a republish, write the depth and the `detail` levels its decision calls for
-(step 2) into each card with no counting answer, and into each card revised anyway, each with a new `rev`; leave a card the
-operator has answered as it is, unless it is revised for another reason. A card that gets
-`detail` gets a new `rev`, so the republish hands it over as shown again (§ Hand over what was
-shown), with the publish time.
+(step 2) into each card with no counting answer, and into each card revised anyway, each with
+a new `rev`; leave a card the operator has answered as it is, unless it is revised for another
+reason. A card that gets `detail` gets a new `rev`, so the republish hands it over as shown
+again (§ Hand over what was shown), with the publish time.
+
+A `cards.json` written before the level shapes renders TLDR first, the Impact one facet a
+line, and its text levels as paragraphs; nothing is refused, and the runner lints its shapes,
+its ids and an effect that reads as the recommendation's. On a republish, give each card with
+no counting answer, and each card revised anyway, its `impact` across the options, its levels
+in their shapes and names in place of its ids, each with a new `rev`, handed over as shown
+again. Leave a card the operator has answered as it is, its lints left knowingly, unless it is
+revised for another reason.
 
 **Hand over what was shown.** After a publish or republish, for every card whose number and
 `rev` were not on the page before (on a first publish, every card), hand the caller the
@@ -249,6 +276,6 @@ answer to a card whose `rev` has not moved is a new answer and hands over one mo
 - `assets/index.html` — the page template
 - `assets/cards.example.json` — invented example data
 - `scripts/check_cards.js` — the pre-publish check under node: the page's own refusals, then
-  lints for ids, counts and named things a card's Context does not introduce, and the depth
-  lints (a visible part without its levels, a level not longer than the one below, thin or long
-  depth, a missing `blocks` row)
+  lints for ids anywhere on the page, counts and named things a card's Context does not
+  introduce, the level shapes, an effect that reads as the recommendation's, and the depth
+  lints (a level not longer than the one below, thin or long depth, a missing `blocks` row)
