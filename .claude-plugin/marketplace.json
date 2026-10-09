@@ -56,6 +56,11 @@
       "description": "The agent–operator interface — how your agents put what they need from you in front of you so you can act on it where it appears. The decisions skill puts a decision to you so you can understand and answer it where it is shown: a content floor every decision carries, its impact shown in every view, detail that scales with the stakes, a set order, natural-language replies with an echo, and \"decide later\" with a wake. The plain-names skill names everything they mention (work items, branches, commits) in plain words, with an id only as a trailing tag. The decision-page skill puts a set of decisions on a page you answer by clicking, saved as you go, and reads your answers back for the agent to record (external, soft: claude.ai Artifacts with the db capability; a docs connector or chat without them)."
     },
     {
+      "name": "ownership",
+      "source": "./plugins/ownership",
+      "description": "Each repo's ownership claim — a CLAIM.md at the repo root stating what the repo owns, what next to it is not ours and whose it is, and which repo defines each boundary with a neighbour; the claim-md skill writes one with the operator's approval, checks the claims across your repos with a read-only script, and answers who owns what from them (soft dependencies: work-items, whose wi files a claim change and its fix items as work items, else they are put to you in chat and listed; kit-dev, whose factor-analysis plans a split not yet made, else you rule on it from the splitting rule; dev-flow, whose librarian section's Not owned lines the check compares with Not ours by name when a repo has both, and through whose librarian cycle a claim change lands in a librarian session; operator-interaction, whose decisions skill shapes the approval question, else a plain question)."
+    },
+    {
       "name": "ralph",
       "source": "./plugins/ralph",
       "description": "Unattended agent loops over a backlog — the backlog.yaml workflow for ralph runs. Requires the claude-sandbox tool (see the sandbox plugin); consumes a work source through the work-source interface, with backlog.yaml as the default provider (soft dependency: work-items, whose work-source provider interface it implements)."

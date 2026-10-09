@@ -150,6 +150,10 @@ plugins/
       plain-names/     # plain names for what agents mention, the id a trailing tag
       decision-page/   # a set of decisions as an answer page: assets/{index.html,cards.example.json}, references/{cards-schema,writer-digest,fallback}.md, scripts/check_cards.js (the pre-publish check; node optional)
     tests/             # test_impact.py: the decision page's impact check and renderers (under node), and the decisions gallery's impact at every size; test_act.py: the page's act field and its check (under node), and the gallery's To act on parts, placeholders and labels; test_context.py: the page's context field, its TLDR check and render order, and the pre-publish runner (under node); test_depth.py: the page's detail levels, the More button's option detail, links and the runner's depth lints (under node); test_shape.py: the page's level shapes and their render, the Impact one facet a line, and the runner's shape, rec-only effect and id lints (under node); test_digest.py: the decision page's writer digest against the schema's fields and their Required cells, the runner's lint keys and line starts, its thresholds and the example's follow list, each check proved by a mutation
+  ownership/           # Each repo's ownership claim (CLAIM.md): what it owns, what is not ours, its boundaries
+    skills/
+      claim-md/        # references/{format,checks,answer,example}.md, assets/CLAIM.template.md
+      claim-md/scripts/  # claim_check.py (the read-only claim check) + unit tests
   ralph/               # Unattended agent loops over a backlog
     skills/
       {backlog-yaml,backlog-entry,backlog-grooming}/
@@ -315,6 +319,7 @@ current home is the real home, and is where files go.
 | Unattended agent loops over a backlog ("ralph") | `plugins/ralph/` | `plugins/ralph/` — **landed** (Phase 5) |
 | Start a new repo for a thread of work, with an agent session launched on it | `plugins/create-repo/` | `plugins/create-repo/` — **landed** (2c77) |
 | The agent–operator interface: what agents need from the operator, in a form they can act on where it appears (first: how decisions are raised and shown; then plain names for what they mention) | `plugins/operator-interaction/` | `plugins/operator-interaction/` — **landed** (9f98) |
+| Declare each repo's ownership claim (CLAIM.md): what it owns, what next to it is not ours and whose, and its boundaries | `plugins/ownership/` | `plugins/ownership/` — **landed** (53d7) |
 | Maintaining this kit itself | `plugins/kit-dev/` | `plugins/kit-dev/` — **landed** (Phase 6) |
 | Stack expertise ("make Claude good at X") | the `expertise` marketplace (repo `claude-expertise`) — not this repo | moved to the expertise marketplace (local scaffold, remote pending) — **landed** (Phase 2) |
 | Web-UI chat-session skills | `plugins/chat/` | family home under review |
@@ -337,5 +342,6 @@ Checks:
 - (cd plugins/dev-flow/skills/research/scripts && python3 -m unittest discover -s tests -q)
 - (cd plugins/dev-flow && python3 -m unittest discover -s tests -q)
 - (cd plugins/operator-interaction && python3 -m unittest discover -s tests -q)
+- (cd plugins/ownership/skills/claim-md/scripts && python3 -m unittest discover -s tests -q)
 - (cd plugins/kit-dev && python3 -m unittest discover -s tests -q)
 Push: main
