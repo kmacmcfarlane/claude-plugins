@@ -116,3 +116,6 @@ verdict: step 2 review round 1 NEEDS_CHANGES (medium 1: tier-3 outcome serial mi
 dispatch: implementer opus medium — fix round 1 (resume aa90361669ba918cc)
 return: DONE 534ffe0 on merge 3725883 (06_build-outcome.md written, INDEX updated: 13 runs, observed 2.1.293, 28/29 plugins loaded, answer mode not exercised, rerun waits on the operator; printable repo names; --literal-pathspecs; example pointer; --dir retry; 12/12 Checks, ownership 71)
 dispatch: reviewer opus high — step 2 review round 2 (resume a81a043e328779aa9)
+verdict: step 2 review round 2 CLEAR (lows: serial line 120-121 false — only A1 recovered after the denied Bash; README catalog conflicts with main at the kit-dev row (d0b0); nits: 'beside the estate', version source)
+decided: 2026-10-09T09:30Z words — the serial's three wording corrections are the librarian's (series file, not custody): line 120-121 rewritten to the review's reading, 'beside the repo', the init event's claude_code_version cited
+dispatch: implementer opus medium — merge main into the branch only (resolve the README catalog conflict, keep main's kit-dev row with the ownership row), rerun all Checks (resume aa90361669ba918cc)

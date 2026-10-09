@@ -34,3 +34,10 @@ decided: 2026-10-09T09:14Z scope — finding 3: no extra page is written just to
 dispatch: implementer opus medium — fix round 1 (resume a5aa638c006bd182a)
 return: DONE 8f65102 on merge 366b1fa (Step 2 points at the digest; act secret rule; digest gaps; line-start column; test_digest pins keys, Required cells, thresholds, follow, with mutations; 11/11 Checks, operator-interaction 127; its scan used the shared scratchpad scan.sh, which another agent had overwritten, so the reviewer reruns cc_scan)
 dispatch: reviewer opus high — review round 2 (resume af1922219a541a7ad)
+verdict: review round 2 CLEAR (minor 1: SKILL.md:142 '§ Size' no longer resolves; nits: id lint's printed start not read through idLine, Context and TLDR caps unpinned, two-key schema rows skipped); real cc_scan clean
+decided: 2026-10-09T09:33Z cap — finish round of minor 1 and nit 3 (authority answer 145); nits 2 and 4 accepted
+dispatch: implementer opus medium — finish round (resume a5aa638c006bd182a)
+return: DONE c25d6fa (finish: § Size pointer; two threshold rows pinned with mutations)
+review: self
+verdict: finish round CLEAR — diff read: the pointer and two table rows with their test
+landed: 64fc695 (merge of b12ad40..c25d6fa); Checks 11/11 OK; the item stays open for the same-page measurement (decided)
