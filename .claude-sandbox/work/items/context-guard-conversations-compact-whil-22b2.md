@@ -3,8 +3,10 @@ id: context-guard-conversations-compact-whil-22b2
 title: "context-guard: conversations compact while idle, without the operator driving it"
 short_display_name: idle compaction without operator
 type: bug
-status: todo
+status: doing
 priority: 1
+owner: Kyle-McFarlane@2d49f8460283
+claimed: 2026-10-09T17:12Z
 created: 2026-10-09
 updated: 2026-10-09
 refs:
@@ -22,3 +24,10 @@ note: 2026-10-09 first look, observed from context-guard's gate state files (cla
 dispatch: scout sonnet medium — evidence pass over every ledger epoch header and gate state: fill, trigger, checkpoint before it, operator turn before it
 agent: scout ad2b806566bbfd486
 note: 2026-10-09 ~17:15 UTC gap 2 observed live in this session: after the 16:40 deferral at ~28% fill, the Stop hook added context asking the model to run the checkpoint now and start no new work; not run, since a checkpoint here would release the next low-fill auto compaction against the operator's stated intent
+
+## Notes
+- 2026-10-09 claimed by Kyle-McFarlane@2d49f8460283
+return: scout — 19 compactions in 14 days (13 manual, 6 auto); three autos below 85% (72.4%, 81.6%, 80.5%) went through at precompact_gate.py:46 on the checkpointed_this_epoch branch; twice the chain deferral → Stop relay → checkpoint → next idle attempt passes; idle auto attempts arrive 53.7–54.0 minutes after the last turn end (observed from transcripts, Claude Code 2.1.292); report at scratchpad/22b2-evidence.md
+decided: 2026-10-09T17:25Z design — the operator's stated expectation settles it: a proactive auto compaction is deferred while remaining > due, whether or not a checkpoint ran; released only at or under due after a checkpoint, or under hard as now; the Stop relay asks for a checkpoint only at or under due, never on a low-fill deferral
+target: no auto compaction passes above the due line (850K on 1M); the relay never fires above it; manual /compact untouched; tests for each path, including checkpointed-at-low-fill and the relay
+dispatch: implementer opus medium — build (gate behaviour; not a canonical mechanical kind)
