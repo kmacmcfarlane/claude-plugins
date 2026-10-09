@@ -3,12 +3,11 @@ id: statusline-hub-refuse-to-write-its-entry-fe79
 title: "statusline-hub: refuse to write its entry into a project's tracked .claude/settings.json"
 short_display_name: hub writes tracked project settings
 type: bug
-status: doing
+status: done
 priority: 3
-owner: Kyle-McFarlane@2d49f8460283
-claimed: 2026-10-09T09:47Z
 created: 2026-10-08
 updated: 2026-10-09
+closed: 2026-10-09
 refs:
   - statusline-hub-end-the-silent-wait-behin-7dd3 review 1
 ---
@@ -34,3 +33,7 @@ dispatch: implementer opus medium — fix round 1 (resume a428d65ba07fb6f87)
 return: DONE 71c8e7f (heal guarded on both restores; --project records scope and is told to rerun --project; message leads with --local and removing the dead entry; git timeout waits; GIT_* stripped in tests; docs; tracked checked first; 11/11 Checks)
 dispatch: reviewer opus high — review round 2 (resume a327c87bd6419153b)
 agent: reviewer a327c87bd6419153b (round 2)
+verdict: review round 2 CLEAR (low 1: heal's _put and the blocked marker drop the new scope field, so the project-specific wording can be lost after a heal — wording only; nits: --settings path records no scope; a git always over 2 s waits quietly)
+decided: 2026-10-09T10:24Z scope — land; low 1 and the nits change only which once-only line is shown, never what is written; filed as a small follow-up
+landed: 3756bcf (merge of 6a74752, 71c8e7f); Checks 12/12 OK
+- 2026-10-09 done
