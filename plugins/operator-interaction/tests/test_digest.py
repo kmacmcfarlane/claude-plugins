@@ -37,7 +37,9 @@ THRESHOLDS = {
     "words in a summary or medium bullet": r"\bTERSE = (\d+)",
     "sub-bullets on one bullet": r"\bSUB_CAP = (\d+)",
     "bullets in a medium level": r"\bMEDIUM_CAP = (\d+)",
+    "sentences in Context's summary": r"\bcs > (\d+)",
     "words in Context's summary": r"\bcw > (\d+)",
+    "bullets in the TLDR": r"\bc\.tldr\.length > (\d+)",
     "words in a summary Impact facet": r"words\(c\.impact\[k\]\) > (\d+)",
     "words in the card in all": r"\ball > (\d+)",
 }
@@ -186,13 +188,19 @@ class WriterDigest(unittest.TestCase):
 
     def test_threshold_mutations(self):
         for old, new in [("TERSE = 14", "TERSE = 15"), ("MEDIUM_CAP = 6", "MEDIUM_CAP = 7"),
-                         ("cw > 60", "cw > 61"), ("all > 1350", "all > 1400")]:
+                         ("cw > 60", "cw > 61"), ("all > 1350", "all > 1400"),
+                         ("cs > 2", "cs > 3"), ("c.tldr.length > 2", "c.tldr.length > 3")]:
             with self.subTest(old=old):
                 self.assertIn(old, self.js)
                 self.assertTrue(threshold_problems(self.js.replace(old, new), self.digest))
         facet = self.digest.replace("| words in a summary Impact facet | 16 |",
                                     "| words in a summary Impact facet | 20 |")
         self.assertTrue(threshold_problems(self.js, facet))
+        for row in ("| sentences in Context's summary | 2 |", "| bullets in the TLDR | 2 |"):
+            with self.subTest(row=row):
+                self.assertIn(row, self.digest)
+                cut = self.digest.replace(row, row.replace("| 2 |", "| 3 |"))
+                self.assertTrue(threshold_problems(self.js, cut))
 
     def test_follow(self):
         self.assertEqual(follow_problems(self.digest, self.example), [])

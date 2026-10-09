@@ -111,7 +111,9 @@ The lints fire past these (`scripts/check_cards.js`):
 | words in a summary or medium bullet | 14 |
 | sub-bullets on one bullet | 2 |
 | bullets in a medium level | 6 |
+| sentences in Context's summary | 2 |
 | words in Context's summary | 60 |
+| bullets in the TLDR | 2 |
 | words in a summary Impact facet | 16 |
 | words in the card in all | 1350 |
 

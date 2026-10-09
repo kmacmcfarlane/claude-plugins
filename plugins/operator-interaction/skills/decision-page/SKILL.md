@@ -139,9 +139,10 @@ The rules below are what the digest condenses:
 
   The caller supplies them, or the paths to them. Read each source once per page, not once per
   card. What no source holds goes under `unknown`, never into the depth. A small call keeps a
-  short card. Each level is more writing, on the cards that carry one (§ Size gives the
-  figures): when a page's cards draw on many sources, say the cost to the caller before
-  writing, and write the depth of the open cards first.
+  short card. Each level is more writing, on the cards that carry one
+  (`references/cards-schema.md` § Size gives the figures): when a page's cards draw on many
+  sources, say the cost to the caller before writing, and write the depth of the open cards
+  first.
 - A card whose option asks the operator to act carries `act`: its steps, as the **To act
   on** part in the `decisions` skill's `references/rendering.md` § Card gives them.
 - Every mention of another decision is a slug, `[[N]]`; a decision not on the page that a
