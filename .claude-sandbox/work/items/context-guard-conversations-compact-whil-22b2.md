@@ -31,3 +31,4 @@ return: scout — 19 compactions in 14 days (13 manual, 6 auto); three autos bel
 decided: 2026-10-09T17:25Z design — the operator's stated expectation settles it: a proactive auto compaction is deferred while remaining > due, whether or not a checkpoint ran; released only at or under due after a checkpoint, or under hard as now; the Stop relay asks for a checkpoint only at or under due, never on a low-fill deferral
 target: no auto compaction passes above the due line (850K on 1M); the relay never fires above it; manual /compact untouched; tests for each path, including checkpointed-at-low-fill and the relay
 dispatch: implementer opus medium — build (gate behaviour; not a canonical mechanical kind)
+agent: implementer a5c4b28f7b81cabbd
