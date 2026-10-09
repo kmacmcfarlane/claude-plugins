@@ -18,3 +18,7 @@ Operator 2026-10-09 asked why the 22-card page cost so much. Measured (subagent 
 - next: —
 - blocked: —
 - learned: —
+
+## Notes
+findings: carried — from 1e00 review 2: rewrap rulings.md:65 and cards-schema.md:248
+note: measured 2026-10-09T08:57Z — one writer for 7 cards: 10 turns, ~132k peak context, reads batched, the file written once and edited (open-decisions page); last night's 5 writers for 22 cards: 18-29 turns and 143-201k each, 13.1M cache-read in all. The skill change should make one writer the default.

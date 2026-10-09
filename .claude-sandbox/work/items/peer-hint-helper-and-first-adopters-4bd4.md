@@ -54,3 +54,5 @@ decision 208: The hub's first-run message names the statusline plugin and its in
   impact: Effect → no install pitch at install time · Wait: none, the build keeps it behind the switch · reach: every new statusline-hub user · undo: one message edit · cost: none
 shown 207: 2026-10-09T08:34Z chat
 shown 208: 2026-10-09T08:34Z chat
+shown 207: 2026-10-09T08:57Z page
+shown 208: 2026-10-09T08:57Z page

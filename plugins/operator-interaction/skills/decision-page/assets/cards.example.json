@@ -60,19 +60,20 @@
       "t": "Docs build home",
       "rev": "2026-01-12T09:30:00Z",
       "impact": {
-        "effect": "publishing no longer depends on one laptop",
-        "wait": "the local build stays; [[42]] and [[43]] wait",
-        "reach": "every docs contributor, and anyone who publishes by hand",
-        "undo": "switch the pipeline off; one config change"
+        "effect": "sets where the docs build runs, and who can publish",
+        "wait": "the laptop build stays; [[42]] and [[43]] wait",
+        "reach": "every docs contributor, and the maintainer who publishes today",
+        "undo": "(a) nothing to undo; (b) switch the CI pipeline off, one config change",
+        "cost": "(b) about 4 minutes of CI per merge"
       },
       "tldr": [
-        "The docs build runs on a laptop today",
-        "Move it to CI, or keep it local"
+        "Docs build and publish from one laptop today",
+        "Move them to CI, or keep the laptop build"
       ],
-      "context": "The docs site is built and published from one maintainer's laptop today. CI is the shared build service that runs on every merge to `main`. A stale cache is a leftover copy of an old build that the laptop reused by mistake; you last saw it break two publishes ([[38]]). You decide where the build runs from now on.",
+      "context": "The docs site is built and published from one maintainer's laptop, where a stale cache (a leftover copy of an old build) broke two publishes this month, and clearing it once ([[38]]) held a week. CI is the shared build service that already runs on every merge to `main`.",
       "why": "Two broken publishes this month came from a local cache. Blocks [[42]] and [[43]].",
       "whyask": "Moving the build changes who can publish; the team may rely on publishing by hand.",
-      "class": "wider scope",
+      "class": "trust",
       "ifunanswered": "I leave the build on the laptop and carry on with other work.",
       "rec": "b",
       "o": [
@@ -124,69 +125,351 @@
       "evidence": "Build logs for both failed publishes show the same stale cache directory.",
       "detail": {
         "context": [
-          "The docs site is built and published from one maintainer's laptop today; CI is the shared build service that runs on every merge to `main`. A stale cache is a leftover copy of an old build that the laptop reused by mistake: it broke two publishes this month, and clearing it once ([[38]]) held for a week. CI already builds the site on every merge as a check, then throws the result away. You decide where the build runs from now on.",
-          "The docs site is built and published from one maintainer's laptop today; CI is the shared build service that runs on every merge to `main`. A stale cache is a leftover copy of an old build that the laptop reused by mistake: it broke two publishes this month, and clearing it once ([[38]], answered: clear it) held for a week. CI already builds the site on every merge as a check, then throws the result away; publishing from it adds one deploy step, the same command the maintainer runs by hand, and one secret, the deploy token. The maintainer is away from the 20th for two weeks, and until the build moves nobody else can publish. You decide where the build runs from now on; [[42]] and [[43]] arise only if it moves."
+          [
+            "Built and published from one maintainer's laptop today",
+            {
+              "t": "A stale cache broke two publishes this month",
+              "sub": [
+                "a leftover copy of an old build, reused by mistake",
+                "clearing it once ([[38]]) held a week"
+              ]
+            },
+            "CI, the shared build service, already builds every merge to `main` as a check",
+            "Publishing from CI adds one deploy step and one secret",
+            "The maintainer is away from the 20th; nobody else can publish"
+          ],
+          [
+            {
+              "h": "Today",
+              "b": [
+                "The docs site is built and published from one maintainer's laptop.",
+                {
+                  "t": "A stale cache broke two publishes this month.",
+                  "sub": [
+                    "It is a leftover copy of an old build that the laptop reused by mistake.",
+                    "Clearing it once ([[38]], answered: clear it) held for a week."
+                  ]
+                }
+              ]
+            },
+            {
+              "h": "What CI changes",
+              "b": [
+                "CI already builds the site on every merge to `main` as a check, then throws the result away.",
+                "Publishing from it adds one deploy step, the command the maintainer runs by hand, and one secret, the deploy token."
+              ]
+            },
+            {
+              "h": "Why now",
+              "b": [
+                "The maintainer is away from the 20th for two weeks; until the build moves, nobody else can publish."
+              ]
+            },
+            {
+              "h": "What rides on it",
+              "b": [
+                "[[42]] and [[43]] arise only if the build moves."
+              ]
+            }
+          ]
         ],
         "impact": [
           {
-            "effect": "publishing no longer depends on one laptop: any merge to `main` publishes, whoever made it",
-            "wait": "the laptop build stays, with its cache failures; [[42]] and [[43]] wait on this answer",
-            "reach": "every docs contributor, and the maintainer who publishes by hand today",
-            "undo": "switch the CI pipeline off; one config change, and the laptop build works as before"
+            "effect": {
+              "t": "sets where the docs build runs, and who can publish",
+              "sub": [
+                "(a) nothing changes; cache failures continue at about two a month",
+                "(b) any merge to `main` publishes within minutes, whoever made it"
+              ]
+            },
+            "wait": {
+              "t": "the laptop build stays, with its cache failures; [[42]] and [[43]] wait",
+              "sub": [
+                "the maintainer is away from the 20th; nobody else can publish"
+              ]
+            },
+            "reach": {
+              "t": "every docs contributor, and the maintainer who publishes today",
+              "sub": [
+                "(b) also readers, who see a merged change within minutes"
+              ]
+            },
+            "undo": {
+              "t": "cheap either way",
+              "sub": [
+                "(a) nothing to undo",
+                "(b) switch the CI pipeline off; one config change"
+              ]
+            },
+            "cost": "(b) only: about 4 minutes of CI per merge, and one deploy secret"
           },
           {
-            "effect": "publishing no longer depends on one laptop: any merge to `main` publishes within about 4 minutes, whoever made it, and a failed build stops the publish instead of shipping a broken page",
-            "wait": "the laptop build stays, with about two cache failures a month; while the maintainer is away from the 20th nobody can publish; [[42]] and [[43]] wait on this answer",
-            "reach": "every docs contributor, the maintainer who publishes by hand today, and readers, who see a merged change within minutes",
-            "undo": "switch the CI pipeline off; one config change. Nothing is migrated, so the laptop build works as before",
-            "cost": "about 4 minutes of CI per merge, and one secret to keep in CI's settings"
+            "effect": [
+              "Sets where the docs build runs, and so who can publish.",
+              {
+                "t": "(a) Nothing changes: the maintainer builds, checks the preview and publishes by hand.",
+                "sub": [
+                  "The cache failures continue at about two a month.",
+                  "Each is found when a reader reports a broken page."
+                ]
+              },
+              {
+                "t": "(b) Any merge to `main` publishes within about 4 minutes, whoever made it.",
+                "sub": [
+                  "A failed build stops the publish instead of shipping a broken page.",
+                  "The first CI publish replaces the live site."
+                ]
+              }
+            ],
+            "wait": [
+              "The laptop build stays, with about two cache failures a month.",
+              "While the maintainer is away from the 20th for two weeks, nobody can publish.",
+              "[[42]] and [[43]] wait on this answer; they arise only if the build moves."
+            ],
+            "reach": [
+              "Every docs contributor: under (b), any merge goes live.",
+              "The maintainer who publishes by hand today.",
+              "(b) Readers, who see a merged change within minutes."
+            ],
+            "undo": [
+              "(a) Nothing to undo.",
+              {
+                "t": "(b) Switch the CI pipeline off; one config change.",
+                "sub": [
+                  "Nothing is migrated, so the laptop build works as before."
+                ]
+              }
+            ],
+            "cost": [
+              "(a) About two failed publishes a month, each fixed by clearing the cache and publishing again.",
+              {
+                "t": "(b) About 4 minutes of CI per merge.",
+                "sub": [
+                  "One secret, the deploy token, kept in CI's settings."
+                ]
+              }
+            ]
           }
         ],
         "tldr": [
           [
-            "The docs site builds and publishes from one maintainer's laptop, whose stale cache broke two publishes this month",
-            "Move building and publishing to CI on every merge, or keep the laptop build"
+            {
+              "t": "Docs build and publish from one laptop today",
+              "sub": [
+                "its stale cache broke two publishes this month"
+              ]
+            },
+            {
+              "t": "Move them to CI on every merge, or keep the laptop build",
+              "sub": [
+                "the laptop build stays for previews either way"
+              ]
+            }
           ],
           [
-            "The docs site builds and publishes from one maintainer's laptop, whose stale cache broke two publishes this month",
-            "Nobody else can publish while it lives there, and the maintainer is away from the 20th",
-            "Move building and publishing to CI on every merge, or keep the laptop build",
-            "Moving changes who can publish: every merge goes live, not only when the maintainer chooses"
+            {
+              "h": "Today",
+              "b": [
+                "The docs site builds and publishes from one maintainer's laptop, whose stale cache broke two publishes this month.",
+                "Nobody else can publish while it lives there, and the maintainer is away from the 20th."
+              ]
+            },
+            {
+              "h": "The choice",
+              "b": [
+                "Move building and publishing to CI on every merge, or keep the laptop build.",
+                {
+                  "t": "Moving changes who can publish.",
+                  "sub": [
+                    "Every merge goes live, not only when the maintainer chooses."
+                  ]
+                }
+              ]
+            }
           ]
         ],
         "rec": [
-          "both failures were read in the build logs: the same stale cache both times, while CI's builds of the same commits passed · unknown: whether anyone publishes from a fork",
-          "both failures were read in the build logs: the same stale cache both times, while CI's builds of the same commits passed, and CI starts every build from a clean checkout · unknown: whether anyone publishes from a fork; the repo settings do not show it, and no fork has opened a docs change this year"
+          [
+            "both failures read in the build logs",
+            {
+              "t": "the same stale cache both times",
+              "sub": [
+                "CI's builds of the same commits passed"
+              ]
+            },
+            "unknown: whether anyone publishes from a fork"
+          ],
+          [
+            {
+              "h": "Reason",
+              "b": [
+                "Both failures were read in the build logs: the same stale cache both times.",
+                "CI's builds of the same commits passed, and CI starts every build from a clean checkout."
+              ]
+            },
+            {
+              "h": "Unknown",
+              "b": [
+                "Whether anyone publishes from a fork.",
+                {
+                  "t": "Not settled by the repo.",
+                  "sub": [
+                    "Its settings do not show it.",
+                    "No fork has opened a docs change this year."
+                  ]
+                }
+              ]
+            }
+          ]
         ],
         "why": [
-          "Two publishes broke this month, both from the laptop's stale cache; clearing it once ([[38]]) held for a week. The maintainer is away from the 20th. Blocks [[42]] and [[43]].",
-          "Two publishes broke this month, both from the laptop's stale cache; clearing it once ([[38]]) held for a week. The maintainer who publishes is away from the 20th for two weeks, and nobody else can publish while the build lives on that laptop. Blocks [[42]] and [[43]], which arise only if the build moves."
+          [
+            "Two publishes broke this month, both from the laptop's stale cache",
+            "Clearing it once ([[38]]) held a week",
+            "The maintainer is away from the 20th",
+            "Blocks [[42]] and [[43]]"
+          ],
+          [
+            {
+              "h": "What broke",
+              "b": [
+                "Two publishes broke this month, both from the laptop's stale cache.",
+                "Clearing it once ([[38]]) held for a week."
+              ]
+            },
+            {
+              "h": "Why now",
+              "b": [
+                "The maintainer who publishes is away from the 20th for two weeks.",
+                "Nobody else can publish while the build lives on that laptop."
+              ]
+            },
+            {
+              "h": "What it blocks",
+              "b": [
+                "[[42]] and [[43]], which arise only if the build moves."
+              ]
+            }
+          ]
         ],
         "whyask": [
-          "Moving the build changes who can publish: from CI, every merge to `main` goes live within minutes, so a change can no longer be held back after merging.",
-          "Moving the build changes who can publish. Today one person publishes by hand, when they choose; from CI, every merge to `main` goes live within minutes. If the team relies on holding a change back after merging (a release-day page, say), that habit breaks, and the repo does not show whether it does."
+          [
+            "Moving the build changes who can publish",
+            {
+              "t": "From CI, every merge to `main` goes live within minutes",
+              "sub": [
+                "a change can no longer be held back after merging"
+              ]
+            }
+          ],
+          [
+            {
+              "h": "Who can publish",
+              "b": [
+                "Today one person publishes by hand, when they choose.",
+                "From CI, every merge to `main` goes live within minutes."
+              ]
+            },
+            {
+              "h": "What may break",
+              "b": [
+                "If the team holds a change back after merging (a release-day page, say), that habit breaks.",
+                "The repo does not show whether it does."
+              ]
+            }
+          ]
         ],
         "evidence": [
           [
-            "Observed: both failed publishes reused the same stale `.cache/build` directory; CI's builds of the same commits passed (`https://ci.example.com/docs-site/builds`).",
-            "Inferred: CI publishes would not hit the cache failure, since every CI build starts clean."
+            "Observed: both failed publishes reused a stale `.cache/build`",
+            {
+              "t": "Observed: CI's builds of the same commits passed",
+              "sub": [
+                "`https://ci.example.com/docs-site/builds`"
+              ]
+            },
+            "Inferred: CI publishes skip the cache failure, each build starting clean"
           ],
           [
-            "Observed: the build logs of both failed publishes show the same stale `.cache/build` directory, reused from an older build; CI's check builds of the same commits passed (`https://ci.example.com/docs-site/builds`).",
-            "Observed: CI already runs the full build on every merge, in about 4 minutes (the same builds page).",
-            "Inferred: CI publishes would not hit the cache failure, since every CI build starts from a clean checkout.",
-            "Observed: the deploy step CI would need is the same command the maintainer runs by hand (`scripts/publish.sh`); it reads the deploy token from the environment, so CI needs only the secret.",
-            "Assumed: nobody publishes from a fork; the repo settings do not show it either way, and no fork has opened a docs change this year."
+            {
+              "h": "Observed",
+              "b": [
+                "The build logs of both failed publishes show the same stale `.cache/build` directory, reused from an older build.",
+                "CI's check builds of the same commits passed (`https://ci.example.com/docs-site/builds`).",
+                "CI already runs the full build on every merge, in about 4 minutes (the same builds page).",
+                "The deploy step CI would need is the command the maintainer runs by hand (`scripts/publish.sh`); it reads the deploy token from the environment, so CI needs only the secret."
+              ]
+            },
+            {
+              "h": "Inferred",
+              "b": [
+                "CI publishes would not hit the cache failure, since every CI build starts from a clean checkout."
+              ]
+            },
+            {
+              "h": "Assumed",
+              "b": [
+                "Nobody publishes from a fork.",
+                {
+                  "t": "Not settled either way.",
+                  "sub": [
+                    "The repo settings do not show it.",
+                    "No fork has opened a docs change this year."
+                  ]
+                }
+              ]
+            }
           ]
         ],
         "o": {
           "a": [
-            "Keep building on the maintainer's laptop and publishing by hand. The stale-cache failures stay at about two a month.",
-            "Keep building on the maintainer's laptop. Nothing changes: they build, check the preview and publish by hand when they choose. The stale-cache failures stay at about two a month, each found when a reader reports a broken page and fixed by clearing the cache and publishing again."
+            [
+              "Keep building on the maintainer's laptop, publishing by hand",
+              "Stale-cache failures stay at about two a month"
+            ],
+            [
+              {
+                "h": "What happens",
+                "b": [
+                  "Keep building on the maintainer's laptop.",
+                  "Nothing changes: they build, check the preview and publish by hand when they choose."
+                ]
+              },
+              {
+                "h": "What it leaves",
+                "b": [
+                  "The stale-cache failures stay at about two a month.",
+                  "Each is found when a reader reports a broken page, and fixed by clearing the cache and publishing again."
+                ]
+              }
+            ]
           ],
           "b": [
-            "Build and publish from CI on every merge to `main`; the laptop build stays for previews. Each merge publishes within about 4 minutes.",
-            "Build and publish from CI on every merge to `main`; the laptop build stays for previews only. The first CI publish replaces the live site, and each later merge publishes within about 4 minutes. Publishing no longer waits for one person, and a failed build stops the publish instead of shipping a broken page."
+            [
+              "Build and publish from CI on every merge to `main`",
+              {
+                "t": "the laptop build stays for previews",
+                "sub": [
+                  "each merge publishes within about 4 minutes"
+                ]
+              }
+            ],
+            [
+              {
+                "h": "What happens",
+                "b": [
+                  "Build and publish from CI on every merge to `main`; the laptop build stays for previews only.",
+                  "The first CI publish replaces the live site; each later merge publishes within about 4 minutes."
+                ]
+              },
+              {
+                "h": "What it changes",
+                "b": [
+                  "Publishing no longer waits for one person.",
+                  "A failed build stops the publish instead of shipping a broken page."
+                ]
+              }
+            ]
           ]
         }
       }
@@ -197,19 +480,19 @@
       "t": "Old URLs after the move",
       "rev": "2026-01-12T09:30:00Z",
       "impact": {
-        "effect": "old links keep working through twelve redirects",
+        "effect": "sets what happens to links into the twelve moved pages",
         "wait": "the first CI publish waits for this answer",
-        "reach": "external readers and every site linking to the old pages",
-        "undo": "(a) remove the redirect lines; (b) none — once search engines drop the old URLs, redirects added later do not win the ranking back"
+        "reach": "external readers, and every site linking to the old pages",
+        "undo": "(a) remove the redirect lines; (b) none — lost search ranking does not come back"
       },
       "tldr": [
-        "The CI build changes some page URLs",
-        "Redirect them, or let them break"
+        "The CI build moves twelve pages to new URLs",
+        "Redirect the old URLs, or let them break"
       ],
-      "context": "Building in CI ([[41]], option b) gives twelve pages a new web address (URL): the ten how-to guides and the two pages that list the site's configuration options, all of which move under a new /docs/ folder. A redirect is one config line that sends a reader from an old URL to its new one. Only matters if [[41]] is (b). You decide what happens to links that point at the old addresses.",
+      "context": "Building in CI ([[41]], option b) moves twelve pages to new web addresses (URLs): the ten how-to guides and the two configuration pages. A redirect is one config line that sends a reader from an old URL to its new one.",
       "why": "Needed before the first CI publish. Blocks nothing else.",
       "whyask": "Breaking public links is a call about readers, not about the build.",
-      "class": "a real trade-off",
+      "class": "one-way",
       "warn": true,
       "rec": "a",
       "o": [
@@ -256,60 +539,302 @@
       "evidence": "Observed: the trial CI build lists the twelve pages whose paths change (`build/moved-pages.txt` from that run).",
       "detail": {
         "context": [
-          "Building in CI ([[41]], option b) gives twelve pages a new web address (URL): the ten how-to guides and the two pages that list the site's configuration options, all of which move under a new /docs/ folder. A redirect is one config line that sends a reader from an old URL to its new one, so a link to the old address keeps working. Only matters if [[41]] is (b). You decide what happens to links that point at the old addresses.",
-          "Building in CI ([[41]], option b) gives twelve pages a new web address (URL): the ten how-to guides and the two pages that list the site's configuration options, all of which move under a new /docs/ folder. You have not seen this list before: a trial CI build last week printed every page whose address changes. A redirect is one config line that sends a reader from an old URL to its new one, the old path then the new one, so a link to the old address keeps working. Only matters if [[41]] is (b). You decide what happens to links that point at the old addresses."
+          [
+            "Building in CI ([[41]], option b) moves twelve pages to new URLs",
+            {
+              "t": "The ten how-to guides and the two configuration pages",
+              "sub": [
+                "all move under a new /docs/ folder"
+              ]
+            },
+            "A trial CI build printed the list of moved pages",
+            "A redirect: one config line sending an old URL to its new one",
+            "Only matters if [[41]] is (b)"
+          ],
+          [
+            {
+              "h": "What moves",
+              "b": [
+                "Building in CI ([[41]], option b) gives twelve pages a new web address (URL).",
+                {
+                  "t": "They are the ten how-to guides and the two pages that list the site's configuration options.",
+                  "sub": [
+                    "All of them move under a new /docs/ folder.",
+                    "A trial CI build last week printed every page whose address changes; you have not seen this list before."
+                  ]
+                }
+              ]
+            },
+            {
+              "h": "What a redirect is",
+              "b": [
+                "One config line that sends a reader from an old URL to its new one: the old path, then the new one.",
+                "A link to the old address then keeps working."
+              ]
+            },
+            {
+              "h": "When it matters",
+              "b": [
+                "Only if [[41]] is (b): if the build stays on the laptop, the pages do not move."
+              ]
+            }
+          ]
         ],
         "impact": [
           {
-            "effect": "old links keep working through twelve redirects, one config line each",
-            "wait": "the first CI publish waits for this answer; nothing else does",
-            "reach": "external readers, and every site and bookmark linking to the old pages",
-            "undo": "(a) remove the redirect lines; (b) none — once search engines drop the old URLs, redirects added later do not win the ranking back"
+            "effect": {
+              "t": "sets what happens to links into the twelve moved pages",
+              "sub": [
+                "(a) old links keep working through twelve redirects",
+                "(b) old links return not found from the first CI publish"
+              ]
+            },
+            "wait": {
+              "t": "the first CI publish waits for this answer",
+              "sub": [
+                "nothing else does"
+              ]
+            },
+            "reach": "external readers, other sites and bookmarks linking to the old pages",
+            "undo": {
+              "t": "one-way under (b)",
+              "sub": [
+                "(a) remove the redirect lines",
+                "(b) none: once search engines drop the old URLs, ranking is lost"
+              ]
+            },
+            "cost": {
+              "t": "small either way",
+              "sub": [
+                "(a) twelve lines of redirect config to keep",
+                "(b) nothing now"
+              ]
+            }
           },
           {
-            "effect": "old links keep working through twelve redirects, one config line each, added before the first CI publish; a reader lands on the new page without noticing",
-            "wait": "the first CI publish waits for this answer; nothing else does, and if [[41]] is (a) the pages do not move",
-            "reach": "external readers, other sites, old forum answers and bookmarks that point at the old pages; about a fifth of the visits to those pages arrive from other sites",
-            "undo": "(a) remove the redirect lines, and nothing else changes; (b) none — search engines drop the old URLs within weeks, and redirects added later do not win the ranking back",
-            "cost": "(a) twelve lines of redirect config to keep; (b) nothing now"
+            "effect": [
+              "Sets what happens to links into the twelve moved pages.",
+              {
+                "t": "(a) Twelve redirects, one config line each, are added before the first CI publish.",
+                "sub": [
+                  "A reader following an old link lands on the new page without noticing."
+                ]
+              },
+              {
+                "t": "(b) The twelve old URLs return not found from the first CI publish.",
+                "sub": [
+                  "A reader following an old link sees an error page."
+                ]
+              }
+            ],
+            "wait": [
+              "The first CI publish waits for this answer; nothing else does.",
+              "If [[41]] is (a), the pages do not move and this card no longer applies."
+            ],
+            "reach": [
+              "External readers, other sites, old forum answers and bookmarks that point at the old pages.",
+              "About a fifth of the visits to those pages arrive from other sites."
+            ],
+            "undo": [
+              "(a) Remove the redirect lines; nothing else changes.",
+              "(b) None: search engines drop the old URLs within weeks, and redirects added later do not win the ranking back."
+            ],
+            "cost": [
+              "(a) Twelve lines of redirect config to keep.",
+              "(b) Nothing now."
+            ]
           }
         ],
         "tldr": [
           [
-            "The CI build moves twelve pages to new URLs",
-            "Redirect the old URLs, or let them return not found"
+            {
+              "t": "The CI build moves twelve pages to new URLs",
+              "sub": [
+                "the ten how-to guides and the two configuration pages"
+              ]
+            },
+            {
+              "t": "Redirect the old URLs, or let them return not found",
+              "sub": [
+                "a lost link cannot be won back later"
+              ]
+            }
           ],
           [
-            "The CI build moves twelve pages to new URLs: the ten how-to guides and the two configuration pages",
-            "Other sites and bookmarks link to them, and a lost link cannot be won back later",
-            "Redirect the old URLs, or let them return not found",
-            "A redirect is one config line per page"
+            {
+              "h": "What moves",
+              "b": [
+                "The CI build moves twelve pages to new URLs: the ten how-to guides and the two configuration pages.",
+                "Other sites and bookmarks link to them."
+              ]
+            },
+            {
+              "h": "The choice",
+              "b": [
+                "Redirect the old URLs, or let them return not found.",
+                {
+                  "t": "A redirect is one config line per page.",
+                  "sub": [
+                    "A lost link cannot be won back later."
+                  ]
+                }
+              ]
+            }
           ]
         ],
         "rec": [
-          "the URL list is observed in a trial CI build; the traffic to those pages is estimated from a referrer report · unknown: how many external sites link to the old URLs",
-          "the URL list is observed: a trial CI build printed every page whose address changes; the traffic is estimated: about a fifth of the visits to those pages arrive from other sites, by last month's referrer report · unknown: how many external sites link to the old URLs, since the report counts visits, not links; and whether the redirects work as the site generator's documentation says, which the first CI publish would show"
+          [
+            "the URL list is observed in a trial CI build",
+            "the traffic to those pages is estimated from a referrer report",
+            "unknown: how many external sites link to the old URLs"
+          ],
+          [
+            {
+              "h": "Reason",
+              "b": [
+                "The URL list is observed: a trial CI build printed every page whose address changes.",
+                "The traffic is estimated: about a fifth of the visits to those pages arrive from other sites, by last month's referrer report."
+              ]
+            },
+            {
+              "h": "Unknown",
+              "b": [
+                "How many external sites link to the old URLs: the report counts visits, not links.",
+                "Whether the redirects work as the site generator's documentation says; the first CI publish would show it."
+              ]
+            }
+          ]
         ],
         "why": [
-          "Needed before the first CI publish, which moves the twelve pages and breaks their old addresses unless the redirects are already in the config.",
-          "Needed before the first CI publish: that publish moves the twelve pages, and their old addresses break the moment it goes live unless the redirects are already in the config. Nothing else waits on it. If [[41]] is (a), the pages do not move and this card no longer applies."
+          [
+            "Needed before the first CI publish",
+            "That publish moves the twelve pages",
+            "Their old addresses break unless the redirects are in place"
+          ],
+          [
+            {
+              "h": "Why now",
+              "b": [
+                "Needed before the first CI publish: that publish moves the twelve pages, and their old addresses break the moment it goes live unless the redirects are already in the config."
+              ]
+            },
+            {
+              "h": "What it blocks",
+              "b": [
+                "Nothing else waits on it.",
+                "If [[41]] is (a), the pages do not move and this card no longer applies."
+              ]
+            }
+          ]
         ],
         "whyask": [
-          "Breaking public links is a call about readers, not about the build: other sites and bookmarks point at these pages, and a lost link cannot be won back.",
-          "Breaking public links is a call about readers, not about the build. Other sites, old forum answers and bookmarks point at these pages; whether those readers are worth twelve config lines is a judgement about the audience, and a lost link cannot be won back later."
+          [
+            "Breaking public links is a call about readers, not the build",
+            {
+              "t": "Other sites and bookmarks point at these pages",
+              "sub": [
+                "a lost link cannot be won back"
+              ]
+            }
+          ],
+          [
+            {
+              "h": "Whose call",
+              "b": [
+                "Breaking public links is a call about readers, not about the build.",
+                "Whether those readers are worth twelve config lines is a judgement about the audience."
+              ]
+            },
+            {
+              "h": "Why it is one-way",
+              "b": [
+                "Other sites, old forum answers and bookmarks point at these pages.",
+                "A lost link cannot be won back later."
+              ]
+            }
+          ]
         ],
         "evidence": [
-          "Observed: the trial CI build lists the twelve pages whose paths change (`build/moved-pages.txt` from that run). Estimated: about a fifth of the visits to those pages arrive from other sites, from last month's referrer report (`https://analytics.example.com/docs-site/referrers`).",
-          "Observed: the trial CI build lists the twelve pages whose paths change (`build/moved-pages.txt` from that run). Estimated: about a fifth of the visits to those pages arrive from other sites, read from last month's referrer report (`https://analytics.example.com/docs-site/referrers`). Unknown: how many sites link to them; the report counts visits, not links. Observed: the site generator reads redirects from its config file, one line each (`https://docs.example.com/generator/redirects`). Assumed: those redirects work as its documentation says; not tried here, and the first CI publish would show it."
+          [
+            "Observed: a trial CI build lists the twelve moved pages",
+            {
+              "t": "Estimated: about a fifth of their visits come from other sites",
+              "sub": [
+                "last month's referrer report"
+              ]
+            }
+          ],
+          [
+            {
+              "h": "Observed",
+              "b": [
+                "The trial CI build lists the twelve pages whose paths change (`build/moved-pages.txt` from that run).",
+                "The site generator reads redirects from its config file, one line each (`https://docs.example.com/generator/redirects`)."
+              ]
+            },
+            {
+              "h": "Estimated",
+              "b": [
+                "About a fifth of the visits to those pages arrive from other sites, read from last month's referrer report (`https://analytics.example.com/docs-site/referrers`)."
+              ]
+            },
+            {
+              "h": "Unknown and assumed",
+              "b": [
+                "Unknown: how many sites link to them; the report counts visits, not links.",
+                "Assumed: the redirects work as the generator's documentation says; not tried here, and the first CI publish would show it."
+              ]
+            }
+          ]
         ],
         "o": {
           "a": [
-            "Add a redirect for each of the twelve old URLs before the first CI publish, one line per page in the site config.",
-            "Add a redirect for each of the twelve old URLs before the first CI publish, one line per page in the site config. A reader following an old link lands on the new page without noticing. The twelve lines stay in the config, and need changing only if those pages move again."
+            [
+              "Add a redirect for each of the twelve old URLs",
+              "One line per page in the site config, before the first CI publish"
+            ],
+            [
+              {
+                "h": "What happens",
+                "b": [
+                  "Add a redirect for each of the twelve old URLs before the first CI publish, one line per page in the site config.",
+                  "A reader following an old link lands on the new page without noticing."
+                ]
+              },
+              {
+                "h": "What it leaves",
+                "b": [
+                  "The twelve lines stay in the config, and need changing only if those pages move again."
+                ]
+              }
+            ]
           ],
           "b": [
-            "Let the twelve old URLs return not found from the first CI publish; a reader following an old link sees an error page.",
-            "Let the twelve old URLs return not found from the first CI publish. A reader following an old link sees an error page and has to search for the new one. Search engines drop the old addresses within weeks, and redirects added after that do not win the ranking back."
+            [
+              "Let the twelve old URLs return not found",
+              {
+                "t": "A reader following an old link sees an error page",
+                "sub": [
+                  "search ranking for those pages is lost"
+                ]
+              }
+            ],
+            [
+              {
+                "h": "What happens",
+                "b": [
+                  "Let the twelve old URLs return not found from the first CI publish.",
+                  "A reader following an old link sees an error page and has to search for the new one."
+                ]
+              },
+              {
+                "h": "What it costs later",
+                "b": [
+                  "Search engines drop the old addresses within weeks.",
+                  "Redirects added after that do not win the ranking back."
+                ]
+              }
+            ]
           ]
         }
       }
@@ -326,10 +851,10 @@
         "undo": "one theme setting"
       },
       "tldr": [
-        "The CI build can apply a new theme",
-        "Pick a colour, or keep the current one"
+        "The move to CI can change the accent colour for free",
+        "Keep the blue, or switch to the logo's green"
       ],
-      "context": "Building in CI ([[41]], option b) applies the site's theme afresh, so the accent colour (the colour of links and headings) can change at no extra cost. The site is blue today; the logo is green. Either colour is one theme setting, a single line in the site's theme file, so it is easy to change back. You pick which the site uses.",
+      "context": "Building in CI ([[41]], option b) applies the site's theme afresh, so the accent colour (the colour of links and headings) can change at no extra cost. The site is blue today and the logo is green; either is one theme setting, a single line in the theme file.",
       "why": "Nothing forces it. It is raised because the move to CI rebuilds the theme from its source files, so a change made now costs nothing extra; made later, it is a separate theme build and a check of every page's contrast.",
       "whyask": "A taste call: no fact settles it. The blue has been the site's colour since launch, and readers know it; the green matches the logo and the product's other sites. Both read well in the light and dark themes (checked), so the choice is only how the site should look.",
       "rec": null,
@@ -375,44 +900,7 @@
           "cost": "The guide screenshots look dated until they are retaken, about an hour."
         }
       },
-      "evidence": "Checked: nothing in the site's build or its pages reads the accent colour except the theme file, so a change is one line there (`theme/colors.toml`). Checked: both colours pass the contrast check against the light and the dark background. Observed: the screenshots in the guides show the blue, so a switch to green leaves them dated until they are retaken, about an hour's work. Not checked: what readers prefer; no survey of them exists.",
-      "detail": {
-        "context": [
-          "Building in CI ([[41]], option b) applies the site's theme afresh, so the accent colour (the colour of links and headings) can change at no extra cost. The site is blue today; the logo is green. Either colour is one theme setting, a single line in the site's theme file, so it is easy to change back, and both pass the contrast check in the light and dark themes. You pick which the site uses.",
-          "Building in CI ([[41]], option b) applies the site's theme afresh, so the accent colour (the colour of links and headings) can change at no extra cost; made later, a change is a separate theme build and a fresh contrast check of every page. The site is blue today; the logo is green. Either colour is one theme setting, a single line in the site's theme file, so it is easy to change back, and both pass the contrast check in the light and dark themes. The screenshots in the guides show the blue, so green leaves them looking dated until they are retaken. You pick which the site uses."
-        ],
-        "impact": [
-          {
-            "effect": "(a) no visual change; (b) links and headings turn the logo's green, matching the logo",
-            "wait": "the site keeps the blue until you answer; nothing else waits",
-            "reach": "readers of the docs site, and the screenshots in the guides",
-            "undo": "one theme setting: a single line in the theme file changes it back"
-          },
-          {
-            "effect": "(a) no visual change, and the guide screenshots stay accurate; (b) links and headings turn the logo's green from the first CI publish, matching the logo and the product's other sites",
-            "wait": "the site keeps the blue meanwhile; nothing else waits, but a change made after the move needs its own theme build and contrast check",
-            "reach": "readers of the docs site, and the screenshots in the guides, which show the blue",
-            "undo": "one theme setting: a single line in the theme file changes it back, at any time",
-            "cost": "(a) nothing; (b) about an hour to retake the guide screenshots"
-          }
-        ],
-        "tldr": [
-          [
-            "The move to CI rebuilds the site's theme, so its accent colour can change at no extra cost",
-            "Keep the current blue, or switch to the logo's green"
-          ],
-          [
-            "The move to CI rebuilds the site's theme, so its accent colour can change at no extra cost",
-            "Both colours pass the contrast check in the light and dark themes",
-            "Keep the current blue, or switch to the logo's green",
-            "Green leaves the guide screenshots looking dated until they are retaken"
-          ]
-        ],
-        "rec": [
-          "nothing depends on the choice (checked): only the theme file reads the accent colour · unknown: none",
-          "nothing depends on the choice (checked): only the theme file reads the accent colour, and both colours pass the contrast check against the light and the dark background · unknown: none for the choice itself; what readers prefer is not surveyed, and is yours to judge"
-        ]
-      }
+      "evidence": "Checked: nothing in the site's build or its pages reads the accent colour except the theme file, so a change is one line there (`theme/colors.toml`). Checked: both colours pass the contrast check against the light and the dark background. Observed: the screenshots in the guides show the blue, so a switch to green leaves them dated until they are retaken, about an hour's work. Not checked: what readers prefer; no survey of them exists."
     }
   ],
   "refs": {

@@ -107,3 +107,8 @@ verdict: step 2 plan review 2 CLEAR (lows: 1 this repo's tree answers DANGLING/M
 findings: carried — step 2 plan review 2 lows 1-6 and nits, into the build's acceptance
 dispatch: implementer opus medium — step 2 build, worktree
 agent: implementer aa90361669ba918cc
+return: DONE worktree-agent-aa90361669ba918cc 8b66e2c + merge 0bb73ef (ownership plugin, claim-md skill, claim_check.py 69 tests; 12/12 Checks; carried lows 1-6 applied; format changes reported: optional #N, N(x), external owners reported, five readings)
+incident: 2026-10-09T08:50Z the tier-3 check ran 13 nested claude -p runs (2.1.293, sonnet, $1.80) WITHOUT the plugin-isolation settings: every run loaded all the host's installed plugins; my stop message reached the builder after the runs. Host settings.json: no hash taken before; its mtime 2026-10-08 04:16:47 UTC predates the first run (~2026-10-09 08:27 UTC) and is unchanged now; sha256 205b6964… recorded. The read-only claim check also ran over the real estate (39 repos), output in scratchpad/53d7-tier3/real-estate.json
+correction: my step 2 brief told the builder to run the tier-3 nested sessions unattended; the isolation gap surfaced in the 4bd4 review later, and my stop came too late. Nested headless runs against this host now wait for the operator (decision 207's class)
+dispatch: reviewer opus high — step 2 review round 1 of 8b66e2c/0bb73ef
+agent: reviewer a81a043e328779aa9

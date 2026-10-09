@@ -3,9 +3,11 @@
 The page (`assets/index.html`) renders whatever `cards.json` beside it holds, and writes one
 answer document per decision to the artifact's `db`. This file is the schema for both.
 `assets/cards.example.json` is a complete, invented example: three decisions, each opening on
-its Context, with every part a click from more detail, and carrying its impact, one ⚠ one-way
-(with its Impact table rows), one with no recommendation, one option with the steps the
-operator takes to act on it, one reference to a decision not on the page.
+its TLDR, then its Context, then its Impact across all its options. Its levels scale with the
+decision: a wide card with every part a click from more detail, a ⚠ one-way card (with its
+Impact table rows) levelled too, and a small call with no recommendation and no levels. One
+option carries the steps the operator takes to act on it, and one slug names a decision not on
+the page.
 
 **The page checks the data before it renders anything** and, when a check fails, shows *The
 decisions can't be shown: cards.json is not valid* with the first problems found, and renders
@@ -24,10 +26,12 @@ lacks its text; an `act` that is not keyed by option letters other than `z`, a k
 of steps is empty or holds anything but text, a step holding a fill-in placeholder (an
 angle-bracketed word with no spaces, such as `<dir>` or `<path>`), or a step holding a line
 break; an `evidence` that is neither text nor a non-empty list of text; a `detail` that is not
-an object, or a malformed `detail` entry; a `detail.o` key that is not an option letter other
-than `z`; a `detail.tldr` bullet that carries the recommendation, at either level. Every text
-field is
-escaped wherever it reaches the page, attributes and ids included.
+an object, or a malformed `detail` entry (a bullet that is neither text nor `{t, sub}`, a
+section that is not `{h, b}`, an object holding both `t` and `h`, a sub-bullet that is not
+text, a list mixing bullets and sections); a `detail.o` key that is not an option letter other
+than `z`; a `detail.tldr` bullet that carries the recommendation, at either level, its
+headings, bullets and sub-bullets counted in reading order. Every text field is escaped
+wherever it reaches the page, attributes and ids included.
 
 Text fields are plain text: the page escapes them. Two marks are rendered:
 
@@ -36,6 +40,13 @@ Text fields are plain text: the page escapes them. Two marks are rendered:
   popup on hover or click. N is a decision on the page (its card's `t` is the short name) or a
   key of `refs`; any other N renders bare. Use a slug wherever a card mentions another
   decision by number.
+
+**No ids on the page.** The page is the reader's only context: they are not in the
+conversation. Refer to another decision by its slug, and to an item, a series, a branch or a
+commit by its short name or title, with no id after it, in every field, titles included (the
+page title, the layer titles). A fact that only an id carries (a commit hash the operator must
+check out, say) goes in backticks in `act` or `evidence`, where it is something to type or
+open. The runner lints an id anywhere the page shows text (SKILL.md step 2).
 
 ## Top level
 
@@ -58,9 +69,9 @@ Each field maps to a part of the `decisions` skill's card (its `references/rende
 | `L` | string | yes | its group: a `layers` key | groups the map and the cards |
 | `t` | string | yes | the short name, 2–6 words, a noun phrase (it is what a slug shows) | title |
 | `rev` | string | yes | the card's revision: a label that changes whenever the card does. Any change to a card gets a new `rev`, Context included: an **Added:** line after `tell me`, more detail after `expand`, a `dig into` finding, a corrected fact, a re-ask. Only the one-time format migration keeps it: a card written before Context existed, whose own `what` and resume cue move into `context`, and whose terms are glossed from its own folds alone. A gloss drawn from anywhere outside the card is new information: a new `rev`. An ISO-8601 UTC time when you write it (`2026-01-12T09:30:00Z`) is the convention, but it is only ever compared for equality, never as a time | not shown; the page copies it into each answer, and it decides which answers count (below) |
-| `context` | string | yes | **Context:** first; the terms, items and concepts the rest of the card uses, each introduced in plain words (an id or label only after the words it stands for); then what is decided; then where the operator left it (the `decisions` cue), when there is one. Context introduces every specific thing the card names. Two shapes need it most: a count ("four changes", "the three"), for which Context says what the things are, or lists them; and a named mode, setting, review, plan or document ("content mode", "the review"), which Context gives a one-line gloss: what it is, and where it comes from. The same holds for an item, an id or a label: plain words first, the id after. Written from the caller's stored What, its cue and the card's terms, with the cold read (below) run on it | first and flat on the open card, above the Impact line, and above the TLDR in the popup; not counted in the flat part's size (below); its medium and high in `detail` |
-| `impact` | object | yes | the **Impact:** line (the `decisions` skill's `references/rendering.md` § Impact): `effect` (what changes if the recommendation is taken; with no recommendation, each option's in a few words), `wait` (what waiting costs, what it blocks), `reach` (who or what is affected), `undo` (how it is reversed, or one-way), each non-empty text; `cost` optional. Copied from the caller's stored Impact line where it keeps one, never composed again | `effect` at tag size (after an arrow) in the map, on the closed card and in the popup; the whole line flat on the open card, right under Context; `wait` as the Impact table's Wait row; its medium and high in `detail` |
-| `tldr` | array of strings | yes | 2–3 fragment bullets: the choice and what rides on it, no recommendation: the options mark it; the check refuses a bullet that opens with Rec or Recommend…, or says I or we recommend | flat; its medium and high in `detail` |
+| `context` | string | yes | **Context:** one or two sentences: the terms, items and concepts the rest of the card uses, each introduced in plain words, by name and never by id; then where the operator left it (the `decisions` cue), when there is one. The TLDR says what is decided, so Context does not repeat it. Context introduces every specific thing the card names. Two shapes need it most: a count ("four changes", "the three"), for which Context says what the things are, or lists them; and a named mode, setting, review, plan or document ("content mode", "the review"), which Context gives a one-line gloss: what it is, and where it comes from. Written from the caller's stored What, its cue and the card's terms, with the cold read (below) run on it | flat on the open card, under the TLDR and above the Impact, and the same in the popup; not counted in the flat part's size (below); its medium and high in `detail` |
+| `impact` | object | yes | the **Impact** (the `decisions` skill's `references/rendering.md` § Impact), across all the decision's options, favouring none: `effect` (what the decision changes and settles, whichever option is taken: *sets where the docs build runs, and who can publish*; where two or three outcomes fit, *(a) …; (b) …*), `wait` (what waiting costs, what it blocks), `reach` (who or what any option reaches), `undo` (each option's undo where they differ), each non-empty text; `cost` optional (the range across the options, when it is what the operator weighs). Its `effect` is written from the card's own option effects (`blocks`, each option's `impact`), never copied from a stored line's Effect, which is the recommendation's; its `wait`, `reach` and `undo` are copied from the caller's stored line where it keeps one and they hold across the options. Each option's own effect lives in its `blocks` row and its **More** detail | `effect` at tag size (after an arrow) in the map, on the closed card and in the popup; on the open card one facet a line, under Context; `wait` as the Impact table's Wait row; its medium and high in `detail` |
+| `tldr` | array of strings | yes | one or two terse fragment bullets: the choice and what rides on it, no recommendation: the options mark it; the check refuses a bullet that opens with Rec or Recommend…, or says I or we recommend | first on the open card and in the popup; its medium and high in `detail` |
 | `ifleft` | string | no | **If left:** an ask for another round: each leftover finding and what it would break | flat |
 | `roundcosts` | string | no | **A round costs:** an ask for another round: time, quota, the operator's attention | flat |
 | `ifunanswered` | string | no | **If unanswered:** a status-quo default (`I leave X as it is …`) | flat |
@@ -97,12 +108,29 @@ part steps it summary → medium → high → summary, and the level replaces th
 part steps alone, only through the levels it has: `[medium]` alone toggles between the two,
 and a part with no entry has no toggle. Every part opens at its summary.
 
+Each level has its own shape, so each is clearly sparser than the next:
+
+| Level | Shape | Words |
+|---|---|---|
+| summary | one or two sentences; the TLDR one or two bullets; the Impact one facet a line | terse |
+| medium | a list of bullets, each with an optional sub-bullet or two | terse fragments |
+| high | headed sections, each with bullets and sub-bullets | full sentences allowed |
+
+A summary or medium bullet is a fragment: a subject and its point, no connective clauses
+(*Stale cache broke two publishes this month*). Full sentences belong at high. A part with no
+levels is its own full text, and a small call stays short.
+
 ```json
+"a bullet":  "text"  |  {"t": "text", "sub": ["text", "text"]}
+"a list":    ["a bullet", …]                            (non-empty)
+"sections":  [{"h": "heading", "b": "a list"}, …]       (non-empty)
+"rendition": "text" | "a list" | "sections"
+
 "detail": {
   "context": [medium, high],
-  "impact":  [{"effect": "…", "wait": "…", "reach": "…", "undo": "…", "cost": "…"}, {…}],
-  "tldr":    [[bullet, …], [bullet, …]],
-  "rec":     ["<reason> · unknown: <unknown>", "…"],
+  "impact":  [{"effect": a bullet, "wait": a bullet, …}, {"effect": "a list", "wait": "a list", …}],
+  "tldr":    ["a list", "sections"],
+  "rec":     ["a list", "sections"],
   "why":     [medium, high],
   "whyask":  [medium, high],
   "dep":     [medium, high],
@@ -111,20 +139,30 @@ and a part with no entry has no toggle. Every part opens at its summary.
 }
 ```
 
-- A rendition is text, or a non-empty list of text, shown as bullets. Links (`https://` only)
-  are clickable in the medium and high renditions, in the fold parts at every level and in the
-  **More** detail; never in a visible part's summary, the Impact table, an option's `impact`
-  line, `act`, the popup or a slug.
+The structure comes from the JSON, never from parsing the text, so every string is escaped on
+its own and no data byte becomes markup. Text is still valid at any level, so older data
+renders; the runner lints a level whose shape is off (SKILL.md step 2).
+
+- A rendition is text, a list of bullets, or a list of sections, shown as a paragraph, bullets
+  with their sub-bullets nested, or a heading over its bullets. Links (`https://` only) are
+  clickable in the medium and high renditions, in the fold parts at every level and in the
+  **More** detail; never in a heading, a visible part's summary, the Impact table, an option's
+  `impact` line, `act`, the popup or a slug.
 - `context`: Context at more detail, under the same label. Its high holds the facts a cold
   reader has lost (the decisions block's *Context you may have lost*: what was tried, what was
   answered before, where a list or number came from). The tick-box doc, which cannot toggle,
   shows Context at its high (`references/fallback.md`).
-- `impact`: facet objects, shown one facet a line (→ effect, later, reach, undo, cost), in the
-  decisions skill's one vocabulary; `effect` required, the rest optional text.
-- `tldr`: lists of bullets, with no recommendation at any level (the check refuses one, as it
-  does in `tldr`).
-- `rec`: one string per level merging the reason and the unknown, shown after
-  `Rec (b) · basis word —`. Write it as `<reason> · unknown: <unknown>`.
+- `impact`: facet objects in the decisions skill's one vocabulary, `effect` required, across
+  all the options as the summary is. At medium, one terse bullet per facet, shown with its
+  label (→, later, reach, undo, cost); where the options differ on a facet, its sub-bullets
+  carry them, lettered, one or two, grouping the options when a facet differs across more than
+  two. At high, a short section per facet, headed Effect, Wait, Reach, Undo, Cost, each value
+  text or a list of bullets.
+- `tldr`: bullets or sections, with no recommendation at any level (the check refuses one, as
+  it does in `tldr`).
+- `rec`: bullets or sections, shown after `Rec (b) · basis word —`: the reason, then the
+  unknown (*unknown: …*), or a Reason and an Unknown section. An older level written as one
+  string, `<reason> · unknown: <unknown>`, shows as the summary shows the two.
 - `why`, `whyask` (its class still first), `dep`, `evidence`: the fold items at more detail.
 - `o`: keyed by option letters other than `z`: each option's paragraph in Options in full, at
   more detail. **More** shows its high (else its medium, else `full`), then its Effect, Reach,
@@ -145,26 +183,28 @@ the operator reads, and `full` sits in a fold. Two shapes need it most:
 - **A named mode, setting, review, plan or document** ("content mode", "the review"). Context
   gives it a one-line gloss: what it is, and where it comes from.
 
-The same holds for an item, an id or a label: plain words first, the id after.
+An item, a commit or a series is named by its short name or title, never by its id (§ No ids
+on the page, above).
 
 **The cold read** (the `decisions` skill's `references/worksheet.md` § The cold read, applied
 to the flat part). Before publishing, list each noun phrase in the card's Impact line, TLDR,
 option titles and one lines that refers to a specific thing: a count, a named mode, setting,
-review, plan or document, an item, an id or a label. For each one, point to its gloss in
+review, plan or document, an item or a label. For each one, point to its gloss in
 `context`. A phrase with no gloss gets one before the page goes out. The pre-publish runner
-(SKILL.md step 2) lints ids, counts and named things missing from `context`; those lints are
-proxies, and plain-word terms stay the cold read's. The same holds for the medium and high
-renditions of the Impact line, the TLDR and the rec line, checked against Context's
-**summary** only: each part steps alone, so the Context beside a TLDR at full detail may be at
-its summary. A term a level introduces needs its gloss in Context's summary, or in the level
-itself.
+(SKILL.md step 2) lints counts and named things missing from `context`, and ids wherever they
+are; those lints are proxies, and plain-word terms stay the cold read's. The same holds for
+the medium and high renditions of the Impact line, the TLDR and the rec line, checked against
+Context's **summary** only: each part steps alone, so the Context beside a TLDR at full
+detail may be at its summary. A term a level introduces needs its gloss in Context's summary,
+or in the level itself.
 
 **Size.** The flat part of a card (title, Impact line, TLDR, option titles and one-liners, rec
 line) stays near 150 words; the folds carry the rest. `context` and an `act` list are outside
 that budget: what the operator needs to read the card, and to act on it, is never folded away.
-Context aims for what its terms need, typically 30–80 words; a term that needs a paragraph has
-its detail in a fold, with its one-line gloss kept in Context. The `effect` stays
-under about 10 words: it is shown alone, at tag size, in the map.
+Context's summary is one or two sentences, typically 30–60 words (the runner lints past ~60);
+a term that needs a paragraph has its detail in its levels or a fold, with its one-line gloss
+kept in Context. The `effect` stays under about 10 words: it is shown alone, at tag size, in
+the map.
 
 Every card carries the decisions block's depth (decision 198), scaled to the decision, with
 levels where the decision calls for them (decision 201). Each size is read at the
@@ -178,23 +218,34 @@ whitespace-split:
 | Evidence, at its top level | ~150, with the paths and links behind each claim |
 | The card in all: the flat part and Context at their summary, the fold parts at their top level, each option's `impact`; not `act` | ~600–900 |
 | A fold part's medium | between its summary and its high, about half its high |
-| Context: medium / high | ~80–120 / ~120–200 |
-| Impact line: medium / high | ~40–70 / ~80–130 |
-| TLDR: medium / high | ~25–50 / ~50–90, 2–4 bullets |
-| Rec line: medium / high | ~25–50 / ~50–90 |
+
+The levels' own sizes are their shapes (§ A card, `detail`), linted as clear misses:
+
+| What | Lint fires at |
+|---|---|
+| Context's summary | more than 2 sentences, or more than ~60 words |
+| TLDR | more than 2 bullets |
+| A summary or medium bullet, or a sub-bullet | more than one sentence, or more than ~14 words |
+| A summary Impact facet | more than ~16 words |
+| A fold part's summary, where the part has levels | more than 2 sentences |
+| Medium | prose, sections, more than 6 bullets, or more than 2 sub-bullets on one bullet |
+| The Impact's medium | a facet as a list rather than one bullet |
+| High (not the Impact's) | anything but headed sections |
 
 The sizes are soft. A small call gets a short card: do not pad. Depth is written from the
 sources (SKILL.md step 2), and a fact no source holds goes under `unknown`, never into the
-depth to fill a size. **The cost** falls on the cards that carry levels: on the example's small
-call (card 43), its visible parts' levels are about 474 words on a card of about 438 words; a
-card with every part levelled (card 41) costs about 2.8 times the fold depth alone (about 1026
-words written against 365). A card with no levels costs nothing extra. The pre-publish runner
-lints only clear misses: thin (about 40% of a size) only on a part that carries levels, long
-(1.5 times) on any.
+depth to fill a size. **The cost** falls on the cards that carry levels: the example's small
+call (card 43) carries none, so it costs nothing extra: about 424 words in its flat part,
+Context and folds; a card with every part levelled (card 41) writes about 1134 words of
+levels, about 674 of them for its visible parts, against its fold depth alone of about 386,
+about 2.9 times. The pre-publish runner lints only clear misses: thin (about 40% of a size)
+only on a part that carries levels, long (1.5 times) on any.
 
-**What the page adds.** Every view shows the impact: the map and a closed card the effect, an
-open card the Impact line, and its Options in full fold the Impact table (a row per option,
-then the Wait row; Effect, Reach, Undo, Cost). It opens every card on its Context: a page is
+**What the page adds.** Every view shows the impact across the options: the map and a closed
+card the effect, beside the rec pill (the map also beside the recommended option's title),
+which mark the recommendation; an open card the Impact, one facet a line; and its Options in
+full fold the Impact table (a row per option, each option's own effect, then the Wait row;
+Effect, Reach, Undo, Cost). It opens every card on its TLDR, then its Context, then its Impact: a page is
 read away from the conversation, so its reader is treated as cold. Any part with `detail`
 toggles its level on a click, on its button or on its text (never on a link or a control, nor
 while text is selected, so it can be copied); the folds keep their order and stay closed, with
@@ -225,9 +276,18 @@ its own folds alone. A gloss drawn from anywhere outside the card is new informa
 A `cards.json` written before `detail` existed renders as it did, with **More** buttons added
 and no toggles; it is thin until rewritten. On a republish, write the depth (§ Size) and the
 `detail` levels its decision calls for into each card with no counting answer, and into each
-card revised anyway, each with a new `rev`. A card the operator has answered keeps its depth as it stands, unless
-it is revised for another reason. A card that gets `detail` gets a new `rev`, so the republish
-hands it over as shown again (SKILL.md § Hand over what was shown), with the publish time.
+card revised anyway, each with a new `rev`. A card the operator has answered keeps its depth
+as it stands, unless it is revised for another reason. A card that gets `detail` gets a new
+`rev`, so the republish hands it over as shown again (SKILL.md § Hand over what was shown),
+with the publish time.
+
+A `cards.json` written before the level shapes renders TLDR first, the Impact one facet a
+line, and its text levels as paragraphs; nothing is refused. The runner lints its shapes, its
+ids and an effect that reads as the recommendation's. On a republish, each card with no
+counting answer, and each card revised anyway, gets its `impact` across the options, its
+levels in their shapes and its ids replaced by names, each with a new `rev`, handed over as
+shown again. A card the operator has answered stays as it is, its lints left knowingly,
+unless it is revised for another reason; its effect may still read as the recommendation's.
 
 ## The answers collection
 
