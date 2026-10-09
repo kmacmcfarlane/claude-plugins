@@ -3,8 +3,10 @@ id: wi-lint-camelcase-keys-secret-words-insi-ac83
 title: "wi lint: camelCase keys, secret words inside longer keys, and Authorization: Bearer"
 short_display_name: wi lint more secret keys
 type: bug
-status: todo
+status: doing
 priority: 3
+owner: Kyle-McFarlane@2d49f8460283
+claimed: 2026-10-09T13:56Z
 created: 2026-10-09
 updated: 2026-10-09
 refs:
@@ -12,6 +14,10 @@ refs:
 ---
 
 From b9fb review 1, finding 6, outside b9fb: camelCase colon keys (clientSecret: …, dbPassword: …) are missed; the key/value rule's word boundaries miss a secret word inside a longer key (api_secret, secret_key, dbPassword) in its colon forms; an Authorization: Bearer <token> header is caught by nothing. Build after b9fb lands, on its key-aware gate.
+
+Also carried from b9fb review 4's follow-ups: tighter $/{} placeholders; a pass suffix (passphrase, passcode) with a deny-list for harmless words (passthrough, compass, bypass); a spaced second call argument.
+target: wi lint flags camelCase and compound secret keys in colon and assignment forms, and an Authorization: Bearer header, with tests; no new finding over the real store; lint stays linear on long lines.
+dispatch: implementer opus medium — build (security-relevant lint; not a canonical mechanical kind)
 
 ## Handoff
 - doing: —
@@ -22,3 +28,4 @@ From b9fb review 1, finding 6, outside b9fb: camelCase colon keys (clientSecret:
 ## Notes
 note: also from b9fb review 2 low 5: a value on the next line (YAML |, \ continuation), a Markdown table row | db_pass | v |, kebab-case db-pass=, a password inside a URL (scheme://user:v@host), --password v with a space
 note: also from b9fb review 4: tighten placeholders to $NAME, ${NAME}, {name} (catches bcrypt-style $2b$…); a pass suffix as a secret word with a deny-list (bypass, compass, surpass, trespass, overpass, underpass, encompass); a secret as a spaced second call argument
+- 2026-10-09 claimed by Kyle-McFarlane@2d49f8460283
