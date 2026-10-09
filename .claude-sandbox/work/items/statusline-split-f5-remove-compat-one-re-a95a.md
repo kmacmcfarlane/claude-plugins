@@ -38,3 +38,4 @@ dispatch: implementer opus medium — build (removes a compat path users may hit
 agent: implementer a194aaaecfdf57eb4
 return: DONE c2998a2 on worktree-agent-a194aaaecfdf57eb4; 12/12 Checks OK (context-guard 808 → 708); old in-state exact read and its reset demotion removed, sensor record only; moved notice removed; F11 citations moved to the sensor record; hub heal never depended on the copy (path match; existing test covers it); 7dd3 recorded-but-disabled question left open (statusline-hub, outside the brief)
 dispatch: reviewer opus high — review round 1 of c2998a2
+agent: reviewer aa9e083fc127070cd

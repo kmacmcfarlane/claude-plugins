@@ -40,3 +40,4 @@ dispatch: reviewer opus high — review round 2 (resume a0d68362569272315)
 verdict: review 2 CLEAR at 7cf366d (must-fix 0; lows: a local-path git rewrite window, a recorded-but-disabled context-guard still waits once its orphaned folder is pruned — noted on a95a)
 landed: ea740bd (merge --no-ff into main; Checks 10/10 OK; push scan read, clean)
 - 2026-10-08 done
+note: 2026-10-09 from a95a's build: once context-guard's copy is gone, a recorded-but-disabled context-guard whose current-hooks link still points at an old folder shipping the copy is treated as live; after that folder is pruned the hub waits silently. Whether recorded-but-disabled counts as absent is this item's question.
