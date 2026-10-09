@@ -3,8 +3,10 @@ id: checkpoint-namespace-the-reply-hint-as-c-aebc
 title: "checkpoint: namespace the reply hint as /context-guard:checkpoint so it pastes"
 short_display_name: checkpoint reply hint namespaced
 type: bug
-status: todo
+status: doing
 priority: 1
+owner: Kyle-McFarlane@2d49f8460283
+claimed: 2026-10-09T07:36Z
 created: 2026-10-09
 updated: 2026-10-09
 refs:
@@ -21,3 +23,6 @@ Operator 2026-10-09: the pasteable reply line the checkpoint skill drafts (Step 
 
 ## Notes
 note: Step 0's reply and override lines are namespaced by 9652 (86970e6); this item covers the remaining bare /checkpoint printouts, e.g. references/operator-playbook.md:128
+dispatch: implementer opus medium — build, worktree (bug; no plan)
+- 2026-10-09 claimed by Kyle-McFarlane@2d49f8460283
+agent: implementer aca6389fa9d43c977
