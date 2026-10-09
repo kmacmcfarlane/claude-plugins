@@ -452,6 +452,13 @@ class TestScoutServesCove(unittest.TestCase):
         self.assertLessEqual(self.NEEDED, tools)
 
 
+# The repo's own docs and marketplace sit two levels up only in the source repo; a copy of
+# this plugin alone has none (kit-dev's standalone check runs it that way).
+IN_REPO = all((REPO / f).is_file() for f in (".claude-plugin/marketplace.json", "CLAUDE.md",
+                                            "README.md"))
+
+
+@unittest.skipUnless(IN_REPO, "not in the source repo: no marketplace.json, CLAUDE.md or README.md")
 class TestDocs(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
