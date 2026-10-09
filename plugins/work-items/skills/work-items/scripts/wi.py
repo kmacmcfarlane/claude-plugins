@@ -3304,7 +3304,9 @@ SECRET_ASSIGN_RE = re.compile(
     r"(?:^|[^A-Za-z0-9_?&])[A-Z][A-Z0-9_]{2,}=(?![$<{])\S{8,}")
 SECRET_KV_RE = re.compile(
     r"(?i)\b(api[_-]?key|secret|token|password|passwd|credential|webhook[_-]?url)\b"
-    r"['\"]?\s*[:=]\s*['\"]?(?![$<{*])([A-Za-z0-9+/_.-]{12,})")
+    r"['\"]?\s*[:=]\s*['\"]?"
+    r"(?!\$\{|\$\(|\$[A-Za-z_][A-Za-z0-9_]*(?:[\s\"'`,;)}\]]|\.(?=\s|$)|$)|[<{*])"
+    r"(\$?[A-Za-z0-9+/_.$=-]{12,})")
 
 # The looser shapes the two rules above miss (b9fb): a lowercase or
 # mixed-case key (db_pass=..., app.db_pass=...), spaces around = and the
@@ -3312,6 +3314,11 @@ SECRET_KV_RE = re.compile(
 # (an env-style or snake_case key, so a prose "next:" never qualifies), a
 # JSON "key": "value" pair and --flag=value, each with the value bare or
 # quoted. Which value counts is the key's call: see _shape_value_flagged.
+# A camelCase or PascalCase colon key (clientSecret: ..., JWTSecret: ...)
+# counts only when it mixes case, splits into 2+ segments, does not open
+# with one capital before a capitalised word (OAuth) and holds a secret
+# word (ac83, see _shape_secret; db2Password and k8sToken count), so prose
+# such as "GitHub: ...", "OAuth: ..." or "Token: ..." never qualifies.
 # The lookbehind lets _shape_secret resume at a value's start, so a later
 # pair joined to it (a=b;db_pass=..., {"a":"b","db_pass":...}) is still
 # examined; the value is capped so the scan stays linear.
@@ -3320,17 +3327,35 @@ SECRET_SHAPE_RE = re.compile(
     r"(?P<flag>--[A-Za-z][A-Za-z0-9-]*)=|"
     r"[\"'](?P<json>[A-Za-z_][A-Za-z0-9_.-]*)[\"']\s*:\s*|"
     r"(?P<kv>[A-Za-z][A-Za-z0-9_]{2,})\s*(?:=>|:=|=(?!=))\s*|"
-    r"(?P<colon>[A-Z][A-Z0-9_]{2,}|[A-Za-z][A-Za-z0-9]*_[A-Za-z0-9_]+)\s*:\s*"
+    r"(?P<colon>[A-Z][A-Z0-9_]{2,}|[A-Za-z][A-Za-z0-9]*_[A-Za-z0-9_]+)\s*:\s*|"
+    r"(?P<camel>[A-Za-z][A-Za-z0-9]+)\s*:\s*"
     r")(?P<quote>[\"']?)(?P<value>\S{1,256})")
+# An Authorization header with a Bearer, Basic or Token credential, any
+# case, after :, = or => (a header, a config pair, a hash), the credential
+# bare or quoted; the credential is judged by _auth_secret.
+SECRET_AUTH_RE = re.compile(
+    r"(?i)\bauthorization[\"']?\s*(?:=>|[:=])\s*[\"']?(?:bearer|basic|token)"
+    r"\s+[\"']?(\S{1,300})")
 # A key is a secret-word key when one of its segments (split on _ - . and
 # camelCase) is one of these whole words, or ends with one of the suffixes
-# (dbpassword, apitoken, clientsecret); a plural (tokens, keys) is not, and
-# key and pass count only as a whole segment (monkey, bypass stay clean).
+# (dbpassword, apitoken, clientsecret, dbpass, userpasscode); a plural
+# (tokens, keys) is not, key counts only as a whole segment (monkey stays
+# clean), and a word ending in pass from _PASS_WORDS is no secret word
+# (bypass, compass). A key of two or more segments whose last is one of
+# _META_WORDS names something about a secret, not the secret
+# (password_policy, token_file, secret_name), and is judged as other keys.
 _SECRET_WORDS = frozenset((
-    "pass", "passwd", "password", "passphrase", "pw", "pwd", "secret",
-    "token", "auth", "cred", "creds", "credential", "credentials", "key",
-    "apikey", "webhook", "secretkey", "privatekey"))
-_SECRET_SUFFIXES = ("password", "passwd", "secret", "token", "apikey")
+    "pass", "passwd", "password", "passphrase", "passcode", "pw", "pwd",
+    "secret", "token", "auth", "cred", "creds", "credential", "credentials",
+    "key", "apikey", "webhook", "secretkey", "privatekey"))
+_SECRET_SUFFIXES = ("password", "passwd", "secret", "token", "apikey",
+                    "pass", "passphrase", "passcode")
+_PASS_WORDS = frozenset((
+    "bypass", "compass", "surpass", "trespass", "overpass", "underpass",
+    "encompass", "subpass", "renderpass", "multipass"))
+_META_WORDS = frozenset((
+    "policy", "policies", "rotation", "hint", "prompt", "field", "label",
+    "name", "names", "type", "mode", "file", "path", "var", "ref"))
 # a bare number under a secret-word key is a count only beside one of these
 _COUNT_WORDS = frozenset((
     "count", "len", "max", "min", "budget", "total", "size", "limit", "num"))
@@ -3343,6 +3368,12 @@ _CODE_RE = re.compile(r"([A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)*)([(
 _ATTR_RE = re.compile(r"[A-Za-z_]+(?:\.[A-Za-z_]+)+")
 _COUNT_RE = re.compile(r"[0-9][0-9,._]*")
 _PLACEHOLDER_RE = re.compile(r"<[a-z][a-z _-]*>")
+# a whole-value variable or template, ending where the value ends
+_TEMPLATE_RE = re.compile(
+    r"(?:\$[A-Za-z_][A-Za-z0-9_]*|\$\{[A-Za-z_][A-Za-z0-9_]*\}"
+    r"|\$\{\{ ?[A-Za-z_][A-Za-z0-9_.-]* ?\}\}|\$\([^()]{1,200}\)"
+    r"|\{[A-Za-z_][A-Za-z0-9_.-]*\}|\{\{ ?[A-Za-z_][A-Za-z0-9_.-]* ?\}\})"
+    r"(?=$|[\s\"'`,;)\]}]|\.(?=\s|$))")
 _CLOSE = {"(": ")", "[": "]"}
 _MARKDOWN_RE = re.compile(r"`|\*|__")
 
@@ -3352,8 +3383,15 @@ def _key_segments(key):
 
 
 def _secret_key(key):
-    return any(seg in _SECRET_WORDS or seg.endswith(_SECRET_SUFFIXES)
-               for seg in _key_segments(key))
+    segs = _key_segments(key)
+    if len(segs) >= 2 and segs[-1] in _META_WORDS:
+        return False
+    return any(_secret_word(seg) for seg in segs)
+
+
+def _secret_word(seg):
+    return seg in _SECRET_WORDS or (seg.endswith(_SECRET_SUFFIXES)
+                                    and seg not in _PASS_WORDS)
 
 
 def _harmless_segment(seg):
@@ -3392,8 +3430,9 @@ def _quoted_code(key, raw, value):
     """True when an unquoted value under a secret-word key is code, a count
     or a path a note may quote, not a secret:
     - a call f(...) or subscript x[...] on a name of harmless segments, when
-      nothing follows the closing bracket and what is inside would not
-      itself flag (len(tokens), os.environ['API_KEY']);
+      nothing follows the closing bracket and no comma-separated argument
+      inside would itself flag (len(tokens), os.environ['API_KEY'],
+      get_token(user, scope));
     - a dotted attribute of letters and _ only (config.api_key, self.token);
     - a number with separators (1,234,567), or a bare number when another
       key segment is a count word (token_count, key_limit);
@@ -3404,8 +3443,13 @@ def _quoted_code(key, raw, value):
     if m and m.group(2) and _harmless_segments(m.group(1)):
         body = raw.rstrip("\"'`,;")
         if body.endswith(_CLOSE[m.group(2)]):
-            inner = body[m.end():-1].strip("\"'")
-            if not inner or not _secret_value_flagged(key, inner, "", inner):
+            args = [arg.strip().strip("\"'")
+                    for arg in _split_args(body[m.end():-1])]
+            # an argument holding a space is prose or an expression, never
+            # one secret (the value rule reads a run of non-space characters)
+            if not any(arg and not re.search(r"\s", arg)
+                       and _secret_value_flagged(key, arg, "", arg)
+                       for arg in args):
                 return True
     if _ATTR_RE.fullmatch(value):
         return True
@@ -3420,22 +3464,116 @@ def _quoted_code(key, raw, value):
 
 
 def _placeholder(value, rest):
-    """$VAR, {template}, all * (masked), or <words>: lowercase words,
-    spaces, _ or - inside, with the closing > (rest is the next 300
-    characters of the line from the value's start, so <your key> counts)."""
-    if value[:1] in "${" or not value.strip("*"):
+    """A whole-value $NAME, ${NAME}, ${{ name }}, $(command), {name} or
+    {{ name }} (_TEMPLATE_RE); all * or all . (masked or elided, an
+    ellipsis included); or <words>: lowercase words, spaces, _ or - inside,
+    with the closing >. rest is the next 300 characters of the line from
+    the value's start, so <your key> and {{ name }} count. A value that
+    only starts with $ or { is no placeholder ($2b$12$..., $TOKENabc+1)."""
+    if not value.strip("*") or not value.strip(".…"):
         return True
-    return _PLACEHOLDER_RE.match(rest) is not None
+    return (_PLACEHOLDER_RE.match(rest) is not None
+            or _TEMPLATE_RE.match(rest) is not None)
+
+
+def _match_close(text, open_at):
+    """The index of the bracket that closes the ( or [ at open_at, counting
+    nested ( [ pairs, or -1 when text (a bounded slice) does not close it."""
+    depth = 0
+    for i in range(open_at, len(text)):
+        if text[i] in "([":
+            depth += 1
+        elif text[i] in ")]":
+            depth -= 1
+            if depth == 0:
+                return i
+    return -1
+
+
+def _split_args(text):
+    """text split at its commas outside any ( or [ pair."""
+    out, depth, start = [], 0, 0
+    for i, c in enumerate(text):
+        if c in "([":
+            depth += 1
+        elif c in ")]":
+            depth -= 1
+        elif c == "," and depth == 0:
+            out.append(text[start:i])
+            start = i + 1
+    out.append(text[start:])
+    return out
+
+
+def _spaced_call(raw, rest):
+    """An unquoted value that opens a call or subscript the value's first
+    run of non-space characters does not close (get(user, value)): the call
+    up to its matching closing bracket and any text glued after it, read from rest,
+    so a spaced second argument is examined. Otherwise raw unchanged."""
+    m = _CODE_RE.match(raw)
+    if not (m and m.group(2)):
+        return raw
+    close = _match_close(rest, m.end() - 1)
+    if close < len(raw):
+        return raw
+    return rest[:close + 1] + re.match(r"\S*", rest[close + 1:]).group()
 
 
 def _secret_value_flagged(key, raw, quote, rest):
     """Under a secret-word key: any 8+ non-space characters, symbols, hex,
     letters-only and UUIDs included, unless the value is unquoted code, a
     count or a path (_quoted_code). A quoted value skips nothing."""
+    if not quote:
+        raw = _spaced_call(raw, rest)
     value = raw.rstrip("\"'`,;)]}")
     if not value or _placeholder(value, rest) or len(value) < 8:
         return False
     return bool(quote) or not _quoted_code(key, raw, value)
+
+
+def _meta_secret_flagged(key, raw, quote, rest):
+    """Under a meta key (last segment in _META_WORDS) whose other segments
+    hold a secret word (secret_ref, password_var, auth_token_file): any
+    value that is no placeholder and no name, word, attribute or path such
+    a key holds (_meta_name) is judged as under a secret-word key."""
+    segs = _key_segments(key)
+    if not (len(segs) >= 2 and segs[-1] in _META_WORDS
+            and any(_secret_word(seg) for seg in segs[:-1])):
+        return False
+    value = raw.rstrip("\"'`,;)]}")
+    if not value or _placeholder(value, rest):
+        return False
+    if _meta_name(value):
+        return False
+    return _secret_value_flagged(key, raw, quote, rest)
+
+
+_META_NAME_RE = re.compile(
+    r"[a-z]{1,15}(?:[-_.:][a-z0-9]{1,15})*|[A-Z]{1,15}(?:_[A-Z0-9]{1,15})*")
+_UUID_RE = re.compile(r"(?i)[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}")
+
+
+def _meta_name(value):
+    """A name, word, attribute or path a meta key may hold: a lowercase
+    name of runs of 15 or fewer letters (prod-db-creds,
+    urn:ietf:params:oauth), an env-var name (GITHUB_TOKEN), a letters-only
+    identifier whose case segments are 3 to 15 letters (Bearer,
+    ClientCredentials), a dotted attribute, or a ~/ ./ / or $NAME/ path of
+    harmless segments. A run of 16+ lowercase letters, digits mixed into a
+    word, a digit run, a UUID (even one whose groups read as words) or a
+    run of 16+ capitals is none of these."""
+    if _UUID_RE.fullmatch(value):
+        return False
+    if _META_NAME_RE.fullmatch(value) or _ATTR_RE.fullmatch(value):
+        return True
+    if (re.fullmatch(r"[A-Za-z]+", value)
+            and all(3 <= len(seg) <= 15 for seg in _KEY_SEG_RE.findall(value))):
+        return True
+    path = re.sub(r"^\$[A-Za-z_][A-Za-z0-9_]*(?=/)", "", value)
+    if path.startswith(("~/", "./", "/")):
+        segs = [seg for seg in _SEG_SPLIT_RE.split(path) if seg]
+        return len(segs) >= 2 and all(_harmless_segment(seg) for seg in segs)
+    return False
 
 
 def _shape_value_flagged(key, raw, quote="", rest=None):
@@ -3444,6 +3582,8 @@ def _shape_value_flagged(key, raw, quote="", rest=None):
     key (sha, commit, *_id, ...) flags only a value _looks_live passes, and
     never a call like name(...)."""
     rest = raw if rest is None else rest
+    if _meta_secret_flagged(key, raw, quote, rest):
+        return True
     if _secret_key(key):
         return _secret_value_flagged(key, raw, quote, rest)
     value = raw.rstrip("\"'`,;)]}")
@@ -3464,6 +3604,18 @@ def _shape_secret(line):
         if not m:
             return False
         key = m.group("flag") or m.group("json") or m.group("kv") or m.group("colon")
+        if m.group("camel"):
+            # mixed case, 2+ segments, no lone capital before a capitalised
+            # word, a secret word: JWTSecret, AWSSecretKey, clientSecret,
+            # db2Password, k8sToken; not OAuth, Token, GitHub
+            key = m.group("camel")
+            segs = _KEY_SEG_RE.findall(key)
+            if not (re.search(r"[a-z]", key) and re.search(r"[A-Z]", key)
+                    and len(segs) >= 2
+                    and not re.match(r"[A-Z][A-Z][a-z]", key)
+                    and _secret_key(key)):
+                pos = m.start("value")
+                continue
         if _shape_value_flagged(key, m.group("value"), m.group("quote"),
                                 line[m.start("value"):m.start("value") + 300]):
             return True
@@ -3480,11 +3632,30 @@ def _secret_line(line):
     return _MARKDOWN_RE.sub("", line)
 
 
+def _auth_secret(line):
+    """An Authorization: Bearer/Basic/Token header whose credential looks
+    like one: 12+ characters, not a placeholder (<token>, $TOKEN,
+    ${TOKEN}, ..., masked), not one or two repeated characters (XXXX...),
+    and not a plain word (prose: "Authorization: Bearer authentication")."""
+    for m in SECRET_AUTH_RE.finditer(line):
+        # the credential is its run of token characters (base64, JWT, hex),
+        # so closing quotes and prose punctuation after it never count
+        value = _VALUE_TOKEN_RE.match(m.group(1))
+        value = value.group().rstrip(".") if value else ""
+        rest = line[m.start(1):m.start(1) + 300]
+        if (len(value) < 12 or _placeholder(value, rest)
+                or len(set(value)) <= 2
+                or re.fullmatch(r"[A-Za-z][a-z]*", value)):
+            continue
+        return True
+    return False
+
+
 def _secret_hit(line):
     if "PRIVATE KEY-----" in line:
         return "PEM private key material"
     if (SECRET_ASSIGN_RE.search(line) or SECRET_KV_RE.search(line)
-            or _shape_secret(line)):
+            or _shape_secret(line) or _auth_secret(line)):
         return "likely secret value (record the path and key, never the value)"
     return None
 

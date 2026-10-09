@@ -589,21 +589,50 @@ glued to a word or follows a URL's `?` or `&`) and
 `token/secret/password/webhook`-style pairs that look like live values. It
 also flags the looser shapes: a lowercase, mixed-case or dotted `key=value`
 (`app.db_pass=…`), `KEY = value`, `key => value`, `key := value`,
-`KEY: value` or `KEY :value` (an env-style or snake_case key), a JSON
-`"key": "value"` pair and `--flag=value`, with the value bare or quoted, and
-every pair on a line (`dsn=host=db;db_pass=…`, compact JSON).
+`KEY: value` or `KEY :value` (an env-style or snake_case key, or a
+mixed-case key of two or more segments that holds a secret word and does
+not open with one capital before a capitalised word: `clientSecret: …`,
+`JWTSecret: …`, `db2Password: …`, `k8sToken: …`; not `OAuth:`), a
+JSON `"key": "value"` pair and `--flag=value`, with the value bare or
+quoted, and every pair on a line (`dsn=host=db;db_pass=…`, compact JSON).
+It flags an `Authorization: Bearer …` header, any case, after `:`, `=` or
+`=>` (never `==`), the credential bare or quoted, and its `Basic` and
+`Token` forms, when the credential is 12+ token characters and not a
+placeholder, one or two repeated characters (`XXXX…`) or a plain word.
 
 - **Secret-word keys.** A key is one when a segment of it, split on `_`,
   `-`, `.` and camelCase, is a secret word (`pass`, `password`, `pw`,
   `secret`, `token`, `auth`, `cred`, `key`, `apikey`, `webhook` and the
-  like) or ends with `password`, `passwd`, `secret`, `token` or `apikey`
-  (`dbpassword`, `clientsecret`, `accesstoken`); `key` and `pass` count only
-  as a whole segment, and a plural such as `tokens` or `keys` is no secret
-  word. Under such a key any value of 8+ non-space characters counts,
+  like) or ends with `password`, `passwd`, `secret`, `token`, `apikey`,
+  `pass`, `passphrase` or `passcode` (`dbpassword`, `clientsecret`,
+  `accesstoken`, `dbpass`); `key` counts only as a whole segment, a word
+  ending in `pass` such as `bypass`, `compass`, `surpass`, `trespass`,
+  `overpass`, `underpass`, `encompass`, `subpass`, `renderpass` or
+  `multipass` is no secret word, nor is a plural
+  such as `tokens` or `keys` (`passthrough` holds none). A key whose last
+  segment names something about a secret (`policy`, `rotation`, `hint`,
+  `prompt`, `field`, `label`, `name`, `type`, `mode`, `file`, `path`, `var`,
+  `ref`: `password_policy`, `token_file`) is a meta key. When another of
+  its segments holds a secret word, only these pass under it: a
+  placeholder; a lowercase name of a first run of 15 or fewer letters,
+  the later runs letters or digits, joined by
+  `-`, `_`, `.` or `:` (`prod-db-creds`, `default-token-x7k2m`,
+  `urn:ietf:params:oauth:token-type:jwt`); an env-var name of runs of
+  15 or fewer (`GITHUB_TOKEN`); a letters-only word or identifier whose case segments
+  are 3 to 15 letters (`bearer`, `ClientCredentials`); a dotted attribute
+  (`cfg.token`); or a path starting `~/`, `./`, `/` or `$NAME/` of two or
+  more harmless segments (`$HOME/.config/gh/token`). Everything else is
+  judged as under a secret-word key (below), so a digit run, any UUID, a
+  word with digits mixed in or 16+ lowercase letters in one run flags. A
+  meta key with no other secret word is judged as other keys. Under a
+  secret-word key any value of 8+ non-space characters counts,
   symbols, hex, letters-only and UUIDs included. A quoted value skips
   nothing; an unquoted one skips only code, a count or a path a note may
   quote: a call `f(…)` or subscript `x[…]` with nothing after the closing
-  bracket and nothing inside it that would flag on its own; a dotted
+  bracket and no comma-separated argument inside it that would flag on its
+  own, a spaced or nested one included (`auth(user, cfg(x), …)` is read
+  to its matching `)`, and split only at commas outside inner brackets); a
+  dotted
   attribute of letters and `_` only (`config.api_key`); a number with
   separators (`1,234,567`), or a bare number when another key segment is a
   count word (`count`, `len`, `max`, `min`, `budget`, `total`, `size`,
@@ -616,9 +645,15 @@ every pair on a line (`dsn=host=db;db_pass=…`, compact JSON).
   makes a segment live; all letters, all digits or all hex at any length,
   or 12 characters or fewer that do not mix upper case, lower case and
   digits), so a work-item id, path, version or UUID stays clean.
-- **Placeholders.** A value is a placeholder only as `$VAR`, `{template}`,
-  all `*` (masked), or `<…>` holding lowercase words, spaces, `_` or `-` with
-  its closing `>` (`<value>`, `<your key>`).
+- **Placeholders.** A value is a placeholder only as a whole-value `$NAME`,
+  `${NAME}`, `${{ name }}`, `$(command)`, `{name}` or `{{ name }}`; all `*`
+  (masked) or all `.` (elided, `…` included); or `<…>` holding lowercase
+  words, spaces, `_` or `-` with its closing `>` (`<value>`, `<your key>`).
+  A value that only starts with `$` or `{` is no placeholder (`$2b$12$…`).
+  Under a bare lowercase key (`password: …`) a `$`-led value flags unless
+  it starts with `${` or `$(` or is a whole `$NAME`; a `{`-led one does
+  not flag there. A `.` may end a placeholder only at the end of a word
+  (`$GITHUB_TOKEN.`).
 - **Raw and cleaned.** Every rule runs on the line as written and on a
   cleaned copy: NFKC-normalised (a fullwidth equals sign, U+FF1D, is `=`),
   Unicode format characters such as a zero-width space dropped, and
@@ -626,14 +661,16 @@ every pair on a line (`dsn=host=db;db_pass=…`, compact JSON).
   the line. Look-alike letters (confusables, such as a Cyrillic a, U+0430,
   in a key) are out of scope for this floor.
 - **Known strictness**, kept on purpose: a letters-only value under a
-  secret-word key (`auth_mode: interactive`), a comma list
+  secret-word key (`auth_level: interactive`), a comma list
   (`KEY_ORDER: priority,status`), a bare name (`self.dedupe_key =
   dedupe_key`), a number with a unit (`pass_rate = 97.5%`), and under other
   keys a single mixed value (`checkpoint_id: ckpt20261009T1104Z`) or a path
   segment over 12 characters that mixes letters and digits. Reword such a
   line, or record the path and key. **Known gaps**: a separated number
-  under a secret-word key, a `$`- or `{`-led value, and a key glued to
-  `pass` (`dbpass`) pass.
+  under a secret-word key, a single lowercase word as a colon key
+  (`passphrase: …`; prose such as `key: …` would trip it), and an
+  `Authorization` header with a scheme other than `Bearer`, `Basic` or
+  `Token` pass.
 
 `wi note` refuses, writing nothing, a line lint would flag. Lint's shapes
 are a floor, not every secret: the path-and-key rule is the guard.
