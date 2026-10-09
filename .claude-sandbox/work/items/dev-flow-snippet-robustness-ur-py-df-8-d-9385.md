@@ -14,6 +14,9 @@ refs:
 ---
 
 Follow-up F9 from the plugin-dependency spike (72ef), 2026-10-08. Acceptance: as .claude-sandbox/investigations/spike-how-much-inter-plugin-dependency-i-72ef/00_initial.md § R3 F9 states, with 01_review-1-fixes.md and 02_review-2-fixes.md applied (Supersedes in order).
+verdict: review round 1 CLEAR (must-fix 0; lows: 1 README dev-flow section omits the create-skill edge; 2 the context-guard tip repeats the disclosure instead of folding into it (CLAUDE.md Peer hints); 3 SKILL.md:420 pointer wording, and no word that a tip line may follow the four; nits: 4 parity test assertIn dumps 25 KB, 5 bindings.md:546 sentence dangles after the tip block, 6 brief templates' no-create-skill line reads as an addition); 12/12 Checks green in the worktree; snippets exercised against a planted __main__.py
+decided: 2026-10-09T13:15Z cap — a finish round of the six exact-fix leftovers (authority answer 145)
+dispatch: implementer opus medium — finish round (resume a2612a58ec3e235a7)
 
 ## Handoff
 - doing: —
