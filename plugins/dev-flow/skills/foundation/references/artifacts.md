@@ -15,7 +15,7 @@ contracts"), never a silent omission.
 | Quality scenarios | core | 1 | the top 3–5, prioritised: quality, stimulus (with its source and environment), response, measure |
 | Constraints | core | 1 | `C<n>`: the constraint and who or what imposes it |
 | Glossary | core when non-empty | 1 | terms used in two senses, or that collide with a neighbour's: term, meaning, not to be confused with |
-| Scope and context | core | 1 | the repo's `CLAIM.md` (written or proposed through a claim skill when one is installed) plus a neighbours table: neighbour, interface, direction, which side defines it |
+| Scope and context | core | 1 | the repo's `CLAIM.md` (written or proposed through the `ownership:claim-md` skill when the session lists it, else proposed as a file, unchecked) plus a neighbours table: neighbour, interface, direction, which side defines it |
 | Context and containers | core | 2 | a table or a small text diagram; containers only when there are several deployables |
 | Solution strategy and traceability | core | 2 | 5–10 bullets, then a table mapping each quality scenario and requirement to the mechanism that meets it |
 | ADRs | core, one-way calls only | 2 | Title, Status, Context, Decision, Alternatives considered, Consequences; kept, never edited, superseded by a later one |
@@ -74,7 +74,7 @@ Phase 1, in the first serial (`00_initial.md`):
 |---|---|---|
 
 ## Scope and context
-Claim: CLAIM.md — <approved <date> | proposed | none (no claim skill installed)>
+Claim: CLAIM.md — <approved <date> | proposed | proposed, unchecked (no claim tool)>
 | Neighbour | Interface | Direction | Defined by |
 |---|---|---|---|
 
