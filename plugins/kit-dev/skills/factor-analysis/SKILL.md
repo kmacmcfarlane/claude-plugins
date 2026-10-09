@@ -111,10 +111,26 @@ fallback keeps the landing, so the shape is never left only in conversation.
   settled decisions with dates. The epic heads the list.
 - **`dev-flow:investigate` not listed**: write the same content (evidence, target shape,
   per-phase steps, switchover checklist, open questions) as one plain markdown plan file,
-  `.claude-sandbox/investigations/<slug>.md` in the analysed repo, or where the owner says,
-  and give its path.
+  where the owner says, else in the analysed repo's `docs/`, and give its path.
 
 The final result names each fallback that ran, in one plain clause, and says nothing when
 neither did: "items not filed: no work-item store tool; the checklist is in the analysis
-instead", "plan not in `investigate` format: dev-flow is not installed; written as a plain
-plan file at <path>".
+instead", "plan not in `investigate` format: dev-flow's `investigate` is not available;
+written as a plain plan file at <path>".
+
+**The work-items tip.** After the "items not filed" clause, add one tip line, only when all
+of these hold:
+
+1. It is the run's final result, in a result the operator reads, never in a peer or relay
+   message; the work-items fallback actually ran; and this is the top level (in a sub-agent
+   or under an orchestrator's brief, return the disclosure alone).
+2. No skill of the `work-items` plugin is in the session's skill list, and this conversation
+   has not already shown a tip for work-items (any skill's: the conversation is the record),
+   so it shows at most once per conversation.
+3. Run `echo "${KMACMCFARLANE_NO_PEER_HINTS-}"`; if it prints `1`, or a comma list naming
+   `work-items`, show nothing more.
+4. Append the line, exactly:
+
+   ```text
+   factor-analysis: the work items are a checklist in the analysis. work-items adds the shape filed as work items: /plugin install work-items@kmacmcfarlane (one-time tip; KMACMCFARLANE_NO_PEER_HINTS=1 hides these)
+   ```

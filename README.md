@@ -221,14 +221,15 @@ it to use the kit.
 | `new-project-from-template` | Create a new project from a claude-templates template |
 | `update-kit` | Sync skills and workflow files upstream to claude-templates / claude-plugins / claude-expertise / claude-sandbox |
 
-Three of the four skills need nothing else here. (`librarian-mode` lived here until it moved
-to `dev-flow`, whose aim it serves.) `new-project-from-template` points at the `create-repo`
-plugin for a bare repo with a session launched on it; `create-repo` uses it, when present,
-to scaffold a template. `factor-analysis` lands its result through two soft dependencies:
-it files the agreed shape as work items with the `work-items` plugin's skill, and writes
-its plan as an `investigate`-format series (`dev-flow`) for `implement` to consume. Without
-`work-items` the items land as a markdown checklist in the analysis; without `dev-flow` the
-plan is a plain plan file; either way the result says which fallback ran.
+`create-skill`, `new-project-from-template` and `update-kit` need nothing else here.
+(`librarian-mode` lived here until it moved to `dev-flow`, whose aim it serves.)
+`new-project-from-template` points at the `create-repo` plugin for a bare repo with a
+session launched on it; `create-repo` uses it, when present, to scaffold a template.
+`factor-analysis` lands its result through two soft dependencies: it files the agreed shape
+as work items with the `work-items` plugin's skill, and writes its plan as an
+`investigate`-format series (`dev-flow`) for `implement` to consume. Without `work-items`
+the items land as a markdown checklist in the analysis; without `dev-flow` the plan is a
+plain plan file; either way the result says which fallback ran.
 
 `plugins/kit-dev/` is what remains of the old kitchen-sink plugin after the factoring: its
 `hooks/`, `checkpoint` and `install-statusline` went to `context-guard` (except the checkout
