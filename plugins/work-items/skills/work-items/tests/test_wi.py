@@ -1774,7 +1774,8 @@ class TestNote(WiTestCase):
         path = self.item()
         before = path.read_bytes()
         for text in ("db_pass = " + fake, "DB_PASS: " + fake,
-                     '{"db_pass": "' + fake + '"}', "--auth=" + fake):
+                     '{"db_pass": "' + fake + '"}', "--auth=" + fake,
+                     'db_pass="' + fake + '"', "app.db_pass => " + fake):
             with self.subTest(text=text):
                 r = run(["note", self.IID, "--", text], self.root)
                 self.assertEqual(r.returncode, 1, r.stdout + r.stderr)
@@ -3046,9 +3047,14 @@ class TestLint(WiTestCase):
                 self.assertEqual(r.returncode, 0, r.stdout)
 
     # obviously fake, letters and digits, no hex-only run, one long segment;
-    # the keys hold none of the KV rule's words, so only the b9fb shape rule
-    # can fire on the lowercase, spaced, colon, JSON and flag forms
+    # the keys hold none of the KV rule's whole words (db_pass, not
+    # password), so only the b9fb shape rule can fire. Every fake below is
+    # built here from "fake" and "dead/beef" runs, never stored as a token.
     SHAPE_FAKE = "fake0fake1fake2fakeXYZ"
+    FAKE_B64 = "Fake+Base64/Value0Only" + "=="
+    FAKE_JWT = ".".join(("fakeHeader0Abc", "fakePayload1Xyz", "fakeSig2Qrs"))
+    FAKE_UUID = "-".join(("deadbeef", "dead", "beef", "dead", "beefdeadbeef"))
+    FAKE_HEX = "deadbeef" * 5
 
     def test_looser_secret_shapes_caught(self):
         v = self.SHAPE_FAKE
@@ -3066,6 +3072,34 @@ class TestLint(WiTestCase):
             "bare flag": "--auth=" + v,
             "with an underscore": "conn_str=fake_" + v,
             "trailing period": "set db_pass=" + v + ".",
+            # quoted values, every key form
+            "double-quoted": 'db_pass="' + v + '"',
+            "single-quoted": "db_pass='" + v + "'",
+            "quoted spaced": 'db_pass = "' + v + '"',
+            "env quoted spaced": 'DB_PASS = "' + v + '"',
+            "env colon quoted": 'DB_PASS: "' + v + '"',
+            "snake colon quoted": 'db_pass: "' + v + '"',
+            "api_secret quoted": 'api_secret = "' + v + '"',
+            "client_secret colon quoted": 'client_secret: "' + v + '"',
+            "flag quoted": '--auth="' + v + '"',
+            # other forms
+            "dotted key": "app.db_pass=" + v,
+            "space before colon": "DB_PASS :" + v,
+            "fat arrow": "db_pass => " + v,
+            "walrus": "db_pass := " + v,
+            # a key with no secret word: the value must look live
+            "plain key, base64": "blob_data=" + self.FAKE_B64,
+            "plain key, quoted base64": '"blob_data": "' + self.FAKE_B64 + '"',
+            "plain key, jwt-like": "--session=" + self.FAKE_JWT,
+            "plain key, mixed long segment": "conn_str: " + v,
+            # a secret-word key: any 8+ non-space characters
+            "secret key, base64": "db_pass=" + self.FAKE_B64,
+            "secret key, jwt-like": "auth_header: " + self.FAKE_JWT,
+            "secret key, letters only": "db_pass=abcdefghijklmnopqrst",
+            "secret key, hex": "api_secret=" + self.FAKE_HEX,
+            "secret key, uuid": "db_pass: " + self.FAKE_UUID,
+            "secret key, symbols": "user_pw=fake!pw@" + "123",
+            "secret key, slug": "--token=" + "-".join(("fake", "slug", "value")),
         }
         for name, line in shapes.items():
             with self.subTest(shape=name):
@@ -3074,6 +3108,7 @@ class TestLint(WiTestCase):
                 self.assertIn("probe-3333.md:", r.stdout)
                 self.assertIn("likely secret value", r.stdout)
                 self.assertNotIn(v, r.stdout + r.stderr)
+                self.assertNotIn(self.FAKE_B64, r.stdout + r.stderr)
 
     def test_looser_shape_look_alikes_stay_clean(self):
         look_alikes = {
@@ -3096,12 +3131,27 @@ class TestLint(WiTestCase):
             "date": "claimed_at: 2026-10-09T11:04Z",
             "frontmatter key": "short_display_name: lint misses other secret shapes",
             "owner": "owner: Kyle-McFarlane@2d49f8460283",
-            "letters only": "db_pass=abcdefghijklmnopqrst",
+            "letters only": "name_tag=abcdefghijklmnopqrst",
             "digits only": "build_number=123456789012345",
             "short value": "db_pass=fake1",
             "comparison": "- check count == 3 and len_value != 12345678abcdefgh",
-            "url query": "- see https://example.invalid/p?db_pass=fake0fake1fake2fakeXYZ",
-            "glued to a word": "- x.db_pass=fake0fake1fake2fakeXYZ",
+            "url query": "- see https://example.invalid/p?db_pass=" + self.SHAPE_FAKE,
+            # a key with no secret word keeps the hex, letters-only and
+            # UUID exemptions
+            "hex under sha": "sha=" + self.FAKE_HEX,
+            "hex under commit": "commit: " + self.FAKE_HEX,
+            "uuid under an id": "request_id: " + self.FAKE_UUID,
+            "uuid quoted under an id": '"session_id": "' + self.FAKE_UUID + '"',
+            "a call": "result = compute_something2(arg)",
+            # long path segments: all letters, all digits or all hex
+            "worktree branch": "branch=worktree-agent-a7035ad4054cec38e",
+            "worktree flag": "--worktree=.claude/worktrees/agent-a7035ad4054cec38e",
+            "worktree colon": "WORKTREE: .claude/worktrees/agent-a7035ad4054cec38e",
+            "json file_path": '{"file_path": "/r/.claude-sandbox/investigations/b9fb/01_plan.md"}',
+            "investigations flag": "--out=.claude-sandbox/investigations/b9fb-plan/01_plan.md",
+            "series dir": "SERIES_DIR: .claude-sandbox/investigations/statusline2",
+            "py path": "see file=plugins/statusline-hub/hooks/tests/test_housekeeping.py",
+            "spaced arrow, short": "map => fake1",
         }
         for name, line in look_alikes.items():
             with self.subTest(shape=name):

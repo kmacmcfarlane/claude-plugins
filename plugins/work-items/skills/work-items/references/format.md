@@ -587,11 +587,18 @@ the webhook URL. `wi lint` flags PEM blocks, `KEY=value` assignments (bare,
 or after a bullet, date, tag, bold or other leading text, unless the key is
 glued to a word or follows a URL's `?` or `&`) and
 `token/secret/password/webhook`-style pairs that look like live values. It
-also flags a lowercase or mixed-case `key=value`, `KEY = value`, `KEY: value`
+also flags a lowercase, mixed-case or dotted `key=value` (`app.db_pass=…`),
+`KEY = value`, `key => value`, `key := value`, `KEY: value` or `KEY :value`
 (an env-style or snake_case key), a JSON `"key": "value"` pair and
-`--flag=value`, but only when the value looks live: 12+ characters holding a
-letter and a digit, not all hex (a sha), not a date, and not short segments
-joined by `-`, `_`, `.` or `/` (a work-item id, path or version).
+`--flag=value`, with the value bare or quoted. When the key holds a secret
+word (`pass`, `pw`, `secret`, `token`, `auth`, `cred`, `key`), any value of 8+
+non-space characters counts, symbols, hex and UUIDs included. Any other key
+(`sha`, `commit`, `*_id`, …) counts only a value that looks live: 12+
+characters holding a letter and a digit, not all hex (a sha), not a date,
+and not two or more segments split on `-`, `_`, `.`, `/` or `~` that are each
+harmless (all letters, all digits or all hex at any length, or 12 characters
+or fewer that do not mix upper case, lower case and digits), so a work-item
+id, path, version or UUID stays clean.
 `wi note` refuses, writing nothing, a line lint would flag. Lint's shapes
 are a floor, not every secret: the path-and-key rule is the guard.
 

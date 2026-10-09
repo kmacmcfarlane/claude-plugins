@@ -3306,38 +3306,72 @@ SECRET_KV_RE = re.compile(
     r"['\"]?\s*[:=]\s*['\"]?(?![$<{*])([A-Za-z0-9+/_.-]{12,})")
 
 # The looser shapes the two rules above miss (b9fb): a lowercase or
-# mixed-case key (db_pass=...), spaces around = (KEY = value), KEY: value
+# mixed-case key (db_pass=..., app.db_pass=...), spaces around = and the
+# => and := forms (KEY = value, key => value), KEY: value and KEY :value
 # (an env-style or snake_case key, so a prose "next:" never qualifies), a
-# JSON "key": "value" pair and --flag=value. A looser key needs a stricter
-# value, so the value must look live: see _looks_live.
+# JSON "key": "value" pair and --flag=value, each with the value bare or
+# quoted. Which value counts is the key's call: see _shape_value_flagged.
 SECRET_SHAPE_RE = re.compile(
-    r"(?:^|[^A-Za-z0-9_?&.-])(?:"
-    r"--[A-Za-z][A-Za-z0-9-]*=|"
-    r"[\"'][A-Za-z_][A-Za-z0-9_.-]*[\"']\s*:\s*[\"']|"
-    r"[A-Za-z][A-Za-z0-9_]{2,}\s*=(?!=)\s*|"
-    r"(?:[A-Z][A-Z0-9_]{2,}|[A-Za-z][A-Za-z0-9]*_[A-Za-z0-9_]+):\s*"
-    r")(?![$<{*])([A-Za-z0-9+/_.=~-]{12,})")
+    r"(?:^|[^A-Za-z0-9_?&-])(?:"
+    r"(?P<flag>--[A-Za-z][A-Za-z0-9-]*)=|"
+    r"[\"'](?P<json>[A-Za-z_][A-Za-z0-9_.-]*)[\"']\s*:\s*|"
+    r"(?P<kv>[A-Za-z][A-Za-z0-9_]{2,})\s*(?:=>|:=|=(?!=))\s*|"
+    r"(?P<colon>[A-Z][A-Z0-9_]{2,}|[A-Za-z][A-Za-z0-9]*_[A-Za-z0-9_]+)\s*:\s*"
+    r")[\"']?(?P<value>\S+)")
+_SECRET_KEY_RE = re.compile(r"(?i)pass|pw|secret|token|auth|cred|key")
+_VALUE_TOKEN_RE = re.compile(r"[A-Za-z0-9+/_.=~-]+")
 _HEX_RE = re.compile(r"(?i)[0-9a-f]+")
 _DATE_RE = re.compile(r"\d{4}-\d{2}-\d{2}")
-_SLUG_RE = re.compile(r"[-_./~]*[A-Za-z0-9]{1,12}(?:[-_./][A-Za-z0-9]{1,12})+")
+_SEG_SPLIT_RE = re.compile(r"[-_./~]+")
+
+
+def _harmless_segment(seg):
+    """All letters, all digits or all hex at any length; otherwise 12
+    characters or fewer that do not mix upper case, lower case and digits."""
+    if re.fullmatch(r"[A-Za-z]+|[0-9]+|(?i:[0-9a-f]+)", seg):
+        return True
+    return len(seg) <= 12 and not (re.search(r"[a-z]", seg)
+                                   and re.search(r"[A-Z]", seg)
+                                   and re.search(r"[0-9]", seg))
 
 
 def _looks_live(value):
-    """True when `value` looks like a live secret rather than a word, a hex
-    sha, a date, or an id, slug, path or version: 12+ characters holding
-    both a letter and a digit, not all hex, no date at its start and not
-    short segments (12 or fewer characters each) joined by - _ . or /."""
+    """True when `value`, under a key with no secret word, looks like a live
+    secret rather than a word, a hex sha, a date, or an id, slug, path,
+    version or UUID: 12+ characters holding both a letter and a digit, not
+    all hex, no date at its start, and not two or more segments (split on
+    - _ . / ~) that are each harmless (see _harmless_segment)."""
     value = value.rstrip(".")
-    return (len(value) >= 12
-            and re.search(r"[A-Za-z]", value) is not None
-            and re.search(r"[0-9]", value) is not None
-            and not _HEX_RE.fullmatch(value)
-            and not _DATE_RE.match(value)
-            and not _SLUG_RE.fullmatch(value))
+    if (len(value) < 12 or not re.search(r"[A-Za-z]", value)
+            or not re.search(r"[0-9]", value)
+            or _HEX_RE.fullmatch(value) or _DATE_RE.match(value)):
+        return False
+    segs = [seg for seg in _SEG_SPLIT_RE.split(value) if seg]
+    return not (len(segs) >= 2 and all(_harmless_segment(seg) for seg in segs))
+
+
+def _shape_value_flagged(key, raw):
+    """A key holding a secret word (pass, pw, secret, token, auth, cred,
+    key) flags any 8+ non-space characters, symbols included, as the
+    KEY=value rule does: no hex, letters-only or UUID exemption. Any other
+    key (sha, commit, *_id, ...) flags only a value _looks_live passes, and
+    never a call like name(...)."""
+    if raw[:1] in "$<{*":
+        return False
+    if _SECRET_KEY_RE.search(key):
+        return len(raw.rstrip("\"'`,;)]}")) >= 8
+    tok = _VALUE_TOKEN_RE.match(raw)
+    if not tok or raw[tok.end():tok.end() + 1] == "(":
+        return False
+    return _looks_live(tok.group())
 
 
 def _shape_secret(line):
-    return any(_looks_live(m.group(1)) for m in SECRET_SHAPE_RE.finditer(line))
+    for m in SECRET_SHAPE_RE.finditer(line):
+        key = m.group("flag") or m.group("json") or m.group("kv") or m.group("colon")
+        if _shape_value_flagged(key, m.group("value")):
+            return True
+    return False
 
 
 def secret_findings(text):
