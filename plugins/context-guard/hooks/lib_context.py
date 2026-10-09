@@ -746,7 +746,7 @@ def thresholds(window):
     Interpolated over ANCHORS - (200K -> due 70K, hard 40K) and (1M -> due
     150K, hard 60K) - linear between, clamped outside. A full checkpoint costs
     ~16-60K in the live window and one operator exchange is p90 ~20K, so
-    `hard` is the floor below which only /checkpoint itself is affordable.
+    `hard` is the floor below which only the checkpoint itself is affordable.
     Under CHECKPOINT_MIN_TOKENS (the lean ~16K plus a margin) not even that is.
     """
     w = max(int(window or 0), 1)

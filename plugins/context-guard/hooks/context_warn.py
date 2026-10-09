@@ -5,8 +5,9 @@ Advisories (60/75% full) inform once per epoch. DUE fires when remaining
 tokens drop under thresholds(window)['due'] with no checkpoint recorded this
 epoch, and re-fires every 3 prompts or 25K tokens so it cannot be scrolled
 past. HARD blocks the prompt itself (exit 2 — Claude Code shows stderr to the
-user and ERASES the prompt) unless the prompt is /checkpoint, /compact or
-/clear, in the bare or the plugin-prefixed form (/context-guard:checkpoint).
+user and ERASES the prompt) unless the prompt is one of
+/checkpoint, /compact or /clear, in the bare or the plugin-prefixed form
+(/context-guard:checkpoint).
 A HARD stop requires a depth source in L.BLOCKING_SOURCES: EXACT (a fresh
 status-line record) or DERIVED (the window derived from documented and
 observed rules, every input resolved; see window_rules.py). When the depth
@@ -23,8 +24,8 @@ input to it resolved, else the model window - so an unresolved auto-compact
 window warns but never blocks.
 Under L.CHECKPOINT_MIN_TOKENS left (against that window) a checkpoint no
 longer fits, so the HARD and not-blocked advice points at /clear or /compact
-instead of /checkpoint. That is advice text only: when the gate blocks is
-decided by decide() alone.
+instead of /context-guard:checkpoint. That is advice text only: when the gate
+blocks is decided by decide() alone.
 A HARD STOP caused by a derived window prints its escape hatches
 (CONTEXT_GUARD_DERIVE=off, mark_checkpoint.py <session>). The operator's
 CONTEXT_GUARD_CONTEXT_WINDOW pin (deprecated alias CLAUDE_KIT_CONTEXT_WINDOW)
@@ -271,8 +272,9 @@ def main():
         bw = m["block_window"] or win
         left = max(bw - tok, 0)
         if left >= L.CHECKPOINT_MIN_TOKENS:
-            advice = ("Run /checkpoint (or /context-guard:checkpoint - both forms are "
-                      "whitelisted) first")
+            # Namespaced: the bare name can resolve to a built-in command
+            # of the same name instead of the skill (operator, 2026-10-09).
+            advice = "Run /context-guard:checkpoint first"
         else:
             # Live-fired 2026-09-03 at 1,062 left: a checkpoint needs a turn of
             # its own, so pointing at it there wedges the session.
