@@ -3304,7 +3304,9 @@ SECRET_ASSIGN_RE = re.compile(
     r"(?:^|[^A-Za-z0-9_?&])[A-Z][A-Z0-9_]{2,}=(?![$<{])\S{8,}")
 SECRET_KV_RE = re.compile(
     r"(?i)\b(api[_-]?key|secret|token|password|passwd|credential|webhook[_-]?url)\b"
-    r"['\"]?\s*[:=]\s*['\"]?(?![$<{*])([A-Za-z0-9+/_.-]{12,})")
+    r"['\"]?\s*[:=]\s*['\"]?"
+    r"(?!\$\{|\$\(|\$[A-Za-z_][A-Za-z0-9_]*(?:[\s\"'`,;)}\].]|$)|[<{*])"
+    r"(\$?[A-Za-z0-9+/_.$=-]{12,})")
 
 # The looser shapes the two rules above miss (b9fb): a lowercase or
 # mixed-case key (db_pass=..., app.db_pass=...), spaces around = and the
@@ -3312,9 +3314,10 @@ SECRET_KV_RE = re.compile(
 # (an env-style or snake_case key, so a prose "next:" never qualifies), a
 # JSON "key": "value" pair and --flag=value, each with the value bare or
 # quoted. Which value counts is the key's call: see _shape_value_flagged.
-# A camelCase or PascalCase colon key (clientSecret: ..., DbPassword: ...)
-# counts only when it holds a secret word (ac83), so prose such as
-# "GitHub: ..." never qualifies.
+# A camelCase or PascalCase colon key (clientSecret: ..., JWTSecret: ...)
+# counts only when it mixes case, splits into 2+ segments of 2+ characters
+# and holds a secret word (ac83, see _shape_secret), so prose such as
+# "GitHub: ...", "OAuth: ..." or "Token: ..." never qualifies.
 # The lookbehind lets _shape_secret resume at a value's start, so a later
 # pair joined to it (a=b;db_pass=..., {"a":"b","db_pass":...}) is still
 # examined; the value is capped so the scan stays linear.
@@ -3324,12 +3327,14 @@ SECRET_SHAPE_RE = re.compile(
     r"[\"'](?P<json>[A-Za-z_][A-Za-z0-9_.-]*)[\"']\s*:\s*|"
     r"(?P<kv>[A-Za-z][A-Za-z0-9_]{2,})\s*(?:=>|:=|=(?!=))\s*|"
     r"(?P<colon>[A-Z][A-Z0-9_]{2,}|[A-Za-z][A-Za-z0-9]*_[A-Za-z0-9_]+)\s*:\s*|"
-    r"(?P<camel>[A-Za-z][a-z0-9]+(?:[A-Z][a-z0-9]*)+)\s*:\s*"
+    r"(?P<camel>[A-Za-z][A-Za-z0-9]+)\s*:\s*"
     r")(?P<quote>[\"']?)(?P<value>\S{1,256})")
 # An Authorization header with a Bearer, Basic or Token credential, any
-# case; the credential is judged by _bearer_flagged.
+# case, after :, = or => (a header, a config pair, a hash), the credential
+# bare or quoted; the credential is judged by _auth_secret.
 SECRET_AUTH_RE = re.compile(
-    r"(?i)\bauthorization[\"']?\s*:\s*[\"']?(?:bearer|basic|token)\s+(\S{1,300})")
+    r"(?i)\bauthorization[\"']?\s*(?:=>|[:=])\s*[\"']?(?:bearer|basic|token)"
+    r"\s+[\"']?(\S{1,300})")
 # A key is a secret-word key when one of its segments (split on _ - . and
 # camelCase) is one of these whole words, or ends with one of the suffixes
 # (dbpassword, apitoken, clientsecret, dbpass, userpasscode); a plural
@@ -3346,7 +3351,7 @@ _SECRET_SUFFIXES = ("password", "passwd", "secret", "token", "apikey",
                     "pass", "passphrase", "passcode")
 _PASS_WORDS = frozenset((
     "bypass", "compass", "surpass", "trespass", "overpass", "underpass",
-    "encompass"))
+    "encompass", "subpass", "renderpass", "multipass"))
 _META_WORDS = frozenset((
     "policy", "policies", "rotation", "hint", "prompt", "field", "label",
     "name", "names", "type", "mode", "file", "path", "var", "ref"))
@@ -3367,7 +3372,7 @@ _TEMPLATE_RE = re.compile(
     r"(?:\$[A-Za-z_][A-Za-z0-9_]*|\$\{[A-Za-z_][A-Za-z0-9_]*\}"
     r"|\$\{\{ ?[A-Za-z_][A-Za-z0-9_.-]* ?\}\}|\$\([^()]{1,200}\)"
     r"|\{[A-Za-z_][A-Za-z0-9_.-]*\}|\{\{ ?[A-Za-z_][A-Za-z0-9_.-]* ?\}\})"
-    r"(?=$|[\s\"'`,;)\]}.])")
+    r"(?=$|[\s\"'`,;)\]}]|\.(?=\s|$))")
 _CLOSE = {"(": ")", "[": "]"}
 _MARKDOWN_RE = re.compile(r"`|\*|__")
 
@@ -3380,9 +3385,12 @@ def _secret_key(key):
     segs = _key_segments(key)
     if len(segs) >= 2 and segs[-1] in _META_WORDS:
         return False
-    return any(seg in _SECRET_WORDS or (seg.endswith(_SECRET_SUFFIXES)
-                                        and seg not in _PASS_WORDS)
-               for seg in segs)
+    return any(_secret_word(seg) for seg in segs)
+
+
+def _secret_word(seg):
+    return seg in _SECRET_WORDS or (seg.endswith(_SECRET_SUFFIXES)
+                                    and seg not in _PASS_WORDS)
 
 
 def _harmless_segment(seg):
@@ -3435,7 +3443,7 @@ def _quoted_code(key, raw, value):
         body = raw.rstrip("\"'`,;")
         if body.endswith(_CLOSE[m.group(2)]):
             args = [arg.strip().strip("\"'")
-                    for arg in body[m.end():-1].split(",")]
+                    for arg in _split_args(body[m.end():-1])]
             # an argument holding a space is prose or an expression, never
             # one secret (the value rule reads a run of non-space characters)
             if not any(arg and not re.search(r"\s", arg)
@@ -3467,16 +3475,45 @@ def _placeholder(value, rest):
             or _TEMPLATE_RE.match(rest) is not None)
 
 
+def _match_close(text, open_at):
+    """The index of the bracket that closes the ( or [ at open_at, counting
+    nested ( [ pairs, or -1 when text (a bounded slice) does not close it."""
+    depth = 0
+    for i in range(open_at, len(text)):
+        if text[i] in "([":
+            depth += 1
+        elif text[i] in ")]":
+            depth -= 1
+            if depth == 0:
+                return i
+    return -1
+
+
+def _split_args(text):
+    """text split at its commas outside any ( or [ pair."""
+    out, depth, start = [], 0, 0
+    for i, c in enumerate(text):
+        if c in "([":
+            depth += 1
+        elif c in ")]":
+            depth -= 1
+        elif c == "," and depth == 0:
+            out.append(text[start:i])
+            start = i + 1
+    out.append(text[start:])
+    return out
+
+
 def _spaced_call(raw, rest):
     """An unquoted value that opens a call or subscript the value's first
     run of non-space characters does not close (get(user, value)): the call
-    up to its closing bracket and any text glued after it, read from rest,
+    up to its matching closing bracket and any text glued after it, read from rest,
     so a spaced second argument is examined. Otherwise raw unchanged."""
     m = _CODE_RE.match(raw)
-    if not (m and m.group(2)) or _CLOSE[m.group(2)] in raw[m.end():]:
+    if not (m and m.group(2)):
         return raw
-    close = rest.find(_CLOSE[m.group(2)], m.end())
-    if close < 0:
+    close = _match_close(rest, m.end() - 1)
+    if close < len(raw):
         return raw
     return rest[:close + 1] + re.match(r"\S*", rest[close + 1:]).group()
 
@@ -3493,12 +3530,32 @@ def _secret_value_flagged(key, raw, quote, rest):
     return bool(quote) or not _quoted_code(key, raw, value)
 
 
+def _meta_secret_flagged(key, raw, rest):
+    """Under a meta key (last segment in _META_WORDS) whose other segments
+    hold a secret word (secret_ref, password_var, auth_token_file): a value
+    that is no placeholder and is all hex of 20+ characters, or 8+
+    characters holding one outside [A-Za-z0-9_./~,:-]. So a letters-only
+    word (token_type: bearer) or a plain name or path still passes."""
+    segs = _key_segments(key)
+    if not (len(segs) >= 2 and segs[-1] in _META_WORDS
+            and any(_secret_word(seg) for seg in segs[:-1])):
+        return False
+    value = raw.rstrip("\"'`,;)]}")
+    if not value or _placeholder(value, rest):
+        return False
+    return bool((len(value) >= 20 and _HEX_RE.fullmatch(value))
+                or (len(value) >= 8
+                    and re.search(r"[^A-Za-z0-9_./~,:-]", value)))
+
+
 def _shape_value_flagged(key, raw, quote="", rest=None):
     """A key holding a secret word (see _secret_key) flags as
     _secret_value_flagged says, as strictly as the KEY=value rule. Any other
     key (sha, commit, *_id, ...) flags only a value _looks_live passes, and
     never a call like name(...)."""
     rest = raw if rest is None else rest
+    if _meta_secret_flagged(key, raw, rest):
+        return True
     if _secret_key(key):
         return _secret_value_flagged(key, raw, quote, rest)
     value = raw.rstrip("\"'`,;)]}")
@@ -3520,8 +3577,13 @@ def _shape_secret(line):
             return False
         key = m.group("flag") or m.group("json") or m.group("kv") or m.group("colon")
         if m.group("camel"):
+            # mixed case, 2+ segments of 2+ characters, a secret word:
+            # JWTSecret, AWSSecretKey, clientSecret; not OAuth, Token, GitHub
             key = m.group("camel")
-            if not _secret_key(key):
+            segs = _KEY_SEG_RE.findall(key)
+            if not (re.search(r"[a-z]", key) and re.search(r"[A-Z]", key)
+                    and len(segs) >= 2 and min(map(len, segs)) >= 2
+                    and _secret_key(key)):
                 pos = m.start("value")
                 continue
         if _shape_value_flagged(key, m.group("value"), m.group("quote"),

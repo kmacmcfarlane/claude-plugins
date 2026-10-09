@@ -3266,6 +3266,29 @@ class TestLint(WiTestCase):
             "passcode": "passcode=" + "fakefake12",
             "spaced second argument": "api_token: auth(user, " + v + ")",
             "spaced, two spaces": "db_pass = mk(u,  " + v + ")",
+            # fix round 1: nested calls are read to the matching bracket
+            "nested call, quoted literal":
+                'api_key = client(region, cfg(x), "' + v + '")',
+            "nested call, middle": "token = f(a, g(b), " + v + ")",
+            "nested call, first": "token = f(g(a), " + v + ")",
+            # a meta key holding a secret word still flags a hex or symbol value
+            "meta ref, hex": "secret_ref: " + self.FAKE_HEX,
+            "meta var, symbols": "password_var: fake!pw@" + "123x",
+            "meta env var, symbols": "API_TOKEN_VAR: fake!pw@" + "123x",
+            "meta json, hex": '{"secret_name": "' + self.FAKE_HEX + '"}',
+            "meta flag, hex": "--token-type=" + self.FAKE_HEX,
+            "meta file, hex": "auth_token_file = " + self.FAKE_HEX,
+            # acronym-led PascalCase colon keys
+            "acronym JWTSecret": "JWTSecret: " + v,
+            "acronym AWSSecretKey": "AWSSecretKey: " + v,
+            "acronym HTTPAuthToken": "HTTPAuthToken: " + v,
+            # $-led values under a bare lowercase key (the KV rule)
+            "bare key, bcrypt-like": "password: $2b$12$" + "fakefake" * 3,
+            "bare key, $ then more": "secret: $FAKEabc+1" + "xyz",
+            # Authorization after = or =>, the credential quoted
+            "auth assignment quoted": 'authorization = "Bearer ' + v + '"',
+            "auth fat arrow": '"authorization" => "Bearer ' + v + '"',
+            "auth colon, quoted scheme": 'Authorization: "Bearer ' + v + '"',
         }
         for name, line in shapes.items():
             with self.subTest(shape=name):
@@ -3306,6 +3329,24 @@ class TestLint(WiTestCase):
             "secret name": "secret_name: prod-db-creds",
             "call of short names": "api_token = get_token(user, scope)",
             "call of a subscript": "api_token: f(user, os.environ['API_KEY'])",
+            # fix round 1
+            "nested call of short names": "token = f(a, g(b), c)",
+            "meta type, a word": "token_type: bearer",
+            "meta mode, a word": "auth_mode: interactive",
+            "meta hint, prose": "password_hint: the usual one",
+            "OAuth prose": "OAuth: " + self.SHAPE_FAKE,
+            "Token prose": "Token: unavailable",
+            "GitHub prose": "GitHub: " + self.SHAPE_FAKE,
+            "nextStep prose": "nextStep: " + self.SHAPE_FAKE,
+            "bare key, $NAME": "password: $DB_PASSWORD_VALUE",
+            "bare key, ${NAME}": "token: ${API_TOKEN}",
+            "bare key, $(command)": "secret: $(cat /run/fake)",
+            "bare key, <value>": "password: <value>",
+            "bare key, $NAME.": "token: $GITHUB_TOKEN.",
+            "auth comparison": "authorization == Bearer " + self.SHAPE_FAKE,
+            "multipass": "multipass=" + self.FAKE_HEX,
+            "renderpass": "renderpass=" + self.FAKE_HEX,
+            "subpass": "subpass: " + self.FAKE_HEX,
         }
         for name, line in look_alikes.items():
             with self.subTest(shape=name):
@@ -3320,11 +3361,19 @@ class TestLint(WiTestCase):
         # the same bounded slice.
         for line in ("aaa=" * 250000, "aaa=*" * 200000,
                      "dbPassword: f(a, " * 60000,
-                     "Authorization: Bearer x " * 40000):
+                     "Authorization: Bearer x " * 40000,
+                     "aB:" * 300000,
+                     "token = f(" + "g(a)," * 200000):
             with self.subTest(line=line[:5]):
                 start = time.perf_counter()
                 self.assertEqual(wi.secret_findings(line), [])
                 self.assertLess(time.perf_counter() - start, 5.0)
+        # an unclosed nest of calls flags (an unclosed call under a
+        # secret-word key is no code), and the bracket match stays inside
+        # the bounded slice, so it is as fast
+        start = time.perf_counter()
+        self.assertTrue(wi.secret_findings("token = " + "f(" * 1000000))
+        self.assertLess(time.perf_counter() - start, 5.0)
 
     def test_conflict_markers_flagged(self):
         (self.root / "items" / "conflicted-0000.md").write_text(

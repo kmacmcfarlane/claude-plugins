@@ -590,12 +590,14 @@ glued to a word or follows a URL's `?` or `&`) and
 also flags the looser shapes: a lowercase, mixed-case or dotted `key=value`
 (`app.db_pass=…`), `KEY = value`, `key => value`, `key := value`,
 `KEY: value` or `KEY :value` (an env-style or snake_case key, or a
-camelCase or PascalCase key that holds a secret word, `clientSecret: …`), a
+mixed-case key of two or more segments of two or more characters that
+holds a secret word, `clientSecret: …`, `JWTSecret: …`; not `OAuth:`), a
 JSON `"key": "value"` pair and `--flag=value`, with the value bare or
 quoted, and every pair on a line (`dsn=host=db;db_pass=…`, compact JSON).
-It flags an `Authorization: Bearer …` header, any case, and its `Basic` and
-`Token` forms, when the credential is 12+ characters and not a placeholder,
-one or two repeated characters (`XXXX…`) or a plain word.
+It flags an `Authorization: Bearer …` header, any case, after `:`, `=` or
+`=>` (never `==`), the credential bare or quoted, and its `Basic` and
+`Token` forms, when the credential is 12+ token characters and not a
+placeholder, one or two repeated characters (`XXXX…`) or a plain word.
 
 - **Secret-word keys.** A key is one when a segment of it, split on `_`,
   `-`, `.` and camelCase, is a secret word (`pass`, `password`, `pw`,
@@ -604,17 +606,25 @@ one or two repeated characters (`XXXX…`) or a plain word.
   `pass`, `passphrase` or `passcode` (`dbpassword`, `clientsecret`,
   `accesstoken`, `dbpass`); `key` counts only as a whole segment, a word
   ending in `pass` such as `bypass`, `compass`, `surpass`, `trespass`,
-  `overpass`, `underpass` or `encompass` is no secret word, nor is a plural
+  `overpass`, `underpass`, `encompass`, `subpass`, `renderpass` or
+  `multipass` is no secret word, nor is a plural
   such as `tokens` or `keys` (`passthrough` holds none). A key whose last
   segment names something about a secret (`policy`, `rotation`, `hint`,
   `prompt`, `field`, `label`, `name`, `type`, `mode`, `file`, `path`, `var`,
-  `ref`: `password_policy`, `token_file`) is judged as other keys. Under a
+  `ref`: `password_policy`, `token_file`) is judged as other keys, so a
+  letters-only value under it passes (`token_type: bearer`); but when
+  another of its segments holds a secret word it still flags a value that
+  is no placeholder and is all hex of 20+ characters, or 8+ characters
+  holding one outside letters, digits and `_ . / ~ , : -`
+  (`secret_ref: <40 hex>`, `password_var: <symbols>`). Under a
   secret-word key any value of 8+ non-space characters counts,
   symbols, hex, letters-only and UUIDs included. A quoted value skips
   nothing; an unquoted one skips only code, a count or a path a note may
   quote: a call `f(…)` or subscript `x[…]` with nothing after the closing
   bracket and no comma-separated argument inside it that would flag on its
-  own, a spaced one included (`auth(user, …)` is read to its `)`); a dotted
+  own, a spaced or nested one included (`auth(user, cfg(x), …)` is read
+  to its matching `)`, and split only at commas outside inner brackets); a
+  dotted
   attribute of letters and `_` only (`config.api_key`); a number with
   separators (`1,234,567`), or a bare number when another key segment is a
   count word (`count`, `len`, `max`, `min`, `budget`, `total`, `size`,
@@ -631,7 +641,9 @@ one or two repeated characters (`XXXX…`) or a plain word.
   `${NAME}`, `${{ name }}`, `$(command)`, `{name}` or `{{ name }}`; all `*`
   (masked) or all `.` (elided, `…` included); or `<…>` holding lowercase
   words, spaces, `_` or `-` with its closing `>` (`<value>`, `<your key>`).
-  A value that only starts with `$` or `{` is no placeholder (`$2b$12$…`).
+  A value that only starts with `$` or `{` is no placeholder (`$2b$12$…`),
+  under any key form, a bare lowercase `password: …` included; a `.` may
+  end a placeholder only at the end of a word (`$GITHUB_TOKEN.`).
 - **Raw and cleaned.** Every rule runs on the line as written and on a
   cleaned copy: NFKC-normalised (a fullwidth equals sign, U+FF1D, is `=`),
   Unicode format characters such as a zero-width space dropped, and
