@@ -5,9 +5,11 @@ Two duties, each firing at most once per epoch (Stop feedback continues the
 conversation and costs a turn — the 8-continuation cap and stop_hook_active
 are honoured, but single-fire is the real guard):
 
-1. Relay a deferred auto-compaction or an unanswered DUE: PreCompact's stderr
-   is only documented to reach the user for manual triggers, so the model
-   hears about a deferral here.
+1. Relay an unanswered DUE, and the deferred auto-compaction that waits on
+   it: PreCompact's stderr is only documented to reach the user for manual
+   triggers, so the model hears about a deferral here. It fires only at or
+   under the due line: a deferral above it (an idle attempt at low fill, say)
+   relays nothing, since a checkpoint there would only release the next one.
 2. The ledger nudge: every CONTEXT_GUARD_LEDGER_EVERY tokens of growth
    (deprecated alias CLAUDE_KIT_LEDGER_EVERY; default 60K), ask for ledger
    lines — skipped when the last assistant message already contains them, and 'nothing new' is an acceptable one-line answer.
@@ -42,8 +44,8 @@ def main():
 
     def apply(st):
         ep = L.epoch(st)
-        if not L.checkpointed_this_epoch(st) and st.get("relay_epoch") != ep and (
-                st.get("compact_deferred") or remaining <= th["due"]):
+        if (not L.checkpointed_this_epoch(st) and st.get("relay_epoch") != ep
+                and remaining <= th["due"]):
             st["relay_epoch"] = ep
             st.update(tokens=tok, window=win)
             res["act"] = "relay"
@@ -69,9 +71,9 @@ def main():
     act = res.get("act")
 
     if act == "relay":
-        why = ("an automatic compaction was deferred by the context gate"
-               if res["deferred"] else
-               f"only {remaining:,} tokens remain ({src})")
+        why = f"only {remaining:,} tokens remain ({src})"
+        if res["deferred"]:
+            why += ", an automatic compaction was deferred by the context gate,"
         print(json.dumps(ctx(
             f"[context-guard context gate] Before anything else: {why} and no "
             f"checkpoint has run this epoch. Run the checkpoint skill now — "
