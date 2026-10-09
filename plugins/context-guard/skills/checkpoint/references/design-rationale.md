@@ -128,12 +128,11 @@ Three layers, escalating; the first two are hooks, the third is a skill.
    or a `CLAUDE_KIT_CONTEXT_WINDOW` pin, turns the mirror off. (That pin, and
    `CLAUDE_KIT_LEDGER_EVERY`, were later renamed `CONTEXT_GUARD_CONTEXT_WINDOW` and
    `CONTEXT_GUARD_LEDGER_EVERY`; the old names remain deprecated aliases.) The account file in the home directory
-   is never opened. context-guard's own deprecated copy of the status line (kept
-   one release for entries that still point at it) writes the same `exact` block into
-   `~/.claude/claude-kit/context-gate/<session>.json` (a historical directory name). The hooks
-   read both records and use the one with the larger `exact.at` (`lib_context.sensor`); a
-   sensor file that is not a regular file, or whose `at` is more than 60s in the future, reads
-   as absent. They never write the sensor file: a new epoch stamps `epoch_at` in the gate's
+   is never opened. The hooks read only the sensor record (`lib_context.sensor`); a sensor
+   file that is not a regular file, or whose `at` is more than 60s in the future, reads as
+   absent. (context-guard once shipped its own copy of the status line, which wrote the same
+   `exact` block into its gate state; that copy is gone, and a block it left there is
+   ignored.) They never write the sensor file: a new epoch stamps `epoch_at` in the gate's
    own state, and a record stamped at or before it, or up to 2 s after it (`EPOCH_GRACE_S`:
    Claude Code can build a payload before the compaction that the status line reads just
    after it), counts as window-only, even when the clock has since stepped back past

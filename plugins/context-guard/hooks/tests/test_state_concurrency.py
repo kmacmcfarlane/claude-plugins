@@ -74,32 +74,6 @@ class ConcurrentWriters(Base):
         self.assertEqual(st["count"], procs * n, "a read-modify-write was lost")
         self.assertEqual([f for f in os.listdir(self.gate) if f.endswith(".tmp")], [])
 
-    def test_status_line_never_undoes_an_epoch_or_checkpoint(self):
-        # The live bug: the status line loaded, a compaction bumped the epoch,
-        # and the status line wrote the stale epoch back.
-        payload = json.dumps({"session_id": "s", "model": {"display_name": "M"},
-                              "context_window": {"used_percentage": 10.0,
-                                                 "context_window_size": 1_000_000,
-                                                 "total_input_tokens": 100_000}})
-        stop = time.monotonic() + 60
-        lines = [subprocess.Popen([sys.executable, os.path.join(HOOKS, "statusline.py")],
-                                  stdin=subprocess.PIPE, stdout=subprocess.DEVNULL,
-                                  env=self.env) for _ in range(12)]
-        for p in lines:
-            p.stdin.write(payload.encode()); p.stdin.close()
-        L.LOCK_TIMEOUT_S = 5
-        resets = 0
-        while any(p.poll() is None for p in lines) or resets < 20:
-            L.reset_epoch("s")
-            resets += 1
-            self.assertLess(time.monotonic(), stop)
-        L.mark_checkpoint("s")
-        for p in lines:
-            self.assertEqual(p.wait(timeout=60), 0)
-        st = L.load_state("s")
-        self.assertEqual(L.epoch(st), resets)
-        self.assertEqual(st["checkpoint_epoch"], resets)
-
     def test_hook_writers_keep_each_others_keys(self):
         L.save_state("h", {})   # a live session has state; mark_checkpoint requires it
         procs = []
@@ -167,21 +141,6 @@ class SessionIdConfinement(Base):
         self.assertEqual(L.safe_sid(""), "unknown")
         self.assertTrue(L.safe_sid(123).startswith("sid-"))
 
-    def test_status_line_with_traversal_id_writes_inside(self):
-        outside = os.path.join(self.tmp.name, "evil.json")
-        payload = {"session_id": "../../evil", "model": {"display_name": "M"},
-                   "context_window": {"used_percentage": 10.0,
-                                      "context_window_size": 1_000_000,
-                                      "total_input_tokens": 100_000}}
-        p = subprocess.run([sys.executable, os.path.join(HOOKS, "statusline.py")],
-                           input=json.dumps(payload), capture_output=True, text=True,
-                           env=self.env, timeout=30)
-        self.assertEqual(p.returncode, 0)
-        self.assertFalse(os.path.exists(outside))
-        self.assertEqual(L.load_state("../../evil")["exact"]["window"], 1_000_000)
-        for f in self.all_files():
-            self.assertTrue(os.path.relpath(f, self.tmp.name).startswith(
-                os.path.join("claude-kit", "context-gate")), f)
 
 
 class FailOpen(Base):

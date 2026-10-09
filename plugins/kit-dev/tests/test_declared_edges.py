@@ -115,20 +115,14 @@ ALLOWED = {
 # finding for the declaration sweep (spike 72ef F7), which removes its entries as they land.
 # Listed so the lint passes meanwhile.
 UNDECLARED = {
-    # context-guard's moved notice reads statusline's data dir to stay quiet when it is
-    # installed (72ef CG-3): named in plugin.json ("installing statusline brings it"), not a
-    # catalog entry. The code line that builds the path, and its docstring.
-    ("context-guard/hooks/rehydrate.py", "statusline", '_data_dirs(cfg, "statusline-")'):
-        "F7 (CG-3)",
-    ("context-guard/hooks/rehydrate.py", "statusline", "any plugins/data/statusline-<mkt>"):
-        "F7 (CG-3)",
     # The research quota read points at statusline's install-statusline references for the
     # safe_sid rules (72ef DF-7); F7 moves the pointer to the hub's hook-contract.md.
     ("dev-flow/skills/research/references/intensity-and-routing.md", "statusline",
      "`safe_sid` rules are in `statusline`'s `install-statusline` references"): "F7 (DF-7)",
-    # The hub treats context-guard's deprecated footer copy as the footer's entry (72ef
-    # SH-3): owner.py names that copy's data-dir home, and the tests fingerprint its path.
-    # F7 declares it, or it goes with the copy (a95a).
+    # The hub treats an entry naming context-guard's old footer copy as the footer's entry
+    # (72ef SH-3): owner.py names that copy's data-dir home, and the tests fingerprint its
+    # path. The copy itself is gone (a95a), but entries that still name it are what the hub
+    # takes over, so the name stays; F7 declares it.
     ("statusline-hub/hooks/owner.py", "context-guard",
      'FOOTER_HOMES = (STATUSLINE, "context-guard"'): "F7 (SH-3)",
     ("statusline-hub/hooks/tests/test_owner.py", "context-guard",

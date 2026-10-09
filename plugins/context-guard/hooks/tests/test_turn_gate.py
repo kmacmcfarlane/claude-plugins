@@ -121,12 +121,12 @@ class TestTurnGate(HookBase):
 
     def test_does_not_clobber_fresh_exact_or_the_prompt_gate_state(self):
         p = self.transcript(900_000)
-        L.save_state("s", {"exact": {"pct": 90.0, "tokens": 900_000,
-                                     "window": 1_000_000, "at": time.time()},
-                           "due": {"prompt_n": 4, "tok": 1}, "prompt_n": 5})
+        self.put_exact("s", {"pct": 90.0, "tokens": 900_000,
+                             "window": 1_000_000, "at": time.time()})
+        L.save_state("s", {"due": {"prompt_n": 4, "tok": 1}, "prompt_n": 5})
         self.assertIn("DUE:", ctx(self.gate(transcript=p)[1]))
         st = L.load_state("s")
-        self.assertEqual(st["exact"]["tokens"], 900_000)
+        self.assertEqual(L.sensor("s", st)["tokens"], 900_000)
         self.assertEqual((st["due"], st["prompt_n"]), ({"prompt_n": 4, "tok": 1}, 5))
 
     def test_skips_subagents_on_agent_id_only(self):
@@ -138,10 +138,8 @@ class TestTurnGate(HookBase):
 
     def test_replay_2026_09_16_guessed_200k_on_a_real_1m_session(self):
         # Stale exact {186,454 of 1M}; the transcript at the same depth.
-        st = L.load_state("s")
-        st["exact"] = {"pct": 18.6, "tokens": 186_454, "window": 1_000_000,
-                       "at": time.time() - 700}
-        L.save_state("s", st)
+        self.put_exact("s", {"pct": 18.6, "tokens": 186_454, "window": 1_000_000,
+                             "at": time.time() - 700})
         self.assertEqual(self.gate(transcript=self.transcript(186_454))[:3], (0, {}, ""))
         # No record at all: the window is guessed at 200K. 150K is under the
         # guessed due line, and deeper is under its hard line: never a word.
@@ -425,8 +423,8 @@ class TestGuessedDepthIsSilent(InProcess):
         def build(tok):
             self.write(usage_line(tok))
             for i in range(len(self.LEFTS)):
-                L.save_state(f"g{i}", {"exact": {"window": 1_000_000, "tokens": tok,
-                                                 "pct": 1.0, "at": time.time() - 700}})
+                self.put_exact(f"g{i}", {"window": 1_000_000, "tokens": tok,
+                                         "pct": 1.0, "at": time.time() - 700})
         self.sweep(build, window=1_000_000)
 
     def test_derived_unresolved(self):
@@ -506,8 +504,8 @@ class TestBlockingSources(InProcess):
                                         (500_000, 600_000), (548_000, 600_000),
                                         (940_000, 1_000_000), (940_001, 1_000_000))):
             with self.subTest(tok=tok, win=win):
-                L.save_state(f"p{i}", {"exact": {"pct": 100.0 * tok / win, "tokens": tok,
-                                                 "window": win, "at": time.time()}})
+                self.put_exact(f"p{i}", {"pct": 100.0 * tok / win, "tokens": tok,
+                                         "window": win, "at": time.time()})
                 out = json.dumps(self.gate(f"p{i}", transcript_path="/nonexistent"))
                 self.assertEqual(MARKER in out, L.hard_applies(win, tok))
 
@@ -556,7 +554,7 @@ class TestStandDownWithoutAStatusLine(InProcess):
     def test_a_derived_only_session_still_lapses_on_tokens(self):
         self.session("claude-opus-5", 950_000)
         self.assertTrue(ctx(self.gate()).startswith(MARKER + " (derived): 50,000"))
-        self.assertNotIn("exact", L.load_state("s"))       # no status line here
+        self.assertEqual(L.sensor_record("s"), {})       # no status line here
         # A real session has the prompt gate's last scored depth; without even
         # that, the first measurement anchors the record (below).
         L.update_state("s", lambda s: s.__setitem__("tokens", 950_000))
@@ -569,7 +567,7 @@ class TestStandDownWithoutAStatusLine(InProcess):
     def test_a_stale_exact_record_still_lapses_on_tokens(self):
         self.session("claude-opus-5", 950_000)
         self.set_exact(950_000, 1_000_000, at=time.time() - 700)
-        self.assertFalse(L.exact_fresh(L.load_state("s")["exact"]))
+        self.assertFalse(L.exact_fresh(L.sensor("s")))
         self.assertIn(MARKER, ctx(self.gate()))
         L.update_state("s", lambda s: s.__setitem__("tokens", 950_000))
         self.standdown()

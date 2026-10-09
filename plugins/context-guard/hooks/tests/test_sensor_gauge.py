@@ -1,5 +1,5 @@
 """The context-guard side of the statusline sensor/gauge contract (3c48 F1):
-ANCHORS, the dual-path sensor read, epoch_at demotion, and gauge.json.
+ANCHORS, the sensor read, epoch_at demotion, and gauge.json.
 
 Hermetic: CLAUDE_CONFIG_DIR and HOME both point at a temp dir, so an
 expanduser fallback can never reach the real ~/.claude."""
@@ -57,6 +57,8 @@ class Base(unittest.TestCase):
         return p
 
     def write_legacy(self, sid, tokens, window, at=None):
+        """An `exact` block in the gate's own state, as an older status line
+        wrote it: never read since a95a."""
         def put(st):
             st["exact"] = {"pct": 100.0 * tokens / window, "tokens": tokens,
                            "window": window, "at": time.time() if at is None else at}
@@ -148,40 +150,28 @@ class TestSensorPath(Base):
         self.assertFalse(os.path.exists(os.path.join(self.tmp.name, "statusline")))
 
 
-class TestDualRead(Base):
+class TestSensorRead(Base):
     def test_new_path_only(self):
         self.write_sensor("s", 420_000, 1_000_000)
         tok, win, pct, src = L.depth("/nonexistent", "s")
         self.assertEqual((tok, win, pct, src), (420_000, 1_000_000, 42.0, "exact"))
         self.assertFalse(os.path.exists(L.state_path("s")))  # read-only: no state write
 
-    def test_old_path_only(self):
+    def test_a_legacy_in_state_block_is_ignored(self):
+        # a95a: the deprecated copy that wrote it is gone; a block left in an
+        # old state file never gates, alone or beside a sensor record.
         self.write_legacy("s", 300_000, 1_000_000)
+        self.assertEqual(L.sensor("s"), {})
         tok, win, pct, src = L.depth("/nonexistent", "s")
-        self.assertEqual((tok, win, src), (300_000, 1_000_000, "exact"))
-
-    def test_both_new_fresher_wins(self):
-        now = time.time()
-        self.write_legacy("s", 300_000, 1_000_000, at=now - 30)
-        self.write_sensor("s", 420_000, 1_000_000, at=now - 5)
-        self.assertEqual(L.depth("/nonexistent", "s")[0], 420_000)
-
-    def test_both_old_fresher_wins(self):
+        self.assertEqual((tok, src), (0, "inferred"))
         now = time.time()
         self.write_legacy("s", 300_000, 1_000_000, at=now - 5)
         self.write_sensor("s", 420_000, 1_000_000, at=now - 30)
-        self.assertEqual(L.depth("/nonexistent", "s")[0], 300_000)
-
-    def test_tie_goes_to_the_sensor_file(self):
-        now = time.time()
-        self.write_legacy("s", 300_000, 1_000_000, at=now)
-        self.write_sensor("s", 420_000, 1_000_000, at=now)
         self.assertEqual(L.depth("/nonexistent", "s")[0], 420_000)
 
     def test_unknown_newer_version_ignored(self):
-        self.write_legacy("s", 300_000, 1_000_000, at=time.time() - 30)
         self.write_sensor("s", 420_000, 1_000_000, v=2)
-        self.assertEqual(L.depth("/nonexistent", "s")[0], 300_000)
+        self.assertEqual(L.depth("/nonexistent", "s")[::3], (0, "inferred"))
         self.assertEqual(L.sensor_record("s"), {})
 
     def test_unknown_version_alone_is_absent(self):
@@ -192,7 +182,6 @@ class TestDualRead(Base):
             self.assertEqual(tok, 0, v)
 
     def test_malformed_records_are_absent(self):
-        self.write_legacy("s", 300_000, 1_000_000, at=time.time() - 30)
         bad = ["not json", "[]", "null", json.dumps({"v": 1, "exact": []}),
                json.dumps({"v": 1, "exact": {"pct": 5, "tokens": 5, "window": 0,
                                              "at": time.time()}}),
@@ -205,7 +194,7 @@ class TestDualRead(Base):
                                              "window": 1000, "at": time.time()}})]
         for raw in bad:
             self.write_sensor("s", raw=raw)
-            self.assertEqual(L.depth("/nonexistent", "s")[0], 300_000, raw)
+            self.assertEqual(L.depth("/nonexistent", "s")[::3], (0, "inferred"), raw)
 
     def test_sensor_dir_is_a_file_does_not_raise(self):
         os.makedirs(os.path.join(self.tmp.name, "statusline"))
@@ -240,52 +229,14 @@ class TestSensorHardening(Base):
         tok, win, pct, src = L.depth("", "s")
         self.assertTrue(src.startswith("inferred"), src)
 
-    def test_future_at_rejected_falls_back_to_legacy(self):
+    def test_future_at_rejected_never_falls_back_to_legacy(self):
         self.write_legacy("s", 300_000, 1_000_000)
         self.write_sensor("s", 500_000, 1_000_000, at=time.time() + 3600)
-        self.assertEqual(L.sensor("s")["tokens"], 300_000)
+        self.assertEqual(L.sensor("s"), {})
 
     def test_small_clock_skew_is_accepted(self):
         self.write_sensor("s", 500_000, 1_000_000, at=time.time() + 30)
         self.assertEqual(L.depth("", "s")[3], "exact")
-
-    # 73a6: the same rule for the legacy in-state block.
-    def test_legacy_future_at_beyond_skew_is_rejected(self):
-        self.write_legacy("s", 500_000, 1_000_000, at=time.time() + L.FUTURE_SKEW_S + 60)
-        self.assertEqual(L.sensor("s"), {})
-        tok, win, pct, src = L.depth("", "s")
-        self.assertTrue(src.startswith("inferred"), src)
-        m = L.measure("", "s")
-        self.assertIsNone(m["block_window"])
-        self.assertTrue(L.measure("", "s", mirror=False)["source"].startswith("inferred"))
-
-    def test_legacy_non_finite_at_is_rejected(self):
-        for at in (float("inf"), "soon", True):
-            L.save_state("s", {"exact": {"pct": 50.0, "tokens": 500_000,
-                                         "window": 1_000_000, "at": at}})
-            self.assertEqual(L.sensor("s"), {}, at)
-            self.assertTrue(L.depth("", "s")[3].startswith("inferred"), at)
-
-    def test_legacy_future_at_does_not_outdate_the_sensor(self):
-        # A skewed legacy block has the larger `at`; it must not win.
-        self.write_sensor("s", 420_000, 1_000_000, at=time.time() - 5)
-        self.write_legacy("s", 900_000, 1_000_000, at=time.time() + 3600)
-        self.assertEqual(L.sensor("s")["tokens"], 420_000)
-        self.assertEqual(L.depth("", "s")[::3], (420_000, "exact"))
-
-    def test_legacy_small_clock_skew_is_accepted(self):
-        self.write_legacy("s", 500_000, 1_000_000, at=time.time() + 30)
-        self.assertEqual(L.depth("", "s")[3], "exact")
-
-    def test_legacy_window_only_demoted_block_is_kept(self):
-        # _reset's demotion ({"window", "at": 0}) is not a future stamp.
-        L.save_state("s", {"exact": {"window": 1_000_000, "at": 0}})
-        self.assertEqual(L.sensor("s"), {"window": 1_000_000, "at": 0})
-
-    def test_epoch_end_ignores_a_skewed_legacy_block(self):
-        self.write_legacy("s", 900_000, 1_000_000, at=time.time() + 3600)
-        L.reset_epoch("s")
-        self.assertEqual(L.load_state("s")["epoch_end_tokens"], 0)
 
     def _read_in_child(self, sid="s", timeout=10):
         """sensor_record in a subprocess, so a regression that blocks on a
@@ -357,12 +308,6 @@ class TestEpochDemotion(Base):
         self.write_sensor("s", 950_000, 1_000_000, at=stamped)
         self.assertEqual(L.depth("/nonexistent", "s")[:2], (0, 1_000_000))
 
-    def test_legacy_race_is_demoted_too(self):
-        stamped = time.time()
-        L.reset_epoch("s")
-        self.write_legacy("s", 950_000, 1_000_000, at=stamped)
-        self.assertEqual(L.depth("/nonexistent", "s")[:2], (0, 1_000_000))
-
     def test_record_after_reset_is_exact(self):
         L.reset_epoch("s")
         epoch_at = L.load_state("s")["epoch_at"]
@@ -380,8 +325,6 @@ class TestEpochDemotion(Base):
                 self.write_sensor("s", 950_000, 1_000_000, at=epoch_at + dt)
                 self.assertEqual(L.sensor("s"), {"window": 1_000_000, "at": 0})
                 self.assertEqual(L.depth("/nonexistent", "s")[:2], (0, 1_000_000))
-        self.write_legacy("s", 950_000, 1_000_000, at=epoch_at + 1)
-        self.assertEqual(L.depth("/nonexistent", "s")[:2], (0, 1_000_000))
 
     def test_future_epoch_at_still_demotes_a_pre_reset_record(self):
         # The clock stepped back 75 s after a reset: the old epoch's last
@@ -390,12 +333,10 @@ class TestEpochDemotion(Base):
         # window-only - silencing the gate for the step, never blocking.
         now = time.time()
         epoch_at = now + 75
-        for write in (self.write_sensor, self.write_legacy):
-            with self.subTest(writer=write.__name__):
-                L.save_state("s", {"epoch": 1, "epoch_at": epoch_at})
-                write("s", 950_000, 1_000_000, at=epoch_at - 30)
-                self.assertEqual(L.sensor("s"), {"window": 1_000_000, "at": 0})
-                self.assertEqual(L.depth("/nonexistent", "s")[:2], (0, 1_000_000))
+        L.save_state("s", {"epoch": 1, "epoch_at": epoch_at})
+        self.write_sensor("s", 950_000, 1_000_000, at=epoch_at - 30)
+        self.assertEqual(L.sensor("s"), {"window": 1_000_000, "at": 0})
+        self.assertEqual(L.depth("/nonexistent", "s")[:2], (0, 1_000_000))
         L.save_state("s", {"epoch": 1, "epoch_at": now + L.FUTURE_SKEW_S + 600})
         self.write_sensor("s", 300_000, 1_000_000, at=now - 5)
         self.assertEqual(L.sensor("s"), {"window": 1_000_000, "at": 0})
@@ -413,11 +354,11 @@ class TestEpochDemotion(Base):
         st = L.reset_epoch("s")
         self.assertEqual(st["epoch_end_tokens"], 777_000)
 
-    def test_epoch_end_tokens_takes_the_fresher_record(self):
+    def test_epoch_end_tokens_ignores_a_legacy_block(self):
         now = time.time()
         self.write_sensor("s", 777_000, 1_000_000, at=now - 50)
         self.write_legacy("s", 800_000, 1_000_000, at=now - 5)
-        self.assertEqual(L.reset_epoch("s")["epoch_end_tokens"], 800_000)
+        self.assertEqual(L.reset_epoch("s")["epoch_end_tokens"], 777_000)
 
     def scored(self, sid, tokens, at):
         """What context_warn.decide() stores on a prompt: the scored depth."""
@@ -536,14 +477,6 @@ class TestGauge(Base):
                            env=dict(os.environ, **self.env), timeout=30)
         self.assertEqual((p.returncode, p.stdout.strip()), (0, "{}"))
         self.assertEqual(self.read_json(L.gauge_path()), L.gauge_record())
-
-    def test_labels_match_the_status_line_hints(self):
-        # context-guard's statusline.py (deprecated at F4) hard-codes its hint
-        # words; the published labels must say the same thing.
-        with open(os.path.join(HOOKS, "statusline.py")) as f:
-            src = f.read()
-        for label in L.GAUGE_LABELS.values():
-            self.assertIn(f"·  {label}", src)
 
     def test_session_start_publishes_the_gauge(self):
         code, out, err = self.run_hook("rehydrate.py", {

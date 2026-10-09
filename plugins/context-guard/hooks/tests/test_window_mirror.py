@@ -124,11 +124,17 @@ class Base(unittest.TestCase):
     def measure(self, sid="s", **env):
         return L.measure(self.tpath, sid, environ=self.environ(**env))
 
+    def put_exact(self, sid, block):
+        """The status line's exact block for `sid`, as its sensor record."""
+        p = L.sensor_path(sid)
+        os.makedirs(os.path.dirname(p), exist_ok=True)
+        with open(p, "w") as f:
+            json.dump({"v": 1, "exact": block}, f)
+
     def set_exact(self, tokens, window, at=None):
-        st = L.load_state("s")
-        st["exact"] = {"pct": 100.0 * tokens / window, "tokens": tokens,
-                       "window": window, "at": time.time() if at is None else at}
-        L.save_state("s", st)
+        self.put_exact("s", {"pct": 100.0 * tokens / window, "tokens": tokens,
+                             "window": window,
+                             "at": time.time() if at is None else at})
 
 
 class TestPrecedence(Base):
@@ -478,9 +484,7 @@ class TestCrossCheck(Base):
         self.assertIn(TEST_VERSION, L.distrusted_versions())
         self.assertFalse(L.load_state("s")["window_mismatch"]["notified"])
         # Row 20: with the status line gone, this version's derived depth warns only.
-        st = L.load_state("s")
-        st.pop("exact")
-        L.save_state("s", st)
+        os.remove(L.sensor_path("s"))
         m = self.measure()
         self.assertTrue(m["source"].startswith("inferred"))
         self.assertTrue(m["derived"]["distrusted"])
