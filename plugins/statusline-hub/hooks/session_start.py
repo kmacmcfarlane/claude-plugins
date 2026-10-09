@@ -92,7 +92,12 @@ same (see owner.py):
 
 A settings file it must use but cannot - not valid JSON, read-only,
 unwritable, a project settings.local.json git does not ignore - makes the
-state `blocked`, said once with the fix; later sessions retry quietly.
+state `blocked`, said once with the fix; later sessions retry quietly. So
+does a project settings file git tracks (a team-shared .claude/settings.json,
+where the old installer's --project put a footer entry): taking over the
+footer's entry there would commit the hub's absolute path on this machine,
+so the hub refuses and leaves the file as it is. The user settings file is
+never refused for being tracked (a dotfiles repo is the user's own).
 
 Then the prune pass (housekeeping.py): sensor records untouched for 30
 days (the hub's tee writes them too), dead hooks.d manifests, stale last-good
@@ -117,7 +122,7 @@ GIT_TIMEOUT_S = 2
 
 class Blocked(Exception):
     """A settings file that must be used and cannot be: `reason` is one of
-    invalid, read-only, unwritable, not-ignored."""
+    invalid, read-only, unwritable, not-ignored, tracked."""
 
     def __init__(self, path, reason):
         super().__init__(path)
@@ -170,9 +175,29 @@ def _git_would_track(proj, path):
     return r.returncode == 1
 
 
-def _guard_local(p, proj):
+def _git_tracks(path):
+    """True when git tracks the file at `path` (it is in the index of the
+    work tree that holds it). Bounded, fail-open: no git, a timeout, or not
+    a repo all mean False."""
+    try:
+        r = subprocess.run(["git", "-C", os.path.dirname(os.path.abspath(path)),
+                            "ls-files", "--error-unmatch", "--", os.path.basename(path)],
+                           stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
+                           stderr=subprocess.DEVNULL, timeout=GIT_TIMEOUT_S)
+    except (OSError, subprocess.SubprocessError, ValueError):
+        return False
+    return r.returncode == 0
+
+
+def _guard_local(owner, p, proj):
+    """Refuse to put the hub's machine-specific entry where git would share
+    it: a project settings.local.json git does not ignore, or any settings
+    file other than the user's that git tracks."""
     if proj and os.path.basename(p) == "settings.local.json" and _git_would_track(proj, p):
         raise Blocked(p, "not-ignored")
+    user = os.path.join(owner.sensor.base_dir(), "settings.json")
+    if not owner._same_path(p, user) and _git_tracks(p):
+        raise Blocked(p, "tracked")
 
 
 def _put(owner, data, path, expect):
@@ -290,7 +315,7 @@ def _from_statusline(owner, data, path, proj, entry):
     if statusline_hooked():
         if not _script_ready(owner, data):
             raise Wait()
-        _guard_local(path, proj)
+        _guard_local(owner, path, proj)
         _put(owner, data, path, {"statusline"})
         return (f"took over the status line slot in {path}; the statusline footer now "
                 f"draws through the hub, as one of its display hooks.")
@@ -353,7 +378,7 @@ def _older_copy(owner, data, path, proj, entry, verb):
         raise Wait()  # mid-update: the link dangles until its plugin re-links it
     if not _script_ready(owner, data):
         raise Wait()
-    _guard_local(path, proj)
+    _guard_local(owner, path, proj)
     _put(owner, data, path, {"statusline"})
     gone = ("whose version no longer ships it" if _has(recs, home) else
             "which is no longer installed")
@@ -578,7 +603,7 @@ def first_run(owner, data, proj):
         raise Wait()
     if not _script_ready(owner, data):
         return None
-    _guard_local(path, proj)
+    _guard_local(owner, path, proj)
     _put(owner, data, path, {"absent"})
     what = ("the statusline footer, and any other display hooks registered"
             if statusline_hooked() or (_statusline_installs_only_hooks(owner) and
@@ -592,6 +617,12 @@ def first_run(owner, data, proj):
 
 def _blocked_message(owner, path, reason, verb):
     retry = "start a new session"
+    if reason == "tracked":
+        return (f"{path} is tracked by git, and the status line entry is an absolute "
+                f"path on this machine; left as it is, not {verb} there. To have the "
+                f"hub own the slot, run /install-statusline-hub to install it in your "
+                f"user settings (or --local, for a git-ignored "
+                f".claude/settings.local.json).")
     if reason == "not-ignored":
         return (f"{path} is not git-ignored, and the status line entry is an absolute "
                 f"path on this machine; not installed there. Add "

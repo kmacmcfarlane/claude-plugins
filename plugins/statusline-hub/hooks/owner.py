@@ -58,10 +58,10 @@ takeover reads):
 - yielded: something else replaced our entry; left alone for good.
 - deferred: a statusLine was already set on first run; never overwritten.
 - blocked: the settings file could not be used (not valid JSON, read-only,
-  unwritable, or a project file git does not ignore); said once, retried
-  quietly every session. Extra fields: "reason", and "resume" - the state
-  whose work is retried ("installed" or "wrapping" or "unwrapped" for a
-  heal, "new" for a first run).
+  unwritable, a project file git does not ignore, or one git tracks); said
+  once, retried quietly every session. Extra fields: "reason", and
+  "resume" - the state whose work is retried ("installed" or "wrapping"
+  or "unwrapped" for a heal, "new" for a first run).
 - wrapping: the entry in `settings` is ours, running the wrapped entry the
   wrap record keeps; SessionStart restores it when a stale session's write
   drops it or puts the wrapped entry back, and yields to anything else.
