@@ -3,10 +3,12 @@ id: librarian-mode-say-so-without-context-gu-64c7
 title: "librarian-mode: say so without context-guard; its work-items stop"
 short_display_name: librarian degrade without context-guard
 type: bug
-status: todo
+status: doing
 priority: 3
+owner: Kyle-McFarlane@2d49f8460283
+claimed: 2026-10-09T08:35Z
 created: 2026-10-08
-updated: 2026-10-08
+updated: 2026-10-09
 refs:
   - spike-how-much-inter-plugin-dependency-i-72ef
 ---
@@ -18,3 +20,8 @@ Follow-up F4 from the plugin-dependency spike (72ef), 2026-10-08. Acceptance: as
 - next: —
 - blocked: —
 - learned: —
+
+## Notes
+note: from 4bd4 OQ2 (2026-10-09T08:34Z): this item also carries its peer hint step (KD-2 for factor-analysis / DF-9 for librarian-mode), per .claude-sandbox/investigations/peer-hint-helper-and-first-adopters-4bd4/ INDEX.md
+dispatch: implementer opus medium — build, worktree (bug; acceptance from the 72ef series; doctrine and kit-dev lint on main)
+- 2026-10-09 claimed by Kyle-McFarlane@2d49f8460283

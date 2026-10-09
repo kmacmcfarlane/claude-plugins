@@ -53,3 +53,6 @@ agent: implementer a5b91673abb322595
 return: DONE worktree-agent-a5b91673abb322595 844b806 (TLDR/Context/Impact order; shaped levels; id lint on titles; Impact facets per line, across options; classes 41 trust / 42 one-way; sub-bullets capped at 2; 10/10 Checks, operator-interaction 117; runner exit 0 on the example; on the live page: 455 lint lines; tests only, no render)
 dispatch: reviewer opus high — review round 1 of 844b806
 agent: reviewer a9c6313902e894792
+verdict: review round 1 NEEDS_CHANGES (medium 3: cards-schema.md:245 says the closed card shows the rec's option title, it doesn't; the 360px both-theme preview not run; the older string detail.rec render lost its only test; lows: rulings.md:60 order not marked superseded, empty sub refuses the page, duplicate id lint lines; nits: wraps, 'layer details's', bracketed port numbers); live page renders under jsdom with 455 lint lines and no refusal
+decided: 2026-10-09T08:31Z scope — finding 2 (the visual preview) can't be done in this sandbox (no browser); the change lands on tests plus jsdom renders, the gap stated in its Report, and the operator sees the layout on the fresh open-decisions page published on it; a broken layout is a quick follow-up fix
+dispatch: implementer opus medium — fix round 1 (resume a5b91673abb322595)
