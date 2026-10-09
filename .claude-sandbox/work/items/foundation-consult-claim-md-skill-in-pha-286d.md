@@ -35,3 +35,6 @@ verdict: review round 1 NEEDS_CHANGES (must-fix 1: medium — F0 writes through 
 dispatch: implementer opus medium — fix round 1 (resume aac8fa75aac1fadce)
 return: DONE 7ef5ce2 (fix round 1); dev-flow and kit-dev Checks OK
 dispatch: reviewer opus high — review round 2 of 7ef5ce2 (resume ae00bc0c31c8b8e3e)
+verdict: review round 2 CLEAR (must-fix 0; lows: the no-store case names a decision line that does not exist; SKILL.md restates state.md; nit: "and defining side" redundant)
+decided: 2026-10-09T17:00Z cap — a finish round of the three exact fixes (authority answer 145)
+dispatch: implementer opus medium — finish round (resume aac8fa75aac1fadce)
