@@ -3,8 +3,10 @@ id: statusline-hub-carry-the-marker-s-scope-5c0c
 title: "statusline-hub: carry the marker's scope through heal and the blocked marker"
 short_display_name: hub keeps install scope
 type: bug
-status: todo
+status: doing
 priority: 4
+owner: Kyle-McFarlane@2d49f8460283
+claimed: 2026-10-09T10:30Z
 created: 2026-10-09
 updated: 2026-10-09
 refs:
@@ -18,3 +20,8 @@ From fe79 review 2: heal's _put (session_start.py:216) and the blocked marker (:
 - next: —
 - blocked: —
 - learned: —
+
+## Notes
+dispatch: implementer opus medium — build, worktree
+- 2026-10-09 claimed by Kyle-McFarlane@2d49f8460283
+agent: implementer ab06ebc39752e7ec6
