@@ -27,3 +27,5 @@ note: from 9385's build — dev-cycle bindings.md § Store's wi lookup ends with
 target: as 72ef F5 (with 01, 02 applied); also the `WI="python3 "` fallback noted on it; all Checks green
 dispatch: implementer opus medium — build (cross-plugin refactor of a lookup snippet; not a canonical mechanical kind)
 agent: implementer af358fa9b3916d4ee
+return: DONE cedc039, then merge of main ec83083 (README, marketplace.json, dev-flow plugin.json resolved keep-both); 12/12 Checks OK; judgement: dev-flow research and librarian-mode copies replaced by pointers to bindings § Store; WI=no-wi-found when nothing resolves (exit 127, never a bare python3); disclosure only, no install tip
+dispatch: reviewer opus high — review round 1 of ec83083
