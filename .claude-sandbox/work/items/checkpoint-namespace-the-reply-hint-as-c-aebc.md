@@ -3,12 +3,11 @@ id: checkpoint-namespace-the-reply-hint-as-c-aebc
 title: "checkpoint: namespace the reply hint as /context-guard:checkpoint so it pastes"
 short_display_name: checkpoint reply hint namespaced
 type: bug
-status: doing
+status: done
 priority: 1
-owner: Kyle-McFarlane@2d49f8460283
-claimed: 2026-10-09T07:36Z
 created: 2026-10-09
 updated: 2026-10-09
+closed: 2026-10-09
 refs:
   - operator message 2026-10-09
 ---
@@ -32,3 +31,8 @@ agent: reviewer a9502a1807ab75325
 verdict: review round 1 CLEAR (lows: 1 allowed line can carry a bare instruction; 2 allowlist can grow to hide a regression; nits 3 manifests unscanned, 4 test location acceptable, 5 long lines)
 decided: 2026-10-09T07:50Z cap — finish round of exact-fix leftovers 1-3 and 5 (authority answer 145); 4 accepted as is
 dispatch: implementer opus medium — finish round (resume aca6389fa9d43c977)
+return: DONE cd56c15 (finish round: bare_outside per-fragment check; fragments must name /checkpoint /compact /clear, two reflowed to fit; manifests scanned; reflows; 808 tests)
+review: self
+verdict: finish round CLEAR — diff read: test tightening plus docstring and playbook reflows, no behaviour change
+landed: cb154bd (merge of 54f07f7, cd56c15); Checks 10/10 OK
+- 2026-10-09 done
