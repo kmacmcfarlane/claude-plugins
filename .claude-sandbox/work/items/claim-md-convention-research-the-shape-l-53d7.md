@@ -119,3 +119,5 @@ dispatch: reviewer opus high — step 2 review round 2 (resume a81a043e328779aa9
 verdict: step 2 review round 2 CLEAR (lows: serial line 120-121 false — only A1 recovered after the denied Bash; README catalog conflicts with main at the kit-dev row (d0b0); nits: 'beside the estate', version source)
 decided: 2026-10-09T09:30Z words — the serial's three wording corrections are the librarian's (series file, not custody): line 120-121 rewritten to the review's reading, 'beside the repo', the init event's claude_code_version cited
 dispatch: implementer opus medium — merge main into the branch only (resolve the README catalog conflict, keep main's kit-dev row with the ownership row), rerun all Checks (resume aa90361669ba918cc)
+landed: step 2 c80f56e (merge of 8b66e2c..443c06d; CLAUDE.md layout conflict with a416 resolved as a union, no other change); Checks 12/12 OK incl. ownership and kit-dev
+next: tier-3 rerun with the operator present (isolation per 06 and 4bd4; Run B with the Read allow, so answer mode is exercised); then step 3 seeding (OQ6, OQ7) and step 4 the reshape message
