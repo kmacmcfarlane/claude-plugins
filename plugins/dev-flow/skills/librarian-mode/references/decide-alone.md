@@ -108,7 +108,10 @@ Applied to decisions 1-97, the line as it stood before answer 134 decided about 
 alone with a standing quota grant (about 15 without one); on 4 of those 26 (53, 62, 34 and
 94, all two-way), the operator's answer differed from what the line would have done. The
 two-word shape narrows the decided-alone side further (live changes, behaviour others rely
-on, and the operator's own words now raise); nothing moves the other way.
+on, and the operator's own words now raise). A few cases move the other way, from raised to
+decided alone: a placement a CLAUDE.md convention settles (such as Skill location) is now
+`place`, where only a row of Aim → home was before; and a config value or a dependency bump
+inside policy is now `design` while its four terms hold.
 
 ## What makes a trade-off real
 
@@ -397,9 +400,11 @@ retired, and what each becomes; only the tag token changes, except where the row
 | `table-placement` | `decided:` | `place` |
 | `reply-reading` | `decided:` | `reading` |
 | `ruled-rule-case` | `decided:` | read by hand: the kind, or the reason word, of its case, the authority kept (a round at a cap → `cap`; the reading of an answer → `reading`) |
+| `wider-scope` | `decided:` | `scope` |
+| `placement` | `decided:` | `place` |
 | `api-name` | `why ask:` | `contract` |
 | `wider-scope`, `rule-change`, `placement` | `why ask:` | `precedent` |
-| `relay` | `why ask:` | `precedent`, the text prefixed `relayed from <repo>: ` |
+| `relay` | `why ask:` | read by hand: `precedent`, the text prefixed `relayed from <repo>: `, the repo read from the item |
 | `cap` | `why ask:` | `spend` (on `decided:`, `cap` stays) |
 | `trade-off — <impact>: ` | `why ask:` | the reason for that impact, the `<impact>: ` prefix dropped |
 
@@ -412,19 +417,20 @@ line is kept. A bare `trade-off — …`, and `one-way`, `trust`, `spend`, `bloc
 `unclassed`, stay as written.
 
 **Who and when.** At every Rehydrate (no plugin-version trigger exists), the librarian reads
-the tags in its own store through the two regexes' captured group:
+the tags in its own store through the two regexes' captured group, a `decided:` line written
+with no time included (`decided: <tag> — …`, its tag token the only thing rewritten):
 
 ```bash
-grep -nP '^decided: \S+ [a-z-]+ — ' "$WI_ROOT"/items/*.md
+grep -nP '^decided: (\S+ )?[a-z-]+ — ' "$WI_ROOT"/items/*.md
 grep -nP '^\s+why ask: [a-z-]+ — ' "$WI_ROOT"/items/*.md
 ```
 
 and writes only on a hit: a captured tag this table lists, or a `trade-off` whose text opens
 with one of the eight impacts and a colon. No hit, no write. On a hit it rewrites each matched
 line in place — the tag token and the prefix the row names, every other character as
-written — reads each `ruled-rule-case` by hand, skips an item `doing` under another `owner:`
-(that owner's Rehydrate migrates it), stages only the files it rewrote, and commits the store
-once.
+written — reads each `ruled-rule-case` and `relay` by hand, skips an item `doing` under
+another `owner:` (that owner's Rehydrate migrates it), stages only the files it rewrote, and
+commits the store once.
 
 **Removal.** `wi estate` does not parse tags: the removal check is the same captured-tag grep,
 run in each repo's store. The librarian of this marketplace files the removal item when this

@@ -16,8 +16,9 @@ diff read, `git merge --no-ff` into local `main`, clean up. Report four lines;
 `decisions needed: none`; then push `main`, and write the push's team summary.
 
 **Operator: "split ralph's backlog skills into their own plugin."** Raised: the name (a
-`contract`) and the dependency direction (a `contract` too: one plugin comes to rely on the
-other); the catalog wording is `words`,
+`contract`) and the dependency direction (a `precedent`: nothing outside the split relies
+on it yet, so it is no `contract`, but the split commits the repo to maintaining a dependency
+between plugins); the catalog wording is `words`,
 decided alone and shown under Done alone. Two decisions, each numbered, in a prose list —
 `1. plugin name: **(a) ralph-backlog**, (b) backlog` and so on, one decision per number,
 each option's impact named, the options in letter order with the recommended one in bold —

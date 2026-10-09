@@ -10,7 +10,9 @@ store from. The skills are prose, so the rules are held by what their files say:
 - the Retired spellings subsection is the file's last heading (the residue check's exemption
   runs to the next heading), and every new tag it maps to is a current tag;
 - outside that subsection, no dev-flow file writes a retired spelling as a tag, names a
-  retired tag as a class, or opens a trade-off's text with the retired `<impact>:` shape.
+  retired tag as a class, or opens a trade-off's text with the retired `<impact>:` shape;
+- every tag the `decided:` and `why ask:` record regexes would capture in a skill file,
+  fenced blocks included, is a current tag or a placeholder (`<tag>`, `<reason>`).
 
 Standard library only. Run from plugins/dev-flow:
 
@@ -32,6 +34,7 @@ RETIRED = ["wording", "minor-design", "narrowing", "ruled-rule-case", "table-pla
            "reply-reading", "forwarding", "wider-scope", "rule-change", "placement",
            "api-name", "relay"]
 RETIRED_HEADING = "### Retired spellings"
+PLACEHOLDERS = {"<tag>", "<reason>"}
 
 
 def text(path):
@@ -147,6 +150,18 @@ class TestNoRetiredResidue(unittest.TestCase):
             for n, ln in enumerate(lines, 1):
                 for tag in pat.findall(ln):
                     self.assertIn(tag, CURRENT, f"{path.relative_to(PLUGIN)}:{n}")
+
+    def test_every_recorded_tag_is_current(self):
+        # The tag the two record regexes capture, in every skill file, fenced blocks included.
+        decided = re.compile(r"^\s*decided: (?:\S+ )?([a-z-]+|<[a-z]+>) — ")
+        why_ask = re.compile(r"why ask: ([a-z-]+|<[a-z]+>) — ")
+        for path, lines in dev_flow_texts():
+            for n, ln in enumerate(lines, 1):
+                for pat in (decided, why_ask):
+                    for tag in pat.findall(ln):
+                        if tag in PLACEHOLDERS:
+                            continue
+                        self.assertIn(tag, CURRENT, f"{path.relative_to(PLUGIN)}:{n}: {ln}")
 
     def test_no_trade_off_opens_with_a_word_and_colon(self):
         pat = re.compile(r"why ask: trade-off — [a-z-]+:")
