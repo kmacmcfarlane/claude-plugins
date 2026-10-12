@@ -3,8 +3,10 @@ id: shell-snippets-run-python3-c-without-i-a-9782
 title: "shell snippets run python3 -c without -I: a json.py in the cwd runs"
 short_display_name: python snippets without -I
 type: bug
-status: todo
+status: doing
 priority: 2
+owner: Kyle-McFarlane@2d49f8460283
+claimed: 2026-10-12T19:47Z
 created: 2026-10-12
 updated: 2026-10-12
 refs:
@@ -18,3 +20,8 @@ From b9e4 review 2, 2026-10-12: snippets outside the wi lookups still run python
 - next: —
 - blocked: —
 - learned: —
+
+## Notes
+- 2026-10-12 claimed by Kyle-McFarlane@2d49f8460283
+target: every python3 -c / python3 - snippet in skills and references runs -I; a kit-dev or plugin test greps for any without it
+dispatch: implementer sonnet medium — build (a mechanical sweep: canonical kind)
