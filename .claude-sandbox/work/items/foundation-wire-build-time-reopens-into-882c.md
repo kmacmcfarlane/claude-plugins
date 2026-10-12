@@ -35,3 +35,6 @@ decided: 2026-10-12T21:00Z design — an item stopped under (a) is re-dispatched
 dispatch: implementer opus medium — fix round 1 (resume a0145b26351bddd68)
 return: DONE c91512e (fix round 1); 12/12 OK; dev-cycle SKILL.md 4996 words
 dispatch: reviewer opus high — review round 2 of c91512e (resume a0abf135be56981e0)
+verdict: review round 2 CLEAR (must-fix 0; lows: record-lines names Step 4.5 as the only writer, but a return's REOPEN is raised before review; option (c) after a CLEAR has no fix round; nit: "below 50%" lost "used"; the three SKILL.md trims dropped no rule)
+decided: 2026-10-12T21:55Z cap — a finish round of the three exact fixes (authority answer 145)
+dispatch: implementer opus medium — finish round (resume a0145b26351bddd68)
