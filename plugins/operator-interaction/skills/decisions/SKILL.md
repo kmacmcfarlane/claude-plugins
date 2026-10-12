@@ -63,8 +63,9 @@ Every decision carries, at any level:
    a bare `a3f9` or `7c41e0d` tells a cold reader nothing. Define every term the operator may
    not know (a source document's label or number, an acronym, a term of art) where it first
    appears in each view, preferring the words it stands for; the label trails as a tag at
-   most. Name items in plain words, the id at most a trailing tag: load the `plain-names`
-   skill (same plugin) and follow it.
+   most; on a card or block, its **Context:** is where the terms are introduced. Name items
+   in plain words, the id at most a trailing tag: load the `plain-names` skill (same plugin)
+   and follow it.
 2. **Its impact**, in five facets in this order: **Effect**, **Wait**, **Reach**, **Undo**,
    **Cost** (`references/rendering.md` § Impact). Written when it is raised, as the Impact
    line, and stored with the card where the caller keeps one.
@@ -156,17 +157,21 @@ Smallest to largest, each showing more of the impact in facet order (templates i
 
 - **Tag size** — `46 (→ effect)`, for a caller's tightest views (a row of open items, a
   report line naming numbers, a page's summary list); never in place of a level.
-- **List line** — every decision gets one: **bold number and title**, recommendation,
+- **List line** — every decision gets one, with no Context: **bold number and title**, recommendation,
   `→` Effect, `later:` Wait, its class when the caller names classes, ⚠ one-way when it is,
   basis, its age and any deadline; a round ask, its justification; a line-only decision, its
   why ask.
-- **Card** — an **Impact:** line under the title, then what is decided, why now, why ask
-  (and a round ask's justification), the options with their impact in italics, decide
-  later, any **To act on (x):** part, then `Rec · basis — reason · unknown`. Its **Context:** cue (where you left it ·
-  what you decide now) is written for every decision when it is raised, and shown to a cold
-  reader (with nowhere to keep it, at the first showing too).
-- **Block** — a card whose Impact line becomes a table (a row per option plus a Wait row),
-  plus context the reader may have lost and the basis drill-down with evidence links.
+- **Card** — in the answer page's order: the decision line (the title, then **What:**, what
+  is decided), then **Context:**, then an **Impact:** line; then why now, why ask (and a
+  round ask's justification), the options with their impact in italics, decide later, any
+  **To act on (x):** part, then `Rec · basis — reason · unknown`. Its **Context:** is one or
+  two sentences, the page's summary size: the terms the card uses, then the resume cue
+  (where you left it · what you decide now). It is written for every decision when it is
+  raised, stored with the card where the caller keeps one, and shown every time the card is
+  shown, warm reader or cold (`references/rendering.md` § Context).
+- **Block** — a card whose Context is fuller, a bullet list at the page's medium
+  size that adds the context the reader may have lost, and whose Impact line becomes a table
+  (a row per option plus a Wait row); plus the basis drill-down with evidence links.
 
 **The line-only rule.** A decision may stay a list line only when all of these hold: the
 reader is warm; the stakes are low (two-way and narrow); the basis is strong (for a
@@ -277,8 +282,8 @@ it appears: **paging** on a cold re-show.
 
 ## References
 
-- `references/worksheet.md` — the six groups, their fields, who supplies each, the two clocks, the cold read
-- `references/rendering.md` — the impact facets and Impact line, the tag size, list line, card and block templates, the message layout, labels, the re-show
+- `references/worksheet.md` — the six groups, their fields, who supplies each, the two clocks, the Context and the Impact line, the cold read
+- `references/rendering.md` — the impact facets and Impact line, the Context section, the tag size, list line, card and block templates, the message layout, labels, the re-show
 - `references/replies.md` — reply parsing, echo, read-back, batch, later and re-ask, reframe
 - `references/evidence-basis.md` — the basis word, its tags and the rule
 - `references/rationale.md` — why each rule, with its sources

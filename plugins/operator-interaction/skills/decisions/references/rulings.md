@@ -33,7 +33,8 @@ alternative not taken, in case practice argues for it.
   template carries the floor by reference.
 - **Every ask justifies itself** (2026-09-30) — *why ask* on every decision, opening with its
   class when the caller names classes. Not taken: the justification on round asks only.
-- **Resume cue** (2026-09-30) — a **Context:** cue stored when raised, shown to a cold reader
+- **Resume cue** (2026-09-30; shown on every card and block since 2026-10-12, folded into
+  the Context section below) — a **Context:** cue stored when raised, shown to a cold reader
   under *while it waited*. Not taken: every cold decision as a block.
 - **Shown after** (2026-09-30) — what a caller's rules let you decide alone is recorded and
   shown as a `Done:` line in a *Done alone* group, never left unseen. Not taken: a record seen
@@ -97,3 +98,16 @@ alternative not taken, in case practice argues for it.
   card-level Impact covers the decision across all its options, each facet on its own line;
   each option's effect lives in its own detail. Not taken: Effect as the recommended option's
   on a page.
+- **A Context section on chat cards and blocks** (2026-10-12, the operator's direction: "the
+  decision skill's TUI output should have a context section for cards and blocks, similar to
+  how the decision-page works"; the cue folded in as Context's last clause, the What line
+  doing the TLDR's work, the sizes (a block at the page's medium only, high staying a
+  page-only level), the origin clause for a subject never seen (*raised when …*, worded to
+  stay true after it is seen), older stored cards with no Context keeping the old order, and
+  the stored line's reading, designs made in build, not the operator's) — every card and
+  block in chat carries a **Context:** section shaped like the page's `context`, in the
+  page's order: the decision line, then Context, then the Impact and the options; a card's
+  at the page's summary size, a block's at its medium; written when raised, stored with the
+  card, shown every time; a list line carries none. Not taken: the cue alone, shown to a
+  cold reader only (2026-09-30); the cue on a line of its own above Context; a block's
+  Context at the page's high size.

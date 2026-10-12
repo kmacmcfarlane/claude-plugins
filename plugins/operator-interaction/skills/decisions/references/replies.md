@@ -98,7 +98,8 @@ from 16:15); if the backup is still paused then, the half-written snapshot is lo
 backup starts over (about 3 hours). Keep that, or pick a time before 17:45?*
 
 When the wake fires, re-show the decision with what changed while it waited, and whether its
-impact changed (`references/rendering.md` § Re-show with what changed). A deferral nobody wakes becomes a
+impact changed, then its card with the **Context:** stored when it was raised — never one
+composed again (`references/rendering.md` § Re-show with what changed). A deferral nobody wakes becomes a
 default by omission; every deferral has a wake. Something must evaluate that wake — anyone
 can check a time wake, but an event wake needs whoever watches for the event (your own
 session for your own work; for other sessions, a cross-session collector, when one exists) —
@@ -107,14 +108,16 @@ stays a list line showing its wake — except on a cold re-show, where it is a c
 with its wake (`references/rendering.md` § Re-show with what changed).
 
 **`tell me [what]` — more context.** Answer under the **same number** with an **Added:** line
-and only the lines the fact changes — the Impact line, an option's impact, the rec line when
-it moves. The card
+and only the lines the fact changes — the Context when the fact is one a later reader needs
+too (store the revised Context with the card), the Impact line, an option's impact, the rec
+line when it moves. The card
 itself is one scroll up; do not send it again. Re-render the whole card only when the options
 or the recommendation change, and then say which and why. Near-zero cost when you already
 know the fact; if finding it needs real work, say so and offer `dig into` instead.
 
 **`expand` — more detail.** Show the decision one level higher in your next message (line →
-card → block). It keeps its number and place, and stays raised on later re-shows. On a block:
+card → block); a line expanded to a card gains its Context, and a card expanded to a block
+its fuller Context, from the store where the caller keeps one. It keeps its number and place, and stays raised on later re-shows. On a block:
 *already at full detail — `tell me [what]` for something specific?*
 
 **`dig into [what]` — investigate first**, typed or picked as a priced option on the card.

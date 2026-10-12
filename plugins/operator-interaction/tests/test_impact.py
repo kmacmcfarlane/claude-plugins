@@ -6,7 +6,7 @@ Two halves:
   renderers, loaded from `assets/index.html` and run under node against
   `assets/cards.example.json` and broken copies of it;
 - the decisions skill's worked examples: every list line carries its effect and its
-  wait, and every card or block opens on its impact.
+  wait, and every card or block shows its impact right after its Context.
 
 Run from the plugin dir: python3 -m unittest discover -s tests -q
 """
@@ -227,7 +227,9 @@ class GalleryShowsImpact(unittest.TestCase):
                                         f"{f.name}:{n}: a stakes word on a line")
         self.assertGreater(seen, 20)
 
-    def test_every_card_and_block_opens_on_its_impact(self):
+    def test_every_card_and_block_shows_its_impact_right_after_its_context(self):
+        # the answer page's order: the decision line (title, What), Context, then the
+        # impact; a Context section is a line, or a heading over bullets (a block)
         seen = 0
         for f in self.files():
             lines = f.read_text().splitlines()
@@ -236,8 +238,17 @@ class GalleryShowsImpact(unittest.TestCase):
                     continue
                 seen += 1
                 j = i + 1
-                while j < len(lines) and (not lines[j].strip()
-                                          or lines[j].startswith("*While it waited")):
+                in_context = False
+                while j < len(lines):
+                    x = lines[j]
+                    if x.startswith("**Context:**"):
+                        in_context = True
+                    elif in_context and x.startswith(("- ", "  - ")):
+                        pass  # a block's Context bullets
+                    elif x.strip() and not x.startswith(("*While it waited", "**What:**")):
+                        break
+                    else:
+                        in_context = in_context and bool(x.strip())
                     j += 1
                 self.assertTrue(lines[j].startswith("**Impact:**")
                                 or lines[j].startswith("| Impact |"),

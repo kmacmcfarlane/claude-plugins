@@ -16,11 +16,11 @@ today.*
 **Decisions** — *5 · one ⚠ one-way*
 
 **41 — Resume the paused nightly backup?**
-**Impact:** → the backup finishes in about 15 minutes · later: at 17:45 the lease lapses, the snapshot is lost and the backup starts over (about 3 hours) · reach: tonight's backup, and shared storage the reporting team writes to · undo: delete the finished snapshot
 **What:** the nightly backup of the reporting database paused halfway through its snapshot and holds a storage lease.
+**Context:** the snapshot is the backup's copy of the database, written to shared storage; the storage lease is the backup's hold on that space, and it lapses at 17:45. You last saw the backup running normally last night · you decide whether it finishes tonight or starts again.
+**Impact:** → the backup finishes in about 15 minutes · later: at 17:45 the lease lapses, the snapshot is lost and the backup starts over (about 3 hours) · reach: tonight's backup, and shared storage the reporting team writes to · undo: delete the finished snapshot
 **Why now:** the lease lapses at ~17:45 today (90 min from 16:15); after that the half-written snapshot is discarded and the backup starts over (about 3 hours).
 **Why ask:** aborting is a real choice too: the snapshot fills shared storage the reporting team also writes to, and whether tonight's backup outranks their jobs is yours to weigh.
-**Context:** you last saw the backup running normally last night · you decide whether it finishes tonight or starts again.
 - **(a) Resume now** — *the snapshot finishes in about 15 minutes · reach: shared storage, 40% free · undo: delete the snapshot*
 - (b) Abort the backup — *releases the lease; no backup tonight unless it is started again · reach: tonight's backup only · undo: start it again, about 3 hours*
 - (z) Decide later — *it waits; at 17:45 the lease lapses and the snapshot is lost*
@@ -28,6 +28,12 @@ today.*
 Rec **(a)** · basis **strong** — *checked the storage quota: 40% free, enough to finish* · unknown: none
 
 **43 — Remove the deprecated `/v1/export` endpoint?** ⚠ one-way
+**What:** whether to delete the old export endpoint `/v1/export`, replaced last quarter by `/v2/export`.
+**Context:**
+- The API cleanup release is the batch of API changes cut on Thursday; you left it at last quarter's launch of `/v2/export` · you decide whether `/v1` goes in this release
+- Two partner integrations still call `/v1/export`
+  - their exports fail once it is removed, until they move to `/v2`
+- A removed public endpoint cannot quietly come back for the clients that already adapted
 
 | Impact | Effect | Reach | Undo | Cost |
 |---|---|---|---|---|
@@ -36,28 +42,26 @@ Rec **(a)** · basis **strong** — *checked the storage quota: 40% free, enough
 | (c) Investigate first | reads this month's access logs for other callers; could change the answer if both partners have already switched | — | nothing to undo | about 15 minutes |
 | (z) Wait | the endpoint stays as it is, and the cleanup release goes out without this change | the API cleanup release | answer any time | nothing now |
 
-**What:** whether to delete the old export endpoint `/v1/export`, replaced last quarter by `/v2/export`.
 **Why now:** the API cleanup release is cut on Thursday; this change goes out in it, or waits for the next one.
 **Why ask:** removing it breaks two partners and cannot be quietly undone; that call is not mine to take alone.
-**Context you may have lost:** you left it at last quarter's launch of `/v2/export` · you decide whether `/v1` goes in this release. Two partner integrations still call `/v1/export`; once it is removed their exports fail until they move to `/v2`, and a removed public endpoint cannot quietly come back for the clients that already adapted.
 
 Rec **(b)** · basis **partial** — *observed: this week's access log shows 2 partners calling it; inferred: no internal callers (only this repo searched)*
 *Basis:* observed — access log, 2 partner callers this week (link) · inferred — no callers in this repo · unknown — whether the partners have a switch planned
 *If you pick (a), I'll repeat it back and act only once you confirm: it can't be undone.*
 
 **45 — Units on the storage dashboard: MiB or MB?** · *your preference — no recommendation*
-**Impact:** → (a) sizes match the OS tools; (b) sizes match the bill · later: the dashboard keeps its placeholder units · reach: the dashboard's readers · undo: one config line
 **What:** show sizes in binary units (MiB, 1,048,576 bytes) or decimal units (MB, 1,000,000 bytes).
+**Context:** the operating system's tools count in binary units and the storage provider bills in decimal ones, so the same disk reads about 5% apart in the two. You left it at the dashboard mock-up, which had placeholder units · you decide which units it shows.
+**Impact:** → (a) sizes match the OS tools; (b) sizes match the bill · later: the dashboard keeps its placeholder units · reach: the dashboard's readers · undo: one config line
 **Why now:** the new dashboard needs one; nothing else waits on it.
 **Why ask:** no fact settles it; which readers the units should suit is yours to say.
-**Context:** you left it at the dashboard mock-up, which had placeholder units · you decide which units it shows.
 - (a) MiB — *matches what the operating system's tools report*
 - (b) MB — *matches the storage provider's bill*
 - (z) Decide later — *it waits; the dashboard keeps its placeholder units until you choose (one config line)*
 
 *No recommendation: no fact settles this.* · basis **strong** — *checked: nothing reads the dashboard's units programmatically* · unknown: none
 
-*Gallery note — layout and order: the cards and the block come first, each with its impact directly under the title (a line on a card, a table on the block), the compact list and the hint last, so the list is what is on screen when the agent stops. Why this order: 41 breaks before you are back; the API cleanup group comes next because it holds a ⚠, with 44 kept beside 43; then 42, which blocks the docs build, before 45, which blocks nothing. 44 and 42 stay list lines: you are warm on both, both are two-way and narrow on a strong basis, 44's options converge and 42 is a template you have seen. 41, 43 and 45 are cold, so each is at least a card, with its **Context:** cue; 43 is a block because this is its first showing, its *Context you may have lost* opening with the same cue. In each card and the block the options keep their letter order and only the recommended one is bold: 43's (b) stays second, and 45, with no recommendation, bolds none. Every list line carries its effect and what waiting costs, the line-only ones too; 45's effect slot shows each option's, since it has no recommendation; only 43 has a ⚠ slot, and no line has a stakes word.*
+*Gallery note — layout and order: the cards and the block come first, each opening on its decision line (the title and What), then its Context, then its impact (a line on a card, a table on the block), the compact list and the hint last, so the list is what is on screen when the agent stops. Why this order: 41 breaks before you are back; the API cleanup group comes next because it holds a ⚠, with 44 kept beside 43; then 42, which blocks the docs build, before 45, which blocks nothing. 44 and 42 stay list lines: you are warm on both, both are two-way and narrow on a strong basis, 44's options converge and 42 is a template you have seen. 41, 43 and 45 are cold, so each is at least a card; 43 is a block because this is its first showing. Each card and the block carries its Context — the terms it uses, then where you left it — and would carry it for a warm reader too; the block's runs to bullets, its first the card-size Context and the rest what a reader coming back may have lost. The list lines carry none. In each card and the block the options keep their letter order and only the recommended one is bold: 43's (b) stays second, and 45, with no recommendation, bolds none. Every list line carries its effect and what waiting costs, the line-only ones too; 45's effect slot shows each option's, since it has no recommendation; only 43 has a ⚠ slot, and no line has a stakes word.*
 
 - **41 Resume the paused nightly backup?** — rec **(a) resume** → *the backup finishes in about 15 minutes* · *later: the snapshot is lost at 17:45 and the backup starts over* · basis **strong** · *25 min old, storage lease lapses ~17:45 (90 min from 16:15)*
 - **43 Remove the deprecated `/v1/export` endpoint?** — rec **(b) keep it, with a sunset date** → *nothing breaks; removal announced for 90 days out* · *later: misses Thursday's API cleanup release* · ⚠ one-way · basis **partial** · *6 h old*
@@ -74,8 +78,9 @@ Rec **(b)** · basis **partial** — *observed: this week's access log shows 2 p
 *Situation: one decision, the operator watching live. The options diverge, so it is a card, not a line.*
 
 **46 — Retry the failed preview deploy?**
-**Impact:** → the preview is up in about 4 minutes · later: no preview for this afternoon's design review · reach: the design review · undo: deploy yesterday's build instead
 **What:** the preview deploy of the search-page change failed while pulling its base image.
+**Context:** the preview is a test copy of the site with the search-page change in it; the base image is the ready-made system it is built on, pulled from a registry. You asked for the preview this morning · you decide whether to retry it or show yesterday's build.
+**Impact:** → the preview is up in about 4 minutes · later: no preview for this afternoon's design review · reach: the design review · undo: deploy yesterday's build instead
 **Why now:** the design review this afternoon needs the preview.
 **Why ask:** if the retry fails too, the review starts with no preview at all; you may prefer yesterday's build as the sure thing.
 - **(a) Retry now** — *the preview is up if it succeeds · cost: about 4 minutes*
@@ -89,8 +94,9 @@ Rec **(a)** · basis **strong** — *the deploy log shows a registry timeout, no
 ## 3. One-way but narrow (no ⚠)
 
 **47 — Delete last month's unused staging snapshot `stg-0814`?**
-**Impact:** → frees 120 GB of staging storage · later: storage keeps filling, about 2% a day · reach: staging only; nothing restores from it · undo: none — a deleted snapshot cannot be recovered
 **What:** delete the staging database snapshot from August 14, which nothing restores from.
+**Context:** staging is the test copy of the live system; `stg-0814` is a full copy of its database taken on August 14 for a migration test that has finished. Raised when the staging storage alert turned it up · you decide whether it goes.
+**Impact:** → frees 120 GB of staging storage · later: storage keeps filling, about 2% a day · reach: staging only; nothing restores from it · undo: none — a deleted snapshot cannot be recovered
 **Why now:** staging storage is at 85% of its quota.
 **Why ask:** the snapshot cannot be recovered once it is deleted.
 - **(a) Delete it** — *frees 120 GB · reach: staging only · undo: none, it cannot be recovered*
@@ -130,8 +136,9 @@ does, because what is left and what a round costs change every time. The first t
 session, a card:*
 
 **48 — One more review round for the retry-policy change?** · *template: review-round cap*
-**Impact:** → the fix gets one more review, and lands in about 20 minutes if it clears · later: the change stays unmerged · reach: the retry-policy change only · undo: nothing to undo — a round changes no code that lands unreviewed
 **What:** the change has used its four review rounds; the last review left one finding open, so it cannot land as it is.
+**Context:** the retry-policy change sets how often a failed job is tried again; the review-round cap is the limit you set of four review rounds a change gets before it comes back to you. You left it when you asked for the change · you decide whether it gets a fifth round.
+**Impact:** → the fix gets one more review, and lands in about 20 minutes if it clears · later: the change stays unmerged · reach: the retry-policy change only · undo: nothing to undo — a round changes no code that lands unreviewed
 **Why now:** the change is blocked until you answer; nothing else waits on it.
 **Why ask:** another round spends quota and your attention past the cap you set: the finding under *If left* is what it buys.
 **If left:** *one medium finding: after a restart the retry counter starts again from zero, so a job that fails on every run is retried forever instead of stopping after five tries.*
@@ -157,16 +164,17 @@ the round costs. The operator cannot weigh an impact they are not shown.*
 ## 6. A preference
 
 See decision 45 in example 1: the preference list line (label in the rec slot, each option's
-effect in the effect slot, wait and basis kept), then a card with its Impact line, options,
-their impacts, the label, and no recommendation.
+effect in the effect slot, wait and basis kept), then a card with its Context, its Impact
+line, options, their impacts, the label, and no recommendation.
 
 ---
 
 ## 7. Outside my authority
 
 **78 — Allow a run the reviewer waived to ship to users?** · *no recommendation — outside my authority*
-**Impact:** → (a) users see the waived section on Friday; (b) the release slips about a day; (c) a shorter report on Friday · later: the release slips past Friday if undecided by Thursday noon · reach: every user of the report · undo: (a) a follow-up release removes the section, after users have seen it
 **What:** a report run passed with one check waived; shipping it puts the waived output in front of users.
+**Context:** a waived check is one a reviewer let through without it passing; here it covers the report's regional totals, the waived section. Raised when the release checklist turned it up · you decide whether that section reaches users on Friday.
+**Impact:** → (a) users see the waived section on Friday; (b) the release slips about a day; (c) a shorter report on Friday · later: the release slips past Friday if undecided by Thursday noon · reach: every user of the report · undo: (a) a follow-up release removes the section, after users have seen it
 **Why now:** the release is scheduled for Friday.
 **Why ask:** shipping it puts output a reviewer waived in front of users, and nothing I can check says whether that is acceptable.
 **Why no recommendation:** whether users may see output a reviewer waived is a product call, not mine.
@@ -205,8 +213,9 @@ their impacts, the label, and no recommendation.
 *Read as: a reframe of 79 — the question is whether to cache at all. New decision 81 replaces 79:*
 
 **81 — Cache at all, or fix the slow query first?**
-**Impact:** → about half a day on the query, which may make a cache unnecessary · later: the listing page stays slow · reach: the listing page and its readers · undo: drop the new index
 **What:** whether to put a cache in front of the product-listing query, or first make the query itself fast.
+**Context:** the product-listing query is the database query behind the listing page; a cache would keep its answers and serve repeat reads, and an index is the database's lookup table that can make the query itself fast. You left it at which caching library to adopt (79) · you decide whether to cache at all.
+**Impact:** → about half a day on the query, which may make a cache unnecessary · later: the listing page stays slow · reach: the listing page and its readers · undo: drop the new index
 **Why now:** the listing page takes about 2 seconds to load, and the performance review is next week.
 **Why ask:** it turns what you asked for — a cache — into a query fix; changing the scope of your request is yours to say.
 - **(a) Fix the query first** — *may make caching unnecessary · cost: about half a day*
@@ -242,8 +251,9 @@ the list: 41, 43 and 45 are unchanged, so they are not rendered again and their 
 **Decisions** — *5 · one ⚠ one-way*
 
 **44 — Deprecation notice: "deprecated" or "scheduled for removal"?**
-**Impact:** → the notice matches the three before it · later: no notice is published until you choose · reach: the two partners still on `/v1`, through the header and the release notes · undo: one edit, before the release
 **What:** the wording of the notice in the `/v1/export` response header and in the release notes.
+**Context:** the notice is the warning partners read before an endpoint goes; the three before it, on older endpoints, all said "deprecated". You left it at the wording we talked over an hour ago · you decide which word this one uses.
+**Impact:** → the notice matches the three before it · later: no notice is published until you choose · reach: the two partners still on `/v1`, through the header and the release notes · undo: one edit, before the release
 **Why now:** it goes out with the API cleanup release.
 **Why ask:** partners read the notice, and (b) warns them more plainly than the three notices before it.
 - **(a) "deprecated"** — *matches the three endpoints deprecated before*
@@ -353,8 +363,9 @@ status page (a preference). The operator replies "ok 51-55".*
 ## 19. A status-quo default
 
 **56 — Open the pull request now, or wait for the benchmark run?**
-**Impact:** → the pull request opens in about 25 minutes, with the benchmark result in it · later: the branch stays unopened; nothing is lost · reach: the two reviewers · undo: nothing to undo
 **What:** the retry-policy change is ready; its benchmark run finishes in about 25 minutes.
+**Context:** the retry-policy change sets how often a failed job is tried again; the benchmark run times it against the current code. You asked for it today and have not seen it since · you decide whether the reviewers start now or after the benchmark.
+**Impact:** → the pull request opens in about 25 minutes, with the benchmark result in it · later: the branch stays unopened; nothing is lost · reach: the two reviewers · undo: nothing to undo
 **Why now:** you asked for the change today.
 **Why ask:** opening it now starts the reviewers' time before the benchmark is known, against your wish to have it today.
 - (a) Open it now — *reviewers start today; the benchmark result arrives mid-review · reach: the two reviewers*
@@ -375,16 +386,21 @@ since ended. Nothing changed for 61. None has a deadline and none is ⚠, so the
 cost: 62 blocks the worker rollout, 63 blocks the docs site build, 61 blocks nothing. 62 is
 wide and the reader is cold, so it is a block (with no read-back: it is not ⚠). The store kept
 each card with its raised-at time, so each is rendered from the stored card, plus what changed
-while it waited — not composed again. Each stored card holds the context cue written when it
-was raised, so under *while it waited* the cards carry **Context:**, and 62's block opens its
-*Context you may have lost* with the same cue. Each stored card holds its Impact line too, so
-each opens with it under *while it waited*, and 62's block with its table; *while it waited*
-says whether the impact changed.*
+while it waited — not composed again. Each stored card holds the Context written when it
+was raised, so under *while it waited* each card runs its What, that Context and its Impact
+line, and 62's block its What, its Context as bullets (the stored card-size Context first)
+and its table; *while it waited* says whether the impact changed.*
 
 **Decisions** — *3 open · shown again after a context reset*
 
 **62 — back, as you asked ("until the load test finishes"):** move the job queue to the new message broker?
 *While it waited (1 day): the load test finished — the new broker held three times peak load with no lost messages. Options and recommendation unchanged; impact unchanged.*
+**What:** switch every worker service from the old job queue to the new message broker.
+**Context:**
+- The new broker has carried the email worker alone for two weeks as a trial; you left it at that trial · you decide whether every worker moves now or one goes first
+- The switch is a config change in each service
+- The old queue keeps running for a week as a fallback
+  - after that week it is shut down
 
 | Impact | Effect | Reach | Undo | Cost |
 |---|---|---|---|---|
@@ -392,21 +408,19 @@ says whether the impact changed.*
 | (b) Move one service first | the email worker moves today; the rest follow in two days if it stays quiet | the email worker only, for now | one config change | two more days before the rollout finishes |
 | (z) Wait | the rollout stays paused and the old queue keeps running | the worker rollout | answer any time | the old queue's upkeep |
 
-**What:** switch every worker service from the old job queue to the new message broker.
 **Why now:** the worker rollout waits on it.
 **Why ask:** every worker service moves at once; how fast the rollout goes is yours to set.
-**Context you may have lost:** you left it at the broker trial on the email worker · you decide whether every worker moves now or one goes first. The switch is a config change in each service; the old queue keeps running for a week as a fallback.
 
 Rec **(a)** · basis **partial** — *observed: the load test report; inferred: no worker relies on the old queue's ordering*
 *Basis:* observed — load test, three times peak, no lost messages (link) · inferred — ordering not relied on (read 4 of the 6 workers' code) · unknown — the 2 workers not read
 
 **63 — Vendor the web font or fetch it from the CDN?**
 *While it waited (1 day): the CDN outage that prompted vendoring ended, and the provider published its fix. Recommendation changed from (a) vendor to (b) fetch, because the outage is over; impact changed with it: the effect is now no growth in the repo.*
-**Impact:** → no growth in the repo; the font depends on the CDN · later: the docs site build stays on hold · reach: the docs site's readers · undo: vendor it later, one commit
 **What:** ship the docs site's web font inside the repo (vendor), or load it from the font CDN (fetch).
+**Context:** the font CDN is the font provider's download service, which each page fetches from; vendoring keeps a 400 KB copy of the font in the repo instead. You left it when the CDN outage blanked the docs site's font · you decide where the font comes from in future.
+**Impact:** → no growth in the repo; the font depends on the CDN · later: the docs site build stays on hold · reach: the docs site's readers · undo: vendor it later, one commit
 **Why now:** the docs site build waits on it.
 **Why ask:** 400 KB in the repo against a font that fails when the CDN does: a trade-off with no fact to settle it for you.
-**Context:** you left it when the CDN outage blanked the docs site's font · you decide where the font comes from in future.
 - (a) Vendor it — *adds 400 KB to the repo; the font still loads if the CDN goes down again · undo: one commit*
 - **(b) Fetch it** — *no growth in the repo; the font depends on the CDN · undo: one commit*
 - (z) Decide later — *it waits; the build stays on hold*
@@ -415,11 +429,11 @@ Rec **(b)** · basis **strong** — *checked the CDN's status history and loaded
 
 **61 — Turn on strict type checking across the repo?**
 *While it waited (1 day): nothing changed; impact unchanged.*
-**Impact:** → 31 warnings fixed, and new code checked strictly from now on · later: loosely typed code keeps growing · reach: everyone writing code in the repo · undo: turn the setting off, one line
 **What:** enable the type checker's strict mode for every package.
+**Context:** strict mode is the type checker's setting that refuses loosely typed code; the 31 warnings are what it flags today, all in the two packages the review named. You left it at the review that flagged loose types in two packages · you decide whether the whole repo goes strict, not just those two.
+**Impact:** → 31 warnings fixed, and new code checked strictly from now on · later: loosely typed code keeps growing · reach: everyone writing code in the repo · undo: turn the setting off, one line
 **Why now:** new code is being written against the loose setting, so each week adds more to fix later.
 **Why ask:** it changes how everyone writes new code in the repo, not just this task.
-**Context:** you left it at the review that flagged loose types in two packages · you decide whether the whole repo goes strict, not just those two.
 - **(a) Turn it on** — *31 existing warnings to fix · reach: everyone writing code here · cost: about an hour of my time*
 - (b) Leave it off — *no work now; the loosely typed code keeps growing*
 - (z) Decide later — *it waits; the setting stays off*
@@ -492,8 +506,9 @@ those records. The decisions block stays last.*
 - **Done: left the Windows install steps to a follow-up item, "Windows install steps"** — *scope · two-way (pull it back in any time), nobody waits on it · the class "scope", which your rules let me decide · undo: say "pull it back in"*
 
 **85 — Ship the install script as one file or as a package?**
-**Impact:** → users download one file and run it; each update is a new download · later: the install section says "coming soon" · reach: everyone installing the command-line tool · undo: publish a package later, about a day
 **What:** how users get the new install script: one file they download and run, or a package from the package manager.
+**Context:** the install script sets the command-line tool up on a user's machine; the package manager is the system's own installer, which keeps what it installs up to date. It came from the guide's install section, which waits on it · you decide how users get the script.
+**Impact:** → users download one file and run it; each update is a new download · later: the install section says "coming soon" · reach: everyone installing the command-line tool · undo: publish a package later, about a day
 **Why now:** the command-line guide's install section waits on it.
 **Why ask:** *trade-off* — one file is quicker to get but never updates itself; a package updates but needs the package manager. Which your users would rather have is not a fact I have.
 - **(a) One file** — *users download and run it; each new version is downloaded again by hand*
@@ -512,11 +527,15 @@ decision 85: Ship the install script as one file or as a package? — options: (
   what: how users get the new install script: one file, or a package from the package manager
   why now: the command-line guide's install section waits on it
   why ask: trade-off — one file never updates itself, a package needs the package manager; which users would rather have is not a fact the agent has
+  context: the install script sets the command-line tool up on a user's machine; the package manager is the system's own installer, which keeps what it installs up to date. It came from the guide's install section, which waits on it · you decide how users get the script — then: none
   impact: → users download one file and run it; each update is a new download · later: the install section says "coming soon" · reach: everyone installing the command-line tool · undo: publish a package later, about a day
 ```
 
-*The `impact:` line is stored with the card when the decision is raised, one physical line, so
-every view of 85 — a caller's row of open items included — reads its impact from there.*
+*The `context:` and `impact:` lines are stored with the card when the decision is raised, one
+physical line each, so every view of 85 reads them from there — a caller's row of open items
+its impact, the card its Context and its Impact line. The `context:` line's text before
+` — then: ` is the card's Context; after it, what a block would add (`none`: 85 was raised as
+a card). A card stored with no `context:` line renders as it did before Context existed.*
 
 *The operator replies "put Setup back, and 85: a".*
 
@@ -590,8 +609,9 @@ operator's own browser — something only they can do. Whatever (a) asks of them
 card, in its **To act on (a):** part.*
 
 **86 — Run the staging sign-in check from your own browser?**
-**Impact:** → we know today whether sign-in works for a real account, and the fix can go out · later: the sign-in fix stays unreleased · reach: you, about 5 minutes; the staging site only · undo: nothing to undo — the check only reads
 **What:** a one-off check that the fixed sign-in works with a real account on the staging site. It needs the signed-in session in your everyday browser, which I cannot reach.
+**Context:** the staging site is the test copy of the live site; the sign-in check is a script that reuses your browser's signed-in session and opens three pages behind sign-in. It came from the merged sign-in fix, which waits on it · you decide whether to run it or release on the automated tests.
+**Impact:** → we know today whether sign-in works for a real account, and the fix can go out · later: the sign-in fix stays unreleased · reach: you, about 5 minutes; the staging site only · undo: nothing to undo — the check only reads
 **Why now:** the fix waits on this check before it is released.
 **Why ask:** only you can run it, and it takes your time.
 - **(a) Run it now** — *about 5 minutes of your time; the fix goes out today if it passes · reach: the staging site only*
@@ -624,8 +644,9 @@ says what each option removes, in words; the plan's label trails as a tag at mos
 the operator opens the plan.*
 
 **87 — How far should the docs cleanup reach this week?**
-**Impact:** → the docs build passes again; the pages that cite the retired guide stay as they are · later: the link checker keeps failing the docs build · reach: the docs site and its readers · undo: one revert
 **What:** how much of the docs cleanup to do now: only the broken links and the unused images, or also the pages that still cite the retired setup guide.
+**Context:** the cleanup plan sorts its work into two levels; the second covers 12 pages that three other teams own. It came from the failing link checker · you decide how far this week's cleanup reaches.
+**Impact:** → the docs build passes again; the pages that cite the retired guide stay as they are · later: the link checker keeps failing the docs build · reach: the docs site and its readers · undo: one revert
 **Why now:** the link checker fails the docs build on the broken links.
 **Why ask:** (b) rewrites pages three other teams own; whether that goes in this week is yours to weigh.
 - **(a) Remove the broken links and the unused images** (level 1 in the cleanup plan) — *the docs build passes again · reach: 40 pages, no wording changed · undo: one revert*
