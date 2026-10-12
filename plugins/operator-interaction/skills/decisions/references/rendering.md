@@ -83,8 +83,9 @@ What it holds, in this order:
   named mode, setting, review, plan or document gets a one-line gloss — what it is, and where
   it comes from; an item goes by its plain name, the id at most a trailing tag;
 - then the **resume cue**, as its last clause: where the operator left it (what they last saw
-  or decided on this subject) · what they decide now. For a decision they have never seen,
-  where it came from: *new to you: the audit you asked for turned it up*. Never what changed
+  or decided on this subject) · what they decide now. For a decision whose subject they have
+  never seen, where it came from, worded so it stays true after they have seen it: *raised
+  when the audit you asked for turned it up*. Never what changed
   since: that is *while it waited*, which opens a re-show (§ Re-show with what changed).
 
 It does not restate what is decided: **What:** says that, as the page's TLDR does.
@@ -94,7 +95,7 @@ Its size follows the page's detail levels:
 | View | Context at | Shape |
 |---|---|---|
 | Card | the page's summary | one or two sentences, about 30–60 words, on the **Context:** line |
-| Block | the page's medium; its high for a ⚠ or wide decision shown to a cold reader | medium: bullets of terse fragments, each with a sub-bullet or two at most; high: two or three short parts, each a bold lead-in over its bullets. The first bullet is the card's Context; the rest are the context the reader may have lost: what was tried, what was answered before, where a list or number came from |
+| Block | the page's medium | bullets of terse fragments, each with a sub-bullet or two at most. The first bullet is the card's Context; the rest are the context the reader may have lost: what was tried, what was answered before, where a list or number came from |
 
 **Written when raised, shown every time.** Write it when the decision is raised, from the
 worksheet (`references/worksheet.md` § The Context), and show it on every card and block,
@@ -294,8 +295,7 @@ Rec **(b)** · basis **partial** — *reason*
 ```
 
 - The block opens as a card does, in the page's order: the title, **What:**, then
-  **Context:** as a bullet list at the page's medium size (its high for a ⚠ or wide decision
-  shown to a cold reader), its first bullet the card's Context and the rest the context the
+  **Context:** as a bullet list at the page's medium size, its first bullet the card's Context and the rest the context the
   reader may have lost (§ Context). It is shown on every block, warm reader or cold.
 - The card's Impact line becomes the **Impact table**, right after Context: one row per
   option, in letter order, then the **Wait row** — decide later's, labelled `(z) Wait` —

@@ -169,7 +169,7 @@ Smallest to largest, each showing more of the impact in facet order (templates i
   (where you left it · what you decide now). It is written for every decision when it is
   raised, stored with the card where the caller keeps one, and shown every time the card is
   shown, warm reader or cold (`references/rendering.md` § Context).
-- **Block** — a card whose Context is fuller, a bullet list at the page's medium or high
+- **Block** — a card whose Context is fuller, a bullet list at the page's medium
   size that adds the context the reader may have lost, and whose Impact line becomes a table
   (a row per option plus a Wait row); plus the basis drill-down with evidence links.
 

@@ -238,11 +238,17 @@ class GalleryShowsImpact(unittest.TestCase):
                     continue
                 seen += 1
                 j = i + 1
-                while j < len(lines) and (not lines[j].strip()
-                                          or lines[j].startswith("*While it waited")
-                                          or lines[j].startswith("**What:**")
-                                          or lines[j].startswith("**Context:**")
-                                          or lines[j].startswith(("- ", "  - "))):
+                in_context = False
+                while j < len(lines):
+                    x = lines[j]
+                    if x.startswith("**Context:**"):
+                        in_context = True
+                    elif in_context and x.startswith(("- ", "  - ")):
+                        pass  # a block's Context bullets
+                    elif x.strip() and not x.startswith(("*While it waited", "**What:**")):
+                        break
+                    else:
+                        in_context = in_context and bool(x.strip())
                     j += 1
                 self.assertTrue(lines[j].startswith("**Impact:**")
                                 or lines[j].startswith("| Impact |"),

@@ -21,7 +21,7 @@ GALLERY = REFS / "gallery.md"
 SKILL_MD = DECISIONS / "SKILL.md"
 
 CUE = " · "  # where you left it · what you decide now
-SENTENCE_END = re.compile(r"[.!?](?=\s+[A-Z])")
+SENTENCE_END = re.compile(r"[.!?](?=\s+[A-Za-z`])")
 # a re-show's title: "**62 — back, as you asked (...):** the question?"
 RESHOW_HEAD = re.compile(r"^\*\*\d+ — back[^*]*:\*\* .+\?")
 
@@ -141,6 +141,17 @@ class GalleryContexts(unittest.TestCase):
             last = SENTENCE_END.split(text)[-1]
             self.assertIn(CUE, last, f"gallery.md:{n}: the cue is not Context's last part")
             self.assertTrue(SENTENCE_END.search(text), f"gallery.md:{n}: no terms before the cue")
+
+    def test_the_origin_clause_stays_true_after_a_showing(self):
+        # Context is stored and re-shown: "new to you" is false from the second showing
+        for n, kind, body in views(GALLERY):
+            text, bullets = context_of(body)
+            whole = " ".join([text] + [b for _, b in bullets])
+            self.assertNotRegex(whole, r"(?i)new to you", f"gallery.md:{n}")
+        stored = [x for x in GALLERY.read_text().splitlines() if x.lstrip().startswith("context:")]
+        self.assertTrue(stored)
+        for x in stored:
+            self.assertNotRegex(x, r"(?i)new to you")
 
     def test_a_blocks_context_is_bullets_its_first_the_cards(self):
         for n, kind, body in views(GALLERY):

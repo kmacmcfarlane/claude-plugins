@@ -16,8 +16,7 @@ Impact line). Each group answers one question and sets one thing — merging the
 | Operator's expected return | when they said they would be back, if they did | you, from what the operator said |
 
 Cold raises the level: a cold reader never gets a line-only decision (the line-only rule in
-SKILL.md § Levels), and a block's Context may step up to the page's high size. Warmth does
-not decide whether Context is shown: every card and block carries it (§ The Context). Re-explaining is triggered by **events**, not by elapsed time alone: a
+SKILL.md § Levels). Warmth does not decide whether Context is shown: every card and block carries it (§ The Context). Re-explaining is triggered by **events**, not by elapsed time alone: a
 compaction five minutes ago makes a reader colder than an idle hour with nothing in between.
 
 The last event is the commonest in a long session. A caller re-entered by background work can
@@ -137,7 +136,7 @@ and F, in plain words for the operator:
 | Part | From | Who can supply it |
 |---|---|---|
 | Terms | group F: each label, number, acronym, count, named mode, setting, review, plan or document, or item the card uses, glossed in plain words (a count says what the things are) | you, from the source |
-| Where you left it | group A: what the operator last saw or decided on this subject; for a decision they have never seen, where it came from | you; the caller's record of shown and seen |
+| Where you left it | group A: what the operator last saw or decided on this subject; for a decision whose subject they have never seen, where it came from, worded to stay true once they have (*raised when …*) | you; the caller's record of shown and seen |
 | What you decide now | the choice, in the terms of where they left it | you |
 | Lost context (a block only) | the facts a reader coming back cold needs: what was tried, what was answered before, where a list or number came from | you, from the source and the record |
 

@@ -101,10 +101,11 @@ alternative not taken, in case practice argues for it.
 - **A Context section on chat cards and blocks** (2026-10-12, the operator's direction: "the
   decision skill's TUI output should have a context section for cards and blocks, similar to
   how the decision-page works"; the cue folded in as Context's last clause, the What line
-  doing the TLDR's work, the sizes and the stored line's reading, designs made in build, not
-  the operator's) — every card and block in chat carries a **Context:** section shaped like
+  doing the TLDR's work, the sizes (a block at the page's medium only, high staying a
+  page-only level), the origin clause for a subject never seen (*raised when …*, worded to
+  stay true after it is seen), older stored cards with no Context keeping the old order, and
+  the stored line's reading, designs made in build, not the operator's) — every card and block in chat carries a **Context:** section shaped like
   the page's `context`, in the page's order: the decision line, then Context, then the
-  Impact and the options; a card's at the page's summary size, a block's at its medium or
-  high; written when raised, stored with the card, shown every time; a list line carries
+  Impact and the options; a card's at the page's summary size, a block's at its medium; written when raised, stored with the card, shown every time; a list line carries
   none. Not taken: the cue alone, shown to a cold reader only (2026-09-30); the cue on a line
   of its own above Context.

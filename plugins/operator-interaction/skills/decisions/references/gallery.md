@@ -95,7 +95,7 @@ Rec **(a)** · basis **strong** — *the deploy log shows a registry timeout, no
 
 **47 — Delete last month's unused staging snapshot `stg-0814`?**
 **What:** delete the staging database snapshot from August 14, which nothing restores from.
-**Context:** staging is the test copy of the live system; `stg-0814` is a full copy of its database taken on August 14 for a migration test that has finished. New to you: the staging storage alert turned it up · you decide whether it goes.
+**Context:** staging is the test copy of the live system; `stg-0814` is a full copy of its database taken on August 14 for a migration test that has finished. Raised when the staging storage alert turned it up · you decide whether it goes.
 **Impact:** → frees 120 GB of staging storage · later: storage keeps filling, about 2% a day · reach: staging only; nothing restores from it · undo: none — a deleted snapshot cannot be recovered
 **Why now:** staging storage is at 85% of its quota.
 **Why ask:** the snapshot cannot be recovered once it is deleted.
@@ -173,7 +173,7 @@ line, options, their impacts, the label, and no recommendation.
 
 **78 — Allow a run the reviewer waived to ship to users?** · *no recommendation — outside my authority*
 **What:** a report run passed with one check waived; shipping it puts the waived output in front of users.
-**Context:** a waived check is one a reviewer let through without it passing; here it covers the report's regional totals, the waived section. New to you: the release checklist turned it up · you decide whether that section reaches users on Friday.
+**Context:** a waived check is one a reviewer let through without it passing; here it covers the report's regional totals, the waived section. Raised when the release checklist turned it up · you decide whether that section reaches users on Friday.
 **Impact:** → (a) users see the waived section on Friday; (b) the release slips about a day; (c) a shorter report on Friday · later: the release slips past Friday if undecided by Thursday noon · reach: every user of the report · undo: (a) a follow-up release removes the section, after users have seen it
 **Why now:** the release is scheduled for Friday.
 **Why ask:** shipping it puts output a reviewer waived in front of users, and nothing I can check says whether that is acceptable.
@@ -507,7 +507,7 @@ those records. The decisions block stays last.*
 
 **85 — Ship the install script as one file or as a package?**
 **What:** how users get the new install script: one file they download and run, or a package from the package manager.
-**Context:** the install script sets the command-line tool up on a user's machine; the package manager is the system's own installer, which keeps what it installs up to date. New to you: the guide's install section needs it · you decide how users get the script.
+**Context:** the install script sets the command-line tool up on a user's machine; the package manager is the system's own installer, which keeps what it installs up to date. It came from the guide's install section, which waits on it · you decide how users get the script.
 **Impact:** → users download one file and run it; each update is a new download · later: the install section says "coming soon" · reach: everyone installing the command-line tool · undo: publish a package later, about a day
 **Why now:** the command-line guide's install section waits on it.
 **Why ask:** *trade-off* — one file is quicker to get but never updates itself; a package updates but needs the package manager. Which your users would rather have is not a fact I have.
@@ -527,7 +527,7 @@ decision 85: Ship the install script as one file or as a package? — options: (
   what: how users get the new install script: one file, or a package from the package manager
   why now: the command-line guide's install section waits on it
   why ask: trade-off — one file never updates itself, a package needs the package manager; which users would rather have is not a fact the agent has
-  context: the install script sets the command-line tool up on a user's machine; the package manager is the system's own installer, which keeps what it installs up to date. New to you: the guide's install section needs it · you decide how users get the script — then: none
+  context: the install script sets the command-line tool up on a user's machine; the package manager is the system's own installer, which keeps what it installs up to date. It came from the guide's install section, which waits on it · you decide how users get the script — then: none
   impact: → users download one file and run it; each update is a new download · later: the install section says "coming soon" · reach: everyone installing the command-line tool · undo: publish a package later, about a day
 ```
 
@@ -610,7 +610,7 @@ card, in its **To act on (a):** part.*
 
 **86 — Run the staging sign-in check from your own browser?**
 **What:** a one-off check that the fixed sign-in works with a real account on the staging site. It needs the signed-in session in your everyday browser, which I cannot reach.
-**Context:** the staging site is the test copy of the live site; the sign-in check is a script that reuses your browser's signed-in session and opens three pages behind sign-in. New to you: the merged sign-in fix needs it · you decide whether to run it or release on the automated tests.
+**Context:** the staging site is the test copy of the live site; the sign-in check is a script that reuses your browser's signed-in session and opens three pages behind sign-in. It came from the merged sign-in fix, which waits on it · you decide whether to run it or release on the automated tests.
 **Impact:** → we know today whether sign-in works for a real account, and the fix can go out · later: the sign-in fix stays unreleased · reach: you, about 5 minutes; the staging site only · undo: nothing to undo — the check only reads
 **Why now:** the fix waits on this check before it is released.
 **Why ask:** only you can run it, and it takes your time.
@@ -645,7 +645,7 @@ the operator opens the plan.*
 
 **87 — How far should the docs cleanup reach this week?**
 **What:** how much of the docs cleanup to do now: only the broken links and the unused images, or also the pages that still cite the retired setup guide.
-**Context:** the cleanup plan sorts the work in two levels: first the broken links and unused images, then the 12 pages that still cite the retired setup guide, which three other teams own. New to you: the failing link checker turned it up · you decide how far this week's cleanup reaches.
+**Context:** the cleanup plan sorts its work into two levels; the second covers 12 pages that three other teams own. It came from the failing link checker · you decide how far this week's cleanup reaches.
 **Impact:** → the docs build passes again; the pages that cite the retired guide stay as they are · later: the link checker keeps failing the docs build · reach: the docs site and its readers · undo: one revert
 **Why now:** the link checker fails the docs build on the broken links.
 **Why ask:** (b) rewrites pages three other teams own; whether that goes in this week is yours to weigh.
