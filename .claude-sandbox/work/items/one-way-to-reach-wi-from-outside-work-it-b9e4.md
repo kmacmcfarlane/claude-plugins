@@ -33,3 +33,5 @@ agent: reviewer a4d208aa5ffbc9603
 verdict: review round 1 NEEDS_CHANGES (must-fix 2: medium 1 — python3 -c in the install-record line puts cwd first on sys.path, so a json.py in the repo runs and breaks the lookup; fix -I in all copies plus the create-skill and spend-reader lookups; medium 2 — research's own copy removed against the operator's 2026-10-02 ruling (e184, point 1: keep research separate from dev-cycle); lows/nits: foundation drives wi bare, store test should require items/, checkpoint "once per repo whose store it writes", merge main again)
 decided: 2026-10-12T19:20Z scope — finding 2 option (a): restore research's copy in the fixed form, as the operator ruled on 2026-10-02; librarian-mode's pointer stays (it already depends on dev-cycle throughout)
 dispatch: implementer opus medium — fix round 1 (resume af358fa9b3916d4ee)
+return: DONE dc138ad (fix round 1) + merge of main 423d490 (clean); 12/12 Checks OK (context-guard 731); harness 72 runs (4 copies × 9 scenarios × bash/sh) correct, no markers
+dispatch: reviewer opus high — review round 2 of 423d490 (resume a4d208aa5ffbc9603)
