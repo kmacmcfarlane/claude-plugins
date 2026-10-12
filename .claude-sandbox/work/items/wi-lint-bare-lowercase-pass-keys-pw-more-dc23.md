@@ -26,3 +26,5 @@ From ac83 review 3 follow-ups, 2026-10-09; gaps main shares, not regressions: ba
 target: wi lint catches the listed gaps without new false positives on the real store or repo; linear on long lines
 dispatch: implementer opus medium — build (security-relevant lint)
 agent: implementer ad174bb9bfc266a07
+return: DONE 4cb0ac3; all nine gaps tested, each with documented residue; reviewer corpus 0 main-only, per-gap corpus 0 main-only; real store 0 secret findings, 0 diff vs main; slowest 1.99s at 2M (aB: chained); one-line state for continuations; loose forms gated on a secret-word key; work-items 317 OK, kit-dev 18 OK
+dispatch: reviewer opus high — review round 1 of 4cb0ac3
