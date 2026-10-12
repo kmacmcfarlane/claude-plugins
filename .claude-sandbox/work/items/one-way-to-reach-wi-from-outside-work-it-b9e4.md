@@ -3,12 +3,11 @@ id: one-way-to-reach-wi-from-outside-work-it-b9e4
 title: one way to reach wi from outside work-items
 short_display_name: one way to reach wi
 type: refactor
-status: doing
+status: done
 priority: 3
-owner: Kyle-McFarlane@2d49f8460283
-claimed: 2026-10-09T14:59Z
 created: 2026-10-08
-updated: 2026-10-09
+updated: 2026-10-12
+closed: 2026-10-12
 refs:
   - spike-how-much-inter-plugin-dependency-i-72ef
 ---
@@ -38,3 +37,6 @@ dispatch: reviewer opus high — review round 2 of 423d490 (resume a4d208aa5ffbc
 verdict: review round 2 CLEAR (must-fix 0; low: README dev-flow cell and section omit foundation from the shared lookup and its no-wi fallback; note: other python3 -c snippets without -I, filed as shell-snippets-run-python3-c-without-i-a-9782; inherited WI_ROOT qualified in prose ruled acceptable; 80-run harness re-extracted from 423d490 all correct)
 decided: 2026-10-12T20:10Z cap — a finish round of the README wording (authority answer 145)
 dispatch: implementer opus medium — finish round (resume af358fa9b3916d4ee)
+verdict: finish round CLEAR — diff read: README cell and section name foundation in the shared lookup and its no-wi fallback
+landed: 27385e5 (merge of cedc039..ce23605, with two merges of main); Checks 12/12 OK; cc_scan clean
+- 2026-10-12 done
