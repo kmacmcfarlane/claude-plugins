@@ -359,17 +359,18 @@ keeps the question alone. With the skill loaded, its floor for a round ask gover
 is written.
 
 **A foundation reopen.** A build under a foundation (its item's parent is the item a
-series' Foundation block names in its `Item:` field — that series fills the brief's
-foundation series path — or its own series' `INDEX.md` has a `## Foundation` block) carries the foundation line in
-its briefs (`agent-brief.md`, `review-brief.md`), and a finding that would change a
-phase-1 or phase-2 foundation artifact comes back as a `REOPEN:` line under the
-implementer's OPEN QUESTIONS or the reviewer's NOTES, never as a fix. The orchestrator —
-a librarian through its own channel — raises each one as it reads the return or the
-verdict, before the next dispatch or Land, as a decision through the decision channel,
-per the `foundation` skill's `references/moves.md`: the question names the artifact, the
-reopen the line names (Reopen requirements or Reopen architecture) and why, and the
-reopen's gate (gate G1 re-runs on the delta and the operator approves the change; or gate
-G2 re-runs on the delta and the operator approves any one-way ADR change). Options:
+series' Foundation block names in its `Item:` field, the field's first word — that series
+fills the brief's foundation series path — or its own series' `INDEX.md` has a
+`## Foundation` block) carries the foundation line in its briefs (`agent-brief.md`,
+`review-brief.md`), and a finding that would change a phase-1 or phase-2 foundation
+artifact comes back as a `REOPEN:` line under the implementer's OPEN QUESTIONS or the
+reviewer's NOTES, never as a fix. The orchestrator — a librarian through its own channel —
+raises each one as it reads the return or the verdict, before the next dispatch or Land,
+as a decision through the decision channel, per the `foundation` skill's
+`references/moves.md`: the question names the artifact, the reopen the line names (Reopen
+requirements or Reopen architecture) and why, and the reopen's gate (gate G1 re-runs on
+the delta and the operator approves the change; or gate G2 re-runs on the delta and the
+operator approves any one-way ADR change). Options:
 
 - (a) **reopen, and this item stops** — the reopen is filed as its own item under the
   foundation item (`$WI add … --parent <foundation id>`; no store: Step 6's `open

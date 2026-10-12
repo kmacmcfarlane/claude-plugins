@@ -29,7 +29,10 @@ their templates are in `references/artifacts.md`.
   Foundation block, and take up the first gate not passed. Gate status is read from the
   series first, the block's Gates passed lines, so a series moved to another repo resumes
   where it stopped; the foundation item, when visible, is a second source
-  (`references/state.md` § The Foundation block).
+  (`references/state.md` § The Foundation block). A moved series with G3 passed and no
+  foundation item here files its features here under a new one, carrying the original
+  approval, or lists them with no store; it never re-runs a gate or re-files in the old
+  repo (`references/state.md` § The work item, A moved series past G3).
 
 **The floor.** When the result could be described in one sentence, this is not a foundation
 session: use `investigate`, or no plan at all.
@@ -62,11 +65,12 @@ requirement change as a plan fix.
    repo does not exist yet, point to the create-repo skill and keep the series in the
    current repo until it does (the format's § A repo not yet created).
 2. **The item.** In a repo with a work-item store, resolve or `wi add` the foundation item
-   and `wi claim` it (standalone only), with `wi` the command the `dev-cycle` skill's
-   `references/bindings.md` § Store snippet prints. On `no wi found`, `work-items` is not
-   installed: run no `wi` command and run as without a store (the series holds the run,
-   its holds and the features), and the Report adds `item not filed: work-items is not
-   installed`.
+   (with `--ref <series path>`; a resolved item without it gains it,
+   `references/state.md` § The work item) and `wi claim` it (standalone only), with `wi`
+   the command the `dev-cycle` skill's `references/bindings.md` § Store snippet prints. On
+   `no wi found`, `work-items` is not installed: run no `wi` command and run as without a
+   store (the series holds the run, its holds and the features), and the Report adds
+   `item not filed: work-items is not installed`.
 3. **The series.** A new slug (kebab-case, 2–5 words, what the project is), or an existing
    foundation series to resume. Nothing is written until the first serial.
 4. **The mode**: `new`, `retrofit` (`references/retrofit.md`) or `resume`.
