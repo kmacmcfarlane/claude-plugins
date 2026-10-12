@@ -92,7 +92,8 @@ Size: full | lite · Mode: new | retrofit · Item: <wi id | none>
   `re-run after <reopen serial>`, a line ending `after <that serial>`. A row whose Gate
   cell reads `re-run after <reopen serial>` is passed only by a line ending
   `after <that serial>`, or by that re-run's own `answer N:` line: no earlier line of it,
-  no later gate's line, no Approved date and no earlier answer passes it. The foundation
+  no later gate's line, no Approved date, no earlier answer and no done foundation item
+  passes it. The foundation
   item, when the session can see it, is a second source: a done foundation item, or a gate
   approval's `answer N:` line, marks that gate passed too, and the session adds the missing
   line when it next regenerates `INDEX.md`. For a gate with neither, the table decides (it
@@ -156,7 +157,8 @@ When the repo has a work-item store (the `work-items` skill), one item carries t
   standalone session, files `F0`'s re-run as a new item under the foundation item, beside
   the revised features the impact list names. A reopen a feature's build raised is itself
   filed as an item under the foundation item when the operator takes it
-  (`references/moves.md`).
+  (`references/moves.md`). A G3 re-run takes step 1 alone; its filing is this bullet's
+  (`F0`'s re-run and the revised features the impact list names).
 
 With no store, the Foundation block's Gates passed, Held and Factored out sections are the
 record, and the Report lists the features to file by hand.
