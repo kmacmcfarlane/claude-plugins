@@ -28,3 +28,4 @@ dispatch: implementer sonnet medium — build (two-line wording: canonical kind)
 agent: implementer a8276de30316e1fd6
 return: DONE c7ee13b; both clauses replaced; substitution phrases intact; no other file quotes it; kit-dev 21 OK
 dispatch: reviewer opus high — review round 1 of c7ee13b
+agent: reviewer a6f5c269d49772711
