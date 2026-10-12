@@ -859,6 +859,79 @@ def _scan_usage_at(transcript_path):
     return cur, peak, boundary, cur_at
 
 
+INPUT_SCAN_MAX = 4 * 1024 * 1024
+_INPUT_SCAN_CHUNK = 64 * 1024
+
+
+def _usage_tokens(obj):
+    u = (obj.get("message") or {}).get("usage") if isinstance(obj, dict) else None
+    if not isinstance(u, dict):
+        return 0
+    try:
+        return sum(u.get(k) or 0 for k in
+                   ("input_tokens", "cache_read_input_tokens",
+                    "cache_creation_input_tokens"))
+    except TypeError:
+        return 0
+
+
+def input_since_usage(transcript_path, max_bytes=INPUT_SCAN_MAX):
+    """Whether input is pending since the last measured fill: True when a
+    `type: user` line (a prompt or a tool result) follows the last assistant
+    line that carries usage, False when only other lines (system, summaries,
+    attachments) do - the session is idle at that fill.
+
+    Reads backwards from the end in chunks, at most `max_bytes`, so its cost
+    is bounded by the tail, not the transcript. Anything it cannot settle
+    within that - a missing or unreadable transcript, no usage line, a tail
+    longer than the cap - counts as pending (True): the caller then keeps
+    the rule that holds when input may be in flight."""
+    if not transcript_path:
+        return True
+    try:
+        with open(transcript_path, "rb") as fh:
+            fh.seek(0, os.SEEK_END)
+            pos = fh.tell()
+            read = 0
+            rest = b""
+            while pos > 0 and read < max_bytes:
+                n = min(_INPUT_SCAN_CHUNK, pos, max_bytes - read)
+                pos -= n
+                fh.seek(pos)
+                buf = fh.read(n) + rest
+                read += n
+                lines = buf.split(b"\n")
+                # the first piece may be a partial line unless at file start
+                rest = lines.pop(0) if pos > 0 else b""
+                for raw in reversed(lines):
+                    r = _input_line(raw)
+                    if r is not None:
+                        return r
+    except (OSError, ValueError):
+        return True
+    return True
+
+
+def _input_line(raw):
+    """True for a user line, False for an assistant line with usage, None
+    for anything else (skipped)."""
+    raw = raw.strip()
+    if not raw:
+        return None
+    try:
+        obj = json.loads(raw.decode("utf-8", "replace"))
+    except ValueError:
+        return None
+    if not isinstance(obj, dict):
+        return None
+    t = obj.get("type")
+    if t == "user":
+        return True
+    if t == "assistant" and _usage_tokens(obj):
+        return False
+    return None
+
+
 LATCH_KEEP = 16
 SCAN_V = 1
 TAIL_CHECK = 64

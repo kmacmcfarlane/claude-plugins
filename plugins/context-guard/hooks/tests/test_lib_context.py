@@ -636,5 +636,51 @@ class TestMarkCheckpointCli(Base):
         self.assertEqual(L.load_state("live")["checkpoint_epoch"], 2)
 
 
+
+class InputSinceUsage(Base):
+    """22b2: whether a prompt or tool result follows the last measured fill."""
+    A = {"type": "assistant", "message": {"usage": {"input_tokens": 5}}}
+    A0 = {"type": "assistant", "message": {"usage": {"input_tokens": 0}}}
+    U = {"type": "user", "message": {"content": "hi"}}
+    S = {"type": "system", "subtype": "x"}
+
+    def write(self, *recs, pad=0):
+        p = os.path.join(self.tmp.name, "t.jsonl")
+        with open(p, "w") as f:
+            for r in recs:
+                if r == "PAD":
+                    r = dict(self.S, pad="x" * pad)
+                f.write(json.dumps(r) + "\n")
+        return p
+
+    def test_idle_after_usage(self):
+        self.assertFalse(L.input_since_usage(self.write(self.U, self.A, self.S, self.S)))
+
+    def test_user_after_usage(self):
+        self.assertTrue(L.input_since_usage(self.write(self.A, self.S, self.U)))
+
+    def test_usage_without_tokens_is_not_a_measurement(self):
+        self.assertTrue(L.input_since_usage(self.write(self.A, self.U, self.A0)))
+
+    def test_missing_unreadable_or_empty_counts_as_pending(self):
+        self.assertTrue(L.input_since_usage(""))
+        self.assertTrue(L.input_since_usage(os.path.join(self.tmp.name, "nope")))
+        self.assertTrue(L.input_since_usage(self.tmp.name))   # a directory
+        self.assertTrue(L.input_since_usage(self.write()))
+        self.assertTrue(L.input_since_usage(self.write(self.S)))
+
+    def test_lines_across_chunk_boundaries(self):
+        # padding lines larger than a chunk put the usage line mid-chunk
+        p = self.write(self.U, self.A, "PAD", "PAD", self.S, pad=150_000)
+        self.assertFalse(L.input_since_usage(p))
+        p = self.write(self.A, "PAD", self.U, "PAD", pad=150_000)
+        self.assertTrue(L.input_since_usage(p))
+
+    def test_a_tail_past_the_cap_counts_as_pending(self):
+        p = self.write(self.A, "PAD", pad=200_000)
+        self.assertFalse(L.input_since_usage(p))
+        self.assertTrue(L.input_since_usage(p, max_bytes=100_000))
+
+
 if __name__ == "__main__":
     unittest.main()

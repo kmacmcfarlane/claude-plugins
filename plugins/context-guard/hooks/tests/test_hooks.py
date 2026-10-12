@@ -276,11 +276,34 @@ class TestContextWarn(Base):
 
 
 class TestPrecompactGate(Base):
-    def gate(self, sid, trigger, ci=None):
-        p = {"session_id": sid, "trigger": trigger, "transcript_path": "/nonexistent"}
+    def gate(self, sid, trigger, ci=None, transcript="/nonexistent"):
+        p = {"session_id": sid, "trigger": trigger, "transcript_path": transcript}
         if ci is not None:
             p["custom_instructions"] = ci
         return run_hook("precompact_gate.py", p, self.env)
+
+    def lines(self, *recs):
+        p = os.path.join(self.tmp.name, "t.jsonl")
+        with open(p, "w") as f:
+            f.write("".join(json.dumps(r) + "\n" for r in recs))
+        return p
+
+    @staticmethod
+    def usage(tokens):
+        return {"type": "assistant", "message": {"role": "assistant", "usage": {
+            "input_tokens": 2, "cache_read_input_tokens": tokens - 2,
+            "cache_creation_input_tokens": 0}}}
+
+    SYSTEM = {"type": "system", "subtype": "turn_duration"}
+    TOOL_RESULT = {"type": "user", "message": {"role": "user", "content": [
+        {"type": "tool_result", "tool_use_id": "t1", "content": "x" * 100}]}}
+
+    def idle(self, tokens):
+        """A transcript idle at `tokens`: its last usage line is followed
+        only by system lines."""
+        return self.lines({"type": "user", "message": {"role": "user",
+                                                       "content": "go"}},
+                          self.usage(tokens), self.SYSTEM, self.SYSTEM)
 
     def test_manual_never_blocked_and_records_instructions(self):
         rc, out, _ = self.gate("s", "manual", ci="keep the auth thread")
@@ -294,11 +317,127 @@ class TestPrecompactGate(Base):
         self.assertTrue(L.load_state("s").get("compact_deferred"))
         self.assertIn("deferred", err)
 
-    def test_auto_allows_after_checkpoint(self):
+    def test_auto_allows_after_checkpoint_at_or_under_due(self):
+        # 1M: due 150K, hard 60K. 100K left is under due; at exactly due too.
+        for tokens in (900_000, 850_000):
+            L.save_state("s", {})
+            L.mark_checkpoint("s")
+            self.set_exact("s", tokens, 1_000_000)
+            rc, out, _ = self.gate("s", "auto")
+            self.assertEqual(rc, 0, tokens)
+            self.assertFalse(L.load_state("s").get("compact_deferred"))
+
+    def test_auto_defers_above_due_even_after_checkpoint(self):
+        # 22b2: an idle auto attempt at ~28% fill after a checkpoint went
+        # through; above the due line it is deferred, checkpoint or not.
+        for checkpointed in (True, False):
+            L.save_state("s", {})
+            if checkpointed:
+                L.mark_checkpoint("s")
+            for tokens in (280_000, 849_999):
+                self.set_exact("s", tokens, 1_000_000)
+                rc, out, err = self.gate("s", "auto",
+                                         transcript=self.idle(tokens))
+                self.assertEqual(rc, 2, (checkpointed, tokens))
+                self.assertIn("deferred", err)
+                self.assertIn("above the due line of 150,000", err)
+                self.assertNotIn("Run the checkpoint skill", err)
+                # not a deferral a checkpoint would release
+                self.assertFalse(L.load_state("s").get("compact_deferred"))
+
+    def test_after_checkpoint_input_since_usage_releases_above_due(self):
+        # A tool result after the last measured fill may have overflowed it
+        # unseen: after a checkpoint the above-due hold does not apply.
         L.mark_checkpoint("s")
-        self.set_exact("s", 900_000, 1_000_000)
+        self.set_exact("s", 800_000, 1_000_000)
+        t = self.lines(self.usage(800_000), self.SYSTEM, self.TOOL_RESULT)
+        rc, out, _ = self.gate("s", "auto", transcript=t)
+        self.assertEqual((rc, out), (0, {}))
+        self.assertFalse(L.load_state("s").get("compact_deferred"))
+
+    def test_after_checkpoint_unreadable_transcript_releases_above_due(self):
+        L.mark_checkpoint("s")
+        self.set_exact("s", 280_000, 1_000_000)
+        rc, out, _ = self.gate("s", "auto")      # /nonexistent: pending
+        self.assertEqual(rc, 0)
+
+    def test_without_checkpoint_input_pending_still_holds_above_due(self):
+        self.set_exact("s", 800_000, 1_000_000)
+        t = self.lines(self.usage(800_000), self.TOOL_RESULT)
+        rc, out, err = self.gate("s", "auto", transcript=t)
+        self.assertEqual(rc, 2)
+        self.assertIn("above the due line", err)
+        self.assertFalse(L.load_state("s").get("compact_deferred"))
+
+    def inferred(self, transcript, **extra):
+        return run_hook("precompact_gate.py",
+                        {"session_id": "s", "trigger": "auto",
+                         "transcript_path": transcript},
+                        dict(self.env, CONTEXT_GUARD_DERIVE="off", **extra))
+
+    def test_inferred_stale_sensor_window_holds_idle_after_checkpoint(self):
+        L.save_state("s", {})
+        L.mark_checkpoint("s")
+        self.put_exact("s", {"pct": 28.0, "tokens": 280_000,
+                             "window": 1_000_000, "at": time.time() - 3300})
+        rc, out, err = self.inferred(self.idle(280_000))
+        self.assertEqual(rc, 2, err)
+        self.assertFalse(L.load_state("s").get("compact_deferred"))
+        self.assertIn("window from status line", err)
+
+    def test_inferred_200k_guess_at_due_defers_until_checkpoint(self):
+        # No sensor: 150K on a guessed 200K window leaves 50K, under due 70K
+        # and above hard 40K.
+        rc, out, err = self.inferred(self.idle(150_000))
+        self.assertEqual(rc, 2, err)
+        self.assertTrue(L.load_state("s").get("compact_deferred"))
+        L.mark_checkpoint("s")
+        rc, out, err = self.inferred(self.idle(150_000))
+        self.assertEqual(rc, 0, err)
+        self.assertFalse(L.load_state("s").get("compact_deferred"))
+
+    def test_auto_defers_at_or_under_due_until_checkpoint(self):
+        self.set_exact("s", 850_000, 1_000_000)
+        rc, out, err = self.gate("s", "auto")
+        self.assertEqual(rc, 2)
+        self.assertTrue(L.load_state("s").get("compact_deferred"))
+        self.assertIn("Run the checkpoint skill", err)
+        L.mark_checkpoint("s")
         rc, out, _ = self.gate("s", "auto")
         self.assertEqual(rc, 0)
+        self.assertFalse(L.load_state("s").get("compact_deferred"))
+
+    def test_auto_allows_under_hard_checkpoint_or_not(self):
+        for checkpointed in (False, True):
+            L.save_state("s", {})
+            if checkpointed:
+                L.mark_checkpoint("s")
+            for tokens in (940_000, 970_000):   # 60K left is the hard line
+                self.set_exact("s", tokens, 1_000_000)
+                rc, out, _ = self.gate("s", "auto")
+                self.assertEqual((rc, out), (0, {}), (checkpointed, tokens))
+                self.assertFalse(L.load_state("s").get("compact_deferred"))
+
+    def test_manual_untouched_at_any_fill(self):
+        for checkpointed in (False, True):
+            L.save_state("s", {})
+            if checkpointed:
+                L.mark_checkpoint("s")
+            for tokens in (100_000, 900_000, 990_000):
+                self.set_exact("s", tokens, 1_000_000)
+                rc, out, err = self.gate("s", "manual")
+                self.assertEqual((rc, out, err), (0, {}, ""), (checkpointed, tokens))
+                self.assertFalse(L.load_state("s").get("compact_deferred"))
+
+    def test_inferred_depth_past_hard_allows(self):
+        # No sensor record: the depth is inferred from the transcript, whose
+        # window guess here is 200K (due 70K, hard 40K); 170K is past hard.
+        L.mark_checkpoint("s")
+        p = {"session_id": "s", "trigger": "auto",
+             "transcript_path": self.transcript(170_000)}
+        rc, out, _ = run_hook("precompact_gate.py", p,
+                              dict(self.env, CONTEXT_GUARD_DERIVE="off"))
+        self.assertEqual((rc, out), (0, {}))
         self.assertFalse(L.load_state("s").get("compact_deferred"))
 
     def test_auto_allows_when_not_provably_proactive(self):
@@ -385,6 +524,38 @@ class TestStopRelay(Base):
         self.set_exact("s", 900_000, 1_000_000)
         rc, out, _ = self.relay("s")
         self.assertNotEqual(out, {})  # re-arms next epoch
+
+    def test_silent_above_due_even_after_a_deferral(self):
+        # 22b2: a low-fill deferral used to relay a checkpoint request, whose
+        # mark released the next idle auto compaction. Above due: nothing.
+        st = L.load_state("s"); st["compact_deferred"] = True; L.save_state("s", st)
+        for tokens in (280_000, 849_999):
+            self.set_exact("s", tokens, 1_000_000)
+            rc, out, _ = self.relay("s")
+            self.assertNotIn("checkpoint", json.dumps(out), tokens)
+        self.assertNotIn("relay_epoch", L.load_state("s"))
+
+    def test_relays_at_due_once_per_epoch(self):
+        self.set_exact("s", 850_000, 1_000_000)   # exactly at due
+        rc, out, _ = self.relay("s")
+        self.assertIn("150,000 tokens remain", json.dumps(out))
+        self.assertNotIn("was deferred", json.dumps(out))
+        self.set_exact("s", 860_000, 1_000_000)
+        rc, out, _ = self.relay("s")
+        self.assertNotIn("checkpoint", json.dumps(out))   # single fire
+
+    def test_relay_names_a_deferral_at_due(self):
+        st = L.load_state("s"); st["compact_deferred"] = True; L.save_state("s", st)
+        self.set_exact("s", 900_000, 1_000_000)
+        rc, out, _ = self.relay("s")
+        self.assertIn("was deferred by the context gate", json.dumps(out))
+
+    def test_silent_after_checkpoint(self):
+        L.save_state("s", {})
+        L.mark_checkpoint("s")
+        self.set_exact("s", 900_000, 1_000_000)
+        rc, out, _ = self.relay("s")
+        self.assertNotIn("checkpoint", json.dumps(out))
 
     def test_honours_stop_hook_active(self):
         st = L.load_state("s"); st["compact_deferred"] = True; L.save_state("s", st)

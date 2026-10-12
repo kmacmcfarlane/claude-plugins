@@ -3,12 +3,11 @@ id: context-guard-conversations-compact-whil-22b2
 title: "context-guard: conversations compact while idle, without the operator driving it"
 short_display_name: idle compaction without operator
 type: bug
-status: doing
+status: done
 priority: 1
-owner: Kyle-McFarlane@2d49f8460283
-claimed: 2026-10-09T17:12Z
 created: 2026-10-09
 updated: 2026-10-09
+closed: 2026-10-09
 refs:
   - operator, chat 2026-10-09
 ---
@@ -32,3 +31,16 @@ decided: 2026-10-09T17:25Z design — the operator's stated expectation settles 
 target: no auto compaction passes above the due line (850K on 1M); the relay never fires above it; manual /compact untouched; tests for each path, including checkpointed-at-low-fill and the relay
 dispatch: implementer opus medium — build (gate behaviour; not a canonical mechanical kind)
 agent: implementer a5c4b28f7b81cabbd
+return: DONE 2634f72; 12/12 Checks OK (context-guard 718); judgement: inferred depth still defers (the brief misstated the existing rule; kept, since making it allow would let idle compactions through without a status-line reading); compact_deferred set only at or under due; relay on mirrored depth, gate on pre-mirror, as before
+dispatch: reviewer opus high — review round 1 of 2634f72
+agent: reviewer a6936b3fdd42a185f
+verdict: review round 1 NEEDS_CHANGES (must-fix 2: medium 1 — the new above-due hold after a checkpoint can block a recovery compaction (model switch leaves a 1M guess on a 200K model; a batch of reads overflows past the last measured fill) and only a manual /compact ends it; fix: hold above due after a checkpoint only when no user line follows the last usage line (idle); medium 2 — no test on inferred depth, which the idle case runs on; lows: mark_checkpoint docstring, playbook overstates (200K guess, lowered auto-compact window); nits: "at or under hard" wording, a lingering flag); judgement call 1 (inferred still defers) ruled right; call 2 sound
+dispatch: implementer opus medium — fix round 1 (resume a5c4b28f7b81cabbd)
+return: DONE f560065 (fix round 1); 12/12 Checks OK (context-guard 729); input_since_usage reads the tail backwards, 64 KiB chunks, 4 MiB cap, unreadable or capped counts as pending
+dispatch: reviewer opus high — review round 2 of f560065 (resume a6936b3fdd42a185f)
+verdict: review round 2 NEEDS_CHANGES (must-fix 1, down from 2: low, playbook caveat understates the no-sensor bands; code correct: probes P1-P5 as intended, real transcripts cut at their auto boundaries — the four idle ones read idle, the five busy ones pending; 3,000-transcript fuzz of the backward scan clean; lows/nits: mark_checkpoint docstring, a garbled caveat phrase, the not-full message omits the pending release, one long line)
+decided: 2026-10-09T19:05Z cap — must-fix fell 2 → 1 and every leftover is exact wording: a finish round (authority answer 145)
+dispatch: implementer opus medium — finish round (resume a5c4b28f7b81cabbd)
+verdict: finish round CLEAR — diff read: caveat bands, docstring, caveat ending, not-full message, reflow
+landed: 458ba1d (merge of 2634f72..4fb51f7); Checks 12/12 OK; cc_scan clean (version hits all labelled observed from transcripts)
+- 2026-10-09 done
