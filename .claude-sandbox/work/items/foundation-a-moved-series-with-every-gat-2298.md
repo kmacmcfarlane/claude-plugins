@@ -3,12 +3,11 @@ id: foundation-a-moved-series-with-every-gat-2298
 title: "foundation: a moved series with every gate passed has no next step"
 short_display_name: moved series past G3, next step
 type: bug
-status: doing
+status: done
 priority: 4
-owner: Kyle-McFarlane@2d49f8460283
-claimed: 2026-10-12T22:50Z
 created: 2026-10-12
 updated: 2026-10-12
+closed: 2026-10-12
 refs:
   - foundation-a-series-moved-after-g3-canno-be6d
 ---
@@ -37,3 +36,6 @@ dispatch: reviewer opus high — review round 2 of 084bac8 (resume a224d4b920c6f
 verdict: review round 2 CLEAR (must-fix 0; low: a resolved Frame item gains no series ref, defence in depth; observation: cut-short bullet tie between Item: and ref only after a crash mid-add; ambiguous-id case ruled negligible, resolve_id matches exact first)
 decided: 2026-10-13T02:10Z cap — a finish round of the low fix (authority answer 145)
 dispatch: implementer opus medium — finish round (resume a456e958153f73c9a)
+verdict: finish round CLEAR — diff read: File bullet and Frame step 2 add the series ref to a resolved item
+landed: 5bed675 (merge of e903e68..7438d70); Checks 12/12 OK; cc_scan clean
+- 2026-10-12 done
