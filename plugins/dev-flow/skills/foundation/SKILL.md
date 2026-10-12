@@ -194,8 +194,10 @@ says, with these changes:
   the prompt list still runs, its unanswered prompts held.
 - From the second phase on, the brief carries the previous gate's verdict, its `CLEAR`
   round, and whether it was approved (with the answer and its decision ref) or reported;
-  record them in the serial's Confirmed Assumptions, in that gate's row of the Foundation
-  block, and as its Gates passed line (`references/state.md` § The Foundation block).
+  record them in the serial's Confirmed Assumptions and in that gate's row of the
+  Foundation block. The orchestrator writes each gate's Gates passed line itself — its
+  only writes in the series; carry the list forward whole (`references/state.md` § The
+  Foundation block).
 - Fill the Foundation block's Operator cell for this gate (`references/gates.md` § 3), so
   the orchestrator knows whether to ask.
 - A fix round, or a reopen the brief names, is a new serial with a `Supersedes` block.

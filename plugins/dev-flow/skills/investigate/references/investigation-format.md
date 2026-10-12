@@ -257,8 +257,9 @@ names and one index block; it amends nothing.
 - **The Foundation block.** `INDEX.md` carries a `## Foundation` section after the TOC: the
   size, the mode and the item; a phase table (phase, serial, gate status, whether the
   operator approves or it is reported, the approved date); the gates passed, one line each
-  with its date and decision ref, so a moved series still knows them; the held questions;
-  the factored-out aspects. Its shape is the `foundation` skill's `references/state.md`
+  with its date and decision ref, so a moved series still knows them (carried forward whole
+  on every regeneration, the move's included); the held questions; the factored-out
+  aspects. Its shape is the `foundation` skill's `references/state.md`
   § The Foundation block. Its presence is what marks a foundation series.
 - **Implementation Approach before gate G3.** The approach section is required per series,
   not per serial, and a foundation series has none until its plan serial. `implement`

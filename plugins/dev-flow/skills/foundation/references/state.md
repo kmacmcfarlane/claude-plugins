@@ -72,31 +72,35 @@ Size: full | lite · Mode: new | retrofit · Item: <wi id | none>
   reason when it is `needed` (the one-way ADR's id, the claim change).
 - **Approved**: the date the operator approved, or `—`.
 - **Gates passed** is the series' own record of each gate's passing, one line per pass,
-  appended and never removed: `G<n> passed <YYYY-MM-DD> (<ref>)`, the ref being the
-  decision that approved it as `<repo>#<N>` (the repo whose decision channel numbered it,
-  so the ref still resolves after the series moves), `reported` for a gate G2 passed on
-  its `CLEAR` alone, or `no store` for an approval given in the session. A gate that
-  re-runs after a reopen gains a new line ending `after <reopen serial>`. Every
-  regeneration of `INDEX.md` carries the list forward whole.
+  appended and never removed: `G<n> passed <YYYY-MM-DD> (<repo>#<N> | reported | in
+  session)`. The ref is the decision that approved it as `<repo>#<N>` (the repo whose
+  decision channel numbered it, so the ref still resolves after the series moves),
+  `reported` for a gate G2 passed on its `CLEAR` alone, or `in session` for an approval
+  with no numbered decision (no store, or an unnumbered channel). A gate that re-runs after
+  a reopen gains a new line ending `after <reopen serial>`. Every regeneration of
+  `INDEX.md` carries the list forward whole.
 - **Who writes the line.** A standalone run writes it as soon as it records the approval
   (or, for a reported G2, the `CLEAR`), regenerating `INDEX.md` then rather than with the
-  next serial. Under an orchestrator the planner writes G1's and G2's lines with the next
-  phase, from the brief, as it fills that gate's row. Gate G3 has no later phase, so the
-  orchestrator writes G3's line itself after the approval, its one write in the series
-  (§ The work item, After gate G3 is approved).
+  next serial. Under an orchestrator the orchestrator writes each gate's line itself, right
+  after the approval (or a reported gate's `CLEAR`) and before its next dispatch — its only
+  writes in the series; the planner fills the gate's row. For G3 that is step 1 of § The
+  work item, After gate G3 is approved.
 - **What marks a gate passed.** A resumed session reads the series first: a gate is passed
-  when the block's Gates passed list holds its line. The foundation item, when the session
-  can see it, is a second source: a done foundation item, or a gate approval's `answer N:`
-  line, marks that gate passed too, and the session adds the missing line when it next
-  regenerates `INDEX.md`. With neither (a series written before this list existed), the
-  table decides: a gate is passed when it is `CLEAR` and its Operator cell is
-  `reported`, or its Approved cell is a date. A resume never re-runs a passed gate or
-  re-files G3's features; a deliberate reopen is a move (`references/moves.md`).
-- Under an orchestrator the planner writes the block; the orchestrator writes nothing in
-  the series but G3's line. From the second phase on, the brief carries the previous gate's verdict,
-  its `CLEAR` round, and whether it was approved (with the answer, its date and its
-  decision ref) or reported; the planner fills that gate's Gate, Operator and Approved
-  cells and its Gates passed line from it.
+  when the block's Gates passed list holds its line — and, when its row's Gate cell reads
+  `re-run after <reopen serial>`, a line ending `after <that serial>`. The foundation
+  item, when the session can see it, is a second source: a done foundation item, or a gate
+  approval's `answer N:` line, marks that gate passed too, and the session adds the missing
+  line when it next regenerates `INDEX.md`. For a gate with neither, the table decides (it
+  covers a series written before this list existed, and a pass whose line is not yet
+  written): a gate is passed when it is `CLEAR` and its Operator cell is `reported`, or its
+  Approved cell is a date. And a gate's line means every earlier gate passed. A resume
+  never re-runs a passed gate or re-files a feature already filed; a deliberate reopen is a move
+  (`references/moves.md`).
+- Under an orchestrator the planner writes all of the block but the Gates passed lines. From the
+  second phase on, the brief carries the previous gate's verdict, its `CLEAR` round, and
+  whether it was approved (with the answer, its date and its decision ref) or reported; the
+  planner fills that gate's Gate, Operator and Approved cells from it, and carries the
+  Gates passed list forward whole.
 
 **A lite run** has one row:
 
@@ -124,8 +128,10 @@ When the repo has a work-item store (the `work-items` skill), one item carries t
   next number on the channel's counter (a librarian's counter under `librarian-mode`).
 - **After gate G3 is approved** — this list is the one home for that filing, which a
   standalone run does at its Step 4 and `dev-cycle` does at its foundation bullet:
-  1. Add the `G3 passed` line to the series' Foundation block (§ The Foundation block) and
-     commit it, before anything is filed. This step runs with no store too.
+  1. Add the `G3 passed` line to the series' Foundation block (§ The Foundation block)
+     before anything is filed (a file write; the series is committed only as its home's
+     tracking mode says, the `investigate` skill's `references/investigation-format.md`
+     § A repo not yet created). This step runs with no store too.
   2. File each feature of the plan serial's Features table as an item, in the table's
      order: `$WI add … --parent <id>`, with a `--dep` naming the filed item of each
      feature it depends on.
@@ -134,6 +140,10 @@ When the repo has a work-item store (the `work-items` skill), one item carries t
   4. File each factored-out aspect that has no item yet: `$WI add … --parent <id>`, or
      `--ref <series path>` for an aspect that belongs to another repo.
   5. `$WI done <id> --note <series path>`.
+- **A filing cut short.** A `G3 passed` line with the foundation item not done means the
+  list stopped after step 1: a resume continues it at step 2, filing only the features and
+  aspects with no item whose `parent:` is the foundation item yet, then step 5. That
+  finishes G3; it is not a re-run or a re-file.
 - **Factored-out aspects** are filed when factored out where the run can (standalone);
   step 4 above files any that are still unfiled, which is every one under an orchestrator.
 - **After a later reopen** passes its gates, the orchestrator (`dev-cycle`), or the
