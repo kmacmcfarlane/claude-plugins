@@ -26,3 +26,4 @@ From 0b15 review 1 finding 2, 2026-10-09: launch-command.md's existing-series va
 - 2026-10-12 claimed by Kyle-McFarlane@2d49f8460283
 target: launch-command.md's existing-series sentence resumes a foundation series (INDEX.md has a Foundation block) with the foundation skill when listed, else extends it with investigate as now, saying which skill it lacked; declarations still agree
 dispatch: implementer sonnet medium — build (one prose clause plus declarations: canonical kind)
+agent: implementer afb5acecb9ba01508
