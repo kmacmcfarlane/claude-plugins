@@ -3,12 +3,11 @@ id: foundation-a-series-moved-after-g3-canno-be6d
 title: "foundation: a series moved after G3 cannot see its G3 approval"
 short_display_name: moved foundation series G3 status
 type: bug
-status: doing
+status: done
 priority: 3
-owner: Kyle-McFarlane@2d49f8460283
-claimed: 2026-10-12T21:34Z
 created: 2026-10-12
 updated: 2026-10-12
+closed: 2026-10-12
 refs:
   - create-repo-a-moved-foundation-series-re-7b85
 ---
@@ -40,3 +39,6 @@ dispatch: reviewer opus high — review round 3 of a2dd295 (resume a465df0b41e98
 verdict: review round 3 NEEDS_CHANGES (must-fix 1, down from 2: resume.md S7 still passes a G3 a reopen is re-running; follow-ups: A a re-run G3 re-files every feature (step 1 alone), B moves.md step 3 should mark re-run rows, C name a done item among the exclusions; all with exact wording)
 decided: 2026-10-13T00:40Z cap — must-fix fell 2 → 1 and every leftover is an exact fix: a finish round of the must-fix and A–C (authority answer 145), no review 4
 dispatch: implementer opus medium — finish round (resume a6352961bcd58ea3f)
+verdict: finish round CLEAR — diff read: S7 exception clause, G3 re-run takes step 1 alone, moves.md step 3 marks the re-run gate and later named gates (builder widened to include the reopened gate itself, correct), done item named among exclusions
+landed: 5a8bca8 (merge of 0f9ad15..b67206a); Checks 12/12 OK; cc_scan clean
+- 2026-10-12 done
