@@ -32,3 +32,5 @@ agent: implementer a9e98bb4769db4a60
 return: DONE e0f2f18; dev-flow 78, operator-interaction 138, kit-dev 21 OK; decision 160's line has no separator, renders as the card's Context as it stands, terms then cue; template placeholder also updated
 dispatch: reviewer opus high — review round 1 of e0f2f18
 agent: reviewer aef7a273eff53b181
+verdict: review round 1 NEEDS_CHANGES (must-fix 1: decisions.md:100-101 names references/rendering.md, a path into operator-interaction from dev-flow; minor: a no-separator line carries no block facts, say so; nit: cards-schema pointer, the block shows the facts at medium)
+dispatch: implementer sonnet medium — fix round 1 (resume a9e98bb4769db4a60)

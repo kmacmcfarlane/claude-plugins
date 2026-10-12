@@ -26,3 +26,5 @@ From 7b85 review 1, 2026-10-12: state.md says a done foundation item or its G3 a
 target: G3's passing is recorded in the series itself (the Foundation block), so a series moved to a new repo resumes past G3; state.md and gates.md say so; a moved series with no work-item record of its own resumes at the right gate
 dispatch: implementer opus medium — build
 agent: implementer a6352961bcd58ea3f
+return: DONE 0f9ad15; 12/12 OK; ### Gates passed list in the Foundation block, append-only, G<n> passed <date> (<repo>#<N>|reported|no store); orchestrator writes G3's line as step 1 after G3; planner writes G1/G2 lines from the brief; older series keep the old rule; also changed dev-cycle SKILL.md, agent-brief.md, resume.md
+dispatch: reviewer opus high — review round 1 of 0f9ad15
