@@ -29,3 +29,5 @@ agent: implementer ad174bb9bfc266a07
 return: DONE 4cb0ac3; all nine gaps tested, each with documented residue; reviewer corpus 0 main-only, per-gap corpus 0 main-only; real store 0 secret findings, 0 diff vs main; slowest 1.99s at 2M (aB: chained); one-line state for continuations; loose forms gated on a secret-word key; work-items 317 OK, kit-dev 18 OK
 dispatch: reviewer opus high — review round 1 of 4cb0ac3
 agent: reviewer affe530eaa9d397c5
+verdict: review round 1 NEEDS_CHANGES (must-fix 2: medium 1 — Authorization credential of letters with a colon (AdminUserName:FakeSecretPass) passes as words, main caught it (1,664 main-only in 707,616); medium-low 2 — spaced flag and kebab key swallow the opening quote of a following JSON pair, pos = m.start("quote") at both sites; lows: capitalised one-word keys, _PLAIN_RE and _DATE_RE wider than documented, env-var table false positives, empty-user URL, undocumented gaps; patched copies at scratchpad/dc23-review/wi_fix.py and wi_fix2.py)
+dispatch: implementer opus medium — fix round 1 (resume ad174bb9bfc266a07)
