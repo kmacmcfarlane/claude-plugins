@@ -70,7 +70,7 @@ them. `SLUG` is one line of kebab-case, `^[a-z0-9][a-z0-9-]*$`. `OLD` is one lin
 characters (`A-Z a-z 0-9 . _ / @ + , : ~ -` and spaces). Write each with the Write tool to
 a scratch file and test it:
 ```bash
-python3 -c 'import re,sys; p={"slug":r"[a-z0-9][a-z0-9-]*","old":r"[A-Za-z0-9][A-Za-z0-9._-]*:[A-Za-z0-9._/@+,:~ -]+"}[sys.argv[1]]; s=open(sys.argv[2]).read().rstrip("\n"); sys.exit(0 if re.fullmatch(p,s) else 1)' slug "$file" && echo safe
+python3 -I -c 'import re,sys; p={"slug":r"[a-z0-9][a-z0-9-]*","old":r"[A-Za-z0-9][A-Za-z0-9._-]*:[A-Za-z0-9._/@+,:~ -]+"}[sys.argv[1]]; s=open(sys.argv[2]).read().rstrip("\n"); sys.exit(0 if re.fullmatch(p,s) else 1)' slug "$file" && echo safe
 ```
 (`old` in place of `slug` for `OLD`.) Not safe, a newline inside included: say which
 character is refused and ask for the value again.
@@ -102,7 +102,7 @@ character is refused and ask for the value again.
    in Important). Check it by reading it; when in doubt, write it with the Write tool to a
    scratch file and test that file, which no shell expansion touches:
    ```bash
-   python3 -c 'import re,sys; s=open(sys.argv[1]).read().rstrip("\n"); sys.exit(0 if re.fullmatch(r"/[A-Za-z0-9._/@+,:~ -]+", s) else 1)' "$file" && echo safe
+   python3 -I -c 'import re,sys; s=open(sys.argv[1]).read().rstrip("\n"); sys.exit(0 if re.fullmatch(r"/[A-Za-z0-9._/@+,:~ -]+", s) else 1)' "$file" && echo safe
    ```
    Not safe (including a newline anywhere inside it): say which character is refused and
    ask for another path. From here on every Bash call starts `REPO='...'` with the checked

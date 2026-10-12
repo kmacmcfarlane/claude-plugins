@@ -289,7 +289,7 @@ Path: `${CLAUDE_CONFIG_DIR:-~/.claude}/statusline/sensor/<session-id>.json` — 
 `statusline-hub` plugin (or the `statusline` plugin when it owns the slot) on every render.
 The session id is the UUID segment of the scratchpad directory named in your system prompt;
 `safe_sid` rules are in `statusline`'s `install-statusline` references. Read it with `Read`
-or `python3 -c`; the shape is:
+or `python3 -I -c`; the shape is:
 
 ```json
 {"v": 1, "rate_limits": {"five_hour": {"used_percentage": 23.5, "resets_at": 1789763600.0},

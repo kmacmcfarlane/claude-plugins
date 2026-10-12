@@ -347,11 +347,12 @@ After writing each file to the template, run a verification scan:
 
 ```bash
 # Extract project name from backlog.yaml
-PROJECT_NAME=$(python3 -c "
+PROJECT_NAME=$(python3 -I -c "
 from ruamel.yaml import YAML
 data = YAML().load(open('agent/backlog.yaml'))
 print(data.get('project', ''))
 ")
+[ -n "$PROJECT_NAME" ] || echo "no project name read"
 
 # Also extract domain terms from PRD.md (first 20 lines, nouns)
 # These are terms like product names, specific technologies, data formats

@@ -71,7 +71,7 @@ $WI --root <repo path>/<store> show <id> --brief
 
 `path` is printable: a name byte that is not UTF-8 shows as `\xe9` and will not open. When
 `path` holds such an escape, take the real path from `path_raw` (the exact bytes, base64):
-`python3 -c 'import base64,os,sys; print(os.fsdecode(base64.b64decode(sys.argv[1])))' <path_raw>`.
+`python3 -I -c 'import base64,os,sys; print(os.fsdecode(base64.b64decode(sys.argv[1])))' <path_raw>`.
 
 Keep the reads few. A store listed with `problems` is reported as it stands; do not repair
 it.
