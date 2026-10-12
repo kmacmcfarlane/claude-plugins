@@ -6,7 +6,7 @@ Two halves:
   renderers, loaded from `assets/index.html` and run under node against
   `assets/cards.example.json` and broken copies of it;
 - the decisions skill's worked examples: every list line carries its effect and its
-  wait, and every card or block opens on its impact.
+  wait, and every card or block shows its impact right after its Context.
 
 Run from the plugin dir: python3 -m unittest discover -s tests -q
 """
@@ -227,7 +227,9 @@ class GalleryShowsImpact(unittest.TestCase):
                                         f"{f.name}:{n}: a stakes word on a line")
         self.assertGreater(seen, 20)
 
-    def test_every_card_and_block_opens_on_its_impact(self):
+    def test_every_card_and_block_shows_its_impact_right_after_its_context(self):
+        # the answer page's order: the decision line (title, What), Context, then the
+        # impact; a Context section is a line, or a heading over bullets (a block)
         seen = 0
         for f in self.files():
             lines = f.read_text().splitlines()
@@ -237,7 +239,10 @@ class GalleryShowsImpact(unittest.TestCase):
                 seen += 1
                 j = i + 1
                 while j < len(lines) and (not lines[j].strip()
-                                          or lines[j].startswith("*While it waited")):
+                                          or lines[j].startswith("*While it waited")
+                                          or lines[j].startswith("**What:**")
+                                          or lines[j].startswith("**Context:**")
+                                          or lines[j].startswith(("- ", "  - "))):
                     j += 1
                 self.assertTrue(lines[j].startswith("**Impact:**")
                                 or lines[j].startswith("| Impact |"),

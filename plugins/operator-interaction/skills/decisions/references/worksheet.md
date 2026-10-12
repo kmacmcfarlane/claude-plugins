@@ -2,7 +2,8 @@
 
 Fill this in for each decision before you write it. You juggle the dimensions; the operator
 sees only what they produce: a level, an answer mode, a place in the order, a basis word, a
-card shape, what it takes to act, and the Impact line (§ The Impact line). Each group answers one question and sets one thing — merging them into one vague
+card shape, what it takes to act, the Context (§ The Context) and the Impact line (§ The
+Impact line). Each group answers one question and sets one thing — merging them into one vague
 "type" of decision is what loses information.
 
 ## A — Who is reading, and how warm are they? → how much to re-explain
@@ -15,8 +16,8 @@ card shape, what it takes to act, and the Impact line (§ The Impact line). Each
 | Operator's expected return | when they said they would be back, if they did | you, from what the operator said |
 
 Cold raises the level: a cold reader never gets a line-only decision (the line-only rule in
-SKILL.md § Levels), a card adds its **Context:** cue, and a block adds a *context you may
-have lost* part. Re-explaining is triggered by **events**, not by elapsed time alone: a
+SKILL.md § Levels), and a block's Context may step up to the page's high size. Warmth does
+not decide whether Context is shown: every card and block carries it (§ The Context). Re-explaining is triggered by **events**, not by elapsed time alone: a
 compaction five minutes ago makes a reader colder than an idle hour with nothing in between.
 
 The last event is the commonest in a long session. A caller re-entered by background work can
@@ -127,6 +128,24 @@ Warm on the decision is not warm on its source's words: group A measures the fir
 reader who answered the decision before this one may never have read the plan whose labels
 its options would use.
 
+## The Context — from the groups above
+
+Every card and block carries a **Context:** section, shaped like the answer page's `context`
+field (`references/rendering.md` § Context). Fill it before the Impact line, from groups A
+and F, in plain words for the operator:
+
+| Part | From | Who can supply it |
+|---|---|---|
+| Terms | group F: each label, number, acronym, count, named mode, setting, review, plan or document, or item the card uses, glossed in plain words (a count says what the things are) | you, from the source |
+| Where you left it | group A: what the operator last saw or decided on this subject; for a decision they have never seen, where it came from | you; the caller's record of shown and seen |
+| What you decide now | the choice, in the terms of where they left it | you |
+| Lost context (a block only) | the facts a reader coming back cold needs: what was tried, what was answered before, where a list or number came from | you, from the source and the record |
+
+A card's Context is the first three, in that order, in one or two sentences (about 30–60
+words); it does not restate **What:**. A block's adds the lost context, as bullets. Write it
+when the decision is raised, and store it with the card where the caller keeps one, so every
+later showing — a re-show after a reset included — reads it instead of composing it again.
+
 ## The Impact line — from the groups above
 
 Fill it last, from what the groups produced, in plain words for the operator. The facets and
@@ -153,5 +172,5 @@ only the card, as someone who has seen nothing else, and for each option ask:
    what it takes to act, from the card alone?
 
 Then check every label, number or acronym on it against SKILL.md § The floor, item 1: defined
-where it first appears, or replaced by its words. A card that fails is fixed before it is
+where it first appears — in its **Context:** — or replaced by its words. A card that fails is fixed before it is
 raised, not after the operator asks.
