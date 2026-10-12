@@ -97,7 +97,7 @@ renders what the operator read instead of composing it again.
   the Context never contains ` — then: ` (reword it). Each sentence after the separator is
   one of a block's bullets, or `none` on a decision raised as a card. The separator is
   always written. The stored Context is shown every time a card or block is shown, to a warm
-  reader as to a cold one (the `decisions` skill's `references/rendering.md` § Context
+  reader as to a cold one (the `decisions` skill's rendering reference, § Context,
   holds the rule); a block shows it as its first bullet, then the sentences after the
   separator. An ask for
   another round — the dev-cycle cap, most often — requires the `if left:` and `round
@@ -131,7 +131,7 @@ renders what the operator read instead of composing it again.
   lacks — a headline-only entry, a block's missing `undo:`, a card stored before `why ask:`
   existed (in the one form `decide-alone.md` § Raised gives it), one stored before the cue
   existed (no `context:` line; a line with no ` — then: ` is the card's Context as it
-  stands, not a block's facts to backfill), a block whose facts read `none` (a decision raised as
+  stands, and carries no block facts), a block whose facts read `none` or are absent (a decision raised as
   a card, rendered as a block by `expand` or as a wide one shown to a cold reader: `none`
   counts as missing), a card with no `impact:` line, a card with an option that asks the
   operator to act and no `to act` line for it — is backfilled from the durable record

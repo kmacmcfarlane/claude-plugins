@@ -151,7 +151,7 @@ renders; the runner lints a level whose shape is off (SKILL.md step 2).
 - `context`: Context at more detail, under the same label. Its high holds the further facts
   the decisions block carries after the card's Context (the `decisions` skill's
   `references/rendering.md` § Context: what was tried, what was answered before, where a
-  list or number came from). The tick-box doc, which cannot toggle,
+  list or number came from); the block shows them as terse bullets, at the page's medium size. The tick-box doc, which cannot toggle,
   shows Context at its high (`references/fallback.md`).
 - `impact`: facet objects in the decisions skill's one vocabulary, `effect` required, across
   all the options as the summary is. At medium, one terse bullet per facet, shown with its
