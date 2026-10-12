@@ -2,7 +2,9 @@
 
 The dispatch brief for the review sub-agent that gates one change between the
 implementer's return and Land. Fill every placeholder from the run's bindings
-(`bindings.md`); delete nothing except the store lines when there is no work item. The
+(`bindings.md`); delete nothing except the store lines when there is no work item, and
+What to do's foundation step when the build is not under a foundation (`bindings.md`
+§ Decisions, A foundation reopen). The
 reviewer starts with none of the orchestrator's context and none of the implementer's, and
 must be able to review from this text alone. Send it as the prompt of one background
 `dev-flow:reviewer` Agent (opus high), or `dev-flow:reviewer-light` (opus medium) for the
@@ -113,6 +115,13 @@ union of every round's CHANGED, one file per line with its one-line reason>
    reached anything beyond this branch.
 8. Grade every finding on the scale below, with a file:line and a one-sentence failure
    scenario: what a user does, and what goes wrong.
+<conditional — a build under a foundation (its item is a child of a foundation item, or its
+series' INDEX.md has a `## Foundation` block):>
+9. A finding that would change a foundation artifact of <the foundation series, absolute>
+   (a requirement, quality scenario, constraint, glossary meaning, claim, ADR, contract,
+   threat or risk entry) is not a FINDING: put it under NOTES as `REOPEN: <the artifact> —
+   <Reopen requirements if it touches any phase-1 artifact, else Reopen architecture> —
+   <why>`. A diff that changes such an artifact in place is a finding at medium.
 
 ## Checks — run all, report outcomes verbatim
 

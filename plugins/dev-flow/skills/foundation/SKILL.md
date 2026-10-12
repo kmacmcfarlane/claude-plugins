@@ -38,7 +38,7 @@ Any step may take a move. The full rows and the reopen procedure are in
 
 | Move | When | Effect on gates |
 |---|---|---|
-| **Raise** | any time a question appears; triaged first (verify, ask, or record as external) | none by itself |
+| **Raise** | any time a question appears; triaged first (verify, ask, or record as external); a reopen found in a feature's build is raised by the build (`references/moves.md`) | none by itself |
 | **Answer locally** | the answer touches no phase-1 or phase-2 artifact | none |
 | **Reopen architecture** | the answer changes a phase-2 artifact and no phase-1 one | gate G2 re-runs on the delta; G3 only for the features the impact list names |
 | **Reopen requirements** | the answer changes any phase-1 artifact | gate G1 re-runs on the delta, with the operator; later gates only for what the impact list names |

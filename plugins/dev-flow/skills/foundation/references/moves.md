@@ -11,7 +11,7 @@ round finds its next consequence.
 
 | Move | When | What is recorded, and where | Effect on gates |
 |---|---|---|---|
-| **Raise** | any phase, any time a question appears | triaged as the `investigate` skill's `references/open-question-sweep.md` triages: verifiable → verified now; a decision → asked; external → an Open Question with its owner and whether it blocks | none by itself |
+| **Raise** | any phase, any time a question appears; a reopen found in a feature's build is raised by the build (below) | triaged as the `investigate` skill's `references/open-question-sweep.md` triages: verifiable → verified now; a decision → asked; external → an Open Question with its owner and whether it blocks | none by itself |
 | **Answer locally** | the answer touches no phase-1 or phase-2 artifact | in the current phase's serial (Confirmed Assumptions) | none |
 | **Reopen architecture** | the answer changes any phase-2 artifact (an ADR, a contract, the threat and privacy model, context and containers, the strategy or traceability, a risk) and no phase-1 artifact | a serial `NN_reopen-<what>.md`: `Supersedes` names the changed artifact; a superseding ADR when an ADR changes; an impact list (the features, contracts and other phase-2 artifacts it touches) | gate G2 re-runs on the delta; the operator approves any one-way ADR change; gate G3 re-runs only for the features the impact list names |
 | **Reopen requirements** | the answer adds or changes any phase-1 artifact (the intent, a goal or non-goal, a requirement, a quality scenario, a constraint, a glossary meaning, the claim or the neighbours table) | a serial `NN_reopen-<what>.md`: `Supersedes` names the changed requirement; an impact list read off the traceability table (the ADRs, contracts and features it touches); the touched artifacts revised in the same serial or the next | gate G1 re-runs on the delta only, and the operator approves the change; G2 and G3 re-run only for what the impact list names |
@@ -51,8 +51,11 @@ A reopen after gate G3, once features are filed, is the same procedure; the feat
 impact list names are the ones to revise, and `F0`'s re-run is filed as a new item under
 the foundation item, by `dev-cycle` or the standalone session, so the living docs follow
 (`references/state.md` § The work item).
-Raising one from inside a feature's build is done by hand, by the operator or a session
-that sees the finding; dev-cycle's build does not raise it on its own.
+A reopen found inside a feature's build is raised by the build: under a foundation,
+`dev-cycle`'s implementer and reviewer briefs report it as a `REOPEN:` line, never a fix,
+and its orchestrator, or a librarian through its channel, raises it to the operator with the
+reopen's gate (the `dev-cycle` skill's `references/bindings.md` § Decisions, A foundation
+reopen). The operator or a session that sees one outside a build raises it by hand.
 
 Under the claim convention, a change to the claim's substance (an area, a Not-ours line, a
 boundary rule, which side defines an interface) is a requirements reopen, and comes to the
