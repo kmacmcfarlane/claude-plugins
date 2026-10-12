@@ -31,3 +31,5 @@ dispatch: reviewer opus high — review round 1 of 4cb0ac3
 agent: reviewer affe530eaa9d397c5
 verdict: review round 1 NEEDS_CHANGES (must-fix 2: medium 1 — Authorization credential of letters with a colon (AdminUserName:FakeSecretPass) passes as words, main caught it (1,664 main-only in 707,616); medium-low 2 — spaced flag and kebab key swallow the opening quote of a following JSON pair, pos = m.start("quote") at both sites; lows: capitalised one-word keys, _PLAIN_RE and _DATE_RE wider than documented, env-var table false positives, empty-user URL, undocumented gaps; patched copies at scratchpad/dc23-review/wi_fix.py and wi_fix2.py)
 dispatch: implementer opus medium — fix round 1 (resume ad174bb9bfc266a07)
+return: DONE b6c6cfe (fix round 1); findings 1-7 applied; found and fixed one extra regression in the reviewer patch (Ws3token: judged as bare key, needs camelCase first); reviewer corpora diff1 x3 seeds, diff2, fuzz seeds 1-9: 0 main-only; real store 0; slowest 2.09s at 2M; work-items 317 OK, kit-dev 18 OK
+dispatch: reviewer opus high — review round 2 of b6c6cfe (resume affe530eaa9d397c5)
