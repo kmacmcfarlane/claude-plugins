@@ -29,3 +29,5 @@ note: 2026-10-12 from 2bc1 review 1 finding 7: librarian decisions.md:129-131 re
 target: librarian decisions.md shows the stored Context every time and reads a context: line as the decisions skill now does (text before " — then: " is the card's Context, after it the block's bullets; a line with no separator is the card's Context as it stands); decision-page cards-schema.md's pointer reworded; decision 160's stored line renders correctly
 dispatch: implementer sonnet medium — build (doc alignment to a landed rule: canonical kind)
 agent: implementer a9e98bb4769db4a60
+return: DONE e0f2f18; dev-flow 78, operator-interaction 138, kit-dev 21 OK; decision 160's line has no separator, renders as the card's Context as it stands, terms then cue; template placeholder also updated
+dispatch: reviewer opus high — review round 1 of e0f2f18
