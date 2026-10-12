@@ -3,12 +3,11 @@ id: wi-lint-bare-lowercase-pass-keys-pw-more-dc23
 title: "wi lint: bare lowercase pass keys, pw, more Authorization forms, spaced args"
 short_display_name: wi lint remaining secret gaps
 type: bug
-status: doing
+status: done
 priority: 4
-owner: Kyle-McFarlane@2d49f8460283
-claimed: 2026-10-12T19:47Z
 created: 2026-10-09
 updated: 2026-10-12
+closed: 2026-10-12
 refs:
   - wi-lint-camelcase-keys-secret-words-insi-ac83
 ---
@@ -33,3 +32,6 @@ verdict: review round 1 NEEDS_CHANGES (must-fix 2: medium 1 — Authorization cr
 dispatch: implementer opus medium — fix round 1 (resume ad174bb9bfc266a07)
 return: DONE b6c6cfe (fix round 1); findings 1-7 applied; found and fixed one extra regression in the reviewer patch (Ws3token: judged as bare key, needs camelCase first); reviewer corpora diff1 x3 seeds, diff2, fuzz seeds 1-9: 0 main-only; real store 0; slowest 2.09s at 2M; work-items 317 OK, kit-dev 18 OK
 dispatch: reviewer opus high — review round 2 of b6c6cfe (resume affe530eaa9d397c5)
+verdict: review round 2 CLEAR (must-fix 0; nit: a code span split across a line in format.md, renders fine, not taken; fresh seeds diff1 x3, diff2 x2, fuzz x8, keyfuzz x2: 0 main-only)
+landed: 171bfb4 (merge of 4cb0ac3..b6c6cfe); Checks 12/12 OK; store lint: no secret findings; cc_scan clean
+- 2026-10-12 done
