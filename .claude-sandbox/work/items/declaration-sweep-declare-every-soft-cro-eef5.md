@@ -28,3 +28,4 @@ dispatch: implementer opus medium — build, run alone (wide README edits)
 agent: implementer a561dcc2863a9c6b3
 return: DONE 942a05e; 12/12 OK; CR-4 already done; CG-7 and SH-3 declared, WI-4 inlined (edge gone), DF-7/SH-4/KD-4/KD-5/WI-5 done; ALLOWED 20 → 11, UNDECLARED 4 → 0
 dispatch: reviewer opus high — review round 1 of 942a05e
+agent: reviewer a6043ac544148d699
