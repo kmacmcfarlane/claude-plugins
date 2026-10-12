@@ -35,3 +35,6 @@ decided: 2026-10-12T23:05Z design — finding 1 option A: a chat block's Context
 dispatch: implementer opus medium — fix round 1 (resume af0c58c783a457a0b)
 return: DONE ba87c56 (fix round 1); operator-interaction 138 OK, kit-dev 21 OK; worksheet "Where you left it" row also aligned
 dispatch: reviewer opus high — review round 2 of ba87c56 (resume a80c72469591f38ff)
+verdict: review round 2 CLEAR (must-fix 0; nits: rulings Not taken lacks the high-size alternative; four lines past the wrap width)
+decided: 2026-10-12T23:40Z cap — a finish round of the two nits (authority answer 145)
+dispatch: implementer opus medium — finish round (resume af0c58c783a457a0b)

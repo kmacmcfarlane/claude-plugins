@@ -3,13 +3,12 @@ id: create-repo-a-moved-foundation-series-re-7b85
 title: "create-repo: a moved foundation series resumes with foundation"
 short_display_name: moved foundation series resumes
 type: feature
-status: doing
+status: done
 priority: 4
 parent: foundation-follow-ups-build-time-reopens-f3d1
-owner: Kyle-McFarlane@2d49f8460283
-claimed: 2026-10-12T21:08Z
 created: 2026-10-09
 updated: 2026-10-12
+closed: 2026-10-12
 refs:
   - create-repo-name-foundation-in-the-boots-0b15
 ---
@@ -31,3 +30,6 @@ return: DONE ef08fbb; one line in launch-command.md; declarations unchanged (non
 dispatch: reviewer opus high — review round 1 of ef08fbb
 note: builder later reported the full kit-dev run: 21 OK
 agent: reviewer ae7ed8bd58eef8962
+verdict: review round 1 CLEAR (must-fix 0; nit: "a skill named here" wording shared with line 25, filed as 1b6a; observation: a series moved after G3 cannot see its G3 approval, filed as be6d)
+landed: 26b2220 (merge of ef08fbb); Checks 12/12 OK; cc_scan clean
+- 2026-10-12 done
