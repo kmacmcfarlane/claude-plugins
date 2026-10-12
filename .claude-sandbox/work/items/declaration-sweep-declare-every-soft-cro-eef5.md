@@ -25,3 +25,4 @@ Follow-up F7 from the plugin-dependency spike (72ef), 2026-10-08. Acceptance: as
 - 2026-10-12 claimed by Kyle-McFarlane@2d49f8460283
 target: as 72ef F7 (with 01, 02 applied): every soft edge in the inventory agrees across source plugin.json, catalog cell and README section, marketplace.json matches plugin.json; DF-7 pointer to the hub's hook-contract.md and statusline-hub owner labels; SH-4 and WI-4 as F7 says; test_declared_edges excuses shrink only; all Checks green
 dispatch: implementer opus medium — build, run alone (wide README edits)
+agent: implementer a561dcc2863a9c6b3
