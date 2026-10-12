@@ -102,15 +102,17 @@ skill when the session lists it, else as a plain lettered list in prose:
 The approval is recorded where the next writer reads it: in the next serial's Confirmed
 Assumptions ("Gate G1 approved by the operator <YYYY-MM-DD>"), and in `INDEX.md`'s
 Foundation block, as the gate's row and its line under Gates passed,
-`G<n> passed <date> (<repo>#<N> | reported | in session)` (`references/state.md` § The
-Foundation block). A reported G2 gets its line too, with the ref `reported`. The line is the series' own record, so a series moved to another
-repo still knows which gates passed; the item's `answer N:` line stays behind in the old
-repo's store, a second source when a session can see it. G3 has no next serial: its
-approval is the item's `answer N:` line and the block's `G3 passed` line. A standalone run
-writes each gate's line when it records the approval. Under an orchestrator the
-orchestrator writes each gate's line itself, right after the approval (or a reported gate's
-`CLEAR`) and before its next dispatch — its only writes in the series; the planner fills
-the gate's row. G3's line comes before any filing (`references/state.md` § The work item).
+`G<n> passed <date> (<repo>#<N> | reported | in session)`, ending ` after <reopen serial>`
+for a gate a reopen re-ran (`references/state.md` § The Foundation block). A reported G2
+gets its line too, with the ref `reported`. The line is the series' own record, so a series
+moved to another repo still knows which gates passed; the item's `answer N:` line stays
+behind in the old repo's store, a second source when a session can see it. G3 has no next
+serial: its approval is the item's `answer N:` line and the block's `G3 passed` line. A
+standalone run writes each gate's line when it records the approval. Under an orchestrator
+the orchestrator writes each gate's line itself, right after the approval (or a reported
+gate's `CLEAR`) and before any next dispatch, or with none to follow, as for a reopen's
+last re-run gate — its only writes in the series; the planner fills the gate's row. G3's
+line comes before any filing (`references/state.md` § The work item).
 
 **Unattended runs.** Requirements belong to the operator, so an unattended run drafts phase 1
 with every question held and stops at gate G1. It never approves a gate itself.

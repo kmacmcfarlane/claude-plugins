@@ -195,8 +195,9 @@ says, with these changes:
 - From the second phase on, the brief carries the previous gate's verdict, its `CLEAR`
   round, and whether it was approved (with the answer and its decision ref) or reported;
   record them in the serial's Confirmed Assumptions and in that gate's row of the
-  Foundation block. The orchestrator writes each gate's Gates passed line itself — its
-  only writes in the series; carry the list forward whole (`references/state.md` § The
+  Foundation block. The orchestrator writes each gate's Gates passed line itself (ending
+  ` after <reopen serial>` for a gate a reopen re-ran) — its only writes in the series;
+  carry the list forward whole (`references/state.md` § The
   Foundation block).
 - Fill the Foundation block's Operator cell for this gate (`references/gates.md` § 3), so
   the orchestrator knows whether to ask.
