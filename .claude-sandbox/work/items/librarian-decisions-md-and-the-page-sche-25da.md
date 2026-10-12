@@ -31,3 +31,4 @@ dispatch: implementer sonnet medium — build (doc alignment to a landed rule: c
 agent: implementer a9e98bb4769db4a60
 return: DONE e0f2f18; dev-flow 78, operator-interaction 138, kit-dev 21 OK; decision 160's line has no separator, renders as the card's Context as it stands, terms then cue; template placeholder also updated
 dispatch: reviewer opus high — review round 1 of e0f2f18
+agent: reviewer aef7a273eff53b181
