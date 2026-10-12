@@ -101,12 +101,14 @@ skill when the session lists it, else as a plain lettered list in prose:
 
 The approval is recorded where the next writer reads it: in the next serial's Confirmed
 Assumptions ("Gate G1 approved by the operator <YYYY-MM-DD>"), and in `INDEX.md`'s
-Foundation block (`references/state.md`). G3 has no next serial: its approval is the
-item's `answer N:` line, and a standalone run also writes it into the Foundation block when
-it regenerates `INDEX.md`. Under an orchestrator, which writes nothing in the series, the
-block keeps the gate's `CLEAR` and the item's line is the record: a done foundation item,
-or that `answer N:` line, marks gate G3 passed (`references/state.md` § The Foundation
-block).
+Foundation block, as the gate's row and its `G<n> passed <date> (<ref>)` line under Gates
+passed (`references/state.md` § The Foundation block). A reported G2 gets its line too,
+with the ref `reported`. The line is the series' own record, so a series moved to another
+repo still knows which gates passed; the item's `answer N:` line stays behind in the old
+repo's store, a second source when a session can see it. G3 has no next serial: its
+approval is the item's `answer N:` line and the block's `G3 passed` line, which a
+standalone run writes when it records the approval and an orchestrator writes after it,
+before filing (`references/state.md` § The work item).
 
 **Unattended runs.** Requirements belong to the operator, so an unattended run drafts phase 1
 with every question held and stops at gate G1. It never approves a gate itself.

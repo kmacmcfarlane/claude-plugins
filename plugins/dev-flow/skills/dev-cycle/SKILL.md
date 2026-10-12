@@ -180,8 +180,9 @@ the plan agent revises, by a new serial.
   Step 6. An answer to revise or reopen dispatches the planner with the operator's words
   instead, and the gate re-runs. **At gate G3** the plan decision always goes to the
   operator, carrying a short architecture summary when gate G2 was reported rather than
-  approved; after they approve it, file the work and close the item exactly as the
-  `foundation` skill's `references/state.md` § The work item says, then Step 6.
+  approved; after they approve it, write the series' `G3 passed` line, file the work
+  and close the item exactly as the `foundation` skill's `references/state.md` § The work
+  item says, then Step 6.
 - **A feature in full mode:** no separate dispatch; the implementer runs /investigate
   then /implement in its worktree, each in its orchestrated mode (each skill's § Running
   under an orchestrator), as the brief's dev-flow block directs
