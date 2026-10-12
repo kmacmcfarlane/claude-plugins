@@ -36,7 +36,7 @@ append that clause after the template one), and replace the sentence beginning "
 the thread's first investigation" with:
 
 ```
-Then read that series and extend it rather than starting a new one: use the investigate skill (dev-flow plugin) if this session has it, writing the next serial after the highest one there, never a new 00; otherwise add your findings and the proposed next steps as a new file at that next serial. If that directory is not here yet, the series has not been moved: move it from OLD as the investigate skill describes if you can reach it, otherwise ask me where it is.
+Then read that series and continue it rather than starting a new one: if its INDEX.md has a `## Foundation` block, resume it with the foundation skill (dev-flow plugin) if this session has it; in any other case, or without that skill, extend it with the investigate skill (dev-flow plugin) if this session has it, writing the next serial after the highest one there, never a new 00; otherwise add your findings and the proposed next steps as a new file at that next serial; if a skill named here is missing from this session, say which one in one clause of your reply. If that directory is not here yet, the series has not been moved: move it from OLD as the investigate skill describes if you can reach it, otherwise ask me where it is.
 ```
 
 SLUG and OLD passed Step 1's check (SKILL.md), so each is one line with no newline to
