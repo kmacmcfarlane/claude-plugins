@@ -30,3 +30,5 @@ correction: 2026-10-13 I named this follow-up 63c4 to the operator twice; its ta
 return: DONE e903e68; 12/12 OK; new bullet "A moved series past G3" in state.md § The work item, SKILL.md § Usage pointer; keys on a Moved from note and no item ref-ing the series path; new item --ref series path, first note carries the G3 line from the old repo
 dispatch: reviewer opus high — review round 1 of e903e68
 agent: reviewer a224d4b920c6f7d94
+verdict: review round 1 NEEDS_CHANGES (must-fix 2: medium-high — trigger fires on a series moved before G3 whose gates passed here (Frame adds the item without --ref), re-filing every feature; medium — the ref search is unnamed and the default wi ls misses done and archived items; should-fix: Item: (was …) not in the template, readers taking the field whole fail; lows: never-re-files wording, no wi found, resume S7 moved case, crash between add and regeneration)
+dispatch: implementer opus medium — fix round 1 (resume a456e958153f73c9a)
