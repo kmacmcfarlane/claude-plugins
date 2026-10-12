@@ -27,3 +27,5 @@ dispatch: implementer opus medium — build
 - 2026-10-12 claimed by Kyle-McFarlane@2d49f8460283
 agent: implementer a456e958153f73c9a
 correction: 2026-10-13 I named this follow-up 63c4 to the operator twice; its tag is 2298. A dispatch record I wrote with an empty id landed in a stray items/.md file and was folded back into this item.
+return: DONE e903e68; 12/12 OK; new bullet "A moved series past G3" in state.md § The work item, SKILL.md § Usage pointer; keys on a Moved from note and no item ref-ing the series path; new item --ref series path, first note carries the G3 line from the old repo
+dispatch: reviewer opus high — review round 1 of e903e68
