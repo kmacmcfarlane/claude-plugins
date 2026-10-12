@@ -148,9 +148,10 @@ renders; the runner lints a level whose shape is off (SKILL.md step 2).
   clickable in the medium and high renditions, in the fold parts at every level and in the
   **More** detail; never in a heading, a visible part's summary, the Impact table, an option's
   `impact` line, `act`, the popup or a slug.
-- `context`: Context at more detail, under the same label. Its high holds the facts a cold
-  reader has lost (the decisions block's *Context you may have lost*: what was tried, what was
-  answered before, where a list or number came from). The tick-box doc, which cannot toggle,
+- `context`: Context at more detail, under the same label. Its high holds the further facts
+  the decisions block carries after the card's Context (the `decisions` skill's
+  `references/rendering.md` § Context: what was tried, what was answered before, where a
+  list or number came from). The tick-box doc, which cannot toggle,
   shows Context at its high (`references/fallback.md`).
 - `impact`: facet objects in the decisions skill's one vocabulary, `effect` required, across
   all the options as the summary is. At medium, one terse bullet per facet, shown with its
