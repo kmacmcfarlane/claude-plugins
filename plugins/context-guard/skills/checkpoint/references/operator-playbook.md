@@ -316,7 +316,7 @@ escape hatches:
 
 ```bash
 P="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/plugins"
-MC="$(python3 - "$P/installed_plugins.json" 2>/dev/null <<'PY'
+MC="$(python3 -I - "$P/installed_plugins.json" 2>/dev/null <<'PY'
 import json, os, sys
 es = json.load(open(sys.argv[1]))["plugins"]["context-guard@kmacmcfarlane"]
 cwd = os.path.realpath(os.getcwd())

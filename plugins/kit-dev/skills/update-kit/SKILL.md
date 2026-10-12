@@ -347,7 +347,7 @@ After writing each file to the template, run a verification scan:
 
 ```bash
 # Extract project name from backlog.yaml
-PROJECT_NAME=$(python3 -c "
+PROJECT_NAME=$(python3 -I -c "
 from ruamel.yaml import YAML
 data = YAML().load(open('agent/backlog.yaml'))
 print(data.get('project', ''))
