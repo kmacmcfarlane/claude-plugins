@@ -38,7 +38,10 @@ of how big the change feels.
    `Supersedes` block naming each changed artifact by serial, section and id, then the
    change, then the impact list. Revise the touched artifacts in the same serial, or in the
    next when the revision is large. An ADR is never edited: a new ADR supersedes it, and the
-   old one's Status line is restated as superseded in the new serial.
+   old one's Status line is restated as superseded in the new serial. The `INDEX.md`
+   regenerated with it marks the gate it re-runs, and every later gate its impact list
+   names, `re-run after <this serial>` in that gate's row (`references/state.md` § The
+   Foundation block).
 4. **Re-run the gate on the delta.** The reviewer gets the reopen serial and the impact
    list, not the whole phase (`references/gates.md` § 2). The operator approves per the
    gate's rule; a requirements reopen always comes to them.

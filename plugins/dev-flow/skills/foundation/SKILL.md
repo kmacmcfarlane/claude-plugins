@@ -26,7 +26,10 @@ their templates are in `references/artifacts.md`.
 - A phase (`requirements`, `architecture`, `plan`, or `all` for a lite run) runs that one
   phase and its gate: the form an orchestrator dispatches (§ Running under an orchestrator).
 - An existing foundation slug resumes it: read the whole series and its `INDEX.md`
-  Foundation block, and take up the first gate not passed.
+  Foundation block, and take up the first gate not passed. Gate status is read from the
+  series first, the block's Gates passed lines, so a series moved to another repo resumes
+  where it stopped; the foundation item, when visible, is a second source
+  (`references/state.md` § The Foundation block).
 
 **The floor.** When the result could be described in one sentence, this is not a foundation
 session: use `investigate`, or no plan at all.
@@ -123,9 +126,10 @@ Features table, so `implement` and `dev-cycle` accept the series. Regenerate the
 
 ## Step 4 — File the work
 
-After the operator approves gate G3, with a store: file the features, groom the ones a hold
-blocks, file the factored-out aspects still unfiled, and close the foundation item, exactly
-as `references/state.md` § The work item says. Without a store, or with `no wi found`, the
+After the operator approves gate G3, record its `G3 passed` line in the Foundation block;
+then, with a store, file the features, groom the ones a hold blocks, file the factored-out
+aspects still unfiled, and close the foundation item, exactly as `references/state.md`
+§ The work item says. Without a store, or with `no wi found`, the
 Report lists the features to file.
 
 ## Step 5 — Report
@@ -189,9 +193,12 @@ says, with these changes:
 - Ask nothing. Each question you would ask is an Open Question marked blocking or not;
   the prompt list still runs, its unanswered prompts held.
 - From the second phase on, the brief carries the previous gate's verdict, its `CLEAR`
-  round, and whether it was approved (with the answer) or reported; record them in the
-  serial's Confirmed Assumptions and in that gate's row of the Foundation block
-  (`references/state.md` § The Foundation block).
+  round, and whether it was approved (with the answer and its decision ref) or reported;
+  record them in the serial's Confirmed Assumptions and in that gate's row of the
+  Foundation block. The orchestrator writes each gate's Gates passed line itself (ending
+  ` after <reopen serial>` for a gate a reopen re-ran) — its only writes in the series;
+  carry the list forward whole (`references/state.md` § The
+  Foundation block).
 - Fill the Foundation block's Operator cell for this gate (`references/gates.md` § 3), so
   the orchestrator knows whether to ask.
 - A fix round, or a reopen the brief names, is a new serial with a `Supersedes` block.

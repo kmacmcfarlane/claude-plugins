@@ -277,14 +277,24 @@ Run /dev-flow:foundation <slug> <phase> in its orchestrated mode — <phase> is
 requirements, architecture, plan, or all for a lite run. One phase only: write its serial
 and regenerate INDEX.md with its Foundation block, at the Series home.
 <from the second phase on:> The previous gate, <G1|G2>: verdict CLEAR at review round
-<n>; <approved by the operator <YYYY-MM-DD>: <the recorded answer, verbatim> | reported,
-not asked (no one-way ADR, no claim change)>. Record it in the serial's Confirmed
-Assumptions and in the Foundation block's row for that gate: its Gate cell
-(CLEAR round <n>), Operator cell and Approved cell.
+<n>; <approved by the operator <YYYY-MM-DD>, decision <repo>#<N>: <the recorded answer,
+verbatim> | approved in session <YYYY-MM-DD>: <the answer, verbatim> | reported, not asked
+(no one-way ADR, no claim change)>. Record it in the serial's Confirmed Assumptions and in
+the Foundation block's row for that gate: its Gate cell (CLEAR round <n>), Operator cell
+and Approved cell. Carry the Gates passed list forward whole; the orchestrator writes its
+lines.
 <a revise or reopen answer:> The operator asked to <revise | reopen <phase>>: <their words,
 verbatim>. Write it as the next serial (a reopen as NN_reopen-<what>.md, with its impact
 list) per that skill's references/moves.md.
 ```
+
+Right after each gate's approval (or a reported gate's `CLEAR`), and before any next
+dispatch, or with none to follow, as for a reopen's last re-run gate, the orchestrator
+writes that gate's line under Gates passed in the series' `INDEX.md` itself:
+`<G1|G2> passed <YYYY-MM-DD> (<repo>#<N> | reported | in session)`, ending
+` after <reopen serial>` for a gate a reopen re-ran.
+These lines, and G3's, are its only writes in the series (the `foundation` skill's
+`references/state.md` § The Foundation block).
 
 The dispatch that opens a gate's phase — each phase's first dispatch, and the one an
 operator's revise or reopen answer opens — adds `foundation <phase>` to its signal,
