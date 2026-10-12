@@ -1,6 +1,6 @@
 {
   "name": "ralph",
-  "description": "Unattended agent loops over a backlog — the backlog.yaml workflow for ralph runs. Requires the claude-sandbox tool (see the sandbox plugin); consumes a work source through the work-source interface, with backlog.yaml as the default provider (soft dependency: work-items, whose work-source provider interface it implements, and whose wi the backlog-yaml bridge commands run, found in the repo's tree or the installed plugin, and not run, saying so, without it).",
+  "description": "Unattended agent loops over a backlog — the backlog.yaml workflow for ralph runs. Requires the claude-sandbox tool (external); consumes a work source through the work-source interface, with backlog.yaml as the default provider (soft dependencies: sandbox, whose skill bootstraps and troubleshoots the claude-sandbox containers the loops run in, and which ralph's skills never call; work-items, whose work-source provider interface it implements, and whose wi the backlog-yaml bridge commands run, found in the repo's tree or the installed plugin, and not run, saying so, without it).",
   "author": {
     "name": "Kyle McFarlane"
   },

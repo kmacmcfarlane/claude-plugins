@@ -83,14 +83,14 @@ claude-plugins/
     │   └── skills/
     │       ├── {checkpoint,usage-report}/
     │       ├── checkpoint/scripts/  (context_forensics.py: where a session's context went, from its transcript)
-    │       └── usage-report/scripts/ (usage_report.py + prices.json: token-spend accounting)
+    │       └── usage-report/scripts/ (usage_report.py + item_spend.py + prices.json: token-spend accounting, and one item's spend by agent id)
     ├── create-repo/           (start a new repo for a thread of work, with a session launched on it)
     │   └── skills/create-repo/ (references/launch-command.md)
     ├── dev-flow/              (plan before you code; research into findings or a knowledge base; the librarian that takes custody of a repo)
     │   ├── agents/            (scribe, scout, implementer, implementer-critical, implementer-deep, planner, planner-deep, reviewer, reviewer-light, cross-checker, cross-checker-deep — the dev cycle's role workers; research-lane, research-lane-deep, research-verifier — the research family's workers)
     │   ├── skills/
-    │   │   ├── {investigate,implement,dev-cycle,deep-investigation,research,research-deep,research-refine,research-prune,chain-of-verification,librarian-mode}/
-    │   │   ├── research/scripts/ (tool-preflight.sh + tests)
+    │   │   ├── {investigate,implement,dev-cycle,foundation,deep-investigation,research,research-deep,research-refine,research-prune,chain-of-verification,librarian-mode}/
+    │   │   ├── research/scripts/ (tool-preflight.sh, scan-findings.py: the scan floor under the verifier + tests)
     │   │   └── librarian-mode/scripts/ (quota_budget.py: the librarian's quota sense + tests)
     │   └── tests/             (test_agents.py: every agent file's model and effort pin;
     │                           test_deep_investigation.py: deep-investigation's security parity)
@@ -99,8 +99,11 @@ claude-plugins/
     │   └── tests/             (test_standalone.py: each plugin's suites alone; test_declared_edges.py: cross-plugin references declared)
     ├── operator-interaction/  (the agent-operator interface, starting with how decisions are raised and shown)
     │   └── skills/
-    │       ├── decisions/     (references/{worksheet,rendering,replies,evidence-basis,rationale,gallery}.md)
-    │       └── plain-names/   (plain names for what agents mention, the id a trailing tag)
+    │       ├── decisions/     (references/{worksheet,rendering,replies,evidence-basis,rationale,rulings,gallery}.md)
+    │       ├── plain-names/   (plain names for what agents mention, the id a trailing tag)
+    │       └── decision-page/ (a set of decisions as an answer page: the page template, its schema and the pre-publish check)
+    ├── ownership/             (each repo's ownership claim, CLAIM.md)
+    │   └── skills/claim-md/   (the claim's format and the read-only claim check + tests)
     ├── ralph/                 (unattended agent loops over a backlog)
     │   └── skills/{backlog-yaml,backlog-entry,backlog-grooming}/
     ├── sandbox/               (isolated execution: claude-sandbox + checkout/worktree convention — a hook-owning plugin)

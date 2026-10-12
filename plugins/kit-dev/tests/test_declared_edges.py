@@ -58,29 +58,9 @@ OWNED_PATHS = {
 # undeclared real dependency belongs in the plugin's description and catalog cell, not
 # here; see UNDECLARED below for the ones still open.
 ALLOWED = {
-    # context-guard: dev-flow skill names as examples of a resume command a manifest may
-    # carry, and as fixtures for that field; context-guard runs the same without dev-flow
-    # (spike 72ef CG-8).
-    ("context-guard/skills/checkpoint/references/handoff-format.md", "dev-flow",
-     "(e.g. `/dev-flow:librarian-mode start`)"): "example resume command",
-    ("context-guard/skills/checkpoint/references/handoff-format.md", "dev-flow",
-     "(e.g. `/dev-flow:implement 8cc2-turn-gate-port`)"): "example resume command",
-    ("context-guard/skills/checkpoint/references/operator-playbook.md", "dev-flow",
-     "/dev-flow:librarian-mode start — Read (the Read tool)"): "example resume command",
-    ("context-guard/skills/checkpoint/references/design-rationale.md", "dev-flow",
-     "investigate skill on every run"): "a past finding about one skill's reads, history",
-    ("context-guard/hooks/tests/test_rehydrate.py", "dev-flow",
-     'NS = "/dev-flow:implement 8cc2-turn-gate-port"'): "fixture skill name",
-    ("context-guard/hooks/tests/test_rehydrate.py", "dev-flow",
-     "mode_skill: /dev-flow:librarian-mode start"): "fixture skill name",
-    ("context-guard/hooks/tests/test_rehydrate.py", "dev-flow",
-     "re-enter it first with `/dev-flow:librarian-mode start`"): "fixture skill name",
-    ("context-guard/hooks/tests/test_window_mirror.py", "dev-flow",
-     'self.warn("/dev-flow:librarian-mode")'): "fixture skill name",
-    # context-guard: the bare-/checkpoint scan's list of files it must see (item aebc).
-    ("context-guard/hooks/tests/test_checkpoint_namespaced.py", "dev-flow",
-     '"plugins/dev-flow/skills/librarian-mode/SKILL.md",'):
-        "a repo scan's list of files it guards, not a use",
+    # context-guard: the bare-/checkpoint scan's list of files it must see (item aebc). Its
+    # dev-flow mentions (the resume-command examples and fixtures, and this scan's
+    # librarian-mode entry) are covered by context-guard's declared dev-flow edge since F7.
     ("context-guard/hooks/tests/test_checkpoint_namespaced.py", "statusline",
      '"plugins/statusline/settings.json",'):
         "a repo scan's list of files it guards, not a use",
@@ -99,7 +79,8 @@ ALLOWED = {
     # work-items: a credit to the step that closes items on landing (72ef WI-5); the other
     # provider of the interface and its grooming skill, declared from ralph's side (WI-1);
     # and `implement` as an item stage name, not the skill.
-    ("work-items/skills/work-items/SKILL.md", "dev-flow", "`implement` Step 10a"): "credit",
+    ("work-items/skills/work-items/SKILL.md", "dev-flow",
+     "`implement`'s \"Update the work item\" step"): "credit",
     ("work-items/skills/work-items/references/provider-interface.md", "ralph",
      "(the `backlog-yaml` skill, canonical"): "names the other provider",
     ("work-items/skills/work-items/references/provider-interface.md", "ralph",
@@ -111,27 +92,10 @@ ALLOWED = {
 }
 
 # (source file relative to plugins/, target plugin, a substring of the referencing line)
-# -> the follow-up that declares it. Real dependencies that are not yet declared: each is a
-# finding for the declaration sweep (spike 72ef F7), which removes its entries as they land.
-# Listed so the lint passes meanwhile.
-UNDECLARED = {
-    # The research quota read points at statusline's install-statusline references for the
-    # safe_sid rules (72ef DF-7); F7 moves the pointer to the hub's hook-contract.md.
-    ("dev-flow/skills/research/references/intensity-and-routing.md", "statusline",
-     "`safe_sid` rules are in `statusline`'s `install-statusline` references"): "F7 (DF-7)",
-    # The hub treats an entry naming context-guard's old footer copy as the footer's entry
-    # (72ef SH-3): owner.py names that copy's data-dir home, and the tests fingerprint its
-    # path. The copy itself is gone (a95a), but entries that still name it are what the hub
-    # takes over, so the name stays; F7 declares it.
-    ("statusline-hub/hooks/owner.py", "context-guard",
-     'FOOTER_HOMES = (STATUSLINE, "context-guard"'): "F7 (SH-3)",
-    ("statusline-hub/hooks/tests/test_owner.py", "context-guard",
-     "/plugins/data/context-guard-"): "F7 (SH-3)",
-    # work-items points at the sandbox skill for worktree-mode details (72ef WI-4); F7
-    # inlines or declares.
-    ("work-items/skills/work-items/SKILL.md", "sandbox", "the sandbox skill's worktree-mode"):
-        "F7 (WI-4)",
-}
+# -> the follow-up that declares it. Real dependencies that are not yet declared, listed so
+# the lint passes meanwhile. None is open: the declaration sweep (spike 72ef F7) declared or
+# removed every one. A new entry here names the item that will declare it.
+UNDECLARED = {}
 
 EXCUSES = {**ALLOWED, **UNDECLARED}
 
