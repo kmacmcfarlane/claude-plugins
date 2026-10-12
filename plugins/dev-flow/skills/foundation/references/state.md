@@ -46,7 +46,7 @@ the guard. No phase-1 or phase-2 serial carries a placeholder section.
 ```markdown
 ## Foundation
 
-Size: full | lite · Mode: new | retrofit · Item: <wi id | none>
+Size: full | lite · Mode: new | retrofit · Item: <wi id | none>[ (was <old-repo>:<id>)]
 
 | Phase | Serial | Gate | Operator | Approved |
 |---|---|---|---|---|
@@ -101,7 +101,14 @@ Size: full | lite · Mode: new | retrofit · Item: <wi id | none>
   written): a gate is passed when it is `CLEAR` and its Operator cell is `reported`, or its
   Approved cell is a date. And a gate's line means every earlier gate passed, except a gate
   a reopen is re-running (above). A resume never re-runs a passed gate or re-files a
-  feature already filed; a deliberate reopen is a move (`references/moves.md`).
+  feature already filed in this repo's store (a moved series past G3 files here, § The
+  work item); a deliberate reopen is a move (`references/moves.md`).
+- **Item**: the foundation item's id, or `none`. A reader takes the id from `Item:`'s first
+  word; `(was …)` is a note, written when a moved series files under a new item here
+  (§ The work item, A moved series past G3).
+- **Moved from**: the note a moved series' `INDEX.md` carries under its provenance line
+  (the `investigate` skill's `references/investigation-format.md`) is carried forward on
+  every regeneration.
 - Under an orchestrator the planner writes all of the block but the Gates passed lines.
   From the second phase on, the brief carries the previous gate's verdict, its `CLEAR`
   round, and whether it was approved (with the answer, its date and its decision ref) or
@@ -126,6 +133,7 @@ it to know which gate a `CLEAR` was for.
 
 When the repo has a work-item store (the `work-items` skill), one item carries the run:
 
+- **File** it at Frame with `--ref <series path>`, so a moved series still finds it.
 - **Claim** it at Frame when standalone; an orchestrator claims it under its own rules.
 - **Handoff** after every gate: `$WI handoff <id>` naming the series, the gate passed and
   the next phase (`--next "phase 2: architecture"`). The item stays open until gate G3.
@@ -147,20 +155,25 @@ When the repo has a work-item store (the `work-items` skill), one item carries t
   4. File each factored-out aspect that has no item yet: `$WI add … --parent <id>`, or
      `--ref <series path>` for an aspect that belongs to another repo.
   5. `$WI done <id> --note <series path>`.
-- **A filing cut short.** A `G3 passed` line with the foundation item not done means the
+- **A filing cut short.** A `G3 passed` line with the foundation item (the block's
+  `Item:`, or in a moved series the item that refs the series path) not done means the
   list stopped after step 1: a resume continues it at step 2, filing only the features and
   aspects with no item whose `parent:` is the foundation item yet, then step 5. That
   finishes G3; it is not a re-run or a re-file.
 - **A moved series past G3.** A resume that finds the `G3 passed` line in a series moved
-  here (its `INDEX.md` has a `Moved from` note), when no item in this repo's store refs
-  the series path, re-runs no gate and files nothing in the old repo. With a store:
+  here (its `INDEX.md` has a `Moved from` note), when the block's `Item:` id (the field's
+  first word) names no item in this repo's store (`$WI show <id>` exits 2) and no item
+  here refs the series path (`$WI ls --status all --json`, which reads done and archived
+  items too: an item whose `refs` holds the path as written), re-runs no gate and files
+  nothing in the old repo. With a store:
   `$WI add` a new foundation item with `--ref <series path>`, its first note
   `G3 passed <date> (<ref>) carried from <old-repo>` quoting the Gates passed line, so the
   original approval stands and no second one is asked; the note also names the old repo's
   items the series records (the block's `Item:`, any filed feature) as `<old-repo>:<id>`.
-  Regenerate `INDEX.md` then, its `Item:` the new id `(was <old-repo>:<id>)`, and run
-  steps 2–5 above under the new item; a cut-short filing resumes as above. With no store,
-  the Report lists the features to file, naming those old items the same way.
+  Regenerate `INDEX.md` then, its `Item:` the new id, followed by `(was <old-repo>:<id>)`
+  only when the old `Item:` was an id, and run steps 2–5 above under the new item; a
+  cut-short filing resumes as above. With no store, or with `no wi found`, the Report
+  lists the features to file, naming those old items the same way.
 - **Factored-out aspects** are filed when factored out where the run can (standalone);
   step 4 above files any that are still unfiled, which is every one under an orchestrator.
 - **After a later reopen** passes its gates, the orchestrator (`dev-cycle`), or the
