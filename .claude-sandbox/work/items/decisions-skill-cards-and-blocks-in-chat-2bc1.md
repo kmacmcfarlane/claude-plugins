@@ -33,3 +33,5 @@ agent: reviewer a80c72469591f38ff
 verdict: review round 1 NEEDS_CHANGES (must-fix 2: block size rule says high for a ⚠ or wide cold block, but both gallery blocks and the test are medium; "New to you:" is stored and goes stale on every re-show; minors: card 87 restates What, ruling omits two build designs, sentence counter misses lowercase starts; info: librarian reads cue-only context lines as block facts (decision 160 open) — added to 25da)
 decided: 2026-10-12T23:05Z design — finding 1 option A: a chat block's Context is the page's medium size; high stays a page-only level
 dispatch: implementer opus medium — fix round 1 (resume af0c58c783a457a0b)
+return: DONE ba87c56 (fix round 1); operator-interaction 138 OK, kit-dev 21 OK; worksheet "Where you left it" row also aligned
+dispatch: reviewer opus high — review round 2 of ba87c56 (resume a80c72469591f38ff)
