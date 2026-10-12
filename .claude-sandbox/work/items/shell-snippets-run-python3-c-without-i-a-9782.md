@@ -3,12 +3,11 @@ id: shell-snippets-run-python3-c-without-i-a-9782
 title: "shell snippets run python3 -c without -I: a json.py in the cwd runs"
 short_display_name: python snippets without -I
 type: bug
-status: doing
+status: done
 priority: 2
-owner: Kyle-McFarlane@2d49f8460283
-claimed: 2026-10-12T19:47Z
 created: 2026-10-12
 updated: 2026-10-12
+closed: 2026-10-12
 refs:
   - one-way-to-reach-wi-from-outside-work-it-b9e4
 ---
@@ -36,3 +35,6 @@ dispatch: reviewer opus high — review round 2 of c11ed0b (resume a6051b1f85c3f
 verdict: review round 2 CLEAR (must-fix 0; nits: pipe form caught only at end of line (widened pattern given, nothing in plugins today); stale comment at test line 28; accepted gaps: python3 <f.py with no space, -uc combined, flags with arguments, ${PY:-python3})
 decided: 2026-10-12T21:15Z cap — a finish round of nits 1 and 3, exact (authority answer 145)
 dispatch: implementer sonnet medium — finish round (resume a2a41b98a71a74186)
+verdict: finish round CLEAR — diff read: widened pipe pattern, four flag cases and one accept case, comment
+landed: 1fc17db (merge of b0d262a..2a2b21e); Checks 12/12 OK (kit-dev 21); cc_scan clean
+- 2026-10-12 done
