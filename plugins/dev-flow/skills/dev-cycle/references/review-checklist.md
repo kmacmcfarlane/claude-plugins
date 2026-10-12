@@ -295,7 +295,7 @@ change — they come on top of the generic ones, never instead of them.
 - [ ] Each Checks-binding command exits 0.
 - [ ] The `work-items` skill touched → wi tests green.
 - [ ] A plugin's `hooks/` touched → that plugin's hook tests green.
-- [ ] Any `scripts/*.py` touched → at least `python3 -m py_compile` on it.
+- [ ] Any `scripts/*.py` touched → at least `python3 -I -m py_compile` on it.
 - [ ] Any `.sh` touched → `bash -n` on it.
 
 ```bash
@@ -303,7 +303,7 @@ git -C $W -c core.quotePath=false diff --name-only $BASE...HEAD | grep -q '/skil
   (cd $W/plugins/*/skills/work-items && python3 -m unittest discover -s tests -q)
 for h in $(git -C $W -c core.quotePath=false diff --name-only $BASE...HEAD | grep -o '^plugins/[^/]*/hooks' | sort -u); do
   (cd $W/$h && python3 -m unittest discover -s tests -q); done
-for p in $(git -C $W -c core.quotePath=false diff --name-only $BASE...HEAD | grep '\.py$'); do python3 -m py_compile $W/$p && echo "ok $p"; done
+for p in $(git -C $W -c core.quotePath=false diff --name-only $BASE...HEAD | grep '\.py$'); do python3 -I -m py_compile $W/$p && echo "ok $p"; done
 for p in $(git -C $W -c core.quotePath=false diff --name-only --diff-filter=d $BASE...HEAD | grep '\.sh$'); do bash -n $W/$p && echo "ok $p"; done
 # then, from $W, each command in the Checks binding, one per line
 ```
@@ -320,7 +320,7 @@ for p in $(git -C $W -c core.quotePath=false diff --name-only --diff-filter=d $B
       `allowCrossMarketplaceDependenciesOn` is set.
 
 ```bash
-for j in $(git -C $W -c core.quotePath=false diff --name-only $BASE...HEAD | grep '\.json$'); do python3 -m json.tool $W/$j >/dev/null && echo "ok $j" || echo "FAIL $j"; done
+for j in $(git -C $W -c core.quotePath=false diff --name-only $BASE...HEAD | grep '\.json$'); do python3 -I -m json.tool $W/$j >/dev/null && echo "ok $j" || echo "FAIL $j"; done
 test -f $W/.claude-plugin/marketplace.json && python3 -I -c "import json,os,sys; m=json.load(open('$W/.claude-plugin/marketplace.json')); names={p['name'] for p in m['plugins']}; disk=set(os.listdir('$W/plugins')); print('marketplace==disk' if names==disk else 'FAIL: '+str(names^disk))"
 test -f $W/.claude-plugin/marketplace.json && python3 -I - "$W" <<'EOF'
 import json, os, re, sys
