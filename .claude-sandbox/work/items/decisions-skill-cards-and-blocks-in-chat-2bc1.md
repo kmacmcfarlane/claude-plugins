@@ -3,12 +3,11 @@ id: decisions-skill-cards-and-blocks-in-chat-2bc1
 title: "decisions skill: cards and blocks in chat get a Context section like the decision page"
 short_display_name: Context section in chat cards
 type: feature
-status: doing
+status: done
 priority: 2
-owner: Kyle-McFarlane@2d49f8460283
-claimed: 2026-10-12T20:43Z
 created: 2026-10-12
 updated: 2026-10-12
+closed: 2026-10-12
 refs:
   - operator, chat 2026-10-12
 ---
@@ -38,3 +37,6 @@ dispatch: reviewer opus high — review round 2 of ba87c56 (resume a80c72469591f
 verdict: review round 2 CLEAR (must-fix 0; nits: rulings Not taken lacks the high-size alternative; four lines past the wrap width)
 decided: 2026-10-12T23:40Z cap — a finish round of the two nits (authority answer 145)
 dispatch: implementer opus medium — finish round (resume af0c58c783a457a0b)
+verdict: finish round CLEAR — word diff: only the Not taken addition; rewraps
+landed: 9cfaa85 (merge of 2dd7a22..f5d237c); Checks 12/12 OK (operator-interaction 138); cc_scan clean
+- 2026-10-12 done
