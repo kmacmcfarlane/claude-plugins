@@ -30,3 +30,6 @@ agent: implementer af0c58c783a457a0b
 return: DONE 2dd7a22; 12/12 OK (operator-interaction 137); order title → What → Context → Impact → Why now → Why ask → options; cue folds into Context as its last clause; stored context: line reused, older cards render as before; ruling recorded with the operator's words as direction; follow-ups filed as librarian-decisions-md-and-the-page-sche-25da
 dispatch: reviewer opus high — review round 1 of 2dd7a22
 agent: reviewer a80c72469591f38ff
+verdict: review round 1 NEEDS_CHANGES (must-fix 2: block size rule says high for a ⚠ or wide cold block, but both gallery blocks and the test are medium; "New to you:" is stored and goes stale on every re-show; minors: card 87 restates What, ruling omits two build designs, sentence counter misses lowercase starts; info: librarian reads cue-only context lines as block facts (decision 160 open) — added to 25da)
+decided: 2026-10-12T23:05Z design — finding 1 option A: a chat block's Context is the page's medium size; high stays a page-only level
+dispatch: implementer opus medium — fix round 1 (resume af0c58c783a457a0b)

@@ -20,3 +20,4 @@ From 2bc1's build, 2026-10-12: dev-flow librarian-mode references/decisions.md s
 - next: —
 - blocked: —
 - learned: —
+note: 2026-10-12 from 2bc1 review 1 finding 7: librarian decisions.md:129-131 reads a context: line with no " — then: " as a block's facts to backfill, while rendering.md now shows it as the card's Context as it stands; decision 160 (20d8, deferred) has such a line; align them
