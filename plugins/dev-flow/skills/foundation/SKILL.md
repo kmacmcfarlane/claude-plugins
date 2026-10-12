@@ -29,7 +29,10 @@ their templates are in `references/artifacts.md`.
   Foundation block, and take up the first gate not passed. Gate status is read from the
   series first, the block's Gates passed lines, so a series moved to another repo resumes
   where it stopped; the foundation item, when visible, is a second source
-  (`references/state.md` § The Foundation block).
+  (`references/state.md` § The Foundation block). A moved series with G3 passed and no
+  foundation item here files its features here under a new one, carrying the original
+  approval, or lists them with no store; it never re-runs a gate or re-files in the old
+  repo (`references/state.md` § The work item, A moved series past G3).
 
 **The floor.** When the result could be described in one sentence, this is not a foundation
 session: use `investigate`, or no plan at all.

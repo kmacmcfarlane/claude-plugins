@@ -151,6 +151,16 @@ When the repo has a work-item store (the `work-items` skill), one item carries t
   list stopped after step 1: a resume continues it at step 2, filing only the features and
   aspects with no item whose `parent:` is the foundation item yet, then step 5. That
   finishes G3; it is not a re-run or a re-file.
+- **A moved series past G3.** A resume that finds the `G3 passed` line in a series moved
+  here (its `INDEX.md` has a `Moved from` note), when no item in this repo's store refs
+  the series path, re-runs no gate and files nothing in the old repo. With a store:
+  `$WI add` a new foundation item with `--ref <series path>`, its first note
+  `G3 passed <date> (<ref>) carried from <old-repo>` quoting the Gates passed line, so the
+  original approval stands and no second one is asked; the note also names the old repo's
+  items the series records (the block's `Item:`, any filed feature) as `<old-repo>:<id>`.
+  Regenerate `INDEX.md` then, its `Item:` the new id `(was <old-repo>:<id>)`, and run
+  steps 2–5 above under the new item; a cut-short filing resumes as above. With no store,
+  the Report lists the features to file, naming those old items the same way.
 - **Factored-out aspects** are filed when factored out where the run can (standalone);
   step 4 above files any that are still unfiled, which is every one under an orchestrator.
 - **After a later reopen** passes its gates, the orchestrator (`dev-cycle`), or the
