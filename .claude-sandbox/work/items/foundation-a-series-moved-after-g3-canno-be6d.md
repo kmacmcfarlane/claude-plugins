@@ -33,3 +33,5 @@ verdict: review round 1 NEEDS_CHANGES (must-fix 4: high — dev-cycle SKILL.md a
 dispatch: implementer opus medium — fix round 1 (resume a6352961bcd58ea3f)
 return: DONE 81198db (fix round 1); 12/12 OK; dev-cycle SKILL.md 4997 words; orchestrator G1/G2 line instruction placed in agent-brief.md
 dispatch: reviewer opus high — review round 2 of 81198db (resume a465df0b41e988bf4)
+verdict: review round 2 NEEDS_CHANGES (must-fix 2, down from 4: high — a row reading re-run after X can still pass by an earlier line, a later gate's line, an Approved date or the earlier answer, so a cut-short requirements reopen reads as approved; medium — the writers' line formats lack the after <reopen serial> ending and the paragraph is tied to a next dispatch a reopen may not have; low: two lines over width)
+dispatch: implementer opus medium — fix round 2 (resume a6352961bcd58ea3f); review 3 next
