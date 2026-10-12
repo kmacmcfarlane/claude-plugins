@@ -28,3 +28,4 @@ dispatch: implementer sonnet medium — build (a mechanical sweep: canonical kin
 agent: implementer a2a41b98a71a74186
 return: DONE b0d262a; 15 lines across context-guard, create-repo, dev-flow, kit-dev, work-items; test_isolated_python.py in kit-dev (skips outside the source repo); 12/12 OK (kit-dev 21); open: -m json.tool and -m py_compile left without -I
 dispatch: reviewer opus high — review round 1 of b0d262a
+agent: reviewer a6051b1f85c3fb961
