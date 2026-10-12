@@ -500,17 +500,32 @@ The handoff keeps `$WI lint` clean while the run is open.
 ### Resolving the store
 
 From the working directory, the main checkout's `.claude-sandbox/work/`, then `.work/`; the
-first that exists is the store. `wi` comes from the repo's own tree when it carries the
-`work-items` plugin, else from the installed plugin. Both are found by dev-flow's one copy
-of the lookup, the `dev-cycle` skill's `references/bindings.md` § Store snippet, run as it
-stands: it exports `WI_ROOT` when a store exists and prints the resolved command, or `no wi
-found`.
+first that holds `items/` is the store. `wi` comes from the repo's own tree when it carries the
+`work-items` plugin, else from the installed plugin:
+
+```bash
+MAIN=$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null) && MAIN=${MAIN%/.git} || MAIN=$PWD
+for d in "$MAIN/.claude-sandbox/work" "$MAIN/.work"; do test -d "$d/items" && { export WI_ROOT="$d"; break; }; done
+WI_PY=$(ls "$MAIN"/plugins/*/skills/work-items/scripts/wi.py 2>/dev/null | head -1)
+P="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/plugins"
+test -n "$WI_PY" || WI_PY="$(python3 -I -c 'import json,sys; print(json.load(open(sys.argv[1]))["plugins"]["work-items@kmacmcfarlane"][0]["installPath"])' "$P/installed_plugins.json" 2>/dev/null)/skills/work-items/scripts/wi.py"
+test -f "$WI_PY" || WI_PY=$(ls -t "$P"/cache/kmacmcfarlane/work-items/*/skills/work-items/scripts/wi.py 2>/dev/null | head -1)
+if test -f "$WI_PY"; then WI="python3 $WI_PY"; echo "$WI"; else WI=no-wi-found; echo "no wi found"; fi
+```
+
+The last line binds `WI` to `python3` only when `wi.py` exists; on a miss it prints `no wi
+found` and binds a name that is no command, so a `$WI` call fails with exit 127 and never
+runs a bare `python3`. The install-record read runs `python3 -I`, so a `json.py` in the
+working directory is never imported.
 
 Rule 4's test is `test -n "$WI_ROOT" && test -f "$WI_PY"` after the snippet (`no wi found`
 fails it): when it fails, rule 4, and no `wi` command runs. Run the snippet once, at the
 record's opening, and from then on use the `wi:` and `item_file:` lines the state file
 carries (with no state file — a quick run, `chain-of-verification` — re-run the snippet in
-each Bash call that needs `wi`, and carry the item id in the conversation).
+each Bash call that needs `wi`, and carry the item id in the conversation). This snippet
+restates the `dev-cycle` skill's store resolution in research's own home, by the operator's
+ruling that the research skills stay separate from dev-cycle; a change to `wi`'s install
+path touches both.
 
 ### Closing
 

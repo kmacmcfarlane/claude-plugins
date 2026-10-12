@@ -85,7 +85,7 @@ carries kit-dev, else the installed plugin's, found as `wi` is (§ Store):
 ```bash
 CS=$(ls "$WORKTREE"/plugins/*/skills/create-skill/SKILL.md 2>/dev/null | head -1)
 P="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/plugins"
-test -n "$CS" || CS="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["plugins"]["kit-dev@kmacmcfarlane"][0]["installPath"])' "$P/installed_plugins.json" 2>/dev/null)/skills/create-skill/SKILL.md"
+test -n "$CS" || CS="$(python3 -I -c 'import json,sys; print(json.load(open(sys.argv[1]))["plugins"]["kit-dev@kmacmcfarlane"][0]["installPath"])' "$P/installed_plugins.json" 2>/dev/null)/skills/create-skill/SKILL.md"
 test -f "$CS" || CS=$(ls -t "$P"/cache/kmacmcfarlane/kit-dev/*/skills/create-skill/SKILL.md 2>/dev/null | head -1)
 if test -f "$CS"; then echo "$CS"; else echo "no create-skill found"; fi
 ```
@@ -512,7 +512,7 @@ operator's or an answer's.
 ```bash
 UR_PY=$(ls "$MAIN"/plugins/*/skills/usage-report/scripts/usage_report.py 2>/dev/null | head -1)
 P="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/plugins"
-test -n "$UR_PY" || UR_PY="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["plugins"]["context-guard@kmacmcfarlane"][0]["installPath"])' "$P/installed_plugins.json" 2>/dev/null)/skills/usage-report/scripts/usage_report.py"
+test -n "$UR_PY" || UR_PY="$(python3 -I -c 'import json,sys; print(json.load(open(sys.argv[1]))["plugins"]["context-guard@kmacmcfarlane"][0]["installPath"])' "$P/installed_plugins.json" 2>/dev/null)/skills/usage-report/scripts/usage_report.py"
 test -f "$UR_PY" || UR_PY=$(ls -t "$P"/cache/kmacmcfarlane/context-guard/*/skills/usage-report/scripts/usage_report.py 2>/dev/null | head -1)
 if test -f "$UR_PY"; then timeout 120 python3 "$UR_PY" item <record sink file> --json --no-week
 else echo "no reader found"; fi
@@ -623,21 +623,24 @@ folded into the housekeeping area.
 ## Store
 
 A work-item store is optional. Look in the main checkout for `.claude-sandbox/work/`, then
-`.work/`; the first that exists is the store. No store: the record sink is the scratchpad
+`.work/`; the first that holds `items/` is the store. No store: the record sink is the scratchpad
 run record, and nothing is filed. Never run `wi init` from a
 cycle.
 
 `wi` itself comes from the repo's own tree when it carries the `work-items` plugin, else
-from the installed plugin. This is dev-flow's one copy of the lookup: every dev-flow skill
-that drives `wi` (`investigate`, `implement`, `librarian-mode`, the research family) runs
-this snippet and names it rather than restating it:
+from the installed plugin. This is dev-flow's canonical copy of the lookup: every dev-flow
+skill that drives `wi` (`investigate`, `implement`, `librarian-mode`, `foundation`) runs this
+snippet and names it rather than restating it. The research family keeps its own copy
+(the `research` skill's `references/intensity-and-routing.md` § Resolving the store), by the
+operator's 2026-10-02 ruling that the research skills stay separate from dev-cycle; a change
+to `wi`'s install path touches both:
 
 ```bash
 MAIN=$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null) && MAIN=${MAIN%/.git} || MAIN=$PWD
-for d in "$MAIN/.claude-sandbox/work" "$MAIN/.work"; do test -d "$d" && { export WI_ROOT="$d"; break; }; done
+for d in "$MAIN/.claude-sandbox/work" "$MAIN/.work"; do test -d "$d/items" && { export WI_ROOT="$d"; break; }; done
 WI_PY=$(ls "$MAIN"/plugins/*/skills/work-items/scripts/wi.py 2>/dev/null | head -1)
 P="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/plugins"
-test -n "$WI_PY" || WI_PY="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["plugins"]["work-items@kmacmcfarlane"][0]["installPath"])' "$P/installed_plugins.json" 2>/dev/null)/skills/work-items/scripts/wi.py"
+test -n "$WI_PY" || WI_PY="$(python3 -I -c 'import json,sys; print(json.load(open(sys.argv[1]))["plugins"]["work-items@kmacmcfarlane"][0]["installPath"])' "$P/installed_plugins.json" 2>/dev/null)/skills/work-items/scripts/wi.py"
 test -f "$WI_PY" || WI_PY=$(ls -t "$P"/cache/kmacmcfarlane/work-items/*/skills/work-items/scripts/wi.py 2>/dev/null | head -1)
 if test -f "$WI_PY"; then WI="python3 $WI_PY"; echo "$WI"; else WI=no-wi-found; echo "no wi found"; fi
 ```
@@ -646,10 +649,11 @@ The last line binds `WI` only to a file that exists: with none, every lookup lea
 `WI_PY` empty or a path that does not exist, and `python3` on it would fail, or, with no
 name at all, take the verb as a script to run from the working directory, or read one from
 stdin. So `no wi found` binds `WI` to a name that is no command, and a `$WI` call run by
-mistake fails with exit 127 instead of running anything. `${CLAUDE_PLUGIN_ROOT}` is
-dev-flow's root and carries no `wi`. Shell state does not outlive one Bash call, so a later
-call uses the command the snippet printed, with its absolute path, or runs the snippet
-again.
+mistake fails with exit 127 instead of running anything. The install-record read runs
+`python3 -I`, so a `json.py` in the working directory is never imported.
+`${CLAUDE_PLUGIN_ROOT}` is dev-flow's root and carries no `wi`. Shell state does not outlive
+one Bash call, so a later call uses the command the snippet printed, with its absolute path,
+or runs the snippet again.
 
 A store with `no wi found`: run no `wi` command; say once that `work-items` is not
 installed, and run with the scratchpad record as the sink.

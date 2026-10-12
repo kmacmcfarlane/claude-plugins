@@ -31,10 +31,10 @@ ralph's one copy of the lookup; run it before either bridge command:
 
 ```bash
 MAIN=$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null) && MAIN=${MAIN%/.git} || MAIN=$PWD
-for d in "$MAIN/.claude-sandbox/work" "$MAIN/.work"; do test -d "$d" && { export WI_ROOT="$d"; break; }; done
+for d in "$MAIN/.claude-sandbox/work" "$MAIN/.work"; do test -d "$d/items" && { export WI_ROOT="$d"; break; }; done
 WI_PY=$(ls "$MAIN"/plugins/*/skills/work-items/scripts/wi.py 2>/dev/null | head -1)
 P="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/plugins"
-test -n "$WI_PY" || WI_PY="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["plugins"]["work-items@kmacmcfarlane"][0]["installPath"])' "$P/installed_plugins.json" 2>/dev/null)/skills/work-items/scripts/wi.py"
+test -n "$WI_PY" || WI_PY="$(python3 -I -c 'import json,sys; print(json.load(open(sys.argv[1]))["plugins"]["work-items@kmacmcfarlane"][0]["installPath"])' "$P/installed_plugins.json" 2>/dev/null)/skills/work-items/scripts/wi.py"
 test -f "$WI_PY" || WI_PY=$(ls -t "$P"/cache/kmacmcfarlane/work-items/*/skills/work-items/scripts/wi.py 2>/dev/null | head -1)
 if test -f "$WI_PY"; then WI="python3 $WI_PY"; echo "$WI"; else WI=no-wi-found; echo "no wi found"; fi
 ```
@@ -42,7 +42,8 @@ if test -f "$WI_PY"; then WI="python3 $WI_PY"; echo "$WI"; else WI=no-wi-found; 
 Then `$WI export --format backlog-yaml` and `$WI import --format backlog-yaml --update`, in
 the same Bash call (shell variables do not outlive one), or with the printed command. `WI` is
 bound to `python3` only when the file exists, so a miss never runs a bare `python3`; a `$WI`
-call run anyway fails with exit 127. On `no wi found`, run neither command and say that the
+call run anyway fails with exit 127. The install-record read runs `python3 -I`, so a
+`json.py` in the working directory is never imported. On `no wi found`, run neither command and say that the
 work items and `backlog.yaml` were not synced because `work-items` is not installed. No
 store (no `WI_ROOT` exported) means there is nothing to bridge.
 

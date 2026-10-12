@@ -13,7 +13,7 @@ investigation begins. With **no argument** in such a repo, offer `wi next --plai
 ready-ranked queue) before falling back to the conversation.
 
 `wi` is found by the `dev-cycle` skill's `references/bindings.md` § Store snippet, dev-flow's
-one copy of the lookup: the repo's own tree, else the installed plugin's copy; every `wi`
+canonical copy of the lookup: the repo's own tree, else the installed plugin's copy; every `wi`
 here is the command it prints. When it prints `no wi found`, `work-items` is not installed:
 run no `wi` command; read the item's file under the store's `items/` directly (an id is its
 file name; a fragment is matched against the files' `title:` lines), claim nothing, and say

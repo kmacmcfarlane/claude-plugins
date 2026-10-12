@@ -226,25 +226,28 @@ non-fork subagent knows nothing, and even a fork's recall is not a substitute fo
 
 `wi` is not on `PATH`: it is a script in the `work-items` plugin (soft), found from the
 repo's own tree when it carries that plugin, else from the installed copy. This is
-context-guard's one copy of the lookup. Run it once, from the repo whose store the
-checkpoint writes, before the first `wi` call (Step 3's `wi add`, Step 4a½, a re-run's
+context-guard's one copy of the lookup. Run it once per repo whose store it writes, from
+that repo, before the first `wi` call (Step 3's `wi add`, Step 4a½, a re-run's
 `wi show`):
 
 ```bash
 MAIN=$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null) && MAIN=${MAIN%/.git} || MAIN=$PWD
-for d in "$MAIN/.claude-sandbox/work" "$MAIN/.work"; do test -d "$d" && { export WI_ROOT="$d"; break; }; done
+for d in "$MAIN/.claude-sandbox/work" "$MAIN/.work"; do test -d "$d/items" && { export WI_ROOT="$d"; break; }; done
 WI_PY=$(ls "$MAIN"/plugins/*/skills/work-items/scripts/wi.py 2>/dev/null | head -1)
 P="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/plugins"
-test -n "$WI_PY" || WI_PY="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["plugins"]["work-items@kmacmcfarlane"][0]["installPath"])' "$P/installed_plugins.json" 2>/dev/null)/skills/work-items/scripts/wi.py"
+test -n "$WI_PY" || WI_PY="$(python3 -I -c 'import json,sys; print(json.load(open(sys.argv[1]))["plugins"]["work-items@kmacmcfarlane"][0]["installPath"])' "$P/installed_plugins.json" 2>/dev/null)/skills/work-items/scripts/wi.py"
 test -f "$WI_PY" || WI_PY=$(ls -t "$P"/cache/kmacmcfarlane/work-items/*/skills/work-items/scripts/wi.py 2>/dev/null | head -1)
 if test -f "$WI_PY"; then WI="python3 $WI_PY"; echo "$WI"; else WI=no-wi-found; echo "no wi found"; fi
 ```
 
-It finds the store too: no `WI_ROOT` exported means no store, and every `wi` step is
-skipped. Every `wi` in this skill means the command it printed, with its absolute path
-(shell variables do not outlive one Bash call), and `WI_ROOT` set to the store it found. `WI` is
+It finds the store too, a `.claude-sandbox/work/` or `.work/` holding `items/`. When it
+finds none, `WI_ROOT` keeps any value the environment set: a store there is the store, as
+it is for `wi` and the rehydration hook; with neither, there is no store and every `wi` step
+is skipped. Every `wi` in this skill means the command it printed, with its absolute path
+(shell variables do not outlive one Bash call), and `WI_ROOT` set to that store. `WI` is
 bound to `python3` only when the file exists, so a miss never runs a bare `python3`; a
-`$WI` call run anyway fails with exit 127. **`no wi found`** with a store means `work-items`
+`$WI` call run anyway fails with exit 127. The install-record read runs `python3 -I`, so a
+`json.py` in the working directory is never imported. **`no wi found`** with a store means `work-items`
 is not installed: run no `wi` command. Fill `items:` from the store's files (an id is a
 file name under `items/`, its `status:` in the frontmatter), carry each item's residue in
 `Aware of` as `<TAG> <item id>: <line>`, as the unattended path does, route deferred work

@@ -66,7 +66,7 @@ serialization, so it does little itself: it files, factors, runs each item throu
 Do this at session start and after any `/clear` or compaction. Never `ls` the whole store.
 
 1. **Locate the main checkout and the store.** Run the `dev-cycle` skill's
-   `references/bindings.md` § Store snippet, dev-flow's one copy of the lookup: it sets
+   `references/bindings.md` § Store snippet, dev-flow's canonical copy of the lookup: it sets
    `MAIN`, exports `WI_ROOT` for the store it finds, and prints the `wi` command, from the
    repo's own tree or else the installed plugin's copy. The librarian's store is
    `$MAIN/.claude-sandbox/work`, or an existing `.work/` one, which the snippet finds
