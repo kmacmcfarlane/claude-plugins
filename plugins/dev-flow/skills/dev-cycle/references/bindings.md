@@ -358,6 +358,38 @@ that stores a card (librarian-mode), where the card's own lines carry them and t
 keeps the question alone. With the skill loaded, its floor for a round ask governs how this
 is written.
 
+**A foundation reopen.** A build under a foundation (its item's parent is the item a
+series' Foundation block names in its `Item:` field — that series fills the brief's
+foundation series path — or its own series' `INDEX.md` has a `## Foundation` block) carries the foundation line in
+its briefs (`agent-brief.md`, `review-brief.md`), and a finding that would change a
+phase-1 or phase-2 foundation artifact comes back as a `REOPEN:` line under the
+implementer's OPEN QUESTIONS or the reviewer's NOTES, never as a fix. The orchestrator —
+a librarian through its own channel — raises each one as it reads the return or the
+verdict, before the next dispatch or Land, as a decision through the decision channel,
+per the `foundation` skill's `references/moves.md`: the question names the artifact, the
+reopen the line names (Reopen requirements or Reopen architecture) and why, and the
+reopen's gate (gate G1 re-runs on the delta and the operator approves the change; or gate
+G2 re-runs on the delta and the operator approves any one-way ADR change). Options:
+
+- (a) **reopen, and this item stops** — the reopen is filed as its own item under the
+  foundation item (`$WI add … --parent <foundation id>`; no store: Step 6's `open
+  questions:`) and run as a foundation reopen (SKILL.md § Step 1, the foundation bullet);
+  this item is handed back `$WI handoff <id> --blocked "awaiting the reopen <reopen id>"`,
+  nothing landed. Once the reopen passes its gates, the stopped item is re-dispatched from
+  its record with the changed artifact named in its acceptance, through a full review;
+- (b) **reopen, and this item carries it** — the reopen is filed as in (a); this build goes
+  on to review and Land, the finding written onto its item as a `reopen: carried` line
+  (`record-lines.md`);
+- (c) **answer locally** — the operator rules that no foundation artifact changes; an
+  implementer's line is re-dispatched with the answer as a `NEEDS_CONTEXT` answer is, a
+  reviewer's goes into the fix round as a finding (after a `CLEAR`, a fix round opened
+  for it), or it is dropped on their word.
+
+Recommend (a) when the build depends on the artifact as it stands, else (b). Why ask: it
+changes what the operator approved at the gate (`your-call`); (z) decide later stops the
+item as (a) does, unfiled. While it is pending, the rules below apply: on a durable
+channel the item stops until it is answered.
+
 A **pending** decision — a `decision:` with no `answer:` — never makes a run wait on a
 question this session is not asking: one whose prompt is gone, or one on a durable
 channel. A live prompt this session is asking is the ordinary case above, and the run

@@ -115,7 +115,9 @@ When the repo has a work-item store (the `work-items` skill), one item carries t
   step 3 above files any that are still unfiled, which is every one under an orchestrator.
 - **After a later reopen** passes its gates, the orchestrator (`dev-cycle`), or the
   standalone session, files `F0`'s re-run as a new item under the foundation item, beside
-  the revised features the impact list names.
+  the revised features the impact list names. A reopen a feature's build raised is itself
+  filed as an item under the foundation item when the operator takes it
+  (`references/moves.md`).
 
 With no store, the Held and Factored out tables in the Foundation block are the record, and
 the Report lists the features to file by hand.

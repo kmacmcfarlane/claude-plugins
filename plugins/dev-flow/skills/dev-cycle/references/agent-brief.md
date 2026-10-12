@@ -3,8 +3,9 @@
 The dispatch brief for one change. Fill every placeholder from the run's bindings
 (`bindings.md`); delete nothing except the blocks marked conditional — the fix-round and
 merge-conflict clauses under Commit (only in those rounds), the Workflow block (only when
-the Workflow binding is set) and the dev-flow block (only for a feature with no plan yet,
-or a given plan). The agent starts with none of the
+the Workflow binding is set), the dev-flow block (only for a feature with no plan yet,
+or a given plan) and the foundation line (only for a build under a foundation,
+`bindings.md` § Decisions, A foundation reopen). The agent starts with none of the
 orchestrator's context and must be able to finish from this text alone. Send it as the
 prompt of one background implementer agent — `subagent_type: "dev-flow:implementer"`,
 `implementer-critical` or `implementer-deep`, as SKILL.md § Step 2 routes it;
@@ -112,6 +113,17 @@ to copy and from where — absolute paths>
 
 <conditional — when the Workflow binding is set: the repo's workflow, follow it:>
 <the Workflow binding, verbatim>
+
+<conditional — a build under a foundation (its item is a child of a foundation item, or its
+series' INDEX.md has a `## Foundation` block):>
+A finding that would change a foundation artifact of <the foundation series, absolute>
+(phase 1: the intent, a goal or non-goal, a requirement, a quality scenario, a constraint,
+a glossary meaning, the claim or the neighbours table; phase 2: an ADR, a contract, the
+threat and privacy model, context and containers, the strategy or traceability, a risk) is
+not yours to fix: leave the artifact as it is, build the rest, report it under OPEN
+QUESTIONS as `REOPEN: <the artifact> — <Reopen requirements if it touches any phase-1
+artifact, else Reopen architecture> — <why>`, and return DONE_WITH_CONCERNS. Writing the
+living docs from the series as it stands (feature F0) is not such a change.
 
 <conditional — a feature with no plan yet (dev-flow block):>
 Use the dev-flow skills for their method: /investigate, then /implement on the series it
@@ -314,7 +326,7 @@ change's to move either.
 | Status | Means | Orchestrator's next move |
 |---|---|---|
 | `DONE` | Every acceptance line met, all checks green, one commit | Review (the sub-agent gate), then Land |
-| `DONE_WITH_CONCERNS` | Committed and green, but the agent flagged a judgement call | Read the concerns; put them in the reviewer brief; Review, then Land |
+| `DONE_WITH_CONCERNS` | Committed and green, but the agent flagged a judgement call, or reported a foundation `REOPEN:` line | Read the concerns; raise each `REOPEN:` line first (`bindings.md` § Decisions, A foundation reopen); put the rest in the reviewer brief; Review, then Land |
 | `NEEDS_CONTEXT` | Could not proceed without an answer; nothing or little committed | Answer in the record sink, re-dispatch with the answer |
 | `BLOCKED` | Worktree wrong, permission denied, dependency missing | `wi block` when there is an item; raise it through the decision channel |
 
