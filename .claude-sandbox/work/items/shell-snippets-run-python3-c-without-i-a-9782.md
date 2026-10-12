@@ -25,3 +25,4 @@ From b9e4 review 2, 2026-10-12: snippets outside the wi lookups still run python
 - 2026-10-12 claimed by Kyle-McFarlane@2d49f8460283
 target: every python3 -c / python3 - snippet in skills and references runs -I; a kit-dev or plugin test greps for any without it
 dispatch: implementer sonnet medium — build (a mechanical sweep: canonical kind)
+agent: implementer a2a41b98a71a74186
