@@ -34,3 +34,6 @@ verdict: review round 1 NEEDS_CHANGES (must-fix 2: medium-high — trigger fires
 dispatch: implementer opus medium — fix round 1 (resume a456e958153f73c9a)
 return: DONE 084bac8 (fix round 1); 12/12 OK; note: wi show exits 2 for an ambiguous id too
 dispatch: reviewer opus high — review round 2 of 084bac8 (resume a224d4b920c6f7d94)
+verdict: review round 2 CLEAR (must-fix 0; low: a resolved Frame item gains no series ref, defence in depth; observation: cut-short bullet tie between Item: and ref only after a crash mid-add; ambiguous-id case ruled negligible, resolve_id matches exact first)
+decided: 2026-10-13T02:10Z cap — a finish round of the low fix (authority answer 145)
+dispatch: implementer opus medium — finish round (resume a456e958153f73c9a)
