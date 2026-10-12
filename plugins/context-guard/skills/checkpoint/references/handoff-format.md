@@ -243,6 +243,8 @@ TOC, read on demand: `path — one line on what it holds`.
   - not found locally (N is unknowable): `... head moved ? commits since this manifest
     (<recorded>..<current>, recorded head not found locally); ...`
 
+  `wi prime and ` appears in the line only when a work-item store is found (the same lookup
+  as `items:` below); with none it ends `run git log.`.
   Other sections stay. Commits touching only `.claude-sandbox/work` (store chores) do not
   count toward N or M. No time-based expiry — the head check covers it.
 - A LANDED manifest skips both checks (no dead claims, Next not withheld): the work is done.

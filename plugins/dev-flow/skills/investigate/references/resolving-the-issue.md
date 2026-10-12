@@ -12,6 +12,14 @@ description and `## Handoff` block as the starting description. `wi claim` it on
 investigation begins. With **no argument** in such a repo, offer `wi next --plain` (the
 ready-ranked queue) before falling back to the conversation.
 
+`wi` is found by the `dev-cycle` skill's `references/bindings.md` § Store snippet, dev-flow's
+canonical copy of the lookup: the repo's own tree, else the installed plugin's copy; every `wi`
+here is the command it prints. When it prints `no wi found`, `work-items` is not installed:
+run no `wi` command; read the item's file under the store's `items/` directly (an id is its
+file name; a fragment is matched against the files' `title:` lines), claim nothing, and say
+in the final report that the item was not claimed because `work-items` is not installed. With
+no argument, there is no queue to offer: fall back to the conversation.
+
 **A TODO.md reference** (`TODO.md item 3`, `the second TODO`, or just a phrase matching one) —
 the fallback when no work-item store exists: read `TODO.md` from the repo root, find the
 matching `- [ ]` item, and use its text as the starting description. A `TODO.md` that carries

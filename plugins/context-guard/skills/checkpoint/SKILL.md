@@ -222,6 +222,38 @@ non-fork subagent knows nothing, and even a fork's recall is not a substitute fo
 **Secrets: path and key, never value.** Residue lands in git; prose evades sops and
 `kind: Secret` gates. Name where a secret lives, never what it is.
 
+## Reaching `wi`
+
+`wi` is not on `PATH`: it is a script in the `work-items` plugin (soft), found from the
+repo's own tree when it carries that plugin, else from the installed copy. This is
+context-guard's one copy of the lookup. Run it once per repo whose store it writes, from
+that repo, before the first `wi` call (Step 3's `wi add`, Step 4a½, a re-run's
+`wi show`):
+
+```bash
+MAIN=$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null) && MAIN=${MAIN%/.git} || MAIN=$PWD
+for d in "$MAIN/.claude-sandbox/work" "$MAIN/.work"; do test -d "$d/items" && { export WI_ROOT="$d"; break; }; done
+WI_PY=$(ls "$MAIN"/plugins/*/skills/work-items/scripts/wi.py 2>/dev/null | head -1)
+P="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/plugins"
+test -n "$WI_PY" || WI_PY="$(python3 -I -c 'import json,sys; print(json.load(open(sys.argv[1]))["plugins"]["work-items@kmacmcfarlane"][0]["installPath"])' "$P/installed_plugins.json" 2>/dev/null)/skills/work-items/scripts/wi.py"
+test -f "$WI_PY" || WI_PY=$(ls -t "$P"/cache/kmacmcfarlane/work-items/*/skills/work-items/scripts/wi.py 2>/dev/null | head -1)
+if test -f "$WI_PY"; then WI="python3 $WI_PY"; echo "$WI"; else WI=no-wi-found; echo "no wi found"; fi
+```
+
+It finds the store too, a `.claude-sandbox/work/` or `.work/` holding `items/`. When it
+finds none, `WI_ROOT` keeps any value the environment set: a store there is the store, as
+it is for `wi` and the rehydration hook; with neither, there is no store and every `wi` step
+is skipped. Every `wi` in this skill means the command it printed, with its absolute path
+(shell variables do not outlive one Bash call), and `WI_ROOT` set to that store. `WI` is
+bound to `python3` only when the file exists, so a miss never runs a bare `python3`; a
+`$WI` call run anyway fails with exit 127. The install-record read runs `python3 -I`, so a
+`json.py` in the working directory is never imported. **`no wi found`** with a store means `work-items`
+is not installed: run no `wi` command. Fill `items:` from the store's files (an id is a
+file name under `items/`, its `status:` in the frontmatter), carry each item's residue in
+`Aware of` as `<TAG> <item id>: <line>`, as the unattended path does, route deferred work
+to an `OPEN` line there instead of `wi add`, commit nothing to the store, and name in
+`Next` `items not updated: work-items is not installed`.
+
 ## Step 3 — Route
 
 Name the repo that owns each item permanently (working in repo A on repo B's problem is
@@ -246,8 +278,9 @@ durable path, or list it under **Copy forward** (the format spec's scratchpad ru
 **4a½ — Open items, before the manifest.** Fix the `items:` set now: the `wi` ids of the
 open or doing items the manifest will mention, checked against this repo's store. 4b writes
 exactly this set. An item in another repo's store gets its residue there but goes in `Aware
-of` with its repo named, never in `items:`, since the hook would read it as missing. For
-each item, read it (`wi show <id>`) and append every Step 2 line tagged with it that the
+of` with its repo named, never in `items:`, since the hook would read it as missing. `wi`
+is found per § Reaching `wi`; on `no wi found`, that section's path replaces the rest of
+this step. For each item, read it (`wi show <id>`) and append every Step 2 line tagged with it that the
 file does not already hold: operator statements not yet confirmed, alternatives weighed and
 rejected, corrections, refusals, pending points. Nothing tagged, nothing written. Each is
 one physical line, dated like the lines `wi` appends, tagged with the manifest's `Aware of`
