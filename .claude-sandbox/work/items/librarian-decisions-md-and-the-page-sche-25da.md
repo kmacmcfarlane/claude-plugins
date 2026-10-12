@@ -3,14 +3,13 @@ id: librarian-decisions-md-and-the-page-sche-25da
 title: librarian decisions.md and the page schema follow the chat Context section
 short_display_name: Context section follow-ups
 type: chore
-status: doing
+status: done
 priority: 2
 deps:
   - decisions-skill-cards-and-blocks-in-chat-2bc1
-owner: Kyle-McFarlane@2d49f8460283
-claimed: 2026-10-12T21:30Z
 created: 2026-10-12
 updated: 2026-10-12
+closed: 2026-10-12
 refs:
   - decisions-skill-cards-and-blocks-in-chat-2bc1
 ---
@@ -36,3 +35,6 @@ verdict: review round 1 NEEDS_CHANGES (must-fix 1: decisions.md:100-101 names re
 dispatch: implementer sonnet medium — fix round 1 (resume a9e98bb4769db4a60)
 return: DONE b912da7 (fix round 1); dev-flow 78, operator-interaction 138, kit-dev 21 OK
 dispatch: reviewer opus high — review round 2 of b912da7 (resume aef7a273eff53b181)
+verdict: review round 2 CLEAR (must-fix 0; nit: two edited lines not rewrapped, not taken)
+landed: 29a1135 (merge of e0f2f18..b912da7); Checks 12/12 OK; cc_scan clean
+- 2026-10-12 done

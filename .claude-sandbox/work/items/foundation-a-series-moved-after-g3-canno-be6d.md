@@ -29,3 +29,5 @@ agent: implementer a6352961bcd58ea3f
 return: DONE 0f9ad15; 12/12 OK; ### Gates passed list in the Foundation block, append-only, G<n> passed <date> (<repo>#<N>|reported|no store); orchestrator writes G3's line as step 1 after G3; planner writes G1/G2 lines from the brief; older series keep the old rule; also changed dev-cycle SKILL.md, agent-brief.md, resume.md
 dispatch: reviewer opus high — review round 1 of 0f9ad15
 agent: reviewer a465df0b41e988bf4
+verdict: review round 1 NEEDS_CHANGES (must-fix 4: high — dev-cycle SKILL.md at 5003 words; medium-high — 'and commit it' conflicts with series tracking (public repo gitignores investigations); medium-high — a crash between the G3 line and filing leaves features never filed; medium — after a reopen an old line still marks the gate passed and the re-run line has no writer; should-fix: mixed-age series fallback per gate; an 'in session' ref for unnumbered approvals; low: investigation-format carry-forward on a move; observation filed as foundation-a-moved-series-with-every-gat-2298)
+dispatch: implementer opus medium — fix round 1 (resume a6352961bcd58ea3f)
