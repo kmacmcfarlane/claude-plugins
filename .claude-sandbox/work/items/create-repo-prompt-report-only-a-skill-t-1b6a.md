@@ -25,3 +25,4 @@ From 7b85 review 1, 2026-10-12: launch-command.md lines 25 and 39 say 'if a skil
 - 2026-10-12 claimed by Kyle-McFarlane@2d49f8460283
 target: launch-command.md lines 25 and 39 say "if a skill this asks you to use is missing from this session, say which one in one clause of your reply."
 dispatch: implementer sonnet medium — build (two-line wording: canonical kind)
+agent: implementer a8276de30316e1fd6

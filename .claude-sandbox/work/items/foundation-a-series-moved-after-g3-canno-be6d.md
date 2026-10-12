@@ -25,3 +25,4 @@ From 7b85 review 1, 2026-10-12: state.md says a done foundation item or its G3 a
 - 2026-10-12 claimed by Kyle-McFarlane@2d49f8460283
 target: G3's passing is recorded in the series itself (the Foundation block), so a series moved to a new repo resumes past G3; state.md and gates.md say so; a moved series with no work-item record of its own resumes at the right gate
 dispatch: implementer opus medium — build
+agent: implementer a6352961bcd58ea3f
