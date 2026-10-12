@@ -24,7 +24,7 @@ Four line kinds are **phase lines**: `dispatch:`, `return:`, `verdict:` and `lan
 They move the run, and only a phase line can be its last state. Every other line —
 `target:`, `checks:`, `intent:`, `agent:`, `review:`, `baseline:`, `findings:`, `changed:`,
 `decision:`, `answer:`, `spent:`, `subject-fix:`, `conflict:`, `blocked:`, `trial:`,
-`cross-check:`, `cross-check-rulings:`, `budget:`, `cost:`, `decided:` — is a
+`cross-check:`, `cross-check-rulings:`, `budget:`, `cost:`, `decided:`, `reopen:`, `REOPEN:` — is a
 **rider**: it never displaces a phase line, and it is read only where a fact below names
 it.
 
@@ -203,7 +203,10 @@ a cap ends in).
 | `many` | **S13** two live agents | Stop. Dispatch nothing and stop no agent. GATE, the question naming every live id: which one to keep is always a human's decision, never the cycle's. |
 
 **Group C — PHASE `RETURN`.** The producer is the `implementer`, or the `planner` in
-`plan` mode; the role is a field of the line, never a selector.
+`plan` mode; the role is a field of the line, never a selector. Before S4 or S7 acts, a
+foundation reopen's `decision:` recorded after the last phase line (`bindings.md`
+§ Decisions, A foundation reopen) is GATEd first: `PENDING` → § The GATE; `ANSWERED` →
+act as its option says.
 
 | STATUS | reason | RETRIES | State | The single next action |
 |---|---|---|---|---|
@@ -214,7 +217,8 @@ a cap ends in).
 | `BLOCKED` | `permission`, or none recorded | — | **S6c** permission | `$WI block` when there is an item, then GATE, the permission. Never re-dispatched. |
 
 **Group D — PHASE `VERDICT`**, over verdict × FRESH × CAP; `—` marks an axis the row
-does not read, because its action opens no round. Before S9 or S11 acts on a `CURRENT`
+does not read, because its action opens no round. S7 meets the foundation reopen's GATE
+first (Group C). Before S9 or S11 acts on a `CURRENT`
 verdict: a decided-alone record of the cap (librarian-mode: a `decided:` line of class
 `cap`), a budget waiver's `decided:` line of class `spend` (authority `answer 176`,
 standalone too: `bindings.md` § Spend budget, The Done-alone line) or a `findings:

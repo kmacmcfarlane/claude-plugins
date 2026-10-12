@@ -118,10 +118,13 @@ union of every round's CHANGED, one file per line with its one-line reason>
 <conditional — a build under a foundation (its item is a child of a foundation item, or its
 series' INDEX.md has a `## Foundation` block):>
 9. A finding that would change a foundation artifact of <the foundation series, absolute>
-   (a requirement, quality scenario, constraint, glossary meaning, claim, ADR, contract,
-   threat or risk entry) is not a FINDING: put it under NOTES as `REOPEN: <the artifact> —
+   (phase 1: the intent, a goal or non-goal, a requirement, a quality scenario, a
+   constraint, a glossary meaning, the claim or the neighbours table; phase 2: an ADR, a
+   contract, the threat and privacy model, context and containers, the strategy or
+   traceability, a risk) is not a FINDING: put it under NOTES as `REOPEN: <the artifact> —
    <Reopen requirements if it touches any phase-1 artifact, else Reopen architecture> —
-   <why>`. A diff that changes such an artifact in place is a finding at medium.
+   <why>`. A diff that changes such an artifact in place is a finding at medium; writing
+   the living docs from the series as it stands (feature F0) is not such a change.
 
 ## Checks — run all, report outcomes verbatim
 

@@ -56,7 +56,7 @@ Modes:
   worktree and, with no item or plan, a one-line intent to grade against, instead
   (`references/bindings.md` §§ Review target, Intent). Step 2 routes the reviewer alone
   (rule 4). Step 4 dispatches the review-mode variant (`references/review-brief.md`
-  § Review-mode variant — claims: none, branch not built by this cycle). On `CLEAR`,
+  § Review-mode variant). On `CLEAR`,
   Step 5 runs the review-mode Land (`references/bindings.md` § Landing: merges
   `<branch>` itself, never deletes it, cleans up only a worktree this cycle added). On
   `NEEDS_CHANGES` or `SHOW_STOPPER`, before any fix loop, ask once through the decision
@@ -326,16 +326,17 @@ resume with findings = review round n+1; the cap: Step 4.3.
    fresh `dispatch:` and `agent:` pair. A change of agent file or model is always a
    re-dispatch. Repeat until `CLEAR`.
    **The cap.** Rounds run unasked inside the phase's spend budget, past the fourth review
-   through its guard; the cap is the budget reached (not a cap while a fresh weekly reading
-   is below 50% used: noted, rounds continue), the must-fix count not falling from
-   the fourth review on (the brief or the target is wrong, not the code), or, with no
+   through its guard; the cap is the budget reached (not while a fresh weekly reading is
+   below 50%), the must-fix count not falling from the fourth review on, or, with no
    spend reading, the fourth review. It ends in a plan's stop and carry, one finish round
    of exact fixes, or a raise with what the open findings would break and what more costs
    (`references/bindings.md` § Decisions, What a cap ends in). Never argue a severity down.
 4. **What escalates** through the decision channel is only a show-stopper with real
    impact: a `SHOW_STOPPER` verdict, a finding that changes the scope or reverses a
    recorded human decision, or a cap or a guard-stopped round that is raised (rule 3) —
-   and a fable cross-check offer (rule 4). Everything else, critical included, is
+   and a fable cross-check offer (rule 4), and each foundation `REOPEN:` line in a
+   return's OPEN QUESTIONS or a verdict's NOTES, raised before the next dispatch or Land
+   (`references/bindings.md` § Decisions, A foundation reopen). Everything else, critical included, is
    resolved inside the loop. The one exception: `review <branch>` mode's ask, before any
    fix loop, whether to dispatch an implementer (Usage) — mode entry, not a severity.
 5. **Record the result** as `verdict: <V> round <n> at <sha>` — a self-review writes
@@ -346,7 +347,8 @@ resume with findings = review round n+1; the cap: Step 4.3.
    count (`references/bindings.md` § Spend budget). A `BLOCKED` reviewer is not a round
    and carries its reason in place of a round number — `verdict: BLOCKED at <token> —
    permission | setup`, the same closed set Step 3.5 writes. Also record: findings fixed,
-   findings declined with reasons, and the reviewer NOTES worth keeping. Reviewer
+   findings declined with reasons, the reviewer NOTES worth keeping, and each `REOPEN:`
+   line in a return or the NOTES, verbatim, whatever the verdict. Reviewer
    questions you cannot settle go on Step 6's `open questions:`.
 
 ## Step 5: Land
@@ -461,7 +463,7 @@ Stop when you catch yourself:
 - **Landing without a `CLEAR`**, or on a `CLEAR` for an older sha.
 - **Merging without running a check yourself.**
 - **Escalating a finding the loop could resolve** — a human hears show-stoppers, scope
-  changes and a cap that is raised, never a medium. (`review <branch>` mode's
+  changes, a raised cap and a foundation reopen, never a medium. (`review <branch>` mode's
   before-any-fix-loop ask is the one exception — Usage.)
 - **Dispatching unrouted** — an Agent call with no `model`, or no `dispatch:` line
   behind it; `general-purpose` while the role agent is loaded; an implementer sent to
@@ -472,9 +474,8 @@ Stop when you catch yourself:
   rule-free wording, CLAUDE.md, an agent, a script, any operational claim).
 - **Pushing unasked**, writing CLAUDE.md to save the checks, or guessing a caller's
   missing binding.
-- **Naming spend to a producer or reviewer** — the budget, the spend so far or left, or
-  that money or quota is short, in a brief, a resume message or a fix-round message, or
-  asking them to hurry or be brief to save cost (`references/bindings.md` § Spend budget).
+- **Naming spend to a producer or reviewer**, or asking them to hurry to save cost, in
+  any brief or message (`references/bindings.md` § Spend budget, Never in a brief).
 
 ## Examples
 

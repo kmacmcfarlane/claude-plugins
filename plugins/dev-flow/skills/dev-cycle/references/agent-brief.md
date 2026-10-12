@@ -116,11 +116,14 @@ to copy and from where — absolute paths>
 
 <conditional — a build under a foundation (its item is a child of a foundation item, or its
 series' INDEX.md has a `## Foundation` block):>
-A finding that would change a foundation artifact of <the foundation series, absolute> (a
-requirement, quality scenario, constraint, glossary meaning, claim, ADR, contract, threat
-or risk entry) is not yours to fix: leave the artifact as it is, build the rest, and report
-it under OPEN QUESTIONS as `REOPEN: <the artifact> — <Reopen requirements if it touches any
-phase-1 artifact, else Reopen architecture> — <why>`.
+A finding that would change a foundation artifact of <the foundation series, absolute>
+(phase 1: the intent, a goal or non-goal, a requirement, a quality scenario, a constraint,
+a glossary meaning, the claim or the neighbours table; phase 2: an ADR, a contract, the
+threat and privacy model, context and containers, the strategy or traceability, a risk) is
+not yours to fix: leave the artifact as it is, build the rest, report it under OPEN
+QUESTIONS as `REOPEN: <the artifact> — <Reopen requirements if it touches any phase-1
+artifact, else Reopen architecture> — <why>`, and return DONE_WITH_CONCERNS. Writing the
+living docs from the series as it stands (feature F0) is not such a change.
 
 <conditional — a feature with no plan yet (dev-flow block):>
 Use the dev-flow skills for their method: /investigate, then /implement on the series it
@@ -323,7 +326,7 @@ change's to move either.
 | Status | Means | Orchestrator's next move |
 |---|---|---|
 | `DONE` | Every acceptance line met, all checks green, one commit | Review (the sub-agent gate), then Land |
-| `DONE_WITH_CONCERNS` | Committed and green, but the agent flagged a judgement call | Read the concerns; put them in the reviewer brief; Review, then Land |
+| `DONE_WITH_CONCERNS` | Committed and green, but the agent flagged a judgement call, or reported a foundation `REOPEN:` line | Read the concerns; raise each `REOPEN:` line first (`bindings.md` § Decisions, A foundation reopen); put the rest in the reviewer brief; Review, then Land |
 | `NEEDS_CONTEXT` | Could not proceed without an answer; nothing or little committed | Answer in the record sink, re-dispatch with the answer |
 | `BLOCKED` | Worktree wrong, permission denied, dependency missing | `wi block` when there is an item; raise it through the decision channel |
 
