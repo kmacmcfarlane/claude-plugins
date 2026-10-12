@@ -133,7 +133,8 @@ it to know which gate a `CLEAR` was for.
 
 When the repo has a work-item store (the `work-items` skill), one item carries the run:
 
-- **File** it at Frame with `--ref <series path>`, so a moved series still finds it.
+- **File** it at Frame with `--ref <series path>` (a resolved item without that ref gains
+  it: `$WI set <id> refs <its refs>,<series path>`), so a moved series still finds it.
 - **Claim** it at Frame when standalone; an orchestrator claims it under its own rules.
 - **Handoff** after every gate: `$WI handoff <id>` naming the series, the gate passed and
   the next phase (`--next "phase 2: architecture"`). The item stays open until gate G3.

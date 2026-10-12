@@ -65,8 +65,9 @@ requirement change as a plan fix.
    repo does not exist yet, point to the create-repo skill and keep the series in the
    current repo until it does (the format's § A repo not yet created).
 2. **The item.** In a repo with a work-item store, resolve or `wi add` the foundation item
-   (with `--ref <series path>`) and `wi claim` it (standalone only), with `wi` the command
-   the `dev-cycle` skill's `references/bindings.md` § Store snippet prints. On
+   (with `--ref <series path>`; a resolved item without it gains it,
+   `references/state.md` § The work item) and `wi claim` it (standalone only), with `wi`
+   the command the `dev-cycle` skill's `references/bindings.md` § Store snippet prints. On
    `no wi found`, `work-items` is not installed: run no `wi` command and run as without a
    store (the series holds the run, its holds and the features), and the Report adds
    `item not filed: work-items is not installed`.
