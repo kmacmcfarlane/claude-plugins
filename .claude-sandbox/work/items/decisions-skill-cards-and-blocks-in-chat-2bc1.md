@@ -29,3 +29,4 @@ dispatch: implementer opus medium — build
 agent: implementer af0c58c783a457a0b
 return: DONE 2dd7a22; 12/12 OK (operator-interaction 137); order title → What → Context → Impact → Why now → Why ask → options; cue folds into Context as its last clause; stored context: line reused, older cards render as before; ruling recorded with the operator's words as direction; follow-ups filed as librarian-decisions-md-and-the-page-sche-25da
 dispatch: reviewer opus high — review round 1 of 2dd7a22
+agent: reviewer a80c72469591f38ff
