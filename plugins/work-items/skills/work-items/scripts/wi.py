@@ -3322,20 +3322,34 @@ SECRET_KV_RE = re.compile(
 # The lookbehind lets _shape_secret resume at a value's start, so a later
 # pair joined to it (a=b;db_pass=..., {"a":"b","db_pass":...}) is still
 # examined; the value is capped so the scan stays linear.
+#
+# dc23 adds the looser key forms, each counted only under a secret-word key
+# and never for a plain word or a date (_loose_flagged): a spaced flag
+# (--password v), a kebab-case colon key (db-pass: v), and a bare
+# one-case colon key that is itself a secret word (dbpass:, passphrase:,
+# pw:; not key:, auth:, cred:). The = forms also take a kebab-case key
+# (db-pass=v) and pw (pw=v), judged as every other = key.
 SECRET_SHAPE_RE = re.compile(
     r"(?:^|(?<=[^A-Za-z0-9_?&-]))(?:"
     r"(?P<flag>--[A-Za-z][A-Za-z0-9-]*)=|"
+    r"(?P<sflag>--[A-Za-z][A-Za-z0-9-]*)[ \t]+(?=[^\s-])|"
     r"[\"'](?P<json>[A-Za-z_][A-Za-z0-9_.-]*)[\"']\s*:\s*|"
-    r"(?P<kv>[A-Za-z][A-Za-z0-9_]{2,})\s*(?:=>|:=|=(?!=))\s*|"
+    r"(?P<kv>[A-Za-z](?:[A-Za-z0-9_]|-(?=[A-Za-z0-9_])){2,}|[Pp][Ww])"
+    r"\s*(?:=>|:=|=(?!=))\s*|"
     r"(?P<colon>[A-Z][A-Z0-9_]{2,}|[A-Za-z][A-Za-z0-9]*_[A-Za-z0-9_]+)\s*:\s*|"
+    r"(?P<kcolon>[A-Za-z][A-Za-z0-9]*(?:-[A-Za-z0-9]+)+)\s*:\s*|"
     r"(?P<camel>[A-Za-z][A-Za-z0-9]+)\s*:\s*"
     r")(?P<quote>[\"']?)(?P<value>\S{1,256})")
 # An Authorization header with a Bearer, Basic or Token credential, any
 # case, after :, = or => (a header, a config pair, a hash), the credential
-# bare or quoted; the credential is judged by _auth_secret.
+# bare or quoted, the quote may carry a string prefix (f"Bearer ...", dc23);
+# the credential is judged by _auth_secret.
 SECRET_AUTH_RE = re.compile(
-    r"(?i)\bauthorization[\"']?\s*(?:=>|[:=])\s*[\"']?(?:bearer|basic|token)"
-    r"\s+[\"']?(\S{1,300})")
+    r"(?i)\bauthorization[\"']?\s*(?:=>|[:=])\s*(?:[fbru]{1,2}(?=[\"']))?[\"']?"
+    r"(?:bearer|basic|token)\s+[\"']?(\S{1,300})")
+# a credential's run of token characters: base64, JWT, hex, and the : and %
+# of a raw user:pass or a percent-encoded value
+_AUTH_TOKEN_RE = re.compile(r"[A-Za-z0-9+/_.=~:%-]+")
 # A key is a secret-word key when one of its segments (split on _ - . and
 # camelCase) is one of these whole words, or ends with one of the suffixes
 # (dbpassword, apitoken, clientsecret, dbpass, userpasscode); a plural
@@ -3445,11 +3459,7 @@ def _quoted_code(key, raw, value):
         if body.endswith(_CLOSE[m.group(2)]):
             args = [arg.strip().strip("\"'")
                     for arg in _split_args(body[m.end():-1])]
-            # an argument holding a space is prose or an expression, never
-            # one secret (the value rule reads a run of non-space characters)
-            if not any(arg and not re.search(r"\s", arg)
-                       and _secret_value_flagged(key, arg, "", arg)
-                       for arg in args):
+            if not any(arg and _arg_flagged(key, arg) for arg in args):
                 return True
     if _ATTR_RE.fullmatch(value):
         return True
@@ -3461,6 +3471,17 @@ def _quoted_code(key, raw, value):
         segs = [seg for seg in _SEG_SPLIT_RE.split(value) if seg]
         return len(segs) >= 2 and all(_harmless_segment(seg) for seg in segs)
     return False
+
+
+def _arg_flagged(key, arg):
+    """A call argument that would flag on its own. One holding a space is
+    prose or an expression, not one secret, so it flags only when one of
+    its words looks live as under other keys (_looks_live: login(user,
+    "Bearer <live token>")) (dc23)."""
+    if re.search(r"\s", arg):
+        return any(_looks_live(tok.group())
+                   for tok in _VALUE_TOKEN_RE.finditer(arg))
+    return _secret_value_flagged(key, arg, "", arg)
 
 
 def _placeholder(value, rest):
@@ -3595,6 +3616,48 @@ def _shape_value_flagged(key, raw, quote="", rest=None):
     return _looks_live(tok.group())
 
 
+# bare one-case colon keys that count (pw:, dbpass:, passphrase:): a
+# secret-word suffix, or one of these whole words; key, auth, cred(s),
+# webhook and pass itself are left out, as prose ("key: the main point",
+# "pass: 12 of 12") uses them
+_BARE_WORDS = frozenset(("pw", "pwd", "apikey", "secretkey", "privatekey"))
+# a plain value: a word or words joined by - _ or ' (required, read-only)
+_PLAIN_RE = re.compile(r"[A-Za-z]+(?:[-_'][A-Za-z]+)*")
+
+
+def _bare_secret_key(key):
+    if not re.fullmatch(r"[a-z][a-z0-9]*|[A-Z][A-Z0-9]*", key):
+        return False
+    word = key.lower()
+    return word in _BARE_WORDS or (word.endswith(_SECRET_SUFFIXES)
+                                   and word not in _PASS_WORDS
+                                   and word != "pass")
+
+
+def _plain_value(raw):
+    value = raw.strip("\"'`,;:.)]}")
+    return (not value or _PLAIN_RE.fullmatch(value) is not None
+            or _DATE_RE.match(value) is not None)
+
+
+def _loose_flagged(key, raw, quote, rest):
+    """The looser key forms (a spaced flag, a kebab or bare colon key, a
+    Markdown table cell, dc23) count only under a key holding a secret word,
+    judged as _shape_value_flagged judges it, and never a plain word or
+    a date (prose: "--auth required", "| password | required |")."""
+    if not any(_secret_word(seg) for seg in _key_segments(key)):
+        return False
+    # a closing ** or ` is markdown around the pair, and an unbalanced } a
+    # brace around it, not the value's (**token: ${TOKEN}**, {pw: f(x)})
+    stripped = re.sub(r"[*`]+[,;:.]*$", "", raw)
+    if stripped.endswith("}") and stripped.count("}") > stripped.count("{"):
+        stripped = stripped[:-1]
+    if stripped != raw:
+        raw, rest = stripped, stripped
+    return (not _plain_value(raw)
+            and _shape_value_flagged(key, raw, quote, rest))
+
+
 def _shape_secret(line):
     # rest is bounded (the value is at most 256 characters), so each pair
     # costs a constant and a long line of pairs stays linear
@@ -3603,23 +3666,76 @@ def _shape_secret(line):
         m = SECRET_SHAPE_RE.search(line, pos)
         if not m:
             return False
+        loose = m.group("sflag") or m.group("kcolon")
         key = m.group("flag") or m.group("json") or m.group("kv") or m.group("colon")
         if m.group("camel"):
             # mixed case, 2+ segments, no lone capital before a capitalised
             # word, a secret word: JWTSecret, AWSSecretKey, clientSecret,
-            # db2Password, k8sToken; not OAuth, Token, GitHub
+            # db2Password, k8sToken; not OAuth, Token, GitHub. A one-case
+            # single word counts only as a bare secret word (dc23).
             key = m.group("camel")
             segs = _KEY_SEG_RE.findall(key)
-            if not (re.search(r"[a-z]", key) and re.search(r"[A-Z]", key)
-                    and len(segs) >= 2
-                    and not re.match(r"[A-Z][A-Z][a-z]", key)
-                    and _secret_key(key)):
+            if _bare_secret_key(key):
+                loose = key
+            elif not (re.search(r"[a-z]", key) and re.search(r"[A-Z]", key)
+                      and len(segs) >= 2
+                      and not re.match(r"[A-Z][A-Z][a-z]", key)
+                      and _secret_key(key)):
                 pos = m.start("value")
                 continue
-        if _shape_value_flagged(key, m.group("value"), m.group("quote"),
-                                line[m.start("value"):m.start("value") + 300]):
-            return True
+        # a loose colon key needs a space after its colon, as YAML does,
+        # so prose such as "dbpass:/dbpassword:" never qualifies
+        if (not loose or m.group("sflag")
+                or re.search(r":\s", line[m.start():m.start("value")])):
+            rest = line[m.start("value"):m.start("value") + 300]
+            if (_loose_flagged if loose else _shape_value_flagged)(
+                    loose or key, m.group("value"), m.group("quote"), rest):
+                return True
         pos = m.start("value")
+
+
+# A Markdown table row (| db_pass | value |): a cell that is one key-shaped
+# token, then a cell that is one token (dc23)
+_TABLE_KEY_RE = re.compile(r"[A-Za-z][A-Za-z0-9_.-]{0,63}")
+
+
+def _table_secret(line):
+    """A Markdown table row whose key cell holds a secret word and whose
+    next cell is a single token that _loose_flagged counts. A cell with a
+    space in it is prose, and a cell over 256 characters is skipped."""
+    if not line.lstrip().startswith("|"):
+        return False
+    # a code span or emphasis around a cell is markdown, not the value's
+    cells = [cell.strip().strip("`*") for cell in line.split("|")]
+    for key, value in zip(cells, cells[1:]):
+        if (not value or len(value) > 256 or not _TABLE_KEY_RE.fullmatch(key)
+                or re.search(r"\s", value)):
+            continue
+        quote = value[0] if value[0] in "\"'" else ""
+        raw = value[1:] if quote else value
+        if _loose_flagged(key, raw, quote, raw):
+            return True
+    return False
+
+
+# a URL's user:password@ part, read from just after each :// (dc23)
+_URL_USERINFO_RE = re.compile(r"[^\s:/@]{1,64}:([^\s/@]{1,256})@")
+
+
+def _url_secret(line):
+    """A password inside a URL (scheme://user:value@host): 8+ characters,
+    not a whole-value placeholder (${DB_PASS}, <password>, ****), not one or
+    two repeated characters, and not a plain word (password, changeme)."""
+    for m in re.finditer("://", line):
+        u = _URL_USERINFO_RE.match(line, m.end())
+        if not u:
+            continue
+        value = u.group(1)
+        if (len(value) < 8 or _placeholder(value, value + " ")
+                or len(set(value)) <= 2 or _plain_value(value)):
+            continue
+        return True
+    return False
 
 
 def _secret_line(line):
@@ -3640,12 +3756,13 @@ def _auth_secret(line):
     for m in SECRET_AUTH_RE.finditer(line):
         # the credential is its run of token characters (base64, JWT, hex),
         # so closing quotes and prose punctuation after it never count
-        value = _VALUE_TOKEN_RE.match(m.group(1))
-        value = value.group().rstrip(".") if value else ""
+        value = _AUTH_TOKEN_RE.match(m.group(1))
+        value = value.group().rstrip(".:") if value else ""
         rest = line[m.start(1):m.start(1) + 300]
         if (len(value) < 12 or _placeholder(value, rest)
                 or len(set(value)) <= 2
-                or re.fullmatch(r"[A-Za-z][a-z]*", value)):
+                or re.fullmatch(r"[A-Za-z][a-z]*|[A-Za-z]+(?::[A-Za-z]+)+",
+                                value)):
             continue
         return True
     return False
@@ -3655,26 +3772,67 @@ def _secret_hit(line):
     if "PRIVATE KEY-----" in line:
         return "PEM private key material"
     if (SECRET_ASSIGN_RE.search(line) or SECRET_KV_RE.search(line)
-            or _shape_secret(line) or _auth_secret(line)):
+            or _shape_secret(line) or _auth_secret(line)
+            or _table_secret(line) or _url_secret(line)):
         return "likely secret value (record the path and key, never the value)"
     return None
+
+
+# A value on the next line (dc23): a YAML block scalar (key: | or key: >,
+# with its - + or digit indicators), a \ continuation (shell, Dockerfile),
+# or an Authorization header whose credential, or scheme and credential,
+# is on the next line
+_YAML_BLOCK_RE = re.compile(r"[:=]\s*[|>][-+0-9]{0,2}$")
+_AUTH_OPEN_RE = re.compile(
+    r"(?i)\bauthorization[\"']?\s*(?:=>|[:=])\s*(?:[fbru]{1,2}(?=[\"']))?"
+    r"[\"']?(?:(?:bearer|basic|token)\s*)?$")
+
+
+def _joined(line, nxt):
+    """The line's last 300 characters joined to the next line's first 300
+    when the line ends in a continuation, else None. Each line is read in at
+    most one join as the first and one as the second, a bounded slice of
+    each, so the scan stays linear."""
+    tail, head = line[-300:].rstrip(), nxt[:300].lstrip()
+    if not head.strip():
+        return None
+    if tail.endswith("\\"):
+        return tail[:-1] + head
+    m = _YAML_BLOCK_RE.search(tail)
+    if m:
+        return tail[:m.start() + 1] + " " + head
+    if _AUTH_OPEN_RE.search(tail):
+        return tail + " " + head
+    return None
+
+
+def _line_hit(line):
+    clean = _secret_line(line)
+    raw_why = _secret_hit(line)
+    clean_why = raw_why if clean == line else _secret_hit(clean)
+    return ("PEM private key material"
+            if "PEM private key material" in (raw_why, clean_why)
+            else raw_why or clean_why)
 
 
 def secret_findings(text):
     """Every rule runs on the raw line and on the cleaned line
     (_secret_line), and either one flagging flags the line, so the cleanup
     never hides what the raw line shows (*my*password:, a value with * in
-    it, a fullwidth $ before a value)."""
-    out = []
+    it, a fullwidth $ before a value). The scan reads line by line and
+    carries one line of state, the previous line: when that line was clean
+    and ends in a continuation (_joined), the two joined are checked too,
+    and a hit is reported on the line that holds the value."""
+    out, prev, prev_hit = [], "", True
     for n, line in enumerate(text.split("\n"), 1):
-        clean = _secret_line(line)
-        raw_why = _secret_hit(line)
-        clean_why = raw_why if clean == line else _secret_hit(clean)
-        why = ("PEM private key material"
-               if "PEM private key material" in (raw_why, clean_why)
-               else raw_why or clean_why)
+        why = _line_hit(line)
+        if not why and not prev_hit:
+            joined = _joined(prev, line)
+            if joined is not None:
+                why = _line_hit(joined)
         if why:
             out.append((n, why))
+        prev, prev_hit = line, bool(why)
     return out
 
 

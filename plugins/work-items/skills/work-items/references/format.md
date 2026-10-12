@@ -596,10 +596,38 @@ not open with one capital before a capitalised word: `clientSecret: …`,
 JSON `"key": "value"` pair and `--flag=value`, with the value bare or
 quoted, and every pair on a line (`dsn=host=db;db_pass=…`, compact JSON).
 It flags an `Authorization: Bearer …` header, any case, after `:`, `=` or
-`=>` (never `==`), the credential bare or quoted, and its `Basic` and
-`Token` forms, when the credential is 12+ token characters and not a
-placeholder, one or two repeated characters (`XXXX…`) or a plain word.
+`=>` (never `==`), the credential bare or quoted (an `f"…"` string prefix
+included), and its `Basic` and `Token` forms, when the credential is 12+
+token characters (`:` and `%` count, so a raw `user:pass` or a
+percent-encoded value is read whole) and not a placeholder, one or two
+repeated characters (`XXXX…`) or a plain word (`user:password` is words).
+The `=` forms take a kebab-case key (`db-pass=…`) and `pw` (`pw=…`).
 
+- **Looser key forms.** These count only under a key holding a secret word
+  (below), judged as under one, and never a plain value (a word, or words
+  joined by `-`, `_` or `'`: `required`, `read-only`) or a date: a spaced
+  flag (`--password …`, not a value starting `-`); a kebab-case colon key
+  (`db-pass: …`); a bare one-case colon key that is itself a secret word
+  or ends with a secret suffix (`dbpass:`, `dbpassword:`, `passphrase:`,
+  `pw:`, `pwd:`), never `key:`, `auth:`, `cred:`, `creds:`, `webhook:` or
+  `pass:` alone, which prose uses; and a Markdown table row
+  (`| db_pass | … |`): a cell of one key-shaped token, then a cell of one
+  token, a code span or emphasis around either dropped. A colon key here
+  needs a space after its colon (`dbpass:/dbpassword:` is prose). A
+  closing `**` or `` ` `` and an unbalanced `}` after the value are
+  markdown or a brace around the pair (`**pw: ${PW}**` is a placeholder).
+- **URL passwords.** `scheme://user:…@host` flags a password of 8+
+  characters that is not a whole-value placeholder (`${DB_PASS}`,
+  `<password>`, `****`), one or two repeated characters, or a plain word
+  (`password`, `changeme`).
+- **The next line.** Lint reads line by line and keeps one line of state:
+  when the previous line was clean and ends in a continuation, its last
+  300 characters joined to this line's first 300 are checked too, and a
+  hit is reported on this line, the one with the value. A continuation is
+  a YAML block scalar (`key: |`, `key: >-`), a trailing `\` (shell,
+  Dockerfile; joined with the next line's indent dropped), or an
+  `Authorization` header whose credential, or scheme and credential, is
+  on the next line.
 - **Secret-word keys.** A key is one when a segment of it, split on `_`,
   `-`, `.` and camelCase, is a secret word (`pass`, `password`, `pw`,
   `secret`, `token`, `auth`, `cred`, `key`, `apikey`, `webhook` and the
@@ -630,7 +658,9 @@ placeholder, one or two repeated characters (`XXXX…`) or a plain word.
   nothing; an unquoted one skips only code, a count or a path a note may
   quote: a call `f(…)` or subscript `x[…]` with nothing after the closing
   bracket and no comma-separated argument inside it that would flag on its
-  own, a spaced or nested one included (`auth(user, cfg(x), …)` is read
+  own (an argument holding a space flags when one of its words looks live
+  as under other keys, below: `login(user, "Bearer …")`), a spaced or
+  nested one included (`auth(user, cfg(x), …)` is read
   to its matching `)`, and split only at commas outside inner brackets); a
   dotted
   attribute of letters and `_` only (`config.api_key`); a number with
@@ -666,11 +696,18 @@ placeholder, one or two repeated characters (`XXXX…`) or a plain word.
   dedupe_key`), a number with a unit (`pass_rate = 97.5%`), and under other
   keys a single mixed value (`checkpoint_id: ckpt20261009T1104Z`) or a path
   segment over 12 characters that mixes letters and digits. Reword such a
-  line, or record the path and key. **Known gaps**: a separated number
-  under a secret-word key, a single lowercase word as a colon key
-  (`passphrase: …`; prose such as `key: …` would trip it), and an
-  `Authorization` header with a scheme other than `Bearer`, `Basic` or
-  `Token` pass.
+  line, or record the path and key. **Known gaps**, each left open
+  because closing it would flag ordinary notes or unbound the scan: a
+  separated number under a secret-word key; `key:`, `auth:`, `cred:` or
+  `pass:` alone as a colon key; in the looser key forms and URL
+  passwords, a plain-word or date value (`passphrase: correcthorse`), and a colon key with no space
+  after its colon; a call argument holding a space whose words do not look
+  live (a short or hex password with a space beside it); a table cell
+  holding a space; a URL password under 8 characters or holding an
+  unencoded `/` or `@`; a value more than one line below its key (a
+  YAML block after a blank line, a key two continued lines up);
+  and an `Authorization` header with a scheme other than `Bearer`, `Basic`
+  or `Token`.
 
 `wi note` refuses, writing nothing, a line lint would flag. Lint's shapes
 are a floor, not every secret: the path-and-key rule is the guard.
