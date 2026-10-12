@@ -382,7 +382,8 @@ G2 re-runs on the delta and the operator approves any one-way ADR change). Optio
   (`record-lines.md`);
 - (c) **answer locally** — the operator rules that no foundation artifact changes; an
   implementer's line is re-dispatched with the answer as a `NEEDS_CONTEXT` answer is, a
-  reviewer's goes into the fix round as a finding, or it is dropped on their word.
+  reviewer's goes into the fix round as a finding (after a `CLEAR`, a fix round opened
+  for it), or it is dropped on their word.
 
 Recommend (a) when the build depends on the artifact as it stands, else (b). Why ask: it
 changes what the operator approved at the gate (`your-call`); (z) decide later stops the

@@ -135,9 +135,9 @@ interrupted run up again; a line that is missing reads there as not recorded:
   path, one line per open finding; a rider no verdict carries, never read by the GATE but
   read by resume's S11 (`resume.md`). Every build of that series copies the lines into its
   brief's Acceptance (`agent-brief.md`).
-- `REOPEN: <the artifact> — <the reopen> — <why>` — SKILL.md § Step 4.5: each such line
-  in an implementer's OPEN QUESTIONS or a reviewer's NOTES, copied verbatim whatever the
-  verdict, before it is raised (`bindings.md` § Decisions, A foundation reopen). A rider.
+- `REOPEN: <the artifact> — <the reopen> — <why>` — SKILL.md § Step 4.5 for a verdict's
+  line, and for a return's as the return is recorded (Step 3.5): each such line in an
+  implementer's OPEN QUESTIONS or a reviewer's NOTES, copied verbatim whatever the verdict, before it is raised (`bindings.md` § Decisions, A foundation reopen). A rider.
 - `reopen: carried — REOPEN: <the artifact> — <the reopen> — <why> — filed as <reopen id |
   open questions>` — `bindings.md` § Decisions, A foundation reopen: written by the
   orchestrator onto a build's item when the operator answers that the build carries a

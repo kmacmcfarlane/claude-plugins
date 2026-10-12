@@ -327,7 +327,7 @@ resume with findings = review round n+1; the cap: Step 4.3.
    re-dispatch. Repeat until `CLEAR`.
    **The cap.** Rounds run unasked inside the phase's spend budget, past the fourth review
    through its guard; the cap is the budget reached (not while a fresh weekly reading is
-   below 50%), the must-fix count not falling from the fourth review on, or, with no
+   below 50% used), the must-fix count not falling from the fourth review on, or, with no
    spend reading, the fourth review. It ends in a plan's stop and carry, one finish round
    of exact fixes, or a raise with what the open findings would break and what more costs
    (`references/bindings.md` § Decisions, What a cap ends in). Never argue a severity down.
