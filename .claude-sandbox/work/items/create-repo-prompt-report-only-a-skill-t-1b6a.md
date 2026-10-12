@@ -26,3 +26,5 @@ From 7b85 review 1, 2026-10-12: launch-command.md lines 25 and 39 say 'if a skil
 target: launch-command.md lines 25 and 39 say "if a skill this asks you to use is missing from this session, say which one in one clause of your reply."
 dispatch: implementer sonnet medium — build (two-line wording: canonical kind)
 agent: implementer a8276de30316e1fd6
+return: DONE c7ee13b; both clauses replaced; substitution phrases intact; no other file quotes it; kit-dev 21 OK
+dispatch: reviewer opus high — review round 1 of c7ee13b
