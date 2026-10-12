@@ -37,3 +37,6 @@ verdict: review round 2 NEEDS_CHANGES (must-fix 2, down from 4: high — a row r
 dispatch: implementer opus medium — fix round 2 (resume a6352961bcd58ea3f); review 3 next
 return: DONE a2dd295 (fix round 2); 12/12 OK; dev-cycle SKILL.md 4997; writer wording mirrored into state.md Who writes, gates.md § 3, foundation SKILL.md
 dispatch: reviewer opus high — review round 3 of a2dd295 (resume a465df0b41e988bf4)
+verdict: review round 3 NEEDS_CHANGES (must-fix 1, down from 2: resume.md S7 still passes a G3 a reopen is re-running; follow-ups: A a re-run G3 re-files every feature (step 1 alone), B moves.md step 3 should mark re-run rows, C name a done item among the exclusions; all with exact wording)
+decided: 2026-10-13T00:40Z cap — must-fix fell 2 → 1 and every leftover is an exact fix: a finish round of the must-fix and A–C (authority answer 145), no review 4
+dispatch: implementer opus medium — finish round (resume a6352961bcd58ea3f)
