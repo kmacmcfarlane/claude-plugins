@@ -31,3 +31,5 @@ dispatch: reviewer opus high — review round 1 of b0d262a
 agent: reviewer a6051b1f85c3fb961
 verdict: review round 1 NEEDS_CHANGES (must-fix 2: medium 1 — -m json.tool and -m py_compile in review-checklist import a planted json.py or re.py (reproduced); -I safe for both, unittest discover exempt; medium 2 — the test misses -m, inline-code prose and /usr/bin/python3; patched test at scratchpad/9782-review/fixed/; nit 3 bare stdin forms (none today); low 4 ruamel under -I degrades on a --user install, optional guard)
 dispatch: implementer sonnet medium — fix round 1 (resume a2a41b98a71a74186)
+return: DONE c11ed0b (fix round 1); kit-dev 21 OK, dev-flow 78 OK; stdin pattern narrowed to < followed by < or whitespace (placeholders like python3 <path> were flagged)
+dispatch: reviewer opus high — review round 2 of c11ed0b (resume a6051b1f85c3fb961)
