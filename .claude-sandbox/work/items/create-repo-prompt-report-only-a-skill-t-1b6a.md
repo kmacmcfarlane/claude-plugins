@@ -31,3 +31,4 @@ agent: reviewer a6f5c269d49772711
 verdict: review round 1 CLEAR (must-fix 0; optional: "say which one" singular, pre-existing; a stricter "path you took" wording — both declined: the reviewer expects the wording to read right and it is the item's own)
 landed: 67bae4f (merge of c7ee13b); Checks 12/12 OK; cc_scan clean
 - 2026-10-12 done
+correction: 2026-10-13 the push (d0fc70e..6317d49) went out before 1b6a's Report was printed; the Report followed right after. Same slip as 2ff6.
