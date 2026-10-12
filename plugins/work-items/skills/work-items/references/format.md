@@ -600,17 +600,23 @@ It flags an `Authorization: Bearer …` header, any case, after `:`, `=` or
 included), and its `Basic` and `Token` forms, when the credential is 12+
 token characters (`:` and `%` count, so a raw `user:pass` or a
 percent-encoded value is read whole) and not a placeholder, one or two
-repeated characters (`XXXX…`) or a plain word (`user:password` is words).
+repeated characters (`XXXX…`) or plain words, each lowercase or
+capitalised, joined by `:` (`user:password`, `User:Password`; a run such
+as `FakeSecretPass` is no plain word).
 The `=` forms take a kebab-case key (`db-pass=…`) and `pw` (`pw=…`).
 
 - **Looser key forms.** These count only under a key holding a secret word
   (below), judged as under one, and never a plain value (a word, or words
-  joined by `-`, `_` or `'`: `required`, `read-only`) or a date: a spaced
+  joined by `-`, `_` or `'`, each lowercase, capitalised or all capitals:
+  `required`, `read-only`, `NOT_SET`, with quotes, brackets and markdown
+  around it dropped: `(optional)`, `_(unset)_`) or a whole date: a spaced
   flag (`--password …`, not a value starting `-`); a kebab-case colon key
-  (`db-pass: …`); a bare one-case colon key that is itself a secret word
-  or ends with a secret suffix (`dbpass:`, `dbpassword:`, `passphrase:`,
-  `pw:`, `pwd:`), never `key:`, `auth:`, `cred:`, `creds:`, `webhook:` or
-  `pass:` alone, which prose uses; and a Markdown table row
+  (`db-pass: …`); a bare one-word colon key, lowercase, capitalised or all
+  capitals, that is itself a secret word or ends with a secret suffix
+  (`dbpass:`, `Dbpassword:`, `Passphrase:`, `pw:`, `PWD:`; a key that is
+  camelCase too, such as `Q9token:`, is judged as camelCase), never
+  `key:`, `auth:`, `cred:`, `creds:`, `webhook:` or `pass:` alone, which
+  prose uses; and a Markdown table row
   (`| db_pass | … |`): a cell of one key-shaped token, then a cell of one
   token, a code span or emphasis around either dropped. A colon key here
   needs a space after its colon (`dbpass:/dbpassword:` is prose). A
@@ -619,7 +625,7 @@ The `=` forms take a kebab-case key (`db-pass=…`) and `pw` (`pw=…`).
 - **URL passwords.** `scheme://user:…@host` flags a password of 8+
   characters that is not a whole-value placeholder (`${DB_PASS}`,
   `<password>`, `****`), one or two repeated characters, or a plain word
-  (`password`, `changeme`).
+  (`password`, `changeme`); the user may be empty (`redis://:…@host`).
 - **The next line.** Lint reads line by line and keeps one line of state:
   when the previous line was clean and ends in a continuation, its last
   300 characters joined to this line's first 300 are checked too, and a
@@ -700,14 +706,18 @@ The `=` forms take a kebab-case key (`db-pass=…`) and `pw` (`pw=…`).
   because closing it would flag ordinary notes or unbound the scan: a
   separated number under a secret-word key; `key:`, `auth:`, `cred:` or
   `pass:` alone as a colon key; in the looser key forms and URL
-  passwords, a plain-word or date value (`passphrase: correcthorse`), and a colon key with no space
-  after its colon; a call argument holding a space whose words do not look
-  live (a short or hex password with a space beside it); a table cell
-  holding a space; a URL password under 8 characters or holding an
-  unencoded `/` or `@`; a value more than one line below its key (a
-  YAML block after a blank line, a key two continued lines up);
-  and an `Authorization` header with a scheme other than `Bearer`, `Basic`
-  or `Token`.
+  passwords, a plain-word or whole-date value (`passphrase:
+  correcthorse`), and
+  a colon key with no space after its colon; a call argument holding a
+  space whose words do not look live (a short or hex password with a
+  space beside it); a table cell holding a space, and a table value not
+  in the cell right after its key; a URL password under 8 characters or
+  holding an unencoded `/` or `@`, and a token as the URL's user
+  (`https://<token>@host`); a value more than one line below its key (a
+  YAML block after a blank line, a key two continued lines up), and a
+  YAML value on the next indented line with no `|` or `>`; and an
+  `Authorization` header with a scheme other than `Bearer`, `Basic` or
+  `Token`.
 
 `wi note` refuses, writing nothing, a line lint would flag. Lint's shapes
 are a floor, not every secret: the path-and-key rule is the guard.

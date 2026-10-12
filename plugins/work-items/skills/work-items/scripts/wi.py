@@ -3319,9 +3319,11 @@ SECRET_KV_RE = re.compile(
 # with one capital before a capitalised word (OAuth) and holds a secret
 # word (ac83, see _shape_secret; db2Password and k8sToken count), so prose
 # such as "GitHub: ...", "OAuth: ..." or "Token: ..." never qualifies.
-# The lookbehind lets _shape_secret resume at a value's start, so a later
-# pair joined to it (a=b;db_pass=..., {"a":"b","db_pass":...}) is still
-# examined; the value is capped so the scan stays linear.
+# The lookbehind lets _shape_secret resume at a value's start (at its
+# opening quote, so a quoted pair after a spaced flag or kebab key,
+# --a-b "db_pass":"...", is read whole), so a later pair joined to it
+# (a=b;db_pass=..., {"a":"b","db_pass":...}) is still examined; the
+# value is capped so the scan stays linear.
 #
 # dc23 adds the looser key forms, each counted only under a secret-word key
 # and never for a plain word or a date (_loose_flagged): a spaced flag
@@ -3621,12 +3623,15 @@ def _shape_value_flagged(key, raw, quote="", rest=None):
 # webhook and pass itself are left out, as prose ("key: the main point",
 # "pass: 12 of 12") uses them
 _BARE_WORDS = frozenset(("pw", "pwd", "apikey", "secretkey", "privatekey"))
-# a plain value: a word or words joined by - _ or ' (required, read-only)
-_PLAIN_RE = re.compile(r"[A-Za-z]+(?:[-_'][A-Za-z]+)*")
+# a plain value: a word or words joined by - _ or ' (required, read-only,
+# NOT_SET), each a lowercase or capitalised word or all capitals, so a
+# mixed-case run such as FakeSecretPass is no plain word
+_PLAIN_WORD = r"(?:[A-Za-z][a-z]*|[A-Z]+)"
+_PLAIN_RE = re.compile(_PLAIN_WORD + r"(?:[-_']" + _PLAIN_WORD + r")*")
 
 
 def _bare_secret_key(key):
-    if not re.fullmatch(r"[a-z][a-z0-9]*|[A-Z][A-Z0-9]*", key):
+    if not re.fullmatch(r"[A-Za-z][a-z0-9]*|[A-Z][A-Z0-9]*", key):
         return False
     word = key.lower()
     return word in _BARE_WORDS or (word.endswith(_SECRET_SUFFIXES)
@@ -3635,9 +3640,12 @@ def _bare_secret_key(key):
 
 
 def _plain_value(raw):
-    value = raw.strip("\"'`,;:.)]}")
+    """A plain word or words (_PLAIN_RE) or a whole date, once quotes,
+    brackets, markdown and prose punctuation around it are dropped
+    ((required), _(unset)_, <optional>)."""
+    value = raw.strip("\"'`,;:.()[]{}<>_*~!?")
     return (not value or _PLAIN_RE.fullmatch(value) is not None
-            or _DATE_RE.match(value) is not None)
+            or _DATE_RE.fullmatch(value) is not None)
 
 
 def _loose_flagged(key, raw, quote, rest):
@@ -3672,16 +3680,20 @@ def _shape_secret(line):
             # mixed case, 2+ segments, no lone capital before a capitalised
             # word, a secret word: JWTSecret, AWSSecretKey, clientSecret,
             # db2Password, k8sToken; not OAuth, Token, GitHub. A one-case
-            # single word counts only as a bare secret word (dc23).
+            # single word counts only as a bare secret word (dc23), and a
+            # key that is both (Q9token) is judged as camelCase, as on main.
             key = m.group("camel")
             segs = _KEY_SEG_RE.findall(key)
-            if _bare_secret_key(key):
+            camel = (re.search(r"[a-z]", key) and re.search(r"[A-Z]", key)
+                     and len(segs) >= 2
+                     and not re.match(r"[A-Z][A-Z][a-z]", key)
+                     and _secret_key(key))
+            if not camel and _bare_secret_key(key):
                 loose = key
-            elif not (re.search(r"[a-z]", key) and re.search(r"[A-Z]", key)
-                      and len(segs) >= 2
-                      and not re.match(r"[A-Z][A-Z][a-z]", key)
-                      and _secret_key(key)):
-                pos = m.start("value")
+            elif not camel:
+                # resume at the quote, so a quoted pair the value
+                # swallowed ("db_pass":"...") is still examined
+                pos = m.start("quote")
                 continue
         # a loose colon key needs a space after its colon, as YAML does,
         # so prose such as "dbpass:/dbpassword:" never qualifies
@@ -3691,7 +3703,7 @@ def _shape_secret(line):
             if (_loose_flagged if loose else _shape_value_flagged)(
                     loose or key, m.group("value"), m.group("quote"), rest):
                 return True
-        pos = m.start("value")
+        pos = m.start("quote")
 
 
 # A Markdown table row (| db_pass | value |): a cell that is one key-shaped
@@ -3719,11 +3731,12 @@ def _table_secret(line):
 
 
 # a URL's user:password@ part, read from just after each :// (dc23)
-_URL_USERINFO_RE = re.compile(r"[^\s:/@]{1,64}:([^\s/@]{1,256})@")
+_URL_USERINFO_RE = re.compile(r"[^\s:/@]{0,64}:([^\s/@]{1,256})@")
 
 
 def _url_secret(line):
-    """A password inside a URL (scheme://user:value@host): 8+ characters,
+    """A password inside a URL (scheme://user:value@host, the user may be
+    empty: redis://:value@host): 8+ characters,
     not a whole-value placeholder (${DB_PASS}, <password>, ****), not one or
     two repeated characters, and not a plain word (password, changeme)."""
     for m in re.finditer("://", line):
@@ -3761,7 +3774,7 @@ def _auth_secret(line):
         rest = line[m.start(1):m.start(1) + 300]
         if (len(value) < 12 or _placeholder(value, rest)
                 or len(set(value)) <= 2
-                or re.fullmatch(r"[A-Za-z][a-z]*|[A-Za-z]+(?::[A-Za-z]+)+",
+                or re.fullmatch(r"[A-Za-z][a-z]*(?::[A-Za-z][a-z]*)*",
                                 value)):
             continue
         return True

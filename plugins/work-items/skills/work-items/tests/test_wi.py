@@ -3422,6 +3422,25 @@ class TestLint(WiTestCase):
             # 9 a spaced flag
             "spaced flag": "--password " + pw,
             "spaced flag, quoted": 'run --api-token "' + v + '"',
+            # fix round 1: a mixed-case letters credential with a colon
+            "auth letters with colon": "Authorization: Basic " + ":".join(
+                ("AdminUserName", "FakeSecretPass")),
+            # a spaced flag or kebab key does not swallow a JSON pair's quote
+            "spaced flag then json pair": '--a-b "db_pass":"' + pw + 'x"',
+            "kebab key then json pair": 'a-b= "db_pass":"' + pw + 'x"',
+            # capitalised one-word keys
+            "capitalised Passphrase": "Passphrase: " + pw,
+            "capitalised Password, short": "Password: " + pw,
+            "capitalised Pw": "Pw: " + pw,
+            "capitalised Dbpass": "Dbpass: " + pw,
+            # a capitalised key that is also camelCase (Q9token, Ws3token)
+            # keeps main's camelCase judgement: no space needed, as on main
+            "camel-capitalised, no space": "Ws3token:" + v,
+            # mixed-case and date-led values are no plain words
+            "bare key, mixed-case letters": "passphrase: FakeSecretPass",
+            "bare key, date-led": "dbpass: 2026-10-09fake0x",
+            # an empty URL user
+            "url, empty user": "redis://:" + pw + "@cache:6379",
         }
         for name, text in shapes.items():
             with self.subTest(shape=name):
@@ -3467,6 +3486,13 @@ class TestLint(WiTestCase):
             "markdown break": "see below\\\nthe token rotation",
             "auth next line, variable": "Authorization: Bearer\n  $TOKEN",
             "auth raw words": "Authorization: Basic user:password",
+            "auth raw capitalised words": "Authorization: Basic User:Password",
+            # fix round 1: env-var tables in docs
+            "table, unset": "| `DB_PASSWORD` | _(unset)_ |",
+            "table, required": "| db_pass | (required) |",
+            "table, optional": "| api_token | (optional) |",
+            "table, all capitals": "| password | NOT_SET |",
+            "capitalised prose key": "Password: required",
             "spaced argument, prose": 'token = get(user, "the default scope")',
             "spaced argument, short": "token = get(user, a b)",
         }
