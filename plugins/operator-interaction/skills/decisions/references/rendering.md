@@ -295,8 +295,9 @@ Rec **(b)** · basis **partial** — *reason*
 ```
 
 - The block opens as a card does, in the page's order: the title, **What:**, then
-  **Context:** as a bullet list at the page's medium size, its first bullet the card's Context and the rest the context the
-  reader may have lost (§ Context). It is shown on every block, warm reader or cold.
+  **Context:** as a bullet list at the page's medium size, its first bullet the card's
+  Context and the rest the context the reader may have lost (§ Context). It is shown on
+  every block, warm reader or cold.
 - The card's Impact line becomes the **Impact table**, right after Context: one row per
   option, in letter order, then the **Wait row** — decide later's, labelled `(z) Wait` —
   with the columns Effect, Reach, Undo and Cost. Only the recommended option's row label is

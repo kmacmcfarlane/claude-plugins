@@ -16,8 +16,10 @@ Impact line). Each group answers one question and sets one thing — merging the
 | Operator's expected return | when they said they would be back, if they did | you, from what the operator said |
 
 Cold raises the level: a cold reader never gets a line-only decision (the line-only rule in
-SKILL.md § Levels). Warmth does not decide whether Context is shown: every card and block carries it (§ The Context). Re-explaining is triggered by **events**, not by elapsed time alone: a
-compaction five minutes ago makes a reader colder than an idle hour with nothing in between.
+SKILL.md § Levels). Warmth does not decide whether Context is shown: every card and block
+carries it (§ The Context). Re-explaining is triggered by **events**, not by elapsed time
+alone: a compaction five minutes ago makes a reader colder than an idle hour with nothing in
+between.
 
 The last event is the commonest in a long session. A caller re-entered by background work can
 write several messages while the operator is away; a card in the first of them was printed,

@@ -104,8 +104,10 @@ alternative not taken, in case practice argues for it.
   doing the TLDR's work, the sizes (a block at the page's medium only, high staying a
   page-only level), the origin clause for a subject never seen (*raised when …*, worded to
   stay true after it is seen), older stored cards with no Context keeping the old order, and
-  the stored line's reading, designs made in build, not the operator's) — every card and block in chat carries a **Context:** section shaped like
-  the page's `context`, in the page's order: the decision line, then Context, then the
-  Impact and the options; a card's at the page's summary size, a block's at its medium; written when raised, stored with the card, shown every time; a list line carries
-  none. Not taken: the cue alone, shown to a cold reader only (2026-09-30); the cue on a line
-  of its own above Context.
+  the stored line's reading, designs made in build, not the operator's) — every card and
+  block in chat carries a **Context:** section shaped like the page's `context`, in the
+  page's order: the decision line, then Context, then the Impact and the options; a card's
+  at the page's summary size, a block's at its medium; written when raised, stored with the
+  card, shown every time; a list line carries none. Not taken: the cue alone, shown to a
+  cold reader only (2026-09-30); the cue on a line of its own above Context; a block's
+  Context at the page's high size.
