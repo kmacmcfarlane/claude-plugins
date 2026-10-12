@@ -26,3 +26,5 @@ Follow-up F7 from the plugin-dependency spike (72ef), 2026-10-08. Acceptance: as
 target: as 72ef F7 (with 01, 02 applied): every soft edge in the inventory agrees across source plugin.json, catalog cell and README section, marketplace.json matches plugin.json; DF-7 pointer to the hub's hook-contract.md and statusline-hub owner labels; SH-4 and WI-4 as F7 says; test_declared_edges excuses shrink only; all Checks green
 dispatch: implementer opus medium — build, run alone (wide README edits)
 agent: implementer a561dcc2863a9c6b3
+return: DONE 942a05e; 12/12 OK; CR-4 already done; CG-7 and SH-3 declared, WI-4 inlined (edge gone), DF-7/SH-4/KD-4/KD-5/WI-5 done; ALLOWED 20 → 11, UNDECLARED 4 → 0
+dispatch: reviewer opus high — review round 1 of 942a05e
