@@ -3,10 +3,12 @@ id: declaration-sweep-declare-every-soft-cro-eef5
 title: "declaration sweep: declare every soft cross-plugin edge"
 short_display_name: declaration sweep of soft edges
 type: chore
-status: todo
+status: doing
 priority: 3
+owner: Kyle-McFarlane@2d49f8460283
+claimed: 2026-10-12T23:38Z
 created: 2026-10-08
-updated: 2026-10-08
+updated: 2026-10-12
 refs:
   - spike-how-much-inter-plugin-dependency-i-72ef
 ---
@@ -18,3 +20,8 @@ Follow-up F7 from the plugin-dependency spike (72ef), 2026-10-08. Acceptance: as
 - next: —
 - blocked: —
 - learned: —
+
+## Notes
+- 2026-10-12 claimed by Kyle-McFarlane@2d49f8460283
+target: as 72ef F7 (with 01, 02 applied): every soft edge in the inventory agrees across source plugin.json, catalog cell and README section, marketplace.json matches plugin.json; DF-7 pointer to the hub's hook-contract.md and statusline-hub owner labels; SH-4 and WI-4 as F7 says; test_declared_edges excuses shrink only; all Checks green
+dispatch: implementer opus medium — build, run alone (wide README edits)
