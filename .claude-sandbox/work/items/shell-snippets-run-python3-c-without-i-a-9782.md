@@ -33,3 +33,6 @@ verdict: review round 1 NEEDS_CHANGES (must-fix 2: medium 1 — -m json.tool and
 dispatch: implementer sonnet medium — fix round 1 (resume a2a41b98a71a74186)
 return: DONE c11ed0b (fix round 1); kit-dev 21 OK, dev-flow 78 OK; stdin pattern narrowed to < followed by < or whitespace (placeholders like python3 <path> were flagged)
 dispatch: reviewer opus high — review round 2 of c11ed0b (resume a6051b1f85c3fb961)
+verdict: review round 2 CLEAR (must-fix 0; nits: pipe form caught only at end of line (widened pattern given, nothing in plugins today); stale comment at test line 28; accepted gaps: python3 <f.py with no space, -uc combined, flags with arguments, ${PY:-python3})
+decided: 2026-10-12T21:15Z cap — a finish round of nits 1 and 3, exact (authority answer 145)
+dispatch: implementer sonnet medium — finish round (resume a2a41b98a71a74186)
