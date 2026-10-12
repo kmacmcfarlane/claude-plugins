@@ -27,3 +27,5 @@ From the 5f2d series 02 § G4 and its Files to Modify, filed by the librarian 20
 target: dev-cycle's implementer and reviewer briefs raise a build-time reopen (a finding that changes a phase-1 or phase-2 foundation artifact) to the foundation moves table, Reopen requirements or Reopen architecture; the moves table points back
 dispatch: implementer opus medium — build
 agent: implementer a0145b26351bddd68
+return: DONE ce34197; 12/12 OK; REOPEN: line in agent-brief (OPEN QUESTIONS) and review-brief (NOTES, step 9); bindings § Decisions "A foundation reopen" (a stop / b carry / c answer locally); reopen: carried record line, separate from findings: carried because resume.md Group D reads that as Step 4.3 done; moves.md, state.md, foundation SKILL.md table row
+dispatch: reviewer opus high — review round 1 of ce34197
