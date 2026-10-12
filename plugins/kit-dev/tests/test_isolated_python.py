@@ -25,11 +25,11 @@ REPO = KIT.parent.parent
 PLUGINS = REPO / "plugins"
 IN_REPO = (REPO / ".claude-plugin" / "marketplace.json").is_file() and PLUGINS.is_dir()
 
-# python / python3 (optionally python3.12), other short flags, then -c or a lone - (stdin).
+# python / python3 (optionally python3.12), other short flags, -c, a lone - (stdin), or -m <module>.
 INLINE = re.compile(r"(?<![\w.-])python3?(?:\.\d+)?((?:\s+-[A-Za-z]+)*)\s+(-c|-|-m\s+[\w.]+)(?=[\s'\"`]|$)")
 # -m puts the cwd first too; unittest discover is exempt: it runs our own tests from their own dir.
 # Bare stdin forms: python3 <<EOF, python3 < f, x | python3.
-STDIN = re.compile(r"(?<![\w.-])python3?(?:\.\d+)?((?:\s+-[A-Za-z]+)*)\s*<(?:<|\s)|\|\s*python3?(?:\.\d+)?((?:\s+-[A-Za-z]+)*)\s*$")
+STDIN = re.compile(r"(?<![\w.-])python3?(?:\.\d+)?((?:\s+-[A-Za-z]+)*)\s*<(?:<|\s)|\|\s*(?:[\w./-]*/)?python3?(?:\.\d+)?((?:\s+-[A-Za-z]+)*)\s*(?=$|[)`;&|]|\d*>)")
 EXEMPT = re.compile(r"-m\s+unittest$")
 SUFFIXES = {".md", ".json", ".sh"}
 
@@ -74,6 +74,10 @@ class Matcher(unittest.TestCase):
         self.assertEqual(self.hits("python3 -u -c 'pass'"), [1])
         self.assertEqual(self.hits("python3 <<'PY'"), [1])
         self.assertEqual(self.hits("cat f | python3"), [1])
+        self.assertEqual(self.hits("x | python3 2>/dev/null"), [1])
+        self.assertEqual(self.hits("$(x | python3)"), [1])
+        self.assertEqual(self.hits("x | python3 && echo ok"), [1])
+        self.assertEqual(self.hits("x | /usr/bin/python3"), [1])
         self.assertEqual(self.hits("python3 -m json.tool f"), [1])
         self.assertEqual(self.hits("or `python3 -c`; the shape"), [1])
         self.assertEqual(self.hits("/usr/bin/python3 -c 'pass'"), [1])
@@ -85,6 +89,7 @@ class Matcher(unittest.TestCase):
         self.assertEqual(self.hits("python3 -m unittest discover"), [])
         self.assertEqual(self.hits("python3 -I -m py_compile f"), [])
         self.assertEqual(self.hits("python3 -I <<'PY'"), [])
+        self.assertEqual(self.hits("x | python3 -I"), [])
 
 
 if __name__ == "__main__":
