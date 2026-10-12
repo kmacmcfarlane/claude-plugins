@@ -1775,7 +1775,9 @@ class TestNote(WiTestCase):
         before = path.read_bytes()
         for text in ("db_pass = " + fake, "DB_PASS: " + fake,
                      '{"db_pass": "' + fake + '"}', "--auth=" + fake,
-                     'db_pass="' + fake + '"', "app.db_pass => " + fake):
+                     'db_pass="' + fake + '"', "app.db_pass => " + fake,
+                     # dc23: a bare colon key, a spaced flag
+                     "dbpass: " + fake, "--password " + fake):
             with self.subTest(text=text):
                 r = run(["note", self.IID, "--", text], self.root)
                 self.assertEqual(r.returncode, 1, r.stdout + r.stderr)
@@ -3379,6 +3381,125 @@ class TestLint(WiTestCase):
             with self.subTest(shape=name):
                 self.assertEqual(wi.secret_findings(line), [], line)
 
+    def test_shared_gap_secrets_caught(self):
+        # dc23: the gaps main shared, each with an obviously fake value
+        v, pw = self.SHAPE_FAKE, "fake0pass1"
+        shapes = {
+            # 1 bare one-case colon keys that are a secret word
+            "bare dbpass": "dbpass: " + v,
+            "bare dbpassword": "- 2026-10-12 dbpassword: " + pw,
+            "bare passphrase": "passphrase: fake-phrase-0x1",
+            "bare upper": "DBPASSWORD: " + pw,
+            "bare in braces": "{pwd: " + pw + "}",
+            # 2 pw as a key
+            "pw colon": "pw: " + pw,
+            "pw assignment": "pw=" + pw,
+            "pw spaced assignment": "PW = " + pw,
+            "pw json": '{"pw": "' + pw + '"}',
+            # 3 Authorization forms
+            "auth f-string": 'h = {"Authorization": f"Bearer ' + v + '"}',
+            "auth raw user:pass": "Authorization: Basic fakeuser:" + pw,
+            "auth percent-encoded": "Authorization: Bearer fake%2Fabc%3D" + pw,
+            "auth credential next line": "Authorization: Bearer\n  " + v,
+            "auth scheme next line": "Authorization:\n  Bearer " + v,
+            # 4 a call argument holding a space, one word of it live
+            "spaced argument": 'token = login(user, "Bearer ' + v + '")',
+            # 5 continuations
+            "yaml block |": "db_password: |\n  " + v,
+            "yaml block >-": "password: >-\n  " + pw,
+            "backslash, assignment": "export DB_PASS=\\\n" + v,
+            "backslash, spaced flag": "mysql --password \\\n  " + pw,
+            # 6 Markdown table rows
+            "table row": "| db_pass | " + pw + " |",
+            "table row, code spans": "| `api_token` | `" + v + "` |",
+            "table row, quoted": '| password | "' + pw + '" |',
+            # 7 kebab-case keys
+            "kebab assignment": "db-pass=" + v,
+            "kebab colon": "db-pass: " + pw,
+            "kebab header": "x-auth-token: " + v,
+            # 8 a password inside a URL
+            "url password": "postgres://admin:" + pw + "@db.local/app",
+            # 9 a spaced flag
+            "spaced flag": "--password " + pw,
+            "spaced flag, quoted": 'run --api-token "' + v + '"',
+            # fix round 1: a mixed-case letters credential with a colon
+            "auth letters with colon": "Authorization: Basic " + ":".join(
+                ("AdminUserName", "FakeSecretPass")),
+            # a spaced flag or kebab key does not swallow a JSON pair's quote
+            "spaced flag then json pair": '--a-b "db_pass":"' + pw + 'x"',
+            "kebab key then json pair": 'a-b= "db_pass":"' + pw + 'x"',
+            # capitalised one-word keys
+            "capitalised Passphrase": "Passphrase: " + pw,
+            "capitalised Password, short": "Password: " + pw,
+            "capitalised Pw": "Pw: " + pw,
+            "capitalised Dbpass": "Dbpass: " + pw,
+            # a capitalised key that is also camelCase (Q9token, Ws3token)
+            # keeps main's camelCase judgement: no space needed, as on main
+            "camel-capitalised, no space": "Ws3token:" + v,
+            # mixed-case and date-led values are no plain words
+            "bare key, mixed-case letters": "passphrase: FakeSecretPass",
+            "bare key, date-led": "dbpass: 2026-10-09fake0x",
+            # an empty URL user
+            "url, empty user": "redis://:" + pw + "@cache:6379",
+        }
+        for name, text in shapes.items():
+            with self.subTest(shape=name):
+                self.assertTrue(wi.secret_findings(text), text)
+        # a value on the next line is reported on that line, once
+        self.assertEqual([n for n, _ in wi.secret_findings(
+            "intro\ndb_password: |\n  " + v + "\nafter")], [3])
+        r = self.lint_notes("dbpass: " + v, "| db_pass | " + pw + " |")
+        self.assertEqual(r.returncode, 3, r.stdout)
+        self.assertNotIn(v, r.stdout + r.stderr)
+        self.assertNotIn(pw, r.stdout + r.stderr)
+
+    def test_shared_gap_look_alikes_stay_clean(self):
+        look_alikes = {
+            "prose key": "key: the main point is " + self.SHAPE_FAKE,
+            "prose auth": "auth: required",
+            "prose pass": "pass: BASE=<merge sha> for the range",
+            "bare key, plain word": "passphrase: required",
+            "bare key, date": "dbpass: 2026-10-09",
+            "bare key, no space": "dbpass:/dbpassword:/passphrase: miss",
+            "bare key, bold template": "**dbpassword: ${DB_PASSWORD}**,",
+            "bypass colon": "bypass: " + self.SHAPE_FAKE,
+            "flag, plain word": "--auth required",
+            "flag, no secret word": "--model opus-4-fake0",
+            "flag, path": "--password-file ~/.config/app/pw",
+            "flag, variable": "--password $DB_PASS",
+            "flag, count": "--token-budget 30000",
+            "flag, next flag": "--password --verbose",
+            "table prose": "| password | required |",
+            "table header": "| Key | Value |",
+            "table date": "| db_pass | 2026-10-09 |",
+            "table placeholder": "| api_token | `<token>` |",
+            "table prose cell": "| token | the token " + self.SHAPE_FAKE + " |",
+            "url template": "postgres://user:${DB_PASS}@host/db",
+            "url word": "postgres://user:password@localhost/db",
+            "url angle": "https://user:<password>@host",
+            "url masked": "https://user:********@host",
+            "url port": "https://example.com:8443/path",
+            "kebab prose": "follow-up: " + self.SHAPE_FAKE,
+            "kebab re-auth": "re-auth: required",
+            "yaml block, other key": "description: |\n  " + self.SHAPE_FAKE,
+            "yaml block, template": "db_password: |\n  ${DB_PASSWORD}",
+            "markdown break": "see below\\\nthe token rotation",
+            "auth next line, variable": "Authorization: Bearer\n  $TOKEN",
+            "auth raw words": "Authorization: Basic user:password",
+            "auth raw capitalised words": "Authorization: Basic User:Password",
+            # fix round 1: env-var tables in docs
+            "table, unset": "| `DB_PASSWORD` | _(unset)_ |",
+            "table, required": "| db_pass | (required) |",
+            "table, optional": "| api_token | (optional) |",
+            "table, all capitals": "| password | NOT_SET |",
+            "capitalised prose key": "Password: required",
+            "spaced argument, prose": 'token = get(user, "the default scope")',
+            "spaced argument, short": "token = get(user, a b)",
+        }
+        for name, text in look_alikes.items():
+            with self.subTest(shape=name):
+                self.assertEqual(wi.secret_findings(text), [], text)
+
     def test_secret_scan_of_a_long_line_of_pairs_is_linear(self):
         # a 1M-character line of repeated aaa= is 250000 pairs; each pair
         # reads a bounded slice of the line, so this takes about a second
@@ -3390,7 +3511,18 @@ class TestLint(WiTestCase):
                      "dbPassword: f(a, " * 60000,
                      "Authorization: Bearer x " * 40000,
                      "aB:" * 300000,
-                     "token = f(" + "g(a)," * 200000):
+                     "token = f(" + "g(a)," * 200000,
+                     # dc23: table cells, URLs, spaced flags, bare and
+                     # kebab colon keys, and many continued lines
+                     "|" + " db_pass | abc |" * 60000,
+                     "a://b:c@" * 120000,
+                     "--password abc " * 60000,
+                     "dbpass: abc " * 80000,
+                     "db-pass: abc " * 75000,
+                     "x=\\\n" * 250000,
+                     "db_pass: |\n  abc\n" * 60000,
+                     "Authorization: Bearer\n" * 45000,
+                     "a" * 1000000 + " password: |\nabc"):
             with self.subTest(line=line[:5]):
                 start = time.perf_counter()
                 self.assertEqual(wi.secret_findings(line), [])
