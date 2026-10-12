@@ -3,8 +3,10 @@ id: foundation-a-moved-series-with-every-gat-2298
 title: "foundation: a moved series with every gate passed has no next step"
 short_display_name: moved series past G3, next step
 type: bug
-status: todo
+status: doing
 priority: 4
+owner: Kyle-McFarlane@2d49f8460283
+claimed: 2026-10-12T22:50Z
 created: 2026-10-12
 updated: 2026-10-12
 refs:
@@ -18,3 +20,8 @@ From be6d review 1 observation, 2026-10-13: a resumed moved series with every ga
 - next: —
 - blocked: —
 - learned: —
+target: foundation says what a resume does when every gate passed, in a new repo: the features listed in the series are filed here (wi present) or listed for filing (no store), and the old repo's items are named when known; no re-filing in the old repo
+dispatch: implementer opus medium — build
+
+## Notes
+- 2026-10-12 claimed by Kyle-McFarlane@2d49f8460283
