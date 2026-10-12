@@ -26,3 +26,5 @@ From b9e4 review 2, 2026-10-12: snippets outside the wi lookups still run python
 target: every python3 -c / python3 - snippet in skills and references runs -I; a kit-dev or plugin test greps for any without it
 dispatch: implementer sonnet medium — build (a mechanical sweep: canonical kind)
 agent: implementer a2a41b98a71a74186
+return: DONE b0d262a; 15 lines across context-guard, create-repo, dev-flow, kit-dev, work-items; test_isolated_python.py in kit-dev (skips outside the source repo); 12/12 OK (kit-dev 21); open: -m json.tool and -m py_compile left without -I
+dispatch: reviewer opus high — review round 1 of b0d262a
