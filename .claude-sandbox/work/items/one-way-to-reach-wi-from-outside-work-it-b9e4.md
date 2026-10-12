@@ -35,3 +35,6 @@ decided: 2026-10-12T19:20Z scope — finding 2 option (a): restore research's co
 dispatch: implementer opus medium — fix round 1 (resume af358fa9b3916d4ee)
 return: DONE dc138ad (fix round 1) + merge of main 423d490 (clean); 12/12 Checks OK (context-guard 731); harness 72 runs (4 copies × 9 scenarios × bash/sh) correct, no markers
 dispatch: reviewer opus high — review round 2 of 423d490 (resume a4d208aa5ffbc9603)
+verdict: review round 2 CLEAR (must-fix 0; low: README dev-flow cell and section omit foundation from the shared lookup and its no-wi fallback; note: other python3 -c snippets without -I, filed as shell-snippets-run-python3-c-without-i-a-9782; inherited WI_ROOT qualified in prose ruled acceptable; 80-run harness re-extracted from 423d490 all correct)
+decided: 2026-10-12T20:10Z cap — a finish round of the README wording (authority answer 145)
+dispatch: implementer opus medium — finish round (resume af358fa9b3916d4ee)
