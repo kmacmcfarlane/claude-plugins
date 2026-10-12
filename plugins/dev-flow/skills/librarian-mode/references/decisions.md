@@ -56,7 +56,7 @@ renders what the operator read instead of composing it again.
     what: <what is decided>
     why now: <why it is up now>
     why ask: <reason> — <what would go wrong if the librarian took its recommendation alone>
-    context: <where the operator left it · what they decide now> — then: <a block's lost-context facts, or none>
+    context: <the card's Context: terms, then the cue> — then: <a block's further facts, or none>
     impact: → <effect> · later: <wait> · reach: <reach> · undo: <undo>
     if left: <a round ask only: each leftover finding — what it would break>
     round costs: <a round ask only: time, quota, the operator's attention>
@@ -91,12 +91,15 @@ renders what the operator read instead of composing it again.
   `cost:` where the option has one. `why ask:` follows `why now:` on every card,
   one physical line, its reason from `decide-alone.md` § Class names. `context:` follows
   `why ask:` on every card, one physical line, written when the decision is raised. Before
-  its first ` — then: ` is the cue: where the operator left it (what they last saw or
-  decided on this subject) · what they decide now — never what changed since, which *while
-  it waited* carries at the re-show; the cue never contains ` — then: ` (reword it). After
-  the separator are the facts a block's *Context you may have lost* adds, or `none` on a
-  decision raised as a card. The separator is always written. A card shows the cue alone as
-  its **Context:** for a cold reader; a block shows the cue, then the facts. An ask for
+  its first ` — then: ` is the card's Context: the terms the card uses, then the cue last —
+  where the operator left it (what they last saw or decided on this subject) · what they
+  decide now — never what changed since, which *while it waited* carries at the re-show;
+  the Context never contains ` — then: ` (reword it). Each sentence after the separator is
+  one of a block's bullets, or `none` on a decision raised as a card. The separator is
+  always written. The stored Context is shown every time a card or block is shown, to a warm
+  reader as to a cold one (the `decisions` skill's rendering reference, § Context,
+  holds the rule); a block shows it as its first bullet, then the sentences after the
+  separator. An ask for
   another round — the dev-cycle cap, most often — requires the `if left:` and `round
   costs:` lines, in that order after `why now:`, `why ask:`, `context:` and `impact:` (the
   skill's floor), filled from the reviewer's `findings:` block and the run's record; any other
@@ -127,8 +130,8 @@ renders what the operator read instead of composing it again.
   **A card or block renders only from stored fields**: a field it needs that the store
   lacks — a headline-only entry, a block's missing `undo:`, a card stored before `why ask:`
   existed (in the one form `decide-alone.md` § Raised gives it), one stored before the cue
-  existed (no `context:` line, or one with no ` — then: `, whose text is a block's facts
-  and is kept as the part after it), a block whose facts read `none` (a decision raised as
+  existed (no `context:` line; a line with no ` — then: ` is the card's Context as it
+  stands, and carries no block facts), a block whose facts read `none` or are absent (a decision raised as
   a card, rendered as a block by `expand` or as a wide one shown to a cold reader: `none`
   counts as missing), a card with no `impact:` line, a card with an option that asks the
   operator to act and no `to act` line for it — is backfilled from the durable record
