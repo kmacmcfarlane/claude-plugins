@@ -32,3 +32,5 @@ dispatch: reviewer opus high — review round 1 of e903e68
 agent: reviewer a224d4b920c6f7d94
 verdict: review round 1 NEEDS_CHANGES (must-fix 2: medium-high — trigger fires on a series moved before G3 whose gates passed here (Frame adds the item without --ref), re-filing every feature; medium — the ref search is unnamed and the default wi ls misses done and archived items; should-fix: Item: (was …) not in the template, readers taking the field whole fail; lows: never-re-files wording, no wi found, resume S7 moved case, crash between add and regeneration)
 dispatch: implementer opus medium — fix round 1 (resume a456e958153f73c9a)
+return: DONE 084bac8 (fix round 1); 12/12 OK; note: wi show exits 2 for an ambiguous id too
+dispatch: reviewer opus high — review round 2 of 084bac8 (resume a224d4b920c6f7d94)
