@@ -34,3 +34,4 @@ decision 210: How should a contract's terms filled in at gate G2 (format, versio
 - 2026-10-12 spike closed on its series; decision 210 raised; the build is filed when 210 is answered
 - 2026-10-12 done
 shown 210: 2026-10-12T22:54Z chat
+expand 210: 2026-10-13T17:17Z operator asked for the block
