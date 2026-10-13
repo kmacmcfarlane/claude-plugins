@@ -63,3 +63,13 @@ findings: 9 must-fix (all medium) + 2 low + 1 nit; verbatim in the reviewer's re
 cost: 2026-10-13T21:09Z plan $7.09 of $28 after review 1 — must-fix 9 — prices 2
 dispatch: planner opus high — resume (fix round 1)
 agent: planner aac4ac82dfa759bb0 round 2
+return: planner DONE /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude-sandbox/investigations/budget-asks-a-per-kind-sanity-ceiling-pl-28e1/ (01_settle-oq1-review-fixes.md; findings 1-12 applied, none declined; OQ6-8 non-blocking; estimate $39)
+baseline: 1852b6360af117f3b0175427d8c884ee6bbffd89d7370ae00920d3ccca76defb  00_initial.md aaef855cc310cf7742bf12566533056df229bde9670e057937989ccd658c6ede  01_settle-oq1-review-fixes.md 
+dispatch: reviewer opus high — resume (plan review round 2)
+agent: reviewer acee424b83620460b round 2
+verdict: NEEDS_CHANGES round 2 at 01_settle-oq1-review-fixes.md
+findings: prior 1-4,6-12 FIXED; 5 PARTIAL (idle turn never takes up an item blocked on a quota ask; idle-turn.md not in files); new 13 [medium] estate-wide wait built ahead of OQ6, no lift path; 14 [medium] option (b) text wrong under ask_all; 15 [medium] nothing resumes a wait-held item after the reset (idle-turn.md); 16 [medium] floor overrides an answer-sourced tighter amount; 17 [low] resume S8/S10 dispatch during a wait; 18 [low] <repo> basename vs origin rule; 19 [low] closed-superseded form for unnumbered answers, needs-input still shows; 20 [nit] fable ceiling source words
+cost: 2026-10-13T21:18Z plan $11.73 of $28 after review 2 — must-fix 5 — prices 2
+decided: "wait" stays per item, as the operator's answer (c) covered only go-on; the estate-wide wait (OQ6) is offered to the operator as a later option, not built — class: scope — reopen: say 'make wait estate-wide' and the planner adds it with a lift path
+dispatch: planner opus high — resume (fix round 2)
+agent: planner aac4ac82dfa759bb0 round 3
