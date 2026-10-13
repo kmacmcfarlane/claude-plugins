@@ -15,9 +15,10 @@ The tiers are the final ones, written as the `dev-cycle` skill's
 `references/model-routing.md` § Recording gives them (a bumped round, a fable
 cross-check). Each check is one of the `Checks:` commands, named by the directory it runs
 in, relative to the repo root (`plugins/dev-flow` for `(cd plugins/dev-flow && …)`, `.`
-for one with no `cd`), then its outcome: `pass`, or `fail — <what failed>`. Every
-`Checks:` command is named, in its order there:
-`plugins/dev-flow pass, plugins/kit-dev pass`.
+for one with no `cd`); when two commands share a directory, add the command's
+distinguishing word after it (`. lint pass`). Then its outcome: `pass`, or `fail — <what
+failed>`. Every `Checks:` command is named, in its order there; for a `Checks:` of those
+two commands: `plugins/dev-flow pass, plugins/kit-dev pass`.
 
 ## The counter
 
@@ -73,11 +74,13 @@ not pushed: <why, one clause>[ — decision N]
 ```
 
 `<old>..<new>` is the short-sha range git's push output prints for `main`. `not pushed:`
-covers a rejection that stopped on a conflict, a red check or a decision (its number
-trailing), a push skipped while a push-rejection decision is open, and no `origin` remote
-(said once, `troubleshooting.md`). A rejection merged through adds one `incoming: <sha>
-<subject> — <author>` line per incoming commit under its `pushed:` line — extra lines,
-beyond the four per landed change. The `incoming:` lines go with the push outcome: a short
+covers any push not made, such as a rejection that stopped on a conflict, a red check or
+a decision (its number trailing); a push skipped while a push-rejection decision is open;
+no `origin` remote (said once, `troubleshooting.md`); and `not pushed: nothing to push —
+main fast-forwarded to origin/main` when `main` was strictly behind (`troubleshooting.md`
+§ Push rejected step 1). A rejection merged through adds one `incoming: <sha> <subject> —
+<author>` line per incoming commit under the outcome line — extra lines, beyond the four
+per landed change. The `incoming:` lines go with the push outcome: a short
 follow-up message mid-session, since the Report has gone out; inside the final Report at
 session end and 75%/DUE (`troubleshooting.md` § Push rejected).
 

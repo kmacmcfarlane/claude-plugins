@@ -219,10 +219,10 @@ numbered; a number is never reused, and an unanswered one keeps it. One counter 
 question, kept in the store, answered `answer N:`: `references/report.md` § The counter.
 
 After the four lines, in order: the **Done alone** group; then, unless `Push: none`, the
-fast-forward push of `main`, its outcome line and any `incoming:` lines (mid-session, a
-follow-up message); then the team summary; with `operator-interaction:decisions` loaded,
-its decisions block last in the turn, at the end of that follow-up when there is one.
-Each, and batching: `references/report.md`.
+fast-forward push of `main`, its outcome line and any `incoming:` lines; then the team
+summary; with `operator-interaction:decisions` loaded, its decisions block last in the
+turn, at the end of the push's follow-up message when there is one (`references/report.md`
+§ The push). Each, and batching: `references/report.md`.
 
 ## Red flags
 
