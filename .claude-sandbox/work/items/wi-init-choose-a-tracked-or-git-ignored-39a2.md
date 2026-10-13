@@ -3,12 +3,11 @@ id: wi-init-choose-a-tracked-or-git-ignored-39a2
 title: "wi init: choose a tracked or git-ignored store, and accept an ignored one"
 short_display_name: wi init tracked or ignored
 type: feature
-status: doing
+status: done
 priority: 2
-owner: Kyle-McFarlane@2d49f8460283
-claimed: 2026-10-13T15:16Z
 created: 2026-10-13
 updated: 2026-10-13
+closed: 2026-10-13
 refs:
   - peer kappa-3475 - investigate, 2026-10-13 (relaying the operator)
 ---
@@ -51,3 +50,6 @@ verdict: review round 2 NEEDS_CHANGES (must-fix 1, down from 5: high — a symli
 dispatch: implementer opus medium — fix round 2 (resume a75c6bb99ba688aab); review 3 next
 return: DONE ae4cb56 (fix round 2); 12/12 OK (work-items 365); probes pp/pp2/pp3 refused, stale temps pass via mkstemp, repo-root store refused before creating
 dispatch: reviewer opus high — review round 3 of ae4cb56 (resume a5063ab4a5b72b981)
+verdict: review round 3 CLEAR (must-fix 0; security flag closed for every init write with a default or git-derived store path; modes match main under 022/027/077; follow-ups 1-4 filed as wi-symlink-edge-cases-left-after-39a2-af-d4ae)
+landed: e3d661a (merge of d962d3c..ae4cb56); Checks 12/12 OK (work-items 365); cc_scan clean; store prime/lint unchanged; this store recorded tracked with wi init --track
+- 2026-10-13 done
