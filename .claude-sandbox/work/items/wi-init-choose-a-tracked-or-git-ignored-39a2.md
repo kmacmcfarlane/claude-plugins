@@ -38,3 +38,5 @@ dispatch: implementer opus medium — build
 ## Notes
 - 2026-10-13 claimed by Kyle-McFarlane@2d49f8460283
 agent: implementer a75c6bb99ba688aab
+return: DONE d962d3c; work-items 338, kit-dev 21, dev-flow 78 OK; <root>/store.yaml tracking: tracked|ignored; existing store without a flag changes nothing; anchored .gitignore line, skipped when any repo rule already ignores it; --track never edits .gitignore; librarian first-start passes a flag
+dispatch: reviewer opus high — review round 1 of d962d3c
