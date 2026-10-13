@@ -65,8 +65,8 @@ verbs, capability differences and canonical state mapping are in
 - The store is resolved `WI_ROOT` → `.claude-sandbox/work/` → `.work/`; create only via
   `$WI init`, and only when the user asks for the store.
 - Working an item follows the checkout/worktree rule — process stays in the checkout, the
-  item's edits go in a worktree. A worktree is a fresh checkout, without the main checkout's
-  untracked or uncommitted store, so from there `WI_ROOT` points at the main checkout's
+  item's edits go in a worktree. A worktree is its own checkout: it lacks the main checkout's
+  untracked or uncommitted store, and a tracked one there is a stale copy, so from there `WI_ROOT` points at the main checkout's
   store: the main checkout is
   `git rev-parse --path-format=absolute --git-common-dir` minus its trailing `/.git`.
 - Item files are hand-editable; run `$WI lint` after hand edits, in the same turn.

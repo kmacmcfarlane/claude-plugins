@@ -439,7 +439,8 @@ whenever both plugins sit in the source repo.
                    "at": 1789760000.0}}
   ```
 
-  Treat a record whose `v` is not 1 as absent. Each block's `at` is the epoch time its
+  Treat a record whose `v` is not 1 as absent. Ignore keys you do not know; adding a
+  field does not bump `v`. Each block's `at` is the epoch time its
   payload was read: judge a block's age by it, not by the file's mtime. `rate_limits` may
   carry more windows than these two, each field present only when it is a finite number;
   a past `resets_at` is kept, for the reader to compare with the clock.

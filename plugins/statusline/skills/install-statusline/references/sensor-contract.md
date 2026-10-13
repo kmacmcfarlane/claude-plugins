@@ -24,6 +24,9 @@ No id can name a path outside its directory.
 
 ## 2. The sensor record (status line → any reader)
 
+A summary of this section is copied in statusline-hub's `hook-contract.md` § 12; change
+both together.
+
 - Path: `CFG/statusline/sensor/<safe_sid>.json`. Its writers all follow the rules below:
   the `statusline-hub` plugin, before its display hooks run on each render it owns and
   through its `tee` command for a status line another renderer draws; and the status line
