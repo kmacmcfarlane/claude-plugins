@@ -20,3 +20,7 @@ From the research-routing plan (e184, series .claude-sandbox/investigations/e184
 - next: —
 - blocked: —
 - learned: —
+target: an agent worktree branch off main (3d839b5c); dev-flow agents/research-verifier.md + research scripts
+budget: waived (operator 2026-10-08); spend measured
+dispatch: implementer opus medium — verifier procedure faults
+agent: implementer a58a079d03da1daa5 round 1

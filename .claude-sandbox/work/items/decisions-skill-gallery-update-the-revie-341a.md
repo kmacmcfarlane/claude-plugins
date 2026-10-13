@@ -18,3 +18,7 @@ plugins/operator-interaction/skills/decisions/references/gallery.md:126-135's ex
 - next: —
 - blocked: —
 - learned: —
+target: an agent worktree branch off main (3d839b5c); operator-interaction decisions references/gallery.md
+budget: waived (operator 2026-10-08); spend measured
+dispatch: implementer opus medium — example card to the spend-based cap
+agent: implementer ab4b79c648f196843 round 1

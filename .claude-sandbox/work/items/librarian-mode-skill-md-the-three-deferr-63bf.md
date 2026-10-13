@@ -18,3 +18,7 @@ Deferred from 6394 (findings 18 push-outcome template, 19 verified: check names,
 - blocked: —
 - learned: —
 dep on 3460 removed 2026-09-29: 3460 parked behind policy spike 8dee; the shared file (LM/SKILL.md) is a merge concern, not a dependency
+target: an agent worktree branch off main (3d839b5c); librarian-mode SKILL.md + references (post-b176)
+budget: waived (operator 2026-10-08); spend measured
+dispatch: implementer opus medium — three deferred render-pass gaps
+agent: implementer a29d3961cc57c78e2 round 1

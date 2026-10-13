@@ -18,3 +18,7 @@ From b3c5 review r2 2026-09-29: a plan run that dies between a round-1/2 NEEDS_C
 - next: —
 - blocked: —
 - learned: —
+target: an agent worktree branch off main (3d839b5c); dev-cycle references resume.md / fix-loop.md
+budget: waived (operator 2026-10-08); spend measured
+dispatch: implementer opus medium — plan-mode fix-round trial enrolment wording
+agent: implementer a02eafed0e64cd55a round 1
