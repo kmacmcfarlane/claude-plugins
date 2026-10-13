@@ -119,7 +119,8 @@ preset's budget, apply the criteria to your own claims honestly, write the reply
 § Profiles, its dispatch recorded per § Recording; criteria: the universal axes in
 `references/research-criteria.md` (there is no brief); sample size 4; its whole-file security
 scan is the point; its sheet checked per `references/run-record.md` § The sheet check — and
-copy it to the destination only when the scanner found no HOLD and the verifier says `PASS`. A HOLD or a security hit keeps it in staging and the reply says so. Then
+copy it to the destination only when the scanner found no HOLD and the verifier says `PASS`.
+A HOLD or a security hit keeps it in staging and the reply says so. Then
 close a filed item per `intensity-and-routing.md` § Closing — `PASS`: done; a HOLD or a security hit: blocked as held —
 and the reply's last line names it (`item <id>`), or, with no item, carries
 `record: none (<reason>)` and the dispatch lines. For everything else, continue.

@@ -43,16 +43,16 @@ series directory. Nothing under those is a source (step 4).
    - **Never a run file.** A file of this run (a findings file, the brief, the synthesis,
      `sources.md`, a sheet, a toolkit script or its output) is not a source for the run's
      claims. When the claim cites one, take the source that file cites for it and open that;
-     when there is none, the verdict is `NOT_FOUND`, noted `own-run source`, and the Opened
-     cell is `—`.
+     the Source cell then names the source you opened, never the run file. When there is
+     none, the verdict is `NOT_FOUND`, noted `own-run source`, and the Opened cell is `—`.
    - **Open it yourself, this run.** `WebFetch` the cited URL, or `Read` the cited local
      path (a PDF per the rule below). Only what you opened in this run counts: not a lane's
      quote, not a search snippet, not a different file that produces the figure, not a
      `Grep` that returned nothing, not a preview cut off before the claimed passage. A
      source you did not open, for any reason, is `UNREACHABLE`, never `FAIL` and never a
-     verdict on its content — say what the response was. Record in the Opened cell the tool
-     and the target you opened (`WebFetch`, `Read`, `Read p. 4`), or `—` when you opened
-     nothing.
+     verdict on its content — say what the response was. The Opened cell is exactly
+     `WebFetch <url>`, `Read <path>` or `Read <path> p. N`, its target the URL or path in
+     the Source cell that you opened, or `—` when you opened nothing.
    - **Ask neutrally.** A `WebFetch` prompt asks what the source says on the claim's topic
      and for the passages that bear on it ("What does this page say about the default rate
      limit? Quote the relevant sentences."). Never state the claim, its figure or its

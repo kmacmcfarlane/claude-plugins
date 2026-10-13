@@ -274,10 +274,12 @@ Tools: poppler present | poppler absent (no pdftotext, pdfinfo or pdftoppm)   (f
 ## The sheet check
 
 The verifier has no shell, so what it would type by hand is checked by a script once its
-sheet is written: the `research` skill's `scripts/check-sheet.py`, run with `python3` on
-`<staging>/verification.md`, with `--own '<series dir>'` when the run feeds an
-investigation series (the sheet's own directory, the staging area, is always a run
-directory).
+sheet is written: the `research` skill's `scripts/check-sheet.py`, run with `python3` from
+the project root on `<staging>/verification.md`, with `--own '<series dir>'` when the run
+feeds an investigation series and `--own '<prior record dir>'` for a refine run (the
+sheet's own directory, the staging area, is always a run directory). A relative path in a
+Source cell is resolved from the sheet's directory, its `findings/`, every `--own`
+directory and the working directory.
 
 ```
 timeout 60 python3 '<research skill dir>/scripts/check-sheet.py' '<staging>/verification.md' [--own '<series dir>']
@@ -286,16 +288,27 @@ timeout 60 python3 '<research skill dir>/scripts/check-sheet.py' '<staging>/veri
 It tallies the Sampled claims table and prints one line per defect, `<file>:<line>: <rule>`,
 then `TALLY: sampled <n>, supported <n>, partial <n>, contradicted <n>, not_found <n>,
 unreachable <n>, demoted <n>` and `CHECK: <n> defects`; exit 0 clean, 1 on any defect, 2
-when the sheet is missing or has no claims table. Like the scan floor, it never prints the
-sheet's text. The defects:
+when the sheet is missing or unreadable, or has no claims section, table or Verdict column.
+Like the scan floor, it never prints the sheet's text. The defects:
 
 - `header-mismatch <field>` or `header-missing <field>`: the header disagrees with its own
   table;
 - `unopened-verdict`: a verdict other than `UNREACHABLE` or `NOT_FOUND` on a row whose
   Opened cell is `—` (the verifier never opened the source); tallied as unreachable;
+- `bad-opened`: an Opened cell that is neither `—` nor `WebFetch <url>`, `Read <path>` or
+  `Read <path> p. N`; tallied as unreachable;
+- `opened-elsewhere`: an Opened target (its `#anchor` and ` p. N` removed) that is not a URL
+  or path named in the row's Source cell; tallied as unreachable;
 - `own-run-source`: a verdict other than `UNREACHABLE` or `NOT_FOUND` resting on a file of
   this run; tallied as not_found;
-- `missing-section <name>`, `missing-column <name>`, `bad-verdict`.
+- `missing-section <name>`, `missing-column <name>`, `no-claims` (an empty claims table),
+  `row-shape` (a row whose cell count differs from the header's), `bad-verdict`.
+
+Two of the verifier's faults rest on its own report even so: whether it opened what its
+Opened cell names, and whether its fetch prompts were neutral. The check makes the first
+visible (a verdict beside `—`, an Opened cell that names something other than the Source)
+and the agent's rules govern the second, but neither is proved until a cross-check against
+the verifier's transcript exists.
 
 **The counts you record are the TALLY's**, never the header's: the `VERIFIED` ledger line,
 the synthesis's § Verification table and any brief or item that quotes them. A defect does

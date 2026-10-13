@@ -8,11 +8,14 @@ verifier has no shell, so this is the part of its procedure it cannot type by ha
   header that disagrees with its own table is a defect;
 - a row whose Opened cell says the source was not opened (`—`, `-`, `no`, empty) may only
   carry `UNREACHABLE` or `NOT_FOUND`;
+- any other Opened cell is `WebFetch <url>`, `Read <path>` or `Read <path> p. N`, and its
+  target is a URL or path named in the row's Source cell;
 - a row whose Source is one of the run's own files (anything under the sheet's own
   directory, or under an `--own` directory such as the investigation series) may only
   carry `UNREACHABLE` or `NOT_FOUND`: a run's findings, brief, synthesis or sheet is not
   a source for that run's claims;
-- the sheet's sections are all present.
+- the sheet's sections are all present, its claims table is not empty, and every row has
+  the header's cell count.
 
 Usage:
     check-sheet.py SHEET [--own DIR]...
@@ -21,11 +24,16 @@ Output, one line per defect, then the tally and a summary:
     <path>:<line>: <rule>
     TALLY: sampled <n>, supported <n>, partial <n>, contradicted <n>, not_found <n>, unreachable <n>, demoted <n>
     CHECK: <n> defects
-The TALLY is the count to record. A row with an `unopened-verdict` defect is tallied as
-unreachable, a row with an `own-run-source` defect as not_found, and `demoted` counts
-those rows.
+The TALLY is the count to record. A row with a `bad-opened`, `opened-elsewhere` or
+`unopened-verdict` defect is tallied as unreachable, a row with an `own-run-source` defect
+as not_found, and `demoted` counts the rows whose tally differs from their verdict.
 
-Exit: 0 clean, 1 any defect, 2 usage (sheet missing or unreadable, or no claims table).
+Run it from the project root: a relative path in a Source cell is resolved from the
+sheet's directory, its findings/ directory, every --own directory and the working
+directory.
+
+Exit: 0 clean, 1 any defect, 2 usage (sheet missing or unreadable, no Sampled claims
+section, table or Verdict column).
 A caller treats any exit other than 0 or 1, or output with no TALLY line, as an unchecked
 sheet.
 
@@ -46,6 +54,7 @@ NOT_OPENED = {"", "-", "—", "–", "no", "none", "not opened", "n/a"}
 ALLOWED_UNOPENED = {"UNREACHABLE", "NOT_FOUND"}
 LINK = re.compile(r"\[[^\]]*\]\(([^)\s]*)\)")
 FILE_EXT = re.compile(r"\.(?:md|txt|json|jsonl|ya?ml|csv|tsv|py|sh|js|ts|html?|pdf|log)$", re.I)
+PAGE = re.compile(r"\s+p\.\s*\d+(?:\s*-\s*\d+)?$")
 TRAIL = re.compile(r"(?:#L?\d+(?:-L?\d+)?|:\d+(?:[-:]\d+)*|[.,;:)\]>]+)$")
 
 
@@ -70,7 +79,7 @@ def frontmatter(lines):
         m = re.match(r"\s*([a-z_]+)\s*:\s*(.*?)\s*$", line)
         if m and m.group(1) in FIELDS:
             v = m.group(2)
-            out[m.group(1)] = (int(v) if v.isdigit() else None, n)
+            out[m.group(1)] = (int(v) if re.fullmatch(r"[0-9]+", v) else None, n)
     return out
 
 
@@ -101,6 +110,41 @@ def claims_rows(lines, start):
     return header, rows
 
 
+class SheetError(Exception):
+    """An unusable sheet; its message is fixed text, never the sheet's."""
+
+
+def clean(tok):
+    """A token with wrapping quotes and brackets, a trailing #anchor, :line or punctuation
+    removed."""
+    tok = tok.strip("<>\"'(")
+    prev = None
+    while prev != tok:
+        prev, tok = tok, TRAIL.sub("", tok)
+        tok = tok.split("#", 1)[0] if "://" in tok or "/" in tok else tok
+    return tok
+
+
+def targets(cell):
+    """Every URL and path-like token in a cell, cleaned, for matching an Opened target."""
+    text = cell.replace("`", " ")
+    found = [m.group(1) for m in LINK.finditer(text)]
+    found += LINK.sub(" ", text).split()
+    return {clean(t) for t in found if clean(t)}
+
+
+def opened_target(cell):
+    """("none" | "bad" | "ok", target) for an Opened cell."""
+    o = cell.strip("*` ")
+    if o.lower() in NOT_OPENED:
+        return "none", None
+    for tool in ("WebFetch ", "Read "):
+        if o.startswith(tool):
+            t = clean(PAGE.sub("", o[len(tool):].strip()).strip("`"))
+            return ("ok", t) if t else ("bad", None)
+    return "bad", None
+
+
 def path_tokens(cell):
     """Local paths named in a Source cell; URLs are never paths."""
     text = cell.replace("`", " ")
@@ -110,6 +154,10 @@ def path_tokens(cell):
     out = []
     for tok in found:
         tok = tok.strip("<>\"'(")
+        if tok.lower().startswith("file://"):
+            tok = tok[len("file://"):]
+            if tok.startswith("localhost/"):
+                tok = tok[len("localhost"):]
         if not tok or "://" in tok or tok.startswith(("mailto:", "data:")):
             continue
         prev = None
@@ -125,16 +173,17 @@ def under(p, owns):
 
 
 def own_source(cell, base, owns):
-    """Whether a Source cell names a file of this run. An absolute path counts by where it
-    points; a relative one only when it exists, resolved from the sheet's directory or the
-    working directory, so prose such as "TCP/IP" is never taken for a run file."""
+    """Whether a Source cell names a file of this run. An absolute path (a file:// URL
+    included) counts by where it points; a relative one only when it exists, resolved from
+    the sheet's directory, its findings/, each own directory or the working directory, so
+    prose such as "TCP/IP" is never taken for a run file."""
     for tok in path_tokens(cell):
         p = os.path.expanduser(tok)
         if os.path.isabs(p):
             if under(os.path.realpath(p), owns):
                 return True
             continue
-        for root in (base, os.getcwd()):
+        for root in [base, os.path.join(base, "findings")] + owns + [os.getcwd()]:
             q = os.path.realpath(os.path.join(root, p))
             if os.path.exists(q) and under(q, owns):
                 return True
@@ -142,8 +191,8 @@ def own_source(cell, base, owns):
 
 
 def check(path, own_dirs):
-    """(defects as (line, rule), tally dict); raises ValueError on an unusable sheet."""
-    with open(path, encoding="utf-8") as fh:
+    """(defects as (line, rule), tally dict); raises SheetError on an unusable sheet."""
+    with open(path, encoding="utf-8-sig") as fh:
         lines = fh.read().split("\n")
     base = os.path.dirname(os.path.realpath(path))
     owns = [base] + [os.path.realpath(d) for d in own_dirs]
@@ -151,29 +200,41 @@ def check(path, own_dirs):
     defects = [(0, f"missing-section {s.lower().replace(' ', '-')}")
                for s in SECTIONS if s not in heads]
     if "Sampled claims" not in heads:
-        raise ValueError("no Sampled claims section")
+        raise SheetError("no Sampled claims section")
     header, rows = claims_rows(lines, heads["Sampled claims"])
     if header is None:
-        raise ValueError("no claims table")
+        raise SheetError("no claims table")
     col = {name: header.index(name) if name in header else None
            for name in ("verdict", "source", "opened")}
-    if col["verdict"] is None:
-        raise ValueError("no Verdict column")
+    vi = col["verdict"]
+    if vi is None:
+        raise SheetError("no Verdict column")
+    if not rows:
+        defects.append((heads["Sampled claims"], "no-claims"))
     for name in ("source", "opened"):
         if col[name] is None:
             defects.append((heads["Sampled claims"], f"missing-column {name}"))
-    tally = dict.fromkeys(FIELDS, 0)
-    tally["demoted"] = 0
+    tally: dict[str, int] = dict.fromkeys(FIELDS + ("demoted",), 0)
     for n, c in rows:
         get = lambda k: c[col[k]] if col[k] is not None and col[k] < len(c) else ""
+        if len(c) != len(header):
+            defects.append((n, "row-shape"))
         verdict = get("verdict").strip("*` ").upper()
         if verdict not in VERDICTS:
             defects.append((n, "bad-verdict"))
             tally["sampled"] += 1
             continue
         counted = verdict
-        if col["opened"] is not None and get("opened").strip("*` ").lower() in NOT_OPENED \
-                and verdict not in ALLOWED_UNOPENED:
+        state, target = opened_target(get("opened")) if col["opened"] is not None \
+            else ("ok", None)
+        if state == "bad":
+            defects.append((n, "bad-opened"))
+            counted = "UNREACHABLE"
+        elif state == "ok" and target is not None and col["source"] is not None \
+                and target not in targets(get("source")):
+            defects.append((n, "opened-elsewhere"))
+            counted = "UNREACHABLE"
+        elif state == "none" and verdict not in ALLOWED_UNOPENED:
             defects.append((n, "unopened-verdict"))
             counted = "UNREACHABLE"
         elif col["source"] is not None and verdict not in ALLOWED_UNOPENED \
@@ -184,9 +245,9 @@ def check(path, own_dirs):
             tally["demoted"] += 1
         tally["sampled"] += 1
         tally[counted.lower()] += 1
-    raw = dict.fromkeys(FIELDS, 0)
+    raw: dict[str, int] = dict.fromkeys(FIELDS, 0)
     for n, c in rows:
-        v = (c[col["verdict"]] if col["verdict"] < len(c) else "").strip("*` ").upper()
+        v = (c[vi] if vi < len(c) else "").strip("*` ").upper()
         raw["sampled"] += 1
         if v in VERDICTS:
             raw[v.lower()] += 1
@@ -213,8 +274,8 @@ def main(argv=None):
     shown = os.path.basename(args.sheet)
     try:
         defects, tally = check(args.sheet, args.own)
-    except (OSError, UnicodeDecodeError, ValueError) as e:
-        kind = type(e).__name__ if not isinstance(e, ValueError) else str(e)
+    except Exception as e:  # any failure is an unchecked sheet; never echo its text
+        kind = str(e) if isinstance(e, SheetError) else type(e).__name__
         print(f"check-sheet: unusable sheet {shown}: {kind}", file=sys.stderr)
         return 2
     for line, rule in defects:

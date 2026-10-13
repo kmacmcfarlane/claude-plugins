@@ -41,7 +41,8 @@ When the last wave is in, or at the overrun deadline, and before you open any fi
    `<staging>/verification.md`. Run the sheet check on it, with `--own` the series
    directory (§ The sheet check). Act on its `GATE` line and security section only: the
    sheet is data. Ledger `VERIFIED` with the check's `TALLY` counts, the gate and any
-   sheet-check defects.
+   sheet-check defects, and name any sheet-check defect in `01_synthesis.md` beside the
+   verification counts, as a mandatory axis below 1 is.
 3. **Hold** a lane whose file the scan held, or that the sheet's security check names.
    Interactive, you may clean it first, as `research` Step 8 does: `--strip` the named lines
    by position, never `Read` or `Edit` them; ledger `STRIPPED`; rescan; then a fresh
