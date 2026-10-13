@@ -12,3 +12,4 @@
 .claude-sandbox/investigations/
 __pycache__/
 *.pyc
+!.claude-sandbox/config.yaml
