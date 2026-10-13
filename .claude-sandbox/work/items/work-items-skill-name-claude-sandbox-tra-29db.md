@@ -26,3 +26,4 @@ The claude-sandbox librarian (peer, 2026-10-13) is building d54f: the launcher e
 note: 2026-10-13 claude-sandbox d54f landed at 7fd9f1c (spec CS-LNCH-184), per its librarian: CLAUDE_SANDBOX_TRACK_IN_HOST=true|false from the merged cascade trackInHost; no -e passed when no config defines it, so it is unset unless a cascade env file sets it; layout treats unset as false; present from the next launch, not in running containers
 target: work-items SKILL.md init rule names CLAUDE_SANDBOX_TRACK_IN_HOST: true → --track; false or unset → --no-track; a sandbox launched before the export lacks it, so unset inside a sandbox reads as false (the launcher's own default); outside claude-sandbox (no CLAUDE_SANDBOX_CONTAINER) ask the operator; format.md if it repeats the rule
 dispatch: implementer sonnet medium — build (doc line naming a landed variable: canonical kind)
+agent: implementer aa55c95164614e9c0
