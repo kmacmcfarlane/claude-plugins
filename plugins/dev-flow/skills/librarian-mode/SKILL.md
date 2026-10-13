@@ -107,7 +107,7 @@ Do this at session start and after any `/clear` or compaction. Never `ls` the wh
    `references/decide-alone.md` § Retired spellings gives it (no hit, no write).
    Then, for each item blocked `watching <repo> <their id>`, the read-only status check
    of § Intake step 4 (`references/forwarding.md`), and for each `awaiting <repo>
-   librarian`, its liveness check.
+   librarian` or `operator: forward to <repo> owner down`, its liveness check.
 
 4. **Inventory the tree.**
 

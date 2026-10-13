@@ -36,7 +36,8 @@ steps 2 and 4, § Rehydrate step 3, § Report, `idle-turn.md` and `ending-the-se
   turn that finds it live. Still not accepted at the silence bound: re-blocked
   `"operator: forward to <repo> owner down"` and raised as a `blocker` ("start that
   librarian, or decide"). That block is still checked for liveness at each Rehydrate and
-  Idle turn (`idle-turn.md`), and the forward is sent once the owner is live.
+  Idle turn (`idle-turn.md`), and the forward is sent once the owner is live; its
+  `blocker` decision is noted as overtaken on the item when the forward is sent.
 - **Backstop.** Whenever the session ends, compacts or is cleared, and at 75%/DUE, every
   forward still awaiting acceptance lands back (`ending-the-session.md`).
 - **One hop.** A forwarded item carries its first line in `--ref`. Outside our Scope too,

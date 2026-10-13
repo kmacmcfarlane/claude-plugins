@@ -17,8 +17,10 @@ names each live role's agent id and round, read off the record's `agent:` lines 
 the handoffs, every forward still awaiting acceptance — blocked
 `forwarded to …, awaiting accept` or `awaiting <repo> librarian` (SKILL.md § Intake
 step 4, `forwarding.md`) — lands back: re-block it
-`"operator: forward to <repo> not accepted before checkpoint or session end"`, so it is a
-Groom row for whoever is librarian next, not a wait that outlives the session. This is
+`"operator: forward to <repo> not accepted before checkpoint or session end"` (one blocked
+`awaiting <repo> librarian`: `"operator: forward to <repo> owner down"`, so its liveness
+check still sends it), so it is a Groom row for whoever is librarian next, not a wait that
+outlives the session. This is
 the backstop under the silence bound, for a peer that stays live and never answers. A
 watched forward (`watching …`) is in its owner's store and stays watching.
 

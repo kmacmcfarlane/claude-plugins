@@ -38,10 +38,10 @@ Intake: `$WI add` with the peer in `--ref` — filed first, like every request. 
 are the `agents` repo's, outside this Scope: step 4. The `agents` repo plainly owns them,
 so it is forwarded (`forwarding.md`), decided alone as a `decided:` line of kind `scope`,
 authority `answer 116`, and shown in the next Report as
-`Done: forwarded <plain name> to agents`, never under `decisions needed`. ListAgents shows one live session
-named `agents`, the bare-name form. The older `agents - librarian` would count too: the
-peer lookup accepts it, though the session-name gate (`references/session-name.md`)
-does not accept it as this session's own name. Had one session held `agents` and
+`Done: forwarded <plain name> to agents`, never under `decisions needed`. ListAgents shows
+one live session named `agents`, the bare-name form. The older `agents - librarian`
+would count too: the peer lookup accepts it, though the session-name gate
+(`references/session-name.md`) does not accept it as this session's own name. Had one session held `agents` and
 another `agents - librarian`, those are two candidates, and which is the librarian is
 the operator's question, as with two sessions on one name. The message to `agents`:
 

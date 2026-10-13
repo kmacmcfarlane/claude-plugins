@@ -274,9 +274,9 @@ Then the first that applies:
    instead; under `librarian-mode` they are forwarded to that repo's owner (its SKILL.md
    § Intake step 4), a `blocker` only when that forward lands back. Then Step 1's tail
    runs, with no fable offer (the at-the-cap stage needs a high left, and the plan stage
-   is not offered at the cap: `model-routing.md` § Fable cross-checks). A plan round past its fourth review
-   opens unasked only with a high left (answer 145, Q8 (i)). A plan never takes a finish
-   round (step 3).
+   is not offered at the cap: `model-routing.md` § Fable cross-checks). A plan round past
+   its fourth review opens unasked only with a high left (answer 145, Q8 (i)). A plan never
+   takes a finish round (step 3).
    **Standalone, every plan cap is raised instead — a stop and a granted plan path's end included — as before answer 145 (decision 156).**
 3. **Exact-fix leftovers at a cap** get one **finish round** unasked, when the previous
    counted verdict did not reach the cap, or the round after it was opened by the
