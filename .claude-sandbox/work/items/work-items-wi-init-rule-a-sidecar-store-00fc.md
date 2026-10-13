@@ -28,3 +28,6 @@ agent: implementer adba9146eca7aabb0
 return: DONE 473f18d8; sidecar check first (test -e .claude-sandbox/.git, as wi's sandbox_shape); scratch: --track in a sidecar records tracked, lint clean, no /work/ line; --no-track reproduces the bug and lint misses it (filed as wi-lint-misses-a-sidecar-store-recorded-3c06); work-items 365, kit-dev 21 OK
 dispatch: reviewer opus high — review round 1 of 473f18d8
 agent: reviewer af4ea7ba3ba76bb00
+verdict: review round 1 NEEDS_CHANGES (must-fix 1: the sidecar test is cwd-relative; from a worktree in a sidecar layout it fails and the rule picks --no-track; should-fix: scope the check to a store at .claude-sandbox/work/; nit: a 120-char line; note: acceptance asks for a worked example — the reviewer's scratch table meets it, recorded here)
+note: worked example (reviewer scratch, 2026-10-13): host-tracked true/false/empty → track/no-track/track; host-ignored no sidecar false/empty → no-track; sidecar any → track; outside sandbox → ask; .work/ store with a sidecar → host tracks
+dispatch: implementer sonnet medium — fix round 1 (resume adba9146eca7aabb0)

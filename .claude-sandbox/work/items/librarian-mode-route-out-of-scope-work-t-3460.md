@@ -83,3 +83,5 @@ agent: implementer a62463034bde045ac
 return: DONE 7ce7fbcc (merge of main) + 0f65c913 (builds watched custody per 116 b, which the CLEAR branch predated; b514 folded in); 12/12 OK; flags bindings.md:274 stale once this lands
 dispatch: reviewer opus high — full review of 902e71ee..0f65c913 against main (new rule text in five files)
 agent: reviewer a004e5e9bd00171a1
+verdict: review round 1 NEEDS_CHANGES (must-fix 5: M1 the Report raises a blocked forward as a decision; M2 an owner-down forward re-blocked to the operator never retries; M3 Rehydrate has no step for the watched-store check; M4 dev-cycle bindings.md:273-274 clause expires on landing — fix here; M5 SKILL.md ~7.2k tokens, move the forward bullets to references/forwarding.md; lows L1-L4, nits; builder's accepted-forward reading ruled sound)
+dispatch: implementer opus medium — fix round 1 (resume a62463034bde045ac)
