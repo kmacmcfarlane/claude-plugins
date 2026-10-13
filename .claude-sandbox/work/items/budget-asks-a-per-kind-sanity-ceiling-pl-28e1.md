@@ -41,8 +41,8 @@ Two independent ask triggers; ask when either fires. They replace the default-bu
 Supersedes spend-budgets-raise-the-defaults-so-only-b9f1. Related: budget-rule-quota-aware-asks-answer-176-20f5 (answer 176), librarian-f2-idle-turn-modes-concurrency-c79e, spend-reader-split-phases-on-each-target-7421.
 
 ## Handoff
-- doing: —
-- next: —
+- doing: plan phase at its cap after review 4 (must-fix 1, finding 23 with an exact Fix)
+- next: operator decisions 1-4 shown 2026-10-13 in chat (finding 23 route, publishing usage-derived constants, wait-as-recommended, build go-ahead); fold budget-values-claude-plugins-is-the-auth-f0f2 into F1/F2
 - blocked: —
 - learned: —
 
@@ -73,3 +73,21 @@ cost: 2026-10-13T21:18Z plan $11.73 of $28 after review 2 — must-fix 5 — pri
 decided: "wait" stays per item, as the operator's answer (c) covered only go-on; the estate-wide wait (OQ6) is offered to the operator as a later option, not built — class: scope — reopen: say 'make wait estate-wide' and the planner adds it with a lift path
 dispatch: planner opus high — resume (fix round 2)
 agent: planner aac4ac82dfa759bb0 round 3
+return: planner DONE /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude-sandbox/investigations/budget-asks-a-per-kind-sanity-ceiling-pl-28e1/ (02_per-item-wait-take-up.md; 5,13-20 applied; wait per item; estimate $40)
+baseline: 1852b6360af117f3b0175427d8c884ee6bbffd89d7370ae00920d3ccca76defb  00_initial.md aaef855cc310cf7742bf12566533056df229bde9670e057937989ccd658c6ede  01_settle-oq1-review-fixes.md 1aeee87fe24208e289091d1698b700b71f9802aff984fdb6b44c07d13727ba08  02_per-item-wait-take-up.md 
+dispatch: reviewer opus high — resume (plan review round 3)
+agent: reviewer acee424b83620460b round 3
+verdict: NEEDS_CHANGES round 3 at 02_per-item-wait-take-up.md
+findings: 5,13-20 FIXED; new 21 [medium] no-signal quota ask: go-on promises estate reach it cannot store, wait names no reset (no end); 22 [low] derived answer line quotes a reply quota-answer.json does not store (cross-repo)
+cost: 2026-10-13T21:24Z plan $13.19 of $28 after review 3 — must-fix 1 — prices 2
+dispatch: planner opus high — resume (fix round 3)
+agent: planner aac4ac82dfa759bb0 round 4
+return: planner DONE /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude-sandbox/investigations/budget-asks-a-per-kind-sanity-ceiling-pl-28e1/ (03_no-signal-ask-reply-store.md; 21, 22 applied; estimate $41)
+baseline: 1852b6360af117f3b0175427d8c884ee6bbffd89d7370ae00920d3ccca76defb  00_initial.md aaef855cc310cf7742bf12566533056df229bde9670e057937989ccd658c6ede  01_settle-oq1-review-fixes.md 1aeee87fe24208e289091d1698b700b71f9802aff984fdb6b44c07d13727ba08  02_per-item-wait-take-up.md 14318e6eeeb0cba8eb93d0a8686f0a72c527b564ce24d9ba2cd78c886df43adf  03_no-signal-ask-reply-store.md 
+dispatch: reviewer opus high — resume (plan review round 4)
+agent: reviewer acee424b83620460b round 4
+verdict: NEEDS_CHANGES round 4 at 03_no-signal-ask-reply-store.md
+findings: 21, 22 FIXED; new 23 [high] 03:74-76, :88-91 — 'stop here' uses wi handoff --blocked, which leaves status doing, so the idle turn's Work bullet resumes the stopped item. Fix: 04's replacement for 03:74-76 — "the item is blocked `$WI block <id> "operator: stopped at the no-reading quota ask"` (standalone: the run stops) and stays stopped until you say go on"
+cost: 2026-10-13T21:27Z plan $14.1 of $28 after review 4 — must-fix 1 — prices 2
+- 2026-10-13 related:  (agents decision 0010 moves budget-value authority here); F1/F2 touch the same constants comments and budget.md ownership paragraph, so fold it in when building
+- 2026-10-13 correction to the previous note: the related item is budget-values-claude-plugins-is-the-auth-f0f2

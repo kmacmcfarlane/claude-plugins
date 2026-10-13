@@ -3,10 +3,11 @@ id: rewrite-the-12-unsure-claude-code-lines-50c2
 title: rewrite the 12 unsure Claude Code lines in three work items to the hint form
 short_display_name: unsure internals lines, hint form
 type: chore
-status: todo
+status: done
 priority: 1
 created: 2026-10-13
 updated: 2026-10-13
+closed: 2026-10-13
 refs:
   - audit-claude-sandbox-on-origin-for-claud-abb8
 ---
@@ -37,3 +38,7 @@ dispatch: implementer opus medium — resume, finish round
 agent: implementer a7b933fa8b09ebdba round 3 (finish)
 result: DONE finish at c4b68f0b (both lows exact; diff read by the librarian: 2 words on 8ab6:23)
 verdict: CLEAR after 2 fix rounds, 1 finish at c4b68f0b (finish read by the librarian, exact)
+correction: 2026-10-13T21:19Z pushed 832cec4f..5f753608 before printing the Report (same slip as 1b6a); Report printed right after
+
+## Notes
+- 2026-10-13 done
