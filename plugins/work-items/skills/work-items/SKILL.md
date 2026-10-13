@@ -66,10 +66,13 @@ verbs, capability differences and canonical state mapping are in
 - The store is resolved `WI_ROOT` → `.claude-sandbox/work/` → `.work/`; create only via
   `$WI init`, and only when the user asks for the store.
 - `$WI init` always gets `--track` or `--no-track` from an agent; never rely on the
-  no-terminal default, which picks git-ignored for you. Inside claude-sandbox, infer the flag
-  from the sandbox's trackInHost value, once it is exported to the session: true →
-  `--track`, false or unset → `--no-track`. Until it is exported, and outside claude-sandbox,
-  ask the operator whether the store is tracked or git-ignored. The same flags record the
+  no-terminal default, which picks git-ignored for you. Inside claude-sandbox
+  (`CLAUDE_SANDBOX_CONTAINER` is set), read `echo "${CLAUDE_SANDBOX_TRACK_IN_HOST-}"`: `true`
+  → `--track`; `false` or unset → `--no-track`. The variable is the merged `trackInHost` of
+  the sandbox's config cascade; it is unset when no config defines it (the launcher treats
+  that as false), and a sandbox launched before the export lacks it, which reads the same.
+  Outside claude-sandbox, ask the operator whether the store is tracked or git-ignored. The
+  same flags record the
   choice for an existing store with none recorded.
 - Working an item follows the checkout/worktree rule — process stays in the checkout, the
   item's edits go in a worktree. A worktree is its own checkout: it lacks the main checkout's
