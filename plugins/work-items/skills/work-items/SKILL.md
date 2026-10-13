@@ -69,7 +69,13 @@ verbs, capability differences and canonical state mapping are in
   no-terminal default, which picks git-ignored for you. Read
   `echo "${CLAUDE_SANDBOX_CONTAINER-}|${CLAUDE_SANDBOX_TRACK_IN_HOST-}"`. Nothing before the
   `|` means outside claude-sandbox: ask the operator whether the store is tracked or
-  git-ignored. Inside, the part after it is the merged `trackInHost` of the sandbox's config
+  git-ignored. Inside, for a store at `.claude-sandbox/work/` (the default whenever
+  `.claude-sandbox/` exists), first look for a sidecar from the main checkout, as for the
+  layout probe below (a worktree has no `.claude-sandbox/` in a sidecar layout, so the test
+  fails there): `test -e .claude-sandbox/.git` succeeds (`.claude-sandbox/` is its own repo,
+  as `wi` itself tests) → `--track`, whatever the variable or the host's ignore says, since
+  `--no-track` there ignores the store in the sidecar and new items land in no repo. Without
+  a sidecar, the part after the `|` is the merged `trackInHost` of the sandbox's config
   cascade: `true` → `--track`; `false` → `--no-track`; any other value → ask the operator.
   Empty means either that no config defines it (the launcher then treats it as false) or
   that the sandbox was launched before the variable was exported, and the two cannot be
