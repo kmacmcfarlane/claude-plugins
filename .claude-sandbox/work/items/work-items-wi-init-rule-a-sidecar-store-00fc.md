@@ -25,3 +25,5 @@ The landed 29db rule maps CLAUDE_SANDBOX_TRACK_IN_HOST false (and, when empty, a
 - 2026-10-13 claimed by Kyle-McFarlane@2d49f8460283
 dispatch: implementer sonnet medium — build (rule text fix)
 agent: implementer adba9146eca7aabb0
+return: DONE 473f18d8; sidecar check first (test -e .claude-sandbox/.git, as wi's sandbox_shape); scratch: --track in a sidecar records tracked, lint clean, no /work/ line; --no-track reproduces the bug and lint misses it (filed as wi-lint-misses-a-sidecar-store-recorded-3c06); work-items 365, kit-dev 21 OK
+dispatch: reviewer opus high — review round 1 of 473f18d8
