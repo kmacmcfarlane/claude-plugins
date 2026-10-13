@@ -13,13 +13,14 @@ names each live role's agent id and round, read off the record's `agent:` lines 
 `dev-cycle` skill's `references/record-lines.md`): `implementer <id> round 2, reviewer
 <id> round 3`, so the id survives in the store even where the manifest does not reach.
 
-**Forwards.** Before the handoffs, every forward still awaiting acceptance — blocked
+**Forwards.** Whenever the session ends, compacts or is cleared, and at 75%/DUE, before
+the handoffs, every forward still awaiting acceptance — blocked
 `forwarded to …, awaiting accept` or `awaiting <repo> librarian` (SKILL.md § Intake
-step 4) — lands back: re-block it `"operator: forward to <peer> not accepted by session
-end"`, so it is a Groom row for whoever is librarian next, not a wait that outlives the
-session. This is the backstop under step 4's silence bound, for a peer that stays live
-and never answers. A watched forward (`watching …`) is in its owner's store and stays
-watching.
+step 4, `forwarding.md`) — lands back: re-block it
+`"operator: forward to <repo> not accepted before checkpoint or session end"`, so it is a
+Groom row for whoever is librarian next, not a wait that outlives the session. This is
+the backstop under the silence bound, for a peer that stays live and never answers. A
+watched forward (`watching …`) is in its owner's store and stays watching.
 
 **In-flight roster.** Every checkpoint this session runs fills the checkpoint skill's In
 flight roster, following that skill's In flight rule (who counts, and resuming by id

@@ -271,9 +271,10 @@ Then the first that applies:
    carries (store-less: the record sink and Step 6's `open questions:`). Every build
    dispatched from that series copies them into its brief's Acceptance line. A series
    naming another repo's work raises its carried findings to the operator as a `blocker`
-   instead, until forwarding (item 3460) lands. Then Step 1's tail runs, with no fable
-   offer (the at-the-cap stage needs a high left, and the plan stage is not offered at the
-   cap: `model-routing.md` § Fable cross-checks). A plan round past its fourth review
+   instead; under `librarian-mode` they are forwarded to that repo's owner (its SKILL.md
+   § Intake step 4), a `blocker` only when that forward lands back. Then Step 1's tail
+   runs, with no fable offer (the at-the-cap stage needs a high left, and the plan stage
+   is not offered at the cap: `model-routing.md` § Fable cross-checks). A plan round past its fourth review
    opens unasked only with a high left (answer 145, Q8 (i)). A plan never takes a finish
    round (step 3).
    **Standalone, every plan cap is raised instead — a stop and a granted plan path's end included — as before answer 145 (decision 156).**

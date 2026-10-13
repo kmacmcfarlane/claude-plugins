@@ -36,8 +36,9 @@ once it has landed.
 **Peer, to the `claude-plugins` librarian: "refresh the `agents` repo's grooming skill."**
 Intake: `$WI add` with the peer in `--ref` — filed first, like every request. The files
 are the `agents` repo's, outside this Scope: step 4. The `agents` repo plainly owns them,
-so it is forwarded, decided alone as a `scope` `decided:` line, and shown in the next
-Report as `Done: forwarded <plain name> to agents`. ListAgents shows one live session
+so it is forwarded (`forwarding.md`), decided alone as a `decided:` line of kind `scope`,
+authority `answer 116`, and shown in the next Report as
+`Done: forwarded <plain name> to agents`, never under `decisions needed`. ListAgents shows one live session
 named `agents`, the bare-name form. The older `agents - librarian` would count too: the
 peer lookup accepts it, though the session-name gate (`references/session-name.md`)
 does not accept it as this session's own name. Had one session held `agents` and
@@ -101,5 +102,6 @@ answered.
 Had no repo owned the work, or two, or had the request needed a real decision (a
 trade-off between the two repos' rules, say), it would have gone to the operator as a
 numbered decision instead. Had it arrived as a forward — its item's `--ref` says so — and
-also fallen outside our Scope, it would have gone to the operator: one hop, never on to a
-third repo.
+also fallen outside our Scope, it would have been declined
+(`declined for <repo> <id>: outside our Scope; one hop`), which returns it to the
+forwarder's operator: never on to a third repo.
