@@ -55,10 +55,11 @@ recorded choice, and `wi lint` reports it, as it does more than one `tracking:` 
   After writing, `init` checks again and warns when the line did not make git ignore the
   store. Outside git, nothing is written and `init` says so.
 - **A sidecar store is never ignored.** In a sidecar layout (`.claude-sandbox/.git`
-  exists, so `.claude-sandbox/` is its own repo, and the host ignores it) a git-ignored
-  store would land in no repo. `init` refuses any git-ignored choice there (`--no-track`,
-  the menu's git-ignored, the no-terminal default) before anything is written, exits 1,
-  and names `wi init --track`; an existing store keeps its recorded choice.
+  exists, so `.claude-sandbox/` is its own git repo, which the host does not track) a
+  git-ignored store would land in no repo. `init` refuses any git-ignored choice there
+  (`--no-track`, the menu's git-ignored, the no-terminal default) before anything is
+  written, exits 1, and names `wi init --track`; an existing store keeps its recorded
+  choice.
 - **What init refuses.** It never writes through a symlink: a symlinked `.gitignore` gets no
   line (`init` names the line to add by hand), and a store directory that is a symlink to a
   place outside the repo holding it is refused outright, with nothing written. A store that

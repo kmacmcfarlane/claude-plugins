@@ -1037,16 +1037,16 @@ def custody_warning(root):
 
 
 SIDECAR_NO_REPO = ("a sidecar store (.claude-sandbox/ is its own git repo, "
-                   "and the host ignores .claude-sandbox/)")
+                   "which the host does not track)")
 
 
 def _sidecar_ignored_warning(root):
     """The warning for a sidecar store recorded `ignored` (3c06). Raised on
     the record alone; when git names the sidecar repo's rule, the fix names
     it too, since `wi init --track` never edits a .gitignore."""
-    msg = (f"wi: WARNING store {root} is recorded git-ignored (tracking: "
-           f"ignored in {STORE_FILE}) in {SIDECAR_NO_REPO}, so new items "
-           "land in no repo; fix: `wi init --track`")
+    msg = (f"wi: WARNING {root} is {SIDECAR_NO_REPO}, recorded git-ignored "
+           f"(tracking: ignored in {STORE_FILE}), so new items land in no "
+           "repo; fix: `wi init --track`")
     rule = _ignore_rule(root)
     if rule:
         src, lineno, pattern = rule
@@ -1741,9 +1741,11 @@ def cmd_init(args):
         if existed:
             # an existing store with no recorded choice is left as it is:
             # an Enter or a missing terminal must not ignore a tracked store
+            # 3c06: a sidecar store cannot be ignored, so only --track
+            flags = ("`wi init --track`" if sandbox_shape(root)[0] == "sidecar"
+                     else "`wi init --track` or `wi init --no-track`")
             print(f"wi: note: {root} has no recorded tracking choice; record "
-                  "one with `wi init --track` or `wi init --no-track`",
-                  file=sys.stderr)
+                  f"one with {flags}", file=sys.stderr)
         elif _interactive():
             try:
                 choice = choose_tracking(sys.stdin, sys.stdout)

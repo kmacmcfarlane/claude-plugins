@@ -4820,16 +4820,17 @@ class TestInitTracking(unittest.TestCase):
         """store.yaml as an older wi's `init --no-track` left it."""
         (store / "store.yaml").write_text("tracking: ignored\n")
 
-    SIDECAR_WARN = ("is recorded git-ignored (tracking: ignored in "
-                    "store.yaml) in a sidecar store (.claude-sandbox/ is its "
-                    "own git repo, and the host ignores .claude-sandbox/), so "
-                    "new items land in no repo; fix: `wi init --track`")
+    SIDECAR_WARN = ("is a sidecar store (.claude-sandbox/ is its own git "
+                    "repo, which the host does not track), recorded "
+                    "git-ignored (tracking: ignored in store.yaml), so new "
+                    "items land in no repo; fix: `wi init --track`")
 
     def assert_sidecar_warns(self, store):
         prime, lint = self.prime_lint(store)
         warn = prime[1]
-        self.assertTrue(warn.startswith(f"wi: WARNING store {store} "), warn)
+        self.assertTrue(warn.startswith(f"wi: WARNING {store} "), warn)
         self.assertIn(self.SIDECAR_WARN, warn)
+        self.assertNotIn("WARNING store", warn)   # "store" said once, not twice
         # one line in prime, exit 0 (prime_lint checks it)
         self.assertEqual(sum("WARNING" in ln for ln in prime), 1)
         self.assertEqual(lint.returncode, 3, lint.stdout)
@@ -4874,6 +4875,16 @@ class TestInitTracking(unittest.TestCase):
         prime, lint = self.prime_lint(store)
         self.assertNotIn("WARNING", "\n".join(prime))
         self.assertEqual(lint.returncode, 0, lint.stdout)
+
+    def test_sidecar_unrecorded_store_note_names_only_track(self):
+        repo, store = self.sidecar("sc-note")
+        self.init(store, "--track")
+        (store / "store.yaml").unlink()
+        r = self.init(store)
+        self.assertIn("has no recorded tracking choice; record one with "
+                      "`wi init --track`", r.stderr)
+        self.assertNotIn("--no-track", r.stderr)
+        self.assertIsNone(self.tracking(store))
 
     def test_sidecar_unrecorded_ignored_store_names_only_track(self):
         repo, store = self.sidecar("sc-unrec")
