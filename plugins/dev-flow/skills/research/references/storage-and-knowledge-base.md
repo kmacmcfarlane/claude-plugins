@@ -15,10 +15,12 @@ research checked in.
 
 **Staging.** Everything drafted from fetched pages — lane findings, a report draft, a quick
 run's `--to` file — lands first in `<scratchpad>/research/<run>/`, the run's staging area,
-named in the brief's frontmatter, and is scanned there by the verifier. The verifier's sheet,
-the synthesis and `sources.md` are written after that scan, from scanned files, into the
-same staging area, and the whole record is copied to the destination only on a clean scan
-(not `pdf/`, the lanes' extracted PDF text, which is unscanned and stays in staging).
+named in the brief's frontmatter, and is scanned there by the scan floor
+(`scripts/scan-findings.py`, `run-record.md` § The scan floor) and then the verifier. The
+verifier's sheet, the synthesis and `sources.md` are written after those scans, from scanned
+files, into the same staging area, and the whole record is copied to the destination only on
+a clean scan (not `pdf/`, the lanes' extracted PDF text, which is unscanned and stays in
+staging); a toolkit's `tools/` also needs its toolkit gate to have passed.
 The brief is the one file written at the destination before that, because the orchestrator
 authors it and it carries no fetched text. A run held on a security concern moves to
 `.claude-sandbox/research/_held/<run>/` when the held-path check (§ The ignore check) says
@@ -69,7 +71,8 @@ to the scratchpad. Never create a tracked path.
 
 **Promotion out of the sidecar** — "this was worth keeping, check it in" — is a separate,
 explicit step, and it is gated: it refuses unless the run's `verification.md` exists and its
-security section is clean (a run that was never verified is verified first). Then copy the
+security section is clean, and a rescan of the run with the scan floor (`run-record.md` § The
+scan floor) finds no HOLD (a run that was never verified is verified first). Then copy the
 run to `docs/research/<run>/` (or the path the operator names), add frontmatter
 `promoted_from:`, and leave the sidecar copy in place. If the repo would benefit
 from a KB, offer to establish one (below) rather than accumulating loose run dirs under
@@ -232,10 +235,11 @@ reports its result in one block in the run's ledger and in `KB.md`'s `last_fit_c
    "should we…" question, or a by-question KB accumulating entity profiles, is a scheme drift,
    not a filing problem. Say which.
 4. **Verdict** — `FITS` (promote now), `STRAINED` (promote now, and file a rebalance
-   proposal in `KB.md`'s rebalance log with the counts), or `REBALANCE FIRST` (a threshold is
-   past by half again or an access pattern dead-ends: propose the rebalance, and in an
-   interactive run ask before promoting; unattended, promote to a `notes/_inbox/` directory
-   and record the proposal — nothing is lost, and the tree is not made worse).
+   proposal in `KB.md`'s rebalance log with the counts), or `REBALANCE FIRST` (a threshold
+   is past by half again or an access pattern dead-ends: propose the rebalance, and in an
+   interactive run ask before promoting, per `intensity-and-routing.md` § Putting an ask to
+   the operator; unattended, promote to a `notes/_inbox/` directory and record the proposal
+   — nothing is lost, and the tree is not made worse).
 
 ### Promotion
 
@@ -267,8 +271,9 @@ its brief's frontmatter and drops out of `INDEX.md`'s default view.
 
 ### Key junctures — when to revisit the charter
 
-The charter is re-read, and the operator asked whether it still holds, at these points and
-no others (asking on every run trains people to stop reading the question):
+The charter is re-read, and the operator asked whether it still holds (asked per
+`intensity-and-routing.md` § Putting an ask to the operator), at these points and no others
+(asking on every run trains people to stop reading the question):
 
 - the fit check returns `REBALANCE FIRST`;
 - a run's material does not fit the scheme (a scheme-drift verdict) for the second time;

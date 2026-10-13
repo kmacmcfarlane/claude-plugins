@@ -8,7 +8,8 @@ the Claude config dir at `${CLAUDE_CONFIG_DIR:-~/.claude}/claude-kit/handoff/<si
 the session id made path-safe), never in a repo — so no session overwrites another's,
 and it is never committed. The path cannot be guessed, so every checkpoint prints it. What
 must outlast the config dir goes where Step 3 routes it: the work item's handoff block
-(`wi handoff`), the investigation series, the commit. Write-side budget **≤6,000 chars**;
+(`wi handoff`) and its Notes (Step 4a½ appends what only the conversation held about each
+open item in `items:`), the investigation series, the commit. Write-side budget **≤6,000 chars**;
 the hook trims Scrolls → Next → Aware-of (keeping CORRECTION/REFUSED) and never the
 mandatory tiers, under its 9,000-char injection cap.
 
@@ -190,10 +191,11 @@ TOC, read on demand: `path — one line on what it holds`.
   `systemMessage` shown to the operator carries the same label and reason
   (`Rehydrated from AGED (recorded head is not an ancestor) manifest (...)`).
 - **Current repo state outranks the manifest.** git log and the work-item store are the
-  durable record; the manifest is only the reasoning. The injected precedence line says so:
+  durable record; the manifest is only the noodle notes. The injected precedence line says so:
   repo state beats the manifest; the manifest and ledger beat any machine summary.
 - **`items:`** (optional) lists the work-item ids the author expects open or in flight —
-  Step 4b fills it with the `wi` ids of open or doing items the manifest mentions. When a
+  Step 4b fills it with the `wi` ids of open or doing items the manifest mentions — the set
+  Step 4a½ fixed and wrote residue into before the manifest. When a
   store is found (`WI_ROOT`, else `.claude-sandbox/work`, else `.work`), the hook names each
   id now done, dropped or missing as `DEAD CLAIM <id> (<status>)`, in every tier. Ids resolve
   as `wi` does (id, alias, unique prefix); `# comments` are ignored; only the first 50 are read;
@@ -241,6 +243,8 @@ TOC, read on demand: `path — one line on what it holds`.
   - not found locally (N is unknowable): `... head moved ? commits since this manifest
     (<recorded>..<current>, recorded head not found locally); ...`
 
+  `wi prime and ` appears in the line only when a work-item store is found (the same lookup
+  as `items:` below); with none it ends `run git log.`.
   Other sections stay. Commits touching only `.claude-sandbox/work` (store chores) do not
   count toward N or M. No time-based expiry — the head check covers it.
 - A LANDED manifest skips both checks (no dead claims, Next not withheld): the work is done.
@@ -269,7 +273,7 @@ TOC, read on demand: `path — one line on what it holds`.
   Goal, Holds, In flight, Read in full and Copy forward are **never trimmed**; only a body
   whose protected sections alone exceed the budget is cut at its end. A trimmed section keeps
   its heading and reads `(trimmed — read the manifest file)`.
-- **The ledger digest** (2,500 chars, never exceeded) keeps reasoning ahead of pointers.
+- **The ledger digest** (2,500 chars, never exceeded) keeps noodle notes ahead of pointers.
   The *room* is the budget less a share held back for the closing line. `R`/`C` lines
   from every epoch come first (newest first, up to half the room), then `D`/`X`/`U`/`Q`
   ranked together newest first, then the remaining `R`/`C`, then the machine-written `P`

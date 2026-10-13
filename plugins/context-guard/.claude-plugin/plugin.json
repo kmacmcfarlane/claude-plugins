@@ -1,9 +1,10 @@
 {
   "name": "context-guard",
-  "description": "Context survival for long sessions — depth gate, checkpoint workflow, session rehydration, and token-spend reporting from the local transcripts (soft dependency: statusline-hub, for exact depth from the sensor record it writes; installing statusline brings it).",
+  "description": "Context survival for long sessions — depth gate, checkpoint workflow, session rehydration, and token-spend reporting from the local transcripts (soft dependency: statusline-hub, for exact depth from the sensor record it writes, and the weekly reading for usage-report's share of a week; installing statusline brings it; soft dependency: work-items, whose wi, found in the repo's tree or the installed plugin, the checkpoint uses to fill items: and write open-item residue when a store exists, skipping both with none, and with a store but no wi keeping the residue in the manifest and saying the items were not updated; rehydration names wi prime only when a store exists; soft dependency: dev-flow, whose dev-cycle and the research skills record on a work item the agent ids and phase budgets that usage-report's item mode sums, so without it an item carries no spend to report).",
   "author": {
     "name": "Kyle McFarlane"
   },
   "homepage": "https://github.com/kmacmcfarlane/claude-plugins",
-  "repository": "https://github.com/kmacmcfarlane/claude-plugins"
+  "repository": "https://github.com/kmacmcfarlane/claude-plugins",
+  "license": "GPL-3.0-only"
 }

@@ -1,6 +1,6 @@
 ---
 name: dev-cycle
-description: Carry one change from plan to merge through sub-agents — resolve the target (a work item, an investigation series, a plan file, or the current conversation), plan it when it needs one, route each dispatch to a model tier by explicit signals, delegate the build to a background agent in its own git worktree, gate the result through a fresh review sub-agent (a self-review for pure prose) with a fix loop capped at four review rounds, run the repo's checks, land it the way the user chooses (a local merge first, never a push unasked), and report in four lines. Use when the user says "dev cycle", "run the dev cycle on", "take this item to merge", "build this through sub-agents", "implement and review this", or wants one work item or plan carried to a reviewed, landed change without a standing librarian. Not for a session that owns a repo's whole stream of work (librarian-mode) or a hands-on plan-and-build session (investigate, implement).
+description: Carry one change from plan to merge through sub-agents — resolve the target (a work item, an investigation series, a plan file, or the current conversation), plan it when it needs one, route each dispatch to a model tier by explicit signals, delegate the build to a background agent in its own git worktree, gate the result through a fresh review sub-agent (a self-review for pure prose) with a capped fix loop, run the repo's checks, land it the way the user chooses (a local merge first, never a push unasked), and report in four lines. Use when the user says "dev cycle", "run the dev cycle on", "take this item to merge", "build this through sub-agents", "implement and review this", or wants one work item or plan carried to a reviewed, landed change without a standing librarian. Not for a session that owns a repo's whole stream of work (librarian-mode) or a hands-on plan-and-build session (investigate, implement).
 disable-model-invocation: false
 allowed-tools: Read, Write, Glob, Grep, Bash, Agent, AskUserQuestion, SendMessage, ListAgents, EnterWorktree
 argument-hint: "[wi-id | slug | plan-path] [plan | review branch]"
@@ -17,14 +17,14 @@ few questions, each asked once: the cycle brief, the checks, how to land.
 ## Critical
 
 - **Nothing passes on an agent's word.** Every `DONE`, a plan-mode series included,
-  goes through a fresh opus review sub-agent and the fix loop until `CLEAR` — pure prose
-  with no operational claim excepted, which you review yourself (Step 2 rule 5); a change
-  then also passes your own checks and diff reading before it lands.
+  goes through a fresh opus review sub-agent and the fix loop until `CLEAR` — Step 2
+  rule 5's waiver excepted, which you review yourself; a change then also passes your own
+  checks and diff reading before it lands.
 - **You never edit the change**, and never fix a finding, not even a nit: a rejected result
   is re-dispatched with a sharper brief. Your only writes are the record sink, the cycle
   brief, a `.git/info/exclude` line (Step 3) and the merge.
-- **Every Agent call carries a `model`.** An unrouted sub-agent inherits your model,
-  often the dearest tier (Step 2).
+- **Every Agent call names its role agent and carries a `model`.** An unrouted sub-agent
+  inherits your model and your effort, often the dearest of both (Step 2).
 - **One target, one worktree, one cycle.** Several items are several cycles; running them
   in parallel, and taking the next ready one when this lands, is the caller's business
   (`librarian-mode`'s Idle turn); a standalone run ends at its Report.
@@ -41,7 +41,7 @@ few questions, each asked once: the cycle brief, the checks, how to land.
 
 | Target | Meaning |
 |---|---|
-| `<wi-id>` | A work item: acceptance, files, base, any `model:` pin; the record lines go into it |
+| `<wi-id>` | A work item: acceptance, files, base, any `model:` or `effort:` pin; the record lines go into it |
 | `<investigation-slug>` / `<plan-path>` | An existing plan — a series under `.claude-sandbox/investigations/<slug>/`, or any plan file. Skips Step 1, except in `plan` mode |
 | *(none)* | The current conversation (Step 0.2) |
 
@@ -56,7 +56,7 @@ Modes:
   worktree and, with no item or plan, a one-line intent to grade against, instead
   (`references/bindings.md` §§ Review target, Intent). Step 2 routes the reviewer alone
   (rule 4). Step 4 dispatches the review-mode variant (`references/review-brief.md`
-  § Review-mode variant — claims: none, branch not built by this cycle). On `CLEAR`,
+  § Review-mode variant). On `CLEAR`,
   Step 5 runs the review-mode Land (`references/bindings.md` § Landing: merges
   `<branch>` itself, never deletes it, cleans up only a worktree this cycle added). On
   `NEEDS_CHANGES` or `SHOW_STOPPER`, before any fix loop, ask once through the decision
@@ -88,7 +88,14 @@ only on a `CLEAR` recorded against the current HEAD sha.
    type (feature, bug, chore, refactor or spike) — show it, and ask once with
    AskUserQuestion: Proceed / Discuss / Reject. Discuss: revise and ask again. Reject:
    stop, nothing written. Proceed: `$WI add` it when a store exists (that item is the
-   target), else write it to `<scratchpad>/dev-cycle/<slug>/record.md`. **`review
+   target), else write it to `<scratchpad>/dev-cycle/<slug>/record.md`. The add passes
+   `--short-display-name "<plain name>"`, a name for the brief's goal in 3–6 words, with
+   no id, no leading article and never the word "until", **40 characters or fewer**. An
+   exit 1 naming `short_display_name` means it is over 40 characters and nothing was
+   written: shorten it and re-run. Any other exit 1 is the call's own error (a title over
+   120 characters, a dep or parent that does not resolve, a line break): fix that. An
+   exit 2 naming `--short-display-name` means an older `wi`: file without the flag, and
+   write the name from the title at each mention. **`review
    <branch>` mode with no other target:** skip the cycle brief — there is nothing to
    plan, the branch already exists; collect a one-line intent instead
    (`references/bindings.md` § Intent), in the same question as any other Step 0 ask.
@@ -106,15 +113,16 @@ only on a `CLEAR` recorded against the current HEAD sha.
    `references/bindings.md` § Review target, and claims a named item here too (Step 3 is
    skipped): `$WI claim <id>` when it is not already yours.
 
-   Then record the run itself, before any dispatch, as one
-   `target: <mode> <ref> <workspace>` line — unless the record already carries one,
-   which a resumed run keeps. The mode is one bare word for the path this run takes:
-   `review` for `review <branch>`; otherwise `plan` when the run takes Step 1's
-   plan-agent bullet; otherwise `full`. The ref is the target as given; the workspace
-   is **absolute** — the path `references/bindings.md` § Review target resolved
-   (`review`), `"$MAIN"/.claude/worktrees/<name>` (`full`), or the series path (`plan`). Every later
-   step reads the workspace from this line, never rebuilding it
-   (`references/record-lines.md`, `target:`).
+   Then record the run itself, before any dispatch, as one `target: <mode> <ref>
+   <workspace>` line and with it this phase's `budget:` line (`references/bindings.md`
+   § Spend budget) — unless the record's last `target:` line is this run's, the same mode
+   and ref, which a resumed run keeps with its `budget:` line; a build on a planned item
+   writes its own pair. The mode is one bare word for the path this run takes: `review`
+   for `review <branch>`; otherwise `plan` when the run takes Step 1's plan-agent bullet;
+   otherwise `full`. The ref is the target as given; the workspace is **absolute** — the
+   path `references/bindings.md` § Review target resolved (`review`),
+   `"$MAIN"/.claude/worktrees/<name>` (`full`), or the series path (`plan`). Every later
+   step reads it from this line, never rebuilding it (`references/record-lines.md`).
 
 4. **Resume.** Reduce the record sink, as Step 0.3 found it before writing, to one
    state, then take the one action that state names: `references/resume.md`, the same
@@ -122,11 +130,12 @@ only on a `CLEAR` recorded against the current HEAD sha.
    state is an interrupted run taken up where its record stops — never re-planned,
    re-dispatched or re-landed past what the record says.
 
-Expected output: one short paragraph — target, mode, base, checks, record sink, and the
-resume state with the facts that selected it (`references/resume.md` § The resume
-summary). When the record sink is the scratchpad run record, say there too that the run
-is **not resumable outside this session**: a scratchpad sink is session-scoped by
-contract (`references/bindings.md` § The ten, Record sink).
+Expected output: one short paragraph — target, mode, base, checks, record sink, the
+phase's budget and its source, and the resume state with the facts that selected it
+(`references/resume.md` § The resume summary). When the record sink is the scratchpad run
+record, say there too that the run is **not resumable outside this session**: a
+scratchpad sink is session-scoped by contract (`references/bindings.md` § The ten,
+Record sink).
 
 ## Step 1: Plan (when needed)
 
@@ -137,20 +146,42 @@ the plan agent revises, by a new serial.
 
 - **`plan` mode or a spike** — a run that reaches this bullet records mode `plan`
   (Step 0.3), whichever word was typed, because what follows is the same and nothing here
-  reaches Step 3 or Land: dispatch one plan agent, routed by Step 2 with opus as its
-  minimum (a plan is judgement) and the Model floor respected, with the plan variant in
-  `references/agent-brief.md`: /investigate in its orchestrated mode (the `investigate`
-  skill's § Running under an orchestrator), writing the series to the Series home; no
-  worktree. Record the plan agent's report as soon as it comes back:
-  `return: planner <STATUS> <series path>` (`references/record-lines.md`) — this bullet is
-  that line's only writer for a planner, and a `BLOCKED` one carries its reason exactly
-  as Step 3.5's does. Its `DONE` goes to Step 4 with the plan-review variant; a
-  `NEEDS_CHANGES` re-dispatches the plan agent, which revises by a new serial per the
-  `investigate` skill's `references/investigation-format.md`. After `CLEAR`, its
-  blocking open questions go to the decision channel; then Step 6. With a work item:
-  `$WI claim <id>` before the plan dispatch (unless already yours); after `CLEAR`,
-  `$WI done <id> --note <series path>`, or `$WI handoff <id>` naming the series while
-  blocking questions are open.
+  reaches Step 3 or Land: dispatch one plan agent — `dev-flow:planner`, or `planner-deep`
+  under an effort pin or on the xhigh trial's bump arm; `general-purpose` only as Step 2's
+  fallback — routed by Step 2 with opus as its minimum (a plan is judgement) and the Model
+  floor respected, with the plan variant in `references/agent-brief.md`: /investigate in
+  its orchestrated mode (the `investigate` skill's § Running under an orchestrator),
+  writing the series to the Series home; no worktree. Record the plan agent's report as
+  soon as it comes back: `return: planner <STATUS> <series path>`
+  (`references/record-lines.md`) — this bullet is that line's only writer for a planner,
+  and a `BLOCKED` one carries its reason exactly as Step 3.5's does. Its `DONE` goes to
+  Step 4 with the plan-review variant; a `NEEDS_CHANGES` goes back to the plan agent —
+  resumed or re-dispatched as `references/fix-loop.md` says, and first through
+  `references/model-routing.md` § The xhigh trial, which may enrol it, writes its
+  `trial:` lines and checks each of its window's planner and plan-review dispatches at
+  their return — which revises by a new serial per the `investigate` skill's
+  `references/investigation-format.md`. After `CLEAR`, its blocking open questions — and
+  an `Estimated cost:` over its build's default (`references/bindings.md` § Spend
+  budget) — go to the decision channel, with any fable cross-check offer
+  (`references/model-routing.md` § Fable cross-checks), which never holds the build;
+  then Step 6. With a work item: `$WI claim <id>` before the plan dispatch (unless
+  already yours); after `CLEAR`, `$WI done <id> --note <series path>`, or
+  `$WI handoff <id>` naming the series while blocking questions are open.
+- **A foundation run** — a `plan` target whose item or brief asks for the `foundation`
+  skill, or whose series' `INDEX.md` carries a `## Foundation` block — takes the bullet
+  above with three changes. **One phase per plan dispatch**, with
+  `references/agent-brief.md` § Foundation plan variant: requirements, then architecture,
+  then the plan (`all` once for a lite run), each reviewed with the plan-review variant's
+  foundation checklist, all inside the run's one cap. **At a `CLEAR` on gate G1 or G2**
+  the item is handed off, never closed, whether or not blocking questions are open: put
+  the gate decision to the operator when the Foundation block's Operator cell says
+  `needed` (gate G1 always), record its answer, run `$WI handoff <id>` naming the series
+  and the next phase, and dispatch that phase — the next phase of the same run, not
+  Step 6. An answer to revise or reopen dispatches the planner with the operator's words
+  instead, and the gate re-runs. **At gate G3** the plan decision always goes to the
+  operator, carrying a short architecture summary when gate G2 was reported rather than
+  approved; after they approve it, file the work and close the item exactly as the
+  `foundation` skill's `references/state.md` § The work item says, then Step 6.
 - **A feature in full mode:** no separate dispatch; the implementer runs /investigate
   then /implement in its worktree, each in its orchestrated mode (each skill's § Running
   under an orchestrator), as the brief's dev-flow block directs
@@ -158,51 +189,77 @@ the plan agent revises, by a new serial.
 
 ## Step 2: Route
 
-Route every dispatch with the Agent tool's `model` field (`sonnet` | `opus` | `fable`;
-never haiku — mechanical checks you run yourself); tables and worked examples:
-`references/model-routing.md`. This step routes dev-cycle's own dispatches — planner,
-implementer, reviewer. The research skills route their lanes and verifiers by their own
-tables; nothing here governs them. Fix round n = the nth re-dispatch or resume with
-findings = review round n+1; cap 4 review rounds.
+Route every dispatch to a role agent, `subagent_type: "dev-flow:<agent>"`, with the Agent
+tool's `model` field on every call (`sonnet` | `opus` | `fable`; never haiku — mechanical
+checks you run yourself). The agent file pins the effort and the field sets the model; the
+agents and when each runs: `references/model-routing.md` § Profiles, with the tables and
+worked examples. When the agent is not loaded, dispatch `general-purpose` with the same
+`model`, recorded `inherit` — asked first under an effort pin
+(`references/model-routing.md` § Fallback); below the quota reserve, its § Below the
+quota reserve. This step routes dev-cycle's own dispatches — planner, implementer,
+reviewer, and the fable cross-checks the operator accepts. The research family (`research`,
+`research-deep`, `research-refine`, `research-prune`), `deep-investigation` and
+`chain-of-verification` route by the `research` skill's `references/intensity-and-routing.md`;
+nothing here governs them, though `scout` serves both. Fix round n = the nth re-dispatch or
+resume with findings = review round n+1; the cap: Step 4.3.
 
-1. **Implementer: sonnet for mechanical edits** — pointer and path fixes, frontmatter,
-   catalog rows, wording that changes no behaviour. Every edit in the change must be one
-   of these; when in doubt, opus.
-2. **Implementer: opus for everything else** — any change to what a skill, agent,
-   CLAUDE.md or doctrine rule does; a format bump; executable logic (hook, `scripts/`,
-   tests, status line, settings write; any code when Ground holds product code);
-   `marketplace.json`, or a plugin added, split, moved or retired; a recorded trade-off
-   or judgement words that ask for one; a prior `NEEDS_CONTEXT`. The table:
-   `references/model-routing.md` § Implementer. A planner is opus at least (Step 1).
+1. **Implementer: sonnet for mechanical edits**, on `implementer`. In a kit repo only the
+   canonical kinds — pointer, path, link, frontmatter, catalog row or layout line,
+   listing; elsewhere also wording that changes no behaviour. Every edit in the change
+   must be one of these; when in doubt, opus.
+2. **Implementer: opus for everything else**, on `implementer` with `model: opus` — any
+   change to what a skill, agent, CLAUDE.md or doctrine rule does; a format bump;
+   executable logic (hook, `scripts/`, tests, status line, settings write; any code when
+   Ground holds product code); `marketplace.json`, or a plugin added, split, moved or
+   retired; a recorded trade-off or judgement words that ask for one; a prior
+   `NEEDS_CONTEXT`; any other kit-repo text. Work the operator called critical — the
+   item or its refs quote the operator calling it critical, crucial, foundational or
+   important, or asking for fable — goes to `implementer-critical` (opus high). The
+   table: `references/model-routing.md` § Implementer. A planner is opus at least
+   (Step 1), on `planner`.
 3. **Fable is no implementer tier by signal.** It runs only under a `model: fable` pin
-   (rule 8), or as the second-opinion reviewer rule 4 allows.
-4. **Reviewer: always opus, always fresh** — a new sub-agent that never saw the
-   implementer's conversation: never a fork, never the implementer resumed, never you
-   (except rule 5's waiver). Resuming the same reviewer for its own re-review is fine.
-   `review <branch>` mode's reviewer is opus too. On a complex `plan` mode series an
-   opus planner made — greenfield architecture, a major refactor — you may add one fresh
-   fable reviewer after the opus reviewer's `CLEAR`, as a second opinion: a second
-   reviewer, never a substitute (`references/model-routing.md` § Second opinion).
+   (rule 8), or as a fable cross-check the operator accepted (rule 4).
+4. **Reviewer: always opus, always fresh**, on `reviewer` (opus high), or `reviewer-light`
+   (opus medium) for the one kind `references/model-routing.md` § Reviewer effort by kind
+   names — a new sub-agent that never saw the implementer's conversation: never a fork,
+   never the implementer resumed, never you (except rule 5's waiver). Resuming the same
+   reviewer for its own re-review is fine. `review <branch>` mode's reviewer is opus too.
+   **Fable cross-checks are offered with why, never dispatched unasked**
+   (`references/model-routing.md` § Fable cross-checks).
 5. **Review waiver: `review: self`.** Pure prose with no operational claim gets your own
-   review instead of a reviewer, recorded as `review: self` above its verdict (Step 4).
-   The test, and what always keeps a reviewer: `references/model-routing.md` § Review
-   waiver. When in doubt, a reviewer.
+   review instead of a reviewer (Step 4) — under `librarian-mode`, so does skill wording
+   that changes no rule. The test, and what always keeps a reviewer:
+   `references/model-routing.md` § Review waiver. When in doubt, a reviewer.
 6. **A re-dispatch keeps the tier** and sharpens the brief. The one bump: a sonnet
    implementer goes to opus, re-dispatched fresh, at the fix round after a critical or
-   high finding, and at fix round 2 whatever the severity. A tier never falls unasked: a
-   `model: fable` pin that cannot run on fable is asked through the decision channel,
-   never fallen back (`references/model-routing.md` § Fallback).
+   high finding, and at fix round 2 whatever the severity. A resume keeps the agent file,
+   and with it the model and the effort: a change of either file or model is a fresh
+   dispatch (`references/fix-loop.md`). A tier never falls unasked: a `model: fable` pin
+   that cannot run on fable, or an `effort:` pin whose `-deep` file is not loaded, is
+   asked through the decision channel, never fallen back
+   (`references/model-routing.md` § Fallback).
 7. **Record each dispatch** in the record sink before the call:
-   `dispatch: <role> <model> — <signal>`. Then, the moment the Agent call returns an id,
+   `dispatch: <role> <model> <effort> — <signal>`, the effort being the agent file's pin,
+   or `inherit` under the fallback. Then, the moment the Agent call returns an id,
    append `agent: <role> <id> round <n>` under it (`references/record-lines.md`). A
    SendMessage that resumes an agent for a new round is recorded the same way, before
-   it is sent: `dispatch: <role> <model> — resume` and `agent: <role> <same id> round
-   <n>`, so every round opens with a phase line a resume can probe. The record,
+   it is sent: `dispatch: <role> <model> <effort> — resume` and `agent: <role> <same id>
+   round <n>`, so every round opens with a phase line a resume can probe. The record,
    not `ListAgents`, is what a later turn or another session has to go on, and a
    `dispatch:` with no `agent:` under it says the call never returned one.
-8. **The Model floor binding** — an operator `model:` pin — is a floor for every role,
-   reviewer included, and is never overridden downward: a `model: fable` pin runs every
-   role on fable.
+8. **The Model floor binding** — an operator's `model:` pin and its `effort:` pin — is a
+   floor never overridden downward.
+   - A `model:` pin is a floor for every role, reviewer included: a `model: fable` pin
+     runs every role on fable.
+   - An `effort: xhigh` pin sends every planner dispatch to `planner-deep`, and every
+     implementer dispatch to `implementer-deep` — on opus, or on the `model:` pin when
+     that is higher, even when the item's edits are canonical mechanical kinds or the
+     operator called it critical. Sonnet at xhigh is no profile. Reviewers and
+     cross-checks keep their files.
+   - The two pins compose: `effort: xhigh` with `model: fable` is `planner-deep` with
+     `model: fable`.
+   - Where routing reads the Model floor as a tier, it means the `model:` pin. An
+     `effort:` pin alone sets no tier.
 
 ## Step 3: Delegate
 
@@ -220,7 +277,9 @@ findings = review round n+1; cap 4 review rounds.
    `.gitignore`.
 2. **Claim** the item, when there is one and it is not already yours: `$WI claim <id>`.
 3. **Brief**: fill `references/agent-brief.md` from the bindings; send it to one
-   background `general-purpose` agent with the routed `model`.
+   background implementer — `dev-flow:implementer`, `implementer-critical` or
+   `implementer-deep`, as Step 2 routes it — with the routed `model`; `general-purpose`
+   only as Step 2's fallback.
 4. **Return contract**: `STATUS` (`DONE` | `DONE_WITH_CONCERNS` | `NEEDS_CONTEXT` |
    `BLOCKED`) and the report shape in the brief.
 5. **On return**: record it as `return: <role> <STATUS> <sha>` (`references/record-lines.md`),
@@ -235,8 +294,9 @@ findings = review round n+1; cap 4 review rounds.
 
 ## Step 4: Review
 
-1. **Dispatch a reviewer**: one background `general-purpose` agent, review-only, `model`
-   per rule 4 — or, when rule 5's waiver holds for the full diff at this HEAD, review it
+1. **Dispatch a reviewer**: one background `dev-flow:reviewer` agent (`general-purpose`
+   only as Step 2's fallback), review-only, `model` per rule 4 — or, when rule 5's waiver
+   holds for the full diff at this HEAD, review it
    yourself (`references/model-routing.md` § Review waiver) — briefed from
    `references/review-brief.md`, against what the producer returned — the sha, or the
    series path, on the last `return:` line (`references/record-lines.md`). In
@@ -260,28 +320,36 @@ findings = review round n+1; cap 4 review rounds.
 3. **Fix loop.** Verdicts are `CLEAR`, `NEEDS_CHANGES`, `SHOW_STOPPER` and `BLOCKED`; who
    is resumed and who is re-dispatched: `references/fix-loop.md`. An agent you resume is
    the one its `agent:` line names (`references/record-lines.md`) — SendMessage to that
-   recorded id, never one remembered from this turn alone — after a second opinion, the
-   opus reviewer's, not the fable one's (`references/fix-loop.md` § A NEEDS_CHANGES
+   recorded id, never one remembered from this turn alone — after a cross-check, the
+   `reviewer`'s, never the `cross-checker`'s (`references/fix-loop.md` § A NEEDS_CHANGES
    round) — with its `— resume` pair written first (rule 7); a re-dispatch writes a
-   fresh `dispatch:` and `agent:` pair. Repeat until `CLEAR`.
-   **Cap: 4 review rounds** — the first review plus three fix rounds; a fourth without
-   `CLEAR` means the brief or the target is wrong, not the code: block it and raise it.
-   Never argue a severity down.
+   fresh `dispatch:` and `agent:` pair. A change of agent file or model is always a
+   re-dispatch. Repeat until `CLEAR`.
+   **The cap.** Rounds run unasked inside the phase's spend budget, past the fourth review
+   through its guard; the cap is the budget reached (not while a fresh weekly reading is
+   below 50% used), the must-fix count not falling from the fourth review on, or, with no
+   spend reading, the fourth review. It ends in a plan's stop and carry, one finish round
+   of exact fixes, or a raise with what the open findings would break and what more costs
+   (`references/bindings.md` § Decisions, What a cap ends in). Never argue a severity down.
 4. **What escalates** through the decision channel is only a show-stopper with real
    impact: a `SHOW_STOPPER` verdict, a finding that changes the scope or reverses a
-   recorded human decision, or the cap. Everything else, critical included, is resolved
-   inside the loop. The one exception: `review <branch>` mode's ask, before any fix loop,
-   whether to dispatch an implementer at all (Usage) — a mode-entry decision, not a
-   severity escalation.
+   recorded human decision, or a cap or a guard-stopped round that is raised (rule 3) —
+   and a fable cross-check offer (rule 4), and each foundation `REOPEN:` line in a
+   return's OPEN QUESTIONS or a verdict's NOTES, raised before the next dispatch or Land
+   (`references/bindings.md` § Decisions, A foundation reopen). Everything else, critical included, is
+   resolved inside the loop. The one exception: `review <branch>` mode's ask, before any
+   fix loop, whether to dispatch an implementer (Usage) — mode entry, not a severity.
 5. **Record the result** as `verdict: <V> round <n> at <sha>` — a self-review writes
    `review: self at <sha> — <why it qualifies>` directly above it — plus, on a
    `NEEDS_CHANGES` or `SHOW_STOPPER`, the reviewer's FINDINGS pasted verbatim as a
-   `findings:` block (`references/record-lines.md`) — what a fix dispatch reads. A `BLOCKED`
-   reviewer is not a round and carries its reason in place of a round number —
-   `verdict: BLOCKED at <token> — permission | setup`, the same closed set Step 3.5
-   writes. Also record: findings fixed, findings declined with reasons, and the reviewer
-   NOTES worth keeping. Reviewer questions you cannot settle go on Step 6's
-   `open questions:`.
+   `findings:` block (`references/record-lines.md`) — what a fix dispatch reads; after
+   every counted verdict, the spend check's `cost:` line with the report's `MUST-FIX:`
+   count (`references/bindings.md` § Spend budget). A `BLOCKED` reviewer is not a round
+   and carries its reason in place of a round number — `verdict: BLOCKED at <token> —
+   permission | setup`, the same closed set Step 3.5 writes. Also record: findings fixed,
+   findings declined with reasons, the reviewer NOTES worth keeping, and each `REOPEN:`
+   line in a return or the NOTES, verbatim, whatever the verdict. Reviewer
+   questions you cannot settle go on Step 6's `open questions:`.
 
 ## Step 5: Land
 
@@ -302,9 +370,11 @@ Only after a `CLEAR` recorded against the current HEAD — the last `verdict:` l
 3. **Take the terminal action.** A caller's binding as given. Standalone, ask once
    (`references/bindings.md` § Landing): `Merge to <base> locally, no push` first, then
    `Leave the branch`, then `Merge and push`. Merging needs the main checkout on the
-   base. Dirt the cycle wrote itself — the record sink or store, the Series home,
-   `.claude/worktrees/` — never blocks a merge; any other dirt the merge would touch or
-   the user owns means stop and ask, never stash
+   base, with no merge pending: when `git -C "$MAIN" rev-parse -q --verify MERGE_HEAD`
+   succeeds, stop and follow `references/troubleshooting.md` § Landing, "A merge left
+   uncommitted in the main checkout". Dirt the cycle wrote itself — the record sink or
+   store, the Series home, `.claude/worktrees/` — never blocks a merge; any other dirt
+   the merge would touch or the user owns means stop and ask, never stash
    (`references/troubleshooting.md` § Landing):
 
    ```bash
@@ -315,44 +385,69 @@ Only after a `CLEAR` recorded against the current HEAD — the last `verdict:` l
    (`references/bindings.md` § Landing). The message, with any `subject-fix:`:
    `references/fix-loop.md`. A conflict: never resolve it yourself — `git -C "$MAIN"
    merge --abort`, record it as a finding, and re-dispatch it into the fix loop
-   (`references/fix-loop.md` § A merge conflict). Re-run the checks on the base after the
-   merge.
+   (`references/fix-loop.md` § A merge conflict). **The moment the merge succeeds**,
+   append `landed: <merge sha>` to the record sink (`references/record-lines.md`) —
+   before anything else, so a run that dies after the merge still says it landed. Then
+   re-run the checks on the base. A red one there is no longer a fix-loop finding — the
+   merge has landed: follow `references/troubleshooting.md` § Landing, "A check is red on
+   the base after the merge". The cycle pushes nothing past it; under a librarian it goes
+   on the Report's `decisions needed:`, and the push is the librarian's call. `Merge and
+   push` pushes only after the `landed:` line and green checks on the base.
 4. **Clean up**, only when merged and the worktree is clean: `git worktree remove` it and
    `git branch -d` the branch. A dirty worktree is never removed: report it and ask.
    `review <branch>` mode never deletes `<branch>` and removes only a worktree this cycle
    added itself (`references/bindings.md` § Landing).
-5. **Record the landing, then close the item**: the moment the merge succeeds, append
-   `landed: <merge sha>` to the record sink (`references/record-lines.md`) — before
-   `$WI done <id> --note <merge-sha>`, so a run that dies between the two still says it
-   landed. For `Leave the branch` nothing merged: no `landed:` line,
-   and `$WI handoff <id>` with `--next` naming the branch instead.
+5. **Close the item**: `$WI done <id> --note <merge-sha>`, after the `landed:` line
+   step 3 wrote, so a run that dies between the two still says it landed. The last
+   piece of a multi-item capability then gets the post-landing offer (rule 4). For
+   `Leave the branch` nothing merged: no `landed:` line, and `$WI handoff <id>` with `--next` naming
+   the branch instead.
 
-A red check or a doctrine miss stops the landing: `$WI handoff <id> --blocked "<what>"`
-(no item: a `blocked:` line in the record sink), and it re-enters the fix loop as a
-finding, counting toward the cap. **Never merge to make a check pass later.**
+A red check or a doctrine miss before the merge (steps 1–2) stops the landing:
+`$WI handoff <id> --blocked "<what>"` (no item: a `blocked:` line in the record sink), and
+it re-enters the fix loop as a finding, counting toward the cap. **Never merge to make a
+check pass later.**
 
 ## Step 6: Report
 
 Four lines, no headings:
 
 ```
-changed: <item id or slug> — <what, one clause>; <files>
-verified: review <CLEAR after N fix round(s)> (impl <tier>, review <tier>); <each check and its outcome>; <landed: merge sha | branch left | pushed>
+changed: <plain name> (<tag>) — <what, one clause>; <files>
+verified: review <CLEAR after N fix round(s)[, k finish]> (impl <tier>, review <tier>; $<spent> of $<budget>); <each check and its outcome>; <landed: merge sha | branch left | pushed>
 open questions: <list, or none>
 decisions needed: <numbered list, or none>
 ```
 
-A self-reviewed change (Step 2 rule 5) writes `self` in place of the reviewer's tier:
-`verified: review CLEAR after 0 fix rounds (impl sonnet, review self); …`.
+No spend reader: `verified:` carries the disclosure in place of the spend figure, and at
+the top level the context-guard tip folds into it (`references/bindings.md` § Spend
+budget, The reader).
 
-`verified:`'s merge sha comes from the `landed:` line Step 5.5 recorded
+A budget passed while the weekly quota was below half used adds one `Done alone:` line
+after the four (`references/bindings.md` § Spend budget, The Done-alone line); under a
+caller, its own Done-alone group carries it.
+
+The plain name is the item's `short_display_name` when it is set; otherwise write one from
+its title at each mention (the `operator-interaction:plain-names` skill, when loaded), and
+store nothing. The tag is the id's last four hex. A target with no item — a series, a plan
+file, a reviewed branch, a scratchpad record — has no tag, so its plain name stands alone.
+The full id stays where agents read it: the record sink and every `wi` call.
+
+A self-review (Step 2 rule 5) writes `self` for the reviewer's tier (figures illustrative):
+`verified: review CLEAR after 0 fix rounds (impl sonnet, review self; $1.40 of $12); …`.
+
+`verified:`'s merge sha comes from the `landed:` line Step 5.3 recorded
 (`references/record-lines.md`), never memory.
 
 `plan` mode reports the series path on `changed:`, its review on `verified:`, blocking
 questions under `decisions needed:`.
 
+When the session lists `operator-interaction:plain-names`, load it before writing the
+Report; `changed:` names the item by it.
+
 With the `operator-interaction:decisions` skill in the session, `decisions needed:` names
-the numbers, and the decisions follow the four lines, written per that skill
+the numbers, each with its effect at that skill's tag size (`46 (→ preview up in about 4
+minutes)`), and the decisions follow the four lines, written per that skill
 (`references/bindings.md` § Decisions) — last in the message, after any push outcome and
 team summary.
 
@@ -368,15 +463,19 @@ Stop when you catch yourself:
 - **Landing without a `CLEAR`**, or on a `CLEAR` for an older sha.
 - **Merging without running a check yourself.**
 - **Escalating a finding the loop could resolve** — a human hears show-stoppers, scope
-  changes and the cap, never a medium. (`review <branch>` mode's before-any-fix-loop ask
-  is the one exception — Usage.)
+  changes, a raised cap and a foundation reopen, never a medium. (`review <branch>` mode's
+  before-any-fix-loop ask is the one exception — Usage.)
 - **Dispatching unrouted** — an Agent call with no `model`, or no `dispatch:` line
-  behind it; an implementer sent to fable with no pin; a reviewer below opus.
+  behind it; `general-purpose` while the role agent is loaded; an implementer sent to
+  fable with no pin; a reviewer below opus; an `effort:` pin's planner or implementer on
+  a file below xhigh; a fable cross-check the operator did not accept.
 - **A reviewer that saw the build** — a fork, the implementer resumed as its own
-  reviewer, or you reviewing a diff outside rule 5's waiver (skill text, CLAUDE.md, an
-  agent, a script, any operational claim).
+  reviewer, or you reviewing outside rule 5's waiver (skill text, bar `librarian-mode`'s
+  rule-free wording, CLAUDE.md, an agent, a script, any operational claim).
 - **Pushing unasked**, writing CLAUDE.md to save the checks, or guessing a caller's
   missing binding.
+- **Naming spend to a producer or reviewer**, or asking them to hurry to save cost, in
+  any brief or message (`references/bindings.md` § Spend budget, Never in a brief).
 
 ## Examples
 

@@ -46,11 +46,23 @@ class Base(unittest.TestCase):
         self.tmp.cleanup()
         os.environ.pop("CLAUDE_CONFIG_DIR", None)
 
+    def put_exact(self, sid, block):
+        """The status line's exact block for `sid`, as its sensor record."""
+        p = L.sensor_path(sid)
+        os.makedirs(os.path.dirname(p), exist_ok=True)
+        with open(p, "w") as f:
+            json.dump({"v": 1, "exact": block}, f)
+
     def set_exact(self, sid, tokens, window):
         st = L.load_state(sid)
-        st["exact"] = {"pct": 100.0 * tokens / window, "tokens": tokens,
-                       "window": window, "at": time.time()}
-        L.save_state(sid, st)
+        # A render of the new epoch: live, it follows the epoch's first
+        # response, well past sensor()'s EPOCH_GRACE_S demotion window.
+        at = time.time()
+        cut = L._finite(st.get("epoch_at"))
+        if cut is not None:
+            at = max(at, cut + L.EPOCH_GRACE_S + 1)
+        self.put_exact(sid, {"pct": 100.0 * tokens / window, "tokens": tokens,
+                             "window": window, "at": at})
 
     def warn(self, sid, prompt="do a thing", transcript="/nonexistent"):
         return run_hook("context_warn.py",
@@ -127,7 +139,9 @@ class TestContextWarn(Base):
         self.assertEqual(rc, 0)  # checkpoint stands the gate down
 
     def test_hard_whitelist_accepts_plugin_prefixed_form(self):
-        for prompt in ("/checkpoint", "/claude-kit:checkpoint",
+        for prompt in ("/checkpoint", "/context-guard:checkpoint",
+                       "/context-guard:checkpoint continue — 2: nothing more 3: ok",
+                       "/claude-kit:checkpoint",
                        "/claude-kit:checkpoint land", "/compact keep auth",
                        "/my-plugin:compact", "/clear", "/x:clear"):
             self.set_exact("s", 950_000, 1_000_000)
@@ -144,10 +158,8 @@ class TestContextWarn(Base):
     def test_inferred_depth_never_hard_blocks(self):
         # Live-fired 2026-09-16: stale exact {186454 of 1M}; transcript at the
         # same depth; the old hook guessed 200K and blocked with 13,546 left.
-        st = L.load_state("s")
-        st["exact"] = {"pct": 18.6, "tokens": 186_454, "window": 1_000_000,
-                       "at": time.time() - 700}
-        L.save_state("s", st)
+        self.put_exact("s", {"pct": 18.6, "tokens": 186_454, "window": 1_000_000,
+                             "at": time.time() - 700})
         rc, out, err = self.warn("s", "a long prompt", self.transcript(186_454))
         self.assertEqual((rc, out, err), (0, {}, ""))
         self.assertEqual(L.load_state("s")["window"], 1_000_000)
@@ -168,10 +180,8 @@ class TestContextWarn(Base):
         rc, out, err = self.warn("t", "a long prompt", self.transcript(170_000))
         self.assertIn("hookSpecificOutput", out)
         # Stale exact record that is itself under hard: still exit 0.
-        st = L.load_state("u")
-        st["exact"] = {"pct": 95.0, "tokens": 950_000, "window": 1_000_000,
-                       "at": time.time() - 700}
-        L.save_state("u", st)
+        self.put_exact("u", {"pct": 95.0, "tokens": 950_000, "window": 1_000_000,
+                             "at": time.time() - 700})
         rc, out, err = self.warn("u", "a long prompt")
         self.assertEqual(rc, 0)
         self.assertIn("inferred", out["hookSpecificOutput"]["additionalContext"])
@@ -184,10 +194,8 @@ class TestContextWarn(Base):
         self.assertEqual(self.warn("v", "a long prompt")[0], 2)
 
     def test_stale_exact_after_compaction_does_not_nag(self):
-        st = L.load_state("s")
-        st["exact"] = {"pct": 95.0, "tokens": 950_000, "window": 1_000_000,
-                       "at": time.time() - 700}
-        L.save_state("s", st)
+        self.put_exact("s", {"pct": 95.0, "tokens": 950_000, "window": 1_000_000,
+                             "at": time.time() - 700})
         p = os.path.join(self.tmp.name, "c.jsonl")
         rec = lambda tok: json.dumps({"type": "assistant", "message": {"usage": {
             "input_tokens": 2, "cache_read_input_tokens": tok - 2,
@@ -211,10 +219,8 @@ class TestContextWarn(Base):
         return p
 
     def _fresh_pre_boundary_record(self, sid):
-        st = L.load_state(sid)
-        st["exact"] = {"pct": 95.0, "tokens": 950_000, "window": 1_000_000,
-                       "at": time.time() - 300}   # fresh (< EXACT_MAX_AGE_S)
-        L.save_state(sid, st)
+        self.put_exact(sid, {"pct": 95.0, "tokens": 950_000, "window": 1_000_000,
+                             "at": time.time() - 300})   # fresh (< EXACT_MAX_AGE_S)
 
     def test_fresh_exact_from_before_compaction_cannot_gate_new_epoch(self):
         # 99cb reviewer: the status line wrote 95% seconds before an auto
@@ -266,15 +272,38 @@ class TestContextWarn(Base):
         run_hook("postcompact_epoch.py",
                  {"session_id": "s", "hook_event_name": "SessionStart",
                   "source": "resume"}, self.env)
-        self.assertEqual(L.load_state("s")["exact"]["tokens"], 950_000)
+        self.assertEqual(L.sensor("s")["tokens"], 950_000)
 
 
 class TestPrecompactGate(Base):
-    def gate(self, sid, trigger, ci=None):
-        p = {"session_id": sid, "trigger": trigger, "transcript_path": "/nonexistent"}
+    def gate(self, sid, trigger, ci=None, transcript="/nonexistent"):
+        p = {"session_id": sid, "trigger": trigger, "transcript_path": transcript}
         if ci is not None:
             p["custom_instructions"] = ci
         return run_hook("precompact_gate.py", p, self.env)
+
+    def lines(self, *recs):
+        p = os.path.join(self.tmp.name, "t.jsonl")
+        with open(p, "w") as f:
+            f.write("".join(json.dumps(r) + "\n" for r in recs))
+        return p
+
+    @staticmethod
+    def usage(tokens):
+        return {"type": "assistant", "message": {"role": "assistant", "usage": {
+            "input_tokens": 2, "cache_read_input_tokens": tokens - 2,
+            "cache_creation_input_tokens": 0}}}
+
+    SYSTEM = {"type": "system", "subtype": "turn_duration"}
+    TOOL_RESULT = {"type": "user", "message": {"role": "user", "content": [
+        {"type": "tool_result", "tool_use_id": "t1", "content": "x" * 100}]}}
+
+    def idle(self, tokens):
+        """A transcript idle at `tokens`: its last usage line is followed
+        only by system lines."""
+        return self.lines({"type": "user", "message": {"role": "user",
+                                                       "content": "go"}},
+                          self.usage(tokens), self.SYSTEM, self.SYSTEM)
 
     def test_manual_never_blocked_and_records_instructions(self):
         rc, out, _ = self.gate("s", "manual", ci="keep the auth thread")
@@ -288,11 +317,127 @@ class TestPrecompactGate(Base):
         self.assertTrue(L.load_state("s").get("compact_deferred"))
         self.assertIn("deferred", err)
 
-    def test_auto_allows_after_checkpoint(self):
+    def test_auto_allows_after_checkpoint_at_or_under_due(self):
+        # 1M: due 150K, hard 60K. 100K left is under due; at exactly due too.
+        for tokens in (900_000, 850_000):
+            L.save_state("s", {})
+            L.mark_checkpoint("s")
+            self.set_exact("s", tokens, 1_000_000)
+            rc, out, _ = self.gate("s", "auto")
+            self.assertEqual(rc, 0, tokens)
+            self.assertFalse(L.load_state("s").get("compact_deferred"))
+
+    def test_auto_defers_above_due_even_after_checkpoint(self):
+        # 22b2: an idle auto attempt at ~28% fill after a checkpoint went
+        # through; above the due line it is deferred, checkpoint or not.
+        for checkpointed in (True, False):
+            L.save_state("s", {})
+            if checkpointed:
+                L.mark_checkpoint("s")
+            for tokens in (280_000, 849_999):
+                self.set_exact("s", tokens, 1_000_000)
+                rc, out, err = self.gate("s", "auto",
+                                         transcript=self.idle(tokens))
+                self.assertEqual(rc, 2, (checkpointed, tokens))
+                self.assertIn("deferred", err)
+                self.assertIn("above the due line of 150,000", err)
+                self.assertNotIn("Run the checkpoint skill", err)
+                # not a deferral a checkpoint would release
+                self.assertFalse(L.load_state("s").get("compact_deferred"))
+
+    def test_after_checkpoint_input_since_usage_releases_above_due(self):
+        # A tool result after the last measured fill may have overflowed it
+        # unseen: after a checkpoint the above-due hold does not apply.
         L.mark_checkpoint("s")
-        self.set_exact("s", 900_000, 1_000_000)
+        self.set_exact("s", 800_000, 1_000_000)
+        t = self.lines(self.usage(800_000), self.SYSTEM, self.TOOL_RESULT)
+        rc, out, _ = self.gate("s", "auto", transcript=t)
+        self.assertEqual((rc, out), (0, {}))
+        self.assertFalse(L.load_state("s").get("compact_deferred"))
+
+    def test_after_checkpoint_unreadable_transcript_releases_above_due(self):
+        L.mark_checkpoint("s")
+        self.set_exact("s", 280_000, 1_000_000)
+        rc, out, _ = self.gate("s", "auto")      # /nonexistent: pending
+        self.assertEqual(rc, 0)
+
+    def test_without_checkpoint_input_pending_still_holds_above_due(self):
+        self.set_exact("s", 800_000, 1_000_000)
+        t = self.lines(self.usage(800_000), self.TOOL_RESULT)
+        rc, out, err = self.gate("s", "auto", transcript=t)
+        self.assertEqual(rc, 2)
+        self.assertIn("above the due line", err)
+        self.assertFalse(L.load_state("s").get("compact_deferred"))
+
+    def inferred(self, transcript, **extra):
+        return run_hook("precompact_gate.py",
+                        {"session_id": "s", "trigger": "auto",
+                         "transcript_path": transcript},
+                        dict(self.env, CONTEXT_GUARD_DERIVE="off", **extra))
+
+    def test_inferred_stale_sensor_window_holds_idle_after_checkpoint(self):
+        L.save_state("s", {})
+        L.mark_checkpoint("s")
+        self.put_exact("s", {"pct": 28.0, "tokens": 280_000,
+                             "window": 1_000_000, "at": time.time() - 3300})
+        rc, out, err = self.inferred(self.idle(280_000))
+        self.assertEqual(rc, 2, err)
+        self.assertFalse(L.load_state("s").get("compact_deferred"))
+        self.assertIn("window from status line", err)
+
+    def test_inferred_200k_guess_at_due_defers_until_checkpoint(self):
+        # No sensor: 150K on a guessed 200K window leaves 50K, under due 70K
+        # and above hard 40K.
+        rc, out, err = self.inferred(self.idle(150_000))
+        self.assertEqual(rc, 2, err)
+        self.assertTrue(L.load_state("s").get("compact_deferred"))
+        L.mark_checkpoint("s")
+        rc, out, err = self.inferred(self.idle(150_000))
+        self.assertEqual(rc, 0, err)
+        self.assertFalse(L.load_state("s").get("compact_deferred"))
+
+    def test_auto_defers_at_or_under_due_until_checkpoint(self):
+        self.set_exact("s", 850_000, 1_000_000)
+        rc, out, err = self.gate("s", "auto")
+        self.assertEqual(rc, 2)
+        self.assertTrue(L.load_state("s").get("compact_deferred"))
+        self.assertIn("Run the checkpoint skill", err)
+        L.mark_checkpoint("s")
         rc, out, _ = self.gate("s", "auto")
         self.assertEqual(rc, 0)
+        self.assertFalse(L.load_state("s").get("compact_deferred"))
+
+    def test_auto_allows_under_hard_checkpoint_or_not(self):
+        for checkpointed in (False, True):
+            L.save_state("s", {})
+            if checkpointed:
+                L.mark_checkpoint("s")
+            for tokens in (940_000, 970_000):   # 60K left is the hard line
+                self.set_exact("s", tokens, 1_000_000)
+                rc, out, _ = self.gate("s", "auto")
+                self.assertEqual((rc, out), (0, {}), (checkpointed, tokens))
+                self.assertFalse(L.load_state("s").get("compact_deferred"))
+
+    def test_manual_untouched_at_any_fill(self):
+        for checkpointed in (False, True):
+            L.save_state("s", {})
+            if checkpointed:
+                L.mark_checkpoint("s")
+            for tokens in (100_000, 900_000, 990_000):
+                self.set_exact("s", tokens, 1_000_000)
+                rc, out, err = self.gate("s", "manual")
+                self.assertEqual((rc, out, err), (0, {}, ""), (checkpointed, tokens))
+                self.assertFalse(L.load_state("s").get("compact_deferred"))
+
+    def test_inferred_depth_past_hard_allows(self):
+        # No sensor record: the depth is inferred from the transcript, whose
+        # window guess here is 200K (due 70K, hard 40K); 170K is past hard.
+        L.mark_checkpoint("s")
+        p = {"session_id": "s", "trigger": "auto",
+             "transcript_path": self.transcript(170_000)}
+        rc, out, _ = run_hook("precompact_gate.py", p,
+                              dict(self.env, CONTEXT_GUARD_DERIVE="off"))
+        self.assertEqual((rc, out), (0, {}))
         self.assertFalse(L.load_state("s").get("compact_deferred"))
 
     def test_auto_allows_when_not_provably_proactive(self):
@@ -317,14 +462,14 @@ class TestPostcompactEpoch(Base):
         self.assertEqual(st["compact_summary"], "sum")
 
     def test_postcompact_demotes_exact_and_headers_pre_reset_tokens(self):
-        L.save_state("s", {"epoch": 1, "tokens": 900_000,
-                           "exact": {"pct": 95.0, "tokens": 950_000,
-                                     "window": 1_000_000, "at": time.time()}})
+        L.save_state("s", {"epoch": 1, "tokens": 900_000})
+        self.put_exact("s", {"pct": 95.0, "tokens": 950_000,
+                             "window": 1_000_000, "at": time.time()})
         rc, out, _ = run_hook("postcompact_epoch.py",
                               {"session_id": "s", "hook_event_name": "PostCompact",
                                "trigger": "auto"}, self.env)
         self.assertEqual(rc, 0)
-        self.assertEqual(L.load_state("s")["exact"], {"window": 1_000_000, "at": 0})
+        self.assertEqual(L.sensor("s"), {"window": 1_000_000, "at": 0})
         self.assertIn("## epoch 2", open(L.ledger_path("s")).read())
         # the exact record's fill, captured under the lock before the demote
         self.assertIn("950,000 tok", open(L.ledger_path("s")).read())
@@ -337,8 +482,7 @@ class TestPostcompactEpoch(Base):
         real = L.update_state
 
         def racing(sid, fn):
-            L.save_state(sid, {"epoch": 1, "exact": {"tokens": 123_456,
-                                                     "window": 200_000, "at": 1}})
+            L.save_state(sid, {"epoch": 1, "tokens": 123_456})
             return real(sid, fn)
         with mock.patch.object(L, "update_state", racing), \
                 mock.patch("sys.stdin", io.StringIO(json.dumps(
@@ -380,6 +524,38 @@ class TestStopRelay(Base):
         self.set_exact("s", 900_000, 1_000_000)
         rc, out, _ = self.relay("s")
         self.assertNotEqual(out, {})  # re-arms next epoch
+
+    def test_silent_above_due_even_after_a_deferral(self):
+        # 22b2: a low-fill deferral used to relay a checkpoint request, whose
+        # mark released the next idle auto compaction. Above due: nothing.
+        st = L.load_state("s"); st["compact_deferred"] = True; L.save_state("s", st)
+        for tokens in (280_000, 849_999):
+            self.set_exact("s", tokens, 1_000_000)
+            rc, out, _ = self.relay("s")
+            self.assertNotIn("checkpoint", json.dumps(out), tokens)
+        self.assertNotIn("relay_epoch", L.load_state("s"))
+
+    def test_relays_at_due_once_per_epoch(self):
+        self.set_exact("s", 850_000, 1_000_000)   # exactly at due
+        rc, out, _ = self.relay("s")
+        self.assertIn("150,000 tokens remain", json.dumps(out))
+        self.assertNotIn("was deferred", json.dumps(out))
+        self.set_exact("s", 860_000, 1_000_000)
+        rc, out, _ = self.relay("s")
+        self.assertNotIn("checkpoint", json.dumps(out))   # single fire
+
+    def test_relay_names_a_deferral_at_due(self):
+        st = L.load_state("s"); st["compact_deferred"] = True; L.save_state("s", st)
+        self.set_exact("s", 900_000, 1_000_000)
+        rc, out, _ = self.relay("s")
+        self.assertIn("was deferred by the context gate", json.dumps(out))
+
+    def test_silent_after_checkpoint(self):
+        L.save_state("s", {})
+        L.mark_checkpoint("s")
+        self.set_exact("s", 900_000, 1_000_000)
+        rc, out, _ = self.relay("s")
+        self.assertNotIn("checkpoint", json.dumps(out))
 
     def test_honours_stop_hook_active(self):
         st = L.load_state("s"); st["compact_deferred"] = True; L.save_state("s", st)
@@ -432,34 +608,33 @@ class TestStopRelay(Base):
                                           CLAUDE_KIT_LEDGER_EVERY="10000"))
 
 
-class TestLegacyFutureSkew(Base):
-    """73a6: a legacy in-state exact block (the deprecated statusline copy)
-    stamped beyond FUTURE_SKEW_S is not exact for any consumer - the prompt
-    gate's HARD block, the PreCompact deferral and the Stop relay - while a
-    fresh legacy block still is."""
+class TestFutureSkew(Base):
+    """73a6: an exact block stamped beyond FUTURE_SKEW_S is not exact for any
+    consumer - the prompt gate's HARD block, the PreCompact deferral and the
+    Stop relay - while a fresh one still is. (73a6 found it on the in-state
+    block the deprecated status-line copy wrote; that copy and that read are
+    gone since a95a, and the rule holds for the sensor record.)"""
 
-    def put_legacy(self, sid, tokens, window, ahead):
-        st = L.load_state(sid)
-        st["exact"] = {"pct": 100.0 * tokens / window, "tokens": tokens,
-                       "window": window, "at": time.time() + ahead}
-        L.save_state(sid, st)
+    def put_skewed(self, sid, tokens, window, ahead):
+        self.put_exact(sid, {"pct": 100.0 * tokens / window, "tokens": tokens,
+                             "window": window, "at": time.time() + ahead})
 
     SKEW = 3600
 
     def test_prompt_gate_does_not_hard_block_on_a_skewed_block(self):
-        self.put_legacy("s", 950_000, 1_000_000, self.SKEW)
+        self.put_skewed("s", 950_000, 1_000_000, self.SKEW)
         rc, out, err = self.warn("s", "please do more work")
         self.assertEqual(rc, 0, err)
         self.assertNotIn("HARD STOP", err)
 
     def test_prompt_gate_still_hard_blocks_on_a_fresh_block(self):
-        self.put_legacy("s", 950_000, 1_000_000, 0)
+        self.put_skewed("s", 950_000, 1_000_000, 0)
         rc, out, err = self.warn("s", "please do more work")
         self.assertEqual(rc, 2)
         self.assertIn("HARD STOP", err)
 
     def test_prompt_gate_small_skew_is_still_exact(self):
-        self.put_legacy("s", 950_000, 1_000_000, 30)
+        self.put_skewed("s", 950_000, 1_000_000, 30)
         rc, out, err = self.warn("s", "please do more work")
         self.assertEqual(rc, 2)
 
@@ -469,13 +644,13 @@ class TestLegacyFutureSkew(Base):
                          "transcript_path": "/nonexistent"}, self.env)
 
     def test_precompact_does_not_defer_on_a_skewed_block(self):
-        self.put_legacy("s", 900_000, 1_000_000, self.SKEW)
+        self.put_skewed("s", 900_000, 1_000_000, self.SKEW)
         rc, out, err = self.gate("s")
         self.assertEqual(rc, 0, err)
         self.assertFalse(L.load_state("s").get("compact_deferred"))
 
     def test_precompact_still_defers_on_a_fresh_block(self):
-        self.put_legacy("s", 900_000, 1_000_000, 0)
+        self.put_skewed("s", 900_000, 1_000_000, 0)
         rc, out, err = self.gate("s")
         self.assertEqual(rc, 2)
 
@@ -486,12 +661,12 @@ class TestLegacyFutureSkew(Base):
                         self.env)
 
     def test_stop_relay_ignores_a_skewed_block(self):
-        self.put_legacy("s", 900_000, 1_000_000, self.SKEW)
+        self.put_skewed("s", 900_000, 1_000_000, self.SKEW)
         rc, out, _ = self.relay("s")
         self.assertEqual(out, {})
 
     def test_stop_relay_still_reads_a_fresh_block(self):
-        self.put_legacy("s", 900_000, 1_000_000, 0)
+        self.put_skewed("s", 900_000, 1_000_000, 0)
         rc, out, _ = self.relay("s")
         self.assertIn("checkpoint", json.dumps(out))
 
@@ -534,315 +709,6 @@ class TestLedgerPointer(Base):
         self.assertEqual(self.read_ledger(), "")
 
 
-class TestStatusline(Base):
-    CTX = {"used_percentage": 42.0, "context_window_size": 1_000_000,
-           "total_input_tokens": 420_000}
-
-    def line(self, payload):
-        payload.setdefault("session_id", "s")
-        payload.setdefault("context_window", dict(self.CTX))
-        payload.setdefault("model", {"display_name": "Fable"})
-        rc, out, err = run_hook("statusline.py", payload, self.env)
-        return rc, out.get("_raw", ""), err
-
-    def test_plan_usage_bars_both_windows(self):
-        now = time.time()
-        rc, line, _ = self.line({"rate_limits": {
-            "five_hour": {"used_percentage": 23.5, "resets_at": now + 2 * 3600 + 600},
-            "seven_day": {"used_percentage": 91.2, "resets_at": now + 3 * 86400}}})
-        self.assertEqual(rc, 0)
-        self.assertEqual(line.count("\n"), 1)
-        self.assertIn("[Fable]", line)
-        self.assertIn("42%  580k left  e0", line)
-        self.assertIn("5h \033[32m██░░░░░░░░\033[0m 23% resets 2h10m", line)
-        self.assertIn("7d \033[31m█████████░\033[0m 91% resets 3d", line)
-        self.assertLess(line.index("580k left"), line.index("5h "))
-        self.assertLess(line.index("5h "), line.index("7d "))
-
-    def test_no_bars_without_rate_limits(self):
-        rc, line, _ = self.line({})
-        self.assertEqual(rc, 0)
-        self.assertNotIn("resets", line)
-        self.assertIn("42%  580k left  e0", line)
-        rc, line, _ = self.line({"rate_limits": {}})
-        self.assertEqual((rc, "resets" in line), (0, False))
-
-    def test_window_with_past_reset_is_absent(self):
-        now = time.time()
-        rc, line, _ = self.line({"rate_limits": {
-            "five_hour": {"used_percentage": 99.0, "resets_at": now - 60},
-            "seven_day": {"used_percentage": 75.0, "resets_at": now + 86400}}})
-        self.assertEqual(rc, 0)
-        self.assertNotIn("5h ", line)
-        self.assertIn("7d \033[33m███████░░░\033[0m 75% resets 1d", line)
-
-    def test_malformed_rate_limits_do_not_crash(self):
-        for bad in ("garbage", 7, ["five_hour"],
-                    {"five_hour": "x", "seven_day": {"used_percentage": "no",
-                                                     "resets_at": None}},
-                    {"five_hour": {"used_percentage": 12.0}}):
-            rc, line, err = self.line({"rate_limits": bad})
-            self.assertEqual((rc, err), (0, ""), bad)
-            self.assertNotIn("resets", line)
-            self.assertIn("42%  580k left", line)
-
-    def test_non_finite_and_bool_fields_are_skipped(self):
-        now = time.time()
-        for bad in ({"used_percentage": 5.0, "resets_at": float("nan")},
-                    {"used_percentage": 5.0, "resets_at": float("inf")},
-                    {"used_percentage": float("nan"), "resets_at": now + 100},
-                    {"used_percentage": float("inf"), "resets_at": now + 100},
-                    {"used_percentage": True, "resets_at": now + 100},
-                    {"used_percentage": 5.0, "resets_at": True}):
-            rc, line, err = self.line({"rate_limits": {
-                "five_hour": bad,
-                "seven_day": {"used_percentage": 1.0, "resets_at": now + 100}}})
-            self.assertEqual((rc, err), (0, ""), bad)
-            self.assertNotIn("5h ", line)
-            self.assertIn("7d ", line)
-
-    def test_reset_too_far_out_is_dropped(self):
-        now = time.time()
-        rc, line, err = self.line({"rate_limits": {
-            "five_hour": {"used_percentage": 5.0, "resets_at": (now + 7200) * 1000},
-            "seven_day": {"used_percentage": 5.0, "resets_at": now + 367 * 86400},
-            "spend_limit": {"used_percentage": 5.0, "resets_at": now + 365 * 86400}}})
-        self.assertEqual((rc, err), (0, ""))
-        self.assertNotIn("5h ", line)
-        self.assertNotIn("7d ", line)
-        self.assertIn("$ \033[32m░░░░░░░░░░\033[0m 5% resets 365d", line)
-
-    def test_spend_limit_is_third(self):
-        now = time.time()
-        rc, line, _ = self.line({"rate_limits": {
-            "spend_limit": {"used_percentage": 10.0, "resets_at": now + 86400},
-            "seven_day": {"used_percentage": 20.0, "resets_at": now + 86400},
-            "five_hour": {"used_percentage": 30.0, "resets_at": now + 86400}}})
-        self.assertEqual(rc, 0)
-        self.assertIn("$ \033[32m█░░░░░░░░░\033[0m 10% resets 1d", line)
-        self.assertLess(line.index("5h "), line.index("7d "))
-        self.assertLess(line.index("7d "), line.index("$ "))
-        self.assertEqual(line.count("resets"), 3)
-
-    def test_clamping_and_threshold_boundaries(self):
-        now = time.time()
-        for used, want in ((150.0, "\033[31m██████████\033[0m 100%"),
-                           (-5.0, "\033[32m░░░░░░░░░░\033[0m 0%"),
-                           (69.9, "\033[32m██████░░░░\033[0m 69%"),
-                           (70.0, "\033[33m███████░░░\033[0m 70%"),
-                           (89.9, "\033[33m████████░░\033[0m 89%"),
-                           (90.0, "\033[31m█████████░\033[0m 90%")):
-            rc, line, _ = self.line({"rate_limits": {
-                "five_hour": {"used_percentage": used, "resets_at": now + 100}}})
-            self.assertEqual(rc, 0)
-            self.assertIn("5h " + want, line, used)
-
-    def test_countdown_rounds_up_to_the_minute(self):
-        now = time.time()
-        for ahead, want in ((59, "1m"), (60, "1m"), (90, "2m"),
-                            (3600 + 5 * 60, "1h05m"), (3600, "1h"),
-                            (86400 + 3600, "1d1h"), (2 * 86400, "2d")):
-            rc, line, _ = self.line({"rate_limits": {
-                "five_hour": {"used_percentage": 1.0, "resets_at": now + ahead}}})
-            self.assertEqual(rc, 0)
-            self.assertIn(f"1% resets {want}", line, ahead)
-
-    def test_exact_state_still_written(self):
-        rc, _, _ = self.line({"rate_limits": {
-            "five_hour": {"used_percentage": 5.0, "resets_at": time.time() + 100}}})
-        self.assertEqual(rc, 0)
-        ex = L.load_state("s")["exact"]
-        self.assertEqual((ex["pct"], ex["tokens"], ex["window"]),
-                         (42.0, 420_000, 1_000_000))
-
-    # The statusline is our direct child, so its parent pid is this process:
-    # a registry entry at sessions/<our pid>.json is what it finds first. Our
-    # own parent is its grandparent, one /proc hop up the ancestor walk.
-    def registry(self, body, sid="s", pid=None):
-        pid = os.getpid() if pid is None else pid
-        d = os.path.join(self.tmp.name, "sessions")
-        os.makedirs(d, exist_ok=True)
-        p = os.path.join(d, f"{pid}.json")
-        if isinstance(body, str):
-            open(p, "w").write(body)
-        else:
-            entry = {"pid": pid, "sessionId": sid, "name": "beta",
-                     "nameSource": "peer"}
-            entry.update(body)
-            json.dump(entry, open(p, "w"))
-
-    def grandparent(self):
-        if not os.path.isdir("/proc") or os.getppid() <= 1:
-            self.skipTest("ancestor walk needs /proc and a real parent")
-        return os.getppid()
-
-    def line_via_shell(self, payload):
-        """Run the hook through `sh -c` so the real chain has depth 2."""
-        payload.setdefault("session_id", "s")
-        payload.setdefault("context_window", dict(self.CTX))
-        payload.setdefault("model", {"display_name": "Fable"})
-        e = dict(os.environ); e.update(self.env)
-        p = subprocess.run(["sh", "-c", f'"$0" "$1"', sys.executable,
-                            os.path.join(HOOKS, "statusline.py")],
-                           input=json.dumps(payload), capture_output=True,
-                           text=True, env=e, timeout=30)
-        return p.returncode, p.stdout, p.stderr
-
-    def test_payload_session_name_shown(self):
-        rc, line, err = self.line({"session_name": "alpha"})
-        self.assertEqual((rc, err), (0, ""))
-        self.assertIn("  (alpha)  ", line)
-
-    def test_registry_name_when_payload_has_none(self):
-        self.registry({})
-        for payload in ({}, {"session_name": ""}, {"session_name": "   "},
-                        {"session_name": None}, {"session_name": 7}):
-            rc, line, err = self.line(dict(payload))
-            self.assertEqual((rc, err), (0, ""), payload)
-            self.assertIn("  (beta)  ", line, payload)
-
-    def test_no_name_segment_without_any_source(self):
-        rc, line, err = self.line({})
-        self.assertEqual((rc, err), (0, ""))
-        self.assertNotIn("(", line)
-        self.assertTrue(line.startswith("[Fable]   "), line)
-
-    def test_malformed_registry_does_not_crash(self):
-        for bad in ("{not json", "", "[]", '"beta"', json.dumps({"name": "beta"}),
-                    json.dumps({"sessionId": "s", "name": 7}),
-                    json.dumps({"sessionId": "s", "name": "  "}),
-                    json.dumps({"sessionId": "s"}), "x" * 70000):
-            self.registry(bad)
-            rc, line, err = self.line({})
-            self.assertEqual((rc, err), (0, ""), bad[:40])
-            self.assertNotIn("(", line, bad[:40])
-            self.assertIn("42%  580k left", line)
-
-    def test_registry_explicit_name_wins_over_payload_title(self):
-        # /rename and an agent naming itself land in the registry first; the
-        # payload lags (next render) or carries only the AI title.
-        for src in ("user", "peer", "hook", "collision"):
-            self.registry({"name": "set-by-" + src, "nameSource": src})
-            rc, line, err = self.line({"session_name": "AI title"})
-            self.assertEqual((rc, err), (0, ""), src)
-            self.assertIn(f"  (set-by-{src})  ", line, src)
-            self.assertNotIn("AI title", line, src)
-
-    def test_registry_auto_name_is_skipped_for_payload_title(self):
-        self.registry({"name": "hooks-3f", "nameSource": "auto"})
-        rc, line, err = self.line({"session_name": "AI title"})
-        self.assertEqual((rc, err), (0, ""))
-        self.assertIn("  (AI title)  ", line)
-        self.assertNotIn("hooks-3f", line)
-
-    def test_registry_entry_for_another_session_is_ignored(self):
-        self.registry({}, sid="someone-else")
-        rc, line, err = self.line({})
-        self.assertEqual((rc, err), (0, ""))
-        self.assertNotIn("(", line)
-
-    def test_derived_and_auto_default_names_are_never_shown(self):
-        for src in ("derived", "auto", None, "bogus"):
-            self.registry({"name": "hooks-3f", "nameSource": src})
-            rc, line, err = self.line({})
-            self.assertEqual((rc, err), (0, ""), src)
-            self.assertNotIn("(", line, src)
-
-    # -- names are sanitised to one printable line, whatever the source --
-
-    HOSTILE = "ev\x1b[31mil\nsecond\x07 line\x7f\x85end"
-
-    def test_registry_name_with_control_chars_stays_one_line(self):
-        self.registry({"name": self.HOSTILE, "nameSource": "user"})
-        rc, line, err = self.line({"session_name": "AI title"})
-        self.assertEqual((rc, err), (0, ""))
-        self.assertEqual(line.count("\n"), 1, repr(line))  # only the trailing one
-        self.assertIn("  (ev [31mil second line end)  ", line)
-        self.assertNotIn("AI title", line)
-
-    def test_payload_name_with_control_chars_stays_one_line(self):
-        rc, line, err = self.line({"session_name": self.HOSTILE})
-        self.assertEqual((rc, err), (0, ""))
-        self.assertEqual(line.count("\n"), 1, repr(line))
-        self.assertIn("  (ev [31mil second line end)  ", line)
-
-    def test_each_control_char_collapses_to_one_space(self):
-        for raw, shown in (("a\x1bb", "a b"), ("a\nb", "a b"), ("a\x07b", "a b"),
-                           ("a\x1b[0m\r\n\tb", "a [0m b"), ("a\x7f\x9fb", "a b"),
-                           ("  a   b  ", "a b"), ("\x1b\x07\n", "")):
-            self.registry({"name": raw, "nameSource": "user"})
-            rc, line, err = self.line({})
-            self.assertEqual((rc, err), (0, ""), repr(raw))
-            if shown:
-                self.assertIn(f"  ({shown})  ", line, repr(raw))
-            else:
-                self.assertNotIn("(", line, repr(raw))
-            rc, line, err = self.line({"session_name": raw})
-            self.assertEqual((rc, err), (0, ""), repr(raw))
-            if shown:
-                self.assertIn(f"  ({shown})  ", line, repr(raw))
-            else:
-                self.assertNotIn("(", line, repr(raw))
-
-    def test_long_names_are_capped_with_an_ellipsis(self):
-        long = "n" * 100
-        for src in ("registry", "payload"):
-            if src == "registry":
-                self.registry({"name": long, "nameSource": "user"})
-                rc, line, err = self.line({})
-            else:
-                rc, line, err = self.line({"session_name": long})
-            self.assertEqual((rc, err), (0, ""), src)
-            self.assertIn("  (" + "n" * 59 + "\u2026)  ", line, src)
-            self.assertNotIn("n" * 60, line, src)
-        self.registry({"name": "n" * 60, "nameSource": "user"})
-        rc, line, _ = self.line({})
-        self.assertIn("  (" + "n" * 60 + ")  ", line)  # exactly NAME_MAX is untouched
-
-    # -- the ancestor walk: nearest entry for this session wins --
-
-    def test_registry_match_at_the_grandparent(self):
-        self.registry({}, pid=self.grandparent())
-        rc, line, err = self.line({})
-        self.assertEqual((rc, err), (0, ""))
-        self.assertIn("  (beta)  ", line)
-
-    def test_walk_continues_past_a_parent_entry_for_another_session(self):
-        self.registry({"name": "not-ours", "nameSource": "user"}, sid="someone-else")
-        self.registry({}, pid=self.grandparent())
-        rc, line, err = self.line({})
-        self.assertEqual((rc, err), (0, ""))
-        self.assertIn("  (beta)  ", line)
-        self.assertNotIn("not-ours", line)
-
-    def test_nearest_matching_entry_wins(self):
-        self.registry({"name": "near", "nameSource": "user"})
-        self.registry({"name": "far", "nameSource": "user"}, pid=self.grandparent())
-        rc, line, err = self.line({})
-        self.assertEqual((rc, err), (0, ""))
-        self.assertIn("  (near)  ", line)
-        self.assertNotIn("far", line)
-
-    def test_nearer_auto_entry_stops_the_walk_for_the_payload_title(self):
-        self.registry({"name": "hooks-3f", "nameSource": "auto"})
-        self.registry({"name": "far", "nameSource": "user"}, pid=self.grandparent())
-        rc, line, err = self.line({"session_name": "AI title"})
-        self.assertEqual((rc, err), (0, ""))
-        self.assertIn("  (AI title)  ", line)
-        self.assertNotIn("far", line)
-        self.assertNotIn("hooks-3f", line)
-
-    def test_walk_reaches_the_session_through_an_intermediate_shell(self):
-        # sh -c between us and the hook: our entry is now at its grandparent.
-        if not os.path.isdir("/proc"):
-            self.skipTest("ancestor walk needs /proc")
-        self.registry({})
-        rc, line, err = self.line_via_shell({"session_name": "AI title"})
-        self.assertEqual((rc, err), (0, ""))
-        self.assertIn("  (beta)  ", line)
-        self.assertNotIn("AI title", line)
-
-
 PLAYBOOK = os.path.join(os.path.dirname(HOOKS), "skills", "checkpoint", "references",
                         "operator-playbook.md")
 
@@ -874,7 +740,7 @@ class TestHardAdvice(Base):
                 rc, out, err = self.exact_hard(left)
                 self.assertEqual(rc, 2)
                 self.assertIn(f"HARD STOP: {left:,} tokens left of 1,000,000 (exact)", err)
-                self.assertIn("Run /checkpoint (or /context-guard:checkpoint", err)
+                self.assertIn("Run /context-guard:checkpoint first", err)
                 self.assertNotIn("no longer fits", err)
                 self.assertIn("please do more work", err)
 
@@ -884,7 +750,7 @@ class TestHardAdvice(Base):
                 rc, out, err = self.exact_hard(left)
                 self.assertEqual(rc, 2)  # the block itself is unchanged
                 self.assertIn(f"A checkpoint no longer fits in {left:,} tokens", err)
-                self.assertNotIn("Run /checkpoint", err)
+                self.assertNotIn("Run /context-guard:checkpoint", err)
                 self.assertLess(err.index("/clear"), err.index("/compact <"))
                 self.assertIn("the guidance steers what the summary keeps", err)
                 self.assertIn("then re-send:\n  please do more work", err)
@@ -898,10 +764,8 @@ class TestHardAdvice(Base):
         # No fresh status-line record: the depth is inferred - against a
         # guessed 200K, or a stale record's window.
         if window != 200_000:
-            st = L.load_state(sid)
-            st["exact"] = {"pct": 50.0, "tokens": window // 2, "window": window,
-                           "at": time.time() - 700}
-            L.save_state(sid, st)
+            self.put_exact(sid, {"pct": 50.0, "tokens": window // 2, "window": window,
+                                 "at": time.time() - 700})
         rc, out, err = self.warn(sid, "a long prompt", self.transcript(window - left))
         self.assertEqual((rc, err), (0, ""))
         return (out["hookSpecificOutput"]["additionalContext"], out["systemMessage"])

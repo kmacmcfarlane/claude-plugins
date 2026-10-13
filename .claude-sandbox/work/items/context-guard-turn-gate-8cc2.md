@@ -33,11 +33,11 @@ Mid-turn PostToolUse depth gate; HARD gate stops recommending an unaffordable ch
 - dispatch: planner opus — gate code (fable signal; fable unavailable (unknown); fallback); plan mode, no worktree; series .claude-sandbox/investigations/8cc2-turn-gate-port/
 
 ## Plan result
-- planner DONE_WITH_CONCERNS (opus): series .claude-sandbox/investigations/8cc2-turn-gate-port/00_initial.md. (1) mid-turn check and (2) affordable HARD advice still wanted, absent on main — rewrite on current measure(); (3) session-addressed manifest conflicts with main's repo HANDOFF.md, but the harm is live (rehydrate injects another session's manifest on compaction); /clear regenerates the session id (verified in the binary). Port: F2 advice, F1 turn_gate, F3a authorship check (safe now), F3b location (blocked). Review nits already covered on main.
+- planner DONE_WITH_CONCERNS (opus): series .claude-sandbox/investigations/8cc2-turn-gate-port/00_initial.md. (1) mid-turn check and (2) affordable HARD advice still wanted, absent on main — rewrite on current measure(); (3) session-addressed manifest conflicts with main's repo HANDOFF.md, but the harm is live (rehydrate injects another session's manifest on compaction); /clear regenerates the session id (not live-verified). Port: F2 advice, F1 turn_gate, F3a authorship check (safe now), F3b location (blocked). Review nits already covered on main.
 - dispatch: plan reviewer opus — dev-cycle plan-review variant
 
 ## Plan review round 1 — NEEDS_CHANGES (opus)
-- verdicts, manifest-injection claim and /clear sid claim all verified (binary 2.1.278); Open Question 4 answerable: skip on agent_id only.
+- verdicts, manifest-injection claim and /clear sid claim all checked (not live-verified); Open Question 4 answerable: skip on agent_id only.
 - [high] F3a breaks the handoff/stage-boundary flow: a successor after /clear or a fresh session loses its inherited manifest (incl. CORRECTION/REFUSED) on compaction → adoption rule (clear predecessor via _proc record, a Read of the manifest, fork parent).
 - [high] F1 can end an unattended turn on an inferred depth (DUE text + ported unattended section) — informational only off BLOCKING_SOURCES.
 - mediums: F3a before F1; agent_type skip wrong; fork parent persisted; ending-the-session.md is a definite F1 file; F1 routing must argue the blocking-predicate refactor (or fable reviewer); B′ costs overstated.
@@ -67,3 +67,4 @@ answer 47: (c) per-session manifests only — plus: checkpoint goal options beco
 decision 89: the old context-guard-turn-gate worktree (clean; 4 prototype commits not on main by sha; its item 8cc2 closed 2026-09-22 with F1-F3b landed by other commits) — (a) remove the worktree and delete the branch [recommended] | (b) keep | (z) decide later
   raised: 2026-09-28
   basis: observed — git cherry shows 4 unmerged shas; 8cc2 status done with F1 3adc, F2 1f9d, F3a 5126, F3b a49b landed
+answer 89: a (read as: remove the context-guard-turn-gate worktree and delete its branch; tip 05e6c68 recorded here for recovery)

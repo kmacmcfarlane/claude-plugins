@@ -79,25 +79,50 @@ claude-plugins/
     ├── chat/                  (web-UI chat-session skills)
     │   └── skills/product-research/
     ├── context-guard/         (surviving the context window — a hook-owning plugin)
-    │   ├── hooks/             (gate, ledger, rehydrate, gauge.json publish, deprecated statusline copy + tests)
-    │   └── skills/{checkpoint,usage-report}/
-    ├── dev-flow/              (plan before you code; the librarian that takes custody of a repo)
-    │   └── skills/{investigate,implement,dev-cycle,deep-investigation,chain-of-verification,librarian-mode}/
+    │   ├── hooks/             (gate, ledger, rehydrate, gauge.json publish + hooks.json + tests)
+    │   └── skills/
+    │       ├── {checkpoint,usage-report}/
+    │       ├── checkpoint/scripts/  (context_forensics.py: where a session's context went, from its transcript)
+    │       └── usage-report/scripts/ (usage_report.py + item_spend.py + prices.json: token-spend accounting, and one item's spend by agent id)
+    ├── create-repo/           (start a new repo for a thread of work, with a session launched on it)
+    │   └── skills/create-repo/ (references/launch-command.md)
+    ├── dev-flow/              (plan before you code; research into findings or a knowledge base; the librarian that takes custody of a repo)
+    │   ├── agents/            (scribe, scout, implementer, implementer-critical, implementer-deep, planner, planner-deep, reviewer, reviewer-light, cross-checker, cross-checker-deep — the dev cycle's role workers; research-lane, research-lane-deep, research-verifier — the research family's workers)
+    │   ├── skills/
+    │   │   ├── {investigate,implement,dev-cycle,foundation,deep-investigation,research,research-deep,research-refine,research-prune,chain-of-verification,librarian-mode}/
+    │   │   ├── research/scripts/ (tool-preflight.sh, scan-findings.py: the scan floor under the verifier + tests)
+    │   │   └── librarian-mode/scripts/ (quota_budget.py: the librarian's quota sense + tests)
+    │   └── tests/             (test_agents.py: every agent file's model and effort pin;
+    │                           test_deep_investigation.py: deep-investigation's security parity)
     ├── kit-dev/               (maintaining this kit itself — where THIS skill lives)
-    │   └── skills/{create-skill,update-kit,new-project-from-template,factor-analysis}/
+    │   ├── skills/{create-skill,update-kit,new-project-from-template,factor-analysis}/
+    │   └── tests/             (test_standalone.py: each plugin's suites alone; test_declared_edges.py: cross-plugin references declared)
+    ├── operator-interaction/  (the agent-operator interface, starting with how decisions are raised and shown)
+    │   └── skills/
+    │       ├── decisions/     (references/{worksheet,rendering,replies,evidence-basis,rationale,rulings,gallery}.md)
+    │       ├── plain-names/   (plain names for what agents mention, the id a trailing tag)
+    │       └── decision-page/ (a set of decisions as an answer page: the page template, its schema and the pre-publish check)
+    ├── ownership/             (each repo's ownership claim, CLAIM.md)
+    │   └── skills/claim-md/   (the claim's format and the read-only claim check + tests)
     ├── ralph/                 (unattended agent loops over a backlog)
     │   └── skills/{backlog-yaml,backlog-entry,backlog-grooming}/
     ├── sandbox/               (isolated execution: claude-sandbox + checkout/worktree convention — a hook-owning plugin)
-    │   ├── hooks/             (checkout guard + tests)
+    │   ├── hooks/             (checkout guard + hooks.json + tests)
     │   └── skills/sandbox/
     ├── statusline/            (always-on status line footer, a statusline-hub display hook — hook-owning; hard-depends on statusline-hub)
-    │   ├── hooks/             (statusline renderer, sensor, session_start: registers the hub hook, prune + tests)
+    │   ├── settings.json      (plugin settings default: subagentStatusLine)
+    │   ├── hooks/             (statusline renderer, subagent_statusline agent-panel renderer, sensor, session_start: registers the hub hook, prune + hooks.json + tests)
     │   └── skills/install-statusline/ (coworker install, hands the slot to install-statusline-hub; references/sensor-contract.md)
-    ├── statusline-hub/        (the status-line slot, shared: owner-mode dispatcher + embed-mode tee — hook-owning; owns the statusLine entry)
-    │   ├── hooks/             (hub, registry, tee, owner, session_start, housekeeping + tests)
-    │   └── skills/{statusline-hub,install-statusline-hub}/ (embed recipes, references/hook-contract.md; installer script)
+    ├── statusline-hub/        (the status-line slot, shared: owner-mode dispatcher + embed-mode tee + consent-only wrap mode — hook-owning; owns the statusLine entry)
+    │   ├── hooks/             (hub, registry, tee, owner, session_start, housekeeping + hooks.json + tests)
+    │   └── skills/
+    │       ├── {statusline-hub,install-statusline-hub}/ (embed recipes, references/hook-contract.md; installer script)
+    │       └── install-statusline-hub/scripts/ (install_hub.py, the installer)
     └── work-items/            (repo-durable work items + work-source provider interface)
-        └── skills/work-items/ (wi CLI, references/, tests/)
+        └── skills/
+            ├── work-items/    (wi CLI incl. `wi estate`, references/, tests/)
+            ├── work-items/scripts/ (wi.py, the wi CLI)
+            └── work-review/   (the on-demand cross-repo review, written from `wi estate`)
 ```
 
 Derive the current set with `ls ../claude-plugins/plugins` and

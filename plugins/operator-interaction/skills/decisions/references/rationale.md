@@ -16,7 +16,8 @@ Five traditions outside software converge on a minimum every decision carries, a
 
 - **Completed staff work** (military staff doctrine): the decider must be able to approve or
   disapprove from the document alone, with no further work
-  (en.wikipedia.org/wiki/Completed_staff_work). The doctrine states no exceptions.
+  (en.wikipedia.org/wiki/Completed_staff_work; *secondhand*, a reference page). The doctrine
+  states no exceptions.
 - **Informed-consent materiality** (*Canterbury v. Spence*, D.C. Cir. 1972, primary case
   text): a fact must be disclosed when a reasonable person in the decider's position would
   weigh it. Brevity does not excuse dropping it.
@@ -39,6 +40,48 @@ More detail is **not** shown to help in itself: the Cochrane review excluded the
 simple comparisons for lack of a usual-care control, and no single decision-aid attribute
 reliably predicts effectiveness. Content completeness is the variable, not length.
 
+## Everything to act on, on the card
+
+The operator's asks, on two cards they could not act on from where they were shown: "A
+decision should have all the MUST-HAVE inputs the decider needs to make the decision"
+(2026-10-06), on a card that asked them to run a check without saying where its files were
+or what to paste; and "Before this decision was shown, it should have included …"
+(2026-10-07), on a card whose options were named by labels from a plan they had not read —
+what those labels stood for. The floor was written for understanding and answering a
+decision, not for carrying out an option the operator performs; its gloss rule covered ids
+and names, not terms or a source document's labels.
+
+- **Completed staff work, its second half.** The decider approves or disapproves from the
+  document alone, "with no further work" (§ The floor; *secondhand*, a reference page). The
+  floor had made a rule of the first half only. What it takes to act is the second, and the
+  cold read is the acceptance test the research behind this skill proposed for every card:
+  could a decider with no prior context approve or disapprove from this alone? It is
+  extended here from approving to carrying out.
+- **The decision memo encloses what is signed.** A U.S. Army decision memorandum states its
+  recommendation as the thing the principal signs, and tabs that item first among its
+  enclosures (AR 25-50, *Preparing and Managing Correspondence*, para 4-4,
+  https://armypubs.army.mil/epubs/DR_pubs/DR_a/ARN42124-AR_25-50-007-WEB-13.pdf;
+  *secondhand*, via an earlier research pass). The **To act on** part is its analogue: what
+  the operator acts on is on the card, not to be fetched. By analogy only: no source found
+  covers a decision whose option the decider performs, with paths, commands and text to
+  paste.
+- **Observed in practice.** Cards and the one-line digests of open decisions leaned on
+  labels a cold reader could not resolve: a plan's step and tier names, short ids, rules
+  named by a section number. One card promised its steps for a later turn, and its command
+  held a fill-in placeholder.
+- **Why inputs get a part and terms do not.** Inputs are long, structured and checkable
+  (steps, commands, text to paste): a part of their own keeps them out of the option line,
+  gives a store one line to keep them on, and gives an answer page one field to check. A
+  term is best said in its place, in the words it stands for; a glossary part would be one
+  more thing to store and render, and a pointer to the source is not a definition. These are
+  the reasons behind the two rulings (`references/rulings.md`, **Inputs to act** and
+  **Terms defined where shown**).
+- **Why a cold read and not a scanner.** Whether a reader knows a term is not decidable by a
+  program, and a card composed in chat would have to be written out to be scanned on every
+  raise. The decidable parts — a fill-in placeholder, an `act` field's shape on the page, the
+  worked examples staying free of both failures — are checked by the page and the tests; the
+  rest is the cold read.
+
 ## Exceptions
 
 Assembled from adjacent practice, since the strictest source allows none: preference
@@ -60,7 +103,31 @@ topic the floor exists to prevent.
   reversible; risk tiering follows blast radius.
 
 Hence ⚠ = one-way *and* high impact, answered on its own, and the higher the stakes, the more
-detail and the slower the answer.
+detail and the slower the answer. The two are judged by you, and shown to the operator as
+the Undo and Reach facets (§ Impact in every view), in words that say how and who rather
+than a stakes label.
+
+## Impact in every view
+
+The operator's ask (2026-10-06): "I want to ALWAYS see some form of impact that a decision
+has, even in the one-line version. The impact of the decision is critical for me, and it's
+not currently visible in a way I can understand it at all times." Then, on a first proposal
+that changed the list line only: "I want it to be in the other sizes of outputs too … Consider
+how to structure the impact as you get more space to work with." The ruling
+took five facets in one vocabulary, shown more fully as space grows.
+
+- **Why these five.** Effect and Wait are the two sides a decider weighs at a glance: what
+  happens on yes, what happens on waiting — the decision aids' "outcome of each option,
+  doing nothing included" (§ The floor). Reach and Undo are the stakes dimensions
+  (§ Stakes), told as who and how instead of as a label: *reversible, narrow* named a tier
+  without saying what reversing takes. Cost is what a round ask already had to justify
+  (§ Asks for another round), for every option.
+- **One order at every size.** The facets are learned once and read the same way in a
+  table row and a block, so a larger view adds to the smaller one and never re-sorts it.
+- **Stored at raise.** The tightest views (a caller's table row, a report's line of numbers)
+  have no room to open the options, and deriving the impact there from option text each
+  time reads less clearly; written once with the card, it is read the same way everywhere,
+  as the context cue is (§ Who is reading).
 
 ## Who is reading: events, not the clock
 
@@ -155,6 +222,31 @@ screen when the agent stops. So the decisions come last, after any report or sum
 compact list with the hint is the very last thing — the operator's own ask (2026-09-24): "the
 compact, one-line decision list below the cards/blocks so you can answer some/all of them
 without scrolling up".
+
+## Options and recommendations, as the operator reads them
+
+The operator's rulings (2026-09-29), each from reading decisions shown the other way:
+
+- **Letter order, the recommendation in bold.** "These options should be in abc...z order,
+  if you have a recommendation, let's bold it." Putting the recommended option first is a
+  modal dialog's convention, where the first choice is the default. In a card the operator
+  reads the options as a list and answers by letter, so the letters run in order and the
+  recommendation is marked where it stands.
+- **Every decision's own recommendation.** Four related decisions shown as one grouped
+  entry drew: "you haven't provided any recommendations?" A group spares context switches
+  (§ Order) only while each decision in it can still be answered from where it is shown; the
+  folded entry kept the topic and lost the answer — the failure § The floor observed in
+  checkpoint digests.
+
+## Asks for another round
+
+A review-cap waiver asked with its fixed options and little else drew: "each ask for another
+turn needs to justify why it's worth the cost of an operator decision along with the ask. If
+the impact is high, it's justified. I have no insight into the impact, so I can't make a
+decision." A template spares the operator reading the options again, not the weighing.
+What the leftover findings would break and what the round costs are the two sides of that
+weighing, and both change every time. Completed staff work (§ The floor) asks the same: the
+decider can approve or disapprove from what is shown alone.
 
 ## Replies
 

@@ -2,18 +2,35 @@
 
 The dispatch brief for the review sub-agent that gates one change between the
 implementer's return and Land. Fill every placeholder from the run's bindings
-(`bindings.md`); delete nothing except the store lines when there is no work item. The
+(`bindings.md`); delete nothing except the store lines when there is no work item, and
+What to do's foundation step when the build is not under a foundation (`bindings.md`
+§ Decisions, A foundation reopen). The
 reviewer starts with none of the orchestrator's context and none of the implementer's, and
 must be able to review from this text alone. Send it as the prompt of one background
-`general-purpose` Agent. The reviewer is review-only: it never edits, never commits. The
-orchestrator sets the `Model:` line from SKILL.md § Step 2 rule 4 — always opus, or fable
-under a `model: fable` pin or as a second opinion — and passes the same value to the Agent
-tool's `model` field; a reviewer is never routed below opus. The reviewer is always a
-fresh agent: never a fork and never the implementer resumed.
+`dev-flow:reviewer` Agent (opus high), or `dev-flow:reviewer-light` (opus medium) for the
+kind `model-routing.md` § Reviewer effort by kind names — for a fable cross-check the
+operator accepted, `dev-flow:cross-checker` or `dev-flow:cross-checker-deep` (§ Fable
+cross-checks); `general-purpose` only as `model-routing.md` § Fallback says. The reviewer
+is review-only: it never edits, never commits. The orchestrator sets the `Model:` line
+from SKILL.md § Step 2 rule 4 — always opus, or fable under a `model: fable` pin or as an
+accepted cross-check — and passes the same value to the Agent tool's `model` field; a reviewer
+is never routed below opus, and an `effort:` pin never moves it off `reviewer` (rule 8).
+The reviewer is always a fresh agent: never a fork and never the implementer resumed.
+A `findings: cross-check (<stage>)` block on the item since the last verdict is pasted
+under "The implementer claims" for the reviewer to rule on: each that stands goes in its
+FINDINGS, and its CROSS-CHECK line rules on every one, whatever the verdict
+(`model-routing.md` § Fable cross-checks).
 
 The prohibitions, the severity scale and the report shape are fixed. The check commands vary
 with what the change touches — take them from `review-checklist.md`, the same list the
 orchestrator runs again at Land, including its section 4's Checks binding.
+
+**Never in a brief** (`bindings.md` § Spend budget): never tell a producer or reviewer the
+budget, the spend so far or left, or that money or quota is short, and never ask them to
+hurry or be brief to save cost, in a brief, a resume message or a fix-round message. Spend
+is the orchestrator's to read, never the agents'. That holds for the template and every
+variant below — the re-review, review-mode and plan-review variants, and a cross-checker's
+brief. A reviewer told the money is short grades to the money, not to the change.
 
 ---
 
@@ -43,8 +60,8 @@ Read it in full first: $WI show <id>
 <without one:>
 Brief: <the cycle brief or plan file, by absolute path — read it in full first>
 
-Model: <opus — routing rule 4 | fable — model: fable pin (rule 8) | fable — second
-       opinion after an opus CLEAR | opus — fable pin unavailable; answer N>
+Model: <opus — routing rule 4 | fable — model: fable pin (rule 8) | fable — cross-check
+       (<stage>) after an opus CLEAR; answer N | opus — fable pin unavailable; answer N>
 Acceptance: <one or two lines, copied from the item, plan or brief>
 Ground: <the Ground binding>
 Files in scope: <explicit list; anything else in the diff is a finding — or "undeclared">
@@ -61,8 +78,9 @@ union of every round's CHANGED, one file per line with its one-line reason>
 - $WORKTREE/CLAUDE.md — layout and conventions
 - A change outside Ground is a finding at medium; a change that ignores the Workflow
   notes above is a finding at medium
-- <when the change adds or edits a skill:> $WORKTREE/plugins/*/skills/create-skill/SKILL.md
-  and its references/ — the authoring rules
+- <when the change adds or edits a skill:> <the create-skill SKILL.md path,
+  bindings.md § Authoring rules> and its references/ — the authoring rules <when none
+  is found, this whole line is replaced by that section's no-create-skill line>
 - <any other skill or reference the change names, by absolute path>
 
 ## What to do
@@ -97,6 +115,16 @@ union of every round's CHANGED, one file per line with its one-line reason>
    reached anything beyond this branch.
 8. Grade every finding on the scale below, with a file:line and a one-sentence failure
    scenario: what a user does, and what goes wrong.
+<conditional — a build under a foundation (its item is a child of a foundation item, or its
+series' INDEX.md has a `## Foundation` block):>
+9. A finding that would change a foundation artifact of <the foundation series, absolute>
+   (phase 1: the intent, a goal or non-goal, a requirement, a quality scenario, a
+   constraint, a glossary meaning, the claim or the neighbours table; phase 2: an ADR, a
+   contract, the threat and privacy model, context and containers, the strategy or
+   traceability, a risk) is not a FINDING: put it under NOTES as `REOPEN: <the artifact> —
+   <Reopen requirements if it touches any phase-1 artifact, else Reopen architecture> —
+   <why>`. A diff that changes such an artifact in place is a finding at medium; writing
+   the living docs from the series as it stands (feature F0) is not such a change.
 
 ## Checks — run all, report outcomes verbatim
 
@@ -135,20 +163,38 @@ $WORKTREE, in addition to the generic ones>
   $WORKTREE. To read another revision, `git -C $WORKTREE show <rev>:<path>`, or
   `git -C $WORKTREE archive <rev>` unpacked under the scratchpad — never a checkout.
 - Do not run `wi claim`, `wi done`, `wi handoff` or any writing `wi` command.
+- Never send a signal (kill, pkill, killall, a pattern or process-group kill) to a process
+  you did not start yourself; stop your own only by the PID you recorded when you started
+  it (`$!` after a background start), never by name or pattern — other agents' check runs
+  share this container.
 - Do not soften a severity because the fix is small, or raise one because the fix is
-  large. Grade the failure, not the effort.
+  large. Grade the failure, not the effort. A `Fix:` never changes a severity.
 - Do not ask the user anything; put the question under NOTES.
 
 ## Report back (this exact shape)
 
 VERDICT: CLEAR | NEEDS_CHANGES | SHOW_STOPPER | BLOCKED
+MUST-FIX: <n> — the findings at medium or above still open after this review: each new
+  one, and each earlier one you rule PARTIAL or OPEN, a new one restating an earlier one
+  counted once; 0 on CLEAR
 TESTS: each command and its outcome, verbatim; any claim you could not reproduce
 FINDINGS:
   1. [critical|high|medium|low|nit] <file>:<line> — <what is wrong>. Failure: <one
-     sentence: who does what, and what goes wrong>.
+     sentence: who does what, and what goes wrong>. [Fix: <file>:<line> — <the words to
+     write there, verbatim>]
   2. ...
   (or: none)
+  Fix: is optional. Write it only when you can write the whole fix; it is in one place;
+  it is at most one sentence of prose or one line of a doc or skill text — never code, a
+  script, a test, config, a hook or an agent file's frontmatter; and it makes no choice
+  the item, the plan or a recorded answer has not already made. It is one set of words,
+  never a menu (two or more to choose between, or an instruction to choose); the words
+  may themselves contain "or". It never adds or renames a name or shape something parses
+  or stores — writing down one that has already landed in a contract file is not adding
+  one. Leave it out when any of these fails.
 DOCTRINE: one line per principle, pass or fail with the diff line for any fail
+CROSS-CHECK: only when the brief pasted cross-check findings — one line each: stands
+  (FINDINGS #<k>), or withdrawn — <reason>
 NOTES: anything you noticed that is not a finding; questions for the orchestrator
 ```
 
@@ -157,10 +203,13 @@ NOTES: anything you noticed that is not a finding; questions for the orchestrato
 ## Re-review variant
 
 After the implementer commits its fixes, resume the **same** reviewer (it has the context)
-with this in place of "What to do" — unless the reviewer's tier changed (a waived fable
-pin, routing rule 6): a resumed agent keeps its model, so dispatch a fresh reviewer at the
-new tier with the full brief, its `Model:` line and "Files changed, with reasons"
-updated, and the previous report pasted above this block.
+with this in place of "What to do" — unless the reviewer's tier or file changed (a waived
+fable pin, routing rule 6; a `reviewer-light` moving up to `reviewer`, `model-routing.md`
+§ Reviewer effort by kind): a resumed agent keeps its file and its model, so dispatch a
+fresh reviewer at the new tier or file with the full brief, its `Model:` line and "Files changed, with
+reasons" updated, and the previous report pasted above this block. After a fable
+cross-check the reviewer resumed is the `reviewer`, never the `cross-checker`
+(`fix-loop.md` § A NEEDS_CHANGES round).
 
 ```
 Fix commits since your last review: git -C $WORKTREE log --oneline <last reviewed sha>..HEAD
@@ -199,8 +248,11 @@ OLD=$(git -C $WORKTREE merge-base <merge sha>^1 <merge sha>^2) and check both si
   kept the base's version) is a dropped change side.
 A resolution that drops either side's intent is a finding.
 
-1. For each finding in your previous report, verify by file:line whether it is fixed,
-   partly fixed, or untouched. For each declined finding: if it is low or nit and the
+1. For each finding in your previous report, verify by file:line and grade it on its
+   failure: FIXED when the failure is gone, by the words its `Fix:` gave or by another
+   edit; PARTIAL when it is reduced; OPEN when it remains. Another edit is never PARTIAL
+   or OPEN for not using the words: attack it under step 3 like any commit. For each
+   declined finding: if it is low or nit and the
    reason holds, record DECLINED (accepted); if the reason is insufficient, record OPEN
    with why. An OPEN low or nit stays in the report and the record but does not block
    `CLEAR` (§ Verdict: only medium and above do). When it matters more than its grade,
@@ -216,7 +268,9 @@ A resolution that drops either side's intent is a finding.
    validation gets What to do step 6's attack classes again, run against a fake.
 4. Report in the same shape. Under FINDINGS, list prior findings first with their status
    (FIXED / PARTIAL / OPEN / DECLINED / WITHDRAWN, each with the reason), then any new
-   ones numbered on.
+   ones numbered on. A PARTIAL or OPEN finding at medium or above carries a `Fix:` for
+   what is left when Report back's conditions hold, or names the new finding that
+   restates it.
 ```
 
 The round is `CLEAR` only when every prior medium-or-above is FIXED or WITHDRAWN and no
@@ -261,8 +315,8 @@ Grade each changed file against this Intent in place of the item's or plan's acc
 itself a finding merely for lacking a one-line reason — there was no implementer to write
 one.
 
-Model: opus (Step 2 rule 4), or the Model floor when one is pinned (rule 8) — the same
-whatever the branch's diff holds.
+Model: opus (Step 2 rule 4), or the Model floor's `model:` pin when one is set (rule 8);
+an `effort:` pin alone leaves opus — the same whatever the branch's diff holds.
 
 ## Plan-review variant
 
@@ -302,12 +356,34 @@ The series follows the investigate skill's investigation-format reference (path 
 Fill the path as the absolute path of the `investigate` skill's
 `references/investigation-format.md`, the sibling of this skill in the dev-flow plugin.
 
+**A foundation series** (its `INDEX.md` carries a `## Foundation` block; SKILL.md § Step 1,
+the foundation bullet) is reviewed one gate at a time. Add to What to do:
+
+```
+7. Gate: this is gate <G1 | G2 | G3> of a foundation series; review the serial(s) this
+   phase wrote against the gate's exit checklist, pasted below from the foundation
+   skill's gates reference. A checklist line that does not hold is a finding at medium.
+   The bar: flag only what affects correctness or the stated requirements; style,
+   wording and preference are not findings. A gate passes with holds only when nothing
+   it approves depends on one; a hold something depends on is a finding at medium.
+   After a reopen, review the reopen serial and what its impact list names, not the
+   whole phase.
+<the gate's checklist, verbatim>
+```
+
+Before gate G3 a foundation series has no Implementation Approach by design (the format's
+§ Foundation series): item 1's missing-approach finding does not apply, and item 2's
+acceptance is the gate's checklist, not the item's build acceptance. At gate G3 item 1
+applies in full. Fill the checklist from the `foundation` skill's `references/gates.md`
+§ 1, the sibling of this skill in the dev-flow plugin.
+
 A `NEEDS_CHANGES` goes back to the plan agent, which follows that format's two rules
 exactly: a written serial is never edited or deleted; the revision is a new serial at the
 next free number, opening with a `Supersedes` block that names each file, section and
 statement the findings overturned; and `INDEX.md` is regenerated wholesale. The re-review
 variant applies with "the new serial, and the regenerated INDEX.md" in place of fix
-commits.
+commits, and its step 1 grades a prior finding the same way against the new serial: is
+its failure gone from the series as the `Supersedes` composes it?
 
 **The baseline for "never edited".** Before every plan review, the orchestrator records
 the hashes of the written serials in the record sink (SKILL.md § Step 4):
@@ -329,6 +405,7 @@ changed or missing one is a finding at medium (the format's rule 1).
 | `SHOW_STOPPER` | Unfixable in scope, or changes scope / a user decision | `wi block` when there is an item; raise it through the decision channel; do not land |
 | `BLOCKED` | The reviewer could not start: worktree, branch, brief or permissions wrong | Fix the brief, re-dispatch — twice at most; not a round. A third `BLOCKED`, or a permission denial, is `wi block` (when there is an item) and a blocked change raised through the decision channel, not a show-stopper |
 
-A fourth review round without `CLEAR` is itself a show-stopper — the cap is 4 review
-rounds, the first review plus three fix rounds: block the change and raise it through the
-decision channel, with the round history from the record sink.
+What a verdict that is not `CLEAR` ends in at the cap (stopped and carried, a finish
+round, or raised) is SKILL.md § Step 4.3's (`bindings.md` § Decisions, What a cap ends
+in); a raise carries the round history from the record sink and the justification
+`bindings.md` § Decisions gives an ask for another round.

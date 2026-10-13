@@ -3,9 +3,119 @@
 Claude Code plugin marketplace. **The doctrine — the seven principles every plugin is
 measured against, plus naming practices and the catalog — lives in [README.md](README.md).**
 Read it before adding or moving anything. This file carries only the mechanics: where files
-go.
+go, and what may never be committed.
 
 Do not restate the principles here; restated rules drift.
+
+## Claude Code source material
+
+This repo is public. Read this before you write, commit, push or post anything that touches
+Claude Code's behaviour.
+
+1. **Never commit Claude Code's source.** From any copy of Claude Code's source, leaked or
+   installed (the bundle or binary included), none of the following goes into any tracked
+   file, test fixture, commit message, work-item text pushed with the repo, or issue or PR
+   text:
+   - verbatim code, or internal strings: message or error text, and flag and event names,
+     that the source holds and that are not externally observable. Text that is externally
+     observable is not internal; rule 2 says what that is and how to label it;
+   - minified or internal identifiers (short mangled function names, internal variable and
+     constant names), including as a label in a comment that maps our code to theirs;
+   - extraction recipes, such as a grep of the bundle, a byte offset, or an anchor to
+     search for.
+
+   Verbatim prompt, system-prompt and system-reminder text is forbidden whatever its
+   source, observable or not, the text in your own context included: seeing it in your own
+   context is not external observation. Claude Code's own tool descriptions, built-in agent
+   and command instructions, and the text a built-in slash command expands to count as
+   prompts.
+2. **State behaviour as observed or documented.** Observed: say how it was observed (a
+   status-line payload, a transcript, a hook's environment, a test run) and on which Claude
+   Code version. Documented: give the public URL. Never write "read from the binary", or
+   any other internals, as a source. Text and values that are externally observable may be
+   quoted or written. Externally observable means observable from outside Claude Code's
+   source: shown to users, written to transcripts, passed to hooks in their input or
+   environment, in status-line payloads, in API responses, or on a public doc page.
+   Inspecting the running program's code or memory (a debugger, a heap dump, an injected
+   script) is reading the source, not observing it. Externally observable text covers
+   message and error text as well as short machine values the code must match (an error
+   code, a field or env-var name). Each is labelled with how and on which Claude Code
+   version it was observed, or with the public doc URL. Prompts, verbatim code, minified or
+   internal identifiers and extraction recipes stay banned (rule 1), and an unreleased
+   feature is not described (rule 4), even where one shows up in one of those places, such
+   as a stack trace a user sees.
+3. **A fact only the internals show is not written down.** In its place you may leave a
+   hint that it can be derived from Claude Code's internals, so agents know to consult the
+   source themselves. The hint's topic is a behaviour a user can see, such as when a
+   warning fires, never an internal mechanism, component or feature, and it is named in
+   plain words only: no location, identifier, value, file or search anchor, and the hint
+   does not quote the text, even where rule 2 lets it be quoted elsewhere. For example,
+   "when this warning fires can be derived from Claude Code's internals" is a hint; naming
+   the function that decides it, or its threshold, is not. No hint is left about an
+   unreleased feature.
+4. **Never describe an unreleased feature.** Unreleased means not in the public docs and
+   not observable in normal use on a public release. A feature that is present but switched
+   off is unreleased. When unsure, treat it as unreleased.
+5. **Check before every commit, every push, and every issue or PR text you post.** The
+   check has three parts, and the grep only surfaces candidates: whether a line is observed
+   or internal is decided by reading it.
+   - **Shape greps.** `cc_scan` below prints every line holding one of the five phrases
+     `bundle`, `binary`, `cli.js`, `minified`, `deobfusc`; a name of one to four
+     characters called like a function; a short mixed-case or dollar-bearing token (the
+     shape minified names take), the commonest of those only next to a provenance word; a
+     version number, since a version paired with a claim about behaviour is to be read,
+     not auto-removed; or a `CLAUDE_CODE_` env-var name, to confirm it is user-visible.
+   - **The deny-list.** `$(git rev-parse --git-common-dir)/info/claude-code-denylist` is a
+     local file, never committed or pushed: one exact internal string or name per line.
+     When you meet one, add it there. `cc_scan` greps for every entry, and says so on
+     stderr when the file is missing, holds no entries, or cannot be found (outside a
+     repo): a scan without it is not clean.
+   - **Reading.** Read the whole diff, the message and the post text yourself. It stays
+     required whatever the greps print.
+
+   ```bash
+   cc_scan() {  # bash; text on stdin; prints candidate lines to read, nothing when clean
+     local t gd deny=; t=$(cat)
+     if gd=$(git rev-parse --git-common-dir 2>/dev/null); then
+       deny="$gd/info/claude-code-denylist"
+     else
+       echo "cc_scan: not in a git repo; deny-list not consulted" >&2
+     fi
+     {
+       printf '%s\n' "$t" | grep -niE 'bundle|binary|cli\.js|minified|deobfusc'
+       printf '%s\n' "$t" | grep -nE '(^|[^A-Za-z0-9_.])[A-Za-z_][A-Za-z0-9$_]{0,3}\(|[0-9]+\.[0-9]+\.[0-9]+|CLAUDE_CODE_[A-Z0-9_]+'
+       printf '%s\n' "$t" | grep -nE '(^|[^A-Za-z0-9_$])([A-Za-z]+\$[A-Za-z0-9]*|[A-Za-z0-9]?[a-z][A-Z][A-Za-z0-9]?|[A-Za-z][0-9][A-Za-z][A-Za-z0-9]?)([^A-Za-z0-9_$]|$)'
+       printf '%s\n' "$t" | grep -nE '(^|[^A-Za-z0-9_$])([A-Z]{2}[a-z][A-Za-z0-9]?|[A-Z][a-z][A-Z][A-Za-z0-9]?)([^A-Za-z0-9_$]|$)' \
+         | grep -iE '\b(via|per|cop(y|ies|ied)|mirrors?|match(es)?|source|internal|chunk|derived|read from)\b'
+       if [ -n "$deny" ] && grep -q '[^[:space:]]' "$deny" 2>/dev/null; then
+         printf '%s\n' "$t" | grep -nF -f <(grep -v '^[[:space:]]*$' "$deny")
+       elif [ -n "$deny" ]; then
+         echo "cc_scan: deny-list missing or empty: $deny" >&2
+       fi
+     } | sort -t: -k1,1n -u
+   }
+   # before a commit: the staged lines and the message text
+   # (MSG=$(cat <-F file>), or MSG set to the -m string)
+   [ -n "$MSG" ] || echo "cc_scan: MSG is empty; the commit message was not scanned" >&2
+   { git diff --cached -U0 | grep '^+'; printf '%s\n' "$MSG"; } | cc_scan
+   # before a push: every commit of the ref you push (<ref>, e.g. main) not yet on any
+   # remote, merge resolutions included
+   git log -p --cc <ref> --not --remotes | cc_scan
+   # before posting an issue or PR: the text itself
+   cc_scan < body.md
+   ```
+
+   Every hit that is verbatim material rule 1 bans, an internal identifier, a recipe, an
+   internal source or an unreleased feature is removed before the commit, never after. A
+   hit in prose that only names the rule, as this section does, may stay. Found while it is
+   still only on its own unmerged branch: rebuild that branch the way
+   `plugins/dev-flow/skills/dev-cycle/references/fix-loop.md` § A leaked secret does (its
+   step 1 reach check first, then a soft reset to the merge base and one clean recommit),
+   never a fix commit on top. Found once it is merged into another branch (local main
+   included) or pushed: stop and hand it to the operator. Scrubbing that history is the
+   operator's path, tracked as work item `history-scrub-purge-claude-code-bundle-d-4151`.
+6. **Why:** distributing verbatim code or prompts is copyright infringement; observed
+   behaviour is fact, and fact is ours to write down.
 
 ## Repository Layout
 
@@ -15,23 +125,35 @@ plugins/
     skills/
       product-research/
   context-guard/       # Surviving the context window (hook-owning)
-    hooks/             # Gate, ledger, rehydrate, gauge.json publish (+ deprecated statusline copy) + unit tests
+    hooks/             # Gate, ledger, rehydrate, gauge.json publish + hooks.json + unit tests
     skills/
       {checkpoint,usage-report}/
+      checkpoint/scripts/  # context_forensics.py (where a session's context went, from its transcript)
+      usage-report/scripts/  # usage_report.py + item_spend.py (an item's spend by agent id) + prices.json (token-spend accounting)
   create-repo/         # Start a new repo for a thread of work, with a session launched on it
     skills/
-      create-repo/     # references/launch-command.md
+      create-repo/     # references/{launch-command,gitignore}.md
   dev-flow/            # Plan before you code; research into findings or a knowledge base; the librarian that takes custody of a repo
-    agents/            # research-lane, research-verifier (the research family's workers)
+    agents/            # scribe, scout, implementer, implementer-critical, implementer-deep, planner, planner-deep, reviewer, reviewer-light, cross-checker, cross-checker-deep (the dev cycle's role workers); research-lane, research-lane-deep, research-verifier (the research family's workers)
     skills/
-      {investigate,implement,dev-cycle,deep-investigation,research,research-deep,research-refine,research-prune,chain-of-verification,librarian-mode}/
-      research/scripts/  # tool-preflight.sh (Step 5.1 tool check) + unit tests
+      {investigate,implement,dev-cycle,foundation,deep-investigation,research,research-deep,research-refine,research-prune,chain-of-verification,librarian-mode}/
+      research/scripts/  # tool-preflight.sh (Step 5.1 tool check), scan-findings.py (the scan floor under the verifier) + unit tests
+      librarian-mode/scripts/  # quota_budget.py (the librarian's quota sense) + unit tests
+    tests/             # test_agents.py: every agent file's model and effort pin, and its frontmatter shape; test_deep_investigation.py: deep-investigation's research-family security parity; test_research_asks.py: the research family's asks as text, the owner section, its pointers, the ledger kinds and the manifest edge; test_frontmatter_parity.py: the review checklist's frontmatter key copy against kit-dev's house rule; test_decision_tags.py: the librarian's two-word decision tags, their order, the retired spellings and no residue of them
   kit-dev/             # Maintaining this kit itself
     skills/
       {create-skill,update-kit,new-project-from-template,factor-analysis}/
+    tests/             # test_standalone.py: each plugin's suites pass from a copy of that plugin alone; test_declared_edges.py: every cross-plugin skill, CLI or data-path reference is declared in plugin.json and the catalog
   operator-interaction/ # The agent-operator interface, starting with how decisions are raised and shown
     skills/
-      decisions/       # references/{worksheet,rendering,replies,evidence-basis,rationale,gallery}.md
+      decisions/       # references/{worksheet,rendering,replies,evidence-basis,rationale,rulings,gallery}.md
+      plain-names/     # plain names for what agents mention, the id a trailing tag
+      decision-page/   # a set of decisions as an answer page: assets/{index.html,cards.example.json}, references/{cards-schema,writer-digest,fallback}.md, scripts/check_cards.js (the pre-publish check; node optional)
+    tests/             # test_impact.py: the decision page's impact check and renderers (under node), and the decisions gallery's impact at every size; test_chat_context.py: the decisions skill's chat cards and blocks carry a Context section in the page's order (the templates and every gallery card and block); test_act.py: the page's act field and its check (under node), and the gallery's To act on parts, placeholders and labels; test_context.py: the page's context field, its TLDR check and render order, and the pre-publish runner (under node); test_depth.py: the page's detail levels, the More button's option detail, links and the runner's depth lints (under node); test_shape.py: the page's level shapes and their render, the Impact one facet a line, and the runner's shape, rec-only effect and id lints (under node); test_digest.py: the decision page's writer digest against the schema's fields and their Required cells, the runner's lint keys and line starts, its thresholds and the example's follow list, each check proved by a mutation
+  ownership/           # Each repo's ownership claim (CLAIM.md): what it owns, what is not ours, its boundaries
+    skills/
+      claim-md/        # references/{format,checks,answer,example}.md, assets/CLAIM.template.md
+      claim-md/scripts/  # claim_check.py (the read-only claim check) + unit tests
   ralph/               # Unattended agent loops over a backlog
     skills/
       {backlog-yaml,backlog-entry,backlog-grooming}/
@@ -49,9 +171,11 @@ plugins/
     skills/
       statusline-hub/  # embed recipes (ccstatusline, Starship, shell wrapper), references/hook-contract.md
       install-statusline-hub/  # installer script (install, remove, replace, wrap, unwrap, --status)
+      install-statusline-hub/scripts/  # install_hub.py, the installer
   work-items/          # Repo-durable work items + the work-source provider interface
     skills/
       work-items/      # wi CLI (incl. `wi estate`, the cross-repo sweep), references/{format,provider-interface}.md, tests/
+      work-items/scripts/  # wi.py, the wi CLI
       work-review/     # the on-demand cross-repo review, written from `wi estate`
 ```
 
@@ -62,12 +186,24 @@ optional `references/`, `scripts/`, `assets/`.
 
 - **Skill location**: `plugins/<plugin>/skills/<name>/SKILL.md` (never `.claude/skills/`).
 - **Agent location**: `plugins/<plugin>/agents/<name>.md` — auto-loaded by the plugin system.
-  Agent `.md` files define role, tools, and model. Task-specific context is injected via the
-  Agent prompt, not baked into the definition. `dev-flow` ships two: `research-lane` and
-  `research-verifier`, the workers of the `research` skill family — their contract (file shape,
-  evidence and security rules, effort pin) lives in the agent body so every lane loads it by
-  construction. (The three agents that served the deprecated plan-execution skill were retired
-  at Phase 3.)
+  Agent `.md` files define role, tools, model and effort. Task-specific context is injected via
+  the Agent prompt, not baked into the definition. One role per file and one effort per file: a
+  role that needs a second effort gets a second file, and the per-call `model` moves a file
+  across models. `dev-flow` ships fourteen:
+  - eleven role workers for the dev cycle — `scribe`, `scout`, `implementer`,
+    `implementer-critical`, `implementer-deep`, `planner`, `planner-deep`, `reviewer`,
+    `reviewer-light`, `cross-checker`, `cross-checker-deep` — whose frontmatter is `name`,
+    `description`, `model` and `effort` only (`tools` left out: every tool);
+  - `research-lane`, `research-lane-deep` (the same lane at a second effort) and
+    `research-verifier`, the workers of the `research` skill family, routed by the
+    `research` skill's `references/intensity-and-routing.md` § Profiles.
+
+  Bodies come in three classes: minimal (the role only; the prompt is the brief) on ten of the
+  eleven; a short read-only evidence contract on `scout`; and the research trio's full contract
+  (file shape, evidence and security rules), in the body so every lane loads it by
+  construction. `plugins/dev-flow/tests/test_agents.py` keeps every file's model and effort
+  pin in step with its table. (The three agents that served the deprecated plan-execution
+  skill were retired at Phase 3.)
 - **Hook location**: `plugins/<plugin>/hooks/<name>.py` — registered in that plugin's
   `plugins/<plugin>/hooks/hooks.json`, which lists each hook under its event (`PreToolUse`,
   `UserPromptSubmit`, `SessionStart`, `Stop`, …) with a `matcher` and a `command` that names
@@ -77,9 +213,14 @@ optional `references/`, `scripts/`, `assets/`.
   from the hooks dir. Hooks, status lines and `settings.json` writes belong only in the
   plugin whose stated aim is that behavior; each such plugin carries its own `hooks.json`
   with only its hooks.
+- **Plugin-level tests**: tests not tied to hooks live in `plugins/<plugin>/tests/`, run with
+  `python3 -m unittest discover -s tests -q` from the plugin dir.
 - **Plugin registry**: `.claude-plugin/marketplace.json` — update when adding or removing a
   plugin (not when adding skills to an existing plugin). Its `name` field, `kmacmcfarlane`,
   is **frozen**: it suffixes every plugin-data directory.
+- **README footer**: a `README.md` inside a skill folder is allowed, for humans, and ends
+  with the line `*User-facing documentation, not agent instructions.*` (the dev-cycle
+  review checklist lints this).
 - **Skill reference paths**: bare relative paths (no `./`, no `${CLAUDE_SKILL_DIR}`).
 - **Cross-skill references**: a skill may point into a sibling skill of the *same* plugin by
   its backticked name right before a bare path — "the `investigate` skill's
@@ -87,6 +228,61 @@ optional `references/`, `scripts/`, `assets/`.
   Never `../`, never a path into another plugin (there, README principle 4 applies).
 - **Catalog upkeep**: any change to the shape of the marketplace updates the README catalog
   in the same commit.
+- **Peer hints** (the mechanics of README principle 4's degrade, disclose, hint once; when a
+  hint may never show is principle 4's list, not restated here):
+  - *Disclosure* is part of the run's result whenever a degraded path changed it: one plain
+    clause naming what was skipped ("items not filed: no work-item store tool"). It never
+    carries the install command; the hint, when shown, adds it. A run whose result is
+    unchanged says nothing.
+  - *The hint* is one line, prefixed by the source plugin's name, naming the benefit rather
+    than the mechanism: `<source>: <what you got instead>. <peer> adds <what it adds>:
+    /plugin install <peer>@<marketplace> (one-time tip; KMACMCFARLANE_NO_PEER_HINTS=1 hides
+    these)`. In a sub-agent or under an orchestrator's brief the skill returns only the
+    disclosure, and the top-level session that reports to the user may add the hint once.
+  - *Hooks* show it once per (source plugin, peer) per install of the source plugin, at most
+    one per source plugin per session, and never once the peer is detected. When several
+    peers are missing, the one shown is the peer whose absence costs the user most, in the
+    source plugin's own order. The hook that shows it is the one that takes the degraded
+    path: SessionStart with matcher `startup` when the state is known at start, otherwise
+    the hook that runs the degraded branch. "Shown" is a marker at
+    `${CLAUDE_PLUGIN_DATA}/peer-hints/<peer>` in the **source** plugin's data dir, created
+    atomically (create-if-absent; only the creator shows the hint); a marker that cannot be
+    created withholds the hint, never repeats it. That dir is one per plugin, kept across
+    plugin updates, and deleted on uninstall from the last place the plugin is installed
+    unless `--keep-data`, so the marker lives exactly as long as the install
+    (https://code.claude.com/docs/en/plugins-reference § Environment variables).
+  - *Hook output*: the hint goes out as `systemMessage` with exit 0, which is shown to the
+    user in the transcript; some events discard `systemMessage`, so a hint is emitted only
+    from an event that shows it, and only from a synchronous hook (an async hook's
+    `systemMessage` goes to Claude on the next turn, not to the user;
+    https://code.claude.com/docs/en/hooks § How async hooks execute). Never
+    `additionalContext`, which goes into the model's context, and never plain stdout, which
+    on SessionStart, the prompt hooks (UserPromptSubmit, UserPromptExpansion) and
+    PostModelSwitch is added to the model's context and on most other events goes only to
+    the debug log, unseen
+    (https://code.claude.com/docs/en/hooks).
+  - *Detection (hooks)* prefers evidence of the peer's effect (a fresh sensor record for the
+    hub, a `hooks.d` registration for statusline) over install records, and fails quiet:
+    anything unreadable counts as present. The marketplace in the install command comes from
+    the install record, as statusline's `_marketplace` does
+    (`plugins/statusline/hooks/session_start.py`).
+  - *Prose skills* keep no marker (background state belongs only in a hook-owning plugin,
+    principle 3). The hint folds into the disclosure line in the run's final result, only
+    when the degraded path changed it, at most once per session (the conversation is the
+    record), with the frozen marketplace name `kmacmcfarlane`. Presence is read from the
+    session's skill list.
+  - *The switch*: `KMACMCFARLANE_NO_PEER_HINTS=1` hides every hint; a comma list of peer
+    names (`KMACMCFARLANE_NO_PEER_HINTS=work-items,context-guard`) hides only those. The
+    user sets it in the shell or in a settings `env` block, which sets variables for every
+    session and its subprocesses (https://code.claude.com/docs/en/settings-reference § env);
+    that a value set either way reaches a hook's environment and the Bash tool's is for the
+    helper item (4bd4) to observe. Hooks read it from their environment; a prose skill reads
+    it before showing a hint with one `echo "${KMACMCFARLANE_NO_PEER_HINTS-}"`, which is in
+    the built-in read-only set that runs without a permission prompt in every mode
+    (https://code.claude.com/docs/en/permissions § Read-only commands). Disclosure is never
+    switched off.
+  - Not peer hints: hard-dependency repair notices and migration warnings, which warn of
+    breakage and may repeat.
 
 ## Placement rules
 
@@ -122,7 +318,8 @@ current home is the real home, and is where files go.
 | Isolated execution (containers; the checkout/worktree convention and its guard) | `plugins/sandbox/` | `plugins/sandbox/` — **landed** (Phase 5) |
 | Unattended agent loops over a backlog ("ralph") | `plugins/ralph/` | `plugins/ralph/` — **landed** (Phase 5) |
 | Start a new repo for a thread of work, with an agent session launched on it | `plugins/create-repo/` | `plugins/create-repo/` — **landed** (2c77) |
-| The agent–operator interface: what agents need from the operator, in a form they can act on where it appears (first: how decisions are raised and shown) | `plugins/operator-interaction/` | `plugins/operator-interaction/` — **landed** (9f98) |
+| The agent–operator interface: what agents need from the operator, in a form they can act on where it appears (first: how decisions are raised and shown; then plain names for what they mention) | `plugins/operator-interaction/` | `plugins/operator-interaction/` — **landed** (9f98) |
+| Declare each repo's ownership claim (CLAIM.md): what it owns, what next to it is not ours and whose, and its boundaries | `plugins/ownership/` | `plugins/ownership/` — **landed** (53d7) |
 | Maintaining this kit itself | `plugins/kit-dev/` | `plugins/kit-dev/` — **landed** (Phase 6) |
 | Stack expertise ("make Claude good at X") | the `expertise` marketplace (repo `claude-expertise`) — not this repo | moved to the expertise marketplace (local scaffold, remote pending) — **landed** (Phase 2) |
 | Web-UI chat-session skills | `plugins/chat/` | family home under review |
@@ -143,4 +340,8 @@ Checks:
 - (cd plugins/statusline-hub/hooks && python3 -m unittest discover -s tests -q)
 - (cd plugins/dev-flow/skills/librarian-mode/scripts && python3 -m unittest discover -s tests -q)
 - (cd plugins/dev-flow/skills/research/scripts && python3 -m unittest discover -s tests -q)
+- (cd plugins/dev-flow && python3 -m unittest discover -s tests -q)
+- (cd plugins/operator-interaction && python3 -m unittest discover -s tests -q)
+- (cd plugins/ownership/skills/claim-md/scripts && python3 -m unittest discover -s tests -q)
+- (cd plugins/kit-dev && python3 -m unittest discover -s tests -q)
 Push: main

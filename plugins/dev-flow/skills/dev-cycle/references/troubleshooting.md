@@ -13,9 +13,9 @@ Pointed at from SKILL.md § Troubleshooting and from `fix-loop.md` for the permi
   `<scratchpad>/dev-cycle/<slug>/record.md` — never a file in an investigation series;
   nothing is filed and nothing is claimed.
   Never `wi init` from a cycle.
-- **A store, but no `wi`.** Resolve it with the lines in `bindings.md` § Store; an empty
-  result after all three sources means `work-items` is not installed. Say so once and run
-  on the scratchpad record.
+- **A store, but no `wi`.** Resolve it with the snippet in `bindings.md` § Store; `no wi
+  found` after all three sources means `work-items` is not installed. Run no `wi` command,
+  say so once, and run on the scratchpad record.
 - **`wi claim` exits 4.** Another session holds the item. Do not force; stop and report
   who holds it.
 - **The target is ambiguous.** An argument that is both an item id and a series slug: take
@@ -35,8 +35,8 @@ Pointed at from SKILL.md § Troubleshooting and from `fix-loop.md` for the permi
   raise it.
 - **A fable dispatch returns HTTP 429 or a usage-credits error.** Not a `BLOCKED`. Under
   a `model: fable` pin, ask through the decision channel — wait for the reset, or opus
-  now — never falling back unasked; a second-opinion reviewer is dropped, and the opus
-  `CLEAR` before it stands. `model-routing.md` §§ Fallback, Second opinion.
+  now — never falling back unasked; a fable cross-check is dropped, and the opus
+  `CLEAR` before it stands. `model-routing.md` §§ Fallback, Fable cross-checks.
 - **Implementer disputes a medium-or-above finding.** It cannot decline it: it fixes, or
   states the counter-case for the re-review. The reviewer withdraws on the merits (the
   failure cannot occur) or holds; if it holds, fix it — that round is spent.
@@ -49,6 +49,11 @@ Pointed at from SKILL.md § Troubleshooting and from `fix-loop.md` for the permi
   `worktree-<name>` still exists, add the worktree on it (`git -C "$MAIN" worktree add
   .claude/worktrees/<name> worktree-<name>`, no `-b`): a fresh branch off the base would
   drop the commits already on it.
+- **`cost: … unread`.** No spend reading: `no reader found` (install context-guard), a reader
+  too old (`item` exits 2: update context-guard and restart), a Claude model `prices.json`
+  does not know (update the price table), or a lost transcript no `cost:` line covers.
+  The fourth review of the phase is the cap meanwhile (`bindings.md` § Decisions);
+  nothing else changes.
 
 ## Resuming
 
@@ -58,8 +63,18 @@ names the symptom.
 - **The run was interrupted.** Re-invoke `/dev-cycle` on the same target: SKILL.md
   § Step 0.4 reduces the record and takes the one action its state names.
 - **A store-less run, re-invoked in a new session, finds what the old one left.** S0b: not
-  resumable from this session — report it and stop; `resume.md` § The reduction, REMNANT names what
-  counts, and the orphan-worktree rule below decides it. Nothing is re-dispatched over it.
+  resumable from this session — report it and stop; `resume.md` § The reduction, REMNANT
+  names what counts. A leftover worktree, branch or series goes to the orphan-worktree rule
+  below; a pending merge goes to "A merge left uncommitted in the main checkout" below,
+  since it may not be this run's. Nothing is re-dispatched over it.
+- **A run died after Land's merge, before its `landed:` line.** Its worktree may already be
+  gone, so the last `CLEAR` would read `STALE`. S2b: `resume.md` § The reduction, MERGED
+  finds the merge on the base whose merged parent is the `CLEAR`'s sha; the run writes
+  `landed:` with it and runs `resume.md` § The landing tail — never a second review or
+  merge.
+- **A run died after its `landed:` line, before the item was closed.** S2: `resume.md`
+  § The landing tail finishes the base checks, push, cleanup and `$WI done` that are still
+  undone, and names any push it did not make.
 - **A recorded dispatch's agent does not answer.** S3b: it counts as gone only after a
   SendMessage to its recorded id fails; then salvage what it left and re-dispatch on top of
   it, never over it.
@@ -100,7 +115,10 @@ names the symptom.
 - **A dirty worktree at cleanup.** Never removed: report its `git status --short` and ask.
 - **A check is red on the base after the merge.** Two green branches can be red together.
   Do not revert or patch by hand: file it (a new item when a store exists) or raise it,
-  and report it on the `verified:` line.
+  and report it on the `verified:` line. The merge has landed — its `landed:` line is
+  written — so it never re-enters the fix loop. The cycle pushes nothing past it; under a
+  librarian it goes on the Report's `decisions needed:`, and the push is the librarian's
+  call.
 - **Orphan worktree from a crashed run.** Dirty: surface it, do not remove. Clean and
   merged: remove it; clean and unmerged: ask.
 - **Push rejected (non-fast-forward or fetch first)** — only when the terminal action
@@ -131,7 +149,10 @@ names the symptom.
     `origin/<base>` into a worktree branch cut from the local `<base>` and resolves or
     fixes it there — a conflict round, reviewed like any other, the shape of `fix-loop.md`
     § A merge conflict — then lands and pushes it; or the user resolving it on origin. A
-    second rejection is reported, not retried.
+    second rejection is reported, not retried. The dialog is safe here because the push
+    follows Land, which runs only after a `CLEAR` with no agent of the cycle's left
+    running; with a session agent ListAgents lists as running, the question goes as the
+    numbered list instead, per `bindings.md` § Decisions.
 - **A merge left uncommitted in the main checkout.** `git -C "$MAIN" rev-parse -q
   --verify MERGE_HEAD` succeeds when a cycle is re-invoked or reaches Land: a merge was
   interrupted before its commit or abort, and its Checks result is gone. Never commit it

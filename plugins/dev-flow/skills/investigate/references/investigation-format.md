@@ -1,8 +1,8 @@
 # Investigation record format
 
-**This file is the single owner of the on-disk investigation format.** The `investigate` and
-`implement` skills both defer to it. Do not restate these rules in a SKILL.md body — restated
-rules drift.
+**This file is the single owner of the on-disk investigation format.** The `investigate`,
+`implement` and `foundation` skills all defer to it. Do not restate these rules in a SKILL.md
+body — restated rules drift.
 
 ## Layout
 
@@ -151,7 +151,7 @@ are written even when the answer is "none":
 | `Confirmed Assumptions` | Settled at the requirements gate. **Never omit.** |
 | `Out of Scope` | What was deliberately excluded, and why. |
 | `Existing Architecture` | Titled **`Root Cause Analysis`** for bugs. What the code does today. |
-| `Implementation Approach` | Titled **`Proposed Fix`** for bugs, or **`Recommendation`** when the conclusion is that no code should be written (the capability exists, the cost is not worth it, the premise fails) — a Recommendation still states what to do, usually documenting why so the idea is not re-proposed, and its row ends up `no code`. **Required** — `implement` refuses a series with none of the three. Genuinely-open alternatives go here as sub-options. |
+| `Implementation Approach` | Titled **`Proposed Fix`** for bugs, or **`Recommendation`** when the conclusion is that no code should be written (the capability exists, the cost is not worth it, the premise fails) — a Recommendation still states what to do, usually documenting why so the idea is not re-proposed, and its row ends up `no code`. **Required** — `implement` refuses a series with none of the three. Genuinely-open alternatives go here as sub-options. A plan for a build may end it with one line, `Estimated cost: $<n> — <why>`: the build's list-price spend, sized from the change and comparable items' recorded `cost:` lines; the `dev-cycle` skill reads it as the build's budget, asked first when over its default (the `dev-cycle` skill's `references/bindings.md` § Spend budget). Left out, the build takes its default. Optional: a missing line is never a finding. |
 | `Files to Modify` | Per repo, with paths. |
 | `Patterns to Follow` | Conventions the implementer must match. |
 | `Blast Radius` | Consumers, public API, contracts, anything downstream. State "self-contained" explicitly when it is. |
@@ -244,6 +244,30 @@ Maintained by `implement`:
 | `superseded by NN` | A later serial invalidated it. |
 
 Leave existing rows' Status and Branches alone except the ones this pass genuinely changes.
+
+## Foundation series
+
+A series written by the `foundation` skill (dev-flow) follows every rule above, and adds
+names and one index block; it amends nothing.
+
+- **Serial names.** `00_initial.md` is the first pass as always: the frame and the
+  requirements (in a lite run, all three phases). Then `NN_architecture.md`, `NN_plan.md`,
+  `NN_reopen-<what>.md` for a reopen, and `NN_retrofit.md` for a retrofit, each at the next
+  free serial. A gate's fix round is an ordinary next serial with its `Supersedes` block.
+- **The Foundation block.** `INDEX.md` carries a `## Foundation` section after the TOC: the
+  size, the mode and the item; a phase table (phase, serial, gate status, whether the
+  operator approves or it is reported, the approved date); the gates passed, one line each
+  with its date and decision ref, so a moved series still knows them (carried forward whole
+  on every regeneration, the move's included); the held questions; the factored-out
+  aspects. Its shape is the `foundation` skill's `references/state.md`
+  § The Foundation block. Its presence is what marks a foundation series.
+- **Implementation Approach before gate G3.** The approach section is required per series,
+  not per serial, and a foundation series has none until its plan serial. `implement`
+  refuses it before then, which is the guard wanted; no phase-1 or phase-2 serial carries
+  a placeholder, and a plan review does not raise the missing section before gate G3.
+- **The artifacts** (intent, requirements, quality scenarios, ADRs and the rest) are
+  sections inside the standard outline, after Existing Architecture, or after Summary when
+  nothing exists yet.
 
 ## Verification tiers
 

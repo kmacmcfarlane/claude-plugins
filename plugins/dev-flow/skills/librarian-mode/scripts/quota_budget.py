@@ -18,7 +18,7 @@ The schema and the rules are in references/budget.md; the values (reserves,
 TTLs) are owned by the agents repo's librarian-budget-policy series.
 
 Reads: this session's sensor record CFG/statusline/sensor/<sid>.json (the
-statusline-hub / statusline contract), this session's own registry file
+statusline-hub contract, its hook-contract.md § 12), this session's own registry file
 CFG/sessions/<CLAUDE_PID>.json (identity fields only, and only when its
 sessionId is ours), the store, and - when the claude-analytics sampler is
 installed and live - its sink CFG/claude-analytics/samples/.

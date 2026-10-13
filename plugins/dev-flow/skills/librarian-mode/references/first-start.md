@@ -7,13 +7,16 @@ checkout. The opt-in that writes `## Librarian` runs before any of it:
 
 ## No store yet (Rehydrate step 1)
 
-**First start:** no store at `$WI_ROOT`? Check `.work/` too — an existing `.work/`
-store is used (point `WI_ROOT` at it), never shadowed by a fresh one. Truly no store
-during `start` or `intake` → resolve the custody layer (step 2) first; no
+**First start:** the store lookup (Rehydrate step 1) exported no `WI_ROOT`? It checks
+`.work/` too, so an existing `.work/` store is used, never shadowed by a fresh one. Truly
+no store during `start` or `intake` → resolve the custody layer (step 2) first; no
 `## Librarian` section means the opt-in dialog (`opt-in.md`), and its `Not now` means
-stop, creating nothing. Once a Scope is written, run `$WI init` (idempotent), relay its
-output (it explains any host `.gitignore` decision), and add one line: "initialised
-.claude-sandbox/work/ — first start on this repo". `status` never creates a store:
+stop, creating nothing. Once a Scope is written, run `$WI init --track` or
+`$WI init --no-track` (idempotent), the flag chosen by the `work-items` skill's rule for
+`$WI init` (never the no-flag default), with
+`WI_ROOT="$MAIN/.claude-sandbox/work"`, relay its output (it explains any host
+`.gitignore` decision), and add one line: "initialised .claude-sandbox/work/ — first start
+on this repo". `status` never creates a store:
 with no `## Librarian` section it prints "not opted in; `start` offers opt-in"
 (`opt-in.md`), otherwise "no store", and stops.
 

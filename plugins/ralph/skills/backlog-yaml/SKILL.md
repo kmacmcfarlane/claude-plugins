@@ -15,13 +15,37 @@ item in git. `backlog.yaml` is the **default work-source provider for unattended
 runs**, because `next-work --claim` is atomic and `validate --strict` is enforceable in a
 loop. The verb contract it implements — and the exit-code and canonical-state conventions a
 consumer must honour — is the work-source provider interface documented in the `work-items`
-plugin; read that document before writing anything that drives a backlog from a loop. Two
+plugin; read that document, through the `work-items` skill when it is listed, before writing
+anything that drives a backlog from a loop. Without `work-items` that document is not on this
+machine: the contract here is then `references/cli-reference.md` and the rules below. Two
 things that document settles and this one does not: closure is a *policy*
 difference, not a verb (agents advance status but never set `status: done` — see
 `/backlog-grooming`), and the contract reserves a `provider:` config key for future
 mechanical provider selection, which is **sketched and unimplemented — nothing reads it, do
 not write it**. The bridge to `wi` is `wi export --format backlog-yaml` before a run and
 `wi import --format backlog-yaml --update` after it.
+
+**Reaching `wi`.** `wi` is not on `PATH`: it is a script in the `work-items` plugin, found
+from the repo's own tree when it carries that plugin, else from the installed copy. This is
+ralph's one copy of the lookup; run it before either bridge command:
+
+```bash
+MAIN=$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null) && MAIN=${MAIN%/.git} || MAIN=$PWD
+for d in "$MAIN/.claude-sandbox/work" "$MAIN/.work"; do test -d "$d/items" && { export WI_ROOT="$d"; break; }; done
+WI_PY=$(ls "$MAIN"/plugins/*/skills/work-items/scripts/wi.py 2>/dev/null | head -1)
+P="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/plugins"
+test -n "$WI_PY" || WI_PY="$(python3 -I -c 'import json,sys; print(json.load(open(sys.argv[1]))["plugins"]["work-items@kmacmcfarlane"][0]["installPath"])' "$P/installed_plugins.json" 2>/dev/null)/skills/work-items/scripts/wi.py"
+test -f "$WI_PY" || WI_PY=$(ls -t "$P"/cache/kmacmcfarlane/work-items/*/skills/work-items/scripts/wi.py 2>/dev/null | head -1)
+if test -f "$WI_PY"; then WI="python3 $WI_PY"; echo "$WI"; else WI=no-wi-found; echo "no wi found"; fi
+```
+
+Then `$WI export --format backlog-yaml` and `$WI import --format backlog-yaml --update`, in
+the same Bash call (shell variables do not outlive one), or with the printed command. `WI` is
+bound to `python3` only when the file exists, so a miss never runs a bare `python3`; a `$WI`
+call run anyway fails with exit 127. The install-record read runs `python3 -I`, so a
+`json.py` in the working directory is never imported. On `no wi found`, run neither command and say that the
+work items and `backlog.yaml` were not synced because `work-items` is not installed. No
+store (no `WI_ROOT` exported) means there is nothing to bridge.
 
 The tool is canonical in the claude-sandbox repo (`scaffold-ralph/scripts/backlog/`) and is seeded into a project by `claude-sandbox init-ralph`. If `.claude-sandbox/scripts/backlog/backlog.py` is missing, run `claude-sandbox init-ralph` (idempotent — it only fills gaps).
 

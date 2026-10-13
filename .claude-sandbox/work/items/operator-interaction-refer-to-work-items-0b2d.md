@@ -2,13 +2,12 @@
 id: operator-interaction-refer-to-work-items-0b2d
 title: "operator-interaction: refer to work items by a plain-language name in operator-facing text, not a bare hash"
 type: spike
-status: doing
+status: done
 priority: 1
 parent: checkpoint-around-continuation-how-agent-d3ee
-owner: Kyle-McFarlane@7696505da8e1
-claimed: 2026-09-28T21:55Z
 created: 2026-09-24
-updated: 2026-09-28
+updated: 2026-09-29
+closed: 2026-09-29
 refs:
   - operator 2026-09-24
 ---
@@ -17,7 +16,7 @@ Operator 2026-09-24: 'using hashes in messaging like this about work items is re
 
 ## Handoff
 - doing: —
-- next: —
+- next: planner serial 03 folds answers 90-95 (93b: optional short_display_name field in wi; 94 relayed to agents); plan review; then build F1 plain-names skill, F2 template wording, and the wi field
 - blocked: —
 - learned: —
 
@@ -68,3 +67,25 @@ decision 92: (series D1) the handle — (a) plain name then 4-hex tag [recommend
 decision 93: (series D3) name source — (a) agent writes it from the title each time, no stored field [recommended] | (b) optional name: field in wi | (c) wi derives from title | (z)
 decision 94: (series D5) wi resolving a 4-hex tag — (d) file the ambiguity-rule version as its own follow-up item; no wi change here [recommended] | (a) build it now | (c) never | (z)
 decision 95: (series D6) store-chore commit subjects — (a) leave them terse [recommended] | (b) plain names there too | (z) · basis thin
+answer 90: a (read as: new plain-names skill in operator-interaction, aim line kept as ruled in 71) — with skill feedback filed as dbfc (option order a-b-c, rec bolded)
+answer 91: a (read as: changed: <plain name> (<tag>) — …)
+answer 92: a (read as: plain name, then the 4-hex tag)
+answer 93: b — "call it the idiomatically capitalized and separated version of 'short display name' which makes it clear to agents what the intention is for the field" (read as: an optional short_display_name: field in wi's item format, snake_case like the store's other multi-word keys; reverses the series' rec (a))
+answer 94: "this seems really related to the stuff I'm working on with the agents agent to get a real work system in place" (read as: no wi change here and no follow-up item in this repo; relayed to the agents librarian as input to its work system)
+answer 95: you decide — chose (a) leave store-commit subjects terse, because the operator says they are mostly for human debugging and not important, and a plain name lengthens every store commit
+next: planner serial 03 folds answers 90-95 (93b adds a wi field) before the build
+dispatch: planner opus — serial 03 folding answers 90-95
+agent: a945c3247aaba07d8 (planner serial 03)
+serial 03 written (03_rulings-folded.md): F1 plain-names skill, F2 short_display_name in wi (1-40 chars, tests), F3 consumers (after F1+F2); 94 withdrawn to agents
+dispatch: plan reviewer opus — fresh, serial 03 round 1
+agent: a3e74832845f19acb (plan reviewer s03 r1)
+plan review s03 r1 NEEDS_CHANGES (1H 3M 6L): H1 rebase->merge order after dbfc, overlap 7 files; M1 backfill-on-next-write exceeds answer 93 -> librarian ruling: drop it (set at filing or explicit wi set only); M2 exit 1 in cmd_add/cmd_set, blank clears; M3 marketplace.json descriptions
+dispatch: planner opus — resume, serial 04
+serial 04 written: all 10 findings folded; F2 disjoint from dbfc and can start now; F1 then F3 after dbfc
+dispatch: plan reviewer opus — fresh, serial 04 round 2
+agent: a7f46d286ac0436ae (plan reviewer s04 r2)
+plan review s04 r2 CLEAR (0H 0M 6L; lows folded into the feature items)
+factored: F2 work-items-optional-short-display-name-f-928d (now), F1 operator-interaction-the-plain-names-ski-cad6 (after dbfc), F3 plain-names-in-the-reports-and-consumers-8e04 (after F1+F2)
+  verbatim 95 (C7, added 2026-09-29T06:22Z; answer 95 above is the librarian's summary): "95 mostly for human debugging, not that important. you decide."
+all three features landed (928d, cad6, 8e04); the plan item closes with them
+- 2026-09-29 done

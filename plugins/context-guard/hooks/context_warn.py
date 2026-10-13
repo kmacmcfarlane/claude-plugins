@@ -5,25 +5,27 @@ Advisories (60/75% full) inform once per epoch. DUE fires when remaining
 tokens drop under thresholds(window)['due'] with no checkpoint recorded this
 epoch, and re-fires every 3 prompts or 25K tokens so it cannot be scrolled
 past. HARD blocks the prompt itself (exit 2 — Claude Code shows stderr to the
-user and ERASES the prompt) unless the prompt is /checkpoint, /compact or
-/clear, in the bare or the plugin-prefixed form (/context-guard:checkpoint).
+user and ERASES the prompt) unless the prompt is one of
+/checkpoint, /compact or /clear, in the bare or the plugin-prefixed form
+(/context-guard:checkpoint).
 A HARD stop requires a depth source in L.BLOCKING_SOURCES: EXACT (a fresh
-status-line record) or DERIVED (the window mirrored from Claude Code's own
-selection logic, every input resolved; see window_rules.py). When the depth
+status-line record) or DERIVED (the window derived from documented and
+observed rules, every input resolved; see window_rules.py). When the depth
 is inferred from the transcript, or the derived window is unresolved, it is a
 guess, so under `hard` the hook emits the DUE-style advisory saying a hard
 stop was not applied and exits 0 (live-fired 2026-09-16: a 1M session was
 blocked against a guessed 200K). The window scored is the gate window
 (L.measure): the model window, lowered to a configured auto-compact window.
-A transcript count stamped before the epoch began (the compaction's boundary
-line not yet on disk) reads as 0 there, so it never warns, latches or blocks.
+A transcript count stamped at or before the epoch began (the compaction's
+boundary line not yet on disk) reads as 0 there, so it never warns, latches
+or blocks.
 A hard stop is measured against `block_window` - the gate window when every
 input to it resolved, else the model window - so an unresolved auto-compact
 window warns but never blocks.
 Under L.CHECKPOINT_MIN_TOKENS left (against that window) a checkpoint no
 longer fits, so the HARD and not-blocked advice points at /clear or /compact
-instead of /checkpoint. That is advice text only: when the gate blocks is
-decided by decide() alone.
+instead of /context-guard:checkpoint. That is advice text only: when the gate
+blocks is decided by decide() alone.
 A HARD STOP caused by a derived window prints its escape hatches
 (CONTEXT_GUARD_DERIVE=off, mark_checkpoint.py <session>). The operator's
 CONTEXT_GUARD_CONTEXT_WINDOW pin (deprecated alias CLAUDE_KIT_CONTEXT_WINDOW)
@@ -140,8 +142,8 @@ def mark_checkpoint_command(sid):
 def derived_hatches(sid):
     """Escape hatches printed under a HARD STOP that a derived (mirrored)
     window caused, in case the mirror is wrong."""
-    return ("If this stop is wrong (its window came from context-guard's mirror of "
-            "Claude Code's window selection, not from the status line alone): set "
+    return ("If this stop is wrong (its window came from context-guard's window "
+            "rules, from documented and observed behaviour, not from the status line alone): set "
             "CONTEXT_GUARD_DERIVE=off in the environment Claude Code is launched "
             "from, or stand the gate down for this epoch with\n"
             f"  {mark_checkpoint_command(sid)}\n"
@@ -164,9 +166,9 @@ def fit_left(m, tok):
 
 
 # The advice when a checkpoint no longer fits. /clear first: it always works.
-# /compact is the alternative when the work is not on disk; in Claude Code
-# 2.1.278 a manual compaction that overflows retries up to 3 times with the
-# oldest messages dropped (read from the binary, not live-verified).
+# /compact is the alternative when the work is not on disk.
+# What `/compact` does when the conversation is too large to summarise can be
+# derived from Claude Code's internals; it is not recorded here.
 COMPACT_GUIDANCE = "/compact <what is in flight, what was decided, what was refused>"
 
 
@@ -270,8 +272,9 @@ def main():
         bw = m["block_window"] or win
         left = max(bw - tok, 0)
         if left >= L.CHECKPOINT_MIN_TOKENS:
-            advice = ("Run /checkpoint (or /context-guard:checkpoint - both forms are "
-                      "whitelisted) first")
+            # Namespaced: the bare name can resolve to a built-in command
+            # of the same name instead of the skill (operator, 2026-10-09).
+            advice = "Run /context-guard:checkpoint first"
         else:
             # Live-fired 2026-09-03 at 1,062 left: a checkpoint needs a turn of
             # its own, so pointing at it there wedges the session.

@@ -38,7 +38,7 @@ Read only this session's file, and only when its `sessionId` equals
 
 ```bash
 WANT="$(basename "$MAIN")"
-python3 - "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/sessions/${CLAUDE_PID:-none}.json" "$WANT" <<'PY'
+python3 -I - "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/sessions/${CLAUDE_PID:-none}.json" "$WANT" <<'PY'
 import json, os, sys
 try: d = json.load(open(sys.argv[1]))
 except (OSError, ValueError): d = {}

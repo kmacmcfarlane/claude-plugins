@@ -43,8 +43,9 @@ puts the old entry back, yields to anything else, and after `--unwrap` undoes an
 session's write that puts the hub's entry back. It leaves the `statusline` plugin's footer in place
 until that plugin registers as a hub display hook (from its first session), then takes the
 slot over with the footer drawing through the hub. It puts the entry back if an older
-session's settings write drops it, and never re-adds one the user removed (that includes a
-`statusline` footer the user removed before the hub arrived). If the hub's hooks are
+session's settings write drops it, except in a project settings file git tracks, which it
+never writes on its own (it says so once; `--local` is the fix), and never re-adds one the
+user removed (that includes a `statusline` footer the user removed before the hub arrived). If the hub's hooks are
 refused as a whole (a config dir inside a git repository, say), it says so once at session
 start; `--status` gives the detail.
 

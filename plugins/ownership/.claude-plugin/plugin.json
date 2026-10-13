@@ -1,0 +1,10 @@
+{
+  "name": "ownership",
+  "description": "Each repo's ownership claim — a CLAIM.md at the repo root stating what the repo owns, what next to it is not ours and whose it is, and which repo defines each boundary with a neighbour; the claim-md skill writes one with the operator's approval, checks the claims across your repos with a read-only script, and answers who owns what from them (soft dependencies: work-items, whose wi files a claim change and its fix items as work items, else they are put to you in chat and listed; kit-dev, whose factor-analysis plans a split not yet made, else you rule on it from the splitting rule; dev-flow, whose librarian section's Not owned lines the check compares with Not ours by name when a repo has both, and through whose librarian cycle a claim change lands in a librarian session; operator-interaction, whose decisions skill shapes the approval question, else a plain question).",
+  "author": {
+    "name": "Kyle McFarlane"
+  },
+  "homepage": "https://github.com/kmacmcfarlane/claude-plugins",
+  "repository": "https://github.com/kmacmcfarlane/claude-plugins",
+  "license": "GPL-3.0-only"
+}

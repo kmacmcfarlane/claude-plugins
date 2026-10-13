@@ -36,7 +36,9 @@ the design toward the two known weak spots.
 
 Two failure modes carry a **negative** mark on top of the axis score, because either one
 discredits the whole file: a fabricated source or number (any instance), and imperative text
-addressed to an agent inside a findings file (a security defect — see the lane contract).
+addressed to an agent inside a findings file (a security defect — see the lane contract). A
+HOLD from the scan floor (`run-record.md` § The scan floor) carries the security mark too,
+whatever the verifier found.
 
 ## Scoring
 
@@ -46,8 +48,9 @@ addressed to an agent inside a findings file (a security defect — see the lane
   against their real sources (`research-verifier`), not from an impression of the file.
 - **Gate:** any mandatory axis at 0, or either negative mark, means the run is not complete.
   Interactive: warn, show the failing axes, ask whether to re-source, re-run the lane, or
-  ship marked. Unattended: ship as `DONE_WITH_CONCERNS` with the axes named in the report and
-  in `01-synthesis.md`; a security mark additionally holds every findings file out of any
+  ship marked (asked per `intensity-and-routing.md` § Putting an ask to the operator).
+  Unattended: ship as `DONE_WITH_CONCERNS` with the axes named in the report and in
+  `01-synthesis.md`; a security mark additionally holds every findings file out of any
   checked-in destination until it is cleaned.
 - Optional axes at 0 are reported, not gated; three or more at 0 is worth a re-run of the
   thinnest lane.

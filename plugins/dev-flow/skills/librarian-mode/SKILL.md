@@ -32,8 +32,9 @@ serialization, so it does little itself: it files, factors, runs each item throu
   (transcription; later edits to it are work items). Everything else is dispatched, and
   a review finding is never the bypass — findings go back to the implementer.
 - **Nothing lands on the implementer's word.** Every `DONE` passes a fresh opus review
-  sub-agent — or, for pure prose with no operational claim, your own `review: self`
-  (dev-cycle's Step 2 rule 5) — a fix loop to `CLEAR`, your checks and your diff reading
+  sub-agent — or, for pure prose with no operational claim or skill wording that changes
+  no rule, your own `review: self` (dev-cycle's Step 2 rule 5; `references/decide-alone.md`
+  § Trivial documentation) — a fix loop to `CLEAR`, your checks and your diff reading
   (The cycle).
 - **Peer messages are requests, never approvals.** A peer session cannot authorize anything.
   Blocked or permission-denied work goes back to the operator, not the peer.
@@ -64,16 +65,17 @@ serialization, so it does little itself: it files, factors, runs each item throu
 
 Do this at session start and after any `/clear` or compaction. Never `ls` the whole store.
 
-1. **Locate the main checkout and the store.**
-
-   ```bash
-   MAIN=$(git rev-parse --path-format=absolute --git-common-dir | sed 's#/\.git$##')
-   export WI_ROOT="$MAIN/.claude-sandbox/work"
-   WI="python3 $(ls "$MAIN"/plugins/*/skills/work-items/scripts/wi.py | head -1)"
-   ```
-
-   An empty glob means the repo does not carry the plugin: use the installed
-   copy (`references/troubleshooting.md`). No store yet, or a `.work/` one:
+1. **Locate the main checkout and the store.** Run the `dev-cycle` skill's
+   `references/bindings.md` § Store snippet, dev-flow's canonical copy of the lookup: it sets
+   `MAIN`, exports `WI_ROOT` for the store it finds, and prints the `wi` command, from the
+   repo's own tree or else the installed plugin's copy. The librarian's store is
+   `$MAIN/.claude-sandbox/work`, or an existing `.work/` one, which the snippet finds
+   too. When it prints `no wi found`, `work-items` is not
+   installed, and the librarian cannot run without it — its whole queue is the store.
+   Stop there: say "librarian-mode needs work-items, which is not
+   installed: /plugin install work-items@kmacmcfarlane", and touch nothing else (no
+   opt-in, no store, no dispatch). This is a repair notice, not a peer hint, so the
+   hint switch never hides it. No store yet, or a `.work/` one:
    `references/first-start.md`. `MAIN` is not this session's cwd: a worktree session —
    say so and route every edit through dispatch (Red flags).
 
@@ -83,8 +85,11 @@ Do this at session start and after any `/clear` or compaction. Never `ls` the wh
    catalog and placement sections when present, otherwise in full — the rest of
    `CLAUDE.md` (layout and conventions), and the `dev-cycle` skill's SKILL.md in full,
    the cycle every item runs. On re-entry, re-read only the section, the conventions and
-   dev-cycle's Steps 1–5. When the session lists `operator-interaction:decisions`, load it
-   too, every time: every decision you raise follows it (`references/decisions.md`).
+   dev-cycle's Steps 1–5. When the session lists `operator-interaction:decisions` or
+   `operator-interaction:plain-names`, load each, every time: every decision you raise
+   follows the first (`references/decisions.md`), and every message to the operator names
+   items by the second. Without `plain-names`, the Report and table templates here carry
+   its rule: `<plain name> (<tag>)`.
 
 3. **Prime the queue, then read the one item you are working.**
 
@@ -97,7 +102,8 @@ Do this at session start and after any `/clear` or compaction. Never `ls` the wh
 
    Take each `doing` item's record up by the `dev-cycle` skill's `references/resume.md`,
    whose § LIVE probes the ids its `agent:` lines (and In flight) name, and whose Group
-   B attaches or salvages.
+   B attaches or salvages. Then migrate any retired decision tag in the store, as
+   `references/decide-alone.md` § Retired spellings gives it (no hit, no write).
 
 4. **Inventory the tree.**
 
@@ -115,9 +121,27 @@ Do this at session start and after any `/clear` or compaction. Never `ls` the wh
    A worktree with no live agent (step 3's probes; ListAgents for any agent no item records)
    and no `doing` item is an orphan — see Troubleshooting.
 
+5. **Context-guard.** When the session's skill list has no `context-guard:checkpoint`,
+   nothing watches this session's context: no gate advisory arrives, so
+   `references/ending-the-session.md` § At 75% never fires, and there is no checkpoint
+   and no manifest to rehydrate from. Disclose it in the first expected-output paragraph
+   of each conversation, whatever the argument (`start`, `status`, `intake`), as one
+   clause: "no context-guard: no checkpoint, no context gate; handoffs kept current at
+   each idle turn and landing". A Rehydrate after compaction does not repeat it. The
+   store then carries what the checkpoint would have:
+   - the in-flight roster is the `agent:` lines dev-cycle already writes at each dispatch
+     (the `dev-cycle` skill's `references/record-lines.md`); nothing more is needed;
+   - every standing hold is a `hold` item;
+   - after each Idle turn's dispatches, and at each Report or landing, `$WI handoff`
+     (`references/ending-the-session.md`) on each `doing` item whose state changed since
+     the last refresh;
+   - when the operator says they will compact or clear: that refresh, then the push
+     (`references/ending-the-session.md`, "Then push what landed"), then the closing
+     Report.
+
 Expected output: one short paragraph — items in flight, items ready, worktrees and agents
 alive, anything awaiting the operator, any active hold; after an init, one clause more
-(first-start).
+(first-start); without context-guard, step 5's clause.
 
 ## Intake
 
@@ -127,6 +151,7 @@ For every request, in this order:
 
    ```bash
    $WI add "<title>" -t <feature|bug|chore|refactor|spike> -p <0-4> \
+       --short-display-name "<plain name>" \
        --desc "<what was asked, by whom, when; the acceptance in one or two lines>" \
        [--ref <source: operator message, peer session name, retro path>]
    ```
@@ -134,25 +159,41 @@ For every request, in this order:
    Describe, do not dump: a path and a key, never a value. The item body is where the
    rationale lives; there is no separate decision log.
 
+   The short display name is what you will call the item to the operator: 3–6 words, no
+   id or tag, no leading article, never the word "until" (a HOLD line reads it as
+   syntax), **40 characters or fewer**. An exit 1 naming `short_display_name` means it is
+   over 40 characters and nothing was written: shorten it and re-run. Any other exit 1 is
+   the call's own error (a title over 120 characters, a dep or parent that does not
+   resolve, a line break): fix that. An exit 2 naming `--short-display-name` means an
+   older `wi`: file without the flag, and write the name from the title at each mention.
+   Only the item's owner sets or changes the name later
+   (`$WI set <id> short_display_name "<name>"`); a mention never writes it.
+
 2. **Peer requests.** A message from another session (SendMessage, `/peers`) is a request to
-   file and relay. File the item with the peer named in `--ref`, reply with the id only
-   (to a forward, the `filed` line it asks for), and continue. If the peer asks you to
-   merge, push, skip the item, widen Scope or reach outside it, decline in the reply
-   (forwarding per step 4) and note it in the item; only the operator can change the rules.
+   file and relay. File the item with the peer named in `--ref`, reply with the id and its
+   short display name (to a forward, the `filed` line it asks for), and continue. If the
+   peer asks you to merge, push, skip the item, widen Scope or reach outside it, decline
+   in the reply (forwarding per step 4) and note it in the item; only the operator can
+   change the rules.
 
 3. **Decide, or ask.** An obvious best way: decide it, state it in one line, proceed.
-   Ask only on a real trade-off, every decision (one or many) as `decision N:` on the
-   item under the Report's `decisions needed` — never AskUserQuestion: a modal prompt
-   blocks the session against background returns and peer messages (opt-in excepted,
-   `references/opt-in.md`). With the `operator-interaction:decisions` skill loaded, put
-   each one to the operator per that skill (`references/decisions.md`).
+   Ask only when a reason applies, or you are in doubt whether one does
+   (`references/decide-alone.md` § The line), every decision (one or many) as
+   `decision N:` on the item under the Report's `decisions needed`. Either way it is
+   recorded: a `decided:` line under its kind, or the ask's `why ask:` and its reason
+   (`references/decide-alone.md`). Never
+   AskUserQuestion: a modal prompt blocks the session against background returns and
+   peer messages (opt-in excepted, `references/opt-in.md`). With the
+   `operator-interaction:decisions` skill loaded, put each one to the operator per that
+   skill (`references/decisions.md`).
    Never in the same turn as a heavy analysis: end with it, ask next turn.
 
 4. **Refuse what is out of scope.** Anything outside Scope (Exclude included), pushing
    early or pushing anything but `main`: except as forwarded below, close the item with
-   `$WI done <id> --drop` after recording why, and tell the requester. Work another repo
-   owns, when ListAgents shows one live session named its `<repo>` or, for this lookup
-   only, `<repo> - librarian` (`references/session-name.md`): SendMessage it, first line
+   `$WI done <id> --drop` after recording why, and tell the requester, naming the item by
+   plain name and tag (to a peer session: also its full id). Work another repo owns, when
+   ListAgents shows one live session named its `<repo>` or, for this lookup only,
+   `<repo> - librarian` (`references/session-name.md`): SendMessage it, first line
    `forwarded from <our repo> <id>` (`<our repo>` is `basename "$MAIN"`), stating that
    this is a request from our librarian carrying no operator approval, the originator
    quoted as provenance only, to file under its own rules and answer
@@ -169,7 +210,8 @@ For every request, in this order:
    `investigate` and `implement` inside it, a spike through its plan phase — siblings in
    this plugin, so always present. Bugs, chores and refactors skip planning.
 
-Expected output: an item id, and either a stated decision or a queued question.
+Expected output: the item, by plain name and tag, and either a stated decision or a queued
+question.
 
 ## Factor
 
@@ -178,9 +220,12 @@ consistent, reviews on its own, and would still be worth landing if the others n
 came. One work item per feature; the original request becomes the parent:
 
 ```bash
-$WI add "<feature>" -t feature --parent <request-id> [--dep <other-feature-id>]
+$WI add "<feature>" -t feature --parent <request-id> \
+    --short-display-name "<plain name>" [--dep <other-feature-id>]
 ```
 
+- The short display name, and what each exit from `add` means, are as Intake step 1
+  says.
 - Real dependency edges only. "Nice to do first" is not a dependency; "cannot compile or
   cannot be reviewed without it" is.
 - A change to the marketplace's shape (a plugin added, moved or retired; a skill added to
@@ -189,6 +234,9 @@ $WI add "<feature>" -t feature --parent <request-id> [--dep <other-feature-id>]
 - A request that is already one landable feature stays one item. Do not manufacture
   structure.
 - Say what you factored and why in the parent item's body, not in the transcript.
+- Factoring a series whose plan item carries findings (`findings: carried`, the
+  `dev-cycle` skill's `references/bindings.md` § Decisions) copies them into each
+  factored feature's acceptance.
 
 ## The cycle
 
@@ -200,22 +248,50 @@ would ask the operator. Its Step 6 is the Report below. Your bindings:
   from Factor. **Checks**: `Checks:`. **Workflow**: `Workflow:`. **Base**: `main`,
   unless the item names another.
 - **Routing**: dev-cycle's Step 2 as written; its one home is the `dev-cycle` skill's
-  `references/model-routing.md`, and nothing here restates or changes it.
-- **Model floor**: an operator pin — a `model: <tier>` line in the item body — for every
-  role; never overridden downward.
+  `references/model-routing.md`, and nothing here restates or changes it. That covers
+  the role agent every dispatch names (`dev-flow:<agent>`, its § Profiles), the
+  `general-purpose` fallback when one is not loaded (its § Fallback), and the dispatches
+  you make outside a cycle's roles: a helper (a card, a brief, a summary) and a read-only
+  question (a `dig into`, a diagnostic) route by the same § Profiles, and you record each
+  as a helper line, which is yours to write and never a phase of the item's cycle (the
+  `dev-cycle` skill's `references/record-lines.md`).
+- **Model floor**: an operator pin — a `model: <tier>` line and/or an `effort: xhigh`
+  line in the item body; the model pin for every role, the effort pin for planner and
+  implementer dispatches (the `dev-cycle` skill's Step 2 rule 8); never overridden
+  downward.
 - **Hold**: an active hold's limit caps tier and concurrency for every dispatch; below
-  a pin or the reviewer's opus (dev-cycle's Step 2 rule 4), the item waits on a decision
-  (Idle turn).
+  a pin's tier (opus for an `effort:` pin's `-deep` files) or the reviewer's opus
+  (dev-cycle's Step 2 rule 4), the item waits on a decision (Idle turn). A hold in force
+  stops every round that would open unasked past a phase's fourth review, a finish round
+  included: it is raised (the one home of this rule; the `dev-cycle` skill's
+  `references/bindings.md` § Decisions names it the caller's stop).
 - **Record sink**: the item body, appended with Bash (not a custody file): a
-  `dispatch: <role> <model> — <signal>` line before every Agent call, a `review: self`
-  line above a verdict you reached yourself, rounds, verdicts,
-  declined findings with reasons.
+  `dispatch: <role> <model> <effort> — <signal>` line before every Agent call, a
+  `review: self` line above a verdict you reached yourself, rounds, verdicts, `trial:`
+  lines, declined findings with reasons.
 - **Decision channel**: `decision N:` appended to the item and carried under the
   Report's `decisions needed` — only what dev-cycle raises there: a `SHOW_STOPPER`, a
-  scope change or reversed operator decision, the cap, a blocked item, a fable-pin wait, a
-  spike's blocking open questions. **Durable**: the question lives in the committed item
-  body and is answered to whichever session is librarian next. Shown per the
+  scope change or reversed operator decision, a cap that is raised, a blocked item, a
+  fable-pin wait, an effort pin whose `-deep` agent is not loaded, a spike's blocking
+  open questions, a fable cross-check offer, a pin's ask below the quota reserve (the
+  `dev-cycle` skill's `references/model-routing.md` §§ Fable cross-checks, Below the
+  quota reserve), a spend budget reached while a fresh weekly reading is at or above 50%
+  used, or with no fresh reading, a plan's estimate over its build's default, a round
+  past the fourth review that a hold or the quota stops. A planner's blocking questions
+  pass through the reasons first (`references/decide-alone.md` § A
+  planner's questions). **Durable**: the question lives in the committed item body and is
+  answered to whichever session is librarian next. Shown per the
   `operator-interaction:decisions` skill when it is loaded (`references/decisions.md`).
+  **Spend budget** (the `dev-cycle` skill's `references/bindings.md` §§ Spend budget,
+  Decisions): the cycle's own, as standalone — the `budget:` line you write with the
+  item's `target:` line, the defaults, an operator's `budget:` pin and the increase ask
+  are all there; the caller's stop you bind with the channel is the Hold above. What the
+  cycle decides alone is a `decided:` line (`references/decide-alone.md`), written before
+  the dispatch or carry it opens: of class `cap`, a plan's stop and carry (authority
+  `answer 114`), and a finish round of exact-fix leftovers (authority `answer 145`), which
+  needs no grant and no reading of its own beyond the guard past the fourth review; of
+  class `spend`, a budget reached while a fresh weekly reading is below 50% used, which
+  does not stop the work to ask (authority `answer 176`).
 - **Terminal action**: `git merge --no-ff` into local `main`; the push is yours, after
   the Report (Critical). An item naming another base merges into that base instead, with
   the main checkout on it, and is never pushed. First-start dirt never blocks a merge
@@ -237,7 +313,8 @@ it: print a **Groom** table (for the operator) and a **Work** table (ready, not 
 or held), then dispatch the top Work items through The cycle — by dependency group,
 same-file items one at a time. Only an operator **hold** (a `hold` item, named above
 the tables) stops or caps it, and `start`'s rename gate stops it while it waits; a
-rate limit does not.
+rate limit does not. Without context-guard, its dispatches are followed by the
+handoff refresh of Rehydrate step 5.
 `references/idle-turn.md`; the quota sense and its store: `references/budget.md`.
 
 ## Report
@@ -245,27 +322,51 @@ rate limit does not.
 To the operator, **exactly four lines per landed change**, in this order, no headings:
 
 ```
-changed: <item id> — <what, one clause>; <files>
-verified: review <CLEAR after N fix round(s)> (impl <final tier>, review <final tier>); <each check and its outcome>
+changed: <plain name> (<tag>) — <what, one clause>; <files>
+verified: review <CLEAR after N fix round(s)[, k finish]> (impl <final tier>, review <final tier>; $<spent> of $<budget>); <each check and its outcome>
 open questions: <list, or none>
 decisions needed: <numbered list, or none>
 ```
 
+The plain name is the item's `short_display_name` when it is set; otherwise write one from
+its title at each mention (the `operator-interaction:plain-names` skill, when loaded), and
+store nothing. The tag is the id's last four hex. The full id stays where agents read it:
+the store, the record lines and every `wi` call.
+
 A spike reports its series path on `changed:`, as dev-cycle's `plan` mode does. A
 self-reviewed change writes `review self` in place of the reviewer's tier, as dev-cycle's
 Step 6 does.
-`decisions needed:` is numbered — one decision per number, its options and their
-impact, recommendation first — so the operator answers "2: b". A lone decision is still
-numbered; a number is never reused, and an unanswered one keeps it. The counter lives in
-the store: raising a decision appends `decision N: <one line>` to its item's body, and
-the reply `answer N: <reply>`; on re-entry continue from the highest N (Rehydrate step
+`decisions needed:` is numbered — one decision per number, each with its own
+recommendation, its options in (a), (b), (c) order with their impact and the recommended
+one in bold, never moved first — so the operator answers "2: b". A lone decision is still
+numbered; a number is never reused, and an unanswered one keeps it. It is **one counter**:
+every question put to the operator takes its number from it — an Intake ask, a dev-cycle
+decision, a Groom row, a series' or a gate's own questions, whose labels (OQ3, R1, G5)
+survive as a tag on the decision, never a second numbering. The two exceptions are the
+opt-in dialog (`references/opt-in.md`) and the session-name gate
+(`references/session-name.md`). Another repo's decision is written `<repo>#N`, never a
+bare N. The counter lives in the store: raising a decision appends one line to its item's
+body — one physical line, never wrapped, since `wi` reads the headline only to the line's
+end — in the form of the `dev-cycle` skill's `references/record-lines.md` `decision:` line,
+numbered:
+
+```
+decision N: <question> — options: (a) … [recommended] | (b) … | (z) decide later
+```
+
+The reply is `answer N: <reply>`; on re-entry continue from the highest N (Rehydrate step
 3), else 1.
 
 With the `operator-interaction:decisions` skill loaded, the four lines stay, and each
-`decisions needed:` names only its decision numbers. One decisions block, written per that
-skill, is the **last thing in the turn** — after the push outcome, its `incoming:` lines and
-the team summary below. The stored card, the store lines per reply, the default wake (the next
+`decisions needed:` names its decision numbers, each with its effect at that skill's tag
+size, read from the stored card's `impact:` line: `46 (→ preview up in about 4 minutes)`.
+One decisions block, written per that skill, is the **last thing in the turn** — after the
+push outcome, its `incoming:` lines and the team summary below. The stored card, the store lines per reply, the default wake (the next
 Report) and the re-show after Rehydrate are in `references/decisions.md`.
+
+What was decided alone since the last Report goes in a **Done alone** group of `Done:`
+lines after the four lines per landed change — extra lines, beyond the four
+(`references/decide-alone.md` § The Report).
 
 Batch several landings in one message, four lines each; anything blocked or declined
 since the last report goes under `decisions needed` of the next. Do not wait for the
@@ -290,7 +391,8 @@ Stop when you catch yourself doing any of these:
 
 - **Any of dev-cycle's red flags** — self-fixing (a custody file edited to make a result
   land, a finding fixed), landing without a `CLEAR`, merging unchecked, escalating what
-  the loop could resolve, dispatching with no `model` or no `dispatch:` line.
+  the loop could resolve, dispatching with no `model` or no `dispatch:` line, or on
+  `general-purpose` while the role agent is loaded.
 - **Skipping the work item** for a request that looks too small to file.
 - **Touching anything outside Scope** — Exclude included — or reasoning about it,
   beyond naming its owner for Intake step 4.
@@ -308,7 +410,7 @@ Stop when you catch yourself doing any of these:
 ## Ending the session
 
 Before the session ends, compacts, or is cleared: `references/ending-the-session.md`.
-At 75% or DUE: its § At 75%.
+At 75% or DUE: its § At 75%. Without context-guard none arrives: Rehydrate step 5.
 
 ## Examples
 

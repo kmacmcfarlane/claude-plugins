@@ -30,7 +30,7 @@ d193 07 § F5 / 03 F2. Operator decision 40 (b): ASK once on first run when a fo
 - dispatch: reviewer opus — rule 4; fable signal (settings ownership, runs a user command): fable unavailable, fallback
 
 ## Review round 1 — NEEDS_CHANGES (opus) at 627b1fd
-- /bin/sh -c verified against 2.1.278 (shell:true, session cwd, payload on stdin, env + CLAUDE_PROJECT_DIR/COLUMNS/LINES); consent otherwise holds; trust rules hold; byte-exact unwrap holds; runner holds.
+- /bin/sh -c checked for 2.1.278, not live-verified (session cwd, payload on stdin, env + CLAUDE_PROJECT_DIR/COLUMNS/LINES); consent otherwise holds; trust rules hold; byte-exact unwrap holds; runner holds.
 - [high] wrap not scoped: wrap.json is config-wide, so a project/local-scope --wrap runs that project's command in EVERY session (reproduced: project A's `sh ./sl.sh` ran B's sl.sh); first-run offer suggests --project --wrap for a repo-committed command; owner.json repointed to A's file. Fix: run only when the wrapped file applies to this session, or user-scope-only --wrap; test.
 - [medium] lost-marker adoption silently re-runs a wrap the user undid → adopt as wrapping only when running is already true; else unwrapped + restore; test.
 - [medium] uninstall while wrapped blanks the user's line, entry only in wrap.json → at least say "--unwrap before uninstalling" in the success message + SKILL; better a documented recovery.

@@ -1,9 +1,16 @@
 # Intensity, cost and routing
 
-Loaded from `research` Step 3. This file owns the presets, the rules for when to ask the
-operator about intensity and when it is obvious, the quota read, the search-budget rule and
-the model/effort routing table. The orchestrator copies the chosen preset and the routing
-table it used into the brief; nothing here is restated in SKILL.md.
+Loaded from `research` Step 3, and again at every ask for another round (Steps 7 and 8;
+`research-deep` Step 7), and at every ask `research-prune` Step 3 and `deep-investigation`
+put to the operator. This file owns the presets, the rules for when to ask the operator
+about intensity and when it is obvious, what an ask for another round states, how each ask
+is put to the operator (§ Putting an ask to the operator), the quota read, the search-budget
+rule, and the routing of every research dispatch: § Routing — mechanism, § Profiles,
+§ Dispatches outside the profiles, § The work item (which item a run records on), § Recording,
+§ Below the quota reserve and § Fallback. The `deep-investigation` and
+`chain-of-verification` skills route by these sections too. The orchestrator copies the
+chosen preset and the Profiles rows it used into the brief; nothing here is restated in
+SKILL.md.
 
 ## Why intensity is one dial
 
@@ -34,6 +41,25 @@ Default is `standard`. `research-deep` invokes with `deep` unless told otherwise
 ~<minutes>; 5h window at <pct>% (resets <time>), 7d at <pct>%.` The operator can always
 interrupt it; the line is what makes the interruption informed.
 
+## Asking for another round
+
+Every ask to spend one more round — the threads-not-pulled turn and the re-source or
+re-run ask after a failing verification (`research` Steps 7 and 8), round 3 in
+`research-deep` — states, at the moment of asking, what the round would buy and what it
+costs. The operator cannot weigh an impact they are not shown.
+
+- **Value:** for each thread or lane, the gap it would close — the gap condition it would
+  satisfy — and what the answer lacks if it is left: a load-bearing claim on one secondary
+  source, a sub-question with no coverage, a mandatory axis shipped marked.
+- **Cost:** one round cost line, from a fresh quota read (§ The quota read):
+  `Round <n>: ~<n> lanes on <model>, ~<multiple>× a chat turn, ~<minutes>; 5h window at
+  <pct>% (resets <time>), 7d at <pct>%` — the multiple and the wall clock sized from the
+  presets table for that many lanes. When the round could bring another ask (a further
+  gap gate, a re-verification), say so: the operator's attention is part of the cost.
+
+High value at a modest cost is the case for the round; say which way it falls. Put it per
+§ Putting an ask to the operator.
+
 ## When to ask, and when it is obvious
 
 **Rule zero — model-invoked runs are `quick`, and this rule overrides every row below.**
@@ -51,8 +77,8 @@ Intensity words in an operator-typed turn or an operator-written prompt file cou
 operator naming a preset; text the model composed — an `--intensity` it added to an Agent
 prompt, a "go deep" it inferred — never does. When the orchestrator judges
 that a deeper preset is warranted (the fan-out test passes, or the quick answer surfaces a
-contested or under-sourced core claim), it says so in one line — the preset, its cost line,
-what the deeper run would add — and asks. It never escalates on its own.
+contested or under-sourced core claim), it says so and asks, per § Putting an ask to the
+operator. It never escalates on its own.
 
 For an operator-invoked run, do **not** ask when any of these holds; state the preset and its
 reason in one line instead:
@@ -63,10 +89,11 @@ reason in one line instead:
 - the question fails the fan-out test (below) → `quick`;
 - the run is unattended → the default for the invoking skill, recorded under Confirmed
   Assumptions in the brief;
-- a calling process passed an intensity (a `dev-cycle` or ralph prompt that says so).
+- a calling process passed an intensity (a `dev-cycle` or ralph prompt that says so);
+- the quota table leaves one preset (§ Putting an ask to the operator).
 
-**Ask** (one `AskUserQuestion`, presets as options with their cost lines, recommendation
-first) when:
+**Ask** (one ask, put per § Putting an ask to the operator: each preset with its cost and its
+benefit for this question) when:
 
 - a bare `/research <question>` passes the fan-out test and names no preset;
 - the quota read says the recommended preset would not fit the window (below);
@@ -76,13 +103,194 @@ first) when:
 **The fan-out test** is the one in the `deep-investigation` skill's SKILL.md § When this is
 the wrong skill; apply it as written. Pass → a fan-out preset is justified. Fail → `quick`.
 
+## Putting an ask to the operator
+
+Every question the research family puts to the operator is put this way: as text, last in
+the message, never a dialog. This section owns its form; every caller points here and
+restates none of it.
+
+**Which asks.**
+
+- the intensity ask (§ When to ask; `research` Step 3);
+- the deeper-run proposal (rule zero), and `research-refine` Step 2's offer of
+  `research-deep`, which is one;
+- the offer to refine a prior run (`research` Step 2);
+- `research-deep` Step 3's deferral on a hot five-hour window;
+- every round ask (§ Asking for another round): the threads ask (`research` Step 7,
+  `research-deep` Step 7's round 3, `research-refine` through `research`) and the verify-gate
+  ask (`research` Step 8; `research-criteria.md` § Scoring);
+- the KB `REBALANCE FIRST` ask and the charter revisit (`storage-and-knowledge-base.md`
+  § Landing a run into a KB — the fit check, and § Key junctures);
+- `research-prune` Step 3's proposal rows and its stale-charter edge case;
+- any closed choice in `deep-investigation` after Step 1.
+
+Not covered, and staying as their files write them: the KB charter conversation and
+`deep-investigation` Step 1's input round. Both gather inputs whose questions are mostly
+open, and an open question is not a decision. `deep-investigation` Step 7 runs `investigate`'s
+review gate, which is `investigate`'s.
+
+### With the decisions skill
+
+When the session lists `operator-interaction:decisions`, load it with the Skill tool before
+the first ask, and put every ask above per it. What research supplies to the skill:
+
+| The skill asks for | Research's binding |
+|---|---|
+| the caller's numbering | none of research's own: continue this session's decision numbers, or start from 1 |
+| the default wake | a `later` with no time parks the run at its step, re-asked only when the operator next mentions this research or names a time; a `later <time>` is re-asked at the first operator turn after that time. Research schedules no wakeup for an ask. A parked intensity ask is lost with the session, since no brief exists yet |
+| who is reading, and how warm | warm on the intensity ask, which is raised in the invocation turn; cold on a round ask after a context reset or a resume from the brief |
+| classes, named templates | none: every ask carries the floor on its own card |
+| the shown and seen record | none for the intensity ask (no brief yet); for a round ask, the ledger's `ASKED` and `ANSWERED` lines (`run-record.md` § Ledger entries) |
+| a status-quo default | **If unanswered:** nothing launches; the run waits at `<step>` |
+
+If the skill is listed but fails to load, use the plain list below. An ask raised as the
+plain list stays a plain list until it is answered, even if the skill becomes listed
+meanwhile.
+
+### Without the skill
+
+A plain lettered list in prose, last in the message, never a dialog:
+
+1. the question in one line, then the window reading;
+2. one line per option in letter order — `(b) standard — cost: …; buys: …` — the
+   recommended one in bold and never moved first;
+3. `(z) decide later — <what waiting costs>`;
+4. `Recommended: (<letter>) — <reason> · unknown: <what is not known>`.
+
+### The intensity ask's options
+
+One option per preset the quota table (§ The quota read) permits, in preset order (`quick`,
+`standard`, `deep`, `exhaustive`) and lettered in that order, plus the deferral option when the
+table offers one — "run `<preset>` after the five-hour window resets (`<local time>`)" — and
+`(z)` last. The recommendation keeps its letter and its place.
+
+- **A preset the table rules out** is left off, and the card's **What:** line names it with
+  the reading.
+- **One preset left.** When the table leaves one preset (a 5h ≥ 90% reading, say), the case
+  is obvious and not asked: state it in one line, with the reading and the reset time.
+- **The 7d ≥ 90% override.** The presets above `quick` stay on the card, each marked as an
+  override, with the reading; each such option says that picking it needs the word override
+  (`c, override`). An answer naming a preset the table rules out, without an
+  override in so many words, is echoed with the rule and re-asked.
+
+Each option carries two parts:
+
+- **Cost**: the preset's part of the cost line (§ Presets): `~<n> lanes on <model>, ≤<n>
+  rounds, ~<multiple>× a chat turn, ~<minutes>`. The window reading is written once — on the
+  card's **What:** line, or after the plain list's question — not per option.
+- **Benefit for this question**, a forecast in the orchestrator's words, in four facets:
+  - *lanes*: which of the draft sub-questions get a lane of their own, which share one, and
+    which the orchestrator answers inline;
+  - *round 2*: whether a second round runs at this preset, from § Presets' round cap,
+    `research` Step 7's gap gate and `research-deep` Step 7;
+  - *verifier*: the sample § Profiles' `research-verifier` row gives the preset;
+  - *what stays thin*: the sub-questions with no lane of their own, and the claim kinds
+    likely to rest on one source at this preset.
+
+The sub-questions are drafted in context at `research` Step 3 from Step 1's scope, with no
+search and no tool call, and are provisional: recon may reshape them, and Step 5 writes the
+real list.
+
+- **Recommendation**: by § When to ask's rules — the default preset, the quota table, and a
+  `kb` shape weighing toward a deeper one.
+- **Basis**: per the decisions skill's evidence rule. The costs are § Presets' estimates and
+  the benefit is a forecast, so it is usually `partial`, and the reason says so.
+- **Unknown**: the sub-questions are provisional until recon, and the search budget may run
+  out (§ The search budget).
+- **(z)**: "Decide later — nothing launches and nothing is spent. The run is parked at Step 3
+  and re-asked when you next mention it. With no brief yet, it is lost if this session ends."
+
+An illustration, invented, of the content only (rendering is the decisions skill's): the
+question "which self-hosted vector stores support hybrid search?", sub-questions 1 support,
+2 query performance, 3 licence, 4 operational maturity.
+
+| Option | Cost | Buys for this question |
+|---|---|---|
+| (a) `quick` | ~0–1 lanes, ≤1 round, ~1–4×, minutes | 1–4 answered inline; no round 2; no verifier (answered in the reply; 4 if written to disk); thin: 2 and 4 on vendor pages |
+| **(b) `standard`** | ~5 lanes on sonnet, ≤2 rounds, ~5–8×, 15–30 min | 5 lanes: two on 2 (benchmarks, issue trackers), one each for 1, 3, 4; round 2 only on a gap; verifier samples 12; thin: 4, on one lane |
+| (c) `deep` | ~10 lanes on sonnet, ≤3 rounds, ~15–20×, 45–90 min | 10 lanes: three each on 2 and 4, two each on 1 and 3; round 2 expected; verifier 20; thin: little |
+| (d) `exhaustive` | 15+ lanes, ≤3 rounds, ~30×+, hours | 15 lanes: four each on 2 and 4, three each on 1 and 3, plus an adversarial lane on 2; round 2 mandatory; verifier 30 |
+
+### The other asks' options
+
+- **The deeper-run proposal**: (a) keep the quick answer, the status quo; then one option per
+  deeper preset the fan-out test supports, each with its cost and benefit as above; (z).
+- **The refine offer** (`research` Step 2): (a) refine the prior run with `research-refine`,
+  at the preset it would inherit, with that preset's cost; (b) a fresh run, which goes on to
+  the intensity ask; (z).
+- **`research-deep`'s deferral**: (a) `standard` now; (b) `deep` after the reset at
+  `<local time>`; (z). When the table leaves one preset, it is stated as above.
+- **Round asks.** § Asking for another round's **Value** goes on the card's **If left**, and
+  its **Cost** on **A round costs**.
+  - The threads ask: (a) pull the named threads, with one option per thread subset only when
+    their values differ enough to choose between; (b) stop here — verification and synthesis
+    go on, and the threads go to `THREADS NOT PULLED` for `research-refine`; (z) "Decide
+    later — the run is parked at this gate. The round in flight, if any, finishes. Nothing new
+    launches."
+  - The verify-gate ask: (a) re-source, (b) re-run the thinnest lane, (c) ship marked; (z).
+
+  Threads are described in the orchestrator's words; nothing is quoted from a findings file,
+  which is unverified.
+- **The KB asks and `research-prune`'s rows**: the options their files give.
+
+### While it is open
+
+The ask is the last thing in the message, and the turn ends on it. Nothing the ask covers
+launches until it is answered. There is no timed default: silence never launches a fan-out
+and never skips a round. The intensity ask comes before any dispatch; a verify-gate ask comes
+when no lane is running.
+
+A threads ask can be open while the round the gap gate did launch is still running. Then:
+
+- ledger each return as it comes in, and keep the ask last and open; never read a return as
+  the answer;
+- run that round's gap gate only after the open ask is answered, and fold its threads into
+  one ask;
+- a thread pulled while its round runs launches as one more lane of that round, under its
+  round number, so the cap holds and the round's gap gate waits for every lane.
+
+The cap counts as reached only when no round is running and the gap gate of the last round
+the cap allows has run. While that round is running, a thread may still be pulled into it,
+and the ask offers that. After a `SEARCH EXHAUSTED` line, pull no web lane that would need a
+search; a local-corpus pull stays open (§ The search budget). When the cap is reached, or
+nothing is left that may be pulled, the case has one option: say in one line that the
+threads go to `THREADS NOT PULLED`. It is not asked.
+
+**A pull is priced and recorded before it launches.** The threads ask states the added
+lanes' cost as `Round <n> (running): +<k> lanes on <model>, ~<multiple>× a chat turn`, the
+multiple sized from § Presets for that many lanes: on the card it is the **A round costs**
+line, in the plain list the pull option's cost. When it is answered, take a fresh quota read
+and apply § The quota read's table, which may decline or narrow the pull and says so; print
+that line before any pulled lane launches. Then, before the lane launches, write it into the
+brief's § Lanes under the running round, mark its § Threads not pulled entry pulled
+(`run-record.md`), and size its search hint from the budget left. The ledger order is
+`ANSWERED`, then a `PLAN CHANGE` line with the printed line's figures, then `LAUNCHED`.
+
+### Reading the answer
+
+- A letter, or a preset named in words, is the operator naming a preset (rule zero).
+- With the skill, every reply form is read per its reply rules. Research's own readings:
+  `you decide` takes the recommendation, recorded as such; `drop` on the intensity ask stops
+  the run before Step 4 with nothing written; `drop` on a round ask reads as "stop here"; a
+  reply that changes the question goes back to `research` Step 1.
+- An answer that names no letter or preset, and is not one of the skill's shortcuts, is
+  echoed as the option it reads as, with that option's cost line, and the run waits for the
+  operator's next turn before anything launches. In the plain list, the echo is that line
+  plus the cost line.
+- Then print the chosen preset's full cost line (§ Presets). Without the skill, that line is
+  the echo.
+- Record the outcome: the intensity ask on the brief's `Asked:` line
+  (`run-record.md` § Intensity, quota and routing), a round ask by its `ASKED` and `ANSWERED`
+  ledger lines.
+
 ## The quota read
 
 Path: `${CLAUDE_CONFIG_DIR:-~/.claude}/statusline/sensor/<session-id>.json` — written by the
-`statusline-hub` plugin (or the `statusline` plugin when it owns the slot) on every render.
+`statusline-hub` plugin on every status-line render (installing `statusline` brings it).
 The session id is the UUID segment of the scratchpad directory named in your system prompt;
-`safe_sid` rules are in `statusline`'s `install-statusline` references. Read it with `Read`
-or `python3 -c`; the shape is:
+`safe_sid` rules are in the `statusline-hub` skill's `references/hook-contract.md` § 12,
+the hub's summary of the record's contract. Read it with `Read`
+or `python3 -I -c`; the shape is:
 
 ```json
 {"v": 1, "rate_limits": {"five_hour": {"used_percentage": 23.5, "resets_at": 1789763600.0},
@@ -95,7 +303,7 @@ absent. Then:
 
 | Reading | Do |
 |---|---|
-| 5h ≥ 75% | downgrade one preset, or offer to defer the fan-out until `resets_at` (print the local time) |
+| 5h ≥ 75% | downgrade one preset, or offer to defer the fan-out until `resets_at` (print the local time), as the deferral option of § Putting an ask to the operator |
 | 7d ≥ 90% | `quick` only unless the operator overrides in so many words |
 | 5h ≥ 90% | `quick` only; say when the window resets |
 | `resets_at` in the past | the window has reset; read it as clear and say so |
@@ -105,7 +313,7 @@ absent. Then:
 `rate_limits` may carry more windows than these two (a model-scoped weekly, for instance);
 print any that is over 75% and treat it like the seven-day one.
 
-This is a **soft** dependency: nothing here requires `statusline` to be installed. Without
+This is a **soft** dependency: nothing here requires `statusline-hub` to be installed. Without
 it the skill asks instead of reading.
 
 ## The search budget
@@ -122,24 +330,316 @@ Rules:
   fetch, and the ledger records the exhaustion;
 - local-corpus lanes cost no searches; put them in the same round as web lanes.
 
-## Routing — model and effort
+## Routing — mechanism
 
-| Role | Model | Effort | Why |
+Research routes its own dispatches, here. It is shaped like dev-cycle's routing but is a
+separate home: nothing in the `dev-cycle` skill governs a research run, and nothing here
+governs a cycle.
+
+- **Dispatch a role agent**: `subagent_type: "dev-flow:<agent>"`, one of § Profiles (or the
+  bare `<agent>` when the plugin is installed under another prefix: check the agent list in
+  your system prompt), and pass `model` on **every** call — `"sonnet"` or `"opus"`, or for
+  the synthesis fork the session's own tier, named. The file pins the effort; the per-call
+  `model` sets the model and wins over the file's. A forgotten `model` falls to the file's
+  pin, and in a `general-purpose` dispatch to the session's model, which is why the field is
+  always passed.
+- **One role and one effort per file.** `research-lane` and `research-lane-deep` are one
+  role at two efforts. An effort change is a change of file, and a change of file is a fresh
+  dispatch.
+- **Nothing is resumed into a new role.** A relaunched lane is a fresh, narrower dispatch
+  (`research` Step 6), never a SendMessage to the old one; a re-verify after a clean-up is a
+  fresh verifier dispatch, since it rescans whole files.
+- **What outranks a pin.** `CLAUDE_CODE_EFFORT_LEVEL` in the environment overrides every
+  file's `effort`, and a `maxEffortLevel` setting caps it. Leave both unset where the pins
+  should hold.
+- **Nested dispatches.** Lanes and the verifier dispatch nothing: they have no `Agent`
+  tool. A research run inside another agent routes its own dispatches by this file and
+  records them per § The work item, rule 1.
+- **Not loaded:** § Fallback.
+
+## Profiles
+
+The agents a research run dispatches, each file one role at one pinned effort. The pin cell
+opens with the file's own `<model> / <effort>`; the per-call `model` moves it as the cell
+says. `plugins/dev-flow/tests/test_agents.py` holds every row to its file.
+
+| Agent | Pin: model / effort | Dispatched when |
+|---|---|---|
+| `research-lane` | sonnet / medium; `model: opus` on the call for a later-round lane that closes gap condition 4, or for a lane the invocation names a stronger model for; `model: opus` for the adversarial lane when § Below the quota reserve or § Fallback steps it down | every lane of `research`, `research-deep`, `research-refine` and `deep-investigation` |
+| `research-lane-deep` | opus / high | the adversarial lane (`a<n>-…`) of an `exhaustive` run, in round 2 (`research-deep` Step 5) |
+| `research-verifier` | sonnet / low | every verification: a quick run written to disk (sample 4), `standard` (12), `deep` (20), `exhaustive` (30), a `deep-investigation` run (20), and a re-verify after a clean-up; and every script review at the toolkit gate (`run-record.md` § The toolkit gate) |
+| `scout` | sonnet / medium; `model: opus` on the call when the invocation names a stronger model | each `chain-of-verification` Step 4 batch: codebase, general knowledge, or one of each in mixed mode, at 5-8 questions a batch |
+
+- **Signals.** Every signal a row names is one the run can check: the preset, the round,
+  the gap condition's number (`research` Step 7), the lane id's `a` prefix, or a model the
+  invocation names. Gap condition 4 is "a lane returned 'could not determine' on something
+  the decision depends on"; its relaunch on opus gives a cheap pass that could not determine
+  one stronger pass. A named model follows the operator's words, never the model's.
+- **No research agent runs on haiku or fable.** The verifier moved off haiku on the record
+  of its ten real runs (verdicts given for sources never opened, sheets whose counts
+  disagree with their tables) and the published record (Haiku 4.5 is lenient on factual
+  support, takes no effort parameter, and is the only Haiku, retiring not sooner than
+  October 15, 2026). `low`, not `medium`: the verifier runs a fixed procedure over a sample.
+  The same holds for its two security jobs — judging the scanner's flags (`benign mention`
+  or `instruction-shaped`) and the toolkit gate's script review — since each is a checklist
+  with a hold-when-in-doubt default, and a false hold costs one mining round. Revisit the pin
+  if a script review or a flag verdict is found wrong.
+  A fable session's synthesis fork is § Dispatches outside the profiles'.
+- **`research-lane-deep`'s pin is set from the role,** not from runs: breaking an answer is
+  judgement, the kind dev-flow runs at opus high, and no `exhaustive` run has happened yet.
+  Revisit it after the first ones, found by their `dispatch: research-lane opus high` lines.
+  Toolkit and mining lanes stay on `research-lane`; a stronger pass is `model: opus` on the
+  call.
+- **`scout` is dev-cycle's role file, shared.** Its pin is held in step with both tables by
+  the test; a change to its pin is a change to both rows.
+- **The orchestrator** — this session — plans, recons and synthesizes at the session's model
+  and effort: decomposition, criteria and synthesis gate everything downstream, and recon
+  changes the plan, so it happens in the context that holds the plan. Published guidance
+  agrees: orchestrator on the dear tier at high effort, workers on a cheap tier at low or
+  medium; a model upgrade buys more than a token-budget increase.
+
+**Print the Profiles rows you used into the brief**, with any step-down or fallback.
+Effort is the largest silent lever on both wall clock and usage, and a run that took three
+hours must be explicable afterwards. Effort is pinned in the agents' frontmatter, not in
+prompts: prompts get paraphrased, frontmatter does not.
+
+## Dispatches outside the profiles
+
+| Dispatch | Agent and model | Effort | Why |
 |---|---|---|---|
-| Orchestrator (this session) | the session's — opus or fable | the session's, high | decomposition, criteria and synthesis gate everything downstream; a weak plan is unrecoverable |
-| Recon | the orchestrator itself | — | recon changes the plan, so it has to happen in the context that holds the plan |
-| Research lane | `research-lane` agent — sonnet | medium (pinned in the agent) | reads a lot, writes ≤300 lines to a fixed shape; not where the dear model earns its keep |
-| Adversarial lane (`exhaustive`) | `research-lane` with `model: opus` on the call | medium | breaking an answer needs more judgement than gathering one |
-| Verifier | `research-verifier` agent — haiku | low (pinned) | mechanical: open the URL, does it say that |
-| Synthesis | the orchestrator, or a fork of it | high | the one pass that cannot be parallelised |
+| Orchestrator, recon, the quick-run answer | this session | the session's | no dispatch |
+| Synthesis fork (`research` Step 9; `research-deep` Step 9) | `general-purpose`, `model:` the session's own tier, named (`sonnet`, `opus` or `fable`) | `inherit` | the orchestrator's own pass, moved to a fork only for context room; no file pins the orchestrator's effort, and the fork must keep it |
+| POC break-out (`deep-investigation` Step 8.4) | not routed here | — | each POC is an `investigate`-format spec, which is build work: it leaves the run and is carried by `dev-cycle` or `implement`, under their own routing. The run records no dispatch for it; its record ends at the synthesis |
+| `research-prune` | — | — | dispatches nothing |
 
-Effort is pinned in the agents' frontmatter, not in prompts: prompts get paraphrased,
-frontmatter does not. The per-call `model` on `Agent` overrides the frontmatter when a run
-needs it (the adversarial lane; a lane on a restricted corpus the operator wants on a
-stronger model). **Print the routing table you used into the brief** — effort is the largest
-silent lever on both wall clock and usage, and a run that took three hours must be
-explicable afterwards.
+The `general-purpose` row is recorded with effort `inherit` (§ Recording).
 
-Published guidance and the operator's own dev-cycle routing agree: orchestrator on the dear
-tier at high effort, workers on a cheap tier at low or medium; and a model upgrade buys more
-than a token-budget increase.
+## The work item
+
+A research run that dispatches an agent records its dispatches on a work item, where a
+spend reader can join them by agent id. The run's orchestrator decides which item, once,
+before its first dispatch.
+
+### Which item
+
+The first rule that matches wins:
+
+1. **The run's orchestrator is a sub-agent** — the run started from an Agent-tool prompt (a
+   planner's `/investigate`, a librarian's spike, any dispatched agent). The run files
+   nothing and writes its lines to its state file's `## Record`, **even when `--item` names
+   an item**. Why: the item's own orchestrator is its single writer, and the run's spend is
+   already counted under its parent's `agent:` line, since a spend reader counts nested
+   transcripts under their parent; a second listing would double it. A librarian's research
+   is always this rule.
+2. **The invocation names an item** — `--item <id>`, passed by the operator or a calling
+   process — or a resumed run's state file names one. Record onto it, file nothing, and
+   never close it: its owner does. A named item with no store or no `wi` resolving (below)
+   falls to rule 4.
+3. **A store and `wi` resolve (below).** File one (§ Filing). Every skill that dispatches
+   files: `research`, `research-deep`, `research-refine`, `deep-investigation` and
+   `chain-of-verification`, model-invoked runs included.
+4. **Otherwise** — no store, or no `wi`. Write the state file's `## Record`. Never run
+   `wi init`; say once that the run has no work-item store, or, with a store and `no wi
+   found`, that `work-items` is not installed, so no item was filed or updated.
+
+So a run records on no item in two cases only: inside a sub-agent (rule 1), or with no store
+or no `wi` (rule 4). Where a rule says `## Record` and the run has no state file (a quick
+run to disk; `chain-of-verification`), the lines go in the report instead: `research`'s
+`COST` field carries `record: none (<reason>)` followed by the lines, `; `-separated, and
+`chain-of-verification`'s Verification Summary carries its `Record:` line.
+
+A run that dispatches nothing (a quick answer in the reply, `research-prune`) records
+nothing.
+
+### Stored names
+
+Each name below is defined here and only here; a rename is an edit to this table and to the
+lines that quote it.
+
+| Name | What it is |
+|---|---|
+| `research-run` | the tag on every item a run files |
+| `item: <id> \| none — <reason>` | the brief's frontmatter field naming the run's item (`Item:` in a strategy doc's opening paragraph); beside it, `wi:` (the resolved command) and `item_file:` (the item's absolute path) when there is an item |
+| `## Record` | the state file's section just above its ledger, used when the run records on no item: a sub-agent run, or no store |
+| `--item <id>` | the argument that names an existing item (rule 2) |
+| `synthesis` | the role word on a synthesis fork's `dispatch:` line |
+| `Record:` | `chain-of-verification`'s Verification Summary line, `- Record: item <id>` when the run filed or named one, else `- Record: none (<reason>) — <dispatch lines>`, the lines one per batch and separated by `; ` |
+
+### Filing
+
+When:
+
+| Skill | Files the item |
+|---|---|
+| `research`, `research-deep`, `research-refine` | after `00-brief.md` is on disk (`research` Step 5.5), before Step 6; a quick run that writes to disk files at Step 4, before its verifier |
+| `deep-investigation` | after `00_research-strategy.md` is on disk (its Step 4), before the first lane |
+| `chain-of-verification` | after Step 3 classifies the mode, before the first Step 4 batch |
+
+```bash
+$WI add "<research: … | deep investigation: … | chain-of-verification: …> <the question or subject, in your words>" -t spike \
+    --tag research-run --short-display-name "<3-6 word noun phrase, ≤ 40 chars>" \
+    --ref <brief, strategy doc or destination path; none for chain-of-verification> \
+    --desc "<the decision it feeds; the preset; the destination — chain-of-verification: the subject and its mode>"
+$WI claim <id>
+$WI handoff <id> --doing "<run> running" --next "report and close"
+```
+
+The handoff keeps `$WI lint` clean while the run is open.
+
+- **Type `spike`**: a research run produces knowledge, not code. **Tag `research-run`**
+  keeps these items separable from plan spikes in any spend population. Priority is `wi`'s
+  default.
+- **The id goes into the run's state file** — the brief's `item:` field, the strategy doc's
+  `Item:` line; `none — <reason>` when there is no item. With an item (filed or named),
+  write beside it the resolved command, `wi: python3 <absolute wi.py> --root <absolute
+  WI_ROOT>`, and the file the record lines are appended to, `item_file: <WI_ROOT>/items/<id>.md`:
+  shell variables do not survive between Bash calls or into a wakeup or a resumed session,
+  and these lines do. A resumed run reads them and never files a second.
+- A `research-refine` run's item carries `--ref wi:<prior run's item>` when the prior brief
+  names one.
+
+### Resolving the store
+
+From the working directory, the main checkout's `.claude-sandbox/work/`, then `.work/`; the
+first that holds `items/` is the store. `wi` comes from the repo's own tree when it carries the
+`work-items` plugin, else from the installed plugin:
+
+```bash
+MAIN=$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null) && MAIN=${MAIN%/.git} || MAIN=$PWD
+for d in "$MAIN/.claude-sandbox/work" "$MAIN/.work"; do test -d "$d/items" && { export WI_ROOT="$d"; break; }; done
+WI_PY=$(ls "$MAIN"/plugins/*/skills/work-items/scripts/wi.py 2>/dev/null | head -1)
+P="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/plugins"
+test -n "$WI_PY" || WI_PY="$(python3 -I -c 'import json,sys; print(json.load(open(sys.argv[1]))["plugins"]["work-items@kmacmcfarlane"][0]["installPath"])' "$P/installed_plugins.json" 2>/dev/null)/skills/work-items/scripts/wi.py"
+test -f "$WI_PY" || WI_PY=$(ls -t "$P"/cache/kmacmcfarlane/work-items/*/skills/work-items/scripts/wi.py 2>/dev/null | head -1)
+if test -f "$WI_PY"; then WI="python3 $WI_PY"; echo "$WI"; else WI=no-wi-found; echo "no wi found"; fi
+```
+
+The last line binds `WI` to `python3` only when `wi.py` exists; on a miss it prints `no wi
+found` and binds a name that is no command, so a `$WI` call fails with exit 127 and never
+runs a bare `python3`. The install-record read runs `python3 -I`, so a `json.py` in the
+working directory is never imported.
+
+Rule 4's test is `test -n "$WI_ROOT" && test -f "$WI_PY"` after the snippet (`no wi found`
+fails it): when it fails, rule 4, and no `wi` command runs. Run the snippet once, at the
+record's opening, and from then on use the `wi:` and `item_file:` lines the state file
+carries (with no state file — a quick run, `chain-of-verification` — re-run the snippet in
+each Bash call that needs `wi`, and carry the item id in the conversation). This snippet
+restates the `dev-cycle` skill's store resolution in research's own home, by the operator's
+ruling that the research skills stay separate from dev-cycle; a change to `wi`'s install
+path touches both.
+
+### Closing
+
+At the run's report (`research` Step 11, `deep-investigation` Step 8,
+`chain-of-verification` Step 6), on an item the run filed only:
+
+| Status | Do |
+|---|---|
+| `DONE` / `DONE_WITH_CONCERNS` | `$WI done <id> --note "<run> <STATUS>: <n> lanes, <n> rounds, verifier <gate> <supported>/<sampled>; <destination>"` |
+| `HELD` | `$WI block <id> "held: security concern; <held path>"` |
+| `BLOCKED` | `$WI block <id> "<the reason, in your words>"` |
+| `deep-investigation` done | `$WI done <id> --note "deep investigation: <n> lanes, <n> waves, verifier <gate> <supported>/<sampled>; <series path>"`, plus `; held <lane ids> at <held path>` when its Step 6.5 held any |
+| `chain-of-verification` done | `$WI done <id> --note "CoVe <VERIFIED\|CORRECTED\|PARTIAL>: <n> claims checked, <consistent>/<contradicted>/<unverified>; <n> batches"` |
+
+A run that stops mid-way leaves its item `doing`, and the stale claim shows in `wi next`. A
+held run's item stays blocked until `research-refine` cleans the run; that refine run files
+its own item with `--ref wi:<held item>`, and then closes the held item with a note naming
+the new one.
+
+### What the item holds
+
+- **Only** the `dispatch:` and `agent:` lines (§ Recording), appended to `item_file:`, the
+  handoff, the closing note, and the filing's title, description, tag and refs. The brief and its ledger stay the run's state
+  and rehydration point; the findings, verification sheet and synthesis stay in staging and
+  at the destination.
+- **Every word on the item is the orchestrator's** — ids, counts, models, efforts, paths,
+  status. Never a lane's or a source's words (the ledger's rule, `run-record.md`), and never
+  a secret. Run `$WI lint` after a hand edit.
+- **No dev-cycle phase or budget lines.** A research run writes no `return:`, `verdict:`,
+  `target:`, `decision:`, `answer:`, `budget:` or `cost:` line, and reads no `budget:`:
+  those move or bound a cycle, and an item named by `--item` may also carry a cycle's record.
+  On such an item the run's `agent:` lines count in the open phase's spend, as every agent
+  line on an item does (the `dev-cycle` skill's spend check), so a named item's owner sees
+  the research it asked for in its next `cost:` line.
+- **The item file is the run's one tracked write besides its destination.** The run never
+  commits it; the report's `LANDED` names it (`item <id>`; `chain-of-verification`: its
+  `Record:` line).
+
+## Recording
+
+**Before each Agent call**, write one line to the record sink — appended to the item's
+`item_file:` (§ The work item); else at the end of the state file's `## Record`, by an edit
+above the ledger, never a `>>` to the file; else in the report:
+
+```
+dispatch: <role> <model> <effort> — <signal>
+```
+
+| Field | Values |
+|---|---|
+| `<role>` | `research-lane` (both lane files), `research-verifier`, `scout` or `synthesis` |
+| `<model>` | the per-call model |
+| `<effort>` | the dispatched file's pin, so `research-lane high` is `research-lane-deep`; or `inherit` for a `general-purpose` dispatch |
+| `<signal>` | the preset, round and lane id (`deep-investigation`: its wave and lane id); or the gap condition, the sample, `script review <toolkit lane id>`, or the fallback or step-down reason |
+
+**As each call returns its agent id**, append `agent: <role> <id> round <n>`, where `<n>` is
+a lane's run round (1-3; a `deep-investigation` lane's wave), the verifier's pass (1, then 2 on a re-verify after a clean-up),
+1 for the fork, 1 for a `chain-of-verification` batch, and for a script review at the
+toolkit gate the round of the toolkit lane it reviews. A round's lanes launch in one
+message: write all their `dispatch:` lines in one append before it, then their `agent:`
+lines as the ids come back.
+
+```
+dispatch: research-lane sonnet medium — standard round 1 w1-vendor-docs
+agent: research-lane a1b2c3d4e5f60718 round 1
+dispatch: research-lane opus medium — round 2 gap 4 w6-pricing
+dispatch: research-lane opus high — adversarial (exhaustive) round 2 a1-break-answer
+dispatch: research-verifier sonnet low — verify sample 30
+dispatch: research-verifier sonnet low — script review l1-log-toolkit
+dispatch: synthesis opus inherit — fork (findings over 2,500 lines)
+dispatch: research-lane sonnet medium — deep-investigation wave 1 b2-landscape
+dispatch: research-verifier sonnet low — deep-investigation verify sample 20
+dispatch: scout sonnet medium — cove general batch 1 of 2
+dispatch: research-lane opus medium — adversarial (exhaustive) round 2 a1-break-answer; dev-flow:research-lane-deep not loaded
+```
+
+Each line is one physical line, unindented, in the orchestrator's words. The lane prompt's
+model mention is unchanged, so the transcript and the record agree.
+
+## Below the quota reserve
+
+A run is below the reserve when the weekly window is spent down to the operator's reserve:
+`windows.seven_day.headroom` ≤ 0 from the `librarian-mode` skill's
+`scripts/quota_budget.py --read-only` (dev-flow's quota sense). Read it once, before the
+round that would dispatch `research-lane-deep`. No script, or no signal, reads as not below.
+
+§ The quota read (the sensor record's five-hour and weekly percentages) sizes the preset;
+§ Below the quota reserve (the quota sense's weekly headroom) steps down only the deep lane
+file.
+
+| What would run | Below the reserve |
+|---|---|
+| `research-lane-deep` (the adversarial lane) | `research-lane` with `model: opus`, recorded `dispatch: research-lane opus medium — adversarial (exhaustive) round 2 <id>; stepped down (below the quota reserve)` |
+| A lane model the invocation names | runs as named: the operator's words are the pin; the cost line carries the reading |
+| `research-lane`, `research-verifier`, `scout`, the synthesis fork | unchanged |
+| The preset | unchanged here: § The quota read's table sizes it (a 7d ≥ 90% reading is `quick` only) |
+
+A step-down is not a hold: the run goes on.
+
+## Fallback
+
+**Not loaded** means `dev-flow:<agent>` is missing from the session's agent list, or a call
+naming it fails as an unknown agent type — typically after a plugin update without a
+restart. Nothing here is asked: research has no operator effort pin to protect.
+
+| Not loaded | Dispatch instead | Recorded |
+|---|---|---|
+| `research-lane-deep` | `research-lane`, `model: opus`: the step-down's shape, and the best pinned file left | `dispatch: research-lane opus medium — …; dev-flow:research-lane-deep not loaded` |
+| `research-lane` or `research-verifier` | `general-purpose`, the routed `model`, with the agent file's body pasted as the prompt's first section | `dispatch: <role> <model> inherit — …; dev-flow:<agent> not loaded`, plus a ledger line |
+| `scout` (`chain-of-verification`) | `general-purpose`, the routed `model` | `dispatch: scout <model> inherit — …; dev-flow:scout not loaded` |
+
+- **Say it once** in the report's `CONCERNS` (`chain-of-verification`: its Summary): "role
+  agents not loaded; update dev-flow and restart".
+- **A usage-limit error** (HTTP 429, "out of usage credits") on a dispatch is not a
+  fallback: the lane is `FAILED` per `research` Step 6, with the reset time in its ledger
+  line. No research dispatch is pinned to fable, so there is no fable row.

@@ -258,7 +258,9 @@ In both modes:
 - **Delegate context-heavy work to subagents** — long logs, broad exploration, mechanical
   edits across many files. Keep your context for the plan and the diff.
 - **An in-scope issue the investigation missed** is neither silently fixed nor silently
-  ignored: surface it via `AskUserQuestion` and let the user decide whether it belongs here.
+  ignored: surface it per the `investigate` skill's § Asking at a gate — a fan-out task or
+  delegated subagent whose return is not yet folded in is running — and let the user decide
+  whether it belongs here.
 
 ---
 
@@ -350,8 +352,12 @@ Commit hygiene:
 
 When the repo has a work-item store (`.work/` or `.claude-sandbox/work/`) and this run
 implements a claimed item: `wi done <id> --note <sha-or-branch>` on completion, or
-`wi handoff <id> --doing … --next …` when the run ends with the item still open. A repo
-without a store: skip silently. This is the only step that closes an item — nothing else does.
+`wi handoff <id> --doing … --next …` when the run ends with the item still open. `wi` is the
+command the `dev-cycle` skill's `references/bindings.md` § Store snippet prints, dev-flow's
+canonical copy of the lookup. When it prints `no wi found`, `work-items` is not installed: run no
+`wi` command, and the report says `item <id> not updated: work-items is not installed`. A
+repo without a store: skip silently. This is the only step that closes an item — nothing
+else does.
 
 ### 10b — Write the outcome
 

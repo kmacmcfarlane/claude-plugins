@@ -2,7 +2,7 @@
 
 Measured from a real 1M-token session that filled its window twice (`design-rationale.md`
 has the full numbers). The short version: **the window was not filled by tool output. It was
-filled by the assistant's own output, most of it hidden reasoning, plus harness overhead the
+filled by the assistant's own output, most of it hidden noodle notes, plus harness overhead the
 operator never sees.** Fixing that is mostly about session *shape*, not about reading fewer files.
 
 ## The numbers that matter
@@ -20,38 +20,69 @@ operator never sees.** Fixing that is mostly about session *shape*, not about re
 | Harness attachments per fill (hooks, diffs, listings) | ~105K tokens | as much as all tool output; audit with `context_forensics.py` |
 
 **The gate thinks in remaining tokens, not percent.** Advisories at 60/75% used; **DUE** when
-~150K tokens remain (1M window; 70K on 200K) — finish things, run `/checkpoint`; **HARD** at
-60K/40K left — on an *exact* depth (a fresh status-line reading) or a *derived* one (the
-window mirrored from Claude Code's own selection logic, every input observed — including,
-above 200K, that this Claude Code process has not hit the long-context credits limit) the gate blocks
+~150K tokens remain (1M window; 70K on 200K) — finish things, run
+`/context-guard:checkpoint`; **HARD** at 60K/40K left — on an *exact* depth (a fresh
+status-line reading) or a *derived* one (the window derived from documented and observed
+rules (`hooks/window_rules.py`), every input observed — including, above 200K, that this
+Claude Code process has not reported the usage-credits error for 1M context) the gate blocks
 every prompt until a checkpoint records; on an *inferred* depth, or a derived one it could not
 fully resolve, it only warns, because the real window may be larger than the guess — and
 that warning keeps the DUE cadence (first time, then every 3 prompts or 25K tokens), so a
 quiet stretch is not an all-clear. The whitelist that passes a blocked prompt through is
 `/checkpoint`, `/compact` and `/clear`, bare or plugin-prefixed (`/context-guard:checkpoint`).
-Under ~20K left (`CHECKPOINT_MIN_TOKENS`) the HARD advice, blocking or not, drops `/checkpoint`
-for `/clear` (the work is on disk) or `/compact <guidance>`, since a checkpoint no longer fits;
+Under ~20K left (`CHECKPOINT_MIN_TOKENS`) the HARD advice, blocking or not, drops
+`/context-guard:checkpoint` for `/clear` (the work is on disk) or `/compact <guidance>`, since
+a checkpoint no longer fits;
 when the gate blocks does not change. All of it resets per epoch (each compaction or `/clear`). The gate also warns against the
 auto-compact window when one is set below the model window (`/autocompact`,
 `CLAUDE_CODE_AUTO_COMPACT_WINDOW`, a valid `autoCompactWindow` of 100000–1000000), because that
-is where Claude Code compacts. **The auto-compact window is advisory: the gate warns there but never hard-stops there on
-Claude Code 2.1.277.** A hard stop at it would need every settings layer that can set or
-cancel it to be read, and one of them never can be: server-managed (remote) policy. Whether an
-account gets it depends on account data the gate never reads, and it may be kept in Claude
-Code's storage backend rather than in `remote-settings.json`. The other conditions, all of
-which would also keep it advisory on their own: `"autoCompactEnabled": true` must be set in a
-settings file (without it Claude Code may take the value from its legacy global config); no
+is where Claude Code compacts. **The auto-compact window is advisory: the gate warns there but never hard-stops there.**
+A hard stop at it would need every settings layer that can set or cancel it to be read, and
+one of them never can be: server-managed settings, which Claude Code fetches from Anthropic's
+servers at startup and hourly (docs: server-managed-settings), so a hook cannot know what
+they will hold. The other conditions, all of which would also keep it advisory on their own:
+`"autoCompactEnabled": true` must be set in a settings file the gate reads (its documented
+default is `true`, but a managed layer may set it, so the gate asks for it explicitly); no
 policy tier may be present — a `managed-settings.json`, a `managed-settings.d/` drop-in, a
-`remote-settings.json`, an MDM profile (macOS, Windows), or `CLAUDE_CODE_MANAGED_SETTINGS_PATH`
-set; no `--settings`, `--setting-sources`, `--managed-settings`, `--autocompact` or similar
-flag on the `claude` command line and not an SDK session; and the `claude` process the hook
-runs under must be verified (its binary, and its own session-registry entry).
-The gate recognises its own `claude` by the `CLAUDE_PID` Claude Code gives every hook. A
-`claude` started from another session's Bash tool is never verified: it does not register,
-and it is never matched to the outer session. So in it any derived window above 200K and any
-auto-compact window only warn. The hard stop
+`remote-settings.json`, or an MDM profile (macOS, Windows); no `--settings`,
+`--setting-sources`, `--autocompact` or `--input-format` flag on the `claude` command line;
+and the `claude` process the hook runs under must be verified (its executable, and its own
+session-registry entry).
+The gate recognises its own `claude` by the `CLAUDE_PID` Claude Code gives every hook
+(docs: env-vars). A `claude` started from another session's Bash tool is never matched to
+the outer session: it writes its own registry entry (observed on Claude Code 2.1.286) and
+its hooks carry its own `CLAUDE_PID`, so it is verified as itself or not at all. The hard stop
 near the model window is unaffected. The compaction gate never uses the derived or
 auto-compact window: it defers only on the depth it used before the window mirror.
+
+**Automatic compaction waits for a full window.** Claude Code also starts an automatic
+compaction when a session sits idle, at any fill: observed from transcripts on Claude Code
+2.1.292, the idle attempts arrived about 54 minutes after the last turn ended. The
+compaction gate defers every automatic attempt while more than the DUE line remains
+(~150K on 1M, 70K on 200K), so an idle session is not compacted at 30% or 80% fill. Before
+a checkpoint this epoch it always does; after one, only while the session is idle at its
+last measured fill — no prompt or tool result in the transcript since the last response
+that reported usage. Input since then may have overflowed a fill the gate never saw (a
+batch of large reads, or a model switch that leaves a 1M guess on a 200K model), so after
+a checkpoint that attempt goes through; an unreadable transcript counts as input pending.
+At or under DUE it defers until a checkpoint records this epoch, then lets the next attempt
+through. At or under HARD it always lets it through, checkpoint or not, because a
+compaction that late may be Claude Code recovering from a full window, and blocking that
+one fails the request in flight. An unknown depth always lets it through. Manual
+`/compact` is never touched. The stop relay, the end-of-turn message that asks the model
+to checkpoint, fires only at or under DUE, once per epoch: a deferral above DUE relays
+nothing.
+
+Two caveats. Without any status-line reading for the session, the depth is inferred from
+the transcript, and the window is guessed at 200K until the session passes ~190K. On a 1M
+model DUE and HARD are then measured against 200K: an idle attempt at ~130K–160K is held
+until a checkpoint and let through after one, and one at ~160K–190K is let through with or
+without one. A stale reading still sets the real window. With the `statusline-hub` plugin
+recording the status line, the gate measures against the real window. And when the
+auto-compact window is lowered (`/autocompact 900k`), Claude Code's own attempt at that
+window is measured against the model window like any other: at 900K of 1M, 100K remains,
+which is at or under DUE, so it is deferred until a checkpoint records, and an attempt past
+HARD, the only place a recovery can arrive, is still let through.
 
 **Inside a turn** the prompt gate cannot speak, so a check runs after every tool call
 (main thread only; a subagent's calls are skipped). It never blocks, and it is **silent
@@ -92,7 +123,7 @@ reads as 900, which Claude Code raises to its 100K floor, and the gate then scor
 
 1. **One workstream per session — one stage, in a skill chain.** Investigate in one session,
    write the result to disk, implement in a fresh one; whenever the next skill reads its
-   inputs from files this session already published, `/checkpoint handoff` at that boundary
+   inputs from files this session already published, `/context-guard:checkpoint handoff` at that boundary
    regardless of window health. A session that spans two repos will accumulate two repos'
    worth of context.
 2. **Rename at the start, clear at the end.** Named sessions are branches; `--resume` is
@@ -100,7 +131,7 @@ reads as 900, which Claude Code raises to its 100K floor, and the gate then scor
 3. **Delegate reads, keep writes.** Anything that would return more than a screen goes to a
    subagent; the main session stays single-threaded on writes (this is also what the
    multi-agent literature converged on).
-4. **Write as you go.** Investigation serials, `INDEX.md`, commit messages with the reasoning.
+4. **Write as you go.** Investigation serials, `INDEX.md`, commit messages with the noodle notes.
    The compaction survivors in the measured session were exactly the things already on disk.
 5. **Don't switch models mid-thread.** Do it at a boundary.
 6. **Trim fixed overhead.** Every start pays for CLAUDE.md, rules, skill descriptions, MCP tool
@@ -120,11 +151,18 @@ When the depth warning fires, answer these before touching anything:
 3. **Which repo owns each of those?** Working in one repo on another repo's problem is fine;
    leaving the knowledge there is not.
 
-Then `/checkpoint <mode>`. The ledger (`~/.claude/claude-kit/ledger/<session>.md` — a
-historical directory name, kept across the move into `context-guard`) has been collecting decisions as you worked — the checkpoint is a delta, and after compaction the
-ledger, and the manifest when this session owns it (the format spec's "Whose memory it is"
-in `references/handoff-format.md`), are re-injected and outrank the machine summary (current repo state — git
-log, the work-item store — outranks the manifest).
+The checkpoint drafts its own Step 0 answers (mode, what is in flight, the window), acts on
+them and echoes them in one line of its close; change any with the reply line it prints; it
+asks first only at a fork.
+
+Then `/context-guard:checkpoint <mode>` (namespaced: the bare name can resolve to a built-in
+command of the same name instead of this skill). The ledger
+(`~/.claude/claude-kit/ledger/<session>.md` — a historical directory name, kept across the
+move into `context-guard`) has been collecting decisions as you worked — the checkpoint is a
+delta, and after compaction the ledger, and the manifest when this session owns it (the
+format spec's "Whose memory it is" in `references/handoff-format.md`), are re-injected and
+outrank the machine summary (current repo state — git log, the work-item store — outranks
+the manifest).
 
 ## Where the manifest lives
 
@@ -215,9 +253,8 @@ The gate state gives the epoch and a depth, but **stores no source label** — t
 derived when the gate reads the file. The status line writes an `exact` block (`pct`,
 `tokens`, `window`, `at`) to its sensor file, `statusline/sensor/<session>.json` (written
 by the `statusline-hub` plugin, which installing `statusline` brings; absent when it is not
-installed). An older install whose status line
-still runs context-guard's deprecated copy writes the block into the gate state instead; the
-gate reads both and takes the one with the larger `at`. That block counts as *exact* only
+installed). The gate reads only that file; an `exact` block an older status line left in
+the gate state is ignored. The sensor file's block counts as *exact* only
 while `now - at` is under 600s, and once it goes stale the depth is re-derived from the
 transcript and is *inferred* (or
 `inferred, window from status line`, the literal the gate messages print when a stale block
@@ -234,8 +271,8 @@ Code's launch environment turns derivation off.
 (Moved here from the installer skill when the status line became its own plugin,
 `statusline`: this is gate content.)
 
-A hard block needs a fresh exact reading or a resolved derived window (the mirror of Claude
-Code's own window selection); an inferred depth or an unresolved derived one only warns. So a
+A hard block needs a fresh exact reading or a resolved derived window (from the documented
+and observed window rules); an inferred depth or an unresolved derived one only warns. So a
 wrong block means a fresh-but-wrong record, e.g. one written just before a compaction, or a
 derived window that drifted from a newer Claude Code (the block message names the source:
 `derived`; with a sensor record from `statusline-hub` a drift is caught, logged to
@@ -248,7 +285,7 @@ escape hatches:
    underscores); a malformed new name never switches off a valid old-name pin — the old one
    then applies, since a pin can only remove derived blocks.
 2. Emergency stand-down: record a checkpoint for the current epoch — exactly what
-   `/checkpoint` records — with the plugin's own `mark_checkpoint.py`. It writes through the
+   `/context-guard:checkpoint` records — with the plugin's own `mark_checkpoint.py`. It writes through the
    same locked read-modify-write as every hook, so a hook firing at the same moment cannot
    drop the change (a hand-edit of the state file can). The session id names the state file
    under `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/claude-kit/context-gate/` (the newest `.json`
@@ -279,7 +316,7 @@ escape hatches:
 
 ```bash
 P="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/plugins"
-MC="$(python3 - "$P/installed_plugins.json" 2>/dev/null <<'PY'
+MC="$(python3 -I - "$P/installed_plugins.json" 2>/dev/null <<'PY'
 import json, os, sys
 es = json.load(open(sys.argv[1]))["plugins"]["context-guard@kmacmcfarlane"]
 cwd = os.path.realpath(os.getcwd())
@@ -300,4 +337,4 @@ python3 "$MC" <session_id>
 3. Turn the window mirror off: `CONTEXT_GUARD_DERIVE=off` in the environment Claude Code is
    launched from. The gate is then exactly what it was before the mirror: exact from the
    status line, else inferred (warn-only). Worth a note to the plugin maintainers: a derived
-   block that was wrong means the mirrored table needs a new Claude Code version.
+   block that was wrong means the window rules need re-checking against a newer Claude Code.

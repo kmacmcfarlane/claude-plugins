@@ -26,6 +26,13 @@ class Base(unittest.TestCase):
         self.tmp.cleanup()
         os.environ.pop("CLAUDE_CONFIG_DIR", None)
 
+    def put_exact(self, sid, block):
+        """The status line's exact block for `sid`, as its sensor record."""
+        p = L.sensor_path(sid)
+        os.makedirs(os.path.dirname(p), exist_ok=True)
+        with open(p, "w") as f:
+            json.dump({"v": 1, "exact": block}, f)
+
 
 class TestThresholds(Base):
     def test_anchors(self):
@@ -65,11 +72,12 @@ class TestEpoch(Base):
         # A record written seconds before the boundary is still fresh after
         # it; the new epoch must not inherit its tokens, only its window.
         import time
-        L.save_state("s", {"exact": {"pct": 95.0, "tokens": 950_000,
-                                     "window": 1_000_000, "at": time.time() - 300}})
+        self.put_exact("s", {"pct": 95.0, "tokens": 950_000,
+                             "window": 1_000_000, "at": time.time() - 300})
         st = L.reset_epoch("s")
-        self.assertEqual(st["exact"], {"window": 1_000_000, "at": 0})
-        self.assertEqual(L.load_state("s")["exact"], {"window": 1_000_000, "at": 0})
+        self.assertEqual(L.sensor("s", st), {"window": 1_000_000, "at": 0})
+        self.assertEqual(L.sensor("s"), {"window": 1_000_000, "at": 0})
+        self.assertNotIn("exact", L.load_state("s"))   # demoted on read, not written
         # No transcript yet (status line not re-rendered): unknown, not 950K.
         tok, win, pct, src = L.depth("/nonexistent", "s")
         self.assertEqual((tok, win), (0, 1_000_000))
@@ -91,16 +99,16 @@ class TestDepth(Base):
 
     def test_exact_preferred_over_inference(self):
         import time
-        L.save_state("s", {"exact": {"pct": 50.0, "tokens": 500_000,
-                                     "window": 1_000_000, "at": time.time()}})
+        self.put_exact("s", {"pct": 50.0, "tokens": 500_000,
+                             "window": 1_000_000, "at": time.time()})
         tok, win, pct, src = L.depth(self._transcript(100_000), "s")
         self.assertEqual((tok, src), (500_000, "exact"))
 
     def test_stale_exact_keeps_window_and_token_floor(self):
         # Live-fired 2026-09-16: exact {186454 of 1M} older than EXACT_MAX_AGE_S
         # was discarded; inference guessed 200K and HARD-blocked a 1M session.
-        L.save_state("s", {"exact": {"pct": 18.6, "tokens": 186_454,
-                                     "window": 1_000_000, "at": 0}})
+        self.put_exact("s", {"pct": 18.6, "tokens": 186_454,
+                             "window": 1_000_000, "at": 0})
         tok, win, pct, src = L.depth(self._transcript(186_454), "s")
         self.assertTrue(src.startswith("inferred"))
         self.assertEqual(win, 1_000_000)          # window never shrinks
@@ -112,8 +120,8 @@ class TestDepth(Base):
         self.assertEqual(L.depth(self._transcript(100_000), "s")[0], 186_454)
 
     def test_stale_exact_token_floor_dropped_after_boundary(self):
-        L.save_state("s", {"exact": {"pct": 95.0, "tokens": 950_000,
-                                     "window": 1_000_000, "at": 0}})
+        self.put_exact("s", {"pct": 95.0, "tokens": 950_000,
+                             "window": 1_000_000, "at": 0})
         p = os.path.join(self.tmp.name, "b.jsonl")
         rec = lambda tok: json.dumps({"type": "assistant", "message": {"usage": {
             "input_tokens": 2, "cache_read_input_tokens": tok - 2,
@@ -131,21 +139,22 @@ class TestDepth(Base):
         # /clear starts a transcript with no compact_boundary line: the
         # demoted record must not floor the count even without a boundary.
         import time
-        L.save_state("s", {"exact": {"pct": 95.0, "tokens": 950_000,
-                                     "window": 1_000_000, "at": time.time() - 300}})
+        self.put_exact("s", {"pct": 95.0, "tokens": 950_000,
+                             "window": 1_000_000, "at": time.time() - 300})
         L.reset_epoch("s")
         tok, win, pct, src = L.depth(self._transcript(30_000), "s")
         self.assertEqual((tok, win), (30_000, 1_000_000))
         self.assertLess(pct, 5)
         self.assertEqual(src, "inferred, window from status line")
-        # A record written after the boundary is exact again.
-        L.save_state("s", {"exact": {"pct": 3.0, "tokens": 30_000,
-                                     "window": 1_000_000, "at": time.time()}})
+        # A record written after the boundary (past the grace) is exact again.
+        at = L.load_state("s")["epoch_at"] + L.EPOCH_GRACE_S + 1
+        self.put_exact("s", {"pct": 3.0, "tokens": 30_000,
+                             "window": 1_000_000, "at": at})
         self.assertEqual(L.depth(self._transcript(30_000), "s")[3], "exact")
 
     def test_stale_exact_missing_transcript_still_reports(self):
-        L.save_state("s", {"exact": {"pct": 50.0, "tokens": 500_000,
-                                     "window": 1_000_000, "at": 0}})
+        self.put_exact("s", {"pct": 50.0, "tokens": 500_000,
+                             "window": 1_000_000, "at": 0})
         tok, win, pct, src = L.depth("/nonexistent", "s")
         self.assertEqual((tok, win), (500_000, 1_000_000))
         self.assertTrue(src.startswith("inferred"))
@@ -232,9 +241,9 @@ def _iso(t):
 
 class TestEpochRule(Base):
     """A transcript count belongs to the epoch its usage line was written in:
-    after PostCompact stamps epoch_at, the compact_boundary line can still be
-    in Claude Code's 100 ms write queue when the queued opener's hook scans
-    the transcript (spike bace, cases B0, S2, S3)."""
+    after PostCompact stamps epoch_at, the compact_boundary line may not have
+    reached the transcript when the queued opener's hook scans it (observed
+    in spike bace's transcripts, Claude Code 2.1.284, cases B0, S2, S3)."""
 
     def setUp(self):
         super().setUp()
@@ -390,6 +399,23 @@ class TestEpochRule(Base):
         self.assertEqual(L._epoch_cur(0, 999.0, st), (0, False))
         self.assertEqual(L._epoch_cur(950_000, float("nan"), st), (950_000, False))
         self.assertEqual(L._epoch_cur(950_000, True, st), (950_000, False))
+        # No grace for transcript counts: the line stamp is Claude Code's own.
+        self.assertEqual(L._epoch_cur(950_000, 1000.0 + L.EPOCH_GRACE_S / 2, st),
+                         (950_000, False))
+
+    def test_future_epoch_at_is_ignored(self):
+        # The clock stepped back after _reset: a cut more than FUTURE_SKEW_S
+        # ahead of now does not apply; one within the skew still does.
+        now = time.time()
+        far = {"epoch_at": now + L.FUTURE_SKEW_S + 600}
+        self.assertEqual(L._epoch_cur(950_000, now - 5, far), (950_000, False))
+        self.assertEqual(L._epoch_cur(950_000, now - 5, {"epoch_at": now + 10}),
+                         (0, True))
+        self.write(self.usage(950_000, now - 5))
+        L.save_state("s", far)
+        for mirror in (True, False):
+            with self.subTest(mirror=mirror):
+                self.assertEqual(L.measure(self.p, "s", mirror=mirror)["tokens"], 950_000)
 
 
 class TestEnvSetting(Base):
@@ -608,6 +634,52 @@ class TestMarkCheckpointCli(Base):
         self.assertEqual(p.returncode, 0, p.stderr)
         self.assertIn("checkpoint recorded for epoch 2", p.stdout)
         self.assertEqual(L.load_state("live")["checkpoint_epoch"], 2)
+
+
+
+class InputSinceUsage(Base):
+    """22b2: whether a prompt or tool result follows the last measured fill."""
+    A = {"type": "assistant", "message": {"usage": {"input_tokens": 5}}}
+    A0 = {"type": "assistant", "message": {"usage": {"input_tokens": 0}}}
+    U = {"type": "user", "message": {"content": "hi"}}
+    S = {"type": "system", "subtype": "x"}
+
+    def write(self, *recs, pad=0):
+        p = os.path.join(self.tmp.name, "t.jsonl")
+        with open(p, "w") as f:
+            for r in recs:
+                if r == "PAD":
+                    r = dict(self.S, pad="x" * pad)
+                f.write(json.dumps(r) + "\n")
+        return p
+
+    def test_idle_after_usage(self):
+        self.assertFalse(L.input_since_usage(self.write(self.U, self.A, self.S, self.S)))
+
+    def test_user_after_usage(self):
+        self.assertTrue(L.input_since_usage(self.write(self.A, self.S, self.U)))
+
+    def test_usage_without_tokens_is_not_a_measurement(self):
+        self.assertTrue(L.input_since_usage(self.write(self.A, self.U, self.A0)))
+
+    def test_missing_unreadable_or_empty_counts_as_pending(self):
+        self.assertTrue(L.input_since_usage(""))
+        self.assertTrue(L.input_since_usage(os.path.join(self.tmp.name, "nope")))
+        self.assertTrue(L.input_since_usage(self.tmp.name))   # a directory
+        self.assertTrue(L.input_since_usage(self.write()))
+        self.assertTrue(L.input_since_usage(self.write(self.S)))
+
+    def test_lines_across_chunk_boundaries(self):
+        # padding lines larger than a chunk put the usage line mid-chunk
+        p = self.write(self.U, self.A, "PAD", "PAD", self.S, pad=150_000)
+        self.assertFalse(L.input_since_usage(p))
+        p = self.write(self.A, "PAD", self.U, "PAD", pad=150_000)
+        self.assertTrue(L.input_since_usage(p))
+
+    def test_a_tail_past_the_cap_counts_as_pending(self):
+        p = self.write(self.A, "PAD", pad=200_000)
+        self.assertFalse(L.input_since_usage(p))
+        self.assertTrue(L.input_since_usage(p, max_bytes=100_000))
 
 
 if __name__ == "__main__":

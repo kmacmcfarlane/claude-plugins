@@ -8,8 +8,8 @@ skill's decision channel, `decision N:` under `decisions needed` (SKILL.md § Th
 
 ## The librarian's
 
-- **`wi` not found by the glob.** Normal when the repo does not carry the plugin: use the
-  installed copy and set `WI_ROOT` explicitly (below). No store at either standard root:
+- **`wi` not found by the glob.** Normal when the repo does not carry the plugin: the
+  store lookup goes on to the installed copy (below). No store at either standard root:
   `start` and `intake` run `$WI init` once a custody layer resolves; `status` reports
   "not opted in; `start` offers opt-in" when CLAUDE.md has no `## Librarian` section,
   else "no store", and stops.
@@ -99,8 +99,8 @@ states it; the one line here is what the librarian binds:
   `references/fix-loop.md` § A merge conflict.
 - **A fable dispatch returns HTTP 429 or a usage-credits error.** Not a `BLOCKED`: under
   a `model: fable` pin it is a numbered decision for the operator, never a fallback; a
-  second-opinion reviewer is dropped — the `dev-cycle` skill's
-  `references/model-routing.md` §§ Fallback, Second opinion.
+  fable cross-check is dropped — the `dev-cycle` skill's
+  `references/model-routing.md` §§ Fallback, Fable cross-checks.
 - **Implementer disputes a medium-or-above finding**, **a reviewer returns
   `SHOW_STOPPER` for something a fix would close** (mis-routed: re-route it as
   `NEEDS_CHANGES`, noted in the item, severity kept), **a dirty main checkout or worktree
@@ -108,20 +108,10 @@ states it; the one line here is what the librarian binds:
 
 ## Installing `wi`
 
-The same case as Rehydrate step 1 states it, which is where the installed path is:
-
-An empty glob is normal on a repo that does not carry the plugin in its tree: use the
-installed `work-items` plugin's copy (not `${CLAUDE_PLUGIN_ROOT}`, which is this plugin's
-root and carries no `wi`), same `WI_ROOT`. The key is the harness's own install record,
-`installed_plugins.json` `plugins['work-items@kmacmcfarlane'][0].installPath`; the newest
-cached version (`ls -t`) is the fallback when that record is missing or unreadable:
-
-```bash
-P="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/plugins"
-WI_PY="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["plugins"]["work-items@kmacmcfarlane"][0]["installPath"])' "$P/installed_plugins.json" 2>/dev/null)/skills/work-items/scripts/wi.py"
-test -f "$WI_PY" || WI_PY=$(ls -t "$P"/cache/kmacmcfarlane/work-items/*/skills/work-items/scripts/wi.py 2>/dev/null | head -1)
-WI="python3 $WI_PY"
-```
-
-An empty `WI_PY` after both means `work-items` is not installed on this machine — install
-it (`/plugin install work-items@kmacmcfarlane`) before continuing.
+Rehydrate step 1 finds `wi` with the `dev-cycle` skill's `references/bindings.md` § Store
+snippet: the repo's own tree first, then the installed `work-items` plugin's copy (not
+`${CLAUDE_PLUGIN_ROOT}`, which is this plugin's root and carries no `wi`), keyed by the
+harness's own install record, with the newest cached version as the fallback. `no wi
+found` after all three means `work-items` is not installed on this machine — install it
+(`/plugin install work-items@kmacmcfarlane`) before continuing; Rehydrate step 1 stops
+there and touches nothing else.

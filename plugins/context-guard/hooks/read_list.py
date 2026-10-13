@@ -11,11 +11,12 @@ read: [real, ...], at}; the record exists only while a reminder is pending:
                 Not inside a subagent. A partial Read, `cat` or `grep` does
                 not count. (A file too long for one Read is marked by the
                 Read without offset or limit, as far as the tool reads.)
-  context_warn  the next UserPromptSubmit that is not /checkpoint, /compact or
-                /clear and is not hard-stopped takes the record (take) and,
-                when any path is unread, adds ONE line to that prompt's
-                context (reminder). The record is dropped either way: once
-                per injection, never a block, never a turn of its own.
+  context_warn  the next UserPromptSubmit that is not one of
+                /checkpoint, /compact or /clear and is not hard-stopped
+                takes the record (take) and, when any path is unread,
+                adds ONE line to that prompt's context (reminder). The
+                record is dropped either way: once per injection, never a
+                block, never a turn of its own.
 
 Paths come from repo text, so only existing regular files are kept, echoed
 as absolute paths with no control characters, at most MAX_PATHS of them.

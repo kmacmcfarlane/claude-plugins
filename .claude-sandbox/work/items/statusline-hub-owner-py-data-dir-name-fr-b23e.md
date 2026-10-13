@@ -29,5 +29,5 @@ Surfaced by d8f6's implementer 2026-09-21 (the moved form of 8588's first low): 
 - dispatch: reviewer opus — rule 4
 
 ## Review round 1 — CLEAR (opus) at 37fa55c
-- rule verified in docs + binary; lows not taken: non-BMP (UTF-16) divergence; raw-name cache subtests.
+- rule verified in docs (not live-verified); lows not taken: non-BMP (UTF-16) divergence; raw-name cache subtests.
 - landed 29b641a

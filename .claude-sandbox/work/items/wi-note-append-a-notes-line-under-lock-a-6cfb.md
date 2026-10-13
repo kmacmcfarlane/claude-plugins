@@ -1,0 +1,59 @@
+---
+id: wi-note-append-a-notes-line-under-lock-a-6cfb
+title: "wi note: append a Notes line under lock, and have checkpoint 4a½ use it in place of its inline snippet"
+short_display_name: wi note command for residue
+type: feature
+status: done
+priority: 2
+created: 2026-10-08
+updated: 2026-10-08
+closed: 2026-10-08
+refs:
+  - checkpoint-before-the-manifest-write-con-6c43 review 4
+---
+
+From the 6c43 review 4 (lows 1-3, nits 4-5) and implementer open questions, 2026-10-08: checkpoint Step 4a½ carries a 22-line inline python insert that mirrors wi's Notes append but lacks its cross-section fence refusal, whitespace-tolerant heading match and lock, and has no test. Acceptance: wi note <id> "<line>" reuses Item.append_note (fence refusal, lock, CRLF, atomic write), with tests; checkpoint 4a½ calls it and drops the snippet; the unattended path may then write items.
+
+## Handoff
+- doing: —
+- next: —
+- blocked: —
+- learned: —
+target: plan main /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude-sandbox/investigations/wi-note-append-a-notes-line-under-lock-a-6cfb
+budget: 2026-10-08T05:43Z plan $28 — default plan
+dispatch: planner opus high — plan
+
+## Notes
+- 2026-10-08 claimed by Kyle-McFarlane@2d49f8460283
+agent: planner ab90561988a81d4b4
+return: DONE series 00_initial.md (wi note <id> <text>... [--raw], secret-lint refusal, 4a½ uses it after a --help probe else manifest; unattended unchanged; other appenders named)
+baseline: plan review 1 — ef77493b63a68ee08bf7cf9e15675429bf5b0b0db8fb6b90cafb8f0772da7c8a .claude-sandbox/investigations/wi-note-append-a-notes-line-under-lock-a-6cfb/00_initial.md; 
+dispatch: reviewer opus high — plan review 1
+agent: reviewer a3d9552bce742b04d
+verdict: plan review 1 NEEDS_CHANGES (must-fix 2: the probe reads any failure as an old wi; other wi note exits lose the residue; lows: replace range :216-247, -- before texts, fence paragraph; nits)
+dispatch: planner opus high — plan fix round 1 (resume ab90561988a81d4b4)
+return: DONE series 01_plan-review-1-fixes.md (fixes 1-7; allow_abbrev left as wi's other verbs, with -- before texts)
+baseline: plan review 2 — ef77493b63a68ee08bf7cf9e15675429bf5b0b0db8fb6b90cafb8f0772da7c8a .claude-sandbox/investigations/wi-note-append-a-notes-line-under-lock-a-6cfb/00_initial.md; 55f8d3c7113066e5b04055b0e0f23c33b6a2d4f174a3ec26a87d45d3f25bd05f .claude-sandbox/investigations/wi-note-append-a-notes-line-under-lock-a-6cfb/01_plan-review-1-fixes.md; 
+dispatch: reviewer opus high — plan review 2 (resume a3d9552bce742b04d)
+verdict: plan review 2 NEEDS_CHANGES (must-fix 1, down from 2: exit 1 also means a rejected front-matter value or a missing store, and the reword loop is unbounded; low: probe-127 Next wording)
+dispatch: planner opus high — plan fix round 2 (resume ab90561988a81d4b4)
+return: DONE series 02_exit-1-routing.md (text <n>: refusal prefix; one reword; other exit 1 routes to Aware of; probe Next wording)
+baseline: plan review 3 — ef77493b63a68ee08bf7cf9e15675429bf5b0b0db8fb6b90cafb8f0772da7c8a .claude-sandbox/investigations/wi-note-append-a-notes-line-under-lock-a-6cfb/00_initial.md; 55f8d3c7113066e5b04055b0e0f23c33b6a2d4f174a3ec26a87d45d3f25bd05f .claude-sandbox/investigations/wi-note-append-a-notes-line-under-lock-a-6cfb/01_plan-review-1-fixes.md; 5dec4ec4468dad2fdaa92bcb2e915326fc81e200b173a1d2b8fe17b2978b5c1a .claude-sandbox/investigations/wi-note-append-a-notes-line-under-lock-a-6cfb/02_exit-1-routing.md; 
+dispatch: reviewer opus high — plan review 3 (resume a3d9552bce742b04d)
+verdict: plan review 3 CLEAR (must-fix 0)
+findings: carried — (1) reword once per text n (a refusal naming a text not yet reworded is that text's first), then re-run the call; (2) the secret refusal message is text {n}: <secret_findings reason>; nothing written (the reason already carries its parenthetical)
+target: full main /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude/worktrees/wi-note-append-a-notes-line-under-lock-a-6cfb
+budget: 2026-10-08T06:22Z build $22 — default other build
+dispatch: implementer opus medium — build from the CLEAR series (CLI code, tests, skill wording)
+agent: implementer a4cea3b5b72b49074
+return: DONE f3338d0 (cmd_note and _note_line; TestNote 16 tests; work-items SKILL, format.md, provider-interface; checkpoint 4a½ probe and wi note calls in place of the inline snippet)
+changed: wi.py, tests/test_wi.py, work-items SKILL.md, references/format.md, references/provider-interface.md, context-guard checkpoint SKILL.md
+dispatch: reviewer opus high — review round 1
+agent: reviewer a0225e6318d9a0491
+verdict: review 1 NEEDS_CHANGES at f3338d0 (must-fix 1: a twice-refused text would be carried into the manifest as written; lows: a bare -- text silently dropped, the decision line's own --raw call routing unstated; nit: PEM refusal hint)
+dispatch: implementer opus medium — fix round 1 (resume a4cea3b5b72b49074)
+return: DONE 3e9a0bb fix round 1 (twice-refused text carried only as path and key in words; a bare -- text refused via raw argv; decision line's own --raw call routed the same)
+dispatch: reviewer opus high — review round 2 (resume a0225e6318d9a0491)
+verdict: review 2 CLEAR at 3e9a0bb (must-fix 0; low: _stray_separator numbers the text wrong after an abbreviated --root note or a dash-shaped text before --, off 4a½'s path — filed)
+landed: 1b86910 (merge --no-ff into main; Checks 10/10 OK; push scan read, clean)
+- 2026-10-08 done

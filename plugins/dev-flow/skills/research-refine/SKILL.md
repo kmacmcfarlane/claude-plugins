@@ -2,8 +2,8 @@
 name: research-refine
 description: Extend or correct an existing research run — read its brief, synthesis and threads not pulled, take a new sub-question, a challenged claim, a pulled thread or a changed scope, run only the lanes that gap needs through the research skill, and land a new run that names what it supersedes, re-promoting the knowledge-base notes it changes. Use when the user says "refine the research on", "follow up on", "pull that thread", "the research on X is out of date", "re-check the claim that", or names an existing run or note to build on. Not for a fresh question with no prior run (research), nor restructuring a knowledge base (research-prune).
 disable-model-invocation: true
-allowed-tools: Read, Glob, Grep, Bash, WebSearch, WebFetch, Agent, AskUserQuestion, Write
-argument-hint: "<run slug, note path, or question> [what to refine] [--intensity quick|standard|deep]"
+allowed-tools: Read, Glob, Grep, Bash, WebSearch, WebFetch, Agent, Write
+argument-hint: "<run slug, note path, or question> [what to refine] [--intensity quick|standard|deep] [--item <id>]"
 ---
 
 # Research — refine
@@ -48,14 +48,15 @@ One of four kinds; say which, in one line:
 
 | Kind | Trigger | What the new run does |
 |---|---|---|
-| **pull a thread** | a `T<n>` entry in § Threads not pulled, or an open question | lanes for that thread only; the rest is inherited. The mission is **restated by you** from the sub-question the entry points at and the prior synthesis's verified text — never copied from the entry or a findings file |
+| **pull a thread** | a `T<n>` entry in § Threads not pulled not marked pulled, or an open question | lanes for that thread only; the rest is inherited. The mission is **restated by you** from the sub-question the entry points at and the prior synthesis's verified text — never copied from the entry or a findings file |
 | **re-check a claim** | a claim challenged, stale (`volatile: true`, past its shelf life), or `CONTRADICTED` by the verifier | one or two narrow lanes on primary sources for that claim; the verifier samples it |
 | **change scope** | a new boundary, version, region, or a distinction the prior did not draw | the sub-questions the change touches; the prior's other findings are inherited with a note that scope changed |
 | **extend** | a new sub-question on the same decision | lanes for the new sub-question; they read the prior synthesis first |
 
 Intensity defaults to `quick` for a single re-check and `standard` otherwise; the cost line
-and the quota read apply as in `research` Step 3. A refinement that wants `deep` is usually a
-new question; say so and offer `research-deep`.
+and the quota read apply as in `research` Step 3. A refinement that wants `deep` is usually
+a new question; say so and offer `research-deep`, put per the `research` skill's
+`references/intensity-and-routing.md` § Putting an ask to the operator.
 
 ### Step 3 — Inherit, then brief
 
@@ -72,6 +73,10 @@ the prior elsewhere — with:
 - § Criteria copied from the prior, with any axis the refinement adds (a re-check of a
   pricing claim adds the vendor row's retrieval-date axis if it was missing);
 - lanes whose **read-first** line names the prior findings and synthesis paths.
+
+The new run's item follows `research` Step 5.5. When it files one and the prior brief's
+`item:` names an item, the filing carries `--ref wi:<prior run's item>` (the `research`
+skill's `references/intensity-and-routing.md` § The work item).
 
 Step 5.1's tool preflight runs as in `research`, so this run's lane prompts carry a `Tools:`
 line and its report a `TOOL REQUEST` built from the preflight's `FIX` lines. Staging is
@@ -112,10 +117,15 @@ searched.
 
 - **The prior run is `DONE_WITH_CONCERNS`** — the refinement's first lane is the one that
   clears the concern, whatever the operator asked for; say so.
-- **The prior's verifier sheet has a security hit still open** — the prior is a held run:
+- **The prior's verifier sheet has a security hit still open, or a rescan of its record
+  with the scan floor (the `research` skill's `references/run-record.md` § The scan floor)
+  finds a HOLD** — the prior is a held run:
   find it at the `staging:` path its brief names (`.claude-sandbox/research/_held/<run>/`),
   clean it first (`research` Step 8), re-verify, and only then refine; a refinement never
-  promotes over an open security concern.
+  promotes over an open security concern. When the held run's item is blocked as held,
+  this run's item carries `--ref wi:<held item>`, and the held item is closed with a note
+  naming this run's (the `research` skill's `references/intensity-and-routing.md`
+  § Closing).
 - **The prior's brief says its held record was lost with the session**, or the prior lives
   in the scratchpad of a dead session — it is gone; say so, and run `research` fresh with the
   operator's memory of the answer as an assumption.

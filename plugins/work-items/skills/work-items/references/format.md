@@ -18,8 +18,64 @@ CLI adds locking, validation and budgeted views on top. Spec of record:
   README.md            what this is, in ten lines
   items/<id>.md        every item, regardless of status
   archive/YYYY/<id>.md closed items moved by `wi archive` (explicit, batched)
+  store.yaml           the store's recorded tracking choice (§ Store tracking)
   .lock                gitignored; flock target for same-machine mutations
 ```
+
+## Store tracking
+
+Whether git tracks the store is a choice `wi init` records in `<root>/store.yaml`:
+
+```yaml
+# wi store settings; format: the work-items skill's references/format.md
+# or: ignored
+tracking: tracked
+```
+
+`tracking:` is the one key, on a line of its own; `tracked` and `ignored` its values. `wi`
+reads the first `tracking:` line and ignores comment lines. Any other value counts as no
+recorded choice, and `wi lint` reports it, as it does more than one `tracking:` line.
+
+- **Making the choice.** `wi init --track` or `wi init --no-track` (mutually exclusive).
+  With neither, a terminal on stdin and stdout gets a two-line menu (tracked, git-ignored;
+  Enter takes git-ignored). With neither and no terminal (an agent's Bash call, a script),
+  `init` creates an ignored store, says so on stderr with how to choose tracked instead
+  (`wi init --track`, then remove the store's line from `.gitignore`), and exits 0.
+- **Ignoring** (`--no-track`, the menu's git-ignored, the no-terminal default) adds
+  `/<store path>/` — `/.work/` or `/.claude-sandbox/work/` — to the root `.gitignore` of the
+  repo that holds the store (glob characters in the path escaped). The file is created when
+  it is missing; otherwise the line is appended in one atomic write that keeps the file's
+  bytes, its line ending (CRLF stays CRLF) and its mode, with a newline added first when
+  its last line has none. No line is added when the store is already ignored by git, as
+  `git check-ignore` judges it, from one of the repo's `.gitignore` files: its path in any
+  spelling, a glob, a parent directory, or, for `.claude-sandbox/work/`, the host
+  `.gitignore` ignoring `.claude-sandbox/` as a whole (`init` says that covers the store). A
+  literal line followed by a negation does not count. A rule only in `.git/info/exclude` or
+  a global excludes file does not count either, since it does not travel with the repo.
+  After writing, `init` checks again and warns when the line did not make git ignore the
+  store. A sidecar store's repo is `.claude-sandbox/` itself, so its line is `/work/` in
+  `.claude-sandbox/.gitignore`. Outside git, nothing is written and `init` says so.
+- **What init refuses.** It never writes through a symlink: a symlinked `.gitignore` gets no
+  line (`init` names the line to add by hand), and a store directory that is a symlink to a
+  place outside the repo holding it is refused outright, with nothing written. A store that
+  is the repo root cannot be ignored: a new one is refused before anything is created
+  (its own `*.tmp*` line would ignore files across the repo), and an existing one gets no
+  line. A symlink on the store's path that sits inside a repo and points out of it (a
+  linked `.claude-sandbox/`, a `WI_ROOT` under a linked dir) is refused the same way; a
+  link above every repo, such as a home-directory alias, is left alone. When the store cannot be made
+  ignored, `ignored` is not recorded and `init` exits 1: the ignore comes first and the
+  record after, so within a git repo, a recorded `ignored` means git ignores the store.
+- **Tracking** never edits a `.gitignore`. If git ignores the store anyway, `init` prints
+  the custody warning naming the rule to remove.
+- **An existing store.** `init` on a store that exists never re-creates or rewrites what is
+  there. With a flag, it records (or changes) the choice and, for `--no-track`, adds the
+  `.gitignore` line. Without a flag, a recorded choice is kept; a store with no recorded
+  choice (every store made before this file existed) is left as it is, with no menu, and a
+  stderr note names the two flags. Such a store is treated as unrecorded until one is run.
+- **prime and lint.** A store recorded `ignored` gets no custody warning. A store recorded
+  `tracked` that git ignores (or that holds ten or more items, none tracked) gets the
+  warning, marked as against its recorded choice. A store with no recorded choice gets the
+  `silently untracked` warning as before, its fix ending with recording the choice.
 
 `status:` is the only authority on state. `done` never moves a file — a
 status-only close is a two-line front-matter change that merges cleanly
@@ -81,6 +137,7 @@ except `claimed` (ISO-8601 UTC to the minute).
 |---|---|---|
 | `id` | `<slug>-<4hex>` | equals the filename stem; immutable; hash suffix from title+time+random so branches rarely collide; a new id is redrawn until it is in neither the store (items/, archive/) nor the same batch, and a new item is never written over an existing file (the write fails, nothing written) |
 | `title` | one line, ≤120 chars | |
+| `short_display_name` | one line, 1–40 chars | optional; the name agents give the item to the operator (§ Short display name and tag) |
 | `type` | `task bug feature refactor workflow chore epic spike` | default `task`; drives backlog-yaml prefix and bugs-first |
 | `status` | `todo doing blocked parked grooming done dropped` | the only authority on state |
 | `stage` | `implement review testing uat uat_feedback` | pipeline sub-state; meaningful only when `doing` |
@@ -178,6 +235,54 @@ Sets exactly one front-matter field. `id` and `created` are immutable (exit 1).
   `--force` does not bypass it. The item is then schema-validated as a whole;
   a value that breaks it (bad `status`, priority out of range, …) exits 3 and
   nothing is written.
+- **`short_display_name`** is stripped, a blank value clears it, and one
+  over 40 characters exits 1 before anything is written (§ Short display
+  name and tag).
+
+## Short display name and tag
+
+`short_display_name` is optional: the name agents give the item when they
+write to the operator. It is a noun phrase of 3–6 words, with no id or tag
+in it and no leading article (`flaky gate test`, not `the flaky gate test`
+or `gate test d1e3`). Its words are used verbatim, and an agent adds an
+article in prose when the sentence needs one. `wi` checks only its shape,
+never its words.
+
+- **Setting it.** At filing, with `wi add "<title>" --short-display-name
+  "<name>"`, or later by an explicit `wi set <id> short_display_name
+  "<name>"` from the item's owner. A mention never writes it.
+- **Its shape.** `add` and `set` strip it. On `add` a blank value (or `—`)
+  leaves the field unset; on `set` a blank value (whitespace-only included)
+  clears it, as `""` and `—` do. So neither ever writes
+  `short_display_name: ""` or a literal dash. Over 40 characters, counted
+  after the strip, exits 1 and writes nothing. A hand-written value that is
+  blank, padded or over 40 characters is a `lint` problem, and a `set` of
+  any other field on that item exits 3 until the name is set right.
+- **When it is absent,** an agent writes a name from the title at each
+  mention and stores nothing.
+- **Output.** Every text row that prints a title prints the title cell
+  `[<name>] <title>` in the title's own column: `ls`, `next` (every form),
+  `prime` (its HOLD, DOING and READY lines), `needs-input`, and `estate`'s
+  SECURITY, DECISION, STALE and READY rows. No `--plain` column is added,
+  and an item without the name prints its title alone. Every `--json`
+  record carries `short_display_name`, null when unset; it is the
+  unambiguous form, since a title that itself starts with `[` reads like a
+  name in text. `show --brief` prints it after `title`.
+- **Store-only.** The backlog-yaml bridge does not carry it: `export` leaves
+  it out, `import --update` keeps it, and a fresh import creates items
+  without it.
+
+**The tag** is the id's last four hex, `id[-4:]` (`d1e3` in
+`flaky-gate-test-d1e3`): a recognition cue for the operator, not a unique
+reference. `wi` resolves an id by exact match or alias, then by unique
+prefix, and never by suffix, so a tag handed to `wi` can resolve to a
+different item whose slug begins with those four hex, and two items can
+share a tag. Given a bare tag, list the files that carry it, and ask when
+more than one matches:
+
+```bash
+find <store>/items <store>/archive -name '*.md' | grep -E -- "-<tag>\.md$|/<tag>[^/]*\.md$"
+```
 
 ## Parked
 
@@ -279,25 +384,194 @@ questions starting with punctuation (`- [ ] x`) export quoted, `GROOMING:
 ## Operator questions: `decision N:` / `answer N:`
 
 The canonical marker for a question to the operator is a body line that
-starts `decision N: <one line>`; the reply is a body line `answer N:
-<reply>`, anywhere in the same item's body (the librarian-mode Report
-convention). A decision is unanswered while its item has no `answer N:`
+starts `decision N: <one line>`; the reply is a body line
+`answer N: <reply>`, anywhere in the same item's body (the librarian-mode
+Report convention). A decision is unanswered while its item has no `answer N:`
 line with the same N. Both must start the line — `- decision 4:` is not a
 marker — and a line inside a fenced code block is text, not a marker. N is
 never reused across the store; a revised question keeps its number: add a
 new `decision N:` line (or edit the old one in place) — when N repeats,
 `needs-input` shows the last line's text. `answer 40:` answers decision 40
-only, never decision 4.
+only, never decision 4. `<reply>` is the operator's reply verbatim, on one
+physical line (an exact `N: letter` reply is stored as its letter; the
+caller's rules give the rest); a caller's form that opens with its own
+wording (`answer N: drop …`, say) appends it as ` — "<reply>"`, and a plain
+reply that opens with such a form word is written in double quotes. A reply
+recorded after the fact goes on an indented `verbatim N …` line under the
+answer, which, indented, matches neither marker.
+
+**One counter.** Every question a caller puts to the operator takes its N
+from the store's one counter, so `needs-input` and the estate sweep see
+every ask; the caller's rules may name exceptions (librarian-mode's opt-in
+dialog and session-name gate). A source's own label — a series' `OQ3`, a
+gate's `G5` — is a tag in the decision's text, never a marker: `decision
+OQ3:` and `answer G5:` match neither.
+
+**Another repo's decision: `<repo>#N`.** A line that names a decision in
+another repo's store writes it `<repo>#N` (`agents#12`), `<repo>` being
+the name of that repo's `origin` remote (its last path part, without
+`.git`), else its main checkout's directory name; a bare N, or `decision
+N`, always means this store's own. It never starts a line, so neither
+marker takes it for one of this store's.
+
+The headline is one physical line: `wi` reads its text to the end of the
+line, so a headline wrapped over two lines loses everything after the
+break. Its canonical form lists the options in letter order and marks the
+recommended one with `[recommended]` right after it:
+
+```
+decision N: <question> — options: (a) … [recommended] | (b) … | (z) decide later
+```
+
+**Reading the recommendation from a headline.** Older headlines mark it
+other ways, and a reader of the store (the `work-review` skill, the
+librarian's Groom table) takes each as the same mark:
+
+- `[recommended]`, or a bracket that opens with it — `[recommended: why]`,
+  `[recommended by the planner]` — after an option;
+- `(rec)`, or `(plan rec)` with or without a reason, after an option;
+- `Rec (x)`, `Rec x`, or `rec: (x)`, naming the option's letter;
+- the word `recommended` beside an option.
+
+A headline with none of these may carry a label in their place — *your
+preference — no recommendation*, or *no recommendation — outside my
+authority* — and a reader shows that label. Only a headline that names
+neither a recommendation nor a label reads "no recommendation recorded".
 
 `wi needs-input` lists every open item awaiting the operator: each grooming
 item (with its questions) and each unanswered `decision N:` (with N and its
 text), on todo, doing, blocked, parked and grooming items alike; closed
-items never show. `--plain` prints `id<TAB>grooming|decision<TAB>N or
--<TAB>text`; `--json` one record per item with `grooming` and `decisions`.
-It exits 2 when nothing awaits the operator.
+items never show. A human row reads `<id>  <title cell>  grooming:
+<questions>` or `<id>  <title cell>  decision N: <text>`, the title cell
+being `[<name>] <title>` or the title alone (§ Short display name and tag).
+`--plain` prints `id<TAB>grooming|decision<TAB>N or -<TAB><title
+cell><TAB>text`: the title cell is fourth, so the free text stays last;
+`--json` one record per item with `title`, `short_display_name`,
+`grooming` and `decisions`, each decision a record of `n`, `text`,
+`raised` and the four shown-and-seen fields (§ Shown and seen), `null`
+where the item has no such line. It exits 2 when nothing awaits the
+operator.
 
-`wi prime` also shows a `HOLD <n>: <id> (<title>) …` line, first under the
-header, for open items tagged `hold` — an operator hold gates what may move.
+**Card lines.** A caller may store the decision's card as indented lines
+under its headline (`raised:`, `what:`, `why now:`, `why ask:`,
+`context:`, `impact:`, …; the librarian-mode convention). Indented, they
+match neither marker, and `wi` reads none of them except the first
+`raised:` per N (the decision's age). `why ask: <class> — <reason>` is one
+physical line: why the question came to the operator, opening with its
+class. `impact: → <effect> · later: <wait> · reach: <reach> · undo:
+<undo>` is one physical line too: what the decision changes, written when
+it is raised, for the views of the decision to read; `wi` reads none of it.
+
+`wi prime` also shows a `HOLD <n>: <id> (<title cell>) …` line, first under
+the header, for open items tagged `hold` — an operator hold gates what may
+move.
+
+## Closed: `closed N:`
+
+Once an answered decision's outcome has taken effect, the caller records it
+as a body line in the same item, one physical line, never wrapped, in one
+of three forms:
+
+```
+closed N: acted <short sha | item id>
+closed N: rule <repo path>
+closed N: superseded by <M | <repo>#M>
+```
+
+`acted` names the commit or the item that carried the answer out; `rule`
+the file the answer became a standing rule in; `superseded by` the later
+decision that replaced it. An answer carried out by several changes is
+closed when the last of them lands; one that changes nothing closes as
+`acted <the id of the item it was recorded on>`. A `drop` answer
+(`answer N: drop …`, the word `drop` unquoted) needs no `closed N:` line
+and counts as closed — a plain reply quoted as `answer N: "drop …"` is not
+one; any other answered decision with no `closed N:` line is answered but
+not closed. When N repeats, the last line is its state.
+`closed N:` is neither `decision N:` nor `answer N:`, so it opens no
+question and answers none: `needs-input`, the decision counter and the
+estate sweep pass it by. The target is one token, never containing a
+space. `wi` does not parse it yet; a reader splits it with
+`^closed (\d+): (acted|rule|superseded by) (\S+)$`.
+
+## Shown and seen: `shown N:` / `seen N:`
+
+Each time decision N is put in front of the operator, the session that
+displays it appends a body line in the item that holds `decision N:`; at
+the operator's next turn in that session (or an answer found at a page or
+doc read-back), it appends a second. One physical line each, never wrapped:
+
+```
+shown N: <UTC time> <chat | page | doc>
+seen N: <UTC time> <turn | page | doc>
+```
+
+The time is `YYYY-MM-DDTHH:MM:SSZ`, UTC, on the writer's clock (`date -u
++%Y-%m-%dT%H:%M:%SZ`); `raised:`'s minute form also reads. A line whose
+first token after `N:` is not written in one of those two forms is not read
+(`wi` checks the form, not the calendar, and keeps the time as written).
+
+- **What is a showing:** a render at card or block level (`chat`); a card
+  on an answer page at the publish that put its current `rev` there
+  (`page`); a decision's section in the tick-box doc, when shared or
+  rewritten unticked (`doc`). A list line, a tag-size mention, a Groom row,
+  an echo or a hint is not a showing and writes nothing.
+- **What sees it:** the operator's first turn after the showing, in the
+  session that showed it (`turn`); a new answer to the card's current
+  `rev` found at a page read-back (`page`); changed ticks or words for it
+  found at a doc read-back (`doc`). A chat turn never sees a page or doc
+  showing.
+- **Reading them:** first shown is the first `shown N:` line, last shown
+  the last one, last seen the last `seen N:` line. The last showing has
+  been seen when a `seen N:` line comes after the last `shown N:` line in
+  file order. File order decides, never a comparison of the two times:
+  writers' clocks differ. With no `shown N:` line the showing is not
+  recorded: the decision's age comes from `raised:`, and the operator
+  counts as cold to it. Lines written before this convention do not exist:
+  there is no backfill.
+- **Writing them:** always append, at column 0; never indent one (an
+  indented line is a card line) and never insert one between a
+  `decision N:` headline and its card, which ends the card and hides its
+  `raised:`. Never write `<repo>#N` here: a session records a showing only
+  in the store that holds the decision. `shown 40:` is about decision 40
+  only, and a line inside a fenced code block is text.
+- **Hold on `seen N:`:** writers append `shown N:` lines only and write no
+  `seen N:` line, so no push carries one, until an `answer 180:` line in
+  the claude-plugins work store chooses (a) (decision 180 asks whether
+  `seen N:` lines may go into a tracked, pushed store; read it with
+  `wi --root <that store> show` on the item holding `decision 180:`; a
+  store that cannot reach it keeps the hold); any other answer, a
+  `wake 180:` or no answer keeps this hold, and every other rule here
+  stands either way.
+
+Neither line is `decision N:` nor `answer N:`, so they open no question and
+answer none: `needs-input`, the decision counter and the estate sweep pass
+them by as questions. `wi` parses them, read-only and into the JSON views
+only (`needs-input --json`, `estate --json`): each decision record carries
+`first_shown`, `last_shown`, `last_seen` (each the time as written, or
+`null`) and `unseen` — `null` with no `shown N:` line, `true` when no
+`seen N:` line follows the last `shown N:` line, else `false`. Text and
+`--plain` output are unchanged. Append them with `wi note <id> --raw --
+'<line>'`, which puts the line at the end of `## Notes` under the store's
+lock, or with Bash, as for every other record line.
+
+## Decided alone: `decided:`
+
+What a caller decided without asking is recorded as a body line that starts
+`decided:` — one physical line, never wrapped:
+
+```
+decided: <UTC time> <class> — <what was decided, and why it was safe to decide alone> · authority: <authority> · reopen: <how to undo it>
+```
+
+The time is in `raised:`'s form (`2026-09-30T14:05Z`); the class is a
+kebab-case tag from the caller's class list; the authority names what let
+the caller decide it (`task`, `answer N`, or a class the caller's rules let
+it decide alone); `reopen` says how it is undone. The what field never
+contains ` · authority: ` or ` · reopen: `, the separators a reader splits
+on. It is neither `decision N:` nor `answer N:`, so it opens no question
+and answers none: `needs-input`, the decision counter and the estate sweep
+pass it by. `wi` does not parse it yet; a reader splits it
+with `^decided: (\S+) ([a-z-]+) — (.*?) · authority: (.*?) · reopen: (.*)$`.
 
 ## Body sections
 
@@ -309,8 +583,15 @@ header, for open items tagged `hold` — an operator hold gates what may move.
   - learned:` (`—` when empty). `wi handoff` rewrites only those four lines
   (the first of each key) and inserts any that are missing; required by `lint`
   when `status: doing`. Each value is one line (see below).
-- `## Notes` — free text; the tool only appends dated lines, after the last
+- `## Notes` — free text; the tool only appends lines, after the last
   non-blank line of the section (it adds `## Notes` at the end when absent).
+  `wi note <id> -- '<text>' […]` is the free-text append: each text becomes a
+  dated line (`- <today> <text>`), or with `--raw` the line as written, all
+  in one write under the lock. It refuses (exit 1, nothing written) a line
+  break, an empty text, under `--raw` a line starting `## ` or opening a
+  fence, any line the secret rule below flags, and a text that is exactly
+  `--` after the separator `--` (argparse would drop it); each refusal reads
+  `wi: text <n>: …; nothing written` and never quotes the text.
 - any other `## …` section round-trips untouched.
 
 A section runs from its `## ` heading to the next `## ` heading, so unheaded
@@ -320,7 +601,7 @@ matching closer is not a fence: it does not hide the headings after it. An
 unclosed opener can still pair with a later block's fence and hide the
 headings between them. When `## Handoff` or `## Notes` then exists only
 inside such a fence, followed there by another `## ` line, `handoff`,
-`claim` and `done` exit 3 and write nothing rather than add a second
+`claim`, `done` and `note` exit 3 and write nothing rather than add a second
 section: add a real heading outside the fence, or close the unclosed one.
 A closed example holding only that heading is text; the section is added.
 Every rewriting command edits the body in place: bytes outside the lines it
@@ -358,8 +639,144 @@ the Handoff's `next:` needs it. Never `cat` the items directory. Hand off with
 
 Item files are tracked forever in git: record **the path and the key, never
 the value**. Write `creds: clusterenv.yaml key DISCORD_WEBHOOK_BACKUPS`, not
-the webhook URL. `wi lint` flags PEM blocks, `KEY=value` assignments and
-`token/secret/password/webhook`-style pairs that look like live values.
+the webhook URL. `wi lint` flags PEM blocks, `KEY=value` assignments (bare,
+or after a bullet, date, tag, bold or other leading text, unless the key is
+glued to a word or follows a URL's `?` or `&`) and
+`token/secret/password/webhook`-style pairs that look like live values. It
+also flags the looser shapes: a lowercase, mixed-case or dotted `key=value`
+(`app.db_pass=…`), `KEY = value`, `key => value`, `key := value`,
+`KEY: value` or `KEY :value` (an env-style or snake_case key, or a
+mixed-case key of two or more segments that holds a secret word and does
+not open with one capital before a capitalised word: `clientSecret: …`,
+`JWTSecret: …`, `db2Password: …`, `k8sToken: …`; not `OAuth:`), a
+JSON `"key": "value"` pair and `--flag=value`, with the value bare or
+quoted, and every pair on a line (`dsn=host=db;db_pass=…`, compact JSON).
+It flags an `Authorization: Bearer …` header, any case, after `:`, `=` or
+`=>` (never `==`), the credential bare or quoted (an `f"…"` string prefix
+included), and its `Basic` and `Token` forms, when the credential is 12+
+token characters (`:` and `%` count, so a raw `user:pass` or a
+percent-encoded value is read whole) and not a placeholder, one or two
+repeated characters (`XXXX…`) or plain words, each lowercase or
+capitalised, joined by `:` (`user:password`, `User:Password`; a run such
+as `FakeSecretPass` is no plain word).
+The `=` forms take a kebab-case key (`db-pass=…`) and `pw` (`pw=…`).
+
+- **Looser key forms.** These count only under a key holding a secret word
+  (below), judged as under one, and never a plain value (a word, or words
+  joined by `-`, `_` or `'`, each lowercase, capitalised or all capitals:
+  `required`, `read-only`, `NOT_SET`, with quotes, brackets and markdown
+  around it dropped: `(optional)`, `_(unset)_`) or a whole date: a spaced
+  flag (`--password …`, not a value starting `-`); a kebab-case colon key
+  (`db-pass: …`); a bare one-word colon key, lowercase, capitalised or all
+  capitals, that is itself a secret word or ends with a secret suffix
+  (`dbpass:`, `Dbpassword:`, `Passphrase:`, `pw:`, `PWD:`; a key that is
+  camelCase too, such as `Q9token:`, is judged as camelCase), never
+  `key:`, `auth:`, `cred:`, `creds:`, `webhook:` or `pass:` alone, which
+  prose uses; and a Markdown table row
+  (`| db_pass | … |`): a cell of one key-shaped token, then a cell of one
+  token, a code span or emphasis around either dropped. A colon key here
+  needs a space after its colon (`dbpass:/dbpassword:` is prose). A
+  closing `**` or `` ` `` and an unbalanced `}` after the value are
+  markdown or a brace around the pair (`**pw: ${PW}**` is a placeholder).
+- **URL passwords.** `scheme://user:…@host` flags a password of 8+
+  characters that is not a whole-value placeholder (`${DB_PASS}`,
+  `<password>`, `****`), one or two repeated characters, or a plain word
+  (`password`, `changeme`); the user may be empty (`redis://:…@host`).
+- **The next line.** Lint reads line by line and keeps one line of state:
+  when the previous line was clean and ends in a continuation, its last
+  300 characters joined to this line's first 300 are checked too, and a
+  hit is reported on this line, the one with the value. A continuation is
+  a YAML block scalar (`key: |`, `key: >-`), a trailing `\` (shell,
+  Dockerfile; joined with the next line's indent dropped), or an
+  `Authorization` header whose credential, or scheme and credential, is
+  on the next line.
+- **Secret-word keys.** A key is one when a segment of it, split on `_`,
+  `-`, `.` and camelCase, is a secret word (`pass`, `password`, `pw`,
+  `secret`, `token`, `auth`, `cred`, `key`, `apikey`, `webhook` and the
+  like) or ends with `password`, `passwd`, `secret`, `token`, `apikey`,
+  `pass`, `passphrase` or `passcode` (`dbpassword`, `clientsecret`,
+  `accesstoken`, `dbpass`); `key` counts only as a whole segment, a word
+  ending in `pass` such as `bypass`, `compass`, `surpass`, `trespass`,
+  `overpass`, `underpass`, `encompass`, `subpass`, `renderpass` or
+  `multipass` is no secret word, nor is a plural
+  such as `tokens` or `keys` (`passthrough` holds none). A key whose last
+  segment names something about a secret (`policy`, `rotation`, `hint`,
+  `prompt`, `field`, `label`, `name`, `type`, `mode`, `file`, `path`, `var`,
+  `ref`: `password_policy`, `token_file`) is a meta key. When another of
+  its segments holds a secret word, only these pass under it: a
+  placeholder; a lowercase name of a first run of 15 or fewer letters,
+  the later runs letters or digits, joined by
+  `-`, `_`, `.` or `:` (`prod-db-creds`, `default-token-x7k2m`,
+  `urn:ietf:params:oauth:token-type:jwt`); an env-var name of runs of
+  15 or fewer (`GITHUB_TOKEN`); a letters-only word or identifier whose case segments
+  are 3 to 15 letters (`bearer`, `ClientCredentials`); a dotted attribute
+  (`cfg.token`); or a path starting `~/`, `./`, `/` or `$NAME/` of two or
+  more harmless segments (`$HOME/.config/gh/token`). Everything else is
+  judged as under a secret-word key (below), so a digit run, any UUID, a
+  word with digits mixed in or 16+ lowercase letters in one run flags. A
+  meta key with no other secret word is judged as other keys. Under a
+  secret-word key any value of 8+ non-space characters counts,
+  symbols, hex, letters-only and UUIDs included. A quoted value skips
+  nothing; an unquoted one skips only code, a count or a path a note may
+  quote: a call `f(…)` or subscript `x[…]` with nothing after the closing
+  bracket and no comma-separated argument inside it that would flag on its
+  own (an argument holding a space flags when one of its words looks live
+  as under other keys, below: `login(user, "Bearer …")`), a spaced or
+  nested one included (`auth(user, cfg(x), …)` is read
+  to its matching `)`, and split only at commas outside inner brackets); a
+  dotted
+  attribute of letters and `_` only (`config.api_key`); a number with
+  separators (`1,234,567`), or a bare number when another key segment is a
+  count word (`count`, `len`, `max`, `min`, `budget`, `total`, `size`,
+  `limit`, `num`); or a path starting `~/`, `./` or `/` of two or more
+  harmless segments (below).
+- **Other keys** (`sha`, `commit`, `*_id`, …) count only a value that looks
+  live: 12+ characters holding a letter and a digit, not all hex (a sha),
+  not a date, and not two or more segments split on `-`, `_`, `.`, `/` or
+  `~` that are each harmless (letters and digits only, so a `+` or `=`
+  makes a segment live; all letters, all digits or all hex at any length,
+  or 12 characters or fewer that do not mix upper case, lower case and
+  digits), so a work-item id, path, version or UUID stays clean.
+- **Placeholders.** A value is a placeholder only as a whole-value `$NAME`,
+  `${NAME}`, `${{ name }}`, `$(command)`, `{name}` or `{{ name }}`; all `*`
+  (masked) or all `.` (elided, `…` included); or `<…>` holding lowercase
+  words, spaces, `_` or `-` with its closing `>` (`<value>`, `<your key>`).
+  A value that only starts with `$` or `{` is no placeholder (`$2b$12$…`).
+  Under a bare lowercase key (`password: …`) a `$`-led value flags unless
+  it starts with `${` or `$(` or is a whole `$NAME`; a `{`-led one does
+  not flag there. A `.` may end a placeholder only at the end of a word
+  (`$GITHUB_TOKEN.`).
+- **Raw and cleaned.** Every rule runs on the line as written and on a
+  cleaned copy: NFKC-normalised (a fullwidth equals sign, U+FF1D, is `=`),
+  Unicode format characters such as a zero-width space dropped, and
+  markdown `` ` ``, `**`, `*` and `__` removed. Either one flagging flags
+  the line. Look-alike letters (confusables, such as a Cyrillic a, U+0430,
+  in a key) are out of scope for this floor.
+- **Known strictness**, kept on purpose: a letters-only value under a
+  secret-word key (`auth_level: interactive`), a comma list
+  (`KEY_ORDER: priority,status`), a bare name (`self.dedupe_key =
+  dedupe_key`), a number with a unit (`pass_rate = 97.5%`), and under other
+  keys a single mixed value (`checkpoint_id: ckpt20261009T1104Z`) or a path
+  segment over 12 characters that mixes letters and digits. Reword such a
+  line, or record the path and key. **Known gaps**, each left open
+  because closing it would flag ordinary notes or unbound the scan: a
+  separated number under a secret-word key; `key:`, `auth:`, `cred:` or
+  `pass:` alone as a colon key; in the looser key forms and URL
+  passwords, a plain-word or whole-date value (`passphrase:
+  correcthorse`), and
+  a colon key with no space after its colon; a call argument holding a
+  space whose words do not look live (a short or hex password with a
+  space beside it); a table cell holding a space, and a table value not
+  in the cell right after its key; a URL password under 8 characters or
+  holding an unencoded `/` or `@`, and a token as the URL's user
+  (`https://<token>@host`); a value more than one line below its key (a
+  YAML block after a blank line, a key two continued lines up), and a
+  YAML value on the next indented line with no `|` or `>`; and an
+  `Authorization` header with a scheme other than `Bearer`, `Basic` or
+  `Token`.
+
+`wi note` refuses, writing nothing, a line lint would flag. Lint's shapes
+are a floor, not every secret: the path-and-key rule is the guard.
 
 ## TODO.md deprecation notice
 

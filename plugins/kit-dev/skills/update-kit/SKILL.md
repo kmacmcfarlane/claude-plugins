@@ -140,6 +140,8 @@ There is **no single skills root any more.** A skill's upstream home is a *plugi
 of the two marketplaces, so every path is built as `$PLUGINS/<plugin>/skills/<name>/` or
 `$EXPERTISE/<plugin>/skills/<name>/`. Never hardcode a plugin name — Step 0.3 discovers it.
 
+For the upstream repos' structure (markers, shapes, how to derive current contents), read `references/repo-map.md`.
+
 Verify sibling repos exist. If any are missing, report which and continue with the reachable
 ones (`$EXPERTISE` and `$KIT` are optional; `$PLUGINS` is required for any skill sync).
 
@@ -345,11 +347,12 @@ After writing each file to the template, run a verification scan:
 
 ```bash
 # Extract project name from backlog.yaml
-PROJECT_NAME=$(python3 -c "
+PROJECT_NAME=$(python3 -I -c "
 from ruamel.yaml import YAML
 data = YAML().load(open('agent/backlog.yaml'))
 print(data.get('project', ''))
 ")
+[ -n "$PROJECT_NAME" ] || echo "no project name read"
 
 # Also extract domain terms from PRD.md (first 20 lines, nouns)
 # These are terms like product names, specific technologies, data formats

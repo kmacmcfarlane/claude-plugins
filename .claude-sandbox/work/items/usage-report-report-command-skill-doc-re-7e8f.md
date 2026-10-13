@@ -2,13 +2,15 @@
 id: usage-report-report-command-skill-doc-re-7e8f
 title: "usage-report: report command, skill doc, README catalog row"
 type: feature
-status: todo
+status: doing
 priority: 2
 deps:
   - usage-report-transcript-parser-dedupe-pr-eff1
 parent: spike-analyze-claude-code-usage-across-c-e5a7
+owner: Kyle-McFarlane@2d49f8460283
+claimed: 2026-10-13T19:34Z
 created: 2026-09-16
-updated: 2026-09-16
+updated: 2026-10-13
 refs:
   - operator approval 2026-09-16
 ---
@@ -31,3 +33,8 @@ entry) must be visible in the report — a separate row or a marker — not sile
 ## Hold 2026-09-19
 - Do NOT build: operator intends usage-report to retire into kmacmcfarlane/claude-analytics (peer agents-61); close when `ca report usage` reaches parity and the skill is removed (their Phase 3).
 - 2026-09-28 held: claude-analytics will notify at report parity; then close and retire usage-report (see 4b0e)
+
+## Notes
+- 2026-10-13 claimed by Kyle-McFarlane@2d49f8460283
+dispatch: implementer opus medium — build per the approved plan (triage d2aa)
+agent: implementer adf30e968152b0aad

@@ -8,13 +8,27 @@ every 5 s, killed at 5 s) it gets one JSON object on stdin: the base hook
 fields (`session_id`, `transcript_path` - the MAIN session's - and `cwd`),
 `columns` (the usable row width) and `tasks`, one entry per visible
 sub-agent row, each with `id`, `name`, `type`, `status`, `description`,
-`label`, `model`, `contextWindowSize` and `tokenCount` among others. For each
+`label`, `model`, `effort`, `contextWindowSize` and `tokenCount` among
+others. For each
 row it can draw, it prints one line `{"id": ..., "content": ...}`; a row it
 prints nothing for keeps Claude Code's default rendering.
 
-A row reads `name · 43% 86k/200k · description`, the fill coloured like the
-footer's gauge (green, yellow, red by tokens left, over the default
-thresholds for that window size).
+A row reads `name · 43% 86k/200k · opus-5-5·high · description`, the fill
+coloured like the footer's gauge (green, yellow, red by tokens left, over the
+default thresholds for that window size).
+
+Model and effort. Both come from the task itself: `model` is the resolved
+model ID the task runs on, omitted until it is resolved; `effort` is the
+effort set in the agent's definition frontmatter or on its invocation, a
+level string or a numeric token budget, as written, and absent when none is
+set (documented: https://code.claude.com/docs/en/statusline, Subagent
+status lines). The tag shows the model with everything through its first
+`claude-` dropped (so a provider-prefixed ID such as Bedrock's
+`us.anthropic.claude-sonnet-4-5-20250929-v1:0`, as the docs show it at
+https://code.claude.com/docs/en/amazon-bedrock, reads
+`sonnet-4-5-20250929-v1:0`), then `·` and the effort; a field the task
+does not carry is left out, never guessed (no effort set means the session
+default applies, which the row cannot see). Neither: no tag.
 
 Depth. Exact when the agent's sidechain transcript can be read:
 <transcript stem>/subagents/agent-<id>.jsonl, the stem being the main
@@ -55,22 +69,41 @@ contextWindowSize. Claude Code's tokenCount adds the agent's cumulative
 output to its last input, so it overstates depth, more the longer the agent
 runs. A row with neither figure is left to the default rendering.
 
-In-process teammates. Claude Code 2.1.278 gives this command only local
-agent tasks (not the main session, not fork workers), so teammate rows never
-reach it; a task whose sidechain is missing would fall back to the payload
-figure anyway.
+Which rows arrive. The command "receives all visible subagent rows" as a
+`tasks` array (documented: https://code.claude.com/docs/en/statusline,
+subagentStatusLine). A task whose sidechain is missing falls back to the
+payload figure.
 
 How it is enabled: plugins/statusline/settings.json names this file through
 the plugin-data `current-hooks` link that the SessionStart hook keeps on this
-version's hooks dir (Claude Code does not expand plugin path variables in a
-plugin's settings.json). A plugin's settings are the lowest layer, so a
+version's hooks dir, not through a plugin path variable. Whether a plugin
+path variable works in a plugin's settings.json can be derived from Claude
+Code's internals; it is not recorded here. Plugin defaults are the lowest
+settings layer (documented:
+https://code.claude.com/docs/en/plugins/components#default-settings), so a
 `subagentStatusLine` the user sets in any settings file wins over it; this
 plugin never writes one.
 
 Text from the payload (name, description) is shown on one line: whitespace
 and control characters collapse to one space, format characters are
 dropped, and the row is cut to `columns` terminal columns (0 columns: no
-rows). Never raises;
+rows): the description is cut first, and goes whole once the model and
+effort tag no longer fits beside it; then the tag goes whole (never cut);
+then the name, leaving the fill alone. So a widening pane only ever adds to
+a row. A long name gives way before the tag, and before the description is
+cut below DESC_MIN columns: when the whole row does not fit, the name is
+shortened to leave the tag whole and the description that much, first by
+dropping a `plugin:` prefix (`dev-flow:implementer-critical` reads
+`implementer-critical`; only a name that is two lowercase name-shaped
+halves around one colon has one), then by cutting it from the middle, both
+ends kept (`impleme…critical`), never below NAME_MIN columns (8 columns,
+or 7 where a wide character would straddle it). A shortened name counts
+for its whole share, so the description gets no more than DESC_MIN
+columns until the name is whole: the name's share and the description's
+room both only grow with the pane, and a widening pane still only adds.
+The tag's halves are capped (MODEL_MAX columns for the model,
+EFFORT_MAX columns for the effort; a half past its cap is left out), so
+an overlong one cannot crowd the description out at every width. Never raises;
 malformed input prints nothing, so every row keeps its default.
 """
 import json, os, re, sys, time, unicodedata
@@ -92,6 +125,11 @@ DEPTH_MAX = 512           # deeper nesting on a long line: treated as unparseabl
 _SAFE_ID = re.compile(r"[A-Za-z0-9][A-Za-z0-9_-]{0,127}")
 _UNSAFE = re.compile(r"[\s\x00-\x1f\x7f-\x9f]+")
 SEP = " · "
+EFFORT_MAX = 6            # an effort (a level, or a budget as shown) wider than this many columns is left out
+MODEL_MAX = 40            # a model (through its `claude-` gone) wider than this many columns is left out
+NAME_MIN = 8              # a long name is shortened no further than this many columns
+DESC_MIN = 10             # the description's columns a long name gives way to
+_PREFIX = re.compile(r"[a-z0-9][a-z0-9-]*:([a-z0-9][a-z0-9-]*)")   # plugin:agent, both halves name-shaped
 USAGE_KEYS = ("input_tokens", "cache_read_input_tokens", "cache_creation_input_tokens")
 
 
@@ -595,6 +633,75 @@ def fill(tokens, window, approx):
     return text, f"{color}{text}\033[0m"
 
 
+def tag(task):
+    """`model·effort` for one task, either half alone, or "" for neither:
+    the model ID with everything through its first `claude-` dropped
+    (a provider prefix such as Bedrock's `us.anthropic.` goes with it),
+    the effort as written (a level string, or a token budget shown like
+    the fill's figures: 1000 and up in k). Each half is capped and left out whole past its cap,
+    never cut (a cut model ID misleads): the model past MODEL_MAX columns,
+    the effort past EFFORT_MAX columns. Every documented level (`low`
+    to `max`) fits EFFORT_MAX. So the tag is never wider than
+    MODEL_MAX + 1 + EFFORT_MAX columns, and since a tag that does not fit
+    takes the description with it (see row), the caps keep an overlong
+    model or effort from hiding the description at every width: at 80
+    columns a row with a short name always has room for both."""
+    model = one_line(task.get("model"))
+    at = model.find("claude-")
+    if at >= 0 and len(model) > at + 7:
+        model = model[at + 7:]
+    if sum(width(ch) for ch in model) > MODEL_MAX:
+        model = ""          # too long to read at a glance; the description keeps its room
+    eff = task.get("effort")
+    eff = one_line(eff) if isinstance(eff, str) else \
+        k(num(eff)) if num(eff) is not None else ""
+    if sum(width(ch) for ch in eff) > EFFORT_MAX:
+        eff = ""            # a level or budget too long to read at a glance
+    return "·".join(x for x in (model, eff) if x)
+
+
+def cols_of(s):
+    return sum(width(ch) for ch in s)
+
+
+def fit_middle(s, cols):
+    """`s` cut to at most `cols` terminal columns from the middle, both ends
+    kept and joined by an ellipsis (the end gets the odd column), so names
+    that differ only at the end (`implementer-critical`, `implementer-deep`)
+    still differ when cut."""
+    ws = [width(ch) for ch in s]
+    if sum(ws) <= cols:
+        return s
+    if cols < 1:
+        return ""
+    avail = cols - 1
+    tail_room, used, start = (avail + 1) // 2, 0, len(s)
+    while start > 0 and used + ws[start - 1] <= tail_room:
+        start -= 1
+        used += ws[start]
+    head_room, hused, end = avail - used, 0, 0
+    while end < start and hused + ws[end] <= head_room:
+        hused += ws[end]
+        end += 1
+    return s[:end].rstrip() + "…" + s[start:].lstrip()
+
+
+def short_name(name, share):
+    """(text, columns it counts for): `name` within `share` columns (never
+    fewer than NAME_MIN). Whole when it fits, counting its own width; else
+    with a `plugin:` prefix dropped, and that cut from the middle when still
+    too wide, counting the whole share, so the columns a shortened name
+    leaves unused never pass to the description (which would then shrink
+    as the pane widens and the name grows back)."""
+    share = max(share, NAME_MIN)
+    if cols_of(name) <= share:
+        return name, cols_of(name)
+    m = _PREFIX.fullmatch(name)
+    if m:
+        name = m.group(1)
+    return fit_middle(name, share), share
+
+
 def row(task, exact, cols):
     """The row body for one task, or None to keep Claude Code's default."""
     window = num(task.get("contextWindowSize")) or 0
@@ -607,13 +714,25 @@ def row(task, exact, cols):
     plain, colored = fill(tokens, window, approx)
     name = one_line(task.get("name"))
     desc = one_line(task.get("description")) or one_line(task.get("label"))
-    head_plain = (name + SEP if name else "") + plain
+    t = tag(task)
+    if name:            # the name's share: what the fill, tag and some description leave
+        rest = len(SEP) + cols_of(plain)
+        if t:
+            rest += len(SEP) + cols_of(t)
+        if desc:
+            rest += len(SEP) + min(cols_of(desc), DESC_MIN)
+        name, name_cols = short_name(name, cols - rest)
     head = (name + SEP if name else "") + colored
-    room = cols - sum(width(ch) for ch in head_plain)
+    room = cols - cols_of(plain) - (name_cols + len(SEP) if name else 0)
     if room < 1:
         if name:        # too narrow for the name too: the fill alone
             return colored if sum(width(ch) for ch in plain) <= cols else None
         return colored if room == 0 else None
+    if t:
+        tw = len(SEP) + sum(width(ch) for ch in t)
+        if tw > room:       # whole or not at all (a cut model ID misleads),
+            return head     # and the description, cut first, is gone by now
+        head, room = head + SEP + t, room - tw
     if desc and room > len(SEP) + 1:
         return head + SEP + fit(desc, room - len(SEP))
     return head

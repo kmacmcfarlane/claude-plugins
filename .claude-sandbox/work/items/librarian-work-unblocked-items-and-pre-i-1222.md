@@ -7,7 +7,7 @@ priority: 0
 owner: unknown@360f41058e92
 claimed: 2026-09-22T02:36Z
 created: 2026-09-22
-updated: 2026-09-28
+updated: 2026-10-06
 refs:
   - operator 2026-09-22
 ---
@@ -15,8 +15,8 @@ refs:
 Operator 2026-09-22: an idle librarian should work new items as they arrive when no operator decision is needed (doc-only requests nearly always; skill changes often; implementation or complex skill changes warrant an investigation round). Investigations can run without waiting on the operator, so when the operator returns the decisions are ready to present. Today items queue up waiting for attention when many are unblocked or at least investigable. Question: how to achieve this without accidentally running the operator's quota into the ground. Acceptance: an investigation series with findings and a recommendation (routing rules for what proceeds unattended vs what waits; quota guards; how investigations pre-run and park their decisions), presented to the operator; decisions raised by number.
 
 ## Handoff
-- doing: session e9bb00fc (2026-09-24..28) landed c0d6 routing, 56e7, b112, ed26 v1.1, 8de3, f4f8 wi estate + work-review, adef, 2ec4, 9a3a; c121/8519/ba8f landed earlier
-- next: after compaction: status report on top-priority work (operator: quota available again); the old P2/P3 queue list here is stale — rank from wi next and wi needs-input
+- doing: nothing in flight; landed since the last checkpoint: ebbe 614b738, 819f 66cc7ff, 0865 e959ae2, 5bdd e92f0e3, 48a8 12de6eb (+ earlier 5579, dabd); all pushed
+- next: answers 134, 147-156; e184 lands on 147/148 after merging main + short re-review; 5925 builds on 153-155; 2bbe on 149; 0999/3e8e on 150/151; 1ffd after e184
 - blocked: —
 - learned: —
 
@@ -92,3 +92,52 @@ decision 88: the no-unattended-dispatch hold (set 2026-09-24) — (a) keep it: I
   unknown: whether the agents scheduler lands this week
 answer 87: (a) A-D, "work in whatever order makes sense to you" (operator 2026-09-28)
 answer 88: (b) the no-unattended-dispatch hold is lifted for this week: keep working the queue between turns and while the operator is away, stopping at the 15% weekly reserve (operator 2026-09-28)
+decision 132: Which waves of tonight's plan may run unattended (plan shown 2026-09-30 in chat; weekly 41% used, stop at 85%)? — options: (a) waves 1-3, stopping at the reserve; waves 4-5 wait for your review [recommended] | (b) all five waves, stopping at the reserve | (c) wave 1 only | (z) decide later
+  raised: 2026-09-30
+  rec: (a) · basis partial — per-item cost from past rounds (~0.5-1% weekly per planner or review round), not measured per feature
+answer 132: a — "wave 1 approved, continue on up through wave 3 and I'll check on your progress later" (2026-09-30T22:17Z, chat)
+answer 133: a — "133a" (2026-09-30T22:22Z, chat; operator relaunches; the new session runs waves 1-3 per 132 a)
+decision 146: Weekly usage is at 82%, 3 points from your 85% stop on new dispatch, and climbing about 1 point an hour; the reset is 2026-10-05 11:00 UTC. What should happen to the work you just approved? — options: (a) keep the 85% stop: finish what is running (the scan floor's last round, the prices fix, the research-routing plan), and queue the spend reader, the budget rule and the research-routing build until the reset [recommended] | (b) raise the stop to 90% for these items only, so the spend reader and the research-routing build can land before the reset | (c) stop new dispatch now, at 82% | (z) decide later
+  raised: 2026-10-02T22:09Z
+  what: whether your 85% weekly stop holds for the work approved today (answers 144 a, 145 a, and the research routing go-ahead)
+  why now: the reading crosses 85% in about three hours at today's rate, mid-way through that work; blocks: the spend reader (0865), the budget rule (5bdd) and the research-routing build (e184) past their current step
+  why ask: spend — your threshold (answer 132 a / 133 a); moving it is yours
+  context: you set the 85% weekly stop for the unattended run; today you approved 144, 145 and the research routing to land · you decide whether the stop holds for that work — then: none
+  stakes: reversible, narrow — this week's quota
+  (a) keep 85% — running work finishes (each step is about $4-30 list price, roughly 0.2-1.4% of a week); new steps after the line wait about 2.5 days; nothing is lost, each item keeps its handoff — undo: lift it later — who: the queued items
+  (b) 90% for these items — the spend reader and research routing likely land this week; about 5 more points of the week go to them, leaving 10% for everything else until the reset — undo: n/a once spent — who: your other sessions' headroom this week
+  (c) stop now — the running agents finish; nothing new starts until the reset
+  (z) decide later — as (a) by default: the 85% stop is the rule in force
+  rec: (a) · basis strong — the rule is yours and the queued work loses nothing by waiting; this week's spend is already high
+  unknown: how much the research-routing plan and its reviews will cost (planner runs this week were $13-40 each)
+decision 152: How should the agent-scope protocol you just described start? — options: (a) a plan-only spike here after Sunday's weekly reset, with the agents librarian asked now which parts its control plane already covers [recommended] | (b) the same spike now, past the weekly stop if needed | (c) hand it to the agents repo to own, with this repo implementing the librarian-mode side | (z) decide later
+  raised: 2026-10-03T05:05Z
+  what: the first step on agent scope of responsibility (agent-scope-protocol-declared-scope-the-51df): declared scope, the observability and credentialed access that come with it, advertising it, and escalating overlaps to you
+  why now: you just asked for it; blocks: nothing
+  why ask: placement — it spans this repo's librarian-mode (Scope, claims, forwarding 3460) and the agents repo's control plane (claims, ledger), and credentialed access is a trust question; where it is owned is yours
+  context: you described the protocol just now, after a day of peers relaying consent and stepping on blurry lines · you decide where it starts and when — then: none
+  stakes: reversible, narrow — planning only
+  (a) plan here after the reset, agents asked now — a cheap peer question now avoids planning what their back end already does; the plan comes back with placement and the credential questions for you — undo: n/a — who: this repo and agents
+  (b) plan now — starts today; a planner run is about 1-2% of a week, with weekly at 83% of your 85% stop
+  (c) the agents repo owns it — fits its control-plane role; this repo builds the librarian-mode half when their spec lands
+  (z) decide later — the item waits
+  rec: (a) · basis partial — the agents back end already has claims and a ledger, so asking first avoids duplicate design; quota is tight until Sunday
+  unknown: how much of this the agents control-plane plan already covers
+answer 152: 152a - I'm imagining a simple skill change in the librarian skill in the short term (interview scope for the Librarian CLAUDE.md section, ask to fill it for repos that don't have it filled yet). Good to consider the long-term solution for this with the `agents` librarian too (read as: (a), shaped — short term, a librarian-mode skill change: the opt-in interviews the repo's scope of responsibility into the ## Librarian section, and a librarian whose repo's section lacks it asks to fill it at start; long term, worked out with the agents librarian, asked now)
+note: 2026-10-05 17:36Z — moot: the weekly window reset (2026-10-05 11:00 UTC) before any queued work crossed 85%; the librarian withdraws decision 146 unless the operator objects; the queued work (spend reader 0865, the scope interview plan 5925) starts under the 85% stop as it stands
+decision 176: When the weekly quota is plentiful, should reaching an item's spend budget still stop and ask you, or just be noted while the rounds go on? — options: (a) below 50% weekly use, a reached budget is noted in the Report and rounds continue; at or above 50% it asks as today [recommended] | (b) double every default budget, asks unchanged | (c) keep the budgets as they are | (z) decide later
+  raised: 2026-10-06T19:10Z
+  what: how the per-item spend budget (answer 145 a) behaves while your subscription quota is cheap; the dollar figures are list-price equivalents, not money you pay
+  why now: you said you don't want good work cut off early to save quota that is cheap right now; blocks: nothing
+  why ask: rule-change — the budget rule is yours (145 a)
+  context: you replaced the round cap with a spend budget per item (145 a) · you decide whether plentiful quota should loosen it
+  impact: → while the week is under half used, no item stops to ask you about its budget; you see the overrun in the Report · later: budgets keep asking at today's amounts · reach: every dev-cycle item the librarian runs · undo: an edit
+  (a) quota-aware — the convergence stop (a review whose must-fix count stops falling) and the reserve guards stay; only the budget ask is waived under 50% weekly
+  (b) double the defaults — fewer asks at any quota level; still asks at the new amounts
+  (c) keep as is — asks at $10 chore, $12 bug, $22 build, $28 plan, $40 spike
+  (z) decide later — budgets stay as they are
+  rec: (a) · basis partial — it ties the ask to what is actually scarce, your quota, and keeps the stop that catches work going in circles
+  unknown: whether 50% is the right line for you
+answer 176: 176a (2026-10-06T19:28Z, chat; read as: (a) quota-aware — below 50% weekly use a reached budget is noted in the Report and rounds continue; at or above 50% it asks as today; the convergence stop and the reserve guards stay)
+helper: scribe sonnet low — cards.json for the decision page (15 open decisions) — agent ae38c041c289219b5
+note: 2026-10-07T20:40Z decision page published https://claude.ai/artifact/7BXtgDngojdMHBr17K33zr (15 cards, rev 2026-10-07T07:00Z; answers owner-write); answers read back when the operator says done

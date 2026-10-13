@@ -22,7 +22,7 @@ Pass it as claude's initial prompt. Fill NAME and PURPOSE (the user's words from
 one line — collapse newlines to spaces):
 
 ```
-This is NAME, a new repo for this thread: PURPOSE. README.md states the purpose; nothing else exists yet. First, write this repo's CLAUDE.md the way /init does: the purpose, the layout, how to build and test once there is something to build, and the conventions to follow. Keep it short and grounded in what is actually here, and commit it. Then run the thread's first investigation into the purpose above: use the investigate skill (dev-flow plugin) if this session has it, otherwise investigate directly and write your findings and the proposed next steps into the repo. Ask me before choosing a stack or anything else that is hard to reverse.
+This is NAME, a new repo for this thread: PURPOSE. README.md states the purpose; nothing else exists yet. First, write this repo's CLAUDE.md the way /init does: the purpose, the layout, how to build and test once there is something to build, and the conventions to follow. Keep it short and grounded in what is actually here, and commit it. Then run the thread's first investigation into the purpose above: if the thread needs its requirements and architecture settled before any code, use the foundation skill (dev-flow plugin) if this session has it; in any other case, or without that skill, use the investigate skill (dev-flow plugin) if this session has it, otherwise investigate directly and write your findings and the proposed next steps into the repo; if a skill this asks you to use is missing from this session, say which one in one clause of your reply. Ask me before choosing a stack or anything else that is hard to reverse.
 ```
 
 With a template goal (Step 4 ran), replace "nothing else exists yet" with "it was
@@ -36,7 +36,7 @@ append that clause after the template one), and replace the sentence beginning "
 the thread's first investigation" with:
 
 ```
-Then read that series and extend it rather than starting a new one: use the investigate skill (dev-flow plugin) if this session has it, writing the next serial after the highest one there, never a new 00; otherwise add your findings and the proposed next steps as a new file at that next serial. If that directory is not here yet, the series has not been moved: move it from OLD as the investigate skill describes if you can reach it, otherwise ask me where it is.
+Then read that series and continue it rather than starting a new one: if its INDEX.md has a `## Foundation` block, resume it with the foundation skill (dev-flow plugin) if this session has it; in any other case, or without that skill, extend it with the investigate skill (dev-flow plugin) if this session has it, writing the next serial after the highest one there, never a new 00; otherwise add your findings and the proposed next steps as a new file at that next serial; if a skill this asks you to use is missing from this session, say which one in one clause of your reply. If that directory is not here yet, the series has not been moved: move it from OLD as the investigate skill describes if you can reach it, otherwise ask me where it is.
 ```
 
 SLUG and OLD passed Step 1's check (SKILL.md), so each is one line with no newline to

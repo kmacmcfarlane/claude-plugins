@@ -24,6 +24,9 @@ No id can name a path outside its directory.
 
 ## 2. The sensor record (status line → any reader)
 
+A summary of this section is copied in statusline-hub's `hook-contract.md` § 12; change
+both together.
+
 - Path: `CFG/statusline/sensor/<safe_sid>.json`. Its writers all follow the rules below:
   the `statusline-hub` plugin, before its display hooks run on each render it owns and
   through its `tee` command for a status line another renderer draws; and the status line
@@ -60,10 +63,14 @@ No id can name a path outside its directory.
   render with neither block writes nothing.
 - How `context-guard` reads it (informative, not part of the contract): an `exact` block
   under 600 s old is its exact depth, which can hard-block. Without one it derives the window
-  from Claude Code's own selection logic; a derived window hard-blocks only when every input it
+  from documented and observed rules (`hooks/window_rules.py`); a derived window hard-blocks only when every input it
   depends on was observed, and warns otherwise, as a depth inferred from the transcript does.
   A fresh record also cross-checks the derived window (a disagreement is logged and makes that
   Claude Code version warn-only). `CONTEXT_GUARD_DERIVE=off` turns derivation off.
+  A new epoch (a compaction or `/clear`) reads an `exact` block whose `at` is at or before
+  the epoch's start, or up to 2 s after it, as window-only: Claude Code can build a payload
+  before the compaction that the status line reads just after it. The new epoch's first
+  exact reading is expected to be the render after its first response.
 - Pruning: the plugin's SessionStart hook deletes records not modified for 30 days (never
   the starting session's own) and orphaned temp files older than one hour, at most once a day
   (the `.pruned` stamp in the same directory). A pruned record reads as absent.

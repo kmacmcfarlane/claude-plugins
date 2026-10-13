@@ -28,7 +28,7 @@ results (~105K), user-turn text (~80K), harness attachments (~105K) — sum to ~
 971K peak. **The remaining ~54% can only be retained thinking** (plus system prompt and tool
 definitions, ~25K).
 
-**Finding 2 — hidden reasoning is retained live and persisted nowhere.** 559 thinking blocks
+**Finding 2 — hidden noodle notes are retained live and persisted nowhere.** 559 thinking blocks
 on disk, 1.8K characters of content between them — effectively none — and a 428-char
 signature each. It is simultaneously the largest
 consumer of the window and the only thing that is a *total* loss at compaction. Nothing that
@@ -85,7 +85,7 @@ turns and anything the agent is actively reasoning over, and evicts oldest-and-m
 rather than oldest-in-time. Its stated failure modes of summarisation — *unpredictable
 lossiness, destruction of causal structure, blocking cost, compression-induced hallucination* —
 are the four things observed here. The design lesson: **a checkpoint's job is to convert
-exploratory context (reasoning) into persisted effects (files), so that all of it becomes
+exploratory context (noodle notes) into persisted effects (files), so that all of it becomes
 safely evictable.** Compaction is then lossless in the only sense that matters.
 
 The community "handoff" pattern (a `HANDOFF.md` distinct from `CLAUDE.md`: *standing context*
@@ -102,38 +102,45 @@ Three layers, escalating; the first two are hooks, the third is a skill.
    exposes exact depth) and writes them to its neutral sensor record,
    `${CLAUDE_CONFIG_DIR:-~/.claude}/statusline/sensor/<session>.json` (`"v": 1`; any other `v`
    reads as absent). Hooks read that; they do not get the fields themselves. Without a fresh
-   record the gate derives the window itself (`hooks/window_rules.py`, the "window mirror"):
-   it duplicates Claude Code's own selection — the transcript's `attachment.type:"model"`
-   line, the native-1M model table, the `[1m]` suffix, `CLAUDE_CODE_DISABLE_1M_CONTEXT`,
-   `CLAUDE_CODE_MAX_CONTEXT_TOKENS` (first under `DISABLE_COMPACT`, last for custom models)
-   and the long-context-credits latch a 429 leaves in the transcript — and counts tokens from
-   the transcript's post-boundary `usage` blocks. A window whose every input was observed is
-   *resolved* and gates like an exact one; one that depends on something a hook cannot see
-   (SDK betas, the served catalog, a 3P provider or gateway, an unknown model, a pending model
-   switch, and — above 200K — a credits latch it cannot rule out for this very process) is
-   *unresolved* and only warns (a false hard block is never acceptable); the depth then
-   falls back to transcript `usage` inference as before. When the status line is present it
-   wins, and a disagreement is logged to `claude-kit/context-gate/window-mismatch.jsonl` and
-   demotes that Claude Code version to warn-only (the table is copied from 2.1.277,
-   `RULES_CC_VERSION`). The gate also warns against the auto-compact window when one is
+   record the gate derives the window itself (`hooks/window_rules.py`, the window rules):
+   it derives the window from documented and observed rules, each cited in that file — the
+   transcript's `attachment.type:"model"` line, the models the Claude Code docs list as
+   running at 1M, the `[1m]` suffix, `CLAUDE_CODE_DISABLE_1M_CONTEXT`,
+   `CLAUDE_CODE_MAX_CONTEXT_TOKENS` (under `DISABLE_COMPACT`, and for custom models) and the
+   documented usage-credits error for 1M context in the transcript — and counts tokens from
+   the transcript's post-boundary `usage` blocks. A window whose every input was observed,
+   under a cited rule, is *resolved* and gates like an exact one; one that depends on
+   something a hook cannot see or no cited rule covers (betas, a 3P provider or gateway, a
+   model no Claude Code doc or observation covers, a pending model switch, a value spelled
+   in a way the docs do not describe, the credits error itself, and — above 200K — a credits
+   error it cannot rule out for this very process) is *unresolved* and only warns (a false
+   hard block is never acceptable); the depth then falls back to transcript `usage`
+   inference as before. When the status line is present it wins, and a disagreement is
+   logged to `claude-kit/context-gate/window-mismatch.jsonl` and demotes that Claude Code
+   version to warn-only (`RULES_CC_VERSION` is the version the cited rules were last checked
+   against). The gate also warns against the auto-compact window when one is
    configured below the model window (`CLAUDE_CODE_AUTO_COMPACT_WINDOW`, the
    `autoCompactWindow` setting), and would hard-stop there only when every settings layer
-   that could set or cancel it was read; server-managed policy can never be ruled out from a
-   hook on 2.1.277, so in practice the auto-compact window only warns. The compaction gate keeps the
+   that could set or cancel it was read; server-managed settings, which Claude Code fetches
+   from the server at startup and hourly, can never be ruled out from a hook, so in practice
+   the auto-compact window only warns. The compaction gate keeps the
    pre-mirror depth: a derived window never defers a compaction. `CONTEXT_GUARD_DERIVE=off`,
    or a `CLAUDE_KIT_CONTEXT_WINDOW` pin, turns the mirror off. (That pin, and
    `CLAUDE_KIT_LEDGER_EVERY`, were later renamed `CONTEXT_GUARD_CONTEXT_WINDOW` and
    `CONTEXT_GUARD_LEDGER_EVERY`; the old names remain deprecated aliases.) The account file in the home directory
-   is never opened. context-guard's own deprecated copy of the status line (kept
-   one release for entries that still point at it) writes the same `exact` block into
-   `~/.claude/claude-kit/context-gate/<session>.json` (a historical directory name). The hooks
-   read both records and use the one with the larger `exact.at` (`lib_context.sensor`); a
-   sensor file that is not a regular file, or whose `at` is more than 60s in the future, reads
-   as absent. They never write the sensor file: a new epoch stamps `epoch_at` in the gate's
-   own state, and a record stamped at or before it counts as window-only. A transcript usage
-   count stamped at or before `epoch_at` is dropped the same way (depth unknown until the
-   epoch's first response): Claude Code can run the queued opener's hook before the
-   compaction's boundary line reaches disk. The gate publishes
+   is never opened. The hooks read only the sensor record (`lib_context.sensor`); a sensor
+   file that is not a regular file, or whose `at` is more than 60s in the future, reads as
+   absent. (context-guard once shipped its own copy of the status line, which wrote the same
+   `exact` block into its gate state; that copy is gone, and a block it left there is
+   ignored.) They never write the sensor file: a new epoch stamps `epoch_at` in the gate's
+   own state, and a record stamped at or before it, or up to 2 s after it (`EPOCH_GRACE_S`:
+   Claude Code can build a payload before the compaction that the status line reads just
+   after it), counts as window-only, even when the clock has since stepped back past
+   `epoch_at` (that only silences the gate). A transcript usage count stamped at or before
+   `epoch_at` is dropped the same way (depth unknown until the epoch's first response):
+   Claude Code can run the queued opener's hook before the compaction's boundary line
+   reaches disk. For transcript counts only, an `epoch_at` more than 60 s ahead of the clock
+   is ignored: such a stale count lives only until the boundary line lands. The gate publishes
    its threshold anchors and gauge labels to `claude-kit/context-gate/gauge.json` (`"v": 1`)
    at SessionStart, generated from the same `ANCHORS` constant it gates on. context-guard
    never writes `settings.json`: the `statusLine` entry belongs to the `statusline-hub` plugin.
@@ -142,23 +149,77 @@ Three layers, escalating; the first two are hooks, the third is a skill.
    decide.
 3. **Gate** (`PreCompact`, hook itself ignores manual triggers) — corrected by agents decision 0007: re-defers on
    every automatic attempt, not just the first, while no checkpoint has run this epoch and
-   depth is provably proactive (`precompact_gate.py:46-60`); it ends when a checkpoint records
+   depth is provably proactive (`precompact_gate.py`); it ends when a checkpoint records
    or depth crosses HARD, whichever comes first. Per the hooks reference, blocking a proactive
    compaction is free; blocking one that fired to recover from a context-limit error already
    returned makes the in-flight request fail, and the hook cannot tell the two apart. No wedged
    session, bounded by depth rather than by a count. Manual `/compact` is never touched.
-4. **Checkpoint skill** — Step 0 asks the operator the goal (*continue / handoff*)
+   **Corrected 2026-10-09 (work item 22b2):** Claude Code also starts automatic compactions
+   on an idle session, at any fill (observed from transcripts on Claude Code 2.1.292: the
+   attempts arrived about 54 minutes after the last turn end). With a checkpoint recorded, the
+   gate used to let any automatic attempt through, so idle compactions at 72–82% fill went
+   through; and the Stop relay asked for a checkpoint after any deferral, even at 28% fill,
+   which unlocked the next idle attempt. The operator expects compaction only when the window
+   is really full. So the gate now defers every proactive automatic attempt while more than
+   DUE remains: always before a checkpoint this epoch, and after one while the session is
+   idle at its last measured fill (no `type: user` line, a prompt or tool result, after the
+   last assistant line with usage; an unreadable transcript counts as not idle). Input since
+   that fill may have overflowed it unseen, and holding a recovery compaction then would
+   leave only a manual `/compact` to free the session. At or under DUE it releases only
+   after a checkpoint this epoch; HARD still always releases. `compact_deferred` is set
+   only for a deferral at or under DUE, the one a checkpoint would release. The Stop relay
+   asks for a checkpoint only at or under DUE, once per epoch; a deferral above DUE relays
+   nothing.
+4. **Checkpoint skill** — Step 0 settles the goal (*continue / handoff*)
    because that is the one input nobody else holds and it changes everything downstream:
    *continue* means residue then `/compact` with drafted guidance; *handoff* means a brief
    for a fresh session or the owning repo. (A third mode, `land`, was dropped on
-   2026-09-22: a finished thread is a handoff whose goal says so.) The brief is one
+   2026-09-22: a finished thread is a handoff whose goal says so.) Since 2026-10-09 it
+   drafts all three of its answers, acts on them and echoes them, asking first only at a
+   fork (below). The brief is one
    manifest per session, in the config dir rather than the repo, so concurrent sessions in
    one checkout cannot overwrite each other's; since its path can no longer be guessed,
-   every checkpoint prints it, and a handoff also prints the commands to continue. Step 2 writes reasoning residue
+   every checkpoint prints it, and a handoff also prints the commands to continue. Step 2 writes noodle notes residue
    from the live session (Finding 2). Step 3 routes twice — task knowledge to its owning repo,
    harness friction to the plugin repo — because a session has two outputs, and the second is
-   the one that improves the next session. Step 4 delegates the mechanical flush to a **fork**
+   the one that improves the next session. Step 4a½ writes what only the conversation held
+   about each open item into that item before the manifest (the operator's standing request,
+   decision 179 (a), 2026-10-07): the manifest lives in the config dir and is one session's,
+   while the item travels with the repo to whoever picks it up next. Step 4 delegates the mechanical flush to a **fork**
    (inherits history + cache; a fresh subagent starts empty and is the wrong primitive here).
+
+**Added later: Step 0 acts on its drafts** (the operator's request, decision 196 (a),
+2026-10-09). Step 0 used to ask its three questions (mode, what is in flight, the window)
+on every attended checkpoint, as a dialog when nothing was running, and the operator
+reported taking the drafted answer almost every time. Observed in a one-off count over the
+operator's local transcripts, of the Step 0 dialog records and their answers (Claude Code
+2.1.251 to 2.1.293 by the records' `version` field, 2026-08-31 to 2026-10-08): *continue*
+drafts were taken every time they were answered (7 of 7); *handoff* drafts were mostly
+overridden, each time to *continue* (taken 2 of 5); and some dialogs were interrupted so
+the operator could say something the options did not hold. So Step 0 now drafts all three,
+acts on them, and opens Step 7's close with one `Acted on:` echo line whose reply line
+changes them; it asks first, as text, only at a fork: a *handoff* nobody named, a deferred
+automatic compaction, an agent in flight or an uncertain inventory line, or guidance that
+would drop a REFUSED line or a hold. Acting passes the FYI-after-acting test (act, then
+report, only for what is two-way, narrow, relied on by nobody before review, and inside
+authority already given): the reply line re-runs the checkpoint and rewrites the manifest,
+and the checkpoint compacts and clears nothing; it touches one session's manifest and
+close; the manifest is read only after the operator's own `/clear`, `/compact` or pasted
+opener, each after the echo is on screen; and the authority is the checkpoint being run,
+typed by the operator or started by the gate they installed. The one exception is a
+deferred automatic compaction: the mark releases it, so the manifest can be re-injected
+before the echo is read, and question 1 is a fork there unless the operator's words named
+the mode. Each other fork is where a condition fails: an unclear mode is the operator's
+call, an agent in flight relies on the roster, an uncertain line is not a fact to act on,
+and a REFUSED line or a hold is the operator's ruling. The echo stands in for the decisions
+skill's `Done:` line without loading that skill: it carries the same parts (what was done,
+the authority, the undo) in a shape that fits a close which must stay short and end on the
+opener. A standing counter of default acceptance per question was weighed and not built:
+the one-off count answered it; after this change Step 0 asks only at forks, whose rare "no"
+is what they exist for, so acceptance alone would mislead; the overrides already sit in
+the transcripts as reply-line prompts; and a counter would write new state on the
+every-prompt path or spend window on every checkpoint. If the count is ever repeated, keep
+it metadata-only: read the records' fields, never their content.
 
 **Added later: the mid-turn check** (`PostToolUse`, `hooks/turn_gate.py`). The layers above
 see only turn boundaries, and an unattended turn has none: one 53-minute tool loop filled a

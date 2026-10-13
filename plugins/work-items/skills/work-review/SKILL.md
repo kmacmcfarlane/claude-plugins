@@ -27,7 +27,10 @@ WI="python3 ${CLAUDE_PLUGIN_ROOT}/skills/work-items/scripts/wi.py"
 - **Plain words for items.** Name every work item by what it is ("move the nightly
   export off the old host"), with its id at most as a trailing tag: `(a1b2)`, the last four
   hex of the id.
-  A bare id means nothing to the operator.
+  A bare id means nothing to the operator. The name is the item's `short_display_name`
+  from `wi estate --json` when it is set, else one you write from the title; never set
+  it, since the review is read-only. The `operator-interaction` plugin's `plain-names`
+  skill, when loaded, is the full rule.
 - Secrets: an item may name a path or key; never print a value, even one found in an item.
 
 ## Step 1: Sweep
@@ -47,8 +50,10 @@ submodule are their own repos and are kept. Each list is capped per store; `omit
 what was left out. The JSON gives, per store: `counts`
 (`open`, `todo`, `doing`, `blocked`, `parked`, `grooming`, `ready`, `done`, `dropped`),
 the top `ready` items in `wi next` order, unanswered `decisions` (with `raised` and
-`age_days` when the stored card has a `raised:` line), `stale` doing claims (older than
-`--stale`, default 24h), `security` items, and `problems`.
+`age_days` when the stored card has a `raised:` line, and `first_shown`, `last_shown`,
+`last_seen` and `unseen` from the item's shown and seen lines, `null` when it has none),
+`stale` doing claims (older than `--stale`, default 24h), `security` items, and
+`problems`.
 
 `security` is a keyword hint (a security- or privacy-shaped tag, or a title naming a
 secret, credential, password, key, leak or exposure), not a verdict. Confirm each one before calling
@@ -66,7 +71,7 @@ $WI --root <repo path>/<store> show <id> --brief
 
 `path` is printable: a name byte that is not UTF-8 shows as `\xe9` and will not open. When
 `path` holds such an escape, take the real path from `path_raw` (the exact bytes, base64):
-`python3 -c 'import base64,os,sys; print(os.fsdecode(base64.b64decode(sys.argv[1])))' <path_raw>`.
+`python3 -I -c 'import base64,os,sys; print(os.fsdecode(base64.b64decode(sys.argv[1])))' <path_raw>`.
 
 Keep the reads few. A store listed with `problems` is reported as it stands; do not repair
 it.
@@ -96,8 +101,12 @@ Write it in this order, short enough to read in two minutes:
    operator cannot act on. Group quiet repos into one line ("garden-api, notes: nothing
    in flight, a few ready items each").
 3. **Waiting on you.** The open decisions, per repo, each named in plain words with how long
-   it has waited when `age_days` is known, and the note that it is answered in that repo's
-   own session. Oldest and most blocking first.
+   it has waited when `age_days` is known, its recommendation as its stored headline (the
+   decision's `text`) names it — read by the marks and labels the `work-items` skill's
+   `references/format.md` § Operator questions lists, a label shown as the label, and "no
+   recommendation recorded" only when the headline names neither — and the note that it
+   is answered in that repo's own session. Oldest and most blocking first. Showing the
+   recommendation is not asking: never put the options to the operator here.
 4. **Stale claims.** Work marked doing with an old claim: name it and its owner, and suggest
    the owning session check it. Do not release it.
 5. **What to do next.** One recommendation, then at most two runners-up. For each: what it
@@ -112,8 +121,12 @@ Write it in this order, short enough to read in two minutes:
 When the overview needs a decision from the operator (which repo to take up next, say), put
 it last, after the overview. When the `decisions` skill from the operator-interaction plugin
 is loaded, follow it for how to write that decision. Without it, give a numbered list: one
-decision per number, each option with its impact, the recommended option first, and
-"decide later" always offered.
+decision per number, each with its own recommendation, its options in (a), (b), (c) order
+with their impact and the recommended one in bold — never moved first — and "decide later"
+always offered.
+
+When the session lists `operator-interaction:plain-names`, load it before writing the
+overview. Without it, the "Plain words for items" rule above stands.
 
 ## Examples
 

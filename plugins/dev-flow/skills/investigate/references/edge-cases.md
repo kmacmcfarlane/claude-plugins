@@ -33,5 +33,8 @@ container, every question deferred, a sweep with no candidates, a problem that i
 - **No relevant code found anywhere** — still write the plan; say so in Existing Architecture
   and suggest where else to look.
 - **User rejects at the gate** — nothing written. Confirm that to the user.
+- **The request is green-field** — a new project or a large new aim with no requirements
+  yet, where the code has nothing to read first. Point to the `foundation` skill; continue
+  here only for a scoped plan the user still wants.
 - **Problem turns out to be several problems** — say so, and propose one series each rather
   than one plan covering all of them. Cross-reference the sibling slugs in each Out of Scope.

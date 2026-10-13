@@ -25,14 +25,18 @@ import json
 import os
 import re
 import shlex
+import shutil
 import stat
 import subprocess
 import sys
+import tempfile
 import time
+import unicodedata
 from datetime import datetime, timezone
 from pathlib import Path
 
-FIELD_ORDER = ["id", "title", "type", "status", "stage", "priority", "tags",
+FIELD_ORDER = ["id", "title", "short_display_name", "type", "status", "stage",
+               "priority", "tags",
                "deps", "parent", "owner", "claimed", "blocked", "parked",
                "grooming", "feedback",
                "mode", "complexity", "alias", "created", "updated", "closed",
@@ -47,6 +51,9 @@ STATUSES = {"todo", "doing", "blocked", "parked", "grooming", "done", "dropped"}
 STAGES = {"implement", "review", "testing", "uat", "uat_feedback"}
 MODES = {"autonomous", "interactive", "mixed"}
 COMPLEXITIES = {"low", "medium", "high"}
+# short_display_name: the optional name agents give an item to the operator
+# (format.md § Short display name and tag); wi checks its shape only
+SHORT_NAME_MAX = 40
 ID_RE = re.compile(r"^[a-z0-9][a-z0-9-]{0,40}-[0-9a-f]{4}$")
 ALIAS_RE = re.compile(r"^[SBRWM]-\d{1,3}$")
 HANDOFF_KEYS = ("doing", "next", "blocked", "learned")
@@ -191,6 +198,50 @@ def decision_raised(item):
         if m:
             raised.setdefault(current, m.group(1))
     return raised
+
+
+# A showing of decision N and the operator's turn that saw it (the format
+# reference's § Shown and seen): column-0 lines appended by the session that
+# displays the decision. Only a line whose first token is a UTC time reads.
+_UTC = r"(\d{4}-\d\d-\d\dT\d\d:\d\d(?::\d\d)?Z)\b"
+SHOWN_RE = re.compile(r"^shown (\d+):\s*" + _UTC)
+SEEN_RE = re.compile(r"^seen (\d+):\s*" + _UTC)
+
+
+def decision_showings(item):
+    """{N: {"first_shown", "last_shown", "last_seen", "unseen"}} from the
+    `shown N:` and `seen N:` lines, times kept as written. First and last
+    are by position; `unseen` is None with no `shown N:` line, True when no
+    `seen N:` line follows the last `shown N:` line in file order (never by
+    comparing times), else False. Same fence rule as unanswered_decisions."""
+    lines = item.body.replace("\r\n", "\n").split("\n")
+    fenced = set()
+    for i, j in _fence_spans(lines):
+        fenced.update(range(i, j + 1))
+    out = {}
+    for i, line in enumerate(lines):
+        if i in fenced:
+            continue
+        m = SHOWN_RE.match(line)
+        if m:
+            rec = out.setdefault(int(m.group(1)), _no_showing())
+            if rec["first_shown"] is None:
+                rec["first_shown"] = m.group(2)
+            rec["last_shown"] = m.group(2)
+            rec["unseen"] = True
+            continue
+        m = SEEN_RE.match(line)
+        if m:
+            rec = out.setdefault(int(m.group(1)), _no_showing())
+            rec["last_seen"] = m.group(2)
+            if rec["unseen"] is not None:
+                rec["unseen"] = False
+    return out
+
+
+def _no_showing():
+    return {"first_shown": None, "last_shown": None, "last_seen": None,
+            "unseen": None}
 
 
 class WiError(Exception):
@@ -829,6 +880,14 @@ class Item:
             errs.append(f"priority out of range: {m['priority']}")
         if m.get("alias") and not ALIAS_RE.match(m["alias"]):
             errs.append(f"invalid alias '{m['alias']}'")
+        # add and set strip the value and check its length first (exit 1),
+        # so this catches a hand-written one: blank, padded or too long
+        name = m.get("short_display_name")
+        if name is not None and not (
+                isinstance(name, str) and name == name.strip()
+                and 1 <= len(name) <= SHORT_NAME_MAX):
+            errs.append(f"short_display_name must be 1-{SHORT_NAME_MAX} "
+                        "chars, no surrounding spaces")
         if m.get("status") == "blocked" and not m.get("blocked"):
             errs.append("blocked without a reason")
         if m.get("status") == "parked" and not m.get("parked"):
@@ -908,27 +967,95 @@ def _dir_level(pattern, root):
     return any(fnmatch.fnmatchcase(d, last) for d in parents)
 
 
+# The store's recorded tracking choice (39a2): `wi init` writes it, prime and
+# lint read it. A store without the file (or without a valid `tracking:`
+# line) has no recorded choice.
+STORE_FILE = "store.yaml"
+TRACKING_CHOICES = ("tracked", "ignored")
+
+
+def read_tracking(root):
+    """'tracked' | 'ignored' | None (no file, or no valid tracking: line)."""
+    raw = _store_tracking_raw(root)
+    return raw if raw in TRACKING_CHOICES else None
+
+
+def _store_tracking_values(root):
+    """Every tracking: value as written, in order, or None when there is no
+    readable store file."""
+    try:
+        text = (root / STORE_FILE).read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError):
+        return None
+    values = []
+    for line in text.splitlines():
+        m = re.match(r"^tracking:\s*(.*?)\s*$", line)
+        if m:
+            values.append(m.group(1).strip("\"'"))
+    return values
+
+
+def _store_tracking_raw(root):
+    """The first tracking: value as written ('' for a file without one), or
+    None when there is no readable store file."""
+    values = _store_tracking_values(root)
+    if values is None:
+        return None
+    return values[0] if values else ""
+
+
+def write_tracking(root, choice):
+    atomic_write(root / STORE_FILE,
+                 "# wi store settings; format: the work-items skill's "
+                 "references/format.md\n"
+                 f"tracking: {choice}\n")
+
+
 def custody_warning(root):
     """One-line warning when the store is silently untracked, else None.
-    Silent outside git, when git is missing or slow, or on any git error."""
+    Silent outside git, when git is missing or slow, or on any git error,
+    and for a store whose recorded choice is `ignored` (39a2)."""
+    tracking = read_tracking(root)
+    if tracking == "ignored":
+        return None
+    if tracking == "tracked":
+        head = (f"wi: WARNING store {root} is silently untracked, against "
+                f"its recorded choice (tracking: tracked in {STORE_FILE}): ")
+        tail = "; or, if it is meant to stay local, run `wi init --no-track`"
+    else:
+        head = f"wi: WARNING store {root} is silently untracked: "
+        tail = ("; then record the choice: `wi init --track`, or "
+                "`wi init --no-track` if it is meant to stay local")
+    body = _custody_body(root)
+    return None if body is None else head + body + tail
+
+
+def _ignore_rule(root, *extra):
+    """The (source, line, pattern) of the rule that ignores a new item's
+    path in the store, None when nothing does, False when git cannot say."""
+    r = _git(root, "check-ignore", "-v", "-z", *extra, "--stdin",
+             stdin=f"items\0{PROBE_ITEM}\0")
+    if r is None or r.returncode not in (0, 1):
+        return False
+    fields = r.stdout.split("\0")
+    for i in range(0, len(fields) - 3, 4):   # source, linenum, pattern, path
+        src, lineno, pattern = fields[i:i + 3]
+        if pattern and not pattern.startswith("!"):   # a negation un-ignores
+            return (src, lineno, pattern)
+    return None
+
+
+def _custody_body(root):
+    """The cause and fix of a silently untracked store, or None."""
     # the probe path, not only `items`, catches a store whose tracked files
     # mask the ignore rule: check-ignore skips tracked paths, but a new
     # item's path is still matched against the rule. -v names the rule; -z
     # (which git allows only with --stdin) gives NUL-separated fields with
     # paths unquoted, so a source path holding ':N:', a tab or a non-ASCII
     # byte parses; _git decodes the raw bytes without failing.
-    r = _git(root, "check-ignore", "-v", "-z", "--stdin",
-             stdin=f"items\0{PROBE_ITEM}\0")
-    if r is None or r.returncode not in (0, 1):
+    rule = _ignore_rule(root)
+    if rule is False:
         return None
-    fields = r.stdout.split("\0")
-    rule = None
-    for i in range(0, len(fields) - 3, 4):   # source, linenum, pattern, path
-        src, lineno, pattern = fields[i:i + 3]
-        if pattern and not pattern.startswith("!"):   # a negation un-ignores
-            rule = (src, lineno, pattern)
-            break
-    head = f"wi: WARNING store {root} is silently untracked: "
     if rule:
         src, lineno, pattern = rule
         shape, _ = sandbox_shape(root)
@@ -953,7 +1080,7 @@ def custody_warning(root):
         else:
             remedy = f"remove or negate that rule{there}"
         if shape == "sidecar":
-            return head + f"new items are git-ignored by {where}; fix: {remedy}"
+            return f"new items are git-ignored by {where}; fix: {remedy}"
         fix = [f"new items are git-ignored by {where}; fix: {remedy}"]
         if shape is not None:
             fix.append(" and set trackInHost: true in the sandbox config (a "
@@ -964,14 +1091,14 @@ def custody_warning(root):
                 # ignore; removing it would publish private items
                 fix.append(", or, for a public repo, give .claude-sandbox/ "
                            "its own sidecar git")
-        return head + "".join(fix)
+        return "".join(fix)
     n = len(item_paths(root))
     if n < UNTRACKED_MIN_ITEMS:
         return None
     r = _git(root, "ls-files", "--", ".")
     if r is None or r.returncode != 0 or r.stdout.strip():
         return None
-    return head + f"it holds {n} items and git tracks none; fix: `git add` the store"
+    return f"it holds {n} items and git tracks none; fix: `git add` the store"
 
 
 class Lock:
@@ -1014,12 +1141,53 @@ def atomic_write(path, text, create=False):
     """tmp+rename. With create=True the file must not exist yet: the tmp is
     moved into place by _move_no_clobber, which fails rather than replace a
     file that appeared since the caller looked (O_EXCL semantics, and the
-    content still lands in one step)."""
-    tmp = path.with_name(path.name + ".tmp" + str(os.getpid()))
-    with open(tmp, "w", encoding="utf-8", newline="") as fh:
-        fh.write(text)
+    content still lands in one step). The tmp gets a fresh random name,
+    created exclusively (mkstemp, O_EXCL), so a planted symlink is never
+    written through and a stale tmp from a killed write is never in the
+    way; its `<name>.tmp` prefix keeps the stale-reservation glob and the
+    store's `*.tmp*` ignore matching it."""
+    _atomic_write(path, text, create=create)
+
+
+def atomic_write_bytes(path, data, create=False, keep_mode=False):
+    """atomic_write for bytes; keep_mode copies an existing file's mode."""
+    _atomic_write(path, data, create=create, keep_mode=keep_mode)
+
+
+def _umask():
+    mask = os.umask(0o022)
+    os.umask(mask)
+    return mask
+
+
+def _atomic_write(path, data, create=False, keep_mode=False):
+    fd, name = tempfile.mkstemp(dir=path.parent, prefix=path.name + ".tmp")
+    tmp = Path(name)
+    try:
+        # mkstemp makes the file 0600; a plain create would honour the umask
+        os.fchmod(fd, 0o666 & ~_umask())
+        if isinstance(data, bytes):
+            fh = open(fd, "wb")
+        else:
+            fh = open(fd, "w", encoding="utf-8", newline="")
+    except BaseException:
+        os.close(fd)
+        tmp.unlink()
+        raise
+    try:
+        with fh:
+            fh.write(data)
+        if keep_mode and os.path.isfile(path) and not os.path.islink(path):
+            shutil.copymode(path, tmp)
+    except BaseException:
+        tmp.unlink()
+        raise
     if not create:
-        os.replace(tmp, path)
+        try:
+            os.replace(tmp, path)
+        except BaseException:
+            tmp.unlink()
+            raise
         return
     try:
         _move_no_clobber(tmp, path)
@@ -1331,6 +1499,19 @@ def item_json(item, by_id=None):
     return rec
 
 
+def title_cell(title, name):
+    """What a text row prints for an item's title: `[<name>] <title>` when
+    it has a short display name, else the title alone. One cell, so no
+    `--plain` column moves (a name holds no tab: the writer refuses one)."""
+    if isinstance(name, str) and name.strip():
+        return f"[{name.strip()}] {title}"
+    return title
+
+
+def item_title(item):
+    return title_cell(item.get("title"), item.get("short_display_name"))
+
+
 # ── Commands ────────────────────────────────────────────────────────────────
 
 # Host-.gitignore spellings that ignore the whole .claude-sandbox/ dir.
@@ -1358,48 +1539,287 @@ def sandbox_shape(root):
     return "private", repo
 
 
+def _interactive():
+    return sys.stdin.isatty() and sys.stdout.isatty()
+
+
+def choose_tracking(inp, out):
+    """The init menu: 'tracked' or 'ignored'. Enter, or end of input, takes
+    the default, git-ignored."""
+    out.write("wi init: should git track this work-item store?\n"
+              "  1) tracked      items are committed with the repo\n"
+              "  2) git-ignored  items stay in this checkout only "
+              "[default]\n")
+    while True:
+        out.write("choose 1 or 2 [2]: ")
+        out.flush()
+        line = inp.readline()
+        if not line:
+            out.write("\n")
+            return "ignored"
+        answer = line.strip().lower()
+        if answer in ("1", "t", "track", "tracked"):
+            return "tracked"
+        if answer in ("", "2", "i", "ignore", "ignored", "g", "git-ignored",
+                      "n", "no-track"):
+            return "ignored"
+        out.write(f"not a choice: {line.strip()!r}\n")
+
+
+def _store_repo(root):
+    """The top of the git repo that holds the store, or None outside git.
+    A sidecar store's repo is .claude-sandbox/ itself."""
+    shape, _ = sandbox_shape(root)
+    if shape == "sidecar":
+        return root.absolute().parent
+    r = _git(root, "rev-parse", "--show-toplevel")
+    if r is None or r.returncode != 0 or not r.stdout.strip():
+        return None
+    return Path(r.stdout.strip())
+
+
+def _gitignore_escape(rel):
+    """A path as a literal .gitignore pattern: glob characters escaped."""
+    return re.sub(r"([\\\[*?])", r"\\\1", rel)
+
+
+def append_gitignore_line(gi, line):
+    """Append one line to a .gitignore, atomically and byte-exact: the file
+    is created when missing, its line ending (CRLF or LF) is kept, a newline
+    is added first when its last line has none, and its mode is kept. A
+    symlinked .gitignore is never written through. (ok, message)."""
+    if gi.is_symlink():
+        return False, f"{gi} is a symlink: no line added; add {line} by hand"
+    try:
+        data = gi.read_bytes() if gi.exists() else b""
+    except OSError as e:
+        return False, (f"{gi} unreadable ({e.strerror}): no line added; add "
+                       f"{line} by hand")
+    nl = b"\r\n" if b"\r\n" in data else b"\n"
+    if data and not data.endswith(b"\n"):
+        data += nl
+    try:
+        atomic_write_bytes(gi, data + line.encode("utf-8", "surrogateescape")
+                           + nl, keep_mode=True)
+    except (OSError, WiError) as e:
+        return False, f"{gi} not written ({e}): add {line} by hand"
+    return True, f"added {line} to {gi}"
+
+
+def _gitignore_lines(gi):
+    """A .gitignore's lines, stripped; non-UTF-8 bytes kept as surrogates."""
+    try:
+        data = gi.read_bytes() if gi.is_file() else b""
+    except OSError:
+        return []
+    return [ln.strip() for ln in
+            data.decode("utf-8", "surrogateescape").splitlines()]
+
+
+def ensure_ignored(root):
+    """Make git ignore the store: add its dir to its repo's root .gitignore
+    unless git already ignores it from one of the repo's .gitignore files.
+    (ok, message); ok False means the store may not be ignored."""
+    repo = _store_repo(root)
+    if repo is None:
+        return True, "not in a git repo: no .gitignore written"
+    try:
+        rel = root.resolve().relative_to(repo.resolve()).as_posix()
+    except ValueError:
+        return False, (f"{root} is outside the repo at {repo}: no "
+                       ".gitignore written")
+    if rel == ".":
+        return False, "store is the repo root: no .gitignore written"
+    gi = repo / ".gitignore"
+    esc = _gitignore_escape(rel)
+    line = f"/{esc}/"
+    if gi.is_symlink():
+        return False, f"{gi} is a symlink: no line added; add {line} by hand"
+    # git decides (a negation after a literal line un-ignores it); a rule
+    # only in info/exclude or an excludesFile does not travel with the
+    # repo, so the line is still added for those
+    rule = _ignore_rule(root, "--no-index")
+    if rule is False:
+        # git unavailable: the literal lines are all there is to go on
+        for ln in _gitignore_lines(gi):
+            if ln in {f"/{esc}/", f"/{esc}", f"{esc}/", esc}:
+                return True, (f"{gi} already ignores the store ('{ln}'): no "
+                              "line added")
+            if rel == ".claude-sandbox/work" and ln in SANDBOX_IGNORES:
+                return True, (f"{gi} already ignores .claude-sandbox/ as a "
+                              f"whole ('{ln}'), which covers the store: no "
+                              "line added")
+    elif rule:
+        src, lineno, pattern = rule
+        if not os.path.isabs(src) and Path(src).name == ".gitignore":
+            if (rel == ".claude-sandbox/work"
+                    and pattern.strip() in SANDBOX_IGNORES):
+                return True, (f"{src}:{lineno} already ignores "
+                              f".claude-sandbox/ as a whole ('{pattern}'), "
+                              "which covers the store: no line added")
+            return True, (f"already ignored by git ({src}:{lineno} "
+                          f"'{pattern}'): no line added")
+    ok, msg = append_gitignore_line(gi, line)
+    if not ok:
+        return ok, msg
+    after = _ignore_rule(root, "--no-index")
+    if after is not False and not after:
+        return False, f"{line} did not make git ignore the store"
+    return True, msg
+
+
+def _store_outside_repo(root):
+    """The refusal when a symlink on the store's path that is repo content
+    (it sits inside a git repo) points outside that repo, else None. A link
+    above every repo (a /home/claude -> /home/rt style alias) is left
+    alone."""
+    p = Path(os.path.abspath(root))
+    for comp in (p, *p.parents):
+        if not comp.is_symlink():
+            continue
+        r = _git(comp.parent, "rev-parse", "--show-toplevel")
+        if r is None or r.returncode != 0 or not r.stdout.strip():
+            continue
+        top = os.path.realpath(r.stdout.strip())
+        target = os.path.realpath(comp)
+        if target != top and not target.startswith(top + os.sep):
+            return (f"{comp} is a symlink to {target}, outside the repo at "
+                    f"{top}: refusing to init there; nothing written")
+    return None
+
+
+def _create_if_absent(path, text):
+    """Write a new file atomically; an existing path, a symlink included,
+    is left alone."""
+    if os.path.lexists(path):
+        return
+    try:
+        atomic_write(path, text, create=True)
+    except WiError:
+        if not os.path.lexists(path):
+            raise
+        # appeared since the check: it is there, leave it
+
+
 def cmd_init(args):
     root = resolve_root(args.root, must_exist=False)
+    refusal = _store_outside_repo(root)
+    if refusal:
+        raise WiError(1, refusal)
+    existed = (root / "items").is_dir()
+    recorded = read_tracking(root)
+    choice = "tracked" if args.track else "ignored" if args.no_track else None
+    defaulted = False
+    if choice is None and not (existed and recorded):
+        if existed:
+            # an existing store with no recorded choice is left as it is:
+            # an Enter or a missing terminal must not ignore a tracked store
+            print(f"wi: note: {root} has no recorded tracking choice; record "
+                  "one with `wi init --track` or `wi init --no-track`",
+                  file=sys.stderr)
+        elif _interactive():
+            try:
+                choice = choose_tracking(sys.stdin, sys.stdout)
+            except KeyboardInterrupt:
+                print("\nwi init: interrupted; nothing written",
+                      file=sys.stderr)
+                return 130
+        else:
+            choice, defaulted = "ignored", True
+    if choice == "ignored" and not existed:
+        # a store at the repo root cannot be ignored, and its own *.tmp*
+        # line would ignore files across the whole repo: refuse first
+        repo_top = _store_repo(root)
+        if repo_top is not None and (os.path.realpath(root)
+                                     == os.path.realpath(repo_top)):
+            raise WiError(1, f"{root} is the repo root: a store there "
+                             "cannot be git-ignored; nothing written (use "
+                             "`wi init --track`, or put the store in a "
+                             "subdirectory)")
     (root / "items").mkdir(parents=True, exist_ok=True)
-    readme = root / "README.md"
-    if not readme.exists():
-        readme.write_text(
-            "# Work items\n\nOne markdown file per item, managed by `wi` "
-            "(the work-items plugin's skills/work-items).\nStart with "
-            "`wi prime`, then `wi show <id> --brief` for the item you will "
-            "work.\nFormat: the work-items plugin's "
-            "skills/work-items/references/format.md\n")
-    gi = root / ".gitignore"
-    if not gi.exists():
-        gi.write_text(".lock\n*.tmp*\n")
+    _create_if_absent(
+        root / "README.md",
+        "# Work items\n\nOne markdown file per item, managed by `wi` "
+        "(the work-items plugin's skills/work-items).\nStart with "
+        "`wi prime`, then `wi show <id> --brief` for the item you will "
+        "work.\nFormat: the work-items plugin's "
+        "skills/work-items/references/format.md\n")
+    _create_if_absent(root / ".gitignore", ".lock\n*.tmp*\n")
     shape, repo = sandbox_shape(root)
-    if shape == "private":
+    effective = choice or recorded
+    if shape == "private" and effective == "tracked":
         print("private-shaped repo (no sidecar git, .claude-sandbox/ not "
               "gitignored): host .gitignore left alone so the store stays "
               "tracked")
     elif shape == "sidecar":
         host_gi = repo / ".gitignore"
-        text = host_gi.read_text() if host_gi.is_file() else ""
-        lines = {ln.strip() for ln in text.splitlines()}
-        if not lines.intersection(SANDBOX_IGNORES):
-            if text and not text.endswith("\n"):
-                text += "\n"
-            host_gi.write_text(text + "/.claude-sandbox/\n")
-            print("sidecar git at .claude-sandbox/.git: added "
-                  "/.claude-sandbox/ to host .gitignore")
+        if not set(_gitignore_lines(host_gi)).intersection(SANDBOX_IGNORES):
+            ok, msg = append_gitignore_line(host_gi, "/.claude-sandbox/")
+            if ok:
+                print("sidecar git at .claude-sandbox/.git: added "
+                      "/.claude-sandbox/ to host .gitignore")
+            else:
+                print(f"wi: WARNING sidecar git at .claude-sandbox/.git: "
+                      f"{msg}", file=sys.stderr)
     # shape 'ignored' (already whole-dir-ignored) and non-sandbox stores:
-    # never duplicate the line, never touch the host .gitignore.
-    print(f"initialised {root}")
-    return 0
+    # never duplicate the line; a tracked choice never touches the host
+    # .gitignore, an ignored one adds only the store's own line
+    rc = 0
+    if choice == "ignored":
+        # ignore first, record after: a store git does not ignore is never
+        # recorded as ignored
+        ok, msg = ensure_ignored(root)
+        if ok:
+            write_tracking(root, choice)
+            print(f"tracking: {choice} (recorded in {root / STORE_FILE})")
+            print(msg)
+        else:
+            print(f"wi: WARNING {msg}; tracking not recorded (run `wi init "
+                  "--no-track` again once that is fixed, or `wi init "
+                  "--track`)", file=sys.stderr)
+            rc = 1
+    elif choice == "tracked":
+        write_tracking(root, choice)
+        print(f"tracking: {choice} (recorded in {root / STORE_FILE})")
+        warning = custody_warning(root)
+        if warning:
+            print(warning, file=sys.stderr)
+    if defaulted and rc == 0:
+        print(f"wi: WARNING no terminal and no --track/--no-track: created "
+              f"{root} as a git-ignored store. To track it instead, run "
+              "`wi init --track` and remove the store's line from "
+              ".gitignore (the `wi init --track` warning names it)",
+              file=sys.stderr)
+    print(f"initialised {root}" if rc == 0
+          else f"created {root}; tracking not recorded")
+    return rc
+
+
+def _short_name_arg(value):
+    """A short_display_name given to `add` or `set`, stripped; None when it
+    is blank or the `—` placeholder (the field is then absent, never `""`
+    or a literal dash). Over SHORT_NAME_MAX exits 1: the caller checks
+    before anything is read or written, as the title check does."""
+    if value is None:
+        return None
+    value = value.strip()
+    if value in ("", "—"):
+        return None
+    if len(value) > SHORT_NAME_MAX:
+        raise WiError(1, f"short_display_name must be 1-{SHORT_NAME_MAX} "
+                         f"chars (got {len(value)})")
+    return value
 
 
 def cmd_add(args):
     _one_line("title", args.title)
+    _one_line("--short-display-name", args.short_display_name)
     root = resolve_root(args.root)
     created = today()
     title = args.title.strip()
     if not title or len(title) > 120:
         raise WiError(1, "title must be 1-120 chars")
+    short_name = _short_name_arg(args.short_display_name)
     with Lock(root):
         items = load_all(root, archived=True)
         by_id = {it.id: it for it in items}
@@ -1410,7 +1830,8 @@ def cmd_add(args):
             raise WiError(1, f"parent '{args.parent}' does not resolve")
         iid = make_id(title, created, taken_ids(root, items), slug=args.slug)
         desc = sys.stdin.read().strip() if args.desc == "-" else (args.desc or "")
-        meta = {"id": iid, "title": title, "type": args.type, "status": "todo",
+        meta = {"id": iid, "title": title, "short_display_name": short_name,
+                "type": args.type, "status": "todo",
                 "priority": args.priority, "tags": args.tag or [],
                 "deps": args.dep or [], "parent": args.parent,
                 "refs": args.ref or [], "created": created, "updated": created}
@@ -1564,8 +1985,11 @@ def cmd_handoff(args):
                 h[key] = val
         item.set_handoff(h)
         if args.learned:
-            line = f"- {today()} learned: {args.learned}"
-            if line not in (item.section("Notes") or ""):
+            line = f"- {today()} learned: {args.learned.strip()}"
+            # Whole lines, not a substring: `L1` is new beside `L10`. Trailing
+            # whitespace is ignored: section() strips the last Notes line.
+            notes = (item.section("Notes") or "").split("\n")
+            if line.rstrip() not in (n.rstrip() for n in notes):
                 item.append_note(line)
         item.touch()
         save_item(root, item)
@@ -1586,6 +2010,80 @@ def cmd_done(args):
         item.touch()
         save_item(root, item)
     print(f"{status} {item.id}")
+    return 0
+
+
+def _note_line(n, text, raw):
+    """The Notes line for text `n` (1-based), or WiError(1). Every refusal
+    starts `text <n>:` (the prefix a caller matches to reword that text) and
+    never quotes the text, so a refused secret never reaches stderr."""
+    def refuse(why):
+        return WiError(1, f"text {n}: {why}; nothing written")
+    try:
+        _one_line("the text", text)
+    except WiError as e:
+        raise refuse(str(e)) from None
+    if not text.strip():
+        raise refuse("empty")
+    line = text if raw else f"- {today()} {text.strip()}"
+    if raw and line.startswith("## "):
+        raise refuse("starts '## ', which would add a section")
+    if raw and _fence_open(line):
+        raise refuse("opens a code fence")
+    for _, why in secret_findings(line):
+        raise refuse(why)
+    return line
+
+
+def _abbrev(tok, name):
+    """True when `tok` is the long option `name` or a prefix of it (at least
+    `--` and one letter), bare or with `=value`. It does not check that the
+    prefix is unambiguous: the caller names only options whose prefixes
+    argparse accepts."""
+    head = tok.split("=", 1)[0]
+    return len(head) > 2 and name.startswith(head)
+
+
+def _stray_separator(argv):
+    """1-based position of the first text that is exactly `--`, judged from
+    the raw argv, else None. argparse takes the first `--` as the end of
+    options, and may silently drop a later one rather than hand it over as
+    a text (it varies by Python version), so a note would lose a text.
+    Texts are counted as argparse counts them: only the id and note's own
+    options (--raw, -h, --help, or a prefix argparse accepts) are not
+    texts; a token such as `-5` is one."""
+    toks, i = list(argv or ()), 0
+    while i < len(toks) and toks[i] != "note":  # the subcommand, past --root
+        root_opt = _abbrev(toks[i], "--root")
+        i += 2 if root_opt and "=" not in toks[i] else 1
+    toks = toks[i + 1:]
+    if "--" not in toks:
+        return None
+    sep = toks.index("--")
+    after = toks[sep + 1:]
+    # these option names must follow note's parser spec in build_parser
+    before = [t for t in toks[:sep]  # the id, then texts
+              if not (t == "-h" or _abbrev(t, "--raw") or _abbrev(t, "--help"))]
+    start = 0 if before else 1  # no id before the separator: after[0] is it
+    if "--" not in after[start:]:
+        return None
+    return len(before) + after.index("--", start)
+
+
+def cmd_note(args):
+    n = _stray_separator(getattr(args, "argv", None))
+    if n:
+        raise WiError(1, f"text {n}: is exactly '--', which the command line "
+                         "cannot carry as a text; nothing written")
+    lines = [_note_line(n, t, args.raw) for n, t in enumerate(args.lines, 1)]
+    root = resolve_root(args.root)
+    with Lock(root):
+        item = load_item_anywhere(root, args.id)
+        for line in lines:
+            item.append_note(line)
+        item.touch()
+        save_item(root, item)
+    print(f"noted {item.id}" + (f" ({len(lines)} lines)" if len(lines) > 1 else ""))
     return 0
 
 
@@ -1812,6 +2310,9 @@ def cmd_set(args):
         raise WiError(1, f"'{field}' is immutable")
     if field not in FIELD_ORDER:
         raise WiError(1, f"unknown field '{field}'")
+    if field == "short_display_name":
+        # stripped; blank (whitespace-only included) clears, as "" does
+        value = _short_name_arg(value) or ""
     with Lock(root):
         items = load_all(root, archived=True)
         by_id = {it.id: it for it in items}
@@ -1899,7 +2400,8 @@ def cmd_ls(args):
     else:
         for it in rows:
             line = (f"{it.id}\tP{it.get('priority', 2)}\t{it.get('status')}\t"
-                    f"{it.get('stage') or '-'}\t{it.get('owner') or '-'}\t{it.get('title')}")
+                    f"{it.get('stage') or '-'}\t{it.get('owner') or '-'}\t"
+                    f"{item_title(it)}")
             print(line if args.plain else line.expandtabs(2))
     return 0 if rows else 2
 
@@ -1975,7 +2477,7 @@ def cmd_next(args):
             for it in its:
                 out.append("\t".join([section, it.id, f"P{it.get('priority', 2)}",
                                       it.get("status"), it.get("stage") or "-",
-                                      it.get("owner") or "-", it.get("title")]))
+                                      it.get("owner") or "-", item_title(it)]))
         print("\n".join(out))
         return 0 if (doing or grouped["blocked"] or ready) else 2
     if doing:
@@ -1987,7 +2489,7 @@ def cmd_next(args):
                 dt = datetime.strptime(claimed, "%Y-%m-%dT%H:%MZ").replace(tzinfo=timezone.utc)
                 if (datetime.now(timezone.utc) - dt).total_seconds() > stale_after:
                     stale = " stale?"
-            out.append(f"  P{it.get('priority', 2)} {it.id}  {it.get('title')}   "
+            out.append(f"  P{it.get('priority', 2)} {it.id}  {item_title(it)}   "
                        f"{it.get('owner') or '-'} {age_str(claimed)}{stale}")
             nxt = it.handoff().get("next")
             if nxt:
@@ -1995,12 +2497,12 @@ def cmd_next(args):
     if grouped["blocked"]:
         out.append("BLOCKED")
         for it in grouped["blocked"]:
-            out.append(f"  P{it.get('priority', 2)} {it.id}  {it.get('title')}   "
+            out.append(f"  P{it.get('priority', 2)} {it.id}  {item_title(it)}   "
                        f"blocked: {it.get('blocked')}")
     if ready:
         out.append("READY")
         for it in ready[:args.limit]:
-            out.append(f"  P{it.get('priority', 2)} {it.id}  {it.get('title')}")
+            out.append(f"  P{it.get('priority', 2)} {it.id}  {item_title(it)}")
     parked = (f" · {len(grouped['parked'])} parked (wi ls --status parked)"
               if grouped["parked"] else "")
     if grouped["grooming"]:
@@ -2031,14 +2533,14 @@ def next_pipeline(root, args):
             rec = item_json(item, by_id)
             rec["queue"] = queue
             print(json.dumps(rec, indent=1) if args.json else
-                  f"{queue}\t{item.id}\t{item.get('title')}")
+                  f"{queue}\t{item.id}\t{item_title(item)}")
             return 0
     if args.json:
         print(json.dumps([dict(item_json(it, by_id), queue=q)
                           for q, it in ordered], indent=1))
     else:
         for q, it in ordered:
-            print(f"{q}\t{it.id}\tP{it.get('priority', 2)}\t{it.get('title')}")
+            print(f"{q}\t{it.id}\tP{it.get('priority', 2)}\t{item_title(it)}")
     return 0 if ordered else 2
 
 
@@ -2078,10 +2580,10 @@ def cmd_prime(args):
     if holds:
         # an operator hold gates what may move: first, before any work line
         take(f"HOLD {len(holds)}: " + " ".join(
-            f"{it.id} ({it.get('title')})" for it in holds[:3]))
+            f"{it.id} ({item_title(it)})" for it in holds[:3]))
     for it in doing:
         who = "you" if it.get("owner") == me else it.get("owner", "-")
-        take(f"DOING  P{it.get('priority', 2)} {it.id}  {it.get('title')}  "
+        take(f"DOING  P{it.get('priority', 2)} {it.id}  {item_title(it)}  "
              f"({who}, {age_str(it.get('claimed'))})")
         h = it.handoff()
         if h.get("next"):
@@ -2100,7 +2602,7 @@ def cmd_prime(args):
     shown = 0
     for i, it in enumerate(ready):
         prefix = "READY  " if shown == 0 else "       "
-        if not take(f"{prefix}P{it.get('priority', 2)} {it.id}  {it.get('title')}"):
+        if not take(f"{prefix}P{it.get('priority', 2)} {it.id}  {item_title(it)}"):
             break
         shown += 1
     if shown < len(ready):
@@ -2135,26 +2637,37 @@ def needs_input(items):
     return out
 
 
+def _json_decisions(it, asks):
+    """needs-input --json's decision records: text, raised and showings."""
+    raised, shown = decision_raised(it), decision_showings(it)
+    return [dict({"n": n, "text": text, "raised": raised.get(n)},
+                 **shown.get(n, _no_showing()))
+            for kind, n, text in asks if kind == "decision"]
+
+
 def cmd_needs_input(args):
     root = resolve_root(args.root)
     rows = needs_input(rank_ready(load_all(root)))
     if args.json:
         print(json.dumps([{"id": it.id, "title": it.get("title"),
+                           "short_display_name":
+                               it.meta.get("short_display_name"),
                            "status": it.get("status"),
                            "grooming": it.get("grooming"),
-                           "decisions": [{"n": n, "text": text}
-                                         for kind, n, text in asks
-                                         if kind == "decision"]}
+                           "decisions": _json_decisions(it, asks)}
                           for it, asks in rows], indent=1))
         return 0 if rows else 2
     for it, asks in rows:
         for kind, n, text in asks:
             if args.plain:
+                # the title cell is fourth: id, kind and N keep their
+                # columns, and the free text (never checked for tabs) stays
+                # last
                 print("\t".join([it.id, kind, "-" if n is None else str(n),
-                                 text]))
+                                 item_title(it), text]))
             else:
                 label = "grooming" if n is None else f"decision {n}"
-                print(f"{it.id}  {label}: {text}")
+                print(f"{it.id}  {item_title(it)}  {label}: {text}")
     return 0 if rows else 2
 
 
@@ -2294,23 +2807,27 @@ def estate_store(store, base, top, stale_after, now, cap=ESTATE_CAP):
         counts["ready"] = len(ready)
         rec["counts"] = counts
         rec["ready"] = [{"id": it.id, "title": it.get("title"),
+                         "short_display_name": it.meta.get("short_display_name"),
                          "priority": it.get("priority", 2),
                          "type": it.get("type"), "tags": it.get("tags", [])}
                         for it in ready[:top]]
         open_items = [it for it in items
                       if it.get("status") not in ("done", "dropped")]
         for it in rank_ready(open_items):
-            raised = decision_raised(it)
+            raised, shown = decision_raised(it), decision_showings(it)
             for n, text in unanswered_decisions(it):
                 when = raised.get(n)
                 dt = _parse_when(when) if when else None
-                rec["decisions"].append({
-                    "id": it.id, "title": it.get("title"), "n": n,
-                    "text": text, "raised": when,
-                    "age_days": (now - dt).days if dt else None})
+                rec["decisions"].append(dict({
+                    "id": it.id, "title": it.get("title"),
+                    "short_display_name": it.meta.get("short_display_name"),
+                    "n": n, "text": text, "raised": when,
+                    "age_days": (now - dt).days if dt else None},
+                    **shown.get(n, _no_showing())))
             if estate_is_security(it):
                 rec["security"].append({
                     "id": it.id, "title": it.get("title"),
+                    "short_display_name": it.meta.get("short_display_name"),
                     "status": it.get("status"),
                     "priority": it.get("priority", 2),
                     "tags": it.get("tags", [])})
@@ -2318,6 +2835,8 @@ def estate_store(store, base, top, stale_after, now, cap=ESTATE_CAP):
             dt = _parse_when(it.get("claimed"))
             if dt and (now - dt).total_seconds() > stale_after:
                 rec["stale"].append({"id": it.id, "title": it.get("title"),
+                                     "short_display_name":
+                                         it.meta.get("short_display_name"),
                                      "owner": it.get("owner"),
                                      "claimed": it.get("claimed"),
                                      "age": age_str(it.get("claimed"))})
@@ -2447,6 +2966,10 @@ def estate_scan(dirs, top=5, stale="24h", now=None, cap=ESTATE_CAP):
             "skipped": skipped}
 
 
+def _estate_title(rec):
+    return title_cell(rec["title"], rec["short_display_name"])
+
+
 def _estate_text(report):
     out = [f"wi estate: scanned {', '.join(report['dirs'])} · "
            f"{len(report['repos'])} store(s)"]
@@ -2458,16 +2981,18 @@ def _estate_text(report):
                      f"{c['blocked']} blocked · {c['ready']} ready")
         out.append(head)
         for s in r["security"]:
-            out.append(f"  SECURITY  P{s['priority']} {s['id']}  {s['title']}"
+            out.append(f"  SECURITY  P{s['priority']} {s['id']}  {_estate_title(s)}"
                        f"  [{s['status']}]")
         for d in r["decisions"]:
             age = f"  ({d['age_days']}d)" if d["age_days"] is not None else ""
-            out.append(f"  DECISION  {d['id']}  {d['n']}: {d['text']}{age}")
+            out.append(f"  DECISION  {d['id']}  {_estate_title(d)}  "
+                       f"{d['n']}: {d['text']}{age}")
         for s in r["stale"]:
-            out.append(f"  STALE     {s['id']}  {s['title']}  "
+            out.append(f"  STALE     {s['id']}  {_estate_title(s)}  "
                        f"({s['owner'] or '-'}, {s['age']})")
         for it in r["ready"]:
-            out.append(f"  READY     P{it['priority']} {it['id']}  {it['title']}")
+            out.append(f"  READY     P{it['priority']} {it['id']}  "
+                       f"{_estate_title(it)}")
         for p in r["problems"]:
             out.append(f"  PROBLEM   {p['path']}: {p['error']}")
         more = [f"{n} {k}" for k, n in r["omitted"].items() if n]
@@ -3101,19 +3626,558 @@ def cmd_import(args):
 
 # ── lint, archive ───────────────────────────────────────────────────────────
 
-SECRET_ASSIGN_RE = re.compile(r"^\s*(?:export\s+)?[A-Z][A-Z0-9_]{2,}=(?![$<{])\S{8,}")
+# KEY=value anywhere a token starts: at line start or after any character
+# but a letter, digit, underscore, ? or &, so a bullet, date, tag, bold
+# (**KEY=...**), em dash or other prefix ("- 2026-10-08 checkpoint: KEY=...")
+# no longer hides it. The value rule is the bare form's, unchanged: 8+
+# non-space characters, not a $VAR, <placeholder> or {template}. A KEY glued
+# to a word, or after a URL's ? or & (a query string), stays unmatched.
+SECRET_ASSIGN_RE = re.compile(
+    r"(?:^|[^A-Za-z0-9_?&])[A-Z][A-Z0-9_]{2,}=(?![$<{])\S{8,}")
 SECRET_KV_RE = re.compile(
     r"(?i)\b(api[_-]?key|secret|token|password|passwd|credential|webhook[_-]?url)\b"
-    r"['\"]?\s*[:=]\s*['\"]?(?![$<{*])([A-Za-z0-9+/_.-]{12,})")
+    r"['\"]?\s*[:=]\s*['\"]?"
+    r"(?!\$\{|\$\(|\$[A-Za-z_][A-Za-z0-9_]*(?:[\s\"'`,;)}\]]|\.(?=\s|$)|$)|[<{*])"
+    r"(\$?[A-Za-z0-9+/_.$=-]{12,})")
+
+# The looser shapes the two rules above miss (b9fb): a lowercase or
+# mixed-case key (db_pass=..., app.db_pass=...), spaces around = and the
+# => and := forms (KEY = value, key => value), KEY: value and KEY :value
+# (an env-style or snake_case key, so a prose "next:" never qualifies), a
+# JSON "key": "value" pair and --flag=value, each with the value bare or
+# quoted. Which value counts is the key's call: see _shape_value_flagged.
+# A camelCase or PascalCase colon key (clientSecret: ..., JWTSecret: ...)
+# counts only when it mixes case, splits into 2+ segments, does not open
+# with one capital before a capitalised word (OAuth) and holds a secret
+# word (ac83, see _shape_secret; db2Password and k8sToken count), so prose
+# such as "GitHub: ...", "OAuth: ..." or "Token: ..." never qualifies.
+# The lookbehind lets _shape_secret resume at a value's start (at its
+# opening quote, so a quoted pair after a spaced flag or kebab key,
+# --a-b "db_pass":"...", is read whole), so a later pair joined to it
+# (a=b;db_pass=..., {"a":"b","db_pass":...}) is still examined; the
+# value is capped so the scan stays linear.
+#
+# dc23 adds the looser key forms, each counted only under a secret-word key
+# and never for a plain word or a date (_loose_flagged): a spaced flag
+# (--password v), a kebab-case colon key (db-pass: v), and a bare
+# one-case colon key that is itself a secret word (dbpass:, passphrase:,
+# pw:; not key:, auth:, cred:). The = forms also take a kebab-case key
+# (db-pass=v) and pw (pw=v), judged as every other = key.
+SECRET_SHAPE_RE = re.compile(
+    r"(?:^|(?<=[^A-Za-z0-9_?&-]))(?:"
+    r"(?P<flag>--[A-Za-z][A-Za-z0-9-]*)=|"
+    r"(?P<sflag>--[A-Za-z][A-Za-z0-9-]*)[ \t]+(?=[^\s-])|"
+    r"[\"'](?P<json>[A-Za-z_][A-Za-z0-9_.-]*)[\"']\s*:\s*|"
+    r"(?P<kv>[A-Za-z](?:[A-Za-z0-9_]|-(?=[A-Za-z0-9_])){2,}|[Pp][Ww])"
+    r"\s*(?:=>|:=|=(?!=))\s*|"
+    r"(?P<colon>[A-Z][A-Z0-9_]{2,}|[A-Za-z][A-Za-z0-9]*_[A-Za-z0-9_]+)\s*:\s*|"
+    r"(?P<kcolon>[A-Za-z][A-Za-z0-9]*(?:-[A-Za-z0-9]+)+)\s*:\s*|"
+    r"(?P<camel>[A-Za-z][A-Za-z0-9]+)\s*:\s*"
+    r")(?P<quote>[\"']?)(?P<value>\S{1,256})")
+# An Authorization header with a Bearer, Basic or Token credential, any
+# case, after :, = or => (a header, a config pair, a hash), the credential
+# bare or quoted, the quote may carry a string prefix (f"Bearer ...", dc23);
+# the credential is judged by _auth_secret.
+SECRET_AUTH_RE = re.compile(
+    r"(?i)\bauthorization[\"']?\s*(?:=>|[:=])\s*(?:[fbru]{1,2}(?=[\"']))?[\"']?"
+    r"(?:bearer|basic|token)\s+[\"']?(\S{1,300})")
+# a credential's run of token characters: base64, JWT, hex, and the : and %
+# of a raw user:pass or a percent-encoded value
+_AUTH_TOKEN_RE = re.compile(r"[A-Za-z0-9+/_.=~:%-]+")
+# A key is a secret-word key when one of its segments (split on _ - . and
+# camelCase) is one of these whole words, or ends with one of the suffixes
+# (dbpassword, apitoken, clientsecret, dbpass, userpasscode); a plural
+# (tokens, keys) is not, key counts only as a whole segment (monkey stays
+# clean), and a word ending in pass from _PASS_WORDS is no secret word
+# (bypass, compass). A key of two or more segments whose last is one of
+# _META_WORDS names something about a secret, not the secret
+# (password_policy, token_file, secret_name), and is judged as other keys.
+_SECRET_WORDS = frozenset((
+    "pass", "passwd", "password", "passphrase", "passcode", "pw", "pwd",
+    "secret", "token", "auth", "cred", "creds", "credential", "credentials",
+    "key", "apikey", "webhook", "secretkey", "privatekey"))
+_SECRET_SUFFIXES = ("password", "passwd", "secret", "token", "apikey",
+                    "pass", "passphrase", "passcode")
+_PASS_WORDS = frozenset((
+    "bypass", "compass", "surpass", "trespass", "overpass", "underpass",
+    "encompass", "subpass", "renderpass", "multipass"))
+_META_WORDS = frozenset((
+    "policy", "policies", "rotation", "hint", "prompt", "field", "label",
+    "name", "names", "type", "mode", "file", "path", "var", "ref"))
+# a bare number under a secret-word key is a count only beside one of these
+_COUNT_WORDS = frozenset((
+    "count", "len", "max", "min", "budget", "total", "size", "limit", "num"))
+_KEY_SEG_RE = re.compile(r"[A-Z]+(?![a-z])|[A-Z]?[a-z]+|[0-9]+")
+_VALUE_TOKEN_RE = re.compile(r"[A-Za-z0-9+/_.=~-]+")
+_HEX_RE = re.compile(r"(?i)[0-9a-f]+")
+_DATE_RE = re.compile(r"\d{4}-\d{2}-\d{2}")
+_SEG_SPLIT_RE = re.compile(r"[-_./~]+")
+_CODE_RE = re.compile(r"([A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)*)([(\[]?)")
+_ATTR_RE = re.compile(r"[A-Za-z_]+(?:\.[A-Za-z_]+)+")
+_COUNT_RE = re.compile(r"[0-9][0-9,._]*")
+_PLACEHOLDER_RE = re.compile(r"<[a-z][a-z _-]*>")
+# a whole-value variable or template, ending where the value ends
+_TEMPLATE_RE = re.compile(
+    r"(?:\$[A-Za-z_][A-Za-z0-9_]*|\$\{[A-Za-z_][A-Za-z0-9_]*\}"
+    r"|\$\{\{ ?[A-Za-z_][A-Za-z0-9_.-]* ?\}\}|\$\([^()]{1,200}\)"
+    r"|\{[A-Za-z_][A-Za-z0-9_.-]*\}|\{\{ ?[A-Za-z_][A-Za-z0-9_.-]* ?\}\})"
+    r"(?=$|[\s\"'`,;)\]}]|\.(?=\s|$))")
+_CLOSE = {"(": ")", "[": "]"}
+_MARKDOWN_RE = re.compile(r"`|\*|__")
+
+
+def _key_segments(key):
+    return [seg.lower() for seg in _KEY_SEG_RE.findall(key)]
+
+
+def _secret_key(key):
+    segs = _key_segments(key)
+    if len(segs) >= 2 and segs[-1] in _META_WORDS:
+        return False
+    return any(_secret_word(seg) for seg in segs)
+
+
+def _secret_word(seg):
+    return seg in _SECRET_WORDS or (seg.endswith(_SECRET_SUFFIXES)
+                                    and seg not in _PASS_WORDS)
+
+
+def _harmless_segment(seg):
+    """Letters and digits only (a + or = makes a segment live): all letters,
+    all digits or all hex at any length; otherwise 12 characters or fewer
+    that do not mix upper case, lower case and digits."""
+    if not re.fullmatch(r"[A-Za-z0-9]+", seg):
+        return False
+    if re.fullmatch(r"[A-Za-z]+|[0-9]+|(?i:[0-9a-f]+)", seg):
+        return True
+    return len(seg) <= 12 and not (re.search(r"[a-z]", seg)
+                                   and re.search(r"[A-Z]", seg)
+                                   and re.search(r"[0-9]", seg))
+
+
+def _harmless_segments(text):
+    return all(_harmless_segment(seg) for seg in _SEG_SPLIT_RE.split(text) if seg)
+
+
+def _looks_live(value):
+    """True when `value`, under a key with no secret word, looks like a live
+    secret rather than a word, a hex sha, a date, or an id, slug, path,
+    version or UUID: 12+ characters holding both a letter and a digit, not
+    all hex, no date at its start, and not two or more segments (split on
+    - _ . / ~) that are each harmless (see _harmless_segment)."""
+    value = value.rstrip(".")
+    if (len(value) < 12 or not re.search(r"[A-Za-z]", value)
+            or not re.search(r"[0-9]", value)
+            or _HEX_RE.fullmatch(value) or _DATE_RE.match(value)):
+        return False
+    segs = [seg for seg in _SEG_SPLIT_RE.split(value) if seg]
+    return not (len(segs) >= 2 and all(_harmless_segment(seg) for seg in segs))
+
+
+def _quoted_code(key, raw, value):
+    """True when an unquoted value under a secret-word key is code, a count
+    or a path a note may quote, not a secret:
+    - a call f(...) or subscript x[...] on a name of harmless segments, when
+      nothing follows the closing bracket and no comma-separated argument
+      inside would itself flag (len(tokens), os.environ['API_KEY'],
+      get_token(user, scope));
+    - a dotted attribute of letters and _ only (config.api_key, self.token);
+    - a number with separators (1,234,567), or a bare number when another
+      key segment is a count word (token_count, key_limit);
+    - a path starting ~/, ./ or / of two or more harmless segments.
+    So a dotted JWT-like token, a base64 value that starts with /, words
+    with a digit (abc.def.ghi1) and a bare 12-digit PIN still count."""
+    m = _CODE_RE.match(raw)
+    if m and m.group(2) and _harmless_segments(m.group(1)):
+        body = raw.rstrip("\"'`,;")
+        if body.endswith(_CLOSE[m.group(2)]):
+            args = [arg.strip().strip("\"'")
+                    for arg in _split_args(body[m.end():-1])]
+            if not any(arg and _arg_flagged(key, arg) for arg in args):
+                return True
+    if _ATTR_RE.fullmatch(value):
+        return True
+    if _COUNT_RE.fullmatch(value):
+        if re.search(r"[,._]", value):
+            return True
+        return any(seg in _COUNT_WORDS for seg in _key_segments(key))
+    if value.startswith(("~/", "./", "/")):
+        segs = [seg for seg in _SEG_SPLIT_RE.split(value) if seg]
+        return len(segs) >= 2 and all(_harmless_segment(seg) for seg in segs)
+    return False
+
+
+def _arg_flagged(key, arg):
+    """A call argument that would flag on its own. One holding a space is
+    prose or an expression, not one secret, so it flags only when one of
+    its words looks live as under other keys (_looks_live: login(user,
+    "Bearer <live token>")) (dc23)."""
+    if re.search(r"\s", arg):
+        return any(_looks_live(tok.group())
+                   for tok in _VALUE_TOKEN_RE.finditer(arg))
+    return _secret_value_flagged(key, arg, "", arg)
+
+
+def _placeholder(value, rest):
+    """A whole-value $NAME, ${NAME}, ${{ name }}, $(command), {name} or
+    {{ name }} (_TEMPLATE_RE); all * or all . (masked or elided, an
+    ellipsis included); or <words>: lowercase words, spaces, _ or - inside,
+    with the closing >. rest is the next 300 characters of the line from
+    the value's start, so <your key> and {{ name }} count. A value that
+    only starts with $ or { is no placeholder ($2b$12$..., $TOKENabc+1)."""
+    if not value.strip("*") or not value.strip(".…"):
+        return True
+    return (_PLACEHOLDER_RE.match(rest) is not None
+            or _TEMPLATE_RE.match(rest) is not None)
+
+
+def _match_close(text, open_at):
+    """The index of the bracket that closes the ( or [ at open_at, counting
+    nested ( [ pairs, or -1 when text (a bounded slice) does not close it."""
+    depth = 0
+    for i in range(open_at, len(text)):
+        if text[i] in "([":
+            depth += 1
+        elif text[i] in ")]":
+            depth -= 1
+            if depth == 0:
+                return i
+    return -1
+
+
+def _split_args(text):
+    """text split at its commas outside any ( or [ pair."""
+    out, depth, start = [], 0, 0
+    for i, c in enumerate(text):
+        if c in "([":
+            depth += 1
+        elif c in ")]":
+            depth -= 1
+        elif c == "," and depth == 0:
+            out.append(text[start:i])
+            start = i + 1
+    out.append(text[start:])
+    return out
+
+
+def _spaced_call(raw, rest):
+    """An unquoted value that opens a call or subscript the value's first
+    run of non-space characters does not close (get(user, value)): the call
+    up to its matching closing bracket and any text glued after it, read from rest,
+    so a spaced second argument is examined. Otherwise raw unchanged."""
+    m = _CODE_RE.match(raw)
+    if not (m and m.group(2)):
+        return raw
+    close = _match_close(rest, m.end() - 1)
+    if close < len(raw):
+        return raw
+    return rest[:close + 1] + re.match(r"\S*", rest[close + 1:]).group()
+
+
+def _secret_value_flagged(key, raw, quote, rest):
+    """Under a secret-word key: any 8+ non-space characters, symbols, hex,
+    letters-only and UUIDs included, unless the value is unquoted code, a
+    count or a path (_quoted_code). A quoted value skips nothing."""
+    if not quote:
+        raw = _spaced_call(raw, rest)
+    value = raw.rstrip("\"'`,;)]}")
+    if not value or _placeholder(value, rest) or len(value) < 8:
+        return False
+    return bool(quote) or not _quoted_code(key, raw, value)
+
+
+def _meta_secret_flagged(key, raw, quote, rest):
+    """Under a meta key (last segment in _META_WORDS) whose other segments
+    hold a secret word (secret_ref, password_var, auth_token_file): any
+    value that is no placeholder and no name, word, attribute or path such
+    a key holds (_meta_name) is judged as under a secret-word key."""
+    segs = _key_segments(key)
+    if not (len(segs) >= 2 and segs[-1] in _META_WORDS
+            and any(_secret_word(seg) for seg in segs[:-1])):
+        return False
+    value = raw.rstrip("\"'`,;)]}")
+    if not value or _placeholder(value, rest):
+        return False
+    if _meta_name(value):
+        return False
+    return _secret_value_flagged(key, raw, quote, rest)
+
+
+_META_NAME_RE = re.compile(
+    r"[a-z]{1,15}(?:[-_.:][a-z0-9]{1,15})*|[A-Z]{1,15}(?:_[A-Z0-9]{1,15})*")
+_UUID_RE = re.compile(r"(?i)[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}")
+
+
+def _meta_name(value):
+    """A name, word, attribute or path a meta key may hold: a lowercase
+    name of runs of 15 or fewer letters (prod-db-creds,
+    urn:ietf:params:oauth), an env-var name (GITHUB_TOKEN), a letters-only
+    identifier whose case segments are 3 to 15 letters (Bearer,
+    ClientCredentials), a dotted attribute, or a ~/ ./ / or $NAME/ path of
+    harmless segments. A run of 16+ lowercase letters, digits mixed into a
+    word, a digit run, a UUID (even one whose groups read as words) or a
+    run of 16+ capitals is none of these."""
+    if _UUID_RE.fullmatch(value):
+        return False
+    if _META_NAME_RE.fullmatch(value) or _ATTR_RE.fullmatch(value):
+        return True
+    if (re.fullmatch(r"[A-Za-z]+", value)
+            and all(3 <= len(seg) <= 15 for seg in _KEY_SEG_RE.findall(value))):
+        return True
+    path = re.sub(r"^\$[A-Za-z_][A-Za-z0-9_]*(?=/)", "", value)
+    if path.startswith(("~/", "./", "/")):
+        segs = [seg for seg in _SEG_SPLIT_RE.split(path) if seg]
+        return len(segs) >= 2 and all(_harmless_segment(seg) for seg in segs)
+    return False
+
+
+def _shape_value_flagged(key, raw, quote="", rest=None):
+    """A key holding a secret word (see _secret_key) flags as
+    _secret_value_flagged says, as strictly as the KEY=value rule. Any other
+    key (sha, commit, *_id, ...) flags only a value _looks_live passes, and
+    never a call like name(...)."""
+    rest = raw if rest is None else rest
+    if _meta_secret_flagged(key, raw, quote, rest):
+        return True
+    if _secret_key(key):
+        return _secret_value_flagged(key, raw, quote, rest)
+    value = raw.rstrip("\"'`,;)]}")
+    if not value or _placeholder(value, rest):
+        return False
+    tok = _VALUE_TOKEN_RE.match(raw)
+    if not tok or raw[tok.end():tok.end() + 1] == "(":
+        return False
+    return _looks_live(tok.group())
+
+
+# bare one-case colon keys that count (pw:, dbpass:, passphrase:): a
+# secret-word suffix, or one of these whole words; key, auth, cred(s),
+# webhook and pass itself are left out, as prose ("key: the main point",
+# "pass: 12 of 12") uses them
+_BARE_WORDS = frozenset(("pw", "pwd", "apikey", "secretkey", "privatekey"))
+# a plain value: a word or words joined by - _ or ' (required, read-only,
+# NOT_SET), each a lowercase or capitalised word or all capitals, so a
+# mixed-case run such as FakeSecretPass is no plain word
+_PLAIN_WORD = r"(?:[A-Za-z][a-z]*|[A-Z]+)"
+_PLAIN_RE = re.compile(_PLAIN_WORD + r"(?:[-_']" + _PLAIN_WORD + r")*")
+
+
+def _bare_secret_key(key):
+    if not re.fullmatch(r"[A-Za-z][a-z0-9]*|[A-Z][A-Z0-9]*", key):
+        return False
+    word = key.lower()
+    return word in _BARE_WORDS or (word.endswith(_SECRET_SUFFIXES)
+                                   and word not in _PASS_WORDS
+                                   and word != "pass")
+
+
+def _plain_value(raw):
+    """A plain word or words (_PLAIN_RE) or a whole date, once quotes,
+    brackets, markdown and prose punctuation around it are dropped
+    ((required), _(unset)_, <optional>)."""
+    value = raw.strip("\"'`,;:.()[]{}<>_*~!?")
+    return (not value or _PLAIN_RE.fullmatch(value) is not None
+            or _DATE_RE.fullmatch(value) is not None)
+
+
+def _loose_flagged(key, raw, quote, rest):
+    """The looser key forms (a spaced flag, a kebab or bare colon key, a
+    Markdown table cell, dc23) count only under a key holding a secret word,
+    judged as _shape_value_flagged judges it, and never a plain word or
+    a date (prose: "--auth required", "| password | required |")."""
+    if not any(_secret_word(seg) for seg in _key_segments(key)):
+        return False
+    # a closing ** or ` is markdown around the pair, and an unbalanced } a
+    # brace around it, not the value's (**token: ${TOKEN}**, {pw: f(x)})
+    stripped = re.sub(r"[*`]+[,;:.]*$", "", raw)
+    if stripped.endswith("}") and stripped.count("}") > stripped.count("{"):
+        stripped = stripped[:-1]
+    if stripped != raw:
+        raw, rest = stripped, stripped
+    return (not _plain_value(raw)
+            and _shape_value_flagged(key, raw, quote, rest))
+
+
+def _shape_secret(line):
+    # rest is bounded (the value is at most 256 characters), so each pair
+    # costs a constant and a long line of pairs stays linear
+    pos = 0
+    while True:
+        m = SECRET_SHAPE_RE.search(line, pos)
+        if not m:
+            return False
+        loose = m.group("sflag") or m.group("kcolon")
+        key = m.group("flag") or m.group("json") or m.group("kv") or m.group("colon")
+        if m.group("camel"):
+            # mixed case, 2+ segments, no lone capital before a capitalised
+            # word, a secret word: JWTSecret, AWSSecretKey, clientSecret,
+            # db2Password, k8sToken; not OAuth, Token, GitHub. A one-case
+            # single word counts only as a bare secret word (dc23), and a
+            # key that is both (Q9token) is judged as camelCase, as on main.
+            key = m.group("camel")
+            segs = _KEY_SEG_RE.findall(key)
+            camel = (re.search(r"[a-z]", key) and re.search(r"[A-Z]", key)
+                     and len(segs) >= 2
+                     and not re.match(r"[A-Z][A-Z][a-z]", key)
+                     and _secret_key(key))
+            if not camel and _bare_secret_key(key):
+                loose = key
+            elif not camel:
+                # resume at the quote, so a quoted pair the value
+                # swallowed ("db_pass":"...") is still examined
+                pos = m.start("quote")
+                continue
+        # a loose colon key needs a space after its colon, as YAML does,
+        # so prose such as "dbpass:/dbpassword:" never qualifies
+        if (not loose or m.group("sflag")
+                or re.search(r":\s", line[m.start():m.start("value")])):
+            rest = line[m.start("value"):m.start("value") + 300]
+            if (_loose_flagged if loose else _shape_value_flagged)(
+                    loose or key, m.group("value"), m.group("quote"), rest):
+                return True
+        pos = m.start("quote")
+
+
+# A Markdown table row (| db_pass | value |): a cell that is one key-shaped
+# token, then a cell that is one token (dc23)
+_TABLE_KEY_RE = re.compile(r"[A-Za-z][A-Za-z0-9_.-]{0,63}")
+
+
+def _table_secret(line):
+    """A Markdown table row whose key cell holds a secret word and whose
+    next cell is a single token that _loose_flagged counts. A cell with a
+    space in it is prose, and a cell over 256 characters is skipped."""
+    if not line.lstrip().startswith("|"):
+        return False
+    # a code span or emphasis around a cell is markdown, not the value's
+    cells = [cell.strip().strip("`*") for cell in line.split("|")]
+    for key, value in zip(cells, cells[1:]):
+        if (not value or len(value) > 256 or not _TABLE_KEY_RE.fullmatch(key)
+                or re.search(r"\s", value)):
+            continue
+        quote = value[0] if value[0] in "\"'" else ""
+        raw = value[1:] if quote else value
+        if _loose_flagged(key, raw, quote, raw):
+            return True
+    return False
+
+
+# a URL's user:password@ part, read from just after each :// (dc23)
+_URL_USERINFO_RE = re.compile(r"[^\s:/@]{0,64}:([^\s/@]{1,256})@")
+
+
+def _url_secret(line):
+    """A password inside a URL (scheme://user:value@host, the user may be
+    empty: redis://:value@host): 8+ characters,
+    not a whole-value placeholder (${DB_PASS}, <password>, ****), not one or
+    two repeated characters, and not a plain word (password, changeme)."""
+    for m in re.finditer("://", line):
+        u = _URL_USERINFO_RE.match(line, m.end())
+        if not u:
+            continue
+        value = u.group(1)
+        if (len(value) < 8 or _placeholder(value, value + " ")
+                or len(set(value)) <= 2 or _plain_value(value)):
+            continue
+        return True
+    return False
+
+
+def _secret_line(line):
+    """The cleaned line: NFKC-normalised (a fullwidth equals sign, U+FF1D,
+    is =), Unicode format characters (category Cf, such as a zero-width
+    space) dropped, and the markdown ` * ** __ around keys and values
+    removed. Look-alike letters (confusables) are out of scope."""
+    line = "".join(c for c in unicodedata.normalize("NFKC", line)
+                   if unicodedata.category(c) != "Cf")
+    return _MARKDOWN_RE.sub("", line)
+
+
+def _auth_secret(line):
+    """An Authorization: Bearer/Basic/Token header whose credential looks
+    like one: 12+ characters, not a placeholder (<token>, $TOKEN,
+    ${TOKEN}, ..., masked), not one or two repeated characters (XXXX...),
+    and not a plain word (prose: "Authorization: Bearer authentication")."""
+    for m in SECRET_AUTH_RE.finditer(line):
+        # the credential is its run of token characters (base64, JWT, hex),
+        # so closing quotes and prose punctuation after it never count
+        value = _AUTH_TOKEN_RE.match(m.group(1))
+        value = value.group().rstrip(".:") if value else ""
+        rest = line[m.start(1):m.start(1) + 300]
+        if (len(value) < 12 or _placeholder(value, rest)
+                or len(set(value)) <= 2
+                or re.fullmatch(r"[A-Za-z][a-z]*(?::[A-Za-z][a-z]*)*",
+                                value)):
+            continue
+        return True
+    return False
+
+
+def _secret_hit(line):
+    if "PRIVATE KEY-----" in line:
+        return "PEM private key material"
+    if (SECRET_ASSIGN_RE.search(line) or SECRET_KV_RE.search(line)
+            or _shape_secret(line) or _auth_secret(line)
+            or _table_secret(line) or _url_secret(line)):
+        return "likely secret value (record the path and key, never the value)"
+    return None
+
+
+# A value on the next line (dc23): a YAML block scalar (key: | or key: >,
+# with its - + or digit indicators), a \ continuation (shell, Dockerfile),
+# or an Authorization header whose credential, or scheme and credential,
+# is on the next line
+_YAML_BLOCK_RE = re.compile(r"[:=]\s*[|>][-+0-9]{0,2}$")
+_AUTH_OPEN_RE = re.compile(
+    r"(?i)\bauthorization[\"']?\s*(?:=>|[:=])\s*(?:[fbru]{1,2}(?=[\"']))?"
+    r"[\"']?(?:(?:bearer|basic|token)\s*)?$")
+
+
+def _joined(line, nxt):
+    """The line's last 300 characters joined to the next line's first 300
+    when the line ends in a continuation, else None. Each line is read in at
+    most one join as the first and one as the second, a bounded slice of
+    each, so the scan stays linear."""
+    tail, head = line[-300:].rstrip(), nxt[:300].lstrip()
+    if not head.strip():
+        return None
+    if tail.endswith("\\"):
+        return tail[:-1] + head
+    m = _YAML_BLOCK_RE.search(tail)
+    if m:
+        return tail[:m.start() + 1] + " " + head
+    if _AUTH_OPEN_RE.search(tail):
+        return tail + " " + head
+    return None
+
+
+def _line_hit(line):
+    clean = _secret_line(line)
+    raw_why = _secret_hit(line)
+    clean_why = raw_why if clean == line else _secret_hit(clean)
+    return ("PEM private key material"
+            if "PEM private key material" in (raw_why, clean_why)
+            else raw_why or clean_why)
 
 
 def secret_findings(text):
-    out = []
+    """Every rule runs on the raw line and on the cleaned line
+    (_secret_line), and either one flagging flags the line, so the cleanup
+    never hides what the raw line shows (*my*password:, a value with * in
+    it, a fullwidth $ before a value). The scan reads line by line and
+    carries one line of state, the previous line: when that line was clean
+    and ends in a continuation (_joined), the two joined are checked too,
+    and a hit is reported on the line that holds the value."""
+    out, prev, prev_hit = [], "", True
     for n, line in enumerate(text.split("\n"), 1):
-        if "PRIVATE KEY-----" in line:
-            out.append((n, "PEM private key material"))
-        elif SECRET_ASSIGN_RE.match(line) or SECRET_KV_RE.search(line):
-            out.append((n, "likely secret value (record the path and key, never the value)"))
+        why = _line_hit(line)
+        if not why and not prev_hit:
+            joined = _joined(prev, line)
+            if joined is not None:
+                why = _line_hit(joined)
+        if why:
+            out.append((n, why))
+        prev, prev_hit = line, bool(why)
     return out
 
 
@@ -3201,6 +4265,15 @@ def cmd_lint(args):
 
     for iid in by_id:
         visit(iid, [])
+    raw = _store_tracking_raw(root)
+    if len(_store_tracking_values(root) or ()) > 1:
+        problems.append(f"{root / STORE_FILE}: more than one tracking: line; "
+                        "fix: `wi init --track` or `wi init --no-track` "
+                        "rewrites it with one")
+    if raw is not None and raw not in TRACKING_CHOICES:
+        problems.append(f"{root / STORE_FILE}: tracking must be one of "
+                        f"{', '.join(TRACKING_CHOICES)} (got '{raw}'); fix: "
+                        "`wi init --track` or `wi init --no-track`")
     # lint has no warning tier: every finding it prints is a problem, exit 3
     warning = custody_warning(root)
     if warning:
@@ -3253,7 +4326,8 @@ def build_parser():
     p.add_argument("--root", help="work-item root (default: $WI_ROOT or auto)")
     sub = p.add_subparsers(dest="command", required=True)
     spec = {
-        ("init", cmd_init, "create the work-item root"): [],
+        ("init", cmd_init, "create the work-item root, or record an "
+         "existing one's tracking choice"): [],
         ("next", cmd_next, "what to work on"): [
             ("--json",), ("--plain",), ("--limit", dict(type=int, default=7)),
             ("--stale", dict(default="24h")), ("--pipeline",), ("--one",),
@@ -3265,7 +4339,8 @@ def build_parser():
             ("-p", "--priority", dict(type=int, default=2, choices=range(5))),
             ("--tag", dict(action="append")), ("--dep", dict(action="append")),
             ("--parent", {}), ("--ref", dict(action="append")), ("--slug", {}),
-            ("--desc", {}), ("--force",), ("--json",)],
+            ("--short-display-name", {}), ("--desc", {}), ("--force",),
+            ("--json",)],
         ("claim", cmd_claim, "claim an item"): [
             ("id", {}), ("--as", dict(dest="as_owner")), ("--steal",)],
         ("release", cmd_release, "release a claim"): [("id", {})],
@@ -3274,6 +4349,10 @@ def build_parser():
             ("--learned", {})],
         ("done", cmd_done, "close an item"): [
             ("id", {}), ("--drop",), ("--note", {})],
+        ("note", cmd_note, "append dated lines (or --raw lines) to an "
+         "item's Notes, under the lock; texts go after --"): [
+            ("id", {}), ("lines", dict(nargs="+", metavar="text")),
+            ("--raw",)],
         ("block", cmd_block, "block on a reason or another item"): [
             ("id", {}), ("reason", dict(nargs="?")), ("--on", {})],
         ("unblock", cmd_unblock, "clear a block"): [("id", {}), ("--dep", {})],
@@ -3326,11 +4405,17 @@ def build_parser():
             kw = flag[-1] if isinstance(flag[-1], dict) else {"action": "store_true"}
             names = [f for f in flag if isinstance(f, str)]
             sp.add_argument(*names, **kw)
+    track = sub.choices["init"].add_mutually_exclusive_group()
+    track.add_argument("--track", action="store_true",
+                       help="git tracks the store")
+    track.add_argument("--no-track", action="store_true",
+                       help="git ignores the store: adds it to .gitignore")
     return p
 
 
 def main(argv=None):
     args = build_parser().parse_args(argv)
+    args.argv = list(sys.argv[1:] if argv is None else argv)
     try:
         return args.func(args) or 0
     except WiError as e:

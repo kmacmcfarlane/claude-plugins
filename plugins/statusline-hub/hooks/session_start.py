@@ -21,7 +21,7 @@ same (see owner.py):
     (until then it still draws the footer: look again next session - but
     only while it cannot be sure no statusline install exists: once Claude
     Code's install records name the hub and no statusline@ key, nothing will
-    register, and the hub yields to that entry, saying whose it is);
+    register, and the entry is handled as an older copy, below);
   - holds anything else: yield - state `yielded`, said once, never fought.
 - wrapping (the user ran /install-statusline-hub --wrap) - the marked file:
   - holds ours: nothing;
@@ -61,7 +61,9 @@ same (see owner.py):
      entry and a wrap record is adopted as `wrapping` only when the record
      is running; one the user had unwrapped gets their entry put back. The hub
      never wraps on its own (operator decision 40: ask once). The statusline footer's entry there (the statusline
-     plugin's, or an older copy's) is handled as in (a). An empty slot the
+     plugin's, or an older copy's) is handled as in (a), except that once the
+     install records surely hold no statusline install it is an older copy
+     (below). An empty slot the
      user emptied by removing the statusline footer (its marker says
      `removed` for that file) stays empty: state `removed`, said once. And
      while the statusline plugin is enabled there but not yet registered as
@@ -72,10 +74,35 @@ same (see owner.py):
      hooks/owner.py, which could not install itself: then nothing is
      coming, and the hub takes the slot on the first session.
   The entry is written only once the current-hooks link resolves.
+- an older copy: the footer's entry (owner.FOOTER_HOMES: the statusline
+  plugin's own, or context-guard's or claude-kit's older copy) in the slot,
+  and the install records naming the hub and no statusline install, so no
+  footer will register. The hub never yields to it for good. When the
+  copy draws nothing - its plugin gone (no <plugin>@ install record and
+  its current-hooks/statusline.py not resolving), or its plugin recorded
+  with current-hooks resolving to a directory without statusline.py - the
+  hub takes the slot, said once. A dangling link alone is not that: an
+  update leaves one until that plugin's own SessionStart re-links it, so a
+  recorded plugin whose link dangles means wait. A copy that still
+  resolves draws: said once (stamped in footer-copy-notice.json in the data
+  dir) that installing statusline lets the hub take over, then looked at
+  again quietly each session, so a later statusline install is still taken
+  over. Records it cannot read, or that do not name the hub: it cannot
+  tell, so nothing.
 
 A settings file it must use but cannot - not valid JSON, read-only,
 unwritable, a project settings.local.json git does not ignore - makes the
-state `blocked`, said once with the fix; later sessions retry quietly.
+state `blocked`, said once with the fix; later sessions retry quietly. So
+does a project settings file git tracks (a team-shared .claude/settings.json,
+where the old installer's --project put a footer entry): taking over the
+footer's entry there would commit the hub's absolute path on this machine,
+so the hub refuses and leaves the file as it is. A heal is refused there
+too: a committed footer entry git brings back is not replaced, and a git
+revert that drops the hub's entry is not fought (an entry the user put
+there with the installer's --project is put back only by running it
+again). A git that times out answering means wait for the next session.
+The user settings file is never refused for being tracked (a dotfiles
+repo is the user's own).
 
 Then the prune pass (housekeeping.py): sensor records untouched for 30
 days (the hub's tee writes them too), dead hooks.d manifests, stale last-good
@@ -100,7 +127,7 @@ GIT_TIMEOUT_S = 2
 
 class Blocked(Exception):
     """A settings file that must be used and cannot be: `reason` is one of
-    invalid, read-only, unwritable, not-ignored."""
+    invalid, read-only, unwritable, not-ignored, tracked."""
 
     def __init__(self, path, reason):
         super().__init__(path)
@@ -153,14 +180,46 @@ def _git_would_track(proj, path):
     return r.returncode == 1
 
 
-def _guard_local(p, proj):
+def _git_tracks(path):
+    """True when git tracks the file at `path` (it is in the index of the
+    work tree that holds it). No git, or not a repo, means False; a
+    timeout raises Wait, so nothing is written until a session can tell."""
+    try:
+        r = subprocess.run(["git", "-C", os.path.dirname(os.path.abspath(path)),
+                            "ls-files", "--error-unmatch", "--", os.path.basename(path)],
+                           stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
+                           stderr=subprocess.DEVNULL, timeout=GIT_TIMEOUT_S)
+    except subprocess.TimeoutExpired:
+        raise Wait()
+    except (OSError, subprocess.SubprocessError, ValueError):
+        return False
+    return r.returncode == 0
+
+
+def _guard_local(owner, p, proj):
+    """Refuse to put the hub's machine-specific entry where git would share
+    it: a project settings.local.json git does not ignore, or any settings
+    file other than the user's that git tracks. Tracked is checked first,
+    so a force-added settings.local.json is named as tracked."""
+    user = os.path.join(owner.sensor.base_dir(), "settings.json")
+    if not owner._same_path(p, user) and _git_tracks(p):
+        raise Blocked(p, "tracked")
     if proj and os.path.basename(p) == "settings.local.json" and _git_would_track(proj, p):
         raise Blocked(p, "not-ignored")
 
 
-def _put(owner, data, path, expect):
+def _scope(marker):
+    """The marker fields to carry into the next one it is replaced by: the
+    `scope` the installer records for a project's shared settings file
+    (--project, or --settings naming one)."""
+    s = marker.get("scope") if marker else None
+    return {"scope": s} if s == "project" else {}
+
+
+def _put(owner, data, path, expect, keep=None):
     """Set our entry in the settings file at path (only if its statusLine is
-    still one of `expect`) and record the install."""
+    still one of `expect`) and record the install, keeping the fields
+    `keep` holds (see _scope)."""
     try:
         owner.write_settings(path, {"type": "command", "command": owner.command_for(data)},
                              expect=expect)
@@ -170,7 +229,7 @@ def _put(owner, data, path, expect):
         raise
     except OSError:
         raise Blocked(path, "unwritable")
-    owner.write_marker(data, "installed", path, owner.command_for(data))
+    owner.write_marker(data, "installed", path, owner.command_for(data), **(keep or {}))
 
 
 def _replace_hint(owner, path):
@@ -266,42 +325,133 @@ def statusline_hooked():
     return bool(h and h["kind"] == "display")
 
 
-def _from_statusline(owner, data, path, proj):
-    """Take over the statusline plugin's entry in `path`, or Wait."""
-    if not statusline_hooked() or not _script_ready(owner, data):
+def _from_statusline(owner, data, path, proj, entry):
+    """Take over the statusline footer's entry `entry` in `path` once the
+    footer is a hub hook; with statusline surely uninstalled, an older copy
+    (_older_copy); else Wait."""
+    if statusline_hooked():
+        if not _script_ready(owner, data):
+            raise Wait()
+        _guard_local(owner, path, proj)
+        _put(owner, data, path, {"statusline"})
+        return (f"took over the status line slot in {path}; the statusline footer now "
+                f"draws through the hub, as one of its display hooks.")
+    if not _statusline_uninstalled(owner):
+        raise Wait()  # installed (or unknown): it may yet register
+    return _older_copy(owner, data, path, proj, entry, "took over")
+
+
+COPY_NOTICE = "footer-copy-notice.json"
+
+
+def _install_hint(owner):
+    """The statusline plugin's install command, from the marketplace Claude
+    Code records this hub under (the kit's own when it records none)."""
+    mkt = next((k.split("@", 1)[1] for k in (_install_records(owner) or {})
+                if isinstance(k, str) and k.startswith(owner.PLUGIN + "@")
+                and k.split("@", 1)[1]), "kmacmcfarlane")
+    return f"/plugin install {owner.STATUSLINE}@{mkt}"
+
+
+def _copy_name(owner, home):
+    """What the footer entry in the slot is, for a message."""
+    if home == owner.STATUSLINE:
+        return "the statusline footer's entry, from the statusline plugin"
+    return f"an older copy of the statusline footer, from the {home} plugin"
+
+
+def _footer_hint(owner):
+    """The first-run line's pointer at the footer: enable the statusline
+    plugin when Claude Code records it installed, else its install command."""
+    if _has(_install_records(owner) or {}, owner.STATUSLINE):
+        return "enable the statusline plugin for its footer"
+    return f"the statusline plugin draws a footer there: {_install_hint(owner)}"
+
+
+def _older_copy(owner, data, path, proj, entry, verb, keep=None):
+    """The slot in `path` holds an older copy of the statusline footer
+    (`entry`, from one of owner.FOOTER_HOMES) and the install records surely
+    hold no statusline install, so no footer will ever register: the hub
+    never yields to it for good.
+    - The copy draws nothing: its plugin is gone (no <plugin>@ install
+      record, and its current-hooks/statusline.py does not resolve), or its
+      plugin is recorded and current-hooks resolves to a directory that no
+      longer holds statusline.py (a version that dropped the copy). The hub
+      takes the slot.
+    - The copy still resolves: it draws; said once (a stamp in the data dir,
+      per settings file and entry) that installing statusline lets the hub
+      take over; then the hub looks again each session, quietly.
+    - Its plugin is recorded and current-hooks dangles or is absent (an
+      update leaves a dangling link until that plugin's own SessionStart
+      re-links it): Wait."""
+    copy = owner.footer_copy(entry)
+    recs = _install_records(owner)
+    if copy is None or recs is None:
         raise Wait()
-    _guard_local(path, proj)
-    _put(owner, data, path, {"statusline"})
-    return (f"took over the status line slot in {path}; the statusline footer now "
-            f"draws through the hub, as one of its display hooks.")
+    home, script = copy
+    if os.path.isfile(script):
+        return _copy_notice(owner, data, path, entry, home)
+    if _has(recs, home) and not os.path.isdir(os.path.dirname(script)):
+        raise Wait()  # mid-update: the link dangles until its plugin re-links it
+    if not _script_ready(owner, data):
+        raise Wait()
+    _guard_local(owner, path, proj)
+    _put(owner, data, path, {"statusline"}, keep)
+    gone = ("whose version no longer ships it" if _has(recs, home) else
+            "which is no longer installed")
+    return (f"{verb} the status line slot in {path}: it ran {_copy_name(owner, home)}, "
+            f"{gone}, so it drew nothing. From your next session "
+            f"the hub records each render for the tools that read it and draws its "
+            f"registered display hooks; for the footer, install the statusline plugin: "
+            f"{_install_hint(owner)}. Undo: /install-statusline-hub{_flag(owner, path)} "
+            f"--remove")
+
+
+def _copy_notice(owner, data, path, entry, home):
+    """Say once that installing statusline lets the hub take over a live
+    older copy; None when said already, or when the stamp cannot be kept
+    (a notice it cannot record is withheld, so it never repeats)."""
+    stamp = os.path.join(data, COPY_NOTICE)
+    key = {"v": 1, "settings": os.path.abspath(path), "command": entry.get("command")}
+    said = owner.sensor._load(stamp)
+    if isinstance(said, dict) and all(said.get(k) == v for k, v in key.items()):
+        raise Wait()
+    try:
+        owner.atomic_write_json(stamp, key, mode=0o600)
+    except OSError:
+        raise Wait()
+    return (f"the status line in {path} runs {_copy_name(owner, home)}; left alone "
+            f"while it draws. Install the statusline plugin ({_install_hint(owner)}) "
+            f"and the hub takes over the slot, drawing the footer as one of its display "
+            f"hooks.")
 
 
 def heal(owner, data, marker):
     path = marker.get("settings")
     if not isinstance(path, str) or not os.path.isfile(path):
         return None
-    kind = owner.classify(_read(owner, path).get("statusLine"))
+    cur = _read(owner, path).get("statusLine")
+    kind = owner.classify(cur)
     if kind == "own":
         return None
     if kind == "statusline":
         if statusline_hooked() and _script_ready(owner, data):
-            _put(owner, data, path, {"statusline"})
+            _guard_local(owner, path, None)
+            _put(owner, data, path, {"statusline"}, _scope(marker))
             return (f"restored the status line in {path} (an older session's settings "
                     f"write had put the footer's earlier entry back; it draws through "
                     f"the hub).")
         if not _statusline_uninstalled(owner):
             raise Wait()  # installed (or unknown): it may yet register
-        owner.write_marker(data, "yielded", path, owner.command_for(data))
-        return (f"the statusLine in {path} is the statusline footer's entry, left "
-                f"behind by the statusline plugin, which is no longer installed; left "
-                f"alone. To have the hub own it again, {_replace_hint(owner, path)}")
+        return _older_copy(owner, data, path, None, cur, "took back", _scope(marker))
     if kind != "absent":
         owner.write_marker(data, "yielded", path, owner.command_for(data))
         return (f"the statusLine in {path} was changed by something else; left "
                 f"alone. To have the hub own it again, {_replace_hint(owner, path)}")
     if not _script_ready(owner, data):
         return None
-    _put(owner, data, path, {"absent"})
+    _guard_local(owner, path, None)
+    _put(owner, data, path, {"absent"}, _scope(marker))
     return (f"restored the status line in {path} (an older session's settings "
             f"write had dropped it; /install-statusline-hub{_flag(owner, path)} --remove "
             f"turns it off).")
@@ -324,7 +474,7 @@ def _takeover(owner, data, proj):
         except owner.SettingsError:
             continue
         if owner.classify(d.get("statusLine")) == "statusline":
-            return _from_statusline(owner, data, path, proj), True
+            return _from_statusline(owner, data, path, proj, d.get("statusLine")), True
     return None, False
 
 
@@ -440,7 +590,8 @@ def first_run(owner, data, proj):
         return None
     path, compete, proj = target
     for p in compete:
-        kind = owner.classify(_read(owner, p).get("statusLine"))
+        cur = _read(owner, p).get("statusLine")
+        kind = owner.classify(cur)
         if kind == "foreign":
             owner.write_marker(data, "deferred", path, owner.command_for(data))
             return _wrap_offer(owner, p)
@@ -461,7 +612,7 @@ def first_run(owner, data, proj):
                 owner.write_marker(data, "installed", p, owner.command_for(data))
             return None
         if kind == "statusline":
-            return _from_statusline(owner, data, p, proj)
+            return _from_statusline(owner, data, p, proj, cur)
     if _statusline_removed(owner, data, path):
         owner.write_marker(data, "removed", path, owner.command_for(data))
         return (f"the statusline footer was removed from {path} earlier, so the hub "
@@ -471,19 +622,37 @@ def first_run(owner, data, proj):
         raise Wait()
     if not _script_ready(owner, data):
         return None
-    _guard_local(path, proj)
+    _guard_local(owner, path, proj)
     _put(owner, data, path, {"absent"})
     what = ("the statusline footer, and any other display hooks registered"
             if statusline_hooked() or (_statusline_installs_only_hooks(owner) and
                                        _statusline_enabled(owner, compete)) else
-            "its registered display hooks (a blank line until one registers)")
+            f"its registered display hooks (a blank line until one registers; "
+            f"{_footer_hint(owner)})")
     return (f"status line slot taken in {path}: from your next session the hub records "
             f"each render for the tools that read it and draws {what}. Undo: "
             f"/install-statusline-hub{_flag(owner, path)} --remove")
 
 
-def _blocked_message(owner, path, reason, verb):
+def _blocked_message(owner, path, reason, verb, project=False):
+    """The once-only line for a Blocked. `project`: the marker it resumes was
+    set by an explicit /install-statusline-hub --project."""
     retry = "start a new session"
+    if reason == "tracked" and project:
+        return (f"{path} is tracked by git, so the hub does not write its entry there on "
+                f"its own (it is an absolute path on this machine); left as it is, not "
+                f"{verb}. To put it back there, run /install-statusline-hub --project "
+                f"again; or /install-statusline-hub --local for this machine only.")
+    if reason == "tracked":
+        # A project's local settings outrank its shared ones, which outrank the
+        # user's (documented: https://code.claude.com/docs/en/settings), so the
+        # fix that wins over the team's file is --local.
+        return (f"{path} is tracked by git, and the status line entry is an absolute "
+                f"path on this machine; left as it is, not {verb} there. To have the "
+                f"hub own the slot in this project, run /install-statusline-hub --local "
+                f"(a git-ignored .claude/settings.local.json, which outranks the shared "
+                f"file), and remove any dead statusLine entry from the team's shared "
+                f"file.")
     if reason == "not-ignored":
         return (f"{path} is not git-ignored, and the status line entry is an absolute "
                 f"path on this machine; not installed there. Add "
@@ -527,11 +696,12 @@ def run(inp):
             return None  # said once already; retried quietly
         try:
             owner.write_marker(data, "blocked", b.path, owner.command_for(data),
-                               reason=b.reason, resume=resume)
+                               reason=b.reason, resume=resume, **_scope(marker))
         except Exception:
             return None
         return _blocked_message(owner, b.path, b.reason,
-                                "installed" if resume == "new" else "restored")
+                                "installed" if resume == "new" else "restored",
+                                project=bool(_scope(marker)))
 
 
 NOTICE = "refusal-notice.json"

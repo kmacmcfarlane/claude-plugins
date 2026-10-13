@@ -9,6 +9,7 @@ falls back to a structural assertion otherwise.
 import contextlib
 import difflib
 import errno
+import fcntl
 import hashlib
 import importlib.util
 import io
@@ -1601,6 +1602,29 @@ class TestHandoffDoneArchive(WiTestCase):
         self.assertEqual((self.root / "items" / "ho-1111.md").read_text(), first)
         self.assertEqual(first.count("learned: SOURCE parses zero"), 2)  # handoff + note
 
+    def test_handoff_learned_dedupe_is_whole_line(self):
+        # A learned line that is a prefix of an existing one is still new.
+        self.write_item("ho-2222", status="doing", owner="tester@local",
+                        claimed="2026-08-30T10:00Z")
+        self.wi_ok(["handoff", "ho-2222", "--learned", "L10"])
+        self.wi_ok(["handoff", "ho-2222", "--learned", "L1"])
+        self.wi_ok(["handoff", "ho-2222", "--learned", "L1"])
+        notes = wi.load_item_anywhere(self.root, "ho-2222").section("Notes")
+        lines = notes.splitlines()
+        self.assertEqual(lines.count(f"- {wi.today()} learned: L10"), 1)
+        self.assertEqual(lines.count(f"- {wi.today()} learned: L1"), 1)
+
+    def test_handoff_learned_trailing_space_added_once(self):
+        # section() strips the last Notes line, so trailing space must not
+        # defeat the dedupe.
+        self.write_item("ho-3333", status="doing", owner="tester@local",
+                        claimed="2026-08-30T10:00Z")
+        self.wi_ok(["handoff", "ho-3333", "--learned", "T2 "])
+        self.wi_ok(["handoff", "ho-3333", "--learned", "T2 "])
+        notes = wi.load_item_anywhere(self.root, "ho-3333").section("Notes")
+        lines = [n.rstrip() for n in notes.splitlines()]
+        self.assertEqual(lines.count(f"- {wi.today()} learned: T2"), 1)
+
     def test_done_unblocks_dependents_and_archive_resolves(self):
         self.write_item("dep-1111")
         self.write_item("child-2222", deps=["dep-1111"])
@@ -1625,6 +1649,227 @@ class TestHandoffDoneArchive(WiTestCase):
         self.write_item("same-prefix-2222")
         self.assertEqual(run(["show", "same-prefix"], self.root).returncode, 2)
         self.wi_ok(["show", "same-prefix-1"])
+
+
+class TestNote(WiTestCase):
+    """6cfb: `wi note` appends to ## Notes through Item.append_note, under
+    the lock, one write for every text or none; every refusal of a text
+    starts `text <n>:` and never quotes the text."""
+
+    IID = "note-1111"
+
+    def path(self):
+        return self.root / "items" / f"{self.IID}.md"
+
+    def item(self, sections="## Notes\n- 2026-08-01 first\n\n## Later\nlater body\n"):
+        self.write_item(self.IID, sections=sections)
+        return self.path()
+
+    def test_dated_default_lands_after_the_last_notes_line(self):
+        path = self.item()
+        out = self.wi_ok(["note", self.IID, "--", "second"])
+        self.assertEqual(out, f"noted {self.IID}\n")
+        self.assertIn(f"- 2026-08-01 first\n- {wi.today()} second\n\n## Later\n",
+                      path.read_text())
+
+    def test_text_is_stripped_and_a_leading_dash_is_text(self):
+        path = self.item()
+        self.wi_ok(["note", self.IID, "--", "  - leading dash  "])
+        self.assertIn(f"- {wi.today()} - leading dash\n", path.read_text())
+
+    def test_raw_writes_verbatim_and_needs_input_reads_it(self):
+        path = self.item()
+        self.wi_ok(["note", self.IID, "--raw", "--", "decision 7: which store?"])
+        self.assertIn("- 2026-08-01 first\ndecision 7: which store?\n\n## Later",
+                      path.read_text())
+        data = json.loads(self.wi_ok(["needs-input", "--json"]))
+        self.assertIn(self.IID, json.dumps(data))
+        self.assertIn("which store?", json.dumps(data))
+
+    def test_several_texts_land_in_order_in_one_write(self):
+        path = self.item()
+        out = self.wi_ok(["note", self.IID, "--", "a", "b", "c"])
+        self.assertEqual(out, f"noted {self.IID} (3 lines)\n")
+        d = wi.today()
+        self.assertIn(f"- 2026-08-01 first\n- {d} a\n- {d} b\n- {d} c\n\n## Later",
+                      path.read_text())
+
+    def test_no_notes_section_is_added_at_the_end(self):
+        path = self.item(sections="")
+        self.wi_ok(["note", self.IID, "--", "x"])
+        self.assertTrue(path.read_text().endswith(f"## Notes\n- {wi.today()} x\n"))
+
+    def test_padded_notes_heading_is_the_section(self):
+        path = self.write_raw_item(
+            "\nDesc.\n\n##  Notes \n- 2026-08-01 first\n\n## Later\nz\n")
+        self.wi_ok(["note", self.IID, "--", "x"])
+        text = path.read_text()
+        self.assertIn(f"- 2026-08-01 first\n- {wi.today()} x\n\n## Later", text)
+        self.assertEqual(text.count("Notes"), 1)
+
+    def write_raw_item(self, body, eol="\n", front_extra="status: todo\n"):
+        front = (f"id: {self.IID}\ntitle: note body\ntype: task\npriority: 2\n"
+                 f"{front_extra}created: 2026-08-01\nupdated: 2026-08-01\n")
+        path = self.path()
+        path.write_bytes(("---\n" + front + "---\n" + body)
+                         .replace("\n", eol).encode())
+        return path
+
+    def test_crlf_is_kept(self):
+        path = self.write_raw_item(
+            "\nDesc.\n\n## Notes\n- 2026-08-01 first\n", eol="\r\n")
+        self.wi_ok(["note", self.IID, "--", "x", "y"])
+        raw = path.read_bytes().decode()
+        self.assertNotIn("\n", raw.replace("\r\n", ""))
+        self.assertTrue(raw.endswith(
+            f"- 2026-08-01 first\r\n- {wi.today()} x\r\n- {wi.today()} y\r\n"))
+
+    def test_notes_hidden_by_a_cross_section_fence_exits_3(self):
+        body = TestBodyPreservation.CROSS_SECTION.replace(
+            "## Notes\n- 2026-09-01 n1\n```sh\nmake\n\n## Handoff",
+            "```sh\nmake\n\n## Notes\n- 2026-09-01 n1\n\n## Handoff")
+        for eol in ("\n", "\r\n"):
+            with self.subTest(eol=repr(eol)):
+                path = self.write_raw_item(body, eol)
+                raw = path.read_bytes()
+                r = run(["note", self.IID, "--", "x"], self.root)
+                self.assertEqual(r.returncode, 3, r.stdout + r.stderr)
+                self.assertIn("'## Notes' is inside a fenced code block", r.stderr)
+                self.assertEqual(path.read_bytes(), raw)
+
+    def test_each_refusal_names_its_text_and_writes_nothing(self):
+        fake = TestLint.ASSIGN_FAKE
+        cases = {
+            "line feed": ([], "a\nb", "must be one line"),
+            "U+2028": ([], "a b", "(U+2028)"),
+            "empty": ([], "   ", "empty"),
+            "raw heading": (["--raw"], "## x", "starts '## '"),
+            "raw fence": (["--raw"], "```sh", "opens a code fence"),
+            "raw tilde fence": (["--raw"], "~~~", "opens a code fence"),
+            "dated secret": ([], "set " + fake, "likely secret value"),
+            "raw secret": (["--raw"], fake, "likely secret value"),
+            "PEM line": ([], "-----BEGIN RSA PRIVATE KEY-----",
+                         "PEM private key material"),
+        }
+        path = self.item()
+        before = path.read_bytes()
+        for name, (flags, text, why) in cases.items():
+            with self.subTest(case=name):
+                r = run(["note", self.IID] + flags + ["--", "fine", text],
+                        self.root)
+                self.assertEqual(r.returncode, 1, r.stdout + r.stderr)
+                self.assertTrue(r.stderr.startswith("wi: text 2: "), r.stderr)
+                self.assertTrue(r.stderr.endswith("; nothing written\n"), r.stderr)
+                self.assertIn(why, r.stderr)
+                self.assertEqual(r.stdout, "")
+                self.assertEqual(path.read_bytes(), before)
+                if "secret" in name:
+                    self.assertNotIn(fake.split("=", 1)[1], r.stderr)
+                    self.assertEqual(
+                        r.stderr, "wi: text 2: likely secret value (record the "
+                        "path and key, never the value); nothing written\n")
+
+    def test_looser_secret_shapes_refused(self):
+        fake = TestLint.SHAPE_FAKE
+        path = self.item()
+        before = path.read_bytes()
+        for text in ("db_pass = " + fake, "DB_PASS: " + fake,
+                     '{"db_pass": "' + fake + '"}', "--auth=" + fake,
+                     'db_pass="' + fake + '"', "app.db_pass => " + fake,
+                     # dc23: a bare colon key, a spaced flag
+                     "dbpass: " + fake, "--password " + fake):
+            with self.subTest(text=text):
+                r = run(["note", self.IID, "--", text], self.root)
+                self.assertEqual(r.returncode, 1, r.stdout + r.stderr)
+                self.assertEqual(
+                    r.stderr, "wi: text 1: likely secret value (record the "
+                    "path and key, never the value); nothing written\n")
+                self.assertEqual(path.read_bytes(), before)
+
+    def test_a_text_that_is_exactly_the_separator_is_refused(self):
+        path = self.item()
+        before = path.read_bytes()
+        for argv, n in ((["--", "a", "--", "b"], 2),
+                        (["--", "--", "a"], 1),
+                        (["--raw", "--", "a", "--", "--", "b"], 2),
+                        (["x", "--", "y", "--"], 3)):
+            with self.subTest(argv=argv):
+                r = run(["note", self.IID] + argv, self.root)
+                self.assertEqual(r.returncode, 1, r.stdout + r.stderr)
+                self.assertTrue(r.stderr.startswith(f"wi: text {n}: is exactly '--'"),
+                                r.stderr)
+                self.assertEqual(path.read_bytes(), before)
+        # a `--` inside a text, and the one separator, are fine
+        self.wi_ok(["note", self.IID, "--", "a -- b", "-- c"])
+        self.assertIn(f"- {wi.today()} a -- b\n- {wi.today()} -- c\n",
+                      path.read_text())
+
+    def test_the_separator_refusal_counts_texts_as_argparse_does(self):
+        """An abbreviated --root whose value is `note`, a text that looks
+        like an option (`-5`), an id after the separator, and an id that is
+        itself `--` still name the right text."""
+        path = self.item()
+        before = path.read_bytes()
+        for argv, n in ((["--roo", "note", "note", self.IID, "--", "a", "--", "b"], 2),
+                        (["--root=note", "note", self.IID, "--", "a", "--", "b"], 2),
+                        (["note", self.IID, "-5", "--", "a", "--", "b"], 3),
+                        (["note", self.IID, "--ra", "-5", "--", "--", "b"], 2),
+                        (["note", "--", self.IID, "a", "--", "b"], 2),
+                        (["note", "--", "--", "a", "--", "b"], 2)):
+            with self.subTest(argv=argv):
+                r = run(argv, self.root)
+                self.assertEqual(r.returncode, 1, r.stdout + r.stderr)
+                self.assertTrue(r.stderr.startswith(f"wi: text {n}: is exactly '--'"),
+                                r.stderr)
+                self.assertEqual(path.read_bytes(), before)
+
+    def test_refusal_runs_before_the_store_is_read(self):
+        r = run(["note", "no-such-0000", "--", "x\ny"], self.tmp / "nowhere")
+        self.assertEqual(r.returncode, 1)
+        self.assertTrue(r.stderr.startswith("wi: text 1: "), r.stderr)
+
+    def test_a_look_alike_is_written(self):
+        path = self.item()
+        self.wi_ok(["note", self.IID, "--", "set KEY=<path> in the env file"])
+        self.assertIn(f"- {wi.today()} set KEY=<path> in the env file\n",
+                      path.read_text())
+
+    def test_missing_id_exits_2(self):
+        self.item()
+        r = run(["note", "nope-0000", "--", "x"], self.root)
+        self.assertEqual(r.returncode, 2, r.stdout + r.stderr)
+        self.assertIn("no item matching 'nope-0000'", r.stderr)
+
+    def test_missing_store_exits_1_without_the_text_prefix(self):
+        empty = self.tmp / "empty"
+        empty.mkdir()
+        r = run(["note", self.IID, "--", "x"], empty)
+        self.assertEqual(r.returncode, 1, r.stdout + r.stderr)
+        self.assertFalse(r.stderr.startswith("wi: text "), r.stderr)
+
+    def test_rejected_front_matter_exits_1_without_the_text_prefix(self):
+        path = self.write_raw_item("\nDesc.\n\n## Notes\n- 2026-08-01 first\n",
+                                   front_extra="status: todo\nstage: a\tb\n")
+        raw = path.read_bytes()
+        r = run(["note", self.IID, "--", "x"], self.root)
+        self.assertEqual(r.returncode, 1, r.stdout + r.stderr)
+        self.assertFalse(r.stderr.startswith("wi: text "), r.stderr)
+        self.assertIn("control character", r.stderr)
+        self.assertEqual(path.read_bytes(), raw)
+
+    def test_held_lock_exits_4_and_writes_nothing(self):
+        path = self.item()
+        raw = path.read_bytes()
+        err = io.StringIO()
+        with open(self.root / ".lock", "a") as held:
+            fcntl.flock(held, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            with mock.patch.object(wi.Lock.__init__, "__defaults__", (0.2,)), \
+                    contextlib.redirect_stderr(err):
+                code = wi.main(["--root", str(self.root), "note", self.IID,
+                                "--", "x"])
+        self.assertEqual(code, 4)
+        self.assertIn("lock timeout", err.getvalue())
+        self.assertEqual(path.read_bytes(), raw)
 
 
 # Body shapes a hand-edited item can take. Every rewriting command must keep
@@ -1782,6 +2027,9 @@ class TestBodyPreservation(WiTestCase):
                        ["set", IID, "status", "todo"], "insert"),
         "done": ("status: doing\n", ["done", IID, "--note", "shipped"], "insert"),
         "drop": ("status: todo\n", ["done", IID, "--drop"], "insert"),
+        "note": ("status: todo\n", ["note", IID, "--", "x", "y"], "insert"),
+        "note-raw": ("status: todo\n",
+                     ["note", IID, "--raw", "--", "- 2026-10-08 raw"], "insert"),
         "export": ("status: todo\n", ["export", "OUT", "--format", "backlog-yaml",
                                       "--project", "t"], "same"),
         "import-update": ("status: todo\nalias: S-001\n",
@@ -1852,6 +2100,9 @@ class TestBodyPreservation(WiTestCase):
 
     def test_done_and_drop_keep_body(self):
         self.run_matrix(["done", "drop"])
+
+    def test_note_keeps_body(self):
+        self.run_matrix(["note", "note-raw"])
 
     def test_export_alias_writeback_keeps_body(self):
         self.run_matrix(["export"])
@@ -2597,9 +2848,9 @@ class TestGrooming(WiTestCase):
         self.wi_ok(["lint"])
 
     def test_needs_input_lists_grooming_and_unanswered_decisions(self):
-        self.write_item("groom-1111", status="grooming", grooming="which store?",
-                        priority=1)
-        self.write_item("dec-2222", sections=(
+        self.write_item("groom-1111", "Store choice", status="grooming",
+                        grooming="which store?", priority=1)
+        self.write_item("dec-2222", "Alias cleanup", sections=(
             "## Notes\n"
             "decision 3: a or b\n"
             "decision 4: keep the alias?\n"
@@ -2608,7 +2859,8 @@ class TestGrooming(WiTestCase):
             "decision 7: already answered further down\n"
             "```\ndecision 9: an example in a fence\n```\n"
             "answer 7: yes\n"))
-        self.write_item("parked-3333", status="parked", parked="later",
+        self.write_item("parked-3333", "Later revisit", status="parked",
+                        parked="later",
                         sections="## Notes\ndecision 5: revisit when?\n")
         self.write_item("answered-4444",
                         sections="## Notes\ndecision 6: x\nanswer 6: y\n")
@@ -2618,16 +2870,21 @@ class TestGrooming(WiTestCase):
                         sections="## Notes\n- decision 10: not the marker\n")
         out = self.wi_ok(["needs-input"])
         self.assertEqual(out.splitlines(), [
-            "groom-1111  grooming: which store?",
-            "dec-2222  decision 4: keep the alias?",
-            "parked-3333  decision 5: revisit when?"])
+            "groom-1111  Store choice  grooming: which store?",
+            "dec-2222  Alias cleanup  decision 4: keep the alias?",
+            "parked-3333  Later revisit  decision 5: revisit when?"])
         plain = self.wi_ok(["needs-input", "--plain"]).splitlines()
-        self.assertIn("groom-1111\tgrooming\t-\twhich store?", plain)
-        self.assertIn("dec-2222\tdecision\t4\tkeep the alias?", plain)
+        self.assertIn("groom-1111\tgrooming\t-\tStore choice\twhich store?",
+                      plain)
+        self.assertIn("dec-2222\tdecision\t4\tAlias cleanup\tkeep the alias?",
+                      plain)
         data = json.loads(self.wi_ok(["needs-input", "--json"]))
         self.assertEqual([r["id"] for r in data],
                          ["groom-1111", "dec-2222", "parked-3333"])
-        self.assertEqual(data[1]["decisions"], [{"n": 4, "text": "keep the alias?"}])
+        self.assertEqual(data[1]["decisions"], [{
+            "n": 4, "text": "keep the alias?", "raised": None,
+            "first_shown": None, "last_shown": None, "last_seen": None,
+            "unseen": None}])
         self.assertEqual(data[0]["grooming"], "which store?")
         self.wi_ok(["lint"])
 
@@ -2642,7 +2899,7 @@ class TestGrooming(WiTestCase):
             b"---\r\nid: crlf-1111\r\ntitle: c\r\nstatus: todo\r\n"
             b"created: 2026-08-01\r\nupdated: 2026-08-01\r\n---\r\n\r\n"
             b"decision 2: crlf?\r\n")
-        self.assertIn("crlf-1111  decision 2: crlf?",
+        self.assertIn("crlf-1111  c  decision 2: crlf?",
                       self.wi_ok(["needs-input"]))
 
     def test_prime_shows_grooming_count_and_hold_line(self):
@@ -2736,6 +2993,546 @@ class TestLint(WiTestCase):
         self.assertEqual(r.stdout.count("likely secret value"), 2)
         self.assertIn("PEM private key", r.stdout)
         self.assertNotIn("clean-2222", r.stdout)
+
+    # obviously fake values; the KEY names hold none of the KV rule's words
+    # (token, secret, password, ...), so only the assignment rule can fire
+    ASSIGN_FAKE = "DB_PASS=hunter2hunter2hunterXYZ"
+
+    def lint_notes(self, *lines):
+        (self.root / "items" / "probe-3333.md").unlink(missing_ok=True)
+        self.write_item("probe-3333", sections="## Notes\n" + "\n".join(lines) + "\n")
+        return run(["lint"], self.root)
+
+    def test_assignment_secret_caught_bare_and_after_a_prefix(self):
+        shapes = {
+            "bare": self.ASSIGN_FAKE,
+            "indented export": "  export " + self.ASSIGN_FAKE,
+            "bullet": "- " + self.ASSIGN_FAKE,
+            "bullet and date": "- 2026-10-08 checkpoint: CORRECTION " + self.ASSIGN_FAKE,
+            "tag prefix": "[ops] " + self.ASSIGN_FAKE,
+            "record line": "learned: set " + self.ASSIGN_FAKE + " on the host",
+            "backticked": "run `" + self.ASSIGN_FAKE + "` first",
+            "after a comma": "two vars,FAKE_ID=fakefakefakefake",
+            "bold": "- note **" + self.ASSIGN_FAKE + "**",
+            "italic": "- note *" + self.ASSIGN_FAKE + "*",
+            "unspaced em dash": "- 2026-10-08 fixed\u2014" + self.ASSIGN_FAKE,
+            "blockquote": ">" + self.ASSIGN_FAKE,
+            "heading": "#" + self.ASSIGN_FAKE,
+            "full-width colon": "note\uff1a" + self.ASSIGN_FAKE,
+            "after a slash": "env/" + self.ASSIGN_FAKE,
+        }
+        for name, line in shapes.items():
+            with self.subTest(shape=name):
+                r = self.lint_notes(line)
+                self.assertEqual(r.returncode, 3, r.stdout)
+                self.assertIn("probe-3333.md:", r.stdout)
+                self.assertIn("likely secret value", r.stdout)
+
+    def test_assignment_look_alikes_stay_clean(self):
+        look_alikes = {
+            "placeholder": "- set KEY=<path> in the env file",
+            "bare placeholder": "KEY=<path>",
+            "shell var": "- 2026-10-08 note: DB_PASS=$DB_PASS from the env",
+            "template": "- render CONF_DIR={root}/conf",
+            "short value": "- 2026-10-08 FOO=bar",
+            "bare short value": "FOO=bar",
+            "url query": "- see https://example.invalid/p?a=bcdefghijklmnop&b=c",
+            "url upper query": "- see https://example.invalid/p?MODE=abcdefghijk",
+            "glued to a word": "- xFOO_BAR=abcdefghijk",
+            "two-letter key": "- 2026-10-08 AB=abcdefghijk",
+            "comparison": "- check X == Y and a=b",
+        }
+        for name, line in look_alikes.items():
+            with self.subTest(shape=name):
+                r = self.lint_notes(line)
+                self.assertNotIn("probe-3333", r.stdout)
+                self.assertEqual(r.returncode, 0, r.stdout)
+
+    # obviously fake, letters and digits, no hex-only run, one long segment;
+    # the keys hold none of the KV rule's whole words (db_pass, not
+    # password), so only the b9fb shape rule can fire. Every fake below is
+    # built here from "fake" and "dead/beef" runs, never stored as a token.
+    SHAPE_FAKE = "fake0fake1fake2fakeXYZ"
+    FAKE_B64 = "Fake+Base64/Value0Only" + "=="
+    FAKE_JWT = ".".join(("fakeHeader0Abc", "fakePayload1Xyz", "fakeSig2Qrs"))
+    FAKE_UUID = "-".join(("deadbeef", "dead", "beef", "dead", "beefdeadbeef"))
+    FAKE_HEX = "deadbeef" * 5
+
+    def test_looser_secret_shapes_caught(self):
+        v = self.SHAPE_FAKE
+        shapes = {
+            "lowercase key": "db_pass=" + v,
+            "mixed-case key": "- 2026-10-09 set dbPass=" + v,
+            "spaces around =": "KEY = " + v,
+            "lowercase spaced": "- db_pass = " + v,
+            "env key colon": "DB_PASS: " + v,
+            "snake key colon": "- learned: db_pass: " + v,
+            "json pair": '{"db_pass":"' + v + '"}',
+            "json pair spaced": "- body {\"dbPass\": \"" + v + "\"}",
+            "json single quotes": "{'user_pw': '" + v + "'}",
+            "flag": "ran `tool --auth=" + v + "` once",
+            "bare flag": "--auth=" + v,
+            "with an underscore": "conn_str=fake_" + v,
+            "trailing period": "set db_pass=" + v + ".",
+            # quoted values, every key form
+            "double-quoted": 'db_pass="' + v + '"',
+            "single-quoted": "db_pass='" + v + "'",
+            "quoted spaced": 'db_pass = "' + v + '"',
+            "env quoted spaced": 'DB_PASS = "' + v + '"',
+            "env colon quoted": 'DB_PASS: "' + v + '"',
+            "snake colon quoted": 'db_pass: "' + v + '"',
+            "api_secret quoted": 'api_secret = "' + v + '"',
+            "client_secret colon quoted": 'client_secret: "' + v + '"',
+            "flag quoted": '--auth="' + v + '"',
+            # other forms
+            "dotted key": "app.db_pass=" + v,
+            "space before colon": "DB_PASS :" + v,
+            "fat arrow": "db_pass => " + v,
+            "walrus": "db_pass := " + v,
+            # a key with no secret word: the value must look live
+            "plain key, base64": "blob_data=" + self.FAKE_B64,
+            "plain key, quoted base64": '"blob_data": "' + self.FAKE_B64 + '"',
+            "plain key, jwt-like": "--session=" + self.FAKE_JWT,
+            "plain key, mixed long segment": "conn_str: " + v,
+            # a secret-word key: any 8+ non-space characters
+            "secret key, base64": "db_pass=" + self.FAKE_B64,
+            "secret key, jwt-like": "auth_header: " + self.FAKE_JWT,
+            "secret key, letters only": "db_pass=abcdefghijklmnopqrst",
+            "secret key, hex": "api_secret=" + self.FAKE_HEX,
+            "secret key, uuid": "db_pass: " + self.FAKE_UUID,
+            "secret key, symbols": "user_pw=fake!pw@" + "123",
+            "secret key, slug": "--token=" + "-".join(("fake", "slug", "value")),
+            "secret key, base64 from /": "db_pass=/" + self.FAKE_B64,
+            "secret key, camelCase": "accessToken := " + v,
+            "secret key, all-caps camel": "APIKey=" + v,
+            "secret key, masked prefix only": "db_pass=*" + v,
+            # a later pair on the same line is still examined
+            "compact json": '{"name":"x","db_pass":"' + v + '"}',
+            "joined pairs ;": "dsn=host=db;user=app;db_pass=" + v,
+            "joined pairs ,": "opts=fast,db_pass=" + v,
+            "joined flags": "args=--x,--auth=" + v,
+            # markdown around keys and values
+            "bold key": "**password**: " + v,
+            "code key": "`API_TOKEN` = " + v,
+            "bold value": "password: **" + v + "**",
+            "code value": "db_pass=`" + v + "`",
+            "split by emphasis": "db_pass=" + v[:8] + "*" + v[8:],
+            "url in angle brackets": "webhook_url: <https://hooks.example.invalid/" + v + ">",
+            # NFKC and format characters
+            "zero-width space in key": "db\u200b_pass=" + v,
+            "fullwidth equals": "db_pass\uff1d" + v,
+            # the raw line is read too, so the cleanup never hides an old hit
+            "glued markdown key": "*my*password: " + v,
+            "a value holding *": "DB_PASS=" + "Fa1k" + "**" + "e2X",
+            "fullwidth dollar": "DB_PASS=\uff04" + v,
+            # secrets dressed as code, a number or a path
+            "quoted dotted words": 'db_pass = "' + ".".join(("fakea", "fakeb", "fakec")) + '"',
+            "dotted words, a digit": "db_pass: " + ".".join(("fakea", "fakeb", "fakec1")),
+            "quoted number": 'db_pass = "' + "1234" * 3 + '"',
+            "bare number": "user_pw=" + "1234" * 3,
+            "quoted path": 'db_pass = "/' + "/".join(("fakea", "fakeb", "fakec")) + '"',
+            "home path, one segment": "db_pass=~/fakea9fakeb",
+            "call holding a token": "db_pass=fakef(" + "fake0Fake1" + ")",
+            "subscript holding a token": "db_pass=fakes[" + "fake0Fake1fake2Fake3" + "]",
+            "dotted call holding a token": "db_pass=fake.fake(" + v + ")",
+            "unclosed call": "db_pass=a(" + v,
+            "text after a subscript": "db_pass=x[0]" + v,
+            "angle brackets, not words": "db_pass=<" + v + ">",
+            "angle brackets, colon": "api_token: <" + v + ">",
+            "angle bracket, unclosed": "db_pass=<" + v,
+            # a compound lowercase key ending with a secret word
+            "dbpassword": "dbpassword=" + self.FAKE_HEX,
+            "secretkey": "secretkey=" + self.FAKE_HEX,
+            "apitoken": "apitoken=" + self.FAKE_HEX,
+            "accesstoken": "accesstoken=" + self.FAKE_HEX,
+            "privatekey": "privatekey=" + self.FAKE_HEX,
+            "authtoken": "authtoken=" + self.FAKE_HEX,
+            "clientsecret": "clientsecret=" + self.FAKE_HEX,
+            "compound key, letters": "dbpassword_x: abcdefghijklmnopqrst",
+            # a + makes a path segment live, so this is no harmless path
+            "path of + segments": "db_pass=/" + "/".join(("abc+def", "ghi+jkl")),
+        }
+        for name, line in shapes.items():
+            with self.subTest(shape=name):
+                r = self.lint_notes(line)
+                self.assertEqual(r.returncode, 3, r.stdout)
+                self.assertIn("probe-3333.md:", r.stdout)
+                self.assertIn("likely secret value", r.stdout)
+                self.assertNotIn(v, r.stdout + r.stderr)
+                self.assertNotIn(self.FAKE_B64, r.stdout + r.stderr)
+
+    def test_looser_shape_look_alikes_stay_clean(self):
+        look_alikes = {
+            "prose": "- 2026-10-09 next: run the checks and land the change",
+            "record line": "learned: lint now flags spaced KEY = value pairs",
+            "prose colon": "verifier gate CONCERNS: grounding/S2 at 1 from tooling",
+            "shell var spaced": "KEY = $DB_PASS",
+            "placeholder colon": "DB_PASS: <value>",
+            "placeholder json": '{"db_pass": "<value>"}',
+            "template flag": "--auth={token_file}",
+            "masked": "db_pass: ****************",
+            "short sha": "- 2026-10-09 merged sha=01dda41 into main",
+            "full sha": "commit_sha: 01dda4101dda4101dda4101dda4101dda41aaaa",
+            "upper hex": "BUILD_ID = 01DDA4101DDA4101DDA41",
+            "work-item id": "refs_item: wi-lint-secret-shapes-the-assignment-and-b9fb",
+            "id flag": "--item=wi-lint-secret-shapes-the-assignment-and-b9fb",
+            "model flag": "dispatch --model=claude-opus-5-5 --effort=medium",
+            "path": "SKILL_DIR: plugins/work-items/skills/work-items/scripts2",
+            "path flag": "--root=.claude-sandbox/work/items2",
+            "date": "claimed_at: 2026-10-09T11:04Z",
+            "frontmatter key": "short_display_name: lint misses other secret shapes",
+            "owner": "owner: Kyle-McFarlane@2d49f8460283",
+            "letters only": "name_tag=abcdefghijklmnopqrst",
+            "digits only": "build_number=123456789012345",
+            "short value": "db_pass=fake1",
+            "comparison": "- check count == 3 and len_value != 12345678abcdefgh",
+            "url query": "- see https://example.invalid/p?db_pass=" + self.SHAPE_FAKE,
+            # a key with no secret word keeps the hex, letters-only and
+            # UUID exemptions
+            "hex under sha": "sha=" + self.FAKE_HEX,
+            "hex under commit": "commit: " + self.FAKE_HEX,
+            "uuid under an id": "request_id: " + self.FAKE_UUID,
+            "uuid quoted under an id": '"session_id": "' + self.FAKE_UUID + '"',
+            "a call": "result = compute_something2(arg)",
+            # long path segments: all letters, all digits or all hex
+            "worktree branch": "branch=worktree-agent-a7035ad4054cec38e",
+            "worktree flag": "--worktree=.claude/worktrees/agent-a7035ad4054cec38e",
+            "worktree colon": "WORKTREE: .claude/worktrees/agent-a7035ad4054cec38e",
+            "json file_path": '{"file_path": "/r/.claude-sandbox/investigations/b9fb/01_plan.md"}',
+            "investigations flag": "--out=.claude-sandbox/investigations/b9fb-plan/01_plan.md",
+            "series dir": "SERIES_DIR: .claude-sandbox/investigations/statusline2",
+            "py path": "see file=plugins/statusline-hub/hooks/tests/test_housekeeping.py",
+            "spaced arrow, short": "map => fake1",
+            # code and counts a note may quote under a secret-word key
+            "a call": "key = get_key()",
+            "an attribute": "token = self.token",
+            "a dotted attribute": "key = config.api_key",
+            "a subscript": "key = os.environ['API_KEY']",
+            "a count call": "token_count = len(tokens)",
+            "a class call": "monkey = MonkeyPatch()",
+            "author": "author=KyleMcFarlane",
+            "keyboard": "keyboard=us-international",
+            "a plural key, count": "max_tokens = 100000000",
+            "a plural key, colon count": "cache_read_input_tokens: 12345678",
+            "a count with separators": "token_budget=1,234,567",
+            "a home path": "ssh_key: ~/.ssh/id_ed25519.pub",
+            "a relative path": "key_file=./conf/dev/keys.yaml",
+            "markdown placeholder": "**password**: <value>",
+            "markdown masked": "`API_TOKEN` = `********`",
+            "code-quoted call": "- 2026-10-09 fixed `key = get_key()` in wi.py",
+            "a count word, bare number": "token_count=12345678",
+            "a limit word, bare number": "key_limit = 123456789",
+            "a spaced placeholder": "db_pass=<your password here>",
+            "a placeholder with _": "DB_PASS: <db_pass_value>",
+            # key and pass count only as a whole segment, and a plural or a
+            # longer word is no secret word, so hex keeps its exemption
+            "monkey": "monkey=" + self.FAKE_HEX,
+            "keyboard": "keyboard=" + self.FAKE_HEX,
+            "turnkey": "turnkey=" + self.FAKE_HEX,
+            "bypass": "bypass=" + self.FAKE_HEX,
+            "compass": "compass: " + self.FAKE_HEX,
+            "passes": "test_passes=" + self.FAKE_HEX,
+            "tokens": "tokens=" + self.FAKE_HEX,
+            "tokenizer": "tokenizer_sha=" + self.FAKE_HEX,
+            "secrets plural": "secrets_dir=" + self.FAKE_HEX,
+        }
+        for name, line in look_alikes.items():
+            with self.subTest(shape=name):
+                r = self.lint_notes(line)
+                self.assertNotIn("probe-3333", r.stdout)
+                self.assertEqual(r.returncode, 0, r.stdout)
+
+    def test_camel_compound_and_header_secrets_caught(self):
+        # ac83: camelCase colon keys, a secret word inside a longer key in
+        # colon forms, an Authorization header, $-led values that are no
+        # whole-value placeholder, the pass suffix, a spaced call argument
+        v = self.SHAPE_FAKE
+        shapes = {
+            "camel colon secret": "clientSecret: " + v,
+            "camel colon password": "- 2026-10-09 dbPassword: " + v,
+            "pascal colon": "ClientSecret: " + v,
+            "camel colon quoted": 'apiKey: "' + v + '"',
+            "camel assignment": "apiToken=" + v,
+            "snake colon api_secret": "api_secret: " + v,
+            "snake colon secret_key": "secret_key: " + v,
+            "snake colon db_password": "db_password: " + v,
+            "bearer header": "Authorization: Bearer " + v,
+            "bearer lowercase": "authorization: bearer " + v,
+            "bearer in curl": '-H "Authorization: Bearer ' + self.FAKE_JWT + '"',
+            "basic header": "Authorization: Basic " + self.FAKE_B64,
+            "bcrypt-like": "db_pass=$2b$12$" + "fakefake" * 3,
+            "dollar inside": "DB_PASS: $FAKE" + "+" + v,
+            "brace-led json": "db_pass={" + v + "}x",
+            "pass suffix": "dbpass=" + self.FAKE_HEX,
+            "passphrase camel": "userPassphrase: " + v,
+            "passcode": "passcode=" + "fakefake12",
+            "spaced second argument": "api_token: auth(user, " + v + ")",
+            "spaced, two spaces": "db_pass = mk(u,  " + v + ")",
+            # fix round 1: nested calls are read to the matching bracket
+            "nested call, quoted literal":
+                'api_key = client(region, cfg(x), "' + v + '")',
+            "nested call, middle": "token = f(a, g(b), " + v + ")",
+            "nested call, first": "token = f(g(a), " + v + ")",
+            # a meta key holding a secret word still flags a hex or symbol value
+            "meta ref, hex": "secret_ref: " + self.FAKE_HEX,
+            "meta var, symbols": "password_var: fake!pw@" + "123x",
+            "meta env var, symbols": "API_TOKEN_VAR: fake!pw@" + "123x",
+            "meta json, hex": '{"secret_name": "' + self.FAKE_HEX + '"}',
+            "meta flag, hex": "--token-type=" + self.FAKE_HEX,
+            "meta file, hex": "auth_token_file = " + self.FAKE_HEX,
+            # acronym-led PascalCase colon keys
+            "acronym JWTSecret": "JWTSecret: " + v,
+            "acronym AWSSecretKey": "AWSSecretKey: " + v,
+            "acronym HTTPAuthToken": "HTTPAuthToken: " + v,
+            # fix round 2: digit-bearing camelCase keys
+            "camel db2Password": "db2Password: " + v,
+            "camel s3SecretKey": "s3SecretKey: " + v,
+            "camel oauth2Token": "oauth2Token: " + v,
+            "camel k8sToken": "k8sToken: " + v,
+            # fix round 2: credential-shaped values under a meta key
+            "meta ref, uuid": "secret_ref: " + "-".join(
+                ("fa4e1234", "5678", "9abc", "def0", "123456789abc")),
+            "meta ref, digit run": "secret_ref: " + "12341234123412",
+            "meta hint, short alnum": "password_hint: " + "fake12ab",
+            "meta type, mixed-case letters": "token_type: " + "FakeXyzAbcQweRtyUioP",
+            "meta name, alnum": "api_key_name: " + "fake1fake2x",
+            "meta file, long lowercase run": "token_file: " + "fake" * 5,
+            # finish round: a UUID whose first group reads as a word, and
+            # 16+ capitals, are no names
+            "meta ref, uuid led by letters": "secret_ref: " + "-".join(
+                ("deadbeef", "1234", "4abc", "8def", "0123456789ab")),
+            "meta name, long capitals": "aws_key_name: AKIA" + "QWERTYUIOPASDFGH",
+            # $-led values under a bare lowercase key (the KV rule)
+            "bare key, bcrypt-like": "password: $2b$12$" + "fakefake" * 3,
+            "bare key, $ then more": "secret: $FAKEabc+1" + "xyz",
+            # Authorization after = or =>, the credential quoted
+            "auth assignment quoted": 'authorization = "Bearer ' + v + '"',
+            "auth fat arrow": '"authorization" => "Bearer ' + v + '"',
+            "auth colon, quoted scheme": 'Authorization: "Bearer ' + v + '"',
+        }
+        for name, line in shapes.items():
+            with self.subTest(shape=name):
+                self.assertTrue(wi.secret_findings(line), line)
+        r = self.lint_notes("clientSecret: " + v,
+                            "Authorization: Bearer " + v)
+        self.assertEqual(r.returncode, 3, r.stdout)
+        self.assertIn("likely secret value", r.stdout)
+        self.assertNotIn(v, r.stdout + r.stderr)
+
+    def test_camel_compound_and_header_look_alikes_stay_clean(self):
+        look_alikes = {
+            "bearer placeholder": "Authorization: Bearer <token>",
+            "bearer var": "Authorization: Bearer $TOKEN",
+            "bearer braced var": "Authorization: Bearer ${TOKEN}",
+            "bearer ellipsis": "Authorization: Bearer …",
+            "bearer dots": 'curl -H "Authorization: Bearer ..."',
+            "bearer masked": "Authorization: Bearer ****************",
+            "bearer x run": "Authorization: Bearer XXXXXXXXXXXXXXXXXXXX",
+            "bearer prose": "Authorization: Bearer authentication is used",
+            "bearer short": "Authorization: Bearer abc",
+            "bearer prose quoted": '(see "Authorization: Bearer authentication").',
+            "call of spaced strings": 'auth_note = fmt("needs a", "reviewer here")',
+            "spaced call of short names": "key = dedupe_key(message, obj)",
+            "camel prose key": "GitHub: the remote holds the mirror2026",
+            "camel no secret word": "nextStep: fake0fake1fake2fakeXYZ",
+            "whole $NAME": "db_pass=$DB_PASS",
+            "whole ${NAME}": "db_pass=${DB_PASS}",
+            "whole {name}": "db_pass={db_pass}",
+            "actions template": "api_token: ${{ secrets.API_TOKEN }}",
+            "jinja template": "db_password: {{ vault_db_password }}",
+            "command substitution": "db_pass=$(pass show db)",
+            "passthrough": "passthrough=" + self.FAKE_HEX,
+            "bypass camel": "cacheBypass: " + self.FAKE_HEX,
+            "trespass": "trespass=" + self.FAKE_HEX,
+            "password policy": "password_policy: strict-length-rules",
+            # fix round 2: names, words and paths a meta key holds
+            "meta urn": "token_type: urn:ietf:params:oauth:token-type:jwt",
+            "meta identifier": "token_type: ClientCredentials",
+            "meta env-var name": "TOKEN_VAR: GITHUB_TOKEN",
+            "meta long env-var name": "TOKEN_VAR: MY_SERVICE_API_TOKEN_V2",
+            "meta $HOME path": "token_file: $HOME/.config/gh/token",
+            "meta home path": "token_file: ~/.config/gh/hosts.yml",
+            "meta k8s-style name": "secret_name: default-token-x7k2m",
+            "meta attribute": "token_file: cfg.token",
+            "token file": "token_file: fake-secrets-store",
+            "secret name": "secret_name: prod-db-creds",
+            "call of short names": "api_token = get_token(user, scope)",
+            "call of a subscript": "api_token: f(user, os.environ['API_KEY'])",
+            # fix round 1
+            "nested call of short names": "token = f(a, g(b), c)",
+            "meta type, a word": "token_type: bearer",
+            "meta mode, a word": "auth_mode: interactive",
+            "meta hint, prose": "password_hint: the usual one",
+            "OAuth prose": "OAuth: " + self.SHAPE_FAKE,
+            "Token prose": "Token: unavailable",
+            "GitHub prose": "GitHub: " + self.SHAPE_FAKE,
+            "nextStep prose": "nextStep: " + self.SHAPE_FAKE,
+            "bare key, $NAME": "password: $DB_PASSWORD_VALUE",
+            "bare key, ${NAME}": "token: ${API_TOKEN}",
+            "bare key, $(command)": "secret: $(cat /run/fake)",
+            "bare key, <value>": "password: <value>",
+            "bare key, $NAME.": "token: $GITHUB_TOKEN.",
+            "auth comparison": "authorization == Bearer " + self.SHAPE_FAKE,
+            "multipass": "multipass=" + self.FAKE_HEX,
+            "renderpass": "renderpass=" + self.FAKE_HEX,
+            "subpass": "subpass: " + self.FAKE_HEX,
+        }
+        for name, line in look_alikes.items():
+            with self.subTest(shape=name):
+                self.assertEqual(wi.secret_findings(line), [], line)
+
+    def test_shared_gap_secrets_caught(self):
+        # dc23: the gaps main shared, each with an obviously fake value
+        v, pw = self.SHAPE_FAKE, "fake0pass1"
+        shapes = {
+            # 1 bare one-case colon keys that are a secret word
+            "bare dbpass": "dbpass: " + v,
+            "bare dbpassword": "- 2026-10-12 dbpassword: " + pw,
+            "bare passphrase": "passphrase: fake-phrase-0x1",
+            "bare upper": "DBPASSWORD: " + pw,
+            "bare in braces": "{pwd: " + pw + "}",
+            # 2 pw as a key
+            "pw colon": "pw: " + pw,
+            "pw assignment": "pw=" + pw,
+            "pw spaced assignment": "PW = " + pw,
+            "pw json": '{"pw": "' + pw + '"}',
+            # 3 Authorization forms
+            "auth f-string": 'h = {"Authorization": f"Bearer ' + v + '"}',
+            "auth raw user:pass": "Authorization: Basic fakeuser:" + pw,
+            "auth percent-encoded": "Authorization: Bearer fake%2Fabc%3D" + pw,
+            "auth credential next line": "Authorization: Bearer\n  " + v,
+            "auth scheme next line": "Authorization:\n  Bearer " + v,
+            # 4 a call argument holding a space, one word of it live
+            "spaced argument": 'token = login(user, "Bearer ' + v + '")',
+            # 5 continuations
+            "yaml block |": "db_password: |\n  " + v,
+            "yaml block >-": "password: >-\n  " + pw,
+            "backslash, assignment": "export DB_PASS=\\\n" + v,
+            "backslash, spaced flag": "mysql --password \\\n  " + pw,
+            # 6 Markdown table rows
+            "table row": "| db_pass | " + pw + " |",
+            "table row, code spans": "| `api_token` | `" + v + "` |",
+            "table row, quoted": '| password | "' + pw + '" |',
+            # 7 kebab-case keys
+            "kebab assignment": "db-pass=" + v,
+            "kebab colon": "db-pass: " + pw,
+            "kebab header": "x-auth-token: " + v,
+            # 8 a password inside a URL
+            "url password": "postgres://admin:" + pw + "@db.local/app",
+            # 9 a spaced flag
+            "spaced flag": "--password " + pw,
+            "spaced flag, quoted": 'run --api-token "' + v + '"',
+            # fix round 1: a mixed-case letters credential with a colon
+            "auth letters with colon": "Authorization: Basic " + ":".join(
+                ("AdminUserName", "FakeSecretPass")),
+            # a spaced flag or kebab key does not swallow a JSON pair's quote
+            "spaced flag then json pair": '--a-b "db_pass":"' + pw + 'x"',
+            "kebab key then json pair": 'a-b= "db_pass":"' + pw + 'x"',
+            # capitalised one-word keys
+            "capitalised Passphrase": "Passphrase: " + pw,
+            "capitalised Password, short": "Password: " + pw,
+            "capitalised Pw": "Pw: " + pw,
+            "capitalised Dbpass": "Dbpass: " + pw,
+            # a capitalised key that is also camelCase (Q9token, Ws3token)
+            # keeps main's camelCase judgement: no space needed, as on main
+            "camel-capitalised, no space": "Ws3token:" + v,
+            # mixed-case and date-led values are no plain words
+            "bare key, mixed-case letters": "passphrase: FakeSecretPass",
+            "bare key, date-led": "dbpass: 2026-10-09fake0x",
+            # an empty URL user
+            "url, empty user": "redis://:" + pw + "@cache:6379",
+        }
+        for name, text in shapes.items():
+            with self.subTest(shape=name):
+                self.assertTrue(wi.secret_findings(text), text)
+        # a value on the next line is reported on that line, once
+        self.assertEqual([n for n, _ in wi.secret_findings(
+            "intro\ndb_password: |\n  " + v + "\nafter")], [3])
+        r = self.lint_notes("dbpass: " + v, "| db_pass | " + pw + " |")
+        self.assertEqual(r.returncode, 3, r.stdout)
+        self.assertNotIn(v, r.stdout + r.stderr)
+        self.assertNotIn(pw, r.stdout + r.stderr)
+
+    def test_shared_gap_look_alikes_stay_clean(self):
+        look_alikes = {
+            "prose key": "key: the main point is " + self.SHAPE_FAKE,
+            "prose auth": "auth: required",
+            "prose pass": "pass: BASE=<merge sha> for the range",
+            "bare key, plain word": "passphrase: required",
+            "bare key, date": "dbpass: 2026-10-09",
+            "bare key, no space": "dbpass:/dbpassword:/passphrase: miss",
+            "bare key, bold template": "**dbpassword: ${DB_PASSWORD}**,",
+            "bypass colon": "bypass: " + self.SHAPE_FAKE,
+            "flag, plain word": "--auth required",
+            "flag, no secret word": "--model opus-4-fake0",
+            "flag, path": "--password-file ~/.config/app/pw",
+            "flag, variable": "--password $DB_PASS",
+            "flag, count": "--token-budget 30000",
+            "flag, next flag": "--password --verbose",
+            "table prose": "| password | required |",
+            "table header": "| Key | Value |",
+            "table date": "| db_pass | 2026-10-09 |",
+            "table placeholder": "| api_token | `<token>` |",
+            "table prose cell": "| token | the token " + self.SHAPE_FAKE + " |",
+            "url template": "postgres://user:${DB_PASS}@host/db",
+            "url word": "postgres://user:password@localhost/db",
+            "url angle": "https://user:<password>@host",
+            "url masked": "https://user:********@host",
+            "url port": "https://example.com:8443/path",
+            "kebab prose": "follow-up: " + self.SHAPE_FAKE,
+            "kebab re-auth": "re-auth: required",
+            "yaml block, other key": "description: |\n  " + self.SHAPE_FAKE,
+            "yaml block, template": "db_password: |\n  ${DB_PASSWORD}",
+            "markdown break": "see below\\\nthe token rotation",
+            "auth next line, variable": "Authorization: Bearer\n  $TOKEN",
+            "auth raw words": "Authorization: Basic user:password",
+            "auth raw capitalised words": "Authorization: Basic User:Password",
+            # fix round 1: env-var tables in docs
+            "table, unset": "| `DB_PASSWORD` | _(unset)_ |",
+            "table, required": "| db_pass | (required) |",
+            "table, optional": "| api_token | (optional) |",
+            "table, all capitals": "| password | NOT_SET |",
+            "capitalised prose key": "Password: required",
+            "spaced argument, prose": 'token = get(user, "the default scope")',
+            "spaced argument, short": "token = get(user, a b)",
+        }
+        for name, text in look_alikes.items():
+            with self.subTest(shape=name):
+                self.assertEqual(wi.secret_findings(text), [], text)
+
+    def test_secret_scan_of_a_long_line_of_pairs_is_linear(self):
+        # a 1M-character line of repeated aaa= is 250000 pairs; each pair
+        # reads a bounded slice of the line, so this takes about a second
+        # (it took tens of seconds while each pair copied the rest of the
+        # line); the bound leaves room for a loaded machine. The camel
+        # colon keys, unclosed calls and Authorization headers (ac83) read
+        # the same bounded slice.
+        for line in ("aaa=" * 250000, "aaa=*" * 200000,
+                     "dbPassword: f(a, " * 60000,
+                     "Authorization: Bearer x " * 40000,
+                     "aB:" * 300000,
+                     "token = f(" + "g(a)," * 200000,
+                     # dc23: table cells, URLs, spaced flags, bare and
+                     # kebab colon keys, and many continued lines
+                     "|" + " db_pass | abc |" * 60000,
+                     "a://b:c@" * 120000,
+                     "--password abc " * 60000,
+                     "dbpass: abc " * 80000,
+                     "db-pass: abc " * 75000,
+                     "x=\\\n" * 250000,
+                     "db_pass: |\n  abc\n" * 60000,
+                     "Authorization: Bearer\n" * 45000,
+                     "a" * 1000000 + " password: |\nabc"):
+            with self.subTest(line=line[:5]):
+                start = time.perf_counter()
+                self.assertEqual(wi.secret_findings(line), [])
+                self.assertLess(time.perf_counter() - start, 5.0)
+        # an unclosed nest of calls flags (an unclosed call under a
+        # secret-word key is no code), and the bracket match stays inside
+        # the bounded slice, so it is as fast
+        start = time.perf_counter()
+        self.assertTrue(wi.secret_findings("token = " + "f(" * 1000000))
+        self.assertLess(time.perf_counter() - start, 5.0)
 
     def test_conflict_markers_flagged(self):
         (self.root / "items" / "conflicted-0000.md").write_text(
@@ -2936,6 +3733,251 @@ class TestSet(WiTestCase):
             run(["set", "target-3333", "nofield", "x"], self.root).returncode, 1)
 
 
+class TestShortDisplayName(WiTestCase):
+    """The optional `short_display_name` (format.md § Short display name and
+    tag): set by `add --short-display-name` or `set`, stripped, 1-40 chars
+    (exit 1 before any write); a bad hand-written value is a lint problem;
+    text rows print the title cell `[<name>] <title>` with no column added;
+    every --json record carries the key, null when unset."""
+    NAME = "flaky gate test"
+    TITLE = "Fix the flaky context-guard gate test"
+    CELL = f"[{NAME}] {TITLE}"
+
+    def path(self, iid):
+        return self.root / "items" / f"{iid}.md"
+
+    def show(self, iid):
+        return json.loads(self.wi_ok(["show", iid, "--json"]))
+
+    def add(self, *extra, title=TITLE):
+        return json.loads(self.wi_ok(["add", title, "--json"] + list(extra)))
+
+    def item_files(self):
+        return sorted(p.name for p in (self.root / "items").iterdir())
+
+    # add
+
+    def test_add_writes_it_on_the_line_after_title(self):
+        rec = self.add("--short-display-name", self.NAME)
+        self.assertEqual(rec["short_display_name"], self.NAME)   # add --json
+        self.assertEqual(self.show(rec["id"])["short_display_name"], self.NAME)
+        front = self.path(rec["id"]).read_text().split("---\n")[1].splitlines()
+        i = front.index(f"title: {self.TITLE}")
+        self.assertEqual(front[i + 1], f"short_display_name: {self.NAME}")
+        self.assertIn("lint clean", self.wi_ok(["lint"]))
+
+    def test_add_strips_it_and_a_blank_or_dash_value_writes_no_line(self):
+        rec = self.add("--short-display-name", "  export fix  ")
+        self.assertEqual(self.show(rec["id"])["short_display_name"], "export fix")
+        self.assertIn("\nshort_display_name: export fix\n",
+                      self.path(rec["id"]).read_text())
+        for blank in ("", "   ", "—", " — "):
+            with self.subTest(blank=blank):
+                rec = self.add("--short-display-name", blank)
+                self.assertIsNone(rec["short_display_name"])
+                self.assertNotIn("short_display_name",
+                                 self.path(rec["id"]).read_text())
+
+    def test_add_40_chars_passes_and_41_exits_1_writing_nothing(self):
+        self.assertEqual(self.add("--short-display-name", "n" * 40)
+                         ["short_display_name"], "n" * 40)
+        # the length is counted after the strip
+        self.assertEqual(self.add("--short-display-name", f" {'n' * 40} ")
+                         ["short_display_name"], "n" * 40)
+        before = self.item_files()
+        r = run(["add", "Too long", "--short-display-name", "n" * 41], self.root)
+        self.assertEqual(r.returncode, 1, r.stderr)
+        self.assertIn("short_display_name must be 1-40 chars", r.stderr)
+        self.assertEqual(self.item_files(), before)
+
+    def test_add_line_break_exits_1_writing_nothing(self):
+        r = run(["add", "t", "--short-display-name", "a\nb"], self.root)
+        self.assertEqual(r.returncode, 1)
+        self.assertIn("--short-display-name must be one line", r.stderr)
+        self.assertEqual(self.item_files(), [])
+
+    # set
+
+    def test_set_sets_strips_and_clears(self):
+        iid = self.write_item("item-1111", self.TITLE)
+        self.wi_ok(["set", iid, "short_display_name", "  export fix  "])
+        self.assertEqual(self.show(iid)["short_display_name"], "export fix")
+        for clear in ("", "—", "   "):
+            with self.subTest(clear=clear):
+                self.wi_ok(["set", iid, "short_display_name", "x"])
+                self.wi_ok(["set", iid, "short_display_name", clear])
+                # cleared: no line at all, never `short_display_name: ""`
+                self.assertNotIn("short_display_name",
+                                 self.path(iid).read_text())
+                self.assertIsNone(self.show(iid)["short_display_name"])
+
+    def test_set_41_chars_or_a_line_break_exits_1_file_byte_identical(self):
+        iid = self.write_item("item-1111", short_display_name="old name")
+        before = self.path(iid).read_bytes()
+        for bad in ("n" * 41, "a\nb"):
+            with self.subTest(bad=bad):
+                r = run(["set", iid, "short_display_name", bad], self.root)
+                self.assertEqual(r.returncode, 1, r.stderr)
+                self.assertEqual(self.path(iid).read_bytes(), before)
+        r = run(["set", iid, "short_display_name", "n" * 41], self.root)
+        self.assertIn("short_display_name must be 1-40 chars", r.stderr)
+
+    def test_set_on_another_field_validates_the_whole_item(self):
+        # a hand-written bad name fails any set on the item (exit 3, as any
+        # schema problem does) until the name itself is set right
+        iid = self.write_item("long-1111", short_display_name="n" * 41)
+        before = self.path(iid).read_bytes()
+        r = run(["set", iid, "priority", "1"], self.root)
+        self.assertEqual(r.returncode, 3, r.stderr)
+        self.assertIn("short_display_name must be 1-40 chars", r.stderr)
+        self.assertEqual(self.path(iid).read_bytes(), before)
+        self.wi_ok(["set", iid, "short_display_name", "short"])
+        self.wi_ok(["set", iid, "priority", "1"])
+
+    # lint
+
+    def test_lint_reports_a_bad_hand_written_value(self):
+        for iid, bad, written in (
+                ("long-1111", "n" * 41, "n" * 41),
+                ("padded-2222", " x", '" x"'),
+                ("blank-3333", "   ", '"   "')):
+            with self.subTest(bad=bad):
+                self.write_item(iid, short_display_name=bad)
+                self.assertIn(f"\nshort_display_name: {written}\n",
+                              self.path(iid).read_text())
+                r = run(["lint"], self.root)
+                self.assertEqual(r.returncode, 3)
+                self.assertIn(f"{iid}.md: short_display_name must be 1-40 "
+                              "chars, no surrounding spaces", r.stdout)
+                self.path(iid).unlink()
+        self.assertIn("lint clean", self.wi_ok(["lint"]))
+        # a bare `short_display_name:` with nothing after it is blank too
+        path = self.path(self.write_item("bare-4444"))
+        path.write_text(path.read_text().replace(
+            "title: bare-4444\n", "title: bare-4444\nshort_display_name:\n"))
+        r = run(["lint"], self.root)
+        self.assertEqual(r.returncode, 3)
+        self.assertIn("bare-4444.md: short_display_name must be 1-40", r.stdout)
+
+    def test_a_quoted_empty_value_reads_as_absent(self):
+        path = self.path(self.write_item("empty-1111"))
+        path.write_text(path.read_text().replace(
+            "title: empty-1111\n", 'title: empty-1111\nshort_display_name: ""\n'))
+        self.assertIn("lint clean", self.wi_ok(["lint"]))
+        self.assertIsNone(self.show("empty-1111")["short_display_name"])
+
+    # output
+
+    def test_title_cell_in_every_text_row(self):
+        cell = self.CELL
+        self.write_item("ready-1111", self.TITLE, short_display_name=self.NAME)
+        self.write_item("doing-2222", self.TITLE, status="doing",
+                        owner="tester@local", claimed="2026-08-30T10:00Z",
+                        handoff={"next": "n"}, short_display_name=self.NAME)
+        self.write_item("hold-3333", self.TITLE, status="blocked",
+                        blocked="operator", tags=["hold"],
+                        short_display_name=self.NAME)
+        for line in self.wi_ok(["ls"]).splitlines():
+            self.assertTrue(line.endswith(cell), line)
+        plain = self.wi_ok(["ls", "--plain"]).splitlines()
+        self.assertEqual(len(plain), 3)
+        for line in plain:   # six columns, as without the field
+            cols = line.split("\t")
+            self.assertEqual((len(cols), cols[-1]), (6, cell))
+        nxt = self.wi_ok(["next"]).splitlines()
+        for head in ("DOING", "BLOCKED", "READY"):
+            self.assertIn(cell, nxt[nxt.index(head) + 1])
+        plain = self.wi_ok(["next", "--plain"]).splitlines()
+        self.assertEqual(len(plain), 3)
+        for line in plain:   # seven columns, as without the field
+            cols = line.split("\t")
+            self.assertEqual((len(cols), cols[-1]), (7, cell))
+        pipe = self.wi_ok(["next", "--pipeline"]).splitlines()
+        self.assertEqual(len(pipe), 2)   # in_progress, then ready todo
+        for line in pipe:
+            self.assertEqual(line.split("\t")[-1], cell)
+        one = self.wi_ok(["next", "--pipeline", "--one"]).rstrip("\n")
+        self.assertEqual(one.split("\t"), ["in_progress", "doing-2222", cell])
+        prime = self.wi_ok(["prime"]).splitlines()
+        self.assertEqual(prime[1], f"HOLD 1: hold-3333 ({cell})")
+        self.assertTrue(any(ln.startswith("DOING") and cell in ln
+                            for ln in prime), prime)
+        self.assertTrue(any(ln.startswith("READY") and cell in ln
+                            for ln in prime), prime)
+
+    def test_an_item_without_it_prints_as_before(self):
+        self.write_item("plain-1111", "Plain title")
+        self.assertEqual(self.wi_ok(["ls", "--plain"]),
+                         "plain-1111\tP2\ttodo\t-\t-\tPlain title\n")
+        self.assertEqual(self.wi_ok(["next", "--plain"]),
+                         "ready\tplain-1111\tP2\ttodo\t-\t-\tPlain title\n")
+        self.assertIn("READY  P2 plain-1111  Plain title\n",
+                      self.wi_ok(["prime"]))
+        # a rewrite adds no line
+        self.wi_ok(["set", "plain-1111", "priority", "1"])
+        self.assertNotIn("short_display_name",
+                         self.path("plain-1111").read_text())
+
+    def test_every_json_record_carries_the_key_null_when_unset(self):
+        self.write_item("named-1111", "Named", short_display_name=self.NAME,
+                        sections="## Notes\ndecision 1: which?\n")
+        self.write_item("bare-2222", "Bare",
+                        sections="## Notes\ndecision 2: when?\n")
+        want = {"named-1111": self.NAME, "bare-2222": None}
+        for what, recs in (
+                ("ls", json.loads(self.wi_ok(["ls", "--json"]))),
+                ("next", json.loads(self.wi_ok(["next", "--json"]))["ready"]),
+                ("pipeline", json.loads(self.wi_ok(
+                    ["next", "--pipeline", "--json"]))),
+                ("show", [self.show(iid) for iid in want]),
+                ("needs-input", json.loads(self.wi_ok(
+                    ["needs-input", "--json"])))):
+            with self.subTest(what=what):
+                self.assertEqual({r["id"]: r["short_display_name"]
+                                  for r in recs}, want)
+
+    def test_show_brief_prints_it_after_title(self):
+        self.write_item("named-1111", "Named", short_display_name=self.NAME)
+        lines = self.wi_ok(["show", "named-1111", "--brief"]).splitlines()
+        i = lines.index("title: Named")
+        self.assertEqual(lines[i + 1], f"short_display_name: {self.NAME}")
+
+    def test_needs_input_rows_show_the_title_cell(self):
+        self.write_item("named-1111", self.TITLE, short_display_name=self.NAME,
+                        sections="## Notes\ndecision 3: a or b?\n")
+        self.write_item("groom-2222", "Pick a store", status="grooming",
+                        grooming="which store?")
+        human = self.wi_ok(["needs-input"]).splitlines()
+        self.assertIn(f"named-1111  {self.CELL}  decision 3: a or b?", human)
+        self.assertIn("groom-2222  Pick a store  grooming: which store?", human)
+        # --plain: id, kind and N keep columns 1-3; the title cell is 4th
+        plain = [ln.split("\t") for ln in
+                 self.wi_ok(["needs-input", "--plain"]).splitlines()]
+        self.assertIn(["named-1111", "decision", "3", self.CELL, "a or b?"],
+                      plain)
+        self.assertIn(["groom-2222", "grooming", "-", "Pick a store",
+                       "which store?"], plain)
+
+    def test_the_bridge_leaves_it_alone(self):
+        self.write_item("named-1111", "Named", short_display_name=self.NAME)
+        out = self.tmp / "backlog.yaml"
+        self.wi_ok(["export", "--format", "backlog-yaml", str(out),
+                    "--project", "t"])
+        self.assertNotIn("short_display_name", out.read_text())
+        self.assertNotIn(self.NAME, out.read_text())
+        # import --update rewrites the item and keeps the store-only field
+        self.wi_ok(["import", "--format", "backlog-yaml", "--update", str(out)])
+        self.assertIn(f"\nshort_display_name: {self.NAME}\n",
+                      self.path("named-1111").read_text())
+        # a fresh import has nothing to carry it from
+        fresh = self.tmp / ".fresh"
+        self.assertEqual(run(["init"], fresh).returncode, 0)
+        r = run(["import", "--format", "backlog-yaml", str(out)], fresh)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        rec = json.loads(run(["ls", "--json"], fresh).stdout)[0]
+        self.assertIsNone(rec["short_display_name"])
+
+
 class TestInitShapes(WiTestCase):
     """`wi init` vs the host .gitignore, per agents/decisions/0002: a
     private-shaped repo tracks config + work, so init must never whole-dir
@@ -2952,7 +3994,7 @@ class TestInitShapes(WiTestCase):
         # repo, .claude-sandbox/ present, no sidecar git — init must leave the
         # host .gitignore alone so the new store stays trackable
         repo, store = self.sandbox_repo("private")
-        r = run(["init"], store)
+        r = run(["init", "--track"], store)
         self.assertEqual(r.returncode, 0, r.stderr)
         self.assertIn("private-shaped", r.stdout)
         self.assertFalse((repo / ".gitignore").exists())
@@ -2962,7 +4004,7 @@ class TestInitShapes(WiTestCase):
     def test_private_shape_store_commits_with_git_add_all(self):
         repo, store = self.sandbox_repo("private-git")
         subprocess.run(["git", "init", "-q", str(repo)], check=True)
-        self.assertEqual(run(["init"], store).returncode, 0)
+        self.assertEqual(run(["init", "--track"], store).returncode, 0)
         subprocess.run(["git", "-C", str(repo), "add", "-A"], check=True)
         staged = subprocess.run(
             ["git", "-C", str(repo), "diff", "--cached", "--name-only"],
@@ -2997,9 +4039,10 @@ class TestInitShapes(WiTestCase):
 
     def test_plain_work_store_stays_quiet(self):
         store = self.tmp / ".work2"
-        r = run(["init"], store)
+        r = run(["init", "--track"], store)
         self.assertEqual(r.returncode, 0, r.stderr)
-        self.assertEqual(r.stdout, f"initialised {store}\n")
+        self.assertEqual(r.stdout, f"tracking: tracked (recorded in "
+                         f"{store / 'store.yaml'})\ninitialised {store}\n")
         self.assertFalse((self.tmp / ".gitignore").exists())
 
 
@@ -3072,6 +4115,7 @@ class TestHostGitignoreUntouched(WiTestCase):
             ["import-todo", str(todo)],
             ["export", str(repo / "backlog.yaml"), "--format", "backlog-yaml"],
             ["import", str(repo / "backlog.yaml"), "--format", "backlog-yaml"],
+            ["note", iid, "--", "x"],
             ["done", dep], ["archive", "--older-than", "0d"],
         ]
         choices = set(next(a for a in wi.build_parser()._actions
@@ -3085,7 +4129,7 @@ class TestHostGitignoreUntouched(WiTestCase):
 
     def test_private_init_then_add_leaves_gitignore_alone(self):
         repo = self.private_repo("init-add")
-        self.wi_in(repo, ["init"])
+        self.wi_in(repo, ["init", "--track"])
         self.wi_in(repo, ["add", "first item"])
         self.assertEqual((repo / ".gitignore").read_text(), self.GI)
         self.assert_store_trackable(repo)
@@ -3095,7 +4139,7 @@ class TestHostGitignoreUntouched(WiTestCase):
         # the operator-attention sequence: the whole-dir line got in, the
         # operator removed it and committed, then kept using wi
         repo = self.private_repo("removed", gi="*.pyc\n/.claude-sandbox/\n")
-        self.wi_in(repo, ["init"])            # 'ignored' shape: untouched
+        self.wi_in(repo, ["init", "--track"])  # 'ignored' shape: untouched
         self.assertEqual((repo / ".gitignore").read_text(),
                          "*.pyc\n/.claude-sandbox/\n")
         (repo / ".gitignore").write_text(self.GI)
@@ -3114,7 +4158,7 @@ class TestHostGitignoreUntouched(WiTestCase):
         # ignore; other commands still never touch the host .gitignore
         repo = self.private_repo("sidecar", gi="*.pyc\n")
         self.git(repo / ".claude-sandbox", "init", "-q")
-        out = self.wi_in(repo, ["init"])
+        out = self.wi_in(repo, ["init", "--track"])
         self.assertIn("sidecar git", out)
         self.assertEqual((repo / ".gitignore").read_text(),
                          "*.pyc\n/.claude-sandbox/\n")
@@ -3156,10 +4200,16 @@ class TestStoreCustodyWarning(WiTestCase):
         if gi is not None:
             (repo / ".gitignore").write_text(gi)
         self.root = repo / ".claude-sandbox" / "work"
-        self.assertEqual(run(["init"], self.root, env=self.env).returncode, 0)
+        self.init_unrecorded()
         for i in range(n_items):
             self.write_item(f"item-{i:02d}-aaaa")
         return self.root
+
+    def init_unrecorded(self):
+        """A store as `wi init` made it before 39a2: no recorded choice."""
+        r = run(["init", "--track"], self.root, env=self.env)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        (self.root / "store.yaml").unlink()
 
     def prime(self, env=None):
         r = run(["prime"], self.root, env=dict(self.env, **(env or {})))
@@ -3191,6 +4241,9 @@ class TestStoreCustodyWarning(WiTestCase):
         warn = out[1]
         self.assertTrue(warn.startswith("wi: WARNING store "), warn)
         self.assertIn("silently untracked", warn)
+        # 39a2: a store with no recorded choice is told how to record one
+        self.assertIn("then record the choice: `wi init --track`, or "
+                      "`wi init --no-track`", warn)
         self.assertNotIn("18a7", warn)
         for part in parts:
             self.assertIn(part, warn)
@@ -3282,7 +4335,7 @@ class TestStoreCustodyWarning(WiTestCase):
         self.git(repo, "init", "-q")
         (repo / ".gitignore").write_text(".work/\n")
         self.root = repo / ".work"
-        self.assertEqual(run(["init"], self.root, env=self.env).returncode, 0)
+        self.init_unrecorded()
         self.write_item("item-00-aaaa")
         self.assert_warns("git-ignored by .gitignore:1 '.work/'",
                           self.NARROW_FIX,
@@ -3442,6 +4495,628 @@ class TestStoreCustodyWarning(WiTestCase):
         self.assertNotIn("WARNING", r.stdout)
 
 
+def fnmatch_tmp(name):
+    """The store's own ignore line and the stale-reservation glob."""
+    import fnmatch
+    return fnmatch.fnmatch(name, "*.tmp*")
+
+
+class TestChooseTracking(unittest.TestCase):
+    """39a2: the init menu, as a function over its input and output."""
+
+    def choose(self, text):
+        out = io.StringIO()
+        return wi.choose_tracking(io.StringIO(text), out), out.getvalue()
+
+    def test_default_is_git_ignored(self):
+        choice, shown = self.choose("\n")
+        self.assertEqual(choice, "ignored")
+        self.assertIn("1) tracked", shown)
+        self.assertIn("2) git-ignored", shown)
+        default_line = next(ln for ln in shown.splitlines()
+                            if "[default]" in ln)
+        self.assertIn("git-ignored", default_line)
+        self.assertIn("[2]", shown)
+
+    def test_answers(self):
+        for text, want in (("1\n", "tracked"), ("tracked\n", "tracked"),
+                           ("T\n", "tracked"), ("2\n", "ignored"),
+                           ("ignored\n", "ignored"), ("", "ignored")):
+            with self.subTest(text=text):
+                self.assertEqual(self.choose(text)[0], want)
+
+    def test_bad_answer_asks_again(self):
+        choice, shown = self.choose("maybe\n1\n")
+        self.assertEqual(choice, "tracked")
+        self.assertIn("not a choice: 'maybe'", shown)
+        self.assertEqual(shown.count("choose 1 or 2"), 2)
+
+
+@unittest.skipUnless(shutil.which("git"), "git not available")
+class TestInitTracking(unittest.TestCase):
+    """39a2: `wi init --track` / `--no-track`, the menu on a terminal, an
+    ignored store plus a warning with neither and no terminal; the choice
+    recorded in store.yaml; the .gitignore line added safely; prime and lint
+    quiet for a recorded ignored store."""
+
+    def setUp(self):
+        self.tmp = Path(tempfile.mkdtemp(prefix="wi-track-"))
+        self.addCleanup(shutil.rmtree, self.tmp, ignore_errors=True)
+        self.env = {"GIT_CONFIG_GLOBAL": os.devnull, "GIT_CONFIG_NOSYSTEM": "1",
+                    "GIT_CEILING_DIRECTORIES": str(self.tmp)}
+
+    def git(self, repo, *args, check=True):
+        env = {k: v for k, v in os.environ.items()
+               if k not in ("GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE")}
+        env.update(self.env)
+        return subprocess.run(
+            ["git", "-C", str(repo), "-c", "user.email=t@t", "-c",
+             "user.name=t", "-c", "commit.gpgsign=false", "-c",
+             "core.excludesFile="] + list(args),
+            capture_output=True, text=True, check=check, env=env)
+
+    def repo(self, name="r", gi=None, sandbox=False, git_init=True):
+        repo = self.tmp / name
+        repo.mkdir()
+        if git_init:
+            self.git(repo, "init", "-q")
+        if gi is not None:
+            (repo / ".gitignore").write_text(gi)
+        if sandbox:
+            (repo / ".claude-sandbox").mkdir()
+            return repo, repo / ".claude-sandbox" / "work"
+        return repo, repo / ".work"
+
+    def init(self, store, *flags, code=0):
+        r = run(["init", *flags], store, env=self.env)
+        self.assertEqual(r.returncode, code, r.stdout + r.stderr)
+        return r
+
+    def tracking(self, store):
+        return wi.read_tracking(store)
+
+    def ignored(self, repo, store):
+        probe = store / "items" / "x-0000.md"
+        return self.git(repo, "check-ignore", "-q", "--no-index",
+                        str(probe), check=False).returncode == 0
+
+    def gi(self, repo):
+        return (repo / ".gitignore").read_text()
+
+    def test_track_records_and_leaves_gitignore_alone(self):
+        repo, store = self.repo()
+        r = self.init(store, "--track")
+        self.assertEqual(self.tracking(store), "tracked")
+        self.assertIn("tracking: tracked", r.stdout)
+        self.assertFalse((repo / ".gitignore").exists())
+        self.assertEqual((store / "store.yaml").read_text().splitlines()[-1],
+                         "tracking: tracked")
+        self.assertEqual(r.stderr, "")
+
+    def test_no_track_creates_missing_gitignore(self):
+        repo, store = self.repo()
+        r = self.init(store, "--no-track")
+        self.assertEqual(self.tracking(store), "ignored")
+        self.assertEqual(self.gi(repo), "/.work/\n")
+        self.assertIn(f"added /.work/ to {repo / '.gitignore'}", r.stdout)
+        self.assertTrue(self.ignored(repo, store))
+        self.assertEqual(r.stderr, "")
+
+    def test_no_track_after_line_without_newline(self):
+        # the real case: a naive append glued `.work/` onto `*/mocks/`
+        repo, store = self.repo(gi="*/mocks/")
+        self.init(store, "--no-track")
+        self.assertEqual(self.gi(repo), "*/mocks/\n/.work/\n")
+        self.assertTrue(self.ignored(repo, store))
+
+    def test_no_track_adds_no_duplicate(self):
+        for i, gi in enumerate((".work/\n", "/.work\n", "*.pyc\n.work\n",
+                                ".w*/\n")):
+            with self.subTest(gi=gi):
+                repo, store = self.repo(f"dup{i}", gi=gi)
+                r = self.init(store, "--no-track")
+                self.assertEqual(self.gi(repo), gi)
+                self.assertIn("no line added", r.stdout)
+                self.assertEqual(self.tracking(store), "ignored")
+
+    def test_local_only_rule_still_gets_the_line(self):
+        # info/exclude does not travel with the repo; the line does
+        repo, store = self.repo(gi="*.pyc\n")
+        with open(repo / ".git" / "info" / "exclude", "a") as fh:
+            fh.write(".work/\n")
+        self.init(store, "--no-track")
+        self.assertEqual(self.gi(repo), "*.pyc\n/.work/\n")
+
+    def test_sandbox_home(self):
+        repo, store = self.repo(gi="*.pyc\n", sandbox=True)
+        r = self.init(store, "--no-track")
+        self.assertEqual(self.gi(repo), "*.pyc\n/.claude-sandbox/work/\n")
+        self.assertNotIn("private-shaped", r.stdout)
+        self.assertTrue(self.ignored(repo, store))
+        # .claude-sandbox/ itself stays tracked
+        (repo / ".claude-sandbox" / "config.yaml").write_text("x: 1\n")
+        self.assertNotEqual(self.git(repo, "check-ignore", "-q",
+                                     ".claude-sandbox/config.yaml",
+                                     check=False).returncode, 0)
+
+    def test_sandbox_already_ignored_whole(self):
+        repo, store = self.repo(gi="/.claude-sandbox/\n", sandbox=True)
+        r = self.init(store, "--no-track")
+        self.assertEqual(self.gi(repo), "/.claude-sandbox/\n")
+        self.assertIn("already ignores .claude-sandbox/ as a whole", r.stdout)
+        self.assertEqual(self.tracking(store), "ignored")
+
+    def test_outside_git_writes_no_gitignore(self):
+        repo, store = self.repo(git_init=False)
+        r = self.init(store, "--no-track")
+        self.assertIn("not in a git repo", r.stdout)
+        self.assertFalse((repo / ".gitignore").exists())
+        self.assertEqual(self.tracking(store), "ignored")
+
+    def test_flags_are_mutually_exclusive(self):
+        repo, store = self.repo()
+        r = self.init(store, "--track", "--no-track", code=2)
+        self.assertIn("not allowed with", r.stderr)
+        self.assertFalse(store.exists())
+
+    def test_no_flag_no_terminal_makes_an_ignored_store_and_warns(self):
+        repo, store = self.repo(gi="*/mocks/")
+        r = self.init(store)          # subprocess: no terminal
+        self.assertEqual(self.tracking(store), "ignored")
+        self.assertEqual(self.gi(repo), "*/mocks/\n/.work/\n")
+        self.assertIn("WARNING no terminal and no --track/--no-track", r.stderr)
+        self.assertIn("git-ignored store", r.stderr)
+        self.assertIn("`wi init --track`", r.stderr)
+        self.assertIn(".gitignore", r.stderr)
+
+    def menu_init(self, store, answer):
+        out = io.StringIO()
+        with mock.patch.object(wi, "_interactive", return_value=True), \
+                mock.patch.object(sys, "stdin", io.StringIO(answer)), \
+                mock.patch.dict(os.environ, self.env), \
+                contextlib.redirect_stdout(out), \
+                contextlib.redirect_stderr(io.StringIO()):
+            code = wi.main(["--root", str(store), "init"])
+        self.assertEqual(code, 0)
+        return out.getvalue()
+
+    def test_menu_on_a_terminal(self):
+        repo, store = self.repo("menu-t")
+        shown = self.menu_init(store, "1\n")
+        self.assertIn("choose 1 or 2 [2]", shown)
+        self.assertEqual(self.tracking(store), "tracked")
+        self.assertFalse((repo / ".gitignore").exists())
+        repo, store = self.repo("menu-default")
+        self.menu_init(store, "\n")
+        self.assertEqual(self.tracking(store), "ignored")
+        self.assertEqual(self.gi(repo), "/.work/\n")
+
+    def test_existing_unrecorded_store_is_left_alone_without_a_flag(self):
+        repo, store = self.repo(gi="*.pyc\n")
+        self.init(store, "--track")
+        (store / "store.yaml").unlink()          # a pre-39a2 store
+        item = store / "items" / "keep-aaaa.md"
+        item.write_text("x\n")
+        readme = (store / "README.md").read_text()
+        for interactive in (False, True):
+            with self.subTest(interactive=interactive):
+                if interactive:
+                    # the menu is not shown for an existing store
+                    shown = self.menu_init(store, "")
+                    self.assertNotIn("choose 1 or 2", shown)
+                else:
+                    r = self.init(store)
+                    self.assertIn("no recorded tracking choice", r.stderr)
+                    self.assertIn("wi init --no-track", r.stderr)
+                self.assertIsNone(self.tracking(store))
+                self.assertFalse((store / "store.yaml").exists())
+                self.assertEqual(self.gi(repo), "*.pyc\n")
+        # a flag records the choice without re-creating anything
+        self.init(store, "--no-track")
+        self.assertEqual(self.tracking(store), "ignored")
+        self.assertEqual(self.gi(repo), "*.pyc\n/.work/\n")
+        self.assertEqual(item.read_text(), "x\n")
+        self.assertEqual((store / "README.md").read_text(), readme)
+
+    def test_existing_recorded_store_keeps_its_choice(self):
+        repo, store = self.repo()
+        self.init(store, "--track")
+        r = self.init(store)
+        self.assertEqual(r.stderr, "")
+        self.assertEqual(self.tracking(store), "tracked")
+        self.assertFalse((repo / ".gitignore").exists())
+
+    def test_switch_to_tracked_names_the_leftover_line(self):
+        repo, store = self.repo()
+        self.init(store)
+        r = self.init(store, "--track")
+        self.assertEqual(self.tracking(store), "tracked")
+        self.assertIn("against its recorded choice", r.stderr)
+        self.assertIn(".gitignore:1 '/.work/'", r.stderr)
+
+    # prime and lint
+
+    def prime_lint(self, store):
+        p = run(["prime"], store, env=self.env)
+        self.assertEqual(p.returncode, 0, p.stderr)
+        return p.stdout.splitlines(), run(["lint"], store, env=self.env)
+
+    def add_items(self, store, n=2):
+        for i in range(n):
+            r = run(["add", f"item {i}"], store, env=self.env)
+            self.assertEqual(r.returncode, 0, r.stderr)
+
+    def test_recorded_ignored_store_is_quiet(self):
+        repo, store = self.repo()
+        self.init(store, "--no-track")
+        self.add_items(store, wi.UNTRACKED_MIN_ITEMS)
+        prime, lint = self.prime_lint(store)
+        self.assertNotIn("WARNING", "\n".join(prime))
+        self.assertNotIn("untracked", "\n".join(prime))
+        self.assertEqual(lint.returncode, 0, lint.stdout)
+        self.assertIn("lint clean", lint.stdout)
+
+    def test_recorded_tracked_but_ignored_warns(self):
+        repo, store = self.repo(gi=".work/\n")
+        self.init(store, "--track")
+        self.add_items(store)
+        prime, lint = self.prime_lint(store)
+        warn = prime[1]
+        self.assertTrue(warn.startswith("wi: WARNING store "), warn)
+        self.assertIn("silently untracked, against its recorded choice", warn)
+        self.assertIn(".gitignore:1 '.work/'", warn)
+        self.assertIn("`wi init --no-track`", warn)
+        self.assertEqual(lint.returncode, 3)
+        self.assertIn(warn, lint.stdout.splitlines())
+
+    def test_unrecorded_ignored_store_names_recording_as_the_fix(self):
+        repo, store = self.repo(gi=".work/\n")
+        self.init(store, "--track")
+        (store / "store.yaml").unlink()
+        self.add_items(store)
+        prime, lint = self.prime_lint(store)
+        warn = prime[1]
+        self.assertIn(f"wi: WARNING store {store} is silently untracked: ",
+                      warn)
+        self.assertNotIn("recorded choice", warn)
+        self.assertIn("then record the choice: `wi init --track`, or "
+                      "`wi init --no-track`", warn)
+        self.assertEqual(lint.returncode, 3)
+        # recording the ignored choice settles it
+        self.init(store, "--no-track")
+        self.assertEqual(self.gi(repo), ".work/\n")
+        prime, lint = self.prime_lint(store)
+        self.assertNotIn("WARNING", "\n".join(prime))
+        self.assertEqual(lint.returncode, 0, lint.stdout)
+
+    # fix round 1: symlinks, bytes, negation, escaping, ordering
+
+    def victim(self, name="victim", text="keep me\n"):
+        v = self.tmp / name
+        v.write_text(text)
+        return v
+
+    def test_store_yaml_tmp_symlink_is_refused(self):
+        repo, store = self.repo()
+        self.init(store, "--track")
+        v = self.victim()
+        # the old fixed temp name: no longer used, so never written through
+        (store / "store.yaml.tmp").symlink_to(v)
+        self.init(store, "--no-track")
+        self.assertEqual(v.read_text(), "keep me\n")
+        self.assertEqual(self.tracking(store), "ignored")
+        # the temp name is random and created exclusively: a symlink
+        # planted at a guessable name (the old per-process one), live or
+        # dangling, is never written through
+        for target in (v, self.tmp / "absent"):
+            with self.subTest(target=target.name):
+                tmp = store / f"store.yaml.tmp{os.getpid()}"
+                tmp.symlink_to(target)
+                wi.write_tracking(store, "tracked")
+                tmp.unlink()
+                self.assertEqual(v.read_text(), "keep me\n")
+                self.assertFalse((self.tmp / "absent").exists())
+                self.assertEqual(self.tracking(store), "tracked")
+                wi.write_tracking(store, "ignored")
+
+    def test_stale_temp_file_does_not_block_a_write(self):
+        # an OOM-killed write can leave <name>.tmp<pid> behind; the next
+        # write under the same pid must not be refused
+        repo, store = self.repo()
+        self.init(store, "--track")
+        stale = store / f"store.yaml.tmp{os.getpid()}"
+        stale.write_text("half")
+        wi.write_tracking(store, "ignored")
+        self.assertEqual(self.tracking(store), "ignored")
+        self.assertEqual(stale.read_text(), "half")
+        left = sorted(p.name for p in store.glob("store.yaml.tmp*"))
+        self.assertEqual(left, [stale.name])
+
+    def test_atomic_write_temp_is_random_matched_and_honours_umask(self):
+        d = self.tmp / "aw"
+        d.mkdir()
+        seen = []
+        real = wi.tempfile.mkstemp
+
+        def spy(*a, **kw):
+            fd, name = real(*a, **kw)
+            seen.append(name)
+            return fd, name
+        old = os.umask(0o027)
+        try:
+            with mock.patch.object(wi.tempfile, "mkstemp", side_effect=spy):
+                wi.atomic_write(d / "f.md", "x\n")
+                wi.atomic_write(d / "n.md", "y\n", create=True)
+        finally:
+            os.umask(old)
+        self.assertEqual(len(seen), 2)
+        for name, prefix in zip(seen, ("f.md.tmp", "n.md.tmp")):
+            self.assertTrue(Path(name).name.startswith(prefix), name)
+            self.assertNotEqual(Path(name).name, prefix + str(os.getpid()))
+            self.assertTrue(fnmatch_tmp(Path(name).name))
+            self.assertFalse(os.path.lexists(name))
+        self.assertEqual(os.stat(d / "f.md").st_mode & 0o777, 0o640)
+        self.assertEqual(os.stat(d / "n.md").st_mode & 0o777, 0o640)
+
+    def test_store_yaml_symlink_is_replaced_not_followed(self):
+        repo, store = self.repo()
+        self.init(store, "--track")
+        v = self.victim()
+        (store / "store.yaml").unlink()
+        (store / "store.yaml").symlink_to(v)
+        self.init(store, "--track")
+        self.assertEqual(v.read_text(), "keep me\n")
+        self.assertFalse((store / "store.yaml").is_symlink())
+        self.assertEqual(self.tracking(store), "tracked")
+
+    def test_gitignore_symlink_gets_no_line_and_no_record(self):
+        for name, target in (("live", "victim"), ("dangling", "absent")):
+            with self.subTest(name):
+                repo, store = self.repo(f"gl-{name}")
+                v = self.victim() if target == "victim" else self.tmp / target
+                (repo / ".gitignore").symlink_to(v)
+                r = self.init(store, "--no-track", code=1)
+                self.assertIn(".gitignore is a symlink: no line added; add "
+                              "/.work/ by hand", r.stderr)
+                self.assertIn("tracking not recorded", r.stderr)
+                self.assertNotIn("tracking: ignored", r.stdout)
+                self.assertIsNone(self.tracking(store))
+                if target == "victim":
+                    self.assertEqual(v.read_text(), "keep me\n")
+                else:
+                    self.assertFalse(v.exists())
+
+    def test_failed_ignore_keeps_a_recorded_tracked_choice(self):
+        repo, store = self.repo()
+        self.init(store, "--track")
+        (repo / ".gitignore").symlink_to(self.victim())
+        self.init(store, "--no-track", code=1)
+        self.assertEqual(self.tracking(store), "tracked")
+
+    def test_no_terminal_default_with_symlinked_gitignore_records_nothing(self):
+        repo, store = self.repo()
+        (repo / ".gitignore").symlink_to(self.victim())
+        r = self.init(store, code=1)
+        self.assertIsNone(self.tracking(store))
+        self.assertNotIn("WARNING no terminal", r.stderr)
+
+    def test_store_dir_symlink_outside_repo_is_refused(self):
+        repo, store = self.repo()
+        out = self.tmp / "outdir"
+        out.mkdir()
+        store.symlink_to(out)
+        r = self.init(store, "--no-track", code=1)
+        self.assertIn("refusing to init there; nothing written", r.stderr)
+        self.assertEqual(list(out.iterdir()), [])
+        self.assertFalse((repo / ".gitignore").exists())
+
+    def test_store_dir_symlink_inside_repo_is_allowed(self):
+        repo, store = self.repo()
+        (repo / "real-store").mkdir()
+        store.symlink_to(repo / "real-store")
+        self.init(store, "--track")
+        self.assertEqual(self.tracking(store), "tracked")
+
+    def test_store_files_symlinks_are_not_written_through(self):
+        repo, store = self.repo()
+        store.mkdir()
+        v = self.victim()
+        (store / "README.md").symlink_to(v)
+        (store / ".gitignore").symlink_to(self.tmp / "absent")
+        self.init(store, "--track")
+        self.assertEqual(v.read_text(), "keep me\n")
+        self.assertFalse((self.tmp / "absent").exists())
+        self.assertTrue((store / "README.md").is_symlink())
+
+    def test_sidecar_host_gitignore_symlink_is_not_written(self):
+        repo, store = self.repo(sandbox=True)
+        self.git(repo / ".claude-sandbox", "init", "-q")
+        v = self.victim()
+        (repo / ".gitignore").symlink_to(v)
+        r = self.init(store, "--track")
+        self.assertEqual(v.read_text(), "keep me\n")
+        self.assertIn("is a symlink: no line added; add /.claude-sandbox/ "
+                      "by hand", r.stderr)
+
+    def raw_gi(self, repo):
+        return (repo / ".gitignore").read_bytes()
+
+    def test_crlf_gitignore_stays_crlf(self):
+        for i, (before, after) in enumerate((
+                (b"a\r\nb", b"a\r\nb\r\n/.work/\r\n"),
+                (b"a\r\n", b"a\r\n/.work/\r\n"))):
+            with self.subTest(before=before):
+                repo, store = self.repo(f"crlf{i}")
+                (repo / ".gitignore").write_bytes(before)
+                self.init(store, "--no-track")
+                self.assertEqual(self.raw_gi(repo), after)
+                self.assertTrue(self.ignored(repo, store))
+
+    def test_non_utf8_gitignore_is_kept_byte_exact(self):
+        repo, store = self.repo()
+        (repo / ".gitignore").write_bytes(b"caf\xe9/\n*.o")
+        r = self.init(store, "--no-track")
+        self.assertNotIn("Traceback", r.stderr)
+        self.assertEqual(self.raw_gi(repo), b"caf\xe9/\n*.o\n/.work/\n")
+        self.assertEqual(self.tracking(store), "ignored")
+
+    def test_gitignore_mode_is_kept(self):
+        repo, store = self.repo(gi="*.o\n")
+        os.chmod(repo / ".gitignore", 0o640)
+        self.init(store, "--no-track")
+        self.assertEqual(os.stat(repo / ".gitignore").st_mode & 0o777, 0o640)
+
+    def test_negated_literal_line_still_gets_the_line(self):
+        repo, store = self.repo(gi=".work/\n!.work/\n")
+        self.assertFalse(self.ignored(repo, store))
+        r = self.init(store, "--no-track")
+        self.assertEqual(self.gi(repo), ".work/\n!.work/\n/.work/\n")
+        self.assertIn("added /.work/", r.stdout)
+        self.assertTrue(self.ignored(repo, store))
+
+    def test_glob_characters_in_the_path_are_escaped(self):
+        repo, store = self.repo()
+        store = repo / "st[a]r*?"
+        self.init(store, "--no-track")
+        self.assertEqual(self.gi(repo), "/st\\[a]r\\*\\?/\n")
+        self.assertTrue(self.ignored(repo, store))
+        # the escaped line ignores only that dir, not a lookalike
+        (repo / "sta").mkdir()
+        self.assertNotEqual(self.git(repo, "check-ignore", "-q", "--no-index",
+                                     "sta/x", check=False).returncode, 0)
+
+    def test_repo_root_store_is_refused_before_anything_is_created(self):
+        # its own unanchored *.tmp* would ignore *.tmpl across the repo
+        for flags in (("--no-track",), ()):
+            with self.subTest(flags=flags):
+                repo, _ = self.repo(f"root{len(flags)}")
+                r = self.init(repo, *flags, code=1)
+                self.assertIn("is the repo root: a store there cannot be "
+                              "git-ignored; nothing written", r.stderr)
+                self.assertEqual(sorted(p.name for p in repo.iterdir()),
+                                 [".git"])
+
+    def test_existing_repo_root_store_gets_no_line(self):
+        repo, _ = self.repo()
+        self.init(repo, "--track")
+        r = self.init(repo, "--no-track", code=1)
+        self.assertIn("store is the repo root: no .gitignore written",
+                      r.stderr)
+        self.assertIn(f"created {repo}; tracking not recorded", r.stdout)
+        self.assertNotIn("initialised", r.stdout)
+        self.assertEqual(self.gi(repo), ".lock\n*.tmp*\n")
+        self.assertEqual(self.tracking(repo), "tracked")
+
+    def assert_refused_nothing_written(self, store, *watched, env=None):
+        before = {w: sorted(os.listdir(w)) for w in watched}
+        gis = {w: (w / ".gitignore").read_bytes()
+               for w in watched if (w / ".gitignore").is_file()}
+        r = run(["init", "--no-track"], store, env=dict(self.env, **(env or {})))
+        self.assertEqual(r.returncode, 1, r.stdout + r.stderr)
+        self.assertIn("outside the repo at", r.stderr)
+        self.assertIn("refusing to init there; nothing written", r.stderr)
+        for w in watched:
+            self.assertEqual(sorted(os.listdir(w)), before[w], w)
+        for w, data in gis.items():
+            self.assertEqual((w / ".gitignore").read_bytes(), data, w)
+
+    def test_sandbox_dir_symlinked_to_another_repo_is_refused(self):
+        repo, _ = self.repo("host")
+        other, _ = self.repo("other", gi="*.o\n")
+        (other / "work").mkdir()
+        (repo / ".claude-sandbox").symlink_to(other)
+        self.git(repo, "add", ".claude-sandbox")
+        self.git(repo, "commit", "-qm", "link")
+        self.assert_refused_nothing_written(
+            repo / ".claude-sandbox" / "work", repo, other, other / "work")
+
+    def test_sandbox_dir_symlinked_outside_git_is_refused(self):
+        repo, _ = self.repo("host")
+        out = self.tmp / "outdir"
+        out.mkdir()
+        (repo / ".claude-sandbox").symlink_to(out)
+        self.assert_refused_nothing_written(
+            repo / ".claude-sandbox" / "work", repo, out)
+
+    def test_wi_root_under_a_symlinked_subdir_is_refused(self):
+        repo, _ = self.repo("host")
+        out = self.tmp / "outdir"
+        out.mkdir()
+        (repo / "sub").symlink_to(out)
+        self.assert_refused_nothing_written(repo / "sub" / "work", repo, out)
+
+    def test_symlink_above_the_repo_is_left_alone(self):
+        # a /home/claude -> /home/rt style alias is not repo content
+        real = self.tmp / "real"
+        real.mkdir()
+        alias = self.tmp / "alias"
+        alias.symlink_to(real)
+        self.git(real, "init", "-q")
+        store = alias / ".work"
+        self.init(store, "--no-track")
+        self.assertEqual(self.tracking(store), "ignored")
+        self.assertEqual(self.gi(real), "/.work/\n")
+
+    def test_line_that_does_not_ignore_is_reported(self):
+        repo, store = self.repo()
+        self.init(store, "--track")
+        with mock.patch.object(wi, "_ignore_rule", return_value=None), \
+                mock.patch.dict(os.environ, self.env):
+            ok, msg = wi.ensure_ignored(store)
+        self.assertFalse(ok)
+        self.assertEqual(msg, "/.work/ did not make git ignore the store")
+
+    def test_git_unavailable_falls_back_to_literal_lines(self):
+        repo, store = self.repo(gi="/.work\n")
+        self.init(store, "--track")
+        with mock.patch.object(wi, "_ignore_rule", return_value=False):
+            ok, msg = wi.ensure_ignored(store)
+        self.assertTrue(ok)
+        self.assertIn("already ignores the store ('/.work')", msg)
+        self.assertEqual(self.gi(repo), "/.work\n")
+
+    def test_lint_flags_duplicate_tracking_lines(self):
+        repo, store = self.repo()
+        self.init(store, "--track")
+        (store / "store.yaml").write_text("tracking: tracked\n"
+                                          "tracking: ignored\n")
+        lint = run(["lint"], store, env=self.env)
+        self.assertEqual(lint.returncode, 3)
+        self.assertIn("store.yaml: more than one tracking: line", lint.stdout)
+
+    def test_ctrl_c_at_the_menu_exits_130(self):
+        repo, store = self.repo()
+        err = io.StringIO()
+        with mock.patch.object(wi, "_interactive", return_value=True), \
+                mock.patch.object(wi, "choose_tracking",
+                                  side_effect=KeyboardInterrupt), \
+                contextlib.redirect_stderr(err):
+            code = wi.main(["--root", str(store), "init"])
+        self.assertEqual(code, 130)
+        self.assertIn("interrupted; nothing written", err.getvalue())
+        self.assertFalse(store.exists())
+
+    def test_format_example_parses(self):
+        fmt = (HERE.parent / "references" / "format.md").read_text()
+        block = fmt.split("## Store tracking", 1)[1].split("```yaml\n", 1)[1]
+        block = block.split("```", 1)[0]
+        store = self.tmp / "example"
+        store.mkdir()
+        (store / "store.yaml").write_text(block)
+        self.assertEqual(wi.read_tracking(store), "tracked")
+        self.assertEqual(wi._store_tracking_values(store), ["tracked"])
+
+    def test_lint_flags_a_bad_tracking_value(self):
+        repo, store = self.repo()
+        self.init(store, "--track")
+        (store / "store.yaml").write_text("tracking: maybe\n")
+        self.assertIsNone(self.tracking(store))
+        lint = run(["lint"], store, env=self.env)
+        self.assertEqual(lint.returncode, 3)
+        self.assertIn("store.yaml: tracking must be one of tracked, ignored "
+                      "(got 'maybe')", lint.stdout)
+
+
 class TestDetailsBlocks(unittest.TestCase):
     def test_details_content_never_becomes_items(self):
         import sys, os
@@ -3511,17 +5186,19 @@ class TestB020Lows(WiTestCase):
             "## Notes\ndecision 4: first wording\ndecision 5: other\n"
             "decision 4: revised wording\n"))
         data = json.loads(self.wi_ok(["needs-input", "--json"]))
+        none = {"raised": None, "first_shown": None, "last_shown": None,
+                "last_seen": None, "unseen": None}
         self.assertEqual(data[0]["decisions"],
-                         [{"n": 4, "text": "revised wording"},
-                          {"n": 5, "text": "other"}])
+                         [dict({"n": 4, "text": "revised wording"}, **none),
+                          dict({"n": 5, "text": "other"}, **none)])
 
     # (3)
     def test_answer_40_does_not_answer_decision_4(self):
-        self.write_item("num-1111", sections=(
+        self.write_item("num-1111", "Numbering", sections=(
             "## Notes\ndecision 4: open?\ndecision 40: answered\n"
             "answer 40: yes\n"))
         self.assertEqual(self.wi_ok(["needs-input"]).splitlines(),
-                         ["num-1111  decision 4: open?"])
+                         ["num-1111  Numbering  decision 4: open?"])
 
     # (4)
     def test_ls_dep_refuses_an_ambiguous_prefix(self):
@@ -3946,6 +5623,109 @@ class TestLeadingPunctuationRoundTrip(WiTestCase):
         self.assertIn("owner: a@b\n", text)
         self.assertIsNone(self.show(recs["S-901"]["id"])["blocked"])
         self.wi_ok(["lint"])
+
+
+class TestShownAndSeen(WiTestCase):
+    """`shown N:` / `seen N:` lines (format.md § Shown and seen): read into
+    the JSON views only; they open and answer nothing."""
+
+    def decisions(self):
+        data = json.loads(self.wi_ok(["needs-input", "--json"]))
+        return {r["id"]: {d["n"]: d for d in r["decisions"]} for r in data}
+
+    def test_needs_input_json_carries_shown_and_seen(self):
+        self.write_item("sh-1111", sections=(
+            "## Notes\n"
+            "decision 1: twice shown, then seen\n"
+            "  raised: 2026-10-01T09:00Z\n"
+            "  what: the thing\n"
+            "decision 2: seen, then shown again\n"
+            "decision 3: never shown\n"
+            "shown 1: 2026-10-01T09:00:05Z chat\n"
+            "shown 2: 2026-10-01T09:00:05Z chat\n"
+            "seen 2: 2026-10-01T09:10:00Z turn\n"
+            "shown 1: 2026-10-02T08:00:00Z page\n"
+            "seen 1: 2026-10-02T08:30:00Z page\n"
+            "shown 2: 2026-10-02T08:00:00Z chat\n"))
+        d = self.decisions()["sh-1111"]
+        self.assertEqual(d[1], {
+            "n": 1, "text": "twice shown, then seen",
+            "raised": "2026-10-01T09:00Z",
+            "first_shown": "2026-10-01T09:00:05Z",
+            "last_shown": "2026-10-02T08:00:00Z",
+            "last_seen": "2026-10-02T08:30:00Z", "unseen": False})
+        self.assertEqual((d[2]["last_seen"], d[2]["unseen"]),
+                         ("2026-10-01T09:10:00Z", True))
+        self.assertEqual(
+            {k: d[3][k] for k in ("raised", "first_shown", "last_shown",
+                                  "last_seen", "unseen")},
+            dict.fromkeys(("raised", "first_shown", "last_shown",
+                           "last_seen", "unseen")))
+        self.assertIn("lint clean", self.wi_ok(["lint"]))
+
+    def test_shown_lines_open_and_answer_nothing(self):
+        self.write_item("sh-1111", "Lines only", sections=(
+            "## Notes\n"
+            "shown 5: 2026-10-01T09:00:00Z chat\n"
+            "seen 5: 2026-10-01T09:01:00Z turn\n"
+            "decision 6: still open\n"
+            "shown 6: 2026-10-01T09:00:00Z chat\n"
+            "seen 6: 2026-10-01T09:01:00Z turn\n"))
+        self.assertEqual(self.wi_ok(["needs-input"]).splitlines(),
+                         ["sh-1111  Lines only  decision 6: still open"])
+
+    def test_shown_40_is_not_shown_4(self):
+        self.write_item("sh-1111", sections=(
+            "## Notes\ndecision 4: open\ndecision 40: open too\n"
+            "shown 40: 2026-10-01T09:00:00Z chat\n"
+            "seen 40: 2026-10-01T09:01:00Z turn\n"))
+        d = self.decisions()["sh-1111"]
+        self.assertIsNone(d[4]["first_shown"])
+        self.assertIsNone(d[4]["unseen"])
+        self.assertEqual(d[40]["first_shown"], "2026-10-01T09:00:00Z")
+        self.assertIs(d[40]["unseen"], False)
+
+    def test_shown_in_a_fence_is_text(self):
+        self.write_item("sh-1111", sections=(
+            "## Notes\ndecision 1: open\n"
+            "```\nshown 1: 2026-10-01T09:00:00Z chat\n```\n"))
+        d = self.decisions()["sh-1111"][1]
+        self.assertEqual((d["first_shown"], d["unseen"]), (None, None))
+
+    def test_shown_seen_read_crlf(self):
+        self.write_item("sh-1111", sections=(
+            "## Notes\r\ndecision 1: open\r\n"
+            "shown 1: 2026-10-01T09:00:00Z chat\r\n"
+            "seen 1: 2026-10-01T09:01:00Z turn\r\n"))
+        d = self.decisions()["sh-1111"][1]
+        self.assertEqual((d["last_shown"], d["last_seen"], d["unseen"]),
+                         ("2026-10-01T09:00:00Z", "2026-10-01T09:01:00Z",
+                          False))
+
+    def test_shown_without_a_time_is_ignored(self):
+        self.write_item("sh-1111", sections=(
+            "## Notes\ndecision 5: open\n"
+            "shown 5: chat\nshown 5:\nseen 5: yesterday\n"))
+        d = self.decisions()["sh-1111"][5]
+        self.assertEqual((d["first_shown"], d["last_shown"], d["last_seen"],
+                          d["unseen"]), (None, None, None, None))
+
+    def test_shown_minute_form_reads(self):
+        self.write_item("sh-1111", sections=(
+            "## Notes\ndecision 5: open\n"
+            "shown 5: 2026-10-08T10:00Z chat\n"))
+        d = self.decisions()["sh-1111"][5]
+        self.assertEqual((d["first_shown"], d["unseen"]),
+                         ("2026-10-08T10:00Z", True))
+
+    def test_seen_follows_last_shown_by_file_order(self):
+        # the seen line's clock is behind the shown line's, but it sits
+        # below it: file order decides, never the times
+        self.write_item("sh-1111", sections=(
+            "## Notes\ndecision 5: open\n"
+            "shown 5: 2026-10-08T10:00:00Z chat\n"
+            "seen 5: 2026-10-08T09:59:00Z page\n"))
+        self.assertIs(self.decisions()["sh-1111"][5]["unseen"], False)
 
 
 if __name__ == "__main__":

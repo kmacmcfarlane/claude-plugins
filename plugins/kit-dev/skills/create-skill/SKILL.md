@@ -88,7 +88,7 @@ Before writing any skill, consult `references/best-practices.md` for Anthropic's
    - Put critical instructions at the top under `## Important` or `## Critical` headers.
    - Include error handling for common failure modes.
    - For critical validations, prefer bundling a script that checks programmatically over relying on language instructions alone.
-   - When the skill needs decisions from the operator, have it present them as a numbered list — one decision per number, each with its options and their impact, the recommended option first — so the operator can answer by number. Never pair that list with a heavy analysis in the same turn: present the analysis, then ask in the next turn.
+   - When the skill needs decisions from the operator, have it present them as a numbered list — one decision per number, each with its own recommendation, its options in (a), (b), (c) order with their impact and the recommended one in bold, never moved first — so the operator can answer by number. Never pair that list with a heavy analysis in the same turn: present the analysis, then ask in the next turn.
    - Use `$ARGUMENTS` to reference user input. Use `$0`, `$1` etc. for positional args.
    - Use `` !`command` `` syntax for dynamic preprocessing only when the skill genuinely needs runtime data injected before Claude sees the prompt.
 
@@ -104,7 +104,7 @@ Before writing any skill, consult `references/best-practices.md` for Anthropic's
    Critical rules:
    - File MUST be exactly `SKILL.md` (case-sensitive). No variations (`SKILL.MD`, `skill.md`).
    - Folder name must match the `name` field in frontmatter.
-   - Do NOT include a `README.md` inside the skill folder. All documentation goes in `SKILL.md` or `references/`.
+   - A `README.md` inside the skill folder is optional and for humans only: never instructions the agent needs (those stay in `SKILL.md` or `references/`), and its last non-blank line is exactly `*User-facing documentation, not agent instructions.*`. Skill files cost no context until read, so it is allowed; it must not duplicate `SKILL.md`.
    - No XML angle brackets anywhere in frontmatter.
    - Double-quote `argument-hint` whenever it is present: `argument-hint: "[file-path] [options]"`. An unquoted value that starts with `[` is a YAML flow sequence, so `[file-path]` loads as a list, not a string, and with a second `[...]` group after it the whole frontmatter fails to parse and the skill silently disappears in stricter YAML loaders. Escape an inner double quote as `\"`.
    - To point into a sibling skill of the same plugin, put its backticked name right before a bare path: the `other-skill` skill's `references/x.md`. Never a parent-directory path, never a path into another plugin.
@@ -136,7 +136,7 @@ Before finalizing, verify:
 - [ ] Error handling included for likely failure modes
 - [ ] Examples provided for common scenarios
 - [ ] SKILL.md is under 5000 tokens; detailed reference moved to `references/`
-- [ ] No `README.md` inside the skill folder
+- [ ] Any `README.md` in the skill folder is for humans only (no agent instructions, no copy of SKILL.md) and its last non-blank line is exactly `*User-facing documentation, not agent instructions.*`
 
 ## Guidelines
 

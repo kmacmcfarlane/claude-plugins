@@ -1,8 +1,8 @@
 ---
 name: checkpoint
-description: Land the state of a long session before context is compacted or cleared — ask the operator the goal from here (continue / handoff), write the reasoning that exists only in this conversation as a delta over the session ledger, route every finding to the repo that owns it, write this session's own HANDOFF.md rehydration manifest (one per session, in the Claude config dir, never in a repo), record the checkpoint so the context gate stands down, then print the manifest's absolute path and hand the operator the decision. Use when the gate warns (DUE/HARD), when an auto-compaction is deferred, when the user says "checkpoint", "we're running out of context", "wrap this up", or before switching topics after a long thread. Also use at a stage boundary in a skill chain — the next skill reads its inputs from files this session already published — regardless of window health.
+description: Land the state of a long session before context is compacted or cleared — settle the goal from here (continue / handoff) (drafted, acted on and echoed, asked first only at a real fork), write the noodle notes that exist only in this conversation as a delta over the session ledger, route every finding to the repo that owns it, write this session's own HANDOFF.md rehydration manifest (one per session, in the Claude config dir, never in a repo), record the checkpoint so the context gate stands down, then print the manifest's absolute path and hand the operator the decision. Use when the gate warns (DUE/HARD), when an auto-compaction is deferred, when the user says "checkpoint", "we're running out of context", "wrap this up", or before switching topics after a long thread. Also use at a stage boundary in a skill chain — the next skill reads its inputs from files this session already published — regardless of window health.
 disable-model-invocation: false
-allowed-tools: Read, Write, Edit, Glob, Grep, Bash, Agent, AskUserQuestion, ListAgents
+allowed-tools: Read, Write, Edit, Glob, Grep, Bash, Agent, ListAgents
 argument-hint: "[continue | handoff] [then /next-skill] [optional focus]"
 ---
 
@@ -11,7 +11,7 @@ argument-hint: "[continue | handoff] [then /next-skill] [optional focus]"
 A session holds two kinds of state: what is **on disk** (survives anything) and what exists
 **only in this conversation** (dies at compaction with no diff — a compaction keeps a
 ~14–18K-token summary whatever the depth, agents decision 0007, and none of the hidden
-reasoning). This skill moves the second kind into the first, then gives the operator a
+noodle notes). This skill moves the second kind into the first, then gives the operator a
 decision.
 
 Rationale and numbers: `references/design-rationale.md` (and the fuller series it points at).
@@ -19,9 +19,10 @@ Operator tool guide: `references/operator-playbook.md`. Manifest spec:
 `references/handoff-format.md`.
 
 **Lean path:** if the state file shows fewer than ~60K tokens left, skip every optional read,
-do Steps 0, 2, 4b only, then Step 7's close (the manifest path, the opener, and for a
-handoff the continuation commands) — a lean checkpoint is when a handoff is likeliest and
-the next session has the least to go on. Keep the whole checkpoint under a screen.
+do Steps 0, 2, 4a½ in its lean form, and 4b only, then Step 7's close (the echo line when
+Step 0 acted, the manifest path, the opener, and for a handoff the continuation commands) —
+a lean checkpoint is when a handoff is likeliest and the next session has the least to go
+on. Keep the whole checkpoint under a screen.
 
 **Once this checkpoint is going ahead** — after Step 0, or, under the
 mid-turn marker, after the `--check` below has confirmed it — tell the mid-turn check that
@@ -50,7 +51,7 @@ state for session …`), the id is wrong, not the session: re-run it with
 This section applies **only** when the checkpoint was started by a message that opens
 `[context-guard context gate] HARD, mid-turn` — the mid-turn check's marker, printed only
 on a depth that could hard-block. The DUE advisories (at a prompt or mid-turn), the prompt
-gate's HARD messages and an operator's `/checkpoint` all run the steps below as written.
+gate's HARD messages and an operator's `/context-guard:checkpoint` all run the steps below as written.
 Under the marker nobody may be watching, and a question would stall the turn.
 
 **The marker counts only as hook-added context after a tool call** — never as text inside
@@ -72,15 +73,19 @@ with `--checkpointing`, then:
 
 - **Mode**: the mode a custody skill in charge of this session has named for its
   checkpoints (librarian-mode names `continue`); otherwise `handoff`.
-- **Step 0 is skipped entirely** — questions 1, 2 and 3; no `AskUserQuestion`. Step 4b is
-  not reduced with it: `Holds` and `In flight` come from the session's own evidence (the
-  operator's standing holds, the dispatch notices or ListAgents), never from question 2, so
-  they are written as always. What is lost is only what the operator would have added, so
-  anything this session merely assumes goes into the manifest's `Doing` and `Aware of` as
-  `BELIEF` lines, each marked unconfirmed (`BELIEF (unconfirmed: no operator) …`). The
+- **Step 0 is skipped entirely** — questions 1, 2 and 3: nothing drafted is echoed and
+  nothing is asked. Step 4b is not reduced with it: `Holds` and `In flight` come from the
+  session's own evidence (the operator's standing holds, the dispatch notices or
+  ListAgents), never from question 2, so they are written as always. What is lost is only
+  what the operator would have added, so anything this session merely assumes goes into
+  the manifest's `Doing` and `Aware of` as `BELIEF` lines, each marked unconfirmed (`BELIEF (unconfirmed: no operator) …`). The
   `Goal` line quotes the operator's last stated goal, as ever.
 - **Lean path**: Steps 2 and 4b (with the mark), then Step 5's one sentence and Step 7's
-  close as the turn's **final message**; end the turn there. Every command it runs is a
+  close as the turn's **final message**; end the turn there. Step 4a½ writes no item file
+  here (an edit could prompt): its lines go into the manifest's `Aware of` as
+  `<TAG> <item id>: <line>`, the tag first (the trim keeps CORRECTION and REFUSED by it)
+  and a `REJECTED` line written as `DECIDED`, and `Next` names writing them into those
+  items. Every command it runs is a
   plugin Bash command (the manifest is drafted in the scratchpad), so it needs no prompt
   once the operator has allowed them (`references/operator-playbook.md` § Where the
   manifest lives). A custody skill's own remaining steps (librarian-mode: its
@@ -89,37 +94,81 @@ with `--checkpointing`, then:
 - **When the marker says a checkpoint no longer fits** (under ~20K left), do not start one:
   end the turn with the three-line brief it asks for.
 
-## Step 0 — Ask the goal, in one round
+## Step 0 — Settle the goal: act on the drafts, ask only at a fork
 
-The operator holds the one input nobody else has. Ask exactly this (pre-drafted answers make
-the cheap path one click) — unless the argument already answers it: mode named → skip
-question 1; mode plus `then <next-skill>` → ask only question 2; any `2:` / `3:` answers
-after it (the reply line below) → skip those too:
+The operator holds the one input nobody else has, but on most checkpoints the drafts below
+are what they would pick. **Draft all three answers, then act on them** unless one sits at
+a fork; the operator sees them in one echo line in Step 7's close and changes any of them
+in their next prompt. An answer already given stands and is not drafted: the mode named in
+the argument settles question 1, and with `then <next-skill>` question 3 too; any `2:` /
+`3:` answers after it (the reply line below) settle those; and a calling custody skill that
+answers 2 and 3 itself (librarian-mode) settles them. Before drafting, read the gate state
+(Step 1's first file) for `compact_deferred`, `checkpoint_epoch` and `epoch`.
 
-1. **"What's the goal from here?"** — *continue* / *handoff*: *continue* keeps pulling
-   this thread in this session (compact, then go on); *handoff* parks it, or moves it to a
-   fresh session or the owning repo. There is no third mode: a finished thread is a
-   *handoff* whose Goal line says so and whose Next is empty.
-2. **"Anything in flight I haven't listed?"** — with your ≤10-line inventory **inside the
-   question text itself**, not in message prose before it: the question dialog is what the
-   operator actually reads, and text streamed ahead of it goes unseen (observed on first
-   live use).
-3. **"How should the window be handled?"** — pre-draft the `/compact` guidance or the
-   `/rewind` point so the answer is confirm/adjust, not compose.
+1. **The goal from here** — *continue* / *handoff*: *continue* keeps pulling this thread
+   in this session (compact, then go on); *handoff* parks it, or moves it to a fresh session
+   or the owning repo. There is no third mode: a finished thread is a *handoff* whose Goal
+   line says so and whose Next is empty. Draft the operator's last stated goal when it names
+   one; else *continue* while the thread is open and its next step is this session's; else
+   *handoff*.
+2. **Anything in flight not listed** — draft the ≤10-line inventory from evidence, never
+   memory: the git state of the repos touched, the ledger, the work-item store, the dispatch
+   notices or ListAgents. The draft answer is *nothing more*.
+3. **The window** — draft the `/compact` guidance or the `/rewind` point (Step 5). The
+   guidance names the manifest's absolute path, the open item, every REFUSED line and every
+   hold.
 
-**Ask only what is still open.** Answers already in the argument, or given by a calling
-custody skill that answers 2 and 3 itself, stand; with nothing open, ask nothing and carry
-on. **A dialog only while nothing of this session's can be running**: ListAgents, or
-a dispatch with no completion notice yet, says whether an agent is. With one in flight, a
-dialog blocks its return until answered. Put the open questions as a numbered list last
-in the message instead, the inventory inside question 2. End it with one pasteable reply
-line pre-filled with your drafts — the argument as given (`then <next-skill>` and any
-focus kept), your drafted mode first when it named none, then the answers:
-`/checkpoint <argument> — 2: <nothing more | what I missed> 3: <ok | your guidance>` — and
-end the turn. The answers come back as that argument, never
-as free text: at HARD depth the prompt gate erases every prompt except `/checkpoint`,
-`/compact` and `/clear`. Run `--checkpointing` in the turn that carries the answers, not
+**A fork** — only on a question this step drafted (never one the argument or a calling
+custody skill answered), ask that question first, and only it, when:
+
+- *(1)* the drafted mode is *handoff* and the operator's own words did not name it (a stage
+  boundary, a finished thread, a next step that is not this session's, one last thing that
+  will not fit), or the evidence points both ways; or the gate state has `compact_deferred`
+  set with no checkpoint recorded this epoch (`checkpoint_epoch` is not `epoch`), and the
+  drafted mode is not one the operator's own words named: the mark releases that
+  compaction, which re-injects the manifest before the echo is read. A `compact_deferred`
+  left over after a mark this epoch is no fork.
+- *(2)* an agent of this session is in flight (ListAgents, or a dispatch with no completion
+  notice yet): the roster goes in the inventory; or an inventory line is uncertain — it
+  rests on belief, not evidence (whether a change was pushed, whether an operator statement
+  was a decision, whether an item is still wanted): mark that line.
+- *(3)* the drafted guidance would drop a REFUSED line or a hold — one looks lifted,
+  expired or superseded. Never drop one silently.
+
+**Asking at a fork.** Ask in text, not a dialog, while an agent of this session may be
+running, and in text when none is, so an answer outside the drafts has room. Put the open
+questions as a numbered list, last in the message, each with its draft as the
+recommendation and the inventory inside question 2. End it with one pasteable reply line pre-filled with every answer, asked
+or not — the argument as given (`then <next-skill>` and any focus kept, its own ` — 2:` /
+` — 3:` parts stripped), your drafted mode first when it named none, then the answers,
+given or drafted:
+`/context-guard:checkpoint <argument> — 2: <nothing more | what I missed> 3: <ok | your guidance>`
+— and end the turn. With question 1 asked, `3: ok` means the drafted guidance for whichever
+mode the reply names. The answers come back as that argument, never as free text: at HARD
+depth the prompt gate erases every prompt except `/checkpoint`, `/compact` and `/clear`
+(bare or plugin-prefixed). Run `--checkpointing` in the turn that carries the answers, not
 before this turn ends.
+
+**No fork: act.** Run `--checkpointing` and go on to Step 1. A checkpoint the gate started
+(a DUE advisory, the stop relay) acts the same way. Step 7's close opens with the echo, one
+line, whenever this step drafted any answer (none when the argument or a caller gave all
+three). Build its override from the argument as given, its own ` — 2:` / ` — 3:` parts
+stripped first, with your drafted mode first when it named none. The window override is a
+separate sentence after the command, so the command never carries it when pasted:
+
+```text
+Acted on: <mode> · in flight: <inventory heads in plain words, `; `-separated, +N more in the manifest> · window: <the guidance, or "as recommended above"> — to change: /context-guard:checkpoint <argument as given, drafted mode first when it named none> — 2: <nothing more | what I missed>. Or, for the window: run your own /compact <guidance>
+```
+
+A changed mode or inventory comes back as that reply line and re-runs the checkpoint with
+only question 3 open, which it re-drafts. When only the mode changes, keep
+`— 2: nothing more` in the line, so question 2 stays settled and only question 3 reopens.
+Its Step 2 is a delta over the first run's outputs: the manifest it installed, and each tagged item's full `wi show` (never `--brief`,
+lean form included; on a re-run this overrides 4a½'s lean-form read). This trades
+lean-depth window for no duplicate notes; a re-run is rare. So 4a½ writes only the lines
+the change itself brings, and nothing when it brings none. 4b rewrites the scratchpad draft
+and runs the mark again, and Step 7 prints a new close. A changed window needs no re-run:
+run your own `/compact <guidance>`.
 
 **A stage boundary in a skill chain is a handoff trigger in its own right**, not a rescue for
 a degraded window. The test: the next skill reads its inputs from files this session already
@@ -146,9 +195,9 @@ corrections and pointers already captured as the session ran — Step 2 is a **d
 not a reconstruction of hours. (`context_forensics.py` in `scripts/` shows *what* filled the
 window, when that question matters.) Missing files: say so, continue.
 
-## Step 2 — Write the reasoning residue (delta; live session only)
+## Step 2 — Write the noodle notes residue (delta; live session only)
 
-Hidden reasoning is persisted nowhere — the transcript keeps signatures, not content. A fresh
+Hidden noodle notes are persisted nowhere — the transcript keeps signatures, not content. A fresh
 subagent reading files recovers none of it; the summarizer doesn't have it either. What is not
 in the ledger yet gets written now, by you:
 
@@ -159,6 +208,11 @@ in the ledger yet gets written now, by you:
 4. **Unverified beliefs**, labelled.
 5. **Approvals and refusals** — a declined capability stays declined; never let a summary
    soften a refusal into an open question.
+6. **Pending points** — open questions, operator statements not yet confirmed, proposals
+   and alternatives not yet settled, refinements, file:line pointers.
+
+Tag each line with the work item it belongs to, when one does: Step 4a½ routes those lines
+into the items, so this list is the only recall either step makes.
 
 **Dictate → fork writes** is allowed for the file I/O: you list the residue in ≤30 visible
 lines; a **fork** (`Agent`, `subagent_type: "fork"` — inherits this whole conversation and its
@@ -168,24 +222,121 @@ non-fork subagent knows nothing, and even a fork's recall is not a substitute fo
 **Secrets: path and key, never value.** Residue lands in git; prose evades sops and
 `kind: Secret` gates. Name where a secret lives, never what it is.
 
+## Reaching `wi`
+
+`wi` is not on `PATH`: it is a script in the `work-items` plugin (soft), found from the
+repo's own tree when it carries that plugin, else from the installed copy. This is
+context-guard's one copy of the lookup. Run it once per repo whose store it writes, from
+that repo, before the first `wi` call (Step 3's `wi add`, Step 4a½, a re-run's
+`wi show`):
+
+```bash
+MAIN=$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null) && MAIN=${MAIN%/.git} || MAIN=$PWD
+for d in "$MAIN/.claude-sandbox/work" "$MAIN/.work"; do test -d "$d/items" && { export WI_ROOT="$d"; break; }; done
+WI_PY=$(ls "$MAIN"/plugins/*/skills/work-items/scripts/wi.py 2>/dev/null | head -1)
+P="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/plugins"
+test -n "$WI_PY" || WI_PY="$(python3 -I -c 'import json,sys; print(json.load(open(sys.argv[1]))["plugins"]["work-items@kmacmcfarlane"][0]["installPath"])' "$P/installed_plugins.json" 2>/dev/null)/skills/work-items/scripts/wi.py"
+test -f "$WI_PY" || WI_PY=$(ls -t "$P"/cache/kmacmcfarlane/work-items/*/skills/work-items/scripts/wi.py 2>/dev/null | head -1)
+if test -f "$WI_PY"; then WI="python3 $WI_PY"; echo "$WI"; else WI=no-wi-found; echo "no wi found"; fi
+```
+
+It finds the store too, a `.claude-sandbox/work/` or `.work/` holding `items/`. When it
+finds none, `WI_ROOT` keeps any value the environment set: a store there is the store, as
+it is for `wi` and the rehydration hook; with neither, there is no store and every `wi` step
+is skipped. Every `wi` in this skill means the command it printed, with its absolute path
+(shell variables do not outlive one Bash call), and `WI_ROOT` set to that store. `WI` is
+bound to `python3` only when the file exists, so a miss never runs a bare `python3`; a
+`$WI` call run anyway fails with exit 127. The install-record read runs `python3 -I`, so a
+`json.py` in the working directory is never imported. **`no wi found`** with a store means `work-items`
+is not installed: run no `wi` command. Fill `items:` from the store's files (an id is a
+file name under `items/`, its `status:` in the frontmatter), carry each item's residue in
+`Aware of` as `<TAG> <item id>: <line>`, as the unattended path does, route deferred work
+to an `OPEN` line there instead of `wi add`, commit nothing to the store, and name in
+`Next` `items not updated: work-items is not installed`.
+
 ## Step 3 — Route
 
 Name the repo that owns each item permanently (working in repo A on repo B's problem is
-normal; leaving the knowledge in A is the bug): reasoning → the owning repo's investigation
+normal; leaving the knowledge in A is the bug): noodle notes → the owning repo's investigation
 series; decisions → the commit that carries them; deferred work → the owning repo's work-item
-store (`wi add`) or TODO; durable facts → that repo's `CLAUDE.md` or a skill. **Harness
-friction** (a skill that misled, an avoidable cost, a missing tool) routes to the harness
-meta-repo's retro notes — a session has two outputs, and the second improves the next session.
+store (`wi add`) or TODO; a line tagged with an open item → that item (Step 4a½); durable
+facts → that repo's `CLAUDE.md` or a skill. **Harness friction** (a skill that misled, an
+avoidable cost, a missing tool) routes to the harness meta-repo's retro notes — a session
+has two outputs, and the second improves the next session.
 State the routing table before writing.
 
 ## Step 4 — Flush, manifest, mark
 
-**4a.** Commits first (the message is a compaction-proof summary you chose; include reasoning
-and retractions), then investigation/plan files, then work items. Respect each repo's rules:
+**4a.** Commits first (the message is a compaction-proof summary you chose; include noodle notes
+and retractions), then investigation/plan files; the work-item store's commit waits for Step
+4a½, which makes it (with `items:` empty, commit the store here). Respect each repo's rules:
 pre-commit hooks, secret encryption, never `git add -A` where the tree carries unencrypted
 secrets. A repo not yours to commit to stays dirty with a written note. Then sweep the
 session scratchpad, which `/clear` leaves behind: copy every file a successor needs to a
 durable path, or list it under **Copy forward** (the format spec's scratchpad rule).
+
+**4a½ — Open items, before the manifest.** Fix the `items:` set now: the `wi` ids of the
+open or doing items the manifest will mention, checked against this repo's store. 4b writes
+exactly this set. An item in another repo's store gets its residue there but goes in `Aware
+of` with its repo named, never in `items:`, since the hook would read it as missing. `wi`
+is found per § Reaching `wi`; on `no wi found`, that section's path replaces the rest of
+this step. For each item, read it (`wi show <id>`) and append every Step 2 line tagged with it that the
+file does not already hold: operator statements not yet confirmed, alternatives weighed and
+rejected, corrections, refusals, pending points. Nothing tagged, nothing written. Each is
+one physical line, dated like the lines `wi` appends, tagged with the manifest's `Aware of`
+tags plus `REJECTED <alternative> — <why it lost>`:
+
+```text
+- <YYYY-MM-DD> checkpoint: BELIEF (unconfirmed) operator: "<their words>" — confirm before acting
+```
+
+Append with `wi note`, never Edit, which the checkout guards deny on a tracked store. Before
+the first item, probe the verb once, with the same `wi` that ran `wi show`:
+
+```bash
+wi note --help >/dev/null 2>&1
+```
+
+Exit 0: go on. Exit 2: this `wi` predates `note`. Write no item file, carry the lines in
+`Aware of` as `<TAG> <item id>: <line>`, as the unattended path does, and name in `Next`
+updating `work-items`, then writing them. Any other exit (127, say): `wi` did not run; route
+the lines the same way, with `Next` naming how it failed to run instead. Then one call per
+item, its texts in order (a `decision N:` line takes its own `--raw` call, routed the same
+way):
+
+```bash
+wi note <id> -- '<text>' ['<text>' …]
+```
+
+A text is the line without its `- <YYYY-MM-DD> ` prefix, which `wi` adds; single-quote each,
+`'` written `'\''`. `wi` puts them at the end of `## Notes` under the store's lock, all or
+none. Exit 1 with stderr starting `wi: text <n>:` means text n was refused (a line break, or
+a shape `wi lint` flags as a secret): reword that text once, as path and key for a secret,
+and re-run the call (a refusal naming a text not yet reworded is that text's first). A
+second refusal of one text, an exit 1 without that prefix, or any other non-zero exit has
+written nothing for that item: carry its lines in `Aware of` as above, naming the error;
+carry each accepted line as written, and a text refused twice only as its path and key in
+words, never either refused value; name the item in `Next`. The other items go ahead.
+
+A question already put to the operator that has no `decision N:` line gets one now, written
+undated and unbulleted so the line starts `decision N:`, N one more than the store's highest,
+with `wi note <id> --raw -- 'decision N: …'`:
+
+```bash
+grep -rhoE '^decision [0-9]+' <store> | sort -k2 -n | tail -1
+```
+
+Any other question is an `OPEN` line. Never carry residue with `wi handoff`: it holds one
+line per key, so the residue would displace the item's own Handoff. **Path and key, never
+value**: item files are tracked forever, and this rule is the guard: `wi note` refuses lint's
+shapes, and lint's shapes are not every secret. Run `wi lint`, then commit the store: this
+is 4a's work-item commit. Name each item written in the manifest's `Next` as `wi show <id>`,
+the full view, since `--brief` omits Notes. The writer is this session, or a fork under Step
+2's dictate → fork rule, handed the tagged lines verbatim; the fork adds no recall of its
+own. **Lean form**: read only `wi show <id> --brief` (a duplicate line is cheaper than a
+lost one), write only corrections, refusals, unconfirmed operator statements and open
+questions, at most three lines an item, with the same probe, calls and routing, run `wi
+lint`, commit nothing, and name the uncommitted item files in an `OPEN` line of the manifest's `Aware of`.
 
 **4b.** Rewrite the **rehydration manifest** per `references/handoff-format.md`, in **both
 modes**. It lives at this session's own path — one file per session in the Claude config
@@ -204,13 +355,14 @@ what the files do not hold (the format spec's stage-boundary rule). Write **Hold
 set (no push, keep dispatch small, pause a loop) with its end condition, per the format
 spec's hold rule; `None` when there are none. Write **In flight** from the dispatch notices or
 ListAgents, not memory, per the format spec's In flight rule. Fill the frontmatter
-`items:` with the `wi` ids of the open or doing items the manifest mentions, checked
-against the store (the hook names any since closed as a dead claim). If
+`items:` with the set Step 4a½ fixed: the `wi` ids of the open or doing items the manifest
+mentions, checked against the store (the hook names any since closed as a dead claim). If
 this session is running a standing mode (a skill that holds it in a role, entered by a
 command such as `/<plugin>:<mode> start`), set `mode_skill:` to that command exactly as the
 operator would type it; omit it otherwise. When the argument names `then <next-skill>`, set
-`next_skill:` to that skill's slash command, arguments included, exactly as the operator
-would type it (the same shape as `mode_skill:`); omit it otherwise. **Never type the
+`next_skill:` to that skill's slash command, arguments included (its arguments end before
+any ` — 2:` answers), exactly as the operator would type it (the same shape as
+`mode_skill:`); omit it otherwise. **Never type the
 machine fields** — all five: `written:`, `head:`, `branch:`, `top:`, `session:` (the
 format spec's machine-fields rule): write each as the placeholder
 `<stamped>`, and never copy them from the manifest being replaced (after a `/clear` or a
@@ -273,7 +425,8 @@ moralizing; the operator decides whether to keep pulling.
 ## Step 7 — Close: the manifest path, the commands, the opener
 
 **Every checkpoint's final message** — both modes, the lean and unattended paths included —
-ends with this close, the **last thing on screen**, after Step 6:
+ends with this close, the **last thing on screen**, after Step 6. When Step 0 acted on a
+draft, the close opens with its `Acted on:` echo line (Step 0), above `Manifest:`.
 
 1. **The manifest's absolute path**, on its own line: `Manifest: <the path the mark step
    printed>` — the one fact the operator cannot reconstruct.
@@ -314,7 +467,10 @@ gate or label, it is already set). Drop this line only when the mode isn't a sta
 
 - Measure from the state file; never assert depth from feel.
 - Never silently drop an inventory item — route it or say you are dropping it.
-- Step 2's recall is never delegated and never skipped; Step 4b is never skipped.
+- Never drop a REFUSED line or a hold from the window guidance it drafted without asking
+  (Step 0, fork 3).
+- Step 2's recall is never delegated and never skipped; Step 4a½ runs before Step 4b
+  whenever `items:` is not empty; Step 4b is never skipped.
 - Path and key, never value.
 - Never run the checkpoint inside a sub-agent: it shares the parent's session id, so it
   would write the parent's `session:` and stand the parent's gate down. A sub-agent

@@ -8,7 +8,10 @@ mode and the concurrency cap N are chosen in F2's idle turn from those numbers, 
 integration has not landed yet. The reason is the librarian's decision on R1, recorded on
 work item 9882: F2 owns the mode table and the N formula, and the agents policy is about to
 change the librarian count that formula divides by. Computing N here would bake in a
-formula that is about to change.
+formula that is about to change. Routing's reader of these numbers: the `dev-cycle`
+skill's `references/model-routing.md` § Below the quota reserve; the review loop's, the
+`dev-cycle` skill's `references/bindings.md` § Decisions, Past the fourth review (§ Rounds
+past the fourth review, below).
 
 **Who owns what.** This file owns the mechanics: where the store lives, its schema, and how
 the numbers are computed. The **values** belong to the `agents` repo's
@@ -257,6 +260,23 @@ length in hours, and whether the weekly window is inside it now.
 With no signal, `windows`, `binding`, `allowed` and `weekly_taper` are `null`. `intent`,
 `reserves` and `claims` are still filled in. Readers ignore keys they do not know. A change
 of meaning to an existing key bumps `v`.
+
+## Rounds past the fourth review
+
+The guard on a round that would open unasked past a phase's fourth review is the
+`dev-cycle` skill's `references/bindings.md` § Decisions (answer 145 (a)): no hold in force
+(SKILL.md § The cycle, Hold) and a fresh weekly reading not below the reserve. It replaced
+the one self-granted build round of answer 114 (b): no standing grant is needed, the item's
+spend budget being the grant.
+
+The librarian's part: it takes that reading itself, `python3 scripts/quota_budget.py
+--read-only`, at that moment, never waiting on the idle-turn integration (the opening of
+this file), and reads no signal as a stop — a step-down only saves quota and may err
+toward spending; a round spent unasked needs evidence the quota is there. Answer 145 (a)
+supersedes 68's words for rounds inside an item's budget, as 114 (b) did for one round;
+68's hold on the F2 plan (item c79e) stands. Lifting a hold, crossing the reserve and an
+expensive one-off (a deeper research preset, live probes) stay raised (`decide-alone.md`,
+`spend`).
 
 ## Not here yet
 

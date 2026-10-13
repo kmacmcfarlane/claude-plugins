@@ -104,11 +104,8 @@ statusline plugin; rewritten only when missing or different), and where
 orphaned state-dir dotfiles are swept (L.sweep_stale: stale temp files, dead
 sessions' lock files; once a day).
 
-It never writes settings.json. The statusLine entry belongs to the statusline
-plugin; this hook only reads it, to show a "moved to the statusline plugin"
-notice at most once a week while an entry still runs context-guard's (or
-claude-kit's) deprecated copy and that plugin is not installed
-(statusline_notice).
+It never writes settings.json: the statusLine entry belongs to the
+statusline-hub plugin.
 
 Never exits non-zero: the staleness checks degrade to the plain manifest on
 any internal error, and anything else degrades to {}.
@@ -345,10 +342,12 @@ def unverified_reason(top):
     return "head unverified"
 
 
-def head_moved(hs):
+def head_moved(hs, store=False):
     """None when the recorded head still describes the repo; else the one line
     that replaces the `## Next` body. Store-only commits (librarian chores under
-    .claude-sandbox/work) do not count as movement."""
+    .claude-sandbox/work) do not count as movement. The line names `wi prime`
+    only when the repo has a work-item store (`store`): with none there is no
+    queue to prime, and `wi` may not be installed at all."""
     if not hs:
         return None
     why, n = divergence(hs), hs["n"]
@@ -358,7 +357,8 @@ def head_moved(hs):
     if why and hs["known"] and n is not None and hs.get("behind") is not None:
         moved += f" ahead, {hs['behind']} behind"   # rewound or diverged
     return (f"Next withheld: head moved {moved} since this manifest ({hs['rec']}.."
-            f"{hs['cur']}{', ' + why if why else ''}); run wi prime and git log.")
+            f"{hs['cur']}{', ' + why if why else ''}); run "
+            f"{'wi prime and ' if store else ''}git log.")
 
 
 _UNSET = object()
@@ -372,7 +372,8 @@ def stale_checks(fm, top, live, hs=_UNSET):
     try:
         if hs is _UNSET:
             hs = head_state(fm, top)
-        return (head_moved(hs),) + dead_claims(fm, top)
+        store = bool(hs) and bool(top) and store_root(top) is not None
+        return (head_moved(hs, store),) + dead_claims(fm, top)
     except Exception:
         return None, [], []
 
@@ -753,80 +754,6 @@ def _parent_by_record_uuid(sid, transcript_path):
         except Exception:
             continue
     return None
-
-
-# The status line moved to the statusline plugin, whose footer draws through
-# the statusline-hub plugin. context-guard keeps its deprecated copy
-# (hooks/statusline.py) for one release and never writes settings.json: it
-# only notices, read-only, when a settings entry still runs a predecessor
-# copy and the statusline plugin is not there - once it is, it registers the
-# footer with the hub, and the hub's SessionStart takes the entry over.
-NOTICE_EVERY_S = 7 * 24 * 3600
-NOTICE_STAMP = ".statusline-moved-notice"
-# The predecessor fingerprint: a command running
-# <cfg>/plugins/data/{claude-kit,context-guard}-<mkt>/current-hooks/statusline.py
-# (the older copies statusline-hub's classify() counts as the footer's own).
-PREDECESSOR_RE = re.compile(
-    r'\s*python3\s+"?[^"]*/plugins/data/(?:claude-kit|context-guard)-[^/"]+'
-    r'/current-hooks/statusline\.py"?\s*')
-NOTICE = ("context-guard: the status line moved to the `statusline` plugin: "
-          "/plugin install statusline@kmacmcfarlane. This copy is removed in a "
-          "later update.")
-
-
-def _data_dirs(cfg, prefix):
-    base = os.path.join(cfg, "plugins", "data")
-    try:
-        return [os.path.join(base, n) for n in sorted(os.listdir(base))
-                if n.startswith(prefix) and os.path.isdir(os.path.join(base, n))]
-    except OSError:
-        return []
-
-
-def _runs_predecessor(settings_path):
-    d = L.read_json_file(settings_path)
-    cur = d.get("statusLine") if isinstance(d, dict) else None
-    cmd = cur.get("command") if isinstance(cur, dict) else None
-    return isinstance(cmd, str) and bool(PREDECESSOR_RE.fullmatch(cmd))
-
-
-def statusline_notice(now=None):
-    """The one-line "moved" notice, or None. Read-only on settings: it fires
-    when a settings file (user settings, or one a predecessor install marker
-    names) still runs context-guard's or claude-kit's copy of the status line
-    AND the statusline plugin is absent - any plugins/data/statusline-<mkt>
-    dir means it is installed, and with it statusline-hub, whose SessionStart
-    takes the entry over once the footer registers as its display hook, so
-    context-guard stays silent. A statusline-hub-<mkt> dir alone does not
-    count: the hub takes a predecessor entry over only once the statusline
-    footer has registered. At most once per
-    NOTICE_EVERY_S across all sessions (a stamp in the state dir); when the
-    stamp cannot be written the notice is withheld, so it can never repeat
-    every session. Never raises."""
-    try:
-        now = time.time() if now is None else now
-        cfg = L._base_dir()
-        if any(not os.path.basename(d).startswith("statusline-hub-")
-               for d in _data_dirs(cfg, "statusline-")):
-            return None
-        stamp = os.path.join(L._state_dir(), NOTICE_STAMP)
-        try:
-            age = now - os.lstat(stamp).st_mtime
-            if 0 <= age < NOTICE_EVERY_S:
-                return None
-        except OSError:
-            pass
-        cands = [os.path.join(cfg, "settings.json")]
-        for d in _data_dirs(cfg, "context-guard-") + _data_dirs(cfg, "claude-kit-"):
-            m = L.read_json_file(os.path.join(d, "statusline-installed.json"))
-            sp = m.get("settings") if isinstance(m, dict) else None
-            if isinstance(sp, str) and sp and sp not in cands:
-                cands.append(sp)
-        if not any(_runs_predecessor(sp) for sp in cands):
-            return None
-        return NOTICE if L._touch_stamp(stamp, now) else None
-    except Exception:
-        return None
 
 
 def fork_parent(sid, transcript_path):
@@ -1358,8 +1285,8 @@ def main():
         # epoch come first and the P pointers fill what is left.
         lt = ledger.digest(sid, budget=LEDGER_BUDGET)
         if lt:
-            parts.append("[context-guard ledger — this session's reasoning trail, "
-                         "reasoning kept ahead of commit pointers, file order, "
+            parts.append("[context-guard ledger — this session's noodle notes trail, "
+                         "noodle notes kept ahead of commit pointers, file order, "
                          "newest last]\n" + lt)
         ci = st.get("custom_instructions")
         if ci:
@@ -1369,7 +1296,7 @@ def main():
         # trail comes along (this session's own ledger is new and empty). The
         # full tier above reserved LEDGER_BUDGET + 400 for this block.
         parts.append(f"[context-guard ledger — predecessor {clear_pred}, by "
-                     f"/clear: its reasoning trail, reasoning kept ahead of "
+                     f"/clear: its noodle notes trail, noodle notes kept ahead of "
                      f"commit pointers, file order, newest last]\n" + clear_digest)
 
     def write_back(cur):
@@ -1394,9 +1321,6 @@ def main():
 
     L.update_state(sid, write_back)
     L.sweep_stale(keep=sid)
-    moved_note = statusline_notice()
-    if moved_note:
-        sysmsg = f"{sysmsg} {moved_note}" if sysmsg else moved_note
     if not parts and not sysmsg:
         print(json.dumps({})); return
     out = {}

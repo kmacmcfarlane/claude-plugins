@@ -2,9 +2,10 @@
 
 One round of the loop in SKILL.md § Step 4: what each verdict means, who is resumed and
 who is re-dispatched, and exactly what the implementer and the re-review are told. The cap
-(4 review rounds), the rule that the orchestrator never fixes a finding itself, what goes
-to the decision channel, and recording the round in the record sink stay in SKILL.md; the
-tier per round is `model-routing.md` § Rounds.
+(SKILL.md § Step 4.3; its home `bindings.md` § Decisions, What a cap ends in), the rule
+that the orchestrator never fixes a finding itself, what goes to the decision channel,
+and recording the round in the record sink stay in SKILL.md; the tier and agent file per
+round are `model-routing.md` § Rounds.
 
 ## The verdicts
 
@@ -20,19 +21,38 @@ SKILL.md § Step 4.
 
 ## A NEEDS_CHANGES round
 
-- `NEEDS_CHANGES`: hand the findings, verbatim, to the **implementer** — resume the same
-  agent (SendMessage, its `— resume` pair recorded first by SKILL.md § Step 2 rule 7; it
-  has the context) only when its tier is unchanged (a resumed agent keeps its model); on
-  a tier change (a sonnet implementer's bump to opus, or an answer that waives a fable
-  pin — `model-routing.md` § Rounds, § Fallback), or if gone, re-dispatch with the full
-  brief, the findings and the fix-round clause from `agent-brief.md`. Tell it explicitly:
-  **fix as new commit(s) on top of the reviewed sha, never amend, report each new sha**,
-  and for each low/nit it declines, the reason. Then resume the **reviewer** (its
-  `— resume` pair recorded the same way) — re-dispatched fresh only if gone, or when its
-  tier changed (a waived fable pin; an opus reviewer never changes tier, rule 4). **After
-  a second opinion** the reviewer resumed is the opus one — the `agent: reviewer` line
-  before the fable dispatch — never the fable one, whose line is the last
-  (`model-routing.md` § Second opinion). Resume it with the re-review variant in
+- `NEEDS_CHANGES`: hand the findings — the verdict's own `findings:` block, never a
+  `findings: cross-check` rider (that goes to the next review brief) — verbatim, to the
+  **implementer** (in `plan` mode, the planner) — resume the same agent (SendMessage, its `— resume` pair recorded first by
+  SKILL.md § Step 2 rule 7; it has the context) only when the next round's **agent file
+  and model are both unchanged**: a resumed agent keeps its file, and with it its model
+  and its effort. Otherwise, or if gone, re-dispatch fresh with the full brief, the
+  findings and the fix-round clause from `agent-brief.md` (a planner: its § Plan variant).
+  - A change of model is a sonnet implementer's bump to opus, or an answer that waives a
+    fable pin (`model-routing.md` § Rounds, § Fallback).
+  - A change of file is a change of effort, such as `implementer` to
+    `implementer-critical` or `implementer-deep`, or `planner` to `planner-deep`. Like a
+    change of tier, it is always a fresh dispatch.
+  - **A trial unit's planner rounds are fresh in both arms.** From the round after its
+    late high until `CLEAR` or its third plan review, every planner round is a fresh
+    dispatch — the bump arm on `planner-deep`, the control arm on `planner` — and neither
+    arm is resumed inside that window, even when its file has not changed
+    (`model-routing.md` § The xhigh trial). After the window, rounds follow the rule above.
+
+  Tell an implementer explicitly: **fix as new commit(s) on top of the reviewed sha,
+  never amend, report each new sha**, and for each low/nit it declines, the reason. Then
+  resume the **reviewer** (its `— resume` pair recorded the same way) — re-dispatched
+  fresh only if gone, or when its tier or file changed (a waived fable pin; a
+  `reviewer-light` whose round no longer passes `model-routing.md` § Reviewer effort by
+  kind, which moves up to `reviewer`; its opus never changes, rule 4). The reviewer
+  resumed is the last `agent: reviewer` line **under a phase `dispatch:`** — never a
+  cross-check's or the author rule's stand-in's, helper lines that are never resumed
+  (`model-routing.md` § Fable cross-checks). In a record written before cross-checks
+  became riders, a cross-check's line is `agent: cross-checker`, never resumed; in one
+  written before the role agents, a second opinion's own line
+  is an `agent: reviewer` too: there the opus reviewer is the `agent: reviewer` line
+  before the fable dispatch, never the fable one, whose line is the last. Resume it with
+  the re-review variant in
   `review-brief.md`, pasting the new shas, the declined list and, every round, the
   cumulative "Files changed, with reasons" — the record sink's `changed:` block after
   this round's CHANGED was merged in, so a file a fix round added arrives with its
@@ -46,8 +66,16 @@ SKILL.md § Step 4.
   holds, dispatch a fresh opus reviewer with the full brief and the self-review's
   `findings:` pasted for verification.
 
-Then repeat until `CLEAR`, inside the cap: a fourth review that is not `CLEAR` blocks the
-change and goes to the decision channel.
+**What a round message never carries** (`bindings.md` § Spend budget): never tell a
+producer or reviewer the budget, the spend so far or left, or that money or quota is
+short, and never ask them to hurry or be brief to save cost, in a brief, a resume message
+or a fix-round message. Spend is the orchestrator's to read, never the agents'. The
+findings, the fix-round clause, the re-review variant and the shas are the whole message;
+how near the round is to the budget or the cap stays in the record sink and the decision
+channel.
+
+Then repeat until `CLEAR`: a verdict that reaches the cap ends as SKILL.md § Step 4.3 says
+— stopped and carried, a finish round, or raised (`bindings.md` § Decisions).
 
 ## A merge conflict
 

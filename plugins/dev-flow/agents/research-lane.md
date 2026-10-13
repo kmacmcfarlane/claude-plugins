@@ -1,6 +1,6 @@
 ---
 name: research-lane
-description: One research lane of a research run — takes a mission, a scope, sibling territories and an output path from the orchestrator, gathers evidence from the web or a local corpus, and writes exactly one findings file to a fixed shape with every claim sourced. Dispatched by the research, research-deep and research-refine skills; not for implementation, review, or editing repo files.
+description: One research lane of a research run — takes a mission, a scope, sibling territories and an output path from the orchestrator, gathers evidence from the web or a local corpus, and writes exactly one findings file to a fixed shape with every claim sourced. Dispatched by the research, research-deep, research-refine and deep-investigation skills; not for implementation, review, or editing repo files.
 tools: Read, Glob, Grep, Bash, WebSearch, WebFetch, Write
 model: sonnet
 effort: medium

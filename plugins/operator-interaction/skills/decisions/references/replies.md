@@ -7,24 +7,63 @@ requirement. Examples are **illustrative**.
 ## Reading a reply
 
 1. Find the decision it answers: the number, or the one decision in play. A reply that names
-   no number while several are open: ask which, in one line.
+   no number while several are open: ask which, in one line. One verb over several numbers
+   (`later 41, 44`, `drop 80-82`) applies to each number under its own rules — a `later`
+   still warns about that decision's deadline. `later`, `drop`, `expand` and `tell me` apply
+   to every number; a verb that acts (a choice, `you decide`) skips each ⚠ decision among
+   them and re-asks it, as `ok N-M` does (the batch below), since a ⚠ decision is never
+   ratified inside a batch.
 2. Classify it as one of the reply types below. Words other than the shortcuts count — "look
    into who imports it first" is `dig into`; "remind me tomorrow" is `later`; "skip it" is
    `drop`; "your call" is `you decide`.
-3. **Echo** every reply that is not an exact `N: letter`, in one italic line before you act:
-   *Read as: 43 → dig into (other callers in the access logs).* The echo is how a misreading is caught
-   in one turn instead of after the damage.
+3. **Echo** every reply that is not an exact `N: letter`, in one italic line:
+   *Read as: 43 → dig into (other callers in the access logs).* It names any item it
+   mentions per the `plain-names` skill: short, but never a bare id. *Read as: 44 → (b) the
+   export migration (b7d4) waits for the release.* The operator sees it with the turn's
+   actions, so a misreading is caught in one turn instead of after the damage: before later
+   work is built on it, while a two-way action is still cheap to undo. That does not hold
+   where a push others pull, or another session, has already acted on the reading. The echo
+   itself stops nothing. What stops an action first:
+   - the ⚠ one-way read-back (below);
+   - a question asked instead of a guess, such as a letter that the words contradict, or a
+     reply naming no number while several are open;
+   - for an action others rely on, `SKILL.md` § Before you write: the worksheet, "When in
+     doubt, ask". Which actions count as relied on is for the caller's rules to set.
 4. Act — except on a ⚠ decision when the chosen option is one-way (the read-back below).
 
 When a reply mixes a letter and words (`43: b, keep it with a sunset date`), the letter
 decides; the words are checked against the option and a mismatch is asked about, not guessed.
 
+## A message with several replies
+
+One message often answers several decisions and mixes in questions, feedback and new
+requests; the whole message is the reply. Split it into parts first. A part that answers an
+open decision — a choice, a shortcut, or words about its options — is read through the steps
+above. A part that answers none — a question of its own, feedback, a new request — is not an
+answer with its number missing: step 1's "ask which" is only for a part that answers a
+decision without saying which. Then:
+
+- **Every question inside a reply gets an answer in words**, in the same message — also when
+  an action is the fix, and also when the answer is "I don't know yet" and what finding out
+  costs. An action alone does not tell the operator what the answer was. A question asked
+  alongside a choice (`62: keep it, but why two formats?`) is answered and the choice
+  stands; a question about a fact behind a decision is its `tell me` (the **Added:** line
+  is the answer); a question that doubts the decision itself (`do we even need caching?`) is
+  a reframe, and the new decision says why. A question that answers no decision is
+  answered all the same.
+- **Echo every part that is not an exact `N: letter`** (step 3), however many share the
+  message; an exact letter gets none. Several readings may share one italic line when each
+  names its part.
+
+Example 25 in `references/gallery.md` shows one.
+
 ## Reply types
 
 **Choose — `N: letter`, or a choice in words.** Act on it. On a **⚠ one-way decision**, when
-the **chosen option** is one-way — its *Undo* line says it cannot be undone, or only at real
-cost — first repeat the choice back and act only once the operator confirms. A *one-way,
-narrow* card is answered like any card: its narrowness is why it is not ⚠.
+the **chosen option** is one-way — its Undo (its cell in the block's Impact table) says it
+cannot be undone, or only at real cost — first repeat the choice back and act only once the
+operator confirms. A one-way decision with a narrow reach (no ⚠, its Undo saying it cannot be
+undone) is answered like any card: its narrow reach is why it is not ⚠.
 
 *Read as: 43 → (a) remove `/v1/export` on Thursday. That can't be undone for the partners who
 break — confirm and I'll go ahead, or change it.*
@@ -58,18 +97,27 @@ restates what happens at the deadline:
 from 16:15); if the backup is still paused then, the half-written snapshot is lost and the
 backup starts over (about 3 hours). Keep that, or pick a time before 17:45?*
 
-When the wake fires, re-show the decision with what changed while it waited
-(`references/rendering.md` § Re-show with what changed). A deferral nobody wakes becomes a
-default by omission; every deferral has a wake.
+When the wake fires, re-show the decision with what changed while it waited, and whether its
+impact changed, then its card with the **Context:** stored when it was raised — never one
+composed again (`references/rendering.md` § Re-show with what changed). A deferral nobody wakes becomes a
+default by omission; every deferral has a wake. Something must evaluate that wake — anyone
+can check a time wake, but an event wake needs whoever watches for the event (your own
+session for your own work; for other sessions, a cross-session collector, when one exists) —
+and a deferred decision is shown in full again only once its wake has fired; until then it
+stays a list line showing its wake — except on a cold re-show, where it is a card that opens
+with its wake (`references/rendering.md` § Re-show with what changed).
 
 **`tell me [what]` — more context.** Answer under the **same number** with an **Added:** line
-and only the lines the fact changes — an option's impact, the rec line when it moves. The card
+and only the lines the fact changes — the Context when the fact is one a later reader needs
+too (store the revised Context with the card), the Impact line, an option's impact, the rec
+line when it moves. The card
 itself is one scroll up; do not send it again. Re-render the whole card only when the options
 or the recommendation change, and then say which and why. Near-zero cost when you already
 know the fact; if finding it needs real work, say so and offer `dig into` instead.
 
 **`expand` — more detail.** Show the decision one level higher in your next message (line →
-card → block). It keeps its number and place, and stays raised on later re-shows. On a block:
+card → block); a line expanded to a card gains its Context, and a card expanded to a block
+its fuller Context, from the store where the caller keeps one. It keeps its number and place, and stays raised on later re-shows. On a block:
 *already at full detail — `tell me [what]` for something specific?*
 
 **`dig into [what]` — investigate first**, typed or picked as a priced option on the card.

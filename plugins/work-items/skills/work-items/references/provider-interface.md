@@ -27,8 +27,8 @@ a consumer may assume.
 | `show` | `show <id> [--brief] [--json]` | `get <id>` |
 | `status` | `set <id> status <v>` / `set <id> stage <v>` (open states only — see `close`) | `set <id> status <v>` (open states only — see `close`) |
 | `close` | `done <id> [--note <ref>]` / `done <id> --drop` | *policy, not a verb*: agents never set `status: done` — closure belongs to grooming (`/backlog-grooming`); `archive` then moves closed rows |
-| `create` | `add "<title>" [-t -p --dep --parent --desc]` | `add` (heredoc), with `next-id <prefix>` |
-| `handoff` / comment | `handoff <id> --doing --next [--blocked] [--learned]` | `set-text <id> <field>` (approximate) |
+| `create` | `add "<title>" [-t -p --dep --parent --desc --short-display-name]` | `add` (heredoc), with `next-id <prefix>` |
+| `handoff` / comment | `handoff <id> --doing --next [--blocked] [--learned]`; `note <id> [--raw] -- "<text>" […]` appends to Notes | `set-text <id> <field>` (approximate) |
 | `query` | `ls [--status --type --tag --owner --dep --ready --json]`; `next --json`; `needs-input --json` | `query --status … --fields …` |
 
 ### Per-verb semantics
@@ -87,7 +87,13 @@ errors (unknown verb, wrong arity) exit 2**, colliding with not-found/empty — 
 must not read exit 2 as "nothing ready" unless the call shape was known-good (stderr is
 empty on a true empty `next`, and `--json` yields no output on usage errors); and
 **item-schema validation on `add`/`set` (e.g. an invalid status value) exits 3, not 1** —
-only immutable-field, unknown-field, and title-length rejections exit 1.
+only these rejections exit 1:
+- an immutable or unknown field;
+- a title or `short_display_name` longer than its limit, or an empty title;
+- a dep or parent that does not resolve (unless `--force`), or an item named as its own dep
+  or parent;
+- a value holding a line break or a control character;
+- `set status parked` or `set status grooming` (use `park` or `groom`).
 
 ## Provider registry
 
@@ -113,8 +119,10 @@ validation (`validate --strict`) is enforceable in a loop. Provider-local verbs:
 
 `wi export/import --format backlog-yaml` syncs the two stores. It is a **sync mechanism, not
 a contract verb** — a consumer never calls it as part of doing work. It is also the model for
-principle 4 cooperation: it activates only when both stores are present and degrades silently
-otherwise.
+principle 4 coupling: two explicit commands, run on demand, with no runtime link to `ralph`.
+They do not degrade, they fail loudly: either exits non-zero with a message when there is no
+`wi` store, and `import` exits 3 when its input file is missing or neither ruamel.yaml nor
+PyYAML is installed.
 
 ## Capability table
 
@@ -127,6 +135,7 @@ A consumer must degrade when a verb is absent — never assume.
 | `show` brief form | yes (`--brief`) | partial (`get`, no budget mode) | varies |
 | `status` with pipeline stage | yes (`status` + `stage`) | yes (folded into one field) | varies; map to the tracker's workflow states |
 | `create` | yes | yes | yes |
+| stored short display name | yes (`short_display_name`) | no (the agent writes one from the title) | varies (a short-name or summary field, where one exists) |
 | `handoff` block | yes (first-class) | approximate (`set-text` into a text field) | approximate (structured comment) |
 | `query` with field selection | yes (`ls --json`) | yes (`query --fields`) | yes |
 | dependency graph | yes (`deps`, `block --on`) | partial (`blocked_by`) | varies |

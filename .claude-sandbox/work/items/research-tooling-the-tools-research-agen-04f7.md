@@ -2,10 +2,11 @@
 id: research-tooling-the-tools-research-agen-04f7
 title: "research tooling: the tools research agents always need, and how each environment gets them"
 type: spike
-status: todo
+status: done
 priority: 2
 created: 2026-09-24
-updated: 2026-09-24
+updated: 2026-10-13
+closed: 2026-10-13
 refs:
   - operator 2026-09-24 (R10, poppler-utils)
 ---
@@ -67,3 +68,6 @@ answer 86: (a) narrow exception: pdftotext and pdfinfo on a file the lane itself
 - 2026-09-25 agent-research - librarian filed research-tooling-series-record-the-opera-d6af to record the rulings on OQ5-7
 - 2026-09-25 relayed to claude-sandbox - librarian: container-context.md:23 "stop and ask" conflicts with answer 85; suggested rewording; plus OQ8 (:12 pip)
 - 2026-09-25 claude-sandbox - librarian filed container-context-md-missing-tools-rule-baf3 and put it to the operator as its decision 41 (our wording recommended); OQ8 already fixed on their main b506e4a
+
+## Notes
+- 2026-10-13 done: closed by triage d2aa 2026-10-13: done already — research/scripts/tool-preflight.sh and research-lane.md:48,65

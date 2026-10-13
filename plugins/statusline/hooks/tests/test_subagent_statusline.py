@@ -389,6 +389,237 @@ class Rows(Hermetic):
         row = ANSI.sub("", self.run_rows([self.task(name=None)])["a1"])
         self.assertEqual(row, "~75% ~150k/200k · Review the diff")
 
+    # -- model and effort -------------------------------------------------
+    # Per-task `model` and `effort` are documented in the subagentStatusLine
+    # input: https://code.claude.com/docs/en/statusline (Subagent status lines).
+
+    def test_model_and_effort_follow_the_fill(self):
+        row = ANSI.sub("", self.run_rows([self.task(model="claude-opus-5-5",
+                                                    effort="high")])["a1"])
+        self.assertEqual(row, "rev · ~75% ~150k/200k · opus-5-5·high · Review the diff")
+
+    def test_effort_absent_shows_the_model_alone(self):
+        row = ANSI.sub("", self.run_rows([self.task(model="claude-sonnet-4-6")])["a1"])
+        self.assertEqual(row, "rev · ~75% ~150k/200k · sonnet-4-6 · Review the diff")
+
+    def test_model_absent_shows_the_effort_alone(self):
+        row = ANSI.sub("", self.run_rows([self.task(effort="medium")])["a1"])
+        self.assertEqual(row, "rev · ~75% ~150k/200k · medium · Review the diff")
+
+    def test_neither_shows_no_tag(self):
+        row = ANSI.sub("", self.run_rows([self.task(model=None, effort="")])["a1"])
+        self.assertEqual(row, "rev · ~75% ~150k/200k · Review the diff")
+
+    def test_a_numeric_effort_is_a_token_budget(self):
+        row = ANSI.sub("", self.run_rows([self.task(model="claude-opus-5-5",
+                                                    effort=32_000)])["a1"])
+        self.assertIn(" · opus-5-5·32k · ", row)
+        row = ANSI.sub("", self.run_rows([self.task(effort=500)])["a1"])
+        self.assertIn(" · 500 · ", row)
+        # A budget too long to read at a glance goes; the model stays.
+        row = ANSI.sub("", self.run_rows([self.task(model="claude-opus-5-5",
+                                                    effort=10 ** 10)])["a1"])
+        self.assertEqual(row, "rev · ~75% ~150k/200k · opus-5-5 · Review the diff")
+        for bad in (True, -5, [1], {"level": "high"}):
+            row = ANSI.sub("", self.run_rows([self.task(effort=bad)])["a1"])
+            self.assertEqual(row, "rev · ~75% ~150k/200k · Review the diff", bad)
+
+    def test_model_text_cannot_inject_escapes(self):
+        row = self.run_rows([self.task(model="claude-x\x1b[2J\ny", effort="hi\x1b]0;\x07")])["a1"]
+        self.assertNotIn("\x1b[2J", row)
+        self.assertNotIn("\x1b]", row)
+        self.assertIn(" · x [2J y·hi ]0; · ", ANSI.sub("", row))
+
+    def test_narrow_rows_lose_the_description_before_the_tag_and_the_tag_before_the_name(self):
+        t = self.task(model="claude-opus-5-5", effort="high")
+        head = "rev · ~75% ~150k/200k · opus-5-5·high"       # 37 columns
+        self.assertEqual(ANSI.sub("", self.run_rows([t], columns=45)["a1"]),
+                         head + " · Revi…")
+        self.assertEqual(ANSI.sub("", self.run_rows([t], columns=38)["a1"]), head)
+        self.assertEqual(ANSI.sub("", self.run_rows([t], columns=37)["a1"]), head)
+        # One column short for the whole tag: it goes, never cut, and the
+        # description does not take its room - it went first.
+        for cols in (36, 30, 26, 22):
+            self.assertEqual(ANSI.sub("", self.run_rows([t], columns=cols)["a1"]),
+                             "rev · ~75% ~150k/200k", cols)
+        self.assertEqual(ANSI.sub("", self.run_rows([t], columns=16)["a1"]),
+                         "~75% ~150k/200k")
+
+    def test_an_overlong_model_or_string_effort_cannot_hide_the_description(self):
+        long_model = "claude-" + "x" * 90
+        for kw, want in (
+                ({"model": long_model, "effort": "high"}, "rev · ~75% ~150k/200k · high · Review the diff"),
+                ({"model": "claude-opus-5-5", "effort": "e" * 90},
+                 "rev · ~75% ~150k/200k · opus-5-5 · Review the diff"),
+                ({"model": long_model, "effort": "e" * 90}, "rev · ~75% ~150k/200k · Review the diff")):
+            row = ANSI.sub("", self.run_rows([self.task(**kw)], columns=80)["a1"])
+            self.assertEqual(row, want, kw)
+        # Every documented level fits the effort cap.
+        for level in ("low", "medium", "high", "xhigh", "max"):
+            row = ANSI.sub("", self.run_rows([self.task(effort=level)], columns=80)["a1"])
+            self.assertEqual(row, f"rev · ~75% ~150k/200k · {level} · Review the diff")
+
+    def test_the_widest_tag_under_the_caps_leaves_the_description_room_at_80(self):
+        import subagent_statusline as R
+        m = "m" * R.MODEL_MAX
+        row = ANSI.sub("", self.run_rows([self.task(model="claude-" + m, effort="medium")],
+                                         columns=80)["a1"])
+        self.assertEqual(row, f"rev · ~75% ~150k/200k · {m}·medium · Revie…")
+        # One column wider and the model goes, the effort and description stay.
+        row = ANSI.sub("", self.run_rows([self.task(model="claude-" + m + "m", effort="medium")],
+                                         columns=80)["a1"])
+        self.assertEqual(row, "rev · ~75% ~150k/200k · medium · Review the diff")
+        # The caps are in terminal columns: wide characters count double.
+        wide = "模" * (R.MODEL_MAX // 2 + 1)
+        row = ANSI.sub("", self.run_rows([self.task(model=wide)], columns=80)["a1"])
+        self.assertEqual(row, "rev · ~75% ~150k/200k · Review the diff")
+        wide_eff = "高" * R.EFFORT_MAX          # EFFORT_MAX characters, twice the columns
+        row = ANSI.sub("", self.run_rows([self.task(model="claude-" + m, effort=wide_eff)],
+                                         columns=80)["a1"])
+        self.assertEqual(row, f"rev · ~75% ~150k/200k · {m} · Review the d…")
+        half = "高" * (R.EFFORT_MAX // 2)        # exactly EFFORT_MAX columns: kept
+        row = ANSI.sub("", self.run_rows([self.task(effort=half)], columns=80)["a1"])
+        self.assertEqual(row, f"rev · ~75% ~150k/200k · {half} · Review the diff")
+
+    def test_a_provider_prefixed_model_drops_everything_through_claude(self):
+        # A Bedrock inference-profile ID, the us. one as the docs show it
+        # (https://code.claude.com/docs/en/amazon-bedrock); the global. one
+        # is the same ID with a longer prefix, made up for this test.
+        for mid in ("us.anthropic.claude-sonnet-4-5-20250929-v1:0",
+                    "global.anthropic.claude-sonnet-4-5-20250929-v1:0"):
+            row = ANSI.sub("", self.run_rows([self.task(model=mid, effort="high")],
+                                             columns=80)["a1"])
+            self.assertEqual(row, "rev · ~75% ~150k/200k · sonnet-4-5-20250929-v1:0·high"
+                                  " · Review the diff", mid)
+        # No `claude-` anywhere: shown as it is; `claude-` with nothing after: kept.
+        row = ANSI.sub("", self.run_rows([self.task(model="other-model")])["a1"])
+        self.assertIn(" · other-model · ", row)
+        row = ANSI.sub("", self.run_rows([self.task(model="x.claude-")])["a1"])
+        self.assertIn(" · x.claude- · ", row)
+
+    def test_a_widening_pane_never_loses_a_part_of_the_row(self):
+        cases = ((self.task(model="claude-opus-5-5", effort="high"), "opus-5-5·high"),
+                 (self.task(), "opus-5-5·high"),
+                 (self.task(model="claude-" + "x" * 90, effort="high"), "high"),
+                 (self.task(model="claude-opus-5-5", effort="e" * 90), "opus-5-5"))
+        for t, tagtxt in cases:
+            parts = {"name": "rev", "tag": tagtxt, "desc": "Rev"}
+            prev = set()
+            for cols in range(1, 81):
+                got = self.run_rows([t], columns=cols).get("a1")
+                row = ANSI.sub("", got) if got is not None else ""
+                self.assertLessEqual(len(row), cols, cols)
+                segs = row.split(" · ")
+                have = {p for p, txt in parts.items()
+                        if any(seg.startswith(txt) for seg in segs)}
+                self.assertLessEqual(prev, have, (cols, row))
+                prev = have
+
+    def test_a_long_name_gives_way_to_the_tag_and_description(self):
+        # The 8680 review's case: a plugin agent's name and a model at the
+        # cap, at 80 columns, used to render the name and fill only.
+        import subagent_statusline as R
+        m = "m" * R.MODEL_MAX
+        name = "dev-flow:implementer-critical"
+        t = self.task(name=name, model="claude-" + m)
+        row = ANSI.sub("", self.run_rows([t], columns=80)["a1"])
+        self.assertEqual(row, f"imp…ical · ~75% ~150k/200k · {m} · Review…")
+        # A usual model: the whole name keeps its prefix at 81 columns, the
+        # description cut first below that.
+        t = self.task(name=name, model="claude-opus-5-5", effort="high")
+        tail = " · ~75% ~150k/200k · opus-5-5·high · "
+        for cols, want in (
+                (81, name + tail + "Review the diff"),
+                (80, name + tail + "Review the di…"),
+                # then the prefix goes, then the rest is cut from the
+                # middle, the tag whole and DESC_MIN columns of description
+                # kept; the columns the shortened name leaves unused stay
+                # unused, so the description cannot shrink as it widens
+                (76, name + tail + "Review th…"),
+                (75, "implementer-critical" + tail + "Review th…"),
+                (66, "implement…-critical" + tail + "Review th…"),
+                (60, "implem…itical" + tail + "Review th…"),
+                # never below NAME_MIN columns: from there the description
+                # and then the tag go, as for a short name
+                (52, "imp…ical" + tail + "Review…"),
+                (40, "imp…ical · ~75% ~150k/200k"),
+                (20, "~75% ~150k/200k")):
+            row = ANSI.sub("", self.run_rows([t], columns=cols)["a1"])
+            self.assertEqual(row, want, cols)
+        # A short name is never touched, however narrow.
+        row = ANSI.sub("", self.run_rows([self.task(name="reviewer")], columns=30)["a1"])
+        self.assertTrue(row.startswith("reviewer · "), row)
+
+    def test_names_that_differ_at_the_end_still_differ_when_cut(self):
+        # dev-flow's agents come in pairs that differ only by a suffix.
+        pairs = (("implementer-critical", "implementer-deep"),
+                 ("research-lane", "research-lane-deep"),
+                 ("cross-checker", "cross-checker-deep"),
+                 ("cross-checker-deep", "implementer-deep"))
+        for a, b in pairs:
+            for cols in (50, 60):
+                ra, rb = (ANSI.sub("", self.run_rows(
+                    [self.task(name="dev-flow:" + n, model="claude-opus-5-5", effort="high")],
+                    columns=cols)["a1"]).split(" · ")[0] for n in (a, b))
+                self.assertNotEqual(ra, rb, (a, b, cols))
+                for r, n in ((ra, a), (rb, b)):
+                    if "…" in r:        # cut: both ends of the name kept
+                        head, tail = r.split("…")
+                        self.assertTrue(n.startswith(head) and n.endswith(tail), (r, n))
+                        self.assertGreaterEqual(len(head), 3, r)
+
+    def test_only_a_plugin_shaped_prefix_is_dropped(self):
+        t = dict(model="claude-opus-5-5", effort="high")
+        for name, want in (
+                # not plugin:agent shaped: kept, cut from the middle
+                ("12:30 standup with the release team", "12:…team"),
+                ("Fix:build the release pipeline", "Fix…line"),
+                ("a:b c:d and so on and so forth", "a:b…orth"),
+                # plugin:agent shaped: the prefix goes first
+                ("dev-flow:implementer-critical", "imp…ical")):
+            row = ANSI.sub("", self.run_rows([self.task(name=name, **t)], columns=50)["a1"])
+            self.assertEqual(row.split(" · ")[0], want, name)
+        # A name that fits is whole, prefix and all.
+        row = ANSI.sub("", self.run_rows([self.task(name="fix:build", **t)], columns=80)["a1"])
+        self.assertTrue(row.startswith("fix:build · "), row)
+
+    def test_a_long_name_never_shrinks_as_the_pane_widens(self):
+        import subagent_statusline as R
+        m = "m" * R.MODEL_MAX
+        names = ("dev-flow:implementer-critical", "x" * 70, "plugin:" + "模" * 20,
+                 "模" * 25, "dev-flow:research-lane-deep")
+        tags = ((m, "high"), ("opus-5-5", "high"), (None, None))
+        for name in names:
+            for model, eff in tags:
+                t = self.task(name=name, model=model and "claude-" + model, effort=eff)
+                tagtxt = "·".join(x for x in (model, eff) if x)
+                prev, prev_name, prev_desc = set(), 0, 0
+                for cols in range(1, 141):
+                    got = self.run_rows([t], columns=cols).get("a1")
+                    row = ANSI.sub("", got) if got is not None else ""
+                    self.assertLessEqual(R.cols_of(row), cols, (name, cols, row))
+                    segs = row.split(" · ") if row else []
+                    fill_at = next((i for i, g in enumerate(segs) if "%" in g), None)
+                    have = set()
+                    if fill_at:     # the fill not first (0, or None: no row): a name leads
+                        have.add("name")
+                        w = R.cols_of(segs[0])
+                        # (a wide character that would straddle the floor goes whole)
+                        self.assertGreaterEqual(w, min(R.NAME_MIN - 1, R.cols_of(name)))
+                        self.assertGreaterEqual(w, prev_name, (name, cols, row))
+                        prev_name = w
+                    if tagtxt and tagtxt in segs:
+                        have.add("tag")
+                    if segs and segs[-1].startswith("Re"):
+                        have.add("desc")
+                        dw = R.cols_of(segs[-1])
+                        self.assertGreaterEqual(dw, prev_desc, (name, cols, row))
+                        prev_desc = dw
+                    self.assertLessEqual(prev, have, (name, cols, row))
+                    prev = have
+                self.assertEqual(prev, {"name", "desc"} | ({"tag"} if tagtxt else set()),
+                                 (name, model))
+
     # -- malformed input --------------------------------------------------
 
     def test_malformed_input_prints_nothing(self):
@@ -448,7 +679,7 @@ class PluginDefault(unittest.TestCase):
     def test_command_reaches_the_renderer_through_current_hooks(self):
         with open(os.path.join(PLUGIN, "settings.json")) as f:
             cmd = json.load(f)["subagentStatusLine"]["command"]
-        self.assertNotIn("CLAUDE_PLUGIN_ROOT", cmd)  # not expanded in plugin settings
+        self.assertNotIn("CLAUDE_PLUGIN_ROOT", cmd)  # the current-hooks link, not a path variable
         m = re.fullmatch(r'python3 "\$\{CLAUDE_CONFIG_DIR:-\$HOME/\.claude\}'
                          r'/plugins/data/statusline-kmacmcfarlane/current-hooks/'
                          r'([a-z_]+\.py)"', cmd)

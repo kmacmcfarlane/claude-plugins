@@ -1,0 +1,37 @@
+---
+id: work-items-skill-name-claude-sandbox-tra-29db
+title: "work-items skill: name CLAUDE_SANDBOX_TRACK_IN_HOST in the wi init rule"
+short_display_name: name the sandbox track variable
+type: chore
+status: done
+priority: 3
+created: 2026-10-13
+updated: 2026-10-13
+closed: 2026-10-13
+refs:
+  - peer claude-sandbox librarian, 2026-10-13 (its item d54f)
+---
+
+The claude-sandbox librarian (peer, 2026-10-13) is building d54f: the launcher exports CLAUDE_SANDBOX_TRACK_IN_HOST=true|false from the merged trackInHost of the config cascade (every .claude-sandbox/config.yaml from / down to the project), unset when none defines it (launcher then behaves as false); set in every new container, inherited by joined sessions. Acceptance: once d54f lands on claude-sandbox main (the peer messages the commit), the work-items SKILL.md init rule names the variable: true → wi init --track; false or unset → --no-track; not in claude-sandbox → ask the operator. Waits on that landing.
+
+## Handoff
+- doing: —
+- next: —
+- blocked: —
+- learned: —
+
+## Notes
+- 2026-10-13 claimed by Kyle-McFarlane@2d49f8460283
+note: 2026-10-13 claude-sandbox d54f landed at 7fd9f1c (spec CS-LNCH-184), per its librarian: CLAUDE_SANDBOX_TRACK_IN_HOST=true|false from the merged cascade trackInHost; no -e passed when no config defines it, so it is unset unless a cascade env file sets it; layout treats unset as false; present from the next launch, not in running containers
+target: work-items SKILL.md init rule names CLAUDE_SANDBOX_TRACK_IN_HOST: true → --track; false or unset → --no-track; a sandbox launched before the export lacks it, so unset inside a sandbox reads as false (the launcher's own default); outside claude-sandbox (no CLAUDE_SANDBOX_CONTAINER) ask the operator; format.md if it repeats the rule
+dispatch: implementer sonnet medium — build (doc line naming a landed variable: canonical kind)
+agent: implementer aa55c95164614e9c0
+return: DONE fee0538; SKILL.md only; work-items 365, kit-dev 21 OK
+dispatch: reviewer opus high — review round 1 of fee0538
+agent: reviewer ae6844080022954eb
+verdict: review round 1 NEEDS_CHANGES (must-fix 4: an older sandbox (variable unset, this one included: trackInHost: true in config) would get --no-track and hide a tracked store; env-file case misstated; non-true/false values unhandled; broken wrap; exact rewrite given)
+decided: 2026-10-13T06:10Z design — target changed: an empty variable inside a sandbox no longer reads as false; the agent reads the layout instead (git check-ignore -q .claude-sandbox/: 0 → --no-track, 1 → --track, else ask), because unset cannot tell "no config" from "launched before the export"
+dispatch: implementer sonnet medium — fix round 1 (resume aa55c95164614e9c0)
+decided: 2026-10-13T06:30Z cap — the fix round applied the reviewer's exact replacement text word for word (diff read); landed without a second review (authority answer 145); main check-ignore .claude-sandbox/ exits 1 → --track, as the rule says for this repo
+landed: a7b784d (merge of fee0538..da9ac6e); Checks 12/12 OK; cc_scan clean
+- 2026-10-13 done

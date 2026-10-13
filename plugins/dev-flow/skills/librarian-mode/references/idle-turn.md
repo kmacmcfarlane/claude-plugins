@@ -42,16 +42,27 @@ $WI ls --dep <hold-id> --status todo,doing,blocked,grooming,parked --plain
 ```
 
 Print a `hold:` line first for each active hold, then two short tables, at most seven
-rows each with `+N more` below:
+rows each with `+N more` below. With the `operator-interaction:decisions` skill loaded,
+Groom's `+N more` says the decisions block that closes the turn lists every open decision
+with its recommendation (`+3 more — every open decision is in the list below`), so no
+decision is cut off. Every item is named by its plain name and tag (SKILL.md § Report):
+an item's own cell always carries its tag, and a later mention of an item the message has
+already shown with its tag (a `next` cell, say) uses the name alone. The two tables
+stack, since named rows no longer fit side by side:
 
 ```
-hold: <hold-id> — <scope>, until <end condition> ("<operator's words>"); holds <ids>
+hold: <plain name> (<tag>) — <scope>, until <end condition> ("<operator's words>"); holds <plain names (tags)>
 
-Groom                                        Work
-| item | why                           |     | item | P | next                        |
-| ab12 | decision 46: <one line>       |     | cd34 | 1 | dispatch now                |
-| ef56 | blocked: operator review      |     | 7890 | 2 | after cd34 (same files)     |
-|      |                               |     | 1a2b | 1 | after reset 14:05           |
+Groom
+| item                       | why                                             |
+| flaky worktree test (ab12) | decision 46: <one line> — rec (b) → <effect>    |
+| nightly export move (ef56) | blocked: operator review                        |
+
+Work
+| item                      | P | next                              |
+| export fix (cd34)         | 1 | dispatch now                      |
+| docs index rebuild (7890) | 2 | after the export fix (same files) |
+| retry backoff (1a2b)      | 1 | after reset 14:05                 |
 ```
 
 - **Groom** — items that need the operator: every row `wi needs-input` prints — a
@@ -62,8 +73,17 @@ Groom                                        Work
   does not cover: including a free-text deferral such as "operator holding until
   spare time", which is not parked (below) and not a `hold` item.
 
-  A decision's Groom row stays one line: its number and the `decision N:` question. A
-  deferred one also shows its last `wake N:`, and stays a Groom row until the wake comes.
+  A decision's Groom row stays one line: its number, the `decision N:` question and its
+  recommendation as the headline names it — `[recommended]` or an older mark, or a
+  preference or authority label, read as the `work-items` skill's format reference,
+  § Operator questions, lists them — one row per decision, never several folded into one
+  row. With the `operator-interaction:decisions` skill loaded, the row ends with the
+  decision's effect at that skill's tag size — `→ <effect>`, under about 10 words, each
+  option's in a few words when there is no recommendation — read from the `impact:` line
+  of the last card stored for N (`decisions.md` § What the store records), since
+  `wi needs-input` prints the headline only; a card without one is backfilled as that
+  section says before the row is printed. A deferred one also shows its last `wake N:`,
+  and stays a Groom row until the wake comes.
   With the `operator-interaction:decisions` skill loaded, a decision is put to the operator
   in full only when `decisions.md` § The Report's item 4 selects it (raised since the last
   Report, its wake come, not yet seen, after Rehydrate, a ⚠ one on first showing or to a
@@ -80,9 +100,10 @@ Groom                                        Work
     handed off after a rate limit, or one whose decision the operator has since
     answered. dev-cycle claims before its Agent call, so these never show as ready.
 
-  `next` says what happens to each row: `dispatch now`, `resume`, `after <id>` (a
-  dependency or the same files), `after reset <time>` (a rate limit), or `held
-  (<hold-id>)`.
+  `next` says what happens to each row: `dispatch now`, `resume`, `after <plain name>`
+  (a dependency or the same files; its tag too when the message has not yet shown that
+  item with it), `after reset <time>` (a rate limit), or `held (<hold's plain name>)`
+  (the `hold:` line above carries the hold's tag).
 
 Nothing in either table: say so in one line and end the turn — that is a real idle.
 
@@ -128,10 +149,17 @@ item that a peer's `wi next --claim` could take.
 
 ```bash
 $WI add "hold: <scope> until <end condition>" -t chore -p 0 --tag hold \
+    --short-display-name "<scope> hold" \
     --desc "Operator <date>, verbatim: '<their words>'. Scope: <all dispatch | the items listed | a limit>. Ends: <end condition>." \
     --ref "operator <date>"
 $WI block <hold-id> "HOLD: <scope> until <end condition>"
 ```
+
+The short display name (`fable hold`, `one-agent hold`) never contains "until":
+context-guard's rehydrate hook reads each HOLD line of a checkpoint manifest (the Holds
+lines in `ending-the-session.md`) and takes its end condition from after the last
+"until". Its length, and what each exit from `add` means, are as SKILL.md § Intake step 1
+says.
 
 It records three things:
 
@@ -152,13 +180,15 @@ It records three things:
 
 **A limit against a floor.** The operator's more recent instruction wins, but never
 silently: when a limit caps below a floor a dispatch must meet — an item's `model:` pin
-(a `model: fable` pin under "no fable"), or the reviewer's opus (dev-cycle's Step 2
-rule 4, so a "sonnet only" limit clashes on every review that is not a `review: self`)
-— that item is not
-downgraded. It waits — `next: held (<hold-id>)` — and the clash goes through the
-decision channel as one `decision N:` on the item, carried under the next Report's
-`decisions needed`: keep it waiting, lift the pin or loosen the limit, or exempt it from
-the hold.
+(a `model: fable` pin under "no fable"); the opus an item's `effort:` pin runs its
+planners and implementers on, since its `-deep` files never run on sonnet (dev-cycle's
+Step 2 rule 8, so a "sonnet only" limit clashes with every such dispatch); or the
+reviewer's opus (dev-cycle's Step 2 rule 4, so a "sonnet only" limit clashes on every
+review that is not a `review: self`) — that item is not downgraded: never a `-deep`
+file on sonnet, and never the pin dropped for a lower file. It waits —
+`next: held (<hold's plain name>)` — and the clash goes through the decision channel as
+one `decision N:` on the item, carried under the next Report's `decisions needed`: keep
+it waiting, lift the pin or loosen the limit, or exempt it from the hold.
 
 Being `blocked`, the hold item never enters the ready queue and shows on `wi prime`'s
 BLOCKED line; Rehydrate step 3 reads it explicitly with `$WI ls --tag hold`, since that
@@ -183,7 +213,7 @@ operator saying *stop*. Never open a hold for one, and never leave the queue idl
 it resets:
 
 - **Fable unavailable**: as the `dev-cycle` skill's `references/model-routing.md`
-  §§ Fallback, Second opinion say. Meanwhile hand each waiting item off and take other
+  §§ Fallback, Fable cross-checks say. Meanwhile hand each waiting item off and take other
   work (The cycle).
 - **Every tier limited**: hand each affected item off naming the limit and the reset
   time (`$WI handoff <id> --blocked "rate limit, resets <time>"`), say so in one line

@@ -3,20 +3,32 @@
 The dispatch brief for one change. Fill every placeholder from the run's bindings
 (`bindings.md`); delete nothing except the blocks marked conditional — the fix-round and
 merge-conflict clauses under Commit (only in those rounds), the Workflow block (only when
-the Workflow binding is set) and the dev-flow block (only for a feature with no plan yet,
-or a given plan). The agent starts with none of the
+the Workflow binding is set), the dev-flow block (only for a feature with no plan yet,
+or a given plan) and the foundation line (only for a build under a foundation,
+`bindings.md` § Decisions, A foundation reopen). The agent starts with none of the
 orchestrator's context and must be able to finish from this text alone. Send it as the
-prompt of one background `general-purpose` Agent. The orchestrator sets the `Model:` line
-from SKILL.md § Step 2 and passes the same value to the Agent tool's `model` field — the
-brief tells the agent which tier it runs on, the field enforces it, and the record sink's
-`dispatch:` line records it. A fix round that changes the tier (a sonnet implementer's
-bump to opus, or a waived fable pin) is a fresh dispatch with the full brief and the
-findings, never a resume — a resumed agent keeps its model; resume only when the tier is
-unchanged.
+prompt of one background implementer agent — `subagent_type: "dev-flow:implementer"`,
+`implementer-critical` or `implementer-deep`, as SKILL.md § Step 2 routes it;
+`general-purpose` only as `model-routing.md` § Fallback says. The orchestrator sets the
+`Model:` line from SKILL.md § Step 2 and passes the same value to the Agent tool's `model`
+field — the brief tells the agent which tier it runs on, the field enforces it, and the
+record sink's `dispatch:` line records it with the agent file's effort. A fix round that
+changes the tier (a sonnet implementer's bump to opus, or a waived fable pin) or the agent
+file (an effort change) is a fresh dispatch with the full brief and the findings, never a
+resume — a resumed agent keeps its file, model and effort; resume only when both the file
+and the tier are unchanged.
 
 The prohibitions and the return contract are fixed. The verification commands vary with what
 the change touches — take them from `review-checklist.md`, plus every command in the Checks
 binding. The Workflow binding goes in verbatim.
+
+**Never in a brief** (`bindings.md` § Spend budget): never tell a producer or reviewer the
+budget, the spend so far or left, or that money or quota is short, and never ask them to
+hurry or be brief to save cost, in a brief, a resume message or a fix-round message. Spend
+is the orchestrator's to read, never the agents'. That holds for the template and every
+block and variant below — the fix-round, finish-round and merge-conflict clauses, the plan
+and review-mode fix variants, and a brief sharpened for re-dispatch. A finding to fix is
+pasted with no word on what fixing it costs.
 
 ---
 
@@ -40,8 +52,14 @@ Item: <id> — <title>
 Brief: <the cycle brief or the plan file, by absolute path — read it first, in full>
 
 Model: <sonnet|opus|fable> — <the routing signal that chose it: mechanical, an opus
-       signal, or a model: pin>
-Acceptance: <one or two lines, copied from the item, plan or brief>
+       signal, a model: pin, or an effort: pin>
+Acceptance: <one or two lines, copied from the item, plan or brief; a build of a series
+            whose plan stopped and carried, or ended a granted plan path, adds the plan
+            item's `findings: carried` lines (`bindings.md` § Decisions), whoever
+            dispatches it — a slug or plan path with a store finds that item as the
+            series-path hit that carries them, archived or not:
+            `grep -l "<series path>" "$WI_ROOT"/items/*.md "$WI_ROOT"/archive/*/*.md
+            2>/dev/null | xargs -r grep -l '^findings: carried'`>
 Base branch: <the Base binding>
 Ground: <the Ground binding — the only ground you may touch>
 Files in scope: <explicit list, inside Ground; anything else is out of scope — or
@@ -52,9 +70,10 @@ Files in scope: <explicit list, inside Ground; anything else is out of scope —
 - $WORKTREE/README.md — its doctrine, catalog and placement sections when present,
   otherwise its plugin tables; on a repo with no plugins/ tree, in full
 - $WORKTREE/CLAUDE.md — layout and conventions
-- <when the change adds or edits a skill:> the create-skill skill at
-  $WORKTREE/plugins/*/skills/create-skill/SKILL.md and its references/ — follow it as the
-  authoring procedure.
+- <when the change adds or edits a skill:> the create-skill skill at <its absolute
+  SKILL.md path, bindings.md § Authoring rules> and its references/ — follow it as the
+  authoring procedure. <When none is found, this whole line is replaced by that
+  section's no-create-skill line.>
 - <any other skill or reference the change names, by absolute path>
 
 Rules that reviewers reject on sight:
@@ -64,11 +83,14 @@ Rules that reviewers reject on sight:
 - Frontmatter keys follow the house rule: every skill declares name and description; any
   other key is optional (leaving out disable-model-invocation, allowed-tools and
   argument-hint is the desired default) but must be a field the Claude Code skills docs
-  define (the list is in the create-skill skill's frontmatter
-  reference, kit-dev plugin); no key twice. The set is closed because undocumented keys
-  are usually typos, and claude.ai / Skills API uploads hard-fail on unknown keys.
+  define (the list is in the create-skill skill's frontmatter reference, kit-dev plugin,
+  and the review checklist's section 2 copies it); no key twice. The set is closed
+  because undocumented keys are usually typos, and claude.ai / Skills API uploads
+  hard-fail on unknown keys.
   allowed-tools only pre-approves tools; it never restricts them. Folder name equals
-  `name`. No README.md inside a skill folder.
+  `name`. A README.md in a skill folder is allowed only for humans, ending with the line
+  `*User-facing documentation, not agent instructions.*`; agent instructions stay in
+  SKILL.md or references/.
 - No angle brackets in `name` or `description` (fine in `argument-hint`); description under
   1024 characters, what + when + triggers.
 - `argument-hint`, when present, is always a double-quoted string, since unquoted a
@@ -91,6 +113,17 @@ to copy and from where — absolute paths>
 
 <conditional — when the Workflow binding is set: the repo's workflow, follow it:>
 <the Workflow binding, verbatim>
+
+<conditional — a build under a foundation (its item is a child of a foundation item, or its
+series' INDEX.md has a `## Foundation` block):>
+A finding that would change a foundation artifact of <the foundation series, absolute>
+(phase 1: the intent, a goal or non-goal, a requirement, a quality scenario, a constraint,
+a glossary meaning, the claim or the neighbours table; phase 2: an ADR, a contract, the
+threat and privacy model, context and containers, the strategy or traceability, a risk) is
+not yours to fix: leave the artifact as it is, build the rest, report it under OPEN
+QUESTIONS as `REOPEN: <the artifact> — <Reopen requirements if it touches any phase-1
+artifact, else Reopen architecture> — <why>`, and return DONE_WITH_CONCERNS. Writing the
+living docs from the series as it stands (feature F0) is not such a change.
 
 <conditional — a feature with no plan yet (dev-flow block):>
 Use the dev-flow skills for their method: /investigate, then /implement on the series it
@@ -129,15 +162,21 @@ paths; never `git add .` or `git add -A`. Do not commit anything under .claude-s
 .claude/.
 
 <conditional — fix round only: include when resuming or re-dispatching with review findings:>
-Fix round <n> — the nth re-dispatch or resume with review findings, i.e. review round n+1
-of a 4-review-round cap. The Model line above is this round's tier (routing rule 6);
-when it differs from the previous round's, this is a fresh dispatch, not a resume.
+Fix round <n> — the nth re-dispatch or resume with review findings, i.e. review round
+n+1. The Model line above is this round's tier (routing rule 6); when it, or the agent
+file, differs from the previous round's, this is a fresh dispatch, not a resume.
 Findings to fix are listed below, verbatim. Fix each finding at medium or
-above; each low/nit you decline, state under DECLINED with a reason. Fix as one or more NEW
-commits on top of <reviewed sha>; never amend, rebase, or squash — the reviewer diffs from
-that sha. Report every new sha under COMMIT. A finding against a commit subject or
-message is always low (the fix-loop rule): never rewrite history for it — no reset, amend
-or rebase; decline it under DECLINED with "carried in the merge message".
+above; each low/nit you decline, state under DECLINED with a reason. A finding that ends
+with `Fix: <file>:<line> — <words>` is fixed by default by writing those words there,
+adjusted only to the grammar around them; you may remove its failure another way instead,
+and then say which finding and why on that file's CHANGED line. A `Fix:` you can neither
+apply as given (the line moved, the words contradict the file) nor replace goes under
+COULD NOT DO as `Fix <n> not applied — <why>`, STATUS DONE_WITH_CONCERNS, the other fixes
+committed. Fix as one or more NEW commits on top of <reviewed sha>; never amend, rebase,
+or squash — the reviewer diffs from that sha. Report every new sha under COMMIT. A
+finding against a commit subject or message is always low (the fix-loop rule): never
+rewrite history for it — no reset, amend or rebase; decline it under DECLINED with
+"carried in the merge message".
 The one exception: a secret or credential in any committed content on this branch — a file
 in any commit, even one a later commit removed, or any message — is critical. Only then is
 the branch rebuilt: `git reset --soft <merge-base sha pasted here by the orchestrator>`,
@@ -148,6 +187,10 @@ above; the no-rebase prohibition below still holds. Before reporting, confirm
 shape. Never write the secret's value anywhere — files, messages, commands, report: name
 it by commit sha, file and key only. Never call the credential safe; rotating it is the
 operator's call.
+<finish round only (`bindings.md` § Decisions, What a cap ends in); the line only
+advises — a re-dispatch that lacks it (`resume.md` S3b) is re-reviewed like any commit:>
+This is a finish round: change nothing but what the `Fix:` lines fix; decline each low or
+nit without a `Fix:` under DECLINED with "outside the finish round".
 
 <conditional — merge-conflict round only: include when Land's merge conflicted:>
 Your branch conflicts with <base> (the conflicting paths, from the aborted merge: <list>).
@@ -168,6 +211,10 @@ each resolution in one line under DEVIATIONS.
   acceptance needs, and justify every changed file under CHANGED. Nothing outside
   Ground is ever in scope.
 - Do not run `git stash` in any form (see Verification).
+- Never send a signal (kill, pkill, killall, a pattern or process-group kill) to a process
+  you did not start yourself; stop your own only by the PID you recorded when you started
+  it (`$!` after a background start), never by name or pattern — other agents' check runs
+  share this container.
 - Do not create README.md, CHANGELOG.md, or any documentation file the change did not ask
   for.
 - Do not run `wi done`, `wi claim` or `wi release`; the orchestrator owns the item's state.
@@ -192,8 +239,12 @@ COMMIT: sha and message subject — in a fix round, every new sha
 
 ## Plan variant
 
-For SKILL.md § Step 1 (`plan` mode, or a spike): one background `general-purpose` agent,
-no worktree. Use the brief above with these changes: drop the WORKTREE lines, Files in
+For SKILL.md § Step 1 (`plan` mode, or a spike): one background planner agent,
+`dev-flow:planner` — or `planner-deep` under an `effort:` pin or on the xhigh trial's bump
+arm (`model-routing.md` § Profiles, § The xhigh trial); `general-purpose` only as
+`model-routing.md` § Fallback says — and no worktree. The dispatch names its file on its
+`dispatch:` line through the effort (`planner opus xhigh` is `planner-deep`). Use the
+brief above with these changes: drop the WORKTREE lines, Files in
 scope, Verification and Commit; set What to do to /investigate alone, in its orchestrated
 mode (the `investigate` skill's § Running under an orchestrator) with the Series home
 binding and the Base, and no worktree; replace the prohibitions'
@@ -204,7 +255,54 @@ marked blocking or not), DEVIATIONS. The series is gated like a change, by
 findings verbatim and the rules of the `investigate` skill's
 `references/investigation-format.md`: never edit a written serial; write the revision as a
 new serial at the next free number, opening with a `Supersedes` block that names what the
-findings overturned; regenerate `INDEX.md`.
+findings overturned; regenerate `INDEX.md`. A finding with a `Fix:` is fixed by default by
+carrying its words into the new serial, whose `Supersedes` names the statement it
+replaces; other words may remove the failure instead; one that cannot be applied goes
+under OPEN QUESTIONS as `Fix <n> not applied — <why>`, non-blocking. A round whose
+planner file and model are unchanged may resume the planner instead (`fix-loop.md` § A
+NEEDS_CHANGES round), with one exception: a trial unit's rounds are fresh in both arms,
+never a resume, from the round after its late high until `CLEAR` or its third plan
+review — this brief re-dispatched to `planner-deep` in the bump arm and to `planner` in
+the control arm (`model-routing.md` § The xhigh trial).
+
+## Foundation plan variant
+
+For a foundation run (SKILL.md § Step 1, its foundation bullet): the Plan variant above,
+routed and recorded the same way, with What to do set to one phase of the `foundation`
+skill in its orchestrated mode (that skill's § Running under an orchestrator), with the
+Series home binding and the Base:
+
+```
+Run /dev-flow:foundation <slug> <phase> in its orchestrated mode — <phase> is
+requirements, architecture, plan, or all for a lite run. One phase only: write its serial
+and regenerate INDEX.md with its Foundation block, at the Series home.
+<from the second phase on:> The previous gate, <G1|G2>: verdict CLEAR at review round
+<n>; <approved by the operator <YYYY-MM-DD>, decision <repo>#<N>: <the recorded answer,
+verbatim> | approved in session <YYYY-MM-DD>: <the answer, verbatim> | reported, not asked
+(no one-way ADR, no claim change)>. Record it in the serial's Confirmed Assumptions and in
+the Foundation block's row for that gate: its Gate cell (CLEAR round <n>), Operator cell
+and Approved cell. Carry the Gates passed list forward whole; the orchestrator writes its
+lines.
+<a revise or reopen answer:> The operator asked to <revise | reopen <phase>>: <their words,
+verbatim>. Write it as the next serial (a reopen as NN_reopen-<what>.md, with its impact
+list) per that skill's references/moves.md.
+```
+
+Right after each gate's approval (or a reported gate's `CLEAR`), and before any next
+dispatch, or with none to follow, as for a reopen's last re-run gate, the orchestrator
+writes that gate's line under Gates passed in the series' `INDEX.md` itself:
+`<G1|G2> passed <YYYY-MM-DD> (<repo>#<N> | reported | in session)`, ending
+` after <reopen serial>` for a gate a reopen re-ran.
+These lines, and G3's, are its only writes in the series (the `foundation` skill's
+`references/state.md` § The Foundation block).
+
+The dispatch that opens a gate's phase — each phase's first dispatch, and the one an
+operator's revise or reopen answer opens — adds `foundation <phase>` to its signal,
+combined with any routing signal and never replacing one (`dispatch: planner opus xhigh —
+foundation architecture; effort pin`); a fix round inside the gate writes its usual line
+(`— resume`, or its routing signal on a fresh re-dispatch). The reviews of every phase
+count toward the run's one cap (`resume.md` § The reduction, ROUNDS). The report shape,
+the prohibitions and the fix-round rules are the Plan variant's, unchanged.
 
 ## Review-mode fix variant
 
@@ -238,7 +336,7 @@ change's to move either.
 | Status | Means | Orchestrator's next move |
 |---|---|---|
 | `DONE` | Every acceptance line met, all checks green, one commit | Review (the sub-agent gate), then Land |
-| `DONE_WITH_CONCERNS` | Committed and green, but the agent flagged a judgement call | Read the concerns; put them in the reviewer brief; Review, then Land |
+| `DONE_WITH_CONCERNS` | Committed and green, but the agent flagged a judgement call, or reported a foundation `REOPEN:` line | Read the concerns; raise each `REOPEN:` line first (`bindings.md` § Decisions, A foundation reopen); put the rest in the reviewer brief; Review, then Land |
 | `NEEDS_CONTEXT` | Could not proceed without an answer; nothing or little committed | Answer in the record sink, re-dispatch with the answer |
 | `BLOCKED` | Worktree wrong, permission denied, dependency missing | `wi block` when there is an item; raise it through the decision channel |
 

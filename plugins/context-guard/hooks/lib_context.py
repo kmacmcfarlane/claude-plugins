@@ -1,26 +1,25 @@
 """Shared state and depth accounting for the context-guard context-gate hooks.
 
 Depth sources, in order of preference:
-1. EXACT - written by the status line (the statusline plugin; its data
-   contract is that plugin's install-statusline references/sensor-contract.md),
+1. EXACT - written by the status line (the statusline-hub plugin, which
+   installing statusline brings; its data contract is summarised in that
+   plugin's statusline-hub skill, references/hook-contract.md § 12),
    which receives
    context_window.used_percentage and context_window_size from Claude Code on
    every render. Hooks never get those fields in their own input, so the status
-   line doubles as the sensor. Two records are read (sensor()): the statusline
-   plugin's neutral sensor file,
+   line doubles as the sensor. One record is read (sensor()): the neutral
+   sensor file,
    ${CLAUDE_CONFIG_DIR:-~/.claude}/statusline/sensor/<safe_sid>.json (v1:
-   `exact`, `rate_limits`; a record whose `v` is not 1 is treated as absent),
-   and the legacy `exact` block in this plugin's own state file (written by
-   context-guard's deprecated statusline.py until the compat release). The
-   one with the larger `exact.at` wins; ties go to the sensor file. The
-   sensor file is read only when it is a regular file (opened O_NONBLOCK, so
-   a FIFO planted at the path cannot hang a hook), and an `exact.at` more than
-   FUTURE_SKEW_S in the future is rejected, in either record: it would
+   `exact`, `rate_limits`; a record whose `v` is not 1 is treated as absent).
+   An `exact` block left in this plugin's own state file by an older status
+   line is ignored. The sensor file is read only when it is a regular file
+   (opened O_NONBLOCK, so a FIFO planted at the path cannot hang a hook), and
+   an `exact.at` more than FUTURE_SKEW_S in the future is rejected: it would
    otherwise read as fresh, and gate as exact, until the clock caught up.
-2. DERIVED - the window mirrored from Claude Code's own selection logic
+2. DERIVED - the window derived from documented and observed rules
    (window_rules.py: the transcript's `attachment.type:"model"` line, the
-   native-1M table, `[1m]`, the CLAUDE_CODE_* window env vars, the credits
-   latch), the tokens from the transcript's post-boundary `usage` blocks
+   cited native-1M models, `[1m]`, the CLAUDE_CODE_* window env vars, the
+   credits error), the tokens from the transcript's post-boundary `usage` blocks
    (the same sum the status line reports). A RESOLVED derived depth (every
    input observed, the Claude Code version not distrusted) is source
    "derived" and may hard-block like "exact". An UNRESOLVED one never
@@ -30,16 +29,19 @@ Depth sources, in order of preference:
    (cross_check): a disagreement is logged to window-mismatch.jsonl and
    distrusts that Claude Code version, so its derived depth warns only.
    A derived window above 200K resolves only when this process's
-   long-context-credits latch is known absent: a SessionStart marker whose
-   pid key (pid and start time) is the running Claude Code process's, no
-   latch line after its offset in the transcript or in this process's
-   sidechain (subagent) transcripts, none in the process record. The latch
-   is matched on apiError "long_context_credits_required" only.
+   usage-credits error for 1M context is known absent: a SessionStart
+   marker whose pid key (pid and start time) is the running Claude Code
+   process's, no error line after its offset in the transcript or in this
+   process's sidechain (subagent) transcripts, none in the process record.
+   The error is matched on an API-error line (`isApiErrorMessage` true)
+   whose text holds the documented error title
+   (window_rules.CREDITS_MESSAGE, cited to the errors page); a seen error
+   gives a 200K window that only warns.
    The running Claude Code process is identified only when verified
    (proc_info: the FIRST claude ancestor, whose session-registry entry
    carries its own pid, start time and PID namespace, and whose pid is the
-   hook's CLAUDE_PID); a nested claude (unregistered, its own CLAUDE_PID)
-   is never matched to an outer one. Unverified, every input that depends on it is unresolved.
+   hook's CLAUDE_PID); a nested claude (its own registry entry, its own
+   CLAUDE_PID) is never matched to an outer one. Unverified, every input that depends on it is unresolved.
    CONTEXT_GUARD_DERIVE=off, or the operator's CONTEXT_GUARD_CONTEXT_WINDOW
    pin (deprecated alias CLAUDE_KIT_CONTEXT_WINDOW), turns the mirror off
    (and the auto-compact window below): the gate is then exactly the
@@ -59,30 +61,37 @@ Depth sources, in order of preference:
    a compaction or /clear describes the OLD fill and must not gate the new
    epoch, and the status line may not have re-rendered yet. context-guard
    never writes the sensor file: _reset stamps `epoch_at` in its own state,
-   and any record with `at <= epoch_at` (from either path) is read as
-   window-only. The tee stamps `at` when it writes, so this covers a render
-   whose payload predates the compaction only when its write lands at or
-   before `epoch_at`.
+   and any record with `at <= epoch_at + EPOCH_GRACE_S` is read as
+   window-only. The tee stamps `at` when it runs, not when Claude
+   Code built the payload, so the grace is what covers a payload built before
+   the compaction but read by the status line just after it. The exact-record
+   rule applies whatever the clock does: after a step back past `epoch_at`
+   no stamp can tell the old epoch's last render from a new one, and demoting
+   both only silences the gate for the length of the step, never blocks.
    The same rule holds for transcript counts (sources 2 and 3): a count
    whose usage line is stamped at or before `epoch_at` describes an earlier
    epoch and is dropped (_epoch_cur), so the depth reads unknown (0) until
-   the epoch's first response. Claude Code queues transcript lines and
-   drains the queue on a 100 ms timer, and PostCompact stamps the epoch
-   before the compact_boundary line is even queued, so a queued prompt's
-   hook can scan the transcript before the boundary is on disk. A usage
-   line with no `timestamp` is never dropped.
+   the epoch's first response. Observed in spike bace's transcripts on
+   Claude Code 2.1.284: the compact_boundary line reached disk after the
+   next prompt's hook had already read the transcript, so a hook can scan
+   it before the boundary is there.
+   When a compaction's boundary line reaches the transcript can be derived
+   from Claude Code's internals; it is not recorded here.
+   A usage line with no `timestamp` is never dropped.
 
 The GATE window (measure()'s `window`) is the model window above lowered to
 the auto-compact window when one is configured below it
 (window_rules.autocompact: CLAUDE_CODE_AUTO_COMPACT_WINDOW, the
-autoCompactWindow setting, the model defaults): Claude Code compacts there.
+autoCompactWindow setting): Claude Code compacts there.
 A resolved auto-compact window may bound a hard block; an unresolved one only
 warns, and a hard stop is then still measured against the model window. It
 resolves only when auto-compact is known on (autoCompactEnabled: true in a
 settings layer the hook reads), no flag layer can be in play (proc_info's
-`observable`), no policy tier is present and remote policy is ruled out -
-which a hook cannot do in Claude Code 2.1.277, so today it only ever warns
-(window_rules.REMOTE_POLICY_RULED_OUT, window_rules.autocompact).
+`observable`), no policy tier is present and server-managed settings are
+ruled out - which a hook can never do, since Claude Code fetches them from
+the server at startup and hourly (docs: server-managed-settings), so today
+it only ever warns (window_rules.REMOTE_POLICY_RULED_OUT,
+window_rules.autocompact).
 depth() returns the MODEL window: precompact_gate proves a compaction
 proactive against it.
 
@@ -92,7 +101,7 @@ the transcript, its pid key, when), `model_switch` (PostModelSwitch's
 to_model), `scan` (the resumable transcript scan, so a prompt reads only
 the bytes appended since the last one), `derived` (the last derived result, with the Claude Code version
 it was read on and RULES_CC_VERSION) and `window_mismatch`; the pseudo
-sessions `_proc-<pid>-<starttime>` (a credits latch seen in that process,
+sessions `_proc-<pid>-<starttime>` (a credits error seen in that process,
 which outlives a /clear) and `_window-rules` (the distrusted versions).
 
 State is per session under $CLAUDE_CONFIG_DIR/claude-kit/context-gate/, and is
@@ -146,15 +155,35 @@ CHECKPOINT_MIN_TOKENS = CHECKPOINT_LEAN_COST + CHECKPOINT_MARGIN
 GAUGE_LABELS = {"due": "checkpoint DUE", "hard": "HARD gate"}
 GAUGE_V = 1
 SENSOR_V = 1
-# A stamp (an exact block's `at`, from either writer, or a scored depth's
-# `tokens_at`) further ahead of now than this is a bad clock or a bad record,
-# never a fresh reading. _future_skewed() is the one check.
+# A stamp (the sensor record's exact `at`, or a scored depth's `tokens_at`)
+# further ahead of now than this is a bad clock or a bad record, never a
+# fresh reading. _future_skewed() is the one check.
 FUTURE_SKEW_S = 60
+# The tee stamps an exact record's `at` when it runs, not when Claude Code
+# built the render's payload: a render that began before PostCompact stamped
+# `epoch_at` and wrote just after it would carry the old epoch's count with a
+# fresh `at`. sensor() demotes a record stamped up to this long after
+# `epoch_at` as well. A genuine new-epoch reading needs a response first, and
+# that takes longer than this. Transcript counts carry Claude Code's own line
+# stamp, so _epoch_cur needs no grace.
+EPOCH_GRACE_S = 2
 
 
 def _future_skewed(at):
     """Whether the finite stamp `at` is more than FUTURE_SKEW_S ahead of now."""
     return at > time.time() + FUTURE_SKEW_S
+
+
+def _epoch_cut(st):
+    """The state's `epoch_at` as the transcript-count cut (_epoch_cur,
+    _epoch_end_tokens), or None when there is none, it is not finite, or it is
+    more than FUTURE_SKEW_S ahead of now (the clock stepped back since _reset
+    stamped it: applying it would drop every count until the clock caught
+    up). sensor() does not use this: see its docstring. Never raises."""
+    cut = _finite(st.get("epoch_at")) if isinstance(st, dict) else None
+    if cut is None or _future_skewed(cut):
+        return None
+    return cut
 
 
 def _base_dir():
@@ -554,11 +583,11 @@ def reset_epoch(session_id, compact_summary=None):
 
 
 def _reset(st, compact_summary, session_id=None):
-    # The fill the ending epoch reached, read under the lock before the demote
-    # below drops it (postcompact_epoch logs it in the ledger's epoch header).
-    # Read before epoch_at moves, which would demote it.
+    # The fill the ending epoch reached, read under the lock
+    # (postcompact_epoch logs it in the ledger's epoch header). Read before
+    # epoch_at moves, which would demote it.
     try:
-        end = sensor(session_id, st) if session_id else (st.get("exact") or {})
+        end = sensor(session_id, st) if session_id else {}
         st["epoch_end_tokens"] = _epoch_end_tokens(end, st)
     except (TypeError, ValueError, AttributeError):
         st["epoch_end_tokens"] = 0
@@ -566,41 +595,34 @@ def _reset(st, compact_summary, session_id=None):
     st.pop("compact_deferred", None)
     st.pop("due", None)
     st["prompt_n"] = 0
-    # Any exact record stamped at or before this instant describes the old
-    # epoch (sensor() demotes it): the sensor file, which context-guard never
-    # writes, and a legacy block written back by a render that raced this reset.
+    # Any exact record stamped at or before this instant (plus EPOCH_GRACE_S)
+    # describes the old epoch, and sensor() demotes it to window-only: its
+    # tokens/pct describe the epoch that just ended, so a still-fresh one
+    # would HARD-block a 3% session until the status line re-renders. The
+    # window survives as the floor (a compaction never shrinks the model's
+    # window) and the count comes from the post-boundary transcript alone,
+    # boundary line or not (/clear starts a transcript with no
+    # compact_boundary). context-guard never writes the sensor file.
     st["epoch_at"] = time.time()
-    ex = st.get("exact") or {}
-    if ex.get("window"):
-        # Demote, don't stamp: the record's tokens/pct describe the epoch that
-        # just ended, so a still-fresh one would HARD-block a 3% session until
-        # the status line re-renders. With `at` zeroed and the tokens dropped,
-        # depth() takes its existing stale path - the window survives as the
-        # floor (a compaction never shrinks the model's window) and the count
-        # comes from the post-boundary transcript alone, boundary line or not
-        # (/clear starts a transcript with no compact_boundary). The next
-        # status-line render overwrites the block with a fresh exact record.
-        st["exact"] = {"window": int(ex["window"]), "at": 0}
     if compact_summary is not None:
         st["compact_summary"] = compact_summary[:20000]
 
 
 def _epoch_end_tokens(end, st):
     """The ending epoch's fill, from two writers: the status line's exact
-    record `end` (the fresher of the sensor file and the legacy in-state
-    block, dated by `at`) and the top-level `tokens` that
-    context_warn.decide() stores on every prompt (the depth it last scored,
+    record `end` (the sensor file's, dated by `at`) and the top-level
+    `tokens` that context_warn.decide() stores on every prompt (the depth it last scored,
     exact or inferred, dated by `tokens_at`). The fresher wins; a tie goes to
     the exact record. A top-level count stamped at or before the state's
-    `epoch_at` scored an earlier epoch and is not used, nor is one stamped
-    more than FUTURE_SKEW_S ahead of now. A count with no `tokens_at`
-    (state written before it existed) is the fallback only. The ledger header
+    `epoch_at` (_epoch_cut) scored an earlier epoch and is not used, nor is
+    one stamped more than FUTURE_SKEW_S ahead of now. A count with no
+    `tokens_at` (state written before it existed) is the fallback only. The ledger header
     is its only reader: nothing here feeds the gate or can block."""
     ex_tok = int(end.get("tokens") or 0)
     top_tok = int(st.get("tokens") or 0)
     top_at = _finite(st.get("tokens_at"))
     if top_at is not None:
-        cut = _finite(st.get("epoch_at"))
+        cut = _epoch_cut(st)
         if (cut is not None and top_at <= cut) or _future_skewed(top_at):
             top_tok = 0
         elif ex_tok and top_tok and top_at > (_finite(end.get("at")) or 0.0):
@@ -715,7 +737,7 @@ def thresholds(window):
     Interpolated over ANCHORS - (200K -> due 70K, hard 40K) and (1M -> due
     150K, hard 60K) - linear between, clamped outside. A full checkpoint costs
     ~16-60K in the live window and one operator exchange is p90 ~20K, so
-    `hard` is the floor below which only /checkpoint itself is affordable.
+    `hard` is the floor below which only the checkpoint itself is affordable.
     Under CHECKPOINT_MIN_TOKENS (the lean ~16K plus a margin) not even that is.
     """
     w = max(int(window or 0), 1)
@@ -838,6 +860,79 @@ def _scan_usage_at(transcript_path):
     return cur, peak, boundary, cur_at
 
 
+INPUT_SCAN_MAX = 4 * 1024 * 1024
+_INPUT_SCAN_CHUNK = 64 * 1024
+
+
+def _usage_tokens(obj):
+    u = (obj.get("message") or {}).get("usage") if isinstance(obj, dict) else None
+    if not isinstance(u, dict):
+        return 0
+    try:
+        return sum(u.get(k) or 0 for k in
+                   ("input_tokens", "cache_read_input_tokens",
+                    "cache_creation_input_tokens"))
+    except TypeError:
+        return 0
+
+
+def input_since_usage(transcript_path, max_bytes=INPUT_SCAN_MAX):
+    """Whether input is pending since the last measured fill: True when a
+    `type: user` line (a prompt or a tool result) follows the last assistant
+    line that carries usage, False when only other lines (system, summaries,
+    attachments) do - the session is idle at that fill.
+
+    Reads backwards from the end in chunks, at most `max_bytes`, so its cost
+    is bounded by the tail, not the transcript. Anything it cannot settle
+    within that - a missing or unreadable transcript, no usage line, a tail
+    longer than the cap - counts as pending (True): the caller then keeps
+    the rule that holds when input may be in flight."""
+    if not transcript_path:
+        return True
+    try:
+        with open(transcript_path, "rb") as fh:
+            fh.seek(0, os.SEEK_END)
+            pos = fh.tell()
+            read = 0
+            rest = b""
+            while pos > 0 and read < max_bytes:
+                n = min(_INPUT_SCAN_CHUNK, pos, max_bytes - read)
+                pos -= n
+                fh.seek(pos)
+                buf = fh.read(n) + rest
+                read += n
+                lines = buf.split(b"\n")
+                # the first piece may be a partial line unless at file start
+                rest = lines.pop(0) if pos > 0 else b""
+                for raw in reversed(lines):
+                    r = _input_line(raw)
+                    if r is not None:
+                        return r
+    except (OSError, ValueError):
+        return True
+    return True
+
+
+def _input_line(raw):
+    """True for a user line, False for an assistant line with usage, None
+    for anything else (skipped)."""
+    raw = raw.strip()
+    if not raw:
+        return None
+    try:
+        obj = json.loads(raw.decode("utf-8", "replace"))
+    except ValueError:
+        return None
+    if not isinstance(obj, dict):
+        return None
+    t = obj.get("type")
+    if t == "user":
+        return True
+    if t == "assistant" and _usage_tokens(obj):
+        return False
+    return None
+
+
 LATCH_KEEP = 16
 SCAN_V = 1
 TAIL_CHECK = 64
@@ -892,13 +987,28 @@ def _tail_version(fh, size):
         return None
 
 
+def _message_text(obj):
+    """The text of a transcript line's message: `message.content` as a
+    string, or its `text` blocks joined. "" when there is none."""
+    msg = obj.get("message")
+    content = msg.get("content") if isinstance(msg, dict) else None
+    if isinstance(content, str):
+        return content
+    if isinstance(content, list):
+        return "".join(b.get("text") for b in content
+                       if isinstance(b, dict) and isinstance(b.get("text"), str))
+    return ""
+
+
 def _is_latch(obj, R):
-    """An API-error line from the one 429 branch that sets Claude Code's
-    long-context-credits latch: apiError "long_context_credits_required" is
-    returned only after `O && nue(message)` set it. The generic 429 path can
-    carry the same words in its text without latching, so the phrase alone
-    never counts."""
-    return obj.get("isApiErrorMessage") is True and obj.get("apiError") == R.LATCH_API_ERROR
+    """An API-error line reporting the usage-credits error for 1M context:
+    `isApiErrorMessage` is true (observed on API-error lines in transcripts,
+    Claude Code 2.1.233 to 2.1.285) and the message text holds the error's
+    documented title, window_rules.CREDITS_MESSAGE (doc: errors § Usage
+    credits required for 1M context). The same words in any other line -
+    a user prompt, an assistant reply, a tool result - never count."""
+    return obj.get("isApiErrorMessage") is True \
+        and R.CREDITS_MESSAGE in _message_text(obj)
 
 
 def _cache_start(fh, st_, cache, path):
@@ -942,7 +1052,7 @@ def scan_transcript(transcript_path, cache=None):
     model_id, model_off, model_at - the last `attachment.type:"model"` line's
       identity.modelId, its byte offset and timestamp (epoch);
     cc_version - the `version` of the last line carrying one (a tail read);
-    latches - [(byte offset, epoch)] of the last LATCH_KEEP credits-latch
+    latches - [(byte offset, epoch)] of the last LATCH_KEEP credits-error
       API-error lines (_is_latch);
     size - bytes read; cache - the resumable state as of the last complete
       line (None when the file could not be read).
@@ -1155,33 +1265,26 @@ def _sensor_exact(session_id):
 
 
 def sensor(session_id, state=None):
-    """The exact block depth() uses: the fresher (larger `at`; a tie goes to the
-    sensor file) of the statusline plugin's sensor record and the legacy
-    `exact` in this session's state (`state`, else loaded). Either block is
-    rejected, as if absent, when its `at` is more than FUTURE_SKEW_S ahead of
-    now (for the legacy block, also when `at` is present but not a finite
-    number): the same rule for both writers, so a clock-skewed legacy block
-    can neither read as fresh nor out-date the sensor file. A block stamped
-    at or before the state's `epoch_at` describes an earlier epoch and is
-    demoted to window-only ({"window", "at": 0}). Returns {} when neither
-    exists. Never raises."""
+    """The exact block depth() uses: the statusline plugin's sensor record's
+    (_sensor_exact: rejected, as if absent, when its `at` is more than
+    FUTURE_SKEW_S ahead of now). An `exact` block in this session's state
+    (`state`, else loaded), left there by an older status line, is ignored.
+    A block stamped at or before the state's `epoch_at` plus EPOCH_GRACE_S
+    describes an earlier epoch and is demoted to window-only
+    ({"window", "at": 0}); an `epoch_at` ahead of the clock still applies
+    (unlike _epoch_cut): a stale record lives up to EXACT_MAX_AGE_S, and
+    after a clock step back it cannot be told from a new render, so both
+    read window-only - which only silences the gate until the clock passes
+    `epoch_at`, never blocks. Returns {} when there is no usable record.
+    Never raises."""
     try:
+        ex = _sensor_exact(session_id)
+        if not ex:
+            return {}
         st = state if state is not None else load_state(session_id)
-        legacy = st.get("exact") or {}
-        if not isinstance(legacy, dict):
-            legacy = {}
-        if legacy.get("at") is not None:
-            lat = _finite(legacy["at"])
-            if lat is None or _future_skewed(lat):
-                legacy = {}
-        new = _sensor_exact(session_id)
-        if new and (not legacy or new["at"] >= (_finite(legacy.get("at")) or 0.0)):
-            ex = new
-        else:
-            ex = legacy
         cut = _finite(st.get("epoch_at"))
         at = _finite(ex.get("at"))
-        if cut is not None and at and at <= cut and ex.get("window"):
+        if cut is not None and at and at <= cut + EPOCH_GRACE_S and ex.get("window"):
             return {"window": int(ex["window"]), "at": 0}
         return ex
     except Exception:
@@ -1192,7 +1295,7 @@ BLOCKING_SOURCES = ("exact", "derived")
 DERIVE_ENV = "CONTEXT_GUARD_DERIVE"
 # Pseudo session ids (a leading "_" never starts a Claude Code session id):
 # the Claude Code process record (keyed pid-starttime) that carries the
-# credits latch across /clear, and the mirror's distrust list.
+# credits error across /clear, and the mirror's distrust list.
 PROC_PREFIX = "_proc-"
 RULES_SID = "_window-rules"
 MISMATCH_LOG = "window-mismatch.jsonl"
@@ -1224,11 +1327,12 @@ def derive_off(environ=None):
 # Command-line flags that add, replace or narrow a settings layer the hook
 # cannot read (or hand Claude Code settings at runtime): with any of them the
 # settings a hook reads are not the whole story.
-SETTINGS_FLAGS = ("--settings", "--setting-sources", "--managed-settings",
-                  "--autocompact", "--project-config-root", "--sdk-url",
-                  "--input-format")
+# doc: cli-reference (https://code.claude.com/docs/en/cli-reference).
+SETTINGS_FLAGS = ("--settings", "--setting-sources", "--autocompact", "--input-format")
 
 
+# observed: `readlink /proc/$CLAUDE_PID/exe` gives
+# ~/.local/share/claude/versions/<version>, Claude Code 2.1.292.
 _CLAUDE_EXE = re.compile(r"/claude/versions/[^/]+$")
 
 
@@ -1269,8 +1373,10 @@ def _is_claude(pid):
 
 
 def _pid_domain():
-    """Claude Code's pidDomain for this PID namespace (e7r() in 2.1.277):
-    'linux:<machine-id>:<readlink /proc/self/ns/pid>', or None."""
+    """The `pidDomain` a session-registry entry carries for this PID
+    namespace: 'linux:<machine-id>:<readlink /proc/self/ns/pid>', or None.
+    observed: the registry entry's pidDomain equals this computation in the
+    same PID namespace, Claude Code 2.1.292."""
     try:
         try:
             with open("/etc/machine-id") as f:
@@ -1298,9 +1404,10 @@ def _registry_matches(entry, pid, start):
     return True
 
 
-# Claude Code 2.1.277 puts its own pid in every command hook's environment
-# (RLe(): CLAUDE_PID, next to CLAUDE_CODE_CHILD_SESSION=1, which is always set
-# and so says nothing about nesting).
+# doc: env-vars (https://code.claude.com/docs/en/env-vars) - Claude Code sets
+# CLAUDE_PID to its own process ID in hook commands, and
+# CLAUDE_CODE_CHILD_SESSION to 1 in hook commands too, so the latter says
+# nothing about nesting.
 CLAUDE_PID_ENV = "CLAUDE_PID"
 
 
@@ -1315,9 +1422,12 @@ def proc_info():
     command hook), and <config>/sessions/<pid>.json exists and was written
     by it (_registry_matches: pid, procStart, pidDomain). A first claude
     that is not verified is never skipped for an outer one: a claude started
-    from another's Bash tool does not register (2.1.277), and its hooks
-    carry its own CLAUDE_PID, so taking the outer claude's key - and with it
-    the outer session's latch and marker - cannot happen. CLAUDE_PID absent
+    from another's Bash tool writes its own registry entry (observed: a
+    `claude -p` started from the Bash tool wrote sessions/<its pid>.json
+    while it ran, Claude Code 2.1.286), and its hooks carry its own
+    CLAUDE_PID (documented), so it is verified as itself or not at all, and
+    taking the outer claude's key - and with it the outer session's credits
+    error and marker - cannot happen. CLAUDE_PID absent
     or naming another process: unverified. Non-claude ancestors (shells) are
     walked past, whatever the registry says about their pids: the registry
     is shared across sandboxes.
@@ -1376,8 +1486,8 @@ def distrusted_versions():
 def _sidechain_latch(transcript_path, since, cache=None):
     """(latch_at or None, readable, cache) over this session's subagent
     (sidechain) transcripts, <dir>/<session>/subagents/*.jsonl: a subagent's
-    429 sets the same process-wide latch but is written there, not to the
-    main transcript. Only files touched and lines stamped at or after
+    API error is written there, not to the main transcript, and counts for
+    the whole process. Only files touched and lines stamped at or after
     `since` (the process start) count; a matching line with no timestamp, or
     a file that cannot be read, makes the answer unknown (readable False).
     `cache` (the previous call's, from the session state) holds per file
@@ -1396,7 +1506,7 @@ def _sidechain_latch(transcript_path, since, cache=None):
     except Exception:
         return None, False, new
     found, readable = None, True
-    needle = R.LATCH_API_ERROR.encode()
+    needle = R.CREDITS_MESSAGE.encode()
     for p in sorted(paths)[:500]:
         try:
             st_ = os.stat(p)
@@ -1440,7 +1550,7 @@ def _sidechain_latch(transcript_path, since, cache=None):
 
 def _latch(scan, st, transcript_path, current_key, side_cache=None):
     """(latch, latch_known, latch_at): whether THIS Claude Code process has
-    its long-context-credits latch set.
+    reported the usage-credits error for 1M context (_is_latch).
 
     Known only with a SessionStart marker (state `proc`) whose key is this
     process's (pid and start time, proc_info): then only main-transcript
@@ -1508,13 +1618,12 @@ def derived_window(scan, st, environ=None, transcript_path=None, current_key=Non
     latch, known, latch_at = _latch(scan, st, transcript_path, current_key, side_cache)
     if latch and latch_at:
         changed = max(changed or 0.0, latch_at)
-    served = R.served_declared(_base_dir(), R.canonical(model), read_json_file)
-    d = R.derive(model, env, latch=latch, latch_known=known, served=served)
+    d = R.derive(model, env, latch=latch, latch_known=known)
     ver = scan.get("cc_version")
     proc = st.get("proc") if isinstance(st.get("proc"), dict) else {}
     d.update(model=model, cc_version=ver, rules_version=R.RULES_CC_VERSION,
              latch=latch, latch_known=known, changed_at=changed, distrusted=False,
-             served=served, side_cache=side_cache[0],
+             side_cache=side_cache[0],
              proc_ok=current_key is not None and proc.get("key") == current_key)
     if switched:
         d.update(resolved=False, rule="model_switch_pending")
@@ -1630,12 +1739,18 @@ def _epoch_cur(cur, cur_at, st):
     """(cur, stale): a transcript count belongs to the epoch its usage line was
     written in. When the state has an `epoch_at` and the line that set `cur`
     is stamped at or before it, the count describes an earlier epoch - the
-    compact_boundary line is still in Claude Code's write queue (it drains on
-    a 100 ms timer, after PostCompact has stamped the epoch) - and is dropped
+    compact_boundary line has not reached the transcript yet (observed in
+    spike bace's transcripts, Claude Code 2.1.284) - and is dropped
     (0, True): what the scan returns once the boundary is on disk. The same
-    rule sensor() applies to the exact record. A count with no stamp, or a
-    state with no epoch_at, is kept."""
-    cut = _finite(st.get("epoch_at")) if isinstance(st, dict) else None
+    rule sensor() applies to the exact record, without its grace: the line's
+    stamp is Claude Code's own, not a write time. A count with no stamp, or a
+    state with no usable epoch_at (none, or one more than FUTURE_SKEW_S ahead
+    of now: _epoch_cut), is kept. Ignoring a future cut here, unlike in
+    sensor(), trades a gate silenced for the whole clock step for a stale
+    count that lives only until the boundary line lands.
+    When a compaction's boundary line reaches the transcript can be derived
+    from Claude Code's internals; it is not recorded here."""
+    cut = _epoch_cut(st)
     at = _finite(cur_at)
     if cur and cut is not None and at is not None and at <= cut:
         return 0, True
@@ -1742,9 +1857,8 @@ def measure(transcript_path, session_id=None, cwd=None, environ=None, mirror=Tru
             proj = environ.get("CLAUDE_PROJECT_DIR") or cwd
             res["acw"] = R.autocompact(
                 d.get("model") if d else None, res["model_window"], env,
-                R.settings_autocompact(_base_dir(), proj, read_json_file, environ=environ),
-                observable=pi["observable"], latch=bool(d and d.get("latch")),
-                served=d.get("served") if d else None)
+                R.settings_autocompact(_base_dir(), proj, read_json_file),
+                observable=pi["observable"])
         except Exception:
             pass
     return _gate(res, blocking)

@@ -2,10 +2,11 @@
 id: docs-refresh-update-kit-repo-map-md-all-5a18
 title: "docs: refresh update-kit repo-map.md (all skills + hooks/) and the README sections after the TODO.md migrations"
 type: chore
-status: todo
+status: done
 priority: 2
 created: 2026-09-22
-updated: 2026-09-22
+updated: 2026-09-28
+closed: 2026-09-28
 refs:
   - "peer: agents - librarian (uds 122.sock), operator relay"
 ---
@@ -17,3 +18,16 @@ Relayed 2026-09-22 from the agents store (phase-5-migrate-the-five-todo-md-repos
 - next: —
 - blocked: —
 - learned: —
+target: branch worktree-docs-refresh-update-kit-repo-map-md-all-5a18 at .claude/worktrees/docs-refresh-update-kit-repo-map-md-all-5a18, base main (a66d203)
+
+## Notes
+- 2026-09-28 claimed by Kyle-McFarlane@7696505da8e1
+dispatch: implementer sonnet — docs refresh: file lists and pointers, verify first (rule 1)
+agent: implementer ac4e627d736c55e18 round 1
+return: implementer DONE 2d204b9 (verification incomplete: 4 of 8 Checks and §1/§3 not run — the reviewer runs them; 5 scripts/ dirs on disk left out because CLAUDE.md omits them)
+changed: plugins/kit-dev/skills/update-kit/references/repo-map.md
+dispatch: reviewer opus — fresh (rule 4)
+agent: reviewer a7678c29118363940 round 1 at 2d204b9
+verdict: CLEAR round 1 at 2d204b9 (2 low: context-guard hooks note lacks + hooks.json, as CLAUDE.md — carried to fabd; update-kit SKILL.md never points at references/repo-map.md — filed)
+landed: f346bc6
+- 2026-09-28 done: f346bc6

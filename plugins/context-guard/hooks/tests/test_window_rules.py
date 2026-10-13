@@ -1,6 +1,7 @@
-"""window_rules: the mirrored window selection, one test per truth-table row
-(plan d63e section 2) plus the auto-compact window (decision 34). Pure: envs are
-dicts, nothing touches os.environ."""
+"""window_rules: the window rules, one test per truth-table row (plan d63e
+section 2, re-cited to the docs and observations by e347) plus the
+auto-compact window (decision 34). Pure: envs are dicts, nothing touches
+os.environ."""
 import json, os, sys, tempfile, unittest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -25,22 +26,36 @@ class TestTruthTable(unittest.TestCase):
             self.assertEqual(d["rule"], rule)
 
     def test_row01_native_1m(self):
-        for m in ("claude-opus-5", "claude-opus-4-7", "claude-opus-4-8", "claude-sonnet-5",
-                  "claude-fable-5", "claude-fable-5-1", "claude-mythos-5",
-                  "claude-mythos-5-1", "claude-mythos-preview"):
+        # model-config § Extended context, plus Opus/Sonnet 5.5 observed with -p.
+        for m in ("claude-opus-5", "claude-opus-5-5", "claude-opus-4-7", "claude-opus-4-8",
+                  "claude-sonnet-5", "claude-sonnet-5-5", "claude-fable-5", "claude-fable-5-1",
+                  "claude-haiku-5-5"):
             with self.subTest(m=m):
                 self.check(derive(m), M1, True, "native_1m")
+
+    def test_row01b_models_no_claude_code_source_covers_are_unresolved(self):
+        # Answer 168 (a): only the Claude Code docs or a -p observation
+        # resolve a window. Mythos was not runnable here, so it only warns.
+        for m in ("claude-mythos-5", "claude-mythos-5-1", "claude-mythos-preview",
+                  "claude-opus-4-1", "claude-opus-4-0", "claude-3-7-sonnet"):
+            with self.subTest(m=m):
+                self.check(derive(m), K200, False, "unknown_model")
 
     def test_row02_suffix(self):
         self.check(derive("claude-opus-5[1m]"), M1, True, "suffix_1m")
         self.check(derive("claude-opus-5[1M]"), M1, True, "suffix_1m")
 
-    def test_row03_haiku_first_party_id(self):
-        self.check(derive("claude-haiku-4-5-20251001"), K200, True, "catalog_200k")
-        self.check(derive("claude-haiku-4-5"), K200, True, "catalog_200k")
+    def test_row03_observed_200k_and_first_party_ids(self):
+        for m in ("claude-haiku-4-5-20251001", "claude-haiku-4-5", "claude-opus-4-5",
+                  "claude-opus-4-5-20251101"):
+            with self.subTest(m=m):
+                self.check(derive(m), K200, True, "cited_200k")
 
-    def test_row04_suffix_has_no_support_check(self):
-        self.check(derive("claude-haiku-4-5[1m]"), M1, True, "suffix_1m")
+    def test_row04_suffix_on_a_model_not_documented_as_1m_capable(self):
+        self.check(derive("claude-haiku-4-5[1m]"), M1, False, "suffix_1m_unsupported")
+        # The 4.6 pair reach 1M through the suffix (model-config).
+        for m in ("claude-opus-4-6[1m]", "claude-sonnet-4-6[1m]"):
+            self.check(derive(m), M1, True, "suffix_1m")
 
     def test_row05_disable_1m(self):
         self.check(derive("claude-opus-5", env(CLAUDE_CODE_DISABLE_1M_CONTEXT=1)),
@@ -51,8 +66,15 @@ class TestTruthTable(unittest.TestCase):
             with self.subTest(v=v):
                 self.check(derive("claude-opus-5[1m]", env(CLAUDE_CODE_DISABLE_1M_CONTEXT=v)),
                            K200, True)
-        # Not a truthy spelling: 1M stands.
+        # A documented off spelling: 1M stands.
         self.check(derive("claude-opus-5[1m]", env(CLAUDE_CODE_DISABLE_1M_CONTEXT="0")), M1, True)
+        # An undocumented spelling: the window cannot be known.
+        for v in ("2", "enable"):
+            with self.subTest(v=v):
+                self.check(derive("claude-opus-5[1m]", env(CLAUDE_CODE_DISABLE_1M_CONTEXT=v)),
+                           M1, False, "flag_unparsed")
+                self.check(derive("claude-opus-5", env(CLAUDE_CODE_DISABLE_1M_CONTEXT=v)),
+                           M1, False, "flag_unparsed")
 
     def test_row07_disable_compact_plus_max_context_tokens(self):
         e = env(DISABLE_COMPACT=1, CLAUDE_CODE_MAX_CONTEXT_TOKENS=500000)
@@ -62,14 +84,33 @@ class TestTruthTable(unittest.TestCase):
         # DISABLE_AUTO_COMPACT is not DISABLE_COMPACT.
         e = env(DISABLE_AUTO_COMPACT=1, CLAUDE_CODE_MAX_CONTEXT_TOKENS=500000)
         self.check(derive("claude-opus-5", e), M1, True, "native_1m")
-        # Claude Code's own integer parse: 5e5 and 500,000 are 500000.
-        for v in ("5e5", "500,000", " 500000 "):
-            e = env(DISABLE_COMPACT=1, CLAUDE_CODE_MAX_CONTEXT_TOKENS=v)
-            self.check(derive("claude-opus-5", e), 500_000, True, "max_context_tokens")
-        # NaN or <= 0 is no override at all.
-        for v in ("abc", "0", "-5"):
-            e = env(DISABLE_COMPACT=1, CLAUDE_CODE_MAX_CONTEXT_TOKENS=v)
-            self.check(derive("claude-opus-5", e), M1, True, "native_1m")
+        # Documented numeric spellings (env-vars § Variables).
+        for v in ("5e5", "500_000"):
+            with self.subTest(v=v):
+                e = env(DISABLE_COMPACT=1, CLAUDE_CODE_MAX_CONTEXT_TOKENS=v)
+                self.check(derive("claude-opus-5", e), 500_000, True, "max_context_tokens")
+        # Undocumented spellings, zero or negative: the window cannot be known.
+        for v in ("500,000", " 500000 ", "900k", "abc", "0", "-5"):
+            with self.subTest(v=v):
+                e = env(DISABLE_COMPACT=1, CLAUDE_CODE_MAX_CONTEXT_TOKENS=v)
+                self.assertFalse(derive("claude-opus-5", e)["resolved"])
+                self.assertEqual(derive("claude-opus-5", e)["rule"],
+                                 "max_context_tokens_unparsed")
+        # An undocumented DISABLE_COMPACT spelling leaves the override unknown.
+        e = env(DISABLE_COMPACT="enable", CLAUDE_CODE_MAX_CONTEXT_TOKENS=500000)
+        self.check(derive("claude-opus-5", e), 500_000, False, "max_context_tokens_unparsed")
+
+    def test_row07b_unrecognized_id_with_suffix(self):
+        # model-config: an unrecognized ID with [1m] is assumed 1M and the
+        # variable "doesn't apply on its own"; whether Claude Code recognizes
+        # a spelling is not observable, so the result only warns.
+        e = env(DISABLE_COMPACT=1, CLAUDE_CODE_MAX_CONTEXT_TOKENS=500000)
+        self.check(derive("my-gw-model[1m]", e), M1, False, "suffix_1m_unrecognized")
+        self.check(derive("my-gw-model[1m]"), M1, False, "suffix_1m_unrecognized")
+        # With CLAUDE_CODE_DISABLE_1M_CONTEXT the ID is sized as if untagged.
+        e = env(DISABLE_COMPACT=1, CLAUDE_CODE_MAX_CONTEXT_TOKENS=500000,
+                CLAUDE_CODE_DISABLE_1M_CONTEXT=1)
+        self.check(derive("my-gw-model[1m]", e), 500_000, True, "max_context_tokens")
 
     def test_row08_max_context_tokens_ignored_for_catalog_models(self):
         e = env(CLAUDE_CODE_MAX_CONTEXT_TOKENS=500000)
@@ -80,11 +121,14 @@ class TestTruthTable(unittest.TestCase):
         self.check(derive("my-gw-model", env(CLAUDE_CODE_MAX_CONTEXT_TOKENS=300000)),
                    300_000, False, "max_context_tokens_custom")
 
-    def test_row10_credits_latch(self):
+    def test_row10_credits_message_only_warns(self):
+        # Answer 167 (a): after the credits error, 200K warns, never blocks.
         self.check(derive("claude-opus-5", latch=True, latch_known=True),
-                   K200, True, "credits_latch")
+                   K200, False, "credits_message")
+        self.check(derive("claude-opus-5[1m]", latch=True, latch_known=True),
+                   K200, False, "credits_message")
         # Never raises a 200K window.
-        self.check(derive("claude-haiku-4-5", latch=True), K200, True, "catalog_200k")
+        self.check(derive("claude-haiku-4-5", latch=True), K200, True, "cited_200k")
 
     def test_row11_latch_under_max_context_override(self):
         e = env(DISABLE_COMPACT=1, CLAUDE_CODE_MAX_CONTEXT_TOKENS=800000)
@@ -92,35 +136,43 @@ class TestTruthTable(unittest.TestCase):
 
     def test_row12_latch_without_process_marker(self):
         self.check(derive("claude-opus-5", latch=True, latch_known=False),
-                   K200, False, "credits_latch")
+                   K200, False, "credits_message")
 
     def test_row13_third_party_or_foreign_base_url(self):
         for e in (env(CLAUDE_CODE_USE_BEDROCK=1), env(CLAUDE_CODE_USE_VERTEX="true"),
                   env(ANTHROPIC_BASE_URL="https://gw.example.com/v1")):
             with self.subTest(e=e["provider"]):
                 self.check(derive("claude-opus-5", e), M1, False, "native_1m_3p")
-        # The Anthropic API host itself, or the assume flag, is direct.
+        # The Anthropic API host itself is direct.
         self.check(derive("claude-opus-5", env(ANTHROPIC_BASE_URL="https://api.anthropic.com")),
                    M1, True)
-        self.check(derive("claude-opus-5", env(ANTHROPIC_BASE_URL="https://gw.example.com",
-                                               _CLAUDE_CODE_ASSUME_FIRST_PARTY_BASE_URL=1)),
-                   M1, True)
+        # A documented off spelling, or empty, is unset (env-vars).
+        for v in ("off", "0", ""):
+            with self.subTest(v=v):
+                self.check(derive("claude-opus-5", env(CLAUDE_CODE_USE_BEDROCK=v)), M1, True,
+                           "native_1m")
+
+    def test_row13b_host_managed_or_undocumented_provider_spelling(self):
+        self.check(derive("claude-opus-5", env(CLAUDE_CODE_PROVIDER_MANAGED_BY_HOST=1)),
+                   M1, False, "native_1m_3p")
+        e = env(CLAUDE_CODE_USE_VERTEX="enable")
+        self.assertEqual(e["provider"], "unknown")
+        self.check(derive("claude-opus-5", e), M1, False, "native_1m_3p")
 
     def test_row14_sonnet_4_6(self):
-        d = derive("claude-sonnet-4-6")
-        self.check(d, K200, False)
-        self.assertIn(d["rule"], ("beta_unobservable", "experiment"))
+        self.check(derive("claude-sonnet-4-6"), K200, False, "beta_unobservable")
+        # CLAUDE_CODE_DISABLE_1M_CONTEXT rules the [1m] variant out.
+        self.check(derive("claude-sonnet-4-6", env(CLAUDE_CODE_DISABLE_1M_CONTEXT=1)),
+                   K200, True, "cited_200k")
 
     def test_row15_beta_capable_200k(self):
-        for m in ("claude-sonnet-4-5-20250929", "claude-opus-4-6", "claude-sonnet-4-20250514"):
+        for m in ("claude-opus-4-6", "claude-sonnet-4-6"):
             with self.subTest(m=m):
                 self.check(derive(m), K200, False, "beta_unobservable")
-
-    def test_row16_served_catalog(self):
-        self.check(derive("claude-haiku-4-5", served=150_000), 150_000, False, "served_catalog")
-        self.check(derive("claude-opus-5", served=900_000), 900_000, False, "served_catalog")
-        # Not native: a declared 1M is believed as 200K.
-        self.check(derive("claude-opus-4-5", served=M1), K200, False, "served_catalog")
+        # No Claude Code source covers these: unresolved either way.
+        for m in ("claude-sonnet-4-5-20250929", "claude-sonnet-4-20250514"):
+            with self.subTest(m=m):
+                self.check(derive(m), K200, False, "unknown_model")
 
     def test_row17_no_model(self):
         for m in (None, "", "  "):
@@ -130,19 +182,37 @@ class TestTruthTable(unittest.TestCase):
         self.check(derive("claude-opus-6"), K200, False, "unknown_model")
         self.check(derive("claude-3-opus-20240229"), K200, False, "unknown_model")
 
-    def test_js_int_mirrors_yl(self):
-        cases = {"500000": 500000, " 42 ": 42, "5e5": 500000, "1.5e5": 150000,
-                 "1.23456e2": None, "1,000,000": 1000000, "1_000": 1000, "900k": 900,
-                 "0x10": 0, "+7": 7, "-3": -3, "abc": None, "": None, "1,00": 1}
+    def test_doc_int_takes_only_documented_spellings(self):
+        # env-vars § Variables: plain digits, scientific notation, `_` separators.
+        cases = {"500000": 500000, "5e5": 500000, "1.5e5": 150000, "2e3": 2000,
+                 "64_000": 64000, "1_000_000": 1000000,
+                 "1.23456e2": None, "1,000,000": None, " 42 ": None, "900k": None,
+                 "0x10": None, "+7": None, "-3": None, "0": None, "abc": None, "": None}
         for raw, want in cases.items():
             with self.subTest(raw=raw):
-                self.assertEqual(R.js_int(raw), want)
-        self.assertIsNone(R.js_int(None))
+                self.assertEqual(R.doc_int(raw), want)
+        self.assertIsNone(R.doc_int(None))
+
+    def test_acw_int_reads_the_leading_integer(self):
+        # env-vars, CLAUDE_CODE_AUTO_COMPACT_WINDOW: plain integer; "500k" reads as 500.
+        self.assertEqual(R.acw_int("500000"), (500000, True))
+        self.assertEqual(R.acw_int("500k"), (500, True))
+        for raw in ("5e5", "500_000", "500,000"):
+            with self.subTest(raw=raw):
+                self.assertFalse(R.acw_int(raw)[1])
+        self.assertEqual(R.acw_int("abc"), (None, False))
+
+    def test_flag_spellings(self):
+        for v in ("1", "true", "YES", "On"):
+            self.assertIs(R.flag(v), True, v)
+        for v in (None, "", "0", "false", "No", "OFF"):
+            self.assertIs(R.flag(v), False, v)
+        for v in ("2", "enable", "y"):
+            self.assertIsNone(R.flag(v), v)
 
     def test_env_inputs_carry_no_env_strings(self):
         e = R.env_inputs({"ANTHROPIC_BASE_URL": "https://user:secret@gw.example.com",
-                          "CLAUDE_CODE_MAX_CONTEXT_TOKENS": "123456",
-                          "CLAUDE_CODE_ENTRYPOINT": "cli"})
+                          "CLAUDE_CODE_MAX_CONTEXT_TOKENS": "123456"})
         blob = json.dumps(e)
         self.assertNotIn("secret", blob)
         self.assertNotIn("gw.example.com", blob)
@@ -155,28 +225,12 @@ class TestTruthTable(unittest.TestCase):
         self.assertFalse(derive("claude-opus-5", e)["resolved"])
 
 
-class TestServedCatalog(unittest.TestCase):
-    def test_reads_only_model_rows(self):
-        with tempfile.TemporaryDirectory() as d:
-            p = os.path.join(d, "cache", "model-catalog")
-            os.makedirs(p)
-            with open(os.path.join(p, "acct-org-cc.json"), "w") as f:
-                json.dump({"version": 2, "fetchedAt": 1, "catalog": {"config": {"models": [
-                    {"id": "claude-opus-5"},
-                    {"id": "claude-haiku-4-5", "context_window": 150000},
-                    {"id": "claude-sonnet-5", "runtime": {"max_input_tokens": 600000},
-                     "context_window": 900000}]}}}, f)
-            self.assertIsNone(R.served_declared(d, "claude-opus-5", L.read_json_file))
-            self.assertEqual(R.served_declared(d, "claude-haiku-4-5", L.read_json_file), 150_000)
-            self.assertEqual(R.served_declared(d, "claude-sonnet-5", L.read_json_file), 600_000)
-            self.assertIsNone(R.served_declared(d, None, L.read_json_file))
-
-
 class TestAutoCompact(unittest.TestCase):
     NONE = {"window": None, "enabled": None, "unsure": False, "policy": False,
             "remote_ruled_out": True}
     # Every hidden layer ruled out - a state the real settings reader never
-    # reports in 2.1.277 (REMOTE_POLICY_RULED_OUT), kept to test the rule.
+    # reports, since server-managed settings can never be ruled out
+    # (REMOTE_POLICY_RULED_OUT), kept to test the rule.
     ON = dict(NONE, enabled=True)
 
     def acw(self, model="claude-opus-5", mw=M1, e=None, s=None, observable=True, **kw):
@@ -186,16 +240,17 @@ class TestAutoCompact(unittest.TestCase):
     def test_env_window_resolved_only_when_everything_is_seen(self):
         e = env(CLAUDE_CODE_AUTO_COMPACT_WINDOW=500000)
         self.assertEqual(self.acw(e=e), {"window": 500_000, "resolved": True, "source": "env"})
-        # autoCompactEnabled not set in any observable layer: Claude Code falls
-        # back to the legacy global config, which a hook never reads.
+        # autoCompactEnabled not set in a settings layer the hook reads: a
+        # managed layer may set it, so an explicit true is required.
         self.assertEqual(self.acw(e=e, s=self.NONE)["resolved"], False)
         # A flag layer could be in play (or the cmdline was not read).
         self.assertEqual(self.acw(e=e, observable=False)["resolved"], False)
-        # An SDK session can get settings at runtime.
-        e2 = env(CLAUDE_CODE_AUTO_COMPACT_WINDOW=500000, CLAUDE_CODE_ENTRYPOINT="sdk-ts")
-        self.assertEqual(self.acw(e=e2)["resolved"], False)
-        # An unreadable policy file; any policy tier present; remote policy
-        # not ruled out (what the reader always reports in 2.1.277).
+        # An undocumented spelling of the window or of a compaction switch.
+        for e2 in (env(CLAUDE_CODE_AUTO_COMPACT_WINDOW="5e5"),
+                   env(CLAUDE_CODE_AUTO_COMPACT_WINDOW=500000, DISABLE_AUTO_COMPACT="maybe")):
+            self.assertEqual(self.acw(e=e2)["resolved"], False)
+        # An unreadable policy file; any policy tier present; server-managed
+        # settings not ruled out (what the reader always reports).
         self.assertEqual(self.acw(e=e, s=dict(self.ON, unsure=True))["resolved"], False)
         self.assertEqual(self.acw(e=e, s=dict(self.ON, policy=True))["resolved"], False)
         self.assertEqual(self.acw(e=e, s=dict(self.ON, remote_ruled_out=False))["resolved"],
@@ -218,7 +273,7 @@ class TestAutoCompact(unittest.TestCase):
         for v in ("0", "-1", "abc"):
             self.assertEqual(self.acw(e=env(CLAUDE_CODE_AUTO_COMPACT_WINDOW=v), s=s)["source"],
                              "settings", v)
-        # parseInt semantics, as in Claude Code: "500k" is 500, clamped up to 100K.
+        # doc: env-vars - "500k" reads as 500 and clamps to the 100K minimum.
         a = self.acw(e=env(CLAUDE_CODE_AUTO_COMPACT_WINDOW="500k"))
         self.assertEqual(a, {"window": 100_000, "resolved": True, "source": "env"})
 
@@ -237,18 +292,12 @@ class TestAutoCompact(unittest.TestCase):
         self.assertEqual((a["source"], a["window"]), ("disabled_setting", None))
 
     def test_model_defaults(self):
-        # claude-sonnet-5's per-entrypoint default, unresolved (client data may replace it).
-        a = self.acw("claude-sonnet-5", e=env(CLAUDE_CODE_ENTRYPOINT="local-agent"))
-        self.assertEqual(a, {"window": 500_000, "resolved": False,
-                             "source": "model_default_surface"})
-        self.assertIsNone(self.acw("claude-sonnet-5", e=env(CLAUDE_CODE_ENTRYPOINT="cli"))["window"])
-        # Nothing configured: server client data / experiments cannot be ruled out.
-        self.assertEqual(self.acw(), {"window": None, "resolved": False, "source": "auto"})
-
-    def test_entrypoint_is_not_carried_raw(self):
-        e = R.env_inputs({"CLAUDE_CODE_ENTRYPOINT": "local-agent"})
-        self.assertNotIn("local-agent", json.dumps(e))
-        self.assertTrue(e["surface_entrypoint"])
+        # Nothing configured: Claude Code's window tuned for the model is not
+        # modelled, whatever the model.
+        for model in ("claude-sonnet-5", "claude-sonnet-4-6", "claude-opus-5"):
+            with self.subTest(model=model):
+                self.assertEqual(self.acw(model),
+                                 {"window": None, "resolved": False, "source": "auto"})
 
     def settings_dirs(self, d):
         cfg, proj = os.path.join(d, "cfg"), os.path.join(d, "proj")
@@ -287,8 +336,10 @@ class TestAutoCompact(unittest.TestCase):
             put(os.path.join(cfg, R.REMOTE_SETTINGS), {"autoCompactWindow": 700000})
             self.assertEqual(read()["window"], 700_000)
 
-    def test_out_of_range_settings_fall_through_like_claude_code(self):
-        # int().min(1e5).max(1e6).catch(undefined): the lower layer's value wins.
+    def test_out_of_range_settings_fall_through(self):
+        # doc: settings-reference - autoCompactWindow is 100000 to 1000000.
+        # Treating a value outside that as absent, so the lower layer's wins,
+        # is our own handling (window_rules._valid_acw), not documented.
         with tempfile.TemporaryDirectory() as d:
             cfg, proj, managed, dropins, put, read = self.settings_dirs(d)
             put(os.path.join(proj, ".claude", "settings.json"), {"autoCompactWindow": 50000})
@@ -311,8 +362,8 @@ class TestAutoCompact(unittest.TestCase):
 
 class TestPolicyPresence(unittest.TestCase):
     """Any policy tier present makes a settings-derived window unresolved,
-    whatever keys it holds (Claude Code's managedSourcesBehavior chooses
-    among tiers first-wins by default; the mirror does not model that)."""
+    whatever keys it holds (managedSourcesBehavior, documented on the
+    managed-settings page, chooses among tiers; the rules do not model that)."""
     ON = TestAutoCompact.ON
     acw = TestAutoCompact.acw
     settings_dirs = TestAutoCompact.settings_dirs
@@ -331,13 +382,6 @@ class TestPolicyPresence(unittest.TestCase):
                     self.assertTrue(got["policy"])
                     self.assertFalse(self.acw(s=got)["resolved"])
                     os.unlink(path)
-
-    def test_managed_settings_path_env_counts(self):
-        with tempfile.TemporaryDirectory() as d:
-            cfg, proj, managed, dropins, put, read = self.settings_dirs(d)
-            got = R.settings_autocompact(cfg, proj, L.read_json_file, (managed,), (dropins,),
-                                         environ={R.MANAGED_PATH_ENV: "/somewhere"})
-            self.assertTrue(got["policy"])
 
     def test_remote_policy_is_never_ruled_out_in_this_version(self):
         self.assertIs(R.REMOTE_POLICY_RULED_OUT, False)
@@ -363,15 +407,9 @@ class TestProviderAndUrl(unittest.TestCase):
         d = derive("claude-opus-5", e)
         self.assertEqual((d["window"], d["resolved"]), (M1, False))
 
-    def test_gateway_env_is_unresolved(self):
-        e = env(CLAUDE_CODE_USE_GATEWAY=1)
-        self.assertEqual(e["provider"], "gateway")
-        self.assertFalse(derive("claude-opus-5", e)["resolved"])
-
     def test_beta_models_are_unresolved_on_every_provider(self):
-        for extra in ({}, {"CLAUDE_CODE_USE_VERTEX": 1}, {"CLAUDE_CODE_USE_BEDROCK": 1},
-                      {"CLAUDE_CODE_USE_GATEWAY": 1}):
-            for m in ("claude-sonnet-4-5", "claude-opus-4-6", "claude-sonnet-4-0"):
+        for extra in ({}, {"CLAUDE_CODE_USE_VERTEX": 1}, {"CLAUDE_CODE_USE_BEDROCK": 1}):
+            for m in ("claude-opus-4-6", "claude-sonnet-4-6"):
                 with self.subTest(m=m, extra=extra):
                     d = derive(m, env(**extra))
                     self.assertEqual((d["window"], d["resolved"], d["rule"]),

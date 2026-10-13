@@ -2,12 +2,11 @@
 id: dev-cycle-step-5-numbering-puts-the-push-f6fd
 title: "dev-cycle: Step 5 numbering puts the push (5.3) before landed: (5.5); a run dying between merge and landed: reads STALE"
 type: bug
-status: doing
+status: done
 priority: 3
-owner: Kyle-McFarlane@7696505da8e1
-claimed: 2026-09-28T23:02Z
 created: 2026-09-28
 updated: 2026-09-28
+closed: 2026-09-28
 refs:
   - 16da review
 ---
@@ -39,3 +38,21 @@ findings:
   [low] resume.md:154 — S2b ignores "a push the invocation asked for in words" (bindings.md:266); say reported unpushed explicitly
 dispatch: implementer opus — resume, fix round 1
 agent: implementer ad34ddcd4498110e0 round 2
+return: implementer DONE 2543c2a (fix round 1; shared landing tail for S2/S2b)
+dispatch: reviewer opus — resume, round 2
+agent: reviewer a8c21f2e82d60050d round 2 at 2543c2a
+verdict: NEEDS_CHANGES round 2 at 2543c2a (3 medium, 1 low; all round-1 fixed)
+findings:
+  [medium] resume.md:223 tail step 3 — base range undefined on resume; pass: BASE=<merge sha>^1 for §6, checks on the base as it stands, attribute a red to this merge only after checking git log <merge sha>..<base>, naming later commits
+  [medium] resume.md:220-222 tail step 2 no-item arm — true from the start for a review <branch> run whose worktree the cycle didn't add; pass: a positive completion record (e.g. a closed: line) or always run steps 3-5 (idempotent)
+  [medium] troubleshooting.md:113, SKILL.md:323-325 vs librarian-mode — "nothing is pushed past it" contradicts the librarian's unconditional push after its Report; pass: scope to the cycle's own push, under a librarian the red goes on decisions needed and the push is the librarian's call
+  [low] SKILL.md:336 — 118-char line, rewrap
+librarian decision: finding 3 takes the scoping option inside dev-cycle; gating librarian-mode's push on green base checks filed as its own item (librarian-mode is outside this item's files)
+dispatch: implementer opus — resume, fix round 2
+agent: implementer ad34ddcd4498110e0 round 3
+return: implementer DONE 0af7908 (fix round 2: 734ffa7 + 0af7908)
+dispatch: reviewer opus — resume, round 3
+agent: reviewer a8c21f2e82d60050d round 3 at 0af7908
+verdict: CLEAR round 3 at 0af7908 (2 low: a resumed push may carry later local commits — name them as step 3 does; store-less S2 re-runs base checks each time — declined, both safe and doctrine-consistent)
+landed: 9f2c425
+- 2026-09-28 done: 9f2c425

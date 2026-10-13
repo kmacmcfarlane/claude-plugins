@@ -3,19 +3,59 @@
 Fixed shapes for the lines the steps append to the record sink; every step that writes
 one uses this exact shape, and each shape below names the step, or steps, that write it —
 **one writer per role**, so that no two steps can write the same line about the same
-thing. Two shapes have two writers, each for a different role: `return:` (SKILL.md
-§ Step 3.5 for an implementer, § Step 1 for a planner) and `answer:` (`bindings.md`
-§ Decisions for a raised decision, SKILL.md § Step 3.5 for a `NEEDS_CONTEXT`). The
+thing. Five shapes have more than one writer, each for a different role: `return:` (SKILL.md
+§ Step 3.5 for an implementer, § Step 1 for a planner), `answer:` (`bindings.md`
+§ Decisions for a raised decision, SKILL.md § Step 3.5 for a `NEEDS_CONTEXT`),
+`dispatch:` and `agent:` (SKILL.md § Step 2 rule 7 for the cycle's own roles; the
+dispatching caller for a `scribe`, a `scout` or a cross-check, below; a research skill's run
+for its own roles, below), and `budget:` (SKILL.md § Step 0.3 opens the phase; `bindings.md`
+§ Decisions and § Spend budget write a raise or a later fable pin). The
 record is a log, read in the order it was written, and what `resume.md` reads to take an
 interrupted run up again; a line that is missing reads there as not recorded:
 
-- `dispatch: <role> <model> — <signal>` — SKILL.md § Step 2 rule 7, written before every
-  dispatch (implementer, planner or reviewer), and before every SendMessage that resumes
-  an agent for a new round, as `dispatch: <role> <model> — resume` (SKILL.md § Step 4.3
-  writes it through rule 7), so that no round opens without a phase line
+- `dispatch: <role> <model> <effort> — <signal>` — three writers, by role:
+  - **the cycle's roles** — `implementer`, `planner`, `reviewer` —
+    SKILL.md § Step 2 rule 7, written before every dispatch, and before every SendMessage
+    that resumes an agent for a new round, as `dispatch: <role> <model> <effort> —
+    resume` (SKILL.md § Step 4.3 writes it through rule 7), so that no round opens without
+    a phase line;
+  - **a helper line** — role `scribe` or `scout` — the caller that dispatches a helper or
+    a read-only question outside a cycle's roles (a librarian's card render, brief fill,
+    summary, `dig into` or diagnostic; `model-routing.md` § Profiles), written before
+    that Agent call. A helper line is a **rider**, never a phase line: it never opens or
+    moves a round, and a decision recorded before it stays after the cycle's last phase
+    line, where the GATE reads it (`resume.md` § Phase lines and riders). A
+    **cross-check** is a helper line too: role `cross-checker`, or `reviewer` with the
+    signal `cross-check stand-in (…)`, dispatched on an operator's accepted offer by the
+    orchestrator that made it (`model-routing.md` § Fable cross-checks). A record written
+    before cross-checks became riders may carry a `cross-checker` phase line
+    (`resume.md` S3b).
+  - **a research run's line** — role `research-lane`, `research-verifier`, `scout` or
+    `synthesis` — a research skill's run recording onto an item it filed or was named
+    (`--item`), written before each Agent call (the `research` skill's
+    `references/intensity-and-routing.md` § Recording), with its `agent:` lines. Each is a
+    helper line: a **rider**, never a phase line (`resume.md` § Phase lines and riders).
+
+  The fields:
+  - `<role>` is one role word: `scribe`, `scout`, `implementer`, `planner`, `reviewer` or
+    `cross-checker`; on a research run's line, `research-lane`, `research-verifier`,
+    `scout` or `synthesis`.
+  - `<model>` is the per-call model: `sonnet`, `opus` or `fable`.
+  - `<effort>` is the dispatched agent file's pin, `low` | `medium` | `high` | `xhigh`,
+    or `inherit` when the fallback dispatched `general-purpose` at the session's effort
+    (`model-routing.md` § Fallback). With the role it names the file, one role at one
+    effort per file: `planner xhigh` is `planner-deep`, `reviewer medium` is
+    `reviewer-light`, `cross-checker xhigh` is `cross-checker-deep`.
+
+  A line written before the effort field existed, its model followed directly by the `—`,
+  reads as **effort unrecorded**, never as a malformed line.
 - `agent: <role> <id> round <n>` — SKILL.md § Step 2 rule 7, written as soon as the Agent
-  call returns an id, directly under the `dispatch:` line it belongs to; under a
-  `— resume` dispatch it repeats the resumed agent's id with the round it now serves.
+  call returns an id, directly under the `dispatch:` line it belongs to, with the same
+  role word; under a `— resume` dispatch it repeats the resumed agent's id with the round
+  it now serves. Under a helper line the caller writes `agent: <role> <id>`,
+  with no round: a rider too, never in a resume's generation. A research run's `agent:`
+  line carries its own run round (the `research` skill's § Recording) and is a rider all
+  the same: its role word is never a cycle role.
   `<n>` is the
   round that dispatch serves (the first build or the first review is round 1). It is what
   SKILL.md § Step 4.3 resumes an agent by and what a caller copies into a handoff: an id
@@ -75,12 +115,57 @@ interrupted run up again; a line that is missing reads there as not recorded:
   waiver: pure prose with no operational claim (`model-routing.md` § Review waiver).
   `<sha>` is the HEAD it reviewed, the same as the verdict's; the clause names the test
   it passed — a doc only, and no command, host, path, permission, config value or rule
-  agents follow touched. It has no `dispatch:` or `agent:` pair, since nothing was
-  dispatched. A `verdict:` with no `review: self` above it was a reviewer's.
+  agents follow touched; or, under `librarian-mode`'s wider reading, `rule-free skill
+  wording:` with the kind and why it changes no rule (the `librarian-mode` skill's
+  `references/decide-alone.md` § Trivial documentation). It has no `dispatch:` or
+  `agent:` pair, since nothing was dispatched. A `verdict:` with no `review: self` above it was a reviewer's.
 - `findings: …` — SKILL.md § Step 4.5, written together with a `NEEDS_CHANGES` or
   `SHOW_STOPPER` verdict: the reviewer's FINDINGS section, pasted verbatim, one line per
   finding in the reviewer's (or the self-review's) own numbering — the source
-  `fix-loop.md`'s NEEDS_CHANGES round hands to the fix dispatch unchanged.
+  `fix-loop.md`'s NEEDS_CHANGES round hands to the fix dispatch unchanged. One more
+  writer, a different role: the orchestrator that ran an accepted cross-check writes its
+  accepted findings onto the build's item as `findings: cross-check (<stage>) — …`, a
+  rider no verdict carries, which the build's next review brief pastes for that reviewer
+  to rule on (`model-routing.md` § Fable cross-checks). A finding's `Fix:` clause
+  (`review-brief.md` § Report back) rides inside it verbatim; only `bindings.md`
+  § Decisions, What a cap ends in, reads it.
+- `findings: carried — <finding, its severity, verbatim>` — `bindings.md` § Decisions,
+  What a cap ends in: written by the orchestrator onto the plan item when a plan stops and
+  carries — at a cap or from its fourth review with no high left — or ends a granted plan
+  path, one line per open finding; a rider no verdict carries, never read by the GATE but
+  read by resume's S11 (`resume.md`). Every build of that series copies the lines into its
+  brief's Acceptance (`agent-brief.md`).
+- `REOPEN: <the artifact> — <the reopen> — <why>` — SKILL.md § Step 4.5 for a verdict's
+  line, and for a return's as the return is recorded (Step 3.5): each such line in an
+  implementer's OPEN QUESTIONS or a reviewer's NOTES, copied verbatim whatever the verdict, before it is raised (`bindings.md` § Decisions, A foundation reopen). A rider.
+- `reopen: carried — REOPEN: <the artifact> — <the reopen> — <why> — filed as <reopen id |
+  open questions>` — `bindings.md` § Decisions, A foundation reopen: written by the
+  orchestrator onto a build's item when the operator answers that the build carries a
+  foundation reopen, the `REOPEN:` line as the agent reported it. A rider: never a phase
+  line, never a `findings:` line, and nothing in resume reads it; the `decision:` and
+  `answer:` pair is the decision's record.
+- `budget: <UTC> <phase> $<total> — <source>` — two writers, by role: SKILL.md § Step 0.3
+  opens the phase with it, beside the `target:` line; `bindings.md` § Decisions (a raise,
+  on an answer) and § Spend budget (a `model: fable` pin set later) write a new one. One
+  unindented line, since context-guard's `usage-report` reads it at column 0.
+  - `<UTC>` is `YYYY-MM-DDTHH:MMZ`, **truncated** to the minute (never rounded up), so the
+    line always precedes the phase's first dispatch in the reader's time split.
+  - `<phase>` is `plan` or `build`; `<total>` the amount in force, never a delta.
+  - `<source>` is one of `default <kind>`, `default <kind> ×2 fable`, `plan <series slug>
+    estimate`, `plan <series slug> estimate (answer N)`, `operator`, `answer N (was
+    $<old>)`. `<kind>` is `spike` or `plan` for a plan; for a build, its type word
+    (`chore`, `bug`, `feature`, …), or `build` with no type.
+  - The operator's pin `budget: [plan|build] $<n>` in the item body is not a record line:
+    `bindings.md` § Spend budget reads it (the reader flags it `ignored line`, harmlessly).
+- `cost: <UTC> <phase> $<spent> of $<budget> after review <n> — must-fix <m> — prices
+  <version>`, or `cost: <UTC> <phase> unread — <reason> — must-fix <m>` — the spend check
+  (`bindings.md` § Spend budget), run by SKILL.md § Step 4.5 and § Step 4.3; a rider, one
+  unindented line. Dollars to two decimals; `<m>` the verdict's `MUST-FIX:` count, an
+  integer or `?`; `<n>` the phase's counted review; `<version>` the price table's. Never
+  `spent:`, which is another line's.
+- `decided:` — the shape in the `librarian-mode` skill's `references/decide-alone.md`
+  § The record; writers: the caller, or standalone `bindings.md` § Spend budget, The
+  Done-alone line.
 - `target: <mode> <ref> <workspace>` — SKILL.md § Step 0.3, **every mode**, written before
   any dispatch.
   - `<mode>` is one bare word, `full` | `plan` | `review` — **one token wide in every
@@ -104,36 +189,42 @@ interrupted run up again; a line that is missing reads there as not recorded:
     `git -C <workspace>` from a working directory this one cannot predict, so a
     repo-relative path here resolves against the wrong tree.
 
-  Every later step reads the workspace from this line instead of reconstructing it.
+  Every later step reads the workspace from this line instead of reconstructing it. The
+  line also opens a phase: the `budget:` line goes with it, and `resume.md`'s ROUNDS
+  counts from the last one.
 - `intent: <one line>` — `bindings.md` § Intent, `review <branch>` mode with no item or
   plan
 - `decision: <question> — options: <a> | <b> | <c>` — `bindings.md` § Decisions, written
-  before a decision is raised. **Self-contained**: the question in full and its options,
-  recommendation first, so that a reader who was not in the session that raised it can put
-  it to a human verbatim. Under a caller it composes as
-  `decision N: <question> — options: …`, so the caller's numbered channel is unchanged.
-  **Exactly one decision carries a tag**: SKILL.md § Usage's `review <branch>` ask,
-  whether to dispatch an implementer for the findings, is written
-  `decision: dispatch-permission — <question> — options: <a> | <b>`, and under a caller
-  the same tag follows the number of `decision N:`. The tag is a fixed identifier, not a
-  kind: every other decision is untagged. It lets a later reader find that one decision
-  by name; what its answer's scope is, `bindings.md` § Decisions says.
+  before a decision is raised. **Self-contained**: the question in full — for an ask for
+  another round, with its justification (`bindings.md` § Decisions) — and its options in
+  letter order, the recommended one marked `[recommended]`, so that a reader who was not
+  in the session that raised it can put it to a human verbatim. Under a caller it
+  composes as `decision N: <question> — options: …`, so the caller's numbered channel is
+  unchanged.
+  **Two tags exist**, each a fixed identifier, not a kind; every other decision is
+  untagged. SKILL.md § Usage's `review <branch>` ask, whether to dispatch an
+  implementer for the findings, is written
+  `decision: dispatch-permission — <question> — options: <a> | <b>`; a fable cross-check
+  offer (`model-routing.md` § Fable cross-checks) is written
+  `decision: fable-offer — <question> — options: …`. Under a caller the tag follows the
+  number of `decision N:`. A tag lets a later reader find that decision by name; what
+  the dispatch permission's answer scope is, `bindings.md` § Decisions says, and the
+  GATE never reads a `fable-offer` pair (`resume.md`, GATE).
 - `answer: <decision> — <reply>` — `bindings.md` § Decisions and SKILL.md § Step 3.5 (a
   `NEEDS_CONTEXT` answer), written as soon as the reply arrives; `<decision>` repeats the
-  `decision:` line's question (or, for a `NEEDS_CONTEXT`, the question) — for the one
-  tagged decision, its tag instead: `answer: dispatch-permission — <reply>`. A caller's
+  `decision:` line's question (or, for a `NEEDS_CONTEXT`, the question) — for a
+  tagged decision, its tag instead: `answer: dispatch-permission — <reply>`,
+  `answer: fable-offer — <reply>`. A caller's
   numbered pair — librarian-mode's `decision N: …` and `answer N: <reply>`, matched by
   `N` — is the same pair and is read the same way; its `answer N:` carries no tag, the
   number already pairing it. Under a caller whose session loads the
   `operator-interaction:decisions` skill, a natural-language reply is recorded with the
   echo's reading, `answer N: <reply> (read as: <reading>)`.
 - A caller's stored card — under librarian-mode with the `operator-interaction:decisions`
-  skill, `decision N:` is followed by the card as indented lines (`raised:`, `what:`,
-  `why now:`, `context:`, one line per option with its `undo:` and `who:`, `rec:`,
-  `basis:`, `unknown:`, and `revised:` on a revision; librarian-mode's
-  `references/decisions.md` § What the store records). Indented lines are not record
-  lines: nothing matches them as `decision`, `answer` or `wake`, and `wi needs-input` reads
-  only the headline.
+  skill, `decision N:` is followed by the card as indented lines, as the `librarian-mode`
+  skill's `references/decisions.md` § What the store records gives them. Indented lines are
+  not record lines: nothing matches them as `decision`, `answer` or `wake`, and `wi
+  needs-input` reads only the headline.
 - `wake N: <time | event | next Report>` — a caller's deferral ("decide later") of
   `decision N:`, written when the operator defers it (librarian-mode's
   `references/decisions.md`). It is not an answer: `decision N:` stays pending, and `wi
@@ -143,9 +234,42 @@ interrupted run up again; a line that is missing reads there as not recorded:
   it fires. A `decision:` with no matching `answer:` is **pending**
   (`bindings.md` § Decisions says what a run does with one), and an answered one is never
   raised again while its answer is in force (the same section).
+- `shown N: <UTC time> <chat | page | doc>` and `seen N: <UTC time> <turn | page | doc>` —
+  a caller's record of each showing of `decision N:` and of the operator's turn (or page
+  or doc answer) that saw it, appended by the session that displays the decision, never
+  by a dispatched agent (librarian-mode's `references/decisions.md` § What the store
+  records). The shape, how they are read (first and last by position; seen after the last
+  showing by file order), and the hold on `seen N:` lines are the `work-items` format
+  reference's § Shown and seen. The cycle itself writes neither, and neither is an answer:
+  `decision N:` stays pending.
 - `spent:` — written and read by `resume.md` (§ The GATE), and by nothing else.
-- `landed: <merge sha>` — SKILL.md § Step 5.5, written once Land's merge succeeds and
-  before `$WI done` / `$WI handoff`. It is the record's only evidence that a target
-  reached a merge, and SKILL.md § Step 6 reports it on the `verified:` line. `Leave the
-  branch` lands nothing and writes no `landed:` line.
+- `trial: xhigh-planner <bump | control>` and
+  `trial: xhigh-planner <bump | control> excluded — <reason>` — both written by the trial
+  routing step, `model-routing.md` § The xhigh trial, which SKILL.md § Step 1 runs before
+  a planner round and at each window dispatch's return, and by nothing else. The first
+  goes in before the first planner dispatch of a trial unit's window; the second, when a
+  window dispatch's transcript shows another effort than its arm's, at that dispatch's
+  return, the reason naming the dispatch and the effort seen (`planner showed xhigh
+  (fallback)`), or when a bump round steps down, with the reason `below the quota reserve`
+  (`model-routing.md` § Below the quota reserve). An item that is no trial unit carries
+  neither. Each is one unindented line, since the trial's count reads them with `grep -x`
+  and `grep '^trial:'`.
+- `cross-check: <stage> <high | xhigh | stand-in> <n> accepted highs <UTC time>` —
+  written by the orchestrator that dispatched a cross-check, when it returns, and by
+  nothing else: it is the rider's return. `<stage>` is `plan-stage` (a research
+  synthesis's included), `estate-wide`, `post-landing` or `at-the-cap`; `stand-in` marks
+  the author rule's opus review; `<n>` is the number of its high or critical findings the
+  opus `CLEAR` missed that the orchestrator accepts, `0` for a `CLEAR`; the time is
+  `YYYY-MM-DDTHH:MMZ`. A dropped cross-check writes `<n>` as `dropped`: not a trial. The
+  keep rule counts only `plan-stage high` and `plan-stage xhigh` lines with a numeric
+  `<n>`, the first 8 by time over the stores (`model-routing.md` § Fable cross-checks), so
+  each is one unindented line.
+- `cross-check-rulings: …` — SKILL.md § Step 4.5, written directly under the `verdict:` of
+  a review that was given a `findings: cross-check` block, whatever the verdict: the
+  reviewer's CROSS-CHECK section pasted verbatim, one line per pasted finding, `stands
+  (FINDINGS #<k>)` or `withdrawn — <reason>` (`review-brief.md`).
+- `landed: <merge sha>` — SKILL.md § Step 5.3, written the moment Land's merge succeeds —
+  before the checks on the base, any push, cleanup and `$WI done`. It is the record's
+  only evidence that a target reached a merge, and SKILL.md § Step 6 reports it on the
+  `verified:` line. `Leave the branch` lands nothing and writes no `landed:` line.
 - `checks:`, the `changed:` block — `bindings.md` §§ Checks, Undeclared files

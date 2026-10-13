@@ -1,28 +1,32 @@
 # The worksheet
 
 Fill this in for each decision before you write it. You juggle the dimensions; the operator
-sees only what they produce: a level, an answer mode, a place in the order, a basis word and a
-card shape. Each group answers one question and sets one thing — merging them into one vague
+sees only what they produce: a level, an answer mode, a place in the order, a basis word, a
+card shape, what it takes to act, the Context (§ The Context) and the Impact line (§ The
+Impact line). Each group answers one question and sets one thing — merging them into one vague
 "type" of decision is what loses information.
 
 ## A — Who is reading, and how warm are they? → how much to re-explain
 
 | Field | Values | Who can supply it |
 |---|---|---|
-| Warmth | **warm** — the operator saw this decision's context in this session, and nothing below happened since; **cold** — any of the events below, or they have never seen it | you, from your own session; a cross-session collector, when one exists |
-| Events since the operator last touched it | a context compaction or clear; a different session or repo in between; a hand-off from another agent; **no operator turn since it was last shown** (you printed it while they were away) | you (for your own session); a collector (for others) |
+| Warmth | **warm** — the operator saw this decision's context in this session, and nothing below happened since; **cold** — any of the events below, or they have never seen it | you, from your own session; the caller's record of shown and seen, after a reset or from another session; a cross-session collector, when one exists |
+| Events since the operator last touched it | a context compaction or clear; a different session or repo in between; a hand-off from another agent; **no operator turn since it was last shown** (you printed it while they were away) | you (for your own session); the caller's record of shown and seen (the last showing, and whether a turn has seen it); a collector (for others) |
 | Age | time since the decision was raised | you, from the decision's record |
 | Operator's expected return | when they said they would be back, if they did | you, from what the operator said |
 
 Cold raises the level: a cold reader never gets a line-only decision (the line-only rule in
-SKILL.md § Levels), and a block adds a *context you may have lost* part. Re-explaining is
-triggered by **events**, not by elapsed time alone: a compaction five minutes ago makes a
-reader colder than an idle hour with nothing in between.
+SKILL.md § Levels). Warmth does not decide whether Context is shown: every card and block
+carries it (§ The Context). Re-explaining is triggered by **events**, not by elapsed time
+alone: a compaction five minutes ago makes a reader colder than an idle hour with nothing in
+between.
 
 The last event is the commonest in a long session. A caller re-entered by background work can
 write several messages while the operator is away; a card in the first of them was printed,
 not seen. Check your own transcript: if the operator has not taken a turn since the card was
-shown, they have not seen it, and it is shown again.
+shown, they have not seen it, and it is shown again. Without the transcript (after a reset,
+or from another session), read the caller's record of shown and seen, where it keeps one: a
+last showing no turn has seen, or no showing recorded, is cold.
 
 Whether *now* is a good moment to interrupt the operator is a real dimension too, but nothing
 observable measures it today; leave it alone rather than guess.
@@ -35,10 +39,13 @@ observable measures it today; leave it alone rather than guess.
 | Blast radius | narrow (your own branch, sandbox or task) / wide (shared history, other people, other sessions, published artifacts, spend) | you, from what the change touches |
 | Others rely on it before review | yes / no — will another agent, session or person act on the outcome before the operator sees it? | you |
 
-Judge **reversibility and blast radius together**; never add them up as two scores. A decision
+Judge **reversibility and blast radius together**; never add them up as two scores. A
+decision is wide when any of its options is. A decision
 that is one-way *and* wide (or relied on) is **⚠ one-way**; how it is shown and answered is
-SKILL.md § Critical. One-way but narrow is a card marked *one-way, narrow*. Two-way and narrow
-is the fast tier: a card, or a line when the line-only rule holds.
+SKILL.md § Critical. One-way but narrow is a card with no ⚠, its Undo saying it cannot be
+undone. Two-way and narrow is the fast tier: a card, or a line when the line-only rule holds.
+The operator never sees these words as a label: reversibility is shown as the **Undo** facet
+(how, or why not) and blast radius as **Reach** (who or what), § The Impact line.
 
 ## C — How well is it understood? → what evidence is shown, and "investigate first"
 
@@ -49,10 +56,10 @@ is the fast tier: a card, or a line when the line-only rule holds.
 | Options diverge | the options lead to materially different outcomes / they converge (any would do) | you |
 | Options exist | yes / not yet — then it is an open question, not a decision | you |
 
-A thin basis or a new decision raises the level. When the missing fact could change the choice
-and finding it costs less than choosing wrong, offer **investigate first** as a priced option
-(its time and cost stated). Converging options are one of the conditions of the line-only
-rule (SKILL.md § Levels).
+A thin basis raises the level; so does a new decision, unless its options converge (any would
+do) — converging options stand in for a seen template in the line-only rule (SKILL.md
+§ Levels). When the missing fact could change the choice and finding it costs less than
+choosing wrong, offer **investigate first** as a priced option (its time and cost stated).
 
 ## D — What does waiting cost? → the order
 
@@ -73,20 +80,98 @@ Two clocks are in play, and each sets something different:
 
 Age — time since it was raised — is shown on the list line and breaks ties, nothing more.
 
+What it blocks and what waiting costs are shown as the **Wait** facet, on every list line and
+up (§ The Impact line).
+
 ## E — What kind of ask is it? → the card's shape
 
 | Kind | Shape |
 |---|---|
-| **Choose** among options | options with impacts, recommendation, decide later |
+| **Choose** among options | options with impacts in letter order, the recommended one bold, decide later |
 | **Approve** a proposed action | approve / change it / decide later, with the consequence of each |
+| **Another round** — a review-cap waiver, or any "one more round" | as *choose*, plus its justification: what the leftover findings would break if left, and what the round costs in time, quota and the operator's attention (SKILL.md § The floor) |
 | **Preference** — no fact settles it | options with impacts, labelled *your preference — no recommendation* |
 | **Outside my authority** | options with impacts, labelled *no recommendation — outside my authority*, with why |
 | **Alert** — time-critical | the fact now, bare; the options next |
 | **Open question** — not defined yet | listed under *Open questions*, unnumbered, until it has options |
-| **FYI after acting** — nothing to answer | one line: what was done, why it was safe to do, how to undo it |
+| **FYI after acting** — nothing to answer | one `Done:` line in the *Done alone* group: what was done, its class, why it was safe to do, the authority, how to undo it |
 
 **FYI after acting** is allowed only for an action that is two-way, narrow, relied on by
 nobody before the operator reviews it, and inside authority the operator already gave — an
-answered decision, or the task you were assigned. Never for ⚠, never when others rely on it.
+answered decision, the task you were assigned, or a decide-alone class the caller's rules
+define. Never for ⚠, never when others rely on it.
 An action about to happen unless the operator stops it is **not** an FYI: it is an approve
 ask, and it waits. When in doubt, ask.
+
+**Why ask, and the class.** Every kind above but the FYI, the alert and the open question
+carries *why ask* (SKILL.md § The floor): what would go wrong if you took your recommendation
+alone. Fill it before you write the card. When the caller names classes of decision, pick
+the one this ask belongs to at birth and open *why ask* with it; one that fits no class says
+so in the caller's word for that. An ask whose *why ask* comes out empty — nothing goes wrong
+if you take the recommendation — is decided alone when the FYI rule above allows, and shown
+after; otherwise it is asked.
+
+| Field | Values | Who can supply it |
+|---|---|---|
+| Class | one of the caller's class names, or none when the caller names none | the caller's rules; you pick at birth |
+| Why ask | what would go wrong if you took your recommendation alone; with no recommendation, why the call is not yours | you |
+
+## F — What does the operator need in hand? → the card's terms and its To act on part
+
+| Field | Values | Who can supply it |
+|---|---|---|
+| Source | the document or session the decision comes from (a plan, a review, a run's record), and whether the operator has read it | you |
+| Terms | each label, number, acronym or term of art the card would use that the operator has not used themselves, and the words each stands for | you, from the source |
+| Operator actions | per option: what the operator must do to carry it out, or *answer only* | you |
+| Inputs | per such option, what SKILL.md § The floor, what it takes to act, requires (its specifics: `references/rendering.md` § Card, To act on) | you; the caller, where it keeps the files |
+
+Warm on the decision is not warm on its source's words: group A measures the first only. A
+reader who answered the decision before this one may never have read the plan whose labels
+its options would use.
+
+## The Context — from the groups above
+
+Every card and block carries a **Context:** section, shaped like the answer page's `context`
+field (`references/rendering.md` § Context). Fill it before the Impact line, from groups A
+and F, in plain words for the operator:
+
+| Part | From | Who can supply it |
+|---|---|---|
+| Terms | group F: each label, number, acronym, count, named mode, setting, review, plan or document, or item the card uses, glossed in plain words (a count says what the things are) | you, from the source |
+| Where you left it | group A: what the operator last saw or decided on this subject; for a decision whose subject they have never seen, where it came from, worded to stay true once they have (*raised when …*) | you; the caller's record of shown and seen |
+| What you decide now | the choice, in the terms of where they left it | you |
+| Lost context (a block only) | the facts a reader coming back cold needs: what was tried, what was answered before, where a list or number came from | you, from the source and the record |
+
+A card's Context is the first three, in that order, in one or two sentences (about 30–60
+words); it does not restate **What:**. A block's adds the lost context, as bullets. Write it
+when the decision is raised, and store it with the card where the caller keeps one, so every
+later showing — a re-show after a reset included — reads it instead of composing it again.
+
+## The Impact line — from the groups above
+
+Fill it last, from what the groups produced, in plain words for the operator. The facets and
+how each view shows them are in `references/rendering.md` § Impact.
+
+| Facet | From | Who can supply it |
+|---|---|---|
+| Effect | what the recommended option does to the world (with no recommendation, each option's, in a few words) | you |
+| Wait | group D: what waiting costs, what it blocks, what happens at a deadline | you; a collector for other sessions |
+| Reach | group B's blast radius, named: the operator, sessions, which repos, the public | you, from what the change touches |
+| Undo | group B's reversibility, as how: *one edit*, *a hotfix release*, or *none — why* | you — say how you know |
+| Cost | time, money, quota, the operator's attention, per option | you; the caller's budget, when it keeps one |
+
+Write it when the decision is raised, and store it with the card where the caller keeps one,
+so every later view reads it instead of composing it again.
+
+## The cold read
+
+The self-check, run on each card or block after it is written and before it goes out. Read
+only the card, as someone who has seen nothing else, and for each option ask:
+
+1. Can you say what it means and what happens if it is chosen, without opening anything?
+2. If the option is the operator's to carry out, does the card meet SKILL.md § The floor,
+   what it takes to act, from the card alone?
+
+Then check every label, number or acronym on it against SKILL.md § The floor, item 1: defined
+where it first appears — in its **Context:** — or replaced by its words. A card that fails is fixed before it is
+raised, not after the operator asks.

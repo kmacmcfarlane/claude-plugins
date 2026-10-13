@@ -12,8 +12,9 @@ remove, replace). Both write settings only through write_settings().
   installed it; or the same under the claude-kit- or context-guard- data dir,
   where older copies of that footer lived): taken over only once the
   statusline plugin has registered itself as a hub display hook (a trusted
-  hooks.d/statusline.json of kind display), so the footer keeps drawing - see
-  session_start.py.
+  hooks.d/statusline.json of kind display), so the footer keeps drawing; or,
+  with no statusline install recorded, once the copy's own plugin is gone
+  (footer_copy names it) - see session_start.py.
 - Anything else is foreign: never modified without the user's explicit consent
   (the installer's --replace, or its --wrap).
 
@@ -50,17 +51,22 @@ takeover reads):
                     | "wrapping" | "unwrapped",
    "settings": "<abs path>", "command": "<our command>", "at": <epoch s>}
 - installed: the entry in `settings` is ours; SessionStart restores it when a
-  stale session's settings write drops it.
+  stale session's settings write drops it (never in a project file git
+  tracks). Extra field "scope": "project" when the installer wrote it into
+  a project's shared settings file (--project, or --settings naming a
+  project's .claude/settings.json); SessionStart keeps it through each
+  heal, so a refused restore names --project as the way back.
 - removed: the user ran --remove (or had removed the statusline footer from
   that file before the hub arrived); nothing re-adds it until they install
   again.
 - yielded: something else replaced our entry; left alone for good.
 - deferred: a statusLine was already set on first run; never overwritten.
 - blocked: the settings file could not be used (not valid JSON, read-only,
-  unwritable, or a project file git does not ignore); said once, retried
-  quietly every session. Extra fields: "reason", and "resume" - the state
-  whose work is retried ("installed" or "wrapping" or "unwrapped" for a
-  heal, "new" for a first run).
+  unwritable, a project file git does not ignore, or one git tracks); said
+  once, retried quietly every session. Extra fields: "reason", and
+  "resume" - the state whose work is retried ("installed" or "wrapping"
+  or "unwrapped" for a heal, "new" for a first run); "scope" too when the
+  marker it replaced carried one, so the heal it resumes keeps it.
 - wrapping: the entry in `settings` is ours, running the wrapped entry the
   wrap record keeps; SessionStart restores it when a stale session's write
   drops it or puts the wrapped entry back, and yields to anything else.
@@ -87,6 +93,10 @@ _SHAPE = r'\s*python3\s+"?(?:[^"\\]|\\.)*/plugins/data/{}-[^/"]+/current-hooks/{
 OWN_RE = re.compile(_SHAPE.format(re.escape(PLUGIN), re.escape(SCRIPT)))
 STATUSLINE_RE = re.compile(_SHAPE.format(
     "(?:" + "|".join(map(re.escape, FOOTER_HOMES)) + ")", re.escape("statusline.py")))
+# The same shape, capturing the script's path and the plugin whose data dir it is in.
+_COPY_RE = re.compile(
+    r'\s*python3\s+"?((?:[^"\\]|\\.)*/plugins/data/('
+    + "|".join(map(re.escape, FOOTER_HOMES)) + r')-[^/"]+/current-hooks/statusline\.py)"?\s*')
 
 MARKER = "owner.json"
 MARKER_V = 1
@@ -679,6 +689,18 @@ def classify(entry):
     if STATUSLINE_RE.fullmatch(cmd):
         return "statusline"
     return "foreign"
+
+
+def footer_copy(entry):
+    """(owning plugin, script path) for a statusLine value classify() calls
+    'statusline': the FOOTER_HOMES plugin whose data dir the entry runs
+    from, and the current-hooks/statusline.py path it runs (shell escapes
+    undone). None for anything else."""
+    cmd = entry.get("command") if isinstance(entry, dict) else None
+    m = _COPY_RE.fullmatch(cmd) if isinstance(cmd, str) else None
+    if not m:
+        return None
+    return m.group(2), re.sub(r"\\(.)", r"\1", m.group(1))
 
 
 def enabled_for(settings, plugin):
