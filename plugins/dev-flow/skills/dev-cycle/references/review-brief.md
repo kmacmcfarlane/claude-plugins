@@ -166,13 +166,13 @@ $WORKTREE, in addition to the generic ones>
   `git -C $WORKTREE archive <rev>` unpacked under the scratchpad — never a checkout.
 - Do not run `wi claim`, `wi done`, `wi handoff` or any writing `wi` command.
 - Never send a signal (kill, pkill, killall, a pattern or process-group kill) to a process
-  you did not start yourself, and never stop a background task you did not start. Stop your
-  own only by the handle you got when you started it: the PID you recorded (`$!` after a
-  background start), or, for a command you started with the Bash tool's `run_in_background`,
-  its task id, through the harness's `TaskStop` tool
+  you did not start yourself, and never stop a background task, agent or teammate you did
+  not start. Stop your own only by the handle you got when you started it: the PID you
+  recorded (`$!` after a background start), or, for a command you started with the Bash
+  tool's `run_in_background`, its task id, through the harness's `TaskStop` tool
   (https://code.claude.com/docs/en/tools-reference). Never by name or pattern, and never a
-  process or task you found by listing (`ps`, `pgrep`) — other agents' check runs share this
-  machine, inside a container or not.
+  process or task you found by listing (`ps`, `pgrep`, `/tasks`, or a list in an error) —
+  other agents' check runs share this machine, inside a container or not.
 - Do not soften a severity because the fix is small, or raise one because the fix is
   large. Grade the failure, not the effort. A `Fix:` never changes a severity.
 - Do not ask the user anything; put the question under NOTES.

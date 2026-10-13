@@ -219,13 +219,13 @@ each resolution in one line under DEVIATIONS.
   Ground is ever in scope.
 - Do not run `git stash` in any form (see Verification).
 - Never send a signal (kill, pkill, killall, a pattern or process-group kill) to a process
-  you did not start yourself, and never stop a background task you did not start. Stop your
-  own only by the handle you got when you started it: the PID you recorded (`$!` after a
-  background start), or, for a command you started with the Bash tool's `run_in_background`,
-  its task id, through the harness's `TaskStop` tool
+  you did not start yourself, and never stop a background task, agent or teammate you did
+  not start. Stop your own only by the handle you got when you started it: the PID you
+  recorded (`$!` after a background start), or, for a command you started with the Bash
+  tool's `run_in_background`, its task id, through the harness's `TaskStop` tool
   (https://code.claude.com/docs/en/tools-reference). Never by name or pattern, and never a
-  process or task you found by listing (`ps`, `pgrep`) — other agents' check runs share this
-  machine, inside a container or not.
+  process or task you found by listing (`ps`, `pgrep`, `/tasks`, or a list in an error) —
+  other agents' check runs share this machine, inside a container or not.
 - Do not create README.md, CHANGELOG.md, or any documentation file the change did not ask
   for.
 - Do not run `wi done`, `wi claim` or `wi release`; the orchestrator owns the item's state.

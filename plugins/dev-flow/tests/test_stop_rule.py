@@ -52,21 +52,29 @@ def stop_rule(path):
 class StopRule(unittest.TestCase):
     def test_home_names_both_routes(self):
         rule = stop_rule(HOME)
-        self.assertIn("never stop a background task you did not start", rule)
+        self.assertIn("never stop a background task, agent or teammate you did not start", rule)
         self.assertIn("the PID you recorded (`$!` after a background start)", rule)
         self.assertIn("`run_in_background`, its task id", rule)
         self.assertIn("`TaskStop`", rule)
         self.assertIn("https://code.claude.com/docs/en/tools-reference", rule)
         self.assertIn("Never by name or pattern", rule)
-        self.assertIn("(`ps`, `pgrep`)", rule)
+        self.assertIn("(`ps`, `pgrep`, `/tasks`, or a list in an error)", rule)
         self.assertIn("inside a container or not", rule)
 
     def test_home_paragraph_names_every_copy(self):
         text = HOME.read_text(encoding="utf-8")
         self.assertIn("**The stop rule's home.**", text)
-        for name in ("review-brief.md", "research-lane", "research-lane-deep",
-                     "research-verifier", "tests/test_stop_rule.py"):
+        for name in ("review-brief.md", "`research-lane`", "`research-lane-deep`",
+                     "`research-verifier`", "tests/test_stop_rule.py"):
             self.assertIn(name, text)
+
+    def test_no_unlisted_copy(self):
+        listed = {HOME.resolve(), *(p.resolve() for p in COPIES)}
+        bullet = re.compile(r"^(\s*)(- |\d+\. )" + re.escape(START), re.M)
+        for path in PLUGIN.rglob("*.md"):
+            if bullet.search(path.read_text(encoding="utf-8")):
+                with self.subTest(path=str(path.relative_to(PLUGIN))):
+                    self.assertIn(path.resolve(), listed)
 
     def test_copies_match_home(self):
         home = stop_rule(HOME)
