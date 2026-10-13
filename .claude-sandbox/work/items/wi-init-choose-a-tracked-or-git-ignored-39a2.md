@@ -42,3 +42,6 @@ return: DONE d962d3c; work-items 338, kit-dev 21, dev-flow 78 OK; <root>/store.y
 dispatch: reviewer opus high — review round 1 of d962d3c
 agent: reviewer a5063ab4a5b72b981
 note: 2026-10-13 background security review flagged a symlink-following file write in wi.py on d962d3c (no details); relayed to review round 1; nothing lands until it is resolved
+verdict: review round 1 NEEDS_CHANGES (must-fix 5: high — store.yaml.tmp fixed name follows a planted symlink (victim overwritten); high — .gitignore write follows a symlink (append to an outside file, or create one); medium-high — .gitignore write not atomic, CRLF rewritten, non-UTF-8 crash after store.yaml says ignored; medium — a literal match skips the line though a later negation un-ignores; medium — format.md example fails the parser; lows: duplicate tracking: lines pass lint, existing cmd_init writes share the symlink pattern, Ctrl-C traceback, first-start wording) — the security flag is findings 1-2
+decided: 2026-10-13T04:30Z scope — the existing cmd_init symlink-following writes (store .gitignore, README, sidecar host .gitignore) are fixed in this round: same function, same hardening, and the flag names this file
+dispatch: implementer opus medium — fix round 1 (resume a75c6bb99ba688aab)
