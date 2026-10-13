@@ -27,3 +27,6 @@ agent: implementer a58a079d03da1daa5 round 1
 result: DONE round 1 at dbbc775f (verifier body rules: opened-only, neutral prompts, never a run file, claim as written; new research/scripts/check-sheet.py + 9 tests; test_research_verifier.py; SKILL.md, run-record.md, security-gate.md run the check; CLAUDE.md layout, repo-map; dev-flow 81, research 115, kit-dev 21 OK)
 dispatch: reviewer opus high — fresh (rule 4)
 agent: reviewer ac442c0e0fb4c51c7 round 1 at dbbc775f
+verdict: NEEDS_CHANGES round 1 at dbbc775f (2 medium: Opened cell is free text and its target is never compared with Source; Source cell undefined when following a run file back; 5 low: digit text can reach stderr, bare/cwd/file:// run-file paths missed, empty table passes, deep-investigation has no place for a sheet defect, research-refine prior record not a run file; 5 nits incl. pyright annotations; transcript cross-check filed as a follow-up)
+dispatch: implementer opus medium — resume, fix round 1
+agent: implementer a58a079d03da1daa5 round 2
