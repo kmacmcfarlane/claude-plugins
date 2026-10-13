@@ -3,8 +3,10 @@ id: wi-init-choose-a-tracked-or-git-ignored-39a2
 title: "wi init: choose a tracked or git-ignored store, and accept an ignored one"
 short_display_name: wi init tracked or ignored
 type: feature
-status: todo
+status: doing
 priority: 2
+owner: Kyle-McFarlane@2d49f8460283
+claimed: 2026-10-13T15:16Z
 created: 2026-10-13
 updated: 2026-10-13
 refs:
@@ -27,3 +29,11 @@ decision 212: The sandbox side — exporting the effective trackInHost into the 
   why ask: reach — it is another repo's change, and a request to its session goes out under this one
   context: the session env today carries CLAUDE_SANDBOX_CONTAINER, INSTANCE, MEMORY_LIMIT, MEMORY_LIMIT_SOURCE, MODE, PID_CLASS, PROJECT_DIR and VERSION, not trackInHost · you decide who carries the request
   impact: (a) → nothing goes out from here; the wi skill documents the variable once it exists · wait: the inference rule only; the rest of the build does not wait · reach: claude-sandbox · undo: n/a
+answer 211: b — "log a warning too" (operator, chat 2026-10-13; read as: no flag and no terminal → an ignored store, with a warning naming the choice made and --track to change it)
+answer 212: a (operator, chat 2026-10-13; the operator passes the trackInHost export to claude-sandbox)
+decided: 2026-10-13T03:55Z scope — the operator's answers to 211/212 confirm the relayed requirements; no separate plan: the request and the answers fix the shape
+target: wi init --track / --no-track; a menu on a terminal with neither; no flag and no terminal → ignored store plus a warning; --no-track (and the default) appends .work/ (or the store's dir) to .gitignore safely (missing trailing newline, already-present entry); the choice recorded in the store; prime/lint warn "silently untracked" only for a store with no recorded choice, and print at most a one-line note for a recorded ignored store; the skill tells agents to use the sandbox trackInHost variable once claude-sandbox exports it (true → --track, false/unset → --no-track), else ask the operator; tests for each path
+dispatch: implementer opus medium — build
+
+## Notes
+- 2026-10-13 claimed by Kyle-McFarlane@2d49f8460283
