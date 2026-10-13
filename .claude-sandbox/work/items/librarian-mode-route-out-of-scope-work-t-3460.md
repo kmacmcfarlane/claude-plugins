@@ -2,14 +2,13 @@
 id: librarian-mode-route-out-of-scope-work-t-3460
 title: "librarian-mode: route out-of-scope work to the owning live librarian, not the operator"
 type: feature
-status: doing
+status: done
 priority: 2
 deps:
   - review-caps-and-spend-plans-raise-only-o-5579
-owner: Kyle-McFarlane@2d49f8460283
-claimed: 2026-10-13T19:34Z
 created: 2026-09-22
 updated: 2026-10-13
+closed: 2026-10-13
 refs:
   - "peer: agents - librarian (uds 122.sock); opencode-11 relay; agents investigations/downtime-grooming-workflow/00_initial.md"
 ---
@@ -91,3 +90,6 @@ verdict: review round 2 NEEDS_CHANGES (must-fix 1, down from 5: N1 the session-e
 decided: 2026-10-13T21:50Z cap — must-fix fell 5 → 1 with exact wording: a finish round of N1-N4 (authority answer 145)
 dispatch: implementer opus medium — finish round (resume a62463034bde045ac)
 agent: implementer a62463034bde045ac (finish round, in flight at checkpoint 2026-10-13)
+verdict: finish round CLEAR — word diff: N1 sweep parenthetical, N2 Rehydrate liveness, N3 rewraps, N4 blocker overtaken
+landed: 83b7c1ed (merge of 902e71ee..ab3abb71, with main merged in at 7ce7fbcc); Checks 12/12 OK; cc_scan clean
+- 2026-10-13 done

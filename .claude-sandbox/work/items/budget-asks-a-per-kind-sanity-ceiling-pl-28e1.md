@@ -53,3 +53,4 @@ budget: 2026-10-13T20:19Z plan $28 — default other plan
 checks: CLAUDE.md ## Librarian Checks (read only)
 dispatch: planner opus high — plan (doctrine change to dev-cycle's budget rule plus quota_budget.py logic; operator asked to review the plan before the build)
 agent: planner aac4ac82dfa759bb0 round 1
+return: planner DONE_WITH_CONCERNS /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude-sandbox/investigations/budget-asks-a-per-kind-sanity-ceiling-pl-28e1/ (OQ1 blocking F2/F3: approved values replay to 77 asks in two weeks vs 3 today)

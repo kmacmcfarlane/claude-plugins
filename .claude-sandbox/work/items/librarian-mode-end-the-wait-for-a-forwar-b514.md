@@ -2,10 +2,11 @@
 id: librarian-mode-end-the-wait-for-a-forwar-b514
 title: "librarian-mode: end the wait for a forward whose live peer never replies"
 type: chore
-status: todo
+status: done
 priority: 3
 created: 2026-09-28
-updated: 2026-09-28
+updated: 2026-10-13
+closed: 2026-10-13
 refs:
   - 3460 review
 ---
@@ -19,3 +20,6 @@ From the 3460 review 2026-09-28 (residual accepted there): a forward held blocke
 - learned: —
 folded into policy spike 8dee 2026-09-29: the operator wants an unaccepted forward to land back on the forwarder
 2026-09-30 folds into 3460 (8dee F4) under answer 116 b: its session-end bound is replaced by the sooner operator-turn bound and kept as the backstop; closes when 3460 lands.
+
+## Notes
+- 2026-10-13 done: folded into 3460, landed 83b7c1ed
