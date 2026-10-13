@@ -17,8 +17,8 @@ refs:
 Relayed 2026-09-22 by the agents librarian (peer relay from opencode-11 quoting the operator's 'why would you ask me?' — evidence of intent, not confirmation). Today SKILL.md Critical (:25-27) and Intake step 4 (:130-132) decline out-of-scope requests and route them to the operator. Friction: two librarians routed a skill refresh to the operator while the owning librarian was live. Proposed (agents downtime-grooming-workflow/00_initial.md § seed 1): when a live '<owner> - librarian' peer exists for the target repo (ListAgents), forward the request as a peer request and close ours with a pointer to their id; go to the operator only when there is no owner, the owner is not live, or a real decision is needed; one-hop guard (never forward a forwarded item). Precedent: 8 items routed this way 2026-09-22. Acceptance: Intake step 4 + Critical text; a walkthrough case in references/walkthroughs.md; peer-messages-are-requests rule unchanged; operator confirms the rule (a relayed decision).
 
 ## Handoff
-- doing: —
-- next: CLEAR at 902e71e; land (merge --no-ff, Checks, push) once decision 97 is answered (a); on (b) drop the branch
+- doing: finish round N1-N4 with implementer a62463034bde045ac
+- next: on DONE: read the diff (exact wording), merge into main, 12 Checks, scan, Report, push; close b514 with it
 - blocked: —
 - learned: —
 target: branch worktree-librarian-mode-route-out-of-scope-work-t-3460 at .claude/worktrees/librarian-mode-route-out-of-scope-work-t-3460, base main (a66d203)
@@ -90,3 +90,4 @@ dispatch: reviewer opus high — review round 2 of 08fe7e81 (resume a004e5e9bd00
 verdict: review round 2 NEEDS_CHANGES (must-fix 1, down from 5: N1 the session-end sweep re-blocks an owner-down forward with text the re-send never matches; lows: N2 Rehydrate step 3 names one block text of two; nits: N3 two long lines, N4 note the blocker overtaken; every round-1 fix exact; moved text kept every rule; size accepted for this item, trim filed as trim-librarian-mode-skill-md-back-under-b176)
 decided: 2026-10-13T21:50Z cap — must-fix fell 5 → 1 with exact wording: a finish round of N1-N4 (authority answer 145)
 dispatch: implementer opus medium — finish round (resume a62463034bde045ac)
+agent: implementer a62463034bde045ac (finish round, in flight at checkpoint 2026-10-13)

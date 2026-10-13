@@ -19,7 +19,7 @@ F2 of the approved analyzer plan: complete the usage-report SKILL.md (what/when/
 
 ## Handoff
 - doing: —
-- next: —
+- next: decision 213 (rec a: land after review); branch worktree-agent-adf30e968152b0aad at 7f0b8541
 - blocked: —
 - learned: —
 From the F1 review (2026-09-16): (a) by_requested_tier needs a "main" bucket (or a key saying main-session tokens
