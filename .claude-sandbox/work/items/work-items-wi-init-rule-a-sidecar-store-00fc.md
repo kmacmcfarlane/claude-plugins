@@ -3,12 +3,11 @@ id: work-items-wi-init-rule-a-sidecar-store-00fc
 title: "work-items wi init rule: a sidecar store is tracked even when the host ignores .claude-sandbox/"
 short_display_name: wi init rule in a sidecar layout
 type: bug
-status: doing
+status: done
 priority: 1
-owner: Kyle-McFarlane@2d49f8460283
-claimed: 2026-10-13T19:51Z
 created: 2026-10-13
 updated: 2026-10-13
+closed: 2026-10-13
 refs:
   - peer claude-sandbox librarian, 2026-10-13 (fe52 planner's scratch test)
 ---
@@ -32,3 +31,6 @@ verdict: review round 1 NEEDS_CHANGES (must-fix 1: the sidecar test is cwd-relat
 note: worked example (reviewer scratch, 2026-10-13): host-tracked true/false/empty → track/no-track/track; host-ignored no sidecar false/empty → no-track; sidecar any → track; outside sandbox → ask; .work/ store with a sidecar → host tracks
 dispatch: implementer sonnet medium — fix round 1 (resume adba9146eca7aabb0)
 note: 2026-10-13 urgent per the claude-sandbox librarian: the kmacmcfarlane workspace now exports CLAUDE_SANDBOX_TRACK_IN_HOST=false in every new sandbox, and 29db (landed 3b12c62) maps false → --no-track, so a sidecar repo gets /work/ ignored; this fix is the remedy — land first
+decided: 2026-10-13T21:20Z cap — the fix round applied the reviewer's exact wording (main checkout, scoped to .claude-sandbox/work/, rewrap); landed without a second review (authority answer 145); urgent per the claude-sandbox librarian
+landed: b4c1b6d1 (merge of 473f18d8..6fbcb67f); Checks 12/12 OK; cc_scan clean
+- 2026-10-13 done

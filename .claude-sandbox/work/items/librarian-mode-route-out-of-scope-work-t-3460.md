@@ -85,3 +85,5 @@ dispatch: reviewer opus high — full review of 902e71ee..0f65c913 against main 
 agent: reviewer a004e5e9bd00171a1
 verdict: review round 1 NEEDS_CHANGES (must-fix 5: M1 the Report raises a blocked forward as a decision; M2 an owner-down forward re-blocked to the operator never retries; M3 Rehydrate has no step for the watched-store check; M4 dev-cycle bindings.md:273-274 clause expires on landing — fix here; M5 SKILL.md ~7.2k tokens, move the forward bullets to references/forwarding.md; lows L1-L4, nits; builder's accepted-forward reading ruled sound)
 dispatch: implementer opus medium — fix round 1 (resume a62463034bde045ac)
+return: DONE 08fe7e81 (fix round 1): M1-M5, L1-L4, nits; forwarding.md new; SKILL.md 26,933 chars / 4,077 words (main 25,261 / 3,831); 12/12 OK
+dispatch: reviewer opus high — review round 2 of 08fe7e81 (resume a004e5e9bd00171a1)

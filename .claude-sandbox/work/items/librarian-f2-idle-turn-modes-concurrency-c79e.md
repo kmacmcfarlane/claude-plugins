@@ -10,7 +10,7 @@ parent: librarian-work-unblocked-items-and-pre-i-1222
 owner: Kyle-McFarlane@bf9f9839222c
 claimed: 2026-09-22T23:40Z
 created: 2026-09-22
-updated: 2026-09-23
+updated: 2026-10-13
 ---
 
 idle-turn.md mode table (full/normal/conservative/stop), N from allowed rate ÷ per-agent rate ÷ active librarians, cap 6, floor 1 for P0; claims on dispatch; quiet mode away; self-wake ≤1 h; walkthrough. Opus (doctrine). Plan: .claude-sandbox/investigations/1222-unattended-librarian/00_initial.md § F2.
@@ -84,3 +84,4 @@ wake 69: when the agents repo's scheduler spec lands
 hold condition moved 2026-09-30: c79e and decisions 68/69/70 now wait for the control-plane back-end plan to clear review and the agents librarian's full shape (bf41's runner moved to that repo); on it, re-show 68-70 with what changed, and cut c79e's scope to self-wake, quiet and stop
 2026-09-30 agents correction: the back end "never writes a repo store" is what the plan proposes (not "read-only through Phase 3", which bounds only decision authority); the plan is at its review cap pending agents decision 16 — hold condition unchanged
 note: peer agents (librarian, their 29d6), 2026-10-03, news not approval: the control-plane back-end repo plan cleared review (agents .claude-sandbox/investigations/control-plane-backend-repo/ 00-05, Supersedes applied); nothing built; repo name, visibility, runtime still open with the operator. For this item: idle-turn modes (self-wake, quiet, stop) stay with c79e; the back end adds no wake evaluation; Phase 6 (the runner) waits on c79e's budget policy among other things. Holds 68/69 stand (the operator's condition is switching to that scheduler, which is not built); 70 still open.
+- 2026-10-13 from 28e1 (dynamic budget asks): apply the free-headroom F (quota_budget.py, once 28e1 lands) to the sum of in-flight expected spend when choosing N; per-item asks do not guard concurrency
