@@ -286,9 +286,10 @@ brief's § Lanes under the running round, mark its § Threads not pulled entry p
 ## The quota read
 
 Path: `${CLAUDE_CONFIG_DIR:-~/.claude}/statusline/sensor/<session-id>.json` — written by the
-`statusline-hub` plugin (or the `statusline` plugin when it owns the slot) on every render.
+`statusline-hub` plugin on every status-line render (installing `statusline` brings it).
 The session id is the UUID segment of the scratchpad directory named in your system prompt;
-`safe_sid` rules are in `statusline`'s `install-statusline` references. Read it with `Read`
+`safe_sid` rules are in the `statusline-hub` skill's `references/hook-contract.md` § 12,
+the hub's summary of the record's contract. Read it with `Read`
 or `python3 -I -c`; the shape is:
 
 ```json
@@ -312,7 +313,7 @@ absent. Then:
 `rate_limits` may carry more windows than these two (a model-scoped weekly, for instance);
 print any that is over 75% and treat it like the seven-day one.
 
-This is a **soft** dependency: nothing here requires `statusline` to be installed. Without
+This is a **soft** dependency: nothing here requires `statusline-hub` to be installed. Without
 it the skill asks instead of reading.
 
 ## The search budget

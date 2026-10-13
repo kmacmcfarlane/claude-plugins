@@ -37,7 +37,7 @@ the TODO.md failure mode with extra steps.
 | `$WI claim <id>` / `release <id>` | atomic; claims as `WI_OWNER`, else `<user>@<host>` from `$USER`, git `user.name`, then the login name (`references/format.md` § Claimant); a stale `claimed:` shows up in `next`; refuses (exit 1) a `blocked`, `parked` or `grooming` item, and a `todo` item with any dep `next` counts as unmet, naming each |
 | `$WI handoff <id> --doing … --next … [--blocked …] [--learned …]` | the per-item residue — write it whenever the item is left mid-flight |
 | `$WI note <id> [--raw] -- "<text>" ["<text>" …]` | appends each text to `## Notes` under the lock, one write for all of them or none: dated (`- <today> <text>`) by default, verbatim with `--raw` (for a record line such as `decision N:`); always put `--` before the texts. Refuses (exit 1, nothing written, stderr `wi: text <n>: …`, never quoting the text) a line break, an empty text, under `--raw` a `## ` line or a fence opener, and any line `lint` would flag as a secret: reword it as path and key and re-run. `handoff` stays the four-line residue |
-| `$WI done <id> [--note <sha>]` / `done --drop` | closes it in place; `implement` Step 10a½ owns this on landed work |
+| `$WI done <id> [--note <sha>]` / `done --drop` | closes it in place; `implement`'s "Update the work item" step owns this on landed work |
 | `$WI block <id> "reason"` / `--on <dep-id>` / `unblock` | runtime vs dependency blocks |
 | `$WI park <id> "reason"` / `unpark <id>` | deliberate deferral, not a block: out of `next`, one count line in `prime`, listed by `ls --status parked`; releases any claim; `unpark` → `todo` (or `blocked` if a block reason remains); `release` never unparks, `set status parked` refuses. Drop one with `done --drop` |
 | `$WI groom <id> "questions"` / `ungroom <id>` | waiting on the operator's answers: out of `next`, one `GROOMING <n>` line in `prime`, listed by `ls` and `needs-input`; releases any claim; `ungroom` → `todo` (or `blocked`); `set status grooming` refuses |
@@ -65,8 +65,10 @@ verbs, capability differences and canonical state mapping are in
 - The store is resolved `WI_ROOT` → `.claude-sandbox/work/` → `.work/`; create only via
   `$WI init`, and only when the user asks for the store.
 - Working an item follows the checkout/worktree rule — process stays in the checkout, the
-  item's edits go in a worktree (from there, `WI_ROOT` points at the main checkout's store);
-  the sandbox skill's worktree-mode section owns the details.
+  item's edits go in a worktree. A worktree is its own checkout: it lacks the main checkout's
+  untracked or uncommitted store, and a tracked one there is a stale copy, so from there `WI_ROOT` points at the main checkout's
+  store: the main checkout is
+  `git rev-parse --path-format=absolute --git-common-dir` minus its trailing `/.git`.
 - Item files are hand-editable; run `$WI lint` after hand edits, in the same turn.
 - A `wi: WARNING store … is silently untracked` line (second line of `prime`; a problem, exit 3, in `lint`) means new items are git-ignored, or the store holds ≥10 items and none is tracked (below 10, an uncommitted store is treated as new). The line names the ignore rule (file:line) and the remedies for that cause; fix the cause rather than working around it.
 - One session claims an item before working it; two sessions on one item is what `claim` is

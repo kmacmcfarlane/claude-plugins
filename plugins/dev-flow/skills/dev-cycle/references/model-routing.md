@@ -567,7 +567,8 @@ question; take the first source that has one:
 2. the status line's `rate_limits` in its sensor record,
    `${CLAUDE_CONFIG_DIR:-~/.claude}/statusline/sensor/<session>.json` (written on every
    status-line render by the `statusline-hub` plugin, which installing `statusline` brings;
-   its contract is the `statusline` plugin's), when present: the exhausted window's
+   its contract is summarised in the `statusline-hub` skill's
+   `references/hook-contract.md` § 12), when present: the exhausted window's
    `resets_at` (epoch seconds). The record keeps its last
    `rate_limits` block when a later payload carries none, so check it before trusting
    it: a `resets_at` already in the past is stale and counts as no reset time; otherwise

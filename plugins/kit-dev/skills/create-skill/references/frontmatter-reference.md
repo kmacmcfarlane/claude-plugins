@@ -27,7 +27,8 @@ Leaving out `disable-model-invocation`, `allowed-tools` and `argument-hint` is t
 default, not a gap: the skill is model-invocable, takes free-form arguments and
 pre-approves no tools. Declare one only when the skill needs a non-default value.
 
-The librarian review checklist (§2) enforces this rule.
+The dev-cycle review checklist's § 2, Skill hygiene (in the dev-flow plugin), enforces this
+rule.
 
 ## Required fields
 

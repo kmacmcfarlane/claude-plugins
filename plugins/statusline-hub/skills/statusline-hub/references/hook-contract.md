@@ -5,8 +5,8 @@ How another plugin, or a user, runs code on every status-line render through
 writes the sensor record first, then runs the registered hooks. This file is the whole
 interface. The hub's `hooks/registry.py` and `hooks/hub.py` implement it, and their tests
 hold them to it. The sensor record itself (what a *reader* gets without registering
-anything) has its own contract, the `statusline` plugin's `sensor-contract.md`, which is
-unchanged.
+anything) is summarised in § 12; its full contract is the `statusline` plugin's
+`sensor-contract.md`, which is unchanged.
 
 A tool that only has a few words to show, and no need to see the payload, need not run
 code at all: it drops a **segment** file the hub reads on each render (§ 11). No manifest,
@@ -319,8 +319,8 @@ CFG/statusline-hub/segments/<provider>/<session>.json   shown in that session on
 - `<provider>` follows the hook-name rule (§ 1), `[a-z0-9][a-z0-9-]{0,39}`: your plugin or
   tool's name. One provider shows at most one segment: its session file when that is live,
   else its every-session file.
-- `<session>` is the session id in the sensor record's file-name form (`sensor-contract.md`
-  §1, `safe_sid`): a safe token (`[A-Za-z0-9_-][A-Za-z0-9._-]{0,127}`, which the UUIDs
+- `<session>` is the session id in the sensor record's file-name form (§ 12,
+  `safe_sid`): a safe token (`[A-Za-z0-9_-][A-Za-z0-9._-]{0,127}`, which the UUIDs
   Claude Code issues are) as is; anything else hashed to `sid-<32 hex>`. The hub reads only
   the file for the session it is rendering.
 
@@ -409,3 +409,40 @@ why any file is skipped.
   session's identity), and the every-session file for anything true of the whole machine
   or container (a sandbox marker). Delete per-session files from a `SessionEnd` hook if
   you have one; otherwise the prune pass gets them after 30 days.
+
+## 12. The sensor record (what a reader gets)
+
+The record a tool reads without registering anything. The hub writes it in owner mode,
+before its display hooks run, and through `tee.py` where another renderer keeps the slot;
+the `statusline` plugin's footer writes the same file when it runs as the whole status
+line. This section is the reader's summary, on disk with the hub alone. The `statusline`
+plugin's `references/sensor-contract.md` states the same contract in full, with the gauge
+policy, and the hub's `hooks/tests/test_parity.py` holds the two writers to one another
+whenever both plugins sit in the source repo.
+
+- **Path:** `CFG/statusline/sensor/<safe_sid>.json`; the directory is `0700`, the files
+  `0600`.
+- **`safe_sid`:** an empty or missing session id becomes `unknown`; one matching
+  `[A-Za-z0-9_-][A-Za-z0-9._-]{0,127}` (the whole string; the UUIDs Claude Code issues are)
+  is used as is; anything else becomes `sid-` plus the first 32 hex digits of the SHA-256 of
+  its UTF-8 bytes. No id names a path outside the directory.
+- **Writes** are atomic (a temp file in the same directory, then `os.replace`), so a reader
+  never sees a torn file. A render keeps from the stored record any block its own payload
+  lacks, so an `exact` or `rate_limits` block can be older than the file.
+- **Shape:**
+
+  ```json
+  {"v": 1,
+   "exact": {"pct": 42.0, "tokens": 420000, "window": 1000000, "at": 1789760000.0},
+   "rate_limits": {"five_hour": {"used_percentage": 23.5, "resets_at": 1789763600.0},
+                   "seven_day": {"used_percentage": 91.0, "resets_at": 1790019200.0},
+                   "at": 1789760000.0}}
+  ```
+
+  Treat a record whose `v` is not 1 as absent. Ignore keys you do not know; adding a
+  field does not bump `v`. Each block's `at` is the epoch time its
+  payload was read: judge a block's age by it, not by the file's mtime. `rate_limits` may
+  carry more windows than these two, each field present only when it is a finite number;
+  a past `resets_at` is kept, for the reader to compare with the clock.
+- **Absent:** a session that has not rendered yet has no file, and the hub's SessionStart
+  prunes records untouched for 30 days. A reader keeps a fallback for no record.

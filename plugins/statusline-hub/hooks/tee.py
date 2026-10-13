@@ -6,7 +6,8 @@ that payload is the only live source of the exact context depth
 (`context_window`) and the plan usage windows (`rate_limits`). Whoever renders
 the status line must write them down for tools that never see the payload -
 the sensor record, ${CLAUDE_CONFIG_DIR:-~/.claude}/statusline/sensor/<sid>.json
-(v1; the contract is the statusline plugin's references/sensor-contract.md).
+(v1; summarised in skills/statusline-hub/references/hook-contract.md § 12, and
+stated in full in the statusline plugin's references/sensor-contract.md).
 This command does only that, so a status line drawn by something else - a
 ccstatusline Custom Command widget, a Starship `custom` module, a shell wrapper
 around any other renderer - still feeds those readers:

@@ -1,13 +1,14 @@
 """Shared state and depth accounting for the context-guard context-gate hooks.
 
 Depth sources, in order of preference:
-1. EXACT - written by the status line (the statusline plugin; its data
-   contract is that plugin's install-statusline references/sensor-contract.md),
+1. EXACT - written by the status line (the statusline-hub plugin, which
+   installing statusline brings; its data contract is summarised in that
+   plugin's statusline-hub skill, references/hook-contract.md § 12),
    which receives
    context_window.used_percentage and context_window_size from Claude Code on
    every render. Hooks never get those fields in their own input, so the status
-   line doubles as the sensor. One record is read (sensor()): the statusline
-   plugin's neutral sensor file,
+   line doubles as the sensor. One record is read (sensor()): the neutral
+   sensor file,
    ${CLAUDE_CONFIG_DIR:-~/.claude}/statusline/sensor/<safe_sid>.json (v1:
    `exact`, `rate_limits`; a record whose `v` is not 1 is treated as absent).
    An `exact` block left in this plugin's own state file by an older status
