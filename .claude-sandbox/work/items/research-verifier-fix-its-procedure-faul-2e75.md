@@ -39,3 +39,7 @@ agent: implementer a58a079d03da1daa5 round 3
 result: DONE round 3 at f90b41dd (all 8 applied; research 126 OK; pyright 0 errors)
 dispatch: reviewer opus high — resume, round 3
 agent: reviewer ac442c0e0fb4c51c7 round 3 at f90b41dd
+verdict: CLEAR round 3 at f90b41dd (lows: any Source word counts as an Opened target; a same-named copy inside a run dir passes as opened; nit: whole-cell link unwrap is dead code)
+decided: 2026-10-13T22:45Z cap — two lows and a nit with exact fixes: one finish round, read by the librarian (authority answer 145)
+dispatch: implementer opus medium — resume, finish round
+agent: implementer a58a079d03da1daa5 round 4 (finish)

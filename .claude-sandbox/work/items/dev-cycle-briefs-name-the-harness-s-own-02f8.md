@@ -3,10 +3,11 @@ id: dev-cycle-briefs-name-the-harness-s-own-02f8
 title: "dev-cycle briefs: name the harness's own background-task stop as a way to stop your own process"
 short_display_name: allow stopping own background tasks
 type: chore
-status: todo
+status: done
 priority: 2
 created: 2026-10-06
-updated: 2026-10-06
+updated: 2026-10-13
+closed: 2026-10-13
 refs:
   - dev-cycle-briefs-never-signal-processes-54fe
 ---
@@ -31,3 +32,6 @@ dispatch: implementer opus medium — resume, finish round
 agent: implementer afb8e096c07e9f442 round 2 (finish)
 result: DONE finish at a31fed02 (exact; test_no_unlisted_copy added; diff read by the librarian)
 verdict: CLEAR after 1 finish at a31fed02
+
+## Notes
+- 2026-10-13 done
