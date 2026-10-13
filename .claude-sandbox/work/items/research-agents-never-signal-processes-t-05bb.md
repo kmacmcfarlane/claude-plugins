@@ -3,14 +3,13 @@ id: research-agents-never-signal-processes-t-05bb
 title: "research agents: never signal processes the agent did not start (lane and verifier contracts)"
 short_display_name: research agents must not kill others
 type: bug
-status: doing
+status: done
 priority: 2
 deps:
   - research-skills-effort-based-routing-par-e184
-owner: Kyle-McFarlane@2d49f8460283
-claimed: 2026-10-13T19:35Z
 created: 2026-10-06
 updated: 2026-10-13
+closed: 2026-10-13
 refs:
   - dev-cycle-briefs-never-signal-processes-54fe
 ---
@@ -30,3 +29,6 @@ agent: implementer a35c15d51db64350c
 return: DONE 0fe941ec; rule copied verbatim from dev-cycle agent-brief's never-send-a-signal bullet; lane item 10, verifier Rules bullet; dev-flow 78, kit-dev 21 OK
 dispatch: reviewer opus high — review round 1 of 0fe941ec
 agent: reviewer a4464969693f44b90
+verdict: review round 1 CLEAR (must-fix 0; notes: the verifier has no Bash, so the rule is inert there but guards a later change; wording kept identical to agent-brief)
+landed: 30597f05 (merge of 0fe941ec); Checks 12/12 OK; cc_scan clean
+- 2026-10-13 done

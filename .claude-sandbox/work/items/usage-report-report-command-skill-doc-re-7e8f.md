@@ -38,3 +38,5 @@ entry) must be visible in the report — a separate row or a marker — not sile
 - 2026-10-13 claimed by Kyle-McFarlane@2d49f8460283
 dispatch: implementer opus medium — build per the approved plan (triage d2aa)
 agent: implementer adf30e968152b0aad
+return: DONE 7f0b8541; report command, skill doc, README row; usage-report 81 OK, 12/12 OK; builder notes the item still carries a hold note (retire into claude-analytics) and built it on the triage dispatch
+note: review and landing paused until the operator settles whether the hold still applies (decision 213)

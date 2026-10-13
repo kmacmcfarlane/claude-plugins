@@ -80,3 +80,5 @@ operator 2026-09-29T05:53Z on this case: "a routing decision error made by an ag
 - 2026-10-13 claimed by Kyle-McFarlane@2d49f8460283
 dispatch: implementer opus medium — merge main into the review-CLEAR branch (902e71ee), resolve conflicts, then a short re-review (triage d2aa)
 agent: implementer a62463034bde045ac
+return: DONE 7ce7fbcc (merge of main) + 0f65c913 (builds watched custody per 116 b, which the CLEAR branch predated; b514 folded in); 12/12 OK; flags bindings.md:274 stale once this lands
+dispatch: reviewer opus high — full review of 902e71ee..0f65c913 against main (new rule text in five files)
