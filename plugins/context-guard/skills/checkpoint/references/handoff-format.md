@@ -44,7 +44,8 @@ outside the store.
   store path, the file or its `<sid>/` directory, is a link that resolves anywhere but
   itself. An installed manifest is recorded in the ledger as `P installed HANDOFF.md ->
   <path>`. Without `--from` it only stamps (and stands the gate down), as before. Any other
-  argument shape, or an id starting with `-`, is a usage error.
+  argument shape, or an id starting with `-`, is a usage error. An empty or blank id (an
+  unset `$CLAUDE_CODE_SESSION_ID`) is refused, exit 1, nothing recorded.
 - **`handoff_path.py --path [<session_id>]`** — prints the store path and does nothing
   else: it writes nothing, creates no directory and reads no state. `--path` is required;
   the id is optional; an argument starting with `-` is a mistyped flag, never an id; any
