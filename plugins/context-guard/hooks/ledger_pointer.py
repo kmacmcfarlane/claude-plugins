@@ -15,8 +15,9 @@ groups), else that `cd`, else the payload cwd. A `cd` backgrounded with a lone
 resolved to its repo's toplevel. Still falling back to the cwd: a path that
 does not exist or cannot be expanded here (a `$VAR`, a glob), `cd -`, and a
 commit behind a wrapper (`time`, `command`, `env`). Not followed at all:
-`GIT_DIR` and `--git-dir` (the `cd`/`-C` repo, else the cwd, is named) and
-`popd` (the directory before it stays in force).
+`GIT_DIR` and `--git-dir` (the `cd`/`-C` repo, else the cwd, is named),
+`popd` (the directory before it stays in force), and a `cd` inside a
+subshell or pipeline still counts after it ends.
 """
 import json, os, re, shlex, subprocess, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))

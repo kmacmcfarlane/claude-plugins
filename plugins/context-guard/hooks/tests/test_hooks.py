@@ -774,8 +774,11 @@ class TestLedgerPointerRepo(Base):
 
     def test_newline_separated(self):
         q = shlex.quote(self.other)
-        self.assertEqual(self.commit(f"cd {q}\ngit add x\ngit commit -m m"),
-                         self.other)
+        for cmd in (f"cd {q}\ngit add x\ngit commit -m m",
+                    f"cd {q} &&\ngit commit -m m",
+                    f"cd {q};\n\ngit commit -m m"):
+            with self.subTest(cmd=cmd):
+                self.assertEqual(self.commit(cmd), self.other)
 
     def test_commit_dash_c_rev_is_not_a_directory(self):
         # `commit -C <rev>` reuses a message; a same-named directory is not
