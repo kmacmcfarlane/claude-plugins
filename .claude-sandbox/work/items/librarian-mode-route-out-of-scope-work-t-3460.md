@@ -2,12 +2,14 @@
 id: librarian-mode-route-out-of-scope-work-t-3460
 title: "librarian-mode: route out-of-scope work to the owning live librarian, not the operator"
 type: feature
-status: todo
+status: doing
 priority: 2
 deps:
   - review-caps-and-spend-plans-raise-only-o-5579
+owner: Kyle-McFarlane@2d49f8460283
+claimed: 2026-10-13T19:34Z
 created: 2026-09-22
-updated: 2026-09-30
+updated: 2026-10-13
 refs:
   - "peer: agents - librarian (uds 122.sock); opencode-11 relay; agents investigations/downtime-grooming-workflow/00_initial.md"
 ---
@@ -75,3 +77,5 @@ operator 2026-09-29T05:53Z on this case: "a routing decision error made by an ag
   verbatim 97 (C7, added 2026-09-29T06:22Z; answer 97 above is the librarian's summary): "there's a line. If it's trivial documentation, I want the librarian to just do it. If it's a simple fix with low-risk and no side-effects it should happen automatically. We should define a policy. Sometimes forwarding is the right move, and the librarian is just down right now. What's the out-of-scope work? We need a  system for communicating blockers that escelates the priority based on the impact (blocking importart work, etc). When you forward a task to a librarian, if they don't accept it, then it lands back on you. The task can't get lost in the shuffle. Mention this to the `agents` librarian toward our long-term vision of work scheduling and prioritization. For now, think about how we can improve the process using the skill-and-librarian based structure we have now. Managing scope creep is important, but managing trivial decisions are too. Help me find that balance."
 - 2026-09-30 unparked
 2026-09-30 unparked as 8dee F4 (answer 116 b, pyramid answer page): amend and land. Acceptance: 8dee 00 § F4 as amended by 01-03 — merge main into the branch and resolve SKILL.md steps 2 and 4 (from 4500b87) and walkthroughs.md (0e87ae3/9332809); forward with watched custody: accepted/declined replies after the Scope check, watched until it lands, lands back on the operator's next turn if silent (the operator-turn bound), the owner-down hold, the read-only filed check, the priority line; the session-end sweep as backstop (folds in b514); the idle-turn pointer. Critical's "routed back to the operator" becomes "forwarded, else the operator"; the receiver's Intake reply waits for the Scope check and gives a close notice. After F3 (same SKILL.md). Never edits another repo's files (115 a).
+- 2026-10-13 claimed by Kyle-McFarlane@2d49f8460283
+dispatch: implementer opus medium — merge main into the review-CLEAR branch (902e71ee), resolve conflicts, then a short re-review (triage d2aa)
