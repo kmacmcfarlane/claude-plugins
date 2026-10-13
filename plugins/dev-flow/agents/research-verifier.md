@@ -50,9 +50,9 @@ series directory. Nothing under those is a source (step 4).
      quote, not a search snippet, not a different file that produces the figure, not a
      `Grep` that returned nothing, not a preview cut off before the claimed passage. A
      source you did not open, for any reason, is `UNREACHABLE`, never `FAIL` and never a
-     verdict on its content — say what the response was. The Opened cell is exactly
-     `WebFetch <url>`, `Read <path>` or `Read <path> p. N`, its target the URL or path in
-     the Source cell that you opened, or `—` when you opened nothing.
+     verdict on its content — the response goes in the Note cell. The Opened cell is exactly
+     `WebFetch <url>`, `Read <path>`, or either with ` p. N` for a page, its target the URL
+     or path in the Source cell that you opened, or `—` when you opened nothing.
    - **Ask neutrally.** A `WebFetch` prompt asks what the source says on the claim's topic
      and for the passages that bear on it ("What does this page say about the default rate
      limit? Quote the relevant sentences."). Never state the claim, its figure or its
@@ -81,7 +81,8 @@ The research lanes' PDF rule, less the shell: you have no `Bash`, and do not nee
 prompt's `Tools:` line says whether poppler is present. Never install anything.
 
 - `WebFetch` the PDF URL. It shows binary, but it saves the raw file and prints its path;
-  open that path (or the local path cited).
+  open that path (or the local path cited). In the Opened cell a fetched PDF is
+  `WebFetch <url> p. N` (the URL, not the saved path).
 - **Poppler present:** `Read` it with `pages` set to the cited page (`p. N` in the claim),
   at most 20 pages per call; they come back as images. A citation without a page is read
   whole under the next bullet's size limit, else `UNREACHABLE` ("no page cited").

@@ -180,6 +180,32 @@ class CheckSheet(unittest.TestCase):
             ("7", "w2.md", "`docs/paper.pdf`, p. 4", "Read docs/paper.pdf p. 4",
              "PARTIAL"),
             ("8", "w2.md", "`src/a.py:12`", "Read src/a.py", "SUPPORTED"),
+            ("9", "w2.md", "https://x.invalid/a.pdf p. 4",
+             "WebFetch https://x.invalid/a.pdf p. 4", "SUPPORTED"),
+            ("10", "w2.md", "https://example.invalid/docs/",
+             "WebFetch https://example.invalid/docs", "SUPPORTED"),
+            ("11", "w2.md", "http://example.invalid/plain",
+             "WebFetch https://example.invalid/plain/", "PARTIAL"),
+            ("12", "w2.md", "[doc](https://example.invalid/linked)",
+             "WebFetch [doc](https://example.invalid/linked)", "SUPPORTED"),
+            ("13", "w2.md", "`paper.pdf`, pp. 4-6", "Read paper.pdf pp. 4-6", "PARTIAL"),
+        ]
+        r = self.run_check(sheet(rows))
+        self.assertEqual(r.returncode, 0, r.stdout)
+
+    def test_absolute_opened_path_for_a_repo_relative_source(self):
+        (self.dir / "docs").mkdir()
+        (self.dir / "docs" / "a.md").write_text("x\n")
+        rows = ROWS_OK + [("6", "w2.md", "`docs/a.md:12`",
+                           f"Read {self.dir}/docs/a.md", "SUPPORTED")]
+        r = self.run_check(sheet(rows), cwd=self.dir)
+        self.assertEqual(r.returncode, 0, r.stdout)
+
+    def test_unreachable_row_is_not_held_to_the_opened_form(self):
+        rows = ROWS_OK + [
+            ("6", "w2.md", "https://example.invalid/f", "WebFetch (timed out)",
+             "UNREACHABLE"),
+            ("7", "w2.md", "https://example.invalid/g", "tried, 404", "UNREACHABLE"),
         ]
         r = self.run_check(sheet(rows))
         self.assertEqual(r.returncode, 0, r.stdout)
@@ -201,6 +227,15 @@ class CheckSheet(unittest.TestCase):
         self.assertEqual(self.rules(r), ["own-run-source"] * 6)
         t = self.tally(r)
         self.assertEqual((t["not_found"], t["demoted"], t["sampled"]), (8, 6, 12))
+
+    def test_project_root_file_named_like_an_own_file(self):
+        # README.md exists both at the project root (the working directory) and in the
+        # series; cited bare, it is the project's file, not the run's
+        (self.dir / "README.md").write_text("x\n")
+        (self.series / "README.md").write_text("x\n")
+        rows = ROWS_OK + [("6", "w1.md", "README.md", "R", "SUPPORTED")]
+        r = self.run_check(sheet(rows), "--own", str(self.series), cwd=self.dir)
+        self.assertEqual(r.returncode, 0, r.stdout)
 
     def test_run_file_followed_back_to_its_source(self):
         # the claim cited findings/w1.md; the verifier opened the URL that file cites and

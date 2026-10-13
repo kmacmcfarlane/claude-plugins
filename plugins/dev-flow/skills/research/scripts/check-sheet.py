@@ -8,8 +8,9 @@ verifier has no shell, so this is the part of its procedure it cannot type by ha
   header that disagrees with its own table is a defect;
 - a row whose Opened cell says the source was not opened (`—`, `-`, `no`, empty) may only
   carry `UNREACHABLE` or `NOT_FOUND`;
-- any other Opened cell is `WebFetch <url>`, `Read <path>` or `Read <path> p. N`, and its
-  target is a URL or path named in the row's Source cell;
+- any other Opened cell is `WebFetch <url>` or `Read <path>`, either with ` p. N`, and its
+  target is a URL or path named in the row's Source cell (a row already UNREACHABLE is not
+  held to this);
 - a row whose Source is one of the run's own files (anything under the sheet's own
   directory, or under an `--own` directory such as the investigation series) may only
   carry `UNREACHABLE` or `NOT_FOUND`: a run's findings, brief, synthesis or sheet is not
@@ -54,7 +55,7 @@ NOT_OPENED = {"", "-", "—", "–", "no", "none", "not opened", "n/a"}
 ALLOWED_UNOPENED = {"UNREACHABLE", "NOT_FOUND"}
 LINK = re.compile(r"\[[^\]]*\]\(([^)\s]*)\)")
 FILE_EXT = re.compile(r"\.(?:md|txt|json|jsonl|ya?ml|csv|tsv|py|sh|js|ts|html?|pdf|log)$", re.I)
-PAGE = re.compile(r"\s+p\.\s*\d+(?:\s*-\s*\d+)?$")
+PAGE = re.compile(r"\s+pp?\.\s*\d+(?:\s*-\s*\d+)?$")
 TRAIL = re.compile(r"(?:#L?\d+(?:-L?\d+)?|:\d+(?:[-:]\d+)*|[.,;:)\]>]+)$")
 
 
@@ -116,12 +117,14 @@ class SheetError(Exception):
 
 def clean(tok):
     """A token with wrapping quotes and brackets, a trailing #anchor, :line or punctuation
-    removed."""
+    removed; a URL's http scheme read as https and its trailing slash dropped."""
     tok = tok.strip("<>\"'(")
     prev = None
     while prev != tok:
         prev, tok = tok, TRAIL.sub("", tok)
         tok = tok.split("#", 1)[0] if "://" in tok or "/" in tok else tok
+        if "://" in tok:
+            tok = re.sub(r"^https?://", "https://", tok, flags=re.I).rstrip("/")
     return tok
 
 
@@ -136,11 +139,16 @@ def targets(cell):
 def opened_target(cell):
     """("none" | "bad" | "ok", target) for an Opened cell."""
     o = cell.strip("*` ")
+    m = LINK.fullmatch(o)  # a whole cell that is one markdown link: its target
+    if m:
+        o = m.group(1)
     if o.lower() in NOT_OPENED:
         return "none", None
     for tool in ("WebFetch ", "Read "):
         if o.startswith(tool):
-            t = clean(PAGE.sub("", o[len(tool):].strip()).strip("`"))
+            rest = o[len(tool):].strip()
+            lm = LINK.fullmatch(rest)
+            t = clean(PAGE.sub("", lm.group(1) if lm else rest).strip("`"))
             return ("ok", t) if t else ("bad", None)
     return "bad", None
 
@@ -168,22 +176,42 @@ def path_tokens(cell):
     return out
 
 
+def opened_matches(target, cell, base, owns):
+    """Whether an Opened target is a URL or path the Source cell names. A path also matches
+    one the Source names relative to the project root, the sheet's directory, its findings/
+    or an own directory, so an absolute Opened path fits a repo-relative Source."""
+    if target in targets(cell):
+        return True
+    if "://" in target:
+        return False
+    t = os.path.realpath(os.path.expanduser(target))
+    roots = [os.getcwd(), base, os.path.join(base, "findings")] + owns
+    return any(t == os.path.realpath(os.path.join(root, os.path.expanduser(s)))
+               for s in path_tokens(cell) for root in roots)
+
+
 def under(p, owns):
     return any(p == own or p.startswith(own.rstrip(os.sep) + os.sep) for own in owns)
 
 
 def own_source(cell, base, owns):
     """Whether a Source cell names a file of this run. An absolute path (a file:// URL
-    included) counts by where it points; a relative one only when it exists, resolved from
-    the sheet's directory, its findings/, each own directory or the working directory, so
-    prose such as "TCP/IP" is never taken for a run file."""
+    included) counts by where it points. A relative one that exists from the working
+    directory (the project root) counts by that path alone; otherwise it counts when it
+    exists from the sheet's directory, its findings/ or an own directory. Prose such as
+    "TCP/IP" exists nowhere, so it is never taken for a run file."""
     for tok in path_tokens(cell):
         p = os.path.expanduser(tok)
         if os.path.isabs(p):
             if under(os.path.realpath(p), owns):
                 return True
             continue
-        for root in [base, os.path.join(base, "findings")] + owns + [os.getcwd()]:
+        q = os.path.realpath(os.path.join(os.getcwd(), p))
+        if os.path.exists(q):
+            if under(q, owns):
+                return True
+            continue
+        for root in [base, os.path.join(base, "findings")] + owns:
             q = os.path.realpath(os.path.join(root, p))
             if os.path.exists(q) and under(q, owns):
                 return True
@@ -216,7 +244,10 @@ def check(path, own_dirs):
             defects.append((heads["Sampled claims"], f"missing-column {name}"))
     tally: dict[str, int] = dict.fromkeys(FIELDS + ("demoted",), 0)
     for n, c in rows:
-        get = lambda k: c[col[k]] if col[k] is not None and col[k] < len(c) else ""
+        def get(k, c=c):
+            i = col[k]
+            return c[i] if i is not None and i < len(c) else ""
+
         if len(c) != len(header):
             defects.append((n, "row-shape"))
         verdict = get("verdict").strip("*` ").upper()
@@ -227,11 +258,13 @@ def check(path, own_dirs):
         counted = verdict
         state, target = opened_target(get("opened")) if col["opened"] is not None \
             else ("ok", None)
-        if state == "bad":
+        if verdict == "UNREACHABLE":
+            pass  # already the lowest tally; what was tried is the Note's to say
+        elif state == "bad":
             defects.append((n, "bad-opened"))
             counted = "UNREACHABLE"
         elif state == "ok" and target is not None and col["source"] is not None \
-                and target not in targets(get("source")):
+                and not opened_matches(target, get("source"), base, owns):
             defects.append((n, "opened-elsewhere"))
             counted = "UNREACHABLE"
         elif state == "none" and verdict not in ALLOWED_UNOPENED:

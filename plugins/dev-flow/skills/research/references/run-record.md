@@ -295,10 +295,12 @@ Like the scan floor, it never prints the sheet's text. The defects:
   table;
 - `unopened-verdict`: a verdict other than `UNREACHABLE` or `NOT_FOUND` on a row whose
   Opened cell is `—` (the verifier never opened the source); tallied as unreachable;
-- `bad-opened`: an Opened cell that is neither `—` nor `WebFetch <url>`, `Read <path>` or
-  `Read <path> p. N`; tallied as unreachable;
+- `bad-opened`: an Opened cell that is neither `—` nor `WebFetch <url>` or `Read <path>`,
+  either with ` p. N`; tallied as unreachable;
 - `opened-elsewhere`: an Opened target (its `#anchor` and ` p. N` removed) that is not a URL
-  or path named in the row's Source cell; tallied as unreachable;
+  or path named in the row's Source cell, a path read from the project root or the run's
+  directories; tallied as unreachable;
+- neither of those two applies to a row already `UNREACHABLE`;
 - `own-run-source`: a verdict other than `UNREACHABLE` or `NOT_FOUND` resting on a file of
   this run; tallied as not_found;
 - `missing-section <name>`, `missing-column <name>`, `no-claims` (an empty claims table),
