@@ -509,7 +509,22 @@ MAIN=$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null) && MAI
 for d in "$MAIN/.claude-sandbox/work" "$MAIN/.work"; do test -d "$d/items" && { export WI_ROOT="$d"; break; }; done
 WI_PY=$(ls "$MAIN"/plugins/*/skills/work-items/scripts/wi.py 2>/dev/null | head -1)
 P="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/plugins"
-test -n "$WI_PY" || WI_PY="$(python3 -I -c 'import json,sys; print(json.load(open(sys.argv[1]))["plugins"]["work-items@kmacmcfarlane"][0]["installPath"])' "$P/installed_plugins.json" 2>/dev/null)/skills/work-items/scripts/wi.py"
+IP="$(python3 -I - "$P/installed_plugins.json" work-items@kmacmcfarlane "$MAIN" 2>/dev/null <<'PY'
+import json, os, sys
+es = json.load(open(sys.argv[1]))["plugins"][sys.argv[2]]
+here = os.path.realpath(sys.argv[3])
+def rank(e):  # the install that applies here: deepest local/project path, then user
+    pp = e.get("projectPath")
+    if e.get("scope") in ("local", "project") and pp:
+        pp = os.path.realpath(pp)
+        if here == pp or here.startswith(pp.rstrip("/") + "/"):
+            return (2, len(pp), e["scope"] == "local")
+    return (1, 0, False) if e.get("scope") == "user" else (0, 0, False)
+best = max(es, key=rank)
+print(best["installPath"] if rank(best)[0] else "")
+PY
+)"
+test -n "$WI_PY" || WI_PY="$IP/skills/work-items/scripts/wi.py"
 test -f "$WI_PY" || WI_PY=$(ls -t "$P"/cache/kmacmcfarlane/work-items/*/skills/work-items/scripts/wi.py 2>/dev/null | head -1)
 if test -f "$WI_PY"; then WI="python3 $WI_PY"; echo "$WI"; else WI=no-wi-found; echo "no wi found"; fi
 ```
@@ -517,7 +532,12 @@ if test -f "$WI_PY"; then WI="python3 $WI_PY"; echo "$WI"; else WI=no-wi-found; 
 The last line binds `WI` to `python3` only when `wi.py` exists; on a miss it prints `no wi
 found` and binds a name that is no command, so a `$WI` call fails with exit 127 and never
 runs a bare `python3`. The install-record read runs `python3 -I`, so a `json.py` in the
-working directory is never imported.
+working directory is never imported. The install record holds one entry per install scope,
+so the read takes the entry that applies to this repo, never the first listed: a `local` or
+`project` entry whose `projectPath` is the main checkout or a directory above it (the
+deepest, `local` before `project`), else the `user` entry; another project's install never
+answers. The pick is the `dev-cycle` skill's `references/bindings.md` § Store's, kept in
+step with it.
 
 Rule 4's test is `test -n "$WI_ROOT" && test -f "$WI_PY"` after the snippet (`no wi found`
 fails it): when it fails, rule 4, and no `wi` command runs. Run the snippet once, at the
