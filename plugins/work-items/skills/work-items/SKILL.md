@@ -31,7 +31,7 @@ the TODO.md failure mode with extra steps.
 
 | | |
 | --- | --- |
-| `$WI init --track\|--no-track` | creates the store, or records an existing one's tracking choice in `store.yaml` without re-creating anything; `--no-track` adds the store's directory to the repo's root `.gitignore` (never a duplicate line, never glued onto a last line with no newline). Neither flag: a menu on a terminal (git-ignored is the default); with no terminal, an ignored store and a stderr warning (`references/format.md` § Store tracking) |
+| `$WI init --track\|--no-track` | creates the store, or records an existing one's tracking choice in `store.yaml` without re-creating anything; `--no-track` adds the store's directory to the repo's root `.gitignore` (never a duplicate line, never glued onto a last line with no newline). Neither flag: a menu on a terminal (git-ignored is the default); with no terminal, an ignored store and a stderr warning. A git-ignored choice in a sidecar layout (`.claude-sandbox/.git` exists) is refused, exit 1, nothing written (`references/format.md` § Store tracking) |
 | `$WI next [--plain\|--json]` | ready-ranked queue: `todo` with every dep met (done, dropped or in UAT, archived or not), priority then age |
 | `$WI show <id> [--brief]` | one item; `--brief` for front matter + handoff only |
 | `$WI add "<title>" [--short-display-name "<name>"]` | new item (`<slug>-<4hex>` id); describe, don't dump — path and key, never value; `--short-display-name` is the optional name agents give it to the operator, stripped and 40 characters or fewer (over that exits 1, nothing written: shorten it and re-run), shown as `[<name>] <title>` in text rows (`references/format.md` § Short display name and tag) |
@@ -74,7 +74,7 @@ verbs, capability differences and canonical state mapping are in
   layout probe below (a worktree has no `.claude-sandbox/` in a sidecar layout, so the test
   fails there): `test -e .claude-sandbox/.git` succeeds (`.claude-sandbox/` is its own repo,
   as `wi` itself tests) → `--track`, whatever the variable or the host's ignore says, since
-  `--no-track` there ignores the store in the sidecar and new items land in no repo. Without
+  `--no-track` there would leave new items in no repo (`wi` refuses it). Without
   a sidecar, the part after the `|` is the merged `trackInHost` of the sandbox's config
   cascade: `true` → `--track`; `false` → `--no-track`; any other value → ask the operator.
   Empty means either that no config defines it (the launcher then treats it as false) or
@@ -91,7 +91,7 @@ verbs, capability differences and canonical state mapping are in
   store: the main checkout is
   `git rev-parse --path-format=absolute --git-common-dir` minus its trailing `/.git`.
 - Item files are hand-editable; run `$WI lint` after hand edits, in the same turn.
-- A `wi: WARNING store … is silently untracked` line (second line of `prime`; a problem, exit 3, in `lint`) means new items are git-ignored, or the store holds ≥10 items and none is tracked (below 10, an uncommitted store is treated as new). The line names the ignore rule (file:line) and the remedies for that cause; fix the cause rather than working around it. A store recorded as git-ignored (`tracking: ignored`) gets no warning; one recorded as tracked that git ignores anyway does, since that contradicts the choice; a store with no recorded choice keeps the warning, whose fix ends by recording the choice (`$WI init --track`, or `--no-track` when it is meant to stay local).
+- A `wi: WARNING store … is silently untracked` line (second line of `prime`; a problem, exit 3, in `lint`) means new items are git-ignored, or the store holds ≥10 items and none is tracked (below 10, an uncommitted store is treated as new). The line names the ignore rule (file:line) and the remedies for that cause; fix the cause rather than working around it. A store recorded as git-ignored (`tracking: ignored`) gets no warning; one recorded as tracked that git ignores anyway does, since that contradicts the choice; a store with no recorded choice keeps the warning, whose fix ends by recording the choice (`$WI init --track`, or `--no-track` when it is meant to stay local). A sidecar store recorded as git-ignored warns too (`… is recorded git-ignored … so new items land in no repo`), naming `$WI init --track` and any ignore line in the sidecar repo to remove.
 - One session claims an item before working it; two sessions on one item is what `claim` is
   for — respect a conflict.
 - Migration of a repo's TODO.md is a reviewed, committed change (import → review items →

@@ -1014,20 +1014,47 @@ def write_tracking(root, choice):
 def custody_warning(root):
     """One-line warning when the store is silently untracked, else None.
     Silent outside git, when git is missing or slow, or on any git error,
-    and for a store whose recorded choice is `ignored` (39a2)."""
+    and for a store whose recorded choice is `ignored` (39a2), except a
+    sidecar store, which lands in no repo when ignored (3c06)."""
     tracking = read_tracking(root)
+    sidecar = sandbox_shape(root)[0] == "sidecar"
     if tracking == "ignored":
-        return None
+        # 3c06: a sidecar's host ignores .claude-sandbox/ as a whole, so a
+        # store its own repo ignores too lands in no repo at all
+        return _sidecar_ignored_warning(root) if sidecar else None
     if tracking == "tracked":
         head = (f"wi: WARNING store {root} is silently untracked, against "
                 f"its recorded choice (tracking: tracked in {STORE_FILE}): ")
-        tail = "; or, if it is meant to stay local, run `wi init --no-track`"
+        tail = ("" if sidecar else
+                "; or, if it is meant to stay local, run `wi init --no-track`")
     else:
         head = f"wi: WARNING store {root} is silently untracked: "
-        tail = ("; then record the choice: `wi init --track`, or "
+        tail = ("; then record the choice: `wi init --track`" if sidecar else
+                "; then record the choice: `wi init --track`, or "
                 "`wi init --no-track` if it is meant to stay local")
     body = _custody_body(root)
     return None if body is None else head + body + tail
+
+
+SIDECAR_NO_REPO = ("a sidecar store (.claude-sandbox/ is its own git repo, "
+                   "and the host ignores .claude-sandbox/)")
+
+
+def _sidecar_ignored_warning(root):
+    """The warning for a sidecar store recorded `ignored` (3c06). Raised on
+    the record alone; when git names the sidecar repo's rule, the fix names
+    it too, since `wi init --track` never edits a .gitignore."""
+    msg = (f"wi: WARNING store {root} is recorded git-ignored (tracking: "
+           f"ignored in {STORE_FILE}) in {SIDECAR_NO_REPO}, so new items "
+           "land in no repo; fix: `wi init --track`")
+    rule = _ignore_rule(root)
+    if rule:
+        src, lineno, pattern = rule
+        where = f"{src}:{lineno} '{pattern}'"
+        if not os.path.isabs(src):
+            where += " in the sidecar repo .claude-sandbox/"
+        msg += f", then remove the ignore line {where}"
+    return msg
 
 
 def _ignore_rule(root, *extra):
@@ -1726,6 +1753,15 @@ def cmd_init(args):
                 return 130
         else:
             choice, defaulted = "ignored", True
+    if choice == "ignored" and sandbox_shape(root)[0] == "sidecar":
+        # 3c06: the host ignores a sidecar's .claude-sandbox/, so a store
+        # its own repo ignores lands in no repo; refuse first, as for the
+        # repo root below
+        how = (" (no terminal and no --track/--no-track picked git-ignored)"
+               if defaulted else "")
+        raise WiError(1, f"{root} is {SIDECAR_NO_REPO}: a git-ignored store "
+                         f"there lands in no repo{how}; nothing written (use "
+                         "`wi init --track`)")
     if choice == "ignored" and not existed:
         # a store at the repo root cannot be ignored, and its own *.tmp*
         # line would ignore files across the whole repo: refuse first
