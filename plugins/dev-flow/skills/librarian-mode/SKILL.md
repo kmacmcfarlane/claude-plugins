@@ -41,10 +41,11 @@ serialization, so it does little itself: it files, factors, runs each item throu
   Blocked or permission-denied work goes back to the operator, not the peer.
 - **Push only fast-forward `main`, right after a Report** (at session end and 75%/DUE,
   before it) — what the operator reads is what is on origin. A rejected push: fetch,
-  merge `origin/main` as a merge commit, re-run every Check, push; its `incoming:` lines,
-  and the conflict or red check that aborts the merge, are `references/troubleshooting.md`
-  § Push rejected. Never rebase, reset or `--force`. `Push: none`: land to local `main`,
-  never push.
+  merge `origin/main` as a merge commit, re-run every Check, push; a conflict or a red
+  check aborts the merge and raises a decision, and no other commit to `main` (store or
+  landing) until the merge is committed or aborted; the `incoming:` lines and the rest:
+  `references/troubleshooting.md` § Push rejected. Never rebase, reset or `--force`.
+  `Push: none`: land to local `main`, never push.
 - **State lives in the work-item store and git, not in this transcript.** `/clear` is safe
   once every open item carries a current handoff.
 
@@ -70,8 +71,8 @@ At session start and after any `/clear` or compaction; never `ls` the whole stor
    (`references/rehydrate.md` § Step 2).
 3. **Prime the queue, then read the one item you are working** — resume each `doing`
    item, migrate retired tags, check forwards (`references/rehydrate.md` § Step 3).
-4. **Inventory the tree** — worktrees, branches, an interrupted merge, orphans
-   (`references/rehydrate.md` § Step 4).
+4. **Inventory the tree** — worktrees, branches, an interrupted merge (checked here and
+   before any store commit), orphans (`references/rehydrate.md` § Step 4).
 5. **Context-guard** — without it, disclose that once and keep handoffs current in the
    store (`references/rehydrate.md` § Step 5).
 
@@ -106,7 +107,8 @@ For every request, in this order (detail: `references/intake.md`):
 3. **Decide, or ask.** An obvious best way: decide it, state it in one line, proceed.
    Ask only when a reason applies, or you are in doubt whether one does
    (`references/decide-alone.md` § The line), every decision (one or many) as
-   `decision N:` on the item under the Report's `decisions needed`. Either way it is
+   `decision N:` on the item (its line form: `references/report.md` § The counter) under
+   the Report's `decisions needed`. Either way it is
    recorded: a `decided:` line under its kind, or the ask's `why ask:` and its reason
    (`references/decide-alone.md`). Never
    AskUserQuestion: a modal prompt blocks the session against background returns and
@@ -162,13 +164,18 @@ its series, nothing landed) as a spec — never through the Skill tool, whose St
 would ask the operator. Its Step 6 is the Report below. Your bindings, each in full in
 `references/cycle-bindings.md`:
 
-- **Ground**: Scope minus Exclude; files from Factor; `Checks:`, `Workflow:`; base `main`.
+- **Ground**: Scope minus Exclude; files from Factor; `Checks:`, `Workflow:`; base `main`
+  unless the item names another.
 - **Routing**: dev-cycle's Step 2 as written, helpers and read-only questions included.
 - **Model floor**: an operator `model:` or `effort: xhigh` pin, never overridden downward.
-- **Hold**: an active hold caps tier and concurrency, and stops unasked rounds past the fourth review.
-- **Record sink**: the item body, appended with Bash; a `dispatch:` line before every Agent call.
-- **Decision channel**: `decision N:` under `decisions needed`, durable; spend budget, `decided:` lines.
-- **Terminal action**: `git merge --no-ff` into local `main`; the push is yours, after the Report.
+- **Hold**: an active hold caps tier and concurrency, and stops unasked rounds past the
+  fourth review.
+- **Record sink**: the item body, appended with Bash; a `dispatch:` line before every
+  Agent call.
+- **Decision channel**: `decision N:` under `decisions needed`, durable; spend budget,
+  `decided:` lines.
+- **Terminal action**: `git merge --no-ff` into local `main`; the push is yours, after the
+  Report; another base is never pushed.
 - **Series home**: `$MAIN/.claude-sandbox/investigations/<slug>/`, never a custody edit.
 
 Dispatch a dependency group in one message, one cycle per item; a later group starts only

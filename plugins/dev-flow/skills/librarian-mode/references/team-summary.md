@@ -2,7 +2,9 @@
 
 The four-line Report is the audit trail, for the operator. The team summary is for the
 people the operator passes the news on to: teammates who did not watch the run and will
-read it in Slack, Teams, an email or on a phone. Pointed at from SKILL.md § Report and `report.md` § The team summary, and from the `dev-cycle` skill's `references/bindings.md` § Landing.
+read it in Slack, Teams, an email or on a phone. Pointed at from SKILL.md § Report and
+`report.md` § The team summary, and from the `dev-cycle` skill's `references/bindings.md`
+§ Landing.
 
 ## When
 

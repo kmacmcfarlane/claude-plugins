@@ -74,7 +74,8 @@ it reports the push as well as the landings — here and at 75%/DUE below, the p
 its Report; everywhere else the Report comes first. The push's team summary
 (`team-summary.md`) follows that Report in the same message, after the push outcome and
 its `incoming:` lines; the decisions block stays the last thing in the turn (step 4
-below and `report.md` § With the decisions skill rule it, with the checkpoint's close as its one exception).
+below and `report.md` § With the decisions skill rule it, with the checkpoint's close as
+its one exception).
 The context-gate ledger and the HANDOFF manifest (both session-addressed, one per
 session, in the config dir, never committed) do not replace this; the librarian
 rehydrates from `wi prime` and git.

@@ -1,14 +1,15 @@
 # Decided alone
 
 Loaded from SKILL.md § Intake step 3, the decision channel (`cycle-bindings.md`),
-`report.md` and SKILL.md § Critical, from `decisions.md`, and from the `dev-cycle` skill's `references/model-routing.md`
-§ Review waiver. What the librarian decides without asking is **recorded and shown**: a
-`decided:` line on the item when it decides, a `Done:` line in the next Report. Every decision
-it raises carries `why ask:` opening with its reason. This file holds the line (the reasons
-that raise a decision, and the kinds a decision alone is recorded under), what makes a
-trade-off real, how the line moves, the triage of a planner's questions, what counts as
-trivial documentation and when it is self-reviewed (§ Trivial documentation), the record, the
-Report group, and the tag names with their retired spellings.
+`report.md` and SKILL.md § Critical, from `decisions.md`, and from the `dev-cycle` skill's
+`references/model-routing.md` § Review waiver. What the librarian decides without asking
+is **recorded and shown**: a `decided:` line on the item when it decides, a `Done:` line
+in the next Report. Every decision it raises carries `why ask:` opening with its reason.
+This file holds the line (the reasons that raise a decision, and the kinds a decision
+alone is recorded under), what makes a trade-off real, how the line moves, the triage of a
+planner's questions, what counts as trivial documentation and when it is self-reviewed
+(§ Trivial documentation), the record, the Report group, and the tag names with their
+retired spellings.
 
 ## The line
 

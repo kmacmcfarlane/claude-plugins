@@ -51,9 +51,8 @@ skill's decision channel, `decision N:` under `decisions needed` (SKILL.md § Th
      tree. All green: `git -C "$MAIN" commit --no-edit`, a merge commit.
   4. **Push, then send the incoming lines.** `git -C "$MAIN" push origin main` — now a
      fast-forward — then one `incoming: <sha> <subject> — <author>` line per incoming
-     commit. The `incoming:` lines go with the push outcome: a short follow-up message
-     mid-session, since the Report has gone out; inside the final Report at session end
-     and 75%/DUE (`report.md` § The push). A second rejection repeats from step 1 once; a
+     commit. The `incoming:` lines go out as `report.md` § The push says. A second
+     rejection repeats from step 1 once; a
      third is a decision.
 
   **A conflict at step 2, or a red check at step 3, stops:** `git -C "$MAIN" merge

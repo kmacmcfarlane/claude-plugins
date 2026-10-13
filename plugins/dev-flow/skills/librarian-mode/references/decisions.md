@@ -2,9 +2,9 @@
 
 Loaded from SKILL.md § Intake step 3, `cycle-bindings.md` § Decision channel and
 `report.md`. This file binds the librarian to the `operator-interaction` plugin's
-`decisions` skill, a soft dependency (README principle 4). It says only what the librarian supplies to that skill and
-what the store records. How a decision is written, ordered and answered is the skill's, and
-is not restated here.
+`decisions` skill, a soft dependency (README principle 4). It says only what the
+librarian supplies to that skill and what the store records. How a decision is written,
+ordered and answered is the skill's, and is not restated here.
 
 ## When it applies
 
@@ -27,7 +27,8 @@ The skill is available when the session's skill listing carries `operator-intera
 
 Without the skill, nothing here applies but the `closed N:` line, the `<repo>#N` form and
 the verbatim rule on every answer line (§ What the store records, **Answered**):
-`decisions needed:`, its store lines and the replies are as SKILL.md § Report and `report.md` give them.
+`decisions needed:`, its store lines and the replies are as SKILL.md § Report and
+`report.md` give them.
 
 ## What the librarian supplies to the skill
 

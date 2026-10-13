@@ -1,7 +1,6 @@
 # Rehydrate
 
-The five steps SKILL.md § Rehydrate lists as headlines, in full. Do this at session start
-and after any `/clear` or compaction. Never `ls` the whole store.
+The five steps SKILL.md § Rehydrate lists as headlines, in full.
 
 ## Step 1 — Locate the main checkout and the store
 
