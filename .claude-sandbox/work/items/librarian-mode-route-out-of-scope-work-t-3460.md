@@ -87,3 +87,6 @@ verdict: review round 1 NEEDS_CHANGES (must-fix 5: M1 the Report raises a blocke
 dispatch: implementer opus medium — fix round 1 (resume a62463034bde045ac)
 return: DONE 08fe7e81 (fix round 1): M1-M5, L1-L4, nits; forwarding.md new; SKILL.md 26,933 chars / 4,077 words (main 25,261 / 3,831); 12/12 OK
 dispatch: reviewer opus high — review round 2 of 08fe7e81 (resume a004e5e9bd00171a1)
+verdict: review round 2 NEEDS_CHANGES (must-fix 1, down from 5: N1 the session-end sweep re-blocks an owner-down forward with text the re-send never matches; lows: N2 Rehydrate step 3 names one block text of two; nits: N3 two long lines, N4 note the blocker overtaken; every round-1 fix exact; moved text kept every rule; size accepted for this item, trim filed as trim-librarian-mode-skill-md-back-under-b176)
+decided: 2026-10-13T21:50Z cap — must-fix fell 5 → 1 with exact wording: a finish round of N1-N4 (authority answer 145)
+dispatch: implementer opus medium — finish round (resume a62463034bde045ac)
