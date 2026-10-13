@@ -33,3 +33,6 @@ agent: implementer a58a079d03da1daa5 round 2
 result: DONE round 2 at 9bd9e0eb (all 12 applied; dev-flow 81, research 123, kit-dev 21 OK)
 dispatch: reviewer opus high — resume, round 2
 agent: reviewer ac442c0e0fb4c51c7 round 2 at 9bd9e0eb
+verdict: NEEDS_CHANGES round 2 at 9bd9e0eb (2 medium: web PDF read from its saved file and repo-relative Source opened by absolute path both flagged opened-elsewhere; 3 low: scheme/trailing slash, UNREACHABLE note, bare name shadowed by --own; 3 nits; all 12 round-1 fixes confirmed; no sheet text leaks)
+dispatch: implementer opus medium — resume, fix round 2
+agent: implementer a58a079d03da1daa5 round 3
