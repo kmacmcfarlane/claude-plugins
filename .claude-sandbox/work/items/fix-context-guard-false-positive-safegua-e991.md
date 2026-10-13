@@ -3,13 +3,12 @@ id: fix-context-guard-false-positive-safegua-e991
 title: Fix context-guard false-positive safeguard blocks on continuation sessions
 short_display_name: context guard block fix
 type: bug
-status: doing
+status: done
 priority: 1
 tags: [context-guard, claude-code, safeguard]
-owner: rt@hooper
-claimed: 2026-10-13T18:18Z
 created: 2026-10-13
 updated: 2026-10-13
+closed: 2026-10-13
 refs:
   - https://github.com/anthropics/claude-code/issues/88139
   - https://github.com/anthropics/claude-code/issues/96118
@@ -47,3 +46,4 @@ Reword "reasoning" to "noodle notes" (grammar adjusted) in the injected prose:
 ## Notes
 - 2026-10-13 filed from opencode investigation; held for operator review before execution (context compact first)
 - 2026-10-13 claimed by rt@hooper
+- 2026-10-13 done: 55435c8f
