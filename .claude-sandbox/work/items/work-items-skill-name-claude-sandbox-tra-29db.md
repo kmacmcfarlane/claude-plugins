@@ -30,3 +30,6 @@ agent: implementer aa55c95164614e9c0
 return: DONE fee0538; SKILL.md only; work-items 365, kit-dev 21 OK
 dispatch: reviewer opus high — review round 1 of fee0538
 agent: reviewer ae6844080022954eb
+verdict: review round 1 NEEDS_CHANGES (must-fix 4: an older sandbox (variable unset, this one included: trackInHost: true in config) would get --no-track and hide a tracked store; env-file case misstated; non-true/false values unhandled; broken wrap; exact rewrite given)
+decided: 2026-10-13T06:10Z design — target changed: an empty variable inside a sandbox no longer reads as false; the agent reads the layout instead (git check-ignore -q .claude-sandbox/: 0 → --no-track, 1 → --track, else ask), because unset cannot tell "no config" from "launched before the export"
+dispatch: implementer sonnet medium — fix round 1 (resume aa55c95164614e9c0)
