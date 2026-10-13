@@ -3,12 +3,11 @@ id: declaration-sweep-declare-every-soft-cro-eef5
 title: "declaration sweep: declare every soft cross-plugin edge"
 short_display_name: declaration sweep of soft edges
 type: chore
-status: doing
+status: done
 priority: 3
-owner: Kyle-McFarlane@2d49f8460283
-claimed: 2026-10-12T23:38Z
 created: 2026-10-08
-updated: 2026-10-12
+updated: 2026-10-13
+closed: 2026-10-13
 refs:
   - spike-how-much-inter-plugin-dependency-i-72ef
 ---
@@ -32,3 +31,6 @@ agent: reviewer a6043ac544148d699
 verdict: review round 1 CLEAR (must-fix 0; lows: L1 hook-contract § 12 is a hand copy of sensor-contract with nothing keeping them in step, and omits unknown-keys; L2 WI-4 reason incomplete (a tracked store is a stale copy); L3 the agent: lines are also written by the research skills; nits: repo-map test lines, CG-8 not named; 41 edges re-measured, 3 mutations caught, code files docstring-only)
 decided: 2026-10-13T03:00Z cap — a finish round of L1 (the sensor-contract cross-note and the unknown-keys line), L2, L3 and nit 2 (authority answer 145)
 dispatch: implementer opus medium — finish round (resume a561dcc2863a9c6b3)
+verdict: finish round CLEAR — word diff: L1 cross-note and unknown-keys line, L2 wording, L3 attribution in four places (plugin.json and marketplace byte-equal), nit 2
+landed: 24888ac (merge of 942a05e..16bf6bd); Checks 12/12 OK; cc_scan clean
+- 2026-10-13 done
