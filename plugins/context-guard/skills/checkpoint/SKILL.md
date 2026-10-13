@@ -266,8 +266,9 @@ bound to `python3` only when the file exists, so a miss never runs a bare `pytho
 per install scope, so the read takes the entry that applies to this repo, never the first
 listed: a `local` or `project` entry whose `projectPath` is the main checkout or a
 directory above it (the deepest, `local` before `project`), else the `user` entry; another
-project's install never answers. It is the same pick as the `mark_checkpoint.py` lookup in
-`references/operator-playbook.md`. **`no wi found`** with a store means `work-items`
+project's install never answers. It ranks entries as the `mark_checkpoint.py` lookup in
+`references/operator-playbook.md` does, but from the main checkout rather than the working
+directory. **`no wi found`** with a store means `work-items`
 is not installed: run no `wi` command. Fill `items:` from the store's files (an id is a
 file name under `items/`, its `status:` in the frontmatter), carry each item's residue in
 `Aware of` as `<TAG> <item id>: <line>`, as the unattended path does, route deferred work
