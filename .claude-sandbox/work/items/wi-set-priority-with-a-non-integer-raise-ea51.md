@@ -28,3 +28,5 @@ agent: implementer a9d852836275d33ee
 return: DONE 011b2fdd; set priority exits 1 on a non-integer or out-of-range value (was a traceback, or exit 3 for out of range); provider-interface exit-1 list updated; work-items 366, kit-dev 21 OK
 dispatch: reviewer opus high — review round 1 of 011b2fdd
 agent: reviewer a9c0cd51371ff55de
+verdict: review round 1 NEEDS_CHANGES (must-fix 3, all docs: format.md:235-237 still says out-of-range priority exits 3; provider-interface title limit is add-only; "as add -p rejects it" implies exit 1 though add -p exits 2; nits: test asserts nothing written, wi.py:2325 comment)
+dispatch: implementer sonnet medium — fix round 1 (resume a9d852836275d33ee)
