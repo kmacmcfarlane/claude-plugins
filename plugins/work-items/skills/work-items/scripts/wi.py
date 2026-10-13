@@ -2322,7 +2322,14 @@ def cmd_set(args):
         elif field in LIST_FIELDS:
             item.meta[field] = [v.strip() for v in value.split(",") if v.strip()]
         elif field in INT_FIELDS:
-            item.meta[field] = int(value)
+            # as `add -p`: an integer 0-4, rejected with a usage error
+            try:
+                num = int(value)
+            except ValueError:
+                num = None
+            if num is None or not 0 <= num <= 4:
+                raise WiError(1, f"{field} must be an integer 0-4, got '{value}'")
+            item.meta[field] = num
         elif field == "status" and value == "parked":
             # parking releases the claim and records a reason: `wi park` is
             # the one path in, so set never leaves a half-parked item

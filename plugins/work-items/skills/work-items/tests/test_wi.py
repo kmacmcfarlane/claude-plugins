@@ -3725,6 +3725,16 @@ class TestSet(WiTestCase):
         self.assertEqual(r.returncode, 3)
         self.assertIn("invalid status", r.stderr)
 
+    def test_set_priority_rejects_bad_values_with_exit_1(self):
+        self.write_item("target-3333")
+        for bad in ("abc", "1.5", "5", "-1", "9"):
+            r = run(["set", "target-3333", "priority", bad], self.root)
+            self.assertEqual(r.returncode, 1, bad)
+            self.assertIn("priority must be an integer 0-4", r.stderr)
+            self.assertNotIn("Traceback", r.stderr)
+        self.wi_ok(["set", "target-3333", "priority", "0"])
+        self.wi_ok(["set", "target-3333", "priority", "4"])
+
     def test_immutable_and_unknown_fields_exit_1(self):
         self.write_item("target-3333")
         self.assertEqual(
