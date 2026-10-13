@@ -47,3 +47,5 @@ decided: 2026-10-13T04:30Z scope — the existing cmd_init symlink-following wri
 dispatch: implementer opus medium — fix round 1 (resume a75c6bb99ba688aab)
 return: DONE 109179b (fix round 1); 12/12 OK (work-items 358); probes rerun: symlinked .gitignore/store.yaml/temp/store dir refused or replaced, victims untouched; CRLF and Latin-1 kept; negation fixed; repo-root store refused; Ctrl-C 130
 dispatch: reviewer opus high — review round 2 of 109179b (resume a5063ab4a5b72b981)
+verdict: review round 2 NEEDS_CHANGES (must-fix 1, down from 5: high — a symlinked parent (.claude-sandbox → another repo or outside git; WI_ROOT via a symlinked dir) still sends the store and a .gitignore append outside the repo; the realpath(gi.parent) check is dead; lows: atomic_write "x" refuses a stale same-pid temp after an OOM kill (mkstemp suggested); format.md:63 overstates outside git; "initialised" printed after a failed ignore; repo-root store writes an unanchored *.tmp* — refuse before creating; builder calls ruled acceptable)
+dispatch: implementer opus medium — fix round 2 (resume a75c6bb99ba688aab); review 3 next
