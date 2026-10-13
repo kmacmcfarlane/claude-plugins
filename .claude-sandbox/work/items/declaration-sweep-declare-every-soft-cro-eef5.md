@@ -29,3 +29,6 @@ agent: implementer a561dcc2863a9c6b3
 return: DONE 942a05e; 12/12 OK; CR-4 already done; CG-7 and SH-3 declared, WI-4 inlined (edge gone), DF-7/SH-4/KD-4/KD-5/WI-5 done; ALLOWED 20 → 11, UNDECLARED 4 → 0
 dispatch: reviewer opus high — review round 1 of 942a05e
 agent: reviewer a6043ac544148d699
+verdict: review round 1 CLEAR (must-fix 0; lows: L1 hook-contract § 12 is a hand copy of sensor-contract with nothing keeping them in step, and omits unknown-keys; L2 WI-4 reason incomplete (a tracked store is a stale copy); L3 the agent: lines are also written by the research skills; nits: repo-map test lines, CG-8 not named; 41 edges re-measured, 3 mutations caught, code files docstring-only)
+decided: 2026-10-13T03:00Z cap — a finish round of L1 (the sensor-contract cross-note and the unknown-keys line), L2, L3 and nit 2 (authority answer 145)
+dispatch: implementer opus medium — finish round (resume a561dcc2863a9c6b3)
