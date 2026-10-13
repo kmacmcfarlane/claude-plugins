@@ -3727,13 +3727,18 @@ class TestSet(WiTestCase):
 
     def test_set_priority_rejects_bad_values_with_exit_1(self):
         self.write_item("target-3333")
+        before = json.loads(self.wi_ok(["show", "target-3333", "--json"])).get("priority", 2)
         for bad in ("abc", "1.5", "5", "-1", "9"):
             r = run(["set", "target-3333", "priority", bad], self.root)
             self.assertEqual(r.returncode, 1, bad)
             self.assertIn("priority must be an integer 0-4", r.stderr)
             self.assertNotIn("Traceback", r.stderr)
-        self.wi_ok(["set", "target-3333", "priority", "0"])
-        self.wi_ok(["set", "target-3333", "priority", "4"])
+        rec = json.loads(self.wi_ok(["show", "target-3333", "--json"]))
+        self.assertEqual(rec.get("priority", 2), before)
+        for ok, want in (("0", 0), ("4", 4), ("+3", 3), (" 2 ", 2)):
+            self.wi_ok(["set", "target-3333", "priority", ok])
+            rec = json.loads(self.wi_ok(["show", "target-3333", "--json"]))
+            self.assertEqual(rec["priority"], want, ok)
 
     def test_immutable_and_unknown_fields_exit_1(self):
         self.write_item("target-3333")

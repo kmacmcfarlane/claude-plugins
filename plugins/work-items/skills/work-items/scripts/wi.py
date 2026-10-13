@@ -2322,7 +2322,7 @@ def cmd_set(args):
         elif field in LIST_FIELDS:
             item.meta[field] = [v.strip() for v in value.split(",") if v.strip()]
         elif field in INT_FIELDS:
-            # as `add -p`: an integer 0-4, rejected with a usage error
+            # same range as `add -p`; here a clean exit-1 usage error
             try:
                 num = int(value)
             except ValueError:
