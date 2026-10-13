@@ -90,7 +90,7 @@ claude-plugins/
     │   ├── agents/            (scribe, scout, implementer, implementer-critical, implementer-deep, planner, planner-deep, reviewer, reviewer-light, cross-checker, cross-checker-deep — the dev cycle's role workers; research-lane, research-lane-deep, research-verifier — the research family's workers)
     │   ├── skills/
     │   │   ├── {investigate,implement,dev-cycle,foundation,deep-investigation,research,research-deep,research-refine,research-prune,chain-of-verification,librarian-mode}/
-    │   │   ├── research/scripts/ (tool-preflight.sh, scan-findings.py: the scan floor under the verifier + tests)
+    │   │   ├── research/scripts/ (tool-preflight.sh, scan-findings.py: the scan floor under the verifier, check-sheet.py: the verifier's sheet against its own table + tests)
     │   │   └── librarian-mode/scripts/ (quota_budget.py: the librarian's quota sense + tests)
     │   └── tests/             (test_agents.py: every agent file's model and effort pin;
     │                           test_deep_investigation.py: deep-investigation's security parity)

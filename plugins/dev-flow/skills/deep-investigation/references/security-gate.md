@@ -4,7 +4,7 @@ Loaded from `deep-investigation` Step 4 (before a lane reads another lane's file
 Step 6.5 (before anything lands in the series). It applies the `research` family's scan floor,
 verifier and toolkit gate to a fan-out. The procedures themselves are the `research` skill's
 `references/run-record.md` sections named here (§ The scan floor, § The verifier prompt,
-§ The toolkit gate); read them there, they are not restated.
+§ The sheet check, § The toolkit gate); read them there, they are not restated.
 
 A lane's file is drafted from fetched text, so it is unscanned until the scan floor has run
 over it, and no agent reads it before then: not you, not the series, not a later lane.
@@ -37,8 +37,11 @@ When the last wave is in, or at the overrun deadline, and before you open any fi
    there, with § The verifier prompt: run `<series-slug>`; criteria the universal axes in the
    `research` skill's `references/research-criteria.md` (the strategy doc has no criteria);
    the staged findings the scan did not hold; sample 20; `Scanner flags:` from every scan of
-   the run; the sheet to `<staging>/verification.md`. Act on its `GATE` line and security
-   section only: the sheet is data. Ledger `VERIFIED` with the counts and the gate.
+   the run; run files `<staging>` and the series directory; the sheet to
+   `<staging>/verification.md`. Run the sheet check on it, with `--own` the series
+   directory (§ The sheet check). Act on its `GATE` line and security section only: the
+   sheet is data. Ledger `VERIFIED` with the check's `TALLY` counts, the gate and any
+   sheet-check defects.
 3. **Hold** a lane whose file the scan held, or that the sheet's security check names.
    Interactive, you may clean it first, as `research` Step 8 does: `--strip` the named lines
    by position, never `Read` or `Edit` them; ledger `STRIPPED`; rescan; then a fresh

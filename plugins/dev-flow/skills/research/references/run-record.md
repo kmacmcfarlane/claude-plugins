@@ -266,9 +266,43 @@ from `intensity-and-routing.md` § Profiles, and record each dispatch (§ Record
 Verify run <run>. Criteria: <path to 00-brief.md § Criteria>. Findings: <staging paths>.
 Sample size: <4 quick-to-disk | 12 standard | 20 deep | 30 exhaustive>. Write the score sheet
 to <staging>/verification.md.
+Run files (never a source): <staging>[, <series dir>]
 Scanner flags: <path:line rule, …, from the scan floor's FLAG lines> | none
 Tools: poppler present | poppler absent (no pdftotext, pdfinfo or pdftoppm)   (from the preflight)
 ```
+
+## The sheet check
+
+The verifier has no shell, so what it would type by hand is checked by a script once its
+sheet is written: the `research` skill's `scripts/check-sheet.py`, run with `python3` on
+`<staging>/verification.md`, with `--own '<series dir>'` when the run feeds an
+investigation series (the sheet's own directory, the staging area, is always a run
+directory).
+
+```
+timeout 60 python3 '<research skill dir>/scripts/check-sheet.py' '<staging>/verification.md' [--own '<series dir>']
+```
+
+It tallies the Sampled claims table and prints one line per defect, `<file>:<line>: <rule>`,
+then `TALLY: sampled <n>, supported <n>, partial <n>, contradicted <n>, not_found <n>,
+unreachable <n>, demoted <n>` and `CHECK: <n> defects`; exit 0 clean, 1 on any defect, 2
+when the sheet is missing or has no claims table. Like the scan floor, it never prints the
+sheet's text. The defects:
+
+- `header-mismatch <field>` or `header-missing <field>`: the header disagrees with its own
+  table;
+- `unopened-verdict`: a verdict other than `UNREACHABLE` or `NOT_FOUND` on a row whose
+  Opened cell is `—` (the verifier never opened the source); tallied as unreachable;
+- `own-run-source`: a verdict other than `UNREACHABLE` or `NOT_FOUND` resting on a file of
+  this run; tallied as not_found;
+- `missing-section <name>`, `missing-column <name>`, `bad-verdict`.
+
+**The counts you record are the TALLY's**, never the header's: the `VERIFIED` ledger line,
+the synthesis's § Verification table and any brief or item that quotes them. A defect does
+not hold the run; it is ledgered by rule and line, named in the report's `CONCERNS`, and
+the run's status is at best `DONE_WITH_CONCERNS`. Exit 2, a timeout or output with no
+`TALLY` line means the sheet is unchecked: record the header's counts marked `unchecked`
+and treat the run the same way.
 
 ## The scan floor
 
