@@ -43,3 +43,5 @@ verdict: CLEAR round 3 at f90b41dd (lows: any Source word counts as an Opened ta
 decided: 2026-10-13T22:45Z cap — two lows and a nit with exact fixes: one finish round, read by the librarian (authority answer 145)
 dispatch: implementer opus medium — resume, finish round
 agent: implementer a58a079d03da1daa5 round 4 (finish)
+result: DONE finish at 22076d33 (exact; one existing test row updated to the new rule; read by the librarian; research 127 OK, pyright 0)
+verdict: CLEAR after 2 fix rounds, 1 finish at 22076d33
