@@ -25,9 +25,11 @@ import json
 import os
 import re
 import shlex
+import shutil
 import stat
 import subprocess
 import sys
+import tempfile
 import time
 import unicodedata
 from datetime import datetime, timezone
@@ -965,27 +967,95 @@ def _dir_level(pattern, root):
     return any(fnmatch.fnmatchcase(d, last) for d in parents)
 
 
+# The store's recorded tracking choice (39a2): `wi init` writes it, prime and
+# lint read it. A store without the file (or without a valid `tracking:`
+# line) has no recorded choice.
+STORE_FILE = "store.yaml"
+TRACKING_CHOICES = ("tracked", "ignored")
+
+
+def read_tracking(root):
+    """'tracked' | 'ignored' | None (no file, or no valid tracking: line)."""
+    raw = _store_tracking_raw(root)
+    return raw if raw in TRACKING_CHOICES else None
+
+
+def _store_tracking_values(root):
+    """Every tracking: value as written, in order, or None when there is no
+    readable store file."""
+    try:
+        text = (root / STORE_FILE).read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError):
+        return None
+    values = []
+    for line in text.splitlines():
+        m = re.match(r"^tracking:\s*(.*?)\s*$", line)
+        if m:
+            values.append(m.group(1).strip("\"'"))
+    return values
+
+
+def _store_tracking_raw(root):
+    """The first tracking: value as written ('' for a file without one), or
+    None when there is no readable store file."""
+    values = _store_tracking_values(root)
+    if values is None:
+        return None
+    return values[0] if values else ""
+
+
+def write_tracking(root, choice):
+    atomic_write(root / STORE_FILE,
+                 "# wi store settings; format: the work-items skill's "
+                 "references/format.md\n"
+                 f"tracking: {choice}\n")
+
+
 def custody_warning(root):
     """One-line warning when the store is silently untracked, else None.
-    Silent outside git, when git is missing or slow, or on any git error."""
+    Silent outside git, when git is missing or slow, or on any git error,
+    and for a store whose recorded choice is `ignored` (39a2)."""
+    tracking = read_tracking(root)
+    if tracking == "ignored":
+        return None
+    if tracking == "tracked":
+        head = (f"wi: WARNING store {root} is silently untracked, against "
+                f"its recorded choice (tracking: tracked in {STORE_FILE}): ")
+        tail = "; or, if it is meant to stay local, run `wi init --no-track`"
+    else:
+        head = f"wi: WARNING store {root} is silently untracked: "
+        tail = ("; then record the choice: `wi init --track`, or "
+                "`wi init --no-track` if it is meant to stay local")
+    body = _custody_body(root)
+    return None if body is None else head + body + tail
+
+
+def _ignore_rule(root, *extra):
+    """The (source, line, pattern) of the rule that ignores a new item's
+    path in the store, None when nothing does, False when git cannot say."""
+    r = _git(root, "check-ignore", "-v", "-z", *extra, "--stdin",
+             stdin=f"items\0{PROBE_ITEM}\0")
+    if r is None or r.returncode not in (0, 1):
+        return False
+    fields = r.stdout.split("\0")
+    for i in range(0, len(fields) - 3, 4):   # source, linenum, pattern, path
+        src, lineno, pattern = fields[i:i + 3]
+        if pattern and not pattern.startswith("!"):   # a negation un-ignores
+            return (src, lineno, pattern)
+    return None
+
+
+def _custody_body(root):
+    """The cause and fix of a silently untracked store, or None."""
     # the probe path, not only `items`, catches a store whose tracked files
     # mask the ignore rule: check-ignore skips tracked paths, but a new
     # item's path is still matched against the rule. -v names the rule; -z
     # (which git allows only with --stdin) gives NUL-separated fields with
     # paths unquoted, so a source path holding ':N:', a tab or a non-ASCII
     # byte parses; _git decodes the raw bytes without failing.
-    r = _git(root, "check-ignore", "-v", "-z", "--stdin",
-             stdin=f"items\0{PROBE_ITEM}\0")
-    if r is None or r.returncode not in (0, 1):
+    rule = _ignore_rule(root)
+    if rule is False:
         return None
-    fields = r.stdout.split("\0")
-    rule = None
-    for i in range(0, len(fields) - 3, 4):   # source, linenum, pattern, path
-        src, lineno, pattern = fields[i:i + 3]
-        if pattern and not pattern.startswith("!"):   # a negation un-ignores
-            rule = (src, lineno, pattern)
-            break
-    head = f"wi: WARNING store {root} is silently untracked: "
     if rule:
         src, lineno, pattern = rule
         shape, _ = sandbox_shape(root)
@@ -1010,7 +1080,7 @@ def custody_warning(root):
         else:
             remedy = f"remove or negate that rule{there}"
         if shape == "sidecar":
-            return head + f"new items are git-ignored by {where}; fix: {remedy}"
+            return f"new items are git-ignored by {where}; fix: {remedy}"
         fix = [f"new items are git-ignored by {where}; fix: {remedy}"]
         if shape is not None:
             fix.append(" and set trackInHost: true in the sandbox config (a "
@@ -1021,14 +1091,14 @@ def custody_warning(root):
                 # ignore; removing it would publish private items
                 fix.append(", or, for a public repo, give .claude-sandbox/ "
                            "its own sidecar git")
-        return head + "".join(fix)
+        return "".join(fix)
     n = len(item_paths(root))
     if n < UNTRACKED_MIN_ITEMS:
         return None
     r = _git(root, "ls-files", "--", ".")
     if r is None or r.returncode != 0 or r.stdout.strip():
         return None
-    return head + f"it holds {n} items and git tracks none; fix: `git add` the store"
+    return f"it holds {n} items and git tracks none; fix: `git add` the store"
 
 
 class Lock:
@@ -1071,12 +1141,53 @@ def atomic_write(path, text, create=False):
     """tmp+rename. With create=True the file must not exist yet: the tmp is
     moved into place by _move_no_clobber, which fails rather than replace a
     file that appeared since the caller looked (O_EXCL semantics, and the
-    content still lands in one step)."""
-    tmp = path.with_name(path.name + ".tmp" + str(os.getpid()))
-    with open(tmp, "w", encoding="utf-8", newline="") as fh:
-        fh.write(text)
+    content still lands in one step). The tmp gets a fresh random name,
+    created exclusively (mkstemp, O_EXCL), so a planted symlink is never
+    written through and a stale tmp from a killed write is never in the
+    way; its `<name>.tmp` prefix keeps the stale-reservation glob and the
+    store's `*.tmp*` ignore matching it."""
+    _atomic_write(path, text, create=create)
+
+
+def atomic_write_bytes(path, data, create=False, keep_mode=False):
+    """atomic_write for bytes; keep_mode copies an existing file's mode."""
+    _atomic_write(path, data, create=create, keep_mode=keep_mode)
+
+
+def _umask():
+    mask = os.umask(0o022)
+    os.umask(mask)
+    return mask
+
+
+def _atomic_write(path, data, create=False, keep_mode=False):
+    fd, name = tempfile.mkstemp(dir=path.parent, prefix=path.name + ".tmp")
+    tmp = Path(name)
+    try:
+        # mkstemp makes the file 0600; a plain create would honour the umask
+        os.fchmod(fd, 0o666 & ~_umask())
+        if isinstance(data, bytes):
+            fh = open(fd, "wb")
+        else:
+            fh = open(fd, "w", encoding="utf-8", newline="")
+    except BaseException:
+        os.close(fd)
+        tmp.unlink()
+        raise
+    try:
+        with fh:
+            fh.write(data)
+        if keep_mode and os.path.isfile(path) and not os.path.islink(path):
+            shutil.copymode(path, tmp)
+    except BaseException:
+        tmp.unlink()
+        raise
     if not create:
-        os.replace(tmp, path)
+        try:
+            os.replace(tmp, path)
+        except BaseException:
+            tmp.unlink()
+            raise
         return
     try:
         _move_no_clobber(tmp, path)
@@ -1428,39 +1539,260 @@ def sandbox_shape(root):
     return "private", repo
 
 
+def _interactive():
+    return sys.stdin.isatty() and sys.stdout.isatty()
+
+
+def choose_tracking(inp, out):
+    """The init menu: 'tracked' or 'ignored'. Enter, or end of input, takes
+    the default, git-ignored."""
+    out.write("wi init: should git track this work-item store?\n"
+              "  1) tracked      items are committed with the repo\n"
+              "  2) git-ignored  items stay in this checkout only "
+              "[default]\n")
+    while True:
+        out.write("choose 1 or 2 [2]: ")
+        out.flush()
+        line = inp.readline()
+        if not line:
+            out.write("\n")
+            return "ignored"
+        answer = line.strip().lower()
+        if answer in ("1", "t", "track", "tracked"):
+            return "tracked"
+        if answer in ("", "2", "i", "ignore", "ignored", "g", "git-ignored",
+                      "n", "no-track"):
+            return "ignored"
+        out.write(f"not a choice: {line.strip()!r}\n")
+
+
+def _store_repo(root):
+    """The top of the git repo that holds the store, or None outside git.
+    A sidecar store's repo is .claude-sandbox/ itself."""
+    shape, _ = sandbox_shape(root)
+    if shape == "sidecar":
+        return root.absolute().parent
+    r = _git(root, "rev-parse", "--show-toplevel")
+    if r is None or r.returncode != 0 or not r.stdout.strip():
+        return None
+    return Path(r.stdout.strip())
+
+
+def _gitignore_escape(rel):
+    """A path as a literal .gitignore pattern: glob characters escaped."""
+    return re.sub(r"([\\\[*?])", r"\\\1", rel)
+
+
+def append_gitignore_line(gi, line):
+    """Append one line to a .gitignore, atomically and byte-exact: the file
+    is created when missing, its line ending (CRLF or LF) is kept, a newline
+    is added first when its last line has none, and its mode is kept. A
+    symlinked .gitignore is never written through. (ok, message)."""
+    if gi.is_symlink():
+        return False, f"{gi} is a symlink: no line added; add {line} by hand"
+    try:
+        data = gi.read_bytes() if gi.exists() else b""
+    except OSError as e:
+        return False, (f"{gi} unreadable ({e.strerror}): no line added; add "
+                       f"{line} by hand")
+    nl = b"\r\n" if b"\r\n" in data else b"\n"
+    if data and not data.endswith(b"\n"):
+        data += nl
+    try:
+        atomic_write_bytes(gi, data + line.encode("utf-8", "surrogateescape")
+                           + nl, keep_mode=True)
+    except (OSError, WiError) as e:
+        return False, f"{gi} not written ({e}): add {line} by hand"
+    return True, f"added {line} to {gi}"
+
+
+def _gitignore_lines(gi):
+    """A .gitignore's lines, stripped; non-UTF-8 bytes kept as surrogates."""
+    try:
+        data = gi.read_bytes() if gi.is_file() else b""
+    except OSError:
+        return []
+    return [ln.strip() for ln in
+            data.decode("utf-8", "surrogateescape").splitlines()]
+
+
+def ensure_ignored(root):
+    """Make git ignore the store: add its dir to its repo's root .gitignore
+    unless git already ignores it from one of the repo's .gitignore files.
+    (ok, message); ok False means the store may not be ignored."""
+    repo = _store_repo(root)
+    if repo is None:
+        return True, "not in a git repo: no .gitignore written"
+    try:
+        rel = root.resolve().relative_to(repo.resolve()).as_posix()
+    except ValueError:
+        return False, (f"{root} is outside the repo at {repo}: no "
+                       ".gitignore written")
+    if rel == ".":
+        return False, "store is the repo root: no .gitignore written"
+    gi = repo / ".gitignore"
+    esc = _gitignore_escape(rel)
+    line = f"/{esc}/"
+    if gi.is_symlink():
+        return False, f"{gi} is a symlink: no line added; add {line} by hand"
+    # git decides (a negation after a literal line un-ignores it); a rule
+    # only in info/exclude or an excludesFile does not travel with the
+    # repo, so the line is still added for those
+    rule = _ignore_rule(root, "--no-index")
+    if rule is False:
+        # git unavailable: the literal lines are all there is to go on
+        for ln in _gitignore_lines(gi):
+            if ln in {f"/{esc}/", f"/{esc}", f"{esc}/", esc}:
+                return True, (f"{gi} already ignores the store ('{ln}'): no "
+                              "line added")
+            if rel == ".claude-sandbox/work" and ln in SANDBOX_IGNORES:
+                return True, (f"{gi} already ignores .claude-sandbox/ as a "
+                              f"whole ('{ln}'), which covers the store: no "
+                              "line added")
+    elif rule:
+        src, lineno, pattern = rule
+        if not os.path.isabs(src) and Path(src).name == ".gitignore":
+            if (rel == ".claude-sandbox/work"
+                    and pattern.strip() in SANDBOX_IGNORES):
+                return True, (f"{src}:{lineno} already ignores "
+                              f".claude-sandbox/ as a whole ('{pattern}'), "
+                              "which covers the store: no line added")
+            return True, (f"already ignored by git ({src}:{lineno} "
+                          f"'{pattern}'): no line added")
+    ok, msg = append_gitignore_line(gi, line)
+    if not ok:
+        return ok, msg
+    after = _ignore_rule(root, "--no-index")
+    if after is not False and not after:
+        return False, f"{line} did not make git ignore the store"
+    return True, msg
+
+
+def _store_outside_repo(root):
+    """The refusal when a symlink on the store's path that is repo content
+    (it sits inside a git repo) points outside that repo, else None. A link
+    above every repo (a /home/claude -> /home/rt style alias) is left
+    alone."""
+    p = Path(os.path.abspath(root))
+    for comp in (p, *p.parents):
+        if not comp.is_symlink():
+            continue
+        r = _git(comp.parent, "rev-parse", "--show-toplevel")
+        if r is None or r.returncode != 0 or not r.stdout.strip():
+            continue
+        top = os.path.realpath(r.stdout.strip())
+        target = os.path.realpath(comp)
+        if target != top and not target.startswith(top + os.sep):
+            return (f"{comp} is a symlink to {target}, outside the repo at "
+                    f"{top}: refusing to init there; nothing written")
+    return None
+
+
+def _create_if_absent(path, text):
+    """Write a new file atomically; an existing path, a symlink included,
+    is left alone."""
+    if os.path.lexists(path):
+        return
+    try:
+        atomic_write(path, text, create=True)
+    except WiError:
+        if not os.path.lexists(path):
+            raise
+        # appeared since the check: it is there, leave it
+
+
 def cmd_init(args):
     root = resolve_root(args.root, must_exist=False)
+    refusal = _store_outside_repo(root)
+    if refusal:
+        raise WiError(1, refusal)
+    existed = (root / "items").is_dir()
+    recorded = read_tracking(root)
+    choice = "tracked" if args.track else "ignored" if args.no_track else None
+    defaulted = False
+    if choice is None and not (existed and recorded):
+        if existed:
+            # an existing store with no recorded choice is left as it is:
+            # an Enter or a missing terminal must not ignore a tracked store
+            print(f"wi: note: {root} has no recorded tracking choice; record "
+                  "one with `wi init --track` or `wi init --no-track`",
+                  file=sys.stderr)
+        elif _interactive():
+            try:
+                choice = choose_tracking(sys.stdin, sys.stdout)
+            except KeyboardInterrupt:
+                print("\nwi init: interrupted; nothing written",
+                      file=sys.stderr)
+                return 130
+        else:
+            choice, defaulted = "ignored", True
+    if choice == "ignored" and not existed:
+        # a store at the repo root cannot be ignored, and its own *.tmp*
+        # line would ignore files across the whole repo: refuse first
+        repo_top = _store_repo(root)
+        if repo_top is not None and (os.path.realpath(root)
+                                     == os.path.realpath(repo_top)):
+            raise WiError(1, f"{root} is the repo root: a store there "
+                             "cannot be git-ignored; nothing written (use "
+                             "`wi init --track`, or put the store in a "
+                             "subdirectory)")
     (root / "items").mkdir(parents=True, exist_ok=True)
-    readme = root / "README.md"
-    if not readme.exists():
-        readme.write_text(
-            "# Work items\n\nOne markdown file per item, managed by `wi` "
-            "(the work-items plugin's skills/work-items).\nStart with "
-            "`wi prime`, then `wi show <id> --brief` for the item you will "
-            "work.\nFormat: the work-items plugin's "
-            "skills/work-items/references/format.md\n")
-    gi = root / ".gitignore"
-    if not gi.exists():
-        gi.write_text(".lock\n*.tmp*\n")
+    _create_if_absent(
+        root / "README.md",
+        "# Work items\n\nOne markdown file per item, managed by `wi` "
+        "(the work-items plugin's skills/work-items).\nStart with "
+        "`wi prime`, then `wi show <id> --brief` for the item you will "
+        "work.\nFormat: the work-items plugin's "
+        "skills/work-items/references/format.md\n")
+    _create_if_absent(root / ".gitignore", ".lock\n*.tmp*\n")
     shape, repo = sandbox_shape(root)
-    if shape == "private":
+    effective = choice or recorded
+    if shape == "private" and effective == "tracked":
         print("private-shaped repo (no sidecar git, .claude-sandbox/ not "
               "gitignored): host .gitignore left alone so the store stays "
               "tracked")
     elif shape == "sidecar":
         host_gi = repo / ".gitignore"
-        text = host_gi.read_text() if host_gi.is_file() else ""
-        lines = {ln.strip() for ln in text.splitlines()}
-        if not lines.intersection(SANDBOX_IGNORES):
-            if text and not text.endswith("\n"):
-                text += "\n"
-            host_gi.write_text(text + "/.claude-sandbox/\n")
-            print("sidecar git at .claude-sandbox/.git: added "
-                  "/.claude-sandbox/ to host .gitignore")
+        if not set(_gitignore_lines(host_gi)).intersection(SANDBOX_IGNORES):
+            ok, msg = append_gitignore_line(host_gi, "/.claude-sandbox/")
+            if ok:
+                print("sidecar git at .claude-sandbox/.git: added "
+                      "/.claude-sandbox/ to host .gitignore")
+            else:
+                print(f"wi: WARNING sidecar git at .claude-sandbox/.git: "
+                      f"{msg}", file=sys.stderr)
     # shape 'ignored' (already whole-dir-ignored) and non-sandbox stores:
-    # never duplicate the line, never touch the host .gitignore.
-    print(f"initialised {root}")
-    return 0
+    # never duplicate the line; a tracked choice never touches the host
+    # .gitignore, an ignored one adds only the store's own line
+    rc = 0
+    if choice == "ignored":
+        # ignore first, record after: a store git does not ignore is never
+        # recorded as ignored
+        ok, msg = ensure_ignored(root)
+        if ok:
+            write_tracking(root, choice)
+            print(f"tracking: {choice} (recorded in {root / STORE_FILE})")
+            print(msg)
+        else:
+            print(f"wi: WARNING {msg}; tracking not recorded (run `wi init "
+                  "--no-track` again once that is fixed, or `wi init "
+                  "--track`)", file=sys.stderr)
+            rc = 1
+    elif choice == "tracked":
+        write_tracking(root, choice)
+        print(f"tracking: {choice} (recorded in {root / STORE_FILE})")
+        warning = custody_warning(root)
+        if warning:
+            print(warning, file=sys.stderr)
+    if defaulted and rc == 0:
+        print(f"wi: WARNING no terminal and no --track/--no-track: created "
+              f"{root} as a git-ignored store. To track it instead, run "
+              "`wi init --track` and remove the store's line from "
+              ".gitignore (the `wi init --track` warning names it)",
+              file=sys.stderr)
+    print(f"initialised {root}" if rc == 0
+          else f"created {root}; tracking not recorded")
+    return rc
 
 
 def _short_name_arg(value):
@@ -3933,6 +4265,15 @@ def cmd_lint(args):
 
     for iid in by_id:
         visit(iid, [])
+    raw = _store_tracking_raw(root)
+    if len(_store_tracking_values(root) or ()) > 1:
+        problems.append(f"{root / STORE_FILE}: more than one tracking: line; "
+                        "fix: `wi init --track` or `wi init --no-track` "
+                        "rewrites it with one")
+    if raw is not None and raw not in TRACKING_CHOICES:
+        problems.append(f"{root / STORE_FILE}: tracking must be one of "
+                        f"{', '.join(TRACKING_CHOICES)} (got '{raw}'); fix: "
+                        "`wi init --track` or `wi init --no-track`")
     # lint has no warning tier: every finding it prints is a problem, exit 3
     warning = custody_warning(root)
     if warning:
@@ -3985,7 +4326,8 @@ def build_parser():
     p.add_argument("--root", help="work-item root (default: $WI_ROOT or auto)")
     sub = p.add_subparsers(dest="command", required=True)
     spec = {
-        ("init", cmd_init, "create the work-item root"): [],
+        ("init", cmd_init, "create the work-item root, or record an "
+         "existing one's tracking choice"): [],
         ("next", cmd_next, "what to work on"): [
             ("--json",), ("--plain",), ("--limit", dict(type=int, default=7)),
             ("--stale", dict(default="24h")), ("--pipeline",), ("--one",),
@@ -4063,6 +4405,11 @@ def build_parser():
             kw = flag[-1] if isinstance(flag[-1], dict) else {"action": "store_true"}
             names = [f for f in flag if isinstance(f, str)]
             sp.add_argument(*names, **kw)
+    track = sub.choices["init"].add_mutually_exclusive_group()
+    track.add_argument("--track", action="store_true",
+                       help="git tracks the store")
+    track.add_argument("--no-track", action="store_true",
+                       help="git ignores the store: adds it to .gitignore")
     return p
 
 
