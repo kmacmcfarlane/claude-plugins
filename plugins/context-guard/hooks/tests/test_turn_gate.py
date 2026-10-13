@@ -309,15 +309,34 @@ class TestCheck(HookBase):
         L.save_state("", {})
         self.assertTrue(os.path.exists(L.state_path("")))
         before = L.load_state("")
+        draft = os.path.join(self.tmp.name, "87fd-draft.md")
+        with open(draft, "w") as f:
+            f.write("---\nmode: handoff\n---\n# draft\n")
+        for sid in ("", "  "):
+            for args in ([sid], ["--from", draft, sid]):
+                with self.subTest(args=args):
+                    p = subprocess.run([sys.executable, os.path.join(HOOKS, "mark_checkpoint.py")]
+                                       + args, capture_output=True, text=True,
+                                       env=dict(os.environ, **self.env), timeout=30)
+                    self.assertNotEqual(p.returncode, 0)
+                    self.assertIn("empty session id", p.stderr)
+                    self.assertNotIn("checkpoint recorded", p.stdout)
+        self.assertEqual(L.load_state(""), before)
+        self.assertFalse(os.path.exists(L.manifest_path("")))
+
+    def test_checkpointing_refuses_an_empty_id_even_with_fallback_state(self):
+        # The stand-down takes the same "$CLAUDE_CODE_SESSION_ID"; an empty one
+        # must not stand down whatever fallback state file it would name.
+        L.save_state("", {})
+        before = L.load_state("")
         for sid in ("", "  "):
             with self.subTest(sid=sid):
-                p = subprocess.run([sys.executable, os.path.join(HOOKS, "mark_checkpoint.py"),
-                                    sid], capture_output=True, text=True,
-                                   env=dict(os.environ, **self.env), timeout=30)
-                self.assertNotEqual(p.returncode, 0)
-                self.assertIn("empty session id", p.stderr)
-                self.assertNotIn("checkpoint recorded", p.stdout)
+                rc, out = self.standdown(sid)
+                self.assertEqual(rc, 1)
+                self.assertIn("empty session id", out)
+                self.assertIn("NOT stood down", out)
         self.assertEqual(L.load_state(""), before)
+        self.assertNotIn("checkpoint_started", L.load_state(""))
 
     def test_the_stand_down_lapses_on_token_growth(self):
         # The wall clock alone is the wrong bound: a stand-down starts at the

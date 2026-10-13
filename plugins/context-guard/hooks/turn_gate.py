@@ -249,6 +249,10 @@ def checkpointing(argv):
     if len(argv) != 1:
         print("usage: turn_gate.py --checkpointing <session_id>"); return 2
     sid = argv[0]
+    if not sid.strip():
+        print("turn_gate.py: empty session id (is $CLAUDE_CODE_SESSION_ID set?) - "
+              "nothing written, the gate is NOT stood down.")
+        return 1
     if not os.path.exists(L.state_path(sid)):
         # A live session always has state (every prompt's gate hook writes
         # it), so a missing file is a mistyped id. Writing one would create a
