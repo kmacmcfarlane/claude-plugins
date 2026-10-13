@@ -27,3 +27,5 @@ note: 2026-10-13 claude-sandbox d54f landed at 7fd9f1c (spec CS-LNCH-184), per i
 target: work-items SKILL.md init rule names CLAUDE_SANDBOX_TRACK_IN_HOST: true → --track; false or unset → --no-track; a sandbox launched before the export lacks it, so unset inside a sandbox reads as false (the launcher's own default); outside claude-sandbox (no CLAUDE_SANDBOX_CONTAINER) ask the operator; format.md if it repeats the rule
 dispatch: implementer sonnet medium — build (doc line naming a landed variable: canonical kind)
 agent: implementer aa55c95164614e9c0
+return: DONE fee0538; SKILL.md only; work-items 365, kit-dev 21 OK
+dispatch: reviewer opus high — review round 1 of fee0538
