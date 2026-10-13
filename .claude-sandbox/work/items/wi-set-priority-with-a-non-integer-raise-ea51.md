@@ -24,3 +24,4 @@ widened 2026-09-29 (928d review r1): provider-interface.md:92 exit-1 list is not
 ## Notes
 - 2026-10-13 claimed by Kyle-McFarlane@2d49f8460283
 dispatch: implementer sonnet medium — build (input validation bug: canonical kind) (triage d2aa)
+agent: implementer a9d852836275d33ee
