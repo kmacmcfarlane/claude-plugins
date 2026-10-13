@@ -41,3 +41,4 @@ agent: implementer a75c6bb99ba688aab
 return: DONE d962d3c; work-items 338, kit-dev 21, dev-flow 78 OK; <root>/store.yaml tracking: tracked|ignored; existing store without a flag changes nothing; anchored .gitignore line, skipped when any repo rule already ignores it; --track never edits .gitignore; librarian first-start passes a flag
 dispatch: reviewer opus high — review round 1 of d962d3c
 agent: reviewer a5063ab4a5b72b981
+note: 2026-10-13 background security review flagged a symlink-following file write in wi.py on d962d3c (no details); relayed to review round 1; nothing lands until it is resolved
