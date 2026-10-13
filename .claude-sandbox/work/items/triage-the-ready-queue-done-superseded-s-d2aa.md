@@ -24,3 +24,5 @@ Operator 2026-10-13: 'yes, run the triage' — a read-only pass over the 102 rea
 ## Notes
 - 2026-10-13 claimed by Kyle-McFarlane@2d49f8460283
 dispatch: scout sonnet medium x2 — read-only triage, halves of 51
+agent: scout a4309efcf70264a20 (half 1)
+agent: scout a9bb42bf9b1a8abc3 (half 2)
