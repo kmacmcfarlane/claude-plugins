@@ -25,3 +25,10 @@ agent: implementer ab4b79c648f196843 round 1
 result: DONE round 1 at 5c504eb5 (gallery example 5 to a budget-cap round ask; 138 OK; flagged decisions SKILL.md:91,108 still says review-round cap waiver)
 dispatch: reviewer opus high — fresh (rule 4)
 agent: reviewer ab756b260ea63feb2 round 1 at 5c504eb5
+verdict: NEEDS_CHANGES round 1 at 5c504eb5 (2 medium: the example is a case dev-flow would finish-round without asking — make the leftover not exact-fix; list line lost quota from a round's cost; lows: 'above the reserve' ambiguous, Undo understates spend; nits: asked-for rule reads unconditional, (a) label differs card vs line; SKILL.md:91,108 acceptable)
+dispatch: implementer opus medium — resume, fix round 1
+agent: implementer ab4b79c648f196843 round 2
+result: DONE round 2 at 175dc146 (all 6 applied; 138 OK)
+dispatch: reviewer opus high — resume, round 2
+agent: reviewer ab756b260ea63feb2 round 2 at 175dc146
+verdict: CLEAR round 2 at 175dc146 (all 6 exact; SKILL.md:91,108 wording optional, declined)

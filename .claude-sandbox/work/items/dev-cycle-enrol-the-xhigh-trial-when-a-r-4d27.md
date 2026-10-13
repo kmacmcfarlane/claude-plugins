@@ -3,10 +3,11 @@ id: dev-cycle-enrol-the-xhigh-trial-when-a-r-4d27
 title: "dev-cycle: enrol the xhigh trial when a resumed plan-mode fix round has a late high and no trial line"
 short_display_name: trial enrolment on resume
 type: chore
-status: todo
+status: done
 priority: 3
 created: 2026-09-29
-updated: 2026-09-29
+updated: 2026-10-13
+closed: 2026-10-13
 refs:
   - b3c5
 ---
@@ -26,3 +27,6 @@ result: DONE round 1 at 30a5a8cf (fix-loop.md trial bullet: enrol first on a lat
 dispatch: reviewer opus high — fresh (rule 4)
 agent: reviewer a7166279a88196b4c round 1 at 30a5a8cf
 verdict: CLEAR round 1 at 30a5a8cf (nit: name the section in full at fix-loop.md:42, declined: resolves today; pre-existing low filed as a follow-up)
+
+## Notes
+- 2026-10-13 done
