@@ -2,10 +2,11 @@
 id: spike-analyze-claude-code-usage-across-c-e5a7
 title: "spike: analyze Claude Code usage across conversations with a skill"
 type: spike
-status: todo
+status: done
 priority: 3
 created: 2026-09-16
-updated: 2026-09-28
+updated: 2026-10-13
+closed: 2026-10-13
 refs:
   - operator message 2026-09-16
 ---
@@ -30,6 +31,7 @@ statusline integrations), what they report, and what they got wrong. The researc
 - 2026-09-16 claimed by unknown@4d338747396e
 dispatch: researcher opus — spike, judgement-heavy web synthesis (no implementer/reviewer role; recorded for the usage record)
 research output: .claude-sandbox/investigations/analyze-usage/research.md (gitignored, host-persistent, the investigate/implement convention)
+- 2026-10-13 done: closed by triage d2aa 2026-10-13: done already — F1 landed 028c6978; F2 is 7e8f
 
 ## Research phase done (2026-09-16)
 Output: .claude-sandbox/investigations/analyze-usage/research.md (2,563 words, sourced, [V]/[R] marked).
