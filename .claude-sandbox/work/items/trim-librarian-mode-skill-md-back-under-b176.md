@@ -18,3 +18,7 @@ From 3460 review 2, 2026-10-13: librarian-mode SKILL.md is 26,933 chars (~6.7k t
 - next: —
 - blocked: —
 - learned: —
+target: an agent worktree branch off main (832cec4f); plugins/dev-flow/skills/librarian-mode/{SKILL.md,references/*}
+budget: waived (operator 2026-10-08); spend measured
+dispatch: implementer opus medium — move procedure detail from SKILL.md into references, no rule dropped
+agent: implementer a593c50487cfe0983 round 1

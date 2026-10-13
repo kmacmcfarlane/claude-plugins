@@ -18,3 +18,7 @@ From 00fc's scratch test, 2026-10-13: wi init --no-track in a sidecar layout rec
 - next: —
 - blocked: —
 - learned: —
+target: an agent worktree branch off main (832cec4f); plugins/work-items/skills/work-items/{scripts/wi.py,tests/test_wi.py,SKILL.md,references/format.md}
+budget: waived (operator 2026-10-08); spend measured
+dispatch: implementer opus medium — lint/prime warn on an ignored sidecar store; init --no-track in a sidecar warns or refuses
+agent: implementer ac34548631423ee4a round 1

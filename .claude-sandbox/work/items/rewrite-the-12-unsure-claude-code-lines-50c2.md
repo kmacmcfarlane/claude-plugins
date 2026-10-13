@@ -18,3 +18,7 @@ From the abb8 audit, 2026-10-13: 12 current-tree lines in d63e (29,40,59,64,84,8
 - next: —
 - blocked: —
 - learned: —
+target: an agent worktree branch off main (832cec4f); store text only (items d63e, 8ab6, e347)
+budget: waived (operator 2026-10-08); spend measured
+dispatch: implementer opus medium — rewrite 12 unsure lines to hint or labelled form (CC source rule)
+agent: implementer a7b933fa8b09ebdba round 1
