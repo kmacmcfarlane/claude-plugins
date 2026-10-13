@@ -3,10 +3,11 @@ id: decisions-skill-gallery-update-the-revie-341a
 title: "decisions skill gallery: update the review-cap example card for the spend budget"
 short_display_name: gallery cap example update
 type: chore
-status: todo
+status: done
 priority: 3
 created: 2026-10-05
-updated: 2026-10-05
+updated: 2026-10-13
+closed: 2026-10-13
 refs:
   - dev-cycle-at-the-review-cap-the-orchestr-5bdd
 ---
@@ -32,3 +33,6 @@ result: DONE round 2 at 175dc146 (all 6 applied; 138 OK)
 dispatch: reviewer opus high — resume, round 2
 agent: reviewer ab756b260ea63feb2 round 2 at 175dc146
 verdict: CLEAR round 2 at 175dc146 (all 6 exact; SKILL.md:91,108 wording optional, declined)
+
+## Notes
+- 2026-10-13 done

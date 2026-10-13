@@ -45,3 +45,6 @@ dispatch: implementer opus medium — resume, finish round
 agent: implementer a58a079d03da1daa5 round 4 (finish)
 result: DONE finish at 22076d33 (exact; one existing test row updated to the new rule; read by the librarian; research 127 OK, pyright 0)
 verdict: CLEAR after 2 fix rounds, 1 finish at 22076d33
+merge: conflict in CLAUDE.md landing 22076d33 on main be2df9b2 (02f8 and 2e75 both edit the dev-flow tests layout line); research-verifier.md auto-merged; aborted
+dispatch: implementer opus medium — resume, merge main into the branch and resolve, rerun suites
+agent: implementer a58a079d03da1daa5 round 5 (merge)
