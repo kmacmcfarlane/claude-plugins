@@ -38,6 +38,8 @@ SKILL.md § Step 4.
     dispatch — the bump arm on `planner-deep`, the control arm on `planner` — and neither
     arm is resumed inside that window, even when its file has not changed
     (`model-routing.md` § The xhigh trial). After the window, rounds follow the rule above.
+    A `plan`-mode round whose verdict carries a late high but whose item has no `trial:`
+    line yet, as on a resume, runs that section's enrolment first, then routes by it.
 
   Tell an implementer explicitly: **fix as new commit(s) on top of the reviewed sha,
   never amend, report each new sha**, and for each low/nit it declines, the reason. Then

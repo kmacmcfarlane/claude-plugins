@@ -9,6 +9,17 @@ A spike reports its series path on `changed:`, as dev-cycle's `plan` mode does. 
 self-reviewed change writes `review self` in place of the reviewer's tier, as dev-cycle's
 Step 6 does.
 
+## The verified line
+
+The tiers are the final ones, written as the `dev-cycle` skill's
+`references/model-routing.md` § Recording gives them (a bumped round, a fable
+cross-check). Each check is one of the `Checks:` commands, named by the directory it runs
+in, relative to the repo root (`plugins/dev-flow` for `(cd plugins/dev-flow && …)`, `.`
+for one with no `cd`); when two commands share a directory, add the command's
+distinguishing word after it (`. lint pass`). Then its outcome: `pass`, or `fail — <what
+failed>`. Every `Checks:` command is named, in its order there; for a `Checks:` of those
+two commands: `plugins/dev-flow pass, plugins/kit-dev pass`.
+
 ## The counter
 
 It is **one counter**: every question put to the operator takes its number from it — an
@@ -54,11 +65,24 @@ review to take the next request.
 
 ## The push
 
-Then, unless `Push: none`, push: `git -C "$MAIN" push origin main` — fast-forward only. A
-rejection merged through adds one `incoming: <sha> <subject> — <author>` line per incoming
-commit — extra lines, beyond the four per landed change. The `incoming:` lines go with the
-push outcome: a short follow-up message mid-session, since the Report has gone out; inside
-the final Report at session end and 75%/DUE (`troubleshooting.md` § Push rejected).
+Then, unless `Push: none`, push: `git -C "$MAIN" push origin main` — fast-forward only.
+Its outcome is one line, in one of two forms:
+
+```
+pushed: main → origin/main, fast-forward <old>..<new>
+not pushed: <why, one clause>[ — decision N]
+```
+
+`<old>..<new>` is the short-sha range git's push output prints for `main`. `not pushed:`
+covers any push not made, such as a rejection that stopped on a conflict, a red check or
+a decision (its number trailing); a push skipped while a push-rejection decision is open;
+no `origin` remote (said once, `troubleshooting.md`); and `not pushed: nothing to push —
+main fast-forwarded to origin/main` when `main` was strictly behind (`troubleshooting.md`
+§ Push rejected step 1). A rejection merged through adds one `incoming: <sha> <subject> —
+<author>` line per incoming commit under the outcome line — extra lines, beyond the four
+per landed change. The `incoming:` lines go with the push outcome: a short
+follow-up message mid-session, since the Report has gone out; inside the final Report at
+session end and 75%/DUE (`troubleshooting.md` § Push rejected).
 
 ## The team summary
 

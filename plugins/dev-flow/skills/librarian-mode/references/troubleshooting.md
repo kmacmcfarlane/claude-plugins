@@ -110,7 +110,8 @@ states it; the one line here is what the librarian binds:
 Rehydrate step 1 finds `wi` with the `dev-cycle` skill's `references/bindings.md` § Store
 snippet: the repo's own tree first, then the installed `work-items` plugin's copy (not
 `${CLAUDE_PLUGIN_ROOT}`, which is this plugin's root and carries no `wi`), keyed by the
-harness's own install record, with the newest cached version as the fallback. `no wi
+harness's own install record (the entry for this repo's install scope, never simply the
+first listed), with the newest cached version as the fallback. `no wi
 found` after all three means `work-items` is not installed on this machine — install it
 (`/plugin install work-items@kmacmcfarlane`) before continuing; Rehydrate step 1 stops
 there and touches nothing else.

@@ -77,8 +77,9 @@ At session start and after any `/clear` or compaction; never `ls` the whole stor
    store (`references/rehydrate.md` § Step 5).
 
 Expected output: one short paragraph — items in flight, items ready, worktrees and agents
-alive, anything awaiting the operator, any active hold; after an init, one clause more
-(first-start); without context-guard, step 5's clause.
+alive, how many decisions await the operator (a count only; the decisions themselves are
+the Report's), any active hold; after an init, one clause more (first-start); without
+context-guard, step 5's clause.
 
 ## Intake
 
@@ -208,7 +209,8 @@ The plain name is the item's `short_display_name` when it is set; otherwise writ
 its title at each mention (the `operator-interaction:plain-names` skill, when loaded), and
 store nothing. The tag is the id's last four hex. The full id stays where agents read it:
 the store, the record lines and every `wi` call. A spike's line and a self-reviewed one:
-`references/report.md` § Spikes and self-review.
+`references/report.md` § Spikes and self-review; how `verified:` names its tiers and
+checks: its § The verified line.
 
 `decisions needed:` is numbered — one decision per number, each with its own
 recommendation, its options in (a), (b), (c) order with their impact and the recommended
@@ -217,9 +219,10 @@ numbered; a number is never reused, and an unanswered one keeps it. One counter 
 question, kept in the store, answered `answer N:`: `references/report.md` § The counter.
 
 After the four lines, in order: the **Done alone** group; then, unless `Push: none`, the
-fast-forward push of `main`, its outcome and any `incoming:` lines; then the team summary;
-with `operator-interaction:decisions` loaded, its decisions block last in the turn. Each,
-and batching: `references/report.md`.
+fast-forward push of `main`, its outcome line and any `incoming:` lines; then the team
+summary; with `operator-interaction:decisions` loaded, its decisions block last in the
+turn, at the end of the push's follow-up message when there is one (`references/report.md`
+§ The push). Each, and batching: `references/report.md`.
 
 ## Red flags
 

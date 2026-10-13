@@ -17,3 +17,16 @@ Surfaced by d8f6's implementer 2026-09-21: plugins/dev-flow/skills/dev-cycle/ref
 - next: —
 - blocked: —
 - learned: —
+target: an agent worktree branch off main (9b5d12b2); dev-cycle references/bindings.md, librarian-mode references/troubleshooting.md
+budget: waived (operator 2026-10-08); spend measured
+dispatch: implementer opus medium — work-items installPath by scope
+agent: implementer a443ccb5718184cbe round 1
+result: DONE round 1 at 356dc506 (scope pick in bindings.md § Store, its kit-dev and context-guard lookups, research intensity-and-routing.md, librarian troubleshooting.md, and the same bug in context-guard checkpoint SKILL.md and ralph backlog-yaml SKILL.md; snippet test picks the user install over another project's; suites OK)
+dispatch: reviewer opus high — fresh (rule 4)
+agent: reviewer a7fd4191da25833fd round 1 at 356dc506
+verdict: CLEAR round 1 at 356dc506 (nit: checkpoint SKILL.md:269 'same pick' wording; nit: no test keeps the six copies identical — filed as a follow-up)
+decided: 2026-10-13T22:45Z cap — nit 1 exact wording: one finish round, read by the librarian (authority answer 145)
+dispatch: implementer opus medium — resume, finish round
+agent: implementer a443ccb5718184cbe round 2 (finish)
+result: DONE finish at 2e42bd76 (one sentence, exact; read by the librarian)
+verdict: CLEAR after 1 finish at 2e42bd76

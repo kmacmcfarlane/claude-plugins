@@ -129,35 +129,38 @@ undone at any time, so it is echoed and acted on — no confirmation round.*
 
 ## 5. An ask for another round (a template)
 
-*Situation: the retry-policy change has had its four review rounds — the cap — and the last
-review left one medium finding open. The review-round cap is a template: its options are
-fixed, so they ride by reference once the operator has seen it. Its justification never
-does, because what is left and what a round costs change every time. The first time in a
-session, a card:*
+*Situation: the retry-policy change has spent its budget — the dollar amount set for its
+build when the build began, inside which review rounds run without asking — and the last
+review left one medium finding open. Reaching the budget is the cap the operator set — a
+caller may let it pass while quota is plentiful, and here it is not — so the next round is
+asked for. The budget cap is a template: its options are fixed — (a) raise the budget, its
+new total filled in each time — so they ride by reference once the operator has seen it.
+Its justification never does, because what is left, what has been spent and what a round
+costs change every time. The first time in a session, a card:*
 
-**48 — One more review round for the retry-policy change?** · *template: review-round cap*
-**What:** the change has used its four review rounds; the last review left one finding open, so it cannot land as it is.
-**Context:** the retry-policy change sets how often a failed job is tried again; the review-round cap is the limit you set of four review rounds a change gets before it comes back to you. You left it when you asked for the change · you decide whether it gets a fifth round.
-**Impact:** → the fix gets one more review, and lands in about 20 minutes if it clears · later: the change stays unmerged · reach: the retry-policy change only · undo: nothing to undo — a round changes no code that lands unreviewed
+**48 — Raise the retry-policy change's budget for another round?** · *template: budget cap*
+**What:** the change has spent $21 of its $20 budget over four reviews; the last review left one finding open, so it cannot land as it is.
+**Context:** the retry-policy change sets how often a failed job is tried again; its budget is the spend its build may use before rounds stop and come back to you. You left it when you asked for the change · you decide whether it gets more.
+**Impact:** → the budget goes to $30 and the fix gets another review, landing in about 20 minutes if it clears · later: the change stays unmerged · reach: the retry-policy change only · undo: the raise is one edit back down; what a round spends is spent — no code lands unreviewed
 **Why now:** the change is blocked until you answer; nothing else waits on it.
-**Why ask:** another round spends quota and your attention past the cap you set: the finding under *If left* is what it buys.
-**If left:** *one medium finding: after a restart the retry counter starts again from zero, so a job that fails on every run is retried forever instead of stopping after five tries.*
-**A round costs:** *about 20 minutes and roughly 3% of the 5-hour quota; one more answer from you if that round does not clear it.*
-- **(a) One more round** — *the fix goes back to the implementer, then a fresh review; it lands in about 20 minutes if it clears · cost: about 3% of the 5-hour quota*
+**Why ask:** another round spends past the budget you set: the finding under *If left* is what it buys.
+**If left:** *one medium finding: after a restart the retry counter starts again from zero, so a job that fails on every run is retried forever instead of stopping after five tries. The review names the cause but not the fix: the count has to be saved with the job.*
+**A round costs:** *spent $21 of $20, about 4% of a week's quota; the weekly quota is 62% used, not below the reserve. The next round costs about $4 and 20 minutes; open findings ran 5 → 2 → 1 over the last three reviews. One more answer from you if that round does not clear it.*
+- **(a) Raise to $30, about two rounds here** — *the fix goes back to the implementer, then a fresh review; it lands in about 20 minutes if it clears · cost: about $4 a round, up to $9 more*
 - (b) Ship as is — *it lands now, with the endless retry in it · reach: every job that fails on every run · undo: a follow-up fix*
 - (c) Park it — *the change waits, unmerged, until someone takes it up · undo: pick it up again*
 - (z) Decide later — *it waits, unmerged; nothing lands*
 
-Rec **(a)** · basis **strong** — *the finding names the line and a one-line fix; an endless retry costs more than one round* · unknown: none
+Rec **(a)** · basis **strong** — *the open findings are falling, 5 → 2 → 1; an endless retry costs more than two rounds* · unknown: none
 
 *Later in the session the operator is warm and has seen the template, so a new ask on it,
 low-stakes on a strong basis, may stay a line — the options by reference, the justification
 still on it:*
 
-- **49 One more review round for the search-index change?** — rec **(a) one more round** → *the fix gets one more review* · *later: the change stays unmerged* · *template: review-round cap* · basis **strong** · *if left: a deleted page stays in search results until the nightly rebuild · a round: ~10 min, ~1% of quota, one more answer from you* · *10 min old* · **(a) one more round** · (b) ship as is · (c) park it · (z) decide later — *it waits, unmerged*
+- **49 Raise the search-index change's budget for another round?** — rec **(a) raise to $16, about two rounds** → *the fix gets one more review* · *later: the change stays unmerged* · *template: budget cap* · basis **strong** · *if left: a deleted page stays in search results until the nightly rebuild · a round: spent $12 of $12, ~$2, ~10 min and ~0.5% of a week's quota a round, weekly 58% used, open findings 3 → 1, one more answer from you* · *10 min old* · **(a) raise the budget** · (b) ship as is · (c) park it · (z) decide later — *it waits, unmerged*
 
-*Not this: "Waive the cap? — rec (a) one more round" with nothing about what is left or what
-the round costs. The operator cannot weigh an impact they are not shown.*
+*Not this: "Raise the budget? — rec (a) raise it" with nothing about what is left, what has
+been spent or what the round costs. The operator cannot weigh an impact they are not shown.*
 
 ---
 

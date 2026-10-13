@@ -3,10 +3,11 @@ id: trim-librarian-mode-skill-md-back-under-b176
 title: trim librarian-mode SKILL.md back under its size line
 short_display_name: trim librarian-mode SKILL.md
 type: chore
-status: todo
+status: done
 priority: 3
 created: 2026-10-13
 updated: 2026-10-13
+closed: 2026-10-13
 refs:
   - librarian-mode-route-out-of-scope-work-t-3460
 ---
@@ -32,3 +33,6 @@ result: DONE round 2 at f5987a9f (all 7 applied; SKILL.md 15,171 chars; dev-flow
 dispatch: reviewer opus high — resume, round 2
 agent: reviewer a1a195df2772e8418 round 2 at f5987a9f
 verdict: CLEAR round 2 at f5987a9f (2 nits: rewraps in troubleshooting.md:54-56 and three 94-96 col lines; declined: cosmetic, no rule or pointer affected)
+
+## Notes
+- 2026-10-13 done

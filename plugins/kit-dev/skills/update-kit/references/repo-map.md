@@ -94,7 +94,8 @@ claude-plugins/
     │   │   └── librarian-mode/scripts/ (quota_budget.py: the librarian's quota sense + tests)
     │   └── tests/             (test_agents.py: every agent file's model and effort pin;
     │                           test_deep_investigation.py: deep-investigation's security parity;
-    │                           test_research_verifier.py: the verifier's procedure rules against check-sheet.py)
+    │                           test_research_verifier.py: the verifier's procedure rules against check-sheet.py;
+    │                           test_stop_rule.py: the stop rule's copies against its home in the agent brief)
     ├── kit-dev/               (maintaining this kit itself — where THIS skill lives)
     │   ├── skills/{create-skill,update-kit,new-project-from-template,factor-analysis}/
     │   └── tests/             (test_standalone.py: each plugin's suites alone; test_declared_edges.py: cross-plugin references declared)
