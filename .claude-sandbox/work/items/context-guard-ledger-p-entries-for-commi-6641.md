@@ -17,3 +17,7 @@ Relayed 2026-09-22 from the agents store (ledger-pointer-attributes-cross-repo-c
 - next: —
 - blocked: —
 - learned: —
+target: an agent worktree branch off main (9b5d12b2); context-guard hooks ledger_pointer.py + tests
+budget: waived (operator 2026-10-08); spend measured
+dispatch: implementer opus medium — P-entry names the commit's repo
+agent: implementer ac59fa52819a075cd round 1

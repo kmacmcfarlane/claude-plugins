@@ -17,3 +17,7 @@ From 5126 review r2 (CLEAR), 2026-09-22: (1) lineage.py adopts by sha of the fil
 - next: —
 - blocked: —
 - learned: —
+target: an agent worktree branch off main (9b5d12b2); context-guard hooks lineage.py, mark_checkpoint.py + tests
+budget: waived (operator 2026-10-08); spend measured
+dispatch: implementer opus medium — Read adoption by content; reject empty session id
+agent: implementer a10af6552cb6da062 round 1

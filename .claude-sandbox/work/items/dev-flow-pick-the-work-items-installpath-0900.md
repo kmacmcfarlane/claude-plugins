@@ -17,3 +17,7 @@ Surfaced by d8f6's implementer 2026-09-21: plugins/dev-flow/skills/dev-cycle/ref
 - next: —
 - blocked: —
 - learned: —
+target: an agent worktree branch off main (9b5d12b2); dev-cycle references/bindings.md, librarian-mode references/troubleshooting.md
+budget: waived (operator 2026-10-08); spend measured
+dispatch: implementer opus medium — work-items installPath by scope
+agent: implementer a443ccb5718184cbe round 1

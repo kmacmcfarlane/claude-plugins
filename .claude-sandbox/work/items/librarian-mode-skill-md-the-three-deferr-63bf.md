@@ -2,10 +2,11 @@
 id: librarian-mode-skill-md-the-three-deferr-63bf
 title: "librarian-mode SKILL.md: the three deferred 6fea render-pass gaps"
 type: chore
-status: todo
+status: done
 priority: 3
 created: 2026-09-29
-updated: 2026-09-29
+updated: 2026-10-13
+closed: 2026-10-13
 refs:
   - 6394
 ---
@@ -31,3 +32,6 @@ dispatch: implementer opus medium — resume, finish round
 agent: implementer a29d3961cc57c78e2 round 2 (finish)
 result: DONE finish at aa279699 (all four exact; diff read by the librarian)
 verdict: CLEAR after 1 fix round as a finish at aa279699 (finish read by the librarian, exact)
+
+## Notes
+- 2026-10-13 done

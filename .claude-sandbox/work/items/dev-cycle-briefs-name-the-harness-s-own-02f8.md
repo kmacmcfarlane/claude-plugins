@@ -18,3 +18,7 @@ refs:
 - next: —
 - blocked: —
 - learned: —
+target: an agent worktree branch off main (9b5d12b2); dev-cycle references (brief templates)
+budget: waived (operator 2026-10-08); spend measured
+dispatch: implementer opus medium — name the harness background-task stop in the briefs
+agent: implementer afb8e096c07e9f442 round 1
