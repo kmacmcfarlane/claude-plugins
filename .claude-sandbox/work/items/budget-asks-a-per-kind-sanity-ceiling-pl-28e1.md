@@ -54,3 +54,12 @@ checks: CLAUDE.md ## Librarian Checks (read only)
 dispatch: planner opus high — plan (doctrine change to dev-cycle's budget rule plus quota_budget.py logic; operator asked to review the plan before the build)
 agent: planner aac4ac82dfa759bb0 round 1
 return: planner DONE_WITH_CONCERNS /home/rt/work/src/github.com/kmacmcfarlane/claude-plugins/.claude-sandbox/investigations/budget-asks-a-per-kind-sanity-ceiling-pl-28e1/ (OQ1 blocking F2/F3: approved values replay to 77 asks in two weeks vs 3 today)
+answer: OQ1 (c) — operator 2026-10-13 chat, verbatim: "77c" (read as: option (c), b=20 with one go-on covering all work for the next 10 weekly points; F3 in; OQ2-OQ5 take the plan's recommendations, echoed to the operator)
+baseline: 1852b6360af117f3b0175427d8c884ee6bbffd89d7370ae00920d3ccca76defb  00_initial.md 
+dispatch: reviewer opus high — plan review round 1
+agent: reviewer acee424b83620460b round 1
+verdict: NEEDS_CHANGES round 1 at 00_initial.md
+findings: 9 must-fix (all medium) + 2 low + 1 nit; verbatim in the reviewer's report, pasted into the planner's fix brief: 1 OQ1 still open in series/menus; 2 go-on option omits its estate-wide reach; 3 grant authority 'answer N' is per-store; 4 no outcome for a failed --grant write or post-reset answer; 5 pending quota asks when a grant starts covering; 6 replay of (c) is 7 at phase start only, 10 at all check points; 7 resumed phases with old default/estimate/fable sources; 8 README row, dev-flow plugin.json and marketplace.json descriptions for the new reader; 9 quota pressure vs step 3 finish round; 10 low --grant 10 hardcoded; 11 low verification grep vs legacy text; 12 nit 'grant' overloaded
+cost: 2026-10-13T21:09Z plan $7.09 of $28 after review 1 — must-fix 9 — prices 2
+dispatch: planner opus high — resume (fix round 1)
+agent: planner aac4ac82dfa759bb0 round 2

@@ -22,3 +22,6 @@ target: an agent worktree branch off main (832cec4f); plugins/work-items/skills/
 budget: waived (operator 2026-10-08); spend measured
 dispatch: implementer opus medium — lint/prime warn on an ignored sidecar store; init --no-track in a sidecar warns or refuses
 agent: implementer ac34548631423ee4a round 1
+result: DONE round 1 at 012293db (372 tests OK; lint finding exit 3; init refuses ignored choices in a sidecar incl. the no-terminal default)
+dispatch: reviewer opus high — fresh (rule 4), review 012293db against main
+agent: reviewer a93ea09796cd7b81e round 1 at 012293db
