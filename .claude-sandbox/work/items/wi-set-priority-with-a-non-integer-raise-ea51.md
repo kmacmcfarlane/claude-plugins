@@ -27,3 +27,4 @@ dispatch: implementer sonnet medium — build (input validation bug: canonical k
 agent: implementer a9d852836275d33ee
 return: DONE 011b2fdd; set priority exits 1 on a non-integer or out-of-range value (was a traceback, or exit 3 for out of range); provider-interface exit-1 list updated; work-items 366, kit-dev 21 OK
 dispatch: reviewer opus high — review round 1 of 011b2fdd
+agent: reviewer a9c0cd51371ff55de

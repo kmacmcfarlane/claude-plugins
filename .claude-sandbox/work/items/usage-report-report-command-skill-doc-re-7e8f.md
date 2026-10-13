@@ -40,3 +40,7 @@ dispatch: implementer opus medium — build per the approved plan (triage d2aa)
 agent: implementer adf30e968152b0aad
 return: DONE 7f0b8541; report command, skill doc, README row; usage-report 81 OK, 12/12 OK; builder notes the item still carries a hold note (retire into claude-analytics) and built it on the triage dispatch
 note: review and landing paused until the operator settles whether the hold still applies (decision 213)
+decision 213: The usage-report command (7e8f) is built and green, but the item still carries a hold note saying not to build it because usage-report is meant to retire into claude-analytics. Land it? — options: (a) land it after review: a working report command now, retired later with the rest of usage-report [recommended] | (b) keep the branch unlanded until claude-analytics' plan settles usage-report's future | (c) drop it | (z) decide later
+  why ask: your-call — the hold note is yours, and the triage dispatch overrode it without asking
+  context: the triage marked 7e8f still real and the builder followed the dispatch; usage-report's item reader already backs dev-cycle's spend check, which this leaves unchanged · you decide whether the hold still stands
+  impact: (a) → a report command and finished doc in context-guard now · wait: the review and landing only · reach: context-guard usage-report · undo: revert the merge
