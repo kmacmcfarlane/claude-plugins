@@ -8,10 +8,15 @@ agent_id/agent_type is present — a subagent's actions are not this session's
 reasoning trail.
 
 A commit's pointer names the repo the commit landed in, read from the
-command itself: the commit's own `git -C <dir>` (relative to any `cd` before
-it), else a `cd <dir>` earlier in the chain, else the payload cwd. A derived
-directory is resolved to its repo's toplevel; one that does not exist, or a
-path the hook cannot expand here (a `$VAR`, a glob), falls back to the cwd.
+command itself: the commit's own `git -C <dir>` (relative to any `cd` or
+`pushd` before it, across `&&`, `;`, `||`, `|`, newlines, subshells and brace
+groups), else that `cd`, else the payload cwd. A `cd` backgrounded with a lone
+`&` is skipped, since it runs in its own subshell. A derived directory is
+resolved to its repo's toplevel. Still falling back to the cwd: a path that
+does not exist or cannot be expanded here (a `$VAR`, a glob), `cd -`, and a
+commit behind a wrapper (`time`, `command`, `env`). Not followed at all:
+`GIT_DIR` and `--git-dir` (the `cd`/`-C` repo, else the cwd, is named) and
+`popd` (the directory before it stays in force).
 """
 import json, os, re, shlex, subprocess, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -21,7 +26,9 @@ COMMIT = re.compile(r"\bgit\b[^|;&]*\bcommit\b")
 # Match "[main abc1234] msg" (git commit) OR "abc1234 msg" (git log --oneline,
 # common right after a -q commit in compound commands).
 SHA = re.compile(r"\[[\w./-]+ ([0-9a-f]{7,40})\]|^([0-9a-f]{7,40}) ", re.M)
-CONTROL = {";", "&&", "||", "|", "&", ";;", "|&"}
+# Control operators: shlex hands a run of these characters back as one token
+# ("&&\n", ";\n\n"), so a token made only of them is an operator.
+OPERATOR_CHARS = ";&|\n"
 # git's global options that take the next token as their value.
 GIT_VALUE_OPTS = {"-c", "--git-dir", "--work-tree", "--namespace",
                   "--exec-path", "--config-env", "--super-prefix"}
@@ -30,18 +37,27 @@ UNEXPANDABLE = re.compile(r"[$`*?\[]")
 
 
 def _segments(command):
-    """The command's simple commands, split at its control operators."""
-    lex = shlex.shlex(command, posix=True, punctuation_chars=";&|")
+    """The command's simple commands as (tokens, background) pairs, split at
+    its control operators and newlines; `background` is True when the
+    command ends in a lone `&`. Subshell and brace-group delimiters are
+    stripped from the tokens."""
+    lex = shlex.shlex(command.replace("\\\n", " "), posix=True,
+                      punctuation_chars=OPERATOR_CHARS)
     lex.whitespace_split = True
+    lex.whitespace = " \t\r"
+    lex.commenters = ""
     segs, cur = [], []
     for tok in lex:
-        if tok in CONTROL:
-            segs.append(cur)
+        if tok and not tok.strip(OPERATOR_CHARS):
+            segs.append((cur, tok.replace("\n", "") == "&"))
             cur = []
-        else:
-            cur.append(tok)
-    segs.append(cur)
-    return [s for s in segs if s]
+            continue
+        bare = tok.lstrip("({!") if not cur else tok
+        bare = bare.rstrip(")}")
+        if bare or not tok:  # an empty quoted word ('') stays a word
+            cur.append(bare)
+    segs.append((cur, False))
+    return [(s, bg) for s, bg in segs if s]
 
 
 def _join(base, path):
@@ -68,7 +84,8 @@ def _commit_dir(seg, base):
     while i < len(seg) and seg[i].startswith("-"):
         opt = seg[i]
         if opt == "-C" and i + 1 < len(seg):
-            d = _join(d, seg[i + 1])
+            # `git -C ''` is a no-op: it keeps the directory.
+            d = _join(d, seg[i + 1]) if seg[i + 1] else d
             i += 2
         elif opt in GIT_VALUE_OPTS:
             i += 2
@@ -98,10 +115,16 @@ def commit_repo(command, cwd):
     `cwd`. Never raises."""
     try:
         base = cwd
-        for seg in _segments(command):
-            if seg[0] == "cd":
+        for seg, background in _segments(command):
+            if seg[0] in ("cd", "pushd"):
+                if background:  # `cd x &` runs in its own subshell
+                    continue
+                seg = [seg[0]] + [t for t in seg[1:]
+                                  if t == "-" or not t.startswith("-")]
                 if len(seg) == 1:
                     base = os.path.expanduser("~")
+                elif seg[1] == "-":  # the previous directory: not tracked
+                    base = None
                 else:
                     base = _join(base, seg[1])
                 continue

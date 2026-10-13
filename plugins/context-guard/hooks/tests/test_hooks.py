@@ -772,6 +772,54 @@ class TestLedgerPointerRepo(Base):
             with self.subTest(cmd=cmd):
                 self.assertEqual(self.commit(cmd), self.cwd)
 
+    def test_newline_separated(self):
+        q = shlex.quote(self.other)
+        self.assertEqual(self.commit(f"cd {q}\ngit add x\ngit commit -m m"),
+                         self.other)
+
+    def test_commit_dash_c_rev_is_not_a_directory(self):
+        # `commit -C <rev>` reuses a message; a same-named directory is not
+        # where the commit lands.
+        root = os.path.dirname(self.other)
+        q = shlex.quote(root)
+        self.assertEqual(self.commit(f"cd {q} && git commit -C 'other repo'"), root)
+
+    def test_global_config_option_before_dash_c(self):
+        q = shlex.quote(self.other)
+        self.assertEqual(self.commit(f"git -c k=v -C {q} commit -m m"), self.other)
+
+    def test_heredoc_message(self):
+        q = shlex.quote(self.other)
+        self.assertEqual(
+            self.commit(f"git -C {q} commit -F- <<'EOF'\na; b && c\nEOF"),
+            self.other)
+
+    def test_subshell_and_brace_group(self):
+        q = shlex.quote(self.other)
+        for cmd in (f"(cd {q} && git commit -m m)",
+                    f"{{ cd {q}; git commit -m m; }}"):
+            with self.subTest(cmd=cmd):
+                self.assertEqual(self.commit(cmd), self.other)
+
+    def test_line_continuation(self):
+        q = shlex.quote(self.other)
+        self.assertEqual(self.commit(f"git -C {q} \\\n commit -m m"), self.other)
+
+    def test_pushd_and_cd_options(self):
+        q = shlex.quote(self.sub)
+        for cmd in (f"pushd {q} && git commit -m m",
+                    f"cd -P {q} && git commit -m m"):
+            with self.subTest(cmd=cmd):
+                self.assertEqual(self.commit(cmd), self.other)
+
+    def test_empty_dash_c_keeps_the_directory(self):
+        q = shlex.quote(self.other)
+        self.assertEqual(self.commit(f"cd {q} && git -C '' commit -m m"), self.other)
+
+    def test_backgrounded_cd_is_skipped(self):
+        q = shlex.quote(self.other)
+        self.assertEqual(self.commit(f"cd {q} & git commit -m m"), self.cwd)
+
     def test_unparseable_command_falls_back_to_cwd(self):
         self.assertEqual(self.commit("git commit -m 'unterminated"), self.cwd)
 
