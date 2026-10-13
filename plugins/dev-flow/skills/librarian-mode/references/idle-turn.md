@@ -91,7 +91,15 @@ Work
   the tables. It appears at most once in a message.
 
   A `hold` item is on the `hold:` line, not here. Items blocked on a peer or an external
-  dependency are counted in one line under the table, not listed.
+  dependency are counted in one line under the table, not listed — except forwards
+  (SKILL.md § Intake step 4, `forwarding.md`): each item blocked `forwarded to …`,
+  `watching …` or `awaiting <repo> librarian` is named on one **forwards** line under the
+  table, `forwards: <plain name> (<tag>) → <repo> <awaiting accept | watching <their id> | owner down>`,
+  for as long as it waits. Before the tables, the Idle turn runs step 4's checks on them:
+  a peer gone from ListAgents before it accepts, the silence bound, and a down owner now
+  live, including an item blocked `operator: forward to <repo> owner down`, which is then
+  sent and re-blocked `forwarded to <peer>, awaiting accept`. One that lands back leaves
+  the line for a Groom row.
 - **Work** — what can move without the operator:
   - ready items (`wi ls --ready`), minus held ones. `status: parked` items already never
     appear here — `--ready` leaves them out by itself (the `work-items` skill's format

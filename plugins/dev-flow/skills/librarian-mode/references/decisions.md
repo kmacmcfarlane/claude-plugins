@@ -282,8 +282,8 @@ skill, the decisions come **last in the turn**, where the operator's eye is when
    effect at tag size from its stored `impact:` line — `46 (→ preview up in about 4
    minutes)` — or `none`. An
    item blocked or declined since the last Report — SKILL.md § Report's "goes under
-   `decisions needed` of the next" — is raised as its own decision and carried in the
-   block, not on another change's line.
+   `decisions needed` of the next" (a forward excepted, as there) — is raised as its own
+   decision and carried in the block, not on another change's line.
 2. Then the **Done alone** group (`decide-alone.md` § The Report), each line in the skill's
    FYI form, with no group when nothing was decided alone since the last Report; then the
    push outcome, any `incoming:` lines, and the team summary, as SKILL.md § Report gives
