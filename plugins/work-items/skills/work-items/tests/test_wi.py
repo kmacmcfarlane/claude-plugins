@@ -4783,6 +4783,221 @@ class TestInitTracking(unittest.TestCase):
         self.assertNotIn("WARNING", "\n".join(prime))
         self.assertEqual(lint.returncode, 0, lint.stdout)
 
+    # fix round 1: symlinks, bytes, negation, escaping, ordering
+
+    def victim(self, name="victim", text="keep me\n"):
+        v = self.tmp / name
+        v.write_text(text)
+        return v
+
+    def test_store_yaml_tmp_symlink_is_refused(self):
+        repo, store = self.repo()
+        self.init(store, "--track")
+        v = self.victim()
+        # the old fixed temp name: no longer used, so never written through
+        (store / "store.yaml.tmp").symlink_to(v)
+        self.init(store, "--no-track")
+        self.assertEqual(v.read_text(), "keep me\n")
+        self.assertEqual(self.tracking(store), "ignored")
+        # the per-process temp name: refused, live or dangling
+        for target in (v, self.tmp / "absent"):
+            with self.subTest(target=target.name):
+                tmp = store / f"store.yaml.tmp{os.getpid()}"
+                tmp.symlink_to(target)
+                self.addCleanup(lambda t=tmp: t.unlink()
+                                if os.path.lexists(t) else None)
+                with self.assertRaises(wi.WiError):
+                    wi.write_tracking(store, "tracked")
+                tmp.unlink()
+                self.assertEqual(v.read_text(), "keep me\n")
+                self.assertFalse((self.tmp / "absent").exists())
+                self.assertEqual(self.tracking(store), "ignored")
+
+    def test_store_yaml_symlink_is_replaced_not_followed(self):
+        repo, store = self.repo()
+        self.init(store, "--track")
+        v = self.victim()
+        (store / "store.yaml").unlink()
+        (store / "store.yaml").symlink_to(v)
+        self.init(store, "--track")
+        self.assertEqual(v.read_text(), "keep me\n")
+        self.assertFalse((store / "store.yaml").is_symlink())
+        self.assertEqual(self.tracking(store), "tracked")
+
+    def test_gitignore_symlink_gets_no_line_and_no_record(self):
+        for name, target in (("live", "victim"), ("dangling", "absent")):
+            with self.subTest(name):
+                repo, store = self.repo(f"gl-{name}")
+                v = self.victim() if target == "victim" else self.tmp / target
+                (repo / ".gitignore").symlink_to(v)
+                r = self.init(store, "--no-track", code=1)
+                self.assertIn(".gitignore is a symlink: no line added; add "
+                              "/.work/ by hand", r.stderr)
+                self.assertIn("tracking not recorded", r.stderr)
+                self.assertNotIn("tracking: ignored", r.stdout)
+                self.assertIsNone(self.tracking(store))
+                if target == "victim":
+                    self.assertEqual(v.read_text(), "keep me\n")
+                else:
+                    self.assertFalse(v.exists())
+
+    def test_failed_ignore_keeps_a_recorded_tracked_choice(self):
+        repo, store = self.repo()
+        self.init(store, "--track")
+        (repo / ".gitignore").symlink_to(self.victim())
+        self.init(store, "--no-track", code=1)
+        self.assertEqual(self.tracking(store), "tracked")
+
+    def test_no_terminal_default_with_symlinked_gitignore_records_nothing(self):
+        repo, store = self.repo()
+        (repo / ".gitignore").symlink_to(self.victim())
+        r = self.init(store, code=1)
+        self.assertIsNone(self.tracking(store))
+        self.assertNotIn("WARNING no terminal", r.stderr)
+
+    def test_store_dir_symlink_outside_repo_is_refused(self):
+        repo, store = self.repo()
+        out = self.tmp / "outdir"
+        out.mkdir()
+        store.symlink_to(out)
+        r = self.init(store, "--no-track", code=1)
+        self.assertIn("refusing to init there; nothing written", r.stderr)
+        self.assertEqual(list(out.iterdir()), [])
+        self.assertFalse((repo / ".gitignore").exists())
+
+    def test_store_dir_symlink_inside_repo_is_allowed(self):
+        repo, store = self.repo()
+        (repo / "real-store").mkdir()
+        store.symlink_to(repo / "real-store")
+        self.init(store, "--track")
+        self.assertEqual(self.tracking(store), "tracked")
+
+    def test_store_files_symlinks_are_not_written_through(self):
+        repo, store = self.repo()
+        store.mkdir()
+        v = self.victim()
+        (store / "README.md").symlink_to(v)
+        (store / ".gitignore").symlink_to(self.tmp / "absent")
+        self.init(store, "--track")
+        self.assertEqual(v.read_text(), "keep me\n")
+        self.assertFalse((self.tmp / "absent").exists())
+        self.assertTrue((store / "README.md").is_symlink())
+
+    def test_sidecar_host_gitignore_symlink_is_not_written(self):
+        repo, store = self.repo(sandbox=True)
+        self.git(repo / ".claude-sandbox", "init", "-q")
+        v = self.victim()
+        (repo / ".gitignore").symlink_to(v)
+        r = self.init(store, "--track")
+        self.assertEqual(v.read_text(), "keep me\n")
+        self.assertIn("is a symlink: no line added; add /.claude-sandbox/ "
+                      "by hand", r.stderr)
+
+    def raw_gi(self, repo):
+        return (repo / ".gitignore").read_bytes()
+
+    def test_crlf_gitignore_stays_crlf(self):
+        for i, (before, after) in enumerate((
+                (b"a\r\nb", b"a\r\nb\r\n/.work/\r\n"),
+                (b"a\r\n", b"a\r\n/.work/\r\n"))):
+            with self.subTest(before=before):
+                repo, store = self.repo(f"crlf{i}")
+                (repo / ".gitignore").write_bytes(before)
+                self.init(store, "--no-track")
+                self.assertEqual(self.raw_gi(repo), after)
+                self.assertTrue(self.ignored(repo, store))
+
+    def test_non_utf8_gitignore_is_kept_byte_exact(self):
+        repo, store = self.repo()
+        (repo / ".gitignore").write_bytes(b"caf\xe9/\n*.o")
+        r = self.init(store, "--no-track")
+        self.assertNotIn("Traceback", r.stderr)
+        self.assertEqual(self.raw_gi(repo), b"caf\xe9/\n*.o\n/.work/\n")
+        self.assertEqual(self.tracking(store), "ignored")
+
+    def test_gitignore_mode_is_kept(self):
+        repo, store = self.repo(gi="*.o\n")
+        os.chmod(repo / ".gitignore", 0o640)
+        self.init(store, "--no-track")
+        self.assertEqual(os.stat(repo / ".gitignore").st_mode & 0o777, 0o640)
+
+    def test_negated_literal_line_still_gets_the_line(self):
+        repo, store = self.repo(gi=".work/\n!.work/\n")
+        self.assertFalse(self.ignored(repo, store))
+        r = self.init(store, "--no-track")
+        self.assertEqual(self.gi(repo), ".work/\n!.work/\n/.work/\n")
+        self.assertIn("added /.work/", r.stdout)
+        self.assertTrue(self.ignored(repo, store))
+
+    def test_glob_characters_in_the_path_are_escaped(self):
+        repo, store = self.repo()
+        store = repo / "st[a]r*?"
+        self.init(store, "--no-track")
+        self.assertEqual(self.gi(repo), "/st\\[a]r\\*\\?/\n")
+        self.assertTrue(self.ignored(repo, store))
+        # the escaped line ignores only that dir, not a lookalike
+        (repo / "sta").mkdir()
+        self.assertNotEqual(self.git(repo, "check-ignore", "-q", "--no-index",
+                                     "sta/x", check=False).returncode, 0)
+
+    def test_repo_root_store_gets_no_line(self):
+        repo, _ = self.repo()
+        r = self.init(repo, "--no-track", code=1)
+        self.assertIn("store is the repo root: no .gitignore written",
+                      r.stderr)
+        # only the store's own .gitignore, which is the repo's here
+        self.assertEqual(self.gi(repo), ".lock\n*.tmp*\n")
+        self.assertIsNone(self.tracking(repo))
+
+    def test_line_that_does_not_ignore_is_reported(self):
+        repo, store = self.repo()
+        self.init(store, "--track")
+        with mock.patch.object(wi, "_ignore_rule", return_value=None), \
+                mock.patch.dict(os.environ, self.env):
+            ok, msg = wi.ensure_ignored(store)
+        self.assertFalse(ok)
+        self.assertEqual(msg, "/.work/ did not make git ignore the store")
+
+    def test_git_unavailable_falls_back_to_literal_lines(self):
+        repo, store = self.repo(gi="/.work\n")
+        self.init(store, "--track")
+        with mock.patch.object(wi, "_ignore_rule", return_value=False):
+            ok, msg = wi.ensure_ignored(store)
+        self.assertTrue(ok)
+        self.assertIn("already ignores the store ('/.work')", msg)
+        self.assertEqual(self.gi(repo), "/.work\n")
+
+    def test_lint_flags_duplicate_tracking_lines(self):
+        repo, store = self.repo()
+        self.init(store, "--track")
+        (store / "store.yaml").write_text("tracking: tracked\n"
+                                          "tracking: ignored\n")
+        lint = run(["lint"], store, env=self.env)
+        self.assertEqual(lint.returncode, 3)
+        self.assertIn("store.yaml: more than one tracking: line", lint.stdout)
+
+    def test_ctrl_c_at_the_menu_exits_130(self):
+        repo, store = self.repo()
+        err = io.StringIO()
+        with mock.patch.object(wi, "_interactive", return_value=True), \
+                mock.patch.object(wi, "choose_tracking",
+                                  side_effect=KeyboardInterrupt), \
+                contextlib.redirect_stderr(err):
+            code = wi.main(["--root", str(store), "init"])
+        self.assertEqual(code, 130)
+        self.assertIn("interrupted; nothing written", err.getvalue())
+        self.assertFalse(store.exists())
+
+    def test_format_example_parses(self):
+        fmt = (HERE.parent / "references" / "format.md").read_text()
+        block = fmt.split("## Store tracking", 1)[1].split("```yaml\n", 1)[1]
+        block = block.split("```", 1)[0]
+        store = self.tmp / "example"
+        store.mkdir()
+        (store / "store.yaml").write_text(block)
+        self.assertEqual(wi.read_tracking(store), "tracked")
+        self.assertEqual(wi._store_tracking_values(store), ["tracked"])
+
     def test_lint_flags_a_bad_tracking_value(self):
         repo, store = self.repo()
         self.init(store, "--track")
