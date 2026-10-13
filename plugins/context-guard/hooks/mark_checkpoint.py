@@ -517,6 +517,12 @@ def main(argv):
         # an id never starts with "-": that is a mistyped flag
         sys.exit(usage)
     sid = argv[1]
+    if not sid.strip():
+        # An unset $CLAUDE_CODE_SESSION_ID expands to "", and an empty id names
+        # the shared fallback state file: refuse before looking it up, so a
+        # stale fallback can never stand a gate down for no session.
+        sys.exit("mark_checkpoint.py: empty session id (is $CLAUDE_CODE_SESSION_ID "
+                 "set?); nothing recorded.")
     if not os.path.exists(L.state_path(sid)):
         # A live session always has state (every prompt's gate hook writes it), so
         # a missing file means a mistyped id: refuse rather than stand down nothing.

@@ -301,6 +301,24 @@ class TestCheck(HookBase):
         self.assertNotEqual(p.returncode, 0)
         self.assertIn("no context-gate state", p.stderr)
 
+    def test_an_empty_id_is_refused_even_with_fallback_state(self):
+        # An unset $CLAUDE_CODE_SESSION_ID passes "" - which names the same
+        # fallback state file every empty id shares. Its existing must not
+        # let the empty id through.
+        import subprocess
+        L.save_state("", {})
+        self.assertTrue(os.path.exists(L.state_path("")))
+        before = L.load_state("")
+        for sid in ("", "  "):
+            with self.subTest(sid=sid):
+                p = subprocess.run([sys.executable, os.path.join(HOOKS, "mark_checkpoint.py"),
+                                    sid], capture_output=True, text=True,
+                                   env=dict(os.environ, **self.env), timeout=30)
+                self.assertNotEqual(p.returncode, 0)
+                self.assertIn("empty session id", p.stderr)
+                self.assertNotIn("checkpoint recorded", p.stdout)
+        self.assertEqual(L.load_state(""), before)
+
     def test_the_stand_down_lapses_on_token_growth(self):
         # The wall clock alone is the wrong bound: a stand-down starts at the
         # hard line, so 30 unconditional minutes there can spend the window.
