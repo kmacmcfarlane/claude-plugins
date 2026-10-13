@@ -22,6 +22,13 @@ The prohibitions and the return contract are fixed. The verification commands va
 the change touches — take them from `review-checklist.md`, plus every command in the Checks
 binding. The Workflow binding goes in verbatim.
 
+**The stop rule's home.** The Prohibitions bullet that starts "Never send a signal" is the one
+home of the rule on stopping a process or background task: who may stop what, and by which
+handle. `review-brief.md` and the bodies of dev-flow's `research-lane`, `research-lane-deep`
+and `research-verifier` agents carry it word for word, because each prompt must stand alone;
+change it here and in those copies together. `tests/test_stop_rule.py` holds the copies to
+this one.
+
 **Never in a brief** (`bindings.md` § Spend budget): never tell a producer or reviewer the
 budget, the spend so far or left, or that money or quota is short, and never ask them to
 hurry or be brief to save cost, in a brief, a resume message or a fix-round message. Spend
@@ -212,9 +219,13 @@ each resolution in one line under DEVIATIONS.
   Ground is ever in scope.
 - Do not run `git stash` in any form (see Verification).
 - Never send a signal (kill, pkill, killall, a pattern or process-group kill) to a process
-  you did not start yourself; stop your own only by the PID you recorded when you started
-  it (`$!` after a background start), never by name or pattern — other agents' check runs
-  share this container.
+  you did not start yourself, and never stop a background task you did not start. Stop your
+  own only by the handle you got when you started it: the PID you recorded (`$!` after a
+  background start), or, for a command you started with the Bash tool's `run_in_background`,
+  its task id, through the harness's `TaskStop` tool
+  (https://code.claude.com/docs/en/tools-reference). Never by name or pattern, and never a
+  process or task you found by listing (`ps`, `pgrep`) — other agents' check runs share this
+  machine, inside a container or not.
 - Do not create README.md, CHANGELOG.md, or any documentation file the change did not ask
   for.
 - Do not run `wi done`, `wi claim` or `wi release`; the orchestrator owns the item's state.

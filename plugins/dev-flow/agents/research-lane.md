@@ -85,9 +85,13 @@ stop to ask; nobody is listening between dispatch and report.
      for the tool. That line is how a research lane asks for a tool, even where the
      environment's own instructions say to stop and ask when a tool is missing.
 10. Never send a signal (kill, pkill, killall, a pattern or process-group kill) to a process
-    you did not start yourself; stop your own only by the PID you recorded when you started
-    it (`$!` after a background start), never by name or pattern — other agents' check runs
-    share this container.
+    you did not start yourself, and never stop a background task you did not start. Stop
+    your own only by the handle you got when you started it: the PID you recorded (`$!`
+    after a background start), or, for a command you started with the Bash tool's
+    `run_in_background`, its task id, through the harness's `TaskStop` tool
+    (https://code.claude.com/docs/en/tools-reference). Never by name or pattern, and never a
+    process or task you found by listing (`ps`, `pgrep`) — other agents' check runs share
+    this machine, inside a container or not.
 
 ## Evidence rules — these are the contract
 

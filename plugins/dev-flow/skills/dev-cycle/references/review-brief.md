@@ -23,7 +23,9 @@ FINDINGS, and its CROSS-CHECK line rules on every one, whatever the verdict
 
 The prohibitions, the severity scale and the report shape are fixed. The check commands vary
 with what the change touches — take them from `review-checklist.md`, the same list the
-orchestrator runs again at Land, including its section 4's Checks binding.
+orchestrator runs again at Land, including its section 4's Checks binding. The Prohibitions'
+"Never send a signal" bullet is a word-for-word copy of the one in `agent-brief.md`, the
+rule's home (its paragraph "The stop rule's home"); change it there first.
 
 **Never in a brief** (`bindings.md` § Spend budget): never tell a producer or reviewer the
 budget, the spend so far or left, or that money or quota is short, and never ask them to
@@ -164,9 +166,13 @@ $WORKTREE, in addition to the generic ones>
   `git -C $WORKTREE archive <rev>` unpacked under the scratchpad — never a checkout.
 - Do not run `wi claim`, `wi done`, `wi handoff` or any writing `wi` command.
 - Never send a signal (kill, pkill, killall, a pattern or process-group kill) to a process
-  you did not start yourself; stop your own only by the PID you recorded when you started
-  it (`$!` after a background start), never by name or pattern — other agents' check runs
-  share this container.
+  you did not start yourself, and never stop a background task you did not start. Stop your
+  own only by the handle you got when you started it: the PID you recorded (`$!` after a
+  background start), or, for a command you started with the Bash tool's `run_in_background`,
+  its task id, through the harness's `TaskStop` tool
+  (https://code.claude.com/docs/en/tools-reference). Never by name or pattern, and never a
+  process or task you found by listing (`ps`, `pgrep`) — other agents' check runs share this
+  machine, inside a container or not.
 - Do not soften a severity because the fix is small, or raise one because the fix is
   large. Grade the failure, not the effort. A `Fix:` never changes a severity.
 - Do not ask the user anything; put the question under NOTES.
