@@ -2,13 +2,15 @@
 
 The four-line Report is the audit trail, for the operator. The team summary is for the
 people the operator passes the news on to: teammates who did not watch the run and will
-read it in Slack, Teams, an email or on a phone. Pointed at from SKILL.md § Report, and from the `dev-cycle` skill's `references/bindings.md` § Landing.
+read it in Slack, Teams, an email or on a phone. Pointed at from SKILL.md § Report and
+`report.md` § The team summary, and from the `dev-cycle` skill's `references/bindings.md`
+§ Landing.
 
 ## When
 
 - **After each push**, one summary covering everything that push carried, not one per
-  item. Normally: the Report, the push outcome with its `incoming:` lines (SKILL.md
-  § Report), then the summary. At session end and at 75%/DUE the push comes before the
+  item. Normally: the Report, the push outcome with its `incoming:` lines (`report.md`
+  § The push), then the summary. At session end and at 75%/DUE the push comes before the
   final Report (`ending-the-session.md`); the summary follows that Report, after the
   push outcome and its `incoming:` lines, in the same closing message.
 - **`Push: none`, or no `origin` remote**: one summary per landing batch, right after its
@@ -37,8 +39,8 @@ Plain text, in this order:
    ref since), or that log does not show this push's commits, read the range from the
    push's own output (the `<old>..<new>  main -> main` line), and from then on note
    `git -C "$MAIN" rev-parse --short origin/main` right before each push, again after
-   any fetch and merge; the value noted before the push that succeeds is `old` (SKILL.md
-   § Report).
+   any fetch and merge; the value noted before the push that succeeds is `old` (`report.md`
+   § The team summary).
    The second line, plain text right under the first, is one short sentence naming the
    pickup step, then one confirming review: when the push carries a change under `plugins/`
    of a plugin marketplace, "Update your plugins to pick it up." — a change under `plugins/`

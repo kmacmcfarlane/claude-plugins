@@ -74,15 +74,16 @@ it reports the push as well as the landings — here and at 75%/DUE below, the p
 its Report; everywhere else the Report comes first. The push's team summary
 (`team-summary.md`) follows that Report in the same message, after the push outcome and
 its `incoming:` lines; the decisions block stays the last thing in the turn (step 4
-below and SKILL.md § Report rule it, with the checkpoint's close as its one exception).
+below and `report.md` § With the decisions skill rule it, with the checkpoint's close as
+its one exception).
 The context-gate ledger and the HANDOFF manifest (both session-addressed, one per
 session, in the config dir, never committed) do not replace this; the librarian
 rehydrates from `wi prime` and git.
 
 ## At 75% or DUE — checkpoint, then continue
 
-Without context-guard none of these advisories arrives; what stands in is SKILL.md §
-Rehydrate step 5.
+Without context-guard none of these advisories arrives; what stands in is `rehydrate.md`
+§ Step 5.
 
 The trigger is the first of these context-gate advisories to arrive, matched by its
 body, not its bracketed prefix (the prefix names the owning plugin, today
@@ -128,8 +129,8 @@ compacts when convenient, and it continues. Finish the step in hand, then:
    then close with a three-line brief (in flight, decided or refused, the one next action)
    and the `/clear` or `/compact <guidance>` the advisory names, for the operator to run.
    Custody holds throughout: its residue goes into item bodies
-   (append) or new items (`$WI add` with `--short-display-name`, as SKILL.md § Intake
-   step 1 says), never into CLAUDE.md or a skill file; its commits
+   (append) or new items (`$WI add` with `--short-display-name`, as `intake.md` § Step 1
+   says), never into CLAUDE.md or a skill file; its commits
    are store-only — the work-item store. The manifest is never committed: it lives in the
    config dir, one per session, and the store and the investigation series carry the
    durable record.

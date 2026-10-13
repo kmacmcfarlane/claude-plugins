@@ -1,17 +1,17 @@
 # Putting decisions to the operator
 
-Loaded from SKILL.md § Intake step 3, § The cycle (Decision channel) and § Report. This
-file binds the librarian to the `operator-interaction` plugin's `decisions` skill, a soft
-dependency (README principle 4). It says only what the librarian supplies to that skill and
-what the store records. How a decision is written, ordered and answered is the skill's, and
-is not restated here.
+Loaded from SKILL.md § Intake step 3, `cycle-bindings.md` § Decision channel and
+`report.md`. This file binds the librarian to the `operator-interaction` plugin's
+`decisions` skill, a soft dependency (README principle 4). It says only what the
+librarian supplies to that skill and what the store records. How a decision is written,
+ordered and answered is the skill's, and is not restated here.
 
 ## When it applies
 
 The skill is available when the session's skill listing carries `operator-interaction:decisions`
 (the `operator-interaction` plugin is installed). Then:
 
-- **Load it at Rehydrate** (SKILL.md § Rehydrate step 2) with the Skill tool, and again after
+- **Load it at Rehydrate** (`rehydrate.md` § Step 2) with the Skill tool, and again after
   every `/clear` or compaction. It is knowledge only: it asks nothing and writes nothing.
 - **Every decision the librarian raises follows it:**
   - an Intake ask (step 3);
@@ -27,13 +27,14 @@ The skill is available when the session's skill listing carries `operator-intera
 
 Without the skill, nothing here applies but the `closed N:` line, the `<repo>#N` form and
 the verbatim rule on every answer line (§ What the store records, **Answered**):
-`decisions needed:`, its store lines and the replies are as SKILL.md § Report gives them.
+`decisions needed:`, its store lines and the replies are as SKILL.md § Report and
+`report.md` give them.
 
 ## What the librarian supplies to the skill
 
 | The skill asks for | The librarian's binding |
 |---|---|
-| the caller's numbering | the store counter, the one counter for every question put to the operator (SKILL.md § Report): `decision N:` continues from the highest N (SKILL.md § Rehydrate step 3); a number is never reused. A source's own label (a series' OQ3, a gate's G5) rides in the card's `what:` line, never as a number |
+| the caller's numbering | the store counter, the one counter for every question put to the operator (`report.md` § The counter): `decision N:` continues from the highest N (`rehydrate.md` § Step 3); a number is never reused. A source's own label (a series' OQ3, a gate's G5) rides in the card's `what:` line, never as a number |
 | the default wake ("the next time I finish a piece of work and report") | **the next Report**; a `later` with no time or event wakes there |
 | the operator's expected return | what the operator said ("back tomorrow morning"), in the item or the transcript; when they said nothing, the return is unknown and every stated deadline goes first |
 | who is reading, and how warm | after Rehydrate the operator is **cold** on every decision raised before the reset; the first Report after it re-shows them per the skill, with what changed since each was raised. Between resets: a decision shown in a Report written after the operator's last turn has **not been seen** — background returns can write several Reports while the operator is away — so the next Report shows it at its level again, not *(shown before)*. Your own transcript tells you: has the operator taken a turn since that Report? The store records the same thing (§ What the store records, **Shown** and **Seen**): a reader without the transcript — after a reset, or another session — reads the last showing as unseen when no `seen N:` line follows the last `shown N:` line, and as not recorded (cold) when there is no `shown N:` line |
@@ -281,15 +282,15 @@ skill, the decisions come **last in the turn**, where the operator's eye is when
 1. Each change's `decisions needed:` names that change's decision numbers, each with its
    effect at tag size from its stored `impact:` line — `46 (→ preview up in about 4
    minutes)` — or `none`. An
-   item blocked or declined since the last Report — SKILL.md § Report's "goes under
+   item blocked or declined since the last Report — `report.md` § Batching's "goes under
    `decisions needed` of the next" (a forward excepted, as there) — is raised as its own
    decision and carried in the block, not on another change's line.
 2. Then the **Done alone** group (`decide-alone.md` § The Report), each line in the skill's
    FYI form, with no group when nothing was decided alone since the last Report; then the
-   push outcome, any `incoming:` lines, and the team summary, as SKILL.md § Report gives
+   push outcome, any `incoming:` lines, and the team summary, as `report.md` gives
    them.
 3. Then **one decisions block**, the last thing written in the turn — when the push outcome
-   and team summary go out as a follow-up message (SKILL.md § Report), the block moves to
+   and team summary go out as a follow-up message (`report.md` § The push), the block moves to
    the end of that follow-up — laid out as the skill says: the decisions shown in full
    first, in list order, then the compact list of every open decision (a deferred one also
    shows its wake), then the hint when it carries two or more.

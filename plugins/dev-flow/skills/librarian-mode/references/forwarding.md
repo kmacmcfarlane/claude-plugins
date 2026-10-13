@@ -3,7 +3,8 @@
 Work another repo owns, as SKILL.md § Intake step 4 sends it: forwarded with watched
 custody, never edited or branched here, however trivial, and nothing forwarded is lost.
 Every case below is walked through in `walkthroughs.md`. Loaded from SKILL.md § Intake
-steps 2 and 4, § Rehydrate step 3, § Report, `idle-turn.md` and `ending-the-session.md`.
+steps 2 and 4, `rehydrate.md` § Step 3, `report.md`, `idle-turn.md` and
+`ending-the-session.md`.
 
 - **Who.** The one repo that plainly owns it; its live librarian is the one session
   ListAgents shows named `<repo>` or, for this lookup only, `<repo> - librarian`
@@ -46,4 +47,4 @@ steps 2 and 4, § Rehydrate step 3, § Report, `idle-turn.md` and `ending-the-se
 
 Until it lands back, a forward awaiting acceptance, watched, or held for a down owner is
 shown by its `Done:` line and the Idle turn's forwards line, not under `decisions needed`
-(SKILL.md § Report).
+(`report.md` § Batching).

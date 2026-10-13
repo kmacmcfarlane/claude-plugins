@@ -67,7 +67,7 @@ Work
 
 - **Groom** — items that need the operator: every row `wi needs-input` prints — a
   `grooming` item (its questions) or an unanswered `decision N:` line (no `answer N:`
-  line with the same N in the same item; `answer N: <reply>`, SKILL.md § Report, is the
+  line with the same N in the same item; `answer N: <reply>`, `report.md` § The counter, is the
   only form it reads, so the librarian writes one whenever the operator answers) —
   plus `blocked` items with a reason that names the operator, which `needs-input`
   does not cover: including a free-text deferral such as "operator holding until
@@ -166,7 +166,7 @@ $WI block <hold-id> "HOLD: <scope> until <end condition>"
 The short display name (`fable hold`, `one-agent hold`) never contains "until":
 context-guard's rehydrate hook reads each HOLD line of a checkpoint manifest (the Holds
 lines in `ending-the-session.md`) and takes its end condition from after the last
-"until". Its length, and what each exit from `add` means, are as SKILL.md § Intake step 1
+"until". Its length, and what each exit from `add` means, are as `intake.md` § Step 1
 says.
 
 It records three things:
@@ -179,8 +179,8 @@ It records three things:
     too; the `hold:` line names them;
   - **a limit** that preserves quota — at most N agents in flight, no fable. A limit
     caps and does not stop: dispatch goes on inside it. It binds every dispatch while
-    it stands — idle-turn dispatch, Intake, and every fix round (SKILL.md § The cycle,
-    the Hold binding). N counts every background agent in flight, implementers and
+    it stands — idle-turn dispatch, Intake, and every fix round (`cycle-bindings.md`
+    § Hold). N counts every background agent in flight, implementers and
     reviewers alike: one item's implementer and reviewer never run at once, but a
     reviewer on one item and an implementer on another are two.
 - **The end condition** — an event ("until the operator says bedtime"), a time ("until

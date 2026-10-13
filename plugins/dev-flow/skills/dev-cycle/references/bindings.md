@@ -31,7 +31,9 @@ the series slug, a kebab-case name made from the cycle brief's goal, or — `rev
 
 ## What a librarian binds
 
-For reference, the values `librarian-mode` supplies (its own SKILL.md is authoritative):
+For reference, the values `librarian-mode` supplies (the `librarian-mode` skill's
+`references/cycle-bindings.md` is authoritative, summarised one line each in its SKILL.md
+§ The cycle):
 
 | Binding | Librarian value |
 |---|---|
@@ -42,7 +44,7 @@ For reference, the values `librarian-mode` supplies (its own SKILL.md is authori
 | Base | `main`, unless the item names another |
 | Model floor | A `model:` pin and/or an `effort:` pin in the item body |
 | Record sink | The item body |
-| Decision channel | `decision N:` appended to the item, carried under `decisions needed` in its Report — **durable**; caller's stop: a hold in force (its SKILL.md § The cycle, Hold) |
+| Decision channel | `decision N:` appended to the item, carried under `decisions needed` in its Report — **durable**; caller's stop: a hold in force (the `librarian-mode` skill's `references/cycle-bindings.md` § Hold) |
 | Terminal action | `git merge --no-ff` into local `main`; the push is the librarian's, after its Report; an item naming another base merges into that base, never pushed |
 | Series home | `$MAIN/.claude-sandbox/investigations/<slug>/`, as standalone — tooling state like the store, written by the cycle, never a custody edit; agents write there only the series, and dispatched commits never include `.claude-sandbox/` |
 
@@ -643,16 +645,16 @@ re-run before the push, a conflict or red check aborting it — or leave the loc
 unpushed (`troubleshooting.md` § Landing, "Push rejected", which follows the
 `librarian-mode` skill's `references/troubleshooting.md` § Push rejected).
 
-Option 3 (or a push the invocation asked for in words), once the push succeeds, also
-means Step 6 adds one team summary after the Report — a push left rejected gets none. The
-shape is the `librarian-mode` skill's `references/team-summary.md`, read there and not
-restated here, with one clause read against this cycle instead of a librarian's: its
-commit-range recipe reads `main`/`origin/main` as `<base>`/`origin/<base>`; its
-librarian-only timing (the `incoming:` lines, its own SKILL.md § Report,
-`ending-the-session.md`, 75%/DUE, noting `origin/<base>` before each push) does not
-apply — the summary simply follows the four lines; and its bullets cover only this
-cycle's own landing — another commit the push carried is noted as not the cycle's, or
-folded into the housekeeping area.
+Option 3 (or a push the invocation asked for in words), once the push succeeds, also means
+Step 6 adds one team summary after the Report — a push left rejected gets none. The shape
+is the `librarian-mode` skill's `references/team-summary.md`, read there and not restated
+here, with one clause read against this cycle instead of a librarian's: its commit-range
+recipe reads `main`/`origin/main` as `<base>`/`origin/<base>`; its librarian-only timing
+(the `incoming:` lines, the `librarian-mode` skill's `references/report.md`,
+`ending-the-session.md`, 75%/DUE, noting `origin/<base>` before each push) does not apply
+— the summary simply follows the four lines; and its bullets cover only this cycle's own
+landing — another commit the push carried is noted as not the cycle's, or folded into the
+housekeeping area.
 
 ## Store
 

@@ -51,9 +51,8 @@ skill's decision channel, `decision N:` under `decisions needed` (SKILL.md § Th
      tree. All green: `git -C "$MAIN" commit --no-edit`, a merge commit.
   4. **Push, then send the incoming lines.** `git -C "$MAIN" push origin main` — now a
      fast-forward — then one `incoming: <sha> <subject> — <author>` line per incoming
-     commit. The `incoming:` lines go with the push outcome: a short follow-up message
-     mid-session, since the Report has gone out; inside the final Report at session end
-     and 75%/DUE (SKILL.md § Report). A second rejection repeats from step 1 once; a
+     commit. The `incoming:` lines go out as `report.md` § The push says. A second
+     rejection repeats from step 1 once; a
      third is a decision.
 
   **A conflict at step 2, or a red check at step 3, stops:** `git -C "$MAIN" merge
@@ -78,7 +77,7 @@ skill's decision channel, `decision N:` under `decisions needed` (SKILL.md § Th
   - **`origin/main`'s commit**: a push-rejection merge (§ Push rejected step 2) —
     `git -C "$MAIN" merge --abort`, then redo § Push rejected from step 1.
   - **A `worktree-*` branch's tip**: a landing merge (`git -C "$MAIN" merge --no-ff
-    worktree-<name>`, SKILL.md § The cycle's Terminal action) — `git -C "$MAIN" merge
+    worktree-<name>`, `cycle-bindings.md` § Terminal action) — `git -C "$MAIN" merge
     --abort`, then re-land that branch through The cycle (Checks again).
   - **Neither**: `origin/main` was fetched again since, or the branch moved after the
     crash — `git -C "$MAIN" merge --abort`, then raise it as a numbered decision.
