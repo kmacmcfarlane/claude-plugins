@@ -458,7 +458,7 @@ class DispatchTests(unittest.TestCase):
         self.assertEqual(row["rolled_up_dispatches"], 1)
         self.assertEqual(row["totals"]["output"], 250)
         self.assertEqual(row["models"], ["claude-opus-5", "claude-sonnet-5"])
-        self.assertEqual(sorted(data["by_requested_tier"]), ["sonnet"])
+        self.assertEqual(sorted(data["by_requested_tier"]), ["main", "sonnet"])
         # the session total still counts main + both dispatches once
         self.assertEqual(data["totals"]["output"], 350)
 
@@ -469,7 +469,7 @@ class DispatchTests(unittest.TestCase):
         self.assertEqual(rows["aaa"]["totals"]["output"], 200)
         self.assertEqual(rows["aaa"]["rolled_up_dispatches"], 0)
         self.assertEqual(rows["bbb"]["totals"]["output"], 50)
-        self.assertEqual(sorted(data["by_requested_tier"]), ["inherit", "sonnet"])
+        self.assertEqual(sorted(data["by_requested_tier"]), ["inherit", "main", "sonnet"])
         self.assertEqual(data["totals"]["output"], 350)
 
     def test_dispatch_without_a_meta_file(self):
@@ -644,6 +644,164 @@ class CliTests(unittest.TestCase):
         proc = self.run_cli()
         self.assertEqual(proc.returncode, 1)
         self.assertIn("usage", proc.stdout.lower())
+
+
+class ReportTests(unittest.TestCase):
+    """The report's tables: tiers that reconcile, aliases shown, days, the CLI."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.fixture = Fixture(self.tmp.name)
+        prices = json.loads(json.dumps(TEST_PRICES))
+        prices["aliases"]["claude-opus-4-8"] = "claude-opus-5"
+        self.prices = self.fixture.prices(prices)
+        self.warnings = []
+        self.table = usage_report.PriceTable(prices, warn=self.warnings.append)
+        self.fixture.session("sess", [
+            assistant_line("m_1", "claude-opus-5", "2026-09-10T23:59:00.000Z",
+                           input_tokens=3, output_tokens=7, cache_read=11),
+            assistant_line("m_2", "claude-opus-4-8", "2026-09-11T00:01:00.000Z",
+                           output_tokens=5),
+            assistant_line("m_3", "claude-opus-5-20260101", "2026-09-11T00:02:00.000Z",
+                           output_tokens=2)])
+        self.fixture.dispatch("sess", "aaa", {"agentType": "implementer",
+                                              "spawnDepth": 1, "model": "sonnet"}, [
+            assistant_line("a_1", "claude-sonnet-5", "2026-09-11T00:03:00.000Z",
+                           agent_id="aaa", input_tokens=1, output_tokens=3)])
+        self.fixture.dispatch("sess", "bbb", {"agentType": "scout",
+                                              "spawnDepth": 2, "parentAgentId": "aaa"}, [
+            assistant_line("b_1", "claude-sonnet-5", "2026-09-11T00:04:00.000Z",
+                           agent_id="bbb", cache_5m=13)])
+        self.session = usage_report.read_session(self.fixture.project / "sess.jsonl",
+                                                 table=self.table)
+
+    def assert_reconciles(self, data):
+        for field in ("input", "output", "cache_creation", "cache_read",
+                      "total_tokens", "records"):
+            self.assertEqual(sum(b[field] for b in data["by_requested_tier"].values()),
+                             data["totals"][field], field)
+            self.assertEqual(sum(b[field] for b in data["by_day"].values()),
+                             data["totals"][field], field)
+        self.assertAlmostEqual(
+            sum(b["cost_usd"] for b in data["by_requested_tier"].values()),
+            data["totals"]["cost_usd"], places=5)
+
+    def test_tiers_carry_main_and_reconcile_with_totals(self):
+        for flat in (False, True):
+            data = usage_report.summarize([self.session], self.table, flat=flat)
+            self.assertEqual(data["by_requested_tier"]["main"]["output"], 14)
+            self.assert_reconciles(data)
+        rolled = usage_report.summarize([self.session], self.table)
+        self.assertEqual(sorted(rolled["by_requested_tier"]), ["main", "sonnet"])
+        self.assertEqual(rolled["by_requested_tier"]["sonnet"]["cache_creation"], 13)
+
+    def test_tier_opus_equivalent_is_summed_unrounded(self):
+        """Fractional rows round once, at the bucket, never once per row."""
+        for agent in ("ccc", "ddd", "eee"):
+            self.fixture.dispatch("sess", agent, {"spawnDepth": 1, "model": "opus"}, [
+                assistant_line("%s_1" % agent, "claude-sonnet-5",
+                               "2026-09-11T01:00:00.000Z", agent_id=agent,
+                               input_tokens=1)])
+        session = usage_report.read_session(self.fixture.project / "sess.jsonl",
+                                            table=self.table)
+        data = usage_report.summarize([session], self.table)
+        # each row is 1 sonnet input token at weight 0.4: round(0.4) per row
+        # would sum to 0; summed unrounded it is round(1.2) = 1
+        for row in data["dispatches"]:
+            if row["agent_id"] in ("ccc", "ddd", "eee"):
+                self.assertEqual(row["totals"]["opus_equivalent_tokens"], 0)
+        self.assertEqual(data["by_requested_tier"]["opus"]["opus_equivalent_tokens"], 1)
+
+    def test_alias_priced_ids_are_shown_not_merged_silently(self):
+        data = usage_report.summarize([self.session], self.table)
+        row = data["by_model"]["claude-opus-5"]
+        self.assertEqual(row["output"], 14)
+        # the legacy alias is named; a dated id of the same entry is not
+        self.assertEqual(sorted(row["aliased_from"]), ["claude-opus-4-8"])
+        self.assertEqual(row["aliased_from"]["claude-opus-4-8"]["output"], 5)
+        self.assertNotIn("aliased_from", data["by_model"]["claude-sonnet-5"])
+        text = "\n".join(usage_report.render_report(data))
+        self.assertIn("claude-opus-5 *", text)
+        self.assertIn("priced through an alias: claude-opus-4-8", text)
+
+    def test_by_day_is_the_utc_day(self):
+        data = usage_report.summarize([self.session], self.table)
+        self.assertEqual(sorted(data["by_day"]), ["2026-09-10", "2026-09-11"])
+        self.assertEqual(data["by_day"]["2026-09-10"]["output"], 7)
+
+    def test_session_rows_split_by_model_for_reconciliation(self):
+        data = usage_report.summarize([self.session], self.table)
+        row = data["sessions"][0]
+        self.assertEqual(sorted(row["by_model"]), ["claude-opus-5", "claude-sonnet-5"])
+        self.assertEqual(row["by_model"]["claude-opus-5"]["output"], 14)
+        self.assertEqual(row["by_model"]["claude-sonnet-5"]["cache_creation"], 13)
+        self.assertTrue(row["started"].startswith("2026-09-10T23:59"))
+
+    def test_zero_token_records_are_skipped_without_a_warning(self):
+        path = self.fixture.session("syn", [
+            assistant_line("s_1", "<synthetic>", "2026-09-11T02:00:00.000Z"),
+            assistant_line("s_2", "claude-opus-5", "2026-09-11T02:01:00.000Z",
+                           output_tokens=1)])
+        session = usage_report.read_session(path, table=self.table)
+        self.assertEqual(len(session.main_records), 1)
+        self.assertEqual(self.warnings, [])
+        self.assertEqual(self.table.unknown_models, [])
+
+    def test_a_parent_cycle_still_lands_every_dispatch_in_a_tier(self):
+        self.fixture.dispatch("sess", "x1", {"spawnDepth": 2, "parentAgentId": "x2",
+                                             "model": "opus"}, [
+            assistant_line("x_1", "claude-opus-5", "2026-09-11T03:00:00.000Z",
+                           agent_id="x1", output_tokens=4)])
+        self.fixture.dispatch("sess", "x2", {"spawnDepth": 2, "parentAgentId": "x1",
+                                             "model": "opus"}, [
+            assistant_line("x_2", "claude-opus-5", "2026-09-11T03:01:00.000Z",
+                           agent_id="x2", output_tokens=6)])
+        session = usage_report.read_session(self.fixture.project / "sess.jsonl",
+                                            table=self.table)
+        data = usage_report.summarize([session], self.table)
+        self.assertEqual(data["by_requested_tier"]["opus"]["output"], 10)
+        self.assert_reconciles(data)
+
+    def run_cli(self, *args):
+        return subprocess.run(
+            [sys.executable, "-I", str(SCRIPT), "--projects-dir", str(self.fixture.root),
+             "--prices", str(self.prices), "--all"] + list(args),
+            capture_output=True, text=True, env={"PYTHONDONTWRITEBYTECODE": "1",
+                                                 "PATH": "/usr/bin:/bin"})
+
+    def test_report_prints_every_table(self):
+        proc = self.run_cli("report")
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        for title in ("By model (served)", "By requested tier", "By day (UTC)",
+                      "Sessions (by $ est)", "Dispatches (by $ est"):
+            self.assertIn(title, proc.stdout)
+        self.assertIn("list-price estimate: $", proc.stdout)
+        self.assertIn("(not a bill)", proc.stdout)
+        self.assertIn("implementer +1", proc.stdout)
+        flat = self.run_cli("report", "--flat")
+        self.assertIn("scout", flat.stdout)
+        self.assertNotIn("implementer +1", flat.stdout)
+
+    def test_report_json_is_the_summary_data(self):
+        report = self.run_cli("report", "--json")
+        summary = self.run_cli("summary", "--json")
+        self.assertEqual(report.returncode, 0, report.stderr)
+        self.assertEqual(json.loads(report.stdout), json.loads(summary.stdout))
+        self.assertIn("by_day", json.loads(report.stdout))
+
+    def test_report_top_and_since(self):
+        self.fixture.session("other", [
+            assistant_line("o_1", "claude-opus-5", "2026-09-12T00:00:00.000Z",
+                           output_tokens=1)])
+        top = self.run_cli("report", "--top", "1")
+        self.assertIn("1 more not shown", top.stdout)
+        every = self.run_cli("report", "--top", "0")
+        self.assertNotIn("more not shown", every.stdout)
+        since = self.run_cli("report", "--since", "2026-09-12")
+        self.assertIn("sessions: 1 ", since.stdout)
+        by_day = since.stdout.split("By day (UTC)")[1].split("Sessions")[0]
+        self.assertNotIn("2026-09-11", by_day)
 
 
 class ShippedPriceTableTests(unittest.TestCase):

@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """usage_report — read Claude Code transcripts and account for token spend.
 
-Library plus a thin CLI skeleton (`scan`, `summary`, and `item`, one work
-item's spend per phase by agent id, which lives in item_spend.py). The full report tables
-are deliberately not here yet; this file owns the parsing, the attribution and
-the arithmetic, and the printing stays small until the report feature lands.
+Library plus a CLI: `report` (the tables: by model, requested tier, UTC day,
+session and dispatch), `summary` (the totals alone), `scan` (what was read),
+and `item`, one work item's spend per phase by agent id, which lives in
+item_spend.py. `--json` on report or summary prints summarize()'s data.
 
 What it reads (nothing else, and never writes):
 
@@ -59,6 +59,8 @@ DEFAULT_PRICES = Path(__file__).resolve().parent / "prices.json"
 DATE_SUFFIX_RE = re.compile(r"-\d{8}$")
 NO_MODEL = "(no model)"
 UNKNOWN_PREFIX = "unknown:"
+NO_TIME = "(no time)"
+MAIN_TIER = "main"
 SLUG_RE = re.compile(r"[^a-zA-Z0-9]")
 
 
@@ -336,8 +338,8 @@ def read_transcript(path, project=None, session_id=None, agent_id=None,
     largest output_tokens (the last streamed line carries the final count).
     Cross-file duplicates are removed afterwards by dedupe_scans(). `--since`
     is applied to the surviving line, after the dedupe. Lines without a usage
-    block (user turns, tool results, the compact-summary injection) are
-    skipped; `compact_boundary` system lines are counted, not summed — a
+    block (user turns, tool results, the compact-summary injection) and
+    responses with zero tokens in every class are skipped; `compact_boundary` system lines are counted, not summed — a
     boundary resets the context window, never the spend.
     """
     path = Path(path)
@@ -391,6 +393,13 @@ def read_transcript(path, project=None, session_id=None, agent_id=None,
             candidates.append(record)
     records = []
     for record in candidates:
+        if not record.total_tokens:
+            # A response with no tokens at all adds nothing and has no price;
+            # it is skipped rather than warned about. Observed in local
+            # transcripts (Claude Code 2.1.292): an API-error line written
+            # with the model `<synthetic>` and every token count 0.
+            skipped += 1
+            continue
         if since is not None and (record.timestamp is None or record.timestamp < since):
             skipped += 1
             continue
@@ -522,10 +531,23 @@ class Session:
         return out
 
     def top_level_dispatches(self):
-        """Dispatches that nothing else in this session spawned."""
+        """Dispatches that nothing else in this session spawned.
+
+        A dispatch only reachable through a parentAgentId cycle is promoted
+        too, as link_dispatches() does, so the rolled-up rows cover every
+        dispatch exactly once.
+        """
         known = {d.agent_id for d in self.dispatches}
-        return [d for d in self.dispatches
-                if d.parent_agent_id is None or d.parent_agent_id not in known]
+        roots = [d for d in self.dispatches
+                 if d.parent_agent_id is None or d.parent_agent_id not in known]
+        reachable = set()
+        for root in roots:
+            reachable.update(d.agent_id for d in root.own_and_descendants())
+        for dispatch in self.dispatches:
+            if dispatch.agent_id not in reachable:
+                roots.append(dispatch)
+                reachable.update(d.agent_id for d in dispatch.own_and_descendants())
+        return roots
 
 
 def link_dispatches(dispatches):
@@ -638,9 +660,14 @@ def model_bucket(record):
     return UNKNOWN_PREFIX + (record.model or NO_MODEL)
 
 
+def dispatch_members(dispatch, flat):
+    """The dispatches one row covers: itself, plus its descendants unless flat."""
+    return [dispatch] if flat else dispatch.own_and_descendants()
+
+
 def dispatch_row(dispatch, flat):
     """One dispatch row; when not flat, nested dispatches roll up into it."""
-    members = [dispatch] if flat else dispatch.own_and_descendants()
+    members = dispatch_members(dispatch, flat)
     records = [r for member in members for r in member.records]
     models = sorted({m for member in members for m in member.models_used()})
     return {
@@ -658,11 +685,50 @@ def dispatch_row(dispatch, flat):
     }
 
 
+def aliased_from(record):
+    """The served model id when a known record was priced through an alias.
+
+    A dated id of the same entry (claude-x-20260101 -> claude-x) is not an
+    alias; an id the table maps to a *different* entry (a legacy id priced as
+    its current same-family model) is, and the report shows it.
+    """
+    if not (record.model_known and record.model and record.price_key):
+        return None
+    if DATE_SUFFIX_RE.sub("", record.model) == record.price_key:
+        return None
+    return record.model
+
+
+def day_bucket(record):
+    """The UTC calendar day of a record, or NO_TIME when it has no timestamp."""
+    if record.timestamp is None:
+        return NO_TIME
+    return record.timestamp.date().isoformat()
+
+
+def session_by_model(records):
+    """One session's records split by model bucket, for a /usage reconciliation."""
+    buckets = {}
+    for record in records:
+        add_records(buckets.setdefault(model_bucket(record), empty_totals()), [record])
+    return {k: round_totals(v) for k, v in sorted(buckets.items())}
+
+
 def summarize(sessions, table, flat=False, scope=None, since=None):
-    """The whole report as plain data — the shape `summary --json` prints."""
+    """The whole report as plain data — the shape `summary --json` prints.
+
+    `by_requested_tier` reconciles with `totals`: every top-level dispatch row
+    (or every dispatch, when flat) lands in its requested tier (`inherit` when
+    none was asked for), and the main sessions' own records land in `main`.
+    Its figures are summed from the records, unrounded, then rounded once.
+    Every session and dispatch read has a row, empty or not; the printed
+    report hides the empty ones.
+    """
     totals = empty_totals()
     by_model = {}
+    aliases = {}
     by_tier = {}
+    by_day = {}
     dispatch_rows = []
     session_rows = []
     boundaries = duplicates = 0
@@ -672,7 +738,15 @@ def summarize(sessions, table, flat=False, scope=None, since=None):
         for record in session_records:
             key = model_bucket(record)
             add_records(by_model.setdefault(key, empty_totals()), [record])
+            served = aliased_from(record)
+            if served:
+                add_records(aliases.setdefault(key, {}).setdefault(
+                    served, empty_totals()), [record])
+            add_records(by_day.setdefault(day_bucket(record), empty_totals()), [record])
         add_records(totals, session_records)
+        if session.main_records:
+            add_records(by_tier.setdefault(MAIN_TIER, empty_totals()),
+                        session.main_records)
         boundaries += session.main_scan.boundaries if session.main_scan else 0
         duplicates += session.main_scan.duplicates if session.main_scan else 0
         for dispatch in session.dispatches:
@@ -680,24 +754,23 @@ def summarize(sessions, table, flat=False, scope=None, since=None):
             duplicates += dispatch.scan.duplicates
 
         roots = session.dispatches if flat else session.top_level_dispatches()
-        rows = [dispatch_row(d, flat) for d in roots]
-        for row in rows:
+        for dispatch in roots:
+            row = dispatch_row(dispatch, flat)
             tier = row["requested_tier"] or "inherit"
-            add_bucket = by_tier.setdefault(tier, empty_totals())
-            for token_class in TOKEN_CLASSES:
-                add_bucket[token_class] += row["totals"][token_class]
-            add_bucket["total_tokens"] += row["totals"]["total_tokens"]
-            add_bucket["opus_equivalent_tokens"] += row["totals"]["opus_equivalent_tokens"]
-            add_bucket["cost_usd"] += row["totals"]["cost_usd"]
-            add_bucket["records"] += row["totals"]["records"]
-        dispatch_rows.extend(rows)
+            add_records(by_tier.setdefault(tier, empty_totals()),
+                        [r for member in dispatch_members(dispatch, flat)
+                         for r in member.records])
+            dispatch_rows.append(row)
 
+        stamps = [r.timestamp for r in session_records if r.timestamp is not None]
         session_rows.append({
             "project": session.project,
             "session_id": session.session_id,
+            "started": min(stamps).isoformat() if stamps else None,
             "dispatch_files": len(session.dispatches),
             "main": totals_for(session.main_records),
             "totals": totals_for(session_records),
+            "by_model": session_by_model(session_records),
         })
 
     warnings = []
@@ -708,6 +781,14 @@ def summarize(sessions, table, flat=False, scope=None, since=None):
                         "uncertain; dollars are a list-price estimate, not a bill"
                         % (table.version, table.retrieved))
 
+    model_rows = {}
+    for key, bucket in sorted(by_model.items()):
+        row = round_totals(bucket)
+        if key in aliases:
+            row["aliased_from"] = {served: round_totals(t)
+                                   for served, t in sorted(aliases[key].items())}
+        model_rows[key] = row
+
     return {
         "scope": scope or [],
         "since": since.isoformat() if since else None,
@@ -716,8 +797,9 @@ def summarize(sessions, table, flat=False, scope=None, since=None):
                    "normalization_base": table.base,
                    "default_model": table.default_model},
         "totals": round_totals(totals),
-        "by_model": {k: round_totals(v) for k, v in sorted(by_model.items())},
+        "by_model": model_rows,
         "by_requested_tier": {k: round_totals(v) for k, v in sorted(by_tier.items())},
+        "by_day": {k: round_totals(v) for k, v in sorted(by_day.items())},
         "sessions": session_rows,
         "dispatches": dispatch_rows,
         "compact_boundaries": boundaries,
@@ -796,6 +878,152 @@ def cmd_summary(args, table):
     return 0
 
 
+def _fmt_tokens(value):
+    """A token count, short: 1234 -> 1.2k, 5_600_000 -> 5.6M."""
+    value = float(value)
+    for limit, suffix in ((1e9, "G"), (1e6, "M"), (1e3, "k")):
+        if abs(value) >= limit:
+            return "%.1f%s" % (value / limit, suffix)
+    return "%d" % value
+
+
+def _share(part, whole):
+    return "%.0f%%" % (100.0 * part / whole) if whole else "-"
+
+
+def _table(title, header, rows, note=None):
+    """Print one fixed-width table: the first column left, the rest right."""
+    lines = []
+    lines.append("")
+    lines.append(title)
+    if not rows:
+        lines.append("  (none)")
+        return lines
+    cells = [header] + rows
+    widths = [max(len(str(row[i])) for row in cells) for i in range(len(header))]
+    for row in cells:
+        parts = []
+        for i, cell in enumerate(row):
+            cell = str(cell)
+            parts.append(cell.ljust(widths[i]) if i == 0 else cell.rjust(widths[i]))
+        lines.append("  " + "  ".join(parts).rstrip())
+    if note:
+        lines.append("  " + note)
+    return lines
+
+
+TOTAL_HEADER = ["input", "output", "cache wr", "cache rd", "opus-eq", "$ est", "share"]
+
+
+def _total_cells(totals, whole):
+    return [_fmt_tokens(totals["input"]), _fmt_tokens(totals["output"]),
+            _fmt_tokens(totals["cache_creation"]), _fmt_tokens(totals["cache_read"]),
+            _fmt_tokens(totals["opus_equivalent_tokens"]),
+            "%.2f" % totals["cost_usd"], _share(totals["cost_usd"], whole)]
+
+
+def render_report(data, top=10):
+    """The report's plain-text tables, as a list of lines.
+
+    Order: the header and totals, then by model, by requested tier, by day,
+    the sessions and the dispatches (each of the last two without its empty
+    rows, sorted by estimated dollars, the first `top` shown; 0 shows all). The share column is each
+    row's part of the total estimated dollars.
+    """
+    totals = data["totals"]
+    whole = totals["cost_usd"]
+    prices = data["prices"]
+    lines = []
+    lines.append("scope: %s" % (", ".join(data["scope"]) or "(none)"))
+    lines.append("since: %s   dispatches: %s   prices: v%s (retrieved %s)"
+                 % (data["since"] or "all time",
+                    "flat" if data["flat"] else "nested rolled up",
+                    prices["version"], prices["retrieved"]))
+    lines.append("sessions: %d   dispatch rows: %d   API responses: %d   "
+                 "compactions: %d   duplicate lines dropped: %d"
+                 % (sum(1 for r in data["sessions"] if r["totals"]["records"]),
+                    sum(1 for r in data["dispatches"] if r["totals"]["records"]),
+                    totals["records"],
+                    data["compact_boundaries"], data["duplicate_lines_dropped"]))
+    lines.append("tokens: input %s  output %s  cache write %s  cache read %s  "
+                 "(total %s)"
+                 % (_fmt_tokens(totals["input"]), _fmt_tokens(totals["output"]),
+                    _fmt_tokens(totals["cache_creation"]),
+                    _fmt_tokens(totals["cache_read"]),
+                    _fmt_tokens(totals["total_tokens"])))
+    lines.append("opus-equivalent tokens: %s (base %s)"
+                 % (_fmt_tokens(totals["opus_equivalent_tokens"]),
+                    prices["normalization_base"]))
+    lines.append("list-price estimate: $%.2f (not a bill)" % whole)
+
+    rows = []
+    aliased = []
+    for key, bucket in data["by_model"].items():
+        label = key
+        if bucket.get("aliased_from"):
+            label = key + " *"
+            for served, part in bucket["aliased_from"].items():
+                aliased.append("%s (%s tokens, $%.2f)"
+                               % (served, _fmt_tokens(part["total_tokens"]),
+                                  part["cost_usd"]))
+        rows.append([label] + _total_cells(bucket, whole))
+    note = None
+    if aliased:
+        note = "* includes ids priced through an alias: " + "; ".join(aliased)
+    lines += _table("By model (served)", ["model"] + TOTAL_HEADER, rows, note)
+
+    rows = [[tier] + _total_cells(bucket, whole)
+            for tier, bucket in data["by_requested_tier"].items() if bucket["records"]]
+    lines += _table("By requested tier (main = the main sessions' own turns)",
+                    ["tier"] + TOTAL_HEADER, rows)
+
+    rows = [[day] + _total_cells(bucket, whole)
+            for day, bucket in data["by_day"].items()]
+    lines += _table("By day (UTC)", ["day"] + TOTAL_HEADER, rows)
+
+    def cut(items):
+        items = [r for r in items if r["totals"]["records"]]
+        ranked = sorted(items, key=lambda r: r["totals"]["cost_usd"], reverse=True)
+        shown = ranked if not top else ranked[:top]
+        hidden = len(ranked) - len(shown)
+        return shown, ("%d more not shown (--top 0 shows all)" % hidden
+                       if hidden else None)
+
+    shown, note = cut(data["sessions"])
+    rows = [[row["session_id"][:8], (row["started"] or "-")[:16].replace("T", " "),
+             row["dispatch_files"]] + _total_cells(row["totals"], whole)
+            for row in shown]
+    lines += _table("Sessions (by $ est)",
+                    ["session", "started UTC", "agents"] + TOTAL_HEADER, rows, note)
+
+    shown, note = cut(data["dispatches"])
+    rows = []
+    for row in shown:
+        what = row["agent_type"] or "-"
+        if row["rolled_up_dispatches"]:
+            what += " +%d" % row["rolled_up_dispatches"]
+        served = ",".join(m.replace("claude-", "") for m in row["models"]) or "-"
+        rows.append([row["agent_id"][:10], what, row["requested_tier"] or "inherit",
+                     served] + _total_cells(row["totals"], whole))
+    lines += _table("Dispatches (by $ est; +N = nested dispatches rolled up)",
+                    ["agent", "type", "tier", "served"] + TOTAL_HEADER, rows, note)
+    return lines
+
+
+def cmd_report(args, table):
+    sessions, scope, since = collect(args, table)
+    data = summarize(sessions, table, flat=args.flat, scope=scope, since=since)
+    if args.json:
+        json.dump(data, sys.stdout, indent=2)
+        sys.stdout.write("\n")
+        return 0
+    for line in render_report(data, top=args.top):
+        print(line)
+    for warning in data["warnings"]:
+        print("warning: %s" % warning, file=sys.stderr)
+    return 0
+
+
 COMMON_DEFAULTS = {"projects_dir": None, "prices": None, "default_model": None,
                    "all": False, "since": None, "flat": False, "json": False}
 
@@ -837,8 +1065,14 @@ def build_parser():
     sub = parser.add_subparsers(dest="command")
     sub.add_parser("scan", parents=[common],
                    help="list the transcripts in scope and what was read")
+    report = sub.add_parser("report", parents=[common],
+                            help="the report: totals, then tables by model, "
+                                 "requested tier, day, session and dispatch")
+    report.add_argument("--top", type=int, default=10, metavar="N",
+                        help="rows shown in the session and dispatch tables "
+                             "(default 10; 0 shows all; --json always has all)")
     sub.add_parser("summary", parents=[common],
-                   help="totals by model, tier and dispatch")
+                   help="the totals only (the report's first lines)")
     item = sub.add_parser("item", parents=[common],
                           help="one work item's spend per phase, by the agent ids on "
                                "its agent: lines (scripts/item_spend.py)")
@@ -872,6 +1106,8 @@ def main(argv=None):
             return cmd_scan(args, table)
         if args.command == "item":
             return _item_spend().run(args, table)
+        if args.command == "report":
+            return cmd_report(args, table)
         return cmd_summary(args, table)
     except ValueError as exc:
         print("usage_report: %s" % exc, file=sys.stderr)
