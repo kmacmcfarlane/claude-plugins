@@ -233,8 +233,9 @@ Sets exactly one front-matter field. `id` and `created` are immutable (exit 1).
   id exits 1, `ext: <text>` deps are exempt, and `--force` writes it anyway.
   An item can never be its own dep or parent — a self-reference exits 1 and
   `--force` does not bypass it. The item is then schema-validated as a whole;
-  a value that breaks it (bad `status`, priority out of range, …) exits 3 and
-  nothing is written.
+  a value that breaks it (bad `status`, …) exits 3 and nothing is written.
+  `priority` must be an integer 0-4; anything else exits 1 before anything is
+  written.
 - **`short_display_name`** is stripped, a blank value clears it, and one
   over 40 characters exits 1 before anything is written (§ Short display
   name and tag).

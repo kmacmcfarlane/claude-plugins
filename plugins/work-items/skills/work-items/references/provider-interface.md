@@ -89,7 +89,11 @@ empty on a true empty `next`, and `--json` yields no output on usage errors); an
 **item-schema validation on `add`/`set` (e.g. an invalid status value) exits 3, not 1** —
 only these rejections exit 1:
 - an immutable or unknown field;
-- a title or `short_display_name` longer than its limit, or an empty title;
+- a `short_display_name` longer than its limit; on `add` only, a title longer than its limit
+  or empty (`set` does not check the title's length, and `set title ""` exits 3);
+- a `priority` that is not an integer 0-4, on `set` (`add -p` rejects the same values at the
+  argparse level, exit 2);
+- a store root that does not exist (run `wi init`);
 - a dep or parent that does not resolve (unless `--force`), or an item named as its own dep
   or parent;
 - a value holding a line break or a control character;
