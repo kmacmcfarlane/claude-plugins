@@ -48,3 +48,4 @@ verdict: CLEAR after 2 fix rounds, 1 finish at 22076d33
 merge: conflict in CLAUDE.md landing 22076d33 on main be2df9b2 (02f8 and 2e75 both edit the dev-flow tests layout line); research-verifier.md auto-merged; aborted
 dispatch: implementer opus medium — resume, merge main into the branch and resolve, rerun suites
 agent: implementer a58a079d03da1daa5 round 5 (merge)
+result: DONE merge at 1e66ab84 (CLAUDE.md both tests kept; repo-map lists both; research-verifier.md stop-rule bullet untouched; dev-flow 86, research 127, kit-dev 21 OK); resolution read by the librarian, mechanical
