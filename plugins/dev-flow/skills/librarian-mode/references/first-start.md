@@ -11,7 +11,9 @@ checkout. The opt-in that writes `## Librarian` runs before any of it:
 `.work/` too, so an existing `.work/` store is used, never shadowed by a fresh one. Truly
 no store during `start` or `intake` → resolve the custody layer (step 2) first; no
 `## Librarian` section means the opt-in dialog (`opt-in.md`), and its `Not now` means
-stop, creating nothing. Once a Scope is written, run `$WI init` (idempotent) with
+stop, creating nothing. Once a Scope is written, run `$WI init --track` or
+`$WI init --no-track` (idempotent), the flag chosen as the `work-items` skill's init rule
+says (never the no-flag default), with
 `WI_ROOT="$MAIN/.claude-sandbox/work"`, relay its output (it explains any host
 `.gitignore` decision), and add one line: "initialised .claude-sandbox/work/ — first start
 on this repo". `status` never creates a store:

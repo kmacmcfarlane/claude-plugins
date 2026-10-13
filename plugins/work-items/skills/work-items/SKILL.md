@@ -31,6 +31,7 @@ the TODO.md failure mode with extra steps.
 
 | | |
 | --- | --- |
+| `$WI init --track\|--no-track` | creates the store, or records an existing one's tracking choice in `store.yaml` without re-creating anything; `--no-track` adds the store's directory to the repo's root `.gitignore` (never a duplicate line, never glued onto a last line with no newline). Neither flag: a menu on a terminal (git-ignored is the default); with no terminal, an ignored store and a stderr warning (`references/format.md` § Store tracking) |
 | `$WI next [--plain\|--json]` | ready-ranked queue: `todo` with every dep met (done, dropped or in UAT, archived or not), priority then age |
 | `$WI show <id> [--brief]` | one item; `--brief` for front matter + handoff only |
 | `$WI add "<title>" [--short-display-name "<name>"]` | new item (`<slug>-<4hex>` id); describe, don't dump — path and key, never value; `--short-display-name` is the optional name agents give it to the operator, stripped and 40 characters or fewer (over that exits 1, nothing written: shorten it and re-run), shown as `[<name>] <title>` in text rows (`references/format.md` § Short display name and tag) |
@@ -64,13 +65,19 @@ verbs, capability differences and canonical state mapping are in
 
 - The store is resolved `WI_ROOT` → `.claude-sandbox/work/` → `.work/`; create only via
   `$WI init`, and only when the user asks for the store.
+- `$WI init` always gets `--track` or `--no-track` from an agent; never rely on the
+  no-terminal default, which picks git-ignored for you. Inside claude-sandbox, infer the flag
+  from the sandbox's trackInHost value, once it is exported to the session: true →
+  `--track`, false or unset → `--no-track`. Until it is exported, and outside claude-sandbox,
+  ask the operator whether the store is tracked or git-ignored. The same flags record the
+  choice for an existing store with none recorded.
 - Working an item follows the checkout/worktree rule — process stays in the checkout, the
   item's edits go in a worktree. A worktree is its own checkout: it lacks the main checkout's
   untracked or uncommitted store, and a tracked one there is a stale copy, so from there `WI_ROOT` points at the main checkout's
   store: the main checkout is
   `git rev-parse --path-format=absolute --git-common-dir` minus its trailing `/.git`.
 - Item files are hand-editable; run `$WI lint` after hand edits, in the same turn.
-- A `wi: WARNING store … is silently untracked` line (second line of `prime`; a problem, exit 3, in `lint`) means new items are git-ignored, or the store holds ≥10 items and none is tracked (below 10, an uncommitted store is treated as new). The line names the ignore rule (file:line) and the remedies for that cause; fix the cause rather than working around it.
+- A `wi: WARNING store … is silently untracked` line (second line of `prime`; a problem, exit 3, in `lint`) means new items are git-ignored, or the store holds ≥10 items and none is tracked (below 10, an uncommitted store is treated as new). The line names the ignore rule (file:line) and the remedies for that cause; fix the cause rather than working around it. A store recorded as git-ignored (`tracking: ignored`) gets no warning; one recorded as tracked that git ignores anyway does, since that contradicts the choice; a store with no recorded choice keeps the warning, whose fix ends by recording the choice (`$WI init --track`, or `--no-track` when it is meant to stay local).
 - One session claims an item before working it; two sessions on one item is what `claim` is
   for — respect a conflict.
 - Migration of a repo's TODO.md is a reviewed, committed change (import → review items →

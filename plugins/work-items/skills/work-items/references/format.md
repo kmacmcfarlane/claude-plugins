@@ -18,8 +18,50 @@ CLI adds locking, validation and budgeted views on top. Spec of record:
   README.md            what this is, in ten lines
   items/<id>.md        every item, regardless of status
   archive/YYYY/<id>.md closed items moved by `wi archive` (explicit, batched)
+  store.yaml           the store's recorded tracking choice (§ Store tracking)
   .lock                gitignored; flock target for same-machine mutations
 ```
+
+## Store tracking
+
+Whether git tracks the store is a choice `wi init` records in `<root>/store.yaml`:
+
+```yaml
+# wi store settings; format: the work-items skill's references/format.md
+tracking: tracked        # or: ignored
+```
+
+`tracking:` is the one key; `tracked` and `ignored` its values. `wi` reads the first
+`tracking:` line and ignores comments. Any other value counts as no recorded choice, and
+`wi lint` reports it.
+
+- **Making the choice.** `wi init --track` or `wi init --no-track` (mutually exclusive).
+  With neither, a terminal on stdin and stdout gets a two-line menu (tracked, git-ignored;
+  Enter takes git-ignored). With neither and no terminal (an agent's Bash call, a script),
+  `init` creates an ignored store, says so on stderr with how to choose tracked instead
+  (`wi init --track`, then remove the store's line from `.gitignore`), and exits 0.
+- **Ignoring** (`--no-track`, the menu's git-ignored, the no-terminal default) adds
+  `/<store path>/` — `/.work/` or `/.claude-sandbox/work/` — to the root `.gitignore` of the
+  repo that holds the store, creating the file when it is missing and adding a newline first
+  when its last line has none. No line is added when the `.gitignore` already holds the
+  store's path in any spelling (`.work/`, `/.work`, …), when any rule in one of the repo's
+  `.gitignore` files already ignores it (a glob, a parent directory), or, for
+  `.claude-sandbox/work/`, when the host `.gitignore` already ignores `.claude-sandbox/` as a
+  whole (that covers the store; `init` says so). A rule only in `.git/info/exclude` or a
+  global excludes file does not count, since it does not travel with the repo. A sidecar
+  store's repo is `.claude-sandbox/` itself, so its line is `/work/` in
+  `.claude-sandbox/.gitignore`. Outside git, nothing is written and `init` says so.
+- **Tracking** never edits a `.gitignore`. If git ignores the store anyway, `init` prints
+  the custody warning naming the rule to remove.
+- **An existing store.** `init` on a store that exists never re-creates or rewrites what is
+  there. With a flag, it records (or changes) the choice and, for `--no-track`, adds the
+  `.gitignore` line. Without a flag, a recorded choice is kept; a store with no recorded
+  choice (every store made before this file existed) is left as it is, with no menu, and a
+  stderr note names the two flags. Such a store is treated as unrecorded until one is run.
+- **prime and lint.** A store recorded `ignored` gets no custody warning. A store recorded
+  `tracked` that git ignores (or that holds ten or more items, none tracked) gets the
+  warning, marked as against its recorded choice. A store with no recorded choice gets the
+  `silently untracked` warning as before, its fix ending with recording the choice.
 
 `status:` is the only authority on state. `done` never moves a file — a
 status-only close is a two-line front-matter change that merges cleanly

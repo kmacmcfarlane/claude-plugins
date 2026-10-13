@@ -3994,7 +3994,7 @@ class TestInitShapes(WiTestCase):
         # repo, .claude-sandbox/ present, no sidecar git — init must leave the
         # host .gitignore alone so the new store stays trackable
         repo, store = self.sandbox_repo("private")
-        r = run(["init"], store)
+        r = run(["init", "--track"], store)
         self.assertEqual(r.returncode, 0, r.stderr)
         self.assertIn("private-shaped", r.stdout)
         self.assertFalse((repo / ".gitignore").exists())
@@ -4004,7 +4004,7 @@ class TestInitShapes(WiTestCase):
     def test_private_shape_store_commits_with_git_add_all(self):
         repo, store = self.sandbox_repo("private-git")
         subprocess.run(["git", "init", "-q", str(repo)], check=True)
-        self.assertEqual(run(["init"], store).returncode, 0)
+        self.assertEqual(run(["init", "--track"], store).returncode, 0)
         subprocess.run(["git", "-C", str(repo), "add", "-A"], check=True)
         staged = subprocess.run(
             ["git", "-C", str(repo), "diff", "--cached", "--name-only"],
@@ -4039,9 +4039,10 @@ class TestInitShapes(WiTestCase):
 
     def test_plain_work_store_stays_quiet(self):
         store = self.tmp / ".work2"
-        r = run(["init"], store)
+        r = run(["init", "--track"], store)
         self.assertEqual(r.returncode, 0, r.stderr)
-        self.assertEqual(r.stdout, f"initialised {store}\n")
+        self.assertEqual(r.stdout, f"tracking: tracked (recorded in "
+                         f"{store / 'store.yaml'})\ninitialised {store}\n")
         self.assertFalse((self.tmp / ".gitignore").exists())
 
 
@@ -4128,7 +4129,7 @@ class TestHostGitignoreUntouched(WiTestCase):
 
     def test_private_init_then_add_leaves_gitignore_alone(self):
         repo = self.private_repo("init-add")
-        self.wi_in(repo, ["init"])
+        self.wi_in(repo, ["init", "--track"])
         self.wi_in(repo, ["add", "first item"])
         self.assertEqual((repo / ".gitignore").read_text(), self.GI)
         self.assert_store_trackable(repo)
@@ -4138,7 +4139,7 @@ class TestHostGitignoreUntouched(WiTestCase):
         # the operator-attention sequence: the whole-dir line got in, the
         # operator removed it and committed, then kept using wi
         repo = self.private_repo("removed", gi="*.pyc\n/.claude-sandbox/\n")
-        self.wi_in(repo, ["init"])            # 'ignored' shape: untouched
+        self.wi_in(repo, ["init", "--track"])  # 'ignored' shape: untouched
         self.assertEqual((repo / ".gitignore").read_text(),
                          "*.pyc\n/.claude-sandbox/\n")
         (repo / ".gitignore").write_text(self.GI)
@@ -4157,7 +4158,7 @@ class TestHostGitignoreUntouched(WiTestCase):
         # ignore; other commands still never touch the host .gitignore
         repo = self.private_repo("sidecar", gi="*.pyc\n")
         self.git(repo / ".claude-sandbox", "init", "-q")
-        out = self.wi_in(repo, ["init"])
+        out = self.wi_in(repo, ["init", "--track"])
         self.assertIn("sidecar git", out)
         self.assertEqual((repo / ".gitignore").read_text(),
                          "*.pyc\n/.claude-sandbox/\n")
@@ -4199,10 +4200,16 @@ class TestStoreCustodyWarning(WiTestCase):
         if gi is not None:
             (repo / ".gitignore").write_text(gi)
         self.root = repo / ".claude-sandbox" / "work"
-        self.assertEqual(run(["init"], self.root, env=self.env).returncode, 0)
+        self.init_unrecorded()
         for i in range(n_items):
             self.write_item(f"item-{i:02d}-aaaa")
         return self.root
+
+    def init_unrecorded(self):
+        """A store as `wi init` made it before 39a2: no recorded choice."""
+        r = run(["init", "--track"], self.root, env=self.env)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        (self.root / "store.yaml").unlink()
 
     def prime(self, env=None):
         r = run(["prime"], self.root, env=dict(self.env, **(env or {})))
@@ -4234,6 +4241,9 @@ class TestStoreCustodyWarning(WiTestCase):
         warn = out[1]
         self.assertTrue(warn.startswith("wi: WARNING store "), warn)
         self.assertIn("silently untracked", warn)
+        # 39a2: a store with no recorded choice is told how to record one
+        self.assertIn("then record the choice: `wi init --track`, or "
+                      "`wi init --no-track`", warn)
         self.assertNotIn("18a7", warn)
         for part in parts:
             self.assertIn(part, warn)
@@ -4325,7 +4335,7 @@ class TestStoreCustodyWarning(WiTestCase):
         self.git(repo, "init", "-q")
         (repo / ".gitignore").write_text(".work/\n")
         self.root = repo / ".work"
-        self.assertEqual(run(["init"], self.root, env=self.env).returncode, 0)
+        self.init_unrecorded()
         self.write_item("item-00-aaaa")
         self.assert_warns("git-ignored by .gitignore:1 '.work/'",
                           self.NARROW_FIX,
@@ -4483,6 +4493,305 @@ class TestStoreCustodyWarning(WiTestCase):
         self.assertEqual(len(lines), 1, r.stdout)
         self.assertTrue(lines[0].startswith("wi: "), r.stdout)
         self.assertNotIn("WARNING", r.stdout)
+
+
+class TestChooseTracking(unittest.TestCase):
+    """39a2: the init menu, as a function over its input and output."""
+
+    def choose(self, text):
+        out = io.StringIO()
+        return wi.choose_tracking(io.StringIO(text), out), out.getvalue()
+
+    def test_default_is_git_ignored(self):
+        choice, shown = self.choose("\n")
+        self.assertEqual(choice, "ignored")
+        self.assertIn("1) tracked", shown)
+        self.assertIn("2) git-ignored", shown)
+        default_line = next(ln for ln in shown.splitlines()
+                            if "[default]" in ln)
+        self.assertIn("git-ignored", default_line)
+        self.assertIn("[2]", shown)
+
+    def test_answers(self):
+        for text, want in (("1\n", "tracked"), ("tracked\n", "tracked"),
+                           ("T\n", "tracked"), ("2\n", "ignored"),
+                           ("ignored\n", "ignored"), ("", "ignored")):
+            with self.subTest(text=text):
+                self.assertEqual(self.choose(text)[0], want)
+
+    def test_bad_answer_asks_again(self):
+        choice, shown = self.choose("maybe\n1\n")
+        self.assertEqual(choice, "tracked")
+        self.assertIn("not a choice: 'maybe'", shown)
+        self.assertEqual(shown.count("choose 1 or 2"), 2)
+
+
+@unittest.skipUnless(shutil.which("git"), "git not available")
+class TestInitTracking(unittest.TestCase):
+    """39a2: `wi init --track` / `--no-track`, the menu on a terminal, an
+    ignored store plus a warning with neither and no terminal; the choice
+    recorded in store.yaml; the .gitignore line added safely; prime and lint
+    quiet for a recorded ignored store."""
+
+    def setUp(self):
+        self.tmp = Path(tempfile.mkdtemp(prefix="wi-track-"))
+        self.addCleanup(shutil.rmtree, self.tmp, ignore_errors=True)
+        self.env = {"GIT_CONFIG_GLOBAL": os.devnull, "GIT_CONFIG_NOSYSTEM": "1",
+                    "GIT_CEILING_DIRECTORIES": str(self.tmp)}
+
+    def git(self, repo, *args, check=True):
+        env = {k: v for k, v in os.environ.items()
+               if k not in ("GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE")}
+        env.update(self.env)
+        return subprocess.run(
+            ["git", "-C", str(repo), "-c", "user.email=t@t", "-c",
+             "user.name=t", "-c", "commit.gpgsign=false", "-c",
+             "core.excludesFile="] + list(args),
+            capture_output=True, text=True, check=check, env=env)
+
+    def repo(self, name="r", gi=None, sandbox=False, git_init=True):
+        repo = self.tmp / name
+        repo.mkdir()
+        if git_init:
+            self.git(repo, "init", "-q")
+        if gi is not None:
+            (repo / ".gitignore").write_text(gi)
+        if sandbox:
+            (repo / ".claude-sandbox").mkdir()
+            return repo, repo / ".claude-sandbox" / "work"
+        return repo, repo / ".work"
+
+    def init(self, store, *flags, code=0):
+        r = run(["init", *flags], store, env=self.env)
+        self.assertEqual(r.returncode, code, r.stdout + r.stderr)
+        return r
+
+    def tracking(self, store):
+        return wi.read_tracking(store)
+
+    def ignored(self, repo, store):
+        probe = store / "items" / "x-0000.md"
+        return self.git(repo, "check-ignore", "-q", "--no-index",
+                        str(probe), check=False).returncode == 0
+
+    def gi(self, repo):
+        return (repo / ".gitignore").read_text()
+
+    def test_track_records_and_leaves_gitignore_alone(self):
+        repo, store = self.repo()
+        r = self.init(store, "--track")
+        self.assertEqual(self.tracking(store), "tracked")
+        self.assertIn("tracking: tracked", r.stdout)
+        self.assertFalse((repo / ".gitignore").exists())
+        self.assertEqual((store / "store.yaml").read_text().splitlines()[-1],
+                         "tracking: tracked")
+        self.assertEqual(r.stderr, "")
+
+    def test_no_track_creates_missing_gitignore(self):
+        repo, store = self.repo()
+        r = self.init(store, "--no-track")
+        self.assertEqual(self.tracking(store), "ignored")
+        self.assertEqual(self.gi(repo), "/.work/\n")
+        self.assertIn(f"added /.work/ to {repo / '.gitignore'}", r.stdout)
+        self.assertTrue(self.ignored(repo, store))
+        self.assertEqual(r.stderr, "")
+
+    def test_no_track_after_line_without_newline(self):
+        # the real case: a naive append glued `.work/` onto `*/mocks/`
+        repo, store = self.repo(gi="*/mocks/")
+        self.init(store, "--no-track")
+        self.assertEqual(self.gi(repo), "*/mocks/\n/.work/\n")
+        self.assertTrue(self.ignored(repo, store))
+
+    def test_no_track_adds_no_duplicate(self):
+        for i, gi in enumerate((".work/\n", "/.work\n", "*.pyc\n.work\n",
+                                ".w*/\n")):
+            with self.subTest(gi=gi):
+                repo, store = self.repo(f"dup{i}", gi=gi)
+                r = self.init(store, "--no-track")
+                self.assertEqual(self.gi(repo), gi)
+                self.assertIn("no line added", r.stdout)
+                self.assertEqual(self.tracking(store), "ignored")
+
+    def test_local_only_rule_still_gets_the_line(self):
+        # info/exclude does not travel with the repo; the line does
+        repo, store = self.repo(gi="*.pyc\n")
+        with open(repo / ".git" / "info" / "exclude", "a") as fh:
+            fh.write(".work/\n")
+        self.init(store, "--no-track")
+        self.assertEqual(self.gi(repo), "*.pyc\n/.work/\n")
+
+    def test_sandbox_home(self):
+        repo, store = self.repo(gi="*.pyc\n", sandbox=True)
+        r = self.init(store, "--no-track")
+        self.assertEqual(self.gi(repo), "*.pyc\n/.claude-sandbox/work/\n")
+        self.assertNotIn("private-shaped", r.stdout)
+        self.assertTrue(self.ignored(repo, store))
+        # .claude-sandbox/ itself stays tracked
+        (repo / ".claude-sandbox" / "config.yaml").write_text("x: 1\n")
+        self.assertNotEqual(self.git(repo, "check-ignore", "-q",
+                                     ".claude-sandbox/config.yaml",
+                                     check=False).returncode, 0)
+
+    def test_sandbox_already_ignored_whole(self):
+        repo, store = self.repo(gi="/.claude-sandbox/\n", sandbox=True)
+        r = self.init(store, "--no-track")
+        self.assertEqual(self.gi(repo), "/.claude-sandbox/\n")
+        self.assertIn("already ignores .claude-sandbox/ as a whole", r.stdout)
+        self.assertEqual(self.tracking(store), "ignored")
+
+    def test_outside_git_writes_no_gitignore(self):
+        repo, store = self.repo(git_init=False)
+        r = self.init(store, "--no-track")
+        self.assertIn("not in a git repo", r.stdout)
+        self.assertFalse((repo / ".gitignore").exists())
+        self.assertEqual(self.tracking(store), "ignored")
+
+    def test_flags_are_mutually_exclusive(self):
+        repo, store = self.repo()
+        r = self.init(store, "--track", "--no-track", code=2)
+        self.assertIn("not allowed with", r.stderr)
+        self.assertFalse(store.exists())
+
+    def test_no_flag_no_terminal_makes_an_ignored_store_and_warns(self):
+        repo, store = self.repo(gi="*/mocks/")
+        r = self.init(store)          # subprocess: no terminal
+        self.assertEqual(self.tracking(store), "ignored")
+        self.assertEqual(self.gi(repo), "*/mocks/\n/.work/\n")
+        self.assertIn("WARNING no terminal and no --track/--no-track", r.stderr)
+        self.assertIn("git-ignored store", r.stderr)
+        self.assertIn("`wi init --track`", r.stderr)
+        self.assertIn(".gitignore", r.stderr)
+
+    def menu_init(self, store, answer):
+        out = io.StringIO()
+        with mock.patch.object(wi, "_interactive", return_value=True), \
+                mock.patch.object(sys, "stdin", io.StringIO(answer)), \
+                mock.patch.dict(os.environ, self.env), \
+                contextlib.redirect_stdout(out), \
+                contextlib.redirect_stderr(io.StringIO()):
+            code = wi.main(["--root", str(store), "init"])
+        self.assertEqual(code, 0)
+        return out.getvalue()
+
+    def test_menu_on_a_terminal(self):
+        repo, store = self.repo("menu-t")
+        shown = self.menu_init(store, "1\n")
+        self.assertIn("choose 1 or 2 [2]", shown)
+        self.assertEqual(self.tracking(store), "tracked")
+        self.assertFalse((repo / ".gitignore").exists())
+        repo, store = self.repo("menu-default")
+        self.menu_init(store, "\n")
+        self.assertEqual(self.tracking(store), "ignored")
+        self.assertEqual(self.gi(repo), "/.work/\n")
+
+    def test_existing_unrecorded_store_is_left_alone_without_a_flag(self):
+        repo, store = self.repo(gi="*.pyc\n")
+        self.init(store, "--track")
+        (store / "store.yaml").unlink()          # a pre-39a2 store
+        item = store / "items" / "keep-aaaa.md"
+        item.write_text("x\n")
+        readme = (store / "README.md").read_text()
+        for interactive in (False, True):
+            with self.subTest(interactive=interactive):
+                if interactive:
+                    # the menu is not shown for an existing store
+                    shown = self.menu_init(store, "")
+                    self.assertNotIn("choose 1 or 2", shown)
+                else:
+                    r = self.init(store)
+                    self.assertIn("no recorded tracking choice", r.stderr)
+                    self.assertIn("wi init --no-track", r.stderr)
+                self.assertIsNone(self.tracking(store))
+                self.assertFalse((store / "store.yaml").exists())
+                self.assertEqual(self.gi(repo), "*.pyc\n")
+        # a flag records the choice without re-creating anything
+        self.init(store, "--no-track")
+        self.assertEqual(self.tracking(store), "ignored")
+        self.assertEqual(self.gi(repo), "*.pyc\n/.work/\n")
+        self.assertEqual(item.read_text(), "x\n")
+        self.assertEqual((store / "README.md").read_text(), readme)
+
+    def test_existing_recorded_store_keeps_its_choice(self):
+        repo, store = self.repo()
+        self.init(store, "--track")
+        r = self.init(store)
+        self.assertEqual(r.stderr, "")
+        self.assertEqual(self.tracking(store), "tracked")
+        self.assertFalse((repo / ".gitignore").exists())
+
+    def test_switch_to_tracked_names_the_leftover_line(self):
+        repo, store = self.repo()
+        self.init(store)
+        r = self.init(store, "--track")
+        self.assertEqual(self.tracking(store), "tracked")
+        self.assertIn("against its recorded choice", r.stderr)
+        self.assertIn(".gitignore:1 '/.work/'", r.stderr)
+
+    # prime and lint
+
+    def prime_lint(self, store):
+        p = run(["prime"], store, env=self.env)
+        self.assertEqual(p.returncode, 0, p.stderr)
+        return p.stdout.splitlines(), run(["lint"], store, env=self.env)
+
+    def add_items(self, store, n=2):
+        for i in range(n):
+            r = run(["add", f"item {i}"], store, env=self.env)
+            self.assertEqual(r.returncode, 0, r.stderr)
+
+    def test_recorded_ignored_store_is_quiet(self):
+        repo, store = self.repo()
+        self.init(store, "--no-track")
+        self.add_items(store, wi.UNTRACKED_MIN_ITEMS)
+        prime, lint = self.prime_lint(store)
+        self.assertNotIn("WARNING", "\n".join(prime))
+        self.assertNotIn("untracked", "\n".join(prime))
+        self.assertEqual(lint.returncode, 0, lint.stdout)
+        self.assertIn("lint clean", lint.stdout)
+
+    def test_recorded_tracked_but_ignored_warns(self):
+        repo, store = self.repo(gi=".work/\n")
+        self.init(store, "--track")
+        self.add_items(store)
+        prime, lint = self.prime_lint(store)
+        warn = prime[1]
+        self.assertTrue(warn.startswith("wi: WARNING store "), warn)
+        self.assertIn("silently untracked, against its recorded choice", warn)
+        self.assertIn(".gitignore:1 '.work/'", warn)
+        self.assertIn("`wi init --no-track`", warn)
+        self.assertEqual(lint.returncode, 3)
+        self.assertIn(warn, lint.stdout.splitlines())
+
+    def test_unrecorded_ignored_store_names_recording_as_the_fix(self):
+        repo, store = self.repo(gi=".work/\n")
+        self.init(store, "--track")
+        (store / "store.yaml").unlink()
+        self.add_items(store)
+        prime, lint = self.prime_lint(store)
+        warn = prime[1]
+        self.assertIn(f"wi: WARNING store {store} is silently untracked: ",
+                      warn)
+        self.assertNotIn("recorded choice", warn)
+        self.assertIn("then record the choice: `wi init --track`, or "
+                      "`wi init --no-track`", warn)
+        self.assertEqual(lint.returncode, 3)
+        # recording the ignored choice settles it
+        self.init(store, "--no-track")
+        self.assertEqual(self.gi(repo), ".work/\n")
+        prime, lint = self.prime_lint(store)
+        self.assertNotIn("WARNING", "\n".join(prime))
+        self.assertEqual(lint.returncode, 0, lint.stdout)
+
+    def test_lint_flags_a_bad_tracking_value(self):
+        repo, store = self.repo()
+        self.init(store, "--track")
+        (store / "store.yaml").write_text("tracking: maybe\n")
+        self.assertIsNone(self.tracking(store))
+        lint = run(["lint"], store, env=self.env)
+        self.assertEqual(lint.returncode, 3)
+        self.assertIn("store.yaml: tracking must be one of tracked, ignored "
+                      "(got 'maybe')", lint.stdout)
 
 
 class TestDetailsBlocks(unittest.TestCase):

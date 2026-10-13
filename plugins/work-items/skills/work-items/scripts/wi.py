@@ -965,27 +965,87 @@ def _dir_level(pattern, root):
     return any(fnmatch.fnmatchcase(d, last) for d in parents)
 
 
+# The store's recorded tracking choice (39a2): `wi init` writes it, prime and
+# lint read it. A store without the file (or without a valid `tracking:`
+# line) has no recorded choice.
+STORE_FILE = "store.yaml"
+TRACKING_CHOICES = ("tracked", "ignored")
+
+
+def read_tracking(root):
+    """'tracked' | 'ignored' | None (no file, or no valid tracking: line)."""
+    raw = _store_tracking_raw(root)
+    return raw if raw in TRACKING_CHOICES else None
+
+
+def _store_tracking_raw(root):
+    """The tracking: value as written ('' for a file without one), or None
+    when there is no readable store file."""
+    try:
+        text = (root / STORE_FILE).read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError):
+        return None
+    for line in text.splitlines():
+        m = re.match(r"^tracking:\s*(.*?)\s*$", line)
+        if m:
+            return m.group(1).strip("\"'")
+    return ""
+
+
+def write_tracking(root, choice):
+    path = root / STORE_FILE
+    tmp = root / (STORE_FILE + ".tmp")
+    tmp.write_text("# wi store settings; format: the work-items skill's "
+                   "references/format.md\n"
+                   f"tracking: {choice}\n", encoding="utf-8")
+    os.replace(tmp, path)
+
+
 def custody_warning(root):
     """One-line warning when the store is silently untracked, else None.
-    Silent outside git, when git is missing or slow, or on any git error."""
+    Silent outside git, when git is missing or slow, or on any git error,
+    and for a store whose recorded choice is `ignored` (39a2)."""
+    tracking = read_tracking(root)
+    if tracking == "ignored":
+        return None
+    if tracking == "tracked":
+        head = (f"wi: WARNING store {root} is silently untracked, against "
+                f"its recorded choice (tracking: tracked in {STORE_FILE}): ")
+        tail = "; or, if it is meant to stay local, run `wi init --no-track`"
+    else:
+        head = f"wi: WARNING store {root} is silently untracked: "
+        tail = ("; then record the choice: `wi init --track`, or "
+                "`wi init --no-track` if it is meant to stay local")
+    body = _custody_body(root)
+    return None if body is None else head + body + tail
+
+
+def _ignore_rule(root, *extra):
+    """The (source, line, pattern) of the rule that ignores a new item's
+    path in the store, None when nothing does, False when git cannot say."""
+    r = _git(root, "check-ignore", "-v", "-z", *extra, "--stdin",
+             stdin=f"items\0{PROBE_ITEM}\0")
+    if r is None or r.returncode not in (0, 1):
+        return False
+    fields = r.stdout.split("\0")
+    for i in range(0, len(fields) - 3, 4):   # source, linenum, pattern, path
+        src, lineno, pattern = fields[i:i + 3]
+        if pattern and not pattern.startswith("!"):   # a negation un-ignores
+            return (src, lineno, pattern)
+    return None
+
+
+def _custody_body(root):
+    """The cause and fix of a silently untracked store, or None."""
     # the probe path, not only `items`, catches a store whose tracked files
     # mask the ignore rule: check-ignore skips tracked paths, but a new
     # item's path is still matched against the rule. -v names the rule; -z
     # (which git allows only with --stdin) gives NUL-separated fields with
     # paths unquoted, so a source path holding ':N:', a tab or a non-ASCII
     # byte parses; _git decodes the raw bytes without failing.
-    r = _git(root, "check-ignore", "-v", "-z", "--stdin",
-             stdin=f"items\0{PROBE_ITEM}\0")
-    if r is None or r.returncode not in (0, 1):
+    rule = _ignore_rule(root)
+    if rule is False:
         return None
-    fields = r.stdout.split("\0")
-    rule = None
-    for i in range(0, len(fields) - 3, 4):   # source, linenum, pattern, path
-        src, lineno, pattern = fields[i:i + 3]
-        if pattern and not pattern.startswith("!"):   # a negation un-ignores
-            rule = (src, lineno, pattern)
-            break
-    head = f"wi: WARNING store {root} is silently untracked: "
     if rule:
         src, lineno, pattern = rule
         shape, _ = sandbox_shape(root)
@@ -1010,7 +1070,7 @@ def custody_warning(root):
         else:
             remedy = f"remove or negate that rule{there}"
         if shape == "sidecar":
-            return head + f"new items are git-ignored by {where}; fix: {remedy}"
+            return f"new items are git-ignored by {where}; fix: {remedy}"
         fix = [f"new items are git-ignored by {where}; fix: {remedy}"]
         if shape is not None:
             fix.append(" and set trackInHost: true in the sandbox config (a "
@@ -1021,14 +1081,14 @@ def custody_warning(root):
                 # ignore; removing it would publish private items
                 fix.append(", or, for a public repo, give .claude-sandbox/ "
                            "its own sidecar git")
-        return head + "".join(fix)
+        return "".join(fix)
     n = len(item_paths(root))
     if n < UNTRACKED_MIN_ITEMS:
         return None
     r = _git(root, "ls-files", "--", ".")
     if r is None or r.returncode != 0 or r.stdout.strip():
         return None
-    return head + f"it holds {n} items and git tracks none; fix: `git add` the store"
+    return f"it holds {n} items and git tracks none; fix: `git add` the store"
 
 
 class Lock:
@@ -1428,8 +1488,100 @@ def sandbox_shape(root):
     return "private", repo
 
 
+def _interactive():
+    return sys.stdin.isatty() and sys.stdout.isatty()
+
+
+def choose_tracking(inp, out):
+    """The init menu: 'tracked' or 'ignored'. Enter, or end of input, takes
+    the default, git-ignored."""
+    out.write("wi init: should git track this work-item store?\n"
+              "  1) tracked      items are committed with the repo\n"
+              "  2) git-ignored  items stay in this checkout only "
+              "[default]\n")
+    while True:
+        out.write("choose 1 or 2 [2]: ")
+        out.flush()
+        line = inp.readline()
+        if not line:
+            out.write("\n")
+            return "ignored"
+        answer = line.strip().lower()
+        if answer in ("1", "t", "track", "tracked"):
+            return "tracked"
+        if answer in ("", "2", "i", "ignore", "ignored", "g", "git-ignored",
+                      "n", "no-track"):
+            return "ignored"
+        out.write(f"not a choice: {line.strip()!r}\n")
+
+
+def _store_repo(root):
+    """The top of the git repo that holds the store, or None outside git.
+    A sidecar store's repo is .claude-sandbox/ itself."""
+    shape, _ = sandbox_shape(root)
+    if shape == "sidecar":
+        return root.absolute().parent
+    r = _git(root, "rev-parse", "--show-toplevel")
+    if r is None or r.returncode != 0 or not r.stdout.strip():
+        return None
+    return Path(r.stdout.strip())
+
+
+def ensure_ignored(root):
+    """Add the store's dir to its repo's root .gitignore unless a line there
+    already ignores it. Returns one line saying what happened."""
+    repo = _store_repo(root)
+    if repo is None:
+        return "not in a git repo: no .gitignore written"
+    try:
+        rel = root.resolve().relative_to(repo.resolve()).as_posix()
+    except ValueError:
+        return f"{root} is outside the repo at {repo}: no .gitignore written"
+    gi = repo / ".gitignore"
+    line = f"/{rel}/"
+    text = gi.read_text() if gi.is_file() else ""
+    have = [ln.strip() for ln in text.splitlines()]
+    same = {f"/{rel}/", f"/{rel}", f"{rel}/", rel}
+    for ln in have:
+        if ln in same:
+            return f"{gi} already ignores the store ('{ln}'): no line added"
+    if rel == ".claude-sandbox/work":
+        for ln in have:
+            if ln in SANDBOX_IGNORES:
+                return (f"{gi} already ignores .claude-sandbox/ as a whole "
+                        f"('{ln}'), which covers the store: no line added")
+    # any other rule in a .gitignore of this repo (a glob, a parent dir)
+    # also travels with the repo; a local-only rule (info/exclude, an
+    # excludesFile) does not, so the line is still added for those
+    rule = _ignore_rule(root, "--no-index")
+    if rule:
+        src, lineno, pattern = rule
+        if not os.path.isabs(src) and Path(src).name == ".gitignore":
+            return (f"already git-ignored by {src}:{lineno} '{pattern}': "
+                    "no line added")
+    if text and not text.endswith("\n"):
+        text += "\n"
+    gi.write_text(text + line + "\n")
+    return f"added {line} to {gi}"
+
+
 def cmd_init(args):
     root = resolve_root(args.root, must_exist=False)
+    existed = (root / "items").is_dir()
+    recorded = read_tracking(root)
+    choice = "tracked" if args.track else "ignored" if args.no_track else None
+    defaulted = False
+    if choice is None and not (existed and recorded):
+        if existed:
+            # an existing store with no recorded choice is left as it is:
+            # an Enter or a missing terminal must not ignore a tracked store
+            print(f"wi: note: {root} has no recorded tracking choice; record "
+                  "one with `wi init --track` or `wi init --no-track`",
+                  file=sys.stderr)
+        elif _interactive():
+            choice = choose_tracking(sys.stdin, sys.stdout)
+        else:
+            choice, defaulted = "ignored", True
     (root / "items").mkdir(parents=True, exist_ok=True)
     readme = root / "README.md"
     if not readme.exists():
@@ -1443,7 +1595,8 @@ def cmd_init(args):
     if not gi.exists():
         gi.write_text(".lock\n*.tmp*\n")
     shape, repo = sandbox_shape(root)
-    if shape == "private":
+    effective = choice or recorded
+    if shape == "private" and effective == "tracked":
         print("private-shaped repo (no sidecar git, .claude-sandbox/ not "
               "gitignored): host .gitignore left alone so the store stays "
               "tracked")
@@ -1458,7 +1611,23 @@ def cmd_init(args):
             print("sidecar git at .claude-sandbox/.git: added "
                   "/.claude-sandbox/ to host .gitignore")
     # shape 'ignored' (already whole-dir-ignored) and non-sandbox stores:
-    # never duplicate the line, never touch the host .gitignore.
+    # never duplicate the line; a tracked choice never touches the host
+    # .gitignore, an ignored one adds only the store's own line
+    if choice:
+        write_tracking(root, choice)
+        print(f"tracking: {choice} (recorded in {root / STORE_FILE})")
+        if choice == "ignored":
+            print(ensure_ignored(root))
+        else:
+            warning = custody_warning(root)
+            if warning:
+                print(warning, file=sys.stderr)
+    if defaulted:
+        print(f"wi: WARNING no terminal and no --track/--no-track: created "
+              f"{root} as a git-ignored store. To track it instead, run "
+              "`wi init --track` and remove the store's line from "
+              ".gitignore (the `wi init --track` warning names it)",
+              file=sys.stderr)
     print(f"initialised {root}")
     return 0
 
@@ -3933,6 +4102,11 @@ def cmd_lint(args):
 
     for iid in by_id:
         visit(iid, [])
+    raw = _store_tracking_raw(root)
+    if raw is not None and raw not in TRACKING_CHOICES:
+        problems.append(f"{root / STORE_FILE}: tracking must be one of "
+                        f"{', '.join(TRACKING_CHOICES)} (got '{raw}'); fix: "
+                        "`wi init --track` or `wi init --no-track`")
     # lint has no warning tier: every finding it prints is a problem, exit 3
     warning = custody_warning(root)
     if warning:
@@ -3985,7 +4159,8 @@ def build_parser():
     p.add_argument("--root", help="work-item root (default: $WI_ROOT or auto)")
     sub = p.add_subparsers(dest="command", required=True)
     spec = {
-        ("init", cmd_init, "create the work-item root"): [],
+        ("init", cmd_init, "create the work-item root, or record an "
+         "existing one's tracking choice"): [],
         ("next", cmd_next, "what to work on"): [
             ("--json",), ("--plain",), ("--limit", dict(type=int, default=7)),
             ("--stale", dict(default="24h")), ("--pipeline",), ("--one",),
@@ -4063,6 +4238,11 @@ def build_parser():
             kw = flag[-1] if isinstance(flag[-1], dict) else {"action": "store_true"}
             names = [f for f in flag if isinstance(f, str)]
             sp.add_argument(*names, **kw)
+    track = sub.choices["init"].add_mutually_exclusive_group()
+    track.add_argument("--track", action="store_true",
+                       help="git tracks the store")
+    track.add_argument("--no-track", action="store_true",
+                       help="git ignores the store: adds it to .gitignore")
     return p
 
 
