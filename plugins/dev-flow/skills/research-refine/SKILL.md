@@ -86,7 +86,9 @@ Creating staging.
 ### Steps 6–9 — As `research`
 
 The lanes are few and narrow. The gap gate applies; the threads-not-pulled turn applies. The
-verifier's sample is weighted to the refined claims. The synthesis opens with a
+verifier's sample is weighted to the refined claims. The prior run's record directory is a
+run file too: the verifier prompt's `Run files` line names it beside this run's staging,
+and the sheet check gets it as an `--own` directory. The synthesis opens with a
 `## Supersedes` block in the `investigate` series style — one line per claim of the prior
 that this run changes, with the prior's wording and the new — then the answer as usual. Where
 the refinement changes nothing, the synthesis says so; "the prior stands" is a result.
