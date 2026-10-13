@@ -265,7 +265,7 @@ of meaning to an existing key bumps `v`.
 
 The guard on a round that would open unasked past a phase's fourth review is the
 `dev-cycle` skill's `references/bindings.md` § Decisions (answer 145 (a)): no hold in force
-(SKILL.md § The cycle, Hold) and a fresh weekly reading not below the reserve. It replaced
+(`cycle-bindings.md` § Hold) and a fresh weekly reading not below the reserve. It replaced
 the one self-granted build round of answer 114 (b): no standing grant is needed, the item's
 spend budget being the grant.
 

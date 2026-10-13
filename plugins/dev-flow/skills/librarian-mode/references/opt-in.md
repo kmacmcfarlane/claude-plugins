@@ -2,7 +2,7 @@
 
 How a repo gets a custody layer: the `## Librarian` section in CLAUDE.md, and the one
 dialog that writes it when it is missing. Pointed at from SKILL.md § Critical and
-§ Rehydrate step 2.
+`rehydrate.md` § Step 2.
 
 ## When it runs
 

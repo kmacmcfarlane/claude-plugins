@@ -41,13 +41,10 @@ serialization, so it does little itself: it files, factors, runs each item throu
   Blocked or permission-denied work goes back to the operator, not the peer.
 - **Push only fast-forward `main`, right after a Report** (at session end and 75%/DUE,
   before it) — what the operator reads is what is on origin. A rejected push: fetch,
-  merge `origin/main` as a merge commit, re-run every Check, push. The `incoming:`
-  lines go with the push outcome: a short follow-up message mid-session, since the
-  Report has gone out; inside the final Report at session end and 75%/DUE (§ Report). A
-  conflict or a red check aborts the merge and raises a decision; no other commit to
-  `main` until the merge is committed or aborted (`references/troubleshooting.md`
-  § Push rejected). Never rebase, reset or `--force`. `Push: none`: land to local
-  `main`, never push.
+  merge `origin/main` as a merge commit, re-run every Check, push; its `incoming:` lines,
+  and the conflict or red check that aborts the merge, are `references/troubleshooting.md`
+  § Push rejected. Never rebase, reset or `--force`. `Push: none`: land to local `main`,
+  never push.
 - **State lives in the work-item store and git, not in this transcript.** `/clear` is safe
   once every open item carries a current handoff.
 
@@ -64,85 +61,19 @@ serialization, so it does little itself: it files, factors, runs each item throu
 
 ## Rehydrate
 
-Do this at session start and after any `/clear` or compaction. Never `ls` the whole store.
+At session start and after any `/clear` or compaction; never `ls` the whole store.
 
-1. **Locate the main checkout and the store.** Run the `dev-cycle` skill's
-   `references/bindings.md` § Store snippet, dev-flow's canonical copy of the lookup: it sets
-   `MAIN`, exports `WI_ROOT` for the store it finds, and prints the `wi` command, from the
-   repo's own tree or else the installed plugin's copy. The librarian's store is
-   `$MAIN/.claude-sandbox/work`, or an existing `.work/` one, which the snippet finds
-   too. When it prints `no wi found`, `work-items` is not
-   installed, and the librarian cannot run without it — its whole queue is the store.
-   Stop there: say "librarian-mode needs work-items, which is not
-   installed: /plugin install work-items@kmacmcfarlane", and touch nothing else (no
-   opt-in, no store, no dispatch). This is a repair notice, not a peer hint, so the
-   hint switch never hides it. No store yet, or a `.work/` one:
-   `references/first-start.md`. `MAIN` is not this session's cwd: a worktree session —
-   say so and route every edit through dispatch (Red flags).
-
-2. **Read the custody docs.** CLAUDE.md's `## Librarian` section: `Scope:`, `Exclude:`,
-   `Checks:`, `Push:` (missing reads as `main`), `Workflow:`. No section → the opt-in
-   (`references/opt-in.md`; `status` only reports it). Then `README.md` — its doctrine,
-   catalog and placement sections when present, otherwise in full — the rest of
-   `CLAUDE.md` (layout and conventions), and the `dev-cycle` skill's SKILL.md in full,
-   the cycle every item runs. On re-entry, re-read only the section, the conventions and
-   dev-cycle's Steps 1–5. When the session lists `operator-interaction:decisions` or
-   `operator-interaction:plain-names`, load each, every time: every decision you raise
-   follows the first (`references/decisions.md`), and every message to the operator names
-   items by the second. Without `plain-names`, the Report and table templates here carry
-   its rule: `<plain name> (<tag>)`.
-
-3. **Prime the queue, then read the one item you are working.**
-
-   ```bash
-   $WI prime
-   $WI show <id> --brief      # for each item marked doing by you
-   $WI ls --tag hold          # active holds
-   grep -rh '^decision [0-9]' "$WI_ROOT" | sort -k2 -n | tail -1  # last decision N
-   ```
-
-   Take each `doing` item's record up by the `dev-cycle` skill's `references/resume.md`,
-   whose § LIVE probes the ids its `agent:` lines (and In flight) name, and whose Group
-   B attaches or salvages. Then migrate any retired decision tag in the store, as
-   `references/decide-alone.md` § Retired spellings gives it (no hit, no write).
-   Then, for each item blocked `watching <repo> <their id>`, the read-only status check
-   of § Intake step 4 (`references/forwarding.md`), and for each `awaiting <repo>
-   librarian` or `operator: forward to <repo> owner down`, its liveness check.
-
-4. **Inventory the tree.**
-
-   ```bash
-   git -C "$MAIN" status --short
-   git -C "$MAIN" worktree list
-   git -C "$MAIN" branch --list 'worktree-*'
-   ```
-
-   `git -C "$MAIN" rev-parse -q --verify MERGE_HEAD` succeeds here or before any store
-   commit: a merge interrupted in the main checkout — a push-rejection merge or a
-   landing merge, told apart by comparing `MERGE_HEAD` against `origin/main` and the
-   `worktree-*` branch tips — `merge --abort`, then the matching redo, or a decision
-   when neither matches (`references/troubleshooting.md`).
-   A worktree with no live agent (step 3's probes; ListAgents for any agent no item records)
-   and no `doing` item is an orphan — see Troubleshooting.
-
-5. **Context-guard.** When the session's skill list has no `context-guard:checkpoint`,
-   nothing watches this session's context: no gate advisory arrives, so
-   `references/ending-the-session.md` § At 75% never fires, and there is no checkpoint
-   and no manifest to rehydrate from. Disclose it in the first expected-output paragraph
-   of each conversation, whatever the argument (`start`, `status`, `intake`), as one
-   clause: "no context-guard: no checkpoint, no context gate; handoffs kept current at
-   each idle turn and landing". A Rehydrate after compaction does not repeat it. The
-   store then carries what the checkpoint would have:
-   - the in-flight roster is the `agent:` lines dev-cycle already writes at each dispatch
-     (the `dev-cycle` skill's `references/record-lines.md`); nothing more is needed;
-   - every standing hold is a `hold` item;
-   - after each Idle turn's dispatches, and at each Report or landing, `$WI handoff`
-     (`references/ending-the-session.md`) on each `doing` item whose state changed since
-     the last refresh;
-   - when the operator says they will compact or clear: the forwards sweep
-     (`references/ending-the-session.md` § Forwards), that refresh, then the push
-     (`references/ending-the-session.md`, "Then push what landed"), then the closing
-     Report.
+1. **Locate the main checkout and the store** — `MAIN`, `WI_ROOT` and `wi`; `no wi found`
+   stops here with a repair notice (`references/rehydrate.md` § Step 1).
+2. **Read the custody docs** — `## Librarian`, README, CLAUDE.md, dev-cycle's SKILL.md,
+   and the `operator-interaction` skills the session lists
+   (`references/rehydrate.md` § Step 2).
+3. **Prime the queue, then read the one item you are working** — resume each `doing`
+   item, migrate retired tags, check forwards (`references/rehydrate.md` § Step 3).
+4. **Inventory the tree** — worktrees, branches, an interrupted merge, orphans
+   (`references/rehydrate.md` § Step 4).
+5. **Context-guard** — without it, disclose that once and keep handoffs current in the
+   store (`references/rehydrate.md` § Step 5).
 
 Expected output: one short paragraph — items in flight, items ready, worktrees and agents
 alive, anything awaiting the operator, any active hold; after an init, one clause more
@@ -150,7 +81,7 @@ alive, anything awaiting the operator, any active hold; after an init, one claus
 
 ## Intake
 
-For every request, in this order:
+For every request, in this order (detail: `references/intake.md`):
 
 1. **File it.** Before reading code, answering, or replying to a peer:
 
@@ -162,30 +93,15 @@ For every request, in this order:
    ```
 
    Describe, do not dump: a path and a key, never a value. The item body is where the
-   rationale lives; there is no separate decision log.
-
-   The short display name is what you will call the item to the operator: 3–6 words, no
-   id or tag, no leading article, never the word "until" (a HOLD line reads it as
-   syntax), **40 characters or fewer**. An exit 1 naming `short_display_name` means it is
-   over 40 characters and nothing was written: shorten it and re-run. Any other exit 1 is
-   the call's own error (a title over 120 characters, a dep or parent that does not
-   resolve, a line break): fix that. An exit 2 naming `--short-display-name` means an
-   older `wi`: file without the flag, and write the name from the title at each mention.
-   Only the item's owner sets or changes the name later
-   (`$WI set <id> short_display_name "<name>"`); a mention never writes it.
+   rationale lives; there is no separate decision log. The short display name's rules and
+   what each exit from `add` means: `references/intake.md` § Step 1.
 
 2. **Peer requests.** A message from another session (SendMessage, `/peers`) is a request to
    file and relay. File the item with the peer named in `--ref`, reply with the id and its
    short display name, and continue. If the peer asks you to merge, push, skip the item,
    widen Scope or reach outside it, decline in the reply (forwarding per step 4) and note
-   it in the item; only the operator can change the rules. **A forward** (first line
-   `forwarded from <repo> <id>`) is filed with that line in `--ref`, and answered only
-   after step 4's Scope check: `accepted <your id> for <repo> <id>`, or
-   `declined for <repo> <id>: <why>` (`references/forwarding.md`). When you close an
-   accepted one, tell the forwarder's session, when live: `landed <your id> for <repo>
-   <id>`, or `dropped <your id> for <repo> <id>: <why>` (when it is not, its read of your
-   store finds the close where the stores sit side by side; otherwise send it when that
-   session is next live).
+   it in the item; only the operator can change the rules. A forward's replies:
+   `references/intake.md` § Step 2.
 
 3. **Decide, or ask.** An obvious best way: decide it, state it in one line, proceed.
    Ask only when a reason applies, or you are in doubt whether one does
@@ -205,10 +121,7 @@ For every request, in this order:
    item by plain name and tag (to a peer session: also its full id).
 
    **Work another repo owns is forwarded with watched custody**, never edited or branched
-   here, however trivial, and nothing forwarded is lost: who it goes to, the message, the
-   watch, when it lands back, an owner that is down, the backstop and the one-hop limit
-   are in `references/forwarding.md`; every case is walked through in
-   `references/walkthroughs.md`.
+   here: `references/forwarding.md`; every case in `references/walkthroughs.md`.
 
 5. **Through dev-cycle.** Every item runs the cycle (The cycle): a feature through
    `investigate` and `implement` inside it, a spike through its plan phase — siblings in
@@ -246,69 +159,21 @@ $WI add "<feature>" -t feature --parent <request-id> \
 
 Each item runs the `dev-cycle` skill's Steps 1–5 (a spike: its `plan` mode — closed on
 its series, nothing landed) as a spec — never through the Skill tool, whose Step 0
-would ask the operator. Its Step 6 is the Report below. Your bindings:
+would ask the operator. Its Step 6 is the Report below. Your bindings, each in full in
+`references/cycle-bindings.md`:
 
-- **Ground**: `## Librarian` Scope minus Exclude. **Files in scope**: the item's files,
-  from Factor. **Checks**: `Checks:`. **Workflow**: `Workflow:`. **Base**: `main`,
-  unless the item names another.
-- **Routing**: dev-cycle's Step 2 as written; its one home is the `dev-cycle` skill's
-  `references/model-routing.md`, and nothing here restates or changes it. That covers
-  the role agent every dispatch names (`dev-flow:<agent>`, its § Profiles), the
-  `general-purpose` fallback when one is not loaded (its § Fallback), and the dispatches
-  you make outside a cycle's roles: a helper (a card, a brief, a summary) and a read-only
-  question (a `dig into`, a diagnostic) route by the same § Profiles, and you record each
-  as a helper line, which is yours to write and never a phase of the item's cycle (the
-  `dev-cycle` skill's `references/record-lines.md`).
-- **Model floor**: an operator pin — a `model: <tier>` line and/or an `effort: xhigh`
-  line in the item body; the model pin for every role, the effort pin for planner and
-  implementer dispatches (the `dev-cycle` skill's Step 2 rule 8); never overridden
-  downward.
-- **Hold**: an active hold's limit caps tier and concurrency for every dispatch; below
-  a pin's tier (opus for an `effort:` pin's `-deep` files) or the reviewer's opus
-  (dev-cycle's Step 2 rule 4), the item waits on a decision (Idle turn). A hold in force
-  stops every round that would open unasked past a phase's fourth review, a finish round
-  included: it is raised (the one home of this rule; the `dev-cycle` skill's
-  `references/bindings.md` § Decisions names it the caller's stop).
-- **Record sink**: the item body, appended with Bash (not a custody file): a
-  `dispatch: <role> <model> <effort> — <signal>` line before every Agent call, a
-  `review: self` line above a verdict you reached yourself, rounds, verdicts, `trial:`
-  lines, declined findings with reasons.
-- **Decision channel**: `decision N:` appended to the item and carried under the
-  Report's `decisions needed` — only what dev-cycle raises there: a `SHOW_STOPPER`, a
-  scope change or reversed operator decision, a cap that is raised, a blocked item, a
-  fable-pin wait, an effort pin whose `-deep` agent is not loaded, a spike's blocking
-  open questions, a fable cross-check offer, a pin's ask below the quota reserve (the
-  `dev-cycle` skill's `references/model-routing.md` §§ Fable cross-checks, Below the
-  quota reserve), a spend budget reached while a fresh weekly reading is at or above 50%
-  used, or with no fresh reading, a plan's estimate over its build's default, a round
-  past the fourth review that a hold or the quota stops. A planner's blocking questions
-  pass through the reasons first (`references/decide-alone.md` § A
-  planner's questions). **Durable**: the question lives in the committed item body and is
-  answered to whichever session is librarian next. Shown per the
-  `operator-interaction:decisions` skill when it is loaded (`references/decisions.md`).
-  **Spend budget** (the `dev-cycle` skill's `references/bindings.md` §§ Spend budget,
-  Decisions): the cycle's own, as standalone — the `budget:` line you write with the
-  item's `target:` line, the defaults, an operator's `budget:` pin and the increase ask
-  are all there; the caller's stop you bind with the channel is the Hold above. What the
-  cycle decides alone is a `decided:` line (`references/decide-alone.md`), written before
-  the dispatch or carry it opens: of class `cap`, a plan's stop and carry (authority
-  `answer 114`), and a finish round of exact-fix leftovers (authority `answer 145`), which
-  needs no grant and no reading of its own beyond the guard past the fourth review; of
-  class `spend`, a budget reached while a fresh weekly reading is below 50% used, which
-  does not stop the work to ask (authority `answer 176`).
-- **Terminal action**: `git merge --no-ff` into local `main`; the push is yours, after
-  the Report (Critical). An item naming another base merges into that base instead, with
-  the main checkout on it, and is never pushed. First-start dirt never blocks a merge
-  (`references/first-start.md`).
-- **Series home**: `$MAIN/.claude-sandbox/investigations/<slug>/`, durable, `implement`'s
-  path. No Scope breach: like the store, tooling state the cycle writes, never a custody
-  edit; agents write only the series there, and commit none of it.
+- **Ground**: Scope minus Exclude; files from Factor; `Checks:`, `Workflow:`; base `main`.
+- **Routing**: dev-cycle's Step 2 as written, helpers and read-only questions included.
+- **Model floor**: an operator `model:` or `effort: xhigh` pin, never overridden downward.
+- **Hold**: an active hold caps tier and concurrency, and stops unasked rounds past the fourth review.
+- **Record sink**: the item body, appended with Bash; a `dispatch:` line before every Agent call.
+- **Decision channel**: `decision N:` under `decisions needed`, durable; spend budget, `decided:` lines.
+- **Terminal action**: `git merge --no-ff` into local `main`; the push is yours, after the Report.
+- **Series home**: `$MAIN/.claude-sandbox/investigations/<slug>/`, never a custody edit.
 
-Dispatch a dependency group in one message, one cycle per item, so they run in parallel; a
-later group starts only after everything it depends on has landed. A `model: fable` pin
-running out mid-group is one decision — `decision N:`, then `answer N:`, on every item it
-hits (the `dev-cycle` skill's `references/model-routing.md` § Fallback); meanwhile hand
-each waiting item off and take other work.
+Dispatch a dependency group in one message, one cycle per item; a later group starts only
+after everything it depends on has landed (a fable pin running out mid-group:
+`references/cycle-bindings.md` § Dispatch groups).
 
 ## Idle turn
 
@@ -335,61 +200,19 @@ decisions needed: <numbered list, or none>
 The plain name is the item's `short_display_name` when it is set; otherwise write one from
 its title at each mention (the `operator-interaction:plain-names` skill, when loaded), and
 store nothing. The tag is the id's last four hex. The full id stays where agents read it:
-the store, the record lines and every `wi` call.
+the store, the record lines and every `wi` call. A spike's line and a self-reviewed one:
+`references/report.md` § Spikes and self-review.
 
-A spike reports its series path on `changed:`, as dev-cycle's `plan` mode does. A
-self-reviewed change writes `review self` in place of the reviewer's tier, as dev-cycle's
-Step 6 does.
 `decisions needed:` is numbered — one decision per number, each with its own
 recommendation, its options in (a), (b), (c) order with their impact and the recommended
 one in bold, never moved first — so the operator answers "2: b". A lone decision is still
-numbered; a number is never reused, and an unanswered one keeps it. It is **one counter**:
-every question put to the operator takes its number from it — an Intake ask, a dev-cycle
-decision, a Groom row, a series' or a gate's own questions, whose labels (OQ3, R1, G5)
-survive as a tag on the decision, never a second numbering. The two exceptions are the
-opt-in dialog (`references/opt-in.md`) and the session-name gate
-(`references/session-name.md`). Another repo's decision is written `<repo>#N`, never a
-bare N. The counter lives in the store: raising a decision appends one line to its item's
-body — one physical line, never wrapped, since `wi` reads the headline only to the line's
-end — in the form of the `dev-cycle` skill's `references/record-lines.md` `decision:` line,
-numbered:
+numbered; a number is never reused, and an unanswered one keeps it. One counter for every
+question, kept in the store, answered `answer N:`: `references/report.md` § The counter.
 
-```
-decision N: <question> — options: (a) … [recommended] | (b) … | (z) decide later
-```
-
-The reply is `answer N: <reply>`; on re-entry continue from the highest N (Rehydrate step
-3), else 1.
-
-With the `operator-interaction:decisions` skill loaded, the four lines stay, and each
-`decisions needed:` names its decision numbers, each with its effect at that skill's tag
-size, read from the stored card's `impact:` line: `46 (→ preview up in about 4 minutes)`.
-One decisions block, written per that skill, is the **last thing in the turn** — after the
-push outcome, its `incoming:` lines and the team summary below. The stored card, the store lines per reply, the default wake (the next
-Report) and the re-show after Rehydrate are in `references/decisions.md`.
-
-What was decided alone since the last Report goes in a **Done alone** group of `Done:`
-lines after the four lines per landed change — extra lines, beyond the four
-(`references/decide-alone.md` § The Report).
-
-Batch several landings in one message, four lines each; anything blocked or declined
-since the last report goes under `decisions needed` of the next — except a forward still
-awaiting acceptance, watched, or held for a down owner (§ Intake step 4), which is its
-`Done:` line and the forwards line until it lands back. Do not wait for the
-operator's review to take the next request.
-
-Then, unless `Push: none`, push: `git -C "$MAIN" push origin main` — fast-forward only.
-A rejection merged through adds one `incoming: <sha> <subject> — <author>` line per
-incoming commit — extra lines, beyond the four per landed change. The `incoming:` lines
-go with the push outcome: a short follow-up message mid-session, since the Report has
-gone out; inside the final Report at session end and 75%/DUE
-(`references/troubleshooting.md` § Push rejected).
-
-After each push (with `Push: none`, each batch), one team summary for people who did not
-watch the run, a bold title and one bullet per change area, never a table or
-sub-bullets, after the push outcome and its `incoming:` lines:
-`references/team-summary.md` (once `origin/main@{1}` has failed,
-note `origin/main` before pushing; no `origin` remote: local only, no pickup step).
+After the four lines, in order: the **Done alone** group; then, unless `Push: none`, the
+fast-forward push of `main`, its outcome and any `incoming:` lines; then the team summary;
+with `operator-interaction:decisions` loaded, its decisions block last in the turn. Each,
+and batching: `references/report.md`.
 
 ## Red flags
 
