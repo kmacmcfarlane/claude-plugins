@@ -3,12 +3,13 @@ id: research-verifier-fix-its-procedure-faul-2e75
 title: "research-verifier: fix its procedure faults (unopened sources, hand-typed counts, leading prompts)"
 short_display_name: verifier procedure faults
 type: bug
-status: todo
+status: done
 priority: 2
 deps:
   - research-security-f1-the-scan-floor-819f
 created: 2026-10-02
-updated: 2026-10-02
+updated: 2026-10-13
+closed: 2026-10-13
 refs:
   - research-skills-effort-based-routing-par-e184
 ---
@@ -49,3 +50,6 @@ merge: conflict in CLAUDE.md landing 22076d33 on main be2df9b2 (02f8 and 2e75 bo
 dispatch: implementer opus medium — resume, merge main into the branch and resolve, rerun suites
 agent: implementer a58a079d03da1daa5 round 5 (merge)
 result: DONE merge at 1e66ab84 (CLAUDE.md both tests kept; repo-map lists both; research-verifier.md stop-rule bullet untouched; dev-flow 86, research 127, kit-dev 21 OK); resolution read by the librarian, mechanical
+
+## Notes
+- 2026-10-13 done
