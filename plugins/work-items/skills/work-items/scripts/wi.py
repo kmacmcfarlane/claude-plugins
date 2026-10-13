@@ -29,6 +29,7 @@ import shutil
 import stat
 import subprocess
 import sys
+import tempfile
 import time
 import unicodedata
 from datetime import datetime, timezone
@@ -1140,9 +1141,11 @@ def atomic_write(path, text, create=False):
     """tmp+rename. With create=True the file must not exist yet: the tmp is
     moved into place by _move_no_clobber, which fails rather than replace a
     file that appeared since the caller looked (O_EXCL semantics, and the
-    content still lands in one step). The tmp is opened exclusively, so an
-    existing path there (a planted symlink, dangling or not) is refused,
-    never written through."""
+    content still lands in one step). The tmp gets a fresh random name,
+    created exclusively (mkstemp, O_EXCL), so a planted symlink is never
+    written through and a stale tmp from a killed write is never in the
+    way; its `<name>.tmp` prefix keeps the stale-reservation glob and the
+    store's `*.tmp*` ignore matching it."""
     _atomic_write(path, text, create=create)
 
 
@@ -1151,17 +1154,26 @@ def atomic_write_bytes(path, data, create=False, keep_mode=False):
     _atomic_write(path, data, create=create, keep_mode=keep_mode)
 
 
+def _umask():
+    mask = os.umask(0o022)
+    os.umask(mask)
+    return mask
+
+
 def _atomic_write(path, data, create=False, keep_mode=False):
-    tmp = path.with_name(path.name + ".tmp" + str(os.getpid()))
+    fd, name = tempfile.mkstemp(dir=path.parent, prefix=path.name + ".tmp")
+    tmp = Path(name)
     try:
+        # mkstemp makes the file 0600; a plain create would honour the umask
+        os.fchmod(fd, 0o666 & ~_umask())
         if isinstance(data, bytes):
-            fh = open(tmp, "xb")
+            fh = open(fd, "wb")
         else:
-            fh = open(tmp, "x", encoding="utf-8", newline="")
-    except FileExistsError:
-        raise WiError(3, f"refusing to write {path}: {tmp} already exists "
-                         "(a stale or planted temp file); remove it and "
-                         "re-run") from None
+            fh = open(fd, "w", encoding="utf-8", newline="")
+    except BaseException:
+        os.close(fd)
+        tmp.unlink()
+        raise
     try:
         with fh:
             fh.write(data)
@@ -1621,8 +1633,7 @@ def ensure_ignored(root):
     gi = repo / ".gitignore"
     esc = _gitignore_escape(rel)
     line = f"/{esc}/"
-    if gi.is_symlink() or (os.path.realpath(gi.parent)
-                           != os.path.realpath(repo)):
+    if gi.is_symlink():
         return False, f"{gi} is a symlink: no line added; add {line} by hand"
     # git decides (a negation after a literal line un-ignores it); a rule
     # only in info/exclude or an excludesFile does not travel with the
@@ -1658,21 +1669,23 @@ def ensure_ignored(root):
 
 
 def _store_outside_repo(root):
-    """The refusal when the store dir is a symlink to a place outside the
-    repo (or, outside git, the dir) that holds it, else None."""
-    if not root.is_symlink():
-        return None
-    target = os.path.realpath(root)
-    holder = root.absolute().parent
-    r = _git(holder, "rev-parse", "--show-toplevel") if holder.is_dir() \
-        else None
-    if r is not None and r.returncode == 0 and r.stdout.strip():
-        holder = Path(r.stdout.strip())
-    holder = os.path.realpath(holder)
-    if target == holder or target.startswith(holder.rstrip(os.sep) + os.sep):
-        return None
-    return (f"{root} is a symlink to {target}, outside {holder}: refusing to "
-            "init there; nothing written")
+    """The refusal when a symlink on the store's path that is repo content
+    (it sits inside a git repo) points outside that repo, else None. A link
+    above every repo (a /home/claude -> /home/rt style alias) is left
+    alone."""
+    p = Path(os.path.abspath(root))
+    for comp in (p, *p.parents):
+        if not comp.is_symlink():
+            continue
+        r = _git(comp.parent, "rev-parse", "--show-toplevel")
+        if r is None or r.returncode != 0 or not r.stdout.strip():
+            continue
+        top = os.path.realpath(r.stdout.strip())
+        target = os.path.realpath(comp)
+        if target != top and not target.startswith(top + os.sep):
+            return (f"{comp} is a symlink to {target}, outside the repo at "
+                    f"{top}: refusing to init there; nothing written")
+    return None
 
 
 def _create_if_absent(path, text):
@@ -1713,6 +1726,16 @@ def cmd_init(args):
                 return 130
         else:
             choice, defaulted = "ignored", True
+    if choice == "ignored" and not existed:
+        # a store at the repo root cannot be ignored, and its own *.tmp*
+        # line would ignore files across the whole repo: refuse first
+        repo_top = _store_repo(root)
+        if repo_top is not None and (os.path.realpath(root)
+                                     == os.path.realpath(repo_top)):
+            raise WiError(1, f"{root} is the repo root: a store there "
+                             "cannot be git-ignored; nothing written (use "
+                             "`wi init --track`, or put the store in a "
+                             "subdirectory)")
     (root / "items").mkdir(parents=True, exist_ok=True)
     _create_if_absent(
         root / "README.md",
@@ -1767,7 +1790,8 @@ def cmd_init(args):
               "`wi init --track` and remove the store's line from "
               ".gitignore (the `wi init --track` warning names it)",
               file=sys.stderr)
-    print(f"initialised {root}")
+    print(f"initialised {root}" if rc == 0
+          else f"created {root}; tracking not recorded")
     return rc
 
 

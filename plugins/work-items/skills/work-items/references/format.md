@@ -58,9 +58,13 @@ recorded choice, and `wi lint` reports it, as it does more than one `tracking:` 
 - **What init refuses.** It never writes through a symlink: a symlinked `.gitignore` gets no
   line (`init` names the line to add by hand), and a store directory that is a symlink to a
   place outside the repo holding it is refused outright, with nothing written. A store that
-  is the repo root cannot be ignored and gets no line. When the store cannot be made
+  is the repo root cannot be ignored: a new one is refused before anything is created
+  (its own `*.tmp*` line would ignore files across the repo), and an existing one gets no
+  line. A symlink on the store's path that sits inside a repo and points out of it (a
+  linked `.claude-sandbox/`, a `WI_ROOT` under a linked dir) is refused the same way; a
+  link above every repo, such as a home-directory alias, is left alone. When the store cannot be made
   ignored, `ignored` is not recorded and `init` exits 1: the ignore comes first and the
-  record after, so a recorded `ignored` always means git ignores the store.
+  record after, so within a git repo, a recorded `ignored` means git ignores the store.
 - **Tracking** never edits a `.gitignore`. If git ignores the store anyway, `init` prints
   the custody warning naming the rule to remove.
 - **An existing store.** `init` on a store that exists never re-creates or rewrites what is

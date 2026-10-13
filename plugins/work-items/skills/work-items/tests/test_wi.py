@@ -4495,6 +4495,12 @@ class TestStoreCustodyWarning(WiTestCase):
         self.assertNotIn("WARNING", r.stdout)
 
 
+def fnmatch_tmp(name):
+    """The store's own ignore line and the stale-reservation glob."""
+    import fnmatch
+    return fnmatch.fnmatch(name, "*.tmp*")
+
+
 class TestChooseTracking(unittest.TestCase):
     """39a2: the init menu, as a function over its input and output."""
 
@@ -4799,19 +4805,58 @@ class TestInitTracking(unittest.TestCase):
         self.init(store, "--no-track")
         self.assertEqual(v.read_text(), "keep me\n")
         self.assertEqual(self.tracking(store), "ignored")
-        # the per-process temp name: refused, live or dangling
+        # the temp name is random and created exclusively: a symlink
+        # planted at a guessable name (the old per-process one), live or
+        # dangling, is never written through
         for target in (v, self.tmp / "absent"):
             with self.subTest(target=target.name):
                 tmp = store / f"store.yaml.tmp{os.getpid()}"
                 tmp.symlink_to(target)
-                self.addCleanup(lambda t=tmp: t.unlink()
-                                if os.path.lexists(t) else None)
-                with self.assertRaises(wi.WiError):
-                    wi.write_tracking(store, "tracked")
+                wi.write_tracking(store, "tracked")
                 tmp.unlink()
                 self.assertEqual(v.read_text(), "keep me\n")
                 self.assertFalse((self.tmp / "absent").exists())
-                self.assertEqual(self.tracking(store), "ignored")
+                self.assertEqual(self.tracking(store), "tracked")
+                wi.write_tracking(store, "ignored")
+
+    def test_stale_temp_file_does_not_block_a_write(self):
+        # an OOM-killed write can leave <name>.tmp<pid> behind; the next
+        # write under the same pid must not be refused
+        repo, store = self.repo()
+        self.init(store, "--track")
+        stale = store / f"store.yaml.tmp{os.getpid()}"
+        stale.write_text("half")
+        wi.write_tracking(store, "ignored")
+        self.assertEqual(self.tracking(store), "ignored")
+        self.assertEqual(stale.read_text(), "half")
+        left = sorted(p.name for p in store.glob("store.yaml.tmp*"))
+        self.assertEqual(left, [stale.name])
+
+    def test_atomic_write_temp_is_random_matched_and_honours_umask(self):
+        d = self.tmp / "aw"
+        d.mkdir()
+        seen = []
+        real = wi.tempfile.mkstemp
+
+        def spy(*a, **kw):
+            fd, name = real(*a, **kw)
+            seen.append(name)
+            return fd, name
+        old = os.umask(0o027)
+        try:
+            with mock.patch.object(wi.tempfile, "mkstemp", side_effect=spy):
+                wi.atomic_write(d / "f.md", "x\n")
+                wi.atomic_write(d / "n.md", "y\n", create=True)
+        finally:
+            os.umask(old)
+        self.assertEqual(len(seen), 2)
+        for name, prefix in zip(seen, ("f.md.tmp", "n.md.tmp")):
+            self.assertTrue(Path(name).name.startswith(prefix), name)
+            self.assertNotEqual(Path(name).name, prefix + str(os.getpid()))
+            self.assertTrue(fnmatch_tmp(Path(name).name))
+            self.assertFalse(os.path.lexists(name))
+        self.assertEqual(os.stat(d / "f.md").st_mode & 0o777, 0o640)
+        self.assertEqual(os.stat(d / "n.md").st_mode & 0o777, 0o640)
 
     def test_store_yaml_symlink_is_replaced_not_followed(self):
         repo, store = self.repo()
@@ -4940,14 +4985,77 @@ class TestInitTracking(unittest.TestCase):
         self.assertNotEqual(self.git(repo, "check-ignore", "-q", "--no-index",
                                      "sta/x", check=False).returncode, 0)
 
-    def test_repo_root_store_gets_no_line(self):
+    def test_repo_root_store_is_refused_before_anything_is_created(self):
+        # its own unanchored *.tmp* would ignore *.tmpl across the repo
+        for flags in (("--no-track",), ()):
+            with self.subTest(flags=flags):
+                repo, _ = self.repo(f"root{len(flags)}")
+                r = self.init(repo, *flags, code=1)
+                self.assertIn("is the repo root: a store there cannot be "
+                              "git-ignored; nothing written", r.stderr)
+                self.assertEqual(sorted(p.name for p in repo.iterdir()),
+                                 [".git"])
+
+    def test_existing_repo_root_store_gets_no_line(self):
         repo, _ = self.repo()
+        self.init(repo, "--track")
         r = self.init(repo, "--no-track", code=1)
         self.assertIn("store is the repo root: no .gitignore written",
                       r.stderr)
-        # only the store's own .gitignore, which is the repo's here
+        self.assertIn(f"created {repo}; tracking not recorded", r.stdout)
+        self.assertNotIn("initialised", r.stdout)
         self.assertEqual(self.gi(repo), ".lock\n*.tmp*\n")
-        self.assertIsNone(self.tracking(repo))
+        self.assertEqual(self.tracking(repo), "tracked")
+
+    def assert_refused_nothing_written(self, store, *watched, env=None):
+        before = {w: sorted(os.listdir(w)) for w in watched}
+        gis = {w: (w / ".gitignore").read_bytes()
+               for w in watched if (w / ".gitignore").is_file()}
+        r = run(["init", "--no-track"], store, env=dict(self.env, **(env or {})))
+        self.assertEqual(r.returncode, 1, r.stdout + r.stderr)
+        self.assertIn("outside the repo at", r.stderr)
+        self.assertIn("refusing to init there; nothing written", r.stderr)
+        for w in watched:
+            self.assertEqual(sorted(os.listdir(w)), before[w], w)
+        for w, data in gis.items():
+            self.assertEqual((w / ".gitignore").read_bytes(), data, w)
+
+    def test_sandbox_dir_symlinked_to_another_repo_is_refused(self):
+        repo, _ = self.repo("host")
+        other, _ = self.repo("other", gi="*.o\n")
+        (other / "work").mkdir()
+        (repo / ".claude-sandbox").symlink_to(other)
+        self.git(repo, "add", ".claude-sandbox")
+        self.git(repo, "commit", "-qm", "link")
+        self.assert_refused_nothing_written(
+            repo / ".claude-sandbox" / "work", repo, other, other / "work")
+
+    def test_sandbox_dir_symlinked_outside_git_is_refused(self):
+        repo, _ = self.repo("host")
+        out = self.tmp / "outdir"
+        out.mkdir()
+        (repo / ".claude-sandbox").symlink_to(out)
+        self.assert_refused_nothing_written(
+            repo / ".claude-sandbox" / "work", repo, out)
+
+    def test_wi_root_under_a_symlinked_subdir_is_refused(self):
+        repo, _ = self.repo("host")
+        out = self.tmp / "outdir"
+        out.mkdir()
+        (repo / "sub").symlink_to(out)
+        self.assert_refused_nothing_written(repo / "sub" / "work", repo, out)
+
+    def test_symlink_above_the_repo_is_left_alone(self):
+        # a /home/claude -> /home/rt style alias is not repo content
+        real = self.tmp / "real"
+        real.mkdir()
+        alias = self.tmp / "alias"
+        alias.symlink_to(real)
+        self.git(real, "init", "-q")
+        store = alias / ".work"
+        self.init(store, "--no-track")
+        self.assertEqual(self.tracking(store), "ignored")
+        self.assertEqual(self.gi(real), "/.work/\n")
 
     def test_line_that_does_not_ignore_is_reported(self):
         repo, store = self.repo()
