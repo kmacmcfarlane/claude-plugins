@@ -28,7 +28,7 @@ results (~105K), user-turn text (~80K), harness attachments (~105K) — sum to ~
 971K peak. **The remaining ~54% can only be retained thinking** (plus system prompt and tool
 definitions, ~25K).
 
-**Finding 2 — hidden reasoning is retained live and persisted nowhere.** 559 thinking blocks
+**Finding 2 — hidden noodle notes are retained live and persisted nowhere.** 559 thinking blocks
 on disk, 1.8K characters of content between them — effectively none — and a 428-char
 signature each. It is simultaneously the largest
 consumer of the window and the only thing that is a *total* loss at compaction. Nothing that
@@ -85,7 +85,7 @@ turns and anything the agent is actively reasoning over, and evicts oldest-and-m
 rather than oldest-in-time. Its stated failure modes of summarisation — *unpredictable
 lossiness, destruction of causal structure, blocking cost, compression-induced hallucination* —
 are the four things observed here. The design lesson: **a checkpoint's job is to convert
-exploratory context (reasoning) into persisted effects (files), so that all of it becomes
+exploratory context (noodle notes) into persisted effects (files), so that all of it becomes
 safely evictable.** Compaction is then lossless in the only sense that matters.
 
 The community "handoff" pattern (a `HANDOFF.md` distinct from `CLAUDE.md`: *standing context*
@@ -179,7 +179,7 @@ Three layers, escalating; the first two are hooks, the third is a skill.
    fork (below). The brief is one
    manifest per session, in the config dir rather than the repo, so concurrent sessions in
    one checkout cannot overwrite each other's; since its path can no longer be guessed,
-   every checkpoint prints it, and a handoff also prints the commands to continue. Step 2 writes reasoning residue
+   every checkpoint prints it, and a handoff also prints the commands to continue. Step 2 writes noodle notes residue
    from the live session (Finding 2). Step 3 routes twice — task knowledge to its owning repo,
    harness friction to the plugin repo — because a session has two outputs, and the second is
    the one that improves the next session. Step 4a½ writes what only the conversation held

@@ -127,7 +127,7 @@ class TestDigest(LedgerCase):
         self.assertIn("decision number 199 ", d)
         self.assertNotIn("decision number 0 ", d)
         self.assertNotIn("- P ", d)
-        self.assertIn("reasoning and 20 pointer line(s) left out", d)
+        self.assertIn("noodle notes and 20 pointer line(s) left out", d)
 
     def test_hand_written_lines_count_as_reasoning(self):
         lines = ["# ledger h", "note: the operator wants no push until decision 52"]
@@ -223,7 +223,7 @@ class TestCompactInjection(LedgerCase):
     def test_compact_carries_epoch_zero_reasoning(self):
         text = self.shaped()
         c = self.ctx("compact")
-        self.assertIn("reasoning kept ahead of commit pointers", c)
+        self.assertIn("noodle notes kept ahead of commit pointers", c)
         led = c.split("[context-guard ledger", 1)[1]
         self.assertIn("- R refused sudo for dd", led)
         self.assertIn("- C corrected: the manifest stamp", led)

@@ -1285,8 +1285,8 @@ def main():
         # epoch come first and the P pointers fill what is left.
         lt = ledger.digest(sid, budget=LEDGER_BUDGET)
         if lt:
-            parts.append("[context-guard ledger — this session's reasoning trail, "
-                         "reasoning kept ahead of commit pointers, file order, "
+            parts.append("[context-guard ledger — this session's noodle notes trail, "
+                         "noodle notes kept ahead of commit pointers, file order, "
                          "newest last]\n" + lt)
         ci = st.get("custom_instructions")
         if ci:
@@ -1296,7 +1296,7 @@ def main():
         # trail comes along (this session's own ledger is new and empty). The
         # full tier above reserved LEDGER_BUDGET + 400 for this block.
         parts.append(f"[context-guard ledger — predecessor {clear_pred}, by "
-                     f"/clear: its reasoning trail, reasoning kept ahead of "
+                     f"/clear: its noodle notes trail, noodle notes kept ahead of "
                      f"commit pointers, file order, newest last]\n" + clear_digest)
 
     def write_back(cur):

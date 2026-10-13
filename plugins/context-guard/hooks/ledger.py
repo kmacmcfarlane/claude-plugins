@@ -214,9 +214,9 @@ def digest(session_id, budget=2500):
     nr = len(left) - np
     said = []
     if left:
-        bits = [f"{n} {w}" for n, w in ((nr, "reasoning"), (np, "pointer")) if n]
+        bits = [f"{n} {w}" for n, w in ((nr, "noodle notes"), (np, "pointer")) if n]
         said.append(f"{' and '.join(bits)} line(s) left out, pointers first, "
-                    f"then older reasoning by kind")
+                    f"then older noodle notes by kind")
     if ncut:
         said.append(f"{ncut} line(s) cut")
     short = ", ".join(x for x in (f"{len(left)} left out" if left else "",

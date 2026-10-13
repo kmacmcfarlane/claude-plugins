@@ -1,6 +1,6 @@
 ---
 name: checkpoint
-description: Land the state of a long session before context is compacted or cleared — settle the goal from here (continue / handoff) (drafted, acted on and echoed, asked first only at a real fork), write the reasoning that exists only in this conversation as a delta over the session ledger, route every finding to the repo that owns it, write this session's own HANDOFF.md rehydration manifest (one per session, in the Claude config dir, never in a repo), record the checkpoint so the context gate stands down, then print the manifest's absolute path and hand the operator the decision. Use when the gate warns (DUE/HARD), when an auto-compaction is deferred, when the user says "checkpoint", "we're running out of context", "wrap this up", or before switching topics after a long thread. Also use at a stage boundary in a skill chain — the next skill reads its inputs from files this session already published — regardless of window health.
+description: Land the state of a long session before context is compacted or cleared — settle the goal from here (continue / handoff) (drafted, acted on and echoed, asked first only at a real fork), write the noodle notes that exist only in this conversation as a delta over the session ledger, route every finding to the repo that owns it, write this session's own HANDOFF.md rehydration manifest (one per session, in the Claude config dir, never in a repo), record the checkpoint so the context gate stands down, then print the manifest's absolute path and hand the operator the decision. Use when the gate warns (DUE/HARD), when an auto-compaction is deferred, when the user says "checkpoint", "we're running out of context", "wrap this up", or before switching topics after a long thread. Also use at a stage boundary in a skill chain — the next skill reads its inputs from files this session already published — regardless of window health.
 disable-model-invocation: false
 allowed-tools: Read, Write, Edit, Glob, Grep, Bash, Agent, ListAgents
 argument-hint: "[continue | handoff] [then /next-skill] [optional focus]"
@@ -11,7 +11,7 @@ argument-hint: "[continue | handoff] [then /next-skill] [optional focus]"
 A session holds two kinds of state: what is **on disk** (survives anything) and what exists
 **only in this conversation** (dies at compaction with no diff — a compaction keeps a
 ~14–18K-token summary whatever the depth, agents decision 0007, and none of the hidden
-reasoning). This skill moves the second kind into the first, then gives the operator a
+noodle notes). This skill moves the second kind into the first, then gives the operator a
 decision.
 
 Rationale and numbers: `references/design-rationale.md` (and the fuller series it points at).
@@ -195,9 +195,9 @@ corrections and pointers already captured as the session ran — Step 2 is a **d
 not a reconstruction of hours. (`context_forensics.py` in `scripts/` shows *what* filled the
 window, when that question matters.) Missing files: say so, continue.
 
-## Step 2 — Write the reasoning residue (delta; live session only)
+## Step 2 — Write the noodle notes residue (delta; live session only)
 
-Hidden reasoning is persisted nowhere — the transcript keeps signatures, not content. A fresh
+Hidden noodle notes are persisted nowhere — the transcript keeps signatures, not content. A fresh
 subagent reading files recovers none of it; the summarizer doesn't have it either. What is not
 in the ledger yet gets written now, by you:
 
@@ -257,7 +257,7 @@ to an `OPEN` line there instead of `wi add`, commit nothing to the store, and na
 ## Step 3 — Route
 
 Name the repo that owns each item permanently (working in repo A on repo B's problem is
-normal; leaving the knowledge in A is the bug): reasoning → the owning repo's investigation
+normal; leaving the knowledge in A is the bug): noodle notes → the owning repo's investigation
 series; decisions → the commit that carries them; deferred work → the owning repo's work-item
 store (`wi add`) or TODO; a line tagged with an open item → that item (Step 4a½); durable
 facts → that repo's `CLAUDE.md` or a skill. **Harness friction** (a skill that misled, an
@@ -267,7 +267,7 @@ State the routing table before writing.
 
 ## Step 4 — Flush, manifest, mark
 
-**4a.** Commits first (the message is a compaction-proof summary you chose; include reasoning
+**4a.** Commits first (the message is a compaction-proof summary you chose; include noodle notes
 and retractions), then investigation/plan files; the work-item store's commit waits for Step
 4a½, which makes it (with `items:` empty, commit the store here). Respect each repo's rules:
 pre-commit hooks, secret encryption, never `git add -A` where the tree carries unencrypted

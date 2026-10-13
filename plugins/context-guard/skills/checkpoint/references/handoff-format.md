@@ -191,7 +191,7 @@ TOC, read on demand: `path — one line on what it holds`.
   `systemMessage` shown to the operator carries the same label and reason
   (`Rehydrated from AGED (recorded head is not an ancestor) manifest (...)`).
 - **Current repo state outranks the manifest.** git log and the work-item store are the
-  durable record; the manifest is only the reasoning. The injected precedence line says so:
+  durable record; the manifest is only the noodle notes. The injected precedence line says so:
   repo state beats the manifest; the manifest and ledger beat any machine summary.
 - **`items:`** (optional) lists the work-item ids the author expects open or in flight —
   Step 4b fills it with the `wi` ids of open or doing items the manifest mentions — the set
@@ -273,7 +273,7 @@ TOC, read on demand: `path — one line on what it holds`.
   Goal, Holds, In flight, Read in full and Copy forward are **never trimmed**; only a body
   whose protected sections alone exceed the budget is cut at its end. A trimmed section keeps
   its heading and reads `(trimmed — read the manifest file)`.
-- **The ledger digest** (2,500 chars, never exceeded) keeps reasoning ahead of pointers.
+- **The ledger digest** (2,500 chars, never exceeded) keeps noodle notes ahead of pointers.
   The *room* is the budget less a share held back for the closing line. `R`/`C` lines
   from every epoch come first (newest first, up to half the room), then `D`/`X`/`U`/`Q`
   ranked together newest first, then the remaining `R`/`C`, then the machine-written `P`

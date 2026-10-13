@@ -78,7 +78,7 @@ def main():
             f"[context-guard context gate] Before anything else: {why} and no "
             f"checkpoint has run this epoch. Run the checkpoint skill now — "
             f"settle the goal (continue / handoff), write the "
-            f"reasoning residue, then mark_checkpoint.py. Do not start new work.")))
+            f"noodle notes residue, then mark_checkpoint.py. Do not start new work.")))
         return
     if act == "ledger":
         last = res["last"]

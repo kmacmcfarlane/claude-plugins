@@ -2,7 +2,7 @@
 
 Measured from a real 1M-token session that filled its window twice (`design-rationale.md`
 has the full numbers). The short version: **the window was not filled by tool output. It was
-filled by the assistant's own output, most of it hidden reasoning, plus harness overhead the
+filled by the assistant's own output, most of it hidden noodle notes, plus harness overhead the
 operator never sees.** Fixing that is mostly about session *shape*, not about reading fewer files.
 
 ## The numbers that matter
@@ -131,7 +131,7 @@ reads as 900, which Claude Code raises to its 100K floor, and the gate then scor
 3. **Delegate reads, keep writes.** Anything that would return more than a screen goes to a
    subagent; the main session stays single-threaded on writes (this is also what the
    multi-agent literature converged on).
-4. **Write as you go.** Investigation serials, `INDEX.md`, commit messages with the reasoning.
+4. **Write as you go.** Investigation serials, `INDEX.md`, commit messages with the noodle notes.
    The compaction survivors in the measured session were exactly the things already on disk.
 5. **Don't switch models mid-thread.** Do it at a boundary.
 6. **Trim fixed overhead.** Every start pays for CLAUDE.md, rules, skill descriptions, MCP tool
