@@ -27,3 +27,6 @@ agent: reviewer a7c12829ab9c31b95 round 1 at d94b7258
 verdict: NEEDS_CHANGES round 1 at d94b7258 (1 medium: newline-separated and continued commands still fall back to cwd, mid-word # comments; lows: subshell/brace group, pushd/cd --/cd -P, untested hard shapes; nits: git -C '', background &, docstring limits)
 dispatch: implementer opus medium — resume, fix round 1
 agent: implementer ac59fa52819a075cd round 2
+result: DONE round 2 at e4883e2a (operator-char tokens, subshell/brace, pushd/cd -/options, git -C '', background & handled; 748 OK)
+dispatch: reviewer opus high — resume, round 2
+agent: reviewer a7c12829ab9c31b95 round 2 at e4883e2a

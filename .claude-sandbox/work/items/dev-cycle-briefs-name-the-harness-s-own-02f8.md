@@ -29,3 +29,5 @@ verdict: CLEAR round 1 at f4556ea8 (low 1: widen the ban to agents and teammates
 decided: 2026-10-13T22:29Z cap — low 1 and nits 3-4 with exact wording: one finish round, read by the librarian (authority answer 145)
 dispatch: implementer opus medium — resume, finish round
 agent: implementer afb8e096c07e9f442 round 2 (finish)
+result: DONE finish at a31fed02 (exact; test_no_unlisted_copy added; diff read by the librarian)
+verdict: CLEAR after 1 finish at a31fed02
