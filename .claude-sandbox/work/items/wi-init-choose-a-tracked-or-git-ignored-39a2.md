@@ -49,3 +49,5 @@ return: DONE 109179b (fix round 1); 12/12 OK (work-items 358); probes rerun: sym
 dispatch: reviewer opus high — review round 2 of 109179b (resume a5063ab4a5b72b981)
 verdict: review round 2 NEEDS_CHANGES (must-fix 1, down from 5: high — a symlinked parent (.claude-sandbox → another repo or outside git; WI_ROOT via a symlinked dir) still sends the store and a .gitignore append outside the repo; the realpath(gi.parent) check is dead; lows: atomic_write "x" refuses a stale same-pid temp after an OOM kill (mkstemp suggested); format.md:63 overstates outside git; "initialised" printed after a failed ignore; repo-root store writes an unanchored *.tmp* — refuse before creating; builder calls ruled acceptable)
 dispatch: implementer opus medium — fix round 2 (resume a75c6bb99ba688aab); review 3 next
+return: DONE ae4cb56 (fix round 2); 12/12 OK (work-items 365); probes pp/pp2/pp3 refused, stale temps pass via mkstemp, repo-root store refused before creating
+dispatch: reviewer opus high — review round 3 of ae4cb56 (resume a5063ab4a5b72b981)
