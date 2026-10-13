@@ -3,12 +3,11 @@ id: work-items-skill-name-claude-sandbox-tra-29db
 title: "work-items skill: name CLAUDE_SANDBOX_TRACK_IN_HOST in the wi init rule"
 short_display_name: name the sandbox track variable
 type: chore
-status: doing
+status: done
 priority: 3
-owner: Kyle-McFarlane@2d49f8460283
-claimed: 2026-10-13T17:23Z
 created: 2026-10-13
 updated: 2026-10-13
+closed: 2026-10-13
 refs:
   - peer claude-sandbox librarian, 2026-10-13 (its item d54f)
 ---
@@ -33,3 +32,6 @@ agent: reviewer ae6844080022954eb
 verdict: review round 1 NEEDS_CHANGES (must-fix 4: an older sandbox (variable unset, this one included: trackInHost: true in config) would get --no-track and hide a tracked store; env-file case misstated; non-true/false values unhandled; broken wrap; exact rewrite given)
 decided: 2026-10-13T06:10Z design — target changed: an empty variable inside a sandbox no longer reads as false; the agent reads the layout instead (git check-ignore -q .claude-sandbox/: 0 → --no-track, 1 → --track, else ask), because unset cannot tell "no config" from "launched before the export"
 dispatch: implementer sonnet medium — fix round 1 (resume aa55c95164614e9c0)
+decided: 2026-10-13T06:30Z cap — the fix round applied the reviewer's exact replacement text word for word (diff read); landed without a second review (authority answer 145); main check-ignore .claude-sandbox/ exits 1 → --track, as the rule says for this repo
+landed: a7b784d (merge of fee0538..da9ac6e); Checks 12/12 OK; cc_scan clean
+- 2026-10-13 done
