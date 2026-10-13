@@ -13,6 +13,14 @@ names each live role's agent id and round, read off the record's `agent:` lines 
 `dev-cycle` skill's `references/record-lines.md`): `implementer <id> round 2, reviewer
 <id> round 3`, so the id survives in the store even where the manifest does not reach.
 
+**Forwards.** Before the handoffs, every forward still awaiting acceptance — blocked
+`forwarded to …, awaiting accept` or `awaiting <repo> librarian` (SKILL.md § Intake
+step 4) — lands back: re-block it `"operator: forward to <peer> not accepted by session
+end"`, so it is a Groom row for whoever is librarian next, not a wait that outlives the
+session. This is the backstop under step 4's silence bound, for a peer that stays live
+and never answers. A watched forward (`watching …`) is in its owner's store and stays
+watching.
+
 **In-flight roster.** Every checkpoint this session runs fills the checkpoint skill's In
 flight roster, following that skill's In flight rule (who counts, and resuming by id
 rather than re-dispatching), with the entries built from the same `agent:` lines and
@@ -91,7 +99,7 @@ librarian's own `continue`, never the gate's `handoff` — the checkpoint skill 
 custody skill's mode. The session does not end here: it checkpoints, the operator
 compacts when convenient, and it continues. Finish the step in hand, then:
 
-1. **Handoffs** — `$WI handoff` on every open item, as above.
+1. **Handoffs** — the forwards sweep, then `$WI handoff` on every open item, as above.
 2. **Checkpoint** — run the checkpoint skill with the argument `continue`, and answer its
    Step 0 question 3 up front with the `/compact <guidance>` arm of its Step 5 (not
    `/rewind`), and question 2 yourself — the in-flight inventory, the In-flight roster
