@@ -66,11 +66,19 @@ verbs, capability differences and canonical state mapping are in
 - The store is resolved `WI_ROOT` → `.claude-sandbox/work/` → `.work/`; create only via
   `$WI init`, and only when the user asks for the store.
 - `$WI init` always gets `--track` or `--no-track` from an agent; never rely on the
-  no-terminal default, which picks git-ignored for you. Inside claude-sandbox, infer the flag
-  from the sandbox's trackInHost value, once it is exported to the session: true →
-  `--track`, false or unset → `--no-track`. Until it is exported, and outside claude-sandbox,
-  ask the operator whether the store is tracked or git-ignored. The same flags record the
-  choice for an existing store with none recorded.
+  no-terminal default, which picks git-ignored for you. Read
+  `echo "${CLAUDE_SANDBOX_CONTAINER-}|${CLAUDE_SANDBOX_TRACK_IN_HOST-}"`. Nothing before the
+  `|` means outside claude-sandbox: ask the operator whether the store is tracked or
+  git-ignored. Inside, the part after it is the merged `trackInHost` of the sandbox's config
+  cascade: `true` → `--track`; `false` → `--no-track`; any other value → ask the operator.
+  Empty means either that no config defines it (the launcher then treats it as false) or
+  that the sandbox was launched before the variable was exported, and the two cannot be
+  told apart, so read the layout from the main checkout: `git check-ignore -q
+  .claude-sandbox/` exits 0 (host git ignores the dir, the false layout) → `--no-track`,
+  1 → `--track`, anything else → ask the operator. An env file in the cascade can also set
+  the variable when no config defines `trackInHost`, and the launcher still lays out as
+  false; if `init --track` then warns that git ignores the store, relay the warning and ask
+  the operator. The same flags record the choice for an existing store with none recorded.
 - Working an item follows the checkout/worktree rule — process stays in the checkout, the
   item's edits go in a worktree. A worktree is its own checkout: it lacks the main checkout's
   untracked or uncommitted store, and a tracked one there is a stale copy, so from there `WI_ROOT` points at the main checkout's
