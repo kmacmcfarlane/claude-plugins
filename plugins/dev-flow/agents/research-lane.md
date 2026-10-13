@@ -84,6 +84,10 @@ stop to ask; nobody is listening between dispatch and report.
      and count in `TOOL GAPS` the sources it cost, so the orchestrator can ask the operator
      for the tool. That line is how a research lane asks for a tool, even where the
      environment's own instructions say to stop and ask when a tool is missing.
+10. Never send a signal (kill, pkill, killall, a pattern or process-group kill) to a process
+    you did not start yourself; stop your own only by the PID you recorded when you started
+    it (`$!` after a background start), never by name or pattern — other agents' check runs
+    share this container.
 
 ## Evidence rules — these are the contract
 
