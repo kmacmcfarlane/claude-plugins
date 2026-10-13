@@ -133,15 +133,13 @@ def targets(cell):
     text = cell.replace("`", " ")
     found = [m.group(1) for m in LINK.finditer(text)]
     found += LINK.sub(" ", text).split()
-    return {clean(t) for t in found if clean(t)}
+    out = {clean(t) for t in found}
+    return {t for t in out if "://" in t or "/" in t or FILE_EXT.search(t)}
 
 
 def opened_target(cell):
     """("none" | "bad" | "ok", target) for an Opened cell."""
     o = cell.strip("*` ")
-    m = LINK.fullmatch(o)  # a whole cell that is one markdown link: its target
-    if m:
-        o = m.group(1)
     if o.lower() in NOT_OPENED:
         return "none", None
     for tool in ("WebFetch ", "Read "):
@@ -149,7 +147,11 @@ def opened_target(cell):
             rest = o[len(tool):].strip()
             lm = LINK.fullmatch(rest)
             t = clean(PAGE.sub("", lm.group(1) if lm else rest).strip("`"))
-            return ("ok", t) if t else ("bad", None)
+            if tool == "WebFetch " and "://" not in t:
+                return "bad", None  # a WebFetch target is a URL
+            if tool == "Read " and "/" not in t and not FILE_EXT.search(t):
+                return "bad", None  # a Read target is a path
+            return "ok", t
     return "bad", None
 
 
@@ -267,6 +269,11 @@ def check(path, own_dirs):
                 and not opened_matches(target, get("source"), base, owns):
             defects.append((n, "opened-elsewhere"))
             counted = "UNREACHABLE"
+        elif state == "ok" and target is not None and "://" not in target \
+                and verdict not in ALLOWED_UNOPENED \
+                and under(os.path.realpath(os.path.expanduser(target)), owns):
+            defects.append((n, "own-run-source"))
+            counted = "NOT_FOUND"
         elif state == "none" and verdict not in ALLOWED_UNOPENED:
             defects.append((n, "unopened-verdict"))
             counted = "UNREACHABLE"

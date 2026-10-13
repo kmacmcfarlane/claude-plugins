@@ -155,12 +155,15 @@ class CheckSheet(unittest.TestCase):
             ("6", "w2.md", "https://example.invalid/f", "WebFetch", "SUPPORTED"),
             ("7", "w2.md", "https://example.invalid/g", "yes, fetched", "PARTIAL"),
             ("8", "w2.md", "https://example.invalid/h", "Grep h", "NOT_FOUND"),
+            ("9", "w2.md", "https://x.invalid/a.pdf p. 4", "WebFetch 4", "SUPPORTED"),
+            ("10", "w2.md", "RFC 9110 section 8", "WebFetch RFC", "SUPPORTED"),
+            ("11", "w2.md", "RFC 9110 section 8", "Read RFC", "SUPPORTED"),
         ]
         r = self.run_check(sheet(rows))
         self.assertEqual(r.returncode, 1)
-        self.assertEqual(self.rules(r), ["bad-opened"] * 3)
+        self.assertEqual(self.rules(r), ["bad-opened"] * 6)
         t = self.tally(r)
-        self.assertEqual((t["unreachable"], t["demoted"], t["sampled"]), (4, 3, 8))
+        self.assertEqual((t["unreachable"], t["demoted"], t["sampled"]), (7, 6, 11))
 
     def test_opened_target_not_in_source(self):
         rows = ROWS_OK + [
@@ -228,6 +231,15 @@ class CheckSheet(unittest.TestCase):
         t = self.tally(r)
         self.assertEqual((t["not_found"], t["demoted"], t["sampled"]), (8, 6, 12))
 
+    def test_opened_path_inside_the_run(self):
+        # the Source reads as a project path, but what was opened sits in staging
+        rows = ROWS_OK + [("6", "w2.md", "`docs/a.md`",
+                           f"Read {self.staging}/docs/a.md", "SUPPORTED")]
+        r = self.run_check(sheet(rows))
+        self.assertEqual(r.returncode, 1, r.stdout)
+        self.assertEqual(self.rules(r), ["own-run-source"])
+        self.assertEqual(self.tally(r)["not_found"], 2)
+
     def test_project_root_file_named_like_an_own_file(self):
         # README.md exists both at the project root (the working directory) and in the
         # series; cited bare, it is the project's file, not the run's
@@ -247,8 +259,9 @@ class CheckSheet(unittest.TestCase):
 
     def test_prose_and_outside_paths_are_not_own_files(self):
         rows = ROWS_OK + [
-            ("6", "w1.md", "TCP/IP spec, arXiv:2607.08700, e.g. p. 5",
-             "WebFetch arXiv:2607.08700", "SUPPORTED"),
+            ("6", "w1.md",
+             "TCP/IP spec, arXiv:2607.08700, e.g. p. 5, https://example.invalid/abs",
+             "WebFetch https://example.invalid/abs", "SUPPORTED"),
             ("7", "w1.md", "/usr/share/doc/README.md", "R", "SUPPORTED"),
             ("8", "w1.md", "https://example.invalid/findings/w1.md", "W", "SUPPORTED"),
         ]
