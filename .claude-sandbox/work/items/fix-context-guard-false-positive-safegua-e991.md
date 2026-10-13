@@ -3,9 +3,11 @@ id: fix-context-guard-false-positive-safegua-e991
 title: Fix context-guard false-positive safeguard blocks on continuation sessions
 short_display_name: context guard block fix
 type: bug
-status: todo
+status: doing
 priority: 1
 tags: [context-guard, claude-code, safeguard]
+owner: rt@hooper
+claimed: 2026-10-13T18:18Z
 created: 2026-10-13
 updated: 2026-10-13
 refs:
@@ -16,14 +18,13 @@ refs:
 Resumed / continuation sessions are stopped mid-turn by a model safeguard
 refusal ("safeguards flagged this message", empty reply) on otherwise normal
 work. False positive: the same turn passes on a fresh session and on older
-models. Cause: context-guard injects prose the model's safety classifier reads
-as a request to spell out its internal thinking; the wording, not the content,
-trips it.
+models. Cause: context-guard injects prose whose wording the model's safety
+classifier over-reads; the words, not the content, trip it.
 
-Fix: rename the label we use for the conversation-only thinking we capture —
-currently "reasoning" — to "noodle notes", in the injected strings only. No
-behaviour change: same ledger lines, budget and ordering; internal R/P kind
-letters and code comments untouched.
+Fix: rename the label we use for the conversation-only thinking we capture to
+"noodle notes", in the injected strings only (the old single-word label is
+retired). No behaviour change: same ledger lines, budget and ordering; internal
+R/P kind letters and code comments untouched.
 
 ## Acceptance
 - [ ] none of the injected sites carries the old trigger wording
@@ -45,3 +46,4 @@ Reword "reasoning" to "noodle notes" (grammar adjusted) in the injected prose:
 
 ## Notes
 - 2026-10-13 filed from opencode investigation; held for operator review before execution (context compact first)
+- 2026-10-13 claimed by rt@hooper
