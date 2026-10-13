@@ -709,6 +709,124 @@ class TestLedgerPointer(Base):
         self.assertEqual(self.read_ledger(), "")
 
 
+class TestLedgerPointerRepo(Base):
+    """A commit's P-entry names the repo the commit landed in, from the
+    command's own `git -C` / `cd`, not the session's cwd."""
+    point = TestLedgerPointer.point
+    read_ledger = TestLedgerPointer.read_ledger
+
+    def setUp(self):
+        super().setUp()
+        root = os.path.realpath(self.tmp.name)
+        self.cwd = os.path.join(root, "session")
+        self.other = os.path.join(root, "other repo")  # a space in the path
+        self.sub = os.path.join(self.other, "pkg", "deep")
+        os.makedirs(self.cwd)
+        os.makedirs(self.sub)
+        subprocess.run(["git", "init", "-q", self.other], check=True,
+                       capture_output=True)
+
+    def commit(self, command):
+        self.point({"tool_name": "Bash", "cwd": self.cwd,
+                    "tool_input": {"command": command},
+                    "tool_response": {"stdout": "[main abc1234] m\n"}})
+        led = self.read_ledger()
+        self.assertIn("- P commit abc1234", led)
+        return led.rstrip("\n").splitlines()[-1].split(" -> ", 1)[1]
+
+    def test_git_dash_c(self):
+        q = shlex.quote(self.other)
+        self.assertEqual(self.commit(f"git -C {q} commit -m m"), self.other)
+
+    def test_git_dash_c_subdir_resolves_to_toplevel(self):
+        q = shlex.quote(self.sub)
+        self.assertEqual(self.commit(f"git -C {q} add . && git -C {q} commit -m m"),
+                         self.other)
+
+    def test_leading_cd_and(self):
+        q = shlex.quote(self.sub)
+        self.assertEqual(self.commit(f"cd {q} && git commit -m m"), self.other)
+
+    def test_leading_cd_semicolon(self):
+        q = shlex.quote(self.other)
+        self.assertEqual(self.commit(f"cd {q}; git add x; git commit -qm m"),
+                         self.other)
+
+    def test_cd_then_relative_dash_c(self):
+        root = shlex.quote(os.path.dirname(self.other))
+        self.assertEqual(
+            self.commit(f"cd {root} && git -C 'other repo/pkg' commit -m m"),
+            self.other)
+
+    def test_quoted_paths_with_spaces(self):
+        for cmd in (f'git -C "{self.other}" commit -m "a b"',
+                    f"cd '{self.sub}' && git commit -m 'a b'"):
+            with self.subTest(cmd=cmd):
+                self.assertEqual(self.commit(cmd), self.other)
+
+    def test_unknown_path_falls_back_to_cwd(self):
+        for cmd in ("git -C /no/such/dir commit -m m",
+                    "cd /no/such/dir && git commit -m m",
+                    'git -C "$REPO" commit -m m',
+                    "git commit -m m"):
+            with self.subTest(cmd=cmd):
+                self.assertEqual(self.commit(cmd), self.cwd)
+
+    def test_newline_separated(self):
+        q = shlex.quote(self.other)
+        for cmd in (f"cd {q}\ngit add x\ngit commit -m m",
+                    f"cd {q} &&\ngit commit -m m",
+                    f"cd {q};\n\ngit commit -m m"):
+            with self.subTest(cmd=cmd):
+                self.assertEqual(self.commit(cmd), self.other)
+
+    def test_commit_dash_c_rev_is_not_a_directory(self):
+        # `commit -C <rev>` reuses a message; a same-named directory is not
+        # where the commit lands.
+        root = os.path.dirname(self.other)
+        q = shlex.quote(root)
+        self.assertEqual(self.commit(f"cd {q} && git commit -C 'other repo'"), root)
+
+    def test_global_config_option_before_dash_c(self):
+        q = shlex.quote(self.other)
+        self.assertEqual(self.commit(f"git -c k=v -C {q} commit -m m"), self.other)
+
+    def test_heredoc_message(self):
+        q = shlex.quote(self.other)
+        self.assertEqual(
+            self.commit(f"git -C {q} commit -F- <<'EOF'\na; b && c\nEOF"),
+            self.other)
+
+    def test_subshell_and_brace_group(self):
+        q = shlex.quote(self.other)
+        for cmd in (f"(cd {q} && git commit -m m)",
+                    f"{{ cd {q}; git commit -m m; }}"):
+            with self.subTest(cmd=cmd):
+                self.assertEqual(self.commit(cmd), self.other)
+
+    def test_line_continuation(self):
+        q = shlex.quote(self.other)
+        self.assertEqual(self.commit(f"git -C {q} \\\n commit -m m"), self.other)
+
+    def test_pushd_and_cd_options(self):
+        q = shlex.quote(self.sub)
+        for cmd in (f"pushd {q} && git commit -m m",
+                    f"cd -P {q} && git commit -m m"):
+            with self.subTest(cmd=cmd):
+                self.assertEqual(self.commit(cmd), self.other)
+
+    def test_empty_dash_c_keeps_the_directory(self):
+        q = shlex.quote(self.other)
+        self.assertEqual(self.commit(f"cd {q} && git -C '' commit -m m"), self.other)
+
+    def test_backgrounded_cd_is_skipped(self):
+        q = shlex.quote(self.other)
+        self.assertEqual(self.commit(f"cd {q} & git commit -m m"), self.cwd)
+
+    def test_unparseable_command_falls_back_to_cwd(self):
+        self.assertEqual(self.commit("git commit -m 'unterminated"), self.cwd)
+
+
 PLAYBOOK = os.path.join(os.path.dirname(HOOKS), "skills", "checkpoint", "references",
                         "operator-playbook.md")
 
