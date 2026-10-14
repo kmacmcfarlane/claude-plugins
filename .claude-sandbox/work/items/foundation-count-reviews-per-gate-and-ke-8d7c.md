@@ -22,3 +22,7 @@ target: series .claude-sandbox/investigations/foundation-count-reviews-per-gate-
 budget: waived (operator 2026-10-08); spend measured
 dispatch: planner opus high — plan per-gate review counts and overlapping operator talk (answer 205 b)
 agent: planner a454d20caa97aeb97 round 1
+return: planner DONE .claude-sandbox/investigations/foundation-count-reviews-per-gate-and-ke-8d7c (00_initial.md; F1 per-gate counting, F2 ask ahead; OQ1-OQ7; F1 after fb35)
+baseline: 9ccc9dc88f17cae9b9dd6cfed2aad901de2ba5ab1d58782f9b930d15d29caa0c  00_initial.md 30eb9ce57042429e156362008390719881ae7de87cb834376dbee0cf065cf18d  INDEX.md 
+dispatch: reviewer opus high — plan review round 1 (fresh)
+agent: reviewer a06b4755eb6d8b126 plan round 1
