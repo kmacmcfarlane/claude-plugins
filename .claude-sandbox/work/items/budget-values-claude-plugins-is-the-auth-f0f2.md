@@ -3,10 +3,11 @@ id: budget-values-claude-plugins-is-the-auth-f0f2
 title: "Budget values: claude-plugins is the authority now (agents decision 0010); repoint quota_budget.py and budget.md"
 short_display_name: budget values owned here now
 type: chore
-status: todo
+status: done
 priority: 2
 created: 2026-10-13
-updated: 2026-10-13
+updated: 2026-10-14
+closed: 2026-10-14
 refs:
   - agents decision-record-0010-librarian-budget-va-9327
   - agents decisions/0010 716bc00
@@ -23,3 +24,6 @@ Overlaps budget-asks-a-per-kind-sanity-ceiling-pl-28e1, whose F1 edits the same 
 - next: —
 - blocked: —
 - learned: —
+
+## Notes
+- 2026-10-14 done: b12bd09f
