@@ -19,3 +19,4 @@ Operator 2026-10-14: create a decision page for the open decisions, including th
 - blocked: —
 - learned: —
 published: open-decisions page https://claude.ai/artifact/YXBW5U31wCnd2jPAWyJF1F version 2 at 2026-10-14T06:53Z, 13 cards (70, 146, 172, 180, 204-208, 210, 213-215), template from main; check_cards exit 0; answers collection empty
+read: answers page at 2026-10-14T07:24Z — 12 answers (146, 70, 180, 204-208, 210, 213-215); 172 open; echoed in chat

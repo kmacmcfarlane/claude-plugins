@@ -142,3 +142,5 @@ answer 176: 176a (2026-10-06T19:28Z, chat; read as: (a) quota-aware — below 50
 helper: scribe sonnet low — cards.json for the decision page (15 open decisions) — agent ae38c041c289219b5
 note: 2026-10-07T20:40Z decision page published https://claude.ai/artifact/7BXtgDngojdMHBr17K33zr (15 cards, rev 2026-10-07T07:00Z; answers owner-write); answers read back when the operator says done
 shown 146: 2026-10-14T06:53Z page
+answer 146: a (retire as moot) (answer page YXBW5U31wCnd2jPAWyJF1F, rev 2026-10-14T00:30:00Z, at 2026-10-14T07:20:37.266Z)
+correction: 2026-10-14T07:22Z a stray wi done closed this item while recording answer 146; reverted to its prior status by the librarian

@@ -54,3 +54,4 @@ landed: 91cb494 (merge of 86194d3, c3389e5, 9b8fe93); Checks 10/10 OK
 - 2026-10-09 done
 shown 205: 2026-10-09T08:57Z page
 shown 205: 2026-10-14T06:53Z page
+answer 205: b — "Foundation runs should have more review, so a cycle per gate makes sense. We should consider how to continue on to starting working on the next phase while the gate review is being processed to prevent the flow of the requirements gathering and decision-making progress from getting too broke up. There should be a class of details to discuss with the operator that are likely still applicable even after the review feedback comes back, so we should keep the conversation going at the expense of a more complex gating/review-cycle structure. Propose the optimal way to implement this" (answer page YXBW5U31wCnd2jPAWyJF1F, rev 2026-10-09T10:00:00Z, at 2026-10-14T07:20:13.953Z)

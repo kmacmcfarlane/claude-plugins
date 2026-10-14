@@ -112,3 +112,6 @@ decision 204: Should the turn log ship as the first instrument of a new plugin c
 dispatch: none — turn-log build waits on decision 204
 shown 204: 2026-10-09T08:57Z page
 shown 204: 2026-10-14T06:53Z page
+answer 204: dig into — "option \"a\" makes sense, you'd need the rest of the repo to make use of the telemetry the plugin provides. How can the plugin be installed at the user-level from inside a repo though? That part seems like a real tradeoff. Explain your proposal for installation of the hooks without going through the kmacmcfarlane plugin marketplace. How would updates happen (wouldn't be automatic then, right?)" (answer page YXBW5U31wCnd2jPAWyJF1F, rev 2026-10-09T10:00:00Z, at 2026-10-14T07:14:34.117Z)
+helper: scout opus medium — dig into 204: user-level install of a repo's plugin without this marketplace, and how updates reach it
+agent: scout a09f61046bf15b65a

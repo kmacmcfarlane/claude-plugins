@@ -59,3 +59,9 @@ shown 208: 2026-10-09T08:57Z page
 note: 2026-10-09T08:59Z DF-9 returns to this item's stage 2 (not 64c7): the librarian-mode hint points at dev-cycle references/bindings.md § Peer hint, which this item adds; text per 00 § DF-9 ('context-guard adds the context gate and checkpoints'). KD-2 stays with d0b0 (inline, no pointer needed)
 shown 207: 2026-10-14T06:53Z page
 shown 208: 2026-10-14T06:53Z page
+answer 207: b (unattended) — "we can run interactively if the unattended probes fail, assuming you can tell if they fail" (answer page YXBW5U31wCnd2jPAWyJF1F, rev 2026-10-09T10:00:00Z, at 2026-10-14T07:08:07.891Z)
+answer 208: a (answer page YXBW5U31wCnd2jPAWyJF1F, rev 2026-10-09T10:00:00Z, at 2026-10-14T07:08:42.503Z)
+target: an agent worktree off main (f4be55ec); per the series plan
+budget: waived (operator 2026-10-08); spend measured
+dispatch: implementer opus medium — build per the series with unattended probes and failure detection (answer 207 b), hub statusline mention removed (answer 208 a)
+agent: implementer a7d5d84371ff4f280 round 1

@@ -23,3 +23,13 @@ target: an agent worktree branch off main (b12bd09f); plugins/operator-interacti
 budget: waived (operator 2026-10-08); spend measured
 dispatch: implementer opus medium — sticky progress bar in the template; title-after-session-name rule in the skill
 agent: implementer ae03c4ed992c8b482 round 1
+result: DONE round 1 at 0da9eab3 (bar moved out of the header, sticky top 0 with bg/z-index/scroll-padding; title rule in SKILL.md Step 3 from the session registry as already recorded observed in statusline.py and session-name.md; test_sticky.py; operator-interaction 143, kit-dev 21 OK)
+dispatch: reviewer opus high — fresh (rule 4)
+agent: reviewer a67b6d52f6064e806 round 1 at 0da9eab3
+verdict: NEEDS_CHANGES round 1 at 0da9eab3 (2 medium: env vars are documented, cite env-vars; version label 2.1.293 should be 2.1.292; lows: fixed scroll padding under a 3-line bar, title set after the pre-publish check, CLAUDE.md layout misses test_sticky.py, owner source assumed; nits: grouped selectors in the test, title format copied in schema)
+decided: 2026-10-14T07:15Z words — owner prefix reads the remote's owner segment for any host (the operator's example matches the GitHub owner; open question carried in the Report)
+dispatch: implementer opus medium — resume, fix round 1
+agent: implementer ae03c4ed992c8b482 round 2
+result: DONE round 2 at 2646a1bf after merging main (0f4ba6eb); ResizeObserver line guarded for node; title rule moved to Step 2; operator-interaction 145, kit-dev 21 OK
+dispatch: reviewer opus high — resume, round 2
+agent: reviewer a67b6d52f6064e806 round 2 at 2646a1bf
