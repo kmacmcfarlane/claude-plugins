@@ -33,3 +33,6 @@ return: planner DONE .claude-sandbox/investigations/foundation-count-reviews-per
 baseline: 9ccc9dc88f17cae9b9dd6cfed2aad901de2ba5ab1d58782f9b930d15d29caa0c  00_initial.md 1ca1a907ad775373ff39dd331641f83d108d31623368e504444c3e092776078f  01_review-round-1.md 6489274214b7bb98e37de5a8833a6b3f65f62a76a6db75369eb3a634798d626d  INDEX.md 
 dispatch: reviewer opus high — resume, plan review round 2
 agent: reviewer a06b4755eb6d8b126 plan round 2
+verdict: NEEDS_CHANGES plan round 2 (all 22 closed; new 1 medium: a reopen during gate N's review drops gate N's open work; 5 low: budget src read by the finish chain and fable rule, no-reading line re-base, resume.md granted-round end, Ids: on reopen serials, ahead question vs Held row double decision, OQ7 names incomplete; 3 nits)
+dispatch: planner opus high — resume, plan fix round 2
+agent: planner a454d20caa97aeb97 round 3
