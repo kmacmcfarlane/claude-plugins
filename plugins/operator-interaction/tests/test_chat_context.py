@@ -3,7 +3,8 @@
 The decisions skill's cards and blocks follow the page's `context` field: the decision line
 (the title, then What), then Context, then the Impact and the options. A card's Context is
 one or two sentences at the page's summary size, ending on the resume cue; a block's is a
-bullet list at the page's medium size, its first bullet the card's Context. A list line
+bullet list at the page's medium size, its first bullet the card's Context, and a block's
+Impact line stands above its table. A list line
 carries none. Checked against the templates in `references/rendering.md` and every card and
 block in `references/gallery.md`.
 
@@ -99,7 +100,8 @@ class Templates(unittest.TestCase):
 
     def test_the_block_template_runs_what_context_bullets_table(self):
         block = fenced(RENDERING.read_text(), "**N — Title as a question?** ⚠ one-way")
-        self.assertEqual(heads(block)[:5], ["What", "Context", "table", "Why now", "Why ask"])
+        self.assertEqual(heads(block)[:6],
+                         ["What", "Context", "Impact", "table", "Why now", "Why ask"])
         k = next(i for i, x in enumerate(block) if x.startswith("**Context:**"))
         self.assertTrue(block[k + 1].startswith("- the card's Context"), block[k + 1])
 
@@ -125,8 +127,8 @@ class GalleryContexts(unittest.TestCase):
 
     def test_every_card_and_block_runs_what_context_impact(self):
         for n, kind, body in views(GALLERY):
-            want = ["What", "Context", "Impact" if kind == "card" else "table"]
-            self.assertEqual(heads(body)[:3], want, f"gallery.md:{n} ({kind})")
+            want = ["What", "Context", "Impact"] + (["table"] if kind == "block" else [])
+            self.assertEqual(heads(body)[:len(want)], want, f"gallery.md:{n} ({kind})")
 
     def test_a_cards_context_is_one_or_two_sentences_ending_on_the_cue(self):
         for n, kind, body in views(GALLERY):
