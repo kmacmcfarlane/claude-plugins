@@ -93,7 +93,9 @@ the operator has nothing left to add, or holds the rest.
 propose the scope through it. Ask its answer mode who owns each aspect at the edge. Ask its
 write mode for a shape-checked draft of the repo's `CLAIM.md`, built from the scope: the
 areas, the `## Not ours` lines, a `## Boundaries` entry for each row of the neighbours
-table, and `## Interfaces` naming each contract the repo will define, with its location.
+table, and `## Interfaces` naming each contract the repo will define, with its location;
+an interface's terms (`references/moves.md` § The rows) are drafted at phase 2 and approved
+at gate G2 (Step 2).
 Ask it to classify the draft as substance or upkeep. The draft goes in the Scope and context
 section, whole for a new claim, as its changed lines for a revision. A new claim, or a
 substance change, is approved with gate G1 (in a lite run, with its one gate): the decision
@@ -116,8 +118,12 @@ Foundation block, then **gate G1** (§ The gates).
 Draft the phase-2 artifacts: context and containers, solution strategy, traceability,
 contracts and the threat and privacy model (or their one-line skips), an ADR for each one-way
 decision, risks with a spike for each H risk the design cannot retire. Research for a vendor
-or protocol fact; a probe-ahead spike for a risk only building answers. Write
-the architecture serial at the next free number (`NN_architecture.md`, `references/state.md`
+or protocol fact; a probe-ahead spike for a risk only building answers. Draft the terms of
+each interface the claim names as its `## Interfaces` lines; with `ownership:claim-md`
+listed, through its write mode as in Step 1 (ask only for the checked changed lines and
+their classification; the approval is gate G2's). The G2 decision shows those lines as the
+write mode shows a revision, and nothing is written before that answer. Write the
+architecture serial at the next free number (`NN_architecture.md`, `references/state.md`
 § The series), regenerate the index, then **gate G2**.
 
 ## Step 3 — Phased plan
@@ -166,9 +172,10 @@ Every gate has three parts, in order (`references/gates.md`):
    stated requirements). The fix loop and its cap are the `dev-cycle` skill's
    `references/fix-loop.md` and its SKILL.md § Step 4.3; each revision is a new serial.
 3. **The operator's approval**: gate G1 always; gate G2 only for a one-way ADR or a change
-   to the repo's `CLAIM.md`, the rest reported; gate G3 always, with a short architecture
-   summary when G2 was reported. One decision per gate:
-   approve, approve with holds, revise, reopen an earlier phase, or decide later.
+   to the repo's `CLAIM.md` (the terms of an interface it names included), the rest
+   reported; gate G3 always, with a short architecture summary when G2 was reported. One
+   decision per gate: approve, approve with holds, revise, reopen an earlier phase, or
+   decide later.
 
 A gate after a reopen runs on the delta only. The lite size runs one gate: G3's checklist,
 plus G1's lines for requirements, quality scenarios and inferred lines, and the operator's
