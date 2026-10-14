@@ -7,7 +7,9 @@ Read from `skills/decision-page/assets/index.html` as text (no node needed):
 - the bar is a direct child of `.wrap`, not of `header`: a sticky element sticks only inside
   its parent, so inside the header it would scroll away with it;
 - no ancestor of the bar (`html`, `body`, `.wrap`) sets `overflow`, which would stop it
-  sticking to the viewport.
+  sticking to the viewport (a grouped selector such as `html,body` counts for each);
+- a ResizeObserver keeps the scroll padding at the bar's height, so a card opened from a
+  slug is not hidden under it (`scroll-padding-top` in the CSS is the fallback).
 
 Each check runs on the real page (no problems) and on a mutated copy (a problem).
 
@@ -26,7 +28,11 @@ def rules(html):
     css = re.search(r"<style>(.*?)</style>", html, re.S).group(1)
     css = re.sub(r"/\*.*?\*/", "", css, flags=re.S)
     css = re.sub(r"@media[^{]*\{(?:[^{}]*\{[^{}]*\})*[^{}]*\}", "", css)
-    return {sel.strip(): body for sel, body in re.findall(r"([^{}]+)\{([^{}]*)\}", css)}
+    out = {}
+    for sels, body in re.findall(r"([^{}]+)\{([^{}]*)\}", css):
+        for sel in sels.split(","):
+            out[sel.strip()] = out.get(sel.strip(), "") + ";" + body
+    return out
 
 
 def decls(body):
@@ -49,6 +55,8 @@ def sticky_problems(html):
     for sel in ("html", "body", ".wrap"):
         if any(k.startswith("overflow") and k != "overflow-wrap" for k in decls(r.get(sel, ""))):
             out.append(sel + " sets overflow")
+    if not re.search(r'new ResizeObserver\(.*?scrollPaddingTop.*?offsetHeight', html):
+        out.append("no ResizeObserver keeps the scroll padding at the bar's height")
     body = html.split("</style>", 1)[1]
     header = re.search(r"<header>.*?</header>", body, re.S)
     if header and 'class="bar"' in header.group(0):
@@ -76,6 +84,15 @@ class StickyBar(unittest.TestCase):
     def test_overflow_ancestor(self):
         bad = self.html.replace(".wrap{", ".wrap{overflow:hidden;", 1)
         self.assertIn(".wrap sets overflow", sticky_problems(bad))
+
+    def test_grouped_overflow(self):
+        bad = self.html.replace("body{", "html,body{overflow-x:hidden}\nbody{", 1)
+        self.assertIn("html sets overflow", sticky_problems(bad))
+
+    def test_no_resize_observer(self):
+        bad = self.html.replace("new ResizeObserver", "new Thing", 1)
+        self.assertIn("no ResizeObserver keeps the scroll padding at the bar's height",
+                      sticky_problems(bad))
 
     def test_bar_in_header(self):
         bar = re.search(r'  <div class="bar">.*?</div>\n', self.html, re.S).group(0)

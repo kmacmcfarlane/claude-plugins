@@ -148,6 +148,40 @@ The rules below are what the digest condenses:
 - Every mention of another decision is a slug, `[[N]]`; a decision not on the page that a
   slug names gets a `refs` entry.
 - `follow` is copied from `references/writer-digest.md` § Top level as it stands.
+- **The title** names the session the page belongs to: `page.title` is
+  `(<owner>) <session name>`, for example `(kmacmcfarlane) claude-plugins context-guard
+  stopping`; on a republish, set it again. A `page:` id warning on a title taken from the
+  session name is left knowingly: it is the operator's own label.
+  - `<owner>` is the remote's owner segment in `git remote get-url origin`
+    (`…:<owner>/<repo>` or `…/<owner>/<repo>`), any host. With no remote, or one that does
+    not parse, leave out `(<owner>) ` and its space.
+  - `<session name>` is the name the operator set for this session (`/rename`, or `--name`
+    at launch), the one they see in the top bar. A name the caller supplies is used as
+    given. Otherwise read it from this session's own entry in Claude Code's local session
+    registry, `${CLAUDE_CONFIG_DIR:-~/.claude}/sessions/$CLAUDE_PID.json`: only when its
+    `sessionId` equals `$CLAUDE_CODE_SESSION_ID` and its `nameSource` is `user` (a name the
+    operator set; `derived` is a default nobody chose), its `name`. Read only that file;
+    never list the directory. The registry file and its keys (`sessionId`, `name`,
+    `nameSource`) are not documented: they are observed (the file on disk, Claude Code
+    2.1.292). `CLAUDE_PID` and `CLAUDE_CODE_SESSION_ID` are documented
+    (https://code.claude.com/docs/en/env-vars). The documented session name, `session_name`
+    in the status line's input (https://code.claude.com/docs/en/statusline), reaches only a
+    status-line command, not a writer.
+  - With no session name (no caller-supplied name, no entry for this session, or a
+    `derived` one), the title is `<repo>: open decisions`, `<repo>` the main checkout's
+    directory name. A writer working for a caller may ask the caller for the name before
+    falling back.
+
+  ```bash
+  python3 -I - "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/sessions/${CLAUDE_PID:-none}.json" <<'PY'
+  import json, os, sys
+  try: d = json.load(open(sys.argv[1]))
+  except (OSError, ValueError): d = {}
+  sid = os.environ.get('CLAUDE_CODE_SESSION_ID')
+  ok = sid and isinstance(d, dict) and d.get('sessionId') == sid and d.get('nameSource') == 'user'
+  print(d.get('name') if ok and isinstance(d.get('name'), str) else '')
+  PY
+  ```
 - Check before publishing that the file passes every refusal `references/writer-digest.md` §
   The checks lists (the page refuses a file that fails one, and says which): whole-number `n`,
   single `a`–`z` letters in order ending `z`, a `rec` among them or null with `norec`, a
@@ -179,43 +213,11 @@ Call the Artifact tool:
 The shipped template is the page's design: it already meets the page contract (title,
 colour tokens with dark mode, body background, 16px gutter), which settles the Artifact
 tool's design step for a publish or republish of it. Change nothing in it but the `<title>`,
-set by the title rule below; a change to the template itself is a new design and goes
+copied from `page.title` below; a change to the template itself is a new design and goes
 through the `artifact-design` skill.
 
-**The title** names the session the page belongs to. Set `page.title` in `cards.json` and
-the working copy's `<title>` (the tab and the gallery card's name) to the same text,
-`(<owner>) <session name>`, for example `(kmacmcfarlane) claude-plugins context-guard
-stopping`; on a republish, set it again.
-
-- `<owner>` is the repo's GitHub owner: the path segment before the repo name in
-  `git remote get-url origin` (`git@github.com:<owner>/<repo>.git`,
-  `https://github.com/<owner>/<repo>`). With no `origin`, or one not on GitHub, leave out
-  `(<owner>) ` and its space.
-- `<session name>` is the name the operator set for this session (`/rename`, or `--name` at
-  launch), the one they see in the top bar. A name the caller supplies is used as given.
-  Otherwise read it from this session's own entry in Claude Code's local session registry,
-  `${CLAUDE_CONFIG_DIR:-~/.claude}/sessions/$CLAUDE_PID.json`: only when its `sessionId`
-  equals `$CLAUDE_CODE_SESSION_ID` and its `nameSource` is `user` (a name the operator set;
-  `derived` is a default nobody chose), its `name`. Read only that file; never list the
-  directory. The registry and those two variables are not documented: they are observed (the
-  registry file on disk and the Bash tool's environment, Claude Code 2.1.293). The
-  documented session name, `session_name` in the status line's input
-  (https://code.claude.com/docs/en/statusline), reaches only a status-line command, not a
-  writer.
-- With no session name (no caller-supplied name, no entry for this session, or a `derived`
-  one), the title is `<repo>: open decisions`, `<repo>` the main checkout's directory name. A
-  writer working for a caller may ask the caller for the name before falling back.
-
-```bash
-python3 -I - "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/sessions/${CLAUDE_PID:-none}.json" <<'PY'
-import json, os, sys
-try: d = json.load(open(sys.argv[1]))
-except (OSError, ValueError): d = {}
-sid = os.environ.get('CLAUDE_CODE_SESSION_ID')
-ok = sid and isinstance(d, dict) and d.get('sessionId') == sid and d.get('nameSource') == 'user'
-print(d.get('name') if ok and isinstance(d.get('name'), str) else '')
-PY
-```
+Copy `page.title` (step 2's title rule) into the working copy's `<title>` (the tab and the
+gallery card's name); on a republish, copy it again.
 
 Then one functional check, a read only: ArtifactData
 `list` on collection `answers` with the url — it returns a page (empty on a new artifact) or

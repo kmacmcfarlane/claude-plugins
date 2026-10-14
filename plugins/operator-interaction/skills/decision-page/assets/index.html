@@ -231,6 +231,10 @@ footer{color:var(--muted);font-size:.85rem;max-width:70ch}
 let LAYERS=[],FOLLOW=[],CARDS=[],REFS={},byN=new Map(),FOLLOW_KEYS=new Set();
 let answers={},raw={},db=null,col=null,readonly=false;const timers={},inflight={},dirty={};
 const $=(s,r=document)=>r.querySelector(s);
+// the scroll padding follows the sticky bar's real height (it wraps at phone width); 5rem in
+// the CSS is the fallback without ResizeObserver (and under node, which has neither)
+if(typeof ResizeObserver==="function"){const barEl=$(".bar");
+  if(barEl)new ResizeObserver(()=>document.documentElement.style.scrollPaddingTop=(barEl.offsetHeight+12)+"px").observe(barEl)}
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));
 const nameOf=k=>{const c=byN.get(k);if(c)return c.t;const r=REFS[k];return r?r.short:""};
 const slug=k=>'<button type="button" class="slug'+(byN.has(k)?' in':'')+'" data-ref="'+esc(k)+'" aria-haspopup="dialog">'+esc(k)+(nameOf(k)?' · '+esc(nameOf(k)):'')+'</button>';
