@@ -228,7 +228,7 @@ function depth(c, say) {
   for (const o of c.o) {
     const k = o[0], top = words(topOf(o[1], optLevels(c, k))), r = row(c, k);
     if (k === "z") { optWords += top + words(o[2]); continue; }
-    if (!r && !c.warn) say("row " + k, "depth: (" + k + ") has no blocks row: give it happens, who, undo and cost");
+    if (!r && !c.warn) say("row " + k, "depth: (" + k + ") has no blocks row: give it happens, who and undo, and cost where it has one");
     const ow = top + (r ? words([r.happens, r.who, r.undo, r.cost]) : 0);
     optWords += ow + words(o[2]);
     if (optLevels(c, k).length && ow < 30) say("opt " + k, "depth: (" + k + ")'s detail is " + ow + " words (its fullest text and its blocks row): write it near 60–120, what happens, undo, who and cost, from the sources; or leave it knowingly");

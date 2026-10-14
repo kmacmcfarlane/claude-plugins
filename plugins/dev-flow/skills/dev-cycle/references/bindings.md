@@ -388,7 +388,7 @@ as a decision through the decision channel, per the `foundation` skill's
 `references/moves.md`: the question names the artifact, the reopen the line names (Reopen
 requirements or Reopen architecture) and why, and the reopen's gate (gate G1 re-runs on
 the delta and the operator approves the change; or gate G2 re-runs on the delta and the
-operator approves any one-way ADR change). Options:
+operator approves any one-way ADR change and any change to an interface's terms). Options:
 
 - (a) **reopen, and this item stops** — the reopen is filed as its own item under the
   foundation item (`$WI add … --parent <foundation id>`; no store: Step 6's `open

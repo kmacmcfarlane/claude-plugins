@@ -110,15 +110,16 @@ The rules below are what the digest condenses:
 - Every card carries `impact`, the decision's Impact across all its options (effect, wait,
   reach, undo; the `decisions` skill's `references/rendering.md` § Impact), so every view on
   the page shows it: the effect in the map and on a closed card, the facets one a line on an
-  open one, the table in its Options in full. Its `effect` says what the decision changes and
+  open one, each option's own row in its **More**. Its `effect` says what the decision changes and
   settles, favouring no option, written from the card's own option effects (`blocks`, each
   option's `impact`); copy a stored Effect only when it names each option's outcome or the
   card was stored or revised on or after 2026-10-14; otherwise write it from the option
   effects (the pre-publish check's rec-only lint backs this). Its `wait`, `reach` and `undo`
   are copied from the caller's stored line where it keeps one and they hold across the
   options. Each option's own effect lives in its `blocks` row.
-- Every card carries `blocks`, its Impact table row per option but (z) (effect, reach, undo,
-  and cost); a ⚠ one-way card is refused without them. A round ask carries `ifleft` and
+- Every card carries `blocks`, its Impact row per option but (z) (effect, reach, undo,
+  and cost where it has one), shown in that option's **More**; a ⚠ one-way card is refused
+  without them. A round ask carries `ifleft` and
   `roundcosts`; a status-quo default, `ifunanswered`.
 - Every card carries the depth the decisions skill's block holds, scaled to the decision, up to
   the soft sizes (`references/writer-digest.md` § Levels and their shapes): Why now and Why ask

@@ -69,7 +69,8 @@ Size: full | lite · Mode: new | retrofit · Item: <wi id | none>[ (was <old-rep
 - **Gate**: `not started`, `in review`, `CLEAR round <n>`, `re-run after <reopen serial>`,
   or `retrofit` (a retrofit's gap decisions are still open, `references/retrofit.md`).
 - **Operator**: `needed` or `reported`, per `references/gates.md` § 3; for gate G2, the
-  reason when it is `needed` (the one-way ADR's id, the claim change).
+  reason when it is `needed` (the one-way ADR's id, `claim: interface terms`, the claim
+  change).
 - **Approved**: the date the operator approved, or `—`.
 - **Gates passed** is the series' own record of each gate's passing, one line per pass,
   appended and never removed: `G<n> passed <YYYY-MM-DD> (<repo>#<N> | reported | in
@@ -194,10 +195,11 @@ phase-1 artifacts), `docs/architecture.md` (the phase-2 artifacts), `docs/adr/NN
 (one per ADR, append-only: a superseded ADR keeps its file and gains its Status line), and
 the repo's `CLAIM.md`, through the `ownership:claim-md` skill's write mode when the
 session lists it, landing the draft that gate G1 (or a reopen's G1 re-run) approved, with
-no second decision: its Status line and Amendments line name that approval's date and its
-`decision N:` line on the foundation item (with no store, the date alone); else as the file
-the series approved. After every reopen that passes its gates, `F0`'s re-run is filed as a
-new item under the foundation item (§ The work item) and built like any feature.
+the interface terms gate G2 (or its re-run) approved, and no further decision: the Status
+line names the later of those approvals, and an Amendments line names each, by its date and
+its `decision N:` line on the foundation item (with no store, the date alone); else as the
+file the series approved. After every reopen that passes its gates, `F0`'s re-run is filed
+as a new item under the foundation item (§ The work item) and built like any feature.
 
 Where the docs live is asked once per repo, at the first run's Frame, and recorded in
 Confirmed Assumptions; the recommendation is tracked `docs/` and `docs/adr/`. In a public
