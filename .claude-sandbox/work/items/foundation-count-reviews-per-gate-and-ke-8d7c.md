@@ -60,3 +60,10 @@ decision 223: OQ4 — does asking ahead also run under an orchestrator (the libr
 decision 224: OQ5 — does a new gate pass (a revise, or a gate resuming after a reopen) start a fresh review count? — options: (a) yes [recommended] | (b) no, it continues the gate's count | (z) decide later: ships as (a)
 decision 225: OQ6 — do foundation runs stay in the xhigh planner trial? — options: (a) exclude them, with the trial's pause rule re-read [recommended] | (b) enrol on the first gate, counted within it | (z) decide later: ships as (a)
 decision 226: OQ7 — approve the new record names this adds (they become part of the store format other tools read)? — options: (a) approve: the gate-open: line, the ahead tag, gate-status values 'in review round <n>' and 'paused for <reopen serial>', the cap reason, the AHEAD field, the per-gate budget source, the Ids: line, the bites field, the rests on: card line, and the status words provisional, re-ask, carried, held, amendment, reopen, raised, dropped [recommended] | (b) the same set with the line named gate: | (c) other names, in your words | (z) decide later: ships as (a)
+shown 220: 2026-10-14T08:14Z page
+shown 221: 2026-10-14T08:14Z page
+shown 222: 2026-10-14T08:14Z page
+shown 223: 2026-10-14T08:14Z page
+shown 224: 2026-10-14T08:14Z page
+shown 225: 2026-10-14T08:14Z page
+shown 226: 2026-10-14T08:14Z page

@@ -31,3 +31,6 @@ verdict: NEEDS_CHANGES round 1 at eefe676e (2 medium: the list line keeps the re
 decision 219: On a decision's one-line list entry (the list at the end of a message and the librarian's Groom row), which effect follows the recommendation? The card now gives Effect across all options; the build kept the recommended option's own effect on the list line to stay terse — options: (a) the recommended option's own effect, as built: terse, and the rec label already names whose effect it is [recommended] | (b) the Effect across all options, as the page's map does: one meaning of Effect everywhere, but longer list lines | (z) decide later: the build lands as (a), marked pending your answer
 dispatch: implementer opus medium — resume, fix round 1 (findings 1 wording, 2-4, 6-8; the list-line choice stays as built, pending decision 219)
 agent: implementer a59b7de78c35ac530 round 2
+result: DONE round 2 at bcb956e8 (all fixes; list line pending 219; 162 OK)
+dispatch: implementer opus medium — resume, merge main (3769 landed) then review round 2
+shown 219: 2026-10-14T08:14Z page

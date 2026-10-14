@@ -68,3 +68,10 @@ agent: implementer a7d5d84371ff4f280 round 1
 result: DONE round 1 at 72f0bbb5 (helper in context-guard and statusline-hub, identity test in kit-dev; adopters; 208 a: hub first-run install mention removed; probes O1, O2, O4 (UserPromptSubmit only), O5 pass, O3 fail: the prose echo of the switch is denied in default mode, so prose no longer reads it; host settings hash unchanged every run)
 dispatch: reviewer opus high — fresh (rule 4)
 agent: reviewer a20cca2804ea4285f round 1 at 72f0bbb5
+verdict: NEEDS_CHANGES round 1 at 72f0bbb5 (1 high: prose tips no longer honour the switch, against README principle 4 and every tip's text; 1 medium: 'prose cannot read it' overstates the probe, printenv ran under an allow rule; 2 low: SessionStart not observed to show a hint, '-p unseen' wording; 2 nits)
+decided: 2026-10-14T08:01Z scope — route A (prose reads the switch through a skill's injected printenv line pre-approved in allowed-tools, per https://code.claude.com/docs/en/skills) keeps README principle 4 unchanged, so no doctrine decision; one more probe in the same isolation under answer 207 (b); if it fails, route B (a doctrine change) comes to the operator as a decision
+dispatch: implementer opus medium — resume, fix round 1 (route A with one probe; findings 2-6)
+agent: implementer a7d5d84371ff4f280 round 2
+result: DONE round 2 at 38aa5ae1 (route A probe passed: runs 9, 11, 12 on 2.1.293; the plain printenv form fails to load the skill when unset, the '|| true' form works; seven skills inject the switch; findings 2-6 applied; all suites OK)
+dispatch: reviewer opus high — resume, round 2
+agent: reviewer a20cca2804ea4285f round 2 at 38aa5ae1

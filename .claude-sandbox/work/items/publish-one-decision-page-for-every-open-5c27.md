@@ -21,3 +21,4 @@ Operator 2026-10-14: create a decision page for the open decisions, including th
 published: open-decisions page https://claude.ai/artifact/YXBW5U31wCnd2jPAWyJF1F version 2 at 2026-10-14T06:53Z, 13 cards (70, 146, 172, 180, 204-208, 210, 213-215), template from main; check_cards exit 0; answers collection empty
 read: answers page at 2026-10-14T07:24Z — 12 answers (146, 70, 180, 204-208, 210, 213-215); 172 open; echoed in chat
 helper: scribe opus medium — write cards.json for the 14 open decisions (172 kept as stored; 204 back from its dig; 214 reframe as 227; 216-226) for the open-decisions page
+published: version 4 at 2026-10-14T08:14Z on the main template (sticky bar, 3769); 14 cards: 172, 227, 204, 216, 218, 217, 219, 220-226; check exit 0
