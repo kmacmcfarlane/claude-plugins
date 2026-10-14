@@ -93,7 +93,9 @@ the operator has nothing left to add, or holds the rest.
 propose the scope through it. Ask its answer mode who owns each aspect at the edge. Ask its
 write mode for a shape-checked draft of the repo's `CLAIM.md`, built from the scope: the
 areas, the `## Not ours` lines, a `## Boundaries` entry for each row of the neighbours
-table, and `## Interfaces` naming each contract the repo will define, with its location.
+table, and `## Interfaces` naming each contract the repo will define, with its location;
+an interface's terms (format, versioning, compatibility) are drafted at phase 2 and approved
+at gate G2 (`references/moves.md` § The rows).
 Ask it to classify the draft as substance or upkeep. The draft goes in the Scope and context
 section, whole for a new claim, as its changed lines for a revision. A new claim, or a
 substance change, is approved with gate G1 (in a lite run, with its one gate): the decision
@@ -166,8 +168,9 @@ Every gate has three parts, in order (`references/gates.md`):
    stated requirements). The fix loop and its cap are the `dev-cycle` skill's
    `references/fix-loop.md` and its SKILL.md § Step 4.3; each revision is a new serial.
 3. **The operator's approval**: gate G1 always; gate G2 only for a one-way ADR or a change
-   to the repo's `CLAIM.md`, the rest reported; gate G3 always, with a short architecture
-   summary when G2 was reported. One decision per gate:
+   to the repo's `CLAIM.md` (the terms of an interface it names included), the rest
+   reported; gate G3 always, with a short architecture summary when G2 was reported. One
+   decision per gate:
    approve, approve with holds, revise, reopen an earlier phase, or decide later.
 
 A gate after a reopen runs on the delta only. The lite size runs one gate: G3's checklist,

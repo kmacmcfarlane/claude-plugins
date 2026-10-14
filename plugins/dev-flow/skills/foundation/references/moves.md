@@ -13,8 +13,8 @@ round finds its next consequence.
 |---|---|---|---|
 | **Raise** | any phase, any time a question appears; a reopen found in a feature's build is raised by the build (below) | triaged as the `investigate` skill's `references/open-question-sweep.md` triages: verifiable → verified now; a decision → asked; external → an Open Question with its owner and whether it blocks | none by itself |
 | **Answer locally** | the answer touches no phase-1 or phase-2 artifact | in the current phase's serial (Confirmed Assumptions) | none |
-| **Reopen architecture** | the answer changes any phase-2 artifact (an ADR, a contract, the threat and privacy model, context and containers, the strategy or traceability, a risk) and no phase-1 artifact | a serial `NN_reopen-<what>.md`: `Supersedes` names the changed artifact; a superseding ADR when an ADR changes; an impact list (the features, contracts and other phase-2 artifacts it touches) | gate G2 re-runs on the delta; the operator approves any one-way ADR change; gate G3 re-runs only for the features the impact list names |
-| **Reopen requirements** | the answer adds or changes any phase-1 artifact (the intent, a goal or non-goal, a requirement, a quality scenario, a constraint, a glossary meaning, the claim or the neighbours table) | a serial `NN_reopen-<what>.md`: `Supersedes` names the changed requirement; an impact list read off the traceability table (the ADRs, contracts and features it touches); the touched artifacts revised in the same serial or the next | gate G1 re-runs on the delta only, and the operator approves the change; G2 and G3 re-run only for what the impact list names |
+| **Reopen architecture** | the answer changes any phase-2 artifact (an ADR, a contract, the terms of an interface the claim names, the threat and privacy model, context and containers, the strategy or traceability, a risk) and no phase-1 artifact | a serial `NN_reopen-<what>.md`: `Supersedes` names the changed artifact; a superseding ADR when an ADR changes; an impact list (the features, contracts and other phase-2 artifacts it touches) | gate G2 re-runs on the delta; the operator approves any one-way ADR change and any change to an interface's terms; gate G3 re-runs only for the features the impact list names |
+| **Reopen requirements** | the answer adds or changes any phase-1 artifact (the intent, a goal or non-goal, a requirement, a quality scenario, a constraint, a glossary meaning, the claim or the neighbours table, except an interface's terms) | a serial `NN_reopen-<what>.md`: `Supersedes` names the changed requirement; an impact list read off the traceability table (the ADRs, contracts and features it touches); the touched artifacts revised in the same serial or the next | gate G1 re-runs on the delta only, and the operator approves the change; G2 and G3 re-run only for what the impact list names |
 | **Hold** | a question the current phase does not need | a Held row: question, needed by, owner; with a store, a `decision N:` line on the foundation item, so `wi needs-input` lists it | a gate passes with holds when nothing it approves depends on one (the reviewer checks this). The wake is the phase or feature named in "needed by"; a feature filed with a hold on it is put to `wi groom` until the hold is answered |
 | **Factor out** | an aspect with its own aim, another repo's claim, or a later horizon | a non-goal or a Later row; a follow-up work item (`--parent` the foundation item, or `--ref` the series); the seam kept for it, as a constraint | none; the seam is checked at gate G2 |
 | **Probe ahead** | a risk or held question only building can answer, or data that must start accruing now because it cannot be rebuilt later | a timeboxed spike as its own work item; its result recorded as evidence in the phase that needed it. A probe that ships freezes its contract on purpose, with an ADR | none; never a substitute for a gate |
@@ -26,6 +26,15 @@ phase-1 one reopens architecture; one that touches neither is answered locally. 
 artifacts (features, roadmap, factored out) are revised inside the plan phase, or through
 gate G3's re-run. The tier is set by the artifact the answer touches, never by a judgement
 of how big the change feels.
+
+**An interface's terms are a phase-2 artifact.** The claim's `## Interfaces` is split between
+two phases: phase 1 names each contract the repo defines, its location and its defining
+side; its terms (format, versioning, compatibility) are part of that contract, designed at
+phase 2 and approved at gate G2 (`references/gates.md` § 3). This is a reclassification of
+the artifact, not a judgement call, so the partition above holds: adding a contract, removing
+one or moving its defining side reopens requirements; filling or changing the terms of an
+interface the claim already names reopens architecture, and that G2 re-run comes to the
+operator, since the terms are claim substance.
 
 ## The reopen procedure
 
@@ -60,6 +69,7 @@ and its orchestrator, or a librarian through its channel, raises it to the opera
 reopen's gate (the `dev-cycle` skill's `references/bindings.md` § Decisions, A foundation
 reopen). The operator or a session that sees one outside a build raises it by hand.
 
-Under the claim convention, a change to the claim's substance (an area, a Not-ours line, a
-boundary rule, which side defines an interface) is a requirements reopen, and comes to the
-operator; upkeep that changes no substance is reported.
+Under the claim convention, a change to the claim's substance, as the `ownership:claim-md`
+skill's substance rule defines it, comes to the operator: a requirements reopen, except for
+an interface's terms, which reopen architecture (above). Upkeep that changes no substance is
+reported.
