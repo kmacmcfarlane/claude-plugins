@@ -68,7 +68,8 @@ Every decision carries, at any level:
    and follow it.
 2. **Its impact**, in five facets in this order: **Effect**, **Wait**, **Reach**, **Undo**,
    **Cost** (`references/rendering.md` § Impact). Written when it is raised, as the Impact
-   line, and stored with the card where the caller keeps one.
+   line, its Effect across all the options, favouring none, and stored with the card where
+   the caller keeps one; each option's own impact is stored with the option.
 3. **Why now**, and what it blocks (the Wait facet). When nothing forces it, say so —
    *why now: nothing forces it; raised because the audit turned it up* — and *blocks:
    nothing* is an honest answer.
@@ -77,7 +78,8 @@ Every decision carries, at any level:
    is not yours). It opens with the decision's **class** when the caller names classes of
    decision. A question that cannot fill it is decided alone when the FYI rule (§ Before you
    write) allows; otherwise it is asked.
-5. **The options**, each with its consequence — what happens to the world if it is chosen.
+5. **The options**, each with its consequence — what happens to the world if it is chosen —
+   and its own reach, undo and cost where they apply.
    Include "do nothing" when it is a real option.
 6. **Decide later**, always, as its own option (`(z)`), distinct from "do nothing": it says what
    waiting costs, and when there is a deadline, what happens at the deadline.
@@ -163,15 +165,17 @@ Smallest to largest, each showing more of the impact in facet order (templates i
   why ask.
 - **Card** — in the answer page's order: the decision line (the title, then **What:**, what
   is decided), then **Context:**, then an **Impact:** line; then why now, why ask (and a
-  round ask's justification), the options with their impact in italics, decide later, any
+  round ask's justification), the options, each with its own impact (effect, reach, undo,
+  cost) on an italic line under it, decide later, any
   **To act on (x):** part, then `Rec · basis — reason · unknown`. Its **Context:** is one or
   two sentences, the page's summary size: the terms the card uses, then the resume cue
   (where you left it · what you decide now). It is written for every decision when it is
   raised, stored with the card where the caller keeps one, and shown every time the card is
   shown, warm reader or cold (`references/rendering.md` § Context).
 - **Block** — a card whose Context is fuller, a bullet list at the page's medium
-  size that adds the context the reader may have lost, and whose Impact line becomes a table
-  (a row per option plus a Wait row); plus the basis drill-down with evidence links.
+  size that adds the context the reader may have lost, and whose Impact line is followed by
+  a table (a row per option, its effect, reach, undo and cost, plus a Wait row) in place of
+  the options' impact lines; plus the basis drill-down with evidence links.
 
 **The line-only rule.** A decision may stay a list line only when all of these hold: the
 reader is warm; the stakes are low (two-way and narrow); the basis is strong (for a

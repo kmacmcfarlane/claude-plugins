@@ -154,11 +154,17 @@ how each view shows them are in `references/rendering.md` § Impact.
 
 | Facet | From | Who can supply it |
 |---|---|---|
-| Effect | what the recommended option does to the world (with no recommendation, each option's, in a few words) | you |
+| Effect | what the decision changes and settles across all its options, favouring none: each option's effect in a few words, `(a) …; (b) …`, where their outcomes differ; written from the options' own impacts (below) | you |
 | Wait | group D: what waiting costs, what it blocks, what happens at a deadline | you; a collector for other sessions |
 | Reach | group B's blast radius, named: the operator, sessions, which repos, the public | you, from what the change touches |
 | Undo | group B's reversibility, as how: *one edit*, *a hotfix release*, or *none — why* | you — say how you know |
 | Cost | time, money, quota, the operator's attention, per option | you; the caller's budget, when it keeps one |
+
+**Each option's impact** is written with the option, from the same groups: its effect, the
+reach and undo of that option alone, and its cost; a facet that does not apply is left out,
+but never an Undo that says the option cannot be undone. A card shows it on an italic line under
+the option, a block in its table (`references/rendering.md` § Impact). Write these first: the
+Impact line's Effect is read off them.
 
 Write it when the decision is raised, and store it with the card where the caller keeps one,
 so every later view reads it instead of composing it again.

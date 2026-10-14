@@ -77,9 +77,10 @@ Work
   recommendation as the headline names it — `[recommended]` or an older mark, or a
   preference or authority label, read as the `work-items` skill's format reference,
   § Operator questions, lists them — one row per decision, never several folded into one
-  row. With the `operator-interaction:decisions` skill loaded, the row ends with the
-  decision's effect at that skill's tag size — `→ <effect>`, under about 10 words, each
-  option's in a few words when there is no recommendation — read from the `impact:` line
+  row. With the `operator-interaction:decisions` skill loaded, the row ends with an
+  effect at that skill's tag size — `→ <effect>`, under about 10 words: the recommended
+  option's own, read from its option line, since the arrow follows the recommendation;
+  with no recommendation, each option's in a few words, read from the `impact:` line —
   of the last card stored for N (`decisions.md` § What the store records), since
   `wi needs-input` prints the headline only; a card without one is backfilled as that
   section says before the row is printed. A deferred one also shows its last `wake N:`,
