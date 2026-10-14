@@ -1442,6 +1442,387 @@ class TestFifo(Base):
         self.assertTrue(stat.S_ISFIFO(os.lstat(path).st_mode))
 
 
+WEEK_RESET = NOW + 100 * H
+
+
+def datetime_iso(t):
+    return qb.datetime.fromtimestamp(t, qb.timezone.utc).isoformat()
+
+
+class QuotaAnswerBase(Base):
+    """28e1 F3: the stored quota answer (a go-on), its write and its reading."""
+
+    @property
+    def qa_path(self):
+        return os.path.join(self.store, "quota-answer.json")
+
+    def reading(self, used=40.0, reset=WEEK_RESET):
+        self.sensor(week=(used, reset), at=NOW)
+
+    def answer(self, *extra, used=40.0, reset=WEEK_RESET, for_reset=None, now=NOW):
+        self.reading(used, reset)
+        fr = str(reset if for_reset is None else for_reset)
+        return self.run_qb("--quota-answer", "go-on", "--for-reset", fr, *extra, now=now)
+
+    def stored(self):
+        with open(self.qa_path) as f:
+            return json.load(f)
+
+    def plant(self, obj):
+        os.makedirs(self.store, exist_ok=True)
+        with open(self.qa_path, "w") as f:
+            f.write(obj if isinstance(obj, str) else json.dumps(obj))
+
+    def good(self, **over):
+        ref = {"repo": "myrepo", "item": "some-item-ab12", "decision": 12,
+               "answered_at": "2026-10-14T09:12Z", "reply": "synthetic go on"}
+        r = over.pop("ref", {})
+        if isinstance(r, dict):
+            ref.update(r)
+        else:
+            ref = r
+        d = {"v": 1, "kind": "go_on", "resets_at": WEEK_RESET, "from_used": 40.0,
+             "go_on_points": 10.0, "until_used": 50.0, "ref": ref, "set_by": "x", "at": NOW}
+        d.update(over)
+        return d
+
+    def read_answer(self, used=45.0, reset=WEEK_RESET, *argv):
+        self.reading(used, reset)
+        rc, r, _ = self.run_qb("--read-only", *argv)
+        self.assertEqual(rc, 0)
+        return r["quota_pressure"]["answer"]
+
+
+class TestQuotaAnswerWrite(QuotaAnswerBase):
+    def test_writes_the_go_on_with_its_reach_and_ref(self):
+        rc, r, err = self.answer("--item", "some-item-ab12", "--decision", "12",
+                                 "--reply", "synthetic go on")
+        self.assertEqual((rc, err), (0, ""))
+        d = self.stored()
+        self.assertEqual((d["v"], d["kind"], d["resets_at"]), (1, "go_on", WEEK_RESET))
+        self.assertEqual(d["from_used"], 40.0)
+        self.assertEqual(d["go_on_points"], qb.GO_ON_POINTS)
+        self.assertEqual(d["until_used"], 40.0 + qb.GO_ON_POINTS)
+        self.assertEqual(d["ref"], {"repo": "myrepo", "item": "some-item-ab12", "decision": 12,
+                                    "answered_at": qb.utc_minute(NOW),
+                                    "reply": "synthetic go on"})
+        self.assertEqual((d["set_by"], d["at"]), (SID, NOW))
+        self.assertEqual(r["quota_answer"], {"written": True, "path": self.qa_path,
+                                             "refused": None})
+        a = r["quota_pressure"]["answer"]
+        self.assertEqual(a, {"until_used": 40.0 + qb.GO_ON_POINTS, "resets_at": WEEK_RESET,
+                             "authority": "answer 12", "covers": True,
+                             "answered_at": qb.utc_minute(NOW), "reply": "synthetic go on"})
+
+    def test_reach_is_go_on_points(self):
+        with mock.patch.object(qb, "GO_ON_POINTS", 7.5):
+            self.answer(used=20.0)
+        self.assertEqual(self.stored()["until_used"], 27.5)
+
+    def test_mode_0600_dirs_0700(self):
+        self.answer()
+        self.assertEqual(stat.S_IMODE(os.stat(self.qa_path).st_mode), 0o600)
+        self.assertEqual(stat.S_IMODE(os.stat(self.store).st_mode), 0o700)
+        self.assertEqual([n for n in os.listdir(self.store) if n.endswith(".tmp")], [])
+
+    def test_writes_no_sample_and_no_claim(self):
+        rc, r, _ = self.answer()
+        self.assertEqual(rc, 0)
+        self.assertEqual(sorted(os.listdir(self.store)), ["quota-answer.json"])
+        self.assertEqual(r["claims"]["action"], "skipped")
+        self.assertFalse(r["claims"]["written"])
+
+    def test_last_writer_wins(self):
+        self.answer("--decision", "3", "--reply", "first")
+        self.answer("--decision", "4", "--reply", "second", used=44.0)
+        d = self.stored()
+        self.assertEqual((d["ref"]["decision"], d["ref"]["reply"], d["until_used"]),
+                         (4, "second", 44.0 + qb.GO_ON_POINTS))
+
+    def test_for_reset_accepts_iso_and_jitter(self):
+        iso = datetime_iso(WEEK_RESET + 30)
+        rc, _, _ = self.answer(for_reset=iso)
+        self.assertEqual(rc, 0)
+        self.assertEqual(self.stored()["resets_at"], WEEK_RESET)
+
+    def assert_refused(self, rc, r, err, words):
+        self.assertEqual(rc, 2)
+        self.assertFalse(os.path.lexists(self.qa_path))
+        self.assertIn(words, err)
+        self.assertTrue(any(words in e for e in r["errors"]))
+        if "quota_answer" in r:
+            self.assertFalse(r["quota_answer"]["written"])
+
+    def test_wait_is_refused_and_never_stored(self):
+        self.reading()
+        rc, r, err = self.run_qb("--quota-answer", "wait", "--for-reset", str(WEEK_RESET))
+        self.assert_refused(rc, r, err, "a wait is never stored")
+
+    def test_other_values_are_refused(self):
+        self.reading()
+        for v in ("go_on", "GO-ON", "", "yes"):
+            rc, r, err = self.run_qb("--quota-answer", v, "--for-reset", str(WEEK_RESET))
+            self.assert_refused(rc, r, err, "go-on only")
+
+    def test_no_signal_is_refused(self):
+        rc, r, err = self.run_qb("--quota-answer", "go-on", "--for-reset", str(WEEK_RESET))
+        self.assertEqual(r["signal"], "none")
+        self.assert_refused(rc, r, err, "no weekly reading")
+
+    def test_a_passed_reset_is_refused(self):
+        # The ask named last week's reset; the reading is already the next window.
+        rc, r, err = self.answer(for_reset=NOW - 60)
+        self.assert_refused(rc, r, err, "has passed")
+
+    def test_another_window_is_refused(self):
+        rc, r, err = self.answer(for_reset=WEEK_RESET + 7 * 24 * H)
+        self.assert_refused(rc, r, err, "window has turned")
+        rc, r, err = self.answer(for_reset=WEEK_RESET + qb.RESET_TOLERANCE_S + 1)
+        self.assert_refused(rc, r, err, "window has turned")
+
+    def test_for_reset_missing_or_malformed_is_refused(self):
+        self.reading()
+        rc, r, err = self.run_qb("--quota-answer", "go-on")
+        self.assert_refused(rc, r, err, "--for-reset is required")
+        for bad in ("soon", "nan", "inf", "-5", "0"):
+            rc, r, err = self.run_qb("--quota-answer", "go-on", "--for-reset", bad)
+            self.assertEqual(rc, 2, bad)
+            self.assertFalse(os.path.lexists(self.qa_path))
+
+    def test_answered_at_is_stamped_to_the_minute(self):
+        now = NOW + 47  # not on a minute boundary
+        self.answer(now=now)
+        stamp = self.stored()["ref"]["answered_at"]
+        self.assertEqual(stamp, qb.utc_minute(now - now % 60))
+        self.assertRegex(stamp, r"^\d{4}-\d\d-\d\dT\d\d:\d\dZ$")
+
+    def test_given_answered_at_is_normalised(self):
+        self.answer("--answered-at", "2026-10-14T11:12:45+02:00")
+        self.assertEqual(self.stored()["ref"]["answered_at"], "2026-10-14T09:12Z")
+        self.answer("--answered-at", "2026-10-14T09:12Z")
+        self.assertEqual(self.stored()["ref"]["answered_at"], "2026-10-14T09:12Z")
+
+    def test_malformed_answered_at_is_refused(self):
+        for bad in ("yesterday", "1791700000", "2026-13-40T99:99Z", ""):
+            rc, r, err = self.answer("--answered-at", bad)
+            self.assert_refused(rc, r, err, "--answered-at")
+
+    def test_reply_is_cleaned_and_cut(self):
+        self.answer("--reply", "go\non\tnow\x07\u2028ok  ")
+        self.assertEqual(self.stored()["ref"]["reply"], "go on now  ok")
+        self.answer("--reply", "x" * 400)
+        reply = self.stored()["ref"]["reply"]
+        self.assertEqual(len(reply), qb.REPLY_MAX)
+        self.assertTrue(reply.endswith("\u2026"))
+        self.answer("--reply", "y" * qb.REPLY_MAX)
+        self.assertEqual(self.stored()["ref"]["reply"], "y" * qb.REPLY_MAX)
+
+    def test_missing_reply_is_empty(self):
+        _, r, _ = self.answer()
+        self.assertEqual(self.stored()["ref"]["reply"], "")
+        self.assertEqual(r["quota_pressure"]["answer"]["reply"], "")
+
+    def test_bad_ref_arguments_are_refused(self):
+        for argv, words in ((("--item", "../x"), "--item"), (("--item", "a b"), "--item"),
+                            (("--decision", "0"), "--decision"),
+                            (("--decision", "twelve"), "--decision"),
+                            (("--repo", "a/b"), "--repo")):
+            rc, r, err = self.answer(*argv)
+            self.assert_refused(rc, r, err, words)
+
+    def test_answer_flags_without_quota_answer_are_refused(self):
+        self.reading()
+        rc, r, err = self.run_qb("--reply", "x")
+        self.assertEqual(rc, 2)
+        self.assertIn("--reply goes with --quota-answer", err)
+        self.assertFalse(os.path.lexists(self.qa_path))
+        self.assertFalse(os.path.lexists(os.path.join(self.store, "claims")))
+        self.assertFalse(os.path.lexists(os.path.join(self.store, "samples.jsonl")))
+
+    def test_read_only_never_writes_it(self):
+        self.reading()
+        rc, r, err = self.run_qb("--read-only", "--quota-answer", "go-on",
+                                 "--for-reset", str(WEEK_RESET))
+        self.assert_refused(rc, r, err, "--read-only")
+        rc, _, _ = self.run_qb("--read-only")
+        self.assertEqual(rc, 0)
+        self.assertFalse(os.path.lexists(self.qa_path))
+
+    def test_store_write_error_exits_1(self):
+        os.makedirs(self.qa_path)  # a directory where the file goes
+        rc, r, err = self.answer()
+        self.assertEqual(rc, 1)
+        self.assertIn("quota-answer.json write failed", err)
+        self.assertFalse(r["quota_answer"]["written"])
+        self.assertIsNone(r["quota_answer"]["refused"])
+        self.assertIsNone(r["quota_pressure"]["answer"])
+
+    def test_symlink_at_the_path_is_replaced_not_followed(self):
+        target = os.path.join(self.cfg, "elsewhere.json")
+        with open(target, "w") as f:
+            f.write("{}")
+        os.makedirs(self.store, exist_ok=True)
+        os.symlink(target, self.qa_path)
+        rc, _, _ = self.answer()
+        self.assertEqual(rc, 0)
+        self.assertFalse(os.path.islink(self.qa_path))
+        with open(target) as f:
+            self.assertEqual(f.read(), "{}")
+
+
+class TestQuotaAnswerRead(QuotaAnswerBase):
+    def test_null_with_no_file(self):
+        self.assertIsNone(self.read_answer())
+
+    def test_no_signal_has_no_quota_pressure(self):
+        self.plant(self.good())
+        rc, r, _ = self.run_qb("--read-only")
+        self.assertEqual((rc, r["quota_pressure"]), (0, None))
+
+    def test_covers_inside_the_window_until_its_reach(self):
+        self.plant(self.good())
+        self.assertTrue(self.read_answer(used=40.0)["covers"])
+        self.assertTrue(self.read_answer(used=49.9)["covers"])
+        self.assertFalse(self.read_answer(used=50.0)["covers"])
+        self.assertFalse(self.read_answer(used=63.0)["covers"])
+
+    def test_null_in_another_window(self):
+        self.plant(self.good())
+        self.assertIsNotNone(self.read_answer(reset=WEEK_RESET + qb.RESET_TOLERANCE_S))
+        self.assertIsNone(self.read_answer(reset=WEEK_RESET + 7 * 24 * H))
+        self.assertIsNone(self.read_answer(used=1.0, reset=NOW + 160 * H))
+
+    def test_printed_keys(self):
+        self.plant(self.good())
+        self.assertEqual(self.read_answer(), {
+            "until_used": 50.0, "resets_at": WEEK_RESET, "authority": "answer 12",
+            "covers": True, "answered_at": "2026-10-14T09:12Z", "reply": "synthetic go on"})
+
+    def test_authority_forms(self):
+        self.plant(self.good())
+        self.assertEqual(self.read_answer()["authority"], "answer 12")
+        self.assertEqual(self.read_answer(45.0, WEEK_RESET, "--repo", "elsewhere")["authority"],
+                         "answer myrepo#12")
+        self.plant(self.good(ref={"decision": None}))
+        self.assertEqual(self.read_answer()["authority"],
+                         "answer myrepo some-item-ab12 2026-10-14T09:12Z")
+        self.plant(self.good(ref={"decision": None, "item": None}))
+        self.assertEqual(self.read_answer()["authority"], "answer myrepo 2026-10-14T09:12Z")
+
+    def test_poisoned_files_read_as_null(self):
+        for bad in ("not json", "[1, 2]", "{}", json.dumps(self.good(v=2)),
+                    json.dumps(self.good(v="1")), json.dumps(self.good(kind="wait")),
+                    json.dumps(self.good(resets_at="soon")),
+                    json.dumps(self.good(until_used=None)), json.dumps(self.good(ref="x")),
+                    json.dumps(self.good(ref={"repo": "../x"})),
+                    json.dumps(self.good(ref={"item": "a b"})),
+                    json.dumps(self.good(ref={"decision": "12"})),
+                    json.dumps(self.good(ref={"decision": True})),
+                    "[" * 100000):
+            self.plant(bad)
+            self.assertIsNone(self.read_answer(), bad[:60])
+
+    def test_oversized_file_reads_as_null(self):
+        d = self.good()
+        d["pad"] = "x" * (qb.READ_MAX + 1)
+        self.plant(d)
+        self.assertIsNone(self.read_answer())
+
+    def test_symlink_reads_as_null(self):
+        target = os.path.join(self.cfg, "planted.json")
+        with open(target, "w") as f:
+            json.dump(self.good(), f)
+        os.makedirs(self.store, exist_ok=True)
+        os.symlink(target, self.qa_path)
+        self.assertIsNone(self.read_answer())
+
+    @unittest.skipUnless(hasattr(os, "mkfifo"), "needs os.mkfifo")
+    def test_fifo_reads_as_null_without_blocking(self):
+        os.makedirs(self.store, exist_ok=True)
+        os.mkfifo(self.qa_path, 0o600)
+        self.reading(45.0)
+        env = dict(os.environ, **self.env)
+        p = subprocess.run([sys.executable, str(SCRIPT), "--now", str(NOW), "--repo", "myrepo",
+                            "--read-only"], capture_output=True, text=True, env=env, timeout=30)
+        self.assertEqual(p.returncode, 0, p.stderr)
+        self.assertIsNone(json.loads(p.stdout)["quota_pressure"]["answer"])
+
+    def test_non_string_reply_reads_empty_and_still_covers(self):
+        self.plant(self.good(ref={"reply": ["x"]}))
+        a = self.read_answer()
+        self.assertEqual((a["reply"], a["covers"]), ("", True))
+
+    def test_hand_edited_reply_is_cleaned_on_read(self):
+        self.plant(self.good(ref={"reply": "a\nb" + "z" * 400}))
+        reply = self.read_answer()["reply"]
+        self.assertTrue(reply.startswith("a b"))
+        self.assertEqual(len(reply), qb.REPLY_MAX)
+
+    def test_missing_or_bad_answered_at_prints_null_and_still_covers(self):
+        for at in (None, "yesterday", 1791700000, "2026-10-14T09:12:30Z"):
+            ref = {"answered_at": at}
+            self.plant(self.good(ref=ref))
+            a = self.read_answer()
+            self.assertIsNone(a["answered_at"], at)
+            self.assertTrue(a["covers"])
+        self.plant(self.good(ref={"answered_at": None, "decision": None}))
+        self.assertEqual(self.read_answer()["authority"], "answer myrepo some-item-ab12")
+
+    def test_written_answered_at_is_always_a_string(self):
+        self.answer()
+        self.assertIsInstance(self.read_answer()["answered_at"], str)
+
+
+class TestRefRepoName(QuotaAnswerBase):
+    def git_repo(self, path, origin=None):
+        subprocess.run(["git", "init", "-q", path], check=True)
+        if origin:
+            subprocess.run(["git", "-C", path, "remote", "add", "origin", origin], check=True)
+        return path
+
+    def test_origin_name_first(self):
+        for origin in ("git@example.com:o/claude-plugins.git",
+                       "https://example.com/o/claude-plugins.git",
+                       "https://example.com/o/claude-plugins/",
+                       "ssh://git@example.com/o/claude-plugins"):
+            path = self.git_repo(tempfile.mkdtemp(dir=self.cfg, prefix="checkout-"), origin)
+            self.assertEqual(qb.ref_repo_name(path), "claude-plugins", origin)
+
+    def test_no_origin_falls_back_to_the_directory_name(self):
+        path = self.git_repo(os.path.join(self.cfg, "dirname-repo"))
+        self.assertEqual(qb.ref_repo_name(path), "dirname-repo")
+
+    def test_authority_against_the_reading_repo(self):
+        # Stored from a checkout of origin claude-plugins; read from another
+        # checkout of the same origin under a different directory name, and
+        # from an unrelated repo.
+        same = self.git_repo(os.path.join(self.cfg, "other-dir-name"),
+                             "git@example.com:o/claude-plugins.git")
+        other = self.git_repo(os.path.join(self.cfg, "unrelated"))
+        self.plant(self.good(ref={"repo": "claude-plugins"}))
+        week = {"used": 45.0, "resets_at": WEEK_RESET}
+        a = qb.read_quota_answer(self.store, week, qb.ref_repo_name(same))
+        self.assertEqual(a["authority"], "answer 12")
+        a = qb.read_quota_answer(self.store, week, qb.ref_repo_name(other))
+        self.assertEqual(a["authority"], "answer claude-plugins#12")
+
+    def test_default_repo_for_the_write_and_the_reading(self):
+        path = self.git_repo(os.path.join(self.cfg, "local-name"),
+                             "git@example.com:o/claude-plugins.git")
+        old = os.getcwd()
+        os.chdir(path)
+        self.addCleanup(os.chdir, old)
+        self.reading()
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out), contextlib.redirect_stderr(io.StringIO()):
+            rc = qb.main(["--now", str(NOW), "--quota-answer", "go-on", "--for-reset",
+                          str(WEEK_RESET), "--decision", "7"], env=self.env)
+        self.assertEqual(rc, 0)
+        self.assertEqual(self.stored()["ref"]["repo"], "claude-plugins")
+        self.assertEqual(json.loads(out.getvalue())["quota_pressure"]["answer"]["authority"],
+                         "answer 7")
+
+
 @unittest.skipUnless(hasattr(os, "openpty") and hasattr(os, "fork") and hasattr(os, "setsid"),
                      "needs a pty, fork and setsid")
 class TestNoCtty(unittest.TestCase):
