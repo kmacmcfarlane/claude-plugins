@@ -24,3 +24,6 @@ dispatch: implementer opus medium — per-option impact facets in chat cards and
 agent: implementer a59b7de78c35ac530 round 1
 result: DONE round 1 at 164c918c on worktree-agent-a59b7de78c35ac530 (base 60d40295; per-option facet line; Effect across options; stored impact: lines; gallery; decision-page 'never blindly'; rulings recorded; operator-interaction 153, dev-flow 96, kit-dev 21 OK)
 dispatch: implementer opus medium — resume, merge main (6d12 landed in the same decision-page files) before review
+result: DONE merge at eefe676e (CLAUDE.md tests line resolved; operator-interaction 160, dev-flow 91, kit-dev 21 OK)
+dispatch: reviewer opus high — fresh (rule 4)
+agent: reviewer a0253b12d610cb762 round 1 at eefe676e

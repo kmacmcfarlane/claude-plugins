@@ -28,3 +28,6 @@ agent: reviewer abaae5cdc3a4f6ace round 1 at 881816a3
 verdict: NEEDS_CHANGES round 1 at 881816a3 (2 medium: phase 2 never says how terms are drafted or what the G2 decision shows; the terms list omits privacy and sits in three homes; 2 low: Data contracts and claim lines change together; 're-run without changed terms' reading; nits: reflows, commit subject, record the third unlisted edit)
 dispatch: implementer opus medium — resume, fix round 1
 agent: implementer abcbff4fd53e132e1 round 2
+result: DONE round 2 at dea9e93f (M1 Step 2 drafting and G2 display; M2 terms defined once incl. privacy; L1, L2, nits)
+dispatch: reviewer opus high — resume, round 2
+agent: reviewer abaae5cdc3a4f6ace round 2 at dea9e93f

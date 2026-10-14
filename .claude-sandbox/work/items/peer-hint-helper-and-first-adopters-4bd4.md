@@ -65,3 +65,6 @@ target: an agent worktree off main (f4be55ec); per the series plan
 budget: waived (operator 2026-10-08); spend measured
 dispatch: implementer opus medium — build per the series with unattended probes and failure detection (answer 207 b), hub statusline mention removed (answer 208 a)
 agent: implementer a7d5d84371ff4f280 round 1
+result: DONE round 1 at 72f0bbb5 (helper in context-guard and statusline-hub, identity test in kit-dev; adopters; 208 a: hub first-run install mention removed; probes O1, O2, O4 (UserPromptSubmit only), O5 pass, O3 fail: the prose echo of the switch is denied in default mode, so prose no longer reads it; host settings hash unchanged every run)
+dispatch: reviewer opus high — fresh (rule 4)
+agent: reviewer a20cca2804ea4285f round 1 at 72f0bbb5

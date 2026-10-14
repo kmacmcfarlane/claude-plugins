@@ -24,3 +24,6 @@ target: an agent worktree off main (352641d7); decision-page template, schema, d
 budget: waived (operator 2026-10-08); spend measured
 dispatch: implementer opus medium — drop Options in full; hide empty or none sub-sections
 agent: implementer adb2d16ec86cbf0f8 round 1
+result: DONE round 1 at d7e0f453 (Options in full removed, its data in each option's More; one isNone helper hides empty or none parts; four required Impact facets, basis and the rec line's unknown kept; test_none.py; 155 OK)
+dispatch: reviewer opus high — fresh (rule 4)
+agent: reviewer aea9ab2a707188486 round 1 at d7e0f453
