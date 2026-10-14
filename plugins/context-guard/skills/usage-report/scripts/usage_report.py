@@ -1011,6 +1011,8 @@ def render_report(data, top=10):
 
 
 def cmd_report(args, table):
+    if args.top < 0:
+        raise ValueError("--top wants 0 or more")
     sessions, scope, since = collect(args, table)
     data = summarize(sessions, table, flat=args.flat, scope=scope, since=since)
     if args.json:

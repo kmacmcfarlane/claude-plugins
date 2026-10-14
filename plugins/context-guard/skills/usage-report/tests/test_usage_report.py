@@ -803,6 +803,12 @@ class ReportTests(unittest.TestCase):
         by_day = since.stdout.split("By day (UTC)")[1].split("Sessions")[0]
         self.assertNotIn("2026-09-11", by_day)
 
+    def test_report_refuses_a_negative_top(self):
+        proc = self.run_cli("report", "--top", "-1")
+        self.assertEqual(proc.returncode, 1)
+        self.assertIn("--top wants 0 or more", proc.stderr)
+        self.assertEqual(proc.stdout, "")
+
 
 class ShippedPriceTableTests(unittest.TestCase):
     def test_table_is_versioned_and_covers_the_observed_models(self):

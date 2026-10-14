@@ -17,7 +17,8 @@ whole transcripts).
 ## Run it
 
 Run from the project whose spend you want: the scope is the project directory matching
-the working directory (a worktree resolves to its project).
+the working directory (a worktree with no transcripts of its own resolves to its project;
+one with its own sessions is its own scope, and `--all` covers both).
 
 ```bash
 UR="${CLAUDE_PLUGIN_ROOT}/skills/usage-report/scripts/usage_report.py"
@@ -63,9 +64,11 @@ dollars). Token counts are short (`1.2k`, `5.6M`).
 Records are counted once per API response, keyed by (`message.id`, `requestId`) across
 every file read, keeping the line with the most output tokens, so a response repeated in
 another file also counts once. As observed in local transcripts (Claude Code 2.1.285 and
-2.1.292, counted with a script over one session's file), about half the responses are
-written as two or more lines carrying the same usage block, so a sum over every line
-over-counts. A response with zero tokens in every class is skipped.
+2.1.292, counted with a script over one session's file; 2.1.292 sub-agent transcripts),
+about half the responses are written as two or more lines for the same response (in a
+main transcript the usage block repeats; in a sub-agent transcript an earlier line carries
+a partial `output_tokens`), so a sum over every line over-counts. A response with zero
+tokens in every class is skipped.
 
 ## Dollars are an estimate
 
@@ -82,7 +85,8 @@ view before a figure leaves the conversation. `/usage` shows the current session
 by model and a locally computed cost (https://code.claude.com/docs/en/costs).
 
 1. Run `/usage` in the session to reconcile and note its per-model token counts.
-2. From that same session, print its row from the report:
+2. From that same session, print its row from the report (`$CLAUDE_CODE_SESSION_ID` is
+   the current session's id in the Bash tool, https://code.claude.com/docs/en/env-vars):
 
    ```bash
    python3 -I "$UR" report --json | python3 -I -c 'import json,sys; d=json.load(sys.stdin); print(json.dumps([r for r in d["sessions"] if r["session_id"] == sys.argv[1]], indent=2))' "$CLAUDE_CODE_SESSION_ID"
