@@ -28,7 +28,7 @@ END_MARK = "/* ---- end of the page-free part"
 
 NODE = shutil.which("node")
 # what the page's isNone treats as saying nothing (trimmed, any case): the operator's rule of 2026-10-14
-NONE = {"", "none", "none.", "n/a", "n/a.", "nothing", "nothing.", "-", "–", "—"}
+NONE = {"", "none", "none.", "n/a", "n/a.", "-", "–", "—"}
 
 
 def setUpModule():
@@ -172,10 +172,12 @@ class DecisionPageImpact(unittest.TestCase):
         for v, c in zip(res["views"], d["cards"]):
             for k, row in c["blocks"].items():
                 more = v["more"][k]
-                # a cell that says nothing ("Nothing." on card 43's (a) cost) is left out
+                # an Effect, Reach or Cost cell that is none is left out; Undo always shows
                 cells = [(f, x) for f, x in (("Effect", "happens"), ("Reach", "who"), ("Undo", "undo"),
-                                             ("Cost", "cost")) if row[x].strip().lower() not in NONE]
+                                             ("Cost", "cost")) if x == "undo" or row[x].strip().lower() not in NONE]
                 pos = [more.index('<span class="lbl">%s</span>' % f) for f, _ in cells]
+                if c.get("warn"):  # the one-way card's row comes before the option's text
+                    self.assertLess(pos[-1], more.index('class="sec"'), (c["n"], k))
                 self.assertEqual(pos, sorted(pos), (c["n"], k))
                 for _, x in cells:
                     self.assertIn(row[x][:20], more, (c["n"], k, x))

@@ -283,10 +283,10 @@ const isFlat=v=>isTxt(v)||(Array.isArray(v)&&v.length>0&&v.every(isTxt));
 const isObj=v=>!!v&&typeof v==="object"&&!Array.isArray(v);
 /* the operator's rule (2026-10-14): a sub-section, facet or field that is empty, missing or none is not
    displayed. One test, used wherever a part may be left out: missing, blank, "none", "none.", "n/a",
-   "n/a.", "nothing", "nothing." or a lone dash (trimmed, any case); a list of nothing but those; a bullet
-   whose text is one. The fields whose none is itself a statement (the required Impact facets, basis, the
-   rec line's unknown) never pass through it */
-const NONE_WORDS=new Set(["","none","none.","n/a","n/a.","nothing","nothing.","-","–","—"]);
+   "n/a." or a lone dash (trimmed, any case); a list of nothing but those; a bullet whose text is one.
+   "Nothing." is not among them: it can be a statement. The fields whose none is itself a statement (the
+   required Impact facets, each option's Undo cell, basis, the rec line's unknown) never pass through it */
+const NONE_WORDS=new Set(["","none","none.","n/a","n/a.","-","–","—"]);
 const isNone=v=>v==null||(typeof v==="string"&&NONE_WORDS.has(v.trim().toLowerCase()))
   ||(Array.isArray(v)&&v.every(isNone))||(isObj(v)&&!("h" in v)&&isNone(v.t));
 const shown=v=>!isNone(v);
@@ -333,7 +333,9 @@ function check(d){
     if(c.rec===null){if(!isStr(c.norec))bad.push(w+": rec null needs norec")}
     else if(!ls.includes(c.rec))bad.push(w+": rec is not one of its option letters");
     const row=b=>!!b&&typeof b==="object"&&isStr(b.happens)&&isStr(b.undo)&&isStr(b.who)&&(!("cost" in b)||isStr(b.cost));
-    if(c.warn&&(typeof c.blocks!=="object"||!c.blocks||!ls.every(k=>k==="z"||row(c.blocks[k]))))bad.push(w+": a ⚠ one-way card needs blocks {happens, undo, who} for every option but (z)");
+    /* a one-way card's rows decide the read-back: each cell non-blank (a none Undo is a statement, kept) */
+    const full=b=>row(b)&&[b.happens,b.undo,b.who].every(x=>x.trim());
+    if(c.warn&&(typeof c.blocks!=="object"||!c.blocks||!ls.every(k=>k==="z"||full(c.blocks[k]))))bad.push(w+": a ⚠ one-way card needs blocks {happens, undo, who} for every option but (z), each non-empty");
     if(c.blocks!=null&&(typeof c.blocks!=="object"||Object.keys(c.blocks).some(k=>k==="z"||!ls.includes(k)||!row(c.blocks[k]))))bad.push(w+": blocks are keyed by option letter, not (z), each {happens, undo, who, cost?} as text");
     if(c.act!=null){
       if(typeof c.act!=="object"||Array.isArray(c.act)||Object.keys(c.act).some(k=>k==="z"||!ls.includes(k)||!Array.isArray(c.act[k])||!c.act[k].length||!c.act[k].every(x=>isStr(x)&&x.trim())))bad.push(w+": act is keyed by option letter, not (z), each a non-empty list of steps as text");
@@ -464,8 +466,9 @@ function secHtml(c,key,label,rs,start){
 }
 /* More beside option k: the option in full. Its text opens at its fullest level and steps through the rest
    (less detail goes to its summary, then up again); then its impact line, static; then Effect, Reach, Undo
-   and Cost from its blocks row. With no blocks row its impact is its Effect ((z)'s, what waiting does, its
-   Wait). Each piece that is none is left out (isNone) */
+   and Cost from its blocks row. On a ⚠ one-way card the row comes first, so its Undo sits at the top as the
+   block's table row did. With no blocks row its impact is its Effect ((z)'s, what waiting does, its Wait).
+   Each piece that is none is left out (isNone), but Undo: a none Undo says the option cannot be undone */
 function optionDetail(c,k,P){
   const o=c.o.find(x=>x[0]===k);
   if(!o)return "";
@@ -475,8 +478,9 @@ function optionDetail(c,k,P){
   const text=shown(o[1])||rs.length>1?secHtml(c,"opt-"+k,"Option ("+k+")",rs,rs.length-1):"";
   if(!b)return text+f(k==="z"?"Wait":"Effect",o[2]);
   const same=x=>String(x).trim().toLowerCase()===String(b.happens).trim().toLowerCase();
-  return text+(shown(o[2])&&!same(o[2])?'<p class="impact">'+fmt(o[2])+'</p>':'')
-    +f("Effect",b.happens)+f("Reach",b.who)+f("Undo",b.undo)+f("Cost",b.cost);
+  const imp=shown(o[2])&&!same(o[2])?'<p class="impact">'+fmt(o[2])+'</p>':'';
+  const rowHtml=f("Effect",b.happens)+f("Reach",b.who)+(isTxt(b.undo)?'<p><span class="lbl">Undo</span>'+fmtD(b.undo)+'</p>':'')+f("Cost",b.cost);
+  return c.warn?rowHtml+text+imp:text+imp+rowHtml;
 }
 /* one open card, as renderCards places it in its group */
 function cardHtml(c){

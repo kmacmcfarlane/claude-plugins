@@ -39,9 +39,9 @@ def panes(html):
 class DecisionPageNone(unittest.TestCase):
 
     def test_is_none_reads_empty_missing_and_none_words(self):
-        nones = [None, "", "  ", "none", "None", " NONE. ", "n/a", "N/A.", "Nothing.", "-", "—",
+        nones = [None, "", "  ", "none", "None", " NONE. ", "n/a", "N/A.", "-", "—",
                  [], ["", "none"], {"t": "None."}]
-        somes = ["(b) none — lost ranking does not come back", "Nothing to undo.", "no",
+        somes = ["(b) none — lost ranking does not come back", "Nothing to undo.", "no", "Nothing.",
                  "none of the above", ["none", "one step"], {"h": "none", "b": ["x"]}, {"t": "x"}]
         got = node(NONE_HARNESS, nones + somes)
         self.assertEqual(got, [True] * len(nones) + [False] * len(somes))
@@ -115,6 +115,37 @@ class DecisionPageNone(unittest.TestCase):
         self.assertNotIn(">Reach<", more)
         self.assertIn('<span class="lbl">Effect</span>', more)
         self.assertIn('<span class="lbl">Undo</span>', more)
+
+    def test_a_none_undo_cell_always_shows(self):
+        # on a one-way card the Undo cell decides the read-back: none there says it cannot be undone
+        for undo in ("None.", "none", "\u2014"):
+            d = example()
+            d["cards"][1]["blocks"]["a"]["undo"] = undo
+            more = card(run_page(d), 42)["more"]["a"]
+            self.assertIn('<span class="lbl">Undo</span>' + undo, more, undo)
+
+    def test_a_one_way_more_shows_its_row_first(self):
+        res = run_page(example())
+        more = card(res, 42)["more"]["a"]
+        pos = [more.index('<span class="lbl">%s</span>' % f) for f in ("Effect", "Reach", "Undo", "Cost")]
+        self.assertEqual(pos, sorted(pos))
+        self.assertLess(pos[-1], more.index('class="sec"'))
+        self.assertLess(more.index('class="sec"'), more.index('<p class="impact">'))
+        # any other card: the text first, then the row
+        more = card(res, 41)["more"]["a"]
+        self.assertLess(more.index('class="sec"'), more.index('<span class="lbl">Effect</span>'))
+
+    def test_a_one_way_row_with_a_blank_cell_is_refused(self):
+        for cell in ("happens", "undo", "who"):
+            d = example()
+            d["cards"][1]["blocks"]["b"][cell] = "  "
+            bad = run_page(d)["bad"]
+            self.assertTrue(any("card 42: a \u26a0 one-way card needs blocks {happens, undo, who} for every "
+                                "option but (z), each non-empty" in b for b in bad), (cell, bad))
+        # a blank cell on any other card is not refused (the cell is just not shown)
+        d = example()
+        d["cards"][0]["blocks"]["b"]["who"] = ""
+        self.assertEqual(run_page(d)["bad"], [])
 
     def test_a_none_unknown_leaves_the_fold_and_stays_on_the_rec_line(self):
         d = example()

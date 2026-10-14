@@ -78,10 +78,11 @@ must start `https://`, or it is not shown.
 
 Do not set `what`: it is older data only.
 
-**None is not shown.** A field, facet or `blocks` cell that is blank or says only `none`,
-`n/a`, `nothing` or a dash is left off the page (a `dep`, a `cost`, an `evidence`, a cell, an
-Unknown in the Evidence fold): leave it out rather than write none. The required Impact facets,
-`basis` and the rec line's *unknown: none* are statements, and stay shown. There is no Options
+**None is not shown.** A field, facet or `blocks` Effect, Reach or Cost cell that is blank or
+says only `none`, `n/a` or a dash is left off the page (a `dep`, a `cost`, an `evidence`, such a
+cell, an Unknown in the Evidence fold): leave it out rather than write none. The required Impact
+facets, each option's Undo cell, `basis` and the rec line's *unknown: none* are statements, and
+stay shown. There is no Options
 in full fold: each option's **More** shows its text at its fullest (a click steps through its
 levels), its `impact` and its `blocks` row.
 

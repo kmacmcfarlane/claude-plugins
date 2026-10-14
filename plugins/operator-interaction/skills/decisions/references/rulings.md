@@ -114,7 +114,8 @@ alternative not taken, in case practice argues for it.
 - **No Options in full; none is not shown, on an answer page** (2026-10-14, the operator's
   direction: "the options in full section is redundant to the inline details in each option,
   ditch it. If any sub-section is empty or none, just don't display it"; the required Impact
-  facets, the basis word and the rec line's *unknown: none* kept as statements, (z) given a
+  facets, each option's Undo cell, the basis word and the rec line's *unknown: none* kept as
+  statements, (z) given a
   **More**, and a one-way card's options shown open, designs made in build, not the
   operator's) — each option's **More** carries what the fold did (its text at every level,
   its impact and its row); a part, facet or field that is empty or none is left off the page.
