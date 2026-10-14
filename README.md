@@ -453,7 +453,7 @@ are `statusline`, for the status line, `sandbox`, for the checkout guard, and
 | Skill | Description |
 |---|---|
 | `checkpoint` | Land a long session's state before compaction or a handoff (`continue` or `handoff`); writes the session's rehydration manifest, prints its absolute path, and for a handoff the commands to continue |
-| `usage-report` | Token spend per session, model and sub-agent dispatch from the local transcripts, and one work item's list-price spend per phase by the agent ids on its record (`usage_report.py item`; stub otherwise: parser, price table and tests; report tables follow) |
+| `usage-report` | Token spend from the local transcripts, read-only: `report` prints totals and tables by served model, requested dispatch tier (the main session as `main`), UTC day, session and dispatch, in tokens by class, Opus-equivalent tokens and a list-price estimate (not a bill), with `--since`, `--all`, `--flat`, `--json` and a reconciliation step against `/usage`; `item` reads one work item's list-price spend per phase by the agent ids on its record |
 
 It also carries `hooks/` — the depth gate, its mid-turn check (`PostToolUse`, advisory
 only), the ledger, the SessionStart rehydration, and `gauge.json`, the thresholds and labels
