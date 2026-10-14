@@ -75,3 +75,7 @@ agent: implementer a7d5d84371ff4f280 round 2
 result: DONE round 2 at 38aa5ae1 (route A probe passed: runs 9, 11, 12 on 2.1.293; the plain printenv form fails to load the skill when unset, the '|| true' form works; seven skills inject the switch; findings 2-6 applied; all suites OK)
 dispatch: reviewer opus high — resume, round 2
 agent: reviewer a20cca2804ea4285f round 2 at 38aa5ae1
+verdict: NEEDS_CHANGES round 2 at 38aa5ae1 (1 high: per the skills doc an injected command that is not allowed (ask or deny rule, managed-only rules) aborts the whole skill, so seven skills could fail to load for a soft-peer tip; 1 low: auto-mode instruction conflict; 2 nits: marketplace suffix, long lines)
+decided: 2026-10-14T08:24Z scope — fix (a): isolate the capture in one small non-user-invocable skill per plugin, called only when a tip would show, a failed call withholds; keeps README principle 4 and confines any abort to the tip; one deny-rule probe first under answer 207 (b); if a failed Skill call ends the turn, route B comes to the operator as a decision
+dispatch: implementer opus medium — resume, fix round 2
+agent: implementer a7d5d84371ff4f280 round 3
