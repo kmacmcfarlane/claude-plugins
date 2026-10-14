@@ -65,3 +65,4 @@ helper: card writer opus — one writer for the 7 open decisions (172, 180, 204-
 agent: card writer a84b51c880f28ff51
 page: open-decisions page https://claude.ai/artifact/YXBW5U31wCnd2jPAWyJF1F (landed template, 7 cards, rev 2026-10-09T10:00:00Z; runner exit 0, deny 0; answers empty at publish; one writer, 10 turns, 132k peak — against last night's five writers at 143-201k each)
 shown 206: 2026-10-09T08:57Z page
+shown 206: 2026-10-14T06:53Z page

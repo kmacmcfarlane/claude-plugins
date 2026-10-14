@@ -30,3 +30,4 @@ dispatch: implementer opus medium — resume, fix round 1 part 1 (findings 3, 6:
 agent: implementer ac34548631423ee4a round 2
 decision 214: In a sidecar layout (.claude-sandbox/ is its own git repo) what should a bare wi init with no terminal do, given answer 211 b chose an ignored store plus a warning for that case in general? — options: (a) refuse, exit 1, nothing written, naming --track (as built; reverses 211 b for sidecars only) | (b) default to tracked in a sidecar: exit 0, the store is committed in the sidecar repo, the host still never sees it, so 211 b's foreign-safe reason holds [recommended] | (c) ignored store plus a warning as 211 b reads literally: wi then flags the store as broken on every prime | (z) decide later: 3c06 waits, the bug stays on main
 result: DONE round 2 part 1 at 1202eb7c (findings 3, 6; 373 OK); the rest waits on decision 214
+shown 214: 2026-10-14T06:53Z page
