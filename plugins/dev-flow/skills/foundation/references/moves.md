@@ -29,12 +29,15 @@ of how big the change feels.
 
 **An interface's terms are a phase-2 artifact.** The claim's `## Interfaces` is split between
 two phases: phase 1 names each contract the repo defines, its location and its defining
-side; its terms (format, versioning, compatibility) are part of that contract, designed at
-phase 2 and approved at gate G2 (`references/gates.md` § 3). This is a reclassification of
-the artifact, not a judgement call, so the partition above holds: adding a contract, removing
-one or moving its defining side reopens requirements; filling or changing the terms of an
-interface the claim already names reopens architecture, and that G2 re-run comes to the
-operator, since the terms are claim substance.
+side; its terms (what the contract guarantees: everything the `ownership:claim-md` skill's
+format lists for an interface beyond its location, privacy included) are part of that
+contract, designed at phase 2 and approved at gate G2 (`references/gates.md` § 3). This is a
+reclassification of the artifact, not a judgement call, so the partition above holds: adding
+a contract, removing one or moving its defining side reopens requirements; filling or
+changing the terms of an interface the claim already names reopens architecture, and that G2
+re-run comes to the operator, since the terms are claim substance. The Data contracts
+artifact and the claim's `## Interfaces` lines carry the same terms: a change to either is a
+change to the terms, and its reopen serial revises both.
 
 ## The reopen procedure
 
