@@ -52,7 +52,7 @@ open. The runner lints an id anywhere the page shows text (SKILL.md step 2).
 
 | Key | Type | Required | What |
 |---|---|---|---|
-| `page` | object | no | `title` (the heading and tab title), `lede` (one or two sentences: what this set of decisions is about; slugs allowed), `doc` (`{name, url}`, a reading copy; `url` must start `https://`, otherwise it is not shown) |
+| `page` | object | no | `title` (the heading and tab title; `(<owner>) <session name>`, else `<repo>: open decisions`, as SKILL.md step 3's title rule sets it, the template's `<title>` set to match), `lede` (one or two sentences: what this set of decisions is about; slugs allowed), `doc` (`{name, url}`, a reading copy; `url` must start `https://`, otherwise it is not shown) |
 | `layers` | array | yes | the groups, in display order: `[key, title, note]` each. `note` is one sentence under the group heading |
 | `follow` | array | yes | the six follow-ups, exactly as in the example, in that order: `[key, label, placeholder, words prompt]`. Keys `later`, `tell me`, `expand`, `dig into`, `you decide`, `drop`; placeholders `[when]` on `later`, `[what]` on `tell me` and `dig into`, empty on the rest |
 | `cards` | array | yes | one card per decision, in list order (the `decisions` skill's order) |

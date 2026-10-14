@@ -42,7 +42,12 @@ p{margin:0}
 code{font-family:var(--f-mono);font-size:.86em;background:var(--sunk);padding:.05em .3em;border-radius:3px}
 header{display:flex;flex-direction:column;gap:10px}
 .lede{max-width:66ch;color:var(--muted)}
-.bar{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;font-size:.9rem}
+/* the progress bar sticks to the top of the viewport once scrolled past: it is a child of
+   .wrap, not of header, so its sticky range is the whole page; no ancestor sets overflow.
+   The negative top margin keeps it close under the header despite .wrap's gap; the
+   scroll padding keeps a card opened from a slug clear of it. */
+html{scroll-padding-top:5rem}
+.bar{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;font-size:.9rem;position:sticky;top:0;z-index:5;background:var(--bg);padding-block:8px;margin-top:-18px;border-bottom:1px solid var(--line)}
 .count{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
 .meter{flex:1 1 160px;height:6px;background:var(--sunk);border-radius:3px;overflow:hidden;min-width:120px}
 .meter>i{display:block;height:100%;background:var(--ok);width:0;transition:width .3s}
@@ -200,16 +205,16 @@ footer{color:var(--muted);font-size:.85rem;max-width:70ch}
     <h1 id="title">Decision answers</h1>
     <p class="lede" id="lede"></p>
     <p class="lede">For each decision, pick one option or one follow-up (the radio buttons allow only one), and add your words if you like. Each click saves at once; there is no submit button. Tell Claude in chat when you're done. A <span class="slug-t">number · name</span> is a decision: hover or click it to see that decision. Each line shows, after an arrow (→), what the decision changes across its options; each card opens on a TLDR, then its Context (the terms it uses), then its impact, one facet a line, then one line per option; the folds under it go from compressed to full detail, the full impact table first, with each option's own effect. A part with a <i>more detail</i> button, above or inside a fold, shows more detail as short bullets when you click it or its text, and full detail in headed sections on a second click; <b>More</b> beside an option shows it in full.<span id="doclink"></span></p>
-    <div class="bar">
-      <span class="count" id="count">loading decisions…</span>
-      <span class="meter" aria-hidden="true"><i id="meterfill"></i></span>
-      <span class="save" id="save">connecting…</span>
-      <button class="linkish" id="toggleall" type="button">Open all cards</button>
-    </div>
     <div class="banner" id="nodb" hidden>This view can't save answers. Nothing you pick here is kept; answer in chat instead (<code id="nodbex">N: a</code>).</div>
     <div class="banner" id="viewonly" hidden>You are viewing these answers. Only the page's owner can answer here.</div>
     <div class="banner" id="nodata" hidden>The decisions didn't load. Reload the page; if it keeps failing, ask Claude for them in chat.</div>
   </header>
+  <div class="bar">
+    <span class="count" id="count">loading decisions…</span>
+    <span class="meter" aria-hidden="true"><i id="meterfill"></i></span>
+    <span class="save" id="save">connecting…</span>
+    <button class="linkish" id="toggleall" type="button">Open all cards</button>
+  </div>
 
   <section aria-labelledby="maph">
     <h2 id="maph" style="margin-bottom:10px">At a glance</h2>
