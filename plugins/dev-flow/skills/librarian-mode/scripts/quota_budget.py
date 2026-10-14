@@ -14,8 +14,14 @@ sandboxes share), `CFG` = ${CLAUDE_CONFIG_DIR:-~/.claude}:
     CFG/claude-kit/librarian/intent.json      operator intent (read only here)
     CFG/claude-kit/librarian/claims/<repo>.json  one claim per repo (this repo's written)
 
+It also prints the spend inputs (each spend kind's sanity ceiling and p75, the
+dollars per weekly point, the burst size, the ask share) and, with a reading,
+the weekly quota pressure that dev-cycle's spend asks read; it decides no ask.
+
 The schema and the rules are in references/budget.md; the values (reserves,
-TTLs) are owned by the agents repo's librarian-budget-policy series.
+TTLs, and the spend inputs below) are claude-plugins' own: agents decision 0010
+moved them here from the agents repo's librarian-budget-policy series; a value
+change is a claude-plugins decision.
 
 Reads: this session's sensor record CFG/statusline/sensor/<sid>.json (the
 statusline-hub contract, its hook-contract.md § 12), this session's own registry file
@@ -44,13 +50,15 @@ from datetime import datetime, timezone
 
 V = 1
 WINDOWS = ("five_hour", "seven_day")
-# Reserves in percentage points per intent: (five_hour, seven_day). The agents
-# librarian-budget-policy series owns them. done-for-the-day's five-hour reserve
-# of 5 is the operator's ruling (2026-09-24, the series' Open Question 3). The
-# other values stay the series' provisional defaults pending ratification
-# (away's five-hour reserve is 10, per its resolution of 1222's F1/F5 split), as
-# does agents decision 0008's 5% floor, read provisionally as no intent's
-# five-hour reserve below 5.
+# Reserves in percentage points per intent: (five_hour, seven_day).
+# claude-plugins owns them (agents decision 0010; values unchanged from the
+# agents series that set them). done-for-the-day's five-hour reserve of 5 is the
+# operator's ruling (2026-09-24, the series' Open Question 3). away's five-hour
+# reserve is 10, per the series' resolution of 1222's F1/F5 split. The other
+# values stay the series' defaults, provisional until the operator ratifies them
+# in claude-plugins (agents decision 0010 moved them here). So does agents
+# decision 0008's 5% floor, read as no intent's five-hour reserve below 5: read
+# provisionally until ratified here.
 RESERVES = {
     "present": (25.0, 15.0),
     "away": (10.0, 15.0),
@@ -59,13 +67,42 @@ RESERVES = {
 }
 DEFAULT_INTENT = "present"
 # The weekly reserve's taper (agents decision 0008 item 3 and its series
-# defaults): reserve still unused at the weekly reset is wasted, so over the last
-# WEEKLY_TAPER_H hours before seven_day.resets_at the weekly reserve R above
-# decays linearly, never below WEEKLY_TAPER_FLOOR points:
+# defaults; owned here since agents decision 0010): reserve still unused at the
+# weekly reset is wasted, so over the last WEEKLY_TAPER_H hours before
+# seven_day.resets_at the weekly reserve R above decays linearly, never below
+# WEEKLY_TAPER_FLOOR points:
 #     max(WEEKLY_TAPER_FLOOR, R * min(1, hours_to_weekly_reset / WEEKLY_TAPER_H))
 # The five-hour reserve does not taper.
 WEEKLY_TAPER_H = 48.0
 WEEKLY_TAPER_FLOOR = 3.0
+# Spend inputs: what dev-cycle's spend asks read (references/budget.md § Spend
+# inputs, § Quota pressure). claude-plugins owns these values, as it does the
+# reserves; a change is a claude-plugins decision, made here, the one copy.
+# Measured inputs - SPEND_KINDS' p75s, USD_PER_POINT, BURST_PER_SQRT_DAY - are
+# defaults from one maintainer's usage, autumn 2026; retune. claude-analytics
+# supplies these through spend_inputs() once its reports exist.
+# Design values - the sanity ceilings, ASK_ALPHA, GO_ON_POINTS, PHASE_HOURS,
+# SHARE_FLOOR, FABLE_FACTOR - are the ask rule's own (operator-approved design,
+# 2026-10-13).
+SPEND_KINDS = {            # list-price dollars per phase: (p75, sanity ceiling)
+    ("plan", "spike"): (26.0, 60.0),
+    ("plan", "other"): (17.0, 45.0),
+    ("build", "chore"): (3.0, 30.0),
+    ("build", "bug"): (6.0, 35.0),
+    ("build", "other"): (12.0, 65.0),
+}
+# A model: fable pin scales ceiling and p75 by this (dev-cycle's fable doubling).
+FABLE_FACTOR = 2.0
+USD_PER_POINT = 25.0       # list dollars per weekly percentage point
+BURST_PER_SQRT_DAY = 20.0  # b: weekly points a big day can take; burst(d) = b * sqrt(d)
+# An item may take this share of the free headroom after burst room unasked.
+ASK_ALPHA = 0.25
+# Weekly points one stored go-on covers (operator answer (c), 2026-10-13).
+GO_ON_POINTS = 10.0
+# Time decay: the share before the reset = min(1, hours to reset / PHASE_HOURS),
+# never below SHARE_FLOOR.
+PHASE_HOURS = 2.0
+SHARE_FLOOR = 0.05
 IDLE_TTL_S = 2 * 3600          # a claim with nothing in flight is fresh this long
 IN_FLIGHT_TTL_S = 4 * 3600     # a claim with items in flight is fresh this long
 STALE_AFTER_S = 30 * 60        # a reading older than this is no signal
@@ -485,6 +522,63 @@ def windows_result(current, history, reserves, now):
     return res
 
 
+# ---------------------------------------------------------------- spend inputs
+
+def spend_inputs():
+    """The inputs dev-cycle's spend asks read: each spend kind's p75 and sanity
+    ceiling, and the quota-pressure parameters. The one seam for their source:
+    `source` is "constants" (the values at the top of this file); a later
+    reader of claude-analytics' reports plugs in here, and nothing downstream
+    changes when it does."""
+    kinds = {}
+    for (phase, kind), (p75, ceiling) in sorted(SPEND_KINDS.items()):
+        kinds.setdefault(phase, {})[kind] = {"p75": p75, "ceiling": ceiling}
+    return {"source": "constants", "kinds": kinds, "usd_per_point": USD_PER_POINT,
+            "fable_factor": FABLE_FACTOR, "burst_per_sqrt_day": BURST_PER_SQRT_DAY,
+            "alpha": ASK_ALPHA, "go_on_points": GO_ON_POINTS,
+            "phase_hours": PHASE_HOURS, "share_floor": SHARE_FLOOR}
+
+
+def before_reset_share(hours_to_reset, inputs):
+    """The share of a phase's spend expected to land before the weekly reset:
+    min(1, hours / phase_hours), never below share_floor."""
+    frac = max(0.0, hours_to_reset) / inputs["phase_hours"]
+    return max(inputs["share_floor"], min(1.0, frac))
+
+
+def quota_pressure(week, inputs):
+    """The weekly quota-pressure block from windows.seven_day (`week`) and the
+    spend inputs. The five-hour window never enters it. It decides nothing: the
+    orchestrator compares its own expected spend with the thresholds.
+
+    burst = b * sqrt(d), d the days to the reset; free (the free headroom after
+    burst room) = 100 - used - reserve - burst, the reserve tapered; ask_all
+    when free <= 0, else ask_above_points = alpha * free / share; room_usd (the
+    room above the reserve, in dollars) = max(0, headroom) * $/pt / share."""
+    hours = week["hours_to_reset"]
+    days = max(0.0, hours) / 24.0
+    headroom = week["headroom"]  # 100 - used - the tapered reserve
+    burst = inputs["burst_per_sqrt_day"] * math.sqrt(days)
+    free = headroom - burst
+    share = before_reset_share(hours, inputs)
+    ask_all = free <= 0
+    above = 0.0 if ask_all else inputs["alpha"] * free / share
+    usd = inputs["usd_per_point"]
+    return {
+        "days_to_reset": round(days, 4),
+        "used": week["used"],
+        "reserve": week["reserve"],
+        "headroom": headroom,
+        "burst": round(burst, 3),
+        "free": round(free, 3),
+        "before_reset_share": round(share, 4),
+        "ask_all": ask_all,
+        "ask_above_points": round(above, 3),
+        "ask_above_usd": round(above * usd, 2),
+        "room_usd": round(max(0.0, headroom) * usd / share, 2),
+    }
+
+
 # ---------------------------------------------------------------- claims
 
 def registry_identity(cfg, session, env):
@@ -711,13 +805,15 @@ def compute(args, env, now):
     session = args.session or env.get("CLAUDE_CODE_SESSION_ID") or None
     result = {"v": V, "now": now, "session": session, "signal": "none", "reason": None,
               "source": None, "intent": None, "reserves": None, "weekly_taper": None,
-              "windows": None,
+              "windows": None, "spend_inputs": None, "quota_pressure": None,
               "binding": None, "allowed": None, "claims": None, "next_check": None}
 
     intent = read_intent(store, now)
     reserves = RESERVES[intent["mode"]]
     result["intent"] = intent
     result["reserves"] = {"five_hour": reserves[0], "seven_day": reserves[1]}
+    inputs = spend_inputs()
+    result["spend_inputs"] = inputs
 
     # Current reading: this session's sensor record; the live sink when the
     # record is missing or stale. History: the live sink, else samples.jsonl.
@@ -764,7 +860,8 @@ def compute(args, env, now):
                                   "window_h": WEEKLY_TAPER_H,
                                   "tapering": wins["seven_day"]["hours_to_reset"] < WEEKLY_TAPER_H}
         result.update(signal="ok", reading_at=reading["at"], windows=wins, binding=binding,
-                      allowed=wins[binding]["allowed"])
+                      allowed=wins[binding]["allowed"],
+                      quota_pressure=quota_pressure(wins["seven_day"], inputs))
     else:
         result["reason"] = reason or "no reading"
 

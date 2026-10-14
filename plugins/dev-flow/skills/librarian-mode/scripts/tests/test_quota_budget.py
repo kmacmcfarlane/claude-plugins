@@ -397,6 +397,190 @@ class TestWeeklyTaper(Base):
         self.assertIsNone(r["weekly_taper"])
 
 
+class TestSpendInputs(Base):
+    """28e1 F1: the spend inputs are printed on every call, from the constants."""
+
+    KINDS = {("plan", "spike"), ("plan", "other"), ("build", "chore"), ("build", "bug"),
+             ("build", "other")}
+
+    def check(self, r):
+        si = r["spend_inputs"]
+        self.assertEqual(si, qb.spend_inputs())
+        self.assertEqual(si["source"], "constants")
+        got = {(ph, k) for ph, ks in si["kinds"].items() for k in ks}
+        self.assertEqual(got, self.KINDS)
+        for (ph, k), (p75, ceiling) in qb.SPEND_KINDS.items():
+            self.assertEqual(si["kinds"][ph][k], {"p75": p75, "ceiling": ceiling})
+            self.assertLess(p75, ceiling, (ph, k))
+        self.assertEqual(si["usd_per_point"], qb.USD_PER_POINT)
+        self.assertEqual(si["fable_factor"], qb.FABLE_FACTOR)
+        self.assertEqual(si["burst_per_sqrt_day"], qb.BURST_PER_SQRT_DAY)
+        self.assertEqual(si["alpha"], qb.ASK_ALPHA)
+        self.assertEqual(si["go_on_points"], qb.GO_ON_POINTS)
+        self.assertEqual(si["phase_hours"], qb.PHASE_HOURS)
+        self.assertEqual(si["share_floor"], qb.SHARE_FLOOR)
+
+    def test_with_a_signal(self):
+        self.sensor(at=NOW)
+        _, r, _ = self.run_qb("--read-only")
+        self.assertEqual(r["signal"], "ok")
+        self.check(r)
+
+    def test_with_no_signal(self):
+        _, r, _ = self.run_qb("--read-only")
+        self.assertEqual(r["signal"], "none")
+        self.check(r)
+
+    def test_the_seam_feeds_quota_pressure(self):
+        # A later source plugs in at spend_inputs(); quota_pressure reads it, not
+        # the module constants.
+        inputs = dict(qb.spend_inputs(), source="test", usd_per_point=50.0)
+        self.sensor(week=(30.0, NOW + 100 * H), at=NOW)
+        with mock.patch.object(qb, "spend_inputs", return_value=inputs):
+            _, r, _ = self.run_qb("--read-only")
+        self.assertEqual(r["spend_inputs"]["source"], "test")
+        qp = r["quota_pressure"]
+        self.assertAlmostEqual(qp["ask_above_usd"], qp["ask_above_points"] * 50.0, places=1)
+
+    def test_absent_from_the_internal_error_object(self):
+        with mock.patch.object(qb, "compute", side_effect=ValueError("boom")):
+            rc, r, _ = self.run_qb()
+        self.assertEqual(rc, 1)
+        self.assertNotIn("spend_inputs", r)
+        self.assertNotIn("quota_pressure", r)
+
+
+class TestQuotaPressure(Base):
+    """28e1 F1: burst room, the free headroom after burst room, and the ask
+    threshold; the weekly window only."""
+
+    def run_at(self, hours, used=30.0, mode=None, five=(40.0, NOW + 3 * H)):
+        if mode:
+            self.intent({"mode": mode})
+        self.sensor(five=five, week=(used, NOW + hours * H), at=NOW)
+        _, r, _ = self.run_qb("--read-only")
+        self.assertEqual(r["signal"], "ok")
+        return r, r["quota_pressure"]
+
+    def test_null_with_no_signal(self):
+        _, r, _ = self.run_qb("--read-only")
+        self.assertIsNone(r["quota_pressure"])
+
+    def test_burst(self):
+        b = qb.BURST_PER_SQRT_DAY
+        for hours, days in ((168, 7), (96, 4), (24, 1), (2, 1 / 12)):
+            _, qp = self.run_at(hours)
+            self.assertAlmostEqual(qp["days_to_reset"], days, places=3)
+            self.assertAlmostEqual(qp["burst"], b * days ** 0.5, places=3)
+
+    def test_free_uses_the_tapered_reserve(self):
+        for hours, reserve in ((100, 15.0), (48, 15.0), (24, 7.5), (2, 3.0)):
+            r, qp = self.run_at(hours, used=40.0)
+            self.assertAlmostEqual(qp["reserve"], reserve, places=3)
+            self.assertEqual(qp["reserve"], r["windows"]["seven_day"]["reserve"])
+            self.assertEqual(qp["headroom"], r["windows"]["seven_day"]["headroom"])
+            burst = qb.BURST_PER_SQRT_DAY * (hours / 24.0) ** 0.5
+            self.assertAlmostEqual(qp["free"], 100 - 40.0 - reserve - burst, places=2)
+            self.assertEqual(qp["used"], 40.0)
+
+    def test_vacation_reserve_changes_free(self):
+        _, present = self.run_at(100, used=20.0)
+        _, vacation = self.run_at(100, used=20.0, mode="vacation")
+        self.assertAlmostEqual(vacation["free"] - present["free"], 5.0, places=3)
+
+    def test_five_hour_window_never_enters(self):
+        _, a = self.run_at(100, used=20.0, five=(5.0, NOW + 3 * H))
+        _, b = self.run_at(100, used=20.0, five=(99.0, NOW + 1 * H))
+        self.assertEqual(a, b)
+
+    def test_ask_all_when_free_is_spent(self):
+        _, qp = self.run_at(96, used=60.0)  # 100 - 60 - 15 - 40 < 0
+        self.assertLessEqual(qp["free"], 0)
+        self.assertTrue(qp["ask_all"])
+        self.assertEqual((qp["ask_above_points"], qp["ask_above_usd"]), (0.0, 0.0))
+
+    def test_threshold_when_free_is_left(self):
+        _, qp = self.run_at(100, used=10.0)
+        self.assertGreater(qp["free"], 0)
+        self.assertFalse(qp["ask_all"])
+        self.assertEqual(qp["before_reset_share"], 1.0)
+        self.assertAlmostEqual(qp["ask_above_points"], qb.ASK_ALPHA * qp["free"], places=2)
+        self.assertAlmostEqual(qp["ask_above_usd"],
+                               qp["ask_above_points"] * qb.USD_PER_POINT, places=1)
+
+    def test_before_reset_share(self):
+        inputs = qb.spend_inputs()
+        ph = qb.PHASE_HOURS
+        self.assertEqual(qb.before_reset_share(ph, inputs), 1.0)
+        self.assertEqual(qb.before_reset_share(ph * 5, inputs), 1.0)
+        self.assertAlmostEqual(qb.before_reset_share(ph / 2, inputs), 0.5)
+        self.assertAlmostEqual(qb.before_reset_share(ph / 4, inputs), 0.25)
+        self.assertEqual(qb.before_reset_share(0.0, inputs), qb.SHARE_FLOOR)
+        self.assertEqual(qb.before_reset_share(-1.0, inputs), qb.SHARE_FLOOR)
+        self.assertEqual(qb.before_reset_share(ph * qb.SHARE_FLOOR / 10, inputs), qb.SHARE_FLOOR)
+
+    def test_share_scales_the_threshold_near_the_reset(self):
+        _, qp = self.run_at(1, used=50.0)  # free > 0 even an hour out
+        self.assertFalse(qp["ask_all"])
+        self.assertAlmostEqual(qp["before_reset_share"], 1 / qb.PHASE_HOURS, places=4)
+        self.assertAlmostEqual(qp["ask_above_points"],
+                               qb.ASK_ALPHA * qp["free"] * qb.PHASE_HOURS, places=2)
+        self.assertAlmostEqual(qp["room_usd"],
+                               qp["headroom"] * qb.USD_PER_POINT * qb.PHASE_HOURS, places=1)
+
+    def test_room_usd(self):
+        _, qp = self.run_at(100, used=30.0)
+        self.assertAlmostEqual(qp["room_usd"], qp["headroom"] * qb.USD_PER_POINT, places=2)
+
+    def test_room_usd_zero_below_the_reserve(self):
+        _, qp = self.run_at(100, used=90.0)
+        self.assertLessEqual(qp["headroom"], 0)
+        self.assertEqual(qp["room_usd"], 0.0)
+        self.assertTrue(qp["ask_all"])
+
+    def test_room_usd_ignores_burst(self):
+        # free <= 0 while the room above the reserve is left: every item asks,
+        # and go-on is still the recommendation the room supports.
+        _, qp = self.run_at(168, used=40.0)  # 100 - 40 - 15 = 45 headroom, burst ~52.9
+        self.assertGreater(qp["headroom"], 0)
+        self.assertLessEqual(qp["free"], 0)
+        self.assertTrue(qp["ask_all"])
+        self.assertAlmostEqual(qp["room_usd"], 45.0 * qb.USD_PER_POINT, places=2)
+        with mock.patch.object(qb, "BURST_PER_SQRT_DAY", 0.0):
+            _, qp0 = self.run_at(168, used=40.0)
+        self.assertEqual(qp0["room_usd"], qp["room_usd"])
+
+    def test_golden_asks_start(self):
+        # Where free reaches 0 under `present` intent, b = 20 (patched so a
+        # retune does not break it): 168/96/48/24/12/2 h before the reset.
+        golden = ((168, 32.1), (96, 45.0), (48, 56.7), (24, 72.5), (12, 82.1), (2, 91.2))
+        with mock.patch.object(qb, "BURST_PER_SQRT_DAY", 20.0):
+            for hours, used in golden:
+                _, qp = self.run_at(hours, used=used)
+                self.assertAlmostEqual(qp["free"], 0.0, delta=0.1, msg=hours)
+                _, below = self.run_at(hours, used=used - 1)
+                self.assertFalse(below["ask_all"], hours)
+                _, above = self.run_at(hours, used=used + 1)
+                self.assertTrue(above["ask_all"], hours)
+
+    def test_free_never_falls_as_the_reset_nears(self):
+        for used in (20.0, 50.0, 80.0):
+            prev = None
+            for hours in range(168, 0, -1):
+                free = qb.quota_pressure(
+                    {"used": used, "hours_to_reset": float(hours),
+                     "reserve": qb.weekly_reserve(15.0, float(hours)),
+                     "headroom": 100 - used - qb.weekly_reserve(15.0, float(hours))},
+                    qb.spend_inputs())["free"]
+                if prev is not None:
+                    self.assertGreaterEqual(free, prev - 1e-9, (used, hours))
+                prev = free
+
+    def test_read_only_still_writes_nothing(self):
+        self.run_at(100)
+        self.assertFalse(os.path.exists(self.store))
+
+
 class TestSamplesAndSink(Base):
     def lines(self):
         p = os.path.join(self.store, "samples.jsonl")
