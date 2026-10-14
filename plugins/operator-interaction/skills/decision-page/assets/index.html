@@ -5,13 +5,14 @@
    top, then collapsible answer cards by group. An open card opens on its TLDR, then its Context
    (the terms it uses), then its Impact, one facet a line; the popup the same, with the Impact at
    tag size. Every view shows the decision's impact across all its options: the map and a closed
-   card its effect, an open card its Impact lines, the Options in full fold its Impact table (each
-   option's own effect). Inside a card the essentials are flat (TLDR, Context, Impact, options,
-   follow-ups, words, recommendation); background, options in full, dependencies and evidence
-   sit in folds. A part with a more-detail button, above or inside a fold, steps to more detail
-   on a click (terse bullets) and again to full detail (headed sections); each level replaces the
-   part's text, and the next click goes back to the summary. The Impact table and the static
-   lines do not step. More beside an option shows it in full. Decision references ([[N]]) are
+   card its effect, an open card its Impact lines, each option's More its own effect, reach, undo
+   and cost. Inside a card the essentials are flat (TLDR, Context, Impact, options, follow-ups,
+   words, recommendation); background, dependencies and evidence sit in folds. A part with a
+   more-detail button, above or inside a fold, steps to more detail on a click (terse bullets)
+   and again to full detail (headed sections); each level replaces the part's text, and the next
+   click goes back to the summary. The static lines do not step. More beside an option shows it
+   in full (open on a one-way card). A part, facet or field that is empty or "none" is not shown
+   (isNone). Decision references ([[N]]) are
    slugs that open the referenced decision in a popup. All content comes from cards.json beside
    this page; answers go to the db collection "answers", one document per decision number. */
 :root{
@@ -181,12 +182,6 @@ details.pane>div{padding:6px 0 2px;font-size:.92rem;max-width:70ch;display:flex;
 .impline{font-size:.92rem;max-width:70ch;border-left:3px solid var(--accent);padding:6px 12px;background:var(--sunk);border-radius:0 6px 6px 0;display:flex;flex-direction:column;gap:2px;min-width:0}
 .impline .lbl{display:block;margin-bottom:1px}
 .impline i{font-style:normal;font-family:var(--f-mono);font-size:.8rem;color:var(--muted)}
-.tw{overflow-x:auto;max-width:100%}
-table.imp{border-collapse:collapse;font-size:.86rem;min-width:520px;width:100%}
-table.imp th,table.imp td{border:1px solid var(--line);padding:5px 8px;text-align:left;vertical-align:top}
-table.imp th{font-family:var(--f-mono);font-size:.72rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);background:var(--sunk);font-weight:600}
-table.imp tr.isrec th[scope=row]{font-weight:700}
-table.imp th[scope=row]{text-transform:none;letter-spacing:0;font-family:var(--f-body);font-size:.86rem;color:var(--ink);background:none;font-weight:400}
 
 /* popup */
 .pop{position:absolute;z-index:10;width:min(420px,calc(100vw - 32px));background:var(--surface);border:1px solid var(--accent);border-radius:8px;box-shadow:var(--shadow);padding:12px 14px;display:flex;flex-direction:column;gap:8px;font-size:.88rem}
@@ -204,7 +199,7 @@ footer{color:var(--muted);font-size:.85rem;max-width:70ch}
   <header>
     <h1 id="title">Decision answers</h1>
     <p class="lede" id="lede"></p>
-    <p class="lede">For each decision, pick one option or one follow-up (the radio buttons allow only one), and add your words if you like. Each click saves at once; there is no submit button. Tell Claude in chat when you're done. A <span class="slug-t">number · name</span> is a decision: hover or click it to see that decision. Each line shows, after an arrow (→), what the decision changes across its options; each card opens on a TLDR, then its Context (the terms it uses), then its impact, one facet a line, then one line per option; the folds under it go from compressed to full detail, the full impact table first, with each option's own effect. A part with a <i>more detail</i> button, above or inside a fold, shows more detail as short bullets when you click it or its text, and full detail in headed sections on a second click; <b>More</b> beside an option shows it in full.<span id="doclink"></span></p>
+    <p class="lede">For each decision, pick one option or one follow-up (the radio buttons allow only one), and add your words if you like. Each click saves at once; there is no submit button. Tell Claude in chat when you're done. A <span class="slug-t">number · name</span> is a decision: hover or click it to see that decision. Each line shows, after an arrow (→), what the decision changes across its options; each card opens on a TLDR, then its Context (the terms it uses), then its impact, one facet a line, then one line per option; the folds under it go from compressed to full detail. A part with a <i>more detail</i> button, above or inside a fold, shows more detail as short bullets when you click it or its text, and full detail in headed sections on a second click; <b>More</b> beside an option shows it in full, with its own effect, reach, undo and cost. A part with nothing to say (none) is left out.<span id="doclink"></span></p>
     <div class="banner" id="nodb" hidden>This view can't save answers. Nothing you pick here is kept; answer in chat instead (<code id="nodbex">N: a</code>).</div>
     <div class="banner" id="viewonly" hidden>You are viewing these answers. Only the page's owner can answer here.</div>
     <div class="banner" id="nodata" hidden>The decisions didn't load. Reload the page; if it keeps failing, ask Claude for them in chat.</div>
@@ -255,22 +250,12 @@ const tagEffect=c=>'<span class="eff"><b>→</b>'+fmtPlain(c.impact.effect)+'</s
 /* the facets in their one order: key, the label a line opens with, the heading at full detail */
 const IMP_FACETS=[["effect","→","Effect"],["wait","later:","Wait"],["reach","reach:","Reach"],["undo","undo:","Undo"],["cost","cost:","Cost"]];
 const impLabel=(k,l)=>k==="effect"?'<b>→</b>':'<i>'+l+'</i>';
+/* the facets the check requires (effect, wait, reach, undo) are decision-wide statements: shown whatever
+   they say ("undo: none" says the decision is one-way). Cost is optional: a none cost is not shown */
+const facetShown=(k,v,ok)=>ok(v)&&(k!=="cost"||!isNone(v));
 /* the card's Impact, across all its options: one facet a line, → effect, later:, reach:, undo:, and cost: when given */
 const impactLine=c=>{const i=c.impact;
-  return '<div class="impline"><span class="lbl">Impact</span>'+IMP_FACETS.map(([k,l])=>isTxt(i[k])?'<p>'+impLabel(k,l)+' '+fmt(i[k])+'</p>':'').join("")+'</div>'};
-/* the block's Impact table: a row per option, then the Wait row (decide later's); Effect, Reach, Undo, Cost.
-   An option with no blocks entry shows its impact as the effect, and — for facets the card does not state;
-   the Wait row is the card's impact.wait, its other facets — */
-const impactTable=c=>{
-  const cell=v=>'<td>'+(typeof v==="string"&&v?fmt(v):"—")+'</td>';
-  let h='<div class="tw"><table class="imp"><thead><tr><th scope="col">Impact</th><th scope="col">Effect</th><th scope="col">Reach</th><th scope="col">Undo</th><th scope="col">Cost</th></tr></thead><tbody>';
-  for(const [k,,imp,ttl] of c.o){
-    if(k==="z")continue;
-    const b=(c.blocks&&c.blocks[k])||null,isRec=!!c.rec&&k===c.rec;
-    h+='<tr'+(isRec?' class="isrec"':'')+'><th scope="row">('+esc(k)+') '+esc(ttl)+'</th>'+cell(b?b.happens:imp)+cell(b&&b.who)+cell(b&&b.undo)+cell(b&&b.cost)+'</tr>';
-  }
-  h+='<tr><th scope="row">(z) Wait</th>'+cell(c.impact.wait)+cell()+cell()+cell()+'</tr>';
-  return h+'</tbody></table></div>'};
+  return '<div class="impline"><span class="lbl">Impact</span>'+IMP_FACETS.map(([k,l])=>facetShown(k,i[k],isTxt)?'<p>'+impLabel(k,l)+' '+fmt(i[k])+'</p>':'').join("")+'</div>'};
 
 /* what it takes to act on option k (the decisions skill's To act on part): its numbered steps, flat
    under the option, never folded; empty when the option asks nothing of the operator */
@@ -284,7 +269,7 @@ const PLACEHOLDER=/<[A-Za-z][\w-]*>/;
    An older card's what, when present, is shown at its end, after the cue, so nothing is lost */
 const contextBlock=(c,plain)=>{const f=plain?fmtPlain:fmt;
   return '<div class="ctx"><span class="lbl">Context</span><p>'+f(c.context)+'</p>'
-    +(typeof c.what==="string"&&c.what.trim()?'<p>'+f(c.what)+'</p>':'')+'</div>'};
+    +(isTxt(c.what)&&shown(c.what)?'<p>'+f(c.what)+'</p>':'')+'</div>'};
 /* a TLDR bullet that carries the recommendation (the options list marks it): only forms that cannot be anything else.
    No lookbehind: one would stop the whole script in an older browser */
 const REC_OPEN=/^[^A-Za-z]*(rec|recs|recommend|recommended|recommendation)\b(?!\s*(\([a-y]\)\s*)?by\b)\s*(\.|:|—|–|-\s|\(|$)/i;
@@ -296,6 +281,15 @@ const recBullet=s=>REC_OPEN.test(s)||REC_ANY.test(s);
 const isTxt=v=>typeof v==="string"&&!!v.trim();
 const isFlat=v=>isTxt(v)||(Array.isArray(v)&&v.length>0&&v.every(isTxt));
 const isObj=v=>!!v&&typeof v==="object"&&!Array.isArray(v);
+/* the operator's rule (2026-10-14): a sub-section, facet or field that is empty, missing or none is not
+   displayed. One test, used wherever a part may be left out: missing, blank, "none", "none.", "n/a",
+   "n/a." or a lone dash (trimmed, any case); a list of nothing but those; a bullet whose text is one.
+   "Nothing." is not among them: it can be a statement. The fields whose none is itself a statement (the
+   required Impact facets, each option's Undo cell, basis, the rec line's unknown) never pass through it */
+const NONE_WORDS=new Set(["","none","none.","n/a","n/a.","-","–","—"]);
+const isNone=v=>v==null||(typeof v==="string"&&NONE_WORDS.has(v.trim().toLowerCase()))
+  ||(Array.isArray(v)&&v.every(isNone))||(isObj(v)&&!("h" in v)&&isNone(v.t));
+const shown=v=>!isNone(v);
 const isItem=v=>isTxt(v)||(isObj(v)&&!("h" in v)&&isTxt(v.t)&&(v.sub==null||(Array.isArray(v.sub)&&v.sub.every(isTxt))));
 const isList=v=>Array.isArray(v)&&v.length>0&&v.every(isItem);
 const isSecs=v=>Array.isArray(v)&&v.length>0&&v.every(x=>isObj(x)&&!("t" in x)&&isTxt(x.h)&&isList(x.b));
@@ -339,7 +333,9 @@ function check(d){
     if(c.rec===null){if(!isStr(c.norec))bad.push(w+": rec null needs norec")}
     else if(!ls.includes(c.rec))bad.push(w+": rec is not one of its option letters");
     const row=b=>!!b&&typeof b==="object"&&isStr(b.happens)&&isStr(b.undo)&&isStr(b.who)&&(!("cost" in b)||isStr(b.cost));
-    if(c.warn&&(typeof c.blocks!=="object"||!c.blocks||!ls.every(k=>k==="z"||row(c.blocks[k]))))bad.push(w+": a ⚠ one-way card needs blocks {happens, undo, who} for every option but (z)");
+    /* a one-way card's rows decide the read-back: each cell non-blank (a none Undo is a statement, kept) */
+    const full=b=>row(b)&&[b.happens,b.undo,b.who].every(x=>x.trim());
+    if(c.warn&&(typeof c.blocks!=="object"||!c.blocks||!ls.every(k=>k==="z"||full(c.blocks[k]))))bad.push(w+": a ⚠ one-way card needs blocks {happens, undo, who} for every option but (z), each non-empty");
     if(c.blocks!=null&&(typeof c.blocks!=="object"||Object.keys(c.blocks).some(k=>k==="z"||!ls.includes(k)||!row(c.blocks[k]))))bad.push(w+": blocks are keyed by option letter, not (z), each {happens, undo, who, cost?} as text");
     if(c.act!=null){
       if(typeof c.act!=="object"||Array.isArray(c.act)||Object.keys(c.act).some(k=>k==="z"||!ls.includes(k)||!Array.isArray(c.act[k])||!c.act[k].length||!c.act[k].every(x=>isStr(x)&&x.trim())))bad.push(w+": act is keyed by option letter, not (z), each a non-empty list of steps as text");
@@ -379,7 +375,7 @@ function ansLabel(c,a){
   if(a.words)t+=" …";
   return '<span class="pill done">'+esc(t)+'</span>';
 }
-function line(label,text){return text?'<p class="extra"><strong>'+esc(label)+'</strong> '+fmt(text)+'</p>':''}
+function line(label,text){return isTxt(text)&&shown(text)?'<p class="extra"><strong>'+esc(label)+'</strong> '+fmt(text)+'</p>':''}
 
 /* a link, in a detail level, a fold part or an option's detail only: https only, matched on the escaped
    text, so an entity other than &amp; ends it and a quote never reaches the href; trailing punctuation
@@ -418,12 +414,12 @@ const labelled=(lbl,x,pre)=>Array.isArray(x)
 /* the Impact at more detail: one bullet per facet, its label first, the options in its sub-bullets
    (a list value, which the runner lints, shows as sub-bullets too) */
 const impactMedium=i=>'<div class="impline"><span class="lbl">Impact</span><ul class="lvl">'
-  +IMP_FACETS.map(([k,l])=>{const v=i[k];if(!isFacet(v))return "";const lab=impLabel(k,l)+' ';
+  +IMP_FACETS.map(([k,l])=>{const v=i[k];if(!facetShown(k,v,isFacet))return "";const lab=impLabel(k,l)+' ';
     if(Array.isArray(v))return '<li>'+lab+listHtml(v,fmtD,"lvl sub")+'</li>';
     return typeof v==="string"?'<li>'+lab+fmtD(v)+'</li>':'<li>'+lab+itemHtml(v,fmtD).slice(4)}).join("")+'</ul></div>';
 /* the Impact at full detail: a section per facet, headed Effect, Wait, Reach, Undo, Cost */
 const impactHigh=i=>'<div class="impline"><span class="lbl">Impact</span>'
-  +IMP_FACETS.map(([k,,h])=>{const v=i[k];if(!isFacet(v))return "";
+  +IMP_FACETS.map(([k,,h])=>{const v=i[k];if(!facetShown(k,v,isFacet))return "";
     return '<div class="lvs"><h4 class="lvh">'+h+'</h4>'+(typeof v==="string"?'<p>'+fmtD(v)+'</p>':listHtml(Array.isArray(v)?v:[v],fmtD))+'</div>'}).join("")+'</div>';
 /* detail.impact's first level is its medium, its second its high */
 const impactLevel=(i,m)=>m===0?impactMedium(i):impactHigh(i);
@@ -432,7 +428,7 @@ const tldrLevel=x=>'<div><span class="lbl">TLDR</span>'+rend(x,fmtD)+'</div>';
 /* the rec line: its summary is the reason and the unknown; a level replaces both with one string */
 const recHeadHtml=c=>(c.rec?'Rec <strong>('+esc(c.rec)+')</strong>':'<em>'+esc(c.norec||"no recommendation")+'</em>')+' · basis <strong>'+esc(c.basis)+'</strong>';
 const recLine=(c,x)=>x==null
-  ?'<p class="recline">'+recHeadHtml(c)+(c.reason?' — <em>'+fmt(c.reason)+'</em>':'')+' · unknown: '+fmt(c.unknown||"none")+'</p>'
+  ?'<p class="recline">'+recHeadHtml(c)+(shown(c.reason)?' — <em>'+fmt(c.reason)+'</em>':'')+' · unknown: '+fmt(c.unknown||"none")+'</p>'
   :(Array.isArray(x)?'<div class="recline">'+recHeadHtml(c)+' —'+rend(x,fmtD)+'</div>'
     :(i=>'<p class="recline">'+recHeadHtml(c)+' — <em>'+fmtD(i<0?x:x.slice(0,i))+'</em>'+(i<0?'':' · unknown: '+fmtD(x.slice(i+RECUNK.length)))+'</p>')(x.indexOf(RECUNK)));
 /* a rec level is "<reason> · unknown: <unknown>", shown as the summary shows the two */
@@ -442,7 +438,10 @@ const optPara=(k,x)=>Array.isArray(x)?'<div><span class="mono ol">('+esc(k)+')</
    its labelled wrapper, so its label shows at every level; the visible summaries never link */
 function parts(c){
   const cls=c.class?'<em>'+esc(c.class)+'</em>':'';
-  const ev=detOf(c,"evidence");
+  const ev=detOf(c,"evidence"),dl=detOf(c,"dep");
+  /* a fold part that may be none: its summary and levels; with levels but no summary, a placeholder holds
+     its place; with neither, no part ([""]) */
+  const opt=(sum,lv,ph,f)=>shown(sum)?[f(sum)].concat(lv.map(f)):(lv.length?['<p class="evph">'+ph+'</p>'].concat(lv.map(f)):[""]);
   const P={
     ctx:[contextBlock(c)].concat(detOf(c,"context").map(x=>'<div class="ctx"><span class="lbl">Context</span>'+rend(x,fmtD)+'</div>')),
     imp:[impactLine(c)].concat(detOf(c,"impact").map(impactLevel)),
@@ -450,52 +449,58 @@ function parts(c){
     rec:[recLine(c,null)].concat(detOf(c,"rec").map(x=>recLine(c,x))),
     why:[labelled("Why now",c.why)].concat(detOf(c,"why").map(x=>labelled("Why now",x))),
     whyask:[labelled("Why ask",c.whyask,cls)].concat(detOf(c,"whyask").map(x=>labelled("Why ask",x,cls))),
-    dep:[labelled("Depends on",c.dep||"nothing on this page")].concat(detOf(c,"dep").map(x=>labelled("Depends on",x))),
-    /* the Evidence: with levels but no summary, a placeholder holds its place; with neither, no part */
-    ev:c.evidence!=null&&c.evidence!==""?[rend(c.evidence,fmtD)].concat(ev.map(x=>rend(x,fmtD)))
-      :(ev.length?['<p class="evph">Not summarised: more detail shows the evidence.</p>'].concat(ev.map(x=>rend(x,fmtD))):[""])
+    dep:opt(c.dep,dl,"Not summarised: more detail shows what it depends on.",x=>labelled("Depends on",x)),
+    ev:opt(c.evidence,ev,"Not summarised: more detail shows the evidence.",x=>rend(x,fmtD))
   };
   for(const [k,full] of c.o)P["opt-"+k]=[optPara(k,full)].concat(detOpt(c,k).map(x=>optPara(k,x)));
   return P;
 }
-/* one part: its renditions, one shown at a time, and a button naming the next step; just the summary when it has no levels */
-function secHtml(c,key,label,rs){
+/* one part: its renditions, one shown at a time, and a button naming the next step; just the summary when it has
+   no levels. It opens at its summary, or at level start (an option's More opens at its fullest) */
+function secHtml(c,key,label,rs,start){
   if(rs.length<2)return rs[0]||"";
-  const n=esc(c.n),id="d"+n+"-"+key,max=rs.length-1,t=lvText(0,max);
-  return '<div class="sec" data-n="'+n+'" data-sec="'+key+'" data-lvl="0" data-max="'+max+'">'
-    +'<button type="button" class="btn lvb" data-lv="'+key+'" data-n="'+n+'" data-lbl="'+esc(label)+'" aria-expanded="false" aria-controls="'+id+'" aria-label="'+esc(label)+': '+t+'">'+t+'</button>'
-    +'<div id="'+id+'" data-secbody>'+rs.map((h,i)=>'<div class="lv"'+(i?' hidden':'')+'>'+h+'</div>').join("")+'</div></div>';
+  const n=esc(c.n),id="d"+n+"-"+key,max=rs.length-1,at=start>0&&start<=max?start:0,t=lvText(at,max);
+  return '<div class="sec" data-n="'+n+'" data-sec="'+key+'" data-lvl="'+at+'" data-max="'+max+'">'
+    +'<button type="button" class="btn lvb" data-lv="'+key+'" data-n="'+n+'" data-lbl="'+esc(label)+'" aria-expanded="'+(at>0)+'" aria-controls="'+id+'" aria-label="'+esc(label)+': '+t+'">'+t+'</button>'
+    +'<div id="'+id+'" data-secbody>'+rs.map((h,i)=>'<div class="lv"'+(i!==at?' hidden':'')+'>'+h+'</div>').join("")+'</div></div>';
 }
-/* More beside option k: its fullest text, then Effect, Reach, Undo and Cost from its blocks row ("" for (z)) */
-function optionDetail(c,k){
+/* More beside option k: the option in full. Its text opens at its fullest level and steps through the rest
+   (less detail goes to its summary, then up again); then its impact line, static; then Effect, Reach, Undo
+   and Cost from its blocks row. On a ⚠ one-way card the row comes first, so its Undo sits at the top as the
+   block's table row did. With no blocks row its impact is its Effect ((z)'s, what waiting does, its Wait).
+   Each piece that is none is left out (isNone), but Undo: a none Undo says the option cannot be undone */
+function optionDetail(c,k,P){
   const o=c.o.find(x=>x[0]===k);
-  if(k==="z"||!o)return "";
-  const lv=detOpt(c,k),top=lv.length?lv[lv.length-1]:o[1],b=(c.blocks&&c.blocks[k])||null;
-  const f=(l,v)=>isTxt(v)?'<p><span class="lbl">'+l+'</span>'+fmtD(v)+'</p>':'';
-  return rend(top,fmtD)+f("Effect",b?b.happens:o[2])+(b?f("Reach",b.who)+f("Undo",b.undo)+f("Cost",b.cost):'');
-}
-/* the Options in full fold: the Impact table (static), then each option's text (it steps) and its impact (static) */
-function optionsInFull(c,P){
+  if(!o)return "";
   P=P||parts(c);
-  return impactTable(c)+c.o.map(([k,,imp])=>secHtml(c,"opt-"+k,"Option ("+k+")",P["opt-"+k])+'<p class="impact">'+fmt(imp)+'</p>').join("");
+  const rs=P["opt-"+k],b=(c.blocks&&c.blocks[k])||null;
+  const f=(l,v)=>isTxt(v)&&shown(v)?'<p><span class="lbl">'+l+'</span>'+fmtD(v)+'</p>':'';
+  const text=shown(o[1])||rs.length>1?secHtml(c,"opt-"+k,"Option ("+k+")",rs,rs.length-1):"";
+  if(!b)return text+f(k==="z"?"Wait":"Effect",o[2]);
+  const same=x=>String(x).trim().toLowerCase()===String(b.happens).trim().toLowerCase();
+  const imp=shown(o[2])&&!same(o[2])?'<p class="impact">'+fmt(o[2])+'</p>':'';
+  const rowHtml=f("Effect",b.happens)+f("Reach",b.who)+(isTxt(b.undo)?'<p><span class="lbl">Undo</span>'+fmtD(b.undo)+'</p>':'')+f("Cost",b.cost);
+  return c.warn?rowHtml+text+imp:text+imp+rowHtml;
 }
 /* one open card, as renderCards places it in its group */
 function cardHtml(c){
   const n=esc(c.n),g="d"+n,P=parts(c);
   let h='<details class="card" id="card-'+n+'"><summary><span class="n">'+n+'</span><h3>'+esc(c.t)+'</h3>'
-    +'<span class="meta">'+metaPills(c)+recPill(c)+tagEffect(c)+(c.dep?'<span>depends on: '+fmtPlain(c.dep)+'</span>':'')+'<span id="sum-'+n+'">'+ansLabel(c,answers[c.n])+'</span></span></summary>'
+    +'<span class="meta">'+metaPills(c)+recPill(c)+tagEffect(c)+(shown(c.dep)?'<span>depends on: '+fmtPlain(c.dep)+'</span>':'')+'<span id="sum-'+n+'">'+ansLabel(c,answers[c.n])+'</span></span></summary>'
     +'<div class="body">'+secHtml(c,"tldr","TLDR",P.tldr)+secHtml(c,"ctx","Context",P.ctx)+secHtml(c,"imp","Impact",P.imp)
     +line("If left:",c.ifleft)+line("A round costs:",c.roundcosts)+line("If unanswered:",c.ifunanswered)
     +'<fieldset><legend>Your answer: one option or one follow-up</legend><div class="opts">';
   for(const [k,full,imp,ttl,why] of c.o){
     const isRec=!!c.rec&&k===c.rec, lab=k==="z"?"if left:":(isRec?"because:":(c.rec?"not recommended because:":"if chosen:"));
-    const more=g+'-'+fid(k)+'-more';
+    /* More: every option with something to show; open at the start on a ⚠ one-way card, whose Impact rows
+       the decisions skill shows unfolded */
+    const more=g+'-'+fid(k)+'-more',det=optionDetail(c,k,P),open=!!c.warn&&k!=="z";
     h+='<div class="opt'+(isRec?' isrec':'')+'"><label class="optl"><input type="radio" name="'+g+'" id="'+g+'-'+fid(k)+'" value="'+esc(k)+'">'
       +'<span class="ot"><span class="ol">('+esc(k)+')</span>'+esc(ttl)+(isRec?'<span class="pill rec">recommended</span>':'')+'</span>'
-      +'<span class="oi"><em>'+lab+'</em> '+fmt(why)+'</span></label>'
-      +(k==="z"?'':'<button type="button" class="btn omore" data-omore="'+esc(k)+'" data-n="'+n+'" aria-expanded="false" aria-controls="'+more+'" aria-label="More decision detail on option ('+esc(k)+')">More</button>')
+      +(shown(why)?'<span class="oi"><em>'+lab+'</em> '+fmt(why)+'</span>':'')+'</label>'
+      +(det?'<button type="button" class="btn omore'+(open?' on':'')+'" data-omore="'+esc(k)+'" data-n="'+n+'" aria-expanded="'+open+'" aria-controls="'+more+'" aria-label="More decision detail on option ('+esc(k)+')">More</button>':'')
       +actList(c,k)
-      +(k==="z"?'':'<div class="odet" id="'+more+'" hidden>'+optionDetail(c,k)+'</div>')+'</div>';
+      +(det?'<div class="odet" id="'+more+'"'+(open?'':' hidden')+'>'+det+'</div>':'')+'</div>';
   }
   h+='</div><div class="follow"><div><span class="sublabel">Or a follow-up</span><div class="chips">';
   for(const [k,label,ph] of FOLLOW){
@@ -507,9 +512,10 @@ function cardHtml(c){
     +'<div class="cardfoot"><span class="lbl">Details, most compressed first</span><button class="btn" type="button" data-clear="'+n+'">Clear answer</button></div>'
     +'<div class="panes">'
     +'<details class="pane"><summary>Background</summary><div>'+secHtml(c,"why","Why now",P.why)+secHtml(c,"whyask","Why ask",P.whyask)+'</div></details>'
-    +'<details class="pane"'+(c.warn?' open':'')+'><summary>Options in full</summary><div>'+optionsInFull(c,P)+'</div></details>'
-    +'<details class="pane"><summary>Dependencies</summary><div>'+secHtml(c,"dep","Depends on",P.dep)+'</div></details>'
-    +'<details class="pane"><summary>Evidence and unknowns</summary><div><p><span class="lbl">Basis</span>'+esc(c.basis)+(c.reason?' — '+fmt(c.reason):'')+'</p>'+secHtml(c,"ev","Evidence",P.ev)+'<p><span class="lbl">Unknown</span>'+fmt(c.unknown||"none")+'</p></div></details>'
+    +(P.dep[0]?'<details class="pane"><summary>Dependencies</summary><div>'+secHtml(c,"dep","Depends on",P.dep)+'</div></details>':'')
+    /* Basis always (its word is a statement, none included); the Unknown line here only when it is not none:
+       the rec line states "unknown: none" */
+    +'<details class="pane"><summary>Evidence and unknowns</summary><div><p><span class="lbl">Basis</span>'+esc(c.basis)+(shown(c.reason)?' — '+fmt(c.reason):'')+'</p>'+secHtml(c,"ev","Evidence",P.ev)+(shown(c.unknown)?'<p><span class="lbl">Unknown</span>'+fmt(c.unknown)+'</p>':'')+'</div></details>'
     +'</div></div></details>';
 }
 

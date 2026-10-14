@@ -111,3 +111,12 @@ alternative not taken, in case practice argues for it.
   card, shown every time; a list line carries none. Not taken: the cue alone, shown to a
   cold reader only (2026-09-30); the cue on a line of its own above Context; a block's
   Context at the page's high size.
+- **No Options in full; none is not shown, on an answer page** (2026-10-14, the operator's
+  direction: "the options in full section is redundant to the inline details in each option,
+  ditch it. If any sub-section is empty or none, just don't display it"; the required Impact
+  facets, each option's Undo cell, the basis word and the rec line's *unknown: none* kept as
+  statements, (z) given a
+  **More**, and a one-way card's options shown open, designs made in build, not the
+  operator's) — each option's **More** carries what the fold did (its text at every level,
+  its impact and its row); a part, facet or field that is empty or none is left off the page.
+  Not taken: the fold kept beside **More** (198, as built); *none* written out.
