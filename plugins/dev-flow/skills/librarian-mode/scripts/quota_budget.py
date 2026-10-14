@@ -13,10 +13,13 @@ sandboxes share), `CFG` = ${CLAUDE_CONFIG_DIR:-~/.claude}:
     CFG/claude-kit/librarian/samples.jsonl    fallback history, one line per call
     CFG/claude-kit/librarian/intent.json      operator intent (read only here)
     CFG/claude-kit/librarian/claims/<repo>.json  one claim per repo (this repo's written)
+    CFG/claude-kit/librarian/quota-answer.json   the stored go-on (written by --quota-answer)
 
 It also prints the spend inputs (each spend kind's sanity ceiling and p75, the
 dollars per weekly point, the burst size, the ask share) and, with a reading,
 the weekly quota pressure that dev-cycle's spend asks read; it decides no ask.
+With --quota-answer go-on it stores the operator's go-on for the subscription
+(and writes nothing else); every reading prints it as quota_pressure.answer.
 
 The schema and the rules are in references/budget.md; the values (reserves,
 TTLs, and the spend inputs below) are claude-plugins' own: agents decision 0010
@@ -46,6 +49,7 @@ import subprocess
 import sys
 import tempfile
 import time
+import unicodedata
 from datetime import datetime, timezone
 
 V = 1
@@ -119,8 +123,12 @@ SAMPLES_TAIL = 2 << 20         # bytes of samples.jsonl read from its end
 SAMPLES_PRUNE_AT = 1 << 20     # rewrite samples.jsonl above this size...
 SAMPLES_KEEP_S = 8 * 86400     # ...keeping this much history
 SINK_DAYS = 8                  # sink day-files read
+QUOTA_ANSWER_FILE = "quota-answer.json"
+REPLY_MAX = 300                # characters of the operator's reply a go-on keeps
 _SAFE = re.compile(r"[A-Za-z0-9_-][A-Za-z0-9._-]{0,127}")
 _DAYFILE = re.compile(r"(\d{4}-\d{2}-\d{2})\.jsonl")
+_UTC_MINUTE = re.compile(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}Z")
+_DECISION = re.compile(r"[1-9][0-9]{0,8}")
 
 
 # ---------------------------------------------------------------- basics
@@ -195,10 +203,12 @@ def open_regular(path, flags, mode=0o600):
     return fd
 
 
-def read_json(path):
-    """A parsed JSON object from a regular file under READ_MAX bytes, else None."""
+def read_json(path, nofollow=False):
+    """A parsed JSON object from a regular file under READ_MAX bytes, else None.
+    nofollow: a symlink at path reads as absent too."""
+    flags = os.O_RDONLY | (os.O_NOFOLLOW if nofollow else 0)
     try:
-        with os.fdopen(open_regular(path, os.O_RDONLY), "rb") as f:
+        with os.fdopen(open_regular(path, flags), "rb") as f:
             if os.fstat(f.fileno()).st_size > READ_MAX:
                 return None
             data = f.read(READ_MAX + 1)
@@ -579,6 +589,156 @@ def quota_pressure(week, inputs):
     }
 
 
+# ---------------------------------------------------------------- quota answer
+
+def utc_minute(t):
+    """Epoch seconds as UTC `YYYY-MM-DDTHH:MMZ`, truncated to the minute; None
+    for a time the calendar cannot show."""
+    try:
+        return datetime.fromtimestamp(t, timezone.utc).strftime("%Y-%m-%dT%H:%MZ")
+    except (OverflowError, ValueError, OSError):
+        return None
+
+
+def clean_reply(text):
+    """The operator's reply as a go-on keeps it: control and format characters
+    (line and paragraph separators included) become spaces, the ends are
+    trimmed, and text over REPLY_MAX characters is cut to REPLY_MAX with an
+    ellipsis. Anything but a string is ""."""
+    if not isinstance(text, str):
+        return ""
+    s = "".join(" " if unicodedata.category(c) in ("Cc", "Cf", "Cs", "Zl", "Zp") else c
+                for c in text).strip()
+    if len(s) > REPLY_MAX:
+        s = s[:REPLY_MAX - 1].rstrip() + "…"
+    return s
+
+
+def ref_repo_name(cwd):
+    """The repo name a quota answer's reference uses (decisions.md's `<repo>#N`):
+    the last path part of the origin remote's URL without `.git` (both
+    `host:owner/name.git` and URL forms), else the main checkout's directory
+    name (repo_name). Passed through the safe-name rule, as claim names are."""
+    try:
+        p = subprocess.run(["git", "-C", cwd, "remote", "get-url", "origin"],
+                           capture_output=True, text=True, timeout=5)
+        url = p.stdout.strip() if p.returncode == 0 else ""
+    except (OSError, subprocess.SubprocessError):
+        url = ""
+    name = re.split(r"[/:\\]", url.rstrip("/"))[-1] if url else ""
+    if name.endswith(".git"):
+        name = name[:-4]
+    return safe_name(name or repo_name(cwd), "repo-")
+
+
+def answer_authority(ref, reading_repo):
+    """The authority a decided-alone line cites for a stored go-on, for the
+    reading repo: `answer N` (this repo's decision N), `answer <repo>#N`
+    (another repo's), or `answer <repo> <item> <UTC>` (an unnumbered standalone
+    answer; a missing item or time is left out)."""
+    if ref["decision"] is not None:
+        if ref["repo"] == reading_repo:
+            return "answer %d" % ref["decision"]
+        return "answer %s#%d" % (ref["repo"], ref["decision"])
+    return " ".join(["answer", ref["repo"]] + [x for x in (ref["item"], ref["answered_at"]) if x])
+
+
+def read_quota_answer(store, week, reading_repo):
+    """quota_pressure.answer: the stored go-on as it applies to the current
+    weekly window `week`, or None - absent, unreadable, a symlink, a FIFO,
+    oversized, garbled, another version or kind, or from another window.
+    `covers` is used < until_used. `reading_repo` is a name or a callable that
+    returns one (it runs git, so only once a file is found)."""
+    d = read_json(os.path.join(store, QUOTA_ANSWER_FILE), nofollow=True)
+    if d is None or type(d.get("v")) is not int or d["v"] != V or d.get("kind") != "go_on":
+        return None
+    resets_at, until = finite(d.get("resets_at")), finite(d.get("until_used"))
+    ref = d.get("ref")
+    if resets_at is None or until is None or not isinstance(ref, dict):
+        return None
+    if abs(resets_at - week["resets_at"]) > RESET_TOLERANCE_S:
+        return None
+    repo, item, dec = ref.get("repo"), ref.get("item"), ref.get("decision")
+    if not (isinstance(repo, str) and _SAFE.fullmatch(repo)):
+        return None
+    if item is not None and not (isinstance(item, str) and _SAFE.fullmatch(item)):
+        return None
+    if dec is not None and not (type(dec) is int and dec >= 1):
+        return None
+    at = ref.get("answered_at")
+    clean = {"repo": repo, "item": item, "decision": dec,
+             "answered_at": at if isinstance(at, str) and _UTC_MINUTE.fullmatch(at) else None}
+    here = reading_repo() if callable(reading_repo) else reading_repo
+    return {"until_used": until, "resets_at": resets_at,
+            "authority": answer_authority(clean, here),
+            "covers": week["used"] < until,
+            "answered_at": clean["answered_at"], "reply": clean_reply(ref.get("reply"))}
+
+
+ANSWER_ONLY_FLAGS = ("for_reset", "item", "decision", "answered_at", "reply")
+
+
+def quota_answer_args(args, now):
+    """The validated write request for --quota-answer, or (None, reason). An
+    allow-list: `go-on` is the only answer stored (a wait is never stored)."""
+    if args.quota_answer is None:
+        given = [f for f in ANSWER_ONLY_FLAGS if getattr(args, f) is not None]
+        if given:
+            return None, "--%s goes with --quota-answer only" % given[0].replace("_", "-")
+        return None, None
+    if args.quota_answer != "go-on":
+        if args.quota_answer == "wait":
+            return None, "a wait is never stored: --quota-answer takes go-on only"
+        return None, "--quota-answer takes go-on only"
+    if args.read_only:
+        return None, "--read-only writes nothing: it cannot store a quota answer"
+    raw = (args.for_reset or "").strip()
+    if not raw:
+        return None, "--for-reset is required: the weekly reset the quota ask named"
+    try:
+        reset = finite(float(raw))
+    except ValueError:
+        reset = None
+    reset = epoch(reset if reset is not None else raw)
+    if reset is None or reset <= 0:
+        return None, "--for-reset is not epoch seconds or ISO 8601: %r" % raw[:64]
+    if reset <= now:
+        when = utc_minute(reset) or raw[:64]
+        return None, "the reset the quota ask named (%s) has passed" % when
+    if args.repo is not None and not _SAFE.fullmatch(args.repo):
+        return None, "--repo is not a safe name"
+    if args.item is not None and not _SAFE.fullmatch(args.item):
+        return None, "--item is not a work-item id"
+    if args.decision is not None and not _DECISION.fullmatch(args.decision.strip()):
+        return None, "--decision is not a decision number"
+    answered = now
+    if args.answered_at is not None:
+        s = args.answered_at.strip()
+        answered = epoch(s) if not re.fullmatch(r"[0-9.+-]+", s) else None
+        if answered is None or utc_minute(answered) is None:
+            return None, "--answered-at is not an ISO 8601 time: %r" % args.answered_at[:64]
+    return {"for_reset": reset, "repo": args.repo, "item": args.item,
+            "decision": int(args.decision) if args.decision is not None else None,
+            "answered_at": utc_minute(answered), "reply": clean_reply(args.reply or "")}, None
+
+
+def write_quota_answer(store, req, week, inputs, session, now):
+    """Store the go-on, temp file and os.replace at 0600 (atomic_write_json; a
+    symlink at the path is replaced, never followed). Its reach: until weekly
+    use reaches the use at answer time plus go_on_points, in this window."""
+    points = inputs["go_on_points"]
+    repo = req["repo"] or ref_repo_name(os.getcwd())
+    obj = {"v": V, "kind": "go_on", "resets_at": week["resets_at"],
+           "from_used": week["used"], "go_on_points": points,
+           "until_used": round(week["used"] + points, 3),
+           "ref": {"repo": repo, "item": req["item"], "decision": req["decision"],
+                   "answered_at": req["answered_at"], "reply": req["reply"]},
+           "set_by": session, "at": now}
+    path = os.path.join(store, QUOTA_ANSWER_FILE)
+    atomic_write_json(path, obj)
+    return path
+
+
 # ---------------------------------------------------------------- claims
 
 def registry_identity(cfg, session, env):
@@ -798,8 +958,13 @@ def next_check(result, now):
 
 
 def compute(args, env, now):
-    """The result dict and a list of error strings (store writes that failed)."""
+    """The result dict, a list of error strings (store writes that failed), and
+    the reason a --quota-answer write was refused (None when it was not)."""
     errors = []
+    req, refused = quota_answer_args(args, now)
+    answering = args.quota_answer is not None
+    # An answer write writes nothing else; a refused call writes nothing at all.
+    quiet = args.read_only or answering or refused is not None
     cfg = cfg_dir(env)
     store = store_dir(cfg)
     session = args.session or env.get("CLAUDE_CODE_SESSION_ID") or None
@@ -838,7 +1003,7 @@ def compute(args, env, now):
 
     history_src = "sink" if sink_live else "samples"
     samples_path = os.path.join(store, "samples.jsonl")
-    if not sink_live and reading is not None and src == "sensor" and not args.read_only:
+    if not sink_live and reading is not None and src == "sensor" and not quiet:
         try:
             append_sample(samples_path, reading)
         except OSError as e:
@@ -865,8 +1030,32 @@ def compute(args, env, now):
     else:
         result["reason"] = reason or "no reading"
 
+    if answering:
+        path = os.path.join(store, QUOTA_ANSWER_FILE)
+        week = wins["seven_day"] if reading is not None else None
+        if refused is None and week is None:
+            refused = "no weekly reading: a quota answer is stored only with one"
+        if refused is None and abs(week["resets_at"] - req["for_reset"]) > RESET_TOLERANCE_S:
+            refused = ("the weekly window has turned: the reset the quota ask named (%s) is "
+                       "not the current one (%s)" % (utc_minute(req["for_reset"]),
+                                                     utc_minute(week["resets_at"])))
+        written = False
+        if refused is None:
+            try:
+                write_quota_answer(store, req, week, inputs, session, now)
+                written = True
+            except OSError as e:
+                errors.append("quota-answer.json write failed: %s" % (e.strerror or e))
+        result["quota_answer"] = {"written": written, "path": path, "refused": refused}
+    if refused is not None:
+        errors.append("quota answer refused: %s" % refused)
+    if result["quota_pressure"] is not None:
+        result["quota_pressure"]["answer"] = read_quota_answer(
+            store, wins["seven_day"],
+            args.repo if args.repo is not None else lambda: ref_repo_name(os.getcwd()))
+
     claims = {"repo": None, "written": False, "action": "skipped"}
-    if not args.read_only:
+    if not quiet:
         repo = args.repo or repo_name(os.getcwd())
         if not session:
             claims.update(repo=repo, action="skipped-no-session")
@@ -882,13 +1071,15 @@ def compute(args, env, now):
     result["next_check"] = next_check(result, now)
     if errors:
         result["errors"] = errors
-    return result, errors
+    return result, errors, refused
 
 
 def parser():
     p = argparse.ArgumentParser(description="The librarian's quota sense: prints one JSON result.")
     p.add_argument("--session", help="session id (default: $CLAUDE_CODE_SESSION_ID)")
-    p.add_argument("--repo", help="repo name for the claim (default: basename of the main checkout)")
+    p.add_argument("--repo", help="repo name for the claim (default: basename of the main checkout);"
+                   " with --quota-answer, and for quota_pressure.answer's authority, the"
+                   " reference's repo (default: the origin remote's name, else the checkout's)")
     p.add_argument("--read-only", action="store_true",
                    help="write nothing: no sample appended, no claim written")
     p.add_argument("--takeover", action="store_true",
@@ -896,6 +1087,20 @@ def parser():
     p.add_argument("--stale-after", type=float, default=STALE_AFTER_S,
                    help="seconds after which a reading is no signal (default %(default)s)")
     p.add_argument("--sink-dir", help="claude-analytics samples dir (default: discovered)")
+    p.add_argument("--quota-answer", metavar="go-on",
+                   help="store the operator's go-on for the subscription (quota-answer.json) and"
+                   " write nothing else; go-on is the only value (a wait is never stored)")
+    p.add_argument("--for-reset", metavar="WHEN",
+                   help="with --quota-answer: the weekly reset the quota ask named (epoch or"
+                   " ISO 8601); refused once it has passed or is not the current window's")
+    p.add_argument("--item", help="with --quota-answer: the asking work item's id")
+    p.add_argument("--decision", metavar="N", help="with --quota-answer: the decision number answered")
+    p.add_argument("--answered-at", metavar="UTC",
+                   help="with --quota-answer: the answer's time, ISO 8601 (default: now),"
+                   " stored as YYYY-MM-DDTHH:MMZ")
+    p.add_argument("--reply", metavar="TEXT",
+                   help="with --quota-answer: the operator's reply as the answer line records it"
+                   " (kept to %d characters, on one line)" % REPLY_MAX)
     p.add_argument("--now", type=float, help=argparse.SUPPRESS)  # tests
     return p
 
@@ -908,7 +1113,7 @@ def main(argv=None, env=None):
         return e.code if isinstance(e.code, int) else 2
     try:
         now = args.now if args.now is not None else time.time()
-        result, errors = compute(args, env, now)
+        result, errors, refused = compute(args, env, now)
     except Exception as e:  # never raise out
         sys.stderr.write("quota_budget: internal error: %s: %s\n" % (type(e).__name__, e))
         print(json.dumps({"v": V, "signal": "none", "reason": "internal error",
@@ -917,6 +1122,8 @@ def main(argv=None, env=None):
     print(json.dumps(result, sort_keys=True))
     for e in errors:
         sys.stderr.write("quota_budget: %s\n" % e)
+    if refused is not None:
+        return 2
     return 1 if errors else 0
 
 
