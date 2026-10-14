@@ -29,7 +29,7 @@ must start `https://`, or it is not shown.
 
 | Key | Required | Shape |
 |---|---|---|
-| `page` | no | `{title, lede, doc: {name, url}}`; `url` must start `https://` |
+| `page` | no | `{title, lede, doc: {name, url}}`; `title` is `(<owner>) <session name>`, else `<repo>: open decisions` (SKILL.md step 2), the `<title>` set to match; `url` must start `https://` |
 | `layers` | yes | `[[key, title, note], …]`, the groups in display order |
 | `follow` | yes | copied from below as it stands |
 | `cards` | yes | one per decision, in the `decisions` skill's order |
