@@ -25,3 +25,6 @@ agent: implementer abcbff4fd53e132e1 round 1
 result: DONE round 1 at 881816a3 (foundation moves.md, gates.md, SKILL.md, state.md, dev-cycle bindings.md; no claim-md edits per the series' option D)
 dispatch: reviewer opus high — fresh (rule 4)
 agent: reviewer abaae5cdc3a4f6ace round 1 at 881816a3
+verdict: NEEDS_CHANGES round 1 at 881816a3 (2 medium: phase 2 never says how terms are drafted or what the G2 decision shows; the terms list omits privacy and sits in three homes; 2 low: Data contracts and claim lines change together; 're-run without changed terms' reading; nits: reflows, commit subject, record the third unlisted edit)
+dispatch: implementer opus medium — resume, fix round 1
+agent: implementer abcbff4fd53e132e1 round 2

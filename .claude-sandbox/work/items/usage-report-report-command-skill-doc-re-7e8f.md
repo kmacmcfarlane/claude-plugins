@@ -53,3 +53,9 @@ agent: implementer ace9ac624032a18b2 round 1 (merge)
 result: DONE merge at 4e7385ce (main f4be55ec + 7f0b8541; no conflicts; usage-report 81, kit-dev 21, hooks 750 OK)
 dispatch: reviewer opus high — fresh (rule 4), the whole command against main
 agent: reviewer af1827744cbcd195f round 1 at 4e7385ce
+verdict: NEEDS_CHANGES round 1 at 4e7385ce (3 low doc fixes with exact wording: cite the session-id env var; duplicate-line wording per transcript kind; worktree scope wording; nit: reject --top below 0; code correct, totals reconcile on real transcripts, consumers unaffected, no Structure entry needed)
+decided: 2026-10-14T07:40Z cap — only lows and a nit, each with an exact fix: one finish round, read by the librarian (authority answer 145)
+dispatch: implementer opus medium — resume, finish round
+agent: implementer ace9ac624032a18b2 round 2 (finish)
+result: DONE finish at 5469e412 (four exact; read by the librarian; usage-report 82 OK)
+verdict: CLEAR after 0 fix rounds, 1 finish at 5469e412

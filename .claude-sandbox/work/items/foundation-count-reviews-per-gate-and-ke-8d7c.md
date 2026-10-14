@@ -26,3 +26,6 @@ return: planner DONE .claude-sandbox/investigations/foundation-count-reviews-per
 baseline: 9ccc9dc88f17cae9b9dd6cfed2aad901de2ba5ab1d58782f9b930d15d29caa0c  00_initial.md 30eb9ce57042429e156362008390719881ae7de87cb834376dbee0cf065cf18d  INDEX.md 
 dispatch: reviewer opus high — plan review round 1 (fresh)
 agent: reviewer a06b4755eb6d8b126 plan round 1
+verdict: NEEDS_CHANGES plan round 1 (2 high: an answer touching an earlier phase must be a reopen, not an amendment; ahead answers go out of force at the next verdict under bindings.md's in-force rule; 9 medium: budget line source and fable/raise lines, fb35 overlap understated, OQ6 and the trial pause, librarian channel and decide-alone, reconcile not mechanical, G3 examples break D2, cap approval passes a gate without CLEAR, no minimal B weighed, answer 205 overstated; 9 low; 2 nits)
+dispatch: planner opus high — resume, plan fix round 1 (all findings, verbatim report passed)
+agent: planner a454d20caa97aeb97 round 2
