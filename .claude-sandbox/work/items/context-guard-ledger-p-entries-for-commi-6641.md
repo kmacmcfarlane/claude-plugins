@@ -2,10 +2,11 @@
 id: context-guard-ledger-p-entries-for-commi-6641
 title: "context-guard ledger: P-entries for commits in other repos name the session cwd"
 type: bug
-status: todo
+status: done
 priority: 3
 created: 2026-09-22
-updated: 2026-09-22
+updated: 2026-10-13
+closed: 2026-10-13
 refs:
   - "peer: agents - librarian (uds 122.sock), operator relay"
 ---
@@ -36,3 +37,6 @@ dispatch: implementer opus medium — resume, finish round
 agent: implementer ac59fa52819a075cd round 3 (finish)
 result: DONE finish at c1a3372d (exact; read by the librarian; 748 OK)
 verdict: CLEAR after 1 fix round, 1 finish at c1a3372d
+
+## Notes
+- 2026-10-13 done

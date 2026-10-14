@@ -31,3 +31,5 @@ dispatch: implementer opus medium — resume, finish round (part 2)
 agent: implementer a10af6552cb6da062 round 2 (finish)
 result: DONE finish at 068e7e5e (all six exact; diff read by the librarian; 733 OK)
 verdict: CLEAR part 2 after 1 finish at 068e7e5e; part 1 open on decision 215
+shown 215: 2026-10-14T06:53Z page
+answer 215: a (answer page YXBW5U31wCnd2jPAWyJF1F, rev 2026-10-14T00:30:00Z, at 2026-10-14T07:05:35.779Z)
