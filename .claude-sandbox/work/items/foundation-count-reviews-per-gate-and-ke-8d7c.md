@@ -36,3 +36,7 @@ agent: reviewer a06b4755eb6d8b126 plan round 2
 verdict: NEEDS_CHANGES plan round 2 (all 22 closed; new 1 medium: a reopen during gate N's review drops gate N's open work; 5 low: budget src read by the finish chain and fable rule, no-reading line re-base, resume.md granted-round end, Ids: on reopen serials, ahead question vs Held row double decision, OQ7 names incomplete; 3 nits)
 dispatch: planner opus high — resume, plan fix round 2
 agent: planner a454d20caa97aeb97 round 3
+return: planner DONE .claude-sandbox/investigations/foundation-count-reviews-per-gate-and-ke-8d7c (02_review-round-2.md; reopen pauses gate N then resumes with its open work; no-reading gate keeps the fourth-review fallback; OQ7 names complete)
+baseline: 9ccc9dc88f17cae9b9dd6cfed2aad901de2ba5ab1d58782f9b930d15d29caa0c  00_initial.md 1ca1a907ad775373ff39dd331641f83d108d31623368e504444c3e092776078f  01_review-round-1.md b7d9216140bf158a4f2b0c9ffad6d1557dd2ec0d0872662fdb9a71c7bdf1fe19  02_review-round-2.md 7bf5405ec2a3dd36b1e9a271ac7390cf06f5a1c10f2230c26add3a1bc490df7e  INDEX.md 
+dispatch: reviewer opus high — resume, plan review round 3
+agent: reviewer a06b4755eb6d8b126 plan round 3

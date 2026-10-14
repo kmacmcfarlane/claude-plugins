@@ -27,3 +27,6 @@ agent: implementer adb2d16ec86cbf0f8 round 1
 result: DONE round 1 at d7e0f453 (Options in full removed, its data in each option's More; one isNone helper hides empty or none parts; four required Impact facets, basis and the rec line's unknown kept; test_none.py; 155 OK)
 dispatch: reviewer opus high — fresh (rule 4)
 agent: reviewer aea9ab2a707188486 round 1 at d7e0f453
+verdict: NEEDS_CHANGES round 1 at d7e0f453 (1 high: a ⚠ option's blocks Undo of 'None.' is hidden; 1 medium: the check passes a blank ⚠ Undo; 2 low: Undo sits low in an open ⚠ More, (z) Wait wording; nit: 'nothing' in the none list)
+dispatch: implementer opus medium — resume, fix round 1
+agent: implementer adb2d16ec86cbf0f8 round 2
