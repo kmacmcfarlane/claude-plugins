@@ -20,3 +20,7 @@ Operator 2026-10-14: the 'Options in full' section repeats the inline detail eac
 - next: —
 - blocked: —
 - learned: —
+target: an agent worktree off main (352641d7); decision-page template, schema, digest, tests
+budget: waived (operator 2026-10-08); spend measured
+dispatch: implementer opus medium — drop Options in full; hide empty or none sub-sections
+agent: implementer adb2d16ec86cbf0f8 round 1
